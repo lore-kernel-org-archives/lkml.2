@@ -1,32 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab1K0PqP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 10:46:15 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59385 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602Ab1K0PqO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 10:46:14 -0500
+	id S1755762Ab1K0P75 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 10:59:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45711 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755724Ab1K0P74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 10:59:56 -0500
+Date: Sun, 27 Nov 2011 17:59:09 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
+        Jason Baron <jbaron@redhat.com>, rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] perf, core: rate limit perf_sched_events jump_label patching
+Message-ID: <20111127155909.GO2557@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20111127010700.GA1037@kroah.com>
-References: <1319752934-1919-1-git-send-email-patrik.r.jakobsson@gmail.com>
-	<20111127010700.GA1037@kroah.com>
-Date: Sun, 27 Nov 2011 16:46:13 +0100
-Message-ID: <CAMeQTsaAoTGc=femSjkrXDfXiLH892UGgVG88HREzOna5YtF+g@mail.gmail.com>
-Subject: Re: [PATCH 0/9] Split psb_intel_output to encoders and connectors
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 2:07 AM, Greg KH <greg@kroah.com> wrote:
-> I need an ack from Alan before I can take this series.
+jump_lable patching is very expensive operation that involves pausing all
+cpus. The patching of perf_sched_events jump_label is easily controllable
+from userspace by unprivileged user. When user runs loop like this
+"while true; do perf stat -e cycles true; done" the performance of my
+test application that just increments a counter for one second drops by
+4%. This is on a 16 cpu box with my test application using only one of
+them. An impact on a real server doing real work will be much worse.
+Performance of KVM PMU drops nearly 50% due to jump_lable for "perf
+record" since KVM PMU implementation creates and destroys perf event
+frequently.
 
-I have talked to Alan and this will not go into staging. Alan is moving gma500
-out of staging so I will adapt my patches to drm-next instead.
+This patch introduce the way to rate limit jump_label patching and uses
+it to fix above problem. I believe that as jump_label use will spread
+the problem will become more common and thus solving it in a generic
+code is appropriate. Also fixing it in a perf code will result in moving
+jump_label accounting logic to perf code with all the ifdefs in case
+of JUMP_LABEL=n kernel. With this patch all details are nicely hidden
+inside jump_label code.
 
-Thanks
-Patrik
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
+index 388b0d4..22509cd 100644
+--- a/include/linux/jump_label.h
++++ b/include/linux/jump_label.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/compiler.h>
++#include <linux/workqueue.h>
+ 
+ #if defined(CC_HAVE_ASM_GOTO) && defined(CONFIG_JUMP_LABEL)
+ 
+@@ -14,6 +15,12 @@ struct jump_label_key {
+ #endif
+ };
+ 
++struct jump_label_key_deferred {
++	struct jump_label_key key;
++	unsigned long timeout;
++	struct delayed_work work;
++};
++
+ # include <asm/jump_label.h>
+ # define HAVE_JUMP_LABEL
+ #endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
+@@ -51,8 +58,11 @@ extern void arch_jump_label_transform_static(struct jump_entry *entry,
+ extern int jump_label_text_reserved(void *start, void *end);
+ extern void jump_label_inc(struct jump_label_key *key);
+ extern void jump_label_dec(struct jump_label_key *key);
++extern void jump_label_dec_deferred(struct jump_label_key_deferred *key);
+ extern bool jump_label_enabled(struct jump_label_key *key);
+ extern void jump_label_apply_nops(struct module *mod);
++extern void jump_label_rate_limit(struct jump_label_key_deferred *key,
++		unsigned long rl);
+ 
+ #else  /* !HAVE_JUMP_LABEL */
+ 
+@@ -68,6 +78,10 @@ static __always_inline void jump_label_init(void)
+ {
+ }
+ 
++struct jump_label_key_deferred {
++	struct jump_label_key  key;
++};
++
+ static __always_inline bool static_branch(struct jump_label_key *key)
+ {
+ 	if (unlikely(atomic_read(&key->enabled)))
+@@ -85,6 +99,11 @@ static inline void jump_label_dec(struct jump_label_key *key)
+ 	atomic_dec(&key->enabled);
+ }
+ 
++static inline void jump_label_dec_deferred(struct jump_label_key_deferred *key)
++{
++	jump_label_dec(&key->key);
++}
++
+ static inline int jump_label_text_reserved(void *start, void *end)
+ {
+ 	return 0;
+@@ -102,6 +121,11 @@ static inline int jump_label_apply_nops(struct module *mod)
+ {
+ 	return 0;
+ }
++ 
++static inline void jump_label_rate_limit(struct jump_label_key_deferred *key,
++		unsigned long rl)
++{
++}
+ #endif	/* HAVE_JUMP_LABEL */
+ 
+ #endif	/* _LINUX_JUMP_LABEL_H */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1e9ebe5..2272238 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1062,12 +1063,12 @@ perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)
+ 	}
+ }
+ 
+-extern struct jump_label_key perf_sched_events;
++extern struct jump_label_key_deferred perf_sched_events;
+ 
+ static inline void perf_event_task_sched_in(struct task_struct *prev,
+ 					    struct task_struct *task)
+ {
+-	if (static_branch(&perf_sched_events))
++	if (static_branch(&perf_sched_events.key))
+ 		__perf_event_task_sched_in(prev, task);
+ }
+ 
+@@ -1076,7 +1077,7 @@ static inline void perf_event_task_sched_out(struct task_struct *prev,
+ {
+ 	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, NULL, 0);
+ 
+-	if (static_branch(&perf_sched_events))
++	if (static_branch(&perf_sched_events.key))
+ 		__perf_event_task_sched_out(prev, next);
+ }
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2e41c8e..7de5e68 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -128,7 +128,7 @@ enum event_type_t {
+  * perf_sched_events : >0 events exist
+  * perf_cgroup_events: >0 per-cpu cgroup events exist on this cpu
+  */
+-struct jump_label_key perf_sched_events __read_mostly;
++struct jump_label_key_deferred perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+@@ -2736,7 +2736,7 @@ static void free_event(struct perf_event *event)
+ 
+ 	if (!event->parent) {
+ 		if (event->attach_state & PERF_ATTACH_TASK)
+-			jump_label_dec(&perf_sched_events);
++			jump_label_dec_deferred(&perf_sched_events);
+ 		if (event->attr.mmap || event->attr.mmap_data)
+ 			atomic_dec(&nr_mmap_events);
+ 		if (event->attr.comm)
+@@ -2747,7 +2747,7 @@ static void free_event(struct perf_event *event)
+ 			put_callchain_buffers();
+ 		if (is_cgroup_event(event)) {
+ 			atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
+-			jump_label_dec(&perf_sched_events);
++			jump_label_dec_deferred(&perf_sched_events);
+ 		}
+ 	}
+ 
+@@ -5695,7 +5695,7 @@ done:
+ 
+ 	if (!event->parent) {
+ 		if (event->attach_state & PERF_ATTACH_TASK)
+-			jump_label_inc(&perf_sched_events);
++			jump_label_inc(&perf_sched_events.key);
+ 		if (event->attr.mmap || event->attr.mmap_data)
+ 			atomic_inc(&nr_mmap_events);
+ 		if (event->attr.comm)
+@@ -5931,7 +5931,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		 * - that may need work on context switch
+ 		 */
+ 		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
+-		jump_label_inc(&perf_sched_events);
++		jump_label_inc(&perf_sched_events.key);
+ 	}
+ 
+ 	/*
+@@ -6777,6 +6777,9 @@ void __init perf_event_init(void)
+ 
+ 	ret = init_hw_breakpoint();
+ 	WARN(ret, "hw_breakpoint initialization failed with: %d", ret);
++
++	/* do not patch jump label more than once per second */
++	jump_label_rate_limit(&perf_sched_events, HZ);
+ }
+ 
+ static int __init perf_event_sysfs_init(void)
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index 66ff710..51a175a 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -72,15 +72,46 @@ void jump_label_inc(struct jump_label_key *key)
+ 	jump_label_unlock();
+ }
+ 
+-void jump_label_dec(struct jump_label_key *key)
++static void __jump_label_dec(struct jump_label_key *key,
++		unsigned long rate_limit, struct delayed_work *work)
+ {
+ 	if (!atomic_dec_and_mutex_lock(&key->enabled, &jump_label_mutex))
+ 		return;
+ 
+-	jump_label_update(key, JUMP_LABEL_DISABLE);
++	if (rate_limit) {
++		atomic_inc(&key->enabled);
++		schedule_delayed_work(work, rate_limit);
++	} else
++		jump_label_update(key, JUMP_LABEL_DISABLE);
++
+ 	jump_label_unlock();
+ }
+ 
++static void jump_label_update_timeout(struct work_struct *work)
++{
++	struct jump_label_key_deferred *key =
++		container_of(work, struct jump_label_key_deferred, work.work);
++	__jump_label_dec(&key->key, 0, NULL);
++}
++
++void jump_label_dec(struct jump_label_key *key)
++{
++	__jump_label_dec(key, 0, NULL);
++}
++
++void jump_label_dec_deferred(struct jump_label_key_deferred *key)
++{
++	__jump_label_dec(&key->key, key->timeout, &key->work);
++}
++
++
++void jump_label_rate_limit(struct jump_label_key_deferred *key,
++		unsigned long rl)
++{
++	key->timeout = rl;
++	INIT_DELAYED_WORK(&key->work, jump_label_update_timeout);
++}
++
+ static int addr_conflict(struct jump_entry *entry, void *start, void *end)
+ {
+ 	if (entry->code <= (unsigned long)end &&
+--
+			Gleb.
