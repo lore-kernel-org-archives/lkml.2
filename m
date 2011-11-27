@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab1K0BNL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 20:13:11 -0500
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:52371 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755208Ab1K0BNJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 20:13:09 -0500
+	id S1755259Ab1K0BQf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 Nov 2011 20:16:35 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43069 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab1K0BQd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 Nov 2011 20:16:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111126070601.GA19176@S2100-06.ap.freescale.net>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <20111126070601.GA19176@S2100-06.ap.freescale.net>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Sat, 26 Nov 2011 17:12:47 -0800
-Message-ID: <CAJOA=zMGaXLrC=sLzrZKTqAKqQHpmn9=xx94ucaCsFAZ6EfYqw@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] common clk framework
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
-        tglx@linutronix.de, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, aul@pwsan.com, grant.likely@secretlab.ca,
-        sboyd@quicinc.com, skannan@quicinc.com, magnus.damm@gmail.com,
-        arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org
+In-Reply-To: <201111262337.43771.rjw@sisk.pl>
+References: <CA+55aFyNUC+k1gp3MQkxQzernEzRZwYOH4EBnOq=6UiaJ2oh4A@mail.gmail.com>
+	<201111250203.29786.rjw@sisk.pl>
+	<201111262232.46195.rjw@sisk.pl>
+	<201111262337.43771.rjw@sisk.pl>
+Date: Sun, 27 Nov 2011 09:16:32 +0800
+X-Google-Sender-Auth: iCTRnkOuPJVQNuSlCU_3VlrI4vA
+Message-ID: <CAJ-Vmo=yh_maZtccaBkqZwip-ubjR4U471ALPwYwTurMaQrZ9Q@mail.gmail.com>
+Subject: Re: [PATCH] ath9k: Revert change that broke AR928X on Acer Ferrari One
+From: Adrian Chadd <adrian@freebsd.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Wireless <linux-wireless@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 25, 2011 at 11:06 PM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> On Mon, Nov 21, 2011 at 05:40:42PM -0800, Mike Turquette wrote:
->>   .speaking of which, clk_set_rate has been overhauled and is now
->> recursive. *collective groan*.  clk_set_rate is still simple for the
->> common case of simply setting a single clk's rate.  But if your clk has
->> the CLK_PARENT_SET_RATE flag and the .round_rate callback recommends
->> changing the parent rate, then clk_set_rate will recurse upwards to the
->> parent and try it all over again.  In the event of a failure everything
->> unwinds and all the clks go out for drinks.
->>
-> I smell that this will be the part which makes the whole series risky
-> of being accepted in a desired time frame, with saying rate change
-> notifications are still missing for now.
+Hm, considering the origina patch did this:
 
-I agree.  I'll send out V4 this coming week with the clk rate change
-notifiers rolled in.  That means that there won't be any missing
-pieces for my vision of how a complex clk tree should interact with
-drivers.  If it is not what people want then we can probably de-scope
-pieces of it, but I think the architecture is sound.
+        /* Clear Bit 14 of AR_WA after putting chip into Full Sleep mode. */
+-       if (AR_SREV_9300_20_OR_LATER(ah))
+-               REG_WRITE(ah, AR_WA,
+-                         ah->WARegVal & ~AR_WA_D3_L1_DISABLE);
++       if (!AR_SREV_9480(ah))
++               REG_WRITE(ah, AR_WA, ah->WARegVal & ~AR_WA_D3_L1_DISABLE);
 
-Thanks for reviewing Shawn.
+.. something tells me that perhaps the correct statement is:
 
-Regards,
-Mike
+if (AR_SREV_9300_20_OR_LATER(ah) && !AR_SREV_9480(ah))
+    REG_WRITE() ...
+
+?
+
+
+Adrian
