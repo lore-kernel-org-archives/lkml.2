@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab1K0MEw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 07:04:52 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58567 "EHLO ogre.sisk.pl"
+	id S1755327Ab1K0MF2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 07:05:28 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58577 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753165Ab1K0MEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 07:04:48 -0500
+	id S1754848Ab1K0MEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 07:04:51 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM list <linux-pm@vger.kernel.org>
-Subject: [PATCH 1/5] PM / Domains: Document how PM domains are used by the PM core
-Date: Sun, 27 Nov 2011 13:03:38 +0100
+Subject: [PATCH 4/5] PM / Sleep: Update documentation related to system wakeup
+Date: Sun, 27 Nov 2011 13:06:22 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: LKML <linux-kernel@vger.kernel.org>, Randy Dunlap <rdunlap@xenotime.net>,
         Alan Stern <stern@rowland.harvard.edu>
@@ -19,122 +19,101 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111271303.38218.rjw@sisk.pl>
+Message-Id: <201111271306.22503.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-The current power management documentation in Documentation/power/
-either doesn't cover PM domains at all, or gives inaccurate
-information about them, so update the relevant files in there to
-follow the code.
+The system wakeup section of Documentation/power/devices.txt is
+outdated, so make it agree with the current code.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- Documentation/power/devices.txt    |   42 +++++++++++++++++++++++--------------
- Documentation/power/runtime_pm.txt |   29 +++++++++++++++----------
- 2 files changed, 45 insertions(+), 26 deletions(-)
+ Documentation/power/devices.txt |   56 +++++++++++++++++++++++++---------------
+ 1 file changed, 36 insertions(+), 20 deletions(-)
 
 Index: linux/Documentation/power/devices.txt
 ===================================================================
 --- linux.orig/Documentation/power/devices.txt
 +++ linux/Documentation/power/devices.txt
-@@ -123,9 +123,10 @@ please refer directly to the source code
- Subsystem-Level Methods
- -----------------------
- The core methods to suspend and resume devices reside in struct dev_pm_ops
--pointed to by the pm member of struct bus_type, struct device_type and
--struct class.  They are mostly of interest to the people writing infrastructure
--for buses, like PCI or USB, or device type and device class drivers.
-+pointed to by the ops member of struct dev_pm_domain, or by the pm member of
-+struct bus_type, struct device_type and struct class.  They are mostly of
-+interest to the people writing infrastructure for platforms and buses, like PCI
-+or USB, or device type and device class drivers.
+@@ -140,41 +140,57 @@ sequencing in the driver model tree.
  
- Bus drivers implement these methods as appropriate for the hardware and the
- drivers using it; PCI works differently from USB, and so on.  Not many people
-@@ -251,18 +252,29 @@ various phases always run after tasks ha
- unfrozen.  Furthermore, the *_noirq phases run at a time when IRQ handlers have
- been disabled (except for those marked with the IRQ_WAKEUP flag).
+ /sys/devices/.../power/wakeup files
+ -----------------------------------
+-All devices in the driver model have two flags to control handling of wakeup
+-events (hardware signals that can force the device and/or system out of a low
+-power state).  These flags are initialized by bus or device driver code using
++All device objects in the driver model contain fields that control the handling
++of system wakeup events (hardware signals that can force the system out of a
++sleep state).  These fields are initialized by bus or device driver code using
+ device_set_wakeup_capable() and device_set_wakeup_enable(), defined in
+ include/linux/pm_wakeup.h.
  
--All phases use bus, type, or class callbacks (that is, methods defined in
--dev->bus->pm, dev->type->pm, or dev->class->pm).  These callbacks are mutually
--exclusive, so if the device type provides a struct dev_pm_ops object pointed to
--by its pm field (i.e. both dev->type and dev->type->pm are defined), the
--callbacks included in that object (i.e. dev->type->pm) will be used.  Otherwise,
--if the class provides a struct dev_pm_ops object pointed to by its pm field
--(i.e. both dev->class and dev->class->pm are defined), the PM core will use the
--callbacks from that object (i.e. dev->class->pm).  Finally, if the pm fields of
--both the device type and class objects are NULL (or those objects do not exist),
--the callbacks provided by the bus (that is, the callbacks from dev->bus->pm)
--will be used (this allows device types to override callbacks provided by bus
--types or classes if necessary).
-+All phases use PM domain, bus, type, or class callbacks (that is, methods
-+defined in dev->pm_domain->ops, dev->bus->pm, dev->type->pm, or dev->class->pm).
-+These callbacks are regarded by the PM core as mutually exclusive.  Moreover,
-+PM domain callbacks always take precedence over bus, type and class callbacks,
-+while type callbacks take precedence over bus and class callbacks, and class
-+callbacks take precedence over bus callbacks.  To be precise, the following
-+rules are used to determine which callback to execute in the given phase:
-+
-+    1.	If dev->pm_domain is present, the PM core will attempt to execute the
-+	callback included in dev->pm_domain->ops.  If that callback is not
-+	present, no action will be carried out for the given device.
-+
-+    2.	Otherwise, if both dev->type and dev->type->pm are present, the callback
-+	included in dev->type->pm will be executed.
-+
-+    3.	Otherwise, if both dev->class and dev->class->pm are present, the
-+	callback included in dev->class->pm will be executed.
-+
-+    4.	Otherwise, if both dev->bus and dev->bus->pm are present, the callback
-+	included in dev->bus->pm will be executed.
-+
-+This allows PM domains and device types to override callbacks provided by bus
-+types or device classes if necessary.
+-The "can_wakeup" flag just records whether the device (and its driver) can
++The "power.can_wakeup" flag just records whether the device (and its driver) can
+ physically support wakeup events.  The device_set_wakeup_capable() routine
+-affects this flag.  The "should_wakeup" flag controls whether the device should
+-try to use its wakeup mechanism.  device_set_wakeup_enable() affects this flag;
+-for the most part drivers should not change its value.  The initial value of
+-should_wakeup is supposed to be false for the majority of devices; the major
+-exceptions are power buttons, keyboards, and Ethernet adapters whose WoL
+-(wake-on-LAN) feature has been set up with ethtool.  It should also default
+-to true for devices that don't generate wakeup requests on their own but merely
+-forward wakeup requests from one bus to another (like PCI bridges).
++affects this flag.  The "power.wakeup" field is a pointer to an object of type
++struct wakeup_source used for controlling whether or not the device should use
++its system wakeup mechanism and for notifying the PM core of system wakeup
++events signaled by the device.  This object is only present for wakeup-capable
++devices (i.e. devices whose "can_wakeup" flags are set) and is created (or
++removed) by device_set_wakeup_capable().
  
- These callbacks may in turn invoke device- or driver-specific methods stored in
- dev->driver->pm, but they don't have to.
-Index: linux/Documentation/power/runtime_pm.txt
-===================================================================
---- linux.orig/Documentation/power/runtime_pm.txt
-+++ linux/Documentation/power/runtime_pm.txt
-@@ -44,17 +44,24 @@ struct dev_pm_ops {
- };
+ Whether or not a device is capable of issuing wakeup events is a hardware
+ matter, and the kernel is responsible for keeping track of it.  By contrast,
+ whether or not a wakeup-capable device should issue wakeup events is a policy
+ decision, and it is managed by user space through a sysfs attribute: the
+-power/wakeup file.  User space can write the strings "enabled" or "disabled" to
+-set or clear the "should_wakeup" flag, respectively.  This file is only present
+-for wakeup-capable devices (i.e. devices whose "can_wakeup" flags are set)
+-and is created (or removed) by device_set_wakeup_capable().  Reads from the
+-file will return the corresponding string.
++"power/wakeup" file.  User space can write the strings "enabled" or "disabled"
++to it to indicate whether or not, respectively, the device is supposed to signal
++system wakeup.  This file is only present if the "power.wakeup" object exists
++for the given device and is created (or removed) along with that object, by
++device_set_wakeup_capable().  Reads from the file will return the corresponding
++string.
++
++The "power/wakeup" file is supposed to contain the "disabled" string initially
++for the majority of devices; the major exceptions are power buttons, keyboards,
++and Ethernet adapters whose WoL (wake-on-LAN) feature has been set up with
++ethtool.  It should also default to "enabled" for devices that don't generate
++wakeup requests on their own but merely forward wakeup requests from one bus to
++another (like PCI Express ports).
  
- The ->runtime_suspend(), ->runtime_resume() and ->runtime_idle() callbacks
--are executed by the PM core for either the power domain, or the device type
--(if the device power domain's struct dev_pm_ops does not exist), or the class
--(if the device power domain's and type's struct dev_pm_ops object does not
--exist), or the bus type (if the device power domain's, type's and class'
--struct dev_pm_ops objects do not exist) of the given device, so the priority
--order of callbacks from high to low is that power domain callbacks, device
--type callbacks, class callbacks and bus type callbacks, and the high priority
--one will take precedence over low priority one. The bus type, device type and
--class callbacks are referred to as subsystem-level callbacks in what follows,
--and generally speaking, the power domain callbacks are used for representing
--power domains within a SoC.
-+are executed by the PM core for the device's subsystem that may be either of
-+the following:
-+
-+  1. PM domain of the device, if the device's PM domain object, dev->pm_domain,
-+     is present.
-+
-+  2. Device type of the device, if both dev->type and dev->type->pm are present.
-+
-+  3. Device class of the device, if both dev->class and dev->class->pm are
-+     present.
-+
-+  4. Bus type of the device, if both dev->bus and dev->bus->pm are present.
-+
-+The PM core always checks which callback to use in the order given above, so the
-+priority order of callbacks from high to low is: PM domain, device type, class
-+and bus type.  Moreover, the high-priority one will always take precedence over
-+a low-priority one.  The PM domain, bus type, device type and class callbacks
-+are referred to as subsystem-level callbacks in what follows.
+-The device_may_wakeup() routine returns true only if both flags are set.
++The device_may_wakeup() routine returns true only if the "power.wakeup" object
++exists and the corresponding "power/wakeup" file contains the string "enabled".
+ This information is used by subsystems, like the PCI bus type code, to see
+ whether or not to enable the devices' wakeup mechanisms.  If device wakeup
+ mechanisms are enabled or disabled directly by drivers, they also should use
+ device_may_wakeup() to decide what to do during a system sleep transition.
+-However for runtime power management, wakeup events should be enabled whenever
+-the device and driver both support them, regardless of the should_wakeup flag.
++Device drivers, however, are not supposed to call device_set_wakeup_enable()
++directly in any case.
  
- By default, the callbacks are always invoked in process context with interrupts
- enabled.  However, subsystems can use the pm_runtime_irq_safe() helper function
++It ought to be noted that system wakeup is conceptually different from "remote
++wakeup" used by runtime power management, although it may be supported by the
++same physical mechanism.  Remote wakeup is a feature allowing devices in
++low-power states to trigger specific interrupts to signal conditions in which
++they should be put into the full-power state.  Those interrupts may or may not
++be used to signal system wakeup events, depending on the hardware design.  On
++some systems it is impossible to trigger them from system sleep states.  In any
++case, remote wakeup should always be enabled for runtime power management for
++all devices and drivers that support it.
+ 
+ /sys/devices/.../power/control files
+ ------------------------------------
 
