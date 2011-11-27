@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab1K0ExQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 Nov 2011 23:53:16 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52951 "EHLO
+	id S1751012Ab1K0FEe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 00:04:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41694 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab1K0ExO (ORCPT
+	with ESMTP id S1750749Ab1K0FEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 Nov 2011 23:53:14 -0500
-Message-ID: <1322369586.2522.3.camel@phoenix>
-Subject: [PATCH] pcmcia: convert drivers/pcmcia/* to use
+	Sun, 27 Nov 2011 00:04:32 -0500
+Message-ID: <1322370265.2522.5.camel@phoenix>
+Subject: [PATCH] sbus: convert drivers/sbus/char/* to use
  module_platform_driver()
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        Manuel Lauss <manuel.lauss@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Marc Zyngier <maz@misterjones.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-pcmcia@lists.infradead.org
-Date: Sun, 27 Nov 2011 12:53:06 +0800
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>, sparclinux@vger.kernel.org
+Date: Sun, 27 Nov 2011 13:04:25 +0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
@@ -27,164 +24,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the drivers in drivers/pcmcia/* to use the
+This patch converts the drivers in drivers/sbus/char/* to use the
 module_platform_driver() macro which makes the code smaller and a bit
 simpler.
 
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>
-Cc: Manuel Lauss <manuel.lauss@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Marc Zyngier <maz@misterjones.org>
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/pcmcia/bfin_cf_pcmcia.c |   13 +------------
- drivers/pcmcia/db1xxx_ss.c      |   13 +------------
- drivers/pcmcia/electra_cf.c     |   12 +-----------
- drivers/pcmcia/m8xx_pcmcia.c    |   13 +------------
- drivers/pcmcia/pxa2xx_viper.c   |   13 +------------
- drivers/pcmcia/xxs1500_ss.c     |   13 +------------
- 6 files changed, 6 insertions(+), 71 deletions(-)
+ drivers/sbus/char/bbc_i2c.c     |   13 +------------
+ drivers/sbus/char/display7seg.c |   13 +------------
+ drivers/sbus/char/envctrl.c     |   12 +-----------
+ drivers/sbus/char/flash.c       |   12 +-----------
+ drivers/sbus/char/uctrl.c       |   12 +-----------
+ 5 files changed, 5 insertions(+), 57 deletions(-)
 
-diff --git a/drivers/pcmcia/bfin_cf_pcmcia.c b/drivers/pcmcia/bfin_cf_pcmcia.c
-index 4922139..ac1a223 100644
---- a/drivers/pcmcia/bfin_cf_pcmcia.c
-+++ b/drivers/pcmcia/bfin_cf_pcmcia.c
-@@ -310,18 +310,7 @@ static struct platform_driver bfin_cf_driver = {
- 	.remove = __devexit_p(bfin_cf_remove),
+diff --git a/drivers/sbus/char/bbc_i2c.c b/drivers/sbus/char/bbc_i2c.c
+index 5f94d22..5e0341d 100644
+--- a/drivers/sbus/char/bbc_i2c.c
++++ b/drivers/sbus/char/bbc_i2c.c
+@@ -422,17 +422,6 @@ static struct platform_driver bbc_i2c_driver = {
+ 	.remove		= __devexit_p(bbc_i2c_remove),
  };
  
--static int __init bfin_cf_init(void)
+-static int __init bbc_i2c_init(void)
 -{
--	return platform_driver_register(&bfin_cf_driver);
+-	return platform_driver_register(&bbc_i2c_driver);
 -}
 -
--static void __exit bfin_cf_exit(void)
+-static void __exit bbc_i2c_exit(void)
 -{
--	platform_driver_unregister(&bfin_cf_driver);
+-	platform_driver_unregister(&bbc_i2c_driver);
 -}
 -
--module_init(bfin_cf_init);
--module_exit(bfin_cf_exit);
-+module_platform_driver(bfin_cf_driver);
- 
- MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
- MODULE_DESCRIPTION("BFIN CF/PCMCIA Driver");
-diff --git a/drivers/pcmcia/db1xxx_ss.c b/drivers/pcmcia/db1xxx_ss.c
-index 5b7c227..ba299a2 100644
---- a/drivers/pcmcia/db1xxx_ss.c
-+++ b/drivers/pcmcia/db1xxx_ss.c
-@@ -580,18 +580,7 @@ static struct platform_driver db1x_pcmcia_socket_driver = {
- 	.remove		= __devexit_p(db1x_pcmcia_socket_remove),
- };
- 
--int __init db1x_pcmcia_socket_load(void)
--{
--	return platform_driver_register(&db1x_pcmcia_socket_driver);
--}
--
--void  __exit db1x_pcmcia_socket_unload(void)
--{
--	platform_driver_unregister(&db1x_pcmcia_socket_driver);
--}
--
--module_init(db1x_pcmcia_socket_load);
--module_exit(db1x_pcmcia_socket_unload);
-+module_platform_driver(db1x_pcmcia_socket_driver);
+-module_init(bbc_i2c_init);
+-module_exit(bbc_i2c_exit);
++module_platform_driver(bbc_i2c_driver);
  
  MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("PCMCIA Socket Services for Alchemy Db/Pb1x00 boards");
-diff --git a/drivers/pcmcia/electra_cf.c b/drivers/pcmcia/electra_cf.c
-index 06ad3e5..7647d23 100644
---- a/drivers/pcmcia/electra_cf.c
-+++ b/drivers/pcmcia/electra_cf.c
-@@ -365,17 +365,7 @@ static struct platform_driver electra_cf_driver = {
- 	.remove   = electra_cf_remove,
+diff --git a/drivers/sbus/char/display7seg.c b/drivers/sbus/char/display7seg.c
+index 965a1fc..4b99397 100644
+--- a/drivers/sbus/char/display7seg.c
++++ b/drivers/sbus/char/display7seg.c
+@@ -275,15 +275,4 @@ static struct platform_driver d7s_driver = {
+ 	.remove		= __devexit_p(d7s_remove),
  };
  
--static int __init electra_cf_init(void)
+-static int __init d7s_init(void)
 -{
--	return platform_driver_register(&electra_cf_driver);
+-	return platform_driver_register(&d7s_driver);
 -}
--module_init(electra_cf_init);
 -
--static void __exit electra_cf_exit(void)
+-static void __exit d7s_exit(void)
 -{
--	platform_driver_unregister(&electra_cf_driver);
+-	platform_driver_unregister(&d7s_driver);
 -}
--module_exit(electra_cf_exit);
-+module_platform_driver(electra_cf_driver);
+-
+-module_init(d7s_init);
+-module_exit(d7s_exit);
++module_platform_driver(d7s_driver);
+diff --git a/drivers/sbus/char/envctrl.c b/drivers/sbus/char/envctrl.c
+index be7b4e5..339fd6f 100644
+--- a/drivers/sbus/char/envctrl.c
++++ b/drivers/sbus/char/envctrl.c
+@@ -1138,16 +1138,6 @@ static struct platform_driver envctrl_driver = {
+ 	.remove		= __devexit_p(envctrl_remove),
+ };
  
+-static int __init envctrl_init(void)
+-{
+-	return platform_driver_register(&envctrl_driver);
+-}
+-
+-static void __exit envctrl_exit(void)
+-{
+-	platform_driver_unregister(&envctrl_driver);
+-}
++module_platform_driver(envctrl_driver);
+ 
+-module_init(envctrl_init);
+-module_exit(envctrl_exit);
  MODULE_LICENSE("GPL");
- MODULE_AUTHOR ("Olof Johansson <olof@lixom.net>");
-diff --git a/drivers/pcmcia/m8xx_pcmcia.c b/drivers/pcmcia/m8xx_pcmcia.c
-index 271a590..b120928 100644
---- a/drivers/pcmcia/m8xx_pcmcia.c
-+++ b/drivers/pcmcia/m8xx_pcmcia.c
-@@ -1304,15 +1304,4 @@ static struct platform_driver m8xx_pcmcia_driver = {
- 	.remove = m8xx_remove,
+diff --git a/drivers/sbus/char/flash.c b/drivers/sbus/char/flash.c
+index 73dd4e7..826157f 100644
+--- a/drivers/sbus/char/flash.c
++++ b/drivers/sbus/char/flash.c
+@@ -216,16 +216,6 @@ static struct platform_driver flash_driver = {
+ 	.remove		= __devexit_p(flash_remove),
  };
  
--static int __init m8xx_init(void)
+-static int __init flash_init(void)
 -{
--	return platform_driver_register(&m8xx_pcmcia_driver);
+-	return platform_driver_register(&flash_driver);
 -}
 -
--static void __exit m8xx_exit(void)
+-static void __exit flash_cleanup(void)
 -{
--	platform_driver_unregister(&m8xx_pcmcia_driver);
+-	platform_driver_unregister(&flash_driver);
 -}
--
--module_init(m8xx_init);
--module_exit(m8xx_exit);
-+module_platform_driver(m8xx_pcmcia_driver);
-diff --git a/drivers/pcmcia/pxa2xx_viper.c b/drivers/pcmcia/pxa2xx_viper.c
-index 1064b1c..44f5c7f 100644
---- a/drivers/pcmcia/pxa2xx_viper.c
-+++ b/drivers/pcmcia/pxa2xx_viper.c
-@@ -204,18 +204,7 @@ static struct platform_driver viper_pcmcia_driver = {
- 	.id_table	= viper_pcmcia_id_table,
- };
++module_platform_driver(flash_driver);
  
--static int __init viper_pcmcia_init(void)
--{
--	return platform_driver_register(&viper_pcmcia_driver);
--}
--
--static void __exit viper_pcmcia_exit(void)
--{
--	return platform_driver_unregister(&viper_pcmcia_driver);
--}
--
--module_init(viper_pcmcia_init);
--module_exit(viper_pcmcia_exit);
-+module_platform_driver(viper_pcmcia_driver);
- 
- MODULE_DEVICE_TABLE(platform, viper_pcmcia_id_table);
+-module_init(flash_init);
+-module_exit(flash_cleanup);
  MODULE_LICENSE("GPL");
-diff --git a/drivers/pcmcia/xxs1500_ss.c b/drivers/pcmcia/xxs1500_ss.c
-index 379f421..1ceff69 100644
---- a/drivers/pcmcia/xxs1500_ss.c
-+++ b/drivers/pcmcia/xxs1500_ss.c
-@@ -321,18 +321,7 @@ static struct platform_driver xxs1500_pcmcia_socket_driver = {
- 	.remove		= __devexit_p(xxs1500_pcmcia_remove),
+diff --git a/drivers/sbus/char/uctrl.c b/drivers/sbus/char/uctrl.c
+index ebce963..0b31658 100644
+--- a/drivers/sbus/char/uctrl.c
++++ b/drivers/sbus/char/uctrl.c
+@@ -435,16 +435,6 @@ static struct platform_driver uctrl_driver = {
  };
  
--int __init xxs1500_pcmcia_socket_load(void)
--{
--	return platform_driver_register(&xxs1500_pcmcia_socket_driver);
--}
--
--void  __exit xxs1500_pcmcia_socket_unload(void)
--{
--	platform_driver_unregister(&xxs1500_pcmcia_socket_driver);
--}
--
--module_init(xxs1500_pcmcia_socket_load);
--module_exit(xxs1500_pcmcia_socket_unload);
-+module_platform_driver(xxs1500_pcmcia_socket_driver);
  
+-static int __init uctrl_init(void)
+-{
+-	return platform_driver_register(&uctrl_driver);
+-}
+-
+-static void __exit uctrl_exit(void)
+-{
+-	platform_driver_unregister(&uctrl_driver);
+-}
++module_platform_driver(uctrl_driver);
+ 
+-module_init(uctrl_init);
+-module_exit(uctrl_exit);
  MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("PCMCIA Socket Services for MyCable XXS1500 systems");
 -- 
 1.7.5.4
 
