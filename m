@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab1K0Rjb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 12:39:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1694 "EHLO mx1.redhat.com"
+	id S1752625Ab1K0Rum (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 12:50:42 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:49721 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751662Ab1K0Rja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 12:39:30 -0500
-Date: Sun, 27 Nov 2011 18:34:30 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Pedro Alves <pedro@codesourcery.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with
-	given pids
-Message-ID: <20111127173430.GB5674@redhat.com>
-References: <4EC4F2FB.408@parallels.com> <201111221204.39235.pedro@codesourcery.com> <20111122153326.GD322@google.com> <201111231620.45440.pedro@codesourcery.com> <20111123162417.GE25780@google.com> <4ECD3946.1030503@parallels.com> <4ECD542C.7010705@parallels.com> <20111124173121.GA23260@redhat.com> <4ECF6AA0.80006@parallels.com> <4ED205D1.5060407@openvz.org>
+	id S1752022Ab1K0Rul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 12:50:41 -0500
+Date: Sun, 27 Nov 2011 09:48:49 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sonic Zhang <sonic.zhang@analog.com>,
+        Marc Pignat <marc.pignat@hevs.ch>, Paul Thomas <pthomas8589@gmail.com>,
+        Eric Miao <eric.miao@marvell.com>, Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH] hwmon: convert drivers/hwmon/* to use module_spi_driver()
+Message-ID: <20111127174849.GA31315@ericsson.com>
+References: <1322205165.11718.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4ED205D1.5060407@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1322205165.11718.2.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27, Konstantin Khlebnikov wrote:
->
-> We can add flag to sys_wait4(), and stash pid in wait_task_zombie(), right before release_task()
-> code will looks something like this:
->
-> -       if (p != NULL)
-> +       if (p != NULL) {
-> +               if ((wo->wo_flags & WCATCHPID) && !current->pid_stash) {
-> +                       struct pid *pid = task_pid(p);
-> +
-> +                       pid->flags |= PID_STASHED;
-> +                       current->pid_stash = get_pid(pid);
-> +               }
->                 release_task(p);
-> +       }
->
-> And next fork() creates child with the same pid.
-> So, struct pid will work like boomerang =)
+On Fri, Nov 25, 2011 at 02:12:45AM -0500, Axel Lin wrote:
+> This patch converts the drivers in drivers/hwmon/* to use the
+> module_spi_driver() macro which makes the code smaller and a bit
+> simpler.
+> 
+> Cc: Sonic Zhang <sonic.zhang@analog.com>
+> Cc: Marc Pignat <marc.pignat@hevs.ch>
+> Cc: Paul Thomas <pthomas8589@gmail.com>
+> Cc: Eric Miao <eric.miao@marvell.com>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Like PR_RESERVE_PID, this can only help if the tracee (or whatever)
-is single-threaded and it is the natural child.
+module_spi_driver() is not (yet) available in mainline, so this patch
+can not be applied right now.
 
-Personally I do not think such a limited interface makes sense.
+It would probably make sense to resubmit the patch once the code necessary
+to support it is available, to make sure it does not miss any new drivers.
 
-Oleg.
-
+Guenter
