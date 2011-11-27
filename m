@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab1K0VZW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 16:25:22 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:53538 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754671Ab1K0VZV (ORCPT
+	id S1755660Ab1K0V0I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 16:26:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52088 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab1K0V0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 16:25:21 -0500
-X-Sasl-enc: 3JpPWqGKUsXJFV5pnJ+bdaxK4wwS1Zbr0je1kiiZFURL 1322429120
-Date: Mon, 28 Nov 2011 06:24:35 +0900
-From: Greg KH <greg@kroah.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Xi Wang <xi.wang@gmail.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        "security@kernel.org" <security@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Ian Abbott <ian.abbott@mev.co.uk>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Abbott <abbotti@mev.co.uk>, Franky Lin <frankyl@broadcom.com>,
-        Greg Dietsche <gregory.dietsche@cuw.edu>,
-        Mark Pearson <markpearson_de@yahoo.de>
-Subject: Re: [PATCH v3] comedi: integer overflow in do_insnlist_ioctl()
-Message-ID: <20111127212435.GA14773@kroah.com>
-References: <CAKU6vyZdC64piK-mn6kLMt1-RhhM8D-4KbAGxje087FJ9X=fNA@mail.gmail.com>
- <20111123145020.GA3258@mwanda>
- <4ECD1A01.3060503@mev.co.uk>
- <4ECD6873.7080106@metafoo.de>
- <20111123215111.GD3258@mwanda>
- <97189E06-26D8-4CF9-B325-06403FB1C42C@gmail.com>
- <20111125072550.GK3195@mwanda>
- <4ED00CCB.80604@gmail.com>
- <20111127025252.GA29073@kroah.com>
- <20111127112539.GB21128@mwanda>
+	Sun, 27 Nov 2011 16:26:06 -0500
+Date: Sun, 27 Nov 2011 13:25:58 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, fweisbec@gmail.com,
+        matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
+        kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH UPDATED 03/10] threadgroup: extend threadgroup_lock()
+ to cover exit and exec
+Message-ID: <20111127212558.GE4266@google.com>
+References: <1320191193-8110-1-git-send-email-tj@kernel.org>
+ <1320191193-8110-4-git-send-email-tj@kernel.org>
+ <20111124225054.GA14828@google.com>
+ <CA+55aFxq1wztMzYhKaY5RHazLBDz4pSXUgiGzTj2wA6EJcDbAw@mail.gmail.com>
+ <20111127192155.GB4266@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111127112539.GB21128@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111127192155.GB4266@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 02:25:39PM +0300, Dan Carpenter wrote:
-> On Sat, Nov 26, 2011 at 06:52:52PM -0800, Greg KH wrote:
-> > On Fri, Nov 25, 2011 at 04:46:51PM -0500, Xi Wang wrote:
-> > > There is a potential integer overflow in do_insnlist_ioctl() if
-> > > userspace passes in a large insnlist.n_insns.  The call to kmalloc()
-> > > would allocate a small buffer, leading to a memory corruption.
-> > > 
-> > > The bug was reported by Dan Carpenter <dan.carpenter@oracle.com>
-> > > and Haogang Chen <haogangchen@gmail.com>.  The patch was suggested by
-> > > Ian Abbott <abbotti@mev.co.uk> and Lars-Peter Clausen <lars@metafoo.de>.
-> > > 
-> > > Signed-off-by: Xi Wang <xi.wang@gmail.com>
-> > 
-> > Hm, I already applied Dan's previous patch, what should I do with this
-> > one now?  Revert Dan's and apply this one, or apply both of them, or
-> > something else?
-> 
-> Sorry for that, I should have replied to my patch when I learned that
-> it had a problem.
-> 
-> Please, revert mine and apply Xi Wang's.
+Hello, Linus.
 
-Ok, now done.
+On Sun, Nov 27, 2011 at 11:21:55AM -0800, Tejun Heo wrote:
+> On Thu, Nov 24, 2011 at 08:02:18PM -0800, Linus Torvalds wrote:
+> >  - do you even *need* two separate locks at all? If you extend the
+> > threadgroup_fork_lock to cover exec/exit too (and rename it), then why
+> > does that separate cred_guard_mutex make sense at all?
+> 
+> That was mostly choosing the path of least resistance as both locks
+> already existed and exec exclusion was added later on, but yeah there
+> isn't much to lose by merging those two locks (do_exit nesting inside
+> exec will need some care tho).  I'll try to unify the two locks.
 
-greg k-h
+Hmmm... I tried this but it seems more difficult than originally
+expected.  The biggest obstacle is that we don't have _interruptible
+and _killable rwsem ops.
+
+As proposed, what we have is,
+
+* fork and exit paths are read-protected by group_rwsem.  ie. forks
+  and exits don't block each other.
+
+* exec path is protected by cred_guard_mutex.  cred_guard_mutex also
+  synchronizes parallel exec attempts.  (It's probably better to
+  rename it to exec_mutex)
+
+* thread_group_lock() makes the thread group stable by write-locking
+  group_rwsem and grabbing cred_guard_mutex.  The former excludes
+  forks and exits and the latter exec.
+
+group_rwsem and cred_guard_mutex can be merged by,
+
+* fork and exit paths read-lock group_rwsem as it currently does.
+
+* exec path write-locks group_rwsem.  Note that it'll need to unlock
+  in de_thread() while waiting for other threads to exit as exit path
+  can't proceed while group_rwsem is write-locked.
+  prepare_bprm_creds() should be updated to check signal_pending()
+  after acquiring group_rwsem.
+
+  This introduces synchronization between exec and fork/exit paths,
+  but I don't think this is something we need to worry about as both
+  fork-exec and exit-exec scalabilities don't matter.
+
+* thread_group_lock() write-locks group_rwsem.
+
+The problem is that cred_guard_mutex uses _interruptible/_killable
+operations and rwsem doesn't have them, so cred_guard_mutex can't be
+easily replaced with write-locking group_rwsem.
+
+If the two locks can't be merged, under the proposed scheme, while not
+exactly pretty, both fork/exit and exec paths go through single
+locking and only the ones which want stable threadgroup need to grab
+both locks, so IMHO it is at least reasonable.
+
+Any better ideas?
+
+Thanks.
+
+-- 
+tejun
