@@ -1,120 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1K0SE4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 13:04:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65494 "EHLO mx1.redhat.com"
+	id S1753653Ab1K0SEw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 13:04:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23030 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753697Ab1K0SEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 13:04:53 -0500
+	id S1753296Ab1K0SEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 13:04:49 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         paulus@samba.org, acme@ghostprotocols.net
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 6/9] ftrace, perf: Add add/del tracepoint perf registration actions
-Date: Sun, 27 Nov 2011 19:04:31 +0100
-Message-Id: <1322417074-5834-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/9] ftrace: Add enable/disable ftrace_ops control interface
+Date: Sun, 27 Nov 2011 19:04:29 +0100
+Message-Id: <1322417074-5834-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
 References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding TRACE_REG_PERF_ADD and TRACE_REG_PERF_DEL to handle
-perf event schedule in/out actions.
+Adding a way to temporarily enable/disable ftrace_ops.
 
-The add action is invoked for when the perf event is scheduled in,
-while the del action is invoked when the event is scheduled out.
+When there is a ftrace_ops with FTRACE_OPS_FL_CONTROL flag
+registered, the ftrace_ops_list_func processing function
+is used as ftrace function in order to have all registered
+ftrace_ops under control.
+
+Also using jump label not to introduce overhead to current
+ftrace_ops_list_func processing.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/ftrace_event.h    |    2 ++
- kernel/trace/trace_event_perf.c |    4 +++-
- kernel/trace/trace_events.c     |    2 ++
- kernel/trace/trace_kprobe.c     |    2 ++
- kernel/trace/trace_syscalls.c   |    4 ++++
- 5 files changed, 13 insertions(+), 1 deletions(-)
+ include/linux/ftrace.h |   12 ++++++++++++
+ kernel/trace/ftrace.c  |   39 +++++++++++++++++++++++++++++----------
+ 2 files changed, 41 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 195e360..2bf677c 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -148,6 +148,8 @@ enum trace_reg {
- 	TRACE_REG_PERF_UNREGISTER,
- 	TRACE_REG_PERF_OPEN,
- 	TRACE_REG_PERF_CLOSE,
-+	TRACE_REG_PERF_ADD,
-+	TRACE_REG_PERF_DEL,
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 26eafce..28b59f1 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -35,12 +35,14 @@ enum {
+ 	FTRACE_OPS_FL_ENABLED		= 1 << 0,
+ 	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
+ 	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
++	FTRACE_OPS_FL_CONTROL		= 1 << 3,
  };
  
- struct ftrace_event_call;
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 0cfcc37..d72af0b 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -211,12 +211,14 @@ int perf_trace_add(struct perf_event *p_event, int flags)
- 	list = this_cpu_ptr(pcpu_list);
- 	hlist_add_head_rcu(&p_event->hlist_entry, list);
+ struct ftrace_ops {
+ 	ftrace_func_t			func;
+ 	struct ftrace_ops		*next;
+ 	unsigned long			flags;
++	atomic_t			disabled;
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 	struct ftrace_hash		*notrace_hash;
+ 	struct ftrace_hash		*filter_hash;
+@@ -97,6 +99,16 @@ int register_ftrace_function(struct ftrace_ops *ops);
+ int unregister_ftrace_function(struct ftrace_ops *ops);
+ void clear_ftrace_function(void);
  
--	return 0;
-+	return tp_event->class->reg(tp_event, TRACE_REG_PERF_ADD, p_event);
- }
++static inline void enable_ftrace_function(struct ftrace_ops *ops)
++{
++	atomic_dec(&ops->disabled);
++}
++
++static inline void disable_ftrace_function(struct ftrace_ops *ops)
++{
++	atomic_inc(&ops->disabled);
++}
++
+ extern void ftrace_stub(unsigned long a0, unsigned long a1);
  
- void perf_trace_del(struct perf_event *p_event, int flags)
- {
-+	struct ftrace_event_call *tp_event = p_event->tp_event;
- 	hlist_del_rcu(&p_event->hlist_entry);
-+	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
- }
+ #else /* !CONFIG_FUNCTION_TRACER */
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0ca0c0d..e5a9498 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -30,6 +30,7 @@
+ #include <linux/list.h>
+ #include <linux/hash.h>
+ #include <linux/rcupdate.h>
++#include <linux/jump_label.h>
  
- __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 5138fea..079a93a 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -173,6 +173,8 @@ int ftrace_event_reg(struct ftrace_event_call *call,
- 		return 0;
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
-+	case TRACE_REG_PERF_ADD:
-+	case TRACE_REG_PERF_DEL:
- 		return 0;
- #endif
- 	}
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 5667f89..580a05e 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1912,6 +1912,8 @@ int kprobe_register(struct ftrace_event_call *event,
- 		return 0;
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
-+	case TRACE_REG_PERF_ADD:
-+	case TRACE_REG_PERF_DEL:
- 		return 0;
- #endif
- 	}
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 6916b0d..dbdd804 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -666,6 +666,8 @@ static int syscall_enter_register(struct ftrace_event_call *event,
- 		return 0;
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
-+	case TRACE_REG_PERF_ADD:
-+	case TRACE_REG_PERF_DEL:
- 		return 0;
- #endif
- 	}
-@@ -690,6 +692,8 @@ static int syscall_exit_register(struct ftrace_event_call *event,
- 		return 0;
- 	case TRACE_REG_PERF_OPEN:
- 	case TRACE_REG_PERF_CLOSE:
-+	case TRACE_REG_PERF_ADD:
-+	case TRACE_REG_PERF_DEL:
- 		return 0;
- #endif
- 	}
+ #include <trace/events/sched.h>
+ 
+@@ -94,6 +95,8 @@ ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
+ ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
+ static struct ftrace_ops global_ops;
+ 
++static struct jump_label_key ftrace_ops_control;
++
+ static void
+ ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
+ 
+@@ -196,17 +199,21 @@ static void update_ftrace_function(void)
+ 
+ 	update_global_ops();
+ 
+-	/*
+-	 * If we are at the end of the list and this ops is
+-	 * not dynamic, then have the mcount trampoline call
+-	 * the function directly
+-	 */
+-	if (ftrace_ops_list == &ftrace_list_end ||
+-	    (ftrace_ops_list->next == &ftrace_list_end &&
+-	     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC)))
+-		func = ftrace_ops_list->func;
+-	else
++	if (jump_label_enabled(&ftrace_ops_control))
+ 		func = ftrace_ops_list_func;
++	else {
++		/*
++		 * If we are at the end of the list and this ops is
++		 * not dynamic, then have the mcount trampoline call
++		 * the function directly
++		 */
++		if (ftrace_ops_list == &ftrace_list_end ||
++		    (ftrace_ops_list->next == &ftrace_list_end &&
++		     !(ftrace_ops_list->flags & FTRACE_OPS_FL_DYNAMIC)))
++			func = ftrace_ops_list->func;
++		else
++			func = ftrace_ops_list_func;
++	}
+ 
+ #ifdef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
+ 	ftrace_trace_function = func;
+@@ -280,6 +287,9 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
+ 	} else
+ 		add_ftrace_ops(&ftrace_ops_list, ops);
+ 
++	if (ops->flags & FTRACE_OPS_FL_CONTROL)
++		jump_label_inc(&ftrace_ops_control);
++
+ 	if (ftrace_enabled)
+ 		update_ftrace_function();
+ 
+@@ -311,6 +321,9 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
+ 	if (ret < 0)
+ 		return ret;
+ 
++	if (ops->flags & FTRACE_OPS_FL_CONTROL)
++		jump_label_dec(&ftrace_ops_control);
++
+ 	if (ftrace_enabled)
+ 		update_ftrace_function();
+ 
+@@ -3577,8 +3590,14 @@ ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
+ 	preempt_disable_notrace();
+ 	op = rcu_dereference_raw(ftrace_ops_list);
+ 	while (op != &ftrace_list_end) {
++		if (static_branch(&ftrace_ops_control))
++			if ((op->flags & FTRACE_OPS_FL_CONTROL) &&
++			    atomic_read(&op->disabled))
++				goto next;
++
+ 		if (ftrace_ops_test(op, ip))
+ 			op->func(ip, parent_ip);
++ next:
+ 		op = rcu_dereference_raw(op->next);
+ 	};
+ 	preempt_enable_notrace();
 -- 
 1.7.1
 
