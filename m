@@ -1,113 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab1K0Uuz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 15:50:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6065 "EHLO mx1.redhat.com"
+	id S1755610Ab1K0UvH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 15:51:07 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58901 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753122Ab1K0Uuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 15:50:54 -0500
-Message-ID: <4ED2A28E.2070206@redhat.com>
-Date: Sun, 27 Nov 2011 15:50:22 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1755529Ab1K0UvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 15:51:02 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] PM / Domains: Make it possible to assign names to generic PM domains
+Date: Sun, 27 Nov 2011 21:53:52 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrea Arcangeli <aarcange@redhat.com>, Linux-MM <linux-mm@kvack.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] mm: compaction: Determine if dirty pages can be migreated
- without blocking within ->migratepage
-References: <1321635524-8586-1-git-send-email-mgorman@suse.de> <1321635524-8586-5-git-send-email-mgorman@suse.de> <20111118213530.GA6323@redhat.com> <20111121111726.GA19415@suse.de> <20111121224545.GC8397@redhat.com> <20111122125906.GK19415@suse.de> <20111124011943.GO8397@redhat.com> <20111124122144.GR19415@suse.de>
-In-Reply-To: <20111124122144.GR19415@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111272153.53008.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2011 07:21 AM, Mel Gorman wrote:
-> On Thu, Nov 24, 2011 at 02:19:43AM +0100, Andrea Arcangeli wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
->> But funny thing grow_dev_page already sets __GFP_MOVABLE. That's
->> pretty weird and it's probably source of a few not movable pages in
->> the movable block. But then many bh are movable... most of them are,
->> it's just the superblock that isn't.
->>
->> But considering grow_dev_page sets __GFP_MOVABLE, any worry about pins
->> from the fs on the block_dev.c pagecache shouldn't be a concern...
->>
->
-> Except in quantity. We can cope with some pollution of MIGRATE_MOVABLE
-> but if it gets excessive, it will cause a lot of trouble. Superblock
-> bh's may not be movable but there are not many of them and they are
-> long lived.
+Add a name member pointer to struct generic_pm_domain and use it in
+diagnostic messages regarding the domain power-off and power-on
+latencies.  Update the ARM shmobile SH7372 code to assign names to
+the PM domains used by it.
 
-We're potentially doomed either way :)
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-If we allocate a lot of movable pages in non-movable
-blocks, we can end up with a lot of slightly polluted
-blocks even after reclaiming all the reclaimable page
-cache.
+Hi,
 
-If we allocate a few non-movable pages in movable
-blocks, we can end up with the same situation.
+This patch is on top of linux-pm/linux-next.
 
-Either way, we can potentially end up with a lot of
-memory that cannot be defragmented.
+Thanks,
+Rafael
 
-Of course, it could take the mounting of a lot of
-filesystems for this problem to be triggered, but we
-know there are people doing that.
+---
+ arch/arm/mach-shmobile/include/mach/sh7372.h |    1 +
+ arch/arm/mach-shmobile/pm-sh7372.c           |   17 +++++++++++++----
+ drivers/base/power/domain.c                  |   14 ++++++++++++--
+ include/linux/pm_domain.h                    |    1 +
+ 4 files changed, 27 insertions(+), 6 deletions(-)
 
->> __GFP_MOVABLE missing block_dev also was not
->> so common and it most certainly contributed to a reclaim more
->> aggressive than it would have happened with that fix. I think you can
->> push things one at time without urgency here, and I'd prefer maybe if
->> block_dev patch is applied and the other reversed in vmscan.c or
->> improved to start limiting only if we're above 8*high or some
->> percentage check to allow a little more reclaim than rc2 allows
->
-> The limiting is my current preferred option - at least until it is
-> confirmed that it really is ok to mark block_dev pages movable and that
-> Rik is ok with the revert.
-
-I am fine with replacing the compaction checks with free limit
-checks. Funny enough, the first iteration of the patch I submitted
-to limit reclaim used a free limit check :)
-
-I also suspect we will want to call shrink_slab regardless of
-whether or not a memory zone is already over its free limit for
-direct reclaim, since that has the potential to free an otherwise
-unmovable page.
-
->> (i.e. no reclaim at all which likely results in a failure in hugepage
->> allocation). Not unlimited as 3.1 is ok with me but if kswapd can free
->> a percentage I don't see why reclaim can't (consdiering more free
->> pages in movable pageblocks are needed to succeed compaction). The
->> ideal is to improve the compaction rate and at the same time reduce
->> reclaim aggressiveness. Let's start with the parts that are more
->> obviously right fixes and that don't risk regressions, we don't want
->> compaction regressions :).
->>
->
-> I don't think there are any "obviously right fixes" right now until the
-> block_dev patch is proven to be ok and that reverting does not regress
-> Rik's workload. Going to take time.
-
-Ironically the test Andrea is measuring THP allocations with
-(dd from /dev/sda to /dev/null) is functionally equivalent to
-me running KVM guests with cache=writethrough directly from
-a block device.
-
-The difference is that Andrea is measuring THP allocation
-success rate, while I am watching how well the programs (and
-KVM guests) actually run.
-
-Not surprisingly, swapping out the working set has a pretty
-catastrophic effect on performance, even if it helps THP
-allocation success :)
-
--- 
-All rights reversed
+Index: linux/drivers/base/power/domain.c
+===================================================================
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -209,8 +209,13 @@ int __pm_genpd_poweron(struct generic_pm
+ 			goto err;
+ 
+ 		elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
+-		if (elapsed_ns > genpd->power_on_latency_ns)
++		if (elapsed_ns > genpd->power_on_latency_ns) {
+ 			genpd->power_on_latency_ns = elapsed_ns;
++			if (genpd->name)
++				pr_warning("%s: Power-on latency exceeded, "
++					"new value %lld ns\n", genpd->name,
++					elapsed_ns);
++		}
+ 	}
+ 
+ 	genpd_set_active(genpd);
+@@ -428,8 +433,13 @@ static int pm_genpd_poweroff(struct gene
+ 		}
+ 
+ 		elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
+-		if (elapsed_ns > genpd->power_off_latency_ns)
++		if (elapsed_ns > genpd->power_off_latency_ns) {
+ 			genpd->power_off_latency_ns = elapsed_ns;
++			if (genpd->name)
++				pr_warning("%s: Power-off latency exceeded, "
++					"new value %lld ns\n", genpd->name,
++					elapsed_ns);
++		}
+ 	}
+ 
+ 	genpd->status = GPD_STATE_POWER_OFF;
+Index: linux/include/linux/pm_domain.h
+===================================================================
+--- linux.orig/include/linux/pm_domain.h
++++ linux/include/linux/pm_domain.h
+@@ -49,6 +49,7 @@ struct generic_pm_domain {
+ 	struct mutex lock;
+ 	struct dev_power_governor *gov;
+ 	struct work_struct power_off_work;
++	char *name;
+ 	unsigned int in_progress;	/* Number of devices being suspended now */
+ 	atomic_t sd_count;	/* Number of subdomains with power "on" */
+ 	enum gpd_status status;	/* Current state of the domain */
+Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
++++ linux/arch/arm/mach-shmobile/pm-sh7372.c
+@@ -101,8 +101,8 @@ static int pd_power_down(struct generic_
+ 	}
+ 
+ 	if (!sh7372_pd->no_debug)
+-		pr_debug("sh7372 power domain down 0x%08x -> PSTR = 0x%08x\n",
+-			 mask, __raw_readl(PSTR));
++		pr_debug("%s: Power off, 0x%08x -> PSTR = 0x%08x\n",
++			 sh7372_pd->name, mask, __raw_readl(PSTR));
+ 
+ 	return 0;
+ }
+@@ -133,8 +133,8 @@ static int __pd_power_up(struct sh7372_p
+ 		ret = -EIO;
+ 
+ 	if (!sh7372_pd->no_debug)
+-		pr_debug("sh7372 power domain up 0x%08x -> PSTR = 0x%08x\n",
+-			 mask, __raw_readl(PSTR));
++		pr_debug("%s: Power on, 0x%08x -> PSTR = 0x%08x\n",
++			 sh7372_pd->name, mask, __raw_readl(PSTR));
+ 
+  out:
+ 	if (ret == 0 && sh7372_pd->resume && do_resume)
+@@ -207,6 +207,7 @@ void sh7372_init_pm_domain(struct sh7372
+ 	struct dev_power_governor *gov = sh7372_pd->gov;
+ 
+ 	pm_genpd_init(genpd, gov ? : &simple_qos_governor, false);
++	genpd->name = sh7372_pd->name;
+ 	genpd->dev_ops.stop = sh7372_stop_dev;
+ 	genpd->dev_ops.start = sh7372_start_dev;
+ 	genpd->dev_ops.active_wakeup = pd_active_wakeup;
+@@ -233,18 +234,22 @@ void sh7372_pm_add_subdomain(struct sh73
+ }
+ 
+ struct sh7372_pm_domain sh7372_a4lc = {
++	.name = "A4LC",
+ 	.bit_shift = 1,
+ };
+ 
+ struct sh7372_pm_domain sh7372_a4mp = {
++	.name = "A4MP",
+ 	.bit_shift = 2,
+ };
+ 
+ struct sh7372_pm_domain sh7372_d4 = {
++	.name = "D4",
+ 	.bit_shift = 3,
+ };
+ 
+ struct sh7372_pm_domain sh7372_a4r = {
++	.name = "A4R",
+ 	.bit_shift = 5,
+ 	.gov = &sh7372_always_on_gov,
+ 	.suspend = sh7372_a4r_suspend,
+@@ -253,14 +258,17 @@ struct sh7372_pm_domain sh7372_a4r = {
+ };
+ 
+ struct sh7372_pm_domain sh7372_a3rv = {
++	.name = "A3RV",
+ 	.bit_shift = 6,
+ };
+ 
+ struct sh7372_pm_domain sh7372_a3ri = {
++	.name = "A3RI",
+ 	.bit_shift = 8,
+ };
+ 
+ struct sh7372_pm_domain sh7372_a3sp = {
++	.name = "A3SP",
+ 	.bit_shift = 11,
+ 	.gov = &sh7372_always_on_gov,
+ 	.no_debug = true,
+@@ -275,6 +283,7 @@ static void sh7372_a3sp_init(void)
+ }
+ 
+ struct sh7372_pm_domain sh7372_a3sg = {
++	.name = "A3SG",
+ 	.bit_shift = 13,
+ };
+ 
+Index: linux/arch/arm/mach-shmobile/include/mach/sh7372.h
+===================================================================
+--- linux.orig/arch/arm/mach-shmobile/include/mach/sh7372.h
++++ linux/arch/arm/mach-shmobile/include/mach/sh7372.h
+@@ -480,6 +480,7 @@ struct platform_device;
+ struct sh7372_pm_domain {
+ 	struct generic_pm_domain genpd;
+ 	struct dev_power_governor *gov;
++	char *name;
+ 	void (*suspend)(void);
+ 	void (*resume)(void);
+ 	unsigned int bit_shift;
