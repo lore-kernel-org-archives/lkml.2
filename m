@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab1K0Xif (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 18:38:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45360 "EHLO mx2.suse.de"
+	id S1752622Ab1K0Xov (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 18:44:51 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:59055 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754207Ab1K0Xid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 18:38:33 -0500
-Date: Mon, 28 Nov 2011 08:30:29 +0900
-From: Greg KH <gregkh@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1751143Ab1K0Xot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 18:44:49 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH 1/2] PM / Sleep: Unify diagnostic messages from device suspend/resume
+Date: Mon, 28 Nov 2011 00:47:42 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
 Cc: Linux PM list <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] PM / Sleep: Drop pm_op() and pm_noirq_op()
-Message-ID: <20111127233029.GB30818@suse.de>
-References: <201111272357.26930.rjw@sisk.pl>
- <201111272359.36511.rjw@sisk.pl>
+References: <201111272357.26930.rjw@sisk.pl> <201111272359.00539.rjw@sisk.pl> <20111127233016.GA30818@suse.de>
+In-Reply-To: <20111127233016.GA30818@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111272359.36511.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111280047.42190.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 11:59:36PM +0100, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+On Monday, November 28, 2011, Greg KH wrote:
+> On Sun, Nov 27, 2011 at 11:59:00PM +0100, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > Make pm_op() and pm_noirq_op() use the same helper function for
+> > running callbacks, which will cause them to use the same format of
+> > diagnostic messages.  This also reduces the complexity and size of
+> > the code quite a bit.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 > 
-> The helper functions pm_op() and pm_noirq_op() are not really
-> necessary and they don't do anything useful, so drop them.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Nice cleanup on both of these patches:
+>  Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Thanks!
