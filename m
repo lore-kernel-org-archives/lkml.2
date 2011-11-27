@@ -1,137 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab1K0NYH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 08:24:07 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43306 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752433Ab1K0NYF convert rfc822-to-8bit (ORCPT
+	id S1755432Ab1K0Nmz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 08:42:55 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51269 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460Ab1K0Nmx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 08:24:05 -0500
+	Sun, 27 Nov 2011 08:42:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <jatcd7$4sc$1@ID-44327.news.uni-berlin.de>
-References: <jatcd7$4sc$1@ID-44327.news.uni-berlin.de>
-Date: Sun, 27 Nov 2011 14:24:03 +0100
-Message-ID: <CAFLxGvzwbLZrECWRzDxbHMt+SwKyCUukh9=PEpEQZsw=EtgoJw@mail.gmail.com>
-Subject: Re: Broken hd or filesystem access after resume from suspend2disk
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Andreas Hartmann <andihartmann@01019freenet.de>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1322283343.14278.2.camel@phoenix>
+References: <1322283343.14278.2.camel@phoenix>
+Date: Sun, 27 Nov 2011 19:12:51 +0530
+Message-ID: <CAOh2x=mF2x+8DG0D2RiEoGsk4kFvi8S5V_MaWYVBP4B5m1sJvQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: convert drivers/mmc/host/* to use module_platform_driver()
+From: viresh kumar <viresh.linux@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Micha <mirq-linux@rere.qmqm.pl>,
+        David Brown <davidb@codeaurora.org>, Ben Dooks <ben-linux@fluff.org>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ian Molton <ian@mnementh.co.uk>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 2:02 PM, Andreas Hartmann
-<andihartmann@01019freenet.de> wrote:
-> Hello,
+On Sat, Nov 26, 2011 at 10:25 AM, Axel Lin <axel.lin@gmail.com> wrote:
+> This patch converts the drivers in drivers/mmc/host/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
 >
-> I'm often having trouble accessing the hd / filesystem after a resume
-> from �suspend2disk. Sometimes, the machine completely hangs after resume
-> or it cannot be suspended at all.
->
-> Today, I faced the following problem after resuming:
->
-> Using wpa_supplicant failed with the message:
->
-> wpa_supplicant -t -c /etc/wpa_supplicant/wpa_supplicant.conf -f
-> /var/log/wpa_supplicant.log -Dnl80211 -iwlan0
-> wpa_supplicant: symbol lookup error: /lib64/libssl.so.1.0.0: undefined
-> symbol: RAND_add
->
->
-> ldd `which wpa_supplicant`
-> � � � �linux-vdso.so.1 => �(0x00007fffd84b9000)
-> � � � �libnl.so.1 => /lib64/libnl.so.1 (0x00007fe5ac0bd000)
-> � � � �libdl.so.2 => /lib64/libdl.so.2 (0x00007fe5abeb9000)
-> � � � �libssl.so.1.0.0 => /lib64/libssl.so.1.0.0 (0x00007fe5abc5d000)
-> � � � �libcrypto.so.1.0.0 => /lib64/libcrypto.so.1.0.0 (0x00007fe5ab8ad000)
-> � � � �libdbus-1.so.3 => /lib64/libdbus-1.so.3 (0x00007fe5ab668000)
-> � � � �libc.so.6 => /lib64/libc.so.6 (0x00007fe5ab2d9000)
-> � � � �libm.so.6 => /lib64/libm.so.6 (0x00007fe5ab082000)
-> � � � �/lib64/ld-linux-x86-64.so.2 (0x00007fe5ac30f000)
-> � � � �libz.so.1 => /lib64/libz.so.1 (0x00007fe5aae6a000)
-> � � � �libpthread.so.0 => /lib64/libpthread.so.0 (0x00007fe5aac4d000)
-> � � � �librt.so.1 => /lib64/librt.so.1 (0x00007fe5aaa45000)
->
->
-> rpm -qVf /lib64/libssl.so.1.0.0
-> 5........ � �/lib64/libcrypto.so.1.0.0
->
-> -> The libcrypto-library seems to be broken.
->
-> In order to check, if there are more broken libraries (after the
-> resume), I did a md5sum on the complete /lib64 directory to have it at
-> base for a recheck after a reboot.
->
-> The recheck after the reboot showed two more broken files:
->
-> cd /lib64
-> md5sum -c md5sum.out | grep FAILED
-> libcrypto.so.1.0.0: FAILED
-> libkeyutils.so.1: FAILED
-> libkeyutils.so.1.4: FAILED
-> md5sum: WARNING: 3 computed checksums did NOT match
->
-> Apparently, there is something completely broken after resume.
->
->
-> The machine is a MSI CR620 notebook and kernel is 3.1.
->
-> 00:00.0 Host bridge: Intel Corporation Core Processor DRAM Controller
-> (rev 02)
-> 00:02.0 VGA compatible controller: Intel Corporation Core Processor
-> Integrated Graphics Controller (rev 02)
-> 00:16.0 Communication controller: Intel Corporation 5 Series/3400 Series
-> Chipset HECI Controller (rev 06)
-> 00:1a.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
-> USB2 Enhanced Host Controller (rev 05)
-> 00:1b.0 Audio device: Intel Corporation 5 Series/3400 Series Chipset
-> High Definition Audio (rev 05)
-> 00:1c.0 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-> Express Root Port 1 (rev 05)
-> 00:1c.1 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-> Express Root Port 2 (rev 05)
-> 00:1c.3 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-> Express Root Port 4 (rev 05)
-> 00:1c.5 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
-> Express Root Port 6 (rev 05)
-> 00:1d.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
-> USB2 Enhanced Host Controller (rev 05)
-> 00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev a5)
-> 00:1f.0 ISA bridge: Intel Corporation Mobile 5 Series Chipset LPC
-> Interface Controller (rev 05)
-> 00:1f.2 SATA controller: Intel Corporation 5 Series/3400 Series Chipset
-> 4 port SATA AHCI Controller (rev 05)
-> 00:1f.3 SMBus: Intel Corporation 5 Series/3400 Series Chipset SMBus
-> Controller (rev 05)
-> 00:1f.6 Signal processing controller: Intel Corporation 5 Series/3400
-> Series Chipset Thermal Subsystem (rev 05)
-> 05:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless
-> Network Adapter (PCI-Express) (rev 01)
-> 06:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-> RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
-> 3f:00.0 Host bridge: Intel Corporation Core Processor QuickPath
-> Architecture Generic Non-core Registers (rev 02)
-> 3f:00.1 Host bridge: Intel Corporation Core Processor QuickPath
-> Architecture System Address Decoder (rev 02)
-> 3f:02.0 Host bridge: Intel Corporation Core Processor QPI Link 0 (rev 02)
-> 3f:02.1 Host bridge: Intel Corporation Core Processor QPI Physical 0
-> (rev 02)
-> 3f:02.2 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
-> 3f:02.3 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
->
->
-> Does anybody has an idea how to fix / or further analyze this problem?
+> Cc: "Michał Mirosław" <mirq-linux@rere.qmqm.pl>
+> Cc: David Brown <davidb@codeaurora.org>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Ian Molton <ian@mnementh.co.uk>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mmc/host/bfin_sdh.c        |   12 +-----------
+>  drivers/mmc/host/cb710-mmc.c       |   13 +------------
+>  drivers/mmc/host/jz4740_mmc.c      |   12 +-----------
+>  drivers/mmc/host/msm_sdcc.c        |   13 +------------
+>  drivers/mmc/host/mxcmmc.c          |   13 +------------
+>  drivers/mmc/host/mxs-mmc.c         |   13 +------------
+>  drivers/mmc/host/pxamci.c          |   13 +------------
+>  drivers/mmc/host/s3cmci.c          |   13 +------------
+>  drivers/mmc/host/sdhci-cns3xxx.c   |   12 +-----------
+>  drivers/mmc/host/sdhci-dove.c      |   12 +-----------
+>  drivers/mmc/host/sdhci-esdhc-imx.c |   12 +-----------
+>  drivers/mmc/host/sdhci-of-esdhc.c  |   12 +-----------
+>  drivers/mmc/host/sdhci-of-hlwd.c   |   12 +-----------
+>  drivers/mmc/host/sdhci-pxav2.c     |   12 +-----------
+>  drivers/mmc/host/sdhci-pxav3.c     |   12 +-----------
+>  drivers/mmc/host/sdhci-s3c.c       |   13 +------------
+>  drivers/mmc/host/sdhci-spear.c     |   12 +-----------
+>  drivers/mmc/host/sdhci-tegra.c     |   12 +-----------
+>  drivers/mmc/host/sh_mmcif.c        |   14 +-------------
+>  drivers/mmc/host/sh_mobile_sdhi.c  |   13 +------------
+>  drivers/mmc/host/tmio_mmc.c        |   14 +-------------
+>  21 files changed, 21 insertions(+), 243 deletions(-)
 >
 
-Hmmm, maybe this related to my problem:
-http://thread.gmane.org/gmane.linux.kernel/1116939/focus=1117113
+> diff --git a/drivers/mmc/host/sdhci-spear.c b/drivers/mmc/host/sdhci-spear.c
+> index dee70b6..883548e 100644
+> --- a/drivers/mmc/host/sdhci-spear.c
+> +++ b/drivers/mmc/host/sdhci-spear.c
+> @@ -320,17 +320,7 @@ static struct platform_driver sdhci_driver = {
+>        .remove         = __devexit_p(sdhci_remove),
+>  };
+>
+> -static int __init sdhci_init(void)
+> -{
+> -       return platform_driver_register(&sdhci_driver);
+> -}
+> -module_init(sdhci_init);
+> -
+> -static void __exit sdhci_exit(void)
+> -{
+> -       platform_driver_unregister(&sdhci_driver);
+> -}
+> -module_exit(sdhci_exit);
+> +module_platform_driver(sdhci_driver);
+>
+>  MODULE_DESCRIPTION("SPEAr Secure Digital Host Controller Interface driver");
+>  MODULE_AUTHOR("Viresh Kumar <viresh.kumar@st.com>");
 
-First I thought the issue is no longer present in newer kernels.
-But my netbook still suffers on it.
+For SPEAr:
 
-
--- 
-Thanks,
-//richard
+Acked-by: Viresh Kumar <viresh.linux@gmail.com>
