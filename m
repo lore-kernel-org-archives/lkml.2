@@ -1,172 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724Ab1K0RE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 12:04:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59554 "EHLO mx1.redhat.com"
+	id S1752519Ab1K0Re0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 12:34:26 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:32856 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736Ab1K0REY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 12:04:24 -0500
-Date: Sun, 27 Nov 2011 19:06:00 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] vhost-net: Acquire device lock when releasing device
-Message-ID: <20111127170558.GA31970@redhat.com>
-References: <1321607982-16283-1-git-send-email-levinsasha928@gmail.com>
- <20111127164925.GA24941@redhat.com>
+	id S1751564Ab1K0ReY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 12:34:24 -0500
+Date: Sun, 27 Nov 2011 09:32:04 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Axel Lin <axel.lin@gmail.com>
+CC: Dirk Eibach <eibach@gdsys.de>, David George <david.george@ska.ac.za>,
+        Guillaume Ligneul <guillaume.ligneul@gmail.com>,
+        Riku Voipio <riku.voipio@iki.fi>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Steve Glendinning <steve.glendinning@smsc.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH] hwmon: convert drivers/hwmon/* to use
+ module_i2c_driver()
+Message-ID: <20111127173204.GA31171@ericsson.com>
+References: <1322204787.11718.1.camel@phoenix>
+ <20111125165708.GA11317@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111127164925.GA24941@redhat.com>
+In-Reply-To: <20111125165708.GA11317@ericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 06:49:27PM +0200, Michael S. Tsirkin wrote:
-> On Fri, Nov 18, 2011 at 11:19:42AM +0200, Sasha Levin wrote:
-> > Device lock should be held when releasing a device, and specifically
-> > when calling vhost_dev_cleanup(). Otherwise, RCU complains about it:
+On Fri, Nov 25, 2011 at 11:57:08AM -0500, Guenter Roeck wrote:
+> On Fri, Nov 25, 2011 at 02:06:27AM -0500, Axel Lin wrote:
+> > This patch converts the drivers in drivers/hwmon/* to use the
+> > module_i2c_driver() macro which makes the code smaller and a bit
+> > simpler.
 > > 
-> > [ 2025.642835] ===============================
-> > [ 2025.643838] [ INFO: suspicious RCU usage. ]
-> > [ 2025.645182] -------------------------------
-> > [ 2025.645927] drivers/vhost/vhost.c:475 suspicious rcu_dereference_protected() usage!
-> > [ 2025.647329]
-> > [ 2025.647330] other info that might help us debug this:
-> > [ 2025.647331]
-> > [ 2025.649042]
-> > [ 2025.649043] rcu_scheduler_active = 1, debug_locks = 1
-> > [ 2025.650235] no locks held by trinity/21042.
-> > [ 2025.650971]
-> > [ 2025.650972] stack backtrace:
-> > [ 2025.651789] Pid: 21042, comm: trinity Not tainted 3.2.0-rc2-sasha-00057-ga9098b3 #5
-> > [ 2025.653342] Call Trace:
-> > [ 2025.653792]  [<ffffffff810b4a6a>] lockdep_rcu_suspicious+0xaf/0xb9
-> > [ 2025.654916]  [<ffffffff818d4c2c>] vhost_dev_cleanup+0x342/0x3ac
-> > [ 2025.655985]  [<ffffffff818d4f18>] vhost_net_release+0x48/0x7f
-> > [ 2025.657247]  [<ffffffff811416e3>] fput+0x11e/0x1dc
-> > [ 2025.658091]  [<ffffffff8113f1ec>] filp_close+0x6e/0x79
-> > [ 2025.658964]  [<ffffffff81089ed7>] put_files_struct+0xcc/0x196
-> > [ 2025.659971]  [<ffffffff8108a034>] exit_files+0x46/0x4f
-> > [ 2025.660865]  [<ffffffff8108a716>] do_exit+0x264/0x75c
-> > [ 2025.662201]  [<ffffffff8113f490>] ? fsnotify_modify+0x60/0x68
-> > [ 2025.663260]  [<ffffffff81bbdbca>] ? sysret_check+0x2e/0x69
-> > [ 2025.664269]  [<ffffffff8108acc1>] do_group_exit+0x83/0xb1
-> > [ 2025.665448]  [<ffffffff8108ad01>] sys_exit_group+0x12/0x16
-> > [ 2025.666396]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
-> > 
-> > Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> > Cc: kvm@vger.kernel.org
-> > Cc: virtualization@lists.linux-foundation.org
-> > Cc: netdev@vger.kernel.org
-> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > ---
-> >  drivers/vhost/net.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> > index 882a51f..c9be601 100644
-> > --- a/drivers/vhost/net.c
-> > +++ b/drivers/vhost/net.c
-> > @@ -586,6 +586,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
-> >  	struct socket *tx_sock;
-> >  	struct socket *rx_sock;
-> >  
-> > +	mutex_lock(&n->dev.mutex);
-> >  	vhost_net_stop(n, &tx_sock, &rx_sock);
-> >  	vhost_net_flush(n);
-> >  	vhost_dev_cleanup(&n->dev);
-> > @@ -596,6 +597,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
-> >  	/* We do an extra flush before freeing memory,
-> >  	 * since jobs can re-queue themselves. */
-> >  	vhost_net_flush(n);
-> > +	mutex_unlock(&n->dev.mutex);
-> >  	kfree(n);
-> >  	return 0;
-> >  }
+> > Cc: Corentin Labbe <corentin.labbe@geomatys.fr>
+> > Cc: Dirk Eibach <eibach@gdsys.de>
+> > Cc: "Mark M. Hoffman" <mhoffman@lightlink.com>
+> > Cc: Steve Glendinning <steve.glendinning@smsc.com>
+> > Cc: Riku Voipio <riku.voipio@iki.fi>
+> > Cc: Guillaume Ligneul <guillaume.ligneul@gmail.com>
+> > Cc: David George <david.george@ska.ac.za>
+> > Cc: "Hans J. Koch" <hjk@hansjkoch.de>
+> > Cc: Marc Hulsman <m.hulsman@tudelft.nl>
+> > Cc: Rudolf Marek <r.marek@assembler.cz>
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > 
-> This calls fput fom release under lock which is generally a bad idea,
-> as locks become nested then. For example, consider what would happen if this
-> somehow triggers a release which in turn needs the same mutex.
+> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 > 
-> And, we are releasing the device, so it seems better to check
-> that no one has the lock.
-> How about the following instead? What do you think?
+> What is the plan for those patches ? Are they expected to all go through the same tree,
+> or through individual trees after the necessary defines are introduced into mainline ?
 > 
-> -->
-> 
-> vhost: fix release path lockdep checks
-> 
-> We shouldn't hold any locks on release path. Pass a flag to
-> vhost_dev_cleanup to use the lockdep info correctly.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> ---
+My question was answered in another thread related to the misc subsystem.
+The patch this one depends on will only be available in 3.3-rc1. It would have been
+nice to let us know ahead of time, because I _did_ find out the hard way.
 
-Sorry, this got cut short. Here's the full patch (1st chunk was
-missing).  Does this solve the problem for you?
+I would suggest to resubmit the i2c and spi patches against a working baseline
+once it is available, to make sure it does not miss some new drivers.
 
+On a side note, this patch does miss the drivers in hwmon/pmbus, but I can take care
+of those myself.
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 8b16d16..9bba4b3 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -598,7 +598,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
- 
- 	vhost_net_stop(n, &tx_sock, &rx_sock);
- 	vhost_net_flush(n);
--	vhost_dev_cleanup(&n->dev);
-+	vhost_dev_cleanup(&n->dev, false);
- 	if (tx_sock)
- 		fput(tx_sock->file);
- 	if (rx_sock)
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index a8c95ef..96f9769 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -424,7 +424,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
- 	if (!memory)
- 		return -ENOMEM;
- 
--	vhost_dev_cleanup(dev);
-+	vhost_dev_cleanup(dev, true);
- 
- 	memory->nregions = 0;
- 	RCU_INIT_POINTER(dev->memory, memory);
-@@ -455,8 +455,8 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
- 	return j;
- }
- 
--/* Caller should have device mutex */
--void vhost_dev_cleanup(struct vhost_dev *dev)
-+/* Caller should have device mutex if and only if locked is set */
-+void vhost_dev_cleanup(struct vhost_dev *dev, bool locked)
- {
- 	int i;
- 
-@@ -493,7 +493,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
- 	dev->log_file = NULL;
- 	/* No one will access memory at this point */
- 	kfree(rcu_dereference_protected(dev->memory,
--					lockdep_is_held(&dev->mutex)));
-+					locked ==
-+						lockdep_is_held(&dev->mutex)));
- 	RCU_INIT_POINTER(dev->memory, NULL);
- 	WARN_ON(!list_empty(&dev->work_list));
- 	if (dev->worker) {
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index b3e8cc3..97e18d3 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -164,7 +164,7 @@ struct vhost_dev {
- long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue *vqs, int nvqs);
- long vhost_dev_check_owner(struct vhost_dev *);
- long vhost_dev_reset_owner(struct vhost_dev *);
--void vhost_dev_cleanup(struct vhost_dev *);
-+void vhost_dev_cleanup(struct vhost_dev *, bool locked);
- long vhost_dev_ioctl(struct vhost_dev *, unsigned int ioctl, unsigned long arg);
- int vhost_vq_access_ok(struct vhost_virtqueue *vq);
- int vhost_log_access_ok(struct vhost_dev *);
+Guenter
