@@ -1,129 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab1K0F6g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 00:58:36 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43929 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab1K0F6f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 00:58:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111126235032.GC9581@n2100.arm.linux.org.uk>
-References: <1321986690-6079-1-git-send-email-consul.kautuk@gmail.com>
-	<20111126235032.GC9581@n2100.arm.linux.org.uk>
-Date: Sun, 27 Nov 2011 00:58:33 -0500
-Message-ID: <CAFPAmTTWVwq8H6HVzdvTcN-jcSoNQ2-TfLWT33ks8_kpGND+SA@mail.gmail.com>
-Subject: Re: [PATCH 1/1 v5] arm: fault.c: Port OOM changes into do_page_fault
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=0016e652e25a899f5f04b2b113be
+	id S1754251Ab1K0GAw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 01:00:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58255 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751893Ab1K0GAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 01:00:50 -0500
+Date: Sun, 27 Nov 2011 17:00:13 +1100
+From: NeilBrown <neilb@suse.de>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: [PATCH 17/62] md: remove the second argument of
+ k[un]map_atomic()
+Message-ID: <20111127170013.20d180a9@notabene.brown>
+In-Reply-To: <1322371662-26166-18-git-send-email-amwang@redhat.com>
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
+	<1322371662-26166-18-git-send-email-amwang@redhat.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Qdl12FHP_lk.3ELq_DsDIDz"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e652e25a899f5f04b2b113be
-Content-Type: text/plain; charset=ISO-8859-1
+--Sig_/Qdl12FHP_lk.3ELq_DsDIDz
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
->
-> Thanks. =A0I think this is fine. =A0Please put it in the patch system so =
-it's
-> not forgotten, and I'll get to it sometime during the next week. =A0Thank=
-s.
->
+On Sun, 27 Nov 2011 13:26:57 +0800 Cong Wang <amwang@redhat.com> wrote:
 
-Thanks. I don't know what you mean by "put it in the patch system" as I alr=
-eady
-did a "git send-email" for this patch to this mailing list.
+>=20
+> Signed-off-by: Cong Wang <amwang@redhat.com>
 
-So, please find the v5 patch file attached to this email for any
-further reference.
+This and patch 57/62
 
---0016e652e25a899f5f04b2b113be
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-arm-fault.c-Port-OOM-changes-into-do_page_fault.patch"
-Content-Disposition: attachment; 
-	filename="0001-arm-fault.c-Port-OOM-changes-into-do_page_fault.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gvhn10qs0
+ Acked-by: NeilBrown <neilb@suse.de>
 
-RnJvbSA5YjdhMGU2YTI3MTg0MzI0NmNmY2M2YTRkYmI4NjdkMjdmMTg2OGQxIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBLYXV0dWsgQ29uc3VsIDxjb25zdWwua2F1dHVrQGdtYWlsLmNv
-bT4KRGF0ZTogVHVlLCAyMiBOb3YgMjAxMSAxMzozMDozNSAtMDUwMApTdWJqZWN0OiBbUEFUQ0gg
-MS8xIHY1XSBhcm06IGZhdWx0LmM6IFBvcnQgT09NIGNoYW5nZXMgaW50byBkb19wYWdlX2ZhdWx0
-CgpDb21taXQgZDA2NWJkODEwYjZkZWI2N2Q0ODk3YTE0YmZlMjFmOGViNTI2YmE5OQoobW06IHJl
-dHJ5IHBhZ2UgZmF1bHQgd2hlbiBibG9ja2luZyBvbiBkaXNrIHRyYW5zZmVyKSBhbmQKY29tbWl0
-IDM3YjIzZTA1MjVkMzkzZDQ4YTdkNTlmODcwYjNiYzA2MWEzMGNjZGIKKHg4NixtbTogbWFrZSBw
-YWdlZmF1bHQga2lsbGFibGUpCgpUaGUgYWJvdmUgY29tbWl0cyBpbnRyb2R1Y2VkIGNoYW5nZXMg
-aW50byB0aGUgeDg2IHBhZ2VmYXVsdCBoYW5kbGVyCmZvciBtYWtpbmcgdGhlIHBhZ2UgZmF1bHQg
-aGFuZGxlciByZXRyeWFibGUgYXMgd2VsbCBhcyBraWxsYWJsZS4KClRoZXNlIGNoYW5nZXMgcmVk
-dWNlIHRoZSBtbWFwX3NlbSBob2xkIHRpbWUsIHdoaWNoIGlzIGNydWNpYWwKZHVyaW5nIE9PTSBr
-aWxsZXIgaW52b2NhdGlvbi4KClBvcnQgdGhlc2UgY2hhbmdlcyB0byBBUk0uCgpXaXRob3V0IHRo
-ZXNlIGNoYW5nZXMsIG15IEFSTSBib2FyZCBlbmNvdW50ZXJzIG1hbnkgaGFuZyBhbmQgbGl2ZWxv
-Y2sKc2NlbmFyaW9zLgpBZnRlciBhcHBseWluZyB0aGlzIHBhdGNoLCBPT00gZmVhdHVyZSBwZXJm
-b3JtYW5jZSBpbXByb3ZlcyBhY2NvcmRpbmcgdG8KbXkgdGVzdGluZy4KClNpZ25lZC1vZmYtYnk6
-IEthdXR1ayBDb25zdWwgPGNvbnN1bC5rYXV0dWtAZ21haWwuY29tPgotLS0KIGFyY2gvYXJtL21t
-L2ZhdWx0LmMgfCAgIDU4ICsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0t
-LS0tLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDM5IGluc2VydGlvbnMoKyksIDE5IGRlbGV0aW9u
-cygtKQoKZGlmZiAtLWdpdCBhL2FyY2gvYXJtL21tL2ZhdWx0LmMgYi9hcmNoL2FybS9tbS9mYXVs
-dC5jCmluZGV4IGFhMzM5NDkuLjRhYWJlYWUgMTAwNjQ0Ci0tLSBhL2FyY2gvYXJtL21tL2ZhdWx0
-LmMKKysrIGIvYXJjaC9hcm0vbW0vZmF1bHQuYwpAQCAtMjMxLDcgKzIzMSw3IEBAIHN0YXRpYyBp
-bmxpbmUgYm9vbCBhY2Nlc3NfZXJyb3IodW5zaWduZWQgaW50IGZzciwgc3RydWN0IHZtX2FyZWFf
-c3RydWN0ICp2bWEpCiAKIHN0YXRpYyBpbnQgX19rcHJvYmVzCiBfX2RvX3BhZ2VfZmF1bHQoc3Ry
-dWN0IG1tX3N0cnVjdCAqbW0sIHVuc2lnbmVkIGxvbmcgYWRkciwgdW5zaWduZWQgaW50IGZzciwK
-LQkJc3RydWN0IHRhc2tfc3RydWN0ICp0c2spCisJCXVuc2lnbmVkIGludCBmbGFncywgc3RydWN0
-IHRhc2tfc3RydWN0ICp0c2spCiB7CiAJc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWE7CiAJaW50
-IGZhdWx0OwpAQCAtMjUzLDE4ICsyNTMsNyBAQCBnb29kX2FyZWE6CiAJCWdvdG8gb3V0OwogCX0K
-IAotCS8qCi0JICogSWYgZm9yIGFueSByZWFzb24gYXQgYWxsIHdlIGNvdWxkbid0IGhhbmRsZSB0
-aGUgZmF1bHQsIG1ha2UKLQkgKiBzdXJlIHdlIGV4aXQgZ3JhY2VmdWxseSByYXRoZXIgdGhhbiBl
-bmRsZXNzbHkgcmVkbyB0aGUgZmF1bHQuCi0JICovCi0JZmF1bHQgPSBoYW5kbGVfbW1fZmF1bHQo
-bW0sIHZtYSwgYWRkciAmIFBBR0VfTUFTSywgKGZzciAmIEZTUl9XUklURSkgPyBGQVVMVF9GTEFH
-X1dSSVRFIDogMCk7Ci0JaWYgKHVubGlrZWx5KGZhdWx0ICYgVk1fRkFVTFRfRVJST1IpKQotCQly
-ZXR1cm4gZmF1bHQ7Ci0JaWYgKGZhdWx0ICYgVk1fRkFVTFRfTUFKT1IpCi0JCXRzay0+bWFqX2Zs
-dCsrOwotCWVsc2UKLQkJdHNrLT5taW5fZmx0Kys7Ci0JcmV0dXJuIGZhdWx0OworCXJldHVybiBo
-YW5kbGVfbW1fZmF1bHQobW0sIHZtYSwgYWRkciAmIFBBR0VfTUFTSywgZmxhZ3MpOwogCiBjaGVj
-a19zdGFjazoKIAlpZiAodm1hLT52bV9mbGFncyAmIFZNX0dST1dTRE9XTiAmJiAhZXhwYW5kX3N0
-YWNrKHZtYSwgYWRkcikpCkBAIC0yNzksNiArMjY4LDkgQEAgZG9fcGFnZV9mYXVsdCh1bnNpZ25l
-ZCBsb25nIGFkZHIsIHVuc2lnbmVkIGludCBmc3IsIHN0cnVjdCBwdF9yZWdzICpyZWdzKQogCXN0
-cnVjdCB0YXNrX3N0cnVjdCAqdHNrOwogCXN0cnVjdCBtbV9zdHJ1Y3QgKm1tOwogCWludCBmYXVs
-dCwgc2lnLCBjb2RlOworCWludCB3cml0ZSA9IGZzciAmIEZTUl9XUklURTsKKwl1bnNpZ25lZCBp
-bnQgZmxhZ3MgPSBGQVVMVF9GTEFHX0FMTE9XX1JFVFJZIHwgRkFVTFRfRkxBR19LSUxMQUJMRSB8
-CisJCQkJKHdyaXRlID8gRkFVTFRfRkxBR19XUklURSA6IDApOwogCiAJaWYgKG5vdGlmeV9wYWdl
-X2ZhdWx0KHJlZ3MsIGZzcikpCiAJCXJldHVybiAwOwpAQCAtMzA1LDYgKzI5Nyw3IEBAIGRvX3Bh
-Z2VfZmF1bHQodW5zaWduZWQgbG9uZyBhZGRyLCB1bnNpZ25lZCBpbnQgZnNyLCBzdHJ1Y3QgcHRf
-cmVncyAqcmVncykKIAlpZiAoIWRvd25fcmVhZF90cnlsb2NrKCZtbS0+bW1hcF9zZW0pKSB7CiAJ
-CWlmICghdXNlcl9tb2RlKHJlZ3MpICYmICFzZWFyY2hfZXhjZXB0aW9uX3RhYmxlcyhyZWdzLT5B
-Uk1fcGMpKQogCQkJZ290byBub19jb250ZXh0OworcmV0cnk6CiAJCWRvd25fcmVhZCgmbW0tPm1t
-YXBfc2VtKTsKIAl9IGVsc2UgewogCQkvKgpAQCAtMzIwLDE0ICszMTMsNDEgQEAgZG9fcGFnZV9m
-YXVsdCh1bnNpZ25lZCBsb25nIGFkZHIsIHVuc2lnbmVkIGludCBmc3IsIHN0cnVjdCBwdF9yZWdz
-ICpyZWdzKQogI2VuZGlmCiAJfQogCi0JZmF1bHQgPSBfX2RvX3BhZ2VfZmF1bHQobW0sIGFkZHIs
-IGZzciwgdHNrKTsKLQl1cF9yZWFkKCZtbS0+bW1hcF9zZW0pOworCWZhdWx0ID0gX19kb19wYWdl
-X2ZhdWx0KG1tLCBhZGRyLCBmc3IsIGZsYWdzLCB0c2spOworCisJLyogSWYgd2UgbmVlZCB0byBy
-ZXRyeSBidXQgYSBmYXRhbCBzaWduYWwgaXMgcGVuZGluZywgaGFuZGxlIHRoZQorCSAqIHNpZ25h
-bCBmaXJzdC4gV2UgZG8gbm90IG5lZWQgdG8gcmVsZWFzZSB0aGUgbW1hcF9zZW0gYmVjYXVzZQor
-CSAqIGl0IHdvdWxkIGFscmVhZHkgYmUgcmVsZWFzZWQgaW4gX19sb2NrX3BhZ2Vfb3JfcmV0cnkg
-aW4KKwkgKiBtbS9maWxlbWFwLmMuICovCisJaWYgKChmYXVsdCAmIFZNX0ZBVUxUX1JFVFJZKSAm
-JiBmYXRhbF9zaWduYWxfcGVuZGluZyhjdXJyZW50KSkKKwkJcmV0dXJuIDA7CisKKwkvKgorCSAq
-IE1ham9yL21pbm9yIHBhZ2UgZmF1bHQgYWNjb3VudGluZyBpcyBvbmx5IGRvbmUgb24gdGhlCisJ
-ICogaW5pdGlhbCBhdHRlbXB0LiBJZiB3ZSBnbyB0aHJvdWdoIGEgcmV0cnksIGl0IGlzIGV4dHJl
-bWVseQorCSAqIGxpa2VseSB0aGF0IHRoZSBwYWdlIHdpbGwgYmUgZm91bmQgaW4gcGFnZSBjYWNo
-ZSBhdCB0aGF0IHBvaW50LgorCSAqLwogCiAJcGVyZl9zd19ldmVudChQRVJGX0NPVU5UX1NXX1BB
-R0VfRkFVTFRTLCAxLCByZWdzLCBhZGRyKTsKLQlpZiAoZmF1bHQgJiBWTV9GQVVMVF9NQUpPUikK
-LQkJcGVyZl9zd19ldmVudChQRVJGX0NPVU5UX1NXX1BBR0VfRkFVTFRTX01BSiwgMSwgcmVncywg
-YWRkcik7Ci0JZWxzZSBpZiAoZmF1bHQgJiBWTV9GQVVMVF9NSU5PUikKLQkJcGVyZl9zd19ldmVu
-dChQRVJGX0NPVU5UX1NXX1BBR0VfRkFVTFRTX01JTiwgMSwgcmVncywgYWRkcik7CisJaWYgKGZs
-YWdzICYgRkFVTFRfRkxBR19BTExPV19SRVRSWSkgeworCQlpZiAoZmF1bHQgJiBWTV9GQVVMVF9N
-QUpPUikgeworCQkJdHNrLT5tYWpfZmx0Kys7CisJCQlwZXJmX3N3X2V2ZW50KFBFUkZfQ09VTlRf
-U1dfUEFHRV9GQVVMVFNfTUFKLCAxLAorCQkJCQlyZWdzLCBhZGRyKTsKKwkJfSBlbHNlIHsKKwkJ
-CXRzay0+bWluX2ZsdCsrOworCQkJcGVyZl9zd19ldmVudChQRVJGX0NPVU5UX1NXX1BBR0VfRkFV
-TFRTX01JTiwgMSwKKwkJCQkJcmVncywgYWRkcik7CisJCX0KKwkJaWYgKGZhdWx0ICYgVk1fRkFV
-TFRfUkVUUlkpIHsKKwkJCS8qIENsZWFyIEZBVUxUX0ZMQUdfQUxMT1dfUkVUUlkgdG8gYXZvaWQg
-YW55IHJpc2sKKwkJCSogb2Ygc3RhcnZhdGlvbi4gKi8KKwkJCWZsYWdzICY9IH5GQVVMVF9GTEFH
-X0FMTE9XX1JFVFJZOworCQkJZ290byByZXRyeTsKKwkJfQorCX0KKworCXVwX3JlYWQoJm1tLT5t
-bWFwX3NlbSk7CiAKIAkvKgogCSAqIEhhbmRsZSB0aGUgIm5vcm1hbCIgY2FzZSBmaXJzdCAtIFZN
-X0ZBVUxUX01BSk9SIC8gVk1fRkFVTFRfTUlOT1IKLS0gCjEuNy41LjQKCg==
---0016e652e25a899f5f04b2b113be--
+thanks.
+
+Not sure why there are two separate patches to md/bitmap.c though...
+
+... and I cannot offically 'ack' the dm-crypt.c parts of this as I'm not the
+    maintainer.  'md' and 'dm' are separate systems in the same directory -
+    confusing, isn't it :-(
+
+NeilBrown
+
+
+> ---
+>  drivers/md/bitmap.c   |   36 ++++++++++++++++++------------------
+>  drivers/md/dm-crypt.c |    8 ++++----
+>  2 files changed, 22 insertions(+), 22 deletions(-)
+>=20
+> diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
+> index 7878712..8659515 100644
+> --- a/drivers/md/bitmap.c
+> +++ b/drivers/md/bitmap.c
+> @@ -457,7 +457,7 @@ void bitmap_update_sb(struct bitmap *bitmap)
+>  		return;
+>  	}
+>  	spin_unlock_irqrestore(&bitmap->lock, flags);
+> -	sb =3D kmap_atomic(bitmap->sb_page, KM_USER0);
+> +	sb =3D kmap_atomic(bitmap->sb_page);
+>  	sb->events =3D cpu_to_le64(bitmap->mddev->events);
+>  	if (bitmap->mddev->events < bitmap->events_cleared)
+>  		/* rocking back to read-only */
+> @@ -467,7 +467,7 @@ void bitmap_update_sb(struct bitmap *bitmap)
+>  	/* Just in case these have been changed via sysfs: */
+>  	sb->daemon_sleep =3D cpu_to_le32(bitmap->mddev->bitmap_info.daemon_slee=
+p/HZ);
+>  	sb->write_behind =3D cpu_to_le32(bitmap->mddev->bitmap_info.max_write_b=
+ehind);
+> -	kunmap_atomic(sb, KM_USER0);
+> +	kunmap_atomic(sb);
+>  	write_page(bitmap, bitmap->sb_page, 1);
+>  }
+> =20
+> @@ -478,7 +478,7 @@ void bitmap_print_sb(struct bitmap *bitmap)
+> =20
+>  	if (!bitmap || !bitmap->sb_page)
+>  		return;
+> -	sb =3D kmap_atomic(bitmap->sb_page, KM_USER0);
+> +	sb =3D kmap_atomic(bitmap->sb_page);
+>  	printk(KERN_DEBUG "%s: bitmap file superblock:\n", bmname(bitmap));
+>  	printk(KERN_DEBUG "         magic: %08x\n", le32_to_cpu(sb->magic));
+>  	printk(KERN_DEBUG "       version: %d\n", le32_to_cpu(sb->version));
+> @@ -497,7 +497,7 @@ void bitmap_print_sb(struct bitmap *bitmap)
+>  	printk(KERN_DEBUG "     sync size: %llu KB\n",
+>  			(unsigned long long)le64_to_cpu(sb->sync_size)/2);
+>  	printk(KERN_DEBUG "max write behind: %d\n", le32_to_cpu(sb->write_behin=
+d));
+> -	kunmap_atomic(sb, KM_USER0);
+> +	kunmap_atomic(sb);
+>  }
+> =20
+>  /*
+> @@ -603,7 +603,7 @@ static int bitmap_read_sb(struct bitmap *bitmap)
+>  		return err;
+>  	}
+> =20
+> -	sb =3D kmap_atomic(bitmap->sb_page, KM_USER0);
+> +	sb =3D kmap_atomic(bitmap->sb_page);
+> =20
+>  	chunksize =3D le32_to_cpu(sb->chunksize);
+>  	daemon_sleep =3D le32_to_cpu(sb->daemon_sleep) * HZ;
+> @@ -664,7 +664,7 @@ success:
+>  		bitmap->events_cleared =3D bitmap->mddev->events;
+>  	err =3D 0;
+>  out:
+> -	kunmap_atomic(sb, KM_USER0);
+> +	kunmap_atomic(sb);
+>  	if (err)
+>  		bitmap_print_sb(bitmap);
+>  	return err;
+> @@ -689,7 +689,7 @@ static int bitmap_mask_state(struct bitmap *bitmap, e=
+num bitmap_state bits,
+>  		return 0;
+>  	}
+>  	spin_unlock_irqrestore(&bitmap->lock, flags);
+> -	sb =3D kmap_atomic(bitmap->sb_page, KM_USER0);
+> +	sb =3D kmap_atomic(bitmap->sb_page);
+>  	old =3D le32_to_cpu(sb->state) & bits;
+>  	switch (op) {
+>  	case MASK_SET:
+> @@ -703,7 +703,7 @@ static int bitmap_mask_state(struct bitmap *bitmap, e=
+num bitmap_state bits,
+>  	default:
+>  		BUG();
+>  	}
+> -	kunmap_atomic(sb, KM_USER0);
+> +	kunmap_atomic(sb);
+>  	return old;
+>  }
+> =20
+> @@ -881,12 +881,12 @@ static void bitmap_file_set_bit(struct bitmap *bitm=
+ap, sector_t block)
+>  	bit =3D file_page_offset(bitmap, chunk);
+> =20
+>  	/* set the bit */
+> -	kaddr =3D kmap_atomic(page, KM_USER0);
+> +	kaddr =3D kmap_atomic(page);
+>  	if (bitmap->flags & BITMAP_HOSTENDIAN)
+>  		set_bit(bit, kaddr);
+>  	else
+>  		__set_bit_le(bit, kaddr);
+> -	kunmap_atomic(kaddr, KM_USER0);
+> +	kunmap_atomic(kaddr);
+>  	pr_debug("set file bit %lu page %lu\n", bit, page->index);
+>  	/* record page number so it gets flushed to disk when unplug occurs */
+>  	set_page_attr(bitmap, page, BITMAP_PAGE_DIRTY);
+> @@ -1050,10 +1050,10 @@ static int bitmap_init_from_disk(struct bitmap *b=
+itmap, sector_t start)
+>  				 * if bitmap is out of date, dirty the
+>  				 * whole page and write it out
+>  				 */
+> -				paddr =3D kmap_atomic(page, KM_USER0);
+> +				paddr =3D kmap_atomic(page);
+>  				memset(paddr + offset, 0xff,
+>  				       PAGE_SIZE - offset);
+> -				kunmap_atomic(paddr, KM_USER0);
+> +				kunmap_atomic(paddr);
+>  				write_page(bitmap, page, 1);
+> =20
+>  				ret =3D -EIO;
+> @@ -1061,12 +1061,12 @@ static int bitmap_init_from_disk(struct bitmap *b=
+itmap, sector_t start)
+>  					goto err;
+>  			}
+>  		}
+> -		paddr =3D kmap_atomic(page, KM_USER0);
+> +		paddr =3D kmap_atomic(page);
+>  		if (bitmap->flags & BITMAP_HOSTENDIAN)
+>  			b =3D test_bit(bit, paddr);
+>  		else
+>  			b =3D test_bit_le(bit, paddr);
+> -		kunmap_atomic(paddr, KM_USER0);
+> +		kunmap_atomic(paddr);
+>  		if (b) {
+>  			/* if the disk bit is set, set the memory bit */
+>  			int needed =3D ((sector_t)(i+1) << (CHUNK_BLOCK_SHIFT(bitmap))
+> @@ -1207,10 +1207,10 @@ void bitmap_daemon_work(struct mddev *mddev)
+>  			    bitmap->mddev->bitmap_info.external =3D=3D 0) {
+>  				bitmap_super_t *sb;
+>  				bitmap->need_sync =3D 0;
+> -				sb =3D kmap_atomic(bitmap->sb_page, KM_USER0);
+> +				sb =3D kmap_atomic(bitmap->sb_page);
+>  				sb->events_cleared =3D
+>  					cpu_to_le64(bitmap->events_cleared);
+> -				kunmap_atomic(sb, KM_USER0);
+> +				kunmap_atomic(sb);
+>  				write_page(bitmap, bitmap->sb_page, 1);
+>  			}
+>  			spin_lock_irqsave(&bitmap->lock, flags);
+> @@ -1233,7 +1233,7 @@ void bitmap_daemon_work(struct mddev *mddev)
+>  						  -1);
+> =20
+>  				/* clear the bit */
+> -				paddr =3D kmap_atomic(page, KM_USER0);
+> +				paddr =3D kmap_atomic(page);
+>  				if (bitmap->flags & BITMAP_HOSTENDIAN)
+>  					clear_bit(file_page_offset(bitmap, j),
+>  						  paddr);
+> @@ -1242,7 +1242,7 @@ void bitmap_daemon_work(struct mddev *mddev)
+>  						file_page_offset(bitmap,
+>  								 j),
+>  						paddr);
+> -				kunmap_atomic(paddr, KM_USER0);
+> +				kunmap_atomic(paddr);
+>  			} else if (*bmc <=3D 2) {
+>  				*bmc =3D 1; /* maybe clear the bit next time */
+>  				set_page_attr(bitmap, page, BITMAP_PAGE_PENDING);
+> diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+> index 8c2a000..db6b516 100644
+> --- a/drivers/md/dm-crypt.c
+> +++ b/drivers/md/dm-crypt.c
+> @@ -590,9 +590,9 @@ static int crypt_iv_lmk_gen(struct crypt_config *cc, =
+u8 *iv,
+>  	int r =3D 0;
+> =20
+>  	if (bio_data_dir(dmreq->ctx->bio_in) =3D=3D WRITE) {
+> -		src =3D kmap_atomic(sg_page(&dmreq->sg_in), KM_USER0);
+> +		src =3D kmap_atomic(sg_page(&dmreq->sg_in));
+>  		r =3D crypt_iv_lmk_one(cc, iv, dmreq, src + dmreq->sg_in.offset);
+> -		kunmap_atomic(src, KM_USER0);
+> +		kunmap_atomic(src);
+>  	} else
+>  		memset(iv, 0, cc->iv_size);
+> =20
+> @@ -608,14 +608,14 @@ static int crypt_iv_lmk_post(struct crypt_config *c=
+c, u8 *iv,
+>  	if (bio_data_dir(dmreq->ctx->bio_in) =3D=3D WRITE)
+>  		return 0;
+> =20
+> -	dst =3D kmap_atomic(sg_page(&dmreq->sg_out), KM_USER0);
+> +	dst =3D kmap_atomic(sg_page(&dmreq->sg_out));
+>  	r =3D crypt_iv_lmk_one(cc, iv, dmreq, dst + dmreq->sg_out.offset);
+> =20
+>  	/* Tweak the first block of plaintext sector */
+>  	if (!r)
+>  		crypto_xor(dst + dmreq->sg_out.offset, iv, cc->iv_size);
+> =20
+> -	kunmap_atomic(dst, KM_USER0);
+> +	kunmap_atomic(dst);
+>  	return r;
+>  }
+> =20
+
+
+--Sig_/Qdl12FHP_lk.3ELq_DsDIDz
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTtHR9znsnt1WYoG5AQLPsg/9GVXSJGhag+EcUSOcz43F3G3vKmNf49X1
+nLlojndqgFUX0aSd/jtpnvmgaphxKJqL1H5e3IBed1IuKdubH4v5Pz2ldvnoXcbj
+CIT43pR1yU0Qt2Mw6D/tCn96+ga6WYFEP8AvPBEGLF657/c0UuvazmsgG4W2bdl2
+seavz6k0kRsGfLvSNZG99tZYBHua73Rar0H7dAL13lc/H4rDmAqKbnh1RQMbj5rM
+e7BkwbaquQLv61+/k/jSMhwMDJm0rEHpCRAJCqZoAafec2Xp4tXyfr4Ej0VczRcx
+sRBBfpgUQvhJPRKM4fBQu85ojfhGSPJoyxrVUlkj/3iQ2Rzam5dkYDTlSPDxaOZE
+gdh81WGVf1klcOjP+bXdM7+VPkDwrIu39NrPNciorvz2tubzEc0T+fyl3vODws7x
+5J3Tb1DcPRjny5Um49cGX5DnUQFUJaIkvYUkoLWeA6iOZBaxsZHykh/f9kxih3jW
+Pj5d4gA7gzv1TjY4QkotcU2uUjXMUXLXCNJ3McmKzxFqvgRAmwIpZz/qYy2UfVmy
+R/3yHEocrztmLJxUN3QU9dSOV8cqRuMRSFWhaKVi0wxGOwr4i9k6zXYqkvP4Drvz
+g9PT44RBGItY89a+lXorrkc8z5iU1GBRbjAEDNvZvvmIxH7QOLTz7dDBiPHv8rzR
+Ztj4zsBm2zs=
+=puUx
+-----END PGP SIGNATURE-----
+
+--Sig_/Qdl12FHP_lk.3ELq_DsDIDz--
