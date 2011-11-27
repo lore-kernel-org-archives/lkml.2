@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab1K0FdP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 00:33:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28029 "EHLO mx1.redhat.com"
+	id S1755137Ab1K0Fdj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 00:33:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3746 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754884Ab1K0FdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 00:33:13 -0500
+	id S1754854Ab1K0Fdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 00:33:37 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Hank Janssen <hjanssen@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Abhishek Kane <v-abkane@microsoft.com>, devel@driverdev.osuosl.org
-Subject: [PATCH 23/62] hv: remove the second argument of k[un]map_atomic()
-Date: Sun, 27 Nov 2011 13:27:03 +0800
-Message-Id: <1322371662-26166-24-git-send-email-amwang@redhat.com>
+        Ilia Mirkin <imirkin@alum.mit.edu>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 25/62] rtl8192u: remove the second argument of k[un]map_atomic()
+Date: Sun, 27 Nov 2011 13:27:05 +0800
+Message-Id: <1322371662-26166-26-git-send-email-amwang@redhat.com>
 In-Reply-To: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,152 +25,188 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Cong Wang <amwang@redhat.com>
 ---
- drivers/staging/hv/netvsc_drv.c   |    5 ++---
- drivers/staging/hv/rndis_filter.c |    4 ++--
- drivers/staging/hv/storvsc_drv.c  |   31 ++++++++++++++-----------------
- 3 files changed, 18 insertions(+), 22 deletions(-)
+ drivers/staging/rtl8192u/ieee80211/cipher.c      |    8 ++++----
+ drivers/staging/rtl8192u/ieee80211/digest.c      |    8 ++++----
+ drivers/staging/rtl8192u/ieee80211/internal.h    |   17 -----------------
+ drivers/staging/rtl8192u/ieee80211/kmap_types.h  |   20 --------------------
+ drivers/staging/rtl8192u/ieee80211/scatterwalk.c |   19 +++++--------------
+ 5 files changed, 13 insertions(+), 59 deletions(-)
+ delete mode 100644 drivers/staging/rtl8192u/ieee80211/kmap_types.h
 
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 93b0e91..1c61a7d 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -261,8 +261,7 @@ int netvsc_recv_callback(struct hv_device *device_obj,
- 	 * hv_netvsc_packet cannot be deallocated
- 	 */
- 	for (i = 0; i < packet->page_buf_cnt; i++) {
--		data = kmap_atomic(pfn_to_page(packet->page_buf[i].pfn),
--					       KM_IRQ1);
-+		data = kmap_atomic(pfn_to_page(packet->page_buf[i].pfn));
- 		data = (void *)(unsigned long)data +
- 				packet->page_buf[i].offset;
+diff --git a/drivers/staging/rtl8192u/ieee80211/cipher.c b/drivers/staging/rtl8192u/ieee80211/cipher.c
+index 69dcc31..d47345c 100644
+--- a/drivers/staging/rtl8192u/ieee80211/cipher.c
++++ b/drivers/staging/rtl8192u/ieee80211/cipher.c
+@@ -71,8 +71,8 @@ static int crypt(struct crypto_tfm *tfm,
+ 		u8 *src_p, *dst_p;
+ 		int in_place;
  
-@@ -270,7 +269,7 @@ int netvsc_recv_callback(struct hv_device *device_obj,
- 		       packet->page_buf[i].len);
+-		scatterwalk_map(&walk_in, 0);
+-		scatterwalk_map(&walk_out, 1);
++		scatterwalk_map(&walk_in);
++		scatterwalk_map(&walk_out);
+ 		src_p = scatterwalk_whichbuf(&walk_in, bsize, tmp_src);
+ 		dst_p = scatterwalk_whichbuf(&walk_out, bsize, tmp_dst);
+ 		in_place = scatterwalk_samebuf(&walk_in, &walk_out,
+@@ -84,10 +84,10 @@ static int crypt(struct crypto_tfm *tfm,
  
- 		kunmap_atomic((void *)((unsigned long)data -
--				       packet->page_buf[i].offset), KM_IRQ1);
-+				       packet->page_buf[i].offset));
+ 		prfn(tfm, dst_p, src_p, crfn, enc, info, in_place);
+ 
+-		scatterwalk_done(&walk_in, 0, nbytes);
++		scatterwalk_done(&walk_in, nbytes);
+ 
+ 		scatterwalk_copychunks(dst_p, &walk_out, bsize, 1);
+-		scatterwalk_done(&walk_out, 1, nbytes);
++		scatterwalk_done(&walk_out, nbytes);
+ 
+ 		if (!nbytes)
+ 			return 0;
+diff --git a/drivers/staging/rtl8192u/ieee80211/digest.c b/drivers/staging/rtl8192u/ieee80211/digest.c
+index 301ed51..05e7497 100644
+--- a/drivers/staging/rtl8192u/ieee80211/digest.c
++++ b/drivers/staging/rtl8192u/ieee80211/digest.c
+@@ -39,12 +39,12 @@ static void update(struct crypto_tfm *tfm,
+ 			unsigned int bytes_from_page = min(l, ((unsigned int)
+ 							   (PAGE_SIZE)) -
+ 							   offset);
+-			char *p = crypto_kmap(pg, 0) + offset;
++			char *p = kmap_atomic(pg) + offset;
+ 
+ 			tfm->__crt_alg->cra_digest.dia_update
+ 					(crypto_tfm_ctx(tfm), p,
+ 					 bytes_from_page);
+-			crypto_kunmap(p, 0);
++			kunmap_atomic(p);
+ 			crypto_yield(tfm);
+ 			offset = 0;
+ 			pg++;
+@@ -75,10 +75,10 @@ static void digest(struct crypto_tfm *tfm,
+ 	tfm->crt_digest.dit_init(tfm);
+ 
+ 	for (i = 0; i < nsg; i++) {
+-		char *p = crypto_kmap(sg[i].page, 0) + sg[i].offset;
++		char *p = kmap_atomic(sg[i].page) + sg[i].offset;
+ 		tfm->__crt_alg->cra_digest.dia_update(crypto_tfm_ctx(tfm),
+ 						      p, sg[i].length);
+-		crypto_kunmap(p, 0);
++		kunmap_atomic(p);
+ 		crypto_yield(tfm);
  	}
+ 	crypto_digest_final(tfm, out);
+diff --git a/drivers/staging/rtl8192u/ieee80211/internal.h b/drivers/staging/rtl8192u/ieee80211/internal.h
+index a7c096e..bebe13a 100644
+--- a/drivers/staging/rtl8192u/ieee80211/internal.h
++++ b/drivers/staging/rtl8192u/ieee80211/internal.h
+@@ -23,23 +23,6 @@
+ #include <asm/kmap_types.h>
  
- 	local_irq_restore(flags);
-diff --git a/drivers/staging/hv/rndis_filter.c b/drivers/staging/hv/rndis_filter.c
-index bafccb3..5e209e7 100644
---- a/drivers/staging/hv/rndis_filter.c
-+++ b/drivers/staging/hv/rndis_filter.c
-@@ -388,7 +388,7 @@ int rndis_filter_receive(struct hv_device *dev,
- 	}
  
- 	rndis_hdr = (struct rndis_message *)kmap_atomic(
--			pfn_to_page(pkt->page_buf[0].pfn), KM_IRQ0);
-+			pfn_to_page(pkt->page_buf[0].pfn));
+-extern enum km_type crypto_km_types[];
+-
+-static inline enum km_type crypto_kmap_type(int out)
+-{
+-	return crypto_km_types[(in_softirq() ? 2 : 0) + out];
+-}
+-
+-static inline void *crypto_kmap(struct page *page, int out)
+-{
+-	return kmap_atomic(page, crypto_kmap_type(out));
+-}
+-
+-static inline void crypto_kunmap(void *vaddr, int out)
+-{
+-	kunmap_atomic(vaddr, crypto_kmap_type(out));
+-}
+-
+ static inline void crypto_yield(struct crypto_tfm *tfm)
+ {
+ 	if (!in_softirq())
+diff --git a/drivers/staging/rtl8192u/ieee80211/kmap_types.h b/drivers/staging/rtl8192u/ieee80211/kmap_types.h
+deleted file mode 100644
+index de67bb0..0000000
+--- a/drivers/staging/rtl8192u/ieee80211/kmap_types.h
++++ /dev/null
+@@ -1,20 +0,0 @@
+-#ifndef __KMAP_TYPES_H
+-
+-#define __KMAP_TYPES_H
+-
+-
+-enum km_type {
+-	KM_BOUNCE_READ,
+-	KM_SKB_SUNRPC_DATA,
+-	KM_SKB_DATA_SOFTIRQ,
+-	KM_USER0,
+-	KM_USER1,
+-	KM_BH_IRQ,
+-	KM_SOFTIRQ0,
+-	KM_SOFTIRQ1,
+-	KM_TYPE_NR
+-};
+-
+-#define _ASM_KMAP_TYPES_H
+-
+-#endif
+diff --git a/drivers/staging/rtl8192u/ieee80211/scatterwalk.c b/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
+index 3543a61..8b73f6c 100644
+--- a/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
++++ b/drivers/staging/rtl8192u/ieee80211/scatterwalk.c
+@@ -13,8 +13,6 @@
+  * any later version.
+  *
+  */
+-#include "kmap_types.h"
+-
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/pagemap.h>
+@@ -23,13 +21,6 @@
+ #include "internal.h"
+ #include "scatterwalk.h"
  
- 	rndis_hdr = (void *)((unsigned long)rndis_hdr +
- 			pkt->page_buf[0].offset);
-@@ -407,7 +407,7 @@ int rndis_filter_receive(struct hv_device *dev,
- 			sizeof(struct rndis_message) :
- 			rndis_hdr->msg_len);
+-enum km_type crypto_km_types[] = {
+-	KM_USER0,
+-	KM_USER1,
+-	KM_SOFTIRQ0,
+-	KM_SOFTIRQ1,
+-};
+-
+ void *scatterwalk_whichbuf(struct scatter_walk *walk, unsigned int nbytes, void *scratch)
+ {
+ 	if (nbytes <= walk->len_this_page &&
+@@ -62,9 +53,9 @@ void scatterwalk_start(struct scatter_walk *walk, struct scatterlist *sg)
+ 	walk->offset = sg->offset;
+ }
  
--	kunmap_atomic(rndis_hdr - pkt->page_buf[0].offset, KM_IRQ0);
-+	kunmap_atomic(rndis_hdr - pkt->page_buf[0].offset);
+-void scatterwalk_map(struct scatter_walk *walk, int out)
++void scatterwalk_map(struct scatter_walk *walk)
+ {
+-	walk->data = crypto_kmap(walk->page, out) + walk->offset;
++	walk->data = kmap_atomic(walk->page) + walk->offset;
+ }
  
- 	dump_rndis_message(dev, &rndis_msg);
+ static void scatterwalk_pagedone(struct scatter_walk *walk, int out,
+@@ -103,7 +94,7 @@ void scatterwalk_done(struct scatter_walk *walk, int out, int more)
+  * has been verified as multiple of the block size.
+  */
+ int scatterwalk_copychunks(void *buf, struct scatter_walk *walk,
+-			   size_t nbytes, int out)
++			   size_t nbytes)
+ {
+ 	if (buf != walk->data) {
+ 		while (nbytes > walk->len_this_page) {
+@@ -111,9 +102,9 @@ int scatterwalk_copychunks(void *buf, struct scatter_walk *walk,
+ 			buf += walk->len_this_page;
+ 			nbytes -= walk->len_this_page;
  
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index ae8c33e..05b8bdc 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -847,15 +847,14 @@ static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
- 	local_irq_save(flags);
- 
- 	for (i = 0; i < orig_sgl_count; i++) {
--		dest_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
--					KM_IRQ0) + orig_sgl[i].offset;
-+		dest_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])))
-+					+ orig_sgl[i].offset;
- 		dest = dest_addr;
- 		destlen = orig_sgl[i].length;
- 
- 		if (bounce_addr == 0)
- 			bounce_addr =
--			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])),
--							KM_IRQ0);
-+			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])));
- 
- 		while (destlen) {
- 			src = bounce_addr + bounce_sgl[j].offset;
-@@ -871,22 +870,21 @@ static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
- 
- 			if (bounce_sgl[j].offset == bounce_sgl[j].length) {
- 				/* full */
--				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
-+				kunmap_atomic((void *)bounce_addr);
- 				j++;
- 
- 				/* if we need to use another bounce buffer */
- 				if (destlen || i != orig_sgl_count - 1)
- 					bounce_addr =
- 					(unsigned long)kmap_atomic(
--					sg_page((&bounce_sgl[j])), KM_IRQ0);
-+					sg_page((&bounce_sgl[j])));
- 			} else if (destlen == 0 && i == orig_sgl_count - 1) {
- 				/* unmap the last bounce that is < PAGE_SIZE */
--				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
-+				kunmap_atomic((void *)bounce_addr);
- 			}
+-			crypto_kunmap(walk->data, out);
++			kunmap_atomic(walk->data);
+ 			scatterwalk_pagedone(walk, out, 1);
+-			scatterwalk_map(walk, out);
++			scatterwalk_map(walk);
  		}
  
--		kunmap_atomic((void *)(dest_addr - orig_sgl[i].offset),
--			      KM_IRQ0);
-+		kunmap_atomic((void *)(dest_addr - orig_sgl[i].offset));
- 	}
- 
- 	local_irq_restore(flags);
-@@ -912,15 +910,14 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
- 	local_irq_save(flags);
- 
- 	for (i = 0; i < orig_sgl_count; i++) {
--		src_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
--				KM_IRQ0) + orig_sgl[i].offset;
-+		src_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])))
-+				+ orig_sgl[i].offset;
- 		src = src_addr;
- 		srclen = orig_sgl[i].length;
- 
- 		if (bounce_addr == 0)
- 			bounce_addr =
--			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])),
--						KM_IRQ0);
-+			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])));
- 
- 		while (srclen) {
- 			/* assume bounce offset always == 0 */
-@@ -937,22 +934,22 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
- 
- 			if (bounce_sgl[j].length == PAGE_SIZE) {
- 				/* full..move to next entry */
--				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
-+				kunmap_atomic((void *)bounce_addr);
- 				j++;
- 
- 				/* if we need to use another bounce buffer */
- 				if (srclen || i != orig_sgl_count - 1)
- 					bounce_addr =
- 					(unsigned long)kmap_atomic(
--					sg_page((&bounce_sgl[j])), KM_IRQ0);
-+					sg_page((&bounce_sgl[j])));
- 
- 			} else if (srclen == 0 && i == orig_sgl_count - 1) {
- 				/* unmap the last bounce that is < PAGE_SIZE */
--				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
-+				kunmap_atomic((void *)bounce_addr);
- 			}
- 		}
- 
--		kunmap_atomic((void *)(src_addr - orig_sgl[i].offset), KM_IRQ0);
-+		kunmap_atomic((void *)(src_addr - orig_sgl[i].offset));
- 	}
- 
- 	local_irq_restore(flags);
+ 		memcpy_dir(buf, walk->data, nbytes, out);
 -- 
 1.7.4.4
 
