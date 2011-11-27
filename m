@@ -1,74 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616Ab1K0J2U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 04:28:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43287 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab1K0J2S convert rfc822-to-8bit (ORCPT
+	id S1752002Ab1K0JcB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 04:32:01 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:38888 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750878Ab1K0Jb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 04:28:18 -0500
-Date: Sun, 27 Nov 2011 03:28:08 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>, netdev@vger.kernel.org,
-        nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        Armin Kazmi <armin.kazmi@tu-dortmund.de>, Gerd <booster@wolke7.net>
-Subject: Re: [bug?] r8169: hangs under heavy load
-Message-ID: <20111127092808.GE21635@elie.hsd1.il.comcast.net>
-References: <4E82C0B5.1050902@wolke7.net>
- <1317254171.4068.12.camel@deadeye>
- <20111124044137.GA18262@elie.hsd1.il.comcast.net>
- <4ECFE7A7.5070300@wolke7.net>
- <20111125201936.GA26692@elie.hsd1.il.comcast.net>
- <1322253122.2550.3.camel@edumazet-laptop>
- <20111125222211.GA13719@electric-eye.fr.zoreil.com>
- <1322262357.2550.12.camel@edumazet-laptop>
- <20111126004447.GA14744@electric-eye.fr.zoreil.com>
- <1322280423.10212.3.camel@edumazet-laptop>
+	Sun, 27 Nov 2011 04:31:59 -0500
+X-Sasl-enc: y4nmojqPWf5wcH9BWI+o3sUD+BWUZVhIEfxIG0B7zrS1 1322386316
+Date: Sat, 26 Nov 2011 17:07:00 -0800
+From: Greg KH <greg@kroah.com>
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Cc: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/9] Split psb_intel_output to encoders and connectors
+Message-ID: <20111127010700.GA1037@kroah.com>
+References: <1319752934-1919-1-git-send-email-patrik.r.jakobsson@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1322280423.10212.3.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+In-Reply-To: <1319752934-1919-1-git-send-email-patrik.r.jakobsson@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet wrote:
-> Le samedi 26 novembre 2011 à 01:44 +0100, Francois Romieu a écrit :
+On Fri, Oct 28, 2011 at 12:02:05AM +0200, Patrik Jakobsson wrote:
+> This set of patches gets rid of the pairing of encoders and connectors we had
+> in psb_intel_output. This was done to make life easier getting the SDVO code
+> from i915 copied into our tree (included in this patchset). It also gives more
+> flexibility for better output handling in the future.
+> 
+> SDVO can now properly setup DDC and get EDID on the Fit-PC2 DVI connector but
+> there are known issues when setting resolutions at 1920x1080 and above.
+> On Asus 1201HA the VGA connector still fails to get EDID so more work is needed.
+> 
+> The changes to Cedarview, Moorestown and Medfield have not been tested so they
+> are subject to change. Particularly the changes to Medfield are known not to be
+> complete so more pondering is also needed there.
 
->> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
->> index 6f06aa1..54be9e1 100644
->> --- a/drivers/net/ethernet/realtek/r8169.c
->> +++ b/drivers/net/ethernet/realtek/r8169.c
->> @@ -5820,8 +5820,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
->>  			case RTL_GIGA_MAC_VER_11:
->>  			case RTL_GIGA_MAC_VER_22:
->>  			case RTL_GIGA_MAC_VER_26:
->> -				netif_stop_queue(dev);
->> -				rtl8169_tx_timeout(dev);
->> +				rtl8169_schedule_work(dev, rtl8169_reset_task);
->>  				goto done;
->>  			/* Testers needed. */
->>  			case RTL_GIGA_MAC_VER_17:
->
-> Please Jonathan, Gerd, try this fix !
+I need an ack from Alan before I can take this series.
 
-Thanks, Eric.  Unfortunately I don't have the hardware.
+thanks,
 
-Gerd, would you be able to try this patch?  It works like this:
-
-  apt-get install git build-essential
-  git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-  cd linux
-  ... apply the fix, for example using "patch -p1" ...
-  make localmodconfig; # minimal configuration
-  make deb-pkg
-  dpkg -i ../<name of package>
-  reboot
-
-Feel free to email me privately if you have any questions.
-
-Regards,
-Jonathan
+greg k-h
