@@ -1,94 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab1K0XSE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 18:18:04 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:51851 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753517Ab1K0XSC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 18:18:02 -0500
-Date: Mon, 28 Nov 2011 00:11:47 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: booster@wolke7.net
-Cc: Jonathan Nieder <jrnieder@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        Armin Kazmi <armin.kazmi@tu-dortmund.de>,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: [bug?] r8169: hangs under heavy load
-Message-ID: <20111127231147.GA1784@electric-eye.fr.zoreil.com>
-References: <20111124044137.GA18262@elie.hsd1.il.comcast.net> <4ECFE7A7.5070300@wolke7.net> <20111125201936.GA26692@elie.hsd1.il.comcast.net> <1322253122.2550.3.camel@edumazet-laptop> <20111125222211.GA13719@electric-eye.fr.zoreil.com> <1322262357.2550.12.camel@edumazet-laptop> <20111126004447.GA14744@electric-eye.fr.zoreil.com> <1322280423.10212.3.camel@edumazet-laptop> <20111127092808.GE21635@elie.hsd1.il.comcast.net> <4ED2A573.1020807@wolke7.net>
+	id S1755847Ab1K0XTh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 18:19:37 -0500
+Received: from gate.crashing.org ([63.228.1.57]:34811 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753007Ab1K0XTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 18:19:36 -0500
+Message-ID: <1322435957.23348.23.camel@pasglop>
+Subject: Re: [PATCH] powerpc/40x: Add APM8018X SOC support
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Tanmay Inamdar <tinamdar@apm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 28 Nov 2011 10:19:17 +1100
+In-Reply-To: <CACoXjcnfCM8Z5qFfrHtxsXkpf492LVbkDA3X=a9dRv9Lcv7Asw@mail.gmail.com>
+References: <1322041464-20605-1-git-send-email-tinamdar@apm.com>
+	 <201111231415.51985.arnd@arndb.de>
+	 <CACoXjcnfCM8Z5qFfrHtxsXkpf492LVbkDA3X=a9dRv9Lcv7Asw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED2A573.1020807@wolke7.net>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-booster@wolke7.net <booster@wolke7.net> :
-[...]
-> Jonathan, I compiled a new kernel with the patch described above but the
-> behavior is still the same. During high network load the link hangs:
+On Fri, 2011-11-25 at 17:49 +0530, Tanmay Inamdar wrote:
+
+>         
+>         >
+>         > +#if defined(CONFIG_APM8018X)
+>         > +/* CPR */
+>         > +#define DCRN_CPR0_CONFIG_ADDR        0xa
+>         > +#define DCRN_CPR1_CONFIG_DATA        0xb
+>         > +/* AHB */
+>         > +#define DCRN_SDR1_CONFIG_ADDR        0xc
+>         > +#define DCRN_SDR1_CONFIG_DATA        0xd
+>         > +#else
+>         >  /* CPRs (440GX and 440SP/440SPe) */
+>         >  #define DCRN_CPR0_CONFIG_ADDR        0xc
+>         >  #define DCRN_CPR0_CONFIG_DATA        0xd
+>         > +#endif /* CONFIG_APM8018X */
+>         
+>         
+>         same comment as above.
+>  
+> Some existing drivers use these macros. If I change the names, I will
+> have to update the
+> driver code.
+
+Right, the best approach is to create a small wrapper that provides cpr
+and sdr accesses using helpers. That way you can:
+
+ - Properly lock since it's all indirect
+
+ - Obtain the right DCRs at boot time, stick them in variables
+   and use them at runtime, avoiding the hard coded constants completely
+
+ - Make the code generally look much better
+
+Ie. Provide something like read_sdr1() and write_sdr1() accessors and
+change the drivers to use them.
+
+>         > diff --git a/arch/powerpc/kernel/cputable.c
+>         b/arch/powerpc/kernel/cputable.c
+>         > index edae5bb..e5c51a6 100644
+>         > --- a/arch/powerpc/kernel/cputable.c
+>         > +++ b/arch/powerpc/kernel/cputable.c
+>         > @@ -1505,6 +1505,58 @@ static struct cpu_spec __initdata
+>         cpu_specs[] = {
+>         >               .machine_check          = machine_check_4xx,
+>         >               .platform               = "ppc405",
+>         >       },
+>         > +     {       /* APM80186-SK */
+>         > +             .pvr_mask               = 0xffffffff,
+>         > +             .pvr_value              = 0x7ff11432,
+>         
+>         
+>         If you mask out the lower bits, you only need a single entry
+>         instead of
+>         four identical ones.
 > 
-> [  195.332478] r8169 0000:02:00.0: eth0: link up
-> [  222.517171] r8169 0000:02:00.0: eth0: link up
-> [  222.908277] r8169 0000:02:00.0: eth0: link up
-> [  223.508249] r8169 0000:02:00.0: eth0: link up
+> You are right. But each PVR represent different version of SOC. If I
+> create single entry, then I will have to give generic cpu_name which I
+> don't want.
 
-It does recover, doesn't it ?
+Note that you should really tell you designers to move away from using
+the PVR to identify the SoC's. This is BAD and isn't sustainable long
+run. Stick to representing the core itself in the PVR and provide a
+different mechanism to identify the SoC (different SPR would do, or even
+a DCR).
 
-> Is there a way to activate more driver debugging in the kernel ?
+>         > --- a/arch/powerpc/kernel/udbg_16550.c
+>         > +++ b/arch/powerpc/kernel/udbg_16550.c
+>         > @@ -18,6 +18,19 @@ extern void real_writeb(u8 data, volatile
+>         u8 __iomem *addr);
+>         >  extern u8 real_205_readb(volatile u8 __iomem  *addr);
+>         >  extern void real_205_writeb(u8 data, volatile u8 __iomem
+>         *addr);
+>         >
+>         > +#ifdef CONFIG_UART_16550_WORD_ADDRESSABLE
+>         > +struct NS16550 {
+>         > +     /* this struct must be packed */
+>         > +     unsigned char rbr;  /* 0 */ u8 s0[3];
+>         > +     unsigned char ier;  /* 1 */ u8 s1[3];
+>         > +     unsigned char fcr;  /* 2 */ u8 s2[3];
+>         > +     unsigned char lcr;  /* 3 */ u8 s3[3];
+>         > +     unsigned char mcr;  /* 4 */ u8 s4[3];
+>         > +     unsigned char lsr;  /* 5 */ u8 s5[3];
+>         > +     unsigned char msr;  /* 6 */ u8 s6[3];
+>         > +     unsigned char scr;  /* 7 */ u8 s7[3];
+>         > +};
+>         > +#else
+>         >  struct NS16550 {
+>         >       /* this struct must be packed */
+>         >       unsigned char rbr;  /* 0 */
+>         > @@ -29,6 +42,7 @@ struct NS16550 {
+>         >       unsigned char msr;  /* 6 */
+>         >       unsigned char scr;  /* 7 */
+>         >  };
+>         > +#endif /* CONFIG_UART_16550_WORD_ADDRESSABLE */
+>         >
+>         
+>         
+>         Same things as with the register definitions. Please make this
+>         run-time selectable to allow build-time configurations that
+>         support both layouts.
+> 
+> Yes. I will try to find better solution. 
 
-You can lower the delay in rtl8169_schedule_work (4) but it is akin
-to papering over the issue.
+Cheers,
+Ben.
 
-You may try the stuff below in place of the current patch. I will not
-be surprized if the link really hangs (no crash but no traffic).
 
-Hayes, does the 8168c require something special to recover from Rx FIFO
-overflow ?
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 6f06aa1..e937737 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -427,6 +427,7 @@ enum rtl_register_content {
- 	/* InterruptStatusBits */
- 	SYSErr		= 0x8000,
- 	PCSTimeout	= 0x4000,
-+	RxFIFOEmpty	= 0x0200,
- 	SWInt		= 0x0100,
- 	TxDescUnavail	= 0x0080,
- 	RxFIFOOver	= 0x0040,
-@@ -5815,15 +5816,27 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
- 		}
- 
- 		if (unlikely(status & RxFIFOOver)) {
-+			int i;
-+
- 			switch (tp->mac_version) {
- 			/* Work around for rx fifo overflow */
- 			case RTL_GIGA_MAC_VER_11:
--			case RTL_GIGA_MAC_VER_22:
- 			case RTL_GIGA_MAC_VER_26:
- 				netif_stop_queue(dev);
- 				rtl8169_tx_timeout(dev);
- 				goto done;
- 			/* Testers needed. */
-+			case RTL_GIGA_MAC_VER_22:
-+				for (i = 0; i < 4000000; i++) {
-+					if (RTL_R16(IntrStatus) & RxFIFOEmpty) {
-+						RTL_W16(IntrStatus, RxFIFOOver);
-+						printk(KERN_INFO "FEmp %d\n", i);
-+						break;
-+					}
-+					udelay(10);
-+				}
-+				if (i >= 4000000)
-+					printk(KERN_ERR "no FEmp\n");
- 			case RTL_GIGA_MAC_VER_17:
- 			case RTL_GIGA_MAC_VER_19:
- 			case RTL_GIGA_MAC_VER_20:
