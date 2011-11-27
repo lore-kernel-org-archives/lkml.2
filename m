@@ -1,133 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab1K0Qlf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 11:41:35 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64550 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab1K0Qld (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 11:41:33 -0500
-Message-ID: <4ED26837.7070003@gmail.com>
-Date: Sun, 27 Nov 2011 17:41:27 +0100
-From: Sylwester Nawrocki <snjw23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S1755870Ab1K0Qrx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 11:47:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755662Ab1K0Qrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 11:47:51 -0500
+Date: Sun, 27 Nov 2011 18:49:27 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vhost-net: Acquire device lock when releasing device
+Message-ID: <20111127164925.GA24941@redhat.com>
+References: <1321607982-16283-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-media <linux-media@vger.kernel.org>, tony@atomide.com,
-        arnd@arndb.de, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] drivers/misc: introduce face detection module driver(fdif)
-References: <1322281904-14526-1-git-send-email-tom.leiming@gmail.com>	<1322281904-14526-4-git-send-email-tom.leiming@gmail.com>	<4ED1652A.8080701@gmail.com> <CACVXFVOh=_wAmQB1fm88RTbwoJxCo5w57-TpiH8zx5V-CC_TqA@mail.gmail.com>
-In-Reply-To: <CACVXFVOh=_wAmQB1fm88RTbwoJxCo5w57-TpiH8zx5V-CC_TqA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1321607982-16283-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ming,
-
-On 11/27/2011 04:40 AM, Ming Lei wrote:
-> Hi guys,
+On Fri, Nov 18, 2011 at 11:19:42AM +0200, Sasha Levin wrote:
+> Device lock should be held when releasing a device, and specifically
+> when calling vhost_dev_cleanup(). Otherwise, RCU complains about it:
 > 
-> Thanks for your comment.
+> [ 2025.642835] ===============================
+> [ 2025.643838] [ INFO: suspicious RCU usage. ]
+> [ 2025.645182] -------------------------------
+> [ 2025.645927] drivers/vhost/vhost.c:475 suspicious rcu_dereference_protected() usage!
+> [ 2025.647329]
+> [ 2025.647330] other info that might help us debug this:
+> [ 2025.647331]
+> [ 2025.649042]
+> [ 2025.649043] rcu_scheduler_active = 1, debug_locks = 1
+> [ 2025.650235] no locks held by trinity/21042.
+> [ 2025.650971]
+> [ 2025.650972] stack backtrace:
+> [ 2025.651789] Pid: 21042, comm: trinity Not tainted 3.2.0-rc2-sasha-00057-ga9098b3 #5
+> [ 2025.653342] Call Trace:
+> [ 2025.653792]  [<ffffffff810b4a6a>] lockdep_rcu_suspicious+0xaf/0xb9
+> [ 2025.654916]  [<ffffffff818d4c2c>] vhost_dev_cleanup+0x342/0x3ac
+> [ 2025.655985]  [<ffffffff818d4f18>] vhost_net_release+0x48/0x7f
+> [ 2025.657247]  [<ffffffff811416e3>] fput+0x11e/0x1dc
+> [ 2025.658091]  [<ffffffff8113f1ec>] filp_close+0x6e/0x79
+> [ 2025.658964]  [<ffffffff81089ed7>] put_files_struct+0xcc/0x196
+> [ 2025.659971]  [<ffffffff8108a034>] exit_files+0x46/0x4f
+> [ 2025.660865]  [<ffffffff8108a716>] do_exit+0x264/0x75c
+> [ 2025.662201]  [<ffffffff8113f490>] ? fsnotify_modify+0x60/0x68
+> [ 2025.663260]  [<ffffffff81bbdbca>] ? sysret_check+0x2e/0x69
+> [ 2025.664269]  [<ffffffff8108acc1>] do_group_exit+0x83/0xb1
+> [ 2025.665448]  [<ffffffff8108ad01>] sys_exit_group+0x12/0x16
+> [ 2025.666396]  [<ffffffff81bbdb92>] system_call_fastpath+0x16/0x1b
 > 
-> On Sun, Nov 27, 2011 at 6:16 AM, Sylwester Nawrocki <snjw23@gmail.com> wrote:
->> Cc: LMML
->>
->> On 11/26/2011 05:31 AM, tom.leiming@gmail.com wrote:
->>> From: Ming Lei <ming.lei@canonical.com>
->>>
->>> One face detection IP[1] is integared inside OMAP4 SoC, so
->>> introduce this driver to make face detection function work
->>> on OMAP4 SoC.
->>
->> Face detection IP is of course not specific to OMAP, I've seen it in 
->> other SoCs already and integrated with the video capture pipeline.
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: kvm@vger.kernel.org
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  drivers/vhost/net.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> Yes, the driver is platform independent, so at least it can support
-> the same IP on different platforms.
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index 882a51f..c9be601 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -586,6 +586,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+>  	struct socket *tx_sock;
+>  	struct socket *rx_sock;
+>  
+> +	mutex_lock(&n->dev.mutex);
+>  	vhost_net_stop(n, &tx_sock, &rx_sock);
+>  	vhost_net_flush(n);
+>  	vhost_dev_cleanup(&n->dev);
+> @@ -596,6 +597,7 @@ static int vhost_net_release(struct inode *inode, struct file *f)
+>  	/* We do an extra flush before freeing memory,
+>  	 * since jobs can re-queue themselves. */
+>  	vhost_net_flush(n);
+> +	mutex_unlock(&n->dev.mutex);
+>  	kfree(n);
+>  	return 0;
+>  }
 
-It's all good, however we need to ensure interoperability with existing
-drivers. I mean it shouldn't be difficult to setup data processing
-pipelines containing  various types of devices, like video capture,
-resizers, filters, etc. The situation where each type of device makes up
-their own interface is rather far from ideal.
+This calls fput fom release under lock which is generally a bad idea,
+as locks become nested then. For example, consider what would happen if this
+somehow triggers a release which in turn needs the same mutex.
 
->>
->> And it clearly belongs to the media subsystem, there is already an 
->> infrastructure there that don't need to be re-invented, like buffer 
->> management and various IO method support.
->>
->> I think there is not much needed on top of that to support FD. We have 
->> already various mem-to-mem devices in V4L2, like video or image encoders
->> or video post-processors.
-> 
-> I have thought about the FD implementation on v4l2 core, but still not
-> very clear
-> how to do it. I will study v4l2 further to figure out how to do it.
+And, we are releasing the device, so it seems better to check
+that no one has the lock.
+How about the following instead? What do you think?
 
-I think we need a new user interface for that, the closest match would be
-the Video Output Interface [1], IMHO this could be used as a base. I got
-a bit confused by the additional working memory requirement and thought
-the FDIF needs input and output memory buffers to process single image
-frame. But that's not the case so there is no reason to bother with
-the mem-to-mem interface.
+-->
 
-Unfortunately there is no example of virtual output device driver in v4l2
-yet. There is only one for the capture devices - drivers/media/video/vivi.c
+vhost: fix release path lockdep checks
 
-For video output one uses V4L2_BUF_TYPE_VIDEO_OUTPUT buffer type instead of
-V4L2_BUF_TYPE_VIDEO_CAPTURE and at the kernel side .vidioc_*_out operations
-of struct v4l2_ioctl_ops should be implemented, rather than .vidioc_*_cap.
+We shouldn't hold any locks on release path. Pass a flag to
+vhost_dev_cleanup to use the lockdep info correctly.
 
-> 
-> Now below are the basic requirements from FD:
-> 
-> - FD on video stream or pictures from external files
-> - FD on video stream or pictures from video device
-> (such as camera)
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-It's up to the applications in what way the image data is loaded into
-memory buffer, if it comes from a file or from other device. Once it is in
-standard v4l2 buffer object it can be shared between v4l2 drivers,
-still user space needs to queue/de-queue buffers. See QBUF/DQBUF ioctls
-[4] for more information.
+---
 
-> - the input video format may be different for different FD IP
-
-That's normally handled by each v4l2 device, see [2] for details at the
-user side, and vidioc_s_fmt_vid_cap() in vivi for example.
-
-> - one method is required to start or stop FD
-
-I suppose VIDIOC_STREAMON/VIDIOC_STREAMOFF would do the job, see [3] and
-start/stop_streaming functions in vivi.
-
-> - one method is required to report the detection results to user space
-
-Perhaps we need new ioctl(s) for that. And possibly some new controls,
-or even new control class [5], [6].
-
-It would also be good to get requirements for other hardware implementations
-existing out there. I might be able to look at the Samsung ones eventually,
-but cannot guarantee this.
-
-> 
-> Any suggestions on how to implement FD on v4l2?
-> 
-> thanks,
-> --
-> Ming Lei
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index a8c95ef..96f9769 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -424,7 +424,7 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
+ 	if (!memory)
+ 		return -ENOMEM;
+ 
+-	vhost_dev_cleanup(dev);
++	vhost_dev_cleanup(dev, true);
+ 
+ 	memory->nregions = 0;
+ 	RCU_INIT_POINTER(dev->memory, memory);
+@@ -455,8 +455,8 @@ int vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
+ 	return j;
+ }
+ 
+-/* Caller should have device mutex */
+-void vhost_dev_cleanup(struct vhost_dev *dev)
++/* Caller should have device mutex if and only if locked is set */
++void vhost_dev_cleanup(struct vhost_dev *dev, bool locked)
+ {
+ 	int i;
+ 
+@@ -493,7 +493,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+ 	dev->log_file = NULL;
+ 	/* No one will access memory at this point */
+ 	kfree(rcu_dereference_protected(dev->memory,
+-					lockdep_is_held(&dev->mutex)));
++					locked ==
++						lockdep_is_held(&dev->mutex)));
+ 	RCU_INIT_POINTER(dev->memory, NULL);
+ 	WARN_ON(!list_empty(&dev->work_list));
+ 	if (dev->worker) {
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index b3e8cc3..97e18d3 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -164,7 +164,7 @@ struct vhost_dev {
+ long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue *vqs, int nvqs);
+ long vhost_dev_check_owner(struct vhost_dev *);
+ long vhost_dev_reset_owner(struct vhost_dev *);
+-void vhost_dev_cleanup(struct vhost_dev *);
++void vhost_dev_cleanup(struct vhost_dev *, bool locked);
+ long vhost_dev_ioctl(struct vhost_dev *, unsigned int ioctl, unsigned long arg);
+ int vhost_vq_access_ok(struct vhost_virtqueue *vq);
+ int vhost_log_access_ok(struct vhost_dev *);
 
 -- 
-Regards,
-Sylwester
-
-[1] http://linuxtv.org/downloads/v4l-dvb-apis/devices.html
-[2] http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-g-fmt.html
-[3] http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-streamon.html
-[4] http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-qbuf.html
-[5] http://linuxtv.org/downloads/v4l-dvb-apis/control.html
-[6] http://linuxtv.org/downloads/v4l-dvb-apis/extended-controls.html
+MST
