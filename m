@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab1K0MeM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 07:34:12 -0500
-Received: from smtp-02.mandic.com.br ([200.225.81.133]:53830 "EHLO
-	smtp-02.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab1K0MeL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 07:34:11 -0500
-Message-ID: <4ED22E3E.8080507@cesarb.net>
-Date: Sun, 27 Nov 2011 10:34:06 -0200
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1755406Ab1K0Mis (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 07:38:48 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58622 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795Ab1K0Miq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 07:38:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [PATCH] PM / Sleep: Simplify generic system suspend callbacks
+Date: Sun, 27 Nov 2011 13:41:36 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>
+References: <201111180037.22157.rjw@sisk.pl>
+In-Reply-To: <201111180037.22157.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 01/62] highmem: mark k[un]map_atomic() with two arguments
- as deprecated
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-2-git-send-email-amwang@redhat.com>
-In-Reply-To: <1322371662-26166-2-git-send-email-amwang@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111271341.36155.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-11-2011 03:26, Cong Wang escreveu:
->   /*
->    * Prevent people trying to call kunmap_atomic() as if it were kunmap()
->    * kunmap_atomic() should get the return value of kmap_atomic, not the page.
->    */
-> -#define kunmap_atomic(addr, args...)				\
-> -do {								\
-> -	BUILD_BUG_ON(__same_type((addr), struct page *));	\
-> -	__kunmap_atomic(addr);					\
-> -} while (0)
-> +static inline void kunmap_atomic(void *addr)
-> +{
-> +	BUILD_BUG_ON(__same_type((addr), struct page *));
-> +	__kunmap_atomic(addr);
-> +}
-> +
-> +static inline void __deprecated kunmap_atomic_deprecated(void *addr,
-> +							enum km_type km)
-> +{
-> +	BUILD_BUG_ON(__same_type((addr), struct page *));
-> +	__kunmap_atomic(addr);
-> +}
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-This will break the misuse detection of kunmap_atomic (see commit 
-597781f3e51f48ef8e67be772196d9e9673752c4).
+The pm_runtime_suspended() check in __pm_generic_call() doesn't
+really help and may cause problems to happen, because in some cases
+the system suspend callbacks need to be called even if the given
+device has been suspended by runtime PM.  For example, if the device
+generally supports remote wakeup and is not enabled to wake up
+the system from sleep, it should be prevented from generating wakeup
+signals during system suspend and that has to be done by the
+suspend callbacks that the pm_runtime_suspended() check prevents from
+being executed.
 
-kunmap_atomic() _must_ be a macro, so the __same_type can see the type 
-the caller used. If you use an inline function, all it will see is a 
-void *, even if the caller confused it with kunmap() and passed a struct 
-page *.
+Similarly, it may not be a good idea to unconditionally change
+the runtime PM status of the device to 'active' in
+__pm_generic_resume(), because the driver may want to leave the
+device in the 'suspended' state, depending on what happened to it
+before the system suspend and whether or not it is enabled to
+wake up the system.
 
--- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+For the above reasons, remove the pm_runtime_suspended()
+check from __pm_generic_call() and remove the code changing the
+device's runtime PM status from __pm_generic_resume().
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/generic_ops.c |   15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
+
+Index: linux/drivers/base/power/generic_ops.c
+===================================================================
+--- linux.orig/drivers/base/power/generic_ops.c
++++ linux/drivers/base/power/generic_ops.c
+@@ -106,7 +106,7 @@ static int __pm_generic_call(struct devi
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 	int (*callback)(struct device *);
+ 
+-	if (!pm || pm_runtime_suspended(dev))
++	if (!pm)
+ 		return 0;
+ 
+ 	switch (event) {
+@@ -224,7 +224,6 @@ static int __pm_generic_resume(struct de
+ {
+ 	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
+ 	int (*callback)(struct device *);
+-	int ret;
+ 
+ 	if (!pm)
+ 		return 0;
+@@ -241,17 +240,7 @@ static int __pm_generic_resume(struct de
+ 		break;
+ 	}
+ 
+-	if (!callback)
+-		return 0;
+-
+-	ret = callback(dev);
+-	if (!ret && !noirq && pm_runtime_enabled(dev)) {
+-		pm_runtime_disable(dev);
+-		pm_runtime_set_active(dev);
+-		pm_runtime_enable(dev);
+-	}
+-
+-	return ret;
++	return callback ? callback(dev) : 0;
+ }
+ 
+ /**
+
