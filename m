@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab1K0SGm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 13:06:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752932Ab1K0SEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 13:04:45 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/9] trace: Fix uninitialized variable compiler warning
-Date: Sun, 27 Nov 2011 19:04:26 +0100
-Message-Id: <1322417074-5834-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+	id S1752792Ab1K0ST7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 13:19:59 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51131 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab1K0ST6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 13:19:58 -0500
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1322369586.2522.3.camel@phoenix>
+References: <1322369586.2522.3.camel@phoenix>
+Date: Sun, 27 Nov 2011 10:19:57 -0800
+Message-ID: <CAOesGMjM+WpQz=Gb8UKA_QD+DuLdwwskPskD8rdujf9B1sCqrA@mail.gmail.com>
+Subject: Re: [PATCH] pcmcia: convert drivers/pcmcia/* to use module_platform_driver()
+From: Olof Johansson <olof@lixom.net>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        Manuel Lauss <manuel.lauss@gmail.com>,
+        Marc Zyngier <maz@misterjones.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        linux-pcmcia@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize page2 variable to make compiler happy.
+On Sat, Nov 26, 2011 at 8:53 PM, Axel Lin <axel.lin@gmail.com> wrote:
+> This patch converts the drivers in drivers/pcmcia/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
+>
+> Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>
+> Cc: Manuel Lauss <manuel.lauss@gmail.com>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Marc Zyngier <maz@misterjones.org>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/trace/trace.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Acked-by: Olof Johansson <olof@lixom.net>
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9e158cc..4a06862 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3655,8 +3655,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
- 	struct page *pages[2];
- 	int nr_pages = 1;
- 	ssize_t written;
--	void *page1;
--	void *page2;
-+	void *page1, *page2 = NULL;
- 	int offset;
- 	int size;
- 	int len;
--- 
-1.7.1
 
+-Olof
