@@ -1,228 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab1K0Fa6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 00:30:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25225 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348Ab1K0Fak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 00:30:40 -0500
-From: Cong Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Olaf Hering <olaf@aepfle.de>, linux-crypto@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: [PATCH 08/62] x86: remove the second argument of k[un]map_atomic()
-Date: Sun, 27 Nov 2011 13:26:48 +0800
-Message-Id: <1322371662-26166-9-git-send-email-amwang@redhat.com>
-In-Reply-To: <1322371662-26166-1-git-send-email-amwang@redhat.com>
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
+	id S1753918Ab1K0F6g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 00:58:36 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43929 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab1K0F6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 00:58:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111126235032.GC9581@n2100.arm.linux.org.uk>
+References: <1321986690-6079-1-git-send-email-consul.kautuk@gmail.com>
+	<20111126235032.GC9581@n2100.arm.linux.org.uk>
+Date: Sun, 27 Nov 2011 00:58:33 -0500
+Message-ID: <CAFPAmTTWVwq8H6HVzdvTcN-jcSoNQ2-TfLWT33ks8_kpGND+SA@mail.gmail.com>
+Subject: Re: [PATCH 1/1 v5] arm: fault.c: Port OOM changes into do_page_fault
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=0016e652e25a899f5f04b2b113be
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--0016e652e25a899f5f04b2b113be
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Cong Wang <amwang@redhat.com>
----
- arch/x86/crypto/aesni-intel_glue.c |   24 ++++++++++++------------
- arch/x86/kernel/crash_dump_32.c    |    6 +++---
- arch/x86/kvm/lapic.c               |    8 ++++----
- arch/x86/kvm/paging_tmpl.h         |    4 ++--
- arch/x86/kvm/x86.c                 |    8 ++++----
- arch/x86/lib/usercopy_32.c         |    4 ++--
- 6 files changed, 27 insertions(+), 27 deletions(-)
+>
+> Thanks. =A0I think this is fine. =A0Please put it in the patch system so =
+it's
+> not forgotten, and I'll get to it sometime during the next week. =A0Thank=
+s.
+>
 
-diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
-index 545d0ce..152232d 100644
---- a/arch/x86/crypto/aesni-intel_glue.c
-+++ b/arch/x86/crypto/aesni-intel_glue.c
-@@ -1107,12 +1107,12 @@ static int __driver_rfc4106_encrypt(struct aead_request *req)
- 		one_entry_in_sg = 1;
- 		scatterwalk_start(&src_sg_walk, req->src);
- 		scatterwalk_start(&assoc_sg_walk, req->assoc);
--		src = scatterwalk_map(&src_sg_walk, 0);
--		assoc = scatterwalk_map(&assoc_sg_walk, 0);
-+		src = scatterwalk_map(&src_sg_walk);
-+		assoc = scatterwalk_map(&assoc_sg_walk);
- 		dst = src;
- 		if (unlikely(req->src != req->dst)) {
- 			scatterwalk_start(&dst_sg_walk, req->dst);
--			dst = scatterwalk_map(&dst_sg_walk, 0);
-+			dst = scatterwalk_map(&dst_sg_walk);
- 		}
- 
- 	} else {
-@@ -1136,11 +1136,11 @@ static int __driver_rfc4106_encrypt(struct aead_request *req)
- 	 * back to the packet. */
- 	if (one_entry_in_sg) {
- 		if (unlikely(req->src != req->dst)) {
--			scatterwalk_unmap(dst, 0);
-+			scatterwalk_unmap(dst);
- 			scatterwalk_done(&dst_sg_walk, 0, 0);
- 		}
--		scatterwalk_unmap(src, 0);
--		scatterwalk_unmap(assoc, 0);
-+		scatterwalk_unmap(src);
-+		scatterwalk_unmap(assoc);
- 		scatterwalk_done(&src_sg_walk, 0, 0);
- 		scatterwalk_done(&assoc_sg_walk, 0, 0);
- 	} else {
-@@ -1189,12 +1189,12 @@ static int __driver_rfc4106_decrypt(struct aead_request *req)
- 		one_entry_in_sg = 1;
- 		scatterwalk_start(&src_sg_walk, req->src);
- 		scatterwalk_start(&assoc_sg_walk, req->assoc);
--		src = scatterwalk_map(&src_sg_walk, 0);
--		assoc = scatterwalk_map(&assoc_sg_walk, 0);
-+		src = scatterwalk_map(&src_sg_walk);
-+		assoc = scatterwalk_map(&assoc_sg_walk);
- 		dst = src;
- 		if (unlikely(req->src != req->dst)) {
- 			scatterwalk_start(&dst_sg_walk, req->dst);
--			dst = scatterwalk_map(&dst_sg_walk, 0);
-+			dst = scatterwalk_map(&dst_sg_walk);
- 		}
- 
- 	} else {
-@@ -1219,11 +1219,11 @@ static int __driver_rfc4106_decrypt(struct aead_request *req)
- 
- 	if (one_entry_in_sg) {
- 		if (unlikely(req->src != req->dst)) {
--			scatterwalk_unmap(dst, 0);
-+			scatterwalk_unmap(dst);
- 			scatterwalk_done(&dst_sg_walk, 0, 0);
- 		}
--		scatterwalk_unmap(src, 0);
--		scatterwalk_unmap(assoc, 0);
-+		scatterwalk_unmap(src);
-+		scatterwalk_unmap(assoc);
- 		scatterwalk_done(&src_sg_walk, 0, 0);
- 		scatterwalk_done(&assoc_sg_walk, 0, 0);
- 	} else {
-diff --git a/arch/x86/kernel/crash_dump_32.c b/arch/x86/kernel/crash_dump_32.c
-index 642f75a..11891ca 100644
---- a/arch/x86/kernel/crash_dump_32.c
-+++ b/arch/x86/kernel/crash_dump_32.c
-@@ -62,16 +62,16 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
- 
- 	if (!userbuf) {
- 		memcpy(buf, (vaddr + offset), csize);
--		kunmap_atomic(vaddr, KM_PTE0);
-+		kunmap_atomic(vaddr);
- 	} else {
- 		if (!kdump_buf_page) {
- 			printk(KERN_WARNING "Kdump: Kdump buffer page not"
- 				" allocated\n");
--			kunmap_atomic(vaddr, KM_PTE0);
-+			kunmap_atomic(vaddr);
- 			return -EFAULT;
- 		}
- 		copy_page(kdump_buf_page, vaddr);
--		kunmap_atomic(vaddr, KM_PTE0);
-+		kunmap_atomic(vaddr);
- 		if (copy_to_user(buf, (kdump_buf_page + offset), csize))
- 			return -EFAULT;
- 	}
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 54abb40..e462e30 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -1282,9 +1282,9 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
- 	if (!irqchip_in_kernel(vcpu->kvm) || !vcpu->arch.apic->vapic_addr)
- 		return;
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page, KM_USER0);
-+	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
- 	data = *(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr));
--	kunmap_atomic(vapic, KM_USER0);
-+	kunmap_atomic(vapic);
- 
- 	apic_set_tpr(vcpu->arch.apic, data & 0xff);
- }
-@@ -1309,9 +1309,9 @@ void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
- 		max_isr = 0;
- 	data = (tpr & 0xff) | ((max_isr & 0xf0) << 8) | (max_irr << 24);
- 
--	vapic = kmap_atomic(vcpu->arch.apic->vapic_page, KM_USER0);
-+	vapic = kmap_atomic(vcpu->arch.apic->vapic_page);
- 	*(u32 *)(vapic + offset_in_page(vcpu->arch.apic->vapic_addr)) = data;
--	kunmap_atomic(vapic, KM_USER0);
-+	kunmap_atomic(vapic);
- }
- 
- void kvm_lapic_set_vapic_addr(struct kvm_vcpu *vcpu, gpa_t vapic_addr)
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 9299410..b7c5f7c 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -92,9 +92,9 @@ static int FNAME(cmpxchg_gpte)(struct kvm_vcpu *vcpu, struct kvm_mmu *mmu,
- 	if (unlikely(npages != 1))
- 		return -EFAULT;
- 
--	table = kmap_atomic(page, KM_USER0);
-+	table = kmap_atomic(page);
- 	ret = CMPXCHG(&table[index], orig_pte, new_pte);
--	kunmap_atomic(table, KM_USER0);
-+	kunmap_atomic(table);
- 
- 	kvm_release_page_dirty(page);
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index c38efd7..dfc7c23 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1200,12 +1200,12 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
- 	 */
- 	vcpu->hv_clock.version += 2;
- 
--	shared_kaddr = kmap_atomic(vcpu->time_page, KM_USER0);
-+	shared_kaddr = kmap_atomic(vcpu->time_page);
- 
- 	memcpy(shared_kaddr + vcpu->time_offset, &vcpu->hv_clock,
- 	       sizeof(vcpu->hv_clock));
- 
--	kunmap_atomic(shared_kaddr, KM_USER0);
-+	kunmap_atomic(shared_kaddr);
- 
- 	mark_page_dirty(v->kvm, vcpu->time >> PAGE_SHIFT);
- 	return 0;
-@@ -4301,7 +4301,7 @@ static int emulator_cmpxchg_emulated(struct x86_emulate_ctxt *ctxt,
- 		goto emul_write;
- 	}
- 
--	kaddr = kmap_atomic(page, KM_USER0);
-+	kaddr = kmap_atomic(page);
- 	kaddr += offset_in_page(gpa);
- 	switch (bytes) {
- 	case 1:
-@@ -4319,7 +4319,7 @@ static int emulator_cmpxchg_emulated(struct x86_emulate_ctxt *ctxt,
- 	default:
- 		BUG();
- 	}
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- 	kvm_release_page_dirty(page);
- 
- 	if (!exchanged)
-diff --git a/arch/x86/lib/usercopy_32.c b/arch/x86/lib/usercopy_32.c
-index e218d5d..d9b094c 100644
---- a/arch/x86/lib/usercopy_32.c
-+++ b/arch/x86/lib/usercopy_32.c
-@@ -760,9 +760,9 @@ survive:
- 				break;
- 			}
- 
--			maddr = kmap_atomic(pg, KM_USER0);
-+			maddr = kmap_atomic(pg);
- 			memcpy(maddr + offset, from, len);
--			kunmap_atomic(maddr, KM_USER0);
-+			kunmap_atomic(maddr);
- 			set_page_dirty_lock(pg);
- 			put_page(pg);
- 			up_read(&current->mm->mmap_sem);
--- 
-1.7.4.4
+Thanks. I don't know what you mean by "put it in the patch system" as I alr=
+eady
+did a "git send-email" for this patch to this mailing list.
 
+So, please find the v5 patch file attached to this email for any
+further reference.
+
+--0016e652e25a899f5f04b2b113be
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-arm-fault.c-Port-OOM-changes-into-do_page_fault.patch"
+Content-Disposition: attachment; 
+	filename="0001-arm-fault.c-Port-OOM-changes-into-do_page_fault.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gvhn10qs0
+
+RnJvbSA5YjdhMGU2YTI3MTg0MzI0NmNmY2M2YTRkYmI4NjdkMjdmMTg2OGQxIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBLYXV0dWsgQ29uc3VsIDxjb25zdWwua2F1dHVrQGdtYWlsLmNv
+bT4KRGF0ZTogVHVlLCAyMiBOb3YgMjAxMSAxMzozMDozNSAtMDUwMApTdWJqZWN0OiBbUEFUQ0gg
+MS8xIHY1XSBhcm06IGZhdWx0LmM6IFBvcnQgT09NIGNoYW5nZXMgaW50byBkb19wYWdlX2ZhdWx0
+CgpDb21taXQgZDA2NWJkODEwYjZkZWI2N2Q0ODk3YTE0YmZlMjFmOGViNTI2YmE5OQoobW06IHJl
+dHJ5IHBhZ2UgZmF1bHQgd2hlbiBibG9ja2luZyBvbiBkaXNrIHRyYW5zZmVyKSBhbmQKY29tbWl0
+IDM3YjIzZTA1MjVkMzkzZDQ4YTdkNTlmODcwYjNiYzA2MWEzMGNjZGIKKHg4NixtbTogbWFrZSBw
+YWdlZmF1bHQga2lsbGFibGUpCgpUaGUgYWJvdmUgY29tbWl0cyBpbnRyb2R1Y2VkIGNoYW5nZXMg
+aW50byB0aGUgeDg2IHBhZ2VmYXVsdCBoYW5kbGVyCmZvciBtYWtpbmcgdGhlIHBhZ2UgZmF1bHQg
+aGFuZGxlciByZXRyeWFibGUgYXMgd2VsbCBhcyBraWxsYWJsZS4KClRoZXNlIGNoYW5nZXMgcmVk
+dWNlIHRoZSBtbWFwX3NlbSBob2xkIHRpbWUsIHdoaWNoIGlzIGNydWNpYWwKZHVyaW5nIE9PTSBr
+aWxsZXIgaW52b2NhdGlvbi4KClBvcnQgdGhlc2UgY2hhbmdlcyB0byBBUk0uCgpXaXRob3V0IHRo
+ZXNlIGNoYW5nZXMsIG15IEFSTSBib2FyZCBlbmNvdW50ZXJzIG1hbnkgaGFuZyBhbmQgbGl2ZWxv
+Y2sKc2NlbmFyaW9zLgpBZnRlciBhcHBseWluZyB0aGlzIHBhdGNoLCBPT00gZmVhdHVyZSBwZXJm
+b3JtYW5jZSBpbXByb3ZlcyBhY2NvcmRpbmcgdG8KbXkgdGVzdGluZy4KClNpZ25lZC1vZmYtYnk6
+IEthdXR1ayBDb25zdWwgPGNvbnN1bC5rYXV0dWtAZ21haWwuY29tPgotLS0KIGFyY2gvYXJtL21t
+L2ZhdWx0LmMgfCAgIDU4ICsrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKystLS0tLS0t
+LS0tLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDM5IGluc2VydGlvbnMoKyksIDE5IGRlbGV0aW9u
+cygtKQoKZGlmZiAtLWdpdCBhL2FyY2gvYXJtL21tL2ZhdWx0LmMgYi9hcmNoL2FybS9tbS9mYXVs
+dC5jCmluZGV4IGFhMzM5NDkuLjRhYWJlYWUgMTAwNjQ0Ci0tLSBhL2FyY2gvYXJtL21tL2ZhdWx0
+LmMKKysrIGIvYXJjaC9hcm0vbW0vZmF1bHQuYwpAQCAtMjMxLDcgKzIzMSw3IEBAIHN0YXRpYyBp
+bmxpbmUgYm9vbCBhY2Nlc3NfZXJyb3IodW5zaWduZWQgaW50IGZzciwgc3RydWN0IHZtX2FyZWFf
+c3RydWN0ICp2bWEpCiAKIHN0YXRpYyBpbnQgX19rcHJvYmVzCiBfX2RvX3BhZ2VfZmF1bHQoc3Ry
+dWN0IG1tX3N0cnVjdCAqbW0sIHVuc2lnbmVkIGxvbmcgYWRkciwgdW5zaWduZWQgaW50IGZzciwK
+LQkJc3RydWN0IHRhc2tfc3RydWN0ICp0c2spCisJCXVuc2lnbmVkIGludCBmbGFncywgc3RydWN0
+IHRhc2tfc3RydWN0ICp0c2spCiB7CiAJc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWE7CiAJaW50
+IGZhdWx0OwpAQCAtMjUzLDE4ICsyNTMsNyBAQCBnb29kX2FyZWE6CiAJCWdvdG8gb3V0OwogCX0K
+IAotCS8qCi0JICogSWYgZm9yIGFueSByZWFzb24gYXQgYWxsIHdlIGNvdWxkbid0IGhhbmRsZSB0
+aGUgZmF1bHQsIG1ha2UKLQkgKiBzdXJlIHdlIGV4aXQgZ3JhY2VmdWxseSByYXRoZXIgdGhhbiBl
+bmRsZXNzbHkgcmVkbyB0aGUgZmF1bHQuCi0JICovCi0JZmF1bHQgPSBoYW5kbGVfbW1fZmF1bHQo
+bW0sIHZtYSwgYWRkciAmIFBBR0VfTUFTSywgKGZzciAmIEZTUl9XUklURSkgPyBGQVVMVF9GTEFH
+X1dSSVRFIDogMCk7Ci0JaWYgKHVubGlrZWx5KGZhdWx0ICYgVk1fRkFVTFRfRVJST1IpKQotCQly
+ZXR1cm4gZmF1bHQ7Ci0JaWYgKGZhdWx0ICYgVk1fRkFVTFRfTUFKT1IpCi0JCXRzay0+bWFqX2Zs
+dCsrOwotCWVsc2UKLQkJdHNrLT5taW5fZmx0Kys7Ci0JcmV0dXJuIGZhdWx0OworCXJldHVybiBo
+YW5kbGVfbW1fZmF1bHQobW0sIHZtYSwgYWRkciAmIFBBR0VfTUFTSywgZmxhZ3MpOwogCiBjaGVj
+a19zdGFjazoKIAlpZiAodm1hLT52bV9mbGFncyAmIFZNX0dST1dTRE9XTiAmJiAhZXhwYW5kX3N0
+YWNrKHZtYSwgYWRkcikpCkBAIC0yNzksNiArMjY4LDkgQEAgZG9fcGFnZV9mYXVsdCh1bnNpZ25l
+ZCBsb25nIGFkZHIsIHVuc2lnbmVkIGludCBmc3IsIHN0cnVjdCBwdF9yZWdzICpyZWdzKQogCXN0
+cnVjdCB0YXNrX3N0cnVjdCAqdHNrOwogCXN0cnVjdCBtbV9zdHJ1Y3QgKm1tOwogCWludCBmYXVs
+dCwgc2lnLCBjb2RlOworCWludCB3cml0ZSA9IGZzciAmIEZTUl9XUklURTsKKwl1bnNpZ25lZCBp
+bnQgZmxhZ3MgPSBGQVVMVF9GTEFHX0FMTE9XX1JFVFJZIHwgRkFVTFRfRkxBR19LSUxMQUJMRSB8
+CisJCQkJKHdyaXRlID8gRkFVTFRfRkxBR19XUklURSA6IDApOwogCiAJaWYgKG5vdGlmeV9wYWdl
+X2ZhdWx0KHJlZ3MsIGZzcikpCiAJCXJldHVybiAwOwpAQCAtMzA1LDYgKzI5Nyw3IEBAIGRvX3Bh
+Z2VfZmF1bHQodW5zaWduZWQgbG9uZyBhZGRyLCB1bnNpZ25lZCBpbnQgZnNyLCBzdHJ1Y3QgcHRf
+cmVncyAqcmVncykKIAlpZiAoIWRvd25fcmVhZF90cnlsb2NrKCZtbS0+bW1hcF9zZW0pKSB7CiAJ
+CWlmICghdXNlcl9tb2RlKHJlZ3MpICYmICFzZWFyY2hfZXhjZXB0aW9uX3RhYmxlcyhyZWdzLT5B
+Uk1fcGMpKQogCQkJZ290byBub19jb250ZXh0OworcmV0cnk6CiAJCWRvd25fcmVhZCgmbW0tPm1t
+YXBfc2VtKTsKIAl9IGVsc2UgewogCQkvKgpAQCAtMzIwLDE0ICszMTMsNDEgQEAgZG9fcGFnZV9m
+YXVsdCh1bnNpZ25lZCBsb25nIGFkZHIsIHVuc2lnbmVkIGludCBmc3IsIHN0cnVjdCBwdF9yZWdz
+ICpyZWdzKQogI2VuZGlmCiAJfQogCi0JZmF1bHQgPSBfX2RvX3BhZ2VfZmF1bHQobW0sIGFkZHIs
+IGZzciwgdHNrKTsKLQl1cF9yZWFkKCZtbS0+bW1hcF9zZW0pOworCWZhdWx0ID0gX19kb19wYWdl
+X2ZhdWx0KG1tLCBhZGRyLCBmc3IsIGZsYWdzLCB0c2spOworCisJLyogSWYgd2UgbmVlZCB0byBy
+ZXRyeSBidXQgYSBmYXRhbCBzaWduYWwgaXMgcGVuZGluZywgaGFuZGxlIHRoZQorCSAqIHNpZ25h
+bCBmaXJzdC4gV2UgZG8gbm90IG5lZWQgdG8gcmVsZWFzZSB0aGUgbW1hcF9zZW0gYmVjYXVzZQor
+CSAqIGl0IHdvdWxkIGFscmVhZHkgYmUgcmVsZWFzZWQgaW4gX19sb2NrX3BhZ2Vfb3JfcmV0cnkg
+aW4KKwkgKiBtbS9maWxlbWFwLmMuICovCisJaWYgKChmYXVsdCAmIFZNX0ZBVUxUX1JFVFJZKSAm
+JiBmYXRhbF9zaWduYWxfcGVuZGluZyhjdXJyZW50KSkKKwkJcmV0dXJuIDA7CisKKwkvKgorCSAq
+IE1ham9yL21pbm9yIHBhZ2UgZmF1bHQgYWNjb3VudGluZyBpcyBvbmx5IGRvbmUgb24gdGhlCisJ
+ICogaW5pdGlhbCBhdHRlbXB0LiBJZiB3ZSBnbyB0aHJvdWdoIGEgcmV0cnksIGl0IGlzIGV4dHJl
+bWVseQorCSAqIGxpa2VseSB0aGF0IHRoZSBwYWdlIHdpbGwgYmUgZm91bmQgaW4gcGFnZSBjYWNo
+ZSBhdCB0aGF0IHBvaW50LgorCSAqLwogCiAJcGVyZl9zd19ldmVudChQRVJGX0NPVU5UX1NXX1BB
+R0VfRkFVTFRTLCAxLCByZWdzLCBhZGRyKTsKLQlpZiAoZmF1bHQgJiBWTV9GQVVMVF9NQUpPUikK
+LQkJcGVyZl9zd19ldmVudChQRVJGX0NPVU5UX1NXX1BBR0VfRkFVTFRTX01BSiwgMSwgcmVncywg
+YWRkcik7Ci0JZWxzZSBpZiAoZmF1bHQgJiBWTV9GQVVMVF9NSU5PUikKLQkJcGVyZl9zd19ldmVu
+dChQRVJGX0NPVU5UX1NXX1BBR0VfRkFVTFRTX01JTiwgMSwgcmVncywgYWRkcik7CisJaWYgKGZs
+YWdzICYgRkFVTFRfRkxBR19BTExPV19SRVRSWSkgeworCQlpZiAoZmF1bHQgJiBWTV9GQVVMVF9N
+QUpPUikgeworCQkJdHNrLT5tYWpfZmx0Kys7CisJCQlwZXJmX3N3X2V2ZW50KFBFUkZfQ09VTlRf
+U1dfUEFHRV9GQVVMVFNfTUFKLCAxLAorCQkJCQlyZWdzLCBhZGRyKTsKKwkJfSBlbHNlIHsKKwkJ
+CXRzay0+bWluX2ZsdCsrOworCQkJcGVyZl9zd19ldmVudChQRVJGX0NPVU5UX1NXX1BBR0VfRkFV
+TFRTX01JTiwgMSwKKwkJCQkJcmVncywgYWRkcik7CisJCX0KKwkJaWYgKGZhdWx0ICYgVk1fRkFV
+TFRfUkVUUlkpIHsKKwkJCS8qIENsZWFyIEZBVUxUX0ZMQUdfQUxMT1dfUkVUUlkgdG8gYXZvaWQg
+YW55IHJpc2sKKwkJCSogb2Ygc3RhcnZhdGlvbi4gKi8KKwkJCWZsYWdzICY9IH5GQVVMVF9GTEFH
+X0FMTE9XX1JFVFJZOworCQkJZ290byByZXRyeTsKKwkJfQorCX0KKworCXVwX3JlYWQoJm1tLT5t
+bWFwX3NlbSk7CiAKIAkvKgogCSAqIEhhbmRsZSB0aGUgIm5vcm1hbCIgY2FzZSBmaXJzdCAtIFZN
+X0ZBVUxUX01BSk9SIC8gVk1fRkFVTFRfTUlOT1IKLS0gCjEuNy41LjQKCg==
+--0016e652e25a899f5f04b2b113be--
