@@ -1,80 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab1K0UXS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 15:23:18 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50455 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab1K0UXQ convert rfc822-to-8bit (ORCPT
+	id S1755420Ab1K0U0c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 15:26:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61497 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab1K0U0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 15:23:16 -0500
+	Sun, 27 Nov 2011 15:26:31 -0500
+Message-ID: <4ED29CE3.8020201@solonet.org.ua>
+Date: Sun, 27 Nov 2011 22:26:11 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CAOtrxKP-0TfJa8dS8_uW195WO13YCy-UyaZfweYD4Tv_1gAmKQ@mail.gmail.com>
-References: <bug-41132-5003@https.bugzilla.kernel.org/> <201108160554.p7G5soeq002083@demeter2.kernel.org>
- <CAOtrxKP-0TfJa8dS8_uW195WO13YCy-UyaZfweYD4Tv_1gAmKQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 27 Nov 2011 12:22:54 -0800
-X-Google-Sender-Auth: aLA5_KAC4Vpa2Gctp09twiwzUEc
-Message-ID: <CA+55aFzh-ST1-Hu+Ny25X5DkEqktv3ZDFP2NDOWx6N+vFbTM8A@mail.gmail.com>
-Subject: Re: [Bug 41132] [BISECTED][REGRESSION] Regression with the IRQ
- subsystem introduced in 2.6.39 (and present in the 3.x version)
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        drivers_pci@kernel-bugs.osdl.org,
-        =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+To: Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] s3c24xx: cpufreq: Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ selected.
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas, Ingo?
+Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
 
-I haven't seen any response to this one, and while clearly commit
-fa27271bc8d2 ("genirq: Fixup poll handling") was *supposed* to be a
-no-op, it isn't.
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+---
 
-The commit message says "Shorter version with the same
-functionality.", but since it causes a regression, it clearly is not
-with the same functionality at all. And I assume that Thomas doesn't
-have a machine that actually ever triggers the spurious irq issue to
-begin with, so it probably was never tested.
+Patch is against 3.2-rc3.
+CONFIG_S3C2410_IOTIMING wasn't present in Kconfig but was referenced by
+Makefile. Because of this the file s3c2410-iotiming.c was not ever compiled
+and enabling CONFIG_CPU_FREQ_S3C24XX_DEBUGFS option caused undefined
+reference to function s3c2410_iotiming_debugfs defined in that file.
 
-In short, it really sounds like this should just be reverted, since
-the code clearly doesn't do what the commit message claims it does.
-
-Comments?
-
-              Linus
-
-2011/11/22 Rogério Brito <rbrito@ime.usp.br>:
-> Hi there.
->
-> Now that, at least part of kernel.org is up, I would appreciate if
-> more people could help with debugging something that I reported to
-> bugzilla in july of this year, a regression (bisected) that led to a
-> bad commit of Thomas in the 2.6.39 cycle as the first bad one.
->
-> Bugzilla has more information on the issue, but as it seems to be
-> down, I can, of course, summarize what I found. And, unfortunately,
-> the problem still occurs with a recent pull of Linus tree up to
-> v3.2-rc2-43-gaa1b052.
->
-> Below is the link to my first message that was archived:
->
->> --- Comment #3 from Rogério Brito <rbrito@ime.usp.br>  2011-08-16 05:54:47 ---
->> Add note that this bug was first reported on 2011-07-04
->>
->>    https://lkml.org/lkml/2011/7/24/54
->>
->> As stated on that e-mail, I am willing to perform any tests to help fix this
->> bug. Just ask me and I will do my best to give you copious amounts of data.
->
->
-> Thanks,
-> Rogério Brito.
->
-> --
-> Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
-> http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
-> DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
->
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 44789ef..81d7025 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2104,9 +2104,31 @@ config CPU_FREQ_S3C24XX_DEBUG
+ 	help
+ 	  Enable s3c_freq_dbg for the Samsung S3C CPUfreq core
+ 
++config S3C2410_IOTIMING
++	bool "CPUfreq iotiming for Samsung S3C2410 series CPUs"
++	depends on ARCH_S3C2410 && CPU_FREQ && CPU_FREQ_S3C24XX && EXPERIMENTAL
++	help
++	  This enables the CPUfreq driver for the Samsung S3C24XX to change
++	  IO timing according to the CPU frequency.
++
++	  For details, take a look at <file:Documentation/cpu-freq>.
++
++	  If in doubt, say Y.
++
++config S3C2412_IOTIMING
++	bool "CPUfreq iotiming for Samsung S3C2412 series CPUs"
++	depends on ARCH_S3C2412 && CPU_FREQ && CPU_FREQ_S3C24XX && EXPERIMENTAL
++	help
++	  This enables the CPUfreq driver for the Samsung S3C2412 to change
++	  IO timing according to the CPU frequency.
++
++	  For details, take a look at <file:Documentation/cpu-freq>.
++
++	  If in doubt, say Y.
++
+ config CPU_FREQ_S3C24XX_IODEBUG
+ 	bool "Debug CPUfreq Samsung driver IO timing"
+-	depends on CPU_FREQ_S3C24XX
++	depends on CPU_FREQ_S3C24XX && (S3C2410_IOTIMING || S3C2412_IOTIMING)
+ 	help
+ 	  Enable s3c_freq_iodbg for the Samsung S3C CPUfreq core
+ 
+diff --git a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+index dac4760..c465252 100644
+--- a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
++++ b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+@@ -202,13 +202,23 @@ extern int s3c_plltab_register(struct cpufreq_frequency_table *plls,
+ extern struct s3c_cpufreq_config *s3c_cpufreq_getconfig(void);
+ extern struct s3c_iotimings *s3c_cpufreq_getiotimings(void);
+ 
+-extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
+-				     struct s3c_cpufreq_config *cfg,
+-				     union s3c_iobank *iob);
+-
+-extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
+-				     struct s3c_cpufreq_config *cfg,
+-				     union s3c_iobank *iob);
++#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
++	#ifdef CONFIG_S3C2410_IOTIMING
++	extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
++					     struct s3c_cpufreq_config *cfg,
++					     union s3c_iobank *iob);
++	#else
++	#define s3c2410_iotiming_debugfs	NULL
++	#endif
++
++	#ifdef CONFIG_S3C2412_IOTIMING
++	extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
++					     struct s3c_cpufreq_config *cfg,
++					     union s3c_iobank *iob);
++	#else
++	#define s3c2412_iotiming_debugfs	NULL
++	#endif
++#endif
+ 
+ #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ #define s3c_cpufreq_debugfs_call(x) x
+@@ -241,10 +251,7 @@ extern void s3c2410_iotiming_set(struct s3c_cpufreq_config *cfg,
+ #endif /* CONFIG_S3C2410_IOTIMING */
+ 
+ /* S3C2412 compatible routines */
+-
+-extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+-				struct s3c_iotimings *timings);
+-
++#ifdef CONFIG_S3C2412_IOTIMING
+ extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+ 				struct s3c_iotimings *timings);
+ 
+@@ -253,6 +260,11 @@ extern int s3c2412_iotiming_calc(struct s3c_cpufreq_config *cfg,
+ 
+ extern void s3c2412_iotiming_set(struct s3c_cpufreq_config *cfg,
+ 				 struct s3c_iotimings *iot);
++#else
++#define s3c2412_iotiming_calc NULL
++#define s3c2412_iotiming_get NULL
++#define s3c2412_iotiming_set NULL
++#endif
+ 
+ #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUG
+ #define s3c_freq_dbg(x...) printk(KERN_INFO x)
