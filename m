@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab1K1R27 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 12:28:59 -0500
-Received: from mail209.messagelabs.com ([216.82.255.3]:21275 "EHLO
-	mail209.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1K1R26 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 12:28:58 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-209.messagelabs.com!1322501327!23298045!13
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.3.6; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 28 Nov 2011 11:28:36 -0600
-Subject: RE: [PATCH] backlight: convert drivers/video/backlight/* to use
- module_platform_driver()
-Thread-Topic: [PATCH] backlight: convert drivers/video/backlight/* to use
- module_platform_driver()
-Thread-Index: Acyr4fFFZJ++KQfZRy2WEvrHHahFgwCEPdgg
-Message-ID: <ADE657CA350FB648AAC2C43247A983F001F3E96DACD5@AUSP01VMBX24.collaborationhost.net>
-References: <1322273963.10633.1.camel@phoenix>
-In-Reply-To: <1322273963.10633.1.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1753256Ab1K1RcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 12:32:04 -0500
+Received: from home.keithp.com ([63.227.221.253]:50601 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751531Ab1K1RcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 12:32:02 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Patrik Kullman <patrik.kullman@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: i915: 3.2 rc1/2 KMS regression
+In-Reply-To: <CAGPN=9Tk69_-oNZpabY+9pWnjdLR=AdMY1N7s9iCkRsonCsotQ@mail.gmail.com>
+References: <CAGPN=9THOv-M4Td4haE94uDcsAjW3eGMG7ioLeu+p8xUOBPd7w@mail.gmail.com> <861usye0og.fsf@sumi.keithp.com> <CAGPN=9ROa_Pf242jxPy-6XfmFNW3+sCMj6M+pFbw+wgCX3tu1Q@mail.gmail.com> <86sjlccchg.fsf@sumi.keithp.com> <CAGPN=9SLsESVPdwhBwJN9G+nkENcFDqhrcva8GC-VTnx_E=apg@mail.gmail.com> <86pqge96z1.fsf@sumi.keithp.com> <CAGPN=9RZgCJy9hF4RqY1BLmC7cA7QWavWfRM26U3czWZ6RBNMQ@mail.gmail.com> <CAGPN=9Tk69_-oNZpabY+9pWnjdLR=AdMY1N7s9iCkRsonCsotQ@mail.gmail.com>
+User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 28 Nov 2011 09:32:14 -0800
+Message-ID: <86d3cc5f1d.fsf@sumi.keithp.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pASHT8Lt001216
 
-On Friday, November 25, 2011 7:19 PM, Axel Lin wrote:
-> This patch converts the drivers in drivers/video/backlight/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Mike Rapoport <mike@compulab.co.il>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: Michael Hennerich <michael.hennerich@analog.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-[...]
+On Mon, 28 Nov 2011 11:28:53 +0100, Patrik Kullman <patrik.kullman@gmail.co=
+m> wrote:
+> Ok, so attached are:
+>=20
+> 3.1.rc6+.dmesg: dmesg from last working commit (before
+> dc22ee6fc18ce0f15424e753e8473c306ece95c1) booted with drm.debug=3D4
+>=20
+> 3.2.rc3+.dmesg: dmesg from 3.2 rc3 with
+> dc22ee6fc18ce0f15424e753e8473c306ece95c1 reverted, booted with
+> drm.debug=3D4
 
->  drivers/video/backlight/ep93xx_bl.c          |   12 +-----------
+Thanks. I'm heading to London shortly, but I'll take a look at these
+when I've got a few minutes to spare.
 
-[...]
+=2D-=20
+keith.packard@intel.com
 
-> diff --git a/drivers/video/backlight/ep93xx_bl.c b/drivers/video/backlight/ep93xx_bl.c
-> index c74a6f4..32b9167 100644
-> --- a/drivers/video/backlight/ep93xx_bl.c
-> +++ b/drivers/video/backlight/ep93xx_bl.c
-> @@ -144,17 +144,7 @@ static struct platform_driver ep93xxbl_driver = {
->  	.resume		= ep93xxbl_resume,
->  };
->  
-> -static int __init ep93xxbl_init(void)
-> -{
-> -	return platform_driver_register(&ep93xxbl_driver);
-> -}
-> -module_init(ep93xxbl_init);
-> -
-> -static void __exit ep93xxbl_exit(void)
-> -{
-> -	platform_driver_unregister(&ep93xxbl_driver);
-> -}
-> -module_exit(ep93xxbl_exit);
-> +module_platform_driver(ep93xxbl_driver);
->  
->  MODULE_DESCRIPTION("EP93xx Backlight Driver");
->  MODULE_AUTHOR("H Hartley Sweeten <hsweeten@visionengravers.com>");
+--=-=-=
+Content-Type: application/pgp-signature
 
-For ep93xx_bl.c:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+iQIVAwUBTtPFnjYtFsjWk68qAQhwzhAAi/ALprkBGz0b5th3tdayANWm0yTAKLUz
+C1M8CyuqxWjl8W+GBZwCufrSDE+MmOx+013mSuTgsXp/w0kMsLT6LLxMXgQ+zpkD
+2c9DCfU4JaZgNj8wD7EjTIj+KhCYKEOhxMCqGp+1hv6h8wwQFxlRNUBNI3iyEUvt
+nuIGctBSaerjr7cxwxubjW/jWanBr1L6hey+qYiA+cfLouMWJqxEQFa4AuVPiLCD
+5O7DDk5jHqsWnBJQam4ge1kENghE0vyWVRVAWmpkqQR/gb3uKXd86gJXhzibv/HE
+LS6+Y5Ot7ln79ki1VR0XY+bO1/YmIG3GlmsftSjahPegOKlyrsbq7EGhReT5Lku1
+MbudeXEtYMCic5A0FP2hTjzLclA9+qA429Le5rOfHQzgZK/E6WS/4opEvGXbFToc
+WjXxf4N6axITbgVbkE3PkAmx/RmFbL1e5PA7G+wRcpZf6RcEvuCFeq1PoTQJNiCC
+WOcQW0lEXYzZ19tpF/vk1MX1rIsjWmDrzpZpz0WgjHfD7/ejJojIqU7Yl0BxMwfB
+fehUMqlj/n3hbFBsInhKHKI8zOa9Od+mw1igLrG01s5w4HYLZCtjjGJJLjARmuwn
+kdqeVUl86tNTY/OjJodyz0tRjLGZknC888Z1wm4i3QuDEiI63g3zk+ednkJGobUH
+svW/wkrE27w=
+=EjrY
+-----END PGP SIGNATURE-----
+--=-=-=--
