@@ -1,122 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab1K1HrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:47:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2549 "EHLO mx1.redhat.com"
+	id S1752558Ab1K1Hr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:47:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27196 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab1K1HrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:47:22 -0500
+	id S1751647Ab1K1Hr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:47:57 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: =?UTF-8?q?=5BUPDATED=20PATCH=2001/62=5D=20highmem=3A=20mark=20k=5Bun=5Dmap=5Fatomic=28=29=20with=20two=20arguments=20as=20deprecated?=
-Date: Mon, 28 Nov 2011 15:46:23 +0800
-Message-Id: <1322466385-10527-1-git-send-email-amwang@redhat.com>
-In-Reply-To: <1322371662-26166-2-git-send-email-amwang@redhat.com>
-References: <1322371662-26166-2-git-send-email-amwang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org
+Subject: [UPDATED PATCH 17/62] md: remove the second argument of k[un]map_atomic()
+Date: Mon, 28 Nov 2011 15:47:40 +0800
+Message-Id: <1322466460-10628-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <20111127170013.20d180a9@notabene.brown>
+References: <20111127170013.20d180a9@notabene.brown>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update: keep kunmap_atomic() as a macro, otherwise BUILD_BUG_ON() won't work.
+Update: Separate md and dm code correctly.
 
-For backward compatibility, we still keep the deprecated form,
-and will warn the users if they still use the deprecated one, like this:
-
-drivers/block/drbd/drbd_bitmap.c: In function ‘bm_page_io_async’:
-drivers/block/drbd/drbd_bitmap.c:973:3: warning: ‘kmap_atomic_deprecated’ is deprecated (declared at /home/wangcong/linux-2.6/include/linux/highmem.h:124)
-drivers/block/drbd/drbd_bitmap.c:977:3: warning: ‘kunmap_atomic_deprecated’ is deprecated (declared at /home/wangcong/linux-2.6/include/linux/highmem.h:144)
-
-Thanks to Nick Bowler for the cpp trick!
-
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: Nick Bowler <nbowler@elliptictech.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Cong Wang <amwang@redhat.com>
-
 ---
- include/linux/highmem.h |   52 +++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 46 insertions(+), 6 deletions(-)
+ drivers/md/bitmap.c |   42 +++++++++++++++++++++---------------------
+ 1 files changed, 21 insertions(+), 21 deletions(-)
 
-diff --git a/include/linux/highmem.h b/include/linux/highmem.h
-index 3a93f73..11617a8 100644
---- a/include/linux/highmem.h
-+++ b/include/linux/highmem.h
-@@ -109,20 +109,60 @@ static inline void kmap_atomic_idx_pop(void)
- #endif
+diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
+index 7878712..4062823 100644
+--- a/drivers/md/bitmap.c
++++ b/drivers/md/bitmap.c
+@@ -457,7 +457,7 @@ void bitmap_update_sb(struct bitmap *bitmap)
+ 		return;
+ 	}
+ 	spin_unlock_irqrestore(&bitmap->lock, flags);
+-	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
++	sb = kmap_atomic(bitmap->sb_page);
+ 	sb->events = cpu_to_le64(bitmap->mddev->events);
+ 	if (bitmap->mddev->events < bitmap->events_cleared)
+ 		/* rocking back to read-only */
+@@ -467,7 +467,7 @@ void bitmap_update_sb(struct bitmap *bitmap)
+ 	/* Just in case these have been changed via sysfs: */
+ 	sb->daemon_sleep = cpu_to_le32(bitmap->mddev->bitmap_info.daemon_sleep/HZ);
+ 	sb->write_behind = cpu_to_le32(bitmap->mddev->bitmap_info.max_write_behind);
+-	kunmap_atomic(sb, KM_USER0);
++	kunmap_atomic(sb);
+ 	write_page(bitmap, bitmap->sb_page, 1);
+ }
+ 
+@@ -478,7 +478,7 @@ void bitmap_print_sb(struct bitmap *bitmap)
+ 
+ 	if (!bitmap || !bitmap->sb_page)
+ 		return;
+-	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
++	sb = kmap_atomic(bitmap->sb_page);
+ 	printk(KERN_DEBUG "%s: bitmap file superblock:\n", bmname(bitmap));
+ 	printk(KERN_DEBUG "         magic: %08x\n", le32_to_cpu(sb->magic));
+ 	printk(KERN_DEBUG "       version: %d\n", le32_to_cpu(sb->version));
+@@ -497,7 +497,7 @@ void bitmap_print_sb(struct bitmap *bitmap)
+ 	printk(KERN_DEBUG "     sync size: %llu KB\n",
+ 			(unsigned long long)le64_to_cpu(sb->sync_size)/2);
+ 	printk(KERN_DEBUG "max write behind: %d\n", le32_to_cpu(sb->write_behind));
+-	kunmap_atomic(sb, KM_USER0);
++	kunmap_atomic(sb);
+ }
  
  /*
-- * Make both: kmap_atomic(page, idx) and kmap_atomic(page) work.
-+ * NOTE:
-+ * kmap_atomic() and kunmap_atomic() with two arguments are deprecated.
-+ * We only keep them for backward compatibility, any usage of them
-+ * are now warned.
-  */
--#define kmap_atomic(page, args...) __kmap_atomic(page)
-+
-+#define PASTE(a, b) a ## b
-+#define PASTE2(a, b) PASTE(a, b)
-+
-+#define NARG_(_2, _1, n, ...) n
-+#define NARG(...) NARG_(__VA_ARGS__, 2, 1, :)
-+
-+static inline void *kmap_atomic(struct page *page)
-+{
-+	return __kmap_atomic(page);
-+}
-+
-+static inline void __deprecated *kmap_atomic_deprecated(struct page *page,
-+							enum km_type km)
-+{
-+	return __kmap_atomic(page);
-+}
-+
-+#define kmap_atomic1(...) kmap_atomic(__VA_ARGS__)
-+#define kmap_atomic2(...) kmap_atomic_deprecated(__VA_ARGS__)
-+#define kmap_atomic(...) PASTE2(kmap_atomic, NARG(__VA_ARGS__)(__VA_ARGS__))
-+
-+static inline void __deprecated __kunmap_atomic_deprecated(void *addr,
-+							enum km_type km)
-+{
-+	__kunmap_atomic(addr);
-+}
+@@ -525,7 +525,7 @@ static int bitmap_new_disk_sb(struct bitmap *bitmap)
+ 	}
+ 	bitmap->sb_page->index = 0;
  
- /*
-  * Prevent people trying to call kunmap_atomic() as if it were kunmap()
-  * kunmap_atomic() should get the return value of kmap_atomic, not the page.
-  */
--#define kunmap_atomic(addr, args...)				\
--do {								\
--	BUILD_BUG_ON(__same_type((addr), struct page *));	\
--	__kunmap_atomic(addr);					\
-+#define kunmap_atomic_deprecated(addr, km)                      \
-+do {                                                            \
-+	BUILD_BUG_ON(__same_type((addr), struct page *));       \
-+	__kunmap_atomic_deprecated(addr, km);                   \
- } while (0)
+-	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
++	sb = kmap_atomic(bitmap->sb_page);
  
-+#define kunmap_atomic_withcheck(addr)                           \
-+do {                                                            \
-+	BUILD_BUG_ON(__same_type((addr), struct page *));       \
-+	__kunmap_atomic(addr);                                  \
-+} while (0)
-+
-+#define kunmap_atomic1(...) kunmap_atomic_withcheck(__VA_ARGS__)
-+#define kunmap_atomic2(...) kunmap_atomic_deprecated(__VA_ARGS__)
-+#define kunmap_atomic(...) PASTE2(kunmap_atomic, NARG(__VA_ARGS__)(__VA_ARGS__))
-+/**** End of C pre-processor tricks for deprecated macros ****/
-+
- /* when CONFIG_HIGHMEM is not set these will be plain clear/copy_page */
- #ifndef clear_user_highpage
- static inline void clear_user_highpage(struct page *page, unsigned long vaddr)
+ 	sb->magic = cpu_to_le32(BITMAP_MAGIC);
+ 	sb->version = cpu_to_le32(BITMAP_MAJOR_HI);
+@@ -533,7 +533,7 @@ static int bitmap_new_disk_sb(struct bitmap *bitmap)
+ 	chunksize = bitmap->mddev->bitmap_info.chunksize;
+ 	BUG_ON(!chunksize);
+ 	if (!is_power_of_2(chunksize)) {
+-		kunmap_atomic(sb, KM_USER0);
++		kunmap_atomic(sb);
+ 		printk(KERN_ERR "bitmap chunksize not a power of 2\n");
+ 		return -EINVAL;
+ 	}
+@@ -571,7 +571,7 @@ static int bitmap_new_disk_sb(struct bitmap *bitmap)
+ 	bitmap->flags |= BITMAP_HOSTENDIAN;
+ 	sb->version = cpu_to_le32(BITMAP_MAJOR_HOSTENDIAN);
+ 
+-	kunmap_atomic(sb, KM_USER0);
++	kunmap_atomic(sb);
+ 
+ 	return 0;
+ }
+@@ -603,7 +603,7 @@ static int bitmap_read_sb(struct bitmap *bitmap)
+ 		return err;
+ 	}
+ 
+-	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
++	sb = kmap_atomic(bitmap->sb_page);
+ 
+ 	chunksize = le32_to_cpu(sb->chunksize);
+ 	daemon_sleep = le32_to_cpu(sb->daemon_sleep) * HZ;
+@@ -664,7 +664,7 @@ success:
+ 		bitmap->events_cleared = bitmap->mddev->events;
+ 	err = 0;
+ out:
+-	kunmap_atomic(sb, KM_USER0);
++	kunmap_atomic(sb);
+ 	if (err)
+ 		bitmap_print_sb(bitmap);
+ 	return err;
+@@ -689,7 +689,7 @@ static int bitmap_mask_state(struct bitmap *bitmap, enum bitmap_state bits,
+ 		return 0;
+ 	}
+ 	spin_unlock_irqrestore(&bitmap->lock, flags);
+-	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
++	sb = kmap_atomic(bitmap->sb_page);
+ 	old = le32_to_cpu(sb->state) & bits;
+ 	switch (op) {
+ 	case MASK_SET:
+@@ -703,7 +703,7 @@ static int bitmap_mask_state(struct bitmap *bitmap, enum bitmap_state bits,
+ 	default:
+ 		BUG();
+ 	}
+-	kunmap_atomic(sb, KM_USER0);
++	kunmap_atomic(sb);
+ 	return old;
+ }
+ 
+@@ -881,12 +881,12 @@ static void bitmap_file_set_bit(struct bitmap *bitmap, sector_t block)
+ 	bit = file_page_offset(bitmap, chunk);
+ 
+ 	/* set the bit */
+-	kaddr = kmap_atomic(page, KM_USER0);
++	kaddr = kmap_atomic(page);
+ 	if (bitmap->flags & BITMAP_HOSTENDIAN)
+ 		set_bit(bit, kaddr);
+ 	else
+ 		__set_bit_le(bit, kaddr);
+-	kunmap_atomic(kaddr, KM_USER0);
++	kunmap_atomic(kaddr);
+ 	pr_debug("set file bit %lu page %lu\n", bit, page->index);
+ 	/* record page number so it gets flushed to disk when unplug occurs */
+ 	set_page_attr(bitmap, page, BITMAP_PAGE_DIRTY);
+@@ -1050,10 +1050,10 @@ static int bitmap_init_from_disk(struct bitmap *bitmap, sector_t start)
+ 				 * if bitmap is out of date, dirty the
+ 				 * whole page and write it out
+ 				 */
+-				paddr = kmap_atomic(page, KM_USER0);
++				paddr = kmap_atomic(page);
+ 				memset(paddr + offset, 0xff,
+ 				       PAGE_SIZE - offset);
+-				kunmap_atomic(paddr, KM_USER0);
++				kunmap_atomic(paddr);
+ 				write_page(bitmap, page, 1);
+ 
+ 				ret = -EIO;
+@@ -1061,12 +1061,12 @@ static int bitmap_init_from_disk(struct bitmap *bitmap, sector_t start)
+ 					goto err;
+ 			}
+ 		}
+-		paddr = kmap_atomic(page, KM_USER0);
++		paddr = kmap_atomic(page);
+ 		if (bitmap->flags & BITMAP_HOSTENDIAN)
+ 			b = test_bit(bit, paddr);
+ 		else
+ 			b = test_bit_le(bit, paddr);
+-		kunmap_atomic(paddr, KM_USER0);
++		kunmap_atomic(paddr);
+ 		if (b) {
+ 			/* if the disk bit is set, set the memory bit */
+ 			int needed = ((sector_t)(i+1) << (CHUNK_BLOCK_SHIFT(bitmap))
+@@ -1207,10 +1207,10 @@ void bitmap_daemon_work(struct mddev *mddev)
+ 			    bitmap->mddev->bitmap_info.external == 0) {
+ 				bitmap_super_t *sb;
+ 				bitmap->need_sync = 0;
+-				sb = kmap_atomic(bitmap->sb_page, KM_USER0);
++				sb = kmap_atomic(bitmap->sb_page);
+ 				sb->events_cleared =
+ 					cpu_to_le64(bitmap->events_cleared);
+-				kunmap_atomic(sb, KM_USER0);
++				kunmap_atomic(sb);
+ 				write_page(bitmap, bitmap->sb_page, 1);
+ 			}
+ 			spin_lock_irqsave(&bitmap->lock, flags);
+@@ -1233,7 +1233,7 @@ void bitmap_daemon_work(struct mddev *mddev)
+ 						  -1);
+ 
+ 				/* clear the bit */
+-				paddr = kmap_atomic(page, KM_USER0);
++				paddr = kmap_atomic(page);
+ 				if (bitmap->flags & BITMAP_HOSTENDIAN)
+ 					clear_bit(file_page_offset(bitmap, j),
+ 						  paddr);
+@@ -1242,7 +1242,7 @@ void bitmap_daemon_work(struct mddev *mddev)
+ 						file_page_offset(bitmap,
+ 								 j),
+ 						paddr);
+-				kunmap_atomic(paddr, KM_USER0);
++				kunmap_atomic(paddr);
+ 			} else if (*bmc <= 2) {
+ 				*bmc = 1; /* maybe clear the bit next time */
+ 				set_page_attr(bitmap, page, BITMAP_PAGE_PENDING);
 -- 
 1.7.4.4
 
