@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab1K1UjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 15:39:10 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:48632 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299Ab1K1UjH (ORCPT
+	id S1754216Ab1K1Ukc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:40:32 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35145 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab1K1Ukb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 15:39:07 -0500
-Date: Mon, 28 Nov 2011 12:39:01 -0800
+	Mon, 28 Nov 2011 15:40:31 -0500
+Date: Mon, 28 Nov 2011 12:40:24 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, john@calva.com, trond.myklebust@netapp.com,
-        marek.belisko@gmail.com, awilliam@redhat.com
-Subject: Re: [PATCH v3 1/2] sunrpc: make rpc_wait_bit_killable handle
- freeze events
-Message-ID: <20111128203901.GG18864@google.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jeff Layton <jlayton@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org, john@calva.com,
+        trond.myklebust@netapp.com, marek.belisko@gmail.com,
+        awilliam@redhat.com
+Subject: Re: [PATCH v3 0/2] nfs/sunrpc: allow freezing of tasks with NFS
+ calls in flight
+Message-ID: <20111128204024.GH18864@google.com>
 References: <1322510488-21189-1-git-send-email-jlayton@redhat.com>
- <1322510488-21189-2-git-send-email-jlayton@redhat.com>
+ <201111282122.53635.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322510488-21189-2-git-send-email-jlayton@redhat.com>
+In-Reply-To: <201111282122.53635.rjw@sisk.pl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Nov 28, 2011 at 09:22:53PM +0100, Rafael J. Wysocki wrote:
+> If no one objects, I'll take these patches to linux-pm/linux-next in the
+> next couple of days (and then to the pm-freezer branch, if there are no
+> visible problems with them).
 
-On Mon, Nov 28, 2011 at 03:01:27PM -0500, Jeff Layton wrote:
-> +#define freezable_schedule()						\
-> +({									\
-> +	freezer_do_not_count();						\
-> +	if (!try_to_freeze())						\
-> +		schedule();						\
-> +	freezer_count();						\
-> +})
-
-I don't think you need try_to_freeze() there when you apply this on
-top of pm-freezer branch.  Per-task freezing flag is gone and freezing
-condition is completely transient from the POV of each task and the
-freezer also doesn't care at all whether a task enters freezer or
-becomes unfreezable.
+Rafael, I think these need to be routed through pm-freezer branch.
+Freezer went through a lot of changes and I don't think this will work
+reliably without the freezer changes.
 
 Thanks.
 
