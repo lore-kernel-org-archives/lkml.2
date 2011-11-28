@@ -1,122 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab1K1WrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:47:25 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:33265 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab1K1WrV convert rfc822-to-8bit (ORCPT
+	id S1755251Ab1K1Wru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 17:47:50 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60985 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754993Ab1K1WpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:47:21 -0500
-From: Satoru Moriya <satoru.moriya@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "nagar@watson.ibm.com" <nagar@watson.ibm.com>,
-        "kobayashi.kk@ncos.nec.co.jp" <kobayashi.kk@ncos.nec.co.jp>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Mon, 28 Nov 2011 17:47:01 -0500
-Subject: [PATCH 4/4] getdelays: show max CPU/IO/SWAP/RECLAIM delays
-Thread-Topic: [PATCH 4/4] getdelays: show max CPU/IO/SWAP/RECLAIM delays
-Thread-Index: AcyuHz1jOo2pA4gdSJ2m+oX/c0nTOAAAE/NQ
-Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB574E716@USINDEVS02.corp.hds.com>
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB574E70D@USINDEVS02.corp.hds.com>
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB574E70D@USINDEVS02.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1111280247
+	Mon, 28 Nov 2011 17:45:05 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 6/8] mfd: Define some additional wm8994 registers
+Date: Mon, 28 Nov 2011 22:44:32 +0000
+Message-Id: <1322520274-13789-6-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1322520274-13789-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <20111128224017.GA13163@opensource.wolfsonmicro.com>
+ <1322520274-13789-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this patch, getdelays shows maximum delay which it gets from kernel
-via taskstats interface.
+Add a bunch of definitions for wm8994 registers that are not currently
+used by software.
 
-Output example:
-(on 100 concurrent dd reading sparse files with 1 dd writing a file)
-
-CPU             count     real total  virtual total    delay total      delay_max  delay average
-                  234       61990576       78703354         543649         138417          0.002ms
-IO              count    delay total      delay max  delay average
-                   16      184774999       61259321             11ms
-SWAP            count    delay total      delay max  delay average
-                    0              0              0              0ms
-RECLAIM         count    delay total      delay_max  delay average
-                   20        4249456         381288              0ms
-
-
-Signed-off-by: Satoru Moriya <satoru.moriya@hds.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- Documentation/accounting/getdelays.c |   28 ++++++++++++++++------------
- 1 files changed, 16 insertions(+), 12 deletions(-)
+ include/linux/mfd/wm8994/registers.h |   96 ++++++++++++++++++++++++++++++++++
+ sound/soc/codecs/wm8994-tables.c     |   12 ++--
+ 2 files changed, 102 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/accounting/getdelays.c b/Documentation/accounting/getdelays.c
-index f6318f6..69d3ec4 100644
---- a/Documentation/accounting/getdelays.c
-+++ b/Documentation/accounting/getdelays.c
-@@ -197,32 +197,36 @@ static int get_family_id(int sd)
+diff --git a/include/linux/mfd/wm8994/registers.h b/include/linux/mfd/wm8994/registers.h
+index 83a9cae..8317b19 100644
+--- a/include/linux/mfd/wm8994/registers.h
++++ b/include/linux/mfd/wm8994/registers.h
+@@ -95,11 +95,15 @@
+ #define WM8994_FLL1_CONTROL_3                   0x222
+ #define WM8994_FLL1_CONTROL_4                   0x223
+ #define WM8994_FLL1_CONTROL_5                   0x224
++#define WM8958_FLL1_EFS_1                       0x226
++#define WM8958_FLL1_EFS_2                       0x227
+ #define WM8994_FLL2_CONTROL_1                   0x240
+ #define WM8994_FLL2_CONTROL_2                   0x241
+ #define WM8994_FLL2_CONTROL_3                   0x242
+ #define WM8994_FLL2_CONTROL_4                   0x243
+ #define WM8994_FLL2_CONTROL_5                   0x244
++#define WM8958_FLL2_EFS_1                       0x246
++#define WM8958_FLL2_EFS_2                       0x247
+ #define WM8994_AIF1_CONTROL_1                   0x300
+ #define WM8994_AIF1_CONTROL_2                   0x301
+ #define WM8994_AIF1_MASTER_SLAVE                0x302
+@@ -116,6 +120,7 @@
+ #define WM8994_AIF2DAC_LRCLK                    0x315
+ #define WM8994_AIF2DAC_DATA                     0x316
+ #define WM8994_AIF2ADC_DATA                     0x317
++#define WM1811_AIF2TX_CONTROL                   0x318
+ #define WM8958_AIF3_CONTROL_1                   0x320
+ #define WM8958_AIF3_CONTROL_2                   0x321
+ #define WM8958_AIF3DAC_DATA                     0x322
+@@ -166,6 +171,7 @@
+ #define WM8994_AIF1_DAC1_EQ_BAND_5_A            0x491
+ #define WM8994_AIF1_DAC1_EQ_BAND_5_B            0x492
+ #define WM8994_AIF1_DAC1_EQ_BAND_5_PG           0x493
++#define WM8994_AIF1_DAC1_EQ_BAND_1_C            0x494
+ #define WM8994_AIF1_DAC2_EQ_GAINS_1             0x4A0
+ #define WM8994_AIF1_DAC2_EQ_GAINS_2             0x4A1
+ #define WM8994_AIF1_DAC2_EQ_BAND_1_A            0x4A2
+@@ -186,6 +192,7 @@
+ #define WM8994_AIF1_DAC2_EQ_BAND_5_A            0x4B1
+ #define WM8994_AIF1_DAC2_EQ_BAND_5_B            0x4B2
+ #define WM8994_AIF1_DAC2_EQ_BAND_5_PG           0x4B3
++#define WM8994_AIF1_DAC2_EQ_BAND_1_C            0x4B4
+ #define WM8994_AIF2_ADC_LEFT_VOLUME             0x500
+ #define WM8994_AIF2_ADC_RIGHT_VOLUME            0x501
+ #define WM8994_AIF2_DAC_LEFT_VOLUME             0x502
+@@ -219,6 +226,7 @@
+ #define WM8994_AIF2_EQ_BAND_5_A                 0x591
+ #define WM8994_AIF2_EQ_BAND_5_B                 0x592
+ #define WM8994_AIF2_EQ_BAND_5_PG                0x593
++#define WM8994_AIF2_EQ_BAND_1_C                 0x594
+ #define WM8994_DAC1_MIXER_VOLUMES               0x600
+ #define WM8994_DAC1_LEFT_MIXER_ROUTING          0x601
+ #define WM8994_DAC1_RIGHT_MIXER_ROUTING         0x602
+@@ -264,7 +272,43 @@
+ #define WM8958_DSP2_RELEASETIME                 0xA03
+ #define WM8958_DSP2_VERMAJMIN                   0xA04
+ #define WM8958_DSP2_VERBUILD                    0xA05
++#define WM8958_DSP2_TESTREG                     0xA06
++#define WM8958_DSP2_XORREG                      0xA07
++#define WM8958_DSP2_SHIFTMAXX                   0xA08
++#define WM8958_DSP2_SHIFTMAXY                   0xA09
++#define WM8958_DSP2_SHIFTMAXZ                   0xA0A
++#define WM8958_DSP2_SHIFTMAXEXTLO               0xA0B
++#define WM8958_DSP2_AESSELECT                   0xA0C
+ #define WM8958_DSP2_EXECCONTROL                 0xA0D
++#define WM8958_DSP2_SAMPLEBREAK                 0xA0E
++#define WM8958_DSP2_COUNTBREAK                  0xA0F
++#define WM8958_DSP2_INTSTATUS                   0xA10
++#define WM8958_DSP2_EVENTSTATUS                 0xA11
++#define WM8958_DSP2_INTMASK                     0xA12
++#define WM8958_DSP2_CONFIGDWIDTH                0xA13
++#define WM8958_DSP2_CONFIGINSTR                 0xA14
++#define WM8958_DSP2_CONFIGDMEM                  0xA15
++#define WM8958_DSP2_CONFIGDELAYS                0xA16
++#define WM8958_DSP2_CONFIGNUMIO                 0xA17
++#define WM8958_DSP2_CONFIGEXTDEPTH              0xA18
++#define WM8958_DSP2_CONFIGMULTIPLIER            0xA19
++#define WM8958_DSP2_CONFIGCTRLDWIDTH            0xA1A
++#define WM8958_DSP2_CONFIGPIPELINE              0xA1B
++#define WM8958_DSP2_SHIFTMAXEXTHI               0xA1C
++#define WM8958_DSP2_SWVERSIONREG                0xA1D
++#define WM8958_DSP2_CONFIGXMEM                  0xA1E
++#define WM8958_DSP2_CONFIGYMEM                  0xA1F
++#define WM8958_DSP2_CONFIGZMEM                  0xA20
++#define WM8958_FW_BUILD_1                       0x2000
++#define WM8958_FW_BUILD_0                       0x2001
++#define WM8958_FW_ID_1                          0x2002
++#define WM8958_FW_ID_0                          0x2003
++#define WM8958_FW_MAJOR_1                       0x2004
++#define WM8958_FW_MAJOR_0                       0x2005
++#define WM8958_FW_MINOR_1                       0x2006
++#define WM8958_FW_MINOR_0                       0x2007
++#define WM8958_FW_PATCH_1                       0x2008
++#define WM8958_FW_PATCH_0                       0x2009
+ #define WM8958_MBC_BAND_2_LOWER_CUTOFF_C1_1     0x2200
+ #define WM8958_MBC_BAND_2_LOWER_CUTOFF_C1_2     0x2201
+ #define WM8958_MBC_BAND_2_LOWER_CUTOFF_C2_1     0x2202
+@@ -333,6 +377,14 @@
+ #define WM8958_MBC_B2_PG2_2                     0x242D
+ #define WM8958_MBC_B1_PG2_1                     0x242E
+ #define WM8958_MBC_B1_PG2_2                     0x242F
++#define WM8958_MBC_CROSSOVER_1                  0x2600
++#define WM8958_MBC_CROSSOVER_2                  0x2601
++#define WM8958_MBC_HPF_1                        0x2602
++#define WM8958_MBC_HPF_2                        0x2603
++#define WM8958_MBC_LPF_1                        0x2606
++#define WM8958_MBC_LPF_2                        0x2607
++#define WM8958_MBC_RMS_LIMIT_1                  0x260A
++#define WM8958_MBC_RMS_LIMIT_2                  0x260B
+ #define WM8994_WRITE_SEQUENCER_0                0x3000
+ #define WM8994_WRITE_SEQUENCER_1                0x3001
+ #define WM8994_WRITE_SEQUENCER_2                0x3002
+@@ -2389,6 +2441,10 @@
+ /*
+  * R548 (0x224) - FLL1 Control (5)
+  */
++#define WM8958_FLL1_BYP                         0x8000  /* FLL1_BYP */
++#define WM8958_FLL1_BYP_MASK                    0x8000  /* FLL1_BYP */
++#define WM8958_FLL1_BYP_SHIFT                       15  /* FLL1_BYP */
++#define WM8958_FLL1_BYP_WIDTH                        1  /* FLL1_BYP */
+ #define WM8994_FLL1_FRC_NCO_VAL_MASK            0x1F80  /* FLL1_FRC_NCO_VAL - [12:7] */
+ #define WM8994_FLL1_FRC_NCO_VAL_SHIFT                7  /* FLL1_FRC_NCO_VAL - [12:7] */
+ #define WM8994_FLL1_FRC_NCO_VAL_WIDTH                6  /* FLL1_FRC_NCO_VAL - [12:7] */
+@@ -2404,6 +2460,24 @@
+ #define WM8994_FLL1_REFCLK_SRC_WIDTH                 2  /* FLL1_REFCLK_SRC - [1:0] */
  
- static void print_delayacct(struct taskstats *t)
- {
--	printf("\n\nCPU   %15s%15s%15s%15s%15s\n"
--	       "      %15llu%15llu%15llu%15llu%15.3fms\n"
--	       "IO    %15s%15s%15s\n"
--	       "      %15llu%15llu%15llums\n"
--	       "SWAP  %15s%15s%15s\n"
--	       "      %15llu%15llu%15llums\n"
--	       "RECLAIM  %12s%15s%15s\n"
--	       "      %15llu%15llu%15llums\n",
-+	printf("\n\nCPU   %15s%15s%15s%15s%15s%15s\n"
-+	       "      %15llu%15llu%15llu%15llu%15llu%15.3fms\n"
-+	       "IO    %15s%15s%15s%15s\n"
-+	       "      %15llu%15llu%15llu%15llums\n"
-+	       "SWAP  %15s%15s%15s%15s\n"
-+	       "      %15llu%15llu%15llu%15llums\n"
-+	       "RECLAIM  %12s%15s%15s%15s\n"
-+	       "      %15llu%15llu%15llu%15llums\n",
- 	       "count", "real total", "virtual total",
--	       "delay total", "delay average",
-+	       "delay total", "delay_max", "delay average",
- 	       (unsigned long long)t->cpu_count,
- 	       (unsigned long long)t->cpu_run_real_total,
- 	       (unsigned long long)t->cpu_run_virtual_total,
- 	       (unsigned long long)t->cpu_delay_total,
-+	       (unsigned long long)t->cpu_delay_max,
- 	       average_ms((double)t->cpu_delay_total, t->cpu_count),
--	       "count", "delay total", "delay average",
-+	       "count", "delay total", "delay max", "delay average",
- 	       (unsigned long long)t->blkio_count,
- 	       (unsigned long long)t->blkio_delay_total,
-+	       (unsigned long long)t->blkio_delay_max,
- 	       average_ms(t->blkio_delay_total, t->blkio_count),
--	       "count", "delay total", "delay average",
-+	       "count", "delay total", "delay max", "delay average",
- 	       (unsigned long long)t->swapin_count,
- 	       (unsigned long long)t->swapin_delay_total,
-+	       (unsigned long long)t->swapin_delay_max,
- 	       average_ms(t->swapin_delay_total, t->swapin_count),
--	       "count", "delay total", "delay average",
-+	       "count", "delay total", "delay_max", "delay average",
- 	       (unsigned long long)t->freepages_count,
- 	       (unsigned long long)t->freepages_delay_total,
-+	       (unsigned long long)t->freepages_delay_max,
- 	       average_ms(t->freepages_delay_total, t->freepages_count));
- }
+ /*
++ * R550 (0x226) - FLL1 EFS 1
++ */
++#define WM8958_FLL1_LAMBDA_MASK                 0xFFFF  /* FLL1_LAMBDA - [15:0] */
++#define WM8958_FLL1_LAMBDA_SHIFT                     0  /* FLL1_LAMBDA - [15:0] */
++#define WM8958_FLL1_LAMBDA_WIDTH                    16  /* FLL1_LAMBDA - [15:0] */
++
++/*
++ * R551 (0x227) - FLL1 EFS 2
++ */
++#define WM8958_FLL1_LFSR_SEL_MASK               0x0006  /* FLL1_LFSR_SEL - [2:1] */
++#define WM8958_FLL1_LFSR_SEL_SHIFT                   1  /* FLL1_LFSR_SEL - [2:1] */
++#define WM8958_FLL1_LFSR_SEL_WIDTH                   2  /* FLL1_LFSR_SEL - [2:1] */
++#define WM8958_FLL1_EFS_ENA                     0x0001  /* FLL1_EFS_ENA */
++#define WM8958_FLL1_EFS_ENA_MASK                0x0001  /* FLL1_EFS_ENA */
++#define WM8958_FLL1_EFS_ENA_SHIFT                    0  /* FLL1_EFS_ENA */
++#define WM8958_FLL1_EFS_ENA_WIDTH                    1  /* FLL1_EFS_ENA */
++
++/*
+  * R576 (0x240) - FLL2 Control (1)
+  */
+ #define WM8994_FLL2_FRAC                        0x0004  /* FLL2_FRAC */
+@@ -2452,6 +2526,10 @@
+ /*
+  * R580 (0x244) - FLL2 Control (5)
+  */
++#define WM8958_FLL2_BYP                         0x8000  /* FLL2_BYP */
++#define WM8958_FLL2_BYP_MASK                    0x8000  /* FLL2_BYP */
++#define WM8958_FLL2_BYP_SHIFT                       15  /* FLL2_BYP */
++#define WM8958_FLL2_BYP_WIDTH                        1  /* FLL2_BYP */
+ #define WM8994_FLL2_FRC_NCO_VAL_MASK            0x1F80  /* FLL2_FRC_NCO_VAL - [12:7] */
+ #define WM8994_FLL2_FRC_NCO_VAL_SHIFT                7  /* FLL2_FRC_NCO_VAL - [12:7] */
+ #define WM8994_FLL2_FRC_NCO_VAL_WIDTH                6  /* FLL2_FRC_NCO_VAL - [12:7] */
+@@ -2467,6 +2545,24 @@
+ #define WM8994_FLL2_REFCLK_SRC_WIDTH                 2  /* FLL2_REFCLK_SRC - [1:0] */
  
+ /*
++ * R582 (0x246) - FLL2 EFS 1
++ */
++#define WM8958_FLL2_LAMBDA_MASK                 0xFFFF  /* FLL2_LAMBDA - [15:0] */
++#define WM8958_FLL2_LAMBDA_SHIFT                     0  /* FLL2_LAMBDA - [15:0] */
++#define WM8958_FLL2_LAMBDA_WIDTH                    16  /* FLL2_LAMBDA - [15:0] */
++
++/*
++ * R583 (0x247) - FLL2 EFS 2
++ */
++#define WM8958_FLL2_LFSR_SEL_MASK               0x0006  /* FLL2_LFSR_SEL - [2:1] */
++#define WM8958_FLL2_LFSR_SEL_SHIFT                   1  /* FLL2_LFSR_SEL - [2:1] */
++#define WM8958_FLL2_LFSR_SEL_WIDTH                   2  /* FLL2_LFSR_SEL - [2:1] */
++#define WM8958_FLL2_EFS_ENA                     0x0001  /* FLL2_EFS_ENA */
++#define WM8958_FLL2_EFS_ENA_MASK                0x0001  /* FLL2_EFS_ENA */
++#define WM8958_FLL2_EFS_ENA_SHIFT                    0  /* FLL2_EFS_ENA */
++#define WM8958_FLL2_EFS_ENA_WIDTH                    1  /* FLL2_EFS_ENA */
++
++/*
+  * R768 (0x300) - AIF1 Control (1)
+  */
+ #define WM8994_AIF1ADCL_SRC                     0x8000  /* AIF1ADCL_SRC */
+diff --git a/sound/soc/codecs/wm8994-tables.c b/sound/soc/codecs/wm8994-tables.c
+index df5a8b9..6ed19d9 100644
+--- a/sound/soc/codecs/wm8994-tables.c
++++ b/sound/soc/codecs/wm8994-tables.c
+@@ -78,7 +78,7 @@ const struct wm8994_access_mask wm8994_access_masks[WM8994_CACHE_SIZE] = {
+ 	{ 0x0000, 0x0000 }, /* R74 */
+ 	{ 0x0000, 0x0000 }, /* R75 */
+ 	{ 0x8000, 0x8000 }, /* R76    - Charge Pump (1) */
+-	{ 0x0000, 0x0000 }, /* R77 */
++	{ 0x8000, 0x8000 }, /* R77    - Charge Pump (2) */
+ 	{ 0x0000, 0x0000 }, /* R78 */
+ 	{ 0x0000, 0x0000 }, /* R79 */
+ 	{ 0x0000, 0x0000 }, /* R80 */
+@@ -1651,7 +1651,7 @@ const u16 wm8994_reg_defaults[WM8994_CACHE_SIZE] = {
+ 	0x0000,     /* R74 */
+ 	0x0000,     /* R75 */
+ 	0x1F25,     /* R76    - Charge Pump (1) */
+-	0x0000,     /* R77 */
++	0xAB19,     /* R77    - Charge Pump (2) */
+ 	0x0000,     /* R78 */
+ 	0x0000,     /* R79 */
+ 	0x0000,     /* R80 */
+@@ -2124,8 +2124,8 @@ const u16 wm8994_reg_defaults[WM8994_CACHE_SIZE] = {
+ 	0x0000,     /* R547   - FLL1 Control (4) */
+ 	0x0C80,     /* R548   - FLL1 Control (5) */
+ 	0x0000,     /* R549 */
+-	0x0000,     /* R550 */
+-	0x0000,     /* R551 */
++	0x0000,     /* R550   - FLL1 EFS 1 */
++	0x0006,     /* R551   - FLL1 EFS 2 */
+ 	0x0000,     /* R552 */
+ 	0x0000,     /* R553 */
+ 	0x0000,     /* R554 */
+@@ -2156,8 +2156,8 @@ const u16 wm8994_reg_defaults[WM8994_CACHE_SIZE] = {
+ 	0x0000,     /* R579   - FLL2 Control (4) */
+ 	0x0C80,     /* R580   - FLL2 Control (5) */
+ 	0x0000,     /* R581 */
+-	0x0000,     /* R582 */
+-	0x0000,     /* R583 */
++	0x0000,     /* R582   - FLL2 EFS 1 */
++	0x0006,     /* R583   - FLL2 EFS 2 */
+ 	0x0000,     /* R584 */
+ 	0x0000,     /* R585 */
+ 	0x0000,     /* R586 */
 -- 
-1.7.6.4
-
+1.7.7.3
 
