@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab1K1OJL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:09:11 -0500
-Received: from mga03.intel.com ([143.182.124.21]:41420 "EHLO mga03.intel.com"
+	id S1753437Ab1K1OJJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:09:09 -0500
+Received: from mga03.intel.com ([143.182.124.21]:49496 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab1K1OJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752625Ab1K1OJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 Nov 2011 09:09:05 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
-   d="scan'208";a="79787540"
-Message-Id: <20111128140513.150701975@intel.com>
+   d="scan'208";a="79787537"
+Message-Id: <20111128140513.777795684@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 28 Nov 2011 21:53:40 +0800
+Date: Mon, 28 Nov 2011 21:53:45 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: <linux-fsdevel@vger.kernel.org>
 cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -19,95 +19,67 @@ cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
 CC: Christoph Hellwig <hch@lst.de>
 cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/7] writeback: charge leaked page dirties to active tasks
+Subject: [PATCH 7/7] writeback: comment on the bdi dirty threshold
 References: <20111128135338.249672012@intel.com>
-Content-Disposition: inline; filename=writeback-save-leaks-at-exit.patch
+Content-Disposition: inline; filename=writeback-comment-bdi_thresh.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's a years long problem that a large number of short-lived dirtiers
-(eg. gcc instances in a fast kernel build) may starve long-run dirtiers
-(eg. dd) as well as pushing the dirty pages to the global hard limit.
+We do "floating proportions" to let active devices to grow its target
+share of dirty pages and stalled/inactive devices to decrease its target
+share over time.
 
-The solution is to charge the pages dirtied by the exited gcc to the
-other random dirtying tasks. It sounds not perfect, however should
-behave good enough in practice, seeing as that throttled tasks aren't
-actually running so those that are running are more likely to pick it up
-and get throttled, therefore promoting an equal spread.
+It works well except in the case of "an inactive disk suddenly goes
+busy", where the initial target share may be too small. To mitigate
+this, bdi_position_ratio() has the below line to raise a small
+bdi_thresh when it's safe to do so, so that the disk be feed with enough
+dirty pages for efficient IO and in turn fast rampup of bdi_thresh:
+
+        bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
+
+balance_dirty_pages() normally does negative feedback control which
+adjusts ratelimit to balance the bdi dirty pages around the target.
+In some extreme cases when that is not enough, it will have to block 
+the tasks completely until the bdi dirty pages drop below bdi_thresh.
 
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/writeback.h |    2 ++
- kernel/exit.c             |    2 ++
- mm/page-writeback.c       |   27 +++++++++++++++++++++++++++
- 3 files changed, 31 insertions(+)
+ mm/page-writeback.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- linux-next.orig/include/linux/writeback.h	2011-11-28 21:23:19.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-11-28 21:23:20.000000000 +0800
-@@ -7,6 +7,8 @@
- #include <linux/sched.h>
- #include <linux/fs.h>
- 
-+DECLARE_PER_CPU(int, dirty_throttle_leaks);
-+
- /*
-  * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
+--- linux-next.orig/mm/page-writeback.c	2011-11-23 10:57:41.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-11-23 11:44:39.000000000 +0800
+@@ -411,8 +411,13 @@ void global_dirty_limits(unsigned long *
   *
---- linux-next.orig/mm/page-writeback.c	2011-11-28 21:23:19.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-11-28 21:23:20.000000000 +0800
-@@ -1195,6 +1195,22 @@ void set_page_dirty_balance(struct page 
- 
- static DEFINE_PER_CPU(int, bdp_ratelimits);
- 
-+/*
-+ * Normal tasks are throttled by
-+ *	loop {
-+ *		dirty tsk->nr_dirtied_pause pages;
-+ *		take a snap in balance_dirty_pages();
-+ *	}
-+ * However there is a worst case. If every task exit immediately when dirtied
-+ * (tsk->nr_dirtied_pause - 1) pages, balance_dirty_pages() will never be
-+ * called to throttle the page dirties. The solution is to save the not yet
-+ * throttled page dirties in dirty_throttle_leaks on task exit and charge them
-+ * randomly into the running tasks. This works well for the above worst case,
-+ * as the new task will pick up and accumulate the old task's leaked dirty
-+ * count and eventually get throttled.
-+ */
-+DEFINE_PER_CPU(int, dirty_throttle_leaks) = 0;
-+
- /**
-  * balance_dirty_pages_ratelimited_nr - balance dirty memory state
-  * @mapping: address_space which was dirtied
-@@ -1242,6 +1258,17 @@ void balance_dirty_pages_ratelimited_nr(
- 			ratelimit = 0;
- 		}
- 	}
+  * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
+  * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
+- * And the "limit" in the name is not seriously taken as hard limit in
+- * balance_dirty_pages().
++ *
++ * Note that balance_dirty_pages() will only seriously take it as a hard limit
++ * when sleeping max_pause per page is not enough to keep the dirty pages under
++ * control. For example, when the device is completely stalled due to some error
++ * conditions, or when there are 1000 dd tasks writing to a slow 10MB/s USB key.
++ * In the other normal situations, it acts more gently by throttling the tasks
++ * more (rather than completely block them) when the bdi dirty pages go high.
+  *
+  * It allocates high/low dirty limits to fast/slow devices, in order to prevent
+  * - starving fast devices
+@@ -594,6 +599,13 @@ static unsigned long bdi_position_ratio(
+ 	 */
+ 	if (unlikely(bdi_thresh > thresh))
+ 		bdi_thresh = thresh;
 +	/*
-+	 * Pick up the dirtied pages by the exited tasks. This avoids lots of
-+	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
-+	 * the dirty throttling and livelock other long-run dirtiers.
++	 * It's very possible that bdi_thresh is close to 0 not because the
++	 * device is slow, but that it has remained inactive for long time.
++	 * Honour such devices a reasonable good (hopefully IO efficient)
++	 * threshold, so that the occasional writes won't be blocked and active
++	 * writes can rampup the threshold quickly.
 +	 */
-+	p = &__get_cpu_var(dirty_throttle_leaks);
-+	if (*p > 0 && current->nr_dirtied < ratelimit) {
-+		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-+		*p -= nr_pages_dirtied;
-+		current->nr_dirtied += nr_pages_dirtied;
-+	}
- 	preempt_enable();
- 
- 	if (unlikely(current->nr_dirtied >= ratelimit))
---- linux-next.orig/kernel/exit.c	2011-11-28 21:23:19.000000000 +0800
-+++ linux-next/kernel/exit.c	2011-11-28 21:23:20.000000000 +0800
-@@ -1037,6 +1037,8 @@ NORET_TYPE void do_exit(long code)
- 	validate_creds_for_do_exit(tsk);
- 
- 	preempt_disable();
-+	if (tsk->nr_dirtied)
-+		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
- 	exit_rcu();
- 	/* causes final put_task_struct in finish_task_switch(). */
- 	tsk->state = TASK_DEAD;
+ 	bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
+ 	/*
+ 	 * scale global setpoint to bdi's:
 
 
