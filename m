@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab1K1SRa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 13:17:30 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51181 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab1K1SR2 (ORCPT
+	id S1753687Ab1K1SSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 13:18:47 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33274 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab1K1SSq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 13:17:28 -0500
-Date: Mon, 28 Nov 2011 22:14:43 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [RFC] Make Yama pid_ns aware
-Message-ID: <20111128181443.GA4672@albatros>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
- <20111121191811.GA24039@albatros>
- <20111122181310.GA4235@sergelap>
- <20111122192028.GA10458@albatros>
- <20111122201007.GA21722@sergelap>
- <20111123074510.GA2356@albatros>
- <20111123144928.GA3893@hallyn.com>
- <20111123165549.GB3463@albatros>
- <CAGXu5j+Y6JnTFhw3Fax_MYLvLLBMO5JOHLgaVyBB2LMsOwhUHw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGXu5j+Y6JnTFhw3Fax_MYLvLLBMO5JOHLgaVyBB2LMsOwhUHw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 Nov 2011 13:18:46 -0500
+Message-ID: <1322504279.2921.154.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu 24/28] rcu: Introduce bulk reference
+ count
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Date: Mon, 28 Nov 2011 19:17:59 +0100
+In-Reply-To: <20111128171513.GF2346@linux.vnet.ibm.com>
+References: <20111102203017.GA3830@linux.vnet.ibm.com>
+	 <1320265849-5744-24-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1322484071.2921.115.camel@twins>
+	 <20111128171513.GF2346@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 10:12 -0800, Kees Cook wrote:
-> On Wed, Nov 23, 2011 at 8:55 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> > Can we probably leave them in pid ns for now and when user ns is matured
-> > just move it from pid ns to user ns?  Is it possible without breaking
-> > Yama's ABI (I think so)?
+On Mon, 2011-11-28 at 09:15 -0800, Paul E. McKenney wrote:
+
+> > I'm having trouble with the naming as well as the need for an explicit
+> > new API.
+> > 
+> > To me this looks like a regular (S)RCU variant, nothing to do with
+> > references per-se (aside from the fact that SRCU is a refcounted rcu
+> > variant). Also WTF is this bulk stuff about? Its still a single ref at a
+> > time, not 10s or 100s or whatnot.
 > 
-> So it sounds like you'll send a new patch where only ptrace_scope is
-> tied to pidns?
+> It is a bulk reference in comparison to a conventional atomic_inc()-style
+> reference count, which is normally associated with a specific structure.
+> In contrast, doing a bulkref_get() normally protects a group of structures,
+> everything covered by the bulkref_t.
+> 
+> Yes, in theory you could have a global reference counter that protected
+> a group of structures, but in practice we both know that this would not
+> end well.  ;-)
 
-Em, no.  I've said we'll leave everything in pid ns for now.  When user
-ns is ready, we'll move some options (all of them?) from pid ns to user
-ns.  As user interface is kernel.yama.* sysctls and will not be changed
-with the migration, ABI would not be broken by this migration.
+Well, all the counter based RCUs are basically that. And yes, making
+them scale is 'interesting', however you've done pretty well so far ;-)
 
-Thanks,
+I just hate the name in that it totally obscures the fact that its
+regular SRCU.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+> > > +static inline int bulkref_get(bulkref_t *brp)
+> > > +{
+> > > +	unsigned long flags;
+> > > +	int ret;
+> > > +
+> > > +	local_irq_save(flags);
+> > > +	ret =  __srcu_read_lock(brp);
+> > > +	local_irq_restore(flags);
+> > > +	return ret;
+> > > +}
+> > > +
+> > > +static inline void bulkref_put(bulkref_t *brp, int idx)
+> > > +{
+> > > +	unsigned long flags;
+> > > +
+> > > +	local_irq_save(flags);
+> > > +	__srcu_read_unlock(brp, idx);
+> > > +	local_irq_restore(flags);
+> > > +}
+> > 
+> > This seems to be the main gist of the patch, which to me sounds utterly
+> > ridiculous. Why not document that srcu_read_{un,}lock() aren't IRQ safe
+> > and if you want to use it from those contexts you have to fix it up
+> > yourself.
+> 
+> I thought I had documented this, but I guess not.  I will add that.
+
+Oh, I hadn't checked, it could be.
+
+> I lost you on the "fix it up yourself" -- what are you suggesting that
+> someone needing to use RCU in this manner actually do?
+
+  local_irq_save(flags);
+  srcu_read_lock(&my_srcu_domain);
+  local_irq_restore(flags);
+
+and
+
+  local_irq_save(flags);
+  srcu_read_unlock(&my_srcu_domain);
+  local_irq_restore(flags)
+
+Doesn't look to be too hard, or confusing.
+
+> > RCU lockdep doesn't do the full validation so it won't actually catch it
+> > if you mess up the irq states, but I guess if you want we could look at
+> > adding that.
+> 
+> Ah, I had missed that.  Yes, it would be very good if that could be added.
+> The vast majority of the uses exit the RCU read-side critical section in
+> the same context that they enter it, so it would be good to check.
+
+/me adds to TODO list.
+
