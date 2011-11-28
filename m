@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab1K1APo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 19:15:44 -0500
-Received: from gate.crashing.org ([63.228.1.57]:43694 "EHLO gate.crashing.org"
+	id S1753075Ab1K1AUu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 19:20:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48151 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752368Ab1K1APn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 19:15:43 -0500
-Message-ID: <1322439281.23348.34.camel@pasglop>
-Subject: Re: [PATCH v9 11/13] powerpc: select HAVE_SECCOMP_FILTER and
- provide seccomp_execve
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linuxppc-dev@lists.ozlabs.org, fweisbec@gmail.com, scarybeasts@gmail.com,
-        djm@mindrot.org, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        segoon@openwall.com, tglx@linutronix.de,
-        Paul Mackerras <paulus@samba.org>, kees.cook@canonical.com,
-        jmorris@namei.org, torvalds@linux-foundation.org, mingo@elte.hu
-Date: Mon, 28 Nov 2011 11:14:41 +1100
-In-Reply-To: <1314682083.2488.73.camel@pasglop>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org>
-	 <1308875813-20122-11-git-send-email-wad@chromium.org>
-	 <1314682083.2488.73.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751378Ab1K1AUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 19:20:49 -0500
+Date: Mon, 28 Nov 2011 09:19:41 +0900
+From: Greg KH <gregkh@suse.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kalle Komierowski <karl.komierowski@stericsson.com>,
+        Johan PALSSON <johan.palsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>
+Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
+Message-ID: <20111128001941.GA2913@suse.de>
+References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
+ <201111251402.28016.arnd@arndb.de>
+ <CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
+ <20111127230836.GA29728@suse.de>
+ <3f636639-7081-40f5-961d-72b1123c19a0@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3f636639-7081-40f5-961d-72b1123c19a0@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-08-30 at 15:28 +1000, Benjamin Herrenschmidt wrote:
-> On Thu, 2011-06-23 at 19:36 -0500, Will Drewry wrote:
-> > Facilitate the use of CONFIG_SECCOMP_FILTER by wrapping compatibility
-> > system call numbering for execve and selecting HAVE_SECCOMP_FILTER.
-> > 
-> > v9: rebase on to bccaeafd7c117acee36e90d37c7e05c19be9e7bf
-> > 
-> > Signed-off-by: Will Drewry <wad@chromium.org>
+On Sun, Nov 27, 2011 at 04:09:19PM -0800, Dmitry Torokhov wrote:
+> >> So for the userspace part it seems to me that we need to make
+> >> up our mind about this stuff: is it going to be through input or
+> >> uevent like in this patch? Or ?both??
+> >
+> >Input please, uevent is not for things like switches that are "common",
+> >but for things that are "uncommon" and don't happen often.
 > 
-> Seen these around for a while ... :-)
-> 
-> I don't see a harm in the patches per-se tho I haven't reviewed the
-> actual seccomp filter stuff and it's good (or bad) behaviour on ppc.
+> Actually, please do not. I never liked audio-related switches added to
+> input; ALSA guys just wore me down. These are usually not switches
+> that user can flip, they are connections between components. Should we
+> switch betide_carrier_*(), power supply state, etc, etc over to input?
+> I think not.
 
-Did that stuff every got anywhere ? I don't see HAVE_SECCOMP_FILTER
-upsteam ... should I just drop the powerpc patch from patchwork ?
+Yes, I think so :)
 
-Cheers,
-Ben.
+Well, not all of them, but when there is a hardware change of state,
+that a user can make happen (plug in headphone, plug in usb port, etc.)
+they should be input events, as there are a zillion different ways to
+have these types of devices.
 
+And as HID has already documented almost all of these already, odds are,
+there's already a HID mapping for what is needed to be exported, and if
+not, it's easy to get a new HID code added, right?
 
+> I haven't looked at the patch yet, but a class that has an attribute
+> that could be queried and emitting uneventful on state change seems
+> like a good diluting for me.
+
+For this one case, maybe.  But what about the next one, and the next
+one, and so on.  I would think those would all map better to input than
+one-off class devices with custom uevent messages.
+
+Unless we want to start piping input events through uevents?  :)
+
+Ok, if you really don't want this, then I suggest we create something
+that encompasses all of these into something unified, much like IIO is
+trying to be for those types of devices.
+
+thanks,
+
+greg k-h
