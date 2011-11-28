@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab1K1XRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:17:31 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48728 "EHLO
+	id S1755027Ab1K1XOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:14:52 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48715 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab1K1XOx (ORCPT
+	with ESMTP id S1754953Ab1K1XOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:14:53 -0500
+	Mon, 28 Nov 2011 18:14:48 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 15/25] perf session: Remove superfluous callchain_cursor member
-Date: Mon, 28 Nov 2011 21:14:16 -0200
-Message-Id: <1322522066-21879-16-git-send-email-acme@infradead.org>
+Subject: [PATCH 12/25] perf symbols: Add nr_events to symbol_conf
+Date: Mon, 28 Nov 2011 21:14:13 -0200
+Message-Id: <1322522066-21879-13-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1322522066-21879-1-git-send-email-acme@infradead.org>
 References: <1322522066-21879-1-git-send-email-acme@infradead.org>
@@ -29,11 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Since we have it in evsel->hists.callchain_cursor, remove it from
-perf_session.
-
-One more step in disentangling several places from requiring a
-perf_session pointer.
+Since symbol__alloc_hists need it, to avoid passing it around in many
+functions have it in the symbol_conf struct.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -41,161 +38,303 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-rxr5dj3di7ckyfmnz0naku1z@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-cwv8ysvpywzjq4v3xtbd4zwv@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c |    5 +++--
- tools/perf/builtin-script.c |    2 +-
- tools/perf/builtin-top.c    |    4 ++--
- tools/perf/util/session.c   |   12 ++++++------
- tools/perf/util/session.h   |    5 ++---
- 5 files changed, 14 insertions(+), 14 deletions(-)
+ tools/perf/builtin-annotate.c          |   22 ++++++++--------------
+ tools/perf/builtin-report.c            |    3 +--
+ tools/perf/builtin-top.c               |    7 ++++---
+ tools/perf/util/annotate.c             |    6 +++---
+ tools/perf/util/annotate.h             |    5 ++---
+ tools/perf/util/header.c               |    2 ++
+ tools/perf/util/hist.h                 |    3 +--
+ tools/perf/util/symbol.h               |    1 +
+ tools/perf/util/ui/browsers/annotate.c |   16 +++++++---------
+ tools/perf/util/ui/browsers/hists.c    |    2 +-
+ 10 files changed, 30 insertions(+), 37 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 758a287..b7ab373 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -65,7 +65,7 @@ static int perf_session__add_hist_entry(struct perf_session *session,
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 46b4c24..8b9091b 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -43,10 +43,9 @@ static const char *sym_hist_filter;
+ static const char	*cpu_list;
+ static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ 
+-static int perf_evlist__add_sample(struct perf_evlist *evlist,
+-				   struct perf_sample *sample,
+-				   struct perf_evsel *evsel,
+-				   struct addr_location *al)
++static int perf_evsel__add_sample(struct perf_evsel *evsel,
++				  struct perf_sample *sample,
++				  struct addr_location *al)
+ {
  	struct hist_entry *he;
+ 	int ret;
+@@ -69,8 +68,7 @@ static int perf_evlist__add_sample(struct perf_evlist *evlist,
+ 	ret = 0;
+ 	if (he->ms.sym != NULL) {
+ 		struct annotation *notes = symbol__annotation(he->ms.sym);
+-		if (notes->src == NULL &&
+-		    symbol__alloc_hist(he->ms.sym, evlist->nr_entries) < 0)
++		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
+ 			return -ENOMEM;
  
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
--		err = perf_session__resolve_callchain(session, al->thread,
-+		err = perf_session__resolve_callchain(session, evsel, al->thread,
- 						      sample->callchain, &parent);
- 		if (err)
- 			return err;
-@@ -76,7 +76,8 @@ static int perf_session__add_hist_entry(struct perf_session *session,
- 		return -ENOMEM;
+ 		ret = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+@@ -98,8 +96,7 @@ static int process_sample_event(union perf_event *event,
+ 	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+ 		return 0;
  
- 	if (symbol_conf.use_callchain) {
--		err = callchain_append(he->callchain, &session->callchain_cursor,
-+		err = callchain_append(he->callchain,
-+				       &evsel->hists.callchain_cursor,
- 				       sample->period);
- 		if (err)
- 			return err;
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 2f62a29..47545e9 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -384,7 +384,7 @@ static void process_event(union perf_event *event __unused,
- 			printf(" ");
- 		else
- 			printf("\n");
--		perf_session__print_ip(event, sample, session,
-+		perf_session__print_ip(event, evsel, sample, session,
- 					      PRINT_FIELD(SYM), PRINT_FIELD(DSO));
- 	}
+-	if (!al.filtered &&
+-	    perf_evlist__add_sample(session->evlist, sample, evsel, &al)) {
++	if (!al.filtered && perf_evsel__add_sample(evsel, sample, &al)) {
+ 		pr_warning("problem incrementing symbol count, "
+ 			   "skipping event\n");
+ 		return -1;
+@@ -114,8 +111,7 @@ static int hist_entry__tty_annotate(struct hist_entry *he, int evidx)
+ 				    print_line, full_paths, 0, 0);
+ }
  
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 04288ee..9b3bbb4 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -777,7 +777,7 @@ static void perf_event__process_sample(const union perf_event *event,
- 
- 		if ((sort__has_parent || symbol_conf.use_callchain) &&
- 		    sample->callchain) {
--			err = perf_session__resolve_callchain(session, al.thread,
-+			err = perf_session__resolve_callchain(session, evsel, al.thread,
- 							      sample->callchain, &parent);
- 			if (err)
- 				return;
-@@ -790,7 +790,7 @@ static void perf_event__process_sample(const union perf_event *event,
+-static void hists__find_annotations(struct hists *self, int evidx,
+-				    int nr_events)
++static void hists__find_annotations(struct hists *self, int evidx)
+ {
+ 	struct rb_node *nd = rb_first(&self->entries), *next;
+ 	int key = K_RIGHT;
+@@ -138,8 +134,7 @@ find_next:
  		}
  
- 		if (symbol_conf.use_callchain) {
--			err = callchain_append(he->callchain, &session->callchain_cursor,
-+			err = callchain_append(he->callchain, &evsel->hists.callchain_cursor,
- 					       sample->period);
- 			if (err)
- 				return;
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6e7d5f5..734358b 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -216,7 +216,7 @@ static bool symbol__match_parent_regex(struct symbol *sym)
+ 		if (use_browser > 0) {
+-			key = hist_entry__tui_annotate(he, evidx, nr_events,
+-						       NULL, NULL, 0);
++			key = hist_entry__tui_annotate(he, evidx, NULL, NULL, 0);
+ 			switch (key) {
+ 			case K_RIGHT:
+ 				next = rb_next(nd);
+@@ -217,8 +212,7 @@ static int __cmd_annotate(void)
+ 			total_nr_samples += nr_samples;
+ 			hists__collapse_resort(hists);
+ 			hists__output_resort(hists);
+-			hists__find_annotations(hists, pos->idx,
+-						session->evlist->nr_entries);
++			hists__find_annotations(hists, pos->idx);
+ 		}
+ 	}
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 4d7c834..758a287 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -92,8 +92,7 @@ static int perf_session__add_hist_entry(struct perf_session *session,
+ 		assert(evsel != NULL);
+ 
+ 		err = -ENOMEM;
+-		if (notes->src == NULL &&
+-		    symbol__alloc_hist(he->ms.sym, session->evlist->nr_entries) < 0)
++		if (notes->src == NULL && symbol__alloc_hist(he->ms.sym) < 0)
+ 			goto out;
+ 
+ 		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c9cdedb..04288ee 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -170,7 +170,7 @@ static int parse_source(struct hist_entry *he)
+ 
+ 	pthread_mutex_lock(&notes->lock);
+ 
+-	if (symbol__alloc_hist(sym, top.evlist->nr_entries) < 0) {
++	if (symbol__alloc_hist(sym) < 0) {
+ 		pthread_mutex_unlock(&notes->lock);
+ 		pr_err("Not enough memory for annotating '%s' symbol!\n",
+ 		       sym->name);
+@@ -210,8 +210,7 @@ static void record_precise_ip(struct hist_entry *he, int counter, u64 ip)
+ 	if (pthread_mutex_trylock(&notes->lock))
+ 		return;
+ 
+-	if (notes->src == NULL &&
+-	    symbol__alloc_hist(sym, top.evlist->nr_entries) < 0) {
++	if (notes->src == NULL && symbol__alloc_hist(sym) < 0) {
+ 		pthread_mutex_unlock(&notes->lock);
+ 		pr_err("Not enough memory for annotating '%s' symbol!\n",
+ 		       sym->name);
+@@ -1215,6 +1214,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
+ 		return -ENOMEM;
+ 	}
+ 
++	symbol_conf.nr_events = top.evlist->nr_entries;
++
+ 	if (top.delay_secs < 1)
+ 		top.delay_secs = 1;
+ 
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 119e996..376e643 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -25,17 +25,17 @@ int symbol__annotate_init(struct map *map __used, struct symbol *sym)
  	return 0;
  }
  
--int perf_session__resolve_callchain(struct perf_session *self,
-+int perf_session__resolve_callchain(struct perf_session *self, struct perf_evsel *evsel,
- 				    struct thread *thread,
- 				    struct ip_callchain *chain,
- 				    struct symbol **parent)
-@@ -225,7 +225,7 @@ int perf_session__resolve_callchain(struct perf_session *self,
- 	unsigned int i;
- 	int err;
+-int symbol__alloc_hist(struct symbol *sym, int nevents)
++int symbol__alloc_hist(struct symbol *sym)
+ {
+ 	struct annotation *notes = symbol__annotation(sym);
+ 	size_t sizeof_sym_hist = (sizeof(struct sym_hist) +
+ 				  (sym->end - sym->start) * sizeof(u64));
  
--	callchain_cursor_reset(&self->callchain_cursor);
-+	callchain_cursor_reset(&evsel->hists.callchain_cursor);
+-	notes->src = zalloc(sizeof(*notes->src) + nevents * sizeof_sym_hist);
++	notes->src = zalloc(sizeof(*notes->src) + symbol_conf.nr_events * sizeof_sym_hist);
+ 	if (notes->src == NULL)
+ 		return -1;
+ 	notes->src->sizeof_sym_hist = sizeof_sym_hist;
+-	notes->src->nr_histograms   = nevents;
++	notes->src->nr_histograms   = symbol_conf.nr_events;
+ 	INIT_LIST_HEAD(&notes->src->source);
+ 	return 0;
+ }
+diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
+index d907252..efa5dc8 100644
+--- a/tools/perf/util/annotate.h
++++ b/tools/perf/util/annotate.h
+@@ -72,7 +72,7 @@ static inline struct annotation *symbol__annotation(struct symbol *sym)
  
- 	for (i = 0; i < chain->nr; i++) {
- 		u64 ip;
-@@ -261,7 +261,7 @@ int perf_session__resolve_callchain(struct perf_session *self,
- 				break;
- 		}
+ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+ 			     int evidx, u64 addr);
+-int symbol__alloc_hist(struct symbol *sym, int nevents);
++int symbol__alloc_hist(struct symbol *sym);
+ void symbol__annotate_zero_histograms(struct symbol *sym);
  
--		err = callchain_cursor_append(&self->callchain_cursor,
-+		err = callchain_cursor_append(&evsel->hists.callchain_cursor,
- 					      ip, al.map, al.sym);
- 		if (err)
- 			return err;
-@@ -1254,14 +1254,14 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 	return NULL;
+ int symbol__annotate(struct symbol *sym, struct map *map, size_t privsize);
+@@ -99,8 +99,7 @@ static inline int symbol__tui_annotate(struct symbol *sym __used,
+ }
+ #else
+ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+-			 int nr_events, void(*timer)(void *arg), void *arg,
+-			 int delay_secs);
++			 void(*timer)(void *arg), void *arg, int delay_secs);
+ #endif
+ 
+ extern const char	*disassembler_style;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index bcd05d0..41424a1 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -2041,6 +2041,8 @@ int perf_session__read_header(struct perf_session *session, int fd)
+ 		lseek(fd, tmp, SEEK_SET);
+ 	}
+ 
++	symbol_conf.nr_events = nr_attrs;
++
+ 	if (f_header.event_types.size) {
+ 		lseek(fd, f_header.event_types.offset, SEEK_SET);
+ 		events = malloc(f_header.event_types.size);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index c86c1d2..6676d55 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -119,7 +119,6 @@ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist __used,
+ 
+ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
+ 					   int evidx __used,
+-					   int nr_events __used,
+ 					   void(*timer)(void *arg) __used,
+ 					   void *arg __used,
+ 					   int delay_secs __used)
+@@ -130,7 +129,7 @@ static inline int hist_entry__tui_annotate(struct hist_entry *self __used,
+ #define K_RIGHT -2
+ #else
+ #include "ui/keysyms.h"
+-int hist_entry__tui_annotate(struct hist_entry *he, int evidx, int nr_events,
++int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
+ 			     void(*timer)(void *arg), void *arg, int delay_secs);
+ 
+ int perf_evlist__tui_browse_hists(struct perf_evlist *evlist, const char *help,
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 29f8d74..123c2e1 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -68,6 +68,7 @@ struct strlist;
+ 
+ struct symbol_conf {
+ 	unsigned short	priv_size;
++	unsigned short	nr_events;
+ 	bool		try_vmlinux_path,
+ 			use_modules,
+ 			sort_by_name,
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index 0575905..295a9c9 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -224,7 +224,7 @@ static bool annotate_browser__toggle_source(struct annotate_browser *browser)
  }
  
--void perf_session__print_ip(union perf_event *event,
-+void perf_session__print_ip(union perf_event *event, struct perf_evsel *evsel,
- 			    struct perf_sample *sample,
- 			    struct perf_session *session,
- 			    int print_sym, int print_dso)
+ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+-				 int nr_events, void(*timer)(void *arg),
++				 void(*timer)(void *arg),
+ 				 void *arg, int delay_secs)
  {
- 	struct addr_location al;
- 	const char *symname, *dsoname;
--	struct callchain_cursor *cursor = &session->callchain_cursor;
-+	struct callchain_cursor *cursor = &evsel->hists.callchain_cursor;
- 	struct callchain_cursor_node *node;
+ 	struct rb_node *nd = NULL;
+@@ -328,8 +328,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 				notes = symbol__annotation(target);
+ 				pthread_mutex_lock(&notes->lock);
  
- 	if (perf_event__preprocess_sample(event, session, &al, sample,
-@@ -1273,7 +1273,7 @@ void perf_session__print_ip(union perf_event *event,
+-				if (notes->src == NULL &&
+-				    symbol__alloc_hist(target, nr_events) < 0) {
++				if (notes->src == NULL && symbol__alloc_hist(target) < 0) {
+ 					pthread_mutex_unlock(&notes->lock);
+ 					ui__warning("Not enough memory for annotating '%s' symbol!\n",
+ 						    target->name);
+@@ -337,7 +336,7 @@ static int annotate_browser__run(struct annotate_browser *self, int evidx,
+ 				}
  
- 	if (symbol_conf.use_callchain && sample->callchain) {
+ 				pthread_mutex_unlock(&notes->lock);
+-				symbol__tui_annotate(target, ms->map, evidx, nr_events,
++				symbol__tui_annotate(target, ms->map, evidx,
+ 						     timer, arg, delay_secs);
+ 			}
+ 			continue;
+@@ -358,15 +357,15 @@ out:
+ 	return key;
+ }
  
--		if (perf_session__resolve_callchain(session, al.thread,
-+		if (perf_session__resolve_callchain(session, evsel, al.thread,
- 						sample->callchain, NULL) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 13bd5e0..d2f4303 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -50,7 +50,6 @@ struct perf_session {
- 	int			cwdlen;
- 	char			*cwd;
- 	struct ordered_samples	ordered_samples;
--	struct callchain_cursor	callchain_cursor;
- 	char			filename[0];
- };
+-int hist_entry__tui_annotate(struct hist_entry *he, int evidx, int nr_events,
++int hist_entry__tui_annotate(struct hist_entry *he, int evidx,
+ 			     void(*timer)(void *arg), void *arg, int delay_secs)
+ {
+-	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx, nr_events,
++	return symbol__tui_annotate(he->ms.sym, he->ms.map, evidx,
+ 				    timer, arg, delay_secs);
+ }
  
-@@ -100,7 +99,7 @@ int __perf_session__process_events(struct perf_session *self,
- int perf_session__process_events(struct perf_session *self,
- 				 struct perf_event_ops *event_ops);
- 
--int perf_session__resolve_callchain(struct perf_session *self,
-+int perf_session__resolve_callchain(struct perf_session *self, struct perf_evsel *evsel,
- 				    struct thread *thread,
- 				    struct ip_callchain *chain,
- 				    struct symbol **parent);
-@@ -169,7 +168,7 @@ static inline int perf_session__parse_sample(struct perf_session *session,
- struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 					    unsigned int type);
- 
--void perf_session__print_ip(union perf_event *event,
-+void perf_session__print_ip(union perf_event *event, struct perf_evsel *evsel,
- 				 struct perf_sample *sample,
- 				 struct perf_session *session,
- 				 int print_sym, int print_dso);
+ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+-			 int nr_events, void(*timer)(void *arg), void *arg,
++			 void(*timer)(void *arg), void *arg,
+ 			 int delay_secs)
+ {
+ 	struct objdump_line *pos, *n;
+@@ -419,8 +418,7 @@ int symbol__tui_annotate(struct symbol *sym, struct map *map, int evidx,
+ 	browser.b.nr_entries = browser.nr_entries;
+ 	browser.b.entries = &notes->src->source,
+ 	browser.b.width += 18; /* Percentage */
+-	ret = annotate_browser__run(&browser, evidx, nr_events,
+-				    timer, arg, delay_secs);
++	ret = annotate_browser__run(&browser, evidx, timer, arg, delay_secs);
+ 	list_for_each_entry_safe(pos, n, &notes->src->source, node) {
+ 		list_del(&pos->node);
+ 		objdump_line__free(pos);
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index d0c94b4..1212a38 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -1020,7 +1020,7 @@ do_annotate:
+ 			 * Don't let this be freed, say, by hists__decay_entry.
+ 			 */
+ 			he->used = true;
+-			err = hist_entry__tui_annotate(he, evsel->idx, nr_events,
++			err = hist_entry__tui_annotate(he, evsel->idx,
+ 						       timer, arg, delay_secs);
+ 			he->used = false;
+ 			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
 -- 
 1.7.8.rc0.35.gee6df
 
