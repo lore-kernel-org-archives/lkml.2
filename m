@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1K1TcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:32:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57739 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab1K1TcL (ORCPT
+	id S1754701Ab1K1Tc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:32:28 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47578 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab1K1TcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:32:11 -0500
+	Mon, 28 Nov 2011 14:32:24 -0500
 From: Tejun Heo <tj@kernel.org>
 To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
         tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
@@ -14,9 +14,9 @@ To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         mingo@redhat.com, jonas@southpole.se, lennox.wu@gmail.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/23] memblock: Make memblock functions handle overflowing range @size
-Date: Mon, 28 Nov 2011 11:31:11 -0800
-Message-Id: <1322508685-32532-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 11/23] powerpc: Cleanup memblock usage
+Date: Mon, 28 Nov 2011 11:31:13 -0800
+Message-Id: <1322508685-32532-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1322508685-32532-1-git-send-email-tj@kernel.org>
 References: <1322508685-32532-1-git-send-email-tj@kernel.org>
@@ -24,73 +24,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow memblock users to specify range where @base + @size overflows
-and automatically cap it at maximum.  This makes the interface more
-robust and specifying till-the-end-of-memory easier.
+* early_init_devtree(): Total memory size is aligned to PAGE_SIZE;
+  however, alignment isn't enforced if memory_limit is explicitly
+  specified.  Simplify the logic and always apply PAGE_SIZE alignment.
+
+* MMU_init(): memblock regions is truncated by directly modifying
+  memblock.memory.cnt.  This is incomplete (reserved array is not
+  truncated) and unnecessarily low level hindering further memblock
+  improvments.  Use memblock_enforce_memory_limit() instead.
+
+* wii_memory_fixups(): Unnecessarily low level direct manipulation of
+  memblock regions.  The same result can be achieved using properly
+  abstracted operations.  Reimplement using memblock API.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 ---
- mm/memblock.c |   15 ++++++++++++---
- 1 files changed, 12 insertions(+), 3 deletions(-)
+ arch/powerpc/kernel/prom.c               |   17 ++++++-----------
+ arch/powerpc/mm/init_32.c                |    2 +-
+ arch/powerpc/platforms/embedded6xx/wii.c |   22 +++++++++-------------
+ 3 files changed, 16 insertions(+), 25 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index fffe68b..945dc31 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -49,6 +49,12 @@ static inline const char *memblock_type_name(struct memblock_type *type)
- 		return "unknown";
- }
+diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+index a7ee83e..28500d4 100644
+--- a/arch/powerpc/kernel/prom.c
++++ b/arch/powerpc/kernel/prom.c
+@@ -754,17 +754,12 @@ void __init early_init_devtree(void *params)
+ 	early_reserve_mem();
+ 	phyp_dump_reserve_mem();
  
-+/* adjust *@size so that (@base + *@size) doesn't overflow, return new size */
-+static inline phys_addr_t memblock_cap_size(phys_addr_t base, phys_addr_t *size)
-+{
-+	return *size = min(*size, (phys_addr_t)ULLONG_MAX - base);
-+}
-+
- /*
-  * Address comparison utilities
-  */
-@@ -328,7 +334,8 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
- 					       phys_addr_t base, phys_addr_t size)
- {
- 	bool insert = false;
--	phys_addr_t obase = base, end = base + size;
-+	phys_addr_t obase = base;
-+	phys_addr_t end = base + memblock_cap_size(base, &size);
- 	int i, nr_new;
+-	limit = memory_limit;
+-	if (! limit) {
+-		phys_addr_t memsize;
+-
+-		/* Ensure that total memory size is page-aligned, because
+-		 * otherwise mark_bootmem() gets upset. */
+-		memblock_analyze();
+-		memsize = memblock_phys_mem_size();
+-		if ((memsize & PAGE_MASK) != memsize)
+-			limit = memsize & PAGE_MASK;
+-	}
++	/*
++	 * Ensure that total memory size is page-aligned, because otherwise
++	 * mark_bootmem() gets upset.
++	 */
++	memblock_analyze();
++	limit = ALIGN(memory_limit ?: memblock_phys_mem_size(), PAGE_SIZE);
+ 	memblock_enforce_memory_limit(limit);
  
- 	/* special case for empty array */
-@@ -420,7 +427,7 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
- 					phys_addr_t base, phys_addr_t size,
- 					int *start_rgn, int *end_rgn)
- {
--	phys_addr_t end = base + size;
-+	phys_addr_t end = base + memblock_cap_size(base, &size);
- 	int i;
+ 	memblock_analyze();
+diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
+index 161cefd..12bb528 100644
+--- a/arch/powerpc/mm/init_32.c
++++ b/arch/powerpc/mm/init_32.c
+@@ -134,7 +134,7 @@ void __init MMU_init(void)
  
- 	*start_rgn = *end_rgn = 0;
-@@ -868,16 +875,18 @@ int __init_memblock memblock_is_memory(phys_addr_t addr)
- int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
- {
- 	int idx = memblock_search(&memblock.memory, base);
-+	phys_addr_t end = base + memblock_cap_size(base, &size);
+ 	if (memblock.memory.cnt > 1) {
+ #ifndef CONFIG_WII
+-		memblock.memory.cnt = 1;
++		memblock_enforce_memory_limit(memblock.memory.regions[0].size);
+ 		memblock_analyze();
+ 		printk(KERN_WARNING "Only using first contiguous memory region");
+ #else
+diff --git a/arch/powerpc/platforms/embedded6xx/wii.c b/arch/powerpc/platforms/embedded6xx/wii.c
+index 1b5dc1a..1cbe9d3 100644
+--- a/arch/powerpc/platforms/embedded6xx/wii.c
++++ b/arch/powerpc/platforms/embedded6xx/wii.c
+@@ -79,23 +79,19 @@ void __init wii_memory_fixups(void)
+ 	BUG_ON(memblock.memory.cnt != 2);
+ 	BUG_ON(!page_aligned(p[0].base) || !page_aligned(p[1].base));
  
- 	if (idx == -1)
- 		return 0;
- 	return memblock.memory.regions[idx].base <= base &&
- 		(memblock.memory.regions[idx].base +
--		 memblock.memory.regions[idx].size) >= (base + size);
-+		 memblock.memory.regions[idx].size) >= end;
- }
+-	p[0].size = _ALIGN_DOWN(p[0].size, PAGE_SIZE);
+-	p[1].size = _ALIGN_DOWN(p[1].size, PAGE_SIZE);
++	/* trim unaligned tail */
++	memblock_remove(ALIGN(p[1].base + p[1].size, PAGE_SIZE),
++			(phys_addr_t)ULLONG_MAX);
  
- int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t size)
- {
-+	memblock_cap_size(base, &size);
- 	return memblock_overlaps_region(&memblock.reserved, base, size) >= 0;
- }
+-	wii_hole_start = p[0].base + p[0].size;
++	/* determine hole, add & reserve them */
++	wii_hole_start = ALIGN(p[0].base + p[0].size, PAGE_SIZE);
+ 	wii_hole_size = p[1].base - wii_hole_start;
+-
+-	pr_info("MEM1: <%08llx %08llx>\n", p[0].base, p[0].size);
+-	pr_info("HOLE: <%08lx %08lx>\n", wii_hole_start, wii_hole_size);
+-	pr_info("MEM2: <%08llx %08llx>\n", p[1].base, p[1].size);
+-
+-	p[0].size += wii_hole_size + p[1].size;
+-
+-	memblock.memory.cnt = 1;
++	memblock_add(wii_hole_start, wii_hole_size);
++	memblock_reserve(wii_hole_start, wii_hole_size);
+ 	memblock_analyze();
  
+-	/* reserve the hole */
+-	memblock_reserve(wii_hole_start, wii_hole_size);
++	BUG_ON(memblock.memory.cnt != 1);
++	__memblock_dump_all();
+ 
+ 	/* allow ioremapping the address space in the hole */
+ 	__allow_ioremap_reserved = 1;
 -- 
 1.7.3.1
 
