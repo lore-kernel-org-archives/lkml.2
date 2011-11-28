@@ -1,55 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1K1OKM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:10:12 -0500
-Received: from mga03.intel.com ([143.182.124.21]:41420 "EHLO mga03.intel.com"
+	id S1753859Ab1K1OKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:10:25 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:23542 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753275Ab1K1OJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:09:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
-   d="scan'208";a="79787557"
-Message-Id: <20111128140513.528601145@intel.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 28 Nov 2011 21:53:43 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: <linux-fsdevel@vger.kernel.org>
-cc: Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Christoph Hellwig <hch@lst.de>
-cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/7] btrfs: fix dirtied pages accounting on sub-page writes
-References: <20111128135338.249672012@intel.com>
-Content-Disposition: inline; filename=btrfs-account-redirty
+	id S1751699Ab1K1OKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:10:23 -0500
+Date: Mon, 28 Nov 2011 18:03:56 +0400
+From: Andrew Vagin <avagin@openvz.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Andrey Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Matt Helsley <matthltc@us.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [RFC] cgroups: freezer -- Allow to attach a task to a frozen
+ cgroup
+Message-ID: <20111128140356.GA27395@dhcp-10-30-18-117.sw.ru>
+References: <20111128120813.GK1775@moon>
+ <CANaxB-wrRd94OJifpYJ=kibx_48oJ=GE51f9GWjZ3np2nCQYsA@mail.gmail.com>
+ <20111128133828.GL1775@moon>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111128133828.GL1775@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing 1KB sequential writes to the same page,
-balance_dirty_pages_ratelimited_nr() should be called once instead of 4
-times, the latter makes the dirtier tasks be throttled much too heavy.
+> > > +static int freezer_can_attach_task(struct cgroup *cgroup, struct task_struct *task)
+> > > +{
+> > > + š š š struct freezer *old_freezer;
+> > > + š š š struct freezer *freezer;
+> > > +
+> > > + š š š int goal_state, orig_state;
+> > > + š š š int retval = 0;
+> > > +
+> > > + š š š old_freezer = task_freezer(task);
+> > > + š š š freezer = cgroup_freezer(cgroup);
+> > > +
+> > > + š š š spin_lock_irq(&freezer->lock);
+> > > +
+> > > + š š š if (!spin_trylock_irq(&old_freezer->lock)) {
+> > > + š š š š š š š retval = -EBUSY;
+> > 
+> > I think EBUSY is not a good idea in this place.  We can do something
+> > like double_rq_lock.
+> > 
+> 
+> Could you please elaborate? freezers are guarded with spinlocks so I think
+> we should stick with them instead of poking rq (or whatever) directly.
 
-Fix it with proper de-accounting on clear_page_dirty_for_io().
+It's misunderstanding. I want to say that we can avoid dead lock if we
+will take a lock with a smaller address at first.
 
-CC: Chris Mason <chris.mason@oracle.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/btrfs/file.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+if (&freezer->lock > &old_freezer->lock) {
+	spin_lock_irq(&old_freezer->lock)
+	spin_lock_irq(&freezer->lock);
+} else {
+	spin_lock_irq(&freezer->lock);
+	spin_lock_irq(&old_freezer->lock)
+}
 
---- linux-next.orig/fs/btrfs/file.c	2011-11-17 20:13:47.000000000 +0800
-+++ linux-next/fs/btrfs/file.c	2011-11-17 20:18:51.000000000 +0800
-@@ -1136,7 +1136,8 @@ again:
- 				     GFP_NOFS);
- 	}
- 	for (i = 0; i < num_pages; i++) {
--		clear_page_dirty_for_io(pages[i]);
-+		if (clear_page_dirty_for_io(pages[i]))
-+			account_page_redirty(pages[i]);
- 		set_page_extent_mapped(pages[i]);
- 		WARN_ON(!PageLocked(pages[i]));
- 	}
+> 
+> > 
+> > > +
+> > > +static void freezer_cancel_attach(struct cgroup_subsys *ss,
+> > > + š š š š š š š š š š š š š š š š struct cgroup *cgroup,
+> > > + š š š š š š š š š š š š š š š š struct cgroup *old_cgroup,
+> > > + š š š š š š š š š š š š š š š š struct task_struct *task)
+> > > +{
+> > > + š š š struct freezer *freezer = cgroup_freezer(old_cgroup);
+> > > + š š š int retval = 0;
+> > > +
+> > > + š š š spin_lock_irq(&freezer->lock);
+> > > + š š š retval = freezer_task_transition(task, freezer->state);
+> > > + š š š if (retval)
+> > > + š š š š š š š pr_warning("freezer: Can't move task (pid %d) to %s state\n",
+> > > + š š š š š š š š š š š š štask_pid_nr(task),
+> > > + š š š š š š š š š š š š šfreezer_state_strs[freezer->state]);
+> > 
+> > It's strange. A rollback can't fail. We have three situations:
+> > 
+> > frozen -> frozen
+> > thawed -> frozen
+> > frozen -> thawed
+> > 
+> > In first and second cases cancel_request can't fail.
+> > In the third we have a problem, which may be solved if we will call
+> > thaw_process(task) from attach_task(), we can do that, because
+> > thaw_process() can't fail. It solves a problem, because
+> > freezer_cancel_attach will be executed for the first and second cases
+> > only.
+> > 
+> > If my suggestion is correct, we can replace pr_warning on BUG_ON
+> > 
+> 
+> Yes, the case which can fail is
+> 
+>    frozen->(can_attach_task)->thawed
+>      (cgroup_task_migrate failure)
+>    thawed->(cancel_attach)->frozen
+> 
+> and we should never fail here since otherwise we would not have
+> a "frozen" state before. But I think placing BUG_ON is too severe
+> here, maybe WARN_ON_ONCE(1) would fit better?
 
-
+It's true, if a task is not being executed between thaw_process() and
+freeze_task().
