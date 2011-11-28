@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab1K1TcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:32:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57739 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab1K1TcQ (ORCPT
+	id S1754746Ab1K1Tcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:32:33 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50227 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753122Ab1K1Tc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:32:16 -0500
+	Mon, 28 Nov 2011 14:32:29 -0500
 From: Tejun Heo <tj@kernel.org>
 To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
         tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
@@ -14,9 +14,9 @@ To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         mingo@redhat.com, jonas@southpole.se, lennox.wu@gmail.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/23] memblock: Reimplement memblock_enforce_memory_limit() using __memblock_remove()
-Date: Mon, 28 Nov 2011 11:31:12 -0800
-Message-Id: <1322508685-32532-11-git-send-email-tj@kernel.org>
+Subject: [PATCH 12/23] memblock: Track total size of regions automatically
+Date: Mon, 28 Nov 2011 11:31:14 -0800
+Message-Id: <1322508685-32532-13-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1322508685-32532-1-git-send-email-tj@kernel.org>
 References: <1322508685-32532-1-git-send-email-tj@kernel.org>
@@ -24,80 +24,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent updates, the basic memblock operations are robust enough
-that there's no reason for memblock_enfore_memory_limit() to directly
-manipulate memblock region arrays.  Reimplement it using
-__memblock_remove().
+Total size of memory regions was calculated by memblock_analyze()
+requiring explicitly calling the function between operations which can
+change memory regions and possible users of total size, which is
+cumbersome and fragile.
+
+This patch makes each memblock_type track total size automatically
+with minor modifications to memblock manipulation functions and remove
+requirements on calling memblock_analyze().  [__]memblock_dump_all()
+now also dumps the total size of reserved regions.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 ---
- mm/memblock.c |   42 +++++++++++++-----------------------------
- 1 files changed, 13 insertions(+), 29 deletions(-)
+ include/linux/memblock.h |    2 +-
+ mm/memblock.c            |   27 +++++++++++++--------------
+ 2 files changed, 14 insertions(+), 15 deletions(-)
 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 6ac91c5..5bb1500 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -30,12 +30,12 @@ struct memblock_region {
+ struct memblock_type {
+ 	unsigned long cnt;	/* number of regions */
+ 	unsigned long max;	/* size of the allocated array */
++	phys_addr_t total_size;	/* size of all regions */
+ 	struct memblock_region *regions;
+ };
+ 
+ struct memblock {
+ 	phys_addr_t current_limit;
+-	phys_addr_t memory_size;	/* Updated by memblock_analyze() */
+ 	struct memblock_type memory;
+ 	struct memblock_type reserved;
+ };
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 945dc31..b44875f 100644
+index b44875f..f399641 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -804,44 +804,28 @@ phys_addr_t __init_memblock memblock_end_of_DRAM(void)
+@@ -179,12 +179,14 @@ int __init_memblock memblock_reserve_reserved_regions(void)
+ 
+ static void __init_memblock memblock_remove_region(struct memblock_type *type, unsigned long r)
+ {
++	type->total_size -= type->regions[r].size;
+ 	memmove(&type->regions[r], &type->regions[r + 1],
+ 		(type->cnt - (r + 1)) * sizeof(type->regions[r]));
+ 	type->cnt--;
+ 
+ 	/* Special case for empty arrays */
+ 	if (type->cnt == 0) {
++		WARN_ON(type->total_size != 0);
+ 		type->cnt = 1;
+ 		type->regions[0].base = 0;
+ 		type->regions[0].size = 0;
+@@ -314,6 +316,7 @@ static void __init_memblock memblock_insert_region(struct memblock_type *type,
+ 	rgn->size = size;
+ 	memblock_set_region_node(rgn, nid);
+ 	type->cnt++;
++	type->total_size += size;
  }
  
- /* You must call memblock_analyze() after this. */
--void __init memblock_enforce_memory_limit(phys_addr_t memory_limit)
-+void __init memblock_enforce_memory_limit(phys_addr_t limit)
+ /**
+@@ -340,10 +343,11 @@ static int __init_memblock memblock_add_region(struct memblock_type *type,
+ 
+ 	/* special case for empty array */
+ 	if (type->regions[0].size == 0) {
+-		WARN_ON(type->cnt != 1);
++		WARN_ON(type->cnt != 1 || type->total_size);
+ 		type->regions[0].base = base;
+ 		type->regions[0].size = size;
+ 		memblock_set_region_node(&type->regions[0], MAX_NUMNODES);
++		type->total_size = size;
+ 		return 0;
+ 	}
+ repeat:
+@@ -453,7 +457,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 			 * to process the next region - the new top half.
+ 			 */
+ 			rgn->base = base;
+-			rgn->size = rend - rgn->base;
++			rgn->size -= base - rbase;
++			type->total_size -= base - rbase;
+ 			memblock_insert_region(type, i, rbase, base - rbase,
+ 					       memblock_get_region_node(rgn));
+ 		} else if (rend > end) {
+@@ -462,7 +467,8 @@ static int __init_memblock memblock_isolate_range(struct memblock_type *type,
+ 			 * current region - the new bottom half.
+ 			 */
+ 			rgn->base = end;
+-			rgn->size = rend - rgn->base;
++			rgn->size -= end - rbase;
++			type->total_size -= end - rbase;
+ 			memblock_insert_region(type, i--, rbase, end - rbase,
+ 					       memblock_get_region_node(rgn));
+ 		} else {
+@@ -784,10 +790,9 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
+  * Remaining API functions
+  */
+ 
+-/* You must call memblock_analyze() before this. */
+ phys_addr_t __init memblock_phys_mem_size(void)
+ {
+-	return memblock.memory_size;
++	return memblock.memory.total_size;
+ }
+ 
+ /* lowest address */
+@@ -803,7 +808,6 @@ phys_addr_t __init_memblock memblock_end_of_DRAM(void)
+ 	return (memblock.memory.regions[idx].base + memblock.memory.regions[idx].size);
+ }
+ 
+-/* You must call memblock_analyze() after this. */
+ void __init memblock_enforce_memory_limit(phys_addr_t limit)
  {
  	unsigned long i;
--	phys_addr_t limit;
--	struct memblock_region *p;
-+	phys_addr_t max_addr = (phys_addr_t)ULLONG_MAX;
+@@ -906,7 +910,9 @@ static void __init_memblock memblock_dump(struct memblock_type *type, char *name
+ void __init_memblock __memblock_dump_all(void)
+ {
+ 	pr_info("MEMBLOCK configuration:\n");
+-	pr_info(" memory size = 0x%llx\n", (unsigned long long)memblock.memory_size);
++	pr_info(" memory size = %#llx reserved size = %#llx\n",
++		(unsigned long long)memblock.memory.total_size,
++		(unsigned long long)memblock.reserved.total_size);
  
--	if (!memory_limit)
-+	if (!limit)
- 		return;
+ 	memblock_dump(&memblock.memory, "memory");
+ 	memblock_dump(&memblock.reserved, "reserved");
+@@ -914,13 +920,6 @@ void __init_memblock __memblock_dump_all(void)
  
--	/* Truncate the memblock regions to satisfy the memory limit. */
--	limit = memory_limit;
-+	/* find out max address */
- 	for (i = 0; i < memblock.memory.cnt; i++) {
--		if (limit > memblock.memory.regions[i].size) {
--			limit -= memblock.memory.regions[i].size;
--			continue;
--		}
+ void __init memblock_analyze(void)
+ {
+-	int i;
 -
--		memblock.memory.regions[i].size = limit;
--		memblock.memory.cnt = i + 1;
--		break;
--	}
+-	memblock.memory_size = 0;
 -
--	memory_limit = memblock_end_of_DRAM();
-+		struct memblock_region *r = &memblock.memory.regions[i];
- 
--	/* And truncate any reserves above the limit also. */
--	for (i = 0; i < memblock.reserved.cnt; i++) {
--		p = &memblock.reserved.regions[i];
+-	for (i = 0; i < memblock.memory.cnt; i++)
+-		memblock.memory_size += memblock.memory.regions[i].size;
 -
--		if (p->base > memory_limit)
--			p->size = 0;
--		else if ((p->base + p->size) > memory_limit)
--			p->size = memory_limit - p->base;
--
--		if (p->size == 0) {
--			memblock_remove_region(&memblock.reserved, i);
--			i--;
-+		if (limit <= r->size) {
-+			max_addr = r->base + limit;
-+			break;
- 		}
-+		limit -= r->size;
- 	}
-+
-+	/* truncate both memory and reserved regions */
-+	__memblock_remove(&memblock.memory, max_addr, (phys_addr_t)ULLONG_MAX);
-+	__memblock_remove(&memblock.reserved, max_addr, (phys_addr_t)ULLONG_MAX);
+ 	/* We allow resizing from there */
+ 	memblock_can_resize = 1;
  }
- 
- static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
 -- 
 1.7.3.1
 
