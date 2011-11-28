@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab1K1SSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 13:18:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33274 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904Ab1K1SSq convert rfc822-to-8bit (ORCPT
+	id S1753322Ab1K1SWW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 13:22:22 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55110 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280Ab1K1SWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 13:18:46 -0500
-Message-ID: <1322504279.2921.154.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu 24/28] rcu: Introduce bulk reference
- count
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Date: Mon, 28 Nov 2011 19:17:59 +0100
-In-Reply-To: <20111128171513.GF2346@linux.vnet.ibm.com>
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
-	 <1320265849-5744-24-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1322484071.2921.115.camel@twins>
-	 <20111128171513.GF2346@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 28 Nov 2011 13:22:18 -0500
+Date: Mon, 28 Nov 2011 10:22:06 -0800
+From: Tejun Heo <tj@kernel.org>
+To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
+        ralf@linux-mips.org, schwidefsky@de.ibm.com, liqin.chen@sunplusct.com,
+        lethal@linux-sh.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: [GIT PULL tip/x86/memblock] updated x86/memblock branch
+Message-ID: <20111128182206.GF18864@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-28 at 09:15 -0800, Paul E. McKenney wrote:
+Hello, Ingo, hpa,
 
-> > I'm having trouble with the naming as well as the need for an explicit
-> > new API.
-> > 
-> > To me this looks like a regular (S)RCU variant, nothing to do with
-> > references per-se (aside from the fact that SRCU is a refcounted rcu
-> > variant). Also WTF is this bulk stuff about? Its still a single ref at a
-> > time, not 10s or 100s or whatnot.
-> 
-> It is a bulk reference in comparison to a conventional atomic_inc()-style
-> reference count, which is normally associated with a specific structure.
-> In contrast, doing a bulkref_get() normally protects a group of structures,
-> everything covered by the bulkref_t.
-> 
-> Yes, in theory you could have a global reference counter that protected
-> a group of structures, but in practice we both know that this would not
-> end well.  ;-)
+For some reason (probably the korg issue played a role), x86/memblock
+got dropped from tip and missed the merge window and I didn't notice
+it either until benh poke me about testing pending patches (thanks a
+lot).  I resurrected the branch and there are some conflicts as
+expected but nothing major.
 
-Well, all the counter based RCUs are basically that. And yes, making
-them scale is 'interesting', however you've done pretty well so far ;-)
+I pulled in the current linux/master 401d0069cb "Merge branch
+'fbdev-for-linus' of git://github.com/schandinat/linux-2.6" into
+x86/memblock and resolve all the conflicts.  List of conflicts and
+resolutions follow (also included in the commit message).
 
-I just hate the name in that it totally obscures the fact that its
-regular SRCU.
+    * arch/x86/xen/setup.c
 
-> > > +static inline int bulkref_get(bulkref_t *brp)
-> > > +{
-> > > +	unsigned long flags;
-> > > +	int ret;
-> > > +
-> > > +	local_irq_save(flags);
-> > > +	ret =  __srcu_read_lock(brp);
-> > > +	local_irq_restore(flags);
-> > > +	return ret;
-> > > +}
-> > > +
-> > > +static inline void bulkref_put(bulkref_t *brp, int idx)
-> > > +{
-> > > +	unsigned long flags;
-> > > +
-> > > +	local_irq_save(flags);
-> > > +	__srcu_read_unlock(brp, idx);
-> > > +	local_irq_restore(flags);
-> > > +}
-> > 
-> > This seems to be the main gist of the patch, which to me sounds utterly
-> > ridiculous. Why not document that srcu_read_{un,}lock() aren't IRQ safe
-> > and if you want to use it from those contexts you have to fix it up
-> > yourself.
-> 
-> I thought I had documented this, but I guess not.  I will add that.
+	dc91c728fd "xen: allow extra memory to be in multiple regions"
+	24aa07882b "memblock, x86: Replace memblock_x86_reserve/free..."
+    
+        conflicted on xen_add_extra_mem() updates.  The resolution is
+        trivial as the latter just want to replace
+        memblock_x86_reserve_range() with memblock_reserve().
 
-Oh, I hadn't checked, it could be.
+    * drivers/pci/intel-iommu.c
 
-> I lost you on the "fix it up yourself" -- what are you suggesting that
-> someone needing to use RCU in this manner actually do?
+        166e9278a3f "x86/ia64: intel-iommu: move to drivers/iommu/"
+        5dfe8660a3d "bootmem: Replace work_with_active_regions() with..."
 
-  local_irq_save(flags);
-  srcu_read_lock(&my_srcu_domain);
-  local_irq_restore(flags);
+        conflicted as the former moved the file under drivers/iommu/.
+        Resolved by applying the chnages from the latter on the moved
+        file.
 
-and
+    * mm/Kconfig
 
-  local_irq_save(flags);
-  srcu_read_unlock(&my_srcu_domain);
-  local_irq_restore(flags)
+        6661672053a "memblock: add NO_BOOTMEM config symbol"
+        c378ddd53f9 "memblock, x86: Make ARCH_DISCARD_MEMBLOCK a config option"
 
-Doesn't look to be too hard, or confusing.
+        conflicted trivially.  Both added config options.  Just
+        letting both add their own options resolves the conflict.
 
-> > RCU lockdep doesn't do the full validation so it won't actually catch it
-> > if you mess up the irq states, but I guess if you want we could look at
-> > adding that.
-> 
-> Ah, I had missed that.  Yes, it would be very good if that could be added.
-> The vast majority of the uses exit the RCU read-side critical section in
-> the same context that they enter it, so it would be good to check.
+    * mm/memblock.c
 
-/me adds to TODO list.
+        d1f0ece6cdc "mm/memblock.c: small function definition fixes"
+        ed7b56a799c "memblock: Remove memblock_memory_can_coalesce()"
 
+        confliected.  The former updates function removed by the
+        latter.  Resolution is trivial.
+
+Please pull from
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86-memblock
+
+to receive the merged branch.  I'll soon post the pending patches on
+top of the merged branch.
+
+Thank you.
+
+-- 
+tejun
