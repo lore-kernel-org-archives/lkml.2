@@ -1,126 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1K1SFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 13:05:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46380 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751427Ab1K1SFE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 13:05:04 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] gpiolib: Add decode of WM8994 GPIO configuration
-Date: Mon, 28 Nov 2011 18:05:01 +0000
-Message-Id: <1322503501-26947-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1753474Ab1K1SGF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 13:06:05 -0500
+Received: from mga11.intel.com ([192.55.52.93]:63566 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751427Ab1K1SGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 13:06:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,585,1315206000"; 
+   d="scan'208";a="89870246"
+Message-ID: <4ED3CD8B.5060000@intel.com>
+Date: Mon, 28 Nov 2011 10:06:03 -0800
+From: Alexander Duyck <alexander.h.duyck@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dean Nelson <dnelson@redhat.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Jiri Pirko <jpirko@redhat.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: [PATCH 21/62] net: remove the second argument of k[un]map_atomic()
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com>  <1322371662-26166-22-git-send-email-amwang@redhat.com> <1322381248.2826.1.camel@edumazet-laptop>
+In-Reply-To: <1322381248.2826.1.camel@edumazet-laptop>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/gpio/gpio-wm8994.c |   79 ++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 77 insertions(+), 2 deletions(-)
+On 11/27/2011 12:07 AM, Eric Dumazet wrote:
+> Le dimanche 27 novembre 2011 à 13:27 +0800, Cong Wang a écrit :
+>> Signed-off-by: Cong Wang <amwang@redhat.com>
+>> ---
+>> diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+>> index cf480b5..b194beb 100644
+>> --- a/drivers/net/ethernet/intel/e1000/e1000_main.c
+>> +++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+>> @@ -3878,11 +3878,9 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
+>>  				if (length <= copybreak &&
+>>  				    skb_tailroom(skb) >= length) {
+>>  					u8 *vaddr;
+>> -					vaddr = kmap_atomic(buffer_info->page,
+>> -					                    KM_SKB_DATA_SOFTIRQ);
+>> +					vaddr = kmap_atomic(buffer_info->page);
+>>  					memcpy(skb_tail_pointer(skb), vaddr, length);
+>> -					kunmap_atomic(vaddr,
+>> -					              KM_SKB_DATA_SOFTIRQ);
+>> +					kunmap_atomic(vaddr);
+>>  					/* re-use the page, so don't erase
+>>  					 * buffer_info->page */
+>>  					skb_put(skb, length);
+>> diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+>> index a855db1..8603c87 100644
+>> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
+>> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+>> @@ -1272,9 +1272,9 @@ static bool e1000_clean_rx_irq_ps(struct e1000_adapter *adapter,
+>>  			 */
+>>  			dma_sync_single_for_cpu(&pdev->dev, ps_page->dma,
+>>  						PAGE_SIZE, DMA_FROM_DEVICE);
+>> -			vaddr = kmap_atomic(ps_page->page, KM_SKB_DATA_SOFTIRQ);
+>> +			vaddr = kmap_atomic(ps_page->page);
+>>  			memcpy(skb_tail_pointer(skb), vaddr, l1);
+>> -			kunmap_atomic(vaddr, KM_SKB_DATA_SOFTIRQ);
+>> +			kunmap_atomic(vaddr);
+>>  			dma_sync_single_for_device(&pdev->dev, ps_page->dma,
+>>  						   PAGE_SIZE, DMA_FROM_DEVICE);
+>>  
+>> @@ -1465,12 +1465,10 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
+>>  				if (length <= copybreak &&
+>>  				    skb_tailroom(skb) >= length) {
+>>  					u8 *vaddr;
+>> -					vaddr = kmap_atomic(buffer_info->page,
+>> -					                   KM_SKB_DATA_SOFTIRQ);
+>> +					vaddr = kmap_atomic(buffer_info->page);
+>>  					memcpy(skb_tail_pointer(skb), vaddr,
+>>  					       length);
+>> -					kunmap_atomic(vaddr,
+>> -					              KM_SKB_DATA_SOFTIRQ);
+>> +					kunmap_atomic(vaddr);
+>>  					/* re-use the page, so don't erase
+>>  					 * buffer_info->page */
+>>  					skb_put(skb, length);
+> But why are these drivers using kmap_atomic() in first place, since
+> their fragments are allocated in regular zone (GFP_ATOMIC or
+> GFP_KERNEL) ?
 
-diff --git a/drivers/gpio/gpio-wm8994.c b/drivers/gpio/gpio-wm8994.c
-index 96198f3..92ea535 100644
---- a/drivers/gpio/gpio-wm8994.c
-+++ b/drivers/gpio/gpio-wm8994.c
-@@ -117,6 +117,60 @@ static int wm8994_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
- 
- 
- #ifdef CONFIG_DEBUG_FS
-+static const char *wm8994_gpio_fn(u16 fn)
-+{
-+	switch (fn) {
-+	case WM8994_GP_FN_PIN_SPECIFIC:
-+		return "pin-specific";
-+	case WM8994_GP_FN_GPIO:
-+		return "GPIO";
-+	case WM8994_GP_FN_SDOUT:
-+		return "SDOUT";
-+	case WM8994_GP_FN_IRQ:
-+		return "IRQ";
-+	case WM8994_GP_FN_TEMPERATURE:
-+		return "Temperature";
-+	case WM8994_GP_FN_MICBIAS1_DET:
-+		return "MICBIAS1 detect";
-+	case WM8994_GP_FN_MICBIAS1_SHORT:
-+		return "MICBIAS1 short";
-+	case WM8994_GP_FN_MICBIAS2_DET:
-+		return "MICBIAS2 detect";
-+	case WM8994_GP_FN_MICBIAS2_SHORT:
-+		return "MICBIAS2 short";
-+	case WM8994_GP_FN_FLL1_LOCK:
-+		return "FLL1 lock";
-+	case WM8994_GP_FN_FLL2_LOCK:
-+		return "FLL2 lock";
-+	case WM8994_GP_FN_SRC1_LOCK:
-+		return "SRC1 lock";
-+	case WM8994_GP_FN_SRC2_LOCK:
-+		return "SRC2 lock";
-+	case WM8994_GP_FN_DRC1_ACT:
-+		return "DRC1 activity";
-+	case WM8994_GP_FN_DRC2_ACT:
-+		return "DRC2 activity";
-+	case WM8994_GP_FN_DRC3_ACT:
-+		return "DRC3 activity";
-+	case WM8994_GP_FN_WSEQ_STATUS:
-+		return "Write sequencer";
-+	case WM8994_GP_FN_FIFO_ERROR:
-+		return "FIFO error";
-+	case WM8994_GP_FN_OPCLK:
-+		return "OPCLK";
-+	case WM8994_GP_FN_THW:
-+		return "Thermal warning";
-+	case WM8994_GP_FN_DCS_DONE:
-+		return "DC servo";
-+	case WM8994_GP_FN_FLL1_OUT:
-+		return "FLL1 output";
-+	case WM8994_GP_FN_FLL2_OUT:
-+		return "FLL1 output";
-+	default:
-+		return "Unknown";
-+	}
-+}
-+
- static void wm8994_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- {
- 	struct wm8994_gpio *wm8994_gpio = to_wm8994_gpio(chip);
-@@ -148,8 +202,29 @@ static void wm8994_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 			continue;
- 		}
- 
--		/* No decode yet; note that GPIO2 is special */
--		seq_printf(s, "(%x)\n", reg);
-+		if (reg & WM8994_GPN_DIR)
-+			seq_printf(s, "in ");
-+		else
-+			seq_printf(s, "out ");
-+
-+		if (reg & WM8994_GPN_PU)
-+			seq_printf(s, "pull up ");
-+
-+		if (reg & WM8994_GPN_PD)
-+			seq_printf(s, "pull down ");
-+
-+		if (reg & WM8994_GPN_POL)
-+			seq_printf(s, "inverted ");
-+		else
-+			seq_printf(s, "noninverted ");
-+
-+		if (reg & WM8994_GPN_OP_CFG)
-+			seq_printf(s, "open drain ");
-+		else
-+			seq_printf(s, "CMOS ");
-+
-+		seq_printf(s, "%s (%x)\n",
-+			   wm8994_gpio_fn(reg & WM8994_GPN_FN_MASK), reg);
- 	}
- }
- #else
--- 
-1.7.7.3
+I was asking the same thing myself recently when I started working on
+some copy-break like code for the ixgbe driver.  I believe the main
+reason is a lack of documentation.  This code is based loosely on the
+skb_copy_bits code which will use kmap_skb_frag over all of the paged
+portions of the sk_buff.  As such it was decided to map things via
+kmap_atomic in order to guarantee the pages had a valid virtual address.
 
+If I understand things correctly, what you are brining up is that pages
+allocated with either GFP_ATOMIC or GFP_KERNEL will always be allocated
+from the lowmem pool and as such page_address should always succeed.  Is
+that correct?
+
+Thanks,
+
+Alex
