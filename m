@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683Ab1K1FHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 00:07:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46425 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304Ab1K1FHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 00:07:22 -0500
-Message-ID: <4ED316F4.20709@redhat.com>
-Date: Mon, 28 Nov 2011 13:07:00 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1752072Ab1K1FH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 00:07:57 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:57930 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750981Ab1K1FHz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 00:07:55 -0500
+X-Sasl-enc: VYTwLBa/ygD9j/ftiA1UXlxQcWPbELnIN4ao1GXSH7vz 1322456874
+Date: Mon, 28 Nov 2011 14:07:49 +0900
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Dave Airlie <airlied@linux.ie>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
+	<ville.syrjala@linux.intel.com>,
+        Rob Clark <rob.clark@linaro.org>
+Subject: Re: linux-next: build failure after merge of the drm tree
+Message-ID: <20111128050749.GC9372@kroah.com>
+References: <20111116113007.5656a7b4823ba085a46c57ae@canb.auug.org.au>
+ <20111125124913.405fc8360a185f3116adb5ec@canb.auug.org.au>
+ <20111125103011.18e167cd@lxorguk.ukuu.org.uk>
+ <20111128135204.33bb929d7495d7830d09dfc3@canb.auug.org.au>
 MIME-Version: 1.0
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 01/62] highmem: mark k[un]map_atomic() with two arguments
- as deprecated
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-2-git-send-email-amwang@redhat.com> <4ED22E3E.8080507@cesarb.net>
-In-Reply-To: <4ED22E3E.8080507@cesarb.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111128135204.33bb929d7495d7830d09dfc3@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年11月27日 20:34, Cesar Eduardo Barros 写道:
->
-> This will break the misuse detection of kunmap_atomic (see commit 597781f3e51f48ef8e67be772196d9e9673752c4).
->
-> kunmap_atomic() _must_ be a macro, so the __same_type can see the type the caller used. If you use an inline function, all it will see is a void *, even if the caller confused it with kunmap() and passed a struct page *.
->
+On Mon, Nov 28, 2011 at 01:52:04PM +1100, Stephen Rothwell wrote:
+> Hi Alan,
+> 
+> On Fri, 25 Nov 2011 10:30:11 +0000 Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> >
+> > > Ping?
+> > 
+> > As I said last time you asked this - the correct merge resolution is to
+> > pull the DRM updates and mark the staging GMA500 Kconfig "&& BROKEN". The
+> > staging driver is frozen while we merge outside of staging and will not
+> > be getting any attention at this point - changes there just mess up the
+> > move work which is far more important.
+> > 
+> > Also nothing in staging should be allowed to hold up real work. The
+> > resolution for anything in staging blocking merges is to mark the staging
+> > parts && BROKEN IMHO
+> 
+> Then if you are moving a driver out of staging, you should put a patch in
+> your tree to disable it in staging (or remove it in staging) and send
+> that patch to Greg as well.
 
-Hmm, I think you are right, I will switch it back to a macro.
+That patch is already in my staging-next tree, so all should be good
+now.
 
-Thanks for review!
+Even then, I don't think that broken staging drivers should stop any
+other tree from being included, except for the staging tree itself.
+
+thanks,
+
+greg k-h
