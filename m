@@ -1,94 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab1K1W4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:56:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57631 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754405Ab1K1W4Q (ORCPT
+	id S1754806Ab1K1W6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 17:58:32 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54614 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab1K1W6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:56:16 -0500
-Date: Mon, 28 Nov 2011 14:56:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yauhen Kharuzhy <jekhor@gmail.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, Daniel Mack <daniel@caiaq.de>
-Subject: Re: [PATCH 2/2] RTC MXC: Make alarm working
-Message-Id: <20111128145615.98789cfc.akpm@linux-foundation.org>
-In-Reply-To: <1320598006-17678-3-git-send-email-jekhor@gmail.com>
-References: <1320598006-17678-1-git-send-email-jekhor@gmail.com>
-	<1320598006-17678-3-git-send-email-jekhor@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Nov 2011 17:58:31 -0500
+Date: Mon, 28 Nov 2011 22:58:29 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8] mfd: Enable register cache for wm8994 devices
+Message-ID: <20111128225829.GC16133@sirena.org.uk>
+References: <20111128224017.GA13163@opensource.wolfsonmicro.com>
+ <1322520274-13789-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <1322520274-13789-8-git-send-email-broonie@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322520274-13789-8-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Cookie: To stay youthful, stay useful.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  6 Nov 2011 19:46:46 +0300
-Yauhen Kharuzhy <jekhor@gmail.com> wrote:
+On Mon, Nov 28, 2011 at 10:44:34PM +0000, Mark Brown wrote:
+> As part of this we provide information about the registers that exist in
+> the device to the regmap core, drop the small amount of cache that the
+> core had been using and let regmap do the sync.
 
-> Fix alarm IRQ handling, make the alarm one-shot. Cleanup black magick with
-> a validation of already validated time data.
-> 
-> Add ability to wake the system with alarm.
-> 
-> ...
->
-> +#ifdef CONFIG_PM
-> +static int mxc_rtc_suspend(struct device *dev)
-> +{
-> +	struct rtc_plat_data *pdata = dev_get_drvdata(dev);
-> +
-> +	if (device_may_wakeup(dev))
-> +		enable_irq_wake(pdata->irq);
-> +
-> +	return 0;
-> +}
-> +
-> +static int mxc_rtc_resume(struct device *dev)
-> +{
-> +	struct rtc_plat_data *pdata = dev_get_drvdata(dev);
-> +
-> +	if (device_may_wakeup(dev))
-> +		disable_irq_wake(pdata->irq);
-> +
-> +	return 0;
-> +}
-> +#endif
-> +
-> +static struct dev_pm_ops mxc_rtc_pm_ops = {
-> +	.suspend	= mxc_rtc_suspend,
-> +	.resume		= mxc_rtc_resume,
-> +};
-> +
->  static struct platform_driver mxc_rtc_driver = {
->  	.driver = {
->  		   .name	= "mxc_rtc",
-> +#ifdef CONFIG_PM
-> +		   .pm		= &mxc_rtc_pm_ops,
-> +#endif
->  		   .owner	= THIS_MODULE,
->  	},
->  	.remove		= __exit_p(mxc_rtc_remove),
-
-This won't compile with CONFIG_PM=n.  Fix:
-
---- a/drivers/rtc/rtc-mxc.c~drivers-rtc-rtc-mxcc-make-alarm-work-fix
-+++ a/drivers/rtc/rtc-mxc.c
-@@ -466,12 +466,12 @@ static int mxc_rtc_resume(struct device 
- 
- 	return 0;
- }
--#endif
- 
- static struct dev_pm_ops mxc_rtc_pm_ops = {
- 	.suspend	= mxc_rtc_suspend,
- 	.resume		= mxc_rtc_resume,
- };
-+#endif
- 
- static struct platform_driver mxc_rtc_driver = {
- 	.driver = {
-_
-
+Oh, and I forgot that this one depends on a regmap patch (regmap: Track
+if the register cache is dirty and suppress unneeded syncs).  I've
+rebuilt the branch with the appropriate merge in it.
