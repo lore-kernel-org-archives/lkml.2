@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab1K1UnO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 15:43:14 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46424 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab1K1UnN (ORCPT
+	id S1754607Ab1K1UoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:44:16 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:59367 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab1K1UoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 15:43:13 -0500
-Date: Mon, 28 Nov 2011 21:43:11 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] x86, microcode fixes for 3.2
-Message-ID: <20111128204311.GA2814@aftab>
-MIME-Version: 1.0
+	Mon, 28 Nov 2011 15:44:15 -0500
+Date: Mon, 28 Nov 2011 21:44:12 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Nicolas Kalkhof <nkalkhof@web.de>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        deepthi@linux.vnet.ibm.com
+Subject: Re: Too many poll_idle cpu calls in kernel 3.2 rc-series
+Message-ID: <20111128204412.GM24062@one.firstfloor.org>
+References: <492649473.3864850.1322512273580.JavaMail.fmail@mwmweb020>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <492649473.3864850.1322512273580.JavaMail.fmail@mwmweb020>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Mon, Nov 28, 2011 at 09:31:13PM +0100, Nicolas Kalkhof wrote:
+> Andi,
+> 
+> correct. The issue was introduced somewhere between 3.1 final and 3.2-rc1. I've tried to track down the bad commit but so far I haven't been successfull. The only workaround I found is to set the idle boot parameter to mwait and to disable CONFIG_INTEL_IDLE. Somehow the kernel seems to set idle to poll by default - no idea why :-(. I wonder if other mobile sandy bridge cpus are affected as well.
 
-please pull the following two fixes for the microcode machinery.
+There are only a few changesets affecting drivers/idle
 
-Thanks.
+Can you try to git revert 
 
-The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+46bcfad7a819bd17ac4e831b04405152d59784ab
+4202735e8ab6ecfb0381631a0d0b58fefe0bd4e2
+e978aa7d7d57d04eb5f88a7507c4fb98577def77
 
-  Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
+?
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode
-
-Borislav Petkov (1):
-      x86, microcode, AMD: Restrict microcode reporting
-
-Srivatsa S. Bhat (1):
-      x86, microcode: Fix the failure path of microcode update driver init code
-
- arch/x86/kernel/cpu/amd.c        |    3 ++-
- arch/x86/kernel/microcode_core.c |   19 +++++++++++--------
- 2 files changed, 13 insertions(+), 9 deletions(-)
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+-Andi
