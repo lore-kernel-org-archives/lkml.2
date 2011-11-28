@@ -1,89 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab1K1WpO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:45:14 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60968 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753945Ab1K1WpC (ORCPT
+	id S1755163Ab1K1WpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 17:45:21 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:32844 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755135Ab1K1WpQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:45:02 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/8] mfd: Add basic device tree binding for wm8994
-Date: Mon, 28 Nov 2011 22:44:28 +0000
-Message-Id: <1322520274-13789-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1322520274-13789-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20111128224017.GA13163@opensource.wolfsonmicro.com>
- <1322520274-13789-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 28 Nov 2011 17:45:16 -0500
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "nagar@watson.ibm.com" <nagar@watson.ibm.com>,
+        "kobayashi.kk@ncos.nec.co.jp" <kobayashi.kk@ncos.nec.co.jp>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Date: Mon, 28 Nov 2011 17:44:56 -0500
+Subject: [PATCH 1/4] sched: add members to struct sched_info to save maximum
+Thread-Topic: [PATCH 1/4] sched: add members to struct sched_info to save
+ maximum
+Thread-Index: AcyuHz1jOo2pA4gdSJ2m+oX/c0nTOAAAAQVQ
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB574E70F@USINDEVS02.corp.hds.com>
+References: <65795E11DBF1E645A09CEC7EAEE94B9CB574E70D@USINDEVS02.corp.hds.com>
+In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB574E70D@USINDEVS02.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1111280247
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a placeholder device tree binding for the wm8994 driver. At present
-the binding is essentially null as none of the platform data is supported,
-and at least some of that will depend on the pending regulator bindings.
+This patch adds members to struct sched_info and save max delays
+into it.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Satoru Moriya <satoru.moriya@hds.com>
 ---
- Documentation/devicetree/bindings/sound/wm8994.txt |   18 ++++++++++++++++++
- drivers/mfd/wm8994-core.c                          |    9 +++++++++
- 2 files changed, 27 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/sound/wm8994.txt
+ include/linux/sched.h |    2 ++
+ kernel/sched_stats.h  |    5 +++++
+ 2 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/sound/wm8994.txt b/Documentation/devicetree/bindings/sound/wm8994.txt
-new file mode 100644
-index 0000000..7a7eb1e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/wm8994.txt
-@@ -0,0 +1,18 @@
-+WM1811/WM8994/WM8958 audio CODEC
-+
-+These devices support both I2C and SPI (configured with pin strapping
-+on the board).
-+
-+Required properties:
-+
-+  - compatible : "wlf,wm1811", "wlf,wm8994", "wlf,wm8958"
-+
-+  - reg : the I2C address of the device for I2C, the chip select
-+          number for SPI.
-+
-+Example:
-+
-+codec: wm8994@1a {
-+	compatible = "wlf,wm8994";
-+	reg = <0x1a>;
-+};
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 5d6ba13..74d4746 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -581,6 +581,14 @@ static void wm8994_device_exit(struct wm8994 *wm8994)
- 	kfree(wm8994);
- }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1c4f3e9..1665e2c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -736,6 +736,8 @@ struct sched_info {
+ 	/* cumulative counters */
+ 	unsigned long pcount;	      /* # of times run on this cpu */
+ 	unsigned long long run_delay; /* time spent waiting on a runqueue */
++	unsigned long long max_delay; /* max run_delay */
++	unsigned long long prev_cpu_delay; /* time spent waiting on prev cpus' runqueue */
  
-+static const struct of_device_id wm8994_of_match[] = {
-+	{ .compatible = "wlf,wm1811", },
-+	{ .compatible = "wlf,wm8994", },
-+	{ .compatible = "wlf,wm8958", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, wm8994_of_match);
-+
- static int wm8994_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
-@@ -633,6 +641,7 @@ static struct i2c_driver wm8994_i2c_driver = {
- 		.name = "wm8994",
- 		.owner = THIS_MODULE,
- 		.pm = &wm8994_pm_ops,
-+		.of_match_table = wm8994_of_match,
- 	},
- 	.probe = wm8994_i2c_probe,
- 	.remove = wm8994_i2c_remove,
+ 	/* timestamps */
+ 	unsigned long long last_arrival,/* when we last ran on a cpu */
+diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
+index 87f9e36..48e9db9 100644
+--- a/kernel/sched_stats.h
++++ b/kernel/sched_stats.h
+@@ -171,6 +171,7 @@ static inline void sched_info_dequeued(struct task_struct *t)
+ 			delta = now - t->sched_info.last_queued;
+ 	sched_info_reset_dequeued(t);
+ 	t->sched_info.run_delay += delta;
++	t->sched_info.prev_cpu_delay += delta;
+ 
+ 	rq_sched_info_dequeued(task_rq(t), delta);
+ }
+@@ -190,6 +191,10 @@ static void sched_info_arrive(struct task_struct *t)
+ 	t->sched_info.run_delay += delta;
+ 	t->sched_info.last_arrival = now;
+ 	t->sched_info.pcount++;
++	t->sched_info.prev_cpu_delay += delta;
++	if (t->sched_info.max_delay < t->sched_info.prev_cpu_delay)
++		t->sched_info.max_delay = t->sched_info.prev_cpu_delay;
++	t->sched_info.prev_cpu_delay = 0;
+ 
+ 	rq_sched_info_arrive(task_rq(t), delta);
+ }
 -- 
-1.7.7.3
+1.7.6.4
+
 
