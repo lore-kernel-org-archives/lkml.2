@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1K1Cgx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 21:36:53 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:35887 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754858Ab1K1Cgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 21:36:52 -0500
-Date: Mon, 28 Nov 2011 13:36:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: linux-next: build warning after merge of the drm tree
-Message-Id: <20111128133641.f847eab9b122d999786b382f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Nov_2011_13_36_42_+1100_7NJKFobTk9kt9N8B"
+	id S1755988Ab1K1Cja (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 21:39:30 -0500
+Received: from mga03.intel.com ([143.182.124.21]:26365 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753297Ab1K1Cj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 21:39:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,580,1315206000"; 
+   d="scan'208";a="79625681"
+Date: Mon, 28 Nov 2011 10:39:22 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Ankit Jain <radical@gmail.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Nikanth Karthikesan <knikanth@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 2/8] readahead: make default readahead size a kernel
+ parameter
+Message-ID: <20111128023922.GA2141@localhost>
+References: <20111121091819.394895091@intel.com>
+ <20111121093846.251104145@intel.com>
+ <20111121100137.GC5084@infradead.org>
+ <20111121113540.GB8895@localhost>
+ <20111124222822.GG29519@quack.suse.cz>
+ <20111125003633.GP2386@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111125003633.GP2386@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Nov_2011_13_36_42_+1100_7NJKFobTk9kt9N8B
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 25, 2011 at 08:36:33AM +0800, Dave Chinner wrote:
+> On Thu, Nov 24, 2011 at 11:28:22PM +0100, Jan Kara wrote:
+> > On Mon 21-11-11 19:35:40, Wu Fengguang wrote:
+> > > On Mon, Nov 21, 2011 at 06:01:37PM +0800, Christoph Hellwig wrote:
+> > > > On Mon, Nov 21, 2011 at 05:18:21PM +0800, Wu Fengguang wrote:
+> > > > > From: Nikanth Karthikesan <knikanth@suse.de>
+> > > > > 
+> > > > > Add new kernel parameter "readahead=", which allows user to override
+> > > > > the static VM_MAX_READAHEAD=128kb.
+> > > > 
+> > > > Is a boot-time paramter really such a good idea?  I would at least
+> > > 
+> > > It's most convenient to set at boot time, because the default size
+> > > will be used to initialize all the block devices.
+> > > 
+> > > > make it a sysctl so that it's run-time controllable, including
+> > > > beeing able to set it from initscripts.
+> > > 
+> > > Once boot up, it's more natural to set the size one by one, for
+> > > example
+> > > 
+> > >         blockdev --setra 1024 /dev/sda2
+> > > or
+> > >         echo 512 > /sys/block/sda/queue/read_ahead_kb
+> > > 
+> > > And you still have the chance to modify the global default, but the
+> > > change will only be inherited by newly created devices thereafter:
+> > > 
+> > >         echo 512 > /sys/devices/virtual/bdi/default/read_ahead_kb
+> > > 
+> > > The above command is very suitable for use in initscripts.  However
+> > > there are no natural way to do sysctl as there is no such a global
+> > > value.
+> >   Well, you can always have an udev rule to set read_ahead_kb to whatever
+> > you want. In some respect that looks like a nicer solution to me...
+> 
+> And one that has already been in use for exactly this purpose for
+> years. Indeed, it's far more flexible because you can give different
+> types of devices different default readahead settings quite easily,
+> and it you can set different defaults for just about any tunable
+> parameter (e.g. readahead, ctq depth, max IO sizes, etc) in the same
+> way.
 
-Hi Dave,
+I'm interested in this usage, too. Would you share some of your rules?
 
-After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning:
+> Hence I don't think we should treat default readahead any
+> differently from any other configurable storage parameter - we've
+> already got places to change the per-device defaults to something
+> sensible at boot/discovery time....
 
-drivers/gpu/drm/gma500/framebuffer.c: In function 'psb_framebuffer_init':
-drivers/gpu/drm/gma500/framebuffer.c:264:2: warning: passing argument 2 of =
-'drm_helper_mode_fill_fb_struct' from incompatible pointer type [enabled by=
- default]
-include/drm/drm_crtc_helper.h:121:12: note: expected 'struct drm_mode_fb_cm=
-d2 *' but argument is of type 'struct drm_mode_fb_cmd *'
+OK, I'll drop this patch.
 
-Caused by commit 4d8d096e9ae8 ("gma500: introduce the framebuffer support
-code") interacting with commit 308e5bcbdb10 ("drm: add an fb creation
-ioctl that takes a pixel format v5").  The version in staging was fixed
-up, but not this version (which should been done during commit
-b63e0f9cb433 ("Merge branch 'drm-gma500-alanc' into drm-core-next")).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__28_Nov_2011_13_36_42_+1100_7NJKFobTk9kt9N8B
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO0vO6AAoJEECxmPOUX5FE6FsQAKa93RhQX4Lb8Bn82jSOLYTI
-KMo61Y4HufKjmWMZ/R5+0laf8U6VVFO5wbBVPBLSJde7KKx3/KogQzrTNhUjOpYC
-tuYsNm577HDPZzJq2sgEJVZpwV3D0RFVjALEgj1pjTghd6MgozrEOEfwago49lpo
-gA4cwZorLSZcbXm42ehSDjJh1/qtkozpibYU2LBHuNSOwY6LFB0E6trCnjnG1OUD
-hULY2fcG8hQGpcGvxwpdelccDwOQCvvOvjkGyTKXGDDugGf+qSBkBngcub1VMBsH
-1EmRhCeial52de4wGVzAkJmVGqijsn9NVKTMkGIvbEzrVzvPWhsQLrfx40iELtKa
-5sop4wzRNwTWcHAE6H7smIpsUiSpiyp7xbMOutWxsLxuHNj+w0pQF25vcAwofgSs
-MLZfLxB2+QXhUgnBRW+XfOVCf6PEl7v2u2qnxdmWcN1++MYGGDT8u6FC0il8UxCJ
-BDkPX/Sxf6hd2qTlCiXCCWKNfH7iSj0H74ZeUhm91o7OpzzKC805yoUSICIXfuJh
-G8tjscEiuOTgJ7wBrjYu0AbpFZ9xXH7nMboDXiYjdxE3QDkEUmEMzOjD/T5C89vW
-y9NLEtDZsbvpaeVUVkEXsqA9W2EGjMDHkYpuZTHYY50IBrV0OOc9YY8KARxyHwuq
-kM263uEDgOivbuzWhcxz
-=Lhtk
------END PGP SIGNATURE-----
-
---Signature=_Mon__28_Nov_2011_13_36_42_+1100_7NJKFobTk9kt9N8B--
+Thanks,
+Fengguang
