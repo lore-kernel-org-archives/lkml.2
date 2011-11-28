@@ -1,271 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab1K1TUf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:20:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64289 "EHLO mx1.redhat.com"
+	id S1754078Ab1K1TVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:21:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53068 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752190Ab1K1TUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:20:33 -0500
-Date: Mon, 28 Nov 2011 21:21:44 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Lasse Collin <lasse.collin@tukaani.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Franky Lin <frankyl@broadcom.com>, Jonas Bonn <jonas@southpole.se>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org
-Subject: [PATCH-RFC 02/10 v2] lib: add GENERIC_PCI_IOMAP
-Message-ID: <20111128192143.GA16459@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b5a1327dd8bb38f87cba7ae10b308ec3b63de66a.1322163031.git.mst@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752280Ab1K1TVg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 14:21:36 -0500
+Date: Mon, 28 Nov 2011 14:21:17 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-nfs@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>, john@calva.com,
+        Tejun Heo <tj@kernel.org>, trond.myklebust@netapp.com
+Subject: Re: Freezing of tasks failed after 20.01 seconds in kernel
+ 3.2.0-rc2
+Message-ID: <20111128142117.146266b2@tlielax.poochiereds.net>
+In-Reply-To: <CAAfyv35bZdQ1524TPu6DdK9HcL-ymVOU1fs==Wj-D15i=Ebwvg@mail.gmail.com>
+References: <CAAfyv36nxYq1EA2pcHi5WR1BdWYHp2sQTY1mMA4Q3JjcOG5RDw@mail.gmail.com>
+	<4ECCAF76.3090502@linux.vnet.ibm.com>
+	<20111123124656.35063401@corrin.poochiereds.net>
+	<CAAfyv35RfdnrjdDF7RhnV-CyTX53f0qm7xOaRQeJLEB==sP+ZQ@mail.gmail.com>
+	<CAAfyv35bZdQ1524TPu6DdK9HcL-ymVOU1fs==Wj-D15i=Ebwvg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many architectures want a generic pci_iomap but
-not the rest of iomap.c. Split that to a separate .c
-file and add a new config symbol. select automatically
-by GENERIC_IOMAP.
+On Sun, 27 Nov 2011 19:26:43 +0100
+Belisko Marek <marek.belisko@gmail.com> wrote:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+> On Sun, Nov 27, 2011 at 8:55 AM, Belisko Marek <marek.belisko@gmail.com> wrote:
+> > On Wed, Nov 23, 2011 at 6:46 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> >> On Wed, 23 Nov 2011 14:01:50 +0530
+> >> "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> >>
+> >>> On 11/23/2011 02:50 AM, Belisko Marek wrote:
+> >>> > Using 3.2.0-rc2 on my laptop once I've seen following trace when suspend:
+> >>> >
+> >>> > [15215.853880] ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+> >>> > [15221.646580] psmouse serio2: bad data from KBC - timeout
+> >>> > [15221.857213] psmouse serio2: bad data from KBC - timeout
+> >>> > [15226.960037] wlan0: no IPv6 routers present
+> >>> > [15278.513091] wlan0: deauthenticating from 00:1e:58:14:6c:44 by local
+> >>> > choice (reason=3)
+> >>> > [15278.537857] cfg80211: All devices are disconnected, going to
+> >>> > restore regulatory settings
+> >>> > [15278.537865] cfg80211: Restoring regulatory settings
+> >>> > [15278.537872] cfg80211: Calling CRDA to update world regulatory domain
+> >>> > [15278.546284] cfg80211: Ignoring regulatory request Set by core since
+> >>> > the driver uses its own custom regulatory domain
+> >>> > [15278.546290] cfg80211: World regulatory domain updated:
+> >>> > [15278.546294] cfg80211:     (start_freq - end_freq @ bandwidth),
+> >>> > (max_antenna_gain, max_eirp)
+> >>> > [15278.546300] cfg80211:     (2402000 KHz - 2472000 KHz @ 40000 KHz),
+> >>> > (300 mBi, 2000 mBm)
+> >>> > [15278.546305] cfg80211:     (2457000 KHz - 2482000 KHz @ 20000 KHz),
+> >>> > (300 mBi, 2000 mBm)
+> >>> > [15278.546310] cfg80211:     (2474000 KHz - 2494000 KHz @ 20000 KHz),
+> >>> > (300 mBi, 2000 mBm)
+> >>> > [15278.546315] cfg80211:     (5170000 KHz - 5250000 KHz @ 40000 KHz),
+> >>> > (300 mBi, 2000 mBm)
+> >>> > [15278.546321] cfg80211:     (5735000 KHz - 5835000 KHz @ 40000 KHz),
+> >>> > (300 mBi, 2000 mBm)
+> >>> > [15280.417945] init: anacron main process (10148) killed by TERM signal
+> >>> > [15281.558943] PM: Syncing filesystems ... done.
+> >>> > [15281.970184] PM: Preparing system for mem sleep
+> >>> > [15282.284192] Freezing user space processes ...
+> >>> > [15302.300305] Freezing of tasks failed after 20.01 seconds (1 tasks
+> >>> > refusing to freeze, wq_busy=0):
+> >>> > [15302.300485] mount.nfs       D f1bb7a1c     0  9987   9985 0x00800004
+> >>> > [15302.300494]  f1bb7a74 00000082 c1539243 f1bb7a1c f9220b89 f1bb79f8
+> >>> > c1026778 c1878340
+> >>> > [15302.300507]  f046cc20 c1878340 c1878340 1e6f8d83 00000de6 c1878340
+> >>> > f4a07340 f046cc20
+> >>> > [15302.300518]  f1a658d0 f3898000 f1bb7a48 c1055e95 00000000 f3898000
+> >>> > 0039d700 00000286
+> >>> > [15302.300530] Call Trace:
+> >>> > [15302.300542]  [<c1539243>] ? _raw_read_unlock_bh+0x13/0x20
+> >>> > [15302.300566]  [<f9220b89>] ? xs_tcp_state_change+0x49/0x280 [sunrpc]
+> >>> > [15302.300574]  [<c1026778>] ? default_spin_lock_flags+0x8/0x10
+> >>> > [15302.300582]  [<c1055e95>] ? mod_timer+0x135/0x260
+> >>> > [15302.300601]  [<f9223003>] ? __rpc_sleep_on_priority+0x173/0x240 [sunrpc]
+> >>> > [15302.300607]  [<c1026778>] ? default_spin_lock_flags+0x8/0x10
+> >>> > [15302.300613]  [<c153901f>] ? _raw_spin_lock_irqsave+0x2f/0x50
+> >>> > [15302.300619]  [<c1537475>] schedule+0x35/0x50
+> >>> > [15302.300637]  [<f922265e>] rpc_wait_bit_killable+0x1e/0x40 [sunrpc]
+> >>> > [15302.300643]  [<c1537b1d>] __wait_on_bit+0x4d/0x70
+> >>> > [15302.300661]  [<f9222640>] ? rpc_queue_empty+0x40/0x40 [sunrpc]
+> >>> > [15302.300679]  [<f9222640>] ? rpc_queue_empty+0x40/0x40 [sunrpc]
+> >>> > [15302.300685]  [<c1537beb>] out_of_line_wait_on_bit+0xab/0xc0
+> >>> > [15302.300692]  [<c1065b50>] ? autoremove_wake_function+0x50/0x50
+> >>> > [15302.300710]  [<f9222d27>] __rpc_execute+0x167/0x270 [sunrpc]
+> >>> > [15302.300716]  [<c1065aee>] ? wake_up_bit+0x5e/0x70
+> >>> > [15302.300734]  [<f9222e68>] rpc_execute+0x38/0x40 [sunrpc]
+> >>> > [15302.300749]  [<f921bd49>] rpc_run_task+0x59/0x70 [sunrpc]
+> >>> > [15302.300765]  [<f921be5e>] rpc_call_sync+0x3e/0x60 [sunrpc]
+> >>> > [15302.300782]  [<f921bec8>] rpc_ping+0x48/0x60 [sunrpc]
+> >>> > [15302.300799]  [<f921c6b7>] rpc_create+0x397/0x4d0 [sunrpc]
+> >>> > [15302.300807]  [<c102c73d>] ? kmap_atomic_prot+0xdd/0x100
+> >>> > [15302.300815]  [<c12b0500>] ? __nla_reserve+0x40/0x50
+> >>> > [15302.300831]  [<f9397a8b>] nfs_create_rpc_client+0xab/0xe0 [nfs]
+> >>> > [15302.300841]  [<f88f0ce9>] ? __fscache_acquire_cookie+0x59/0x270 [fscache]
+> >>> > [15302.300858]  [<f9397b92>] nfs4_init_client+0x62/0x170 [nfs]
+> >>> > [15302.300873]  [<f9398c83>] nfs_get_client+0x353/0x4e0 [nfs]
+> >>> > [15302.300880]  [<c1537e69>] ? mutex_lock+0x19/0x40
+> >>> > [15302.300886]  [<c12afef2>] ? __percpu_counter_init+0x62/0x70
+> >>> > [15302.300901]  [<f9398e6a>] nfs4_set_client+0x5a/0xc0 [nfs]
+> >>> > [15302.300917]  [<f9398f96>] nfs4_create_server+0xc6/0x310 [nfs]
+> >>> > [15302.300936]  [<f93a400e>] nfs4_remote_mount+0x5e/0x2f0 [nfs]
+> >>> > [15302.300943]  [<c1298aa1>] ? ida_get_new_above+0x101/0x1b0
+> >>> > [15302.300951]  [<c112fde6>] mount_fs+0x36/0x170
+> >>> > [15302.300960]  [<c10fcf9f>] ? __alloc_percpu+0xf/0x20
+> >>> > [15302.300967]  [<c1146dae>] ? alloc_vfsmnt+0xae/0x130
+> >>> > [15302.300974]  [<c1147b0b>] vfs_kern_mount+0x4b/0xa0
+> >>> > [15302.300991]  [<f93a35f9>] nfs_do_root_mount+0x69/0x90 [nfs]
+> >>> > [15302.301008]  [<f93a209c>] ? nfs_parse_devname+0x8c/0x1a0 [nfs]
+> >>> > [15302.301026]  [<f93a390f>] nfs4_try_mount+0x3f/0xb0 [nfs]
+> >>> > [15302.301043]  [<f93a2235>] ? nfs4_validate_text_mount_data+0x85/0x100 [nfs]
+> >>> > [15302.301060]  [<f93a47a5>] nfs_fs_mount+0x465/0xb20 [nfs]
+> >>> > [15302.301066]  [<c10fc210>] ? pcpu_alloc_area+0x210/0x320
+> >>> > [15302.301073]  [<c10fbbf8>] ? pcpu_next_pop+0x38/0x50
+> >>> > [15302.301078]  [<c10fca94>] ? pcpu_alloc+0x354/0x830
+> >>> > [15302.301085]  [<c1298aa1>] ? ida_get_new_above+0x101/0x1b0
+> >>> > [15302.301092]  [<c111e375>] ? __kmalloc_track_caller+0xf5/0x1a0
+> >>> > [15302.301097]  [<c1298aa1>] ? ida_get_new_above+0x101/0x1b0
+> >>> > [15302.301104]  [<c112fde6>] mount_fs+0x36/0x170
+> >>> > [15302.301110]  [<c10fcf9f>] ? __alloc_percpu+0xf/0x20
+> >>> > [15302.301116]  [<c1146dae>] ? alloc_vfsmnt+0xae/0x130
+> >>> > [15302.301123]  [<c1147b0b>] vfs_kern_mount+0x4b/0xa0
+> >>> > [15302.301129]  [<c1147bce>] do_kern_mount+0x3e/0xd0
+> >>> > [15302.301135]  [<c1148ec8>] do_mount+0x308/0x6d0
+> >>> > [15302.301142]  [<c11470b8>] ? copy_mount_options+0xa8/0x120
+> >>> > [15302.301148]  [<c11492fb>] sys_mount+0x6b/0xa0
+> >>> > [15302.301154]  [<c15393d4>] syscall_call+0x7/0xb
+> >>> > [15302.301162]
+> >>> > [15302.301165] Restarting tasks ... done.
+> >>> > [15302.359593] video LNXVIDEO:00: Restoring backlight state
+> >>> > [15303.897565] init: anacron main process (10434) killed by TERM signal
+> >>> > [15304.088853] iwlwifi 0000:07:00.0: L1 Disabled; Enabling L0S
+> >>> > [15304.091810] iwlwifi 0000:07:00.0: Radio type=0x1-0x2-0x0
+> >>> > [15304.139846] ADDRCONF(NETDEV_UP): wlan0: link is not ready
+> >>> > [15304.153864] atl1c 0000:09:00.0: irq 46 for MSI/MSI-X
+> >>> > [15304.212718] ADDRCONF(NETDEV_UP): eth0: link is not ready
+> >>> >
+> >>> >
+> >>> > Marek
+> >>> >
+> >>>
+> >>> Hi Marek,
+> >>>
+> >>> Thanks for the bug report. But this is a known issue and Jeff Layton
+> >>> is working on a patchset that aims to fix it.
+> >>>
+> >>> http://www.spinics.net/lists/linux-nfs/msg25585.html
+> >>>
+> >>> Can you please try it out and see if it fixes the issue for you?
+> > Hi I've applied both patches on top v3.2-rc3 and problem is gone. I
+> > make several suspend/resume
+> > and never seen reported behaviour.
+> > You can add my: Tested-by: Marek Belisko <marek.belisko@open-nandra.com>
+> Not sure if it's just coincidence or whatever but today I got
+> it again :( on tom of 3.2-rc3 (both patches applied):
+> 
+> [ 9110.307971] PM: Syncing filesystems ... done.
+> [ 9110.608064] PM: Preparing system for mem sleep
+> [ 9110.740487] Freezing user space processes ...
+> [ 9130.756335] Freezing of tasks failed after 20.01 seconds (1 tasks
+> refusing to freeze, wq_busy=0):
+> [ 9130.756533] mount.nfs       D 00000000     0  6071   6070 0x00800004
+> [ 9130.756542]  f0a9fa74 00000082 c1033ff5 00000000 00000000 f0a9f9f8
+> c10267e8 c1876340
+> [ 9130.756554]  f309f1a0 c1876340 c1876340 f0a9fa38 f0a9fa24 c1876340
+> f4a07340 f309f1a0
+> [ 9130.756565]  f38c0000 f3898000 f0a9fa48 c1055ee5 00000000 f3898000
+> 00225600 00000286
+> [ 9130.756577] Call Trace:
+> [ 9130.756589]  [<c1033ff5>] ? __wake_up+0x45/0x60
+> [ 9130.756596]  [<c10267e8>] ? default_spin_lock_flags+0x8/0x10
+> [ 9130.756604]  [<c1055ee5>] ? mod_timer+0x135/0x260
+> [ 9130.756631]  [<f9265013>] ? __rpc_sleep_on_priority+0x173/0x240 [sunrpc]
+> [ 9130.756637]  [<c10267e8>] ? default_spin_lock_flags+0x8/0x10
+> [ 9130.756645]  [<c1538c4f>] ? _raw_spin_lock_irqsave+0x2f/0x50
+> [ 9130.756652]  [<c15370a5>] schedule+0x35/0x50
+> [ 9130.756671]  [<f926466e>] rpc_wait_bit_killable+0x1e/0x40 [sunrpc]
+> [ 9130.756677]  [<c153774d>] __wait_on_bit+0x4d/0x70
+> [ 9130.756695]  [<f9264650>] ? rpc_queue_empty+0x40/0x40 [sunrpc]
+> [ 9130.756713]  [<f9264650>] ? rpc_queue_empty+0x40/0x40 [sunrpc]
+> [ 9130.756719]  [<c153781b>] out_of_line_wait_on_bit+0xab/0xc0
+> [ 9130.756725]  [<c1065ba0>] ? autoremove_wake_function+0x50/0x50
+> [ 9130.756744]  [<f9264d37>] __rpc_execute+0x167/0x270 [sunrpc]
+> [ 9130.756750]  [<c1065b3e>] ? wake_up_bit+0x5e/0x70
+> [ 9130.756768]  [<f9264e78>] rpc_execute+0x38/0x40 [sunrpc]
+> [ 9130.756784]  [<f925dd49>] rpc_run_task+0x59/0x70 [sunrpc]
+> [ 9130.756800]  [<f925de5e>] rpc_call_sync+0x3e/0x60 [sunrpc]
+> [ 9130.756816]  [<f925dec8>] rpc_ping+0x48/0x60 [sunrpc]
+> [ 9130.756834]  [<f925e6b7>] rpc_create+0x397/0x4d0 [sunrpc]
+> [ 9130.756853]  [<f93a8a8b>] nfs_create_rpc_client+0xab/0xe0 [nfs]
+> [ 9130.756862]  [<f9240ce9>] ? __fscache_acquire_cookie+0x59/0x270 [fscache]
+> [ 9130.756883]  [<f93a8b92>] nfs4_init_client+0x62/0x170 [nfs]
+> [ 9130.756899]  [<f93a9c83>] nfs_get_client+0x353/0x4e0 [nfs]
+> [ 9130.756905]  [<c1537a99>] ? mutex_lock+0x19/0x40
+> [ 9130.756912]  [<c12aff92>] ? __percpu_counter_init+0x62/0x70
+> [ 9130.756928]  [<f93a9e6a>] nfs4_set_client+0x5a/0xc0 [nfs]
+> [ 9130.756944]  [<f93a9f96>] nfs4_create_server+0xc6/0x310 [nfs]
+> [ 9130.756963]  [<f93b4fee>] nfs4_remote_mount+0x5e/0x2f0 [nfs]
+> [ 9130.756970]  [<c1298b41>] ? ida_get_new_above+0x101/0x1b0
+> [ 9130.756978]  [<c112fea6>] mount_fs+0x36/0x170
+> [ 9130.756985]  [<c10fcfff>] ? __alloc_percpu+0xf/0x20
+> [ 9130.756991]  [<c1146e7e>] ? alloc_vfsmnt+0xae/0x130
+> [ 9130.756998]  [<c1147cbb>] vfs_kern_mount+0x4b/0xa0
+> [ 9130.757016]  [<f93b4659>] nfs_do_root_mount+0x69/0x90 [nfs]
+> [ 9130.757034]  [<f93b30fc>] ? nfs_parse_devname+0x8c/0x1a0 [nfs]
+> [ 9130.757051]  [<f93b48ef>] nfs4_try_mount+0x3f/0xb0 [nfs]
+> [ 9130.757069]  [<f93b3295>] ? nfs4_validate_text_mount_data+0x85/0x100 [nfs]
+> [ 9130.757087]  [<f93b5785>] nfs_fs_mount+0x465/0xb20 [nfs]
+> [ 9130.757093]  [<c10fc270>] ? pcpu_alloc_area+0x210/0x320
+> [ 9130.757099]  [<c10fbc58>] ? pcpu_next_pop+0x38/0x50
+> [ 9130.757105]  [<c10fcaf4>] ? pcpu_alloc+0x354/0x830
+> [ 9130.757111]  [<c1298b41>] ? ida_get_new_above+0x101/0x1b0
+> [ 9130.757118]  [<c111e435>] ? __kmalloc_track_caller+0xf5/0x1a0
+> [ 9130.757124]  [<c1298b41>] ? ida_get_new_above+0x101/0x1b0
+> [ 9130.757131]  [<c112fea6>] mount_fs+0x36/0x170
+> [ 9130.757136]  [<c10fcfff>] ? __alloc_percpu+0xf/0x20
+> [ 9130.757142]  [<c1146e7e>] ? alloc_vfsmnt+0xae/0x130
+> [ 9130.757149]  [<c1147cbb>] vfs_kern_mount+0x4b/0xa0
+> [ 9130.757155]  [<c1147d7e>] do_kern_mount+0x3e/0xd0
+> [ 9130.757161]  [<c1149078>] do_mount+0x308/0x6d0
+> [ 9130.757168]  [<c1147188>] ? copy_mount_options+0xa8/0x120
+> [ 9130.757174]  [<c11494ab>] sys_mount+0x6b/0xa0
+> [ 9130.757180]  [<c1539004>] syscall_call+0x7/0xb
+> [ 9130.757188]
+> [ 9130.757191] Restarting tasks ... done.
+> 
 
-Here's an updated version (just this one patch was changed).
-Changes from v1:
-	minor tweaks to address comments by Stephen Rothwell 
+Thanks. To be clear, you did have the patchset applied on top of this?
+If so, then I wonder if we just hit a race...
 
+freezer_do_not_count() just sets PF_FREEZER_SKIP. It's possible though
+that the freezer has already tried to put the task to sleep just before
+that flag is set. If so, then the schedule() will run and the task
+won't go to sleep.
 
- include/asm-generic/io.h        |    4 +-
- include/asm-generic/iomap.h     |    9 ++-----
- include/asm-generic/pci_iomap.h |   25 ++++++++++++++++++++
- lib/Kconfig                     |    4 +++
- lib/Makefile                    |    1 +
- lib/iomap.c                     |   38 +-----------------------------
- lib/pci_iomap.c                 |   48 +++++++++++++++++++++++++++++++++++++++
- 7 files changed, 85 insertions(+), 44 deletions(-)
- create mode 100644 include/asm-generic/pci_iomap.h
- create mode 100644 lib/pci_iomap.c
+I suppose we could do a try_to_freeze() prior to going to sleep. I'll
+add that in for the coming respin...
 
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 9120887..dddc61d 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -19,6 +19,8 @@
- #include <asm-generic/iomap.h>
- #endif
- 
-+#include <asm-generic/pci_iomap.h>
-+
- #ifndef mmiowb
- #define mmiowb() do {} while (0)
- #endif
-@@ -283,9 +285,7 @@ static inline void writesb(const void __iomem *addr, const void *buf, int len)
- #define __io_virt(x) ((void __force *) (x))
- 
- #ifndef CONFIG_GENERIC_IOMAP
--/* Create a virtual mapping cookie for a PCI BAR (memory or IO) */
- struct pci_dev;
--extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
- static inline void pci_iounmap(struct pci_dev *dev, void __iomem *p)
- {
- }
-diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
-index 98dcd76..8a3d4fd 100644
---- a/include/asm-generic/iomap.h
-+++ b/include/asm-generic/iomap.h
-@@ -67,18 +67,15 @@ extern void ioport_unmap(void __iomem *);
- #endif
- 
- #ifdef CONFIG_PCI
--/* Create a virtual mapping cookie for a PCI BAR (memory or IO) */
-+/* Destroy a virtual mapping cookie for a PCI BAR (memory or IO) */
- struct pci_dev;
--extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
- extern void pci_iounmap(struct pci_dev *dev, void __iomem *);
- #else
- struct pci_dev;
--static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max)
--{
--	return NULL;
--}
- static inline void pci_iounmap(struct pci_dev *dev, void __iomem *addr)
- { }
- #endif
- 
-+#include <asm-generic/pci_iomap.h>
-+
- #endif
-diff --git a/include/asm-generic/pci_iomap.h b/include/asm-generic/pci_iomap.h
-new file mode 100644
-index 0000000..8de4b73
---- /dev/null
-+++ b/include/asm-generic/pci_iomap.h
-@@ -0,0 +1,25 @@
-+/* Generic I/O port emulation, based on MN10300 code
-+ *
-+ * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+#ifndef __ASM_GENERIC_PCI_IOMAP_H
-+#define __ASM_GENERIC_PCI_IOMAP_H
-+
-+struct pci_dev;
-+#ifdef CONFIG_PCI
-+/* Create a virtual mapping cookie for a PCI BAR (memory or IO) */
-+extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
-+#else
-+static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max)
-+{
-+	return NULL;
-+}
-+#endif
-+
-+#endif /* __ASM_GENERIC_IO_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 0058927..36884b4 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -19,8 +19,12 @@ config RATIONAL
- config GENERIC_FIND_FIRST_BIT
- 	bool
- 
-+config GENERIC_PCI_IOMAP
-+	bool
-+
- config GENERIC_IOMAP
- 	bool
-+	select GENERIC_PCI_IOMAP
- 
- config CRC_CCITT
- 	tristate "CRC-CCITT functions"
-diff --git a/lib/Makefile b/lib/Makefile
-index a4da283..609b2adc 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -33,6 +33,7 @@ endif
- 
- lib-$(CONFIG_HOTPLUG) += kobject_uevent.o
- obj-$(CONFIG_GENERIC_IOMAP) += iomap.o
-+obj-$(CONFIG_GENERIC_PCI_IOMAP) += pci_iomap.o
- obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o devres.o
- obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
- obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
-diff --git a/lib/iomap.c b/lib/iomap.c
-index 5dbcb4b..ada922a 100644
---- a/lib/iomap.c
-+++ b/lib/iomap.c
-@@ -242,45 +242,11 @@ EXPORT_SYMBOL(ioport_unmap);
- #endif /* CONFIG_HAS_IOPORT */
- 
- #ifdef CONFIG_PCI
--/**
-- * pci_iomap - create a virtual mapping cookie for a PCI BAR
-- * @dev: PCI device that owns the BAR
-- * @bar: BAR number
-- * @maxlen: length of the memory to map
-- *
-- * Using this function you will get a __iomem address to your device BAR.
-- * You can access it using ioread*() and iowrite*(). These functions hide
-- * the details if this is a MMIO or PIO address space and will just do what
-- * you expect from them in the correct way.
-- *
-- * @maxlen specifies the maximum length to map. If you want to get access to
-- * the complete BAR without checking for its length first, pass %0 here.
-- * */
--void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
--{
--	resource_size_t start = pci_resource_start(dev, bar);
--	resource_size_t len = pci_resource_len(dev, bar);
--	unsigned long flags = pci_resource_flags(dev, bar);
--
--	if (!len || !start)
--		return NULL;
--	if (maxlen && len > maxlen)
--		len = maxlen;
--	if (flags & IORESOURCE_IO)
--		return ioport_map(start, len);
--	if (flags & IORESOURCE_MEM) {
--		if (flags & IORESOURCE_CACHEABLE)
--			return ioremap(start, len);
--		return ioremap_nocache(start, len);
--	}
--	/* What? */
--	return NULL;
--}
--
-+/* Hide the details if this is a MMIO or PIO address space and just do what
-+ * you expect in the correct way. */
- void pci_iounmap(struct pci_dev *dev, void __iomem * addr)
- {
- 	IO_COND(addr, /* nothing */, iounmap(addr));
- }
--EXPORT_SYMBOL(pci_iomap);
- EXPORT_SYMBOL(pci_iounmap);
- #endif /* CONFIG_PCI */
-diff --git a/lib/pci_iomap.c b/lib/pci_iomap.c
-new file mode 100644
-index 0000000..4b0fdc2
---- /dev/null
-+++ b/lib/pci_iomap.c
-@@ -0,0 +1,48 @@
-+/*
-+ * Implement the default iomap interfaces
-+ *
-+ * (C) Copyright 2004 Linus Torvalds
-+ */
-+#include <linux/pci.h>
-+#include <linux/io.h>
-+
-+#include <linux/export.h>
-+
-+#ifdef CONFIG_PCI
-+/**
-+ * pci_iomap - create a virtual mapping cookie for a PCI BAR
-+ * @dev: PCI device that owns the BAR
-+ * @bar: BAR number
-+ * @maxlen: length of the memory to map
-+ *
-+ * Using this function you will get a __iomem address to your device BAR.
-+ * You can access it using ioread*() and iowrite*(). These functions hide
-+ * the details if this is a MMIO or PIO address space and will just do what
-+ * you expect from them in the correct way.
-+ *
-+ * @maxlen specifies the maximum length to map. If you want to get access to
-+ * the complete BAR without checking for its length first, pass %0 here.
-+ * */
-+void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
-+{
-+	resource_size_t start = pci_resource_start(dev, bar);
-+	resource_size_t len = pci_resource_len(dev, bar);
-+	unsigned long flags = pci_resource_flags(dev, bar);
-+
-+	if (!len || !start)
-+		return NULL;
-+	if (maxlen && len > maxlen)
-+		len = maxlen;
-+	if (flags & IORESOURCE_IO)
-+		return ioport_map(start, len);
-+	if (flags & IORESOURCE_MEM) {
-+		if (flags & IORESOURCE_CACHEABLE)
-+			return ioremap(start, len);
-+		return ioremap_nocache(start, len);
-+	}
-+	/* What? */
-+	return NULL;
-+}
-+
-+EXPORT_SYMBOL(pci_iomap);
-+#endif /* CONFIG_PCI */
 -- 
-1.7.5.53.gc233e
+Jeff Layton <jlayton@redhat.com>
