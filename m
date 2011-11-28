@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1K1RUj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 12:20:39 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:14033
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751795Ab1K1RUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 12:20:38 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zzbb2dK9371K1432N98dKzz1202hzzz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4ED3C2E2.9040601@freescale.com>
-Date: Mon, 28 Nov 2011 11:20:34 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Li Yang-R58472 <r58472@freescale.com>
-CC: Liu Shuo-B35362 <B35362@freescale.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-References: <1322095306-13156-1-git-send-email-b35362@freescale.com> <1322095306-13156-3-git-send-email-b35362@freescale.com> <3F607A5180246847A760FD34122A1E052DC4CD@039-SN1MPN1-003.039d.mgd.msft.net>
-In-Reply-To: <3F607A5180246847A760FD34122A1E052DC4CD@039-SN1MPN1-003.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+	id S1753956Ab1K1RVT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 12:21:19 -0500
+Received: from smarthost3.mail.uk.easynet.net ([212.135.6.13]:47415 "EHLO
+	smarthost3.mail.uk.easynet.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753120Ab1K1RVS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 12:21:18 -0500
+X-Greylist: delayed 3727 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Nov 2011 12:21:18 EST
+Subject: MFD: core assumes that all children are platform devices
+Content-Transfer-Encoding: 8BIT
+From: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <dagenaisj@sonatest.com>
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <2F9D884C-6B95-4F81-8445-8056676B28D8@sonatest.com>
+Date: Mon, 28 Nov 2011 11:23:00 -0500
+Cc: open list <linux-kernel@vger.kernel.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
+X-OriginalArrivalTime: 28 Nov 2011 16:22:54.0868 (UTC) FILETIME=[FBB2B540:01CCADE9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/24/2011 01:37 AM, Li Yang-R58472 wrote:
->> +static void io_to_buffer(struct mtd_info *mtd, int subpage, int oob)
->> +{
->> +	struct nand_chip *chip = mtd->priv;
->> +	struct fsl_elbc_mtd *priv = chip->priv;
->> +	struct fsl_elbc_fcm_ctrl *elbc_fcm_ctrl = priv->ctrl->nand;
->> +	void *src, *dst;
->> +	int len = (oob ? 64 : 2048);
->> +
->> +	if (oob)
->> +		dst = elbc_fcm_ctrl->buffer + mtd->writesize + subpage * 64;
->> +	else
->> +		dst = elbc_fcm_ctrl->buffer + subpage * 2048;
->> +
->> +	src = elbc_fcm_ctrl->addr + (oob ? 2048 : 0);
->> +	memcpy_fromio(dst, src, len);
-> 
-> Might be safer to use _memcpy_fromio()
+Hi,
 
-How so?
+I have a pci driver that registers with UIO for it's operations. As a consequence, the pci device
+instance has a child device of class uio.
 
-memcpy_fromio() is the public interface that will end up calling
-_memcpy_fromio() on powerpc.
+My driver also declares a ds1wm instance that has it's register interface at an offset in BAR0
+of the pci device, as an MFD cell.
 
--Scott
+When I call mfd_remove_devices, MFD proceeds to enumerate ALL the parent device's chilren
+and assumes that they are MFD cells, and thus platform_device, which is not true in my case.
+(...uio is a child of the parent pci device)
 
+I had (luckily or unluckily) not seen signs of this broken assumption on certain setups I have
+used, but in my current setup, this page-faults every time now.
+
+This is a major thing and I have not found the assumption documented anywhere.
+
+I could first declare a new child device on my pci device and then declare it as the parent to
+the mfd cells...
+
+Or, is there a way for the mfd-core, as it's doing the "for each child device", to recognize
+non-MFD-cell children and skip them?
+
+/jfd
