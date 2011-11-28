@@ -1,51 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab1K1T7t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:59:49 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33475 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753247Ab1K1T7r (ORCPT
+	id S1754612Ab1K1UAK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:00:10 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:50421 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab1K1UAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:59:47 -0500
-Date: Mon, 28 Nov 2011 20:59:39 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: stable-3.1: iwlwifi broken with nomsi
-Message-ID: <20111128195939.GA15362@localhost>
+	Mon, 28 Nov 2011 15:00:08 -0500
+Date: Mon, 28 Nov 2011 20:00:23 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [RFC -resend] Make Yama pid_ns aware
+Message-ID: <20111128200023.GA1818@hallyn.com>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+ <20111128191658.GA6028@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111128191658.GA6028@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, 
+Quoting Vasiliy Kulikov (segoon@openwall.com):
+> As Yama's sysctls are about defining a security policy for the system,
+> it is reasonable to define it per container in case of LXC containers
+> (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
+> to pid namespace.  With per-pid_ns sysctls it is possible to create
+> multiple containers with different ptrace, /tmp, etc. policies.
+> 
+> The patch is straightforward:
+> 
+> 1) all sysctl variables are moved from global vars to pid_namespace
+> fields.
+> 
+> 2) each cloned pid ns gets the settings of the parent.
+> 
+> 3) the variables of current pid ns are visible through sysctl interface.
+> 
+> proc_pid_dointvec_minmax() is stolen from its ipc_ns equivalent in
+> ipc/ipc_sysctl.c.
+> 
+> P.S.  As user namespaces are not merged yet and it's not clear when/whether
+> they are merged, these changes belong to pid namespace for now.  When
+> user namespaces are merged, per pid_ns variables should go to struct
+> user_namespace.  It will not break ABI as userspace sees the same
+> kernel.yama.* sysctls in both pid ns and user ns cases.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-I believe commit 63665158282dd3b5d70 (iwlwifi: allow pci_enable_msi fail)
-needs to be added to the 3.1 stable tree as the driver fails to probe
-with MSI disabled since commit 084dd79172cb3 (iwlagn: move PCI related
-operations from probe and remove to PCI layer) without it:
+Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
 
-[    2.564901] iwlagn 0000:0e:00.0: PCI INT A -> GSI 18 (level, low) ->
-IRQ 18
-[    2.564962] iwlagn 0000:0e:00.0: setting latency timer to 64
-[    2.564977] iwlagn 0000:0e:00.0: pci_resource_len = 0x00002000
-[    2.567136] iwlagn 0000:0e:00.0: pci_resource_base = f8038000
-[    2.569274] iwlagn 0000:0e:00.0: HW Revision ID = 0x0
-[    2.571375] iwlagn 0000:0e:00.0: pci_enable_msi failed
-[    2.571431] iwlagn 0000:0e:00.0: PCI INT A disabled
-[    2.575598] iwlagn: probe of 0000:0e:00.0 failed with error -1
+thanks,
+-serge
 
-The problem was initially reported here:
-
-	https://lkml.org/lkml/2011/10/26/314
-
-but the fix was never marked for stable.
-
-Thanks,
-Johan
+> --
+> 
+> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+> index 38d1032..46edaf8 100644
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -30,6 +30,11 @@ struct pid_namespace {
+>  #ifdef CONFIG_BSD_PROCESS_ACCT
+>  	struct bsd_acct_struct *bacct;
+>  #endif
+> +#ifdef CONFIG_SECURITY_YAMA
+> +	int ptrace_scope;
+> +	int protected_sticky_symlinks;
+> +	int protected_nonaccess_hardlinks;
+> +#endif
+>  };
+>  
+>  extern struct pid_namespace init_pid_ns;
+> diff --git a/kernel/pid.c b/kernel/pid.c
+> index fa5f722..0cd8926 100644
+> --- a/kernel/pid.c
+> +++ b/kernel/pid.c
+> @@ -78,6 +78,11 @@ struct pid_namespace init_pid_ns = {
+>  	.last_pid = 0,
+>  	.level = 0,
+>  	.child_reaper = &init_task,
+> +#ifdef CONFIG_SECURITY_YAMA
+> +	.ptrace_scope = 1,
+> +	.protected_sticky_symlinks = 1,
+> +	.protected_nonaccess_hardlinks = 1,
+> +#endif
+>  };
+>  EXPORT_SYMBOL_GPL(init_pid_ns);
+>  
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index e9c9adc..73d47c4 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -101,6 +101,14 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+>  	if (err)
+>  		goto out_put_parent_pid_ns;
+>  
+> +#ifdef CONFIG_SECURITY_YAMA
+> +	ns->ptrace_scope = parent_pid_ns->ptrace_scope;
+> +	ns->protected_sticky_symlinks =
+> +		parent_pid_ns->protected_sticky_symlinks;
+> +	ns->protected_nonaccess_hardlinks =
+> +		parent_pid_ns->protected_nonaccess_hardlinks;
+> +#endif
+> +
+>  	return ns;
+>  
+>  out_put_parent_pid_ns:
+> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+> index a92538c..cf99a8c 100644
+> --- a/security/yama/yama_lsm.c
+> +++ b/security/yama/yama_lsm.c
+> @@ -16,10 +16,7 @@
+>  #include <linux/ptrace.h>
+>  #include <linux/prctl.h>
+>  #include <linux/ratelimit.h>
+> -
+> -static int ptrace_scope = 1;
+> -static int protected_sticky_symlinks = 1;
+> -static int protected_nonaccess_hardlinks = 1;
+> +#include <linux/pid_namespace.h>
+>  
+>  /* describe a PTRACE relationship for potential exception */
+>  struct ptrace_relation {
+> @@ -250,7 +247,7 @@ static int yama_ptrace_access_check(struct task_struct *child,
+>  
+>  	/* require ptrace target be a child of ptracer on attach */
+>  	if (mode == PTRACE_MODE_ATTACH &&
+> -	    ptrace_scope &&
+> +	    current->nsproxy->pid_ns->ptrace_scope &&
+>  	    !capable(CAP_SYS_PTRACE) &&
+>  	    !task_is_descendant(current, child) &&
+>  	    !ptracer_exception_found(current, child))
+> @@ -292,7 +289,7 @@ static int yama_inode_follow_link(struct dentry *dentry,
+>  	const struct inode *inode;
+>  	const struct cred *cred;
+>  
+> -	if (!protected_sticky_symlinks)
+> +	if (!current->nsproxy->pid_ns->protected_sticky_symlinks)
+>  		return 0;
+>  
+>  	/* if inode isn't a symlink, don't try to evaluate blocking it */
+> @@ -362,7 +359,7 @@ static int yama_path_link(struct dentry *old_dentry, struct path *new_dir,
+>  	const int mode = inode->i_mode;
+>  	const struct cred *cred = current_cred();
+>  
+> -	if (!protected_nonaccess_hardlinks)
+> +	if (!current->nsproxy->pid_ns->protected_nonaccess_hardlinks)
+>  		return 0;
+>  
+>  	if (cred->fsuid != inode->i_uid &&
+> @@ -395,6 +392,26 @@ static struct security_operations yama_ops = {
+>  static int zero;
+>  static int one = 1;
+>  
+> +static void *get_pid_data(ctl_table *table)
+> +{
+> +	char *which = table->data;
+> +	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
+> +	which = (which - (char *)&init_pid_ns) + (char *)pid_ns;
+> +	return which;
+> +}
+> +
+> +static int proc_pid_dointvec_minmax(ctl_table *table, int write,
+> +	void __user *buffer, size_t *lenp, loff_t *ppos)
+> +{
+> +	struct ctl_table pid_table;
+> +
+> +	memcpy(&pid_table, table, sizeof(pid_table));
+> +	pid_table.data = get_pid_data(table);
+> +
+> +	return proc_dointvec_minmax(&pid_table, write, buffer, lenp, ppos);
+> +}
+> +
+> +
+>  struct ctl_path yama_sysctl_path[] = {
+>  	{ .procname = "kernel", },
+>  	{ .procname = "yama", },
+> @@ -404,28 +421,28 @@ struct ctl_path yama_sysctl_path[] = {
+>  static struct ctl_table yama_sysctl_table[] = {
+>  	{
+>  		.procname       = "protected_sticky_symlinks",
+> -		.data           = &protected_sticky_symlinks,
+> +		.data           = &init_pid_ns.protected_sticky_symlinks,
+>  		.maxlen         = sizeof(int),
+>  		.mode           = 0644,
+> -		.proc_handler   = proc_dointvec_minmax,
+> +		.proc_handler   = proc_pid_dointvec_minmax,
+>  		.extra1         = &zero,
+>  		.extra2         = &one,
+>  	},
+>  	{
+>  		.procname       = "protected_nonaccess_hardlinks",
+> -		.data           = &protected_nonaccess_hardlinks,
+> +		.data           = &init_pid_ns.protected_nonaccess_hardlinks,
+>  		.maxlen         = sizeof(int),
+>  		.mode           = 0644,
+> -		.proc_handler   = proc_dointvec_minmax,
+> +		.proc_handler   = proc_pid_dointvec_minmax,
+>  		.extra1         = &zero,
+>  		.extra2         = &one,
+>  	},
+>  	{
+>  		.procname       = "ptrace_scope",
+> -		.data           = &ptrace_scope,
+> +		.data           = &init_pid_ns.ptrace_scope,
+>  		.maxlen         = sizeof(int),
+>  		.mode           = 0644,
+> -		.proc_handler   = proc_dointvec_minmax,
+> +		.proc_handler   = proc_pid_dointvec_minmax,
+>  		.extra1         = &zero,
+>  		.extra2         = &one,
+>  	},
+> ---
