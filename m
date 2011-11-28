@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab1K1XOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:14:44 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34285 "EHLO
+	id S1755147Ab1K1XUZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:20:25 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34290 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab1K1XOm (ORCPT
+	with ESMTP id S1754421Ab1K1XOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:14:42 -0500
+	Mon, 28 Nov 2011 18:14:44 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 02/25] perf tools: Simplify debugfs mountpoint handling code
-Date: Mon, 28 Nov 2011 21:14:03 -0200
-Message-Id: <1322522066-21879-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 06/25] perf evlist: Introduce {prepare,start}_workload refactored from 'perf record'
+Date: Mon, 28 Nov 2011 21:14:07 -0200
+Message-Id: <1322522066-21879-7-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1322522066-21879-1-git-send-email-acme@infradead.org>
 References: <1322522066-21879-1-git-send-email-acme@infradead.org>
@@ -29,18 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-We don't need to have two PATH_MAX char sized arrays holding it, just
-one in util/debugfs.c will do.
-
-Also rename debugfs_path to tracing_events_path, as it is not the path
-to debugfs, that is debugfs_mountpoint. Both are now accessible.
-
-This will allow accessing this code in the perf python binding without
-having to drag in perf.c and util/parse-events.c.
-
-The defaults for these variables are the canonical "/sys/kernel/debug"
-and "/sys/kernel/debug/tracing/events/", removing the need for simple
-tools to call debugfs_mount(NULL).
+So that we can easily start a workload in other tools.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -48,341 +37,348 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-ug9jvtjrsqbluuhqqxpvg30f@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-zdsksd4aphu0nltg2lpwsw3x@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-test.c      |    3 ++-
- tools/perf/perf.c              |   33 ++++-----------------------------
- tools/perf/util/debugfs.c      |   25 ++++++++++++++++++++-----
- tools/perf/util/debugfs.h      |    4 ++++
- tools/perf/util/parse-events.c |   28 +++++++++++++---------------
- tools/perf/util/parse-events.h |    1 -
- 6 files changed, 43 insertions(+), 51 deletions(-)
+ tools/perf/builtin-record.c |   81 ++++++------------------------------
+ tools/perf/perf.h           |    1 +
+ tools/perf/util/evlist.c    |   96 +++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evlist.h    |   10 ++++
+ 4 files changed, 120 insertions(+), 68 deletions(-)
 
-diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
-index 831d1ba..77d68bf 100644
---- a/tools/perf/builtin-test.c
-+++ b/tools/perf/builtin-test.c
-@@ -7,6 +7,7 @@
- 
- #include "util/cache.h"
- #include "util/debug.h"
-+#include "util/debugfs.h"
- #include "util/evlist.h"
- #include "util/parse-options.h"
- #include "util/parse-events.h"
-@@ -247,7 +248,7 @@ static int trace_event__id(const char *evname)
- 
- 	if (asprintf(&filename,
- 		     "%s/syscalls/%s/id",
--		     debugfs_path, evname) < 0)
-+		     tracing_events_path, evname) < 0)
- 		return -1;
- 
- 	fd = open(filename, O_RDONLY);
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 73d0cac..2b2e225 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -29,8 +29,6 @@ struct pager_config {
- 	int val;
- };
- 
--static char debugfs_mntpt[MAXPATHLEN];
--
- static int pager_command_config(const char *var, const char *value, void *data)
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index c3ac541..4799195 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -47,11 +47,9 @@ static struct perf_record_opts record_opts = {
+ static unsigned int		page_size;
+ static unsigned int		mmap_pages			= UINT_MAX;
+ static int			output;
+-static int			pipe_output			=      0;
+ static const char		*output_name			= NULL;
+ static bool			group				=  false;
+ static int			realtime_prio			=      0;
+-static pid_t			child_pid			=     -1;
+ static enum write_mode_t	write_mode			= WRITE_FORCE;
+ static bool			no_buildid			=  false;
+ static bool			no_buildid_cache		=  false;
+@@ -144,9 +142,9 @@ static void sig_atexit(void)
  {
- 	struct pager_config *c = data;
-@@ -81,15 +79,6 @@ static void commit_pager_choice(void)
+ 	int status;
+ 
+-	if (child_pid > 0) {
++	if (evsel_list->workload.pid > 0) {
+ 		if (!child_finished)
+-			kill(child_pid, SIGTERM);
++			kill(evsel_list->workload.pid, SIGTERM);
+ 
+ 		wait(&status);
+ 		if (WIFSIGNALED(status))
+@@ -304,7 +302,7 @@ static int process_buildids(void)
+ 
+ static void atexit_header(void)
+ {
+-	if (!pipe_output) {
++	if (!record_opts.pipe_output) {
+ 		session->header.data_size += bytes_written;
+ 
+ 		if (!no_buildid)
+@@ -377,9 +375,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	int flags;
+ 	int err;
+ 	unsigned long waking = 0;
+-	int child_ready_pipe[2], go_pipe[2];
+ 	const bool forks = argc > 0;
+-	char buf;
+ 	struct machine *machine;
+ 
+ 	progname = argv[0];
+@@ -391,20 +387,15 @@ static int __cmd_record(int argc, const char **argv)
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
+ 
+-	if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
+-		perror("failed to create pipes");
+-		exit(-1);
+-	}
+-
+ 	if (!output_name) {
+ 		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
+-			pipe_output = true;
++			record_opts.pipe_output = true;
+ 		else
+ 			output_name = "perf.data";
  	}
- }
+ 	if (output_name) {
+ 		if (!strcmp(output_name, "-"))
+-			pipe_output = true;
++			record_opts.pipe_output = true;
+ 		else if (!stat(output_name, &st) && st.st_size) {
+ 			if (write_mode == WRITE_FORCE) {
+ 				char oldname[PATH_MAX];
+@@ -424,7 +415,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	else
+ 		flags |= O_TRUNC;
  
--static void set_debugfs_path(void)
--{
--	char *path;
+-	if (pipe_output)
++	if (record_opts.pipe_output)
+ 		output = STDOUT_FILENO;
+ 	else
+ 		output = open(output_name, flags, S_IRUSR | S_IWUSR);
+@@ -470,57 +461,11 @@ static int __cmd_record(int argc, const char **argv)
+ 		mmap_pages = (512 * 1024) / page_size;
+ 
+ 	if (forks) {
+-		child_pid = fork();
+-		if (child_pid < 0) {
+-			perror("failed to fork");
+-			exit(-1);
+-		}
 -
--	path = getenv(PERF_DEBUGFS_ENVIRONMENT);
--	snprintf(debugfs_path, MAXPATHLEN, "%s/%s", path ?: debugfs_mntpt,
--		 "tracing/events");
--}
+-		if (!child_pid) {
+-			if (pipe_output)
+-				dup2(2, 1);
+-			close(child_ready_pipe[0]);
+-			close(go_pipe[1]);
+-			fcntl(go_pipe[0], F_SETFD, FD_CLOEXEC);
 -
- static int handle_options(const char ***argv, int *argc, int *envchanged)
- {
- 	int handled = 0;
-@@ -161,15 +150,14 @@ static int handle_options(const char ***argv, int *argc, int *envchanged)
- 				fprintf(stderr, "No directory given for --debugfs-dir.\n");
- 				usage(perf_usage_string);
- 			}
--			strncpy(debugfs_mntpt, (*argv)[1], MAXPATHLEN);
--			debugfs_mntpt[MAXPATHLEN - 1] = '\0';
-+			debugfs_set_path((*argv)[1]);
- 			if (envchanged)
- 				*envchanged = 1;
- 			(*argv)++;
- 			(*argc)--;
- 		} else if (!prefixcmp(cmd, CMD_DEBUGFS_DIR)) {
--			strncpy(debugfs_mntpt, cmd + strlen(CMD_DEBUGFS_DIR), MAXPATHLEN);
--			debugfs_mntpt[MAXPATHLEN - 1] = '\0';
-+			debugfs_set_path(cmd + strlen(CMD_DEBUGFS_DIR));
-+			fprintf(stderr, "dir: %s\n", debugfs_mountpoint);
- 			if (envchanged)
- 				*envchanged = 1;
- 		} else {
-@@ -281,7 +269,6 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 	if (use_pager == -1 && p->option & USE_PAGER)
- 		use_pager = 1;
- 	commit_pager_choice();
--	set_debugfs_path();
- 
- 	status = p->fn(argc, argv, prefix);
- 	exit_browser(status);
-@@ -416,17 +403,6 @@ static int run_argv(int *argcp, const char ***argv)
- 	return done_alias;
- }
- 
--/* mini /proc/mounts parser: searching for "^blah /mount/point debugfs" */
--static void get_debugfs_mntpt(void)
--{
--	const char *path = debugfs_mount(NULL);
+-			/*
+-			 * Do a dummy execvp to get the PLT entry resolved,
+-			 * so we avoid the resolver overhead on the real
+-			 * execvp call.
+-			 */
+-			execvp("", (char **)argv);
 -
--	if (path)
--		strncpy(debugfs_mntpt, path, sizeof(debugfs_mntpt));
--	else
--		debugfs_mntpt[0] = '\0';
--}
+-			/*
+-			 * Tell the parent we're ready to go
+-			 */
+-			close(child_ready_pipe[1]);
 -
- static void pthread__block_sigwinch(void)
- {
- 	sigset_t set;
-@@ -453,7 +429,7 @@ int main(int argc, const char **argv)
- 	if (!cmd)
- 		cmd = "perf-help";
- 	/* get debugfs mount point from /proc/mounts */
--	get_debugfs_mntpt();
-+	debugfs_mount(NULL);
- 	/*
- 	 * "perf-xxxx" is the same as "perf xxxx", but we obviously:
- 	 *
-@@ -476,7 +452,6 @@ int main(int argc, const char **argv)
- 	argc--;
- 	handle_options(&argv, &argc, NULL);
- 	commit_pager_choice();
--	set_debugfs_path();
- 	set_buildid_dir();
- 
- 	if (argc > 0) {
-diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
-index 680be34..ffc35e7 100644
---- a/tools/perf/util/debugfs.c
-+++ b/tools/perf/util/debugfs.c
-@@ -2,10 +2,12 @@
- #include "debugfs.h"
- #include "cache.h"
- 
-+#include <linux/kernel.h>
- #include <sys/mount.h>
- 
- static int debugfs_premounted;
--static char debugfs_mountpoint[PATH_MAX + 1];
-+char debugfs_mountpoint[PATH_MAX + 1] = "/sys/kernel/debug";
-+char tracing_events_path[PATH_MAX + 1] = "/sys/kernel/debug/tracing/events";
- 
- static const char *debugfs_known_mountpoints[] = {
- 	"/sys/kernel/debug/",
-@@ -64,7 +66,7 @@ const char *debugfs_find_mountpoint(void)
- 	/* give up and parse /proc/mounts */
- 	fp = fopen("/proc/mounts", "r");
- 	if (fp == NULL)
--		die("Can't open /proc/mounts for read");
-+		return NULL;
- 
- 	while (fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
- 		      debugfs_mountpoint, type) == 2) {
-@@ -106,6 +108,12 @@ int debugfs_valid_entry(const char *path)
- 	return 0;
- }
- 
-+static void debugfs_set_tracing_events_path(const char *mountpoint)
-+{
-+	snprintf(tracing_events_path, sizeof(tracing_events_path), "%s/%s",
-+		 mountpoint, "tracing/events");
-+}
-+
- /* mount the debugfs somewhere if it's not mounted */
- 
- char *debugfs_mount(const char *mountpoint)
-@@ -113,7 +121,7 @@ char *debugfs_mount(const char *mountpoint)
- 	/* see if it's already mounted */
- 	if (debugfs_find_mountpoint()) {
- 		debugfs_premounted = 1;
--		return debugfs_mountpoint;
-+		goto out;
+-			/*
+-			 * Wait until the parent tells us to go.
+-			 */
+-			if (read(go_pipe[0], &buf, 1) == -1)
+-				perror("unable to read pipe");
+-
+-			execvp(argv[0], (char **)argv);
+-
+-			perror(argv[0]);
+-			kill(getppid(), SIGUSR1);
+-			exit(-1);
+-		}
+-
+-		if (!record_opts.system_wide && record_opts.target_tid == -1 && record_opts.target_pid == -1)
+-			evsel_list->threads->map[0] = child_pid;
+-
+-		close(child_ready_pipe[1]);
+-		close(go_pipe[0]);
+-		/*
+-		 * wait for child to settle
+-		 */
+-		if (read(child_ready_pipe[0], &buf, 1) == -1) {
+-			perror("unable to read pipe");
+-			exit(-1);
++		err = perf_evlist__prepare_workload(evsel_list, &record_opts, argv);
++		if (err < 0) {
++			pr_err("Couldn't run the workload!\n");
++			goto out_delete_session;
+ 		}
+-		close(child_ready_pipe[0]);
  	}
  
- 	/* if not mounted and no argument */
-@@ -129,12 +137,19 @@ char *debugfs_mount(const char *mountpoint)
- 		return NULL;
+ 	open_counters(evsel_list);
+@@ -530,7 +475,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	 */
+ 	atexit(atexit_header);
  
- 	/* save the mountpoint */
--	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
- 	debugfs_found = 1;
--
-+	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
-+out:
-+	debugfs_set_tracing_events_path(debugfs_mountpoint);
- 	return debugfs_mountpoint;
+-	if (pipe_output) {
++	if (record_opts.pipe_output) {
+ 		err = perf_header__write_pipe(output);
+ 		if (err < 0)
+ 			return err;
+@@ -543,7 +488,7 @@ static int __cmd_record(int argc, const char **argv)
+ 
+ 	post_processing_offset = lseek(output, 0, SEEK_CUR);
+ 
+-	if (pipe_output) {
++	if (record_opts.pipe_output) {
+ 		err = perf_session__synthesize_attrs(session,
+ 						     process_synthesized_event);
+ 		if (err < 0) {
+@@ -629,7 +574,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	 * Let the child rip
+ 	 */
+ 	if (forks)
+-		close(go_pipe[1]);
++		perf_evlist__start_workload(evsel_list);
+ 
+ 	for (;;) {
+ 		int hits = samples;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index eb6a138..32ee6ca 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -193,6 +193,7 @@ struct perf_record_opts {
+ 	bool	     no_delay;
+ 	bool	     no_inherit;
+ 	bool	     no_samples;
++	bool	     pipe_output;
+ 	bool	     raw_samples;
+ 	bool	     sample_address;
+ 	bool	     sample_time;
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index b774341..a472247 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -13,6 +13,7 @@
+ #include "thread_map.h"
+ #include "evlist.h"
+ #include "evsel.h"
++#include <unistd.h>
+ 
+ #include "parse-events.h"
+ 
+@@ -33,6 +34,7 @@ void perf_evlist__init(struct perf_evlist *evlist, struct cpu_map *cpus,
+ 		INIT_HLIST_HEAD(&evlist->heads[i]);
+ 	INIT_LIST_HEAD(&evlist->entries);
+ 	perf_evlist__set_maps(evlist, cpus, threads);
++	evlist->workload.pid = -1;
  }
  
-+void debugfs_set_path(const char *mountpoint)
+ struct perf_evlist *perf_evlist__new(struct cpu_map *cpus,
+@@ -674,3 +676,97 @@ out_err:
+ 
+ 	return err;
+ }
++
++int perf_evlist__prepare_workload(struct perf_evlist *evlist,
++				  struct perf_record_opts *opts,
++				  const char *argv[])
 +{
-+	snprintf(debugfs_mountpoint, sizeof(debugfs_mountpoint), "%s", mountpoint);
-+	debugfs_set_tracing_events_path(mountpoint);
++	int child_ready_pipe[2], go_pipe[2];
++	char bf;
++
++	if (pipe(child_ready_pipe) < 0) {
++		perror("failed to create 'ready' pipe");
++		return -1;
++	}
++
++	if (pipe(go_pipe) < 0) {
++		perror("failed to create 'go' pipe");
++		goto out_close_ready_pipe;
++	}
++
++	evlist->workload.pid = fork();
++	if (evlist->workload.pid < 0) {
++		perror("failed to fork");
++		goto out_close_pipes;
++	}
++
++	if (!evlist->workload.pid) {
++		if (opts->pipe_output)
++			dup2(2, 1);
++
++		close(child_ready_pipe[0]);
++		close(go_pipe[1]);
++		fcntl(go_pipe[0], F_SETFD, FD_CLOEXEC);
++
++		/*
++		 * Do a dummy execvp to get the PLT entry resolved,
++		 * so we avoid the resolver overhead on the real
++		 * execvp call.
++		 */
++		execvp("", (char **)argv);
++
++		/*
++		 * Tell the parent we're ready to go
++		 */
++		close(child_ready_pipe[1]);
++
++		/*
++		 * Wait until the parent tells us to go.
++		 */
++		if (read(go_pipe[0], &bf, 1) == -1)
++			perror("unable to read pipe");
++
++		execvp(argv[0], (char **)argv);
++
++		perror(argv[0]);
++		kill(getppid(), SIGUSR1);
++		exit(-1);
++	}
++
++	if (!opts->system_wide && opts->target_tid == -1 && opts->target_pid == -1)
++		evlist->threads->map[0] = evlist->workload.pid;
++
++	close(child_ready_pipe[1]);
++	close(go_pipe[0]);
++	/*
++	 * wait for child to settle
++	 */
++	if (read(child_ready_pipe[0], &bf, 1) == -1) {
++		perror("unable to read pipe");
++		goto out_close_pipes;
++	}
++
++	evlist->workload.cork_fd = go_pipe[1];
++	close(child_ready_pipe[0]);
++	return 0;
++
++out_close_pipes:
++	close(go_pipe[0]);
++	close(go_pipe[1]);
++out_close_ready_pipe:
++	close(child_ready_pipe[0]);
++	close(child_ready_pipe[1]);
++	return -1;
 +}
 +
- /* umount the debugfs */
- 
- int debugfs_umount(void)
-diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
-index 8cd3fa0..4a878f7 100644
---- a/tools/perf/util/debugfs.h
-+++ b/tools/perf/util/debugfs.h
-@@ -6,9 +6,13 @@ int debugfs_valid_mountpoint(const char *debugfs);
- int debugfs_valid_entry(const char *path);
- char *debugfs_mount(const char *mountpoint);
- int debugfs_umount(void);
-+void debugfs_set_path(const char *mountpoint);
- int debugfs_write(const char *entry, const char *value);
- int debugfs_read(const char *entry, char *buffer, size_t size);
- void debugfs_force_cleanup(void);
- int debugfs_make_path(const char *element, char *buffer, int size);
- 
-+extern char debugfs_mountpoint[];
-+extern char tracing_events_path[];
++int perf_evlist__start_workload(struct perf_evlist *evlist)
++{
++	if (evlist->workload.cork_fd > 0) {
++		/*
++		 * Remove the cork, let it rip!
++		 */
++		return close(evlist->workload.cork_fd);
++	}
 +
- #endif /* __DEBUGFS_H__ */
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 928918b..586ab3f 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -25,8 +25,6 @@ enum event_result {
- 	EVT_HANDLED_ALL
- };
++	return 0;
++}
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 231c06f..07d56b3 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -6,6 +6,7 @@
+ #include "../perf.h"
+ #include "event.h"
+ #include "util.h"
++#include <unistd.h>
  
--char debugfs_path[MAXPATHLEN];
--
- #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
- #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
+ struct pollfd;
+ struct thread_map;
+@@ -22,6 +23,10 @@ struct perf_evlist {
+ 	int		 nr_fds;
+ 	int		 nr_mmaps;
+ 	int		 mmap_len;
++	struct {
++		int	cork_fd;
++		pid_t	pid;
++	} workload;
+ 	bool		 overwrite;
+ 	union perf_event event_copy;
+ 	struct perf_mmap *mmap;
+@@ -68,6 +73,11 @@ int perf_evlist__open(struct perf_evlist *evlist, bool group);
+ void perf_evlist__config_attrs(struct perf_evlist *evlist,
+ 			       struct perf_record_opts *opts);
  
-@@ -140,7 +138,7 @@ static int tp_event_has_id(struct dirent *sys_dir, struct dirent *evt_dir)
- 	char evt_path[MAXPATHLEN];
- 	int fd;
- 
--	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
-+	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", tracing_events_path,
- 			sys_dir->d_name, evt_dir->d_name);
- 	fd = open(evt_path, O_RDONLY);
- 	if (fd < 0)
-@@ -171,16 +169,16 @@ struct tracepoint_path *tracepoint_id_to_path(u64 config)
- 	char evt_path[MAXPATHLEN];
- 	char dir_path[MAXPATHLEN];
- 
--	if (debugfs_valid_mountpoint(debugfs_path))
-+	if (debugfs_valid_mountpoint(tracing_events_path))
- 		return NULL;
- 
--	sys_dir = opendir(debugfs_path);
-+	sys_dir = opendir(tracing_events_path);
- 	if (!sys_dir)
- 		return NULL;
- 
- 	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
- 
--		snprintf(dir_path, MAXPATHLEN, "%s/%s", debugfs_path,
-+		snprintf(dir_path, MAXPATHLEN, "%s/%s", tracing_events_path,
- 			 sys_dirent.d_name);
- 		evt_dir = opendir(dir_path);
- 		if (!evt_dir)
-@@ -447,7 +445,7 @@ parse_single_tracepoint_event(char *sys_name,
- 	u64 id;
- 	int fd;
- 
--	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
-+	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", tracing_events_path,
- 		 sys_name, evt_name);
- 
- 	fd = open(evt_path, O_RDONLY);
-@@ -485,7 +483,7 @@ parse_multiple_tracepoint_event(struct perf_evlist *evlist, char *sys_name,
- 	struct dirent *evt_ent;
- 	DIR *evt_dir;
- 
--	snprintf(evt_path, MAXPATHLEN, "%s/%s", debugfs_path, sys_name);
-+	snprintf(evt_path, MAXPATHLEN, "%s/%s", tracing_events_path, sys_name);
- 	evt_dir = opendir(evt_path);
- 
- 	if (!evt_dir) {
-@@ -528,7 +526,7 @@ parse_tracepoint_event(struct perf_evlist *evlist, const char **strp,
- 	char sys_name[MAX_EVENT_LENGTH];
- 	unsigned int sys_length, evt_length;
- 
--	if (debugfs_valid_mountpoint(debugfs_path))
-+	if (debugfs_valid_mountpoint(tracing_events_path))
- 		return 0;
- 
- 	evt_name = strchr(*strp, ':');
-@@ -920,10 +918,10 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob)
- 	char evt_path[MAXPATHLEN];
- 	char dir_path[MAXPATHLEN];
- 
--	if (debugfs_valid_mountpoint(debugfs_path))
-+	if (debugfs_valid_mountpoint(tracing_events_path))
- 		return;
- 
--	sys_dir = opendir(debugfs_path);
-+	sys_dir = opendir(tracing_events_path);
- 	if (!sys_dir)
- 		return;
- 
-@@ -932,7 +930,7 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob)
- 		    !strglobmatch(sys_dirent.d_name, subsys_glob))
- 			continue;
- 
--		snprintf(dir_path, MAXPATHLEN, "%s/%s", debugfs_path,
-+		snprintf(dir_path, MAXPATHLEN, "%s/%s", tracing_events_path,
- 			 sys_dirent.d_name);
- 		evt_dir = opendir(dir_path);
- 		if (!evt_dir)
-@@ -964,16 +962,16 @@ int is_valid_tracepoint(const char *event_string)
- 	char evt_path[MAXPATHLEN];
- 	char dir_path[MAXPATHLEN];
- 
--	if (debugfs_valid_mountpoint(debugfs_path))
-+	if (debugfs_valid_mountpoint(tracing_events_path))
- 		return 0;
- 
--	sys_dir = opendir(debugfs_path);
-+	sys_dir = opendir(tracing_events_path);
- 	if (!sys_dir)
- 		return 0;
- 
- 	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
- 
--		snprintf(dir_path, MAXPATHLEN, "%s/%s", debugfs_path,
-+		snprintf(dir_path, MAXPATHLEN, "%s/%s", tracing_events_path,
- 			 sys_dirent.d_name);
- 		evt_dir = opendir(dir_path);
- 		if (!evt_dir)
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index 2f8e375..7e0cbe7 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -39,7 +39,6 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob);
- int print_hwcache_events(const char *event_glob);
- extern int is_valid_tracepoint(const char *event_string);
- 
--extern char debugfs_path[];
- extern int valid_debugfs_mount(const char *debugfs);
- 
- #endif /* __PERF_PARSE_EVENTS_H */
++int perf_evlist__prepare_workload(struct perf_evlist *evlist,
++				  struct perf_record_opts *opts,
++				  const char *argv[]);
++int perf_evlist__start_workload(struct perf_evlist *evlist);
++
+ int perf_evlist__alloc_mmap(struct perf_evlist *evlist);
+ int perf_evlist__mmap(struct perf_evlist *evlist, int pages, bool overwrite);
+ void perf_evlist__munmap(struct perf_evlist *evlist);
 -- 
 1.7.8.rc0.35.gee6df
 
