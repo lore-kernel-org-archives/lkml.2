@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481Ab1K1PqS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 10:46:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49186 "EHLO mx1.redhat.com"
+	id S1754432Ab1K1Pqo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 10:46:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62846 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754410Ab1K1PqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 10:46:15 -0500
+	id S1754000Ab1K1Pqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 10:46:42 -0500
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 08/14] KEYS: Add signature verification facility
+Subject: [PATCH 10/14] KEYS: Add a crypto key request function
 To: keyrings@linux-nfs.org
 Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, mitry.kasatkin@intel.com,
         zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
         alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Mon, 28 Nov 2011 15:46:05 +0000
-Message-ID: <20111128154605.6009.66475.stgit@warthog.procyon.org.uk>
+Date: Mon, 28 Nov 2011 15:46:30 +0000
+Message-ID: <20111128154630.6009.70895.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20111128154436.6009.77586.stgit@warthog.procyon.org.uk>
 References: <20111128154436.6009.77586.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,235 +25,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a facility whereby a key subtype may be asked to verify a signature against
-the data it is purported to have signed.
+Add a function by which crypto keys can be requested.  A keyring is supplied
+for the function to search (which can be, say, a system keyring containing keys
+for kernel module signature checking).  The function also provides a point at
+which hardware key caches, such as a TPM, can be consulted.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/security/keys-crypto.txt |  106 +++++++++++++++++++++++++++++++-
- include/keys/crypto-subtype.h          |   15 +++++
- include/keys/crypto-type.h             |    9 +++
+ Documentation/security/keys-crypto.txt |   12 ++++
+ include/keys/crypto-type.h             |    3 +
  security/keys/Makefile                 |    2 -
- security/keys/crypto_verify.c          |   87 ++++++++++++++++++++++++++
- 5 files changed, 214 insertions(+), 5 deletions(-)
- create mode 100644 security/keys/crypto_verify.c
+ security/keys/crypto_request.c         |   94 ++++++++++++++++++++++++++++++++
+ 4 files changed, 110 insertions(+), 1 deletions(-)
+ create mode 100644 security/keys/crypto_request.c
 
 
 diff --git a/Documentation/security/keys-crypto.txt b/Documentation/security/keys-crypto.txt
-index 44c936a..236d750c 100644
+index 236d750c..e1c19ea 100644
 --- a/Documentation/security/keys-crypto.txt
 +++ b/Documentation/security/keys-crypto.txt
-@@ -8,7 +8,9 @@ Contents:
-   - Key identification.
-   - Crypto subtypes.
-   - Accessing crypto keys.
-+    - Signature verification.
-   - Implementing crypto subtypes.
-+    - Registration.
+@@ -158,6 +158,18 @@ using a key to provide the public key:
+      not necessary if verify_sig_end() was called.
  
  
- ========
-@@ -98,14 +100,69 @@ This gives access to the key type:
- 	struct key_type key_type_crypto;
- 
- 
-+SIGNATURE VERIFICATION
-+----------------------
++To find a key to use for signature verification, the following function may be
++called:
 +
-+The four operations that can perform cryptographic signature verification,
-+using a key to provide the public key:
++	struct key *request_crypto_key_for_PGP_sig(struct key *keyring,
++						  const u8 *sig, size_t siglen);
 +
-+ (1) Begin verification procedure.
-+
-+	struct crypto_key_verify_context *
-+	verify_sig_begin(struct key *key, const void *sig, size_t siglen);
-+
-+     This function sets up a verification context from the specified key and
-+     the signature blob.  The signature blob must be presented again at the end
-+     of the procedure.  The key is checked against parameters in the signature,
-+     and if it's not the right key then an error will be given.
-+
-+     If such a thing applies, the hashing algorithm, will be extracted from the
-+     signature and the appropriate crypto module will be used.  -ENOPKG will be
-+     returned if the hash algorithm is unavailable.
-+
-+     The return value is an opaque pointer to be passed to the other functions,
-+     or a negative error code.
-+
-+ (2) Indicate data to be verified.
-+
-+	int verify_sig_add_data(struct crypto_key_verify_context *ctx,
-+				const void *data, size_t datalen);
-+
-+     This function is used to shovel data to the verification procedure so that
-+     it can load it into the hash, pass it to hardware or whatever is
-+     appropriate for the algorithm being employed.
-+
-+     The data is not canonicalised for the document type specified in the
-+     signature.  The caller must do that.
-+
-+     It will return 0 if successful and a negative error code if not.
-+
-+ (3) Complete the verification process.
-+
-+	int verify_sig_end(struct crypto_key_verify_context *ctx,
-+			   const void *sig, size_t siglen);
-+
-+     This function performs the actual signature verification step and cleans
-+     up the resources allocated at the beginning.  The signature must be
-+     presented again as some of the data therein may need to be added to the
-+     internal hash.
-+
-+     It will return -EKEYREJECTED if the signature didn't match, 0 if
-+     successful and may return other errors as appropriate.
-+
-+ (4) Cancel the verification process.
-+
-+	void verify_sig_cancel(struct crypto_key_verify_context *ctx);
-+
-+     This function cleans up the resources allocated at the beginning.  This is
-+     not necessary if verify_sig_end() was called.
++This parses the specified signature blob to find the signing key identity and
++then searches the given keyring for a matching key.  It may also examine a
++hardware keystore (such as a TPM) for a usable signature matching service and
++generate a key to provide an access method to that service.
 +
 +
  ============================
  IMPLEMENTING CRYPTO SUBTYPES
  ============================
- 
--If a suitable subtype is found, then key->type_data.p[0] is set to point to the
--subtype definition and the module usage count is incremented.
--
--The subtype definition structure looks like the following:
-+Each subtype is specified through a definition structure:
- 
- 	struct crypto_key_subtype {
- 		struct module		*owner;
-@@ -118,6 +175,14 @@ The subtype definition structure looks like the following:
- 
- 		void (*revoke)(struct key *key);
- 		void (*destroy)(struct key *key);
-+
-+		struct crypto_key_verify_context *(*verify_sig_begin)(
-+			struct key *key, const u8 *sig, size_t siglen);
-+		int (*verify_sig_add_data)(struct crypto_key_verify_context *ctx,
-+					   const void *data, size_t datalen);
-+		int (*verify_sig_end)(struct crypto_key_verify_context *ctx,
-+				      const u8 *sig, size_t siglen);
-+		void (*verify_sig_cancel)(struct crypto_key_verify_context *ctx);
- 	};
- 
- The owner and name fields should be set to the owning module and the name of
-@@ -160,6 +225,39 @@ management of the key itself:
-      must free whatever key->payload refers to.
- 
- 
-+There are then sets of method pointers to actually use the key for things:
-+
-+ (*) Signature verification
-+
-+     Then there are functions to verify a signature using the public key stored in
-+     this key:
-+
-+	(1) verify_sig_begin().
-+	(2) verify_sig_add_data().
-+	(3) verify_sig_end().
-+	(4) verify_sig_cancel().
-+
-+     These correspond to the accessor functions mentioned in the previous
-+     section.  The first function is optional - if it is not provided, then
-+     verification is not a service available with this key.  The other three
-+     are mandatory if the first is supplied and unnecessary otherwise.
-+
-+     The subtype should allocate a context in ->verify_sig_begin() and embed
-+     the following struct in it:
-+
-+	struct crypto_key_verify_context {
-+		struct key *key;
-+	};
-+
-+     A pointer to this struct is then returned to the caller.  This is used by
-+     the master routines to route the operations to the right place.  This is
-+     passed to the _add_data, _end and _cancel routines - which should use
-+     container_of() on it to get the full context.
-+
-+
-+REGISTRATION
-+------------
-+
- Functions are provided to register and unregister key subtypes:
- 
- 	int register_crypto_key_subtype(struct crypto_key_subtype *subtype);
-diff --git a/include/keys/crypto-subtype.h b/include/keys/crypto-subtype.h
-index 218cb2b..76dbd50 100644
---- a/include/keys/crypto-subtype.h
-+++ b/include/keys/crypto-subtype.h
-@@ -20,6 +20,14 @@
- extern struct key_type key_type_crypto;
- 
- /*
-+ * Context base for signature verification methods.  Allocated by the subtype
-+ * and presumably embedded in something appropriate.
-+ */
-+struct crypto_key_verify_context {
-+	struct key *key;
-+};
-+
-+/*
-  * Keys of this type declare a subtype that indicates the handlers and
-  * capabilities.
-  */
-@@ -38,6 +46,13 @@ struct crypto_key_subtype {
- 	void (*revoke)(struct key *key);
- 	void (*destroy)(struct key *key);
- 
-+	struct crypto_key_verify_context *(*verify_sig_begin)(
-+		struct key *key, const u8 *sig, size_t siglen);
-+	int (*verify_sig_add_data)(struct crypto_key_verify_context *ctx,
-+				   const void *data, size_t datalen);
-+	int (*verify_sig_end)(struct crypto_key_verify_context *ctx,
-+			      const u8 *sig, size_t siglen);
-+	void (*verify_sig_cancel)(struct crypto_key_verify_context *ctx);
- };
- 
- extern int register_crypto_key_subtype(struct crypto_key_subtype *);
 diff --git a/include/keys/crypto-type.h b/include/keys/crypto-type.h
-index 47c00c7..6b93366 100644
+index 6b93366..142611b 100644
 --- a/include/keys/crypto-type.h
 +++ b/include/keys/crypto-type.h
-@@ -18,6 +18,15 @@
- 
- extern struct key_type key_type_crypto;
- 
-+struct crypto_key_verify_context;
-+extern struct crypto_key_verify_context *verify_sig_begin(
-+	struct key *key, const void *sig, size_t siglen);
-+extern int verify_sig_add_data(struct crypto_key_verify_context *ctx,
-+			       const void *data, size_t datalen);
-+extern int verify_sig_end(struct crypto_key_verify_context *ctx,
-+			  const void *sig, size_t siglen);
-+extern void verify_sig_cancel(struct crypto_key_verify_context *ctx);
-+
- /*
+@@ -31,4 +31,7 @@ extern void verify_sig_cancel(struct crypto_key_verify_context *ctx);
   * The payload is at the discretion of the subtype.
   */
+ 
++extern struct key *request_crypto_key_for_PGP_sig(struct key *keyring,
++						  const u8 *sig, size_t siglen);
++
+ #endif /* _KEYS_CRYPTO_TYPE_H */
 diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 293eefb..f37c750 100644
+index d6b691b..63def08 100644
 --- a/security/keys/Makefile
 +++ b/security/keys/Makefile
 @@ -22,5 +22,5 @@ obj-$(CONFIG_KEYS_COMPAT) += compat.o
  obj-$(CONFIG_PROC_FS) += proc.o
  obj-$(CONFIG_SYSCTL) += sysctl.o
  
--crypto_keys-y	:= crypto_type.o pgp_parse.o
-+crypto_keys-y	:= crypto_type.o pgp_parse.o crypto_verify.o
- crypto_dsa-y	:= crypto_dsa_subtype.o
-diff --git a/security/keys/crypto_verify.c b/security/keys/crypto_verify.c
+-crypto_keys-y	:= crypto_type.o pgp_parse.o crypto_verify.o
++crypto_keys-y	:= crypto_type.o pgp_parse.o crypto_verify.o crypto_request.o
+ crypto_dsa-y	:= crypto_dsa_subtype.o crypto_dsa_verify.o
+diff --git a/security/keys/crypto_request.c b/security/keys/crypto_request.c
 new file mode 100644
-index 0000000..ac97cc9
+index 0000000..98e4a17
 --- /dev/null
-+++ b/security/keys/crypto_verify.c
-@@ -0,0 +1,87 @@
-+/* Signature verification with a crypto key
++++ b/security/keys/crypto_request.c
+@@ -0,0 +1,94 @@
++/* Cryptographic key request handling
 + *
 + * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -266,78 +106,85 @@ index 0000000..ac97cc9
 + * See Documentation/security/keys-crypto.txt
 + */
 +
++#define __KDEBUG
 +#include <keys/crypto-subtype.h>
 +#include <linux/seq_file.h>
 +#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/pgp.h>
 +#include "crypto_keys.h"
++#include "internal.h"
++
++struct PGP_sig_parse_context {
++	struct pgp_parse_context pgp;
++	struct pgp_sig_parameters params;
++	bool found_sig;
++};
++
++/*
++ * Look inside signature sections for a key ID
++ */
++static int PGP_sig_parse_signature(struct pgp_parse_context *context,
++				   enum pgp_packet_tag type,
++				   u8 headerlen,
++				   const u8 *data,
++				   size_t datalen)
++{
++	struct PGP_sig_parse_context *ctx =
++		container_of(context, struct PGP_sig_parse_context, pgp);
++
++	ctx->found_sig = true;
++	return pgp_parse_sig_params(&data, &datalen, &ctx->params);
++}
 +
 +/**
-+ * verify_sig_begin - Initiate the use of a crypto key to verify a signature
-+ * @key: The public key to verify against
-+ * @sig: The signature data
-+ * @siglen: The signature length
++ * request_crypto_key_for_PGP_sig - Request a key matching a PGP signature
++ * @keyring: The keyring that might contain the key.
++ * @sig: The PGP signature blob.
++ * @siglen: The size of the PGP signature blob.
 + *
-+ * Returns a context or an error.
++ * Attempt to find a key to use for PGP signature verification, starting off by
++ * looking in the supplied keyring.  The function may also look for other key
++ * sources such as a TPM.  If an alternative key is found it will be added to
++ * the keyring for future reference.
 + */
-+struct crypto_key_verify_context *verify_sig_begin(
-+	struct key *key, const void *sig, size_t siglen)
++struct key *request_crypto_key_for_PGP_sig(struct key *keyring,
++					   const u8 *sig, size_t siglen)
 +{
-+	const struct crypto_key_subtype *subtype = crypto_key_subtype(key);
++	struct PGP_sig_parse_context p;
++	key_ref_t key;
++	char criterion[3 + 8 * 2 + 1];
++	int ret;
 +
-+	if (!subtype || !subtype->verify_sig_begin)
-+		return ERR_PTR(-EOPNOTSUPP);
++	kenter("");
 +
-+	return subtype->verify_sig_begin(key, sig, siglen);
++	if (!keyring)
++		return ERR_PTR(-ENOKEY);
++
++	/* Need to find the key ID */
++	p.pgp.types_of_interest = (1 << PGP_PKT_SIGNATURE);
++	p.pgp.process_packet = PGP_sig_parse_signature;
++	p.found_sig = false;
++	ret = pgp_parse_packets(sig, siglen, &p.pgp);
++	if (ret < 0)
++		return ERR_PTR(ret);
++
++	if (!p.found_sig)
++		return ERR_PTR(-EINVAL);
++
++	sprintf(criterion, "id:%08x%08x",
++		be32_to_cpu(p.params.issuer32[0]),
++		be32_to_cpu(p.params.issuer32[1]));
++
++	kdebug("Look up: %s", criterion);
++
++	key = keyring_search(make_key_ref(keyring, 1),
++			     &key_type_crypto, criterion);
++	if (IS_ERR(key)) {
++		kleave(" = %ld", PTR_ERR(key));
++		return ERR_CAST(key);
++	}
++
++	return key_ref_to_ptr(key);
 +}
-+EXPORT_SYMBOL_GPL(verify_sig_begin);
-+
-+/**
-+ * verify_sig_add_data - Incrementally provide data to be verified
-+ * @ctx: The context from verify_sig_begin()
-+ * @data: Data
-+ * @datalen: The amount of @data
-+ *
-+ * This may be called multiple times.
-+ */
-+int verify_sig_add_data(struct crypto_key_verify_context *ctx,
-+			const void *data, size_t datalen)
-+{
-+	const struct crypto_key_subtype *subtype;
-+
-+	BUG_ON(!ctx);
-+	subtype = crypto_key_subtype(ctx->key);
-+	return subtype->verify_sig_add_data(ctx, data, datalen);
-+}
-+EXPORT_SYMBOL_GPL(verify_sig_add_data);
-+
-+/**
-+ * verify_sig_end - Finalise signature verification and return result
-+ * @ctx: The context from verify_sig_begin()
-+ * @sig: The signature data
-+ * @siglen: The signature length
-+ */
-+int verify_sig_end(struct crypto_key_verify_context *ctx,
-+		   const void *sig, size_t siglen)
-+{
-+	const struct crypto_key_subtype *subtype;
-+
-+	BUG_ON(!ctx);
-+	subtype = crypto_key_subtype(ctx->key);
-+	return subtype->verify_sig_end(ctx, sig, siglen);
-+}
-+EXPORT_SYMBOL_GPL(verify_sig_end);
-+
-+/**
-+ * verify_sig_end - Cancel signature verification
-+ * @ctx: The context from verify_sig_begin()
-+ */
-+void verify_sig_cancel(struct crypto_key_verify_context *ctx)
-+{
-+	const struct crypto_key_subtype *subtype;
-+
-+	BUG_ON(!ctx);
-+	subtype = crypto_key_subtype(ctx->key);
-+	subtype->verify_sig_cancel(ctx);
-+}
-+EXPORT_SYMBOL_GPL(verify_sig_cancel);
 
