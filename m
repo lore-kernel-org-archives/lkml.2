@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab1K1TzO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:55:14 -0500
-Received: from eazy.amigager.de ([213.239.192.238]:56518 "EHLO
-	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449Ab1K1TzK (ORCPT
+	id S1754739Ab1K1TzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:55:21 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63889 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449Ab1K1TzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:55:10 -0500
-Date: Mon, 28 Nov 2011 20:55:34 +0100
-From: Tino Keitel <tino.keitel@tikei.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, "Artem S. Tashkinov" <t.artem@lycos.com>
-Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
- metering applications has gone crackers
-Message-ID: <20111128195533.GA26460@mac.home>
-Mail-Followup-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-	linux-kernel@vger.kernel.org,
-	"Artem S. Tashkinov" <t.artem@lycos.com>
-References: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
- <20111124200553.GA13353@mac.home>
- <20111127110400.GA4672@mac.home>
- <201111271245.57772.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111271245.57772.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 28 Nov 2011 14:55:16 -0500
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: cbouatmailru@gmail.com, dg77.kim@samsung.com, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com, Jason.Wortham@maxim-ic.com,
+        alan@linux.intel.com, Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH 0/4] MAX17042 add support for maxim POR procedure
+Date: Mon, 28 Nov 2011 11:49:49 -0800
+Message-Id: <1322509793-10800-1-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 12:45:57 +0100, Rafael J. Wysocki wrote:
-> On Sunday, November 27, 2011, Tino Keitel wrote:
-> > On Thu, Nov 24, 2011 at 21:05:53 +0100, Tino Keitel wrote:
-> > > On Thu, Nov 24, 2011 at 10:30:15 +0000, Artem S. Tashkinov wrote:
-> > > > Hello,
-> > > > 
-> > > > I'd like to report a weird regression in Linux 3.2 (running rc3 now) - all CPU metering applications have gone terribly mad
-> > > > under this kernel:
-> > > 
-> > > I get the same using top, htop and the gnome system monitor with kernel
-> > > 3.2 on a Sandy Bridge quad core box, running Debian unstable.
-> > 
-> > I just tested 3.2-rc2, and see the same bug.
-> 
-> I'm seeing that too on one of my test boxes, but not all the time
-> (i.e. there are periods in which the readings are correct).  The other boxes
-> I've tested with 3.2-rc are fine in that respect.
-> 
-> Also, it seems that it shows 100%-(real load) when it is wrong.  So, it looks
-> like there's an overflow somewhere in the CPU load measuring code, at least
-> on some CPUs.
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Hi,
+This patch set adds support for the power on reset procedure for the
+max17042 battery fuel gauge.  The accuracy of the fuel gauge is
+improved by configuring the fuel gauge with the characterization data
+for the battery present in the platform.
 
-I reverted this commit and so far it looks good:
 
-commit a25cac5198d4ff2842ccca63b423962848ad24b2
-Author: Michal Hocko <mhocko@suse.cz>
-Date:   Wed Aug 24 09:40:25 2011 +0200
 
-    proc: Consider NO_HZ when printing idle and iowait times
+Dirk Brandewie (4):
+  max17042: Move power suppply registration to a worker thread
+  max17042: Align register definitions with data sheet and init appnote
+  max17042: Add POR init procedure from Maxim appnote
+  x86-mrst: Add battery fuel guage platform data
 
-I'll report back tomorrow how the kernel behaves.
+ arch/x86/platform/mrst/mrst.c          |   46 ++++
+ drivers/power/max17042_battery.c       |  401 ++++++++++++++++++++++++++++++--
+ include/linux/power/max17042_battery.h |   93 +++++++-
+ 3 files changed, 510 insertions(+), 30 deletions(-)
 
-Regards,
-Tino
+-- 
+1.7.7.3
+
