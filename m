@@ -1,139 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab1K1XOq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:14:46 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34287 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab1K1XOn (ORCPT
+	id S1755279Ab1K1XTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:19:30 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48692 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754684Ab1K1XOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:14:43 -0500
+	Mon, 28 Nov 2011 18:14:45 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: [GIT PULL 00/25] perf/core fixes and improvements
-Date: Mon, 28 Nov 2011 21:14:01 -0200
-Message-Id: <1322522066-21879-1-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 01/25] perf tools: Eliminate duplicate code and use PATH_MAX consistently
+Date: Mon, 28 Nov 2011 21:14:02 -0200
+Message-Id: <1322522066-21879-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+In-Reply-To: <1322522066-21879-1-git-send-email-acme@infradead.org>
+References: <1322522066-21879-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-        Please consider pulling from:
+No need for multiple definitions for STR() and die(), also use SuSv2's
+PATH_MAX instead of adding MAX_PATH.
 
-git://github.com/acmel/linux.git perf/core
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-qpujjkw7u0bf0tr4wt55cr9y@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-probe.c         |    1 -
+ tools/perf/util/cgroup.c           |   15 +++++++--------
+ tools/perf/util/debugfs.c          |   12 ++++++------
+ tools/perf/util/debugfs.h          |   29 +++++++++--------------------
+ tools/perf/util/probe-finder.h     |    1 -
+ tools/perf/util/trace-event-info.c |   28 ++--------------------------
+ 6 files changed, 24 insertions(+), 62 deletions(-)
 
-	Mostly infrastructure improvements/refactorings to ease the development
-of tracepoint based tools and to avoid having to create a perf.data file or
-using pipes when wanting to produce and consume events directly like in a
-strace reimplementation using these libraries.
-
-	More is needed to make all tools use what has changed but what is
-present in this patchset should illustrate the goals I'm pursuing.
-
-Regards,
-
-- Arnaldo
-
-Arnaldo Carvalho de Melo (23):
-  perf tools: Eliminate duplicate code and use PATH_MAX consistently
-  perf tools: Simplify debugfs mountpoint handling code
-  perf evlist: Introduce perf_evlist__add_attrs
-  perf evlist: Introduce add_tracepoints method
-  perf evsel: Introduce config attr method
-  perf evlist: Introduce {prepare,start}_workload refactored from 'perf record'
-  perf evlist: Handle default value for 'pages' on mmap method
-  perf record: Move mmap_pages to perf_record_opts
-  perf session: Move threads to struct machine
-  perf record: Move 'group' to perf_event_ops
-  perf ui progress: Fix divide by zero
-  perf symbols: Add nr_events to symbol_conf
-  perf evlist: Introduce id_hdr_size method out of perf_session
-  perf event: perf_event_ops->attr() manipulates only an evlist
-  perf session: Remove superfluous callchain_cursor member
-  perf tools: Use evsel->attr.sample_type instead of session->sample_type
-  perf report: Group options in a struct
-  perf annotate: Group options in a struct
-  perf tools: Pass tool context in the the perf_event_ops functions
-  perf tools: Resolve machine earlier and pass it to perf_event_ops
-  perf tools: Rename perf_event_ops to perf_tool
-  perf top: Stop using globals for tool state
-  perf tools: Save some loops using perf_evlist__id2evsel
-
-David Ahern (2):
-  perf tools: make -C consistent across commands (for cpu list arg)
-  perf script: Add comm filtering option
-
- tools/perf/Documentation/perf-annotate.txt         |    2 +-
- tools/perf/Documentation/perf-report.txt           |    4 +-
- tools/perf/Documentation/perf-script.txt           |    7 +-
- tools/perf/Makefile                                |    1 +
- tools/perf/builtin-annotate.c                      |  133 +++---
- tools/perf/builtin-diff.c                          |   21 +-
- tools/perf/builtin-inject.c                        |  118 +++--
- tools/perf/builtin-kmem.c                          |   14 +-
- tools/perf/builtin-lock.c                          |   10 +-
- tools/perf/builtin-probe.c                         |    1 -
- tools/perf/builtin-record.c                        |  579 ++++++++------------
- tools/perf/builtin-report.c                        |  225 ++++----
- tools/perf/builtin-sched.c                         |  198 ++++----
- tools/perf/builtin-script.c                        |   50 ++-
- tools/perf/builtin-stat.c                          |   40 +--
- tools/perf/builtin-test.c                          |    3 +-
- tools/perf/builtin-timechart.c                     |   34 +-
- tools/perf/builtin-top.c                           |  540 +++++++++---------
- tools/perf/perf.c                                  |   33 +-
- tools/perf/perf.h                                  |   23 +
- tools/perf/util/annotate.c                         |    6 +-
- tools/perf/util/annotate.h                         |    5 +-
- tools/perf/util/build-id.c                         |   26 +-
- tools/perf/util/build-id.h                         |    2 +-
- tools/perf/util/callchain.h                        |    3 +
- tools/perf/util/cgroup.c                           |   15 +-
- tools/perf/util/debugfs.c                          |   35 +-
- tools/perf/util/debugfs.h                          |   31 +-
- tools/perf/util/event.c                            |  189 +++----
- tools/perf/util/event.h                            |   59 ++-
- tools/perf/util/evlist.c                           |  289 ++++++++++-
- tools/perf/util/evlist.h                           |   41 ++-
- tools/perf/util/evsel.c                            |   70 +++
- tools/perf/util/evsel.h                            |    8 +
- tools/perf/util/header.c                           |   75 ++--
- tools/perf/util/header.h                           |   45 +-
- tools/perf/util/hist.h                             |    3 +-
- tools/perf/util/map.c                              |    4 +
- tools/perf/util/map.h                              |   19 +
- tools/perf/util/parse-events.c                     |   28 +-
- tools/perf/util/parse-events.h                     |    1 -
- tools/perf/util/probe-finder.h                     |    1 -
- .../perf/util/scripting-engines/trace-event-perl.c |    4 +-
- .../util/scripting-engines/trace-event-python.c    |    4 +-
- tools/perf/util/session.c                          |  326 +++++++-----
- tools/perf/util/session.h                          |   62 +--
- tools/perf/util/setup.py                           |    3 +-
- tools/perf/util/symbol.h                           |    1 +
- tools/perf/util/thread.c                           |    6 +-
- tools/perf/util/thread.h                           |   14 +-
- tools/perf/util/tool.h                             |   50 ++
- tools/perf/util/top.h                              |   20 +-
- tools/perf/util/trace-event-info.c                 |   28 +-
- tools/perf/util/trace-event-scripting.c            |    2 +-
- tools/perf/util/trace-event.h                      |    8 +-
- tools/perf/util/ui/browsers/annotate.c             |   16 +-
- tools/perf/util/ui/browsers/hists.c                |    2 +-
- tools/perf/util/ui/progress.c                      |    3 +
- 58 files changed, 1995 insertions(+), 1545 deletions(-)
- create mode 100644 tools/perf/util/tool.h
-
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 710ae3d..59d43ab 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -46,7 +46,6 @@
+ 
+ #define DEFAULT_VAR_FILTER "!__k???tab_* & !__crc_*"
+ #define DEFAULT_FUNC_FILTER "!_*"
+-#define MAX_PATH_LEN 256
+ 
+ /* Session management structure */
+ static struct {
+diff --git a/tools/perf/util/cgroup.c b/tools/perf/util/cgroup.c
+index 96bee5c..dbe2f16 100644
+--- a/tools/perf/util/cgroup.c
++++ b/tools/perf/util/cgroup.c
+@@ -3,7 +3,6 @@
+ #include "parse-options.h"
+ #include "evsel.h"
+ #include "cgroup.h"
+-#include "debugfs.h" /* MAX_PATH, STR() */
+ #include "evlist.h"
+ 
+ int nr_cgroups;
+@@ -12,7 +11,7 @@ static int
+ cgroupfs_find_mountpoint(char *buf, size_t maxlen)
+ {
+ 	FILE *fp;
+-	char mountpoint[MAX_PATH+1], tokens[MAX_PATH+1], type[MAX_PATH+1];
++	char mountpoint[PATH_MAX + 1], tokens[PATH_MAX + 1], type[PATH_MAX + 1];
+ 	char *token, *saved_ptr = NULL;
+ 	int found = 0;
+ 
+@@ -25,8 +24,8 @@ cgroupfs_find_mountpoint(char *buf, size_t maxlen)
+ 	 * and inspect every cgroupfs mount point to find one that has
+ 	 * perf_event subsystem
+ 	 */
+-	while (fscanf(fp, "%*s %"STR(MAX_PATH)"s %"STR(MAX_PATH)"s %"
+-				STR(MAX_PATH)"s %*d %*d\n",
++	while (fscanf(fp, "%*s %"STR(PATH_MAX)"s %"STR(PATH_MAX)"s %"
++				STR(PATH_MAX)"s %*d %*d\n",
+ 				mountpoint, type, tokens) == 3) {
+ 
+ 		if (!strcmp(type, "cgroup")) {
+@@ -57,15 +56,15 @@ cgroupfs_find_mountpoint(char *buf, size_t maxlen)
+ 
+ static int open_cgroup(char *name)
+ {
+-	char path[MAX_PATH+1];
+-	char mnt[MAX_PATH+1];
++	char path[PATH_MAX + 1];
++	char mnt[PATH_MAX + 1];
+ 	int fd;
+ 
+ 
+-	if (cgroupfs_find_mountpoint(mnt, MAX_PATH+1))
++	if (cgroupfs_find_mountpoint(mnt, PATH_MAX + 1))
+ 		return -1;
+ 
+-	snprintf(path, MAX_PATH, "%s/%s", mnt, name);
++	snprintf(path, PATH_MAX, "%s/%s", mnt, name);
+ 
+ 	fd = open(path, O_RDONLY);
+ 	if (fd == -1)
+diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
+index a88fefc..680be34 100644
+--- a/tools/perf/util/debugfs.c
++++ b/tools/perf/util/debugfs.c
+@@ -2,8 +2,10 @@
+ #include "debugfs.h"
+ #include "cache.h"
+ 
++#include <sys/mount.h>
++
+ static int debugfs_premounted;
+-static char debugfs_mountpoint[MAX_PATH+1];
++static char debugfs_mountpoint[PATH_MAX + 1];
+ 
+ static const char *debugfs_known_mountpoints[] = {
+ 	"/sys/kernel/debug/",
+@@ -64,9 +66,7 @@ const char *debugfs_find_mountpoint(void)
+ 	if (fp == NULL)
+ 		die("Can't open /proc/mounts for read");
+ 
+-	while (fscanf(fp, "%*s %"
+-		      STR(MAX_PATH)
+-		      "s %99s %*s %*d %*d\n",
++	while (fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
+ 		      debugfs_mountpoint, type) == 2) {
+ 		if (strcmp(type, "debugfs") == 0)
+ 			break;
+@@ -158,7 +158,7 @@ int debugfs_umount(void)
+ 
+ int debugfs_write(const char *entry, const char *value)
+ {
+-	char path[MAX_PATH+1];
++	char path[PATH_MAX + 1];
+ 	int ret, count;
+ 	int fd;
+ 
+@@ -203,7 +203,7 @@ int debugfs_write(const char *entry, const char *value)
+  */
+ int debugfs_read(const char *entry, char *buffer, size_t size)
+ {
+-	char path[MAX_PATH+1];
++	char path[PATH_MAX + 1];
+ 	int ret;
+ 	int fd;
+ 
+diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
+index 83a0287..8cd3fa0 100644
+--- a/tools/perf/util/debugfs.h
++++ b/tools/perf/util/debugfs.h
+@@ -1,25 +1,14 @@
+ #ifndef __DEBUGFS_H__
+ #define __DEBUGFS_H__
+ 
+-#include <sys/mount.h>
+-
+-#ifndef MAX_PATH
+-# define MAX_PATH 256
+-#endif
+-
+-#ifndef STR
+-# define _STR(x) #x
+-# define STR(x) _STR(x)
+-#endif
+-
+-extern const char *debugfs_find_mountpoint(void);
+-extern int debugfs_valid_mountpoint(const char *debugfs);
+-extern int debugfs_valid_entry(const char *path);
+-extern char *debugfs_mount(const char *mountpoint);
+-extern int debugfs_umount(void);
+-extern int debugfs_write(const char *entry, const char *value);
+-extern int debugfs_read(const char *entry, char *buffer, size_t size);
+-extern void debugfs_force_cleanup(void);
+-extern int debugfs_make_path(const char *element, char *buffer, int size);
++const char *debugfs_find_mountpoint(void);
++int debugfs_valid_mountpoint(const char *debugfs);
++int debugfs_valid_entry(const char *path);
++char *debugfs_mount(const char *mountpoint);
++int debugfs_umount(void);
++int debugfs_write(const char *entry, const char *value);
++int debugfs_read(const char *entry, char *buffer, size_t size);
++void debugfs_force_cleanup(void);
++int debugfs_make_path(const char *element, char *buffer, int size);
+ 
+ #endif /* __DEBUGFS_H__ */
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index 1132c8f..17e94d0 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -5,7 +5,6 @@
+ #include "util.h"
+ #include "probe-event.h"
+ 
+-#define MAX_PATH_LEN		 256
+ #define MAX_PROBE_BUFFER	1024
+ #define MAX_PROBES		 128
+ 
+diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+index d2655f0..ac6830d 100644
+--- a/tools/perf/util/trace-event-info.c
++++ b/tools/perf/util/trace-event-info.c
+@@ -18,7 +18,8 @@
+  *
+  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  */
+-#define _GNU_SOURCE
++#include <ctype.h>
++#include "util.h"
+ #include <dirent.h>
+ #include <mntent.h>
+ #include <stdio.h>
+@@ -31,7 +32,6 @@
+ #include <pthread.h>
+ #include <fcntl.h>
+ #include <unistd.h>
+-#include <ctype.h>
+ #include <errno.h>
+ #include <stdbool.h>
+ #include <linux/list.h>
+@@ -44,10 +44,6 @@
+ 
+ #define VERSION "0.5"
+ 
+-#define _STR(x) #x
+-#define STR(x) _STR(x)
+-#define MAX_PATH 256
+-
+ #define TRACE_CTRL	"tracing_on"
+ #define TRACE		"trace"
+ #define AVAILABLE	"available_tracers"
+@@ -73,26 +69,6 @@ struct events {
+ };
+ 
+ 
+-
+-static void die(const char *fmt, ...)
+-{
+-	va_list ap;
+-	int ret = errno;
+-
+-	if (errno)
+-		perror("perf");
+-	else
+-		ret = -1;
+-
+-	va_start(ap, fmt);
+-	fprintf(stderr, "  ");
+-	vfprintf(stderr, fmt, ap);
+-	va_end(ap);
+-
+-	fprintf(stderr, "\n");
+-	exit(ret);
+-}
+-
+ void *malloc_or_die(unsigned int size)
+ {
+ 	void *data;
 -- 
 1.7.8.rc0.35.gee6df
 
