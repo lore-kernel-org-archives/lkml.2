@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab1K1Wtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:49:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37516 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445Ab1K1Wtl (ORCPT
+	id S1754772Ab1K1Wuu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 17:50:50 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25789 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796Ab1K1Wut convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:49:41 -0500
-Subject: [PATCH] efivars: add missing parameter to efi_pstore_read()
-From: Christoph Fritz <chf.fritz@googlemail.com>
-To: Mike Waychison <mikew@google.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Tony Luck <tony.luck@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        Dan Carpenter <error27@gmail.com>, linux-kernel@vger.kernel.org
+	Mon, 28 Nov 2011 17:50:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="80635780"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Udo Steinberg <udo@hypervisor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Mon, 28 Nov 2011 14:50:47 -0800
+Subject: RE: MCE/Package power limit notification
+Thread-Topic: MCE/Package power limit notification
+Thread-Index: Acyp8gd0e6JYG39eTne0/UWpnlDM9AELSydgAAAudfA=
+Message-ID: <493994B35A117E4F832F97C4719C4C04022D835792@orsmsx505.amr.corp.intel.com>
+References: <20111123160950.67860131@x220>
+ <987664A83D2D224EAE907B061CE93D53027D89B577@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <987664A83D2D224EAE907B061CE93D53027D89B577@orsmsx505.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset="us-ascii"
-Date: Mon, 28 Nov 2011 23:49:33 +0100
-Message-ID: <1322520574.24241.10.camel@mars>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case where CONFIG_PSTORE=n, the function efi_pstore_read() doesn't
-have the correct list of parameters. This patch provides a definition
-of efi_pstore_read() with 'char **buf' added to fix this warning:
-"drivers/firmware/efivars.c:609: warning: initialization from".
+> -----Original Message-----
+> From: Luck, Tony
+> Sent: Monday, November 28, 2011 2:46 PM
+> To: Udo Steinberg; Linux Kernel Mailing List
+> Cc: Yu, Fenghua
+> Subject: RE: MCE/Package power limit notification
+> 
+> > After half an hour of compiling code on an Intel SNB machine, at
+> which time
+> > the machine was more or less permanently running with turbo boost
+> active,
+> > I've gotten the following in my dmesg with Linux-3.1.0:
+> >
+> > CPU2: Package power limit notification (total events = 1)
+> > CPU3: Package power limit notification (total events = 1)
+> > CPU1: Package power limit notification (total events = 1)
+> > CPU0: Package power limit notification (total events = 1)
+> > ...
+> 
+> Udo,
+> 
+> Fenghua is looking at options to tone down these messages - reporting
+> as machine checks is unduly scary.
 
-Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
----
- drivers/firmware/efivars.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Hi, Udo,
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index a54a6b9..b0a8117 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -581,7 +581,8 @@ static int efi_pstore_close(struct pstore_info *psi)
- }
- 
- static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
--			       struct timespec *time, struct pstore_info *psi)
-+			       struct timespec *timespec,
-+			       char **buf, struct pstore_info *psi)
- {
- 	return -1;
- }
--- 
-1.7.2.5
+I sent out a patch to remove the mcelog info. Could you try it and see if it works for you?
+https://lkml.org/lkml/2011/11/14/239
 
+Thanks.
 
+-Fenghua
