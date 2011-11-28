@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab1K1Xds (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:33:48 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53644 "EHLO e7.ny.us.ibm.com"
+	id S1755946Ab1K1Xd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:33:59 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:36977 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755442Ab1K1Xdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:33:43 -0500
+	id S1754719Ab1K1Xd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:33:57 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,144 +13,86 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 05/13] rcu: Add tracing for RCU_FAST_NO_HZ
-Date: Mon, 28 Nov 2011 15:32:57 -0800
-Message-Id: <1322523185-456-5-git-send-email-paulmck@linux.vnet.ibm.com>
+        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 12/13] rcu: Document same-context read-side constraints
+Date: Mon, 28 Nov 2011 15:33:04 -0800
+Message-Id: <1322523185-456-12-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20111128233212.GA32279@linux.vnet.ibm.com>
 References: <20111128233212.GA32279@linux.vnet.ibm.com>
-x-cbid: 11112823-5806-0000-0000-00000E8602B9
+x-cbid: 11112823-8974-0000-0000-00000380646A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul E. McKenney <paul.mckenney@linaro.org>
+The intent is that a given RCU read-side critical section be confined
+to a single context.  For example, it is illegal to invoke rcu_read_lock()
+in an exception handler and then invoke rcu_read_unlock() from the
+context of the task that received the exception.
 
-This commit adds trace_rcu_prep_idle(), which is invoked from
-rcu_prepare_for_idle() and rcu_wake_cpu() to trace attempts on
-the part of RCU to force CPUs into dyntick-idle mode.
-
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/trace/events/rcu.h |   37 +++++++++++++++++++++++++++++++++++++
- kernel/rcutree_plugin.h    |   18 +++++++++++++++---
- 2 files changed, 52 insertions(+), 3 deletions(-)
+ include/linux/rcupdate.h |   15 +++++++++++++++
+ include/linux/srcu.h     |    5 +++++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index 7f6877a..debe453 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -275,6 +275,42 @@ TRACE_EVENT(rcu_dyntick,
- );
- 
- /*
-+ * Tracepoint for RCU preparation for idle, the goal being to get RCU
-+ * processing done so that the current CPU can shut off its scheduling
-+ * clock and enter dyntick-idle mode.  One way to accomplish this is
-+ * to drain all RCU callbacks from this CPU, and the other is to have
-+ * done everything RCU requires for the current grace period.  In this
-+ * latter case, the CPU will be awakened at the end of the current grace
-+ * period in order to process the remainder of its callbacks.
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 5dd6fd8..81c04f4 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -265,6 +265,11 @@ extern int debug_lockdep_rcu_enabled(void);
+  *
+  * Checks debug_lockdep_rcu_enabled() to prevent false positives during boot
+  * and while lockdep is disabled.
 + *
-+ * These tracepoints take a string as argument:
-+ *
-+ *	"No callbacks": Nothing to do, no callbacks on this CPU.
-+ *	"In holdoff": Nothing to do, holding off after unsuccessful attempt.
-+ *	"Dyntick with callbacks": Callbacks remain, but RCU doesn't need CPU.
-+ *	"Begin holdoff": Attempt failed, don't retry until next jiffy.
-+ *	"More callbacks": Still more callbacks, try again to clear them out.
-+ *	"Callbacks drained": All callbacks processed, off to dyntick idle!
-+ *	"CPU awakened at GP end":
-+ */
-+TRACE_EVENT(rcu_prep_idle,
-+
-+	TP_PROTO(char *reason),
-+
-+	TP_ARGS(reason),
-+
-+	TP_STRUCT__entry(
-+		__field(char *, reason)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->reason = reason;
-+	),
-+
-+	TP_printk("%s", __entry->reason)
-+);
-+
-+/*
-  * Tracepoint for the registration of a single RCU callback function.
-  * The first argument is the type of RCU, the second argument is
-  * a pointer to the RCU callback itself, and the third element is the
-@@ -482,6 +518,7 @@ TRACE_EVENT(rcu_torture_read,
- #define trace_rcu_quiescent_state_report(rcuname, gpnum, mask, qsmask, level, grplo, grphi, gp_tasks) do { } while (0)
- #define trace_rcu_fqs(rcuname, gpnum, cpu, qsevent) do { } while (0)
- #define trace_rcu_dyntick(polarity, oldnesting, newnesting) do { } while (0)
-+#define trace_rcu_prep_idle(reason) do { } while (0)
- #define trace_rcu_callback(rcuname, rhp, qlen) do { } while (0)
- #define trace_rcu_kfree_callback(rcuname, rhp, offset, qlen) do { } while (0)
- #define trace_rcu_batch_start(rcuname, qlen, blimit) do { } while (0)
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index b70ca8c..6467f56 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2031,10 +2031,13 @@ static void rcu_prepare_for_idle(int cpu)
- 	/* If no callbacks or in the holdoff period, enter dyntick-idle. */
- 	if (!rcu_cpu_has_callbacks(cpu)) {
- 		per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
-+		trace_rcu_prep_idle("No callbacks");
- 		return;
- 	}
--	if (per_cpu(rcu_dyntick_holdoff, cpu) == jiffies)
-+	if (per_cpu(rcu_dyntick_holdoff, cpu) == jiffies) {
-+		trace_rcu_prep_idle("In holdoff");
- 		return;
-+	}
- 
- 	/* Check and update the rcu_dyntick_drain sequencing. */
- 	if (per_cpu(rcu_dyntick_drain, cpu) <= 0) {
-@@ -2044,9 +2047,11 @@ static void rcu_prepare_for_idle(int cpu)
- 		/* We have hit the limit, so time to give up. */
- 		per_cpu(rcu_dyntick_holdoff, cpu) = jiffies;
- 		if (!rcu_pending(cpu)) {
-+			trace_rcu_prep_idle("Dyntick with callbacks");
- 			per_cpu(rcu_awake_at_gp_end, cpu) = 1;
- 			return;  /* Nothing to do immediately. */
- 		}
-+		trace_rcu_prep_idle("Begin holdoff");
- 		invoke_rcu_core();  /* Force the CPU out of dyntick-idle. */
- 		return;
- 	}
-@@ -2073,9 +2078,15 @@ static void rcu_prepare_for_idle(int cpu)
- 		c = c || per_cpu(rcu_bh_data, cpu).nxtlist;
- 	}
- 
--	/* If RCU callbacks are still pending, RCU still needs this CPU. */
--	if (c)
-+	/*
-+	 * If RCU callbacks are still pending, RCU still needs this CPU.
-+	 * So try forcing the callbacks through the grace period.
-+	 */
-+	if (c) {
-+		trace_rcu_prep_idle("More callbacks");
- 		invoke_rcu_core();
-+	} else
-+		trace_rcu_prep_idle("Callbacks drained");
- }
- 
- /*
-@@ -2085,6 +2096,7 @@ static void rcu_prepare_for_idle(int cpu)
++ * Note that rcu_read_lock() and the matching rcu_read_unlock() must
++ * occur in the same context, for example, it is illegal to invoke
++ * rcu_read_unlock() in process context if the matching rcu_read_lock()
++ * was invoked from within an irq handler.
   */
- static void rcu_wake_cpu(void *unused)
+ static inline int rcu_read_lock_held(void)
  {
-+	trace_rcu_prep_idle("CPU awakened at GP end");
- 	invoke_rcu_core();
- }
- 
+@@ -689,6 +694,11 @@ static inline void rcu_read_unlock(void)
+  * critical sections in interrupt context can use just rcu_read_lock(),
+  * though this should at least be commented to avoid confusing people
+  * reading the code.
++ *
++ * Note that rcu_read_lock_bh() and the matching rcu_read_unlock_bh()
++ * must occur in the same context, for example, it is illegal to invoke
++ * rcu_read_unlock_bh() from one task if the matching rcu_read_lock_bh()
++ * was invoked from some other task.
+  */
+ static inline void rcu_read_lock_bh(void)
+ {
+@@ -716,6 +726,11 @@ static inline void rcu_read_unlock_bh(void)
+  * are being done using call_rcu_sched() or synchronize_rcu_sched().
+  * Read-side critical sections can also be introduced by anything that
+  * disables preemption, including local_irq_disable() and friends.
++ *
++ * Note that rcu_read_lock_sched() and the matching rcu_read_unlock_sched()
++ * must occur in the same context, for example, it is illegal to invoke
++ * rcu_read_unlock_sched() from process context if the matching
++ * rcu_read_lock_sched() was invoked from an NMI handler.
+  */
+ static inline void rcu_read_lock_sched(void)
+ {
+diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+index d5334d0..83a4f06 100644
+--- a/include/linux/srcu.h
++++ b/include/linux/srcu.h
+@@ -158,6 +158,11 @@ static inline int srcu_read_lock_held(struct srcu_struct *sp)
+  * one way to indirectly wait on an SRCU grace period is to acquire
+  * a mutex that is held elsewhere while calling synchronize_srcu() or
+  * synchronize_srcu_expedited().
++ *
++ * Note that srcu_read_lock() and the matching srcu_read_unlock() must
++ * occur in the same context, for example, it is illegal to invoke
++ * srcu_read_unlock() in an irq handler if the matching srcu_read_lock()
++ * was invoked in process context.
+  */
+ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+ {
 -- 
 1.7.3.2
 
