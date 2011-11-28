@@ -1,89 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab1K1OYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:24:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8141 "EHLO mx1.redhat.com"
+	id S1753275Ab1K1O1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:27:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13662 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab1K1OYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:24:40 -0500
-Date: Mon, 28 Nov 2011 09:24:02 -0500
+	id S1751796Ab1K1O1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:27:13 -0500
+Date: Mon, 28 Nov 2011 09:26:52 -0500
 From: Vivek Goyal <vgoyal@redhat.com>
 To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+Cc: Dave Anderson <anderson@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
-        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [RFC Patch 0/2] Slimdump framework using CRASH_REASON - v2
-Message-ID: <20111128142402.GA20758@redhat.com>
-References: <20111121095405.GA2289@in.ibm.com>
- <20111121151727.GF313@redhat.com>
- <20111123173318.GB2515@in.ibm.com>
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch 1/2][slimdump] Append CRASH_REASON to VMCOREINFO
+ elf-note
+Message-ID: <20111128142652.GB20758@redhat.com>
+References: <20111121101157.GA10194@in.ibm.com>
+ <36c0c64c-9ccb-44a0-a81c-1071604cbdec@zmail15.collab.prod.int.phx2.redhat.com>
+ <20111123173930.GC2515@in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111123173318.GB2515@in.ibm.com>
+In-Reply-To: <20111123173930.GC2515@in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 11:03:18PM +0530, K.Prasad wrote:
-> On Mon, Nov 21, 2011 at 10:17:27AM -0500, Vivek Goyal wrote:
-> > On Mon, Nov 21, 2011 at 03:24:05PM +0530, K.Prasad wrote:
-> > > Hi All,
-> > > 	In furtherance of the previous discussion regarding 'slimdump'
-> > > (refer: http://article.gmane.org/gmane.linux.kernel/1204967), it was
-> > > decided that,
-> > > 
-> > > - An entry in VMCOREINFO elf-note be added to denote the cause of crash,
-> > >   instead of creating a new elf-note.
-> > > 
-> > > - Upstream tools such as 'makedumpfile' and 'crash' be modified to
-> > >   recognise this string and inform the user accordingly.
-> > > 
-> > > Accordingly, this new version of the patchset makes the following
-> > > changes 
-> > > 
-> > > Changelog - version 2
-> > > -----------------------
-> > > (First version posted here:
-> > > http://article.gmane.org/gmane.linux.kernel/1198435)
-> > > 
-> > > - Append VMCOREINFO elf-note with a new variable CRASH_REASON whose
-> > >   value will be populated using arch_add_crash_reason() function.
-> > > 
-> > > - Define arch_add_crash_reason() in the x86 MCE path to return "PANIC_MCE"
-> > >   in the panic path of MCE.
-> > > 
-> > > - 'makedumpfile' tool is taught to recognise PANIC_MCE string as one
-> > >   value of CRASH_REASON for which 'slimdump' must be captured.
+On Wed, Nov 23, 2011 at 11:09:31PM +0530, K.Prasad wrote:
+> On Mon, Nov 21, 2011 at 10:19:31AM -0500, Dave Anderson wrote:
 > > 
-> > So again, what is slimdump? I mean, what information is now being captured
-> > in the case of slimdump? Are you capturing atleast the kernel message
-> > buffers? I am assuming that any register info emitted on console will
-> > make into kernel buffers and that should be useful to figure out what
-> > MCE happened.
+> > 
+> > ----- Original Message -----
+> > > Allow various crash paths to append the reason of crash into the
+> > > VMCOREINFO elf-note through the field CRASH_REASON. We also make the
+> > > fatal machine check exceptions append "PANIC_MCE" as the crash
+> > > reason.  This string will be recognised by upstream tools like makedumpfile and
+> > > crash to generate slimdump.
+> > 
+> > I don't understand -- how could "various paths" append a reason?
+> > The patch below seems to return "PANIC_MCE" for every x86 crash.
+> > What am I missing?
+> > 
+> > Dave
 > > 
 > 
-> The kernel message buffers can be obtained by using the --dump-dmesg
-> option of makedumpfile but again that's risky. We wouldn't know if it'll
-> cause access to the faulty memory (which is how the previous method of having
-> a new elf-notes in a pristine location is much safer).
+> Yes, presently it can only be "PANIC_MCE" for MCE crashes in x86 (not
+> for every crash though).
 > 
-> The method in this patch is quite primitive in that informs the user
-> nothing more than a one-line cause of crash. One should take help from other
-> tools (such as service processor/firmware/ACPI logs, or previous corrected
-> error logs) to infer the location of bad memory.
+> With increased usage, we should move this code to a generic location and
+> let each of these crash paths return a string to be appended. In fact it
+> doesn't have to be a string for CRASH_REASON but just an encoding of the
+> various crash types into numbers. User-space tools could then do a lookup
+> for getting the right crash string.
 
-And how does one get to firmware/ACPI logs? Many system don't have service
-processor also.
+Probably string is a better idea? Where do we do lookup to find out what
+maps to what? This would require kernel exporting this info in a header
+and then comes the issue of having same kernel version info. Or the issue
+of analyzing kernel dumps on the same machine.
 
-I think extracting kernel buffers by default in case of MCE is reasonable.
-This should allow somebody to figure out some MCE related information.
-
-You might want to modify makedumpfile so that it does not try to access
-pages marked poisoned.
+Storing a string will atleast help that one does not have to worry about
+mapping error code. makedumpfile shall have to grep for exact same string
+though.
 
 Thanks
 Vivek
