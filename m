@@ -1,133 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab1K1Hsq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:48:46 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:46360 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab1K1Hso (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:48:44 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Mon, 28 Nov 2011 08:47:31 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanismch
-In-reply-to: <20111108184314.GB4754@phenom.ffwll.local>
-To: "'Daniel Vetter'" <daniel@ffwll.ch>
-Cc: "'Clark, Rob'" <rob@ti.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        "'Sumit Semwal'" <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, arnd@arndb.de, jesse.barker@linaro.org,
-        "'Sumit Semwal'" <sumit.semwal@linaro.org>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Message-id: <000401ccada1$fbdcc030$f3964090$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: AcyeRiTYhO1yNMg+Rma38bGuKGfOAwPVWg8w
-References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
- <1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
- <4E98085A.8080803@samsung.com> <20111014152139.GA2908@phenom.ffwll.local>
- <000001cc99ff$47cfe960$d76fbc20$%szyprowski@samsung.com>
- <CAO8GWqnNMGwADVnO4-RfJu0TPzHhANBdyctv2RyhCxbBJ0beXw@mail.gmail.com>
- <20111108174122.GA4754@phenom.ffwll.local>
- <20111108175517.GG12913@n2100.arm.linux.org.uk>
- <20111108184314.GB4754@phenom.ffwll.local>
+	id S1752464Ab1K1Ht2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:49:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291Ab1K1Ht0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:49:26 -0500
+From: Cong Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dean Nelson <dnelson@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Jiri Pirko <jpirko@redhat.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: [UPDATED PATCH 21/62] net: remove the second argument of k[un]map_atomic()
+Date: Mon, 28 Nov 2011 15:48:31 +0800
+Message-Id: <1322466513-10730-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <1322371662-26166-22-git-send-email-amwang@redhat.com>
+References: <1322371662-26166-22-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+---
+ drivers/net/ethernet/intel/e1000/e1000_main.c |    6 ++----
+ drivers/net/ethernet/intel/e1000e/netdev.c    |   10 ++++------
+ drivers/net/ethernet/sun/cassini.c            |    4 ++--
+ 3 files changed, 8 insertions(+), 12 deletions(-)
 
-I'm sorry for the late reply, I must have missed this mail...
-
-On Tuesday, November 08, 2011 7:43 PM Daniel Vetter wrote:
-
-> On Tue, Nov 08, 2011 at 05:55:17PM +0000, Russell King - ARM Linux wrote:
-> > On Tue, Nov 08, 2011 at 06:42:27PM +0100, Daniel Vetter wrote:
-> > > Actually I think the importer should get a _mapped_ scatterlist when it
-> > > calls get_scatterlist. The simple reason is that for strange stuff like
-> > > memory remapped into e.g. omaps TILER doesn't have any sensible notion of
-> > > an address in physical memory. For the USB-example I think the right
-> > > approach is to attach the usb hci to the dma_buf, after all that is the
-> > > device that will read the data and move over the usb bus to the udl
-> > > device. Similar for any other device that sits behind a bus that can't do
-> > > dma (or it doesn't make sense to do dma).
-> > >
-> > > Imo if there's a use-case where the client needs to frob the sg_list
-> > > before calling dma_map_sg, we have an issue with the dma subsystem in
-> > > general.
-> >
-> > Let's clear something up about the DMA API, which I think is causing some
-> > misunderstanding here.  For this purpose, I'm going to talk about
-> > dma_map_single(), but the same applies to the scatterlist and _page
-> > variants as well.
-> >
-> > 	dma = dma_map_single(dev, cpuaddr, size, dir);
-> >
-> > dev := the device _performing_ the DMA operation.  You are quite correct
-> >        that in the case of a USB peripheral device, the device is normally
-> >        the USB HCI device.
-> >
-> > dma := dma address to be programmed into 'dev' which corresponds (by some
-> >        means) with 'cpuaddr'.  This may not be the physical address due
-> >        to bus offset translations or mappings setup in IOMMUs.
-> >
-> > Therefore, it is wrong to talk about a 'physical address' when talking
-> > about the DMA API.
-> >
-> > We can take this one step further.  Lets say that the USB HCI is not
-> > capable of performing memory accesses itself, but it is connected to a
-> > separate DMA engine device:
-> >
-> > 	mem <---> dma engine <---> usb hci <---> usb peripheral
-> >
-> > (such setups do exist, but despite having such implementations I've never
-> > tried to support it.)
-> >
-> > In this case, the dma engine, in response to control signals from the
-> > USB host controller, will generate the appropriate bus address to access
-> > memory and transfer the data into the USB HCI device.
-> >
-> > So, in this case, the struct device to be used for mapping memory for
-> > transfers to the usb peripheral is the DMA engine device, not the USB HCI
-> > device nor the USB peripheral device.
-> 
-> Thanks for the clarification. I think this is another reason why
-> get_scatterlist should return the sg_list already mapped into the device
-> address space - it's more consisten with the other dma apis. Another
-> reason to completely hide everything but mapped addresses is crazy stuff
-> like this
-> 
-> 	mem <---> tiling iommu <-+-> gpu
-> 	                         |
-> 	                         +-> scanout engine
-> 	                         |
-> 				 +-> mpeg decoder
-> 
-> where it doesn't really make sense to talk about the memory backing the
-> dma buffer because that's smeared all over the place due to tiling. IIRC
-> for the case of omap these devices can also access memory through other
-> paths and iommut that don't tile (but just remap like a normal iommu)
-
-I really don't get why you want to force the exporter to map the buffer into
-clients dma address space. Only the client device might know all the quirks
-required to do this correctly. Exporter should only provide a scatter-list 
-with the memory that belongs to the exported buffer (might be pinned). How
-do you want to solve the following case - the gpu hardware from your diagram
-and a simple usb webcam with generic driver. The application would like to
-export a buffer from the webcam to scanout engine. How the generic webcam 
-driver might know HOW to set up the tiller to create correct mappings for 
-the GPU/scanout? IMHO only a GPU driver is capable of doing that assuming
-it got just a scatter list from the webcam driver.
-
-Best regards
+diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
+index cf480b5..b194beb 100644
+--- a/drivers/net/ethernet/intel/e1000/e1000_main.c
++++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
+@@ -3878,11 +3878,9 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
+ 				if (length <= copybreak &&
+ 				    skb_tailroom(skb) >= length) {
+ 					u8 *vaddr;
+-					vaddr = kmap_atomic(buffer_info->page,
+-					                    KM_SKB_DATA_SOFTIRQ);
++					vaddr = kmap_atomic(buffer_info->page);
+ 					memcpy(skb_tail_pointer(skb), vaddr, length);
+-					kunmap_atomic(vaddr,
+-					              KM_SKB_DATA_SOFTIRQ);
++					kunmap_atomic(vaddr);
+ 					/* re-use the page, so don't erase
+ 					 * buffer_info->page */
+ 					skb_put(skb, length);
+diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
+index a855db1..8603c87 100644
+--- a/drivers/net/ethernet/intel/e1000e/netdev.c
++++ b/drivers/net/ethernet/intel/e1000e/netdev.c
+@@ -1272,9 +1272,9 @@ static bool e1000_clean_rx_irq_ps(struct e1000_adapter *adapter,
+ 			 */
+ 			dma_sync_single_for_cpu(&pdev->dev, ps_page->dma,
+ 						PAGE_SIZE, DMA_FROM_DEVICE);
+-			vaddr = kmap_atomic(ps_page->page, KM_SKB_DATA_SOFTIRQ);
++			vaddr = kmap_atomic(ps_page->page);
+ 			memcpy(skb_tail_pointer(skb), vaddr, l1);
+-			kunmap_atomic(vaddr, KM_SKB_DATA_SOFTIRQ);
++			kunmap_atomic(vaddr);
+ 			dma_sync_single_for_device(&pdev->dev, ps_page->dma,
+ 						   PAGE_SIZE, DMA_FROM_DEVICE);
+ 
+@@ -1465,12 +1465,10 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
+ 				if (length <= copybreak &&
+ 				    skb_tailroom(skb) >= length) {
+ 					u8 *vaddr;
+-					vaddr = kmap_atomic(buffer_info->page,
+-					                   KM_SKB_DATA_SOFTIRQ);
++					vaddr = kmap_atomic(buffer_info->page);
+ 					memcpy(skb_tail_pointer(skb), vaddr,
+ 					       length);
+-					kunmap_atomic(vaddr,
+-					              KM_SKB_DATA_SOFTIRQ);
++					kunmap_atomic(vaddr);
+ 					/* re-use the page, so don't erase
+ 					 * buffer_info->page */
+ 					skb_put(skb, length);
+diff --git a/drivers/net/ethernet/sun/cassini.c b/drivers/net/ethernet/sun/cassini.c
+index fd40988..c22a195 100644
+--- a/drivers/net/ethernet/sun/cassini.c
++++ b/drivers/net/ethernet/sun/cassini.c
+@@ -104,8 +104,8 @@
+ #include <asm/byteorder.h>
+ #include <asm/uaccess.h>
+ 
+-#define cas_page_map(x)      kmap_atomic((x), KM_SKB_DATA_SOFTIRQ)
+-#define cas_page_unmap(x)    kunmap_atomic((x), KM_SKB_DATA_SOFTIRQ)
++#define cas_page_map(x)      kmap_atomic((x))
++#define cas_page_unmap(x)    kunmap_atomic((x))
+ #define CAS_NCPUS            num_online_cpus()
+ 
+ #define cas_skb_release(x)  netif_rx(x)
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+1.7.4.4
 
