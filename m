@@ -1,45 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab1K1X0x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:26:53 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59703 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755253Ab1K1X0v (ORCPT
+	id S1755440Ab1K1X1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:27:07 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:34396 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754982Ab1K1X06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:26:51 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Constify WM8994 regulator_init_data
-Date: Mon, 28 Nov 2011 23:26:47 +0000
-Message-Id: <1322522807-4562-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	Mon, 28 Nov 2011 18:26:58 -0500
+Subject: [PATCH 03/22] ext4: Record the checksum algorithm in use in the
+	superblock
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Mon, 28 Nov 2011 15:26:36 -0800
+Message-ID: <20111128232636.19194.92115.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
+References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11112823-2398-0000-0000-0000025A8147
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver has no need to modify the regulator_init_data so declare it
-const to allow machine code to do so.
+Record the type of checksum algorithm we're using for metadata in the
+superblock, in case we ever want/need to change the algorithm.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- include/linux/mfd/wm8994/pdata.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/ext4/ext4.h  |    5 ++++-
+ fs/ext4/super.c |   18 ++++++++++++++++++
+ 2 files changed, 22 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/mfd/wm8994/pdata.h b/include/linux/mfd/wm8994/pdata.h
-index 54e2fef..b00897a 100644
---- a/include/linux/mfd/wm8994/pdata.h
-+++ b/include/linux/mfd/wm8994/pdata.h
-@@ -23,7 +23,7 @@ struct wm8994_ldo_pdata {
- 	int enable;
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 414c2f8..e496e72 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -982,6 +982,9 @@ extern void ext4_set_bits(void *bm, int cur, int len);
+ #define EXT4_ERRORS_PANIC		3	/* Panic */
+ #define EXT4_ERRORS_DEFAULT		EXT4_ERRORS_CONTINUE
  
- 	const char *supply;
--	struct regulator_init_data *init_data;
-+	const struct regulator_init_data *init_data;
- };
++/* Metadata checksum algorithm codes */
++#define EXT4_CRC32C_CHKSUM		1
++
+ /*
+  * Structure of the super block
+  */
+@@ -1068,7 +1071,7 @@ struct ext4_super_block {
+ 	__le64  s_mmp_block;            /* Block for multi-mount protection */
+ 	__le32  s_raid_stripe_width;    /* blocks on all data disks (N*stride)*/
+ 	__u8	s_log_groups_per_flex;  /* FLEX_BG group size */
+-	__u8	s_reserved_char_pad;
++	__u8	s_checksum_type;	/* metadata checksum algorithm used */
+ 	__le16  s_reserved_pad;
+ 	__le64	s_kbytes_written;	/* nr of lifetime kilobytes written */
+ 	__le32	s_snapshot_inum;	/* Inode number of active snapshot */
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 3858767..a56c14e 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -111,6 +111,16 @@ static struct file_system_type ext3_fs_type = {
+ #define IS_EXT3_SB(sb) (0)
+ #endif
  
- #define WM8994_CONFIGURE_GPIO 0x10000
--- 
-1.7.7.3
++static int ext4_verify_csum_type(struct super_block *sb,
++				 struct ext4_super_block *es)
++{
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
++					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return 1;
++
++	return es->s_checksum_type == EXT4_CRC32C_CHKSUM;
++}
++
+ void *ext4_kvmalloc(size_t size, gfp_t flags)
+ {
+ 	void *ret;
+@@ -3182,6 +3192,14 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto cantfind_ext4;
+ 	sbi->s_kbytes_written = le64_to_cpu(es->s_kbytes_written);
+ 
++	/* Check for a known checksum algorithm */
++	if (!ext4_verify_csum_type(sb, es)) {
++		ext4_msg(sb, KERN_ERR, "VFS: Found ext4 filesystem with "
++			 "unknown checksum algorithm.");
++		silent = 1;
++		goto cantfind_ext4;
++	}
++
+ 	/* Set defaults before we parse the mount options */
+ 	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
+ 	set_opt(sb, INIT_INODE_TABLE);
 
