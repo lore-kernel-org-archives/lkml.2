@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1K1XDR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:03:17 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:59702 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273Ab1K1XDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:03:16 -0500
-Date: Mon, 28 Nov 2011 15:02:07 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH tip/core/rcu 9/9] tile: Make tile use the new
- is_idle_task() API
-Message-ID: <20111128230207.GN2346@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111115202736.GA11030@linux.vnet.ibm.com>
- <1321388885-11211-9-git-send-email-paulmck@linux.vnet.ibm.com>
- <4ECD276F.3050801@tilera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ECD276F.3050801@tilera.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11112823-5930-0000-0000-000002A5DFA5
+	id S1754722Ab1K1XIZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:08:25 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:59699 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754471Ab1K1XIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:08:23 -0500
+Date: Mon, 28 Nov 2011 18:08:07 -0500 (EST)
+Message-Id: <20111128.180807.649757269111867027.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: anton@samba.org, levinsasha928@gmail.com, mpm@selenic.com,
+        cl@linux-foundation.org, penberg@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        mihai.maruseac@gmail.com
+Subject: Re: [PATCH] net: Fix corruption in /proc/*/net/dev_mcast
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1322474116.2292.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20111128181446.2ab784d0@kryten>
+	<1322474116.2292.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 28 Nov 2011 15:08:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 12:03:43PM -0500, Chris Metcalf wrote:
-> (Narrowing cc's)
-> 
-> On 11/15/2011 3:30 PM, Paul E. McKenney wrote:
-> > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > 
-> > Change from direct comparison of ->pid with zero to is_idle_task().
-> > 
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  arch/tile/mm/fault.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-> 
-> Please cc me on changes to tile architecture files - thanks!
-> I picked this up while belatedly catching up on LKML.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 28 Nov 2011 10:55:16 +0100
 
-My apologies -- I have added your Acked-by (thank you!) and will try
-harder to get the CCs right in the future.
+>> With slub debugging on I see red zone issues in /proc/*/net/dev_mcast:
+>> 
+>> =============================================================================
+>> BUG kmalloc-8: Redzone overwritten
+>> -----------------------------------------------------------------------------
+ ...
+>> dev_mc_seq_ops uses dev_seq_start/next/stop but only allocates
+>> sizeof(struct seq_net_private) of private data, whereas it expects
+>> sizeof(struct dev_iter_state):
+>> 
+>> struct dev_iter_state {
+>> 	struct seq_net_private p;
+>> 	unsigned int pos; /* bucket << BUCKET_SPACE + offset */
+>> };
+>> 
+>> Create dev_seq_open_ops and use it so we don't have to expose
+>> struct dev_iter_state.
+>> 
+>> Signed-off-by: Anton Blanchard <anton@samba.org>
+ ...
+> Problem added by commit f04565ddf52e4 (dev: use name hash for
+> dev_seq_ops)
+> 
+> 
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Mihai Maruseac <mihai.maruseac@gmail.com>
 
-							Thanx, Paul
-
+Applied, thanks everyone.
