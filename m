@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab1K1Ukc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 15:40:32 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35145 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab1K1Ukb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 15:40:31 -0500
-Date: Mon, 28 Nov 2011 12:40:24 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jeff Layton <jlayton@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org, john@calva.com,
-        trond.myklebust@netapp.com, marek.belisko@gmail.com,
-        awilliam@redhat.com
-Subject: Re: [PATCH v3 0/2] nfs/sunrpc: allow freezing of tasks with NFS
- calls in flight
-Message-ID: <20111128204024.GH18864@google.com>
-References: <1322510488-21189-1-git-send-email-jlayton@redhat.com>
- <201111282122.53635.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111282122.53635.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754543Ab1K1Ukt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:40:49 -0500
+Received: from gate.crashing.org ([63.228.1.57]:57097 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab1K1Ukr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 15:40:47 -0500
+Message-ID: <1322512522.23348.43.camel@pasglop>
+Subject: Re: [RFC PATCH v2 1/4] cpuidle: (powerpc) Add cpu_idle_wait() to
+ allow switching of idle routines
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Date: Tue, 29 Nov 2011 07:35:22 +1100
+In-Reply-To: <4ED36A37.3030409@linux.vnet.ibm.com>
+References: <20111117112815.9191.2322.stgit@localhost6.localdomain6>
+	 <20111117112830.9191.1951.stgit@localhost6.localdomain6>
+	 <1322434096.23348.6.camel@pasglop> <4ED36A37.3030409@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 09:22:53PM +0100, Rafael J. Wysocki wrote:
-> If no one objects, I'll take these patches to linux-pm/linux-next in the
-> next couple of days (and then to the pm-freezer branch, if there are no
-> visible problems with them).
+On Mon, 2011-11-28 at 16:32 +0530, Deepthi Dharwar wrote:
 
-Rafael, I think these need to be routed through pm-freezer branch.
-Freezer went through a lot of changes and I don't think this will work
-reliably without the freezer changes.
+> > Additionally, I'm a bit worried (but maybe we already discussed that a
+> > while back, I don't know) but cpu_idle_wait() has "wait" in the name,
+> > which makes me think it might need to actually -wait- for all cpus to
+> > have come out of the function.
+> 
+> cpu_idle_wait is used to ensure that all the CPUs discard old idle
+> handler and update to new one.  Required while changing idle
+> handler on SMP systems.
+>
+> > Now your implementation doesn't provide that guarantee. It might be
+> > fine, I don't know, but if it is, you'd better document it well in the
+> > comments surrounding the code, because as it is, all you do is shoot an
+> > interrupt which will cause the target CPU to eventually come out of idle
+> > some time in the future.
+> 
+> 
+> I was hoping that sending an explicit reschedule to the cpus would
+> do the trick but sure we can add some documentation around the code.
 
-Thanks.
+Well, the question is what guarantee do you expect. Sending a reschedule
+IPI will take the other CPUs out of the actual sleep mode, but it will
+be some time from there back to getting out of the handler function
+(first back out of hypervisor etc...).
 
--- 
-tejun
+The code as you implemented it doesn't wait for that to happen. It might
+be fine ... or not. I don't know what semantics you are after precisely.
+
+Cheers,
+Ben.
+
+
