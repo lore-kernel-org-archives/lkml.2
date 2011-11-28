@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab1K1Nba (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 08:31:30 -0500
-Received: from mx1.zuehlke.com ([193.135.254.67]:34691 "EHLO mx1.zuehlke.com"
+	id S1752078Ab1K1NfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 08:35:05 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:35742 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750981Ab1K1Nb3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 08:31:29 -0500
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Nov 2011 08:31:28 EST
-From: "Mosler, Martin" <mmo@zuehlke.com>
-To: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>
-CC: "wg@grandegger.com" <wg@grandegger.com>,
-        "socketcan@hartkopp.net" <socketcan@hartkopp.net>,
-        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] net/can/mscan: Enable interrupts when all TX buffers are
- occupied to get notified when they are available again
-Thread-Topic: [PATCH] net/can/mscan: Enable interrupts when all TX buffers
- are occupied to get notified when they are available again
-Thread-Index: Acytz0PEWH6BZ/i4S3OXVrtQzUPclQ==
-Date: Mon, 28 Nov 2011 13:25:30 +0000
-Message-ID: <C3745E3C7FD07D429C54EB3D7606A5A7677E7C@ZRHEX021.ads.zuehlke.com>
-Accept-Language: de-CH, en-US
-Content-Language: de-CH
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.31.255.3]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751000Ab1K1NfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 08:35:04 -0500
+Subject: [PATCH 0/6] NFS: create clients and IDMAP pipes per network namespace
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Mon, 28 Nov 2011 17:33:20 +0300
+Message-ID: <20111128132805.4251.15252.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When all TX buffers of the mscan are occupied the network layer is told to stop sending further packets. However the TX interrupts are not enabled and therefore the driver has no chance to tell the network layer when it is ready to accept further packets.
+This patch set was created in context of clone of git
+branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
+tag: v3.1
 
-Signed-off-by: Martin Mosler <mmo@zuehlke.com>
+This patch set depends on previous patch sets titled:
+1) "SUNRPC: initial part of making pipefs work in net ns"
+2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+3) "SUNRPC: make RPC clients use network-namespace-aware PipeFS routines"
 
---- linux-2.6/drivers/net/can/mscan/mscan.c.orig    2011-11-28 13:54:29.547850661 +0100
-+++ linux-2.6/drivers/net/can/mscan/mscan.c 2011-11-28 13:55:52.427849601 +0100
-@@ -214,6 +214,7 @@ static netdev_tx_t mscan_start_xmit(stru
-    case 0:
-        netif_stop_queue(dev);
-        dev_err(dev->dev.parent, "Tx Ring full when queue awake!\n");
-+       out_8(&regs->cantier, priv->tx_active);
-        return NETDEV_TX_BUSY;
-    case 1:
-        /*  
+Actually, this patch set consists of two tightly connected parts:
+1) NFS clients creation per network namespace
+2) IDMAP pipe dentries creation in owner client network namesapce context
+
+This patch set is the third part of making "PipeFS per network namespace".
+
+The following series consists of:
+
+---
+
+Stanislav Kinsbursky (6):
+      SUNRPC: fix pipe->ops cleanup on pipe dentry unlink
+      NFS: make NFS client allocated per network namespace context
+      NFS: pass NFS client owner network namespace to RPC client creation routine
+      NFS: create callback transports in parent transport network namespace
+      NFS: handle NFS idmap pipe PipeFS dentries by network namespace aware routines
+      NFS: idmap PipeFS notifier introduced
+
+
+ fs/nfs/callback.c                  |   10 +--
+ fs/nfs/client.c                    |   22 ++++--
+ fs/nfs/idmap.c                     |  136 ++++++++++++++++++++++++++++++++++--
+ fs/nfs/internal.h                  |    6 ++
+ fs/nfs/mount_clnt.c                |    4 +
+ fs/nfs/super.c                     |    4 +
+ include/linux/nfs_fs_sb.h          |    1 
+ include/linux/nfs_idmap.h          |   13 +--
+ include/linux/sunrpc/rpc_pipe_fs.h |    7 ++
+ net/sunrpc/clnt.c                  |    1 
+ net/sunrpc/rpc_pipe.c              |   67 ++++++++++--------
+ 11 files changed, 208 insertions(+), 63 deletions(-)
+
+-- 
+Signature
