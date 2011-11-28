@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909Ab1K1XOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:14:47 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48686 "EHLO
+	id S1755154Ab1K1XTE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:19:04 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48702 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab1K1XOo (ORCPT
+	with ESMTP id S1754816Ab1K1XOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:14:44 -0500
+	Mon, 28 Nov 2011 18:14:46 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 03/25] perf evlist: Introduce perf_evlist__add_attrs
-Date: Mon, 28 Nov 2011 21:14:04 -0200
-Message-Id: <1322522066-21879-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 08/25] perf record: Move mmap_pages to perf_record_opts
+Date: Mon, 28 Nov 2011 21:14:09 -0200
+Message-Id: <1322522066-21879-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1322522066-21879-1-git-send-email-acme@infradead.org>
 References: <1322522066-21879-1-git-send-email-acme@infradead.org>
@@ -29,7 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Replacing the open coded equivalents in 'perf stat'.
+Tools being developed will need this to allow the user to override this
+value.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -37,173 +38,68 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-1btwadnf2tds2g07hsccsdse@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-zydc1yhxfm0z35fuy95bsn1l@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-stat.c |   40 +++++++---------------------------------
- tools/perf/util/evlist.c  |   34 ++++++++++++++++++++++++++++++++++
- tools/perf/util/evlist.h  |    7 +++++++
- 3 files changed, 48 insertions(+), 33 deletions(-)
+ tools/perf/builtin-record.c |    9 +++++----
+ tools/perf/perf.h           |    1 +
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 7d98676..227befb 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1107,22 +1107,13 @@ static const struct option options[] = {
-  */
- static int add_default_attributes(void)
- {
--	struct perf_evsel *pos;
--	size_t attr_nr = 0;
--	size_t c;
--
- 	/* Set attrs if no event is selected and !null_run: */
- 	if (null_run)
- 		return 0;
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 749862d..ffb627d 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -35,9 +35,10 @@ enum write_mode_t {
+ 	WRITE_APPEND
+ };
  
- 	if (!evsel_list->nr_entries) {
--		for (c = 0; c < ARRAY_SIZE(default_attrs); c++) {
--			pos = perf_evsel__new(default_attrs + c, c + attr_nr);
--			if (pos == NULL)
--				return -1;
--			perf_evlist__add(evsel_list, pos);
--		}
--		attr_nr += c;
-+		if (perf_evlist__add_attrs_array(evsel_list, default_attrs) < 0)
-+			return -1;
+-static struct perf_record_opts record_opts = {
++struct perf_record_opts record_opts = {
+ 	.target_pid	     = -1,
+ 	.target_tid	     = -1,
++	.mmap_pages	     = UINT_MAX,
+ 	.user_freq	     = UINT_MAX,
+ 	.user_interval	     = ULLONG_MAX,
+ 	.freq		     = 1000,
+@@ -45,7 +46,6 @@ static struct perf_record_opts record_opts = {
+ };
+ 
+ static unsigned int		page_size;
+-static unsigned int		mmap_pages			= UINT_MAX;
+ static int			output;
+ static const char		*output_name			= NULL;
+ static bool			group				=  false;
+@@ -272,7 +272,7 @@ try_again:
+ 		exit(-1);
  	}
  
- 	/* Detailed events get appended to the event list: */
-@@ -1131,38 +1122,21 @@ static int add_default_attributes(void)
- 		return 0;
+-	if (perf_evlist__mmap(evlist, mmap_pages, false) < 0)
++	if (perf_evlist__mmap(evlist, record_opts.mmap_pages, false) < 0)
+ 		die("failed to mmap with %d (%s)\n", errno, strerror(errno));
  
- 	/* Append detailed run extra attributes: */
--	for (c = 0; c < ARRAY_SIZE(detailed_attrs); c++) {
--		pos = perf_evsel__new(detailed_attrs + c, c + attr_nr);
--		if (pos == NULL)
--			return -1;
--		perf_evlist__add(evsel_list, pos);
--	}
--	attr_nr += c;
-+	if (perf_evlist__add_attrs_array(evsel_list, detailed_attrs) < 0)
-+		return -1;
- 
- 	if (detailed_run < 2)
- 		return 0;
- 
- 	/* Append very detailed run extra attributes: */
--	for (c = 0; c < ARRAY_SIZE(very_detailed_attrs); c++) {
--		pos = perf_evsel__new(very_detailed_attrs + c, c + attr_nr);
--		if (pos == NULL)
--			return -1;
--		perf_evlist__add(evsel_list, pos);
--	}
-+	if (perf_evlist__add_attrs_array(evsel_list, very_detailed_attrs) < 0)
-+		return -1;
- 
- 	if (detailed_run < 3)
- 		return 0;
- 
- 	/* Append very, very detailed run extra attributes: */
--	for (c = 0; c < ARRAY_SIZE(very_very_detailed_attrs); c++) {
--		pos = perf_evsel__new(very_very_detailed_attrs + c, c + attr_nr);
--		if (pos == NULL)
--			return -1;
--		perf_evlist__add(evsel_list, pos);
--	}
--
--
--	return 0;
-+	return perf_evlist__add_attrs_array(evsel_list, very_very_detailed_attrs);
- }
- 
- int cmd_stat(int argc, const char **argv, const char *prefix __used)
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index fbb4b4a..58aa1e0 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -13,6 +13,8 @@
- #include "evsel.h"
- #include "util.h"
- 
-+#include "parse-events.h"
-+
- #include <sys/mman.h>
- 
- #include <linux/bitops.h>
-@@ -76,6 +78,14 @@ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry)
- 	++evlist->nr_entries;
- }
- 
-+static void perf_evlist__splice_list_tail(struct perf_evlist *evlist,
-+					  struct list_head *list,
-+					  int nr_entries)
-+{
-+	list_splice_tail(list, &evlist->entries);
-+	evlist->nr_entries += nr_entries;
-+}
-+
- int perf_evlist__add_default(struct perf_evlist *evlist)
- {
- 	struct perf_event_attr attr = {
-@@ -100,6 +110,30 @@ error:
- 	return -ENOMEM;
- }
- 
-+int perf_evlist__add_attrs(struct perf_evlist *evlist,
-+			   struct perf_event_attr *attrs, size_t nr_attrs)
-+{
-+	struct perf_evsel *evsel, *n;
-+	LIST_HEAD(head);
-+	size_t i;
-+
-+	for (i = 0; i < nr_attrs; i++) {
-+		evsel = perf_evsel__new(attrs + i, evlist->nr_entries + i);
-+		if (evsel == NULL)
-+			goto out_delete_partial_list;
-+		list_add_tail(&evsel->node, &head);
-+	}
-+
-+	perf_evlist__splice_list_tail(evlist, &head, nr_attrs);
-+
-+	return 0;
-+
-+out_delete_partial_list:
-+	list_for_each_entry_safe(evsel, n, &head, node)
-+		perf_evsel__delete(evsel);
-+	return -1;
-+}
-+
- void perf_evlist__disable(struct perf_evlist *evlist)
- {
- 	int cpu, thread;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 1779ffe..57d91ff 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -2,8 +2,10 @@
- #define __PERF_EVLIST_H 1
- 
- #include <linux/list.h>
-+#include <stdio.h>
- #include "../perf.h"
- #include "event.h"
-+#include "util.h"
- 
- struct pollfd;
- struct thread_map;
-@@ -39,6 +41,11 @@ void perf_evlist__delete(struct perf_evlist *evlist);
- 
- void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry);
- int perf_evlist__add_default(struct perf_evlist *evlist);
-+int perf_evlist__add_attrs(struct perf_evlist *evlist,
-+			   struct perf_event_attr *attrs, size_t nr_attrs);
-+
-+#define perf_evlist__add_attrs_array(evlist, array) \
-+	perf_evlist__add_attrs(evlist, array, ARRAY_SIZE(array))
- 
- void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
- 			 int cpu, int thread, u64 id);
+ 	if (file_new)
+@@ -647,7 +647,8 @@ const struct option record_options[] = {
+ 	OPT_BOOLEAN('i', "no-inherit", &record_opts.no_inherit,
+ 		    "child tasks do not inherit counters"),
+ 	OPT_UINTEGER('F', "freq", &record_opts.user_freq, "profile at this frequency"),
+-	OPT_UINTEGER('m', "mmap-pages", &mmap_pages, "number of mmap data pages"),
++	OPT_UINTEGER('m', "mmap-pages", &record_opts.mmap_pages,
++		     "number of mmap data pages"),
+ 	OPT_BOOLEAN(0, "group", &group,
+ 		    "put the counters into a counter group"),
+ 	OPT_BOOLEAN('g', "call-graph", &record_opts.call_graph,
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 32ee6ca..13c42f3 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -200,6 +200,7 @@ struct perf_record_opts {
+ 	bool	     sample_id_all_avail;
+ 	bool	     system_wide;
+ 	unsigned int freq;
++	unsigned int mmap_pages;
+ 	unsigned int user_freq;
+ 	u64	     default_interval;
+ 	u64	     user_interval;
 -- 
 1.7.8.rc0.35.gee6df
 
