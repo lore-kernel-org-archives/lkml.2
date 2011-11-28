@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab1K1HUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:20:15 -0500
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:44056 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751288Ab1K1HUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:20:13 -0500
-Subject: Re: [PATCH 10/11] wireless: Remove redundant spi driver bus
- initialization
-From: Luciano Coelho <coelho@ti.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org
-In-Reply-To: <1322148561-25138-10-git-send-email-lars@metafoo.de>
-References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
-	 <1322148561-25138-10-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Nov 2011 09:20:07 +0200
-Message-ID: <1322464807.6502.11.camel@cumari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752094Ab1K1H13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:27:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36970 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435Ab1K1H12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:27:28 -0500
+Date: Mon, 28 Nov 2011 16:27:13 +0900
+From: Greg KH <gregkh@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kalle Komierowski <karl.komierowski@stericsson.com>,
+        Johan PALSSON <johan.palsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
+Message-ID: <20111128072713.GA17724@suse.de>
+References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
+ <201111251402.28016.arnd@arndb.de>
+ <CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
+ <20111127230836.GA29728@suse.de>
+ <20111128123114.2601bd7c@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111128123114.2601bd7c@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-24 at 16:29 +0100, Lars-Peter Clausen wrote: 
-> In ancient times it was necessary to manually initialize the bus field of an
-> spi_driver to spi_bus_type. These days this is done in spi_driver_register(),
-> so we can drop the manual assignment.
+On Mon, Nov 28, 2011 at 12:31:14PM +1100, NeilBrown wrote:
 > 
-> The patch was generated using the following coccinelle semantic patch:
-> // <smpl>
-> @@
-> identifier _driver;
-> @@
-> struct spi_driver _driver = {
-> 	.driver = {
-> -		.bus = &spi_bus_type,
-> 	},
-> };
-> // </smpl>
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Dan Williams <dcbw@redhat.com>
-> Cc: "John W. Linville" <linville@tuxdriver.com>
-> Cc: Christian Lamparter <chunkeey@googlemail.com>
-> Cc: Luciano Coelho <coelho@ti.com>
-> Cc: libertas-dev@lists.infradead.org
-> Cc: linux-wireless@vger.kernel.org
-> ---
+>  My own thought is that this deserves a new device class which allows easy
+>  hook-up of in-kernel signalling using notifications and which can be
+>  exported as input devices in much the same way the 'gpio' devices can be
+>  exported via gpio_keys.  The switch could also optionally be exported through
+>  sysfs much like gpio can be exported through sysfs.
 
-[...]
+That might also work, but again, odds are the HID spec already defines
+this type of "switch", so why recreate it as a different type of device?
 
-> diff --git a/drivers/net/wireless/wl1251/spi.c b/drivers/net/wireless/wl1251/spi.c
-> index eaa5f95..6248c35 100644
-> --- a/drivers/net/wireless/wl1251/spi.c
-> +++ b/drivers/net/wireless/wl1251/spi.c
-> @@ -319,7 +319,6 @@ static int __devexit wl1251_spi_remove(struct spi_device *spi)
->  static struct spi_driver wl1251_spi_driver = {
->  	.driver = {
->  		.name		= DRIVER_NAME,
-> -		.bus		= &spi_bus_type,
->  		.owner		= THIS_MODULE,
->  	},
->  
-> diff --git a/drivers/net/wireless/wl12xx/spi.c b/drivers/net/wireless/wl12xx/spi.c
-> index 0f97186..12421a6 100644
-> --- a/drivers/net/wireless/wl12xx/spi.c
-> +++ b/drivers/net/wireless/wl12xx/spi.c
-> @@ -462,7 +462,6 @@ static int __devexit wl1271_remove(struct spi_device *spi)
->  static struct spi_driver wl1271_spi_driver = {
->  	.driver = {
->  		.name		= "wl1271_spi",
-> -		.bus		= &spi_bus_type,
->  		.owner		= THIS_MODULE,
->  	},
+>  So I think I agree with your conclusion, but not with your argument :-)
 
-For the wl12xx and wl1251 parts:
+Heh, nice :)
 
-Acked-by: Luciano Coelho <coelho@ti.com>
-
-
--- 
-Cheers,
-Luca.
-
+greg k-h
