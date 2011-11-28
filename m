@@ -1,77 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab1K1Xzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:55:32 -0500
-Received: from mga01.intel.com ([192.55.52.88]:37284 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab1K1Xzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:55:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,587,1315206000"; 
-   d="scan'208";a="89973130"
-Subject: Re: [patch 1/6] sched, nohz: introduce nohz_flags in the struct rq
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Mike Galbraith <efault@gmx.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.jf.intel.com>,
-        "Shi, Alex" <alex.shi@intel.com>
-Date: Mon, 28 Nov 2011 15:59:09 -0800
-In-Reply-To: <1322130279.2921.7.camel@twins>
-References: <20111118230323.592022417@sbsiddha-desk.sc.intel.com>
-	 <20111118230553.882444396@sbsiddha-desk.sc.intel.com>
-	 <1322130279.2921.7.camel@twins>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1322524749.21329.70.camel@sbsiddha-desk.sc.intel.com>
+	id S1754262Ab1K1X4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:56:39 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50451 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab1K1X4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:56:37 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 29 Nov 2011 08:55:18 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <lizf@cn.fujitsu.com>,
+        <ebiederm@xmission.com>, <davem@davemloft.net>, <paul@paulmenage.org>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
+        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v6 01/10] Basic kernel memory functionality for the
+ Memory Controller
+Message-Id: <20111129085518.65befeee.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4ED36A6D.60900@parallels.com>
+References: <1322242696-27682-1-git-send-email-glommer@parallels.com>
+	<1322242696-27682-2-git-send-email-glommer@parallels.com>
+	<20111128112441.44a6e166.kamezawa.hiroyu@jp.fujitsu.com>
+	<4ED36A6D.60900@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-24 at 02:24 -0800, Peter Zijlstra wrote:
-> On Fri, 2011-11-18 at 15:03 -0800, Suresh Siddha wrote:
-> > plain text document attachment (introduce_rq_nohz_flags.patch)
-> > Introduce nohz_flags in the struct rq, which will track two flags for now.
-> > 
-> > NOHZ_TICK_STOPPED will convey the stop tick status that gets set when
-> > the tick is stopped and cleared during the first busy tick after the tick
-> > is restarted.
-> > 
-> > NOHZ_BALANCE_KICK will track the need for nohz idle load balance
-> > on this rq.
+On Mon, 28 Nov 2011 09:03:09 -0200
+Glauber Costa <glommer@parallels.com> wrote:
+
+> On 11/28/2011 12:24 AM, KAMEZAWA Hiroyuki wrote:
+> > On Fri, 25 Nov 2011 15:38:07 -0200
+> > Glauber Costa<glommer@parallels.com>  wrote:
+> >
+> >> This patch lays down the foundation for the kernel memory component
+> >> of the Memory Controller.
+> >>
+> >> As of today, I am only laying down the following files:
+> >>
+> >>   * memory.independent_kmem_limit
+> >>   * memory.kmem.limit_in_bytes (currently ignored)
+> >>   * memory.kmem.usage_in_bytes (always zero)
+> >>
+> >> Signed-off-by: Glauber Costa<glommer@parallels.com>
+> >> Reviewed-by: Kirill A. Shutemov<kirill@shutemov.name>
+> >> CC: Paul Menage<paul@paulmenage.org>
+> >> CC: Greg Thelen<gthelen@google.com>
+> >> ---
+> >>   Documentation/cgroups/memory.txt |   36 ++++++++++++-
+> >>   init/Kconfig                     |   14 +++++
+> >>   mm/memcontrol.c                  |  107 ++++++++++++++++++++++++++++++++++++--
+> >>   3 files changed, 150 insertions(+), 7 deletions(-)
+> >>
+> >> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> >> index 06eb6d9..bf00cd2 100644
+> >> --- a/Documentation/cgroups/memory.txt
+> >> +++ b/Documentation/cgroups/memory.txt
+> >> @@ -44,8 +44,9 @@ Features:
+> >>    - oom-killer disable knob and oom-notifier
+> >>    - Root cgroup has no limit controls.
+> >>
+> >> - Kernel memory and Hugepages are not under control yet. We just manage
+> >> - pages on LRU. To add more controls, we have to take care of performance.
+> >> + Hugepages is not under control yet. We just manage pages on LRU. To add more
+> >> + controls, we have to take care of performance. Kernel memory support is work
+> >> + in progress, and the current version provides basically functionality.
+> >>
+> >>   Brief summary of control files.
+> >>
+> >> @@ -56,8 +57,11 @@ Brief summary of control files.
+> >>   				 (See 5.5 for details)
+> >>    memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
+> >>   				 (See 5.5 for details)
+> >> + memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
+> >> +				 (See 2.7 for details)
+> >>    memory.limit_in_bytes		 # set/show limit of memory usage
+> >>    memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+> >> + memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
+> >>    memory.failcnt			 # show the number of memory usage hits limits
+> >>    memory.memsw.failcnt		 # show the number of memory+Swap hits limits
+> >>    memory.max_usage_in_bytes	 # show max memory usage recorded
+> >> @@ -72,6 +76,9 @@ Brief summary of control files.
+> >>    memory.oom_control		 # set/show oom controls.
+> >>    memory.numa_stat		 # show the number of memory usage per numa node
+> >>
+> >> + memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+> >> +				   independent of user limits
+> >> +
+> >>   1. History
+> >>
+> >>   The memory controller has a long history. A request for comments for the memory
+> >> @@ -255,6 +262,31 @@ When oom event notifier is registered, event will be delivered.
+> >>     per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
+> >>     zone->lru_lock, it has no lock of its own.
+> >>
+> >> +2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
+> >> +
+> >> + With the Kernel memory extension, the Memory Controller is able to limit
+> >> +the amount of kernel memory used by the system. Kernel memory is fundamentally
+> >> +different than user memory, since it can't be swapped out, which makes it
+> >> +possible to DoS the system by consuming too much of this precious resource.
+> >> +Kernel memory limits are not imposed for the root cgroup.
+> >> +
+> >> +Memory limits as specified by the standard Memory Controller may or may not
+> >> +take kernel memory into consideration. This is achieved through the file
+> >> +memory.independent_kmem_limit. A Value different than 0 will allow for kernel
+> >> +memory to be controlled separately.
+> >> +
+> >> +When kernel memory limits are not independent, the limit values set in
+> >> +memory.kmem files are ignored.
+> >> +
+> >> +Currently no soft limit is implemented for kernel memory. It is future work
+> >> +to trigger slab reclaim when those limits are reached.
+> >> +
+> >> +CAUTION: As of this writing, the kmem extention may prevent tasks from moving
+> >> +among cgroups. If a task has kmem accounting in a cgroup, the task cannot be
+> >> +moved until the kmem resource is released. Also, until the resource is fully
+> >> +released, the cgroup cannot be destroyed. So, please consider your use cases
+> >> +and set kmem extention config option carefully.
+> >> +
+> >
+> > This seems that memcg 'has' kernel memory limiting feature for all kinds of kmem..
+> > Could you add a list of "currently controled kmems" section ?
+> > And update the list in later patch ?
+> >
+> > Thanks,
+> > -Kame
+> >
+> >
+> Hi Kame,
 > 
-> The changelog is missing the crucial part: Why are we doing this? :-)
+> Thanks for your review.
+> Since none of your comments are blockers, I'd prefer to send follow up 
+> patches if you don't mind - assuming Dave won't have any restrictions 
+> himself that would prevent him from picking this series. If I have to 
+> resend it anyway, I'll be more than happy to address them all in my next 
+> submission
+> 
 
-We already had nohz_balance_kick in the rq, which was not being updated
-atomically. So it is quite possible that two cpu's can simultaneously
-kick the idle load balancing cpu. NOHZ_BALANCE_KICK bit of the
-nohz_flags will track the need for nohz idle load balance on this rq and
-will be updated atomically.
+As you like. But please clarify my comment which pointed out bugs in patch 02/10
+and 06/10 aren't correct.
 
-When the rq is ready to run a task when coming out of tickless idle,
-tick is restarted and data structures used for nohz idle load balancing
-are updated immediately. This will result in too many nohz idle load
-balancer status updates, if the rq comes out of tickless for running one
-(or very few) short running tasks before going back to tickless idle.
-This is resulting in scalability issues especially if there are lot of
-logical cpu's that enters and exit idle often. There is no need to
-update the nohz idle load balancer data structures for the semi-idle cpu
-so often (as the information for the need of the idle load balancing and
-who needs to be kicked is needed only at the busy cpu's tick).
-NOHZ_TICK_STOPPED in rq's nohz_flags is introduced to keep track of the
-tick stopped status that gets set when the tick is stopped. It will be
-used to update the nohz idle load balancer data structures during the
-first busy tick after the tick is restarted. At this first busy tick
-after tickless idle, NOHZ_TICK_STOPPED flag will be reset.
+Thanks,
+-Kame
 
-I will include this info in the next update.
-
-thanks,
-suresh
 
