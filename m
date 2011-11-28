@@ -1,201 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab1K1Io2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 03:44:28 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:38802 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043Ab1K1IoJ (ORCPT
+	id S1752938Ab1K1Iqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 03:46:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47516 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291Ab1K1Iqs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 03:44:09 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <drivers@analog.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, <stable@kernel.org>
-Subject: [PATCH v2 1/7] firmware: Sigma: Prevent out of bounds memory access
-Date: Mon, 28 Nov 2011 09:44:14 +0100
-Message-ID: <1322469860-8210-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.7.3
+	Mon, 28 Nov 2011 03:46:48 -0500
+Date: Mon, 28 Nov 2011 10:46:43 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Liu ping fan <kernelfans@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, aliguori@us.ibm.com, kvm@vger.kernel.org,
+        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org, ryanh@us.ibm.com,
+        jan.kiszka@web.de
+Subject: Re: [Qemu-devel] [PATCH 2/2] kvm: exit to userspace with reason
+ KVM_EXIT_VCPU_DEAD
+Message-ID: <20111128084643.GP2557@redhat.com>
+References: <1322188529-11609-1-git-send-email-kernelfans@gmail.com>
+ <1322361735-21428-1-git-send-email-kernelfans@gmail.com>
+ <4ED212C7.1080901@redhat.com>
+ <20111127105000.GL2557@redhat.com>
+ <CAFgQCTscektJsC-2ThQn7FhHA7=Qf4t3t0+X+i0zT_yZZjwL0g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAFgQCTscektJsC-2ThQn7FhHA7=Qf4t3t0+X+i0zT_yZZjwL0g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SigmaDSP firmware loader currently does not perform enough boundary size
-checks when processing the firmware. As a result it is possible that a
-malformed firmware can cause an out of bounds memory access.
+On Mon, Nov 28, 2011 at 03:16:01PM +0800, Liu ping fan wrote:
+> On Sun, Nov 27, 2011 at 6:50 PM, Gleb Natapov <gleb@redhat.com> wrote:
+> > On Sun, Nov 27, 2011 at 12:36:55PM +0200, Avi Kivity wrote:
+> >> On 11/27/2011 04:42 AM, Liu Ping Fan wrote:
+> >> > From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+> >> >
+> >> > The vcpu can be safely released when
+> >> > --1.guest tells us that the vcpu is not needed any longer.
+> >> > --2.vcpu hits the last instruction _halt_
+> >> >
+> >> > If both of the conditions are satisfied, kvm exits to userspace
+> >> > with the reason vcpu dead. So the user thread can exit safely.
+> >> >
+> >> >
+> >>
+> >> Seems to be completely unnecessary. šIf you want to exit from the vcpu
+> >> thread, send it a signal.
+> >>
+> Hi Avi and Gleb,
+> 
+> First, I wanted to make sure my assumption is right, so I can grab
+> your meaning more clearly -:). Could you elaborate it for me, thanks.
+> 
+> I had thought that when a vcpu was being removed from guest, kvm must
+> satisfy the following conditions to safely remove the vcpu:
+> --1. The tasks on vcpu in GUEST  have already been migrated to other
+> vcpus and ONLY idle_task left ---- The CPU_DEAD is the checkpoint.
+> --2. We must wait the idle task to hit native_halt() in GUEST, till
+> that time, this vcpu is no needed even by idle_task. In KVM, the vcpu
+> thread will finally sit on "kvm_vcpu_block(vcpu);"
+> We CAN NOT suppose the sequence of the two condition because they come
+> from different threads.  Am I right?
+> 
+No, KVM can remove vcpu whenever it told to do so (may be not in the
+middle of emulated io though). It is a guest responsibility to eject cpu
+only when it is safe to do so from guest's point of view.
 
-This patch adds checks which ensure that both the action header and the payload
-are completely inside the firmware data boundaries before processing them.
+> And here comes my question,
+> --1. I think the signal will make vcpu_run exit to user, but is it
+> allow vcpu thread to finally call  "kernel/exit.c : void do_exit(long
+> code)" in current code in kvm or in qemu?
+Yes. Why not?
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: stable@kernel.org
+> --2. If we got CPU_DEAD event, and then send a signal to vcpu thread,
+> could we ensure that we have already sit on "kvm_vcpu_block(vcpu);"
+CPU_DEAD event is internal to a guest (one of them). KVM does not care
+about it. And to remove vcpu it does not have to sit in kvm_vcpu_block().
+And actually since signal kicks vcpu thread out from kernel into userspace
+you can be sure it is not sitting in kvm_vcpu_block(). 
 
----
-Mark, in case you are ok with these patches could you take them through your
-ASoC tree? The firmware subsystem is orphaned.
+> 
+> Thanks and regards,
+> ping fan
+> 
+> > Also if guest "tells us that the vcpu is not needed any longer" (via
+> > ACPI I presume) and vcpu actually doing something critical instead of
+> > sitting in 1:hlt; jmp 1b loop then it is guest's problem if it stops
+> > working after vcpu destruction.
+> >
+> 
+> 
+> > --
+> > š š š š š š š š š š š šGleb.
+> >
 
-Changes since v1:
-	* Minor code style issues fixes
-	* Add comment exlaining the return value of process_sigma_action
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/firmware/sigma.c |   76 +++++++++++++++++++++++++++++++++-------------
- include/linux/sigma.h    |    5 ---
- 2 files changed, 55 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/firmware/sigma.c b/drivers/firmware/sigma.c
-index f10fc52..c780baa 100644
---- a/drivers/firmware/sigma.c
-+++ b/drivers/firmware/sigma.c
-@@ -14,13 +14,34 @@
- #include <linux/module.h>
- #include <linux/sigma.h>
- 
--/* Return: 0==OK, <0==error, =1 ==no more actions */
-+static size_t sigma_action_size(struct sigma_action *sa)
-+{
-+	size_t payload = 0;
-+
-+	switch (sa->instr) {
-+	case SIGMA_ACTION_WRITEXBYTES:
-+	case SIGMA_ACTION_WRITESINGLE:
-+	case SIGMA_ACTION_WRITESAFELOAD:
-+		payload = sigma_action_len(sa);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	payload = ALIGN(payload, 2);
-+
-+	return payload + sizeof(struct sigma_action);
-+}
-+
-+/*
-+ * Returns a negative error value in case of an error, 0 if processing of
-+ * the firmware should be stopped after this action, 1 otherwise.
-+ */
- static int
--process_sigma_action(struct i2c_client *client, struct sigma_firmware *ssfw)
-+process_sigma_action(struct i2c_client *client, struct sigma_action *sa)
- {
--	struct sigma_action *sa = (void *)(ssfw->fw->data + ssfw->pos);
- 	size_t len = sigma_action_len(sa);
--	int ret = 0;
-+	int ret;
- 
- 	pr_debug("%s: instr:%i addr:%#x len:%zu\n", __func__,
- 		sa->instr, sa->addr, len);
-@@ -29,44 +50,50 @@ process_sigma_action(struct i2c_client *client, struct sigma_firmware *ssfw)
- 	case SIGMA_ACTION_WRITEXBYTES:
- 	case SIGMA_ACTION_WRITESINGLE:
- 	case SIGMA_ACTION_WRITESAFELOAD:
--		if (ssfw->fw->size < ssfw->pos + len)
--			return -EINVAL;
- 		ret = i2c_master_send(client, (void *)&sa->addr, len);
- 		if (ret < 0)
- 			return -EINVAL;
- 		break;
--
- 	case SIGMA_ACTION_DELAY:
--		ret = 0;
- 		udelay(len);
- 		len = 0;
- 		break;
--
- 	case SIGMA_ACTION_END:
--		return 1;
--
-+		return 0;
- 	default:
- 		return -EINVAL;
- 	}
- 
--	/* when arrive here ret=0 or sent data */
--	ssfw->pos += sigma_action_size(sa, len);
--	return ssfw->pos == ssfw->fw->size;
-+	return 1;
- }
- 
- static int
- process_sigma_actions(struct i2c_client *client, struct sigma_firmware *ssfw)
- {
--	pr_debug("%s: processing %p\n", __func__, ssfw);
-+	struct sigma_action *sa;
-+	size_t size;
-+	int ret;
-+
-+	while (ssfw->pos + sizeof(*sa) <= ssfw->fw->size) {
-+		sa = (struct sigma_action *)(ssfw->fw->data + ssfw->pos);
-+
-+		size = sigma_action_size(sa);
-+		ssfw->pos += size;
-+		if (ssfw->pos > ssfw->fw->size || size == 0)
-+			break;
-+
-+		ret = process_sigma_action(client, sa);
- 
--	while (1) {
--		int ret = process_sigma_action(client, ssfw);
- 		pr_debug("%s: action returned %i\n", __func__, ret);
--		if (ret == 1)
--			return 0;
--		else if (ret)
-+
-+		if (ret <= 0)
- 			return ret;
- 	}
-+
-+	if (ssfw->pos != ssfw->fw->size)
-+		return -EINVAL;
-+
-+	return 0;
- }
- 
- int process_sigma_firmware(struct i2c_client *client, const char *name)
-@@ -89,7 +116,14 @@ int process_sigma_firmware(struct i2c_client *client, const char *name)
- 
- 	/* then verify the header */
- 	ret = -EINVAL;
--	if (fw->size < sizeof(*ssfw_head))
-+
-+	/*
-+	 * Reject too small or unreasonable large files. The upper limit has been
-+	 * chosen a bit arbitrarily, but it should be enough for all practical
-+	 * purposes and having the limit makes it easier to avoid integer
-+	 * overflows later in the loading process.
-+	 */
-+	if (fw->size < sizeof(*ssfw_head) || fw->size >= 0x4000000)
- 		goto done;
- 
- 	ssfw_head = (void *)fw->data;
-diff --git a/include/linux/sigma.h b/include/linux/sigma.h
-index e2accb3..9a138c2 100644
---- a/include/linux/sigma.h
-+++ b/include/linux/sigma.h
-@@ -50,11 +50,6 @@ static inline u32 sigma_action_len(struct sigma_action *sa)
- 	return (sa->len_hi << 16) | sa->len;
- }
- 
--static inline size_t sigma_action_size(struct sigma_action *sa, u32 payload_len)
--{
--	return sizeof(*sa) + payload_len + (payload_len % 2);
--}
--
- extern int process_sigma_firmware(struct i2c_client *client, const char *name);
- 
- #endif
--- 
-1.7.7.3
-
-
+--
+			Gleb.
