@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1K1WoO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:44:14 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50134 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753945Ab1K1WoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:44:10 -0500
-Subject: [PATCH 04/14] Replace 2D array references by pointer references in
-	loops.
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Theodore Tso <tytso@mit.edu>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
-Date: Mon, 28 Nov 2011 14:37:31 -0800
-Message-ID: <20111128223731.28705.99216.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
-References: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
+	id S1754870Ab1K1Wo5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 17:44:57 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:32790 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945Ab1K1Wo4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 17:44:56 -0500
+From: Satoru Moriya <satoru.moriya@hds.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "nagar@watson.ibm.com" <nagar@watson.ibm.com>,
+        "kobayashi.kk@ncos.nec.co.jp" <kobayashi.kk@ncos.nec.co.jp>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Date: Mon, 28 Nov 2011 17:44:08 -0500
+Subject: [PATCH 0/4] delayacct: save max CPU/IO/SWAP/RECLAIM delays
+Thread-Topic: [PATCH 0/4] delayacct: save max CPU/IO/SWAP/RECLAIM delays
+Thread-Index: AcyuHz1jOo2pA4gdSJ2m+oX/c0nTOA==
+Message-ID: <65795E11DBF1E645A09CEC7EAEE94B9CB574E70D@USINDEVS02.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112822-5112-0000-0000-00000285984F
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=1
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1111280247
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change has no effect on X86 code but improves PPC
-performance.
+In the latency sensitive systems, we usually focus on the worst latency.
+And so, it is useful to save max delays into the per-task delay
+accounting functionality.
 
-Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
----
- lib/crc32.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
+Example output:
+(on 100 concurrent dd reading sparse files w/ 1 dd writing a file)
+
+CPU             count     real total  virtual total    delay total      delay_max  delay average
+                  222       45993008       74603882        7637295        3691858          0.034ms
+IO              count    delay total      delay max  delay average
+                    2       21812073       12728672             10ms
+SWAP            count    delay total      delay max  delay average
+                    0              0              0              0ms
+RECLAIM         count    delay total      delay_max  delay average
+                    2         348488         211985              0ms
+
+Any comments are welcome.
 
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 7a0e5a9..c93c9ae 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -53,20 +53,21 @@ static inline u32
- crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- {
- # ifdef __LITTLE_ENDIAN
--#  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
--#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
--		tab[2][(crc >> 8) & 255] ^ \
--		tab[1][(crc >> 16) & 255] ^ \
--		tab[0][(crc >> 24) & 255]
-+#  define DO_CRC(x) (crc = t0[(crc ^ (x)) & 255] ^ (crc >> 8))
-+#  define DO_CRC4 crc = t3[(crc) & 255] ^ \
-+			t2[(crc >> 8) & 255] ^ \
-+			t1[(crc >> 16) & 255] ^ \
-+			t0[(crc >> 24) & 255]
- # else
--#  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
--#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
--		tab[1][(crc >> 8) & 255] ^ \
--		tab[2][(crc >> 16) & 255] ^ \
--		tab[3][(crc >> 24) & 255]
-+#  define DO_CRC(x) (crc = t0[((crc >> 24) ^ (x)) & 255] ^ (crc << 8))
-+#  define DO_CRC4 crc = t0[(crc) & 255] ^ \
-+			t1[(crc >> 8) & 255] ^ \
-+			t2[(crc >> 16) & 255] ^ \
-+			t3[(crc >> 24) & 255]
- # endif
- 	const u32 *b;
- 	size_t    rem_len;
-+	const u32 *t0 = tab[0], *t1 = tab[1], *t2 = tab[2], *t3 = tab[3];
- 
- 	/* Align it */
- 	if (unlikely((long)buf & 3 && len)) {
+Satoru Moriya (4):
+  sched: add members to struct sched_info to save maximum
+  delayacct: add members to struct task_delay_info to save max delays
+  delayacct: update taskstats to save max delays
+  getdelays: show max CPU/IO/SWAP/RECLAIM delays
+
+ Documentation/accounting/getdelays.c          |   28 ++++++++++++++----------
+ Documentation/accounting/taskstats-struct.txt |    9 ++++++++
+ include/linux/sched.h                         |    5 ++++
+ include/linux/taskstats.h                     |    8 ++++++-
+ kernel/delayacct.c                            |   25 +++++++++++++++++----
+ kernel/sched_stats.h                          |    5 ++++
+ 6 files changed, 62 insertions(+), 18 deletions(-)
+
+-- 
+1.7.6.4
+
 
