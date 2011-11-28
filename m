@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab1K1Tzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:55:43 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:35318 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449Ab1K1Tz0 (ORCPT
+	id S1754878Ab1K1T4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:56:17 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63889 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452Ab1K1TzT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:55:26 -0500
+	Mon, 28 Nov 2011 14:55:19 -0500
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: cbouatmailru@gmail.com, dg77.kim@samsung.com, kyungmin.park@samsung.com,
         myungjoo.ham@samsung.com, Jason.Wortham@maxim-ic.com,
         alan@linux.intel.com, Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 4/4] x86-mrst: Add battery fuel guage platform data
-Date: Mon, 28 Nov 2011 11:49:53 -0800
-Message-Id: <1322509793-10800-5-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH 1/4] max17042: Move power suppply registration to a worker thread
+Date: Mon, 28 Nov 2011 11:49:50 -0800
+Message-Id: <1322509793-10800-2-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322509793-10800-1-git-send-email-dirk.brandewie@gmail.com>
 References: <1322509793-10800-1-git-send-email-dirk.brandewie@gmail.com>
@@ -24,84 +24,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Add platform data to configure the MAX17042 at POR.  The accuracy of
-the MAX17042 is improved by initializing the fuel gauge with the
-battery characterization data.Summary:
----
- arch/x86/platform/mrst/mrst.c |   46 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 46 insertions(+), 0 deletions(-)
+This patch move the final registration of the battery to a worker
+thread in preperation for adding the POR proceedure recommended by
+maxim. This is needed since the Maxim init proceedure requires two
+long delays totaling 850ms. This patch will reduce the impact on
+system boot time.  The battery will not be available to the power
+supply subsystem until the init proceedure is complete
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index b1489a0..b4032a9 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -22,6 +22,8 @@
- #include <linux/i2c.h>
- #include <linux/i2c/pca953x.h>
- #include <linux/gpio_keys.h>
-+#include <linux/power_supply.h>
-+#include <linux/power/max17042_battery.h>
- #include <linux/input.h>
- #include <linux/platform_device.h>
- #include <linux/irq.h>
-@@ -484,6 +486,49 @@ static void __init *max7315_platform_data(void *info)
- 	return max7315;
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+---
+ drivers/power/max17042_battery.c |   53 +++++++++++++++++++++++---------------
+ 1 files changed, 32 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+index 9f0183c..33fdce0 100644
+--- a/drivers/power/max17042_battery.c
++++ b/drivers/power/max17042_battery.c
+@@ -34,6 +34,7 @@ struct max17042_chip {
+ 	struct i2c_client *client;
+ 	struct power_supply battery;
+ 	struct max17042_platform_data *pdata;
++	struct work_struct work;
+ };
+ 
+ static int max17042_write_reg(struct i2c_client *client, u8 reg, u16 value)
+@@ -180,12 +181,40 @@ static int max17042_get_property(struct power_supply *psy,
+ 	return 0;
  }
  
-+#define	NTC_47K_TGAIN	0xE4E4
-+#define	NTC_47K_TOFF	0x2F1D
-+
-+static void *max17042_platform_data(void *info)
++static void max17042_init_worker(struct work_struct *work)
 +{
-+	struct i2c_board_info *i2c_info = (struct i2c_board_info *)info;
-+	static struct max17042_platform_data platform_data;
-+	static struct max17042_config_data config_data = {
-+		.tgain = NTC_47K_TGAIN,
-+		.toff = NTC_47K_TOFF,
-+		.config = 0x2210,
-+		.learn_cfg = 0x0076,
-+		.filter_cfg = 0x87A4,
-+		.relax_cfg = 0x506B,
-+		.rcomp0 = 0x0092,
-+		.tcompc0 = 0x0B19,
-+		.empty_tempco = 0x2D51,
-+		.kempty0 = 0x0D83,
-+		.fullcap = 14727,
-+		.design_cap = 14727,
-+		.fullcapnom = 14727,
-+		.cell_technology = POWER_SUPPLY_TECHNOLOGY_LION,
-+		.cell_char_tbl = {
-+	/* Data to be written from 0x80h */
-+	0xABB0, 0xB2B0, 0xBB10, 0xBBB0, 0xBC10, 0xBC70, 0xBD00, 0xBD70,
-+	0xBDC0, 0xBE10, 0xC010, 0xC130, 0xC4A0, 0xC9C0, 0xCD10, 0xD090,
-+ 	/* Data to be written from 0x90h */
-+	0x0620, 0x0420, 0x1900, 0x3600, 0x3DA0, 0x2CA0, 0x3C20, 0x3500,
-+	0x3500, 0x0440, 0x1240, 0x0DF0, 0x08F0, 0x0870, 0x07F0, 0x07F0,
-+	/* Data to be written from 0xA0h */
-+	0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100,
-+	0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100, 0x0100,
-+		},
-+	};
++	struct max17042_chip *chip = container_of(work,
++				struct max17042_chip, work);
++	struct i2c_client *client = chip->client;
++	int ret;
 +
-+	strcpy(i2c_info->type, "max17042");
-+	platform_data.enable_por_init = 1;
-+	platform_data.config_data = &config_data;
-+	platform_data.enable_current_sense = 1;
 +
-+	return &platform_data;
++	/* Initialize registers according to values from the platform data */
++	if (chip->pdata->init_data)
++		max17042_set_reg(client, chip->pdata->init_data,
++				 chip->pdata->num_init_data);
++
++	if (!chip->pdata->enable_current_sense) {
++		max17042_write_reg(client, MAX17042_CGAIN, 0x0000);
++		max17042_write_reg(client, MAX17042_MiscCFG, 0x0003);
++		max17042_write_reg(client, MAX17042_LearnCFG, 0x0007);
++	} else {
++		if (chip->pdata->r_sns == 0)
++			chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
++	}
++
++	ret = power_supply_register(&client->dev, &chip->battery);
++	if (ret) {
++		dev_err(&client->dev, "failed: power supply register\n");
++		kfree(chip);
++	}
 +}
 +
- static void __init *emc1403_platform_data(void *info)
+ static int __devinit max17042_probe(struct i2c_client *client,
+ 			const struct i2c_device_id *id)
  {
- 	static short intr2nd_pdata;
-@@ -649,6 +694,7 @@ static const struct devs_id __initconst device_ids[] = {
- 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
- 	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
- 	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
-+	{"max17042", SFI_DEV_TYPE_I2C, 0, &max17042_platform_data},
- 	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data},
- 	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data},
- 	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
+ 	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
+ 	struct max17042_chip *chip;
+-	int ret;
+ 
+ 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
+ 		return -EIO;
+@@ -210,26 +239,8 @@ static int __devinit max17042_probe(struct i2c_client *client,
+ 	if (!chip->pdata->enable_current_sense)
+ 		chip->battery.num_properties -= 2;
+ 
+-	ret = power_supply_register(&client->dev, &chip->battery);
+-	if (ret) {
+-		dev_err(&client->dev, "failed: power supply register\n");
+-		kfree(chip);
+-		return ret;
+-	}
+-
+-	/* Initialize registers according to values from the platform data */
+-	if (chip->pdata->init_data)
+-		max17042_set_reg(client, chip->pdata->init_data,
+-				 chip->pdata->num_init_data);
+-
+-	if (!chip->pdata->enable_current_sense) {
+-		max17042_write_reg(client, MAX17042_CGAIN, 0x0000);
+-		max17042_write_reg(client, MAX17042_MiscCFG, 0x0003);
+-		max17042_write_reg(client, MAX17042_LearnCFG, 0x0007);
+-	} else {
+-		if (chip->pdata->r_sns == 0)
+-			chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
+-	}
++	INIT_WORK(&chip->work, max17042_init_worker);
++	schedule_work(&chip->work);
+ 
+ 	return 0;
+ }
 -- 
 1.7.7.3
 
