@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab1K1DrE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 22:47:04 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:51656 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab1K1DrD (ORCPT
+	id S1756088Ab1K1Dr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 22:47:29 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:60162 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753141Ab1K1Dr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 22:47:03 -0500
-Date: Sun, 27 Nov 2011 22:46:58 -0500
-From: Edward Donovan <edward.donovan@numble.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
-        drivers_pci@kernel-bugs.osdl.org,
-        =?iso-8859-1?Q?Rog=E9rio?= Brito <rbrito@ime.usp.br>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug 41132] [BISECTED][REGRESSION] Regression with the IRQ
- subsystem introduced in 2.6.39 (and present in the 3.x version)
-Message-ID: <20111128034658.GA3503@Brahman>
-References: <bug-41132-5003@https.bugzilla.kernel.org/>
- <201108160554.p7G5soeq002083@demeter2.kernel.org>
- <CAOtrxKP-0TfJa8dS8_uW195WO13YCy-UyaZfweYD4Tv_1gAmKQ@mail.gmail.com>
- <CA+55aFzh-ST1-Hu+Ny25X5DkEqktv3ZDFP2NDOWx6N+vFbTM8A@mail.gmail.com>
+	Sun, 27 Nov 2011 22:47:28 -0500
+Message-ID: <4ED30351.7090809@st.com>
+Date: Mon, 28 Nov 2011 09:13:13 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzh-ST1-Hu+Ny25X5DkEqktv3ZDFP2NDOWx6N+vFbTM8A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Sylvain Munaut <tnt@246tNt.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Mark Miesfeld <mmiesfeld@amcc.com>,
+        Ashish Kalra <ashish.kalra@freescale.com>,
+        Paul Mundt <lethal@linux-sh.org>, Jeff Garzik <jgarzik@pobox.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>
+Subject: Re: [PATCH] SATA/PATA: convert drivers/ata/* to use module_platform_driver()
+References: <1322376266.2226.3.camel@phoenix>
+In-Reply-To: <1322376266.2226.3.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all -
-
-On Sun, Nov 27, 2011 at 12:22:54PM -0800, Linus Torvalds wrote:
-> Thomas, Ingo?
+On 11/27/2011 12:14 PM, Axel Lin wrote:
+> This patch converts the drivers in drivers/ata/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
 > 
-> I haven't seen any response to this one, and while clearly commit
-> fa27271bc8d2 ("genirq: Fixup poll handling") was *supposed* to be a
-> no-op, it isn't.
+> Cc: Viresh Kumar <viresh.kumar@st.com>
+> Cc: Jeff Garzik <jgarzik@pobox.com>
+> Cc: Arnaud Patard <arnaud.patard@rtp-net.org>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: Sylvain Munaut <tnt@246tNt.com>
+> Cc: Anton Vorontsov <avorontsov@ru.mvista.com>
+> Cc: Marek Vasut <marek.vasut@gmail.com>
+> Cc: Florian Fainelli <florian@openwrt.org>
+> Cc: Mark Miesfeld <mmiesfeld@amcc.com>
+> Cc: Ashish Kalra <ashish.kalra@freescale.com>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/ata/pata_arasan_cf.c   |   12 +-----------
+>  drivers/ata/pata_at91.c        |   15 +--------------
+>  drivers/ata/pata_imx.c         |   12 +-----------
+>  drivers/ata/pata_ixp4xx_cf.c   |   13 +------------
+>  drivers/ata/pata_mpc52xx.c     |   21 +--------------------
+>  drivers/ata/pata_of_platform.c |   12 +-----------
+>  drivers/ata/pata_palmld.c      |   13 +------------
+>  drivers/ata/pata_platform.c    |   12 +-----------
+>  drivers/ata/pata_pxa.c         |   13 +------------
+>  drivers/ata/pata_rb532_cf.c    |   21 ++-------------------
+>  drivers/ata/sata_dwc_460ex.c   |   13 +------------
+>  drivers/ata/sata_fsl.c         |   14 +-------------
+>  12 files changed, 13 insertions(+), 158 deletions(-)
 > 
-> The commit message says "Shorter version with the same
-> functionality.", but since it causes a regression, it clearly is not
-> with the same functionality at all. And I assume that Thomas doesn't
-> have a machine that actually ever triggers the spurious irq issue to
-> begin with, so it probably was never tested.
-> 
-> In short, it really sounds like this should just be reverted, since
-> the code clearly doesn't do what the commit message claims it does.
-> 
-> Comments?
-> 
->               Linus
+> diff --git a/drivers/ata/pata_arasan_cf.c b/drivers/ata/pata_arasan_cf.c
+> index e8574bb..048589f 100644
+> --- a/drivers/ata/pata_arasan_cf.c
+> +++ b/drivers/ata/pata_arasan_cf.c
+> @@ -963,17 +963,7 @@ static struct platform_driver arasan_cf_driver = {
+>  	},
+>  };
+>  
+> -static int __init arasan_cf_init(void)
+> -{
+> -	return platform_driver_register(&arasan_cf_driver);
+> -}
+> -module_init(arasan_cf_init);
+> -
+> -static void __exit arasan_cf_exit(void)
+> -{
+> -	platform_driver_unregister(&arasan_cf_driver);
+> -}
+> -module_exit(arasan_cf_exit);
+> +module_platform_driver(arasan_cf_driver);
+>  
+>  MODULE_AUTHOR("Viresh Kumar <viresh.kumar@st.com>");
+>  MODULE_DESCRIPTION("Arasan ATA Compact Flash driver");
 
+For SPEAr:
 
-I experienced the regression in fa2727, too, and recently submitted a
-patch; I believe Thomas has it queued for review.  I'll repost here.
-The commit won't need to be fully reverted--it wouldn't be a simple
-reversion, amidst the rest of the 2.6.39 irq overhaul, and Thomas'
-rewrite is indeed better organized, I think.
+Acked-by: Viresh Kumar <viresh.kumar@st.com>
 
-I isolated the regression to the new version of 'try_one_irq' not
-testing for:
-
-  (action->handler(irq, action->dev_id) == IRQ_HANDLED)
-
-before trying to deal with the interrupt, as the old did.  My patch
-puts it with the other tests in the restructured code.
-
-Happy to revise, or test suggestions against my bad-irq boxes.
-
-Thanks -
-
-Edward
+-- 
+viresh
