@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab1K1X3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:29:01 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:39415 "EHLO e8.ny.us.ibm.com"
+	id S1755816Ab1K1X3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:29:34 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:34373 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755727Ab1K1X2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:28:44 -0500
-Subject: [PATCH 17/22] jbd2: Grab a reference to the crc32c driver only when
-	necessary
+	id S1755726Ab1K1X3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:29:31 -0500
+Subject: [PATCH v2.1 00/22] ext4: Add metadata checksumming
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,136 +19,94 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Mon, 28 Nov 2011 15:28:16 -0800
-Message-ID: <20111128232815.19194.31307.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
-References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
+Date: Mon, 28 Nov 2011 15:26:15 -0800
+Message-ID: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11112823-9360-0000-0000-0000010C2146
+x-cbid: 11112823-5112-0000-0000-0000028607AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Obtain a reference to the crc32c driver only when the journal needs it for
-checksum v2.
+Hi all,
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- fs/jbd2/Kconfig      |    2 ++
- fs/jbd2/journal.c    |   22 ++++++++++++++++++++++
- include/linux/jbd2.h |   23 +++++++++++++++++++++++
- 3 files changed, 47 insertions(+), 0 deletions(-)
+This patchset adds crc32c checksums to most of the ext4 metadata objects.  A
+full design document is on the ext4 wiki[1] but I will summarize that document here.
 
+As much as we wish our storage hardware was totally reliable, it is still
+quite possible for data to be corrupted on disk, corrupted during transfer over
+a wire, or written to the wrong places.  To protect against this sort of
+non-hostile corruption, it is desirable to store checksums of metadata objects
+on the filesystem to prevent broken metadata from shredding the filesystem.
 
-diff --git a/fs/jbd2/Kconfig b/fs/jbd2/Kconfig
-index f32f346..69a48c2 100644
---- a/fs/jbd2/Kconfig
-+++ b/fs/jbd2/Kconfig
-@@ -1,6 +1,8 @@
- config JBD2
- 	tristate
- 	select CRC32
-+	select CRYPTO
-+	select CRYPTO_CRC32C
- 	help
- 	  This is a generic journaling layer for block devices that support
- 	  both 32-bit and 64-bit block numbers.  It is currently used by
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 300b46f..fbf86ee 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1284,6 +1284,16 @@ static int journal_get_superblock(journal_t *journal)
- 		goto out;
- 	}
- 
-+	/* Load the checksum driver */
-+	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2)) {
-+		journal->j_chksum_driver = crypto_alloc_shash("crc32c", 0, 0);
-+		if (IS_ERR(journal->j_chksum_driver)) {
-+			err = PTR_ERR(journal->j_chksum_driver);
-+			journal->j_chksum_driver = NULL;
-+			goto out;
-+		}
-+	}
-+
- 	set_buffer_verified(bh);
- 
- 	return 0;
-@@ -1440,6 +1450,8 @@ int jbd2_journal_destroy(journal_t *journal)
- 		iput(journal->j_inode);
- 	if (journal->j_revoke)
- 		jbd2_journal_destroy_revoke(journal);
-+	if (journal->j_chksum_driver)
-+		crypto_free_shash(journal->j_chksum_driver);
- 	kfree(journal->j_wbuf);
- 	kfree(journal);
- 
-@@ -1556,6 +1568,16 @@ int jbd2_journal_set_features (journal_t *journal, unsigned long compat,
- 		sb->s_checksum_type = JBD2_CRC32C_CHKSUM;
- 		sb->s_feature_compat &=
- 			~cpu_to_be32(JBD2_FEATURE_COMPAT_CHECKSUM);
-+
-+		/* Load the checksum driver */
-+		if (journal->j_chksum_driver == NULL) {
-+			journal->j_chksum_driver = crypto_alloc_shash("crc32c",
-+								      0, 0);
-+			if (IS_ERR(journal->j_chksum_driver)) {
-+				journal->j_chksum_driver = NULL;
-+				return 0;
-+			}
-+		}
- 	}
- 
- 	/* If enabling v1 checksums, downgrade superblock */
-diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index 4ead3d5..88af51f 100644
---- a/include/linux/jbd2.h
-+++ b/include/linux/jbd2.h
-@@ -31,6 +31,7 @@
- #include <linux/mutex.h>
- #include <linux/timer.h>
- #include <linux/slab.h>
-+#include <crypto/hash.h>
- #endif
- 
- #define journal_oom_retry 1
-@@ -945,6 +946,9 @@ struct journal_s
- 
- 	/* Precomputed UUID checksum */
- 	__u32 j_uuid_csum;
-+
-+	/* Reference to checksum algorithm driver via cryptoapi */
-+	struct crypto_shash *j_chksum_driver;
- };
- 
- /*
-@@ -1263,6 +1267,25 @@ static inline int jbd_space_needed(journal_t *journal)
- 
- extern int jbd_blocks_per_page(struct inode *inode);
- 
-+static inline u32 jbd2_chksum(journal_t *journal, u32 crc,
-+			      const void *address, unsigned int length)
-+{
-+	struct {
-+		struct shash_desc shash;
-+		char ctx[crypto_shash_descsize(journal->j_chksum_driver)];
-+	} desc;
-+	int err;
-+
-+	desc.shash.tfm = journal->j_chksum_driver;
-+	desc.shash.flags = 0;
-+	*(u32 *)desc.ctx = crc;
-+
-+	err = crypto_shash_update(&desc.shash, address, length);
-+	BUG_ON(err);
-+
-+	return *(u32 *)desc.ctx;
-+}
-+
- #ifdef __KERNEL__
- 
- #define buffer_trace_init(bh)	do {} while (0)
+The crc32c polynomial was chosen for its improved error detection capabilities
+over crc32 and crc16, and because of its hardware acceleration on current and
+upcoming Intel and Sparc chips.
+
+Each type of metadata object has been retrofitted to store a checksum as follows:
+
+- The superblock stores a crc32c of itself.
+- Each inode stores crc32c(fs_uuid + inode_num + inode_gen + inode +
+  slack_space_after_inode)
+- Block and inode bitmaps each get their own crc32c(fs_uuid + group_num +
+  bitmap), stored in the block group descriptor.
+- Each extent tree block stores a crc32c(fs_uuid + inode_num + inode_gen +
+  extent_entries) in unused space at the end of the block.
+- Each directory leaf block has an unused-looking directory entry big enough to
+  store a crc32c(fs_uuid + inode_num + inode_gen + block) at the end of the
+  block.
+- Each directory htree block is shortened to contain a crc32c(fs_uuid +
+  inode_num + inode_gen + block) at the end of the block.
+- Extended attribute blocks store crc32c(fs_uuid + id + ea_block) in the
+  header, where id is, depending on the refcount, either the inode_num and
+  inode_gen; or the block number.
+- MMP blocks store crc32c(fs_uuid + mmpblock) at the end of the MMP block.
+- Block groups can now use crc32c instead of crc16.
+- The journal now has a v2 checksum feature flag.
+- crc32c(j_uuid + block) checksums have been inserted into descriptor blocks,
+  commit blocks, revoke blocks, and the journal superblock.
+- Each block tag in a descriptor block has a checksum of the related data block.
+
+The patchset for e2fsprogs will be sent under separate cover only to linux-ext4
+as it is quite lengthy (~48 patches).
+
+As far as performance impact goes, I see nearly no change with a standard mail
+server ffsb simulation.  On a test that involves only file creation and
+deletion and extent tree modifications, I see a drop of about 50 percent with
+the current kernel crc32c implementation; this improves to a drop of about 20
+percent with the enclosed crc32c implementation.  However, given that metadata
+is usually a small fraction of total IO, it doesn't seem like the cost of
+enabling this feature is unreasonable.
+
+There are of course unresolved issues:
+
+- I haven't fixed it up to checksum the exclude bitmap yet.  I'll probably
+  submit that as an add-on to the snapshot patchset.
+
+- Using the journal commit hooks to delay crc32c calculation until dirty
+  buffers are actually being written to disk.
+
+- Interaction with online resize code.  Yongqiang seems to be in the process of
+  rewriting this not to use custom metadata block write functions, but I haven't
+  looked at it very closely yet.
+
+Please have a look at the design document and patches, and please feel free to
+suggest any changes.
+
+v2: Checksum the MMP block, store the checksum type in the superblock, include
+the inode generation in file checksums, and finally solve the problem of limited
+space in block groups by splitting the checksum into two halves.
+
+v2.1: Checksum the reserved parts of the htree tail structure.  Fix some flag
+handling bugs with the mb cache init routine wherein bitmaps could fail to be
+checksummed at read time.
+
+This patchset has been tested on 3.2.0-rc3 on x64, i386, ppc64, and ppc32.  The
+patches seems to work fine on all four platforms.
+
+--D
+
+[1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
 
