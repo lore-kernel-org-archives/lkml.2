@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab1K1Jjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 04:39:36 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35661 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab1K1Jjf convert rfc822-to-8bit (ORCPT
+	id S1753267Ab1K1JoH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 04:44:07 -0500
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:48028 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab1K1JoF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 04:39:35 -0500
+	Mon, 28 Nov 2011 04:44:05 -0500
 MIME-Version: 1.0
-X-Originating-IP: [188.143.17.84]
-In-Reply-To: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
-References: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
-Date: Mon, 28 Nov 2011 10:39:34 +0100
-Message-ID: <CAJfpeguawQGYvL+tDD-mgxjyZPVbJs04tug853H0yLn7MyfLig@mail.gmail.com>
-Subject: Re: [PATCH 0/4] read-only remount race fix v10
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@zeniv.linux.org.uk
-Cc: hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
-        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20111125142858.GE5315@opensource.wolfsonmicro.com>
+References: <1322224743-15671-1-git-send-email-tomoya.rohm@gmail.com>
+	<20111125142858.GE5315@opensource.wolfsonmicro.com>
+Date: Mon, 28 Nov 2011 18:44:04 +0900
+Message-ID: <CANKRQnjf6x6GJhFoE+VYRG-=T=vtWDhNgjuED0zGcEEGDA7y0A@mail.gmail.com>
+Subject: Re: [PATCH v2] sound/soc/codecs: add LAPIS Semiconductor ML26124
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 12:11 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Al,
+2011/11/25 Mark Brown <broonie@opensource.wolfsonmicro.com>: wrote
 >
-> Please apply the following patches that fix read-only remount races.
+>> +static const struct snd_kcontrol_new ml26124_snd_controls[] = {
+>> + � � SOC_SINGLE_TLV("Capture Digital Volume", ML26124_RECORD_DIG_VOL, 0, 0xff, 1, rec_play_digi_vol),
+>> + � � SOC_SINGLE_TLV("Playback Digital Volume", ML26124_PLBAK_DIG_VOL, 0, 0xff, 1, rec_play_digi_vol),
 >
-> Git tree is here:
+>> + � � SOC_SINGLE("Digital Volume Switch", ML26124_FILTER_EN, 4, 1, 0),
 >
-> git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git read-only-remount-fixes.v10
+> This needs either a Playback or Capture in there to match up with the
+> above unless it genuinely does mute both which would be really weird.
+>
 
-Ping?
+Digital Volume Switch is used for both Playback and Capture.
 
-
->
-> Thanks,
-> Miklos
-> ---
-> Miklos Szeredi (4):
->      vfs: keep list of mounts for each superblock
->      vfs: protect remounting superblock read-only
->      vfs: count unlinked inodes
->      vfs: prevent remount read-only if pending removes
->
-> ---
->  fs/file_table.c       |   23 -------------
->  fs/inode.c            |   85 +++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/internal.h         |    1 +
->  fs/namespace.c        |   57 ++++++++++++++++++++++++++++++++-
->  fs/super.c            |   20 +++++++++--
->  include/linux/fs.h    |   67 ++++++--------------------------------
->  include/linux/mount.h |    1 +
->  7 files changed, 170 insertions(+), 84 deletions(-)
->
->
+Regards,
+tomoya
