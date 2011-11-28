@@ -1,166 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab1K1JHj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 04:07:39 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:6525 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210Ab1K1JFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 04:05:13 -0500
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net, asharma@fb.com, devel@openvz.org,
-        dsahern@gmail.com, linux-perf-users@vger.kernel.org
-Subject: [PATCH 5/7] perf: teach perf inject to merge sched_stat_* and sched_switch events
-Date: Mon, 28 Nov 2011 12:03:33 +0300
-Message-Id: <1322471015-107825-6-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1322471015-107825-1-git-send-email-avagin@openvz.org>
-References: <1322471015-107825-1-git-send-email-avagin@openvz.org>
+	id S1753390Ab1K1JHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 04:07:48 -0500
+Received: from tus1smtoutpex01.symantec.com ([216.10.195.241]:64211 "EHLO
+	tus1smtoutpex01.symantec.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753210Ab1K1JHn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 04:07:43 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Nov 2011 04:07:43 EST
+X-AuditID: d80ac3f1-b7fae6d0000026bf-e0-4ed34e32e0f5
+From: Wen Yan Xin <WenYan_Xin@symantec.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Zongliang Li <Zongliang_Li@symantec.com>, Gang He <Gang_He@symantec.com>,
+        Yong Jun Chai <YongJun_Chai@symantec.com>
+Date: Mon, 28 Nov 2011 01:03:07 -0800
+Subject: what's the replace for the big kernel lock after kernel version
+ 2.6.39 for system call.
+Thread-Topic: what's the replace for the big kernel lock after kernel
+ version 2.6.39 for system call.
+Thread-Index: AcyrU/YiIsISdx0XRBquy8hmDQw7lwAAOf8wAJXOidA=
+Message-ID: <F0BE05962279964D949D53875492E2E24FC27D7C30@APJ1XCHEVSPIN32.SYMC.SYMANTEC.COM>
+References: <S1752501Ab1KYJXy/20111125092354Z+1871@vger.kernel.org> 
+Accept-Language: en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: AVec AtUq AwKd A4AW BEv+ DCdI EKoj GSvj HNfz HObI Hq5A
+ ITz4 I17X JMLo JmhV
+ KE5g;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{193A4F9D-5A16-46BC-9D65-F84D7647AC6F};dwBlAG4AeQBhAG4AXwB4AGkAbgBAAHMAeQBtAGEAbgB0AGUAYwAuAGMAbwBtAA==;Mon,
+ 28 Nov 2011 09:03:07
+ GMT;dwBoAGEAdAAnAHMAIAB0AGgAZQAgAHIAZQBwAGwAYQBjAGUAIABmAG8AcgAgAHQAaABlACAAYgBpAGcAIABrAGUAcgBuAGUAbAAgAGwAbwBjAGsAIABhAGYAdABlAHIAIABrAGUAcgBuAGUAbAAgAHYAZQByAHMAaQBvAG4AIAAyAC4ANgAuADMAOQAgAGYAbwByACAAcwB5AHMAdABlAG0AIABjAGEAbABsAC4A
+x-cr-puzzleid: {193A4F9D-5A16-46BC-9D65-F84D7647AC6F}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPIsWRmVeSWpSXmKPExsVyYMX1NF0jv8t+Bi9ey1tc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MLdOusxdcY63Y1NnL1sC4l6WLkZNDQsBE4t2uJihbTOLCvfVs
+	XYxcHEICHxklpr18wArhdDNJnHzZzQzhrGCUuHNoLSNIC5uAtkT78u3MILaIgKPEjoNf2UBs
+	ZoFKiS//e9lBbBYBVYktrdOZQGxhgSSJ+RcXskDUp0tc33sHqtdK4sn9ZjCbVyBKYsO3p2D1
+	QgIuEl8nPAWLMwKd9/3UGiaI+eISc6fNYoU4W0BiyZ7zzBC2qMTLx//ArpYQ2MIi8er/GUaI
+	hKnEq/abrBCDRCXutK9nhBikI7Fg9yeoo7Ulli18DXWEoMTJmU9YJjBKzEKybxaSlllIWmYh
+	aVnAyLKKUaaktNiwOLckv7SkILXCwFCvuDI3ERhpyXrJ+bmbGIHRdoPr8McdjNeXKh5iFOBg
+	VOLhvet82U+INbEMqPIQowQHs5IIb8/RS35CvCmJlVWpRfnxRaU5qcWHGKU5WJTEeStmbfIT
+	EkhPLEnNTk0tSC2CyTJxcEo1MErX+7HHzb006ZrK8lP2mas/WpdwLrsgsGef29bOMO/crsyf
+	rVrfNlR/jiyZvC1wcbOnwUQWg/UubqI3XFeKXbW8HfmL+aiL45syV73LYdqTA5yNPuUfC/7t
+	32BveSd7wdoHVi+7j37bH6FdcutFmevMqT9tk4XNhDv7p/YaSGqFnThuz+LhpcRSnJFoqMVc
+	VJwIAIgTlzWyAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You may want to know where and how long a task is sleeping. A callchain
-may be found in sched_switch and a time slice in stat_iowait, so I add
-handler in perf inject for merging this events.
+Hi all,
 
-My code saves sched_switch event for each process and when it meets
-stat_iowait, it reports the sched_switch event, because this event
-contains a correct callchain. By another words it replaces all
-stat_iowait events on proper sched_switch events.
+I have a trouble of working on kernel 2.6.39 and later. Originally when our kernel module startups, it hooks some file system call, like sys_open... , and the big kernel lock - lock_kernel() - will be held before creating the hook to prevent user application use system calls, and be released after the hook created.
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- tools/perf/builtin-inject.c |   87 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 87 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 8df8b71..d0af19d 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -12,6 +12,8 @@
- #include "util/debug.h"
- 
- #include "util/parse-options.h"
-+#include "util/trace-event.h"
-+
- 
- static char		const *input_name	= "-";
- static const char	*output_name		= "-";
-@@ -20,6 +22,7 @@ static int		output;
- static u64		bytes_written		= 0;
- 
- static bool		inject_build_ids;
-+static bool		inject_sched_stat;
- 
- static int perf_event__repipe_synth(union perf_event *event,
- 				    struct perf_session *session __used)
-@@ -179,6 +182,85 @@ repipe:
- 	return 0;
- }
- 
-+struct event_entry
-+{
-+	struct list_head list;
-+	u32 pid;
-+	union perf_event event[0];
-+};
-+
-+static LIST_HEAD(samples);
-+
-+static int perf_event__sched_stat(union perf_event *event,
-+				      struct perf_sample *sample,
-+				      struct perf_evsel *evsel __used,
-+				      struct perf_session *session)
-+{
-+	int type;
-+	struct event *e;
-+	const char *evname = NULL;
-+	uint32_t size;
-+	struct event_entry *ent;
-+	union perf_event *event_sw = NULL;
-+	struct perf_sample sample_sw;
-+	int sched_process_exit;
-+
-+	size = event->header.size;
-+
-+	type = trace_parse_common_type(sample->raw_data);
-+	e = trace_find_event(type);
-+	if (e)
-+		evname = e->name;
-+
-+	sched_process_exit = !strcmp(evname, "sched_process_exit");
-+
-+	if (!strcmp(evname, "sched_switch") ||  sched_process_exit) {
-+		list_for_each_entry(ent, &samples, list)
-+			if (sample->pid == ent->pid)
-+				break;
-+
-+		if (&ent->list != &samples) {
-+			list_del(&ent->list);
-+			free(ent);
-+		}
-+
-+		if (sched_process_exit)
-+			return 0;
-+
-+		ent = malloc(size + sizeof(struct event_entry));
-+		ent->pid = sample->pid;
-+		memcpy(&ent->event, event, size);
-+		list_add(&ent->list, &samples);
-+		return 0;
-+
-+	} else if (!strncmp(evname, "sched_stat_", 11)) {
-+		u32 pid;
-+
-+		pid = raw_field_value(e, "pid", sample->raw_data);
-+
-+		list_for_each_entry(ent, &samples, list) {
-+			if (pid == ent->pid)
-+				break;
-+		}
-+
-+		if (&ent->list == &samples) {
-+			pr_debug("Could not find sched_switch for pid %u\n", pid);
-+			return 0;
-+		}
-+
-+		event_sw = &ent->event[0];
-+		perf_session__parse_sample(session, event_sw, &sample_sw);
-+		sample_sw.period = sample->period;
-+		sample_sw.time = sample->time;
-+		perf_session__change_sample(session, event_sw, &sample_sw);
-+		perf_event__repipe(event_sw, &sample_sw, session);
-+		return 0;
-+	}
-+
-+	perf_event__repipe(event, sample, session);
-+
-+	return 0;
-+}
- struct perf_event_ops inject_ops = {
- 	.sample		= perf_event__repipe_sample,
- 	.mmap		= perf_event__repipe,
-@@ -214,6 +296,9 @@ static int __cmd_inject(void)
- 		inject_ops.mmap		= perf_event__repipe_mmap;
- 		inject_ops.fork		= perf_event__repipe_task;
- 		inject_ops.tracing_data	= perf_event__repipe_tracing_data;
-+	} else if (inject_sched_stat) {
-+		inject_ops.sample	= perf_event__sched_stat;
-+		inject_ops.ordered_samples = true;
- 	}
- 
- 	session = perf_session__new(input_name, O_RDONLY, false, true, &inject_ops);
-@@ -241,6 +326,8 @@ static const char * const report_usage[] = {
- static const struct option options[] = {
- 	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
- 		    "Inject build-ids into the output stream"),
-+	OPT_BOOLEAN('s', "sched-stat", &inject_sched_stat,
-+		    "correct call-chains for shed-stat-*"),
- 	OPT_STRING('i', "input", &input_name, "file",
- 		    "input file name"),
- 	OPT_STRING('o', "output", &output_name, "file",
--- 
-1.7.1
+But after the kernel 2.6.39, the big kernel lock has been removed. I'm thinking there should be one or more lock that should be used. 
 
+So, my question is which lock should be held now, when we hook the system call of file system?
+
+I'd really appreciate your answer in advance.
+
+
+--
+
+>>>> 	auth ca64a8ac subscribe linux-kernel wenyan_xin@symantec.com
+Succeeded.
