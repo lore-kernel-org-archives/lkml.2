@@ -1,131 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab1K1KdC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 05:33:02 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65510 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab1K1KdA (ORCPT
+	id S1752170Ab1K1Kdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 05:33:49 -0500
+Received: from inca-roads.misterjones.org ([213.251.177.50]:35114 "EHLO
+	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751061Ab1K1Kds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 05:33:00 -0500
-Date: Mon, 28 Nov 2011 11:34:15 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Daniel Vetter'" <daniel@ffwll.ch>, "'Clark, Rob'" <rob@ti.com>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        "'Sumit Semwal'" <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-        linux-media@vger.kernel.org, arnd@arndb.de, jesse.barker@linaro.org,
-        "'Sumit Semwal'" <sumit.semwal@linaro.org>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Subject: Re: [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanismch
-Message-ID: <20111128103212.GA3840@phenom.ffwll.local>
-Mail-Followup-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-	"'Clark, Rob'" <rob@ti.com>,
-	Tomasz Stanislawski <t.stanislaws@samsung.com>,
-	'Sumit Semwal' <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-	linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
-	linux-media@vger.kernel.org, arnd@arndb.de, jesse.barker@linaro.org,
-	'Sumit Semwal' <sumit.semwal@linaro.org>,
-	'Russell King - ARM Linux' <linux@arm.linux.org.uk>
-References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
- <1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
- <4E98085A.8080803@samsung.com>
- <20111014152139.GA2908@phenom.ffwll.local>
- <000001cc99ff$47cfe960$d76fbc20$%szyprowski@samsung.com>
- <CAO8GWqnNMGwADVnO4-RfJu0TPzHhANBdyctv2RyhCxbBJ0beXw@mail.gmail.com>
- <20111108174122.GA4754@phenom.ffwll.local>
- <20111108175517.GG12913@n2100.arm.linux.org.uk>
- <20111108184314.GB4754@phenom.ffwll.local>
- <000401ccada1$fbdcc030$f3964090$%szyprowski@samsung.com>
+	Mon, 28 Nov 2011 05:33:48 -0500
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH] pcmcia: convert drivers/pcmcia/* to use
+ =?UTF-8?Q?module=5Fplatform=5Fdriver=28=29?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000401ccada1$fbdcc030$f3964090$%szyprowski@samsung.com>
-X-Operating-System: Linux phenom 3.1.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Mon, 28 Nov 2011 11:33:42 +0100
+From: Marc Zyngier <maz@misterjones.org>
+Cc: <linux-kernel@vger.kernel.org>,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        Manuel Lauss <manuel.lauss@gmail.com>, Olof Johansson <olof@lixom.net>,
+        Ralf Baechle <ralf@linux-mips.org>, Eric Miao <eric.y.miao@gmail.com>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        <linux-pcmcia@lists.infradead.org>
+Organization: Metropolis
+In-Reply-To: <1322369586.2522.3.camel@phoenix>
+References: <1322369586.2522.3.camel@phoenix>
+Message-ID: <d6963f1ecb253ca948d8106b10832fe1@localhost>
+User-Agent: RoundCube Webmail/0.3.1
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Rcpt-To: axel.lin@gmail.com, linux-kernel@vger.kernel.org, hennerich@blackfin.uclinux.org, manuel.lauss@gmail.com, olof@lixom.net, ralf@linux-mips.org, eric.y.miao@gmail.com, linux@dominikbrodowski.net, linux-pcmcia@lists.infradead.org
+X-SA-Exim-Mail-From: maz@misterjones.org
+X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 08:47:31AM +0100, Marek Szyprowski wrote:
-> On Tuesday, November 08, 2011 7:43 PM Daniel Vetter wrote:
-> > Thanks for the clarification. I think this is another reason why
-> > get_scatterlist should return the sg_list already mapped into the device
-> > address space - it's more consisten with the other dma apis. Another
-> > reason to completely hide everything but mapped addresses is crazy stuff
-> > like this
-> > 
-> > 	mem <---> tiling iommu <-+-> gpu
-> > 	                         |
-> > 	                         +-> scanout engine
-> > 	                         |
-> > 				 +-> mpeg decoder
-> > 
-> > where it doesn't really make sense to talk about the memory backing the
-> > dma buffer because that's smeared all over the place due to tiling. IIRC
-> > for the case of omap these devices can also access memory through other
-> > paths and iommut that don't tile (but just remap like a normal iommu)
+
+On Sun, 27 Nov 2011 12:53:06 +0800, Axel Lin <axel.lin@gmail.com> wrote:
+> This patch converts the drivers in drivers/pcmcia/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
 > 
-> I really don't get why you want to force the exporter to map the buffer into
-> clients dma address space. Only the client device might know all the quirks
-> required to do this correctly. Exporter should only provide a scatter-list 
-> with the memory that belongs to the exported buffer (might be pinned). How
-> do you want to solve the following case - the gpu hardware from your diagram
-> and a simple usb webcam with generic driver. The application would like to
-> export a buffer from the webcam to scanout engine. How the generic webcam 
-> driver might know HOW to set up the tiller to create correct mappings for 
-> the GPU/scanout? IMHO only a GPU driver is capable of doing that assuming
-> it got just a scatter list from the webcam driver.
+> Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>
+> Cc: Manuel Lauss <manuel.lauss@gmail.com>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Marc Zyngier <maz@misterjones.org>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/pcmcia/bfin_cf_pcmcia.c |   13 +------------
+>  drivers/pcmcia/db1xxx_ss.c      |   13 +------------
+>  drivers/pcmcia/electra_cf.c     |   12 +-----------
+>  drivers/pcmcia/m8xx_pcmcia.c    |   13 +------------
+>  drivers/pcmcia/pxa2xx_viper.c   |   13 +------------
+>  drivers/pcmcia/xxs1500_ss.c     |   13 +------------
+>  6 files changed, 6 insertions(+), 71 deletions(-)
+> 
 
-You're correct that only the gpu knows how to put things into the tiler
-(and maybe other devices that have access to it). Let me expand my diagram
-so that you're webcam fits into the picture.
-
- 	mem <-+-> tiling iommu <-+-> gpu
- 	      |                  |
- 	      |                  +-> scanout engine
- 	      |                  |
-              |                  +-> mpeg decoder
-              |                  |                
-              |                  |                
-              +-> direct dma   <-+
-              |                                  
-              +-> iommua A <-+-> usb hci                                   
-                             |                    
-                             +-> other devices                   
-                             |                    
-                             ...                    
-
-A few notes:
-- might not be exactly how omap really looks like
-- the devices behind tiler have different device address space windows to
-  access the different paths to main memory. No other device can access
-  the tiler, iirc.
-- your webcam doesn't exist on this because we can't dma from it's memory,
-  we can only zero-copy from the memory the usb hci transferred the frame
-  to.
-
-Now when when e.g. the scanout engine calls get_scatterlist you only call
-dma_map_sg (which does nothing, because there's no iommu that's managed by
-the core kernel code for it). The scanout engine will then complain that
-your stuff is not contiguous and bail out. Or it is indeed contiguous and
-things Just Work.
-
-The much more interesting case is when the mpeg decoder and the gpu share
-a buffer (think video on rotating cube or whatever other gui transition
-you fancy). Then the omap tiler code can check whether the the device sits
-behind the tiler (e.g. with some omap-specific device tree attribute) and
-hand out a linear view to a tiled buffer.
-
-In other words, whereever you're currently calling one of the map/unmap
-dma api variants, you would call get/put_scatterlist (or better the new
-name I'm proposing). So I also don't see your argument about only the
-client knows how to map something into address space.
-
-Yours, Daniel
+For the viper part:
+Acked-by: Marc Zyngier <maz@misterjones.org>
 -- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Who you jivin' with that Cosmik Debris?
