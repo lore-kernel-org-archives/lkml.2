@@ -1,112 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab1K1SGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 13:06:05 -0500
-Received: from mga11.intel.com ([192.55.52.93]:63566 "EHLO mga11.intel.com"
+	id S1753436Ab1K1SHw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 13:07:52 -0500
+Received: from dion.org.ua ([193.104.35.143]:49151 "EHLO dion.org.ua"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427Ab1K1SGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 13:06:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,585,1315206000"; 
-   d="scan'208";a="89870246"
-Message-ID: <4ED3CD8B.5060000@intel.com>
-Date: Mon, 28 Nov 2011 10:06:03 -0800
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1752843Ab1K1SHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 13:07:51 -0500
+X-Greylist: delayed 1823 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Nov 2011 13:07:50 EST
+Date: Mon, 28 Nov 2011 19:37:09 +0200
+From: Dmitry Nezhevenko <dion@inhex.net>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
+Subject: Re: Linux 3.1.3
+Message-ID: <20111128173708.GA3785@laptop.local>
+References: <20111127190735.GA11899@kroah.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dean Nelson <dnelson@redhat.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Jiri Pirko <jpirko@redhat.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [PATCH 21/62] net: remove the second argument of k[un]map_atomic()
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com>  <1322371662-26166-22-git-send-email-amwang@redhat.com> <1322381248.2826.1.camel@edumazet-laptop>
-In-Reply-To: <1322381248.2826.1.camel@edumazet-laptop>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111127190735.GA11899@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2011 12:07 AM, Eric Dumazet wrote:
-> Le dimanche 27 novembre 2011 à 13:27 +0800, Cong Wang a écrit :
->> Signed-off-by: Cong Wang <amwang@redhat.com>
->> ---
->> diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
->> index cf480b5..b194beb 100644
->> --- a/drivers/net/ethernet/intel/e1000/e1000_main.c
->> +++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
->> @@ -3878,11 +3878,9 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
->>  				if (length <= copybreak &&
->>  				    skb_tailroom(skb) >= length) {
->>  					u8 *vaddr;
->> -					vaddr = kmap_atomic(buffer_info->page,
->> -					                    KM_SKB_DATA_SOFTIRQ);
->> +					vaddr = kmap_atomic(buffer_info->page);
->>  					memcpy(skb_tail_pointer(skb), vaddr, length);
->> -					kunmap_atomic(vaddr,
->> -					              KM_SKB_DATA_SOFTIRQ);
->> +					kunmap_atomic(vaddr);
->>  					/* re-use the page, so don't erase
->>  					 * buffer_info->page */
->>  					skb_put(skb, length);
->> diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
->> index a855db1..8603c87 100644
->> --- a/drivers/net/ethernet/intel/e1000e/netdev.c
->> +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
->> @@ -1272,9 +1272,9 @@ static bool e1000_clean_rx_irq_ps(struct e1000_adapter *adapter,
->>  			 */
->>  			dma_sync_single_for_cpu(&pdev->dev, ps_page->dma,
->>  						PAGE_SIZE, DMA_FROM_DEVICE);
->> -			vaddr = kmap_atomic(ps_page->page, KM_SKB_DATA_SOFTIRQ);
->> +			vaddr = kmap_atomic(ps_page->page);
->>  			memcpy(skb_tail_pointer(skb), vaddr, l1);
->> -			kunmap_atomic(vaddr, KM_SKB_DATA_SOFTIRQ);
->> +			kunmap_atomic(vaddr);
->>  			dma_sync_single_for_device(&pdev->dev, ps_page->dma,
->>  						   PAGE_SIZE, DMA_FROM_DEVICE);
->>  
->> @@ -1465,12 +1465,10 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
->>  				if (length <= copybreak &&
->>  				    skb_tailroom(skb) >= length) {
->>  					u8 *vaddr;
->> -					vaddr = kmap_atomic(buffer_info->page,
->> -					                   KM_SKB_DATA_SOFTIRQ);
->> +					vaddr = kmap_atomic(buffer_info->page);
->>  					memcpy(skb_tail_pointer(skb), vaddr,
->>  					       length);
->> -					kunmap_atomic(vaddr,
->> -					              KM_SKB_DATA_SOFTIRQ);
->> +					kunmap_atomic(vaddr);
->>  					/* re-use the page, so don't erase
->>  					 * buffer_info->page */
->>  					skb_put(skb, length);
-> But why are these drivers using kmap_atomic() in first place, since
-> their fragments are allocated in regular zone (GFP_ATOMIC or
-> GFP_KERNEL) ?
+On Mon, Nov 28, 2011 at 04:07:35AM +0900, Greg KH wrote:
+> I'm announcing the release of the 3.1.3 kernel.
+> 
+> All users of the 3.1 kernel series must upgrade.
+> 
 
-I was asking the same thing myself recently when I started working on
-some copy-break like code for the ixgbe driver.  I believe the main
-reason is a lack of documentation.  This code is based loosely on the
-skb_copy_bits code which will use kmap_skb_frag over all of the paged
-portions of the sk_buff.  As such it was decided to map things via
-kmap_atomic in order to guarantee the pages had a valid virtual address.
+I don't know where to report this, since bugzilla is still down. This
+upgrade breaks UVC webcam that I've:
 
-If I understand things correctly, what you are brining up is that pages
-allocated with either GFP_ATOMIC or GFP_KERNEL will always be allocated
-from the lowmem pool and as such page_address should always succeed.  Is
-that correct?
+Bus 002 Device 002: ID 04f2:b029 Chicony Electronics Co., Ltd 1.3M UVC
+Webcam
 
-Thanks,
+I'm getting followed while trying to capture from it:
 
-Alex
+	[  187.555352] uvcvideo: Failed to submit URB 0 (-28).
+
+Kernel 3.1.2 is definitely working.
+
+[    1.810009] usb 2-5: Product: USB2.0 1.3M UVC WebCam
+[   10.664671] uvcvideo: Found UVC 1.00 device USB2.0 1.3M UVC WebCam (04f2:b029)
+[   10.670255] input: USB2.0 1.3M UVC WebCam as /devices/pci0000:00/0000:00:1d.7/usb2/2-5/2-5:1.0/input/input7
+
+-- 
+WBR, Dmitry
