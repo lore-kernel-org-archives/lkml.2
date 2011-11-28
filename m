@@ -1,136 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab1K1Iw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 03:52:58 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:32425 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab1K1Iw4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 03:52:56 -0500
-X-AuditID: cbfee61b-b7bdbae000001970-52-4ed34be6808d
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: merez@codeaurora.org
-Cc: "'S, Venkatraman'" <svenkatr@ti.com>, linux-mmc@vger.kernel.org,
-        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        dh.han@samsung.com
-References: <aad7cb35699550e89526a5fb083c520d.squirrel@www.codeaurora.org>
-In-reply-to: <aad7cb35699550e89526a5fb083c520d.squirrel@www.codeaurora.org>
-Subject: RE: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 device
-Date: Mon, 28 Nov 2011 17:52:54 +0900
-Message-id: <000201ccadab$1e57b8a0$5b0729e0$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcytPIeCLj3bt5IQTDG04nR08dsqHQAbUtvw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1753016Ab1K1I76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 03:59:58 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:49505 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752272Ab1K1I74 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 03:59:56 -0500
+From: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
+To: David Daney <ddaney.cavm@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Moore, Eric" <Eric.Moore@lsi.com>,
+        "James Bottomley" <jejb@kernel.org>,
+        "Desai, Kashyap" <Kashyap.Desai@lsi.com>,
+        "DL-MPT Fusion Linux" <DL-MPTFusionLinux@lsi.com>,
+        Support <support@lsi.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+CC: Chandrakala Chavva <cchavva@caviumnetworks.com>,
+        David Daney <david.daney@cavium.com>
+Date: Mon, 28 Nov 2011 14:29:49 +0530
+Subject: RE: [PATCH] mptsas: Add device ID for SAS1068_820XELP.
+Thread-Topic: [PATCH] mptsas: Add device ID for SAS1068_820XELP.
+Thread-Index: AcymP1qPx6xroV9hRW23l/W3FQiHFAHbJggw
+Message-ID: <A6888A6805518E4EA4AF7072A28264A604726F2879@inbmail02.lsi.com>
+References: <1321654422-27617-1-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1321654422-27617-1-git-send-email-ddaney.cavm@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maya Erez wrote:
-> >> >> On Wed, Nov 2, 2011 at 1:33 PM, Seungwon Jeon <tgih.jun@samsung.com>
-> >> wrote:
-> >> >> > @@ -943,7 +950,8 @@ static int mmc_blk_err_check(struct mmc_card
-> >> *card,
-> >> >> >         * kind.  If it was a write, we may have transitioned to
->       * program mode, which we have to wait for it to complete.
->       */
-> >> >> > -       if (!mmc_host_is_spi(card->host) && rq_data_dir(req) !=
-> >> READ) {
-> >> >> > +       if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) !=
-> >> READ) ||
-> >> >> > +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR))
-> Since the header's direction is WRITE I don't think we also need to check
-> if mq_mrq->packed_cmd == MMC_PACKED_WR_HDR since it will be covered by the
-> original condition.
-The header is written. But origin request is about read.
-That means rq_data_dir(req) is READ. So new condition is needed.
-> >> {
-> >> >> >                u32 status;
-> >> >> >                do {
-> >> >> >                        int err = get_card_status(card, &status,
-> 5);
-> A general question, not related specifically to packed commands - Do you
-> know why the status is not checked to see which error we got?
-This status is for checking whether the card is ready for new data.
-> >> >> > @@ -980,12 +988,67 @@ static int mmc_blk_err_check(struct mmc_card
-> >> *card,
-> >> >> >        if (!brq->data.bytes_xfered)
-> >> >> >                return MMC_BLK_RETRY;
-> >> >> >
-> >> >> > +       if (mq_mrq->packed_cmd != MMC_PACKED_NONE) {
-> >> >> > +               if (unlikely(brq->data.blocks << 9 !=
-> >> brq->data.bytes_xfered))
-> >> >> > +                       return MMC_BLK_PARTIAL;
-> >> >> > +               else
-> >> >> > +                       return MMC_BLK_SUCCESS;
-> >> >> > +       }
-> >> >> > +
-> >> >> >        if (blk_rq_bytes(req) != brq->data.bytes_xfered)
-> >> >> >                return MMC_BLK_PARTIAL;
-> >> >> >
-> >> >> >        return MMC_BLK_SUCCESS;
-> >> >> >  }
-> >> >> >
-> >> >> > +static int mmc_blk_packed_err_check(struct mmc_card *card, +
->                        struct mmc_async_req *areq)
-> >> >> > +{
-> >> >> > +       struct mmc_queue_req *mq_mrq = container_of(areq, struct
-> >> mmc_queue_req,
-> >> >> > +                                                   mmc_active); +
->       int err, check, status;
-> >> >> > +       u8 ext_csd[512];
-> >> >> > +
-> >> >> > +       check = mmc_blk_err_check(card, areq);
-> >> >> > +
-> >> >> > +       if (check == MMC_BLK_SUCCESS)
-> >> >> > +               return check;
-> I think we need to check the status for all cases and not only in case of
-> MMC_BLK_PARTIAL. For example, in cases where the header was traferred
-> successfully but had logic errors (wrong number of sectors etc.)
-> mmc_blk_err_check will return MMC_BLK_SUCCESS although the packed commands
-> failed.
-Similarly, Sahitya Tummala is already mentioned this.
-Other error case will be checked in next version.
-The case you suggested is about read or write?
-Device may detect error and stop transferring the data.
-> >> >> > +
-> >> >> > +       if (check == MMC_BLK_PARTIAL) {
-> >> >> > +               err = get_card_status(card, &status, 0);
-> >> >> > +               if (err)
-> >> >> > +                       return MMC_BLK_ABORT;
-> >> >> > +
-> >> >> > +               if (status & R1_EXP_EVENT) {
-> >> >> > +                       err = mmc_send_ext_csd(card, ext_csd); +
->                     if (err)
-> >> >> > +                               return MMC_BLK_ABORT;
-> >> >> > +
-> >> >> > +                       if ((ext_csd[EXT_CSD_EXP_EVENTS_STATUS +
-> 0]
-> why do we need the + 0?
-It is explicit expression, no more, no less.
-Actually, there is no need.
-> >> &
-> >> >> > +
-> >> EXT_CSD_PACKED_INDEXED_ERROR) {
-> >> >> > +                                       /* Make be 0-based */
-> The comment is not understood
-PACKED_FAILURE_INDEX starts from '1'
-It is converted to 0-base for use.
-> >> >> > +                                       mq_mrq->packed_fail_idx =
-> +
-> Thanks,
-> Maya Erez
-> --
-> Seny by a Consultant for Qualcomm innovation center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please consider this patch as an Acked by me.
+
+Regards,
+Nagalakshmi
+
+
+-----Original Message-----
+From: David Daney [mailto:ddaney.cavm@gmail.com] 
+Sent: Saturday, November 19, 2011 3:44 AM
+To: linux-kernel@vger.kernel.org; Moore, Eric; James Bottomley; Desai, Kashyap; DL-MPT Fusion Linux; Support; linux-scsi@vger.kernel.org
+Cc: Chandrakala Chavva; David Daney
+Subject: [PATCH] mptsas: Add device ID for SAS1068_820XELP.
+
+From: Chandrakala Chavva <cchavva@caviumnetworks.com>
+
+We need this new devid to be able to use this board.
+
+Signed-off-by: Chandrakala Chavva <cchavva@caviumnetworks.com>
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
+ drivers/message/fusion/lsi/mpi_cnfg.h |    1 +
+ drivers/message/fusion/mptsas.c       |    2 ++
+ 2 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/message/fusion/lsi/mpi_cnfg.h b/drivers/message/fusion/lsi/mpi_cnfg.h
+index 22027e7..d9bcfba 100644
+--- a/drivers/message/fusion/lsi/mpi_cnfg.h
++++ b/drivers/message/fusion/lsi/mpi_cnfg.h
+@@ -583,6 +583,7 @@ typedef struct _MSG_CONFIG_REPLY
+ #define MPI_MANUFACTPAGE_DEVID_SAS1066E             (0x005A)
+ #define MPI_MANUFACTPAGE_DEVID_SAS1068              (0x0054)
+ #define MPI_MANUFACTPAGE_DEVID_SAS1068E             (0x0058)
++#define MPI_MANUFACTPAGE_DEVID_SAS1068_820XELP      (0x0059)
+ #define MPI_MANUFACTPAGE_DEVID_SAS1078              (0x0062)
+ 
+ 
+diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
+index 9d95042..551262e 100644
+--- a/drivers/message/fusion/mptsas.c
++++ b/drivers/message/fusion/mptsas.c
+@@ -5376,6 +5376,8 @@ static struct pci_device_id mptsas_pci_table[] = {
+ 		PCI_ANY_ID, PCI_ANY_ID },
+ 	{ PCI_VENDOR_ID_LSI_LOGIC, MPI_MANUFACTPAGE_DEVID_SAS1078,
+ 		PCI_ANY_ID, PCI_ANY_ID },
++	{ PCI_VENDOR_ID_LSI_LOGIC, MPI_MANUFACTPAGE_DEVID_SAS1068_820XELP,
++		PCI_ANY_ID, PCI_ANY_ID },
+ 	{0}	/* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(pci, mptsas_pci_table);
+-- 
+1.7.2.3
 
