@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab1K1Xd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:33:28 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:46502 "EHLO e5.ny.us.ibm.com"
+	id S1755583Ab1K1Xd0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:33:26 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:44562 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754655Ab1K1XdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:33:21 -0500
+	id S1755209Ab1K1XdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:33:22 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,255 +15,218 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 01/13] rcu: Add rcutorture CPU-hotplug capability
-Date: Mon, 28 Nov 2011 15:32:53 -0800
-Message-Id: <1322523185-456-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 08/13] rcu: Eliminate RCU_FAST_NO_HZ grace-period hang
+Date: Mon, 28 Nov 2011 15:33:00 -0800
+Message-Id: <1322523185-456-8-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20111128233212.GA32279@linux.vnet.ibm.com>
 References: <20111128233212.GA32279@linux.vnet.ibm.com>
-x-cbid: 11112823-5930-0000-0000-000002A601CD
+x-cbid: 11112823-1976-0000-0000-000006F05E4D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-Running CPU-hotplug operations concurrently with rcutorture has
-historically been a good way to find bugs in both RCU and CPU hotplug.
-This commit therefore adds an rcutorture module parameter called
-"onoff_interval" that causes a randomly selected CPU-hotplug operation to
-be executed at the specified interval, in seconds.  The default value of
-"onoff_interval" is zero, which disables rcutorture-instigated CPU-hotplug
-operations.
+With the new implementation of RCU_FAST_NO_HZ, it was possible to hang
+RCU grace periods as follows:
+
+o	CPU 0 attempts to go idle, cycles several times through the
+	rcu_prepare_for_idle() loop, then goes dyntick-idle when
+	RCU needs nothing more from it, while still having at least
+	on RCU callback pending.
+
+o	CPU 1 goes idle with no callbacks.
+
+Both CPUs can then stay in dyntick-idle mode indefinitely, preventing
+the RCU grace period from ever completing, possibly hanging the system.
+
+This commit therefore prevents CPUs that have RCU callbacks from entering
+dyntick-idle mode.  This approach also eliminates the need for the
+end-of-grace-period IPIs used previously.
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/RCU/torture.txt |    8 +++
- kernel/rcutorture.c           |  117 +++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 120 insertions(+), 5 deletions(-)
+ include/trace/events/rcu.h |    1 -
+ kernel/rcutree.c           |    2 -
+ kernel/rcutree.h           |    3 --
+ kernel/rcutree_plugin.h    |   78 +------------------------------------------
+ 4 files changed, 2 insertions(+), 82 deletions(-)
 
-diff --git a/Documentation/RCU/torture.txt b/Documentation/RCU/torture.txt
-index af40929..d67068d 100644
---- a/Documentation/RCU/torture.txt
-+++ b/Documentation/RCU/torture.txt
-@@ -61,6 +61,14 @@ nreaders	This is the number of RCU reading threads supported.
- 		To properly exercise RCU implementations with preemptible
- 		read-side critical sections.
+diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
+index debe453..8dd6fcb 100644
+--- a/include/trace/events/rcu.h
++++ b/include/trace/events/rcu.h
+@@ -287,7 +287,6 @@ TRACE_EVENT(rcu_dyntick,
+  *
+  *	"No callbacks": Nothing to do, no callbacks on this CPU.
+  *	"In holdoff": Nothing to do, holding off after unsuccessful attempt.
+- *	"Dyntick with callbacks": Callbacks remain, but RCU doesn't need CPU.
+  *	"Begin holdoff": Attempt failed, don't retry until next jiffy.
+  *	"More callbacks": Still more callbacks, try again to clear them out.
+  *	"Callbacks drained": All callbacks processed, off to dyntick idle!
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 7fb8b0e..13fab4a 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1086,7 +1086,6 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	 * callbacks are waiting on the grace period that just now
+ 	 * completed.
+ 	 */
+-	rcu_schedule_wake_gp_end();
+ 	if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
+ 		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
  
-+onoff_interval
-+		The number of seconds between each attempt to execute a
-+		randomly selected CPU-hotplug operation.  Defaults to
-+		zero, which disables CPU hotplugging.  In HOTPLUG_CPU=n
-+		kernels, rcutorture will silently refuse to do any
-+		CPU-hotplug operations regardless of what value is
-+		specified for onoff_interval.
-+
- shuffle_interval
- 		The number of seconds to keep the test threads affinitied
- 		to a particular subset of the CPUs, defaults to 3 seconds.
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index eed9f46..1e422ae 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -64,6 +64,7 @@ static int irqreader = 1;	/* RCU readers from irq (timers). */
- static int fqs_duration;	/* Duration of bursts (us), 0 to disable. */
- static int fqs_holdoff;		/* Hold time within burst (us). */
- static int fqs_stutter = 3;	/* Wait time between bursts (s). */
-+static int onoff_interval;	/* Wait time between CPU hotplugs, 0=disable. */
- static int shutdown_secs;	/* Shutdown time (s).  <=0 for no shutdown. */
- static int test_boost = 1;	/* Test RCU prio boost: 0=no, 1=maybe, 2=yes. */
- static int test_boost_interval = 7; /* Interval between boost tests, seconds. */
-@@ -92,6 +93,8 @@ module_param(fqs_holdoff, int, 0444);
- MODULE_PARM_DESC(fqs_holdoff, "Holdoff time within fqs bursts (us)");
- module_param(fqs_stutter, int, 0444);
- MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
-+module_param(onoff_interval, int, 0444);
-+MODULE_PARM_DESC(onoff_interval, "Time between CPU hotplugs (s), 0=disable");
- module_param(shutdown_secs, int, 0444);
- MODULE_PARM_DESC(shutdown_secs, "Shutdown time (s), zero to disable.");
- module_param(test_boost, int, 0444);
-@@ -123,6 +126,9 @@ static struct task_struct *stutter_task;
- static struct task_struct *fqs_task;
- static struct task_struct *boost_tasks[NR_CPUS];
- static struct task_struct *shutdown_task;
-+#ifdef CONFIG_HOTPLUG_CPU
-+static struct task_struct *onoff_task;
-+#endif /* #ifdef CONFIG_HOTPLUG_CPU */
- 
- #define RCU_TORTURE_PIPE_LEN 10
- 
-@@ -153,6 +159,10 @@ static long n_rcu_torture_boost_rterror;
- static long n_rcu_torture_boost_failure;
- static long n_rcu_torture_boosts;
- static long n_rcu_torture_timers;
-+static long n_offline_attempts;
-+static long n_offline_successes;
-+static long n_online_attempts;
-+static long n_online_successes;
- static struct list_head rcu_torture_removed;
- static cpumask_var_t shuffle_tmp_mask;
- 
-@@ -1084,7 +1094,8 @@ rcu_torture_printk(char *page)
- 	cnt += sprintf(&page[cnt],
- 		       "rtc: %p ver: %lu tfle: %d rta: %d rtaf: %d rtf: %d "
- 		       "rtmbe: %d rtbke: %ld rtbre: %ld "
--		       "rtbf: %ld rtb: %ld nt: %ld",
-+		       "rtbf: %ld rtb: %ld nt: %ld "
-+		       "onoff: %ld/%ld:%ld/%ld",
- 		       rcu_torture_current,
- 		       rcu_torture_current_version,
- 		       list_empty(&rcu_torture_freelist),
-@@ -1096,7 +1107,11 @@ rcu_torture_printk(char *page)
- 		       n_rcu_torture_boost_rterror,
- 		       n_rcu_torture_boost_failure,
- 		       n_rcu_torture_boosts,
--		       n_rcu_torture_timers);
-+		       n_rcu_torture_timers,
-+		       n_online_successes,
-+		       n_online_attempts,
-+		       n_offline_successes,
-+		       n_offline_attempts);
- 	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
- 	    n_rcu_torture_boost_ktrerror != 0 ||
- 	    n_rcu_torture_boost_rterror != 0 ||
-@@ -1260,12 +1275,14 @@ rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
- 		"shuffle_interval=%d stutter=%d irqreader=%d "
- 		"fqs_duration=%d fqs_holdoff=%d fqs_stutter=%d "
- 		"test_boost=%d/%d test_boost_interval=%d "
--		"test_boost_duration=%d shutdown_secs=%d\n",
-+		"test_boost_duration=%d shutdown_secs=%d "
-+		"onoff_interval=%d\n",
- 		torture_type, tag, nrealreaders, nfakewriters,
- 		stat_interval, verbose, test_no_idle_hz, shuffle_interval,
- 		stutter, irqreader, fqs_duration, fqs_holdoff, fqs_stutter,
- 		test_boost, cur_ops->can_boost,
--		test_boost_interval, test_boost_duration, shutdown_secs);
-+		test_boost_interval, test_boost_duration, shutdown_secs,
-+		onoff_interval);
+@@ -1672,7 +1671,6 @@ static void rcu_process_callbacks(struct softirq_action *unused)
+ 				&__get_cpu_var(rcu_sched_data));
+ 	__rcu_process_callbacks(&rcu_bh_state, &__get_cpu_var(rcu_bh_data));
+ 	rcu_preempt_process_callbacks();
+-	rcu_wake_cpus_for_gp_end();
+ 	trace_rcu_utilization("End RCU core");
  }
  
- static struct notifier_block rcutorture_shutdown_nb = {
-@@ -1338,7 +1355,7 @@ rcu_torture_shutdown(void *arg)
- 		schedule_timeout_interruptible(delta);
- 		jiffies_snap = ACCESS_ONCE(jiffies);
- 	}
--	if (ULONG_CMP_LT(jiffies, shutdown_time)) {
-+	if (kthread_should_stop()) {
- 		VERBOSE_PRINTK_STRING("rcu_torture_shutdown task stopping");
- 		return 0;
- 	}
-@@ -1352,6 +1369,94 @@ rcu_torture_shutdown(void *arg)
- 	return 0;
- }
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index ea32405..70d8a55 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -88,7 +88,6 @@ struct rcu_dynticks {
+ 				    /* Process level is worth LLONG_MAX/2. */
+ 	int dynticks_nmi_nesting;   /* Track NMI nesting level. */
+ 	atomic_t dynticks;	    /* Even value for idle, else odd. */
+-	int wake_gp_end;	    /* A GP ended, need to wake up CPUs. */
+ };
  
-+#ifdef CONFIG_HOTPLUG_CPU
-+
-+/*
-+ * Execute random CPU-hotplug operations at the interval specified
-+ * by the onoff_interval.
-+ */
-+static int
-+rcu_torture_onoff(void *arg)
-+{
-+	int cpu;
-+	int maxcpu = -1;
-+	DEFINE_RCU_RANDOM(rand);
-+
-+	VERBOSE_PRINTK_STRING("rcu_torture_onoff task started");
-+	for_each_online_cpu(cpu)
-+		maxcpu = cpu;
-+	WARN_ON(maxcpu < 0);
-+	while (!kthread_should_stop()) {
-+		cpu = (rcu_random(&rand) >> 4) % (maxcpu + 1);
-+		if (cpu_online(cpu)) {
-+			if (verbose)
-+				printk(KERN_ALERT "%s" TORTURE_FLAG
-+				       "rcu_torture_onoff task: offlining %d\n",
-+				       torture_type, cpu);
-+			n_offline_attempts++;
-+			if (cpu_down(cpu) == 0) {
-+				if (verbose)
-+					printk(KERN_ALERT "%s" TORTURE_FLAG
-+					       "rcu_torture_onoff task: "
-+					       "offlined %d\n",
-+					       torture_type, cpu);
-+				n_offline_successes++;
-+			}
-+		} else {
-+			if (verbose)
-+				printk(KERN_ALERT "%s" TORTURE_FLAG
-+				       "rcu_torture_onoff task: onlining %d\n",
-+				       torture_type, cpu);
-+			n_online_attempts++;
-+			if (cpu_up(cpu) == 0) {
-+				if (verbose)
-+					printk(KERN_ALERT "%s" TORTURE_FLAG
-+					       "rcu_torture_onoff task: "
-+					       "onlined %d\n",
-+					       torture_type, cpu);
-+				n_online_successes++;
-+			}
-+		}
-+		schedule_timeout_interruptible(onoff_interval * HZ);
-+	}
-+	VERBOSE_PRINTK_STRING("rcu_torture_onoff task stopping");
-+	return 0;
-+}
-+
-+static int
-+rcu_torture_onoff_init(void)
-+{
-+	if (onoff_interval <= 0)
-+		return 0;
-+	onoff_task = kthread_run(rcu_torture_onoff, NULL, "rcu_torture_onoff");
-+	if (IS_ERR(onoff_task)) {
-+		onoff_task = NULL;
-+		return PTR_ERR(onoff_task);
-+	}
-+	return 0;
-+}
-+
-+static void rcu_torture_onoff_cleanup(void)
-+{
-+	if (onoff_task == NULL)
-+		return;
-+	VERBOSE_PRINTK_STRING("Stopping rcu_torture_onoff task");
-+	kthread_stop(onoff_task);
-+}
-+
-+#else /* #ifdef CONFIG_HOTPLUG_CPU */
-+
-+static void
-+rcu_torture_onoff_init(void)
-+{
-+}
-+
-+static void rcu_torture_onoff_cleanup(void)
-+{
-+}
-+
-+#endif /* #else #ifdef CONFIG_HOTPLUG_CPU */
-+
- static int rcutorture_cpu_notify(struct notifier_block *self,
- 				 unsigned long action, void *hcpu)
+ /* RCU's kthread states for tracing. */
+@@ -469,7 +468,5 @@ static void rcu_yield(void (*f)(unsigned long), unsigned long arg);
+ static void rcu_cpu_kthread_setrt(int cpu, int to_rt);
+ static void __cpuinit rcu_prepare_kthreads(int cpu);
+ static void rcu_prepare_for_idle(int cpu);
+-static void rcu_wake_cpus_for_gp_end(void);
+-static void rcu_schedule_wake_gp_end(void);
+ 
+ #endif /* #ifndef RCU_TREE_NONCORE */
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index c4daf1e..3d84dbc 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -1964,28 +1964,11 @@ static void rcu_prepare_for_idle(int cpu)
  {
-@@ -1460,6 +1565,7 @@ rcu_torture_cleanup(void)
- 		VERBOSE_PRINTK_STRING("Stopping rcu_torture_shutdown task");
- 		kthread_stop(shutdown_task);
- 	}
-+	rcu_torture_onoff_cleanup();
+ }
  
- 	/* Wait for all RCU callbacks to fire.  */
+-/*
+- * CPUs are never putting themselves to sleep with callbacks pending,
+- * so there is no need to awaken them.
+- */
+-static void rcu_wake_cpus_for_gp_end(void)
+-{
+-}
+-
+-/*
+- * CPUs are never putting themselves to sleep with callbacks pending,
+- * so there is no need to schedule the act of awakening them.
+- */
+-static void rcu_schedule_wake_gp_end(void)
+-{
+-}
+-
+ #else /* #if !defined(CONFIG_RCU_FAST_NO_HZ) */
  
-@@ -1687,6 +1793,7 @@ rcu_torture_init(void)
- 			goto unwind;
- 		}
+ #define RCU_NEEDS_CPU_FLUSHES 5
+ static DEFINE_PER_CPU(int, rcu_dyntick_drain);
+ static DEFINE_PER_CPU(unsigned long, rcu_dyntick_holdoff);
+-static DEFINE_PER_CPU(bool, rcu_awake_at_gp_end);
+ 
+ /*
+  * Allow the CPU to enter dyntick-idle mode if either: (1) There are no
+@@ -2032,26 +2015,16 @@ static void rcu_prepare_for_idle(int cpu)
+ 	local_irq_save(flags);
+ 
+ 	/*
+-	 * If there are no callbacks on this CPU or if RCU has no further
+-	 * need for this CPU at the moment, enter dyntick-idle mode.
+-	 * Also reset state so as to not prejudice later attempts.
++	 * If there are no callbacks on this CPU, enter dyntick-idle mode.
++	 * Also reset state to avoid prejudicing later attempts.
+ 	 */
+ 	if (!rcu_cpu_has_callbacks(cpu)) {
+ 		per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
+ 		per_cpu(rcu_dyntick_drain, cpu) = 0;
+-		per_cpu(rcu_awake_at_gp_end, cpu) = 0;
+ 		local_irq_restore(flags);
+ 		trace_rcu_prep_idle("No callbacks");
+ 		return;
  	}
-+	rcu_torture_onoff_init();
- 	register_reboot_notifier(&rcutorture_shutdown_nb);
- 	rcutorture_record_test_transition();
- 	mutex_unlock(&fullstop_mutex);
+-	if (!rcu_pending(cpu)) {
+-		per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
+-		per_cpu(rcu_dyntick_drain, cpu) = 0;
+-		per_cpu(rcu_awake_at_gp_end, cpu) = 1;
+-		local_irq_restore(flags);
+-		trace_rcu_prep_idle("Dyntick with callbacks");
+-		return;  /* Nothing to do immediately. */
+-	}
+ 
+ 	/*
+ 	 * If in holdoff mode, just return.  We will presumably have
+@@ -2067,7 +2040,6 @@ static void rcu_prepare_for_idle(int cpu)
+ 	if (per_cpu(rcu_dyntick_drain, cpu) <= 0) {
+ 		/* First time through, initialize the counter. */
+ 		per_cpu(rcu_dyntick_drain, cpu) = RCU_NEEDS_CPU_FLUSHES;
+-		per_cpu(rcu_awake_at_gp_end, cpu) = 0;
+ 	} else if (--per_cpu(rcu_dyntick_drain, cpu) <= 0) {
+ 		/* We have hit the limit, so time to give up. */
+ 		per_cpu(rcu_dyntick_holdoff, cpu) = jiffies;
+@@ -2113,50 +2085,4 @@ static void rcu_prepare_for_idle(int cpu)
+ 	}
+ }
+ 
+-/*
+- * Wake up a CPU by invoking the RCU core.  Intended for use by
+- * rcu_wake_cpus_for_gp_end(), which passes this function to
+- * smp_call_function_single().
+- */
+-static void rcu_wake_cpu(void *unused)
+-{
+-	trace_rcu_prep_idle("CPU awakened at GP end");
+-	invoke_rcu_core();
+-}
+-
+-/*
+- * If an RCU grace period ended recently, scan the rcu_awake_at_gp_end
+- * per-CPU variables, and wake up any CPUs that requested a wakeup.
+- */
+-static void rcu_wake_cpus_for_gp_end(void)
+-{
+-	int cpu;
+-	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
+-
+-	if (!rdtp->wake_gp_end)
+-		return;
+-	rdtp->wake_gp_end = 0;
+-	for_each_online_cpu(cpu) {
+-		if (per_cpu(rcu_awake_at_gp_end, cpu)) {
+-			per_cpu(rcu_awake_at_gp_end, cpu) = 0;
+-			smp_call_function_single(cpu, rcu_wake_cpu, NULL, 0);
+-		}
+-	}
+-}
+-
+-/*
+- * A grace period has just ended, and so we will need to awaken CPUs
+- * that now have work to do.  But we cannot send IPIs with interrupts
+- * disabled, so just set a flag so that this will happen upon exit
+- * from RCU core processing.
+- */
+-static void rcu_schedule_wake_gp_end(void)
+-{
+-	struct rcu_dynticks *rdtp = &__get_cpu_var(rcu_dynticks);
+-
+-	rdtp->wake_gp_end = 1;
+-}
+-
+-/* @@@ need tracing as well. */
+-
+ #endif /* #else #if !defined(CONFIG_RCU_FAST_NO_HZ) */
 -- 
 1.7.3.2
 
