@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab1K1MYb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 07:24:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:48265 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab1K1MYa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 07:24:30 -0500
-Date: Mon, 28 Nov 2011 12:24:16 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Chris Mason <chris.mason@oracle.com>, Josef Bacik <josef@redhat.com>,
-        Miao Xie <miaox@cn.fujitsu.com>,
-        Ivan Vilata i Balaguer <ivan@selidor.net>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no
- read/write devices V2
-Message-ID: <20111128122416.GA25996@localhost>
-References: <1312205910-13053-1-git-send-email-apw@canonical.com>
- <20111128121041.GA19498@elie.hsd1.il.comcast.net>
+	id S1753604Ab1K1M2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 07:28:49 -0500
+Received: from bender.cm4all.net ([87.106.27.49]:44323 "EHLO bender.cm4all.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752619Ab1K1M2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 07:28:47 -0500
+Date: Mon, 28 Nov 2011 13:30:57 +0100
+From: Max Kellermann <mk@cm4all.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/namei: waiting for mutex during name lookups is
+ "killable"
+Message-ID: <20111128123056.GA19907@rabbit.intern.cm-ag>
+References: <20111128113918.23050.25938.stgit@rabbit.intern.cm-ag>
+ <20111128121936.GR4387@parisc-linux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111128121041.GA19498@elie.hsd1.il.comcast.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111128121936.GR4387@parisc-linux.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 06:11:06AM -0600, Jonathan Nieder wrote:
-> Hi,
+On 2011/11/28 13:19, Matthew Wilcox <matthew@wil.cx> wrote:
+> On Mon, Nov 28, 2011 at 12:39:18PM +0100, Max Kellermann wrote:
+> > Use mutex_lock_killable() instead of mutex_lock() during name lookups,
+> > to allow killing the process while it's waiting.
 > 
-> Andy Whitcroft wrote:
-> 
-> > When we mount a btrfs filesystem from read-only media there will be no
-> > read/write devices; for example mounting an SD card with its lock enabled.
-> > This triggers an immediate BUG during mount:
-> >
-> >   kernel BUG at .../fs/btrfs/super.c:984!
-> [...]
-> > BugLink: http://bugs.launchpad.net/bugs/816770
-> > Signed-off-by: Andy Whitcroft <apw@canonical.com>
-> > ---
-> 
-> Fixes http://bugs.debian.org/649847
-> Tested-by: Ivan Vilata i Balaguer <ivan@selidor.net>
-> 
-> This patch fixes a regression introduced by 6d07bcec969a ("btrfs: fix
-> wrong free space information of btrfs"), which hit mainline in
-> v2.6.38-rc1.  Josef Bacik acked the patch, but I can't seem to find it
-> in linux-next, linux-btrfs, or Josef's btrfs-work tree.  Maybe it was
-> just forgotten.
-> 
-> What can I do to help this patch get unstuck?
+> This is cool.  Could you describe what situations this mutex gets held
+> for a user-noticable length of time, and how you tested this patch?
 
-I had completely forgotten about this one.  I wonder where it did get
-to.  I seem to remember testing this in house successfully.
+I experienced lots of blocked unkillable processes in an environment
+that uses NFS mounts extensively.
 
--apw
+There seems to be a lot wrong with Linux's NFS client; it waits for
+RPC responses synchronously while the VFS layer holds mutexes, a
+behaviour that should be avoided.  My patch does not try to address
+this core issue.  Instead, it attempts to mitigate a nasty side
+effect.
+
+Most blocked processes were hanging inside stat(), in the code
+locations that my patch changes.  After this patch, I could verify
+that the affected processes could be killed, instead of hanging in the
+task list until the one process holding the mutex would give up the
+RPC request.
+
+The patch has been in production on a few heavily loaded servers for
+nearly a week, and I did not observe any negative side effects.
+
+Max
