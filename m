@@ -1,134 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab1K1HOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:14:51 -0500
-Received: from ozlabs.org ([203.10.76.45]:40033 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288Ab1K1HOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:14:50 -0500
-Date: Mon, 28 Nov 2011 18:14:46 +1100
-From: Anton Blanchard <anton@samba.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, David Miller <davem@davemloft.net>,
-        Matt Mackall <mpm@selenic.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: [PATCH] net: Fix corruption in /proc/*/net/dev_mcast
-Message-ID: <20111128181446.2ab784d0@kryten>
-In-Reply-To: <1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <1321866845.3831.7.camel@lappy>
-	<1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752004Ab1K1HQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:16:04 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:53790 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab1K1HQC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:16:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111127105000.GL2557@redhat.com>
+References: <1322188529-11609-1-git-send-email-kernelfans@gmail.com>
+	<1322361735-21428-1-git-send-email-kernelfans@gmail.com>
+	<4ED212C7.1080901@redhat.com>
+	<20111127105000.GL2557@redhat.com>
+Date: Mon, 28 Nov 2011 15:16:01 +0800
+Message-ID: <CAFgQCTscektJsC-2ThQn7FhHA7=Qf4t3t0+X+i0zT_yZZjwL0g@mail.gmail.com>
+Subject: Re: [Qemu-devel] [PATCH 2/2] kvm: exit to userspace with reason KVM_EXIT_VCPU_DEAD
+From: Liu ping fan <kernelfans@gmail.com>
+To: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>
+Cc: aliguori@us.ibm.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        linux-kernel@vger.kernel.org, ryanh@us.ibm.com, jan.kiszka@web.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 27, 2011 at 6:50 PM, Gleb Natapov <gleb@redhat.com> wrote:
+> On Sun, Nov 27, 2011 at 12:36:55PM +0200, Avi Kivity wrote:
+>> On 11/27/2011 04:42 AM, Liu Ping Fan wrote:
+>> > From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>> >
+>> > The vcpu can be safely released when
+>> > --1.guest tells us that the vcpu is not needed any longer.
+>> > --2.vcpu hits the last instruction _halt_
+>> >
+>> > If both of the conditions are satisfied, kvm exits to userspace
+>> > with the reason vcpu dead. So the user thread can exit safely.
+>> >
+>> >
+>>
+>> Seems to be completely unnecessary.  If you want to exit from the vcpu
+>> thread, send it a signal.
+>>
+Hi Avi and Gleb,
 
-Hi,
+First, I wanted to make sure my assumption is right, so I can grab
+your meaning more clearly -:). Could you elaborate it for me, thanks.
 
-> I got the following output when running some tests (I'm not really sure
-> what exactly happened when this bug was triggered):
-> 
-> [13850.947279] =============================================================================
-> [13850.948024] BUG kmalloc-8: Redzone overwritten
-> [13850.948024] -----------------------------------------------------------------------------
-> [13850.948024] 
-> [13850.948024] INFO: 0xffff8800104f6d28-0xffff8800104f6d2b. First byte 0x0 instead of 0xcc
-> [13850.948024] INFO: Allocated in __seq_open_private+0x20/0x5e age=4436 cpu=0 pid=17295
-> [13850.948024] 	__slab_alloc.clone.46+0x3e7/0x456
-> [13850.948024] 	__kmalloc+0x8c/0x110
-> [13850.948024] 	__seq_open_private+0x20/0x5e
-> [13850.948024] 	seq_open_net+0x3b/0x5d
-> [13850.948024] 	dev_mc_seq_open+0x15/0x17
-> [13850.948024] 	proc_reg_open+0xad/0x127
+I had thought that when a vcpu was being removed from guest, kvm must
+satisfy the following conditions to safely remove the vcpu:
+--1. The tasks on vcpu in GUEST  have already been migrated to other
+vcpus and ONLY idle_task left ---- The CPU_DEAD is the checkpoint.
+--2. We must wait the idle task to hit native_halt() in GUEST, till
+that time, this vcpu is no needed even by idle_task. In KVM, the vcpu
+thread will finally sit on "kvm_vcpu_block(vcpu);"
+We CAN NOT suppose the sequence of the two condition because they come
+from different threads.  Am I right?
 
-I just hit this during my testing. Isn't there another bug lurking?
+And here comes my question,
+--1. I think the signal will make vcpu_run exit to user, but is it
+allow vcpu thread to finally call  "kernel/exit.c : void do_exit(long
+code)" in current code in kvm or in qemu?
+--2. If we got CPU_DEAD event, and then send a signal to vcpu thread,
+could we ensure that we have already sit on "kvm_vcpu_block(vcpu);"
 
-Anton
---
+Thanks and regards,
+ping fan
+
+> Also if guest "tells us that the vcpu is not needed any longer" (via
+> ACPI I presume) and vcpu actually doing something critical instead of
+> sitting in 1:hlt; jmp 1b loop then it is guest's problem if it stops
+> working after vcpu destruction.
+>
 
 
-With slub debugging on I see red zone issues in /proc/*/net/dev_mcast:
-
-=============================================================================
-BUG kmalloc-8: Redzone overwritten
------------------------------------------------------------------------------
-
-INFO: 0xc0000000de9dec48-0xc0000000de9dec4b. First byte 0x0 instead of 0xcc
-INFO: Allocated in .__seq_open_private+0x30/0xa0 age=0 cpu=5 pid=3896
-	.__kmalloc+0x1e0/0x2d0
-	.__seq_open_private+0x30/0xa0
-	.seq_open_net+0x60/0xe0
-	.dev_mc_seq_open+0x4c/0x70
-	.proc_reg_open+0xd8/0x260
-	.__dentry_open.clone.11+0x2b8/0x400
-	.do_last+0xf4/0x950
-	.path_openat+0xf8/0x480
-	.do_filp_open+0x48/0xc0
-	.do_sys_open+0x140/0x250
-	syscall_exit+0x0/0x40
-
-dev_mc_seq_ops uses dev_seq_start/next/stop but only allocates
-sizeof(struct seq_net_private) of private data, whereas it expects
-sizeof(struct dev_iter_state):
-
-struct dev_iter_state {
-	struct seq_net_private p;
-	unsigned int pos; /* bucket << BUCKET_SPACE + offset */
-};
-
-Create dev_seq_open_ops and use it so we don't have to expose
-struct dev_iter_state.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
-
-Index: linux-net/include/linux/netdevice.h
-===================================================================
---- linux-net.orig/include/linux/netdevice.h	2011-11-28 17:55:51.469508056 +1100
-+++ linux-net/include/linux/netdevice.h	2011-11-28 17:55:52.985535812 +1100
-@@ -2536,6 +2536,8 @@ extern void		net_disable_timestamp(void)
- extern void *dev_seq_start(struct seq_file *seq, loff_t *pos);
- extern void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos);
- extern void dev_seq_stop(struct seq_file *seq, void *v);
-+extern int dev_seq_open_ops(struct inode *inode, struct file *file,
-+			    const struct seq_operations *ops);
- #endif
- 
- extern int netdev_class_create_file(struct class_attribute *class_attr);
-Index: linux-net/net/core/dev.c
-===================================================================
---- linux-net.orig/net/core/dev.c	2011-11-28 17:55:51.481508276 +1100
-+++ linux-net/net/core/dev.c	2011-11-28 17:55:52.989535885 +1100
-@@ -4282,6 +4282,12 @@ static int dev_seq_open(struct inode *in
- 			    sizeof(struct dev_iter_state));
- }
- 
-+int dev_seq_open_ops(struct inode *inode, struct file *file,
-+		     const struct seq_operations *ops)
-+{
-+	return seq_open_net(inode, file, ops, sizeof(struct dev_iter_state));
-+}
-+
- static const struct file_operations dev_seq_fops = {
- 	.owner	 = THIS_MODULE,
- 	.open    = dev_seq_open,
-Index: linux-net/net/core/dev_addr_lists.c
-===================================================================
---- linux-net.orig/net/core/dev_addr_lists.c	2011-11-28 17:55:47.845441705 +1100
-+++ linux-net/net/core/dev_addr_lists.c	2011-11-28 17:55:52.989535885 +1100
-@@ -696,8 +696,7 @@ static const struct seq_operations dev_m
- 
- static int dev_mc_seq_open(struct inode *inode, struct file *file)
- {
--	return seq_open_net(inode, file, &dev_mc_seq_ops,
--			    sizeof(struct seq_net_private));
-+	return dev_seq_open_ops(inode, file, &dev_mc_seq_ops);
- }
- 
- static const struct file_operations dev_mc_seq_fops = {
+> --
+>                        Gleb.
+>
