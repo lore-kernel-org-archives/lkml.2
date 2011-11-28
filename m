@@ -1,348 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab1K1TNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:13:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28225 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752190Ab1K1TNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:13:52 -0500
-Date: Mon, 28 Nov 2011 20:07:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH 5/5] uprobes: remove the uprobes_xol_area code
-Message-ID: <20111128190746.GF4602@redhat.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com> <20111128190614.GA4602@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111128190614.GA4602@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754116Ab1K1TOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:14:06 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15408 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985Ab1K1TOD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 14:14:03 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 28 Nov 2011 11:13:52 -0800
+Subject: Re: [PATCH v5] power: bq20z75: devicetree init support
+From: Rhyland Klein <rklein@nvidia.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20111124184215.GA29135@oksana.dev.rtsoft.ru>
+References: <1316031547-18281-1-git-send-email-rklein@nvidia.com>
+	 <20111124184215.GA29135@oksana.dev.rtsoft.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Nov 2011 11:13:21 -0800
+Message-ID: <1322507601.3888.2.camel@rklein-linux2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the no longer needed uprobes_xol_area code.
+On Thu, 2011-11-24 at 10:42 -0800, Anton Vorontsov wrote:
+> Hello Rhyland,
+> 
+> Got this:
+> 
+>   CC [M]  drivers/power/bq20z75.o
+> drivers/power/bq20z75.c: In function ‘bq20z75_of_populate_pdata’:
+> drivers/power/bq20z75.c:630:21: error: storage size of ‘gpio_flags’ isn’t known
+> drivers/power/bq20z75.c:668:2: error: implicit declaration of function ‘of_get_named_gpio_flags’ [-Werror=implicit-function-declaration]
+> drivers/power/bq20z75.c:671:19: error: ‘OF_GPIO_ACTIVE_LOW’ undeclared (first use in this function)
+> drivers/power/bq20z75.c:671:19: note: each undeclared identifier is reported only once for each function it appears in
+> drivers/power/bq20z75.c:630:21: warning: unused variable ‘gpio_flags’ [-Wunused-variable]
+> drivers/power/bq20z75.c:627:29: warning: unused variable ‘dtid’ [-Wunused-variable]
+> 
+> I fixed this by...
+> 
+> On Wed, Sep 14, 2011 at 01:19:07PM -0700, Rhyland Klein wrote:
+> 
+> > +#if defined(CONFIG_OF)
+> > +#include <linux/of_device.h>
+> 
+> Adding linux/of_gpio.h
+> 
+> > +static const struct of_device_id bq20z75_dt_ids[] = {
+> > +	{ .compatible = "ti,bq20z75" },
+> > +	{ }
+> > +};
+> > +MODULE_DEVICE_TABLE(i2c, bq20z75_dt_ids);
+> > +
+> > +static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
+> > +	struct i2c_client *client)
+> > +{
+> > +	const struct of_device_id *dtid;
+> 
+> And deleting that line.
+> 
+> 
+> Applied to battery-2.6.git, but please double check if everything
+> is OK.
+> 
+> Thanks,
+> 
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/mm_types.h |    1 -
- include/linux/uprobes.h  |   24 ------
- kernel/fork.c            |    2 -
- kernel/uprobes.c         |  198 ----------------------------------------------
- 4 files changed, 0 insertions(+), 225 deletions(-)
+Yah, sorry about that. Seems things have changed a bit since I
+originally sent out the patch. I synced battery-2.6 and everything looks
+great.
 
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 2595c9c..b3f1ece 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -392,7 +392,6 @@ struct mm_struct {
- #endif
- #ifdef CONFIG_UPROBES
- 	atomic_t mm_uprobes_count;
--	struct uprobes_xol_area *uprobes_xol_area;
- #endif
- };
- 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index bb59a66..4f92272 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -100,26 +100,6 @@ struct uprobe_task {
- 	struct uprobe *active_uprobe;
- };
- 
--/*
-- * On a breakpoint hit, thread contests for a slot.  It free the
-- * slot after singlestep.  Only definite number of slots are
-- * allocated.
-- */
--
--struct uprobes_xol_area {
--	wait_queue_head_t wq;	/* if all slots are busy */
--	atomic_t slot_count;	/* currently in use slots */
--	unsigned long *bitmap;	/* 0 = free slot */
--	struct page *page;
--
--	/*
--	 * We keep the vma's vm_start rather than a pointer to the vma
--	 * itself.  The probed process or a naughty kernel module could make
--	 * the vma go away, and we must handle that reasonably gracefully.
--	 */
--	unsigned long vaddr;		/* Page(s) of instruction slots */
--};
--
- #ifdef CONFIG_UPROBES
- extern int __weak set_bkpt(struct mm_struct *mm, struct uprobe *uprobe,
- 							unsigned long vaddr);
-@@ -131,7 +111,6 @@ extern int register_uprobe(struct inode *inode, loff_t offset,
- extern void unregister_uprobe(struct inode *inode, loff_t offset,
- 				struct uprobe_consumer *consumer);
- extern void free_uprobe_utask(struct task_struct *tsk);
--extern void free_uprobes_xol_area(struct mm_struct *mm);
- extern int mmap_uprobe(struct vm_area_struct *vma);
- extern void munmap_uprobe(struct vm_area_struct *vma);
- extern unsigned long __weak get_uprobe_bkpt_addr(struct pt_regs *regs);
-@@ -174,8 +153,5 @@ static inline unsigned long get_uprobe_bkpt_addr(struct pt_regs *regs)
- static inline void free_uprobe_utask(struct task_struct *tsk)
- {
- }
--static inline void free_uprobes_xol_area(struct mm_struct *mm)
--{
--}
- #endif /* CONFIG_UPROBES */
- #endif	/* _LINUX_UPROBES_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 166ee1b..a6b1757 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -553,7 +553,6 @@ void mmput(struct mm_struct *mm)
- 	might_sleep();
- 
- 	if (atomic_dec_and_test(&mm->mm_users)) {
--		free_uprobes_xol_area(mm);
- 		exit_aio(mm);
- 		ksm_exit(mm);
- 		khugepaged_exit(mm); /* must run before exit_mmap */
-@@ -742,7 +741,6 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
- #endif
- #ifdef CONFIG_UPROBES
- 	atomic_set(&mm->mm_uprobes_count, 0);
--	mm->uprobes_xol_area = NULL;
- #endif
- 
- 	if (!mm_init(mm, tsk))
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index c9e2f65..aaab607 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -33,9 +33,6 @@
- #include <linux/kdebug.h>	/* notifier mechanism */
- #include <linux/uprobes.h>
- 
--#define UINSNS_PER_PAGE	(PAGE_SIZE/UPROBES_XOL_SLOT_BYTES)
--#define MAX_UPROBES_XOL_SLOTS UINSNS_PER_PAGE
--
- static bulkref_t uprobes_srcu;
- static struct rb_root uprobes_tree = RB_ROOT;
- static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
-@@ -1062,201 +1059,6 @@ void munmap_uprobe(struct vm_area_struct *vma)
- 	return;
- }
- 
--/* Slot allocation for XOL */
--static int xol_add_vma(struct uprobes_xol_area *area)
--{
--	struct mm_struct *mm;
--	int ret;
--
--	area->page = alloc_page(GFP_HIGHUSER);
--	if (!area->page)
--		return -ENOMEM;
--
--	mm = current->mm;
--	down_write(&mm->mmap_sem);
--	ret = -EALREADY;
--	if (mm->uprobes_xol_area)
--		goto fail;
--
--	ret = -ENOMEM;
--
--	/* Try to map as high as possible, this is only a hint. */
--	area->vaddr = get_unmapped_area(NULL, TASK_SIZE - PAGE_SIZE,
--							PAGE_SIZE, 0, 0);
--	if (area->vaddr & ~PAGE_MASK) {
--		ret = area->vaddr;
--		goto fail;
--	}
--
--	ret = install_special_mapping(mm, area->vaddr, PAGE_SIZE,
--				VM_EXEC|VM_MAYEXEC|VM_DONTCOPY|VM_IO,
--				&area->page);
--	if (ret)
--		goto fail;
--
--	smp_wmb();	/* pairs with get_uprobes_xol_area() */
--	mm->uprobes_xol_area = area;
--	ret = 0;
--
--fail:
--	up_write(&mm->mmap_sem);
--	if (ret)
--		__free_page(area->page);
--
--	return ret;
--}
--
--static struct uprobes_xol_area *get_uprobes_xol_area(struct mm_struct *mm)
--{
--	struct uprobes_xol_area *area = mm->uprobes_xol_area;
--	smp_read_barrier_depends();/* pairs with wmb in xol_add_vma() */
--	return area;
--}
--
--/*
-- * xol_alloc_area - Allocate process's uprobes_xol_area.
-- * This area will be used for storing instructions for execution out of
-- * line.
-- *
-- * Returns the allocated area or NULL.
-- */
--static struct uprobes_xol_area *xol_alloc_area(void)
--{
--	struct uprobes_xol_area *area;
--
--	area = kzalloc(sizeof(*area), GFP_KERNEL);
--	if (unlikely(!area))
--		return NULL;
--
--	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long),
--								GFP_KERNEL);
--
--	if (!area->bitmap)
--		goto fail;
--
--	init_waitqueue_head(&area->wq);
--	if (!xol_add_vma(area))
--		return area;
--
--fail:
--	kfree(area->bitmap);
--	kfree(area);
--	return get_uprobes_xol_area(current->mm);
--}
--
--/*
-- * free_uprobes_xol_area - Free the area allocated for slots.
-- */
--void free_uprobes_xol_area(struct mm_struct *mm)
--{
--	struct uprobes_xol_area *area = mm->uprobes_xol_area;
--
--	if (!area)
--		return;
--
--	put_page(area->page);
--	kfree(area->bitmap);
--	kfree(area);
--}
--
--/*
-- *  - search for a free slot.
-- */
--static unsigned long xol_take_insn_slot(struct uprobes_xol_area *area)
--{
--	unsigned long slot_addr;
--	int slot_nr;
--
--	do {
--		slot_nr = find_first_zero_bit(area->bitmap, UINSNS_PER_PAGE);
--		if (slot_nr < UINSNS_PER_PAGE) {
--			if (!test_and_set_bit(slot_nr, area->bitmap))
--				break;
--
--			slot_nr = UINSNS_PER_PAGE;
--			continue;
--		}
--		wait_event(area->wq,
--			(atomic_read(&area->slot_count) < UINSNS_PER_PAGE));
--	} while (slot_nr >= UINSNS_PER_PAGE);
--
--	slot_addr = area->vaddr + (slot_nr * UPROBES_XOL_SLOT_BYTES);
--	atomic_inc(&area->slot_count);
--	return slot_addr;
--}
--
--/*
-- * xol_get_insn_slot - If was not allocated a slot, then
-- * allocate a slot.
-- * Returns the allocated slot address or 0.
-- */
--static unsigned long xol_get_insn_slot(struct uprobe *uprobe,
--					unsigned long slot_addr)
--{
--	struct uprobes_xol_area *area;
--	unsigned long offset;
--	void *vaddr;
--
--	area = get_uprobes_xol_area(current->mm);
--	if (!area) {
--		area = xol_alloc_area();
--		if (!area)
--			return 0;
--	}
--	current->utask->xol_vaddr = xol_take_insn_slot(area);
--
--	/*
--	 * Initialize the slot if xol_vaddr points to valid
--	 * instruction slot.
--	 */
--	if (unlikely(!current->utask->xol_vaddr))
--		return 0;
--
--	current->utask->vaddr = slot_addr;
--	offset = current->utask->xol_vaddr & ~PAGE_MASK;
--	vaddr = kmap_atomic(area->page);
--	memcpy(vaddr + offset, uprobe->insn, MAX_UINSN_BYTES);
--	kunmap_atomic(vaddr);
--	return current->utask->xol_vaddr;
--}
--
--/*
-- * xol_free_insn_slot - If slot was earlier allocated by
-- * @xol_get_insn_slot(), make the slot available for
-- * subsequent requests.
-- */
--static void xol_free_insn_slot(struct task_struct *tsk)
--{
--	struct uprobes_xol_area *area;
--	unsigned long vma_end;
--	unsigned long slot_addr;
--
--	if (!tsk->mm || !tsk->mm->uprobes_xol_area || !tsk->utask)
--		return;
--
--	slot_addr = tsk->utask->xol_vaddr;
--
--	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
--		return;
--
--	area = tsk->mm->uprobes_xol_area;
--	vma_end = area->vaddr + PAGE_SIZE;
--	if (area->vaddr <= slot_addr && slot_addr < vma_end) {
--		int slot_nr;
--		unsigned long offset = slot_addr - area->vaddr;
--
--		slot_nr = offset / UPROBES_XOL_SLOT_BYTES;
--		if (slot_nr >= UINSNS_PER_PAGE)
--			return;
--
--		clear_bit(slot_nr, area->bitmap);
--		atomic_dec(&area->slot_count);
--		if (waitqueue_active(&area->wq))
--			wake_up(&area->wq);
--		tsk->utask->xol_vaddr = 0;
--	}
--}
--
- /**
-  * get_uprobe_bkpt_addr - compute address of bkpt given post-bkpt regs
-  * @regs: Reflects the saved state of the task after it has hit a breakpoint
--- 
-1.5.5.1
-
+thanks,
+rhyland
 
