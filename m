@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab1K1PrQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 10:47:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17848 "EHLO mx1.redhat.com"
+	id S1754560Ab1K1PrY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 10:47:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61055 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753395Ab1K1PpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 10:45:10 -0500
+	id S1753395Ab1K1PrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 10:47:19 -0500
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 03/14] PGP: Add definitions (RFC 4880) and packet parser
+Subject: [PATCH 13/14] MODSIGN: Module ELF verifier
 To: keyrings@linux-nfs.org
 Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, mitry.kasatkin@intel.com,
         zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
         alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Mon, 28 Nov 2011 15:45:01 +0000
-Message-ID: <20111128154501.6009.18571.stgit@warthog.procyon.org.uk>
+Date: Mon, 28 Nov 2011 15:47:09 +0000
+Message-ID: <20111128154709.6009.2673.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20111128154436.6009.77586.stgit@warthog.procyon.org.uk>
 References: <20111128154436.6009.77586.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,529 +25,541 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some useful PGP definitions from RFC 4880.  These describe details of
-public key crypto as used by crypto keys for things like signature
-verification.
+Do preliminary verification of the ELF structure of a module.  This is used to
+make sure that the ELF structure can then be used to check the module signature
+and access the module data without breaking the module loader.
 
-Also add a simple parser that extracts the packets from a PGP blob and passes
-the desirous ones to the given processor function:
+If the module's ELF metadata is determined to be bad, then ELIBBAD will be
+returned and a message will be logged to the kernel log.
 
-	struct pgp_parse_context {
-		u64 types_of_interest;
-		int (*process_packet)(struct pgp_parse_context *context,
-				      enum pgp_packet_tag type,
-				      u8 headerlen,
-				      const u8 *data,
-				      size_t datalen);
-	};
-
-	int pgp_parse_packets(const u8 *data, size_t datalen,
-			      struct pgp_parse_context *ctx);
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-Off-By: David Howells <dhowells@redhat.com>
 ---
 
- include/linux/pgp.h       |  230 +++++++++++++++++++++++++++++++++++++++++
- security/keys/pgp_parse.c |  254 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 484 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/pgp.h
- create mode 100644 security/keys/pgp_parse.c
+ init/Kconfig               |   11 +
+ kernel/Makefile            |    2 
+ kernel/module-verify-elf.c |  344 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/module-verify.c     |   41 +++++
+ kernel/module-verify.h     |   53 +++++++
+ kernel/module.c            |    6 +
+ 6 files changed, 457 insertions(+), 0 deletions(-)
+ create mode 100644 kernel/module-verify-elf.c
+ create mode 100644 kernel/module-verify.c
+ create mode 100644 kernel/module-verify.h
 
 
-diff --git a/include/linux/pgp.h b/include/linux/pgp.h
+diff --git a/init/Kconfig b/init/Kconfig
+index 43298f9..42e685d 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1383,6 +1383,17 @@ config MODULE_SRCVERSION_ALL
+ 	  the version).  With this option, such a "srcversion" field
+ 	  will be created for all modules.  If unsure, say N.
+ 
++config MODULE_VERIFY_ELF
++	bool "Module ELF structure verification"
++	depends on MODULES
++	help
++	  Check ELF structure of modules upon load
++
++config MODULE_VERIFY
++	bool
++	depends on MODULES
++	default y if MODULE_VERIFY_ELF
++
+ endif # MODULES
+ 
+ config INIT_ALL_POSSIBLE
+diff --git a/kernel/Makefile b/kernel/Makefile
+index e898c5b..3c34fab 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -51,6 +51,8 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
+ obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
+ obj-$(CONFIG_UID16) += uid16.o
+ obj-$(CONFIG_MODULES) += module.o
++obj-$(CONFIG_MODULE_VERIFY) += module-verify.o
++obj-$(CONFIG_MODULE_VERIFY_ELF) += module-verify-elf.o
+ obj-$(CONFIG_KALLSYMS) += kallsyms.o
+ obj-$(CONFIG_PM) += power/
+ obj-$(CONFIG_FREEZER) += power/
+diff --git a/kernel/module-verify-elf.c b/kernel/module-verify-elf.c
 new file mode 100644
-index 0000000..7e86a06
+index 0000000..4dea8d0
 --- /dev/null
-+++ b/include/linux/pgp.h
-@@ -0,0 +1,230 @@
-+/* PGP definitions (RFC 4880)
++++ b/kernel/module-verify-elf.c
+@@ -0,0 +1,344 @@
++/* module-verify-elf.c: module ELF verifier
 + *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
 + *
 + * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
++ * modify it under the terms of the GNU General Public License
 + * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
++ * 2 of the License, or (at your option) any later version.
 + */
 +
-+#ifndef _LINUX_PGP_H
-+#define _LINUX_PGP_H
-+
-+#include <linux/types.h>
-+
-+struct pgp_key_ID {
-+	u8 id[8];
-+};
-+
-+struct pgp_time {
-+	u8 time[4];
-+};
-+
-+/*
-+ * PGP public-key algorithm identifiers [RFC4880: 9.1]
-+ */
-+enum pgp_pubkey_algo {
-+	PGP_PUBKEY_RSA_ENC_OR_SIG	= 1,
-+	PGP_PUBKEY_RSA_ENC_ONLY		= 2,
-+	PGP_PUBKEY_RSA_SIG_ONLY		= 3,
-+	PGP_PUBKEY_ELGAMAL		= 16,
-+	PGP_PUBKEY_DSA			= 17,
-+};
-+
-+/*
-+ * PGP symmetric-key algorithm identifiers [RFC4880: 9.2]
-+ */
-+enum pgp_symkey_algo {
-+	PGP_SYMKEY_PLAINTEXT		= 0,
-+	PGP_SYMKEY_IDEA			= 1,
-+	PGP_SYMKEY_3DES			= 2,
-+	PGP_SYMKEY_CAST5		= 3,
-+	PGP_SYMKEY_BLOWFISH		= 4,
-+	PGP_SYMKEY_AES_128KEY		= 7,
-+	PGP_SYMKEY_AES_192KEY		= 8,
-+	PGP_SYMKEY_AES_256KEY		= 9,
-+	PGP_SYMKEY_TWOFISH_256KEY	= 10,
-+};
-+
-+/*
-+ * PGP compression algorithm identifiers [RFC4880: 9.3]
-+ */
-+enum pgp_compr_algo {
-+	PGP_COMPR_UNCOMPRESSED		= 0,
-+	PGP_COMPR_ZIP			= 1,
-+	PGP_COMPR_ZLIB			= 2,
-+	PGP_COMPR_BZIP2			= 3,
-+};
-+
-+/*
-+ * PGP hash algorithm identifiers [RFC4880: 9.4]
-+ */
-+enum pgp_hash_algo {
-+	PGP_HASH_MD5			= 1,
-+	PGP_HASH_SHA1			= 2,
-+	PGP_HASH_RIPE_MD_160		= 3,
-+	PGP_HASH_SHA256			= 8,
-+	PGP_HASH_SHA384			= 9,
-+	PGP_HASH_SHA512			= 10,
-+	PGP_HASH_SHA224			= 11,
-+	PGP_HASH__LAST
-+};
-+
-+extern const char *const pgp_hash_algorithms[PGP_HASH__LAST];
-+
-+/*
-+ * PGP packet type tags [RFC4880: 4.3].
-+ */
-+enum pgp_packet_tag {
-+	PGP_PKT_RESERVED		= 0,
-+	PGP_PKT_PUBKEY_ENC_SESSION_KEY	= 1,
-+	PGP_PKT_SIGNATURE		= 2,
-+	PGP_PKT_SYMKEY_ENC_SESSION_KEY	= 3,
-+	PGP_PKT_ONEPASS_SIGNATURE	= 4,
-+	PGP_PKT_SECRET_KEY		= 5,
-+	PGP_PKT_PUBLIC_KEY		= 6,
-+	PGP_PKT_SECRET_SUBKEY		= 7,
-+	PGP_PKT_COMPRESSED_DATA		= 8,
-+	PGP_PKT_SYM_ENC_DATA		= 9,
-+	PGP_PKT_MARKER			= 10,
-+	PGP_PKT_LITERAL_DATA		= 11,
-+	PGP_PKT_TRUST			= 12,
-+	PGP_PKT_USER_ID			= 13,
-+	PGP_PKT_PUBLIC_SUBKEY		= 14,
-+	PGP_PKT_USER_ATTRIBUTE		= 17,
-+	PGP_PKT_SYM_ENC_AND_INTEG_DATA	= 18,
-+	PGP_PKT_MODIFY_DETECT_CODE	= 19,
-+	PGP_PKT_PRIVATE_0		= 60,
-+	PGP_PKT_PRIVATE_3		= 63,
-+	PGP_PKT__HIGHEST		= 63
-+};
-+
-+/*
-+ * Signature (tag 2) packet [RFC4880: 5.2].
-+ */
-+enum pgp_signature_version {
-+	PGP_SIG_VERSION_3			= 3,
-+	PGP_SIG_VERSION_4			= 4,
-+};
-+
-+enum pgp_signature_type {
-+	PGP_SIG_BINARY_DOCUMENT_SIG		= 0x00,
-+	PGP_SIG_CANONICAL_TEXT_DOCUMENT_SIG	= 0x01,
-+	PGP_SIG_STANDALONE_SIG			= 0x02,
-+	PGP_SIG_GENERAL_CERT_OF_UID_PUBKEY	= 0x10,
-+	PGP_SIG_PERSONAL_CERT_OF_UID_PUBKEY	= 0x11,
-+	PGP_SIG_CASUAL_CERT_OF_UID_PUBKEY	= 0x12,
-+	PGP_SIG_POSTITIVE_CERT_OF_UID_PUBKEY	= 0x13,
-+	PGP_SIG_SUBKEY_BINDING_SIG		= 0x18,
-+	PGP_SIG_PRIMARY_KEY_BINDING_SIG		= 0x19,
-+	PGP_SIG_DIRECTLY_ON_KEY			= 0x1F,
-+	PGP_SIG_KEY_REVOCATION_SIG		= 0x20,
-+	PGP_SIG_SUBKEY_REVOCATION_SIG		= 0x28,
-+	PGP_SIG_CERT_REVOCATION_SIG		= 0x30,
-+	PGP_SIG_TIMESTAMP_SIG			= 0x40,
-+	PGP_SIG_THIRD_PARTY_CONFIRM_SIG		= 0x50,
-+};
-+
-+struct pgp_signature_v3_packet {
-+	enum pgp_signature_version version : 8; /* == PGP_SIG_VERSION_3 */
-+	u8	length_of_hashed;	/* == 5 */
-+	struct {
-+		enum pgp_signature_type signature_type : 8;
-+		struct pgp_time	creation_time;
-+	} hashed;
-+	struct pgp_key_ID issuer;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+};
-+
-+struct pgp_signature_v4_packet {
-+	enum pgp_signature_version version : 8;	/* == PGP_SIG_VERSION_4 */
-+	enum pgp_signature_type signature_type : 8;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+};
-+
-+/*
-+ * V4 signature subpacket types [RFC4880: 5.2.3.1].
-+ */
-+enum pgp_sig_subpkt_type {
-+	PGP_SIG_CREATION_TIME			= 2,
-+	PGP_SIG_EXPIRATION_TIME			= 3,
-+	PGP_SIG_EXPORTABLE_CERT			= 4,
-+	PGP_SIG_TRUST_SIG			= 5,
-+	PGP_SIG_REGEXP				= 6,
-+	PGP_SIG_REVOCABLE			= 7,
-+	PGP_SIG_KEY_EXPIRATION_TIME		= 9,
-+	PGP_SIG_PREF_SYM_ALGO			= 11,
-+	PGP_SIG_REVOCATION_KEY			= 12,
-+	PGP_SIG_ISSUER				= 16,
-+	PGP_SIG_NOTATION_DATA			= 20,
-+	PGP_SIG_PREF_HASH_ALGO			= 21,
-+	PGP_SIG_PREF_COMPR_ALGO			= 22,
-+	PGP_SIG_KEY_SERVER_PREFS		= 23,
-+	PGP_SIG_PREF_KEY_SERVER			= 24,
-+	PGP_SIG_PRIMARY_USER_ID			= 25,
-+	PGP_SIG_POLICY_URI			= 26,
-+	PGP_SIG_KEY_FLAGS			= 27,
-+	PGP_SIG_SIGNERS_USER_ID			= 28,
-+	PGP_SIG_REASON_FOR_REVOCATION		= 29,
-+	PGP_SIG_FEATURES			= 30,
-+	PGP_SIG_TARGET				= 31,
-+	PGP_SIG_EMBEDDED_SIG			= 32,
-+	PGP_SIG__LAST
-+};
-+
-+#define PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK	0x80
-+
-+/*
-+ * Key (tag 5, 6, 7 and 14) packet
-+ */
-+enum pgp_key_version {
-+	PGP_KEY_VERSION_2			= 2,
-+	PGP_KEY_VERSION_3			= 3,
-+	PGP_KEY_VERSION_4			= 4,
-+};
-+
-+struct pgp_key_v3_packet {
-+	enum pgp_key_version version : 8;
-+	struct pgp_time	creation_time;
-+	u8 expiry[2];				/* 0 or time in days till expiry */
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	u8 key_material[0];
-+};
-+
-+struct pgp_key_v4_packet {
-+	enum pgp_key_version version : 8;
-+	struct pgp_time	creation_time;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	u8 key_material[0];
-+};
-+
-+/*
-+ * PGP packet parser
-+ */
-+struct pgp_parse_context {
-+	u64 types_of_interest;
-+	int (*process_packet)(struct pgp_parse_context *context,
-+			      enum pgp_packet_tag type,
-+			      u8 headerlen,
-+			      const u8 *data,
-+			      size_t datalen);
-+};
-+
-+extern int pgp_parse_packets(const u8 *data, size_t datalen,
-+			     struct pgp_parse_context *ctx);
-+
-+struct pgp_parse_pubkey {
-+	enum pgp_key_version version : 8;
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	time_t		creation_time;
-+	time_t		expires_at;
-+};
-+
-+extern int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
-+				struct pgp_parse_pubkey *pk);
-+
-+#endif /* _LINUX_PGP_H */
-diff --git a/security/keys/pgp_parse.c b/security/keys/pgp_parse.c
-new file mode 100644
-index 0000000..fb8d64a
---- /dev/null
-+++ b/security/keys/pgp_parse.c
-@@ -0,0 +1,254 @@
-+/* PGP packet parser (RFC 4880)
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+#define pr_fmt(fmt) "PGP: "fmt
-+#include <linux/pgp.h>
-+#include <linux/errno.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/elf.h>
++#include <linux/ctype.h>
++#include "module-verify.h"
 +
-+MODULE_LICENSE("GPL");
++#if 0
++#define _debug(FMT, ...) printk(FMT, ##__VA_ARGS__)
++#else
++#define _debug(FMT, ...) do {} while (0)
++#endif
 +
-+const char *const pgp_hash_algorithms[PGP_HASH__LAST] = {
-+	[PGP_HASH_MD5]			= "md5",
-+	[PGP_HASH_SHA1]			= "sha1",
-+	[PGP_HASH_RIPE_MD_160]		= "rmd160",
-+	[PGP_HASH_SHA256]		= "sha256",
-+	[PGP_HASH_SHA384]		= "sha384",
-+	[PGP_HASH_SHA512]		= "sha512",
-+	[PGP_HASH_SHA224]		= "sha224",
-+};
-+EXPORT_SYMBOL_GPL(pgp_hash_algorithms);
-+
-+/**
-+ * pgp_parse_packet_header - Parse a PGP packet header
-+ * @_data: Start of the PGP packet (updated to PGP packet data)
-+ * @_datalen: Amount of data remaining in buffer (decreased)
-+ * @_type: Where the packet type will be returned
-+ * @_headerlen: Where the header length will be returned
-+ *
-+ * Parse a set of PGP packet header [RFC 4880: 4.2].
-+ *
-+ * Returns packet data size on success; non-zero on error.  If successful,
-+ * *_data and *_datalen will have been updated and *_headerlen will be set to
-+ * hold the length of the packet header.
++/*
++ * verify the ELF structure of a module
 + */
-+ssize_t pgp_parse_packet_header(const u8 **_data, size_t *_datalen,
-+				enum pgp_packet_tag *_type,
-+				u8 *_headerlen)
++int module_verify_elf(struct module_verify_data *mvdata)
 +{
-+	enum pgp_packet_tag type;
-+	const u8 *data = *_data;
-+	size_t size, datalen = *_datalen;
++	const struct elf_note *note;
++	const Elf_Ehdr *hdr = mvdata->hdr;
++	const Elf_Shdr *section, *section2, *secstop;
++	const Elf_Rela *relas, *rela, *relastop;
++	const Elf_Rel *rels, *rel, *relstop;
++	const Elf_Sym *symbol, *symstop;
++	const void *start, *p, *stop;
++	const char *q, *qs;
++	size_t size, sssize, *secsize, tmp, tmp2;
++	long last;
++	int line;
 +
-+	pr_devel("-->pgp_parse_packet_header(,%zu,,)", datalen);
++	size = mvdata->size;
++	mvdata->nsects = hdr->e_shnum;
 +
-+	if (datalen < 2)
-+		goto short_packet;
++#define elfcheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto elfcheck_error; } } while(0)
 +
-+	pr_devel("pkthdr %02x, %02x\n", data[0], data[1]);
++#define seccheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto seccheck_error; } } while(0)
 +
-+	type = *data++;
-+	datalen--;
-+	if (!(type & 0x80)) {
-+		pr_warning("Packet type does not have MSB set\n");
-+		return -EBADMSG;
-+	}
-+	type &= ~0x80;
++#define symcheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto symcheck_error; } } while(0)
 +
-+	if (type & 0x40) {
-+		/* New packet length format */
-+		type &= ~0x40;
-+		pr_devel("new format: t=%u\n", type);
-+		switch (data[0]) {
-+		case 0x00 ... 0xbf:
-+			/* One-byte length */
-+			size = data[0];
-+			data++;
-+			datalen--;
-+			*_headerlen = 2;
-+			break;
-+		case 0xc0 ... 0xdf:
-+			/* Two-byte length */
-+			if (datalen < 2)
-+				goto short_packet;
-+			size = (data[0] - 192) * 256;
-+			size += data[1] + 192;
-+			data += 2;
-+			datalen -= 2;
-+			*_headerlen = 3;
-+			break;
-+		case 0xff:
-+			pr_warning("Five-byte packet length not supported\n");
-+			return -EBADMSG;
-+		default:
-+			pr_warning("Error parsing packet length\n");
-+			return -EBADMSG;
++#define relcheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto relcheck_error; } } while(0)
++
++#define relacheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto relacheck_error; } } while(0)
++
++#define notecheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto notecheck_error; } } while(0)
++
++	/* validate the ELF header */
++	elfcheck(hdr->e_ehsize < size);
++	/*elfcheck(hdr->e_entry == 0);*/
++	elfcheck(hdr->e_phoff == 0);
++	elfcheck(hdr->e_phnum == 0);
++
++	elfcheck(hdr->e_shnum < SHN_LORESERVE);
++	elfcheck(hdr->e_shoff < size);
++	elfcheck(hdr->e_shoff >= hdr->e_ehsize);
++	elfcheck((hdr->e_shoff & (sizeof(long) - 1)) == 0);
++	elfcheck(hdr->e_shstrndx > 0);
++	elfcheck(hdr->e_shstrndx < hdr->e_shnum);
++	elfcheck(hdr->e_shentsize == sizeof(Elf_Shdr));
++
++	tmp = (size_t) hdr->e_shentsize * (size_t) hdr->e_shnum;
++	elfcheck(tmp <= size - hdr->e_shoff);
++
++	/* allocate a table to hold in-file section sizes */
++	mvdata->secsizes = kcalloc(hdr->e_shnum, sizeof(size_t), GFP_KERNEL);
++	if (!mvdata->secsizes)
++		return -ENOMEM;
++
++	/* validate the ELF section headers */
++	mvdata->sections = mvdata->buffer + hdr->e_shoff;
++	secstop = mvdata->sections + mvdata->nsects;
++
++	sssize = mvdata->sections[hdr->e_shstrndx].sh_size;
++	elfcheck(sssize > 0);
++
++	section = mvdata->sections;
++	seccheck(section->sh_type == SHT_NULL);
++	seccheck(section->sh_size == 0);
++	seccheck(section->sh_offset == 0);
++
++	secsize = mvdata->secsizes + 1;
++	for (section++; section < secstop; secsize++, section++) {
++		seccheck(section->sh_name < sssize);
++		seccheck(section->sh_link < hdr->e_shnum);
++
++		if (section->sh_entsize > 0)
++			seccheck(section->sh_size % section->sh_entsize == 0);
++
++		seccheck(section->sh_offset >= hdr->e_ehsize);
++		seccheck(section->sh_offset < size);
++
++		/* determine the section's in-file size */
++		tmp = size - section->sh_offset;
++		if (section->sh_offset < hdr->e_shoff)
++			tmp = hdr->e_shoff - section->sh_offset;
++
++		for (section2 = mvdata->sections + 1;
++		     section2 < secstop;
++		     section2++) {
++			if (section->sh_offset < section2->sh_offset) {
++				tmp2 = section2->sh_offset -
++					section->sh_offset;
++				if (tmp2 < tmp)
++					tmp = tmp2;
++			}
 +		}
-+	} else {
-+		/* Old packet length format */
-+		u8 length_type = type & 0x03;
-+		type >>= 2;
-+		pr_devel("old format: t=%u lt=%u\n", type, length_type);
++		*secsize = tmp;
 +
-+		switch (length_type) {
-+		case 0:
-+			/* One-byte length */
-+			size = data[0];
-+			data++;
-+			datalen--;
-+			*_headerlen = 2;
++		_debug("Section %ld: %zx bytes at %lx\n",
++		       section - mvdata->sections,
++		       *secsize,
++		       (unsigned long) section->sh_offset);
++
++		/* perform section type specific checks */
++		switch (section->sh_type) {
++		case SHT_NOBITS:
 +			break;
-+		case 1:
-+			/* Two-byte length */
-+			if (datalen < 2)
-+				goto short_packet;
-+			size  = data[0] << 8;
-+			size |= data[1];
-+			data += 2;
-+			datalen -= 2;
-+			*_headerlen = 3;
-+			break;
-+		case 2:
-+			/* Four-byte length */
-+			if (datalen < 4)
-+				goto short_packet;
-+			size  = data[0] << 24;
-+			size |= data[1] << 16;
-+			size |= data[2] << 8;
-+			size |= data[3];
-+			data += 4;
-+			datalen -= 4;
-+			*_headerlen = 5;
-+			break;
++
++		case SHT_REL:
++			seccheck(section->sh_entsize == sizeof(Elf_Rel));
++			goto more_rel_checks;
++
++		case SHT_RELA:
++			seccheck(section->sh_entsize == sizeof(Elf_Rela));
++		more_rel_checks:
++			seccheck(section->sh_info > 0);
++			seccheck(section->sh_info < hdr->e_shnum);
++			goto more_sec_checks;
++
++		case SHT_SYMTAB:
++			seccheck(section->sh_entsize == sizeof(Elf_Sym));
++			goto more_sec_checks;
++
 +		default:
-+			pr_warning("Indefinite length packet not supported\n");
-+			return -EBADMSG;
++		more_sec_checks:
++			/* most types of section must be contained entirely
++			 * within the file */
++			seccheck(section->sh_size <= *secsize);
++			break;
 +		}
 +	}
 +
-+	pr_devel("datalen=%zu size=%zu", datalen, size);
-+	if (datalen < size)
-+		goto short_packet;
++	/* validate the ELF section names */
++	section = &mvdata->sections[hdr->e_shstrndx];
 +
-+	*_data = data;
-+	*_datalen = datalen;
-+	*_type = type;
-+	pr_devel("Found packet type=%u size=%zd\n", type, size);
-+	return size;
++	seccheck(section->sh_offset != hdr->e_shoff);
 +
-+short_packet:
-+	pr_warning("Attempt to parse short packet\n");
-+	return -EBADMSG;
++	mvdata->secstrings = mvdata->buffer + section->sh_offset;
++
++	last = -1;
++	for (section = mvdata->sections + 1; section < secstop; section++) {
++		const char *secname;
++		tmp = sssize - section->sh_name;
++		secname = mvdata->secstrings + section->sh_name;
++		seccheck(secname[0] != 0);
++		if (section->sh_name > last)
++			last = section->sh_name;
++	}
++
++	if (last > -1) {
++		tmp = sssize - last;
++		elfcheck(memchr(mvdata->secstrings + last, 0, tmp) != NULL);
++	}
++
++	/* look for various sections in the module */
++	for (section = mvdata->sections + 1; section < secstop; section++) {
++		switch (section->sh_type) {
++		case SHT_SYMTAB:
++			if (strcmp(mvdata->secstrings + section->sh_name,
++				   ".symtab") == 0
++			    ) {
++				seccheck(mvdata->symbols == NULL);
++				mvdata->symbols =
++					mvdata->buffer + section->sh_offset;
++				mvdata->nsyms =
++					section->sh_size / sizeof(Elf_Sym);
++				seccheck(section->sh_size > 0);
++			}
++			break;
++
++		case SHT_STRTAB:
++			if (strcmp(mvdata->secstrings + section->sh_name,
++				   ".strtab") == 0
++			    ) {
++				seccheck(mvdata->strings == NULL);
++				mvdata->strings =
++					mvdata->buffer + section->sh_offset;
++				sssize = mvdata->nstrings = section->sh_size;
++				seccheck(section->sh_size > 0);
++			}
++			break;
++		}
++	}
++
++	if (!mvdata->symbols) {
++		printk("Couldn't locate module symbol table\n");
++		goto format_error;
++	}
++
++	if (!mvdata->strings) {
++		printk("Couldn't locate module strings table\n");
++		goto format_error;
++	}
++
++	/* validate the symbol table */
++	symstop = mvdata->symbols + mvdata->nsyms;
++
++	symbol = mvdata->symbols;
++	symcheck(ELF_ST_TYPE(symbol[0].st_info) == STT_NOTYPE);
++	symcheck(symbol[0].st_shndx == SHN_UNDEF);
++	symcheck(symbol[0].st_value == 0);
++	symcheck(symbol[0].st_size == 0);
++
++	last = -1;
++	for (symbol++; symbol < symstop; symbol++) {
++		symcheck(symbol->st_name < sssize);
++		if (symbol->st_name > last)
++			last = symbol->st_name;
++		symcheck(symbol->st_shndx < mvdata->nsects ||
++			 symbol->st_shndx >= SHN_LORESERVE);
++	}
++
++	if (last > -1) {
++		tmp = sssize - last;
++		elfcheck(memchr(mvdata->strings + last, 0, tmp) != NULL);
++	}
++
++	/* validate each relocation table and note list as best we can */
++	for (section = mvdata->sections + 1; section < secstop; section++) {
++		section2 = mvdata->sections + section->sh_info;
++		start = mvdata->buffer + section->sh_offset;
++		stop = start + section->sh_size;
++
++		switch (section->sh_type) {
++		case SHT_REL:
++			rels = start;
++			relstop = stop;
++
++			for (rel = rels; rel < relstop; rel++) {
++				relcheck(rel->r_offset < section2->sh_size);
++				relcheck(ELF_R_SYM(rel->r_info) <
++					 mvdata->nsyms);
++			}
++
++			break;
++
++		case SHT_RELA:
++			relas = start;
++			relastop = stop;
++
++			for (rela = relas; rela < relastop; rela++) {
++				relacheck(rela->r_offset < section2->sh_size);
++				relacheck(ELF_R_SYM(rela->r_info) <
++					  mvdata->nsyms);
++			}
++
++			break;
++
++		case SHT_NOTE:
++			p = start;
++			while (p < stop) {
++				note = p;
++				notecheck(stop - p >= sizeof(*note));
++				p += sizeof(*note);
++				tmp = note->n_namesz;
++				if (tmp > 0) {
++					notecheck(stop - p >= tmp);
++					qs = p + tmp - 1;
++					notecheck(*qs == '\0');
++					for (q = p; q < qs; q++)
++						notecheck(*q != '\0');
++					tmp = roundup(tmp, 4);
++					notecheck(stop - p >= tmp);
++					p += tmp;
++				}
++				tmp = note->n_descsz;
++				if (tmp > 0) {
++					notecheck(stop - p >= tmp);
++					tmp = roundup(tmp, 4);
++					notecheck(stop - p >= tmp);
++					p += tmp;
++				}
++			}
++			seccheck(p == stop);
++			break;
++
++		default:
++			break;
++		}
++	}
++
++	_debug("ELF okay\n");
++	return 0;
++
++elfcheck_error:
++	printk("Verify ELF error (assertion %d)\n", line);
++	goto format_error;
++
++seccheck_error:
++	printk("Verify ELF error [sec %ld] (assertion %d)\n",
++	       (long)(section - mvdata->sections), line);
++	goto format_error;
++
++symcheck_error:
++	printk("Verify ELF error [sym %ld] (assertion %d)\n",
++	       (long)(symbol - mvdata->symbols), line);
++	goto format_error;
++
++relcheck_error:
++	printk("Verify ELF error [sec %ld rel %ld] (assertion %d)\n",
++	       (long)(section - mvdata->sections),
++	       (long)(rel - rels), line);
++	goto format_error;
++
++relacheck_error:
++	printk("Verify ELF error [sec %ld rela %ld] (assertion %d)\n",
++	       (long)(section - mvdata->sections),
++	       (long)(rela - relas), line);
++	goto format_error;
++
++notecheck_error:
++	printk("Verify ELF error [sec %ld note %ld] (assertion %d)\n",
++	       (long)(section - mvdata->sections),
++	       (long)(p - start), line);
++	goto format_error;
++
++format_error:
++	return -ELIBBAD;
 +}
-+
-+/**
-+ * pgp_parse_packets - Parse a set of PGP packets
-+ * @_data: Data to be parsed (updated)
-+ * @_datalen: Amount of data (updated)
-+ * @ctx: Parsing context
+diff --git a/kernel/module-verify.c b/kernel/module-verify.c
+new file mode 100644
+index 0000000..875279f
+--- /dev/null
++++ b/kernel/module-verify.c
+@@ -0,0 +1,41 @@
++/* module-verify.c: module verifier
 + *
-+ * Parse a set of PGP packets [RFC 4880: 4].
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + */
-+int pgp_parse_packets(const u8 *data, size_t datalen,
-+		      struct pgp_parse_context *ctx)
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include "module-verify.h"
++
++/*
++ * verify a module's integrity
++ * - check the ELF is viable
++ */
++int module_verify(const Elf_Ehdr *hdr, size_t size)
 +{
-+	enum pgp_packet_tag type;
-+	ssize_t pktlen;
-+	u8 headerlen;
++	struct module_verify_data mvdata;
 +	int ret;
 +
-+	while (datalen > 2) {
-+		pktlen = pgp_parse_packet_header(&data, &datalen, &type,
-+						 &headerlen);
-+		if (pktlen < 0)
-+			return pktlen;
++	memset(&mvdata, 0, sizeof(mvdata));
++	mvdata.buffer	= hdr;
++	mvdata.hdr	= hdr;
++	mvdata.size	= size;
 +
-+		if ((ctx->types_of_interest >> type) & 1) {
-+			ret = ctx->process_packet(ctx, type, headerlen,
-+						  data, pktlen);
-+			if (ret < 0)
-+				return ret;
-+		}
-+		data += pktlen;
-+		datalen -= pktlen;
++	ret = module_verify_elf(&mvdata);
++	if (ret < 0) {
++		if (ret == -ELIBBAD)
++			printk("Module failed ELF checks\n");
++		goto error;
 +	}
 +
-+	if (datalen != 0) {
-+		pr_warning("Excess octets in packet stream\n");
-+		return -EBADMSG;
-+	}
-+
-+	return 0;
++error:
++	kfree(mvdata.secsizes);
++	kfree(mvdata.canonlist);
++	return ret;
 +}
-+EXPORT_SYMBOL_GPL(pgp_parse_packets);
-+
-+/**
-+ * pgp_parse_public_key - Parse the common part of a PGP pubkey packet
-+ * @_data: Content of packet (updated)
-+ * @_datalen: Length of packet remaining (updated)
-+ * @pk: Public key data
+diff --git a/kernel/module-verify.h b/kernel/module-verify.h
+new file mode 100644
+index 0000000..20884fc
+--- /dev/null
++++ b/kernel/module-verify.h
+@@ -0,0 +1,53 @@
++/* module-verify.h: module verification definitions
 + *
-+ * Parse the common data struct for a PGP pubkey packet [RFC 4880: 5.5.2].
++ * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + */
-+int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
-+			 struct pgp_parse_pubkey *pk)
-+{
-+	const u8 *data = *_data;
-+	size_t datalen = *_datalen;
-+	__be32 tmp;
 +
-+	if (datalen < 12) {
-+		pr_warning("Public key packet too short\n");
-+		return -EBADMSG;
-+	}
++#include <linux/types.h>
++#include <asm/module.h>
 +
-+	pk->version = *data++;
-+	switch (pk->version) {
-+	case PGP_KEY_VERSION_2:
-+	case PGP_KEY_VERSION_3:
-+	case PGP_KEY_VERSION_4:
-+		break;
-+	default:
-+		pr_warning("Public key packet with unhandled version %d\n",
-+			   pk->version);
-+		return -EBADMSG;
-+	}
++#ifdef CONFIG_MODULE_VERIFY
++struct module_verify_data {
++	const void		*buffer;	/* module buffer */
++	const Elf_Ehdr		*hdr;		/* ELF header */
++	const Elf_Shdr		*sections;	/* ELF section table */
++	const Elf_Sym		*symbols;	/* ELF symbol table */
++	const char		*secstrings;	/* ELF section string table */
++	const char		*strings;	/* ELF string table */
++	size_t			*secsizes;	/* section size list */
++	size_t			size;		/* module object size */
++	size_t			nsects;		/* number of sections */
++	size_t			nsyms;		/* number of symbols */
++	size_t			nstrings;	/* size of strings section */
++	size_t			signed_size;	/* count of bytes contributed to digest */
++	int			*canonlist;	/* list of canonicalised sections */
++	int			*canonmap;	/* section canonicalisation map */
++	int			ncanon;		/* number of canonicalised sections */
++	int			sig_index;	/* module signature section index */
++	uint8_t			xcsum;		/* checksum of bytes contributed to digest */
++	uint8_t			csum;		/* checksum of bytes representing a section */
++};
 +
-+	tmp  = *data++ << 24;
-+	tmp |= *data++ << 16;
-+	tmp |= *data++ << 8;
-+	tmp |= *data++;
-+	pk->creation_time = tmp;
-+	if (pk->version == PGP_KEY_VERSION_4) {
-+		pk->expires_at = 0; /* Have to get it from the selfsignature */
-+	} else {
-+		unsigned short ndays;
-+		ndays  = *data++ << 8;
-+		ndays |= *data++;
-+		if (ndays)
-+			pk->expires_at = pk->creation_time + ndays * 86400UL;
-+		else
-+			pk->expires_at = 0;
-+		datalen -= 2;
-+	}
++/*
++ * module-verify.c
++ */
++extern int module_verify(const Elf_Ehdr *hdr, size_t size);
 +
-+	pk->pubkey_algo = *data++;
-+	datalen -= 6;
++/*
++ * module-verify-elf.c
++ */
++#ifdef CONFIG_MODULE_VERIFY_ELF
++extern int module_verify_elf(struct module_verify_data *mvdata);
++#else
++#define module_verify_elf(m) (0)
++#endif
 +
-+	pr_devel("%x,%x,%lx,%lx",
-+		 pk->version, pk->pubkey_algo, pk->creation_time,
-+		 pk->expires_at);
++#else
++#define module_verify(h, s) (0)
++#endif
+diff --git a/kernel/module.c b/kernel/module.c
+index 178333c..8309389 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -58,6 +58,7 @@
+ #include <linux/jump_label.h>
+ #include <linux/pfn.h>
+ #include <linux/bsearch.h>
++#include "module-verify.h"
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/module.h>
+@@ -2365,6 +2366,11 @@ static int copy_and_check(struct load_info *info,
+ 		goto free_hdr;
+ 	}
+ 
++	/* Verify the module's contents */
++	err = module_verify(hdr, len);
++	if (err < 0)
++		goto free_hdr;
 +
-+	*_data = data;
-+	*_datalen = datalen;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pgp_parse_public_key);
+ 	info->hdr = hdr;
+ 	info->len = len;
+ 	return 0;
 
