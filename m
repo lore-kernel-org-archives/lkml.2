@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170Ab1K1Kdt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 05:33:49 -0500
-Received: from inca-roads.misterjones.org ([213.251.177.50]:35114 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751061Ab1K1Kds (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 05:33:48 -0500
-To: Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH] pcmcia: convert drivers/pcmcia/* to use
- =?UTF-8?Q?module=5Fplatform=5Fdriver=28=29?=
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Date: Mon, 28 Nov 2011 11:33:42 +0100
-From: Marc Zyngier <maz@misterjones.org>
-Cc: <linux-kernel@vger.kernel.org>,
-        Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        Manuel Lauss <manuel.lauss@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Ralf Baechle <ralf@linux-mips.org>, Eric Miao <eric.y.miao@gmail.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        <linux-pcmcia@lists.infradead.org>
-Organization: Metropolis
-In-Reply-To: <1322369586.2522.3.camel@phoenix>
-References: <1322369586.2522.3.camel@phoenix>
-Message-ID: <d6963f1ecb253ca948d8106b10832fe1@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: axel.lin@gmail.com, linux-kernel@vger.kernel.org, hennerich@blackfin.uclinux.org, manuel.lauss@gmail.com, olof@lixom.net, ralf@linux-mips.org, eric.y.miao@gmail.com, linux@dominikbrodowski.net, linux-pcmcia@lists.infradead.org
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+	id S1752048Ab1K1KjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 05:39:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:7427 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751034Ab1K1Ki7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 05:38:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,583,1315206000"; 
+   d="scan'208";a="89731684"
+Subject: Re: [PATCH 1/3] dmaengine: at_hdmac: add const to struct
+ platform_device_id definition
+From: Vinod Koul <vinod.koul@intel.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        grant.likely@secretlab.ca
+In-Reply-To: <25000153a64c2845223be78ee55e01e034613601.1321959137.git.nicolas.ferre@atmel.com>
+References: <25000153a64c2845223be78ee55e01e034613601.1321959137.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Nov 2011 16:05:54 +0530
+Message-ID: <1322476554.1516.980.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sun, 27 Nov 2011 12:53:06 +0800, Axel Lin <axel.lin@gmail.com> wrote:
-> This patch converts the drivers in drivers/pcmcia/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>
-> Cc: Manuel Lauss <manuel.lauss@gmail.com>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Marc Zyngier <maz@misterjones.org>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Tue, 2011-11-22 at 11:55 +0100, Nicolas Ferre wrote:
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 > ---
->  drivers/pcmcia/bfin_cf_pcmcia.c |   13 +------------
->  drivers/pcmcia/db1xxx_ss.c      |   13 +------------
->  drivers/pcmcia/electra_cf.c     |   12 +-----------
->  drivers/pcmcia/m8xx_pcmcia.c    |   13 +------------
->  drivers/pcmcia/pxa2xx_viper.c   |   13 +------------
->  drivers/pcmcia/xxs1500_ss.c     |   13 +------------
->  6 files changed, 6 insertions(+), 71 deletions(-)
-> 
+>  drivers/dma/at_hdmac.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+Applied all 3, thanks
 
-For the viper part:
-Acked-by: Marc Zyngier <maz@misterjones.org>
 -- 
-Who you jivin' with that Cosmik Debris?
+~Vinod
+
