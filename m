@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab1K1TzI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:55:08 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54472
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754449Ab1K1TzH (ORCPT
+	id S1754678Ab1K1TzO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:55:14 -0500
+Received: from eazy.amigager.de ([213.239.192.238]:56518 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449Ab1K1TzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:55:07 -0500
-Date: Mon, 28 Nov 2011 14:55:05 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Simon Kirby <sim@hostway.ca>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, bpm@sgi.com
-Subject: Re: XFS read hangs in 3.1-rc10
-Message-ID: <20111128195505.GA3759@infradead.org>
-References: <20111020224214.GC22772@hostway.ca>
- <20111021132240.GA24136@infradead.org>
- <20111021202857.GB30100@hostway.ca>
- <20111024082219.GA19941@infradead.org>
- <20111025200748.GA25043@hostway.ca>
- <20111026112521.GA10432@infradead.org>
- <20111104210324.GB14983@infradead.org>
- <20111116195643.GF24411@hostway.ca>
- <20111120153241.GA23511@infradead.org>
- <20111128190554.GA31168@hostway.ca>
+	Mon, 28 Nov 2011 14:55:10 -0500
+Date: Mon, 28 Nov 2011 20:55:34 +0100
+From: Tino Keitel <tino.keitel@tikei.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, "Artem S. Tashkinov" <t.artem@lycos.com>
+Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
+ metering applications has gone crackers
+Message-ID: <20111128195533.GA26460@mac.home>
+Mail-Followup-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+	linux-kernel@vger.kernel.org,
+	"Artem S. Tashkinov" <t.artem@lycos.com>
+References: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
+ <20111124200553.GA13353@mac.home>
+ <20111127110400.GA4672@mac.home>
+ <201111271245.57772.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111128190554.GA31168@hostway.ca>
+In-Reply-To: <201111271245.57772.rjw@sisk.pl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 11:05:54AM -0800, Simon Kirby wrote:
-> On Sun, Nov 20, 2011 at 10:32:41AM -0500, Christoph Hellwig wrote:
-> 
-> > On Wed, Nov 16, 2011 at 11:56:43AM -0800, Simon Kirby wrote:
-> > > Sorry for the delay in testing.
+On Sun, Nov 27, 2011 at 12:45:57 +0100, Rafael J. Wysocki wrote:
+> On Sunday, November 27, 2011, Tino Keitel wrote:
+> > On Thu, Nov 24, 2011 at 21:05:53 +0100, Tino Keitel wrote:
+> > > On Thu, Nov 24, 2011 at 10:30:15 +0000, Artem S. Tashkinov wrote:
+> > > > Hello,
+> > > > 
+> > > > I'd like to report a weird regression in Linux 3.2 (running rc3 now) - all CPU metering applications have gone terribly mad
+> > > > under this kernel:
 > > > 
-> > > Yes, everything looks fine even with the xfs_log_force line from your
-> > > patch commented out. So, the changes in xfs_reclaim_inode() are just the
-> > > set_bit(XBT_FORCE_FLUSH) and wake_up_process(), relative to 3.1.
+> > > I get the same using top, htop and the gnome system monitor with kernel
+> > > 3.2 on a Sandy Bridge quad core box, running Debian unstable.
 > > 
-> > Dave pointed out that we can do better than the big hammer, and the
-> > patch below should fix your issue, too.  Can you test it?
+> > I just tested 3.2-rc2, and see the same bug.
 > 
-> Yes, seems to be fine. No hung task warnings, tested for ~5 days.
+> I'm seeing that too on one of my test boxes, but not all the time
+> (i.e. there are periods in which the readings are correct).  The other boxes
+> I've tested with 3.2-rc are fine in that respect.
+> 
+> Also, it seems that it shows 100%-(real load) when it is wrong.  So, it looks
+> like there's an overflow somewhere in the CPU load measuring code, at least
+> on some CPUs.
 
-Thanks a lot for the testing Simon.
+Hi,
 
-Ben, can you add a:
+I reverted this commit and so far it looks good:
 
-Tested-by: Simon Kirby <sim@hostway.ca>
+commit a25cac5198d4ff2842ccca63b423962848ad24b2
+Author: Michal Hocko <mhocko@suse.cz>
+Date:   Wed Aug 24 09:40:25 2011 +0200
 
-to the patch when applying it?
+    proc: Consider NO_HZ when printing idle and iowait times
 
+I'll report back tomorrow how the kernel behaves.
+
+Regards,
+Tino
