@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab1K1Cja (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 21:39:30 -0500
-Received: from mga03.intel.com ([143.182.124.21]:26365 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753297Ab1K1Cj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 21:39:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,580,1315206000"; 
-   d="scan'208";a="79625681"
-Date: Mon, 28 Nov 2011 10:39:22 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Ankit Jain <radical@gmail.com>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Nikanth Karthikesan <knikanth@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 2/8] readahead: make default readahead size a kernel
- parameter
-Message-ID: <20111128023922.GA2141@localhost>
-References: <20111121091819.394895091@intel.com>
- <20111121093846.251104145@intel.com>
- <20111121100137.GC5084@infradead.org>
- <20111121113540.GB8895@localhost>
- <20111124222822.GG29519@quack.suse.cz>
- <20111125003633.GP2386@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111125003633.GP2386@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755999Ab1K1CmE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 21:42:04 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:37633 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753297Ab1K1CmC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 21:42:02 -0500
+Date: Mon, 28 Nov 2011 13:41:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build warning after merge of the drm tree
+Message-Id: <20111128134156.186426a6dd7d612d488c87b1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_Nov_2011_13_41_56_+1100_rKv=.yJNj9_vhq.a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 25, 2011 at 08:36:33AM +0800, Dave Chinner wrote:
-> On Thu, Nov 24, 2011 at 11:28:22PM +0100, Jan Kara wrote:
-> > On Mon 21-11-11 19:35:40, Wu Fengguang wrote:
-> > > On Mon, Nov 21, 2011 at 06:01:37PM +0800, Christoph Hellwig wrote:
-> > > > On Mon, Nov 21, 2011 at 05:18:21PM +0800, Wu Fengguang wrote:
-> > > > > From: Nikanth Karthikesan <knikanth@suse.de>
-> > > > > 
-> > > > > Add new kernel parameter "readahead=", which allows user to override
-> > > > > the static VM_MAX_READAHEAD=128kb.
-> > > > 
-> > > > Is a boot-time paramter really such a good idea?  I would at least
-> > > 
-> > > It's most convenient to set at boot time, because the default size
-> > > will be used to initialize all the block devices.
-> > > 
-> > > > make it a sysctl so that it's run-time controllable, including
-> > > > beeing able to set it from initscripts.
-> > > 
-> > > Once boot up, it's more natural to set the size one by one, for
-> > > example
-> > > 
-> > >         blockdev --setra 1024 /dev/sda2
-> > > or
-> > >         echo 512 > /sys/block/sda/queue/read_ahead_kb
-> > > 
-> > > And you still have the chance to modify the global default, but the
-> > > change will only be inherited by newly created devices thereafter:
-> > > 
-> > >         echo 512 > /sys/devices/virtual/bdi/default/read_ahead_kb
-> > > 
-> > > The above command is very suitable for use in initscripts.  However
-> > > there are no natural way to do sysctl as there is no such a global
-> > > value.
-> >   Well, you can always have an udev rule to set read_ahead_kb to whatever
-> > you want. In some respect that looks like a nicer solution to me...
-> 
-> And one that has already been in use for exactly this purpose for
-> years. Indeed, it's far more flexible because you can give different
-> types of devices different default readahead settings quite easily,
-> and it you can set different defaults for just about any tunable
-> parameter (e.g. readahead, ctq depth, max IO sizes, etc) in the same
-> way.
+--Signature=_Mon__28_Nov_2011_13_41_56_+1100_rKv=.yJNj9_vhq.a
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm interested in this usage, too. Would you share some of your rules?
+Hi Dave,
 
-> Hence I don't think we should treat default readahead any
-> differently from any other configurable storage parameter - we've
-> already got places to change the per-device defaults to something
-> sensible at boot/discovery time....
+After merging the drm tree, today's linux-next build (x86_64 allmodconfig)
+produced this warning:
 
-OK, I'll drop this patch.
+drivers/gpu/drm/gma500/framebuffer.c: At top level:
+drivers/gpu/drm/gma500/framebuffer.c:669:2: warning: initialization from in=
+compatible pointer type [enabled by default]
+drivers/gpu/drm/gma500/framebuffer.c:669:2: warning: (near initialization f=
+or 'psb_mode_funcs.fb_create') [enabled by default]
 
-Thanks,
-Fengguang
+Caused by commit 4d8d096e9ae8 ("gma500: introduce the framebuffer support
+code") interacting with commit 308e5bcbdb10 ("drm: add an fb creation
+ioctl that takes a pixel format v5").  Again this should have been fixed
+up in commit b63e0f9cb433 ("Merge branch 'drm-gma500-alanc' into
+drm-core-next").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__28_Nov_2011_13_41_56_+1100_rKv=.yJNj9_vhq.a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO0vT0AAoJEECxmPOUX5FErIwQAJMOEdum0kCLtONBTl5jB2WE
+CsD2fLWKIJhwwfNZc9RY6ccyRK13YxHYo6dA/BwOIumaX8lXkb5clVeUKUsxFft5
+RSaWIvUaeyuT7j9XlocIYtyFMfq9e7VPzClIyN7Bs7I8T2K2U3Emip3/iHbRNhe2
+9jtqLL0Bw0iS/+Fia0TnE3B39VfV6Z37+kQNyNrZgM+FDmHAS/ikWTkg5tiW4r8n
+qcJrurbASScsViGK+1+v26PXTU4N3TvQinf68EmuFEb85pXCTstkS5b9GvseaK4F
+wGEBap6o1+oVopDlacoZO/BJO0NtgU2taMU5rsRW5vsm2Y20PcPuVjT4H8UPphVz
+T6aiRQnUtfay40mc1gQR/cmKdhZyk/G2719Mx2x9aiw9n0J27fwcyQWAw0J411Ww
+7D8h4sUJQmzMVAzBwMNb89j0yCM3XqsnO7VtzPyEvrQ1mQrbmYZRZLR43vFDrI/z
+CxA2n1lcs0iBWWqCCmGNFk7tKmDDkfxgAzxkt/J6/RPGF7XBERp2FExXDv/Yki1D
+sxbknJbQkAvY4BlqWGTADS/SW6NvoKnyxt6dPzTs7fSlza2jttneJv4MweSSaply
+XyrgB0RpHsixY0sk3YwhX+hHUTbb8rP/XwKFmtdXzTl49Sxi+IV64lhXJrwN2/id
+2Mxtv79Tv/pjy47wbx5z
+=H4xd
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_Nov_2011_13_41_56_+1100_rKv=.yJNj9_vhq.a--
