@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1K1QLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 11:11:22 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:34966 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699Ab1K1QLV convert rfc822-to-8bit (ORCPT
+	id S1752750Ab1K1QOq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 11:14:46 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:47259 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab1K1QOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 11:11:21 -0500
-X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
-   d="scan'208";a="602753192"
-Message-ID: <1322496677.8433.1.camel@lade.trondhjem.org>
-Subject: [GIT PULL] Please pull one NFS client bugfix
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 28 Nov 2011 11:11:17 -0500
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 28 Nov 2011 16:11:18.0371 (UTC) FILETIME=[5C8DB330:01CCADE8]
+	Mon, 28 Nov 2011 11:14:45 -0500
+Subject: [PATCH 1/2] cciss: Add IRQF_SHARED back in for the non-MSI(X)
+	interrupt handler
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com
+Date: Mon, 28 Nov 2011 10:14:42 -0600
+Message-ID: <20111128161442.25472.71410.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Please pull from the "bugfixes" branch of the repository at
+IRQF_SHARED is required for older controllers that don't support MSI(X)
+and which may end up sharing an interrupt.
 
-   git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git bugfixes
+Also remove deprecated IRQF_DISABLED.
 
-This will update the following files through the appended changesets.
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/block/cciss.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-  Cheers,
-    Trond
-
-----
- net/sunrpc/xprtsock.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-commit 24ca9a847791fd53d9b217330b15f3c285827a18
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Tue Nov 22 14:44:28 2011 +0200
-
-    SUNRPC: Ensure we return EAGAIN in xs_nospace if congestion is cleared
-    
-    By returning '0' instead of 'EAGAIN' when the tests in xs_nospace() fail
-    to find evidence of socket congestion, we are making the RPC engine believe
-    that the message was incorrectly sent and so it disconnects the socket
-    instead of just retrying.
-    
-    The bug appears to have been introduced by commit
-    5e3771ce2d6a69e10fcc870cdf226d121d868491 (SUNRPC: Ensure that xs_nospace
-    return values are propagated).
-    
-    Reported-by: Andrew Cooper <andrew.cooper3@citrix.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Cc: stable@vger.kernel.org [>= 2.6.30]
-    Tested-by: Andrew Cooper <andrew.cooper3@citrix.com>
-
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 8004ac3..6f22ed0 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -4880,7 +4880,7 @@ static int cciss_request_irq(ctlr_info_t *h,
+ {
+ 	if (h->msix_vector || h->msi_vector) {
+ 		if (!request_irq(h->intr[h->intr_mode], msixhandler,
+-				IRQF_DISABLED, h->devname, h))
++				0, h->devname, h))
+ 			return 0;
+ 		dev_err(&h->pdev->dev, "Unable to get msi irq %d"
+ 			" for %s\n", h->intr[h->intr_mode],
+@@ -4889,7 +4889,7 @@ static int cciss_request_irq(ctlr_info_t *h,
+ 	}
+ 
+ 	if (!request_irq(h->intr[h->intr_mode], intxhandler,
+-			IRQF_DISABLED, h->devname, h))
++			IRQF_SHARED, h->devname, h))
+ 		return 0;
+ 	dev_err(&h->pdev->dev, "Unable to get irq %d for %s\n",
+ 		h->intr[h->intr_mode], h->devname);
 
