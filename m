@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab1K1CS4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 21:18:56 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58161 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab1K1CSz (ORCPT
+	id S1755970Ab1K1CZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 21:25:56 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59736 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755869Ab1K1CZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 21:18:55 -0500
+	Sun, 27 Nov 2011 21:25:54 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 28 Nov 2011 11:17:44 +0900
+Date: Mon, 28 Nov 2011 11:24:41 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Kautuk Consul <consul.kautuk@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-2.6.35.13: Schedule while atomic bug and kernel crash in
- kswapd.
-Message-Id: <20111128111744.3020ad4d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <CAFPAmTQCcWf0yLm239b_fQTv9CY9t=B5gUrDO1wKM97pyrJurQ@mail.gmail.com>
-References: <CAFPAmTQCcWf0yLm239b_fQTv9CY9t=B5gUrDO1wKM97pyrJurQ@mail.gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
+        davem@davemloft.net, paul@paulmenage.org, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH v6 01/10] Basic kernel memory functionality for the
+ Memory Controller
+Message-Id: <20111128112441.44a6e166.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1322242696-27682-2-git-send-email-glommer@parallels.com>
+References: <1322242696-27682-1-git-send-email-glommer@parallels.com>
+	<1322242696-27682-2-git-send-email-glommer@parallels.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -29,46 +31,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Nov 2011 18:20:31 +0530
-Kautuk Consul <consul.kautuk@gmail.com> wrote:
+On Fri, 25 Nov 2011 15:38:07 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-> Hi,
+> This patch lays down the foundation for the kernel memory component
+> of the Memory Controller.
 > 
-> I am running linux-2.6.35.31 on my ARM system and I got around 197
-> schedule while atomics and then finally a kernel crash.
+> As of today, I am only laying down the following files:
 > 
-> Can anyone suggest some MMpatches to apply on this fix this problem ?
+>  * memory.independent_kmem_limit
+>  * memory.kmem.limit_in_bytes (currently ignored)
+>  * memory.kmem.usage_in_bytes (always zero)
 > 
-> I got the following schedule while atomic log around 197 times:
-> ------------------------------------------------------------------------------------------
-> Backtrace(CPU 0):
-> [<c00393a0>] (dump_backtrace+0x0/0x11c) from [<c0393728>] (dump_stack+0x20/0x24)
-> [<c0393708>] (dump_stack+0x0/0x24) from [<c0058ad0>] (__schedule_bug+0x70/0x7c)
-> [<c0058a60>] (__schedule_bug+0x0/0x7c) from [<c03939f8>] (schedule+0x74/0x5a4)
->   r5:d2002000 r4:d1f79440
->  [<c0393984>] (schedule+0x0/0x5a4) from [<c03948a0>]
-> (schedule_timeout+0x2c8/0x304)
->  [<c03945d8>] (schedule_timeout+0x0/0x304) from [<c0393958>]
-> (io_schedule_timeout+0x50/0x7c)
->   r7:d1f79440 r6:d2002000 r5:c04c0088 r4:c04bfc88
->  [<c0393908>] (io_schedule_timeout+0x0/0x7c) from [<c0109cbc>]
-> (congestion_wait+0x7c/0xa0)
->   r6:00000019 r5:c04c6230 r4:d2003edc r3:00000000
->  [<c0109c40>] (congestion_wait+0x0/0xa0) from [<c0102268>] (kswapd+0x594/0x61c)
->   r7:00000000 r6:c04d7a28 r5:00000008 r4:c04d76f4
->  [<c0101cd4>] (kswapd+0x0/0x61c) from [<c007db6c>] (kthread+0x90/0x98)
->  [<c007dadc>] (kthread+0x0/0x98) from [<c00642f4>] (do_exit+0x0/0x708)
->   r7:00000013 r6:c00642f4 r5:c007dadc r4:d1f47f3c
->  BUG: scheduling while atomic: kswapd0/16/0x00000000
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
+> CC: Paul Menage <paul@paulmenage.org>
+> CC: Greg Thelen <gthelen@google.com>
+> ---
+>  Documentation/cgroups/memory.txt |   36 ++++++++++++-
+>  init/Kconfig                     |   14 +++++
+>  mm/memcontrol.c                  |  107 ++++++++++++++++++++++++++++++++++++--
+>  3 files changed, 150 insertions(+), 7 deletions(-)
 > 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 06eb6d9..bf00cd2 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -44,8 +44,9 @@ Features:
+>   - oom-killer disable knob and oom-notifier
+>   - Root cgroup has no limit controls.
+>  
+> - Kernel memory and Hugepages are not under control yet. We just manage
+> - pages on LRU. To add more controls, we have to take care of performance.
+> + Hugepages is not under control yet. We just manage pages on LRU. To add more
+> + controls, we have to take care of performance. Kernel memory support is work
+> + in progress, and the current version provides basically functionality.
+>  
+>  Brief summary of control files.
+>  
+> @@ -56,8 +57,11 @@ Brief summary of control files.
+>  				 (See 5.5 for details)
+>   memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
+>  				 (See 5.5 for details)
+> + memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
+> +				 (See 2.7 for details)
+>   memory.limit_in_bytes		 # set/show limit of memory usage
+>   memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
+> + memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
+>   memory.failcnt			 # show the number of memory usage hits limits
+>   memory.memsw.failcnt		 # show the number of memory+Swap hits limits
+>   memory.max_usage_in_bytes	 # show max memory usage recorded
+> @@ -72,6 +76,9 @@ Brief summary of control files.
+>   memory.oom_control		 # set/show oom controls.
+>   memory.numa_stat		 # show the number of memory usage per numa node
+>  
+> + memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+> +				   independent of user limits
+> +
+>  1. History
+>  
+>  The memory controller has a long history. A request for comments for the memory
+> @@ -255,6 +262,31 @@ When oom event notifier is registered, event will be delivered.
+>    per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
+>    zone->lru_lock, it has no lock of its own.
+>  
+> +2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
+> +
+> + With the Kernel memory extension, the Memory Controller is able to limit
+> +the amount of kernel memory used by the system. Kernel memory is fundamentally
+> +different than user memory, since it can't be swapped out, which makes it
+> +possible to DoS the system by consuming too much of this precious resource.
+> +Kernel memory limits are not imposed for the root cgroup.
+> +
+> +Memory limits as specified by the standard Memory Controller may or may not
+> +take kernel memory into consideration. This is achieved through the file
+> +memory.independent_kmem_limit. A Value different than 0 will allow for kernel
+> +memory to be controlled separately.
+> +
+> +When kernel memory limits are not independent, the limit values set in
+> +memory.kmem files are ignored.
+> +
+> +Currently no soft limit is implemented for kernel memory. It is future work
+> +to trigger slab reclaim when those limits are reached.
+> +
+> +CAUTION: As of this writing, the kmem extention may prevent tasks from moving
+> +among cgroups. If a task has kmem accounting in a cgroup, the task cannot be
+> +moved until the kmem resource is released. Also, until the resource is fully
+> +released, the cgroup cannot be destroyed. So, please consider your use cases
+> +and set kmem extention config option carefully.
+> +
 
-Hmm, it seems strange and I never see this.
-This seems __schedule_bug() is called but preempt_count() is 0x00000000.
-Could you show your .config ?
+This seems that memcg 'has' kernel memory limiting feature for all kinds of kmem..
+Could you add a list of "currently controled kmems" section ?
+And update the list in later patch ?
 
-Regards,
+Thanks,
 -Kame
-
-
 
 
