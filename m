@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab1K1NEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 08:04:08 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39285 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab1K1NEH convert rfc822-to-8bit (ORCPT
+	id S1751530Ab1K1NG5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 08:06:57 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54005 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab1K1NGz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 08:04:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111128072713.GA17724@suse.de>
-References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
-	<201111251402.28016.arnd@arndb.de>
-	<CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
-	<20111127230836.GA29728@suse.de>
-	<20111128123114.2601bd7c@notabene.brown>
-	<20111128072713.GA17724@suse.de>
-Date: Mon, 28 Nov 2011 14:04:06 +0100
-Message-ID: <CACRpkdZ+Epa_Y2Kr3dy3-BM8qrcV3f3fWsJXUAbhMTqd268+hw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Greg KH <gregkh@suse.de>
-Cc: NeilBrown <neilb@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org,
-        Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>,
-        Johan PALSSON <johan.palsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mian Yousaf KAUKAB <mian.yousaf.kaukab@stericsson.com>,
-        morten.christiansen@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 28 Nov 2011 08:06:55 -0500
+Message-ID: <1322485597.2921.120.camel@twins>
+Subject: Re: BUG: scheduling while atomic: swapper/0/0x10000002
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>
+Cc: paulmck@linux.vnet.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mingo@elte.hu, fweisbec@gmail.com, linux-acpi@vger.kernel.org
+Date: Mon, 28 Nov 2011 14:06:37 +0100
+In-Reply-To: <4ED37B0A.2000705@cwi.nl>
+References: <4ED37B0A.2000705@cwi.nl>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 8:27 AM, Greg KH <gregkh@suse.de> wrote:
-> On Mon, Nov 28, 2011 at 12:31:14PM +1100, NeilBrown wrote:
->>
->>  My own thought is that this deserves a new device class which allows easy
->>  hook-up of in-kernel signalling using notifications and which can be
->>  exported as input devices in much the same way the 'gpio' devices can be
->>  exported via gpio_keys.  The switch could also optionally be exported through
->>  sysfs much like gpio can be exported through sysfs.
->
-> That might also work, but again, odds are the HID spec already defines
-> this type of "switch", so why recreate it as a different type of device?
+On Mon, 2011-11-28 at 12:14 +0000, Wouter M. Koolen wrote:
+> Dear Paul and others,
+> 
+> On vanilla kernel 3.1.3, I got the following during boot.
+> 
+> BUG: scheduling while atomic: swapper/0/0x10000002
+> no locks held by swapper/0.
+> Modules linked in:
+> Pid: 0, comm: swapper Not tainted 3.1.3.debug+ #32
+> Call Trace:
+> [<ffffffff814058de>] __schedule_bug+0x60/0x65
+> [<ffffffff8189b85a>] ? pidmap_init+0x84/0xc4
+> [<ffffffff8140a3d9>] __schedule+0x759/0x920
+> [<ffffffff8189b85a>] ? pidmap_init+0x84/0xc4
+> [<ffffffff8103d855>] __cond_resched+0x25/0x40
+> [<ffffffff8140a61d>] _cond_resched+0x2d/0x40
+> [<ffffffff811107df>] kmem_cache_alloc_trace+0x4f/0x1d0
+> [<ffffffff8189b85a>] pidmap_init+0x84/0xc4
+> [<ffffffff8188ab47>] start_kernel+0x339/0x3bc
+> [<ffffffff8188a322>] x86_64_start_reservations+0x132/0x136
+> [<ffffffff8188a416>] x86_64_start_kernel+0xf0/0xf7
+> 
+> A little googling revealed that patch [2] "rcu: Avoid having 
+> just-onlined CPU resched itself when RCU is idle"
+> is supposed to address this issue. However, booting 3.1.3 with patch [2] 
+> leads to three new "BUG: scheduling while atomic: swapper/0/0x10000002" 
+> reports every boot.
+> 
+> The exact blurb varies a little bit, but all backtraces seem ACPI 
+> related. I include three examples below. Some old [4] and new [1,3] 
+> similar threads exist, but without resolution as far as I can tell.
+> 
+> The machine, a 2008 macbook 4.1, seems to be fine.
+> 
+> Is this just noise (produced by overzealous debugging checks) that I 
+> should safely ignore? If not, please let me know what I can do to help 
+> track this down.
 
-I think both yes and no, but I will stand corrected.
+Bah, looks like d86ee4809d0 ("sched: optimize cond_resched()") is
+broken, what's weird is that it only now shows up.
 
-When you plug it into a host, I guess your device will
-negotiate power withdrawal from the host as anything else,
-no matter what device or interface classes it presents.
+We reset the preempt_count to 0 at sched_init()->init_idle(), which is
+way before pidmap_init(), loosing the PREEMPT_ACTIVE bit that would
+disable should_resched().
 
-However in the other case I am under the impression that
-devices supporting EPS
-http://en.wikipedia.org/wiki/Common_External_Power_Supply
-Or the "battery charging specification"
-http://www.usb.org/developers/devclass_docs/batt_charging_1_1.zip
-do so in their Phy transceiver drivers, say e.g.
-drivers/usb/otg/ab8500-usb.c in our case. This is sometime
-called a "chinese charger" or "dedicated charger". It's just
-appearing on the micro-USB port, it doesn't enumerate and
-the OS driver does not talk to it. I think it notifies the transceiver
-by short-circuiting D+ and D- and the transceiver/phy
-driver may in many cases notify charging circuitry and
-userspace that it's been plugged in (switch uevent,
-cable insertion input event or whatever we come up with).
 
-So no, I don't think HID defines this, it's defined in a
-physical layer spec, and the interfaces to OS:es are
-transciever/phy-custom.
-
-I've CC:ed Morten who was part of writing the charging
-spec so he can correct me if I'm saying the wrong thing.
-
-Yours,
-Linus Walleij
