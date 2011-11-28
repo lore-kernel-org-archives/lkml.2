@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab1K1Hlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:41:51 -0500
-Received: from mga09.intel.com ([134.134.136.24]:44890 "EHLO mga09.intel.com"
+	id S1752049Ab1K1HnA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:43:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50005 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab1K1HlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:41:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="80548648"
-Message-Id: <20111128074029.504309527@intel.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 28 Nov 2011 15:33:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Keith Packard <keithp@keithp.com>
-cc: Takashi Iwai <tiwai@suse.de>, Wu Fengguang <fengguang.wu@intel.com>
-Cc: Sander Jansen <s.jansen@gmail.com>,
-        Christopher White <c.white@pulseforce.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "Pierre-louis Bossart " <pierre-louis.bossart@intel.com>,
-        "Zhenyu Wang" <zhenyu.z.wang@intel.com>,
-        Jeremy Bush <contractfrombelow@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] drm/i915: fix ELD writing for SandyBridge
-References: <20111128073337.815008177@intel.com>
-Content-Disposition: inline; filename=sandybridge-eld-fix
+	id S1751034Ab1K1Hm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:42:59 -0500
+Message-ID: <4ED33B61.8040808@redhat.com>
+Date: Mon, 28 Nov 2011 15:42:25 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [V2 PATCH 00/62] highmem: remove the second argument of kmap_atomic/kunmap_atomic
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322432495.23348.1.camel@pasglop>
+In-Reply-To: <1322432495.23348.1.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SandyBridge should be using the same register addresses as IvyBridge.
+于 2011年11月28日 06:21, Benjamin Herrenschmidt 写道:
+> On Sun, 2011-11-27 at 13:26 +0800, Cong Wang wrote:
+>> V1: https://lkml.org/lkml/2011/1/30/13
+>>
+>> V1->V2: Split patches and rebase them to the latest linus tree.
+>
+> I'm not too fan of the split myself... 62 patches is just plain crazy.
+> However, no obvious objection from the patches themselves (at least the
+> ones affecting powerpc), though I haven't had a chance to test them yet.
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux.orig/drivers/gpu/drm/i915/intel_display.c	2011-11-24 08:09:41.000000000 +0800
-+++ linux/drivers/gpu/drm/i915/intel_display.c	2011-11-24 08:10:32.000000000 +0800
-@@ -5857,7 +5857,7 @@ static void ironlake_write_eld(struct dr
- 	int aud_cntl_st;
- 	int aud_cntrl_st2;
- 
--	if (IS_IVYBRIDGE(connector->dev)) {
-+	if (HAS_PCH_IBX(connector->dev)) {
- 		hdmiw_hdmiedid = GEN7_HDMIW_HDMIEDID_A;
- 		aud_cntl_st = GEN7_AUD_CNTRL_ST_A;
- 		aud_cntrl_st2 = GEN7_AUD_CNTRL_ST2;
-
-
+Actually Andrew Morton prefers to have patches split, also, splitting
+patches helps review. ;-)
