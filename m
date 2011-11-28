@@ -1,110 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1K1OKZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:10:25 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:23542 "EHLO relay.sw.ru"
+	id S1753687Ab1K1OK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:10:56 -0500
+Received: from mga03.intel.com ([143.182.124.21]:41420 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751699Ab1K1OKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:10:23 -0500
-Date: Mon, 28 Nov 2011 18:03:56 +0400
-From: Andrew Vagin <avagin@openvz.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Andrey Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Matt Helsley <matthltc@us.ibm.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [RFC] cgroups: freezer -- Allow to attach a task to a frozen
- cgroup
-Message-ID: <20111128140356.GA27395@dhcp-10-30-18-117.sw.ru>
-References: <20111128120813.GK1775@moon>
- <CANaxB-wrRd94OJifpYJ=kibx_48oJ=GE51f9GWjZ3np2nCQYsA@mail.gmail.com>
- <20111128133828.GL1775@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111128133828.GL1775@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753024Ab1K1OJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:09:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
+   d="scan'208";a="79787547"
+Message-Id: <20111128140513.038056015@intel.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 28 Nov 2011 21:53:39 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: <linux-fsdevel@vger.kernel.org>
+cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>
+CC: Christoph Hellwig <hch@lst.de>
+cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/7] writeback: balanced_rate cannot exceed write bandwidth
+References: <20111128135338.249672012@intel.com>
+Content-Disposition: inline; filename=ref-bw-up-bound
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +static int freezer_can_attach_task(struct cgroup *cgroup, struct task_struct *task)
-> > > +{
-> > > + š š š struct freezer *old_freezer;
-> > > + š š š struct freezer *freezer;
-> > > +
-> > > + š š š int goal_state, orig_state;
-> > > + š š š int retval = 0;
-> > > +
-> > > + š š š old_freezer = task_freezer(task);
-> > > + š š š freezer = cgroup_freezer(cgroup);
-> > > +
-> > > + š š š spin_lock_irq(&freezer->lock);
-> > > +
-> > > + š š š if (!spin_trylock_irq(&old_freezer->lock)) {
-> > > + š š š š š š š retval = -EBUSY;
-> > 
-> > I think EBUSY is not a good idea in this place.  We can do something
-> > like double_rq_lock.
-> > 
-> 
-> Could you please elaborate? freezers are guarded with spinlocks so I think
-> we should stick with them instead of poking rq (or whatever) directly.
+Add an upper limit to balanced_rate according to the below inequality.
+This filters out some rare but huge singular points, which at least
+enables more readable gnuplot figures.
 
-It's misunderstanding. I want to say that we can avoid dead lock if we
-will take a lock with a smaller address at first.
+When there are N dd dirtiers,
 
-if (&freezer->lock > &old_freezer->lock) {
-	spin_lock_irq(&old_freezer->lock)
-	spin_lock_irq(&freezer->lock);
-} else {
-	spin_lock_irq(&freezer->lock);
-	spin_lock_irq(&old_freezer->lock)
-}
+	balanced_dirty_ratelimit = write_bw / N
 
-> 
-> > 
-> > > +
-> > > +static void freezer_cancel_attach(struct cgroup_subsys *ss,
-> > > + š š š š š š š š š š š š š š š š struct cgroup *cgroup,
-> > > + š š š š š š š š š š š š š š š š struct cgroup *old_cgroup,
-> > > + š š š š š š š š š š š š š š š š struct task_struct *task)
-> > > +{
-> > > + š š š struct freezer *freezer = cgroup_freezer(old_cgroup);
-> > > + š š š int retval = 0;
-> > > +
-> > > + š š š spin_lock_irq(&freezer->lock);
-> > > + š š š retval = freezer_task_transition(task, freezer->state);
-> > > + š š š if (retval)
-> > > + š š š š š š š pr_warning("freezer: Can't move task (pid %d) to %s state\n",
-> > > + š š š š š š š š š š š š štask_pid_nr(task),
-> > > + š š š š š š š š š š š š šfreezer_state_strs[freezer->state]);
-> > 
-> > It's strange. A rollback can't fail. We have three situations:
-> > 
-> > frozen -> frozen
-> > thawed -> frozen
-> > frozen -> thawed
-> > 
-> > In first and second cases cancel_request can't fail.
-> > In the third we have a problem, which may be solved if we will call
-> > thaw_process(task) from attach_task(), we can do that, because
-> > thaw_process() can't fail. It solves a problem, because
-> > freezer_cancel_attach will be executed for the first and second cases
-> > only.
-> > 
-> > If my suggestion is correct, we can replace pr_warning on BUG_ON
-> > 
-> 
-> Yes, the case which can fail is
-> 
->    frozen->(can_attach_task)->thawed
->      (cgroup_task_migrate failure)
->    thawed->(cancel_attach)->frozen
-> 
-> and we should never fail here since otherwise we would not have
-> a "frozen" state before. But I think placing BUG_ON is too severe
-> here, maybe WARN_ON_ONCE(1) would fit better?
+So it holds that
 
-It's true, if a task is not being executed between thaw_process() and
-freeze_task().
+	balanced_dirty_ratelimit <= write_bw
+
+The singular points originate from dirty_rate in the below formular:
+
+        balanced_dirty_ratelimit = task_ratelimit * write_bw / dirty_rate
+where
+	dirty_rate = (number of page dirties in the past 200ms) / 200ms
+
+In the extreme case, if all dd tasks suddenly get blocked on something
+else and hence no pages are dirtied at all, dirty_rate will be 0 and
+balanced_dirty_ratelimit will be inf. This could happen in reality.
+
+Note that these huge singular points are not a real threat, since they
+are _guaranteed_ to be filtered out by the
+	min(balanced_dirty_ratelimit, task_ratelimit)
+line in bdi_update_dirty_ratelimit(). task_ratelimit is based on the
+number of dirty pages, which will never _suddenly_ fly away like
+balanced_dirty_ratelimit. So any weirdly large balanced_dirty_ratelimit
+will be cut down to the level of task_ratelimit.
+
+There won't be tiny singular points though, as long as the dirty pages
+lie inside the dirty throttling region (above the freerun region).
+Because there the dd tasks will be throttled by balanced_dirty_pages()
+and won't be able to suddenly dirty much more pages than average.
+
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/page-writeback.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- linux-next.orig/mm/page-writeback.c	2011-11-17 20:18:03.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-11-17 20:18:23.000000000 +0800
+@@ -804,6 +804,11 @@ static void bdi_update_dirty_ratelimit(s
+ 	 */
+ 	balanced_dirty_ratelimit = div_u64((u64)task_ratelimit * write_bw,
+ 					   dirty_rate | 1);
++	/*
++	 * balanced_dirty_ratelimit ~= (write_bw / N) <= write_bw
++	 */
++	if (unlikely(balanced_dirty_ratelimit > write_bw))
++		balanced_dirty_ratelimit = write_bw;
+ 
+ 	/*
+ 	 * We could safely do this and return immediately:
+
+
