@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab1K1HkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:40:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12941 "EHLO mx1.redhat.com"
+	id S1752176Ab1K1HlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:41:18 -0500
+Received: from mga01.intel.com ([192.55.52.88]:19748 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab1K1HkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:40:15 -0500
-Message-ID: <4ED33ABF.7000203@redhat.com>
-Date: Mon, 28 Nov 2011 15:39:43 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dean Nelson <dnelson@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Jiri Pirko <jpirko@redhat.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [PATCH 21/62] net: remove the second argument of k[un]map_atomic()
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-22-git-send-email-amwang@redhat.com>
-In-Reply-To: <1322371662-26166-22-git-send-email-amwang@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1751435Ab1K1HlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:41:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,582,1315206000"; 
+   d="scan'208";a="95944918"
+Message-Id: <20111128074029.878450261@intel.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 28 Nov 2011 15:33:41 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Keith Packard <keithp@keithp.com>
+cc: Takashi Iwai <tiwai@suse.de>, Wang Zhenyu <zhenyu.z.wang@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Cc: Sander Jansen <s.jansen@gmail.com>,
+        Christopher White <c.white@pulseforce.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "Pierre-louis Bossart " <pierre-louis.bossart@intel.com>,
+        Jeremy Bush <contractfrombelow@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 4/4] drm/i915: HDMI hot remove notification to audio driver
+References: <20111128073337.815008177@intel.com>
+Content-Disposition: inline; filename=eld-hot-disable
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年11月27日 13:27, Cong Wang 写道:
-> Signed-off-by: Cong Wang<amwang@redhat.com>
-...
->   create mode 100644 drivers/net/team/Module.symvers
+On HDMI monitor hot remove, clear SDVO_AUDIO_ENABLE accordingly, so that
+the audio driver will receive hot plug events and take action to refresh
+its device state and ELD contents.
 
-This piece is not correct, I will send an updated patch.
+The cleared SDVO_AUDIO_ENABLE bit needs to be restored to prevent losing
+HDMI audio after DPMS on.
+
+CC: Wang Zhenyu <zhenyu.z.wang@intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ drivers/gpu/drm/i915/intel_dp.c   |    4 +++-
+ drivers/gpu/drm/i915/intel_hdmi.c |    8 ++++++--
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+--- linux.orig/drivers/gpu/drm/i915/intel_hdmi.c	2011-11-24 17:11:38.000000000 +0800
++++ linux/drivers/gpu/drm/i915/intel_hdmi.c	2011-11-24 17:15:03.000000000 +0800
+@@ -269,6 +269,10 @@ static void intel_hdmi_dpms(struct drm_e
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_hdmi *intel_hdmi = enc_to_intel_hdmi(encoder);
+ 	u32 temp;
++	u32 enable_bits = SDVO_ENABLE;
++
++	if (intel_hdmi->has_audio)
++		enable_bits |= SDVO_AUDIO_ENABLE;
+ 
+ 	temp = I915_READ(intel_hdmi->sdvox_reg);
+ 
+@@ -281,9 +285,9 @@ static void intel_hdmi_dpms(struct drm_e
+ 	}
+ 
+ 	if (mode != DRM_MODE_DPMS_ON) {
+-		temp &= ~SDVO_ENABLE;
++		temp &= ~enable_bits;
+ 	} else {
+-		temp |= SDVO_ENABLE;
++		temp |= enable_bits;
+ 	}
+ 
+ 	I915_WRITE(intel_hdmi->sdvox_reg, temp);
+
+
