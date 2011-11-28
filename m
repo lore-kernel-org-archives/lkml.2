@@ -1,107 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754219Ab1K1VZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 16:25:42 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:48196 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753673Ab1K1VZB (ORCPT
+	id S1754263Ab1K1V0J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 16:26:09 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57485 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753945Ab1K1V0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 16:25:01 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: [PATCH 4/4 RFC] rcu: New rcu_user_enter_irq() and rcu_user_exit_irq() APIs
-Date: Mon, 28 Nov 2011 22:24:47 +0100
-Message-Id: <1322515487-18690-5-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
-References: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
+	Mon, 28 Nov 2011 16:26:08 -0500
+Date: Mon, 28 Nov 2011 21:27:34 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stefano Laporta <Stefano.Laporta@bo.infn.it>
+Cc: linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Subject: Re: 3.1.3 2.6.37.6 2.6.33.4 kernel bug in pata_oldpiix driver
+Message-ID: <20111128212734.7818a2d6@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LNX.2.00.1111281823440.12891@g-3.bo.infn.it>
+References: <alpine.LNX.2.00.1111281823440.12891@g-3.bo.infn.it>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A CPU running in adaptive tickless mode wants to enter into
-RCU extended quiescent state while running in userspace. This
-way we can shut down the tick that is usually needed on each
-CPU for the needs of RCU.
+> BUG: unable to handle kernel paging request at 45230451
 
-Typically, RCU enters the extended quiescent state when we resume
-to userspace through a syscall or exception exit, this is done
-using rcu_user_enter(). Then RCU exit this state by calling
-rcu_user_exit() from syscall or exception entry.
+That looks like junk from somewhere.
 
-However there are two other points where we may want to enter
-or exit this state. Some remote CPU may require a tickless CPU
-to restart its tick for any reason and send it an IPI for
-this purpose. As we restart the tick, we don't want to resume
-from the IPI in RCU extended quiescent state anymore.
-Similarly we may stop the tick from an interrupt in userspace and
-we need to be able to enter RCU extended quiescent state when we
-resume from this interrupt to userspace.
+> IP: [<c17bb1f3>] oldpiix_set_dmamode+0xb3/0x120
 
-To these ends, we provide two new APIs:
+>   [<c17bb3b0>] ? oldpiix_qc_issue+0x40/0x60
+>   [<c1788d8a>] ? ata_qc_issue+0x1ea/0x330
 
-- rcu_user_enter_irq(). This must be called from a non-nesting
-interrupt betwenn rcu_irq_enter() and rcu_irq_exit().
-After the irq calls rcu_irq_exit(), we'll run into RCU extended
-quiescent state.
+So we were issuing a command, we called the oldpiix code, it decided that
+the timings were not loaded for this drive (ie it was those loaded for
+the other device on the bus)
 
-- rcu_user_exit_irq(). This must be called from a non-nesting
-interrupt, interrupting an RCU extended quiescent state, and
-between rcu_irq_enter() and rcu_irq_exit(). After the irq calls
-rcu_irq_exit(), we'll prevent from resuming the RCU extended
-quiescent.
+It will then have gone into oldpiix_set_piomode which ran succesfully
+implying that ap and adev were valid at that point but seem to have
+mysteriously gone invalid later.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>
----
- kernel/rcutree.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+No idea, and the fact that changing things like the pre-empt behaviour or
+build options makes me wonder if it was scribbled on from elsewhere.
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 00a9fba..a7906c9 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -402,6 +402,18 @@ void rcu_user_enter(void)
- 	__rcu_idle_enter();
- }
- 
-+void rcu_user_enter_irq(void)
-+{
-+	unsigned long flags;
-+	struct rcu_dynticks *rdtp;
-+
-+	local_irq_save(flags);
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	WARN_ON_ONCE(rdtp->dynticks_nesting == 1);
-+	rdtp->dynticks_nesting = 1;
-+	local_irq_restore(flags);
-+}
-+
- /**
-  * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
-  *
-@@ -503,6 +515,18 @@ void rcu_user_exit(void)
- 	__rcu_idle_exit();
- }
- 
-+void rcu_user_exit_irq(void)
-+{
-+	unsigned long flags;
-+	struct rcu_dynticks *rdtp;
-+
-+	local_irq_save(flags);
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	WARN_ON_ONCE(rdtp->dynticks_nesting != 1);
-+	rdtp->dynticks_nesting = (LLONG_MAX / 2) + 1;
-+	local_irq_restore(flags);
-+}
-+
- /**
-  * rcu_irq_enter - inform RCU that current CPU is entering irq away from idle
-  *
--- 
-1.7.5.4
 
