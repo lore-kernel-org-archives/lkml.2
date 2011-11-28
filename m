@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab1K1PAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 10:00:05 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47230 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab1K1PAD convert rfc822-to-8bit (ORCPT
+	id S1753365Ab1K1PAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 10:00:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55661 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab1K1PAP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 10:00:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111127093321.GC31086@kroah.com>
-References: <cover.1322328073.git.rubini@gnudd.com> <51ba376321edbd0bcbd206cb28abb14a68a05a2b.1322328075.git.rubini@gnudd.com>
- <20111126200341.GD11421@kroah.com> <7431481.TL8TOhprdN@harkonnen> <20111127093321.GC31086@kroah.com>
-From: Federico Vaga <federico.vaga@gmail.com>
-Date: Mon, 28 Nov 2011 15:59:41 +0100
-Message-ID: <CAH5GJ0rwJj9m7Hx1o_1N-Hb7CmDU9hRfp3oPXET9ecD4+TQDYA@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/7] drivers/zio: core files for the ZIO input/output
-To: Greg KH <greg@kroah.com>
-Cc: Alessandro Rubini <rubini@gnudd.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dcobas@cern.ch, siglesia@cern.ch,
-        manohar.vanga@cern.ch
-Content-Type: text/plain; charset=UTF-8
+	Mon, 28 Nov 2011 10:00:15 -0500
+Message-ID: <1322492384.2921.143.camel@twins>
+Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>, tulasidhard@gmail.com
+Date: Mon, 28 Nov 2011 15:59:44 +0100
+In-Reply-To: <20111124134742.GH28065@linux.vnet.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+	 <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
+	 <1322071812.14799.87.camel@twins>
+	 <20111124134742.GH28065@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/27 Greg KH <greg@kroah.com>:
-> On Sat, Nov 26, 2011 at 11:58:41PM +0100, Federico Vaga wrote:
->> In data sabato 26 novembre 2011 12:03:41, Greg KH ha scritto:
->> > On Sat, Nov 26, 2011 at 06:30:42PM +0100, Alessandro Rubini wrote:
->> > > +static struct kobj_type zdktype = { /* For standard and extended
->> > > attribute */ +    .release   = NULL,
->> >
->> > Sweet!
->> >
->> > As-per the in-kernel documentation, I now get to mock you for doing
->> > this :)
->> >
->> > Please NEVER DO THIS, you are ignoring the messages that the kernel
->> > sends you when you remove one of these devices, and causing a memory
->> > leak.
->>
->> Honestly we never see any messages about this.
->
-> Really?  Then you never removed that kobject from memory.  Please go
-> read the kobject documentation for more details.
+On Thu, 2011-11-24 at 19:17 +0530, Srikar Dronamraju wrote:
+> * Peter Zijlstra <peterz@infradead.org> [2011-11-23 19:10:12]:
+> 
+> > On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
+> > > +                       ret = install_breakpoint(vma->vm_mm, uprobe);
+> > > +                       if (ret == -EEXIST) {
+> > > +                               atomic_inc(&vma->vm_mm->mm_uprobes_count);
+> > > +                               ret = 0;
+> > > +                       } 
+> > 
+> > Aren't you double counting that probe position here? The one that raced
+> > you to inserting it will also have incremented that counter, no?
+> > 
+> 
+> No we arent.
+> Because register_uprobe can never race with mmap_uprobe and register
+> before mmap_uprobe registers .(Once we start mmap_region,
+> register_uprobe waits for the read_lock of mmap_sem.)
+> 
+> And we badly need this for mmap_uprobe case.  Because when we do mremap,
+> or vma_adjust(), we do a munmap_uprobe() followed by mmap_uprobe() which
+> would have decremented the count but not removed it. So when we do a
+> mmap_uprobe, we need to increment the count. 
 
-Yes. All the kobjects are correctly removed and no memory leak was found.
+Ok, so I didn't parse that properly last time around.. but it still
+doesn't make sense, why would munmap_uprobe() decrement the count but
+not uninstall the probe?
 
-I took a look into kobject.c and I found (I suppose) the message but
-it is a pr_debug(); if it is so important we can think to "promote" it
-to pr_warning()
+install_breakpoint() returning -EEXIST on two different conditions
+doesn't help either.
 
->> > Not nice at all, yet another reason to use a 'struct device'.
->>
->> I don't think is a valid reason, because device_release implementation require
->> us to implement a release method within device, or device_type or class; so we
->> can use kobj_type as well.
->
-> True, but it tries to make things easier to not get wrong, like you are
-> here.
->
-> Please fix this.
+So what I think you're doing is that you're optimizing the unmap case
+since the memory is going to be thrown out fixing up the instruction is
+a waste of time, but this leads to the asymmetry observed above. But you
+fail to mention this in both the changelog or a comment near that
+-EEXIST branch in mmap_uprobe.
 
-I'll fix it
+Worse, you don't explain how the other -EEXIST (!consumers) thing
+interacts here, and I just gave up trying to figure that out since it
+made my head hurt.
 
-> greg k-h
->
+Also, your whole series of patches is still utter crap, the splitup
+doesn't work at all, I need to constantly search back and forth between
+patches in order to figure out wtf is happening, and your changelogs
+only seem to add confusion if anything at all.
 
+Also, you seem to have stuck a whole bunch of random patches at the end
+that fix various things without folding them back in to make the series
+saner/smaller.
 
+I've now reverted to simply applying all patches and reading the end
+result and using git-blame to figure out what patch something came
+from :-(
 
--- 
-Federico Vaga
