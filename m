@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab1K1UFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 15:05:18 -0500
-Received: from blu0-omc1-s1.blu0.hotmail.com ([65.55.116.12]:62946 "EHLO
-	blu0-omc1-s1.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752836Ab1K1UFQ (ORCPT
+	id S1754596Ab1K1UF4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:05:56 -0500
+Received: from casper.infradead.org ([85.118.1.10]:59990 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab1K1UFz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 15:05:16 -0500
-X-Originating-IP: [87.194.136.79]
-X-Originating-Email: [piercing_male@hotmail.com]
-Message-ID: <BLU0-SMTP36987CC5BAE13BD585AA31198B20@phx.gbl>
-Subject: Re: linear raid, is partial recovery possible?
-From: wilsonjonathan <piercing_male@hotmail.com>
-To: linux-kernel@vger.kernel.org
-In-Reply-To: <1322506426.2259.33.camel@AOC>
-References: <1322506426.2259.33.camel@AOC>
+	Mon, 28 Nov 2011 15:05:55 -0500
+Message-ID: <1322510741.2921.169.camel@twins>
+Subject: Re: [PATCH 4/9] ftrace: Add enable/disable ftrace_ops control
+ interface
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org
+Date: Mon, 28 Nov 2011 21:05:41 +0100
+In-Reply-To: <1322510552.2921.167.camel@twins>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+	 <1322417074-5834-5-git-send-email-jolsa@redhat.com>
+	 <1322508398.17003.9.camel@frodo> <1322510552.2921.167.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Nov 2011 20:05:15 +0000
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Nov 2011 20:05:14.0233 (UTC) FILETIME=[0A944690:01CCAE09]
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore as sent to wrong list.
+On Mon, 2011-11-28 at 21:02 +0100, Peter Zijlstra wrote:
+> On Mon, 2011-11-28 at 14:26 -0500, Steven Rostedt wrote:
+> > 
+> > Are jump labels safe in NMI context yet? If not, this will need to wait
+> > till we make it so. 
+> 
+> I don't think they are, we currently very much rely on that
+> stop_machine() crap. NMIs can go straight through that.
+> 
+> I think you can make it work with the stop_machine()-less approach,
+> because then the NMI will trap on the INT3 which will wait for
+> completion, sync and resume the NMI.
 
-On Mon, 2011-11-28 at 18:53 +0000, wilsonjonathan wrote:
-> Quick question regarding linear raid.
-> 
-> If a disk fails on a linear raid I understand how the raid is
-> non-recoverable, as a whole, as it has lost a chunk of data.
-> 
-> However is it possible to recover the data from the non-failed portion
-> of the raid as I assume linear works by starting at one end of the array
-> and slowly progresses to the other?
-> 
-> Or perhaps it is dependent on the file system on the array, eg. ext
-> works by trying to place files distant to each other to help reduce the
-> possibility of fragmentation?
-> 
-> Perhaps the filesystem meta data, or some portion, may span between two
-> physical drives which would corrupt its table?
-> 
-> And obviously if a file spans two disks it would be missing part of its
-> data?
-> 
-> Does the raid underlying a file system do its own things, re-space,
-> physical data layout, etc; or does/can a file system impact on the
-> workings of an array?
-> 
-> The more I look into software raid the more fasinated I become with it
-> and its inner workings. While its way beyond me in some of the maths and
-> the fact I am un-proficient in C it has really caught my intrigue, and
-> all because I wanted to set up a small home server ;-)
-> 
-
-
+Note that this of course precludes ever using jump_labels from do_int3
+handlers ;-)
