@@ -1,219 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab1K1UAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 15:00:10 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:50421 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248Ab1K1UAI (ORCPT
+	id S1754702Ab1K1UAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:00:39 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47161 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab1K1UAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 15:00:08 -0500
-Date: Mon, 28 Nov 2011 20:00:23 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [RFC -resend] Make Yama pid_ns aware
-Message-ID: <20111128200023.GA1818@hallyn.com>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
- <20111128191658.GA6028@albatros>
+	Mon, 28 Nov 2011 15:00:36 -0500
+From: William Douglas <william.r.douglas@gmail.com>
+To: linux-kernel@vger.kernel.org, pascal@unilogicnetworks.net, jlee@novell.com,
+        joe@perches.com
+Subject: [PATCH] Don't show error if Acer WMI is not found
+Date: Mon, 28 Nov 2011 12:00:31 -0800
+Message-ID: <8762i4dnkw.fsf@intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111128191658.GA6028@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Vasiliy Kulikov (segoon@openwall.com):
-> As Yama's sysctls are about defining a security policy for the system,
-> it is reasonable to define it per container in case of LXC containers
-> (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
-> to pid namespace.  With per-pid_ns sysctls it is possible to create
-> multiple containers with different ptrace, /tmp, etc. policies.
-> 
-> The patch is straightforward:
-> 
-> 1) all sysctl variables are moved from global vars to pid_namespace
-> fields.
-> 
-> 2) each cloned pid ns gets the settings of the parent.
-> 
-> 3) the variables of current pid ns are visible through sysctl interface.
-> 
-> proc_pid_dointvec_minmax() is stolen from its ipc_ns equivalent in
-> ipc/ipc_sysctl.c.
-> 
-> P.S.  As user namespaces are not merged yet and it's not clear when/whether
-> they are merged, these changes belong to pid namespace for now.  When
-> user namespaces are merged, per pid_ns variables should go to struct
-> user_namespace.  It will not break ABI as userspace sees the same
-> kernel.yama.* sysctls in both pid ns and user ns cases.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+>From 486df5137ae34a4057d604e2b645d7b3848a562f Mon Sep 17 00:00:00 2001
+From: William Douglas <william.douglas@intel.com>
+Date: Mon, 28 Nov 2011 11:30:26 -0800
+Subject: [PATCH] Don't show error if Acer WMI is not found.
 
-thanks,
--serge
+This patch initiated by Pascal seemed to get left out when switching
+to pr_<level>. I've updated the patch and am resubmitting it as it
+reduces unnecessary boot noise.
 
-> --
-> 
-> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-> index 38d1032..46edaf8 100644
-> --- a/include/linux/pid_namespace.h
-> +++ b/include/linux/pid_namespace.h
-> @@ -30,6 +30,11 @@ struct pid_namespace {
->  #ifdef CONFIG_BSD_PROCESS_ACCT
->  	struct bsd_acct_struct *bacct;
->  #endif
-> +#ifdef CONFIG_SECURITY_YAMA
-> +	int ptrace_scope;
-> +	int protected_sticky_symlinks;
-> +	int protected_nonaccess_hardlinks;
-> +#endif
->  };
->  
->  extern struct pid_namespace init_pid_ns;
-> diff --git a/kernel/pid.c b/kernel/pid.c
-> index fa5f722..0cd8926 100644
-> --- a/kernel/pid.c
-> +++ b/kernel/pid.c
-> @@ -78,6 +78,11 @@ struct pid_namespace init_pid_ns = {
->  	.last_pid = 0,
->  	.level = 0,
->  	.child_reaper = &init_task,
-> +#ifdef CONFIG_SECURITY_YAMA
-> +	.ptrace_scope = 1,
-> +	.protected_sticky_symlinks = 1,
-> +	.protected_nonaccess_hardlinks = 1,
-> +#endif
->  };
->  EXPORT_SYMBOL_GPL(init_pid_ns);
->  
-> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> index e9c9adc..73d47c4 100644
-> --- a/kernel/pid_namespace.c
-> +++ b/kernel/pid_namespace.c
-> @@ -101,6 +101,14 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
->  	if (err)
->  		goto out_put_parent_pid_ns;
->  
-> +#ifdef CONFIG_SECURITY_YAMA
-> +	ns->ptrace_scope = parent_pid_ns->ptrace_scope;
-> +	ns->protected_sticky_symlinks =
-> +		parent_pid_ns->protected_sticky_symlinks;
-> +	ns->protected_nonaccess_hardlinks =
-> +		parent_pid_ns->protected_nonaccess_hardlinks;
-> +#endif
-> +
->  	return ns;
->  
->  out_put_parent_pid_ns:
-> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-> index a92538c..cf99a8c 100644
-> --- a/security/yama/yama_lsm.c
-> +++ b/security/yama/yama_lsm.c
-> @@ -16,10 +16,7 @@
->  #include <linux/ptrace.h>
->  #include <linux/prctl.h>
->  #include <linux/ratelimit.h>
-> -
-> -static int ptrace_scope = 1;
-> -static int protected_sticky_symlinks = 1;
-> -static int protected_nonaccess_hardlinks = 1;
-> +#include <linux/pid_namespace.h>
->  
->  /* describe a PTRACE relationship for potential exception */
->  struct ptrace_relation {
-> @@ -250,7 +247,7 @@ static int yama_ptrace_access_check(struct task_struct *child,
->  
->  	/* require ptrace target be a child of ptracer on attach */
->  	if (mode == PTRACE_MODE_ATTACH &&
-> -	    ptrace_scope &&
-> +	    current->nsproxy->pid_ns->ptrace_scope &&
->  	    !capable(CAP_SYS_PTRACE) &&
->  	    !task_is_descendant(current, child) &&
->  	    !ptracer_exception_found(current, child))
-> @@ -292,7 +289,7 @@ static int yama_inode_follow_link(struct dentry *dentry,
->  	const struct inode *inode;
->  	const struct cred *cred;
->  
-> -	if (!protected_sticky_symlinks)
-> +	if (!current->nsproxy->pid_ns->protected_sticky_symlinks)
->  		return 0;
->  
->  	/* if inode isn't a symlink, don't try to evaluate blocking it */
-> @@ -362,7 +359,7 @@ static int yama_path_link(struct dentry *old_dentry, struct path *new_dir,
->  	const int mode = inode->i_mode;
->  	const struct cred *cred = current_cred();
->  
-> -	if (!protected_nonaccess_hardlinks)
-> +	if (!current->nsproxy->pid_ns->protected_nonaccess_hardlinks)
->  		return 0;
->  
->  	if (cred->fsuid != inode->i_uid &&
-> @@ -395,6 +392,26 @@ static struct security_operations yama_ops = {
->  static int zero;
->  static int one = 1;
->  
-> +static void *get_pid_data(ctl_table *table)
-> +{
-> +	char *which = table->data;
-> +	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
-> +	which = (which - (char *)&init_pid_ns) + (char *)pid_ns;
-> +	return which;
-> +}
-> +
-> +static int proc_pid_dointvec_minmax(ctl_table *table, int write,
-> +	void __user *buffer, size_t *lenp, loff_t *ppos)
-> +{
-> +	struct ctl_table pid_table;
-> +
-> +	memcpy(&pid_table, table, sizeof(pid_table));
-> +	pid_table.data = get_pid_data(table);
-> +
-> +	return proc_dointvec_minmax(&pid_table, write, buffer, lenp, ppos);
-> +}
-> +
-> +
->  struct ctl_path yama_sysctl_path[] = {
->  	{ .procname = "kernel", },
->  	{ .procname = "yama", },
-> @@ -404,28 +421,28 @@ struct ctl_path yama_sysctl_path[] = {
->  static struct ctl_table yama_sysctl_table[] = {
->  	{
->  		.procname       = "protected_sticky_symlinks",
-> -		.data           = &protected_sticky_symlinks,
-> +		.data           = &init_pid_ns.protected_sticky_symlinks,
->  		.maxlen         = sizeof(int),
->  		.mode           = 0644,
-> -		.proc_handler   = proc_dointvec_minmax,
-> +		.proc_handler   = proc_pid_dointvec_minmax,
->  		.extra1         = &zero,
->  		.extra2         = &one,
->  	},
->  	{
->  		.procname       = "protected_nonaccess_hardlinks",
-> -		.data           = &protected_nonaccess_hardlinks,
-> +		.data           = &init_pid_ns.protected_nonaccess_hardlinks,
->  		.maxlen         = sizeof(int),
->  		.mode           = 0644,
-> -		.proc_handler   = proc_dointvec_minmax,
-> +		.proc_handler   = proc_pid_dointvec_minmax,
->  		.extra1         = &zero,
->  		.extra2         = &one,
->  	},
->  	{
->  		.procname       = "ptrace_scope",
-> -		.data           = &ptrace_scope,
-> +		.data           = &init_pid_ns.ptrace_scope,
->  		.maxlen         = sizeof(int),
->  		.mode           = 0644,
-> -		.proc_handler   = proc_dointvec_minmax,
-> +		.proc_handler   = proc_pid_dointvec_minmax,
->  		.extra1         = &zero,
->  		.extra2         = &one,
->  	},
-> ---
+Signed-off-by: William Douglas <william.douglas@intel.com>
+---
+ drivers/platform/x86/acer-wmi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index b848277..607af16 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -1946,7 +1946,7 @@ static int __init acer_wmi_init(void)
+ 		AMW0_find_mailled();
+ 
+ 	if (!interface) {
+-		pr_err("No or unsupported WMI interface, unable to load\n");
++		pr_info("No or unsupported WMI interface, unable to load\n");
+ 		return -ENODEV;
+ 	}
+ 
+-- 
+1.7.7.4
+
+--
+William Douglas, Intel Open Source Technology Center
