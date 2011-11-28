@@ -1,45 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213Ab1K1FfY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 00:35:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49697 "EHLO mx1.redhat.com"
+	id S1752925Ab1K1FlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 00:41:17 -0500
+Received: from mga03.intel.com ([143.182.124.21]:3359 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab1K1FfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 00:35:24 -0500
-Message-ID: <4ED31D80.9090404@redhat.com>
-Date: Mon, 28 Nov 2011 13:34:56 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1751494Ab1K1FlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 00:41:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,582,1315206000"; 
+   d="scan'208";a="79655603"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Liu, Hong" <hong.liu@intel.com>, Daniel Drake <dsd@laptop.org>,
+        Matthew Garrett <mjg@redhat.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Date: Mon, 28 Nov 2011 11:10:30 +0530
+Subject: RE: [PATCH] platform-drivers-x86: convert drivers/platform/x86/* to
+ use module_platform_driver()
+Thread-Topic: [PATCH] platform-drivers-x86: convert drivers/platform/x86/*
+ to use module_platform_driver()
+Thread-Index: Acyr8fC2rwTXyUg4TXKgSxTEcR0MeABneY+A
+Message-ID: <D6D887BA8C9DFF48B5233887EF04654109F12EC332@bgsmsx502.gar.corp.intel.com>
+References: <1322280877.6458.3.camel@phoenix>
+In-Reply-To: <1322280877.6458.3.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tony Breeds <tbreeds@au1.ibm.com>
-Subject: Re: [V2 PATCH 00/62] highmem: remove the second argument of kmap_atomic/kunmap_atomic
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com>	 <1322432495.23348.1.camel@pasglop> <1322454868.23348.38.camel@pasglop>
-In-Reply-To: <1322454868.23348.38.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAS5fObH030277
 
-äº 2011å¹´11æœˆ28æ—¥ 12:34, Benjamin Herrenschmidt å†™é“:
-> On Mon, 2011-11-28 at 09:21 +1100, Benjamin Herrenschmidt wrote:
->> On Sun, 2011-11-27 at 13:26 +0800, Cong Wang wrote:
->>> V1: https://lkml.org/lkml/2011/1/30/13
->>>
->>> V1->V2: Split patches and rebase them to the latest linus tree.
->>
->> I'm not too fan of the split myself... 62 patches is just plain crazy.
->> However, no obvious objection from the patches themselves (at least the
->> ones affecting powerpc), though I haven't had a chance to test them yet.
->
-> So Tony tested for me (thanks !) and it looks all fine.
->
-> For the powerpc parts
->
-> Acked-by: Benjamin Herrenschmidt<benh@kernel.crashing.org>
->
+Hi,
 
-Thanks for review and tests!
+Thanks for the nice clean up for intel_mid_thermal.c
+
+>From which kernel version is this new macro supported ?
+
+> -----Original Message-----
+> From: Axel Lin [mailto:axel.lin@gmail.com]
+> Sent: Saturday, November 26, 2011 9:45 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: Liu, Hong; R, Durgadoss; Daniel Drake; Matthew Garrett; platform-driver-
+> x86@vger.kernel.org
+> Subject: [PATCH] platform-drivers-x86: convert drivers/platform/x86/* to use
+> module_platform_driver()
+> 
+> This patch converts the drivers in drivers/platform/x86/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
+> 
+> Cc: Hong Liu <hong.liu@intel.com>
+> Cc: Durgadoss R <durgadoss.r@intel.com>
+> Cc: Daniel Drake <dsd@laptop.org>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+
+
+Acked-by: Durgadoss R <Durgadoss.r@intel.com>
+
+> diff --git a/drivers/platform/x86/intel_mid_thermal.c
+> b/drivers/platform/x86/intel_mid_thermal.c
+> index ccd7b1f..e4cc992 100644
+> --- a/drivers/platform/x86/intel_mid_thermal.c
+> +++ b/drivers/platform/x86/intel_mid_thermal.c
+> @@ -565,18 +565,7 @@ static struct platform_driver mid_thermal_driver = {
+>  	.id_table = therm_id_table,
+>  };
+> 
+> -static int __init mid_thermal_module_init(void)
+> -{
+> -	return platform_driver_register(&mid_thermal_driver);
+> -}
+> -
+> -static void __exit mid_thermal_module_exit(void)
+> -{
+> -	platform_driver_unregister(&mid_thermal_driver);
+> -}
+> -
+> -module_init(mid_thermal_module_init);
+> -module_exit(mid_thermal_module_exit);
+> +module_platform_driver(mid_thermal_driver);
+
+Thanks,
+Durga
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
