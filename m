@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab1K1QZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 11:25:46 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:57568 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1K1QZp (ORCPT
+	id S1753270Ab1K1Q1P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 11:27:15 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:28555
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751823Ab1K1Q1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 11:25:45 -0500
-Date: Mon, 28 Nov 2011 08:25:38 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Pedro Alves <pedro@codesourcery.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        James Bottomley <jbottomley@parallels.com>
-Subject: Re: [RFC][PATCH 0/3] fork: Add the ability to create tasks with
- given pids
-Message-ID: <20111128162538.GD18864@google.com>
-References: <201111221204.39235.pedro@codesourcery.com>
- <20111122153326.GD322@google.com>
- <201111231620.45440.pedro@codesourcery.com>
- <20111123162417.GE25780@google.com>
- <4ECD3946.1030503@parallels.com>
- <4ECD542C.7010705@parallels.com>
- <20111124173121.GA23260@redhat.com>
- <4ECF6AA0.80006@parallels.com>
- <20111127184725.GA4266@google.com>
- <4ED364B6.8090108@parallels.com>
+	Mon, 28 Nov 2011 11:27:14 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-SS: 13,
+X-FB-DOMAIN-IP-MATCH: fail
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <drivers@analog.com>, <device-drivers-devel@blackfin.uclinux.org>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH 1/7] ASoC: ad193X: Use table based DAPM and controls setup
+Date: Mon, 28 Nov 2011 17:28:06 +0100
+Message-ID: <1322497692-27868-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.7.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED364B6.8090108@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Pavel.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ sound/soc/codecs/ad193x.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
-On Mon, Nov 28, 2011 at 02:38:46PM +0400, Pavel Emelyanov wrote:
-> > Hmmm... Any attempt to reserve PIDs without full control over the
-> > namespace is futile.  It can never be complete / reliable. 
-> 
-> Why? What's the _real_ problem with the 
-> 
-> pid = prctl(PR_RESERVE_PID, 0); /* let the kernel _generate_ a pid for us */
-> while (1) {
-> 	real_pid = fork();
-> 	BUG_ON(pid != real_pid);
-> 	if (real_pid == 0)
-> 		return do_child();
-> 
-> 	wait();
-> }
-> 
-> model? Let's temporarily forget about the single reserved pid implementation
-> limitation and concentrate on the approach itself.
-
-PID is ns-shared resource.  If you don't have full control over it and
-there are other tasks allocating from it, there is no way to reserve
-specific pid reliably no matter what you do.  The only things you can
-do are - either reserve the pids you want before anyone else takes it
-or somehow revoke pids held by other tasks.
-
-Full ns control + set_last_pid essentially gives the ns owner full
-reservation + a way to control allocation.
-
-I suppose you're suggesting that with reserve approach, we can also
-support recycling pids of existing tasks which is suggested to be
-useful for systemd and gdb.
-
-Using this kind of black magic for general system management seems
-like a really bad idea to me.  It is extremely obscure and unexpected
-and we actually should be looking to dissuade such usage even if the
-natural implementation of the mechanism allows for it.
-
-For gdb, it *might* be useful but the usage isn't out there yet and
-the suggested mechanism isn't enough to support the suggested usage
-(ie. multithread).  We have neither concrete problem or solution.
-
-So, let's do the simple 30 line non-invasive thing now and worry about
-the complex problem when it's actually necessary.  It's not like the
-ability to set last_pid is gonna interfere with future changes or
-anything.
-
-Thanks.
-
+diff --git a/sound/soc/codecs/ad193x.c b/sound/soc/codecs/ad193x.c
+index 1901cd2..1dfda5c 100644
+--- a/sound/soc/codecs/ad193x.c
++++ b/sound/soc/codecs/ad193x.c
+@@ -345,7 +345,6 @@ static struct snd_soc_dai_driver ad193x_dai = {
+ static int ad193x_probe(struct snd_soc_codec *codec)
+ {
+ 	struct ad193x_priv *ad193x = snd_soc_codec_get_drvdata(codec);
+-	struct snd_soc_dapm_context *dapm = &codec->dapm;
+ 	int ret;
+ 
+ 	codec->control_data = ad193x->regmap;
+@@ -371,17 +370,17 @@ static int ad193x_probe(struct snd_soc_codec *codec)
+ 	snd_soc_write(codec, AD193X_PLL_CLK_CTRL0, 0x99); /* mclk=24.576Mhz: 0x9D; mclk=12.288Mhz: 0x99 */
+ 	snd_soc_write(codec, AD193X_PLL_CLK_CTRL1, 0x04);
+ 
+-	snd_soc_add_controls(codec, ad193x_snd_controls,
+-			     ARRAY_SIZE(ad193x_snd_controls));
+-	snd_soc_dapm_new_controls(dapm, ad193x_dapm_widgets,
+-				  ARRAY_SIZE(ad193x_dapm_widgets));
+-	snd_soc_dapm_add_routes(dapm, audio_paths, ARRAY_SIZE(audio_paths));
+-
+ 	return ret;
+ }
+ 
+ static struct snd_soc_codec_driver soc_codec_dev_ad193x = {
+ 	.probe = 	ad193x_probe,
++	.controls = ad193x_snd_controls,
++	.num_controls = ARRAY_SIZE(ad193x_snd_controls),
++	.dapm_widgets = ad193x_dapm_widgets,
++	.num_dapm_widgets = ARRAY_SIZE(ad193x_dapm_widgets),
++	.dapm_routes = audio_paths,
++	.num_dapm_routes = ARRAY_SIZE(audio_paths),
+ };
+ 
+ #if defined(CONFIG_SPI_MASTER)
 -- 
-tejun
+1.7.7.3
+
+
