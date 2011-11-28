@@ -1,481 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab1K1XQE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:16:04 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34333 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755260Ab1K1XPE (ORCPT
+	id S1755286Ab1K1XPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:15:07 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48746 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755106Ab1K1XO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:15:04 -0500
+	Mon, 28 Nov 2011 18:14:59 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 25/25] perf tools: Save some loops using perf_evlist__id2evsel
-Date: Mon, 28 Nov 2011 21:14:26 -0200
-Message-Id: <1322522066-21879-26-git-send-email-acme@infradead.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 23/25] perf tools: make -C consistent across commands (for cpu list arg)
+Date: Mon, 28 Nov 2011 21:14:24 -0200
+Message-Id: <1322522066-21879-24-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1322522066-21879-1-git-send-email-acme@infradead.org>
 References: <1322522066-21879-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: David Ahern <dsahern@gmail.com>
 
-Since we already ask for PERF_SAMPLE_ID and use it to quickly find the
-associated evsel, add handler func + data to struct perf_evsel to avoid
-using chains of if(strcmp(event_name)) and also to avoid all the linear
-list searches via trace_event_find.
+Currently the meaning of -C varies by perf command: for perf-top,
+perf-stat, perf-record it means cpu list. For perf-report it means comm
+list. Then perf-annotate, perf-report and perf-script use -c for cpu
+list.
 
-To demonstrate the technique convert 'perf sched' to it:
+Fix annotate, report and script to use -C for cpu list to be consistent
+with top, stat and record. This means report needs to use -c for comm
+list which does introduce a backward compatibility change.
 
- # perf sched record sleep 5m
+v1 -> v2
+- update perf-script.txt too
 
-And then:
-
- Performance counter stats for '/tmp/oldperf sched lat':
-
-        646.929438 task-clock                #    0.999 CPUs utilized
-                 9 context-switches          #    0.000 M/sec
-                 0 CPU-migrations            #    0.000 M/sec
-            20,901 page-faults               #    0.032 M/sec
-     1,290,144,450 cycles                    #    1.994 GHz
-   <not supported> stalled-cycles-frontend
-   <not supported> stalled-cycles-backend
-     1,606,158,439 instructions              #    1.24  insns per cycle
-       339,088,395 branches                  #  524.151 M/sec
-         4,550,735 branch-misses             #    1.34% of all branches
-
-       0.647524759 seconds time elapsed
-
-Versus:
-
- Performance counter stats for 'perf sched lat':
-
-        473.564691 task-clock                #    0.999 CPUs utilized
-                 9 context-switches          #    0.000 M/sec
-                 0 CPU-migrations            #    0.000 M/sec
-            20,903 page-faults               #    0.044 M/sec
-       944,367,984 cycles                    #    1.994 GHz
-   <not supported> stalled-cycles-frontend
-   <not supported> stalled-cycles-backend
-     1,442,385,571 instructions              #    1.53  insns per cycle
-       308,383,106 branches                  #  651.195 M/sec
-         4,481,784 branch-misses             #    1.45% of all branches
-
-       0.474215751 seconds time elapsed
-
-[root@emilia ~]#
-
-Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-1kbzpl74lwi6lavpqke2u2p3@git.kernel.org
+Link: http://lkml.kernel.org/r/1321209008-7004-1-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-sched.c |  149 ++++++++++++++++++++++----------------------
- tools/perf/util/evlist.c   |   42 ++++++++++++
- tools/perf/util/evlist.h   |   11 +++
- tools/perf/util/evsel.h    |    4 +
- tools/perf/util/tool.h     |    5 ++
- 5 files changed, 136 insertions(+), 75 deletions(-)
+ tools/perf/Documentation/perf-annotate.txt |    2 +-
+ tools/perf/Documentation/perf-report.txt   |    4 ++--
+ tools/perf/Documentation/perf-script.txt   |    2 +-
+ tools/perf/builtin-annotate.c              |    2 +-
+ tools/perf/builtin-report.c                |    4 ++--
+ tools/perf/builtin-script.c                |    2 +-
+ 6 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 0ee868e..6284ed2 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -2,6 +2,7 @@
- #include "perf.h"
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index fe6762e..476029d 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -66,7 +66,7 @@ OPTIONS
+ 	used. This interfaces starts by centering on the line with more
+ 	samples, TAB/UNTAB cycles through the lines with more samples.
  
- #include "util/util.h"
-+#include "util/evlist.h"
- #include "util/cache.h"
- #include "util/evsel.h"
- #include "util/symbol.h"
-@@ -1358,12 +1359,13 @@ static void sort_lat(void)
- static struct trace_sched_handler *trace_handler;
+--c::
++-C::
+ --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
+ 	be provided as a comma-separated list with no space: 0,1. Ranges of
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 212f24d..dc85392 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -39,7 +39,7 @@ OPTIONS
+ -T::
+ --threads::
+ 	Show per-thread event counters
+--C::
++-c::
+ --comms=::
+ 	Only consider symbols in these comms. CSV that understands
+ 	file://filename entries.
+@@ -128,7 +128,7 @@ OPTIONS
+ --symfs=<directory>::
+         Look for files with symbols relative to this directory.
  
- static void
--process_sched_wakeup_event(void *data, struct machine *machine,
-+process_sched_wakeup_event(struct perf_tool *tool __used,
- 			   struct event *event,
--			   int cpu __used,
--			   u64 timestamp __used,
--			   struct thread *thread __used)
-+			   struct perf_sample *sample,
-+			   struct machine *machine,
-+			   struct thread *thread)
- {
-+	void *data = sample->raw_data;
- 	struct trace_wakeup_event wakeup_event;
+--c::
++-C::
+ --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
+ 	be provided as a comma-separated list with no space: 0,1. Ranges of
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index dec87ec..3613b0a 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -182,7 +182,7 @@ OPTIONS
+ --hide-call-graph::
+         When printing symbols do not display call chain.
  
- 	FILL_COMMON_FIELDS(wakeup_event, event, data);
-@@ -1376,7 +1378,7 @@ process_sched_wakeup_event(void *data, struct machine *machine,
- 
- 	if (trace_handler->wakeup_event)
- 		trace_handler->wakeup_event(&wakeup_event, machine, event,
--					    cpu, timestamp, thread);
-+					    sample->cpu, sample->time, thread);
- }
- 
- /*
-@@ -1471,14 +1473,15 @@ map_switch_event(struct trace_switch_event *switch_event,
- 	}
- }
- 
--
- static void
--process_sched_switch_event(void *data, struct machine *machine,
-+process_sched_switch_event(struct perf_tool *tool __used,
- 			   struct event *event,
--			   int this_cpu,
--			   u64 timestamp __used,
--			   struct thread *thread __used)
-+			   struct perf_sample *sample,
-+			   struct machine *machine,
-+			   struct thread *thread)
- {
-+	int this_cpu = sample->cpu;
-+	void *data = sample->raw_data;
- 	struct trace_switch_event switch_event;
- 
- 	FILL_COMMON_FIELDS(switch_event, event, data);
-@@ -1501,18 +1504,19 @@ process_sched_switch_event(void *data, struct machine *machine,
- 	}
- 	if (trace_handler->switch_event)
- 		trace_handler->switch_event(&switch_event, machine, event,
--					    this_cpu, timestamp, thread);
-+					    this_cpu, sample->time, thread);
- 
- 	curr_pid[this_cpu] = switch_event.next_pid;
- }
- 
- static void
--process_sched_runtime_event(void *data, struct machine *machine,
--			   struct event *event,
--			   int cpu __used,
--			   u64 timestamp __used,
--			   struct thread *thread __used)
-+process_sched_runtime_event(struct perf_tool *tool __used,
-+			    struct event *event,
-+			    struct perf_sample *sample,
-+			    struct machine *machine,
-+			    struct thread *thread)
- {
-+	void *data = sample->raw_data;
- 	struct trace_runtime_event runtime_event;
- 
- 	FILL_ARRAY(runtime_event, comm, event, data);
-@@ -1521,16 +1525,18 @@ process_sched_runtime_event(void *data, struct machine *machine,
- 	FILL_FIELD(runtime_event, vruntime, event, data);
- 
- 	if (trace_handler->runtime_event)
--		trace_handler->runtime_event(&runtime_event, machine, event, cpu, timestamp, thread);
-+		trace_handler->runtime_event(&runtime_event, machine, event,
-+					     sample->cpu, sample->time, thread);
- }
- 
- static void
--process_sched_fork_event(void *data,
-+process_sched_fork_event(struct perf_tool *tool __used,
- 			 struct event *event,
--			 int cpu __used,
--			 u64 timestamp __used,
--			 struct thread *thread __used)
-+			 struct perf_sample *sample,
-+			 struct machine *machine __used,
-+			 struct thread *thread)
- {
-+	void *data = sample->raw_data;
- 	struct trace_fork_event fork_event;
- 
- 	FILL_COMMON_FIELDS(fork_event, event, data);
-@@ -1542,13 +1548,14 @@ process_sched_fork_event(void *data,
- 
- 	if (trace_handler->fork_event)
- 		trace_handler->fork_event(&fork_event, event,
--					  cpu, timestamp, thread);
-+					  sample->cpu, sample->time, thread);
- }
- 
- static void
--process_sched_exit_event(struct event *event,
--			 int cpu __used,
--			 u64 timestamp __used,
-+process_sched_exit_event(struct perf_tool *tool __used,
-+			 struct event *event,
-+			 struct perf_sample *sample __used,
-+			 struct machine *machine __used,
- 			 struct thread *thread __used)
- {
- 	if (verbose)
-@@ -1556,12 +1563,13 @@ process_sched_exit_event(struct event *event,
- }
- 
- static void
--process_sched_migrate_task_event(void *data, struct machine *machine,
--			   struct event *event,
--			   int cpu __used,
--			   u64 timestamp __used,
--			   struct thread *thread __used)
-+process_sched_migrate_task_event(struct perf_tool *tool __used,
-+				 struct event *event,
-+				 struct perf_sample *sample,
-+				 struct machine *machine,
-+				 struct thread *thread)
- {
-+	void *data = sample->raw_data;
- 	struct trace_migrate_task_event migrate_task_event;
- 
- 	FILL_COMMON_FIELDS(migrate_task_event, event, data);
-@@ -1573,67 +1581,46 @@ process_sched_migrate_task_event(void *data, struct machine *machine,
- 
- 	if (trace_handler->migrate_task_event)
- 		trace_handler->migrate_task_event(&migrate_task_event, machine,
--						 event, cpu, timestamp, thread);
-+						  event, sample->cpu,
-+						  sample->time, thread);
- }
- 
--static void process_raw_event(union perf_event *raw_event __used,
--			      struct machine *machine, void *data, int cpu,
--			      u64 timestamp, struct thread *thread)
--{
--	struct event *event;
--	int type;
--
--
--	type = trace_parse_common_type(data);
--	event = trace_find_event(type);
--
--	if (!strcmp(event->name, "sched_switch"))
--		process_sched_switch_event(data, machine, event, cpu, timestamp, thread);
--	if (!strcmp(event->name, "sched_stat_runtime"))
--		process_sched_runtime_event(data, machine, event, cpu, timestamp, thread);
--	if (!strcmp(event->name, "sched_wakeup"))
--		process_sched_wakeup_event(data, machine, event, cpu, timestamp, thread);
--	if (!strcmp(event->name, "sched_wakeup_new"))
--		process_sched_wakeup_event(data, machine, event, cpu, timestamp, thread);
--	if (!strcmp(event->name, "sched_process_fork"))
--		process_sched_fork_event(data, event, cpu, timestamp, thread);
--	if (!strcmp(event->name, "sched_process_exit"))
--		process_sched_exit_event(event, cpu, timestamp, thread);
--	if (!strcmp(event->name, "sched_migrate_task"))
--		process_sched_migrate_task_event(data, machine, event, cpu, timestamp, thread);
--}
-+typedef void (*tracepoint_handler)(struct perf_tool *tool, struct event *event,
-+				   struct perf_sample *sample,
-+				   struct machine *machine,
-+				   struct thread *thread);
- 
--static int process_sample_event(struct perf_tool *tool __used,
--				union perf_event *event,
--				struct perf_sample *sample,
--				struct perf_evsel *evsel,
--				struct machine *machine)
-+static int perf_sched__process_tracepoint_sample(struct perf_tool *tool,
-+						 union perf_event *event __used,
-+						 struct perf_sample *sample,
-+						 struct perf_evsel *evsel,
-+						 struct machine *machine)
- {
--	struct thread *thread;
--
--	if (!(evsel->attr.sample_type & PERF_SAMPLE_RAW))
--		return 0;
-+	struct thread *thread = machine__findnew_thread(machine, sample->pid);
- 
--	thread = machine__findnew_thread(machine, sample->pid);
- 	if (thread == NULL) {
--		pr_debug("problem processing %d event, skipping it.\n",
--			 event->header.type);
-+		pr_debug("problem processing %s event, skipping it.\n",
-+			 evsel->name);
- 		return -1;
- 	}
- 
--	dump_printf(" ... thread: %s:%d\n", thread->comm, thread->pid);
-+	evsel->hists.stats.total_period += sample->period;
-+	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 
--	if (profile_cpu != -1 && profile_cpu != (int)sample->cpu)
--		return 0;
-+	if (evsel->handler.func != NULL) {
-+		tracepoint_handler f = evsel->handler.func;
- 
--	process_raw_event(event, machine, sample->raw_data, sample->cpu,
--			  sample->time, thread);
-+		if (evsel->handler.data == NULL)
-+			evsel->handler.data = trace_find_event(evsel->attr.config);
-+
-+		f(tool, evsel->handler.data, sample, machine, thread);
-+	}
- 
- 	return 0;
- }
- 
- static struct perf_tool perf_sched = {
--	.sample			= process_sample_event,
-+	.sample			= perf_sched__process_tracepoint_sample,
- 	.comm			= perf_event__process_comm,
- 	.lost			= perf_event__process_lost,
- 	.fork			= perf_event__process_task,
-@@ -1643,11 +1630,23 @@ static struct perf_tool perf_sched = {
- static void read_events(bool destroy, struct perf_session **psession)
- {
- 	int err = -EINVAL;
-+	const struct perf_evsel_str_handler handlers[] = {
-+		{ "sched:sched_switch",	      process_sched_switch_event, },
-+		{ "sched:sched_stat_runtime", process_sched_runtime_event, },
-+		{ "sched:sched_wakeup",	      process_sched_wakeup_event, },
-+		{ "sched:sched_wakeup_new",   process_sched_wakeup_event, },
-+		{ "sched:sched_process_fork", process_sched_fork_event, },
-+		{ "sched:sched_process_exit", process_sched_exit_event, },
-+		{ "sched:sched_migrate_task", process_sched_migrate_task_event, },
-+	};
- 	struct perf_session *session = perf_session__new(input_name, O_RDONLY,
- 							 0, false, &perf_sched);
- 	if (session == NULL)
- 		die("No Memory");
- 
-+	err = perf_evlist__set_tracepoints_handlers_array(session->evlist, handlers);
-+	assert(err == 0);
-+
- 	if (perf_session__has_traces(session, "record -R")) {
- 		err = perf_session__process_events(session, &perf_sched);
- 		if (err)
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index d44e3df..b36f26f 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -207,6 +207,48 @@ out_free_attrs:
- 	return err;
- }
- 
-+static struct perf_evsel *
-+	perf_evlist__find_tracepoint_by_id(struct perf_evlist *evlist, int id)
-+{
-+	struct perf_evsel *evsel;
-+
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (evsel->attr.type   == PERF_TYPE_TRACEPOINT &&
-+		    (int)evsel->attr.config == id)
-+			return evsel;
-+	}
-+
-+	return NULL;
-+}
-+
-+int perf_evlist__set_tracepoints_handlers(struct perf_evlist *evlist,
-+					  const struct perf_evsel_str_handler *assocs,
-+					  size_t nr_assocs)
-+{
-+	struct perf_evsel *evsel;
-+	int err;
-+	size_t i;
-+
-+	for (i = 0; i < nr_assocs; i++) {
-+		err = trace_event__id(assocs[i].name);
-+		if (err < 0)
-+			goto out;
-+
-+		evsel = perf_evlist__find_tracepoint_by_id(evlist, err);
-+		if (evsel == NULL)
-+			continue;
-+
-+		err = -EEXIST;
-+		if (evsel->handler.func != NULL)
-+			goto out;
-+		evsel->handler.func = assocs[i].handler;
-+	}
-+
-+	err = 0;
-+out:
-+	return err;
-+}
-+
- void perf_evlist__disable(struct perf_evlist *evlist)
- {
- 	int cpu, thread;
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 2202e7b..f94ed7e 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -36,6 +36,11 @@ struct perf_evlist {
- 	struct perf_evsel *selected;
- };
- 
-+struct perf_evsel_str_handler {
-+	const char *name;
-+	void	   *handler;
-+};
-+
- struct perf_evsel;
- 
- struct perf_evlist *perf_evlist__new(struct cpu_map *cpus,
-@@ -51,6 +56,9 @@ int perf_evlist__add_attrs(struct perf_evlist *evlist,
- 			   struct perf_event_attr *attrs, size_t nr_attrs);
- int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
- 				 const char *tracepoints[], size_t nr_tracepoints);
-+int perf_evlist__set_tracepoints_handlers(struct perf_evlist *evlist,
-+					  const struct perf_evsel_str_handler *assocs,
-+					  size_t nr_assocs);
- 
- #define perf_evlist__add_attrs_array(evlist, array) \
- 	perf_evlist__add_attrs(evlist, array, ARRAY_SIZE(array))
-@@ -58,6 +66,9 @@ int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
- #define perf_evlist__add_tracepoints_array(evlist, array) \
- 	perf_evlist__add_tracepoints(evlist, array, ARRAY_SIZE(array))
- 
-+#define perf_evlist__set_tracepoints_handlers_array(evlist, array) \
-+	perf_evlist__set_tracepoints_handlers(evlist, array, ARRAY_SIZE(array))
-+
- void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
- 			 int cpu, int thread, u64 id);
- 
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 6421c07..326b8e4 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -61,6 +61,10 @@ struct perf_evsel {
- 		off_t		id_offset;
- 	};
- 	struct cgroup_sel	*cgrp;
-+	struct {
-+		void		*func;
-+		void		*data;
-+	} handler;
- 	bool 			supported;
- };
- 
-diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
-index 89ff1b5..b0e1aad 100644
---- a/tools/perf/util/tool.h
-+++ b/tools/perf/util/tool.h
-@@ -1,8 +1,13 @@
- #ifndef __PERF_TOOL_H
- #define __PERF_TOOL_H
- 
-+#include <stdbool.h>
-+
- struct perf_session;
-+union perf_event;
-+struct perf_evlist;
- struct perf_evsel;
-+struct perf_sample;
- struct perf_tool;
- struct machine;
- 
+--c::
++-C::
+ --cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
+ 	be provided as a comma-separated list with no space: 0,1. Ranges of
+ 	CPUs are specified with -: 0-2. Default is to report samples on all
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index c01139f..d449645 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -274,7 +274,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __used)
+ 		    "print matching source lines (may be slow)"),
+ 	OPT_BOOLEAN('P', "full-paths", &annotate.full_paths,
+ 		    "Don't shorten the displayed pathnames"),
+-	OPT_STRING('c', "cpu", &annotate.cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('C', "cpu", &annotate.cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		   "Look for files with symbols relative to this directory"),
+ 	OPT_BOOLEAN(0, "source", &symbol_conf.annotate_src,
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index eef8e42..ece7c5d 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -492,7 +492,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ 		    "alias for inverted call graph"),
+ 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+ 		   "only consider symbols in these dsos"),
+-	OPT_STRING('C', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
++	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+ 		   "only consider symbols in these comms"),
+ 	OPT_STRING('S', "symbols", &symbol_conf.sym_list_str, "symbol[,symbol...]",
+ 		   "only consider these symbols"),
+@@ -506,7 +506,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ 		    "Only display entries resolved to a symbol"),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+-	OPT_STRING('c', "cpu", &report.cpu_list, "cpu",
++	OPT_STRING('C', "cpu", &report.cpu_list, "cpu",
+ 		   "list of cpus to profile"),
+ 	OPT_BOOLEAN('I', "show-info", &report.show_full_info,
+ 		    "Display extended information about perf.data file"),
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 5f8afc6..7731a09 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -1085,7 +1085,7 @@ static const struct option options[] = {
+ 	OPT_CALLBACK('f', "fields", NULL, "str",
+ 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
+ 		     parse_output_fields),
+-	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
++	OPT_STRING('C', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_BOOLEAN('I', "show-info", &show_full_info,
+ 		    "display extended information from perf.data file"),
+ 	OPT_END()
 -- 
 1.7.8.rc0.35.gee6df
 
