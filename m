@@ -1,120 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab1K1Vxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 16:53:33 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:51277 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab1K1Vxc (ORCPT
+	id S1754560Ab1K1Vxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 16:53:35 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46300 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754036Ab1K1Vxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 16:53:32 -0500
-X-Originating-IP: 217.70.178.143
-X-Originating-IP: 50.43.15.19
-Date: Mon, 28 Nov 2011 13:53:23 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4 RFC] rcu: New rcu_user_enter_irq() and
- rcu_user_exit_irq() APIs
-Message-ID: <20111128215323.GF30852@leaf>
-References: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
- <1322515487-18690-5-git-send-email-fweisbec@gmail.com>
+	Mon, 28 Nov 2011 16:53:33 -0500
+Message-ID: <4ED402D9.1070505@lwfinger.net>
+Date: Mon, 28 Nov 2011 15:53:29 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322515487-18690-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: Andiry Xu <andiry.xu@amd.com>, USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, v4mp <gaigo88@hotmail.it>
+Subject: Re: Question about error from xhci-hcd
+References: <4EAC3C5C.5000209@lwfinger.net> <20111030050443.GC4535@xanatos> <4EB01904.10605@lwfinger.net> <4EC0DCD5.2010509@amd.com> <20111128181413.GA6462@xanatos>
+In-Reply-To: <20111128181413.GA6462@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 10:24:47PM +0100, Frederic Weisbecker wrote:
-> A CPU running in adaptive tickless mode wants to enter into
-> RCU extended quiescent state while running in userspace. This
-> way we can shut down the tick that is usually needed on each
-> CPU for the needs of RCU.
+On 11/28/2011 12:14 PM, Sarah Sharp wrote:
+> Ping.  Larry, have you been able to test Andiry's patch?  We'd like to
+> figure out what's wrong with the control endpoint ring in your xHCI host.
 
-Very awesome.  I've wanted to see this change for a long time.  Thanks!
+Sarah,
 
-> Typically, RCU enters the extended quiescent state when we resume
-> to userspace through a syscall or exception exit, this is done
-> using rcu_user_enter(). Then RCU exit this state by calling
-> rcu_user_exit() from syscall or exception entry.
-> 
-> However there are two other points where we may want to enter
-> or exit this state. Some remote CPU may require a tickless CPU
-> to restart its tick for any reason and send it an IPI for
-> this purpose. As we restart the tick, we don't want to resume
-> from the IPI in RCU extended quiescent state anymore.
-> Similarly we may stop the tick from an interrupt in userspace and
-> we need to be able to enter RCU extended quiescent state when we
-> resume from this interrupt to userspace.
-> 
-> To these ends, we provide two new APIs:
-> 
-> - rcu_user_enter_irq(). This must be called from a non-nesting
-> interrupt betwenn rcu_irq_enter() and rcu_irq_exit().
-> After the irq calls rcu_irq_exit(), we'll run into RCU extended
-> quiescent state.
-> 
-> - rcu_user_exit_irq(). This must be called from a non-nesting
-> interrupt, interrupting an RCU extended quiescent state, and
-> between rcu_irq_enter() and rcu_irq_exit(). After the irq calls
-> rcu_irq_exit(), we'll prevent from resuming the RCU extended
-> quiescent.
+So far, the OP has not yet gotten a run that includes the extra output that 
+Andiry's patch provides, and I have not yet figured out why. He cannot build his 
+own kerne;, thus I have had to get the revised copy of xhci-hcd folded into the 
+compat-wireless source. That seems to be working, but still no output.
 
-It would help to see the corresponding patches making use of this new
-API.
+Thanks,
 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> ---
->  kernel/rcutree.c |   24 ++++++++++++++++++++++++
->  1 files changed, 24 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 00a9fba..a7906c9 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -402,6 +402,18 @@ void rcu_user_enter(void)
->  	__rcu_idle_enter();
->  }
->  
-> +void rcu_user_enter_irq(void)
-> +{
-> +	unsigned long flags;
-> +	struct rcu_dynticks *rdtp;
-> +
-> +	local_irq_save(flags);
-> +	rdtp = &__get_cpu_var(rcu_dynticks);
-> +	WARN_ON_ONCE(rdtp->dynticks_nesting == 1);
-> +	rdtp->dynticks_nesting = 1;
-> +	local_irq_restore(flags);
-> +}
-> +
->  /**
->   * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
->   *
-> @@ -503,6 +515,18 @@ void rcu_user_exit(void)
->  	__rcu_idle_exit();
->  }
->  
-> +void rcu_user_exit_irq(void)
-> +{
-> +	unsigned long flags;
-> +	struct rcu_dynticks *rdtp;
-> +
-> +	local_irq_save(flags);
-> +	rdtp = &__get_cpu_var(rcu_dynticks);
-> +	WARN_ON_ONCE(rdtp->dynticks_nesting != 1);
-> +	rdtp->dynticks_nesting = (LLONG_MAX / 2) + 1;
-> +	local_irq_restore(flags);
-> +}
-> +
+Larry
 
-Any chance that either of these two needs a memory barrier of some kind,
-to prevent leakage of operations from between them?  Or can you count on
-no RCU-protected operations occurring during (or leaking into) the
-extended quiescent state?
 
-- Josh Triplett
+
