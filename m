@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab1K1OBr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:01:47 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37592 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab1K1OBq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:01:46 -0500
-Date: Mon, 28 Nov 2011 15:01:43 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Bob Tracy <rct@gherkin.frus.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 3.2-rcX regression: boot failure on AMD K6-III/450
-Message-ID: <20111128140143.GA4522@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@amd64.org>,
-	Bob Tracy <rct@gherkin.frus.com>, linux-kernel@vger.kernel.org
-References: <20111126181724.GA1993@gherkin.frus.com>
+	id S1753078Ab1K1OCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:02:36 -0500
+Received: from mga03.intel.com ([143.182.124.21]:26801 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467Ab1K1OCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:02:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
+   d="scan'208";a="79785159"
+Message-ID: <4ED39473.9080600@linux.intel.com>
+Date: Mon, 28 Nov 2011 06:02:27 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111126181724.GA1993@gherkin.frus.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
+        asharma@fb.com, devel@openvz.org, dsahern@gmail.com,
+        linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 7/7] event: add tracepoint for accounting block time
+References: <1322471015-107825-1-git-send-email-avagin@openvz.org>  <1322471015-107825-8-git-send-email-avagin@openvz.org> <1322480531.2921.107.camel@twins>
+In-Reply-To: <1322480531.2921.107.camel@twins>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Sat, Nov 26, 2011 at 12:17:24PM -0600, Bob Tracy wrote:
-> Verified for 3.2-rc[1-3].  Subject system using LILO as bootloader.
-> The following messages appear on the console:
+On 11/28/2011 3:42 AM, Peter Zijlstra wrote:
+> On Mon, 2011-11-28 at 12:03 +0300, Andrew Vagin wrote:
+>> This tracepoint shows how long a task is sleeping in uninterruptible state.
+>>
+>> E.g.
+>> It may show how long and where a mutex is waited.
 > 
-> Loading linux-dev.
-> BIOS data check successful
-> Probing EDD (edd=off to disable)... ok
-> <blank line>
-> Decompressing Linux... Parsing ELF... done.
-> Booting the kernel.
-> <hang here -- no further output>
-> 
-> The console output is normal and expected up to the point of the hang.
-> Versions 3.1 and prior work fine.  I had earlier thought the floppy
-> regression Pavel reported applied to my case (and it may), but I don't
-> seem to be getting that far in the boot process.
+> Fair enough, makes one wonder how much it would take to make
+> account_scheduler_latency() go away..
 
-can you try the following patch:
+I would *love* to switch latencytop to using trace points / perf events.
+But as long as this just means I get yelled at more for using "internal
+ABIs" and the like at various occasions, I'm rather hesitant to turn
+more tools into using perf.
 
---
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Wed, 9 Nov 2011 18:08:40 +0100
-Subject: [PATCH] x86, microcode, AMD: Restrict microcode reporting
-
-bcb80e53877c ("x86, microcode, AMD: Add microcode revision to
-/proc/cpuinfo") added support for dumping microcode patch level in
-/proc/cpuinfo on AMD. Although we were very cautious and did rdmsr_safe
-the microcode patch level MSR, this broke booting on Geode LX because
-this CPU doesn't have that MSR and at the time we do the read, exception
-tables which are used by rdmsr_safe are not yet initialized, leading to
-the boot hang.
-
-This is the simple fix which enables the microcode line in /proc/cpuinfo
-for K8 and newer (it is not that interesting for older boxes anyway :-)).
-
-Reported-and-bisected-and-tested-by: Daniel Drake <dsd@laptop.org>
-Link: http://lkml.kernel.org/r/CAMLZHHTSuHZoPbm_YfB8G05JA+xKCE4+Jmj4NW8mnZUHogQSBA@mail.gmail.com
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/amd.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index c7e46cb..a72d183 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -474,7 +474,8 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- 	}
- #endif
- 
--	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
-+	if (c->x86 >= 0xf)
-+		rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
- }
- 
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
--- 
-1.7.8.rc0
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+(and we all know what the next steps to resolve this are, they just have
+not happened yet; not all hope is lost)
