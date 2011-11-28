@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab1K1D4v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 22:56:51 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:45203 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab1K1D4u (ORCPT
+	id S1755953Ab1K1EFy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 23:05:54 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:43507 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752624Ab1K1EFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 22:56:50 -0500
-Date: Mon, 28 Nov 2011 12:56:27 +0900
-From: Norbert Preining <preining@logic.at>
-To: Emmanuel Grumbach <egrumbach@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Dave Jones <davej@redhat.com>
-Subject: Re: iwlagn is getting very shaky
-Message-ID: <20111128035627.GH1422@gamma.logic.tuwien.ac.at>
-References: <CANUX_P0uyyuK4netV6srYCh9FsC4cpGzxobHE3T38n5RvvA0RQ@mail.gmail.com> <20111123015503.GC23203@gamma.logic.tuwien.ac.at> <CANUX_P1zDDzMy5yrFXSZAkMQ-87uu-fE1e-2sCEgHJi4dh5eiw@mail.gmail.com> <20111125122143.GA30404@gamma.logic.tuwien.ac.at> <CANUX_P1hFzSVPQzd6gq3tLY7hu+LX5suph6uHP+hq6+7rdAK1w@mail.gmail.com> <20111125123720.GA31564@gamma.logic.tuwien.ac.at> <CANUX_P2mGQX9H-f7OFusjUrv8ey56JNzFVEdKJkAejsg9zVNkQ@mail.gmail.com> <CANUX_P1aAz-4TpgSzQ2G=RkJOxXCAVQBja3GNsj_HpMNmqxeUw@mail.gmail.com> <1322387175.4044.16.camel@jlt3.sipsolutions.net> <CANUX_P3uoNOj3j-REvYCZP382cHfq+DpBRi7fnzFfMG_dyHtTQ@mail.gmail.com>
+	Sun, 27 Nov 2011 23:05:53 -0500
+Message-ID: <4ED30893.6080601@st.com>
+Date: Mon, 28 Nov 2011 09:35:39 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANUX_P3uoNOj3j-REvYCZP382cHfq+DpBRi7fnzFfMG_dyHtTQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Vinod Koul <vinod.koul@intel.com>, Dan <dan.j.williams@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>
+Subject: Re: [PATCH 1/3] dmaengine: Allow controller drivers to set channel
+ ids
+References: <63faf72913f4f35b0a542c859522e8333e878c95.1316687776.git.viresh.kumar@st.com> <1317200887.1573.1768.camel@vkoul-udesk3>
+In-Reply-To: <1317200887.1573.1768.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On So, 27 Nov 2011, Emmanuel Grumbach wrote:
-> Norbert, could you please test Nikolay's patch instead of mine ?
+On 9/28/2011 2:38 PM, Vinod Koul wrote:
+> On Thu, 2011-09-22 at 16:13 +0530, Viresh Kumar wrote:
+>> > Currently value of chan_id field is updated by dmaengine.c while the dma device
+>> > is registered. In some cases the controller driver may need to assign channel
+>> > numbers by itself. For example, dw_dmac.c wants to control the order in which
+>> > channels are allocated by dmaengine. So it added channels inside channel list of
+>> > dma_device in reverse order. Now channel 7 is allocated first and channel 0 is
+>> > allocated last.
+>> > 
+>> > But as the channel ids are updated by dmaengine, channel numbers in sysfs will
+>> > be overwritten if controller has added channels in reverse order. To represent
+>> > correct channel number in sysfs, it is required that dmaengine must not assume
+>> > that first channel in list is channel 0 and last is 7.
+> to dmaengine, this is just a channel representation in sysfs and nothing
+> more. If damc is assuming that this is same as what dmaengine will do
+> then dmac is wrong.
+> 
+> Nevertheless, Dan was okay with changing this representation.
+> Dan I would need your comments/Ack before we discuss this further
 
-Looks promising, I will do more testing on the way.
+Dan/Vinod,
 
-Are you still interested in the output from a kernel wiht all the
-patches (the dump_stack() etc etc)? There are actually quite a lot
-of stacks dumped now into my dmesg/syslog ;-)
+Any feedback on this patchset?
 
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-VIRGINSTOW (n.)
-A Durex machine which doesn't have the phrase 'So was the Titanic'
-scrawled on it. The word has now fallen into disuse.
-			--- Douglas Adams, The Meaning of Liff
+-- 
+viresh
