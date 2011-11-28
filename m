@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab1K1TAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:00:18 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35476 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753299Ab1K1TAO (ORCPT
+	id S1753984Ab1K1TCO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:02:14 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62393 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753370Ab1K1TCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:00:14 -0500
-Subject: Re: [PATCH 10/62] ata: remove the second argument of
- k[un]map_atomic()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-ide@vger.kernel.org
-In-Reply-To: <4ED37541.4040701@redhat.com>
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
-	 <1322371662-26166-11-git-send-email-amwang@redhat.com>
-	 <4ED35BFE.6080900@mvista.com> <4ED373C3.4050903@redhat.com>
-	 <4ED37541.4040701@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Nov 2011 13:00:12 -0600
-Message-ID: <1322506812.5071.37.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8bit
+	Mon, 28 Nov 2011 14:02:13 -0500
+Message-ID: <4ED3DA92.6050704@metafoo.de>
+Date: Mon, 28 Nov 2011 20:01:38 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, drivers@analog.com,
+        device-drivers-devel@blackfin.uclinux.org
+Subject: Re: [PATCH 3/7] ASoC: AD193X: Make enum items const char * const
+References: <1322497692-27868-1-git-send-email-lars@metafoo.de> <1322497692-27868-3-git-send-email-lars@metafoo.de> <20111128185345.GA1586@opensource.wolfsonmicro.com>
+In-Reply-To: <20111128185345.GA1586@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-28 at 19:49 +0800, Cong Wang wrote:
-> 于 2011年11月28日 19:42, Cong Wang 写道:
-> > 于 2011年11月28日 18:01, Sergei Shtylyov 写道:
-> >> Hello.
-> >>
-> >> On 27-11-2011 9:26, Cong Wang wrote:
-> >>
-> >>> Signed-off-by: Cong Wang<amwang@redhat.com>
-> >>> ---
-> >>> drivers/ata/libata-sff.c | 8 ++++----
-> >>> 1 files changed, 4 insertions(+), 4 deletions(-)
-> >>
-> >> IMO, you should do this in a single patch, not piecemeal to keep the kernel bisectable.
-> >>
-> >
-> > Hi,
-> >
-> > Please see patch 01/62,
-> >
-> > https://lkml.org/lkml/2011/11/28/35
-> >
-> > So even without it, the kernel can still compile, just with some warnings.
-> >
+On 11/28/2011 07:53 PM, Mark Brown wrote:
+> On Mon, Nov 28, 2011 at 05:28:08PM +0100, Lars-Peter Clausen wrote:
 > 
-> Ah, no, sorry that I replied too quickly. We have to have at least 01/62
-> to compile.
+>> -static const char *ad193x_deemp[] = {"None", "48kHz", "44.1kHz", "32kHz"};
+>> +static const char * const ad193x_deemp[] = {"None", "48kHz", "44.1kHz", "32kHz"};
 > 
-> Actually I did make the patches as a whole, but Andrew Morton prefers to
-> split them, so I make V2 of them.
+> Ideally this would be converted to a switch and the driver would
+> automatically select the rate based on the current sample rate.
 
-I'd vote for as a whole as well, but if there's some legitimate reason
-why not, then take them through Jiri's trivial tree; it's pretty trivial
-anyway and at least going that way would keep them bisectable.
+Ideally yes, but I'm not sure if this couldn't break some existing setup if it
+expects to find that control.
 
-James
-
-
+- Lars
