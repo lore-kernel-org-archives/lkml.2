@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab1K1Nvi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 08:51:38 -0500
-Received: from mga01.intel.com ([192.55.52.88]:4293 "EHLO mga01.intel.com"
+	id S1752946Ab1K1Nv5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 08:51:57 -0500
+Received: from mga14.intel.com ([143.182.124.37]:52623 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751774Ab1K1Nvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 08:51:36 -0500
+	id S1751939Ab1K1Nv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 08:51:56 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
-   d="scan'208";a="96049748"
-Subject: Re: [PATCH v4 6/6] ata: add ata port runtime PM callbacks
-From: Lin Ming <ming.m.lin@intel.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-In-Reply-To: <4ED35EBF.6030602@mvista.com>
-References: <1322442950-16268-1-git-send-email-ming.m.lin@intel.com>
-	 <1322442950-16268-7-git-send-email-ming.m.lin@intel.com>
-	 <4ED35EBF.6030602@mvista.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Mon, 28 Nov 2011 21:50:12 +0800
-Message-ID: <1322488212.3744.10.camel@hp6530s>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="79781885"
+Date: Mon, 28 Nov 2011 21:51:49 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: fix dirtied pages accounting on
+ sub-page writes
+Message-ID: <20111128135149.GA24975@localhost>
+References: <20111121130342.211953629@intel.com>
+ <20111121131215.905222115@intel.com>
+ <20111122001127.GG4017@quack.suse.cz>
+ <20111122092110.GB12864@localhost>
+ <20111122122157.GB8058@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111122122157.GB8058@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-28 at 18:13 +0800, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 28-11-2011 5:15, Lin Ming wrote:
-> 
-> > Add ata port runtime suspend/resume/idle callbacks.
-> > Set ->eh_noresume to skip the runtime PM calls on scsi host
-> > in the error handler to avoid dead lock.
-> 
-> > Signed-off-by: Lin Ming<ming.m.lin@intel.com>
-> > ---
-> >   drivers/ata/libata-core.c      |   10 ++++++++++
-> >   drivers/ata/libata-scsi.c      |    1 +
-> >   drivers/ata/libata-transport.c |    4 ++++
-> >   3 files changed, 15 insertions(+), 0 deletions(-)
-> 
-> > diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-> > index 04c208e..15a3d4d 100644
-> > --- a/drivers/ata/libata-core.c
-> > +++ b/drivers/ata/libata-core.c
-> [...]
-> > @@ -5307,9 +5308,18 @@ static int ata_port_resume(struct device *dev)
-> >   	return rc;
-> >   }
-> >
-> > +static int ata_port_runtime_idle(struct device *dev)
-> > +{
-> > +	return pm_runtime_suspend(dev);
-> > +}
-> > +
-> >   static const struct dev_pm_ops ata_port_pm_ops = {
-> >   	.suspend = ata_port_suspend,
-> >   	.resume = ata_port_resume,
-> > +
-> > +	.runtime_suspend = ata_port_suspend_common,
-> > +	.runtime_resume = ata_port_resume,
-> > +	.runtime_idle = ata_port_runtime_idle,
-> 
->     Can't use set this to pm_runtime_suspend directly?
+Jan,
 
-No.
+On Tue, Nov 22, 2011 at 01:21:57PM +0100, Jan Kara wrote:
+> On Tue 22-11-11 17:21:11, Wu Fengguang wrote:
+> > On Tue, Nov 22, 2011 at 08:11:27AM +0800, Jan Kara wrote:
+> > > On Mon 21-11-11 21:03:45, Wu Fengguang wrote:
+> > > > When dd in 512bytes, generic_perform_write() calls
+> > > > balance_dirty_pages_ratelimited() 8 times for the same page, but
+> > > > obviously the page is only dirtied once.
+> > > > 
+> > > > Fix it by accounting nr_dirtied at page dirty time.
+> > >   Well, but after this change, the interface balance_dirty_ratelimited_nr()
+> > > is strange because the argument is only used for per-CPU ratelimiting and
+> > > not for per-task ratelimiting...
+> > 
+> > Yeah I was vaguely aware of this... and still choose to ignore this
+> > since the patchset looked already forbiddingly large at the time ;)
+> > 
+> > > So if you do this switch then I'd also
+> > > switch bdp_ratelimits to get consistent results and a clean interface and
+> > > completely kill balance_dirty_pages_ratelimited_nr().
+> > 
+> > Following your suggestions to change ratelimiting as well :)
+> > 
+> > I'll do the interface change with a standalone patch.
+>   OK.
 
-pm_runtime_suspend is a runtime PM core helper function,
-It will call driver's .runtime_suspend callback.
+It looks worthwhile to consider a better scheme to reduce calls into
+balance_dirty_pages_ratelimited_nr() before doing the interface
+change. Currently that function is called on every page in
+generic_perform_write().
 
-> 
-> MBR, Sergei
+I have no clear idea for now, so would like to delay the interface
+change (after this patch).
 
-
+Thanks,
+Fengguang
