@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab1K1OJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:09:09 -0500
-Received: from mga03.intel.com ([143.182.124.21]:49496 "EHLO mga03.intel.com"
+	id S1753702Ab1K1OJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:09:42 -0500
+Received: from mga03.intel.com ([143.182.124.21]:26312 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752625Ab1K1OJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:09:05 -0500
+	id S1753330Ab1K1OJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:09:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
-   d="scan'208";a="79787537"
-Message-Id: <20111128140513.777795684@intel.com>
+   d="scan'208";a="79787559"
+Message-Id: <20111128140513.275099009@intel.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 28 Nov 2011 21:53:45 +0800
+Date: Mon, 28 Nov 2011 21:53:41 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: <linux-fsdevel@vger.kernel.org>
 cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -19,67 +19,60 @@ cc: Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
 CC: Christoph Hellwig <hch@lst.de>
 cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/7] writeback: comment on the bdi dirty threshold
+Subject: [PATCH 3/7] writeback: fix dirtied pages accounting on sub-page writes
 References: <20111128135338.249672012@intel.com>
-Content-Disposition: inline; filename=writeback-comment-bdi_thresh.patch
+Content-Disposition: inline; filename=writeback-accurate-task-dirtied.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We do "floating proportions" to let active devices to grow its target
-share of dirty pages and stalled/inactive devices to decrease its target
-share over time.
+When dd in 512bytes, generic_perform_write() calls
+balance_dirty_pages_ratelimited() 8 times for the same page, but
+obviously the page is only dirtied once.
 
-It works well except in the case of "an inactive disk suddenly goes
-busy", where the initial target share may be too small. To mitigate
-this, bdi_position_ratio() has the below line to raise a small
-bdi_thresh when it's safe to do so, so that the disk be feed with enough
-dirty pages for efficient IO and in turn fast rampup of bdi_thresh:
-
-        bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
-
-balance_dirty_pages() normally does negative feedback control which
-adjusts ratelimit to balance the bdi dirty pages around the target.
-In some extreme cases when that is not enough, it will have to block 
-the tasks completely until the bdi dirty pages drop below bdi_thresh.
+Fix it by accounting tsk->nr_dirtied and bdp_ratelimits at page dirty time.
 
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ mm/page-writeback.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2011-11-23 10:57:41.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-11-23 11:44:39.000000000 +0800
-@@ -411,8 +411,13 @@ void global_dirty_limits(unsigned long *
-  *
-  * Returns @bdi's dirty limit in pages. The term "dirty" in the context of
-  * dirty balancing includes all PG_dirty, PG_writeback and NFS unstable pages.
-- * And the "limit" in the name is not seriously taken as hard limit in
-- * balance_dirty_pages().
-+ *
-+ * Note that balance_dirty_pages() will only seriously take it as a hard limit
-+ * when sleeping max_pause per page is not enough to keep the dirty pages under
-+ * control. For example, when the device is completely stalled due to some error
-+ * conditions, or when there are 1000 dd tasks writing to a slow 10MB/s USB key.
-+ * In the other normal situations, it acts more gently by throttling the tasks
-+ * more (rather than completely block them) when the bdi dirty pages go high.
-  *
-  * It allocates high/low dirty limits to fast/slow devices, in order to prevent
-  * - starving fast devices
-@@ -594,6 +599,13 @@ static unsigned long bdi_position_ratio(
- 	 */
- 	if (unlikely(bdi_thresh > thresh))
- 		bdi_thresh = thresh;
-+	/*
-+	 * It's very possible that bdi_thresh is close to 0 not because the
-+	 * device is slow, but that it has remained inactive for long time.
-+	 * Honour such devices a reasonable good (hopefully IO efficient)
-+	 * threshold, so that the occasional writes won't be blocked and active
-+	 * writes can rampup the threshold quickly.
-+	 */
- 	bdi_thresh = max(bdi_thresh, (limit - dirty) / 8);
+--- linux-next.orig/mm/page-writeback.c	2011-11-28 21:23:20.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-11-28 21:23:23.000000000 +0800
+@@ -1239,8 +1239,6 @@ void balance_dirty_pages_ratelimited_nr(
+ 	if (bdi->dirty_exceeded)
+ 		ratelimit = min(ratelimit, 32 >> (PAGE_SHIFT - 10));
+ 
+-	current->nr_dirtied += nr_pages_dirtied;
+-
+ 	preempt_disable();
  	/*
- 	 * scale global setpoint to bdi's:
+ 	 * This prevents one CPU to accumulate too many dirtied pages without
+@@ -1251,12 +1249,9 @@ void balance_dirty_pages_ratelimited_nr(
+ 	p =  &__get_cpu_var(bdp_ratelimits);
+ 	if (unlikely(current->nr_dirtied >= ratelimit))
+ 		*p = 0;
+-	else {
+-		*p += nr_pages_dirtied;
+-		if (unlikely(*p >= ratelimit_pages)) {
+-			*p = 0;
+-			ratelimit = 0;
+-		}
++	else if (unlikely(*p >= ratelimit_pages)) {
++		*p = 0;
++		ratelimit = 0;
+ 	}
+ 	/*
+ 	 * Pick up the dirtied pages by the exited tasks. This avoids lots of
+@@ -1749,6 +1744,8 @@ void account_page_dirtied(struct page *p
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
+ 		task_io_account_write(PAGE_CACHE_SIZE);
++		current->nr_dirtied++;
++		this_cpu_inc(bdp_ratelimits);
+ 	}
+ }
+ EXPORT_SYMBOL(account_page_dirtied);
 
 
