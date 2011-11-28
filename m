@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab1K1M2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 07:28:49 -0500
-Received: from bender.cm4all.net ([87.106.27.49]:44323 "EHLO bender.cm4all.net"
+	id S1753684Ab1K1Mf1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 07:35:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10994 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab1K1M2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 07:28:47 -0500
-Date: Mon, 28 Nov 2011 13:30:57 +0100
-From: Max Kellermann <mk@cm4all.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs/namei: waiting for mutex during name lookups is
- "killable"
-Message-ID: <20111128123056.GA19907@rabbit.intern.cm-ag>
-References: <20111128113918.23050.25938.stgit@rabbit.intern.cm-ag>
- <20111128121936.GR4387@parisc-linux.org>
+	id S1753421Ab1K1MfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 07:35:25 -0500
+Message-ID: <4ED37FF7.2060207@redhat.com>
+Date: Mon, 28 Nov 2011 14:35:03 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111128121936.GR4387@parisc-linux.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Cong Wang <amwang@redhat.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>, Olaf Hering <olaf@aepfle.de>,
+        linux-crypto@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 08/62] x86: remove the second argument of k[un]map_atomic()
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-9-git-send-email-amwang@redhat.com>
+In-Reply-To: <1322371662-26166-9-git-send-email-amwang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011/11/28 13:19, Matthew Wilcox <matthew@wil.cx> wrote:
-> On Mon, Nov 28, 2011 at 12:39:18PM +0100, Max Kellermann wrote:
-> > Use mutex_lock_killable() instead of mutex_lock() during name lookups,
-> > to allow killing the process while it's waiting.
-> 
-> This is cool.  Could you describe what situations this mutex gets held
-> for a user-noticable length of time, and how you tested this patch?
+On 11/27/2011 07:26 AM, Cong Wang wrote:
+> Signed-off-by: Cong Wang <amwang@redhat.com>
+> ---
 
-I experienced lots of blocked unkillable processes in an environment
-that uses NFS mounts extensively.
+>  arch/x86/kvm/lapic.c               |    8 ++++----
+>  arch/x86/kvm/paging_tmpl.h         |    4 ++--
+>  arch/x86/kvm/x86.c                 |    8 ++++----
+>
 
-There seems to be a lot wrong with Linux's NFS client; it waits for
-RPC responses synchronously while the VFS layer holds mutexes, a
-behaviour that should be avoided.  My patch does not try to address
-this core issue.  Instead, it attempts to mitigate a nasty side
-effect.
+The kvm parts are:
 
-Most blocked processes were hanging inside stat(), in the code
-locations that my patch changes.  After this patch, I could verify
-that the affected processes could be killed, instead of hanging in the
-task list until the one process holding the mutex would give up the
-RPC request.
+Acked-by: Avi Kivity <avi@redhat.com>
 
-The patch has been in production on a few heavily loaded servers for
-nearly a week, and I did not observe any negative side effects.
+-- 
+error compiling committee.c: too many arguments to function
 
-Max
