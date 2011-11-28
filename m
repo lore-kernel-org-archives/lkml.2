@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab1K1O62 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:58:28 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:57985 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab1K1O61 (ORCPT
+	id S1752657Ab1K1O7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:59:32 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55629 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981Ab1K1O7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:58:27 -0500
-X-Greylist: delayed 1182 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Nov 2011 09:58:27 EST
-From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Liam Girdwood <lrg@ti.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org,
-        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [BUGFIX][PATCH] drivers/regulator/core.c: fix use after free bug
-Date: Mon, 28 Nov 2011 15:38:37 +0100
-Message-Id: <1322491117-9185-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.5.6.5
+	Mon, 28 Nov 2011 09:59:31 -0500
+Date: Mon, 28 Nov 2011 12:59:17 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        paulus@samba.org, mingo@elte.hu, asharma@fb.com, devel@openvz.org,
+        dsahern@gmail.com, linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 7/7] event: add tracepoint for accounting block time
+Message-ID: <20111128145917.GB12377@infradead.org>
+References: <1322471015-107825-1-git-send-email-avagin@openvz.org>
+ <1322471015-107825-8-git-send-email-avagin@openvz.org>
+ <1322480531.2921.107.camel@twins>
+ <4ED39473.9080600@linux.intel.com>
+ <20111128143140.GA12377@infradead.org>
+ <4ED39E17.7050807@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ED39E17.7050807@linux.intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiling the kernel with CONFIG_PAGE_POISONING produces the following
-crash upon removal of a driver that calls regulator_unregister():
-|Unable to handle kernel paging request at virtual address ffef3fde
-|pgd = c6564000
-|[ffef3fde] *pgd=47dfe831, *pte=00000000, *ppte=00000000
-|Internal error: Oops: 1 [#1] PREEMPT
-|Modules linked in: snd_soc_mxs_pcm snd_soc_mxs_sgtl5000(-) snd_soc_mxs fixed ehci_hcd mxs_usbphy usbcore usb_common evdev snd_soc_sgtl5000 snd_soc_core regmap_spi snd_pcm snd_timer snd_page_alloc regmap_i2c gpio_pca953x tsc2007 [last unloaded: snd_mixer_oss]
-|CPU: 0    Not tainted  (3.2.0-rc1-next-20111110-karo+ #13)
-|PC is at kfree+0x44/0x17c
-|LR is at regulator_unregister+0x7c/0xac
-|pc : [<c009a6d8>]    lr : [<c0219a34>]    psr: 00000013
-|sp : c650fe80  ip : c641c7e0  fp : beffea28
-|r10: 00000000  r9 : c650e000  r8 : c7372b00
-|r7 : ffef3fde  r6 : 6b6b6b6b  r5 : c72fd70c  r4 : c0219a34
-|r3 : c09e2000  r2 : dffbfe5e  r1 : 00000000  r0 : 6b6b6b6b
-|Flags: nzcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-|Control: 0005317f  Table: 46564000  DAC: 00000015
-|Process modprobe (pid: 1281, stack limit = 0xc650e270)
-|Stack: (0xc650fe80 to 0xc6510000)
-|fe80: c73d17c0 c72fd70c c71b1300 c7274d80 c7372b00 c650e000 00000000 c0219a34
-|fea0: c640ab00 bf0637a0 c7372b00 bf06382c c7372b00 c7274360 c71b1300 bf040a50
-|fec0: c720abc0 bf040c44 00000000 bf0ce2b4 00000000 c650e000 c650ff48 c650e000
-|fee0: 00cc5b28 bf041128 bf0ce2b4 bf0ce278 c78bc87c bf0ce0d8 c78bc848 c023f0e0
-|ff00: c78bc848 c023dad8 c78bc848 bf0ce278 c78bc87c c023dbdc c047202c bf0ce278
-|ff20: c049c440 c023cd64 c047202c 00000080 bf0ce4ec c005d250 beffe98c c03250f4
-|ff40: 00000002 00000000 5f646e73 5f636f73 5f73786d 6c746773 30303035 c01ea700
-|ff60: c650e000 00000001 c650ff7c c001e9a0 60000013 c7321a98 beffe98c c0325888
-|ff80: 00ffea1c c87c8db6 00000001 beffea1c 00cc5ac0 00000001 00000081 c000f3c8
-|ffa0: 00000000 c000f200 beffea1c 00cc5ac0 00cc5b28 00000080 beffe984 00000000
-|ffc0: beffea1c 00cc5ac0 00000001 00000081 00cc5b28 0000c69c 00cc5acc beffea28
-|ffe0: 00cc5430 beffe990 0000a42c 4028911c 60000010 00cc5b28 aaaaaaaa aaaaaaaa
-|[<c009a6d8>] (kfree+0x44/0x17c) from [<c0219a34>] (regulator_unregister+0x7c/0xac)
-|[<c0219a34>] (regulator_unregister+0x7c/0xac) from [<bf0637a0>] (ldo_regulator_remove+0x4c/0x94 [snd_soc_sgtl5000])
-|[<bf0637a0>] (ldo_regulator_remove+0x4c/0x94 [snd_soc_sgtl5000]) from [<bf06382c>] (sgtl5000_remove+0x44/0x4c [snd_soc_sgtl5000])
-|[<bf06382c>] (sgtl5000_remove+0x44/0x4c [snd_soc_sgtl5000]) from [<bf040a50>] (soc_remove_codec+0x1c/0x94 [snd_soc_core])
-|[<bf040a50>] (soc_remove_codec+0x1c/0x94 [snd_soc_core]) from [<bf040c44>] (soc_remove_dai_link+0x108/0x24c [snd_soc_core])
-|[<bf040c44>] (soc_remove_dai_link+0x108/0x24c [snd_soc_core]) from [<bf041128>] (snd_soc_unregister_card+0xd8/0x140 [snd_soc_core])
-|[<bf041128>] (snd_soc_unregister_card+0xd8/0x140 [snd_soc_core]) from [<bf0ce0d8>] (mxs_sgtl5000_remove+0x20/0x28 [snd_soc_mxs_sgtl5000])
-|[<bf0ce0d8>] (mxs_sgtl5000_remove+0x20/0x28 [snd_soc_mxs_sgtl5000]) from [<c023f0e0>] (platform_drv_remove+0x18/0x1c)
-|[<c023f0e0>] (platform_drv_remove+0x18/0x1c) from [<c023dad8>] (__device_release_driver+0x58/0xa8)
-|[<c023dad8>] (__device_release_driver+0x58/0xa8) from [<c023dbdc>] (driver_detach+0xb4/0xb8)
-|[<c023dbdc>] (driver_detach+0xb4/0xb8) from [<c023cd64>] (bus_remove_driver+0x7c/0xc0)
-|[<c023cd64>] (bus_remove_driver+0x7c/0xc0) from [<c005d250>] (sys_delete_module+0x204/0x270)
-|[<c005d250>] (sys_delete_module+0x204/0x270) from [<c000f200>] (ret_fast_syscall+0x0/0x38)
-|Code: e7932107 e0837107 e3120902 1597701c (e5973000) 
-|---[ end trace fe04617c1a901602 ]---
+Em Mon, Nov 28, 2011 at 06:43:35AM -0800, Arjan van de Ven escreveu:
+> > perf_evlist is what you call perf_bundle and perf_evsel is what you call
+> > perf_event in powertop.
 
-This is caused by dereferencing 'rdev' after device_unregister() in
-the regulator_unregister() function.
-'rdev' is freed by device_unregister(), so it must not be dereferenced
-after this call.
+> > That part of the API should be ok for wider use and is in fact exported
+> > in the python binding.
+> 
+> I don't care about the snake language.
 
+I haven't suggested that you use any other language than C.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/regulator/core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+What I tried to say was that the way the python binding was written
+provides an initial libperf.so, just that it is not exposed yet.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 679f92e..648fa2a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2800,8 +2800,8 @@ void regulator_unregister(struct regulator_dev *rdev)
- 	list_del(&rdev->list);
- 	if (rdev->supply)
- 		regulator_put(rdev->supply);
--	device_unregister(&rdev->dev);
- 	kfree(rdev->constraints);
-+	device_unregister(&rdev->dev);
- 	mutex_unlock(&regulator_list_mutex);
- }
- EXPORT_SYMBOL_GPL(regulator_unregister);
--- 
-1.5.6.5
+That is, the subset of C files there is (or should be) untangled from
+all the rest of tools/perf.
+ 
+> frankly all that's missing is a "safe" accessor library as Steve has
+> promised will appear.
 
+> that library really needs to be a proper shared library and not come
+> from/with the kernel package, so that distributions can independently
+> package it properly.
+
+I can probably have something like:
+
+[acme@emilia linux]$ make help | grep perf
+  perf-tar-src-pkg    - Build perf-3.2.0-rc1.tar source tarball
+  perf-targz-src-pkg  - Build perf-3.2.0-rc1.tar.gz source tarball
+  perf-tarbz2-src-pkg - Build perf-3.2.0-rc1.tar.bz2 source tarball
+  perf-tarxz-src-pkg  - Build perf-3.2.0-rc1.tar.xz source tarball
+[acme@emilia linux]$ 
+
+i.e.:
+
+$ make libperf-tar-src.pkg
+
+> (and this obviously needs to at least look at the things that the
+> systemd guys pointed us at at the kernel summit)
+
+Yes, I'll take that into account.
+ 
+> I'm not interested if the code for a library is somewhere deep in the
+> kernel source code, not installed by default in distros (or tied in with
+> loads of other mess) and/or uses the kernel makefiles/etc like perf does.
+
+Right, I'm working on that, don't know when it will get to the point
+you'd consider using it, but I'll try to address your concerns in the
+process.
+
+- Arnaldo
