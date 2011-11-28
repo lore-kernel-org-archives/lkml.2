@@ -1,81 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab1K1I3b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 03:29:31 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63801 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab1K1I3a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 03:29:30 -0500
+	id S1752798Ab1K1IdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 03:33:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40359 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751070Ab1K1IdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 03:33:17 -0500
+Date: Mon, 28 Nov 2011 09:33:13 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: stable@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] hugetlb: release pages in the error path of hugetlb_cow()
+ (was: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1)
+Message-ID: <20111128083313.GA18337@tiehlicka.suse.cz>
+References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
+ <201111212249.31196.rjw@sisk.pl>
+ <CA+55aFygSFt+O5KLoiE_0V+o45eKfsoDDV5ML8EF=J0n9z_D-Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPM31RLcUUzCXqfrALgAc0g_A0uOq-Htaz50vcpqoo83Nc0tpA@mail.gmail.com>
-References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
-	<1320182360-20043-15-git-send-email-glommer@parallels.com>
-	<4EBD94A0.9070703@google.com>
-	<4EBE4A80.6090607@parallels.com>
-	<CAPM31RLUDpaxDAw00erwgmNogbuD+=LgkJ-5i9ncJw00nvryfQ@mail.gmail.com>
-	<CAKTCnzkFb2rRyOJ3Uxt13mXrB-9Ox=zgXAOZ5bZ_6Kwr64AbTA@mail.gmail.com>
-	<20111117085251.443fefa5.kamezawa.hiroyu@jp.fujitsu.com>
-	<4EC47632.2000904@parallels.com>
-	<CAKTCnznzpqUbMJEMwaewwjvMW1fG0J3=a8JxqKiHKNuffO7azg@mail.gmail.com>
-	<4EC52F32.2040708@parallels.com>
-	<20111121105957.9c85db16.kamezawa.hiroyu@jp.fujitsu.com>
-	<1322141073.2921.51.camel@twins>
-	<4ECE6BC4.7090600@parallels.com>
-	<1322152152.2921.64.camel@twins>
-	<4ECE731E.6030508@parallels.com>
-	<CAKTCnznU1jA9ME2F12pPSLosi3=sbiHPikPd3UDon3arBK6XLQ@mail.gmail.com>
-	<1322216360.2921.86.camel@twins>
-	<CAPM31RLcUUzCXqfrALgAc0g_A0uOq-Htaz50vcpqoo83Nc0tpA@mail.gmail.com>
-Date: Mon, 28 Nov 2011 13:59:29 +0530
-Message-ID: <CAKTCnz=Xk7fsvF6asN4v6m5ma4-B38a5+FGRNOmhr+ftGpxPmA@mail.gmail.com>
-Subject: Re: [PATCH v2 14/14] Change CPUACCT to default n
-From: Balbir Singh <bsingharora@gmail.com>
-To: Paul Turner <pjt@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, jbottomley@parallels.com, fweisbec@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFygSFt+O5KLoiE_0V+o45eKfsoDDV5ML8EF=J0n9z_D-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 26, 2011 at 6:48 PM, Paul Turner <pjt@google.com> wrote:
-> On Fri, Nov 25, 2011 at 2:19 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> On Fri, 2011-11-25 at 11:08 +0530, Balbir Singh wrote:
->>> It is not about $customer. I am OK with a design that allows
->>> accounting independent of control. Put it another way when I look at
->>> cgroups, I see the following functionality
->>>
->>> 1. Accounting and feedback
->>> 2. Control
->>>
->>> Why do 1 and 2 have to co-exist. A good case would be that we might
->>> need just stats and might want to implement control based on 1.
->>
->> I would say that 2 always requires 1 (provided they are of course on the
->> same subject), for the very simple reason that you need to know the
->> current state (as provided by 1) to control it (2).
->>
->> Therefore separating them leads to useless duplication.
->
-> Almost all of the stats that are coming in here are completely useless
-> for control and don't belong in the cpu controller.
->
-> While it's not as pure we really have 2 tiers of statistic:
->
-> 1) Accounting needed for control
-> 2) Everything else
->
-> What causes so much over-head for cpuacct currently is that it tries
-> to maintain a separate accounting of usage.  If this were removed from
-> the controller then it would be *much* cheaper, even with all extra
-> stats added here.
->
+On Mon 21-11-11 14:18:29, Linus Torvalds wrote:
+> On Mon, Nov 21, 2011 at 1:49 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > Subject    : hugetlb oops on 3.1.0-rc8-devel
+> > Submitter  : Andy Lutomirski <luto@amacapital.net>
+> > Date       : 2011-11-01 22:20
+> > Message-ID : CALCETrW1mpVCz2tO5roaz1r6vnno+srHR-dHA6_pkRi2qiCfdw@mail.gmail.com
+> > References : http://marc.info/?l=linux-kernel&m=132018604426692&w=2
+> 
+> Despite the subject line, that's not an oops, it's a BUG_ON().
+> 
+> And it *should* be fixed by commit ea4039a34c4c ("hugetlb: release
+> pages in the error path of hugetlb_cow()") although I don't think Andy
+> ever confirmed that (since it was hard to trigger).
 
-Sure, if we can integrate the stats without control, I am all for it :)
+AFAICS the issue has been introduced by 0fe6e20b (hugetlb, rmap:
+add reverse mapping for hugepage) in 2.6.36-rc1 so this is a stable
+material. I do not see the patch in any stable branch so here we go.
+The patch is on top of 3.0.y branch and it applies as is to 3.1.y
+as well.
+---
+>From fdaa4aaa008cce149a5fd60934112acd8988e0b6 Mon Sep 17 00:00:00 2001
+From: Hillf Danton <dhillf@gmail.com>
+Date: Tue, 15 Nov 2011 14:36:12 -0800
+Subject: [PATCH] hugetlb: release pages in the error path of hugetlb_cow()
 
-Balbir Singh
+commit ea4039a34c4c206d015d34a49d0b00868e37db1d upstream.
+
+If we fail to prepare an anon_vma, the {new, old}_page should be released,
+or they will leak.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ mm/hugetlb.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index bfcf153..2b57cd9 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2415,6 +2415,8 @@ retry_avoidcopy:
+ 	 * anon_vma prepared.
+ 	 */
+ 	if (unlikely(anon_vma_prepare(vma))) {
++		page_cache_release(new_page);
++		page_cache_release(old_page);
+ 		/* Caller expects lock to be held */
+ 		spin_lock(&mm->page_table_lock);
+ 		return VM_FAULT_OOM;
+-- 
+1.7.7.3
+
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
