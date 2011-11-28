@@ -1,165 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab1K1UB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 15:01:26 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36058 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1K1UBZ (ORCPT
+	id S1754835Ab1K1UBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:01:41 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46950 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab1K1UBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 15:01:25 -0500
-X-Authority-Analysis: v=2.0 cv=Xd0LPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=OUZlpDKCT1UA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=20KFwNOVAAAA:8 a=nhRpTmaL0pnQvLdKo_UA:9 a=XwO-BxLVSrCF3SlyftMA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH 8/9] ftrace, perf: Add FILTER_TRACE_FN event field type
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <1322417074-5834-9-git-send-email-jolsa@redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
-	 <1322417074-5834-9-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Nov 2011 15:01:23 -0500
-Message-ID: <1322510483.17003.16.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Nov 2011 15:01:39 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: rjw@sisk.pl
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, tj@kernel.org, john@calva.com,
+        trond.myklebust@netapp.com, marek.belisko@gmail.com,
+        awilliam@redhat.com
+Subject: [PATCH v3 1/2] sunrpc: make rpc_wait_bit_killable handle freeze events
+Date: Mon, 28 Nov 2011 15:01:27 -0500
+Message-Id: <1322510488-21189-2-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1322510488-21189-1-git-send-email-jlayton@redhat.com>
+References: <1322510488-21189-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BTW, Please Cc Peter Zijlstra too, as he maintains perf inside the
-kernel.
+Allow the freezer to skip wait_on_bit_killable sleeps in the sunrpc
+layer. This should allow suspend and hibernate events to proceed, even
+when there are RPC's pending on the wire.
 
-On Sun, 2011-11-27 at 19:04 +0100, Jiri Olsa wrote:
-> Adding FILTER_TRACE_FN event field type for function tracepoint
-> event, so it can be properly recognized within filtering code.
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ include/linux/freezer.h |   21 +++++++++++++++++++++
+ net/sunrpc/sched.c      |    3 ++-
+ 2 files changed, 23 insertions(+), 1 deletions(-)
 
--ECHANGELOGTOOSHORT
-
-I'm not sure what this is for.
-
--- Steve
-
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  include/linux/ftrace_event.h       |    1 +
->  kernel/trace/trace_events_filter.c |    7 ++++++-
->  kernel/trace/trace_export.c        |   25 ++++++++++++++++++++-----
->  3 files changed, 27 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 2bf677c..dd478fc 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -245,6 +245,7 @@ enum {
->  	FILTER_STATIC_STRING,
->  	FILTER_DYN_STRING,
->  	FILTER_PTR_STRING,
-> +	FILTER_TRACE_FN,
->  };
->  
->  #define EVENT_STORAGE_SIZE 128
-> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-> index fdc6d22..7b0b04c 100644
-> --- a/kernel/trace/trace_events_filter.c
-> +++ b/kernel/trace/trace_events_filter.c
-> @@ -900,6 +900,11 @@ int filter_assign_type(const char *type)
->  	return FILTER_OTHER;
->  }
->  
-> +static bool is_function_field(struct ftrace_event_field *field)
-> +{
-> +	return field->filter_type == FILTER_TRACE_FN;
-> +}
-> +
->  static bool is_string_field(struct ftrace_event_field *field)
->  {
->  	return field->filter_type == FILTER_DYN_STRING ||
-> @@ -987,7 +992,7 @@ static int init_pred(struct filter_parse_state *ps,
->  			fn = filter_pred_strloc;
->  		else
->  			fn = filter_pred_pchar;
-> -	} else {
-> +	} else if (!is_function_field(field)) {
->  		if (field->is_signed)
->  			ret = strict_strtoll(pred->regex.pattern, 0, &val);
->  		else
-> diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-> index 62e86a5..7b035ab 100644
-> --- a/kernel/trace/trace_export.c
-> +++ b/kernel/trace/trace_export.c
-> @@ -67,7 +67,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
->  	ret = trace_define_field(event_call, #type, #item,		\
->  				 offsetof(typeof(field), item),		\
->  				 sizeof(field.item),			\
-> -				 is_signed_type(type), FILTER_OTHER);	\
-> +				 is_signed_type(type), filter_type);	\
->  	if (ret)							\
->  		return ret;
->  
-> @@ -77,7 +77,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
->  				 offsetof(typeof(field),		\
->  					  container.item),		\
->  				 sizeof(field.container.item),		\
-> -				 is_signed_type(type), FILTER_OTHER);	\
-> +				 is_signed_type(type), filter_type);	\
->  	if (ret)							\
->  		return ret;
->  
-> @@ -91,7 +91,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
->  		ret = trace_define_field(event_call, event_storage, #item, \
->  				 offsetof(typeof(field), item),		\
->  				 sizeof(field.item),			\
-> -				 is_signed_type(type), FILTER_OTHER);	\
-> +				 is_signed_type(type), filter_type);	\
->  		mutex_unlock(&event_storage_mutex);			\
->  		if (ret)						\
->  			return ret;					\
-> @@ -104,7 +104,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
->  				 offsetof(typeof(field),		\
->  					  container.item),		\
->  				 sizeof(field.container.item),		\
-> -				 is_signed_type(type), FILTER_OTHER);	\
-> +				 is_signed_type(type), filter_type);	\
->  	if (ret)							\
->  		return ret;
->  
-> @@ -112,10 +112,24 @@ static void __always_unused ____ftrace_check_##name(void)	\
->  #define __dynamic_array(type, item)					\
->  	ret = trace_define_field(event_call, #type, #item,		\
->  				 offsetof(typeof(field), item),		\
-> -				 0, is_signed_type(type), FILTER_OTHER);\
-> +				 0, is_signed_type(type), filter_type);\
->  	if (ret)							\
->  		return ret;
->  
-> +#define FILTER_TYPE_TRACE_FN           FILTER_TRACE_FN
-> +#define FILTER_TYPE_TRACE_GRAPH_ENT    FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_GRAPH_RET    FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_CTX          FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_WAKE         FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_STACK                FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_USER_STACK   FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_BPRINT       FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_PRINT                FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_MMIO_RW      FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_MMIO_MAP     FILTER_OTHER
-> +#define FILTER_TYPE_TRACE_BRANCH       FILTER_OTHER
-> +#define FILTER_TYPE(arg)               FILTER_TYPE_##arg
-> +
->  #undef FTRACE_ENTRY
->  #define FTRACE_ENTRY(name, struct_name, id, tstruct, print)		\
->  int									\
-> @@ -123,6 +137,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
->  {									\
->  	struct struct_name field;					\
->  	int ret;							\
-> +	int filter_type = FILTER_TYPE(id);				\
->  									\
->  	tstruct;							\
->  									\
-
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index a5386e3..fda3ac6 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -135,6 +135,25 @@ static inline void set_freezable_with_signal(void)
+ }
+ 
+ /*
++ * These macros are intended to be used whenever you want allow a task that's
++ * sleeping in TASK_UNINTERRUPTIBLE or TASK_KILLABLE state to be frozen.
++ *
++ */
++
++/*
++ * Like schedule(), but should not block the freezer. It may return immediately
++ * if it ends up racing with the freezer. Callers must be able to deal with
++ * spurious wakeups.
++ */
++#define freezable_schedule()						\
++({									\
++	freezer_do_not_count();						\
++	if (!try_to_freeze())						\
++		schedule();						\
++	freezer_count();						\
++})
++
++/*
+  * Freezer-friendly wrappers around wait_event_interruptible(),
+  * wait_event_killable() and wait_event_interruptible_timeout(), originally
+  * defined in <linux/wait.h>
+@@ -194,6 +213,8 @@ static inline int freezer_should_skip(struct task_struct *p) { return 0; }
+ static inline void set_freezable(void) {}
+ static inline void set_freezable_with_signal(void) {}
+ 
++#define freezable_schedule()  schedule()
++
+ #define wait_event_freezable(wq, condition)				\
+ 		wait_event_interruptible(wq, condition)
+ 
+diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
+index d12ffa5..5317b93 100644
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -18,6 +18,7 @@
+ #include <linux/smp.h>
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
++#include <linux/freezer.h>
+ 
+ #include <linux/sunrpc/clnt.h>
+ 
+@@ -231,7 +232,7 @@ static int rpc_wait_bit_killable(void *word)
+ {
+ 	if (fatal_signal_pending(current))
+ 		return -ERESTARTSYS;
+-	schedule();
++	freezable_schedule();
+ 	return 0;
+ }
+ 
+-- 
+1.7.6.4
 
