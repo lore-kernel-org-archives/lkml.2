@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab1K1Lmg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 06:42:36 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52940 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751857Ab1K1Lme convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 06:42:34 -0500
-Message-ID: <1322480531.2921.107.camel@twins>
-Subject: Re: [PATCH 7/7] event: add tracepoint for accounting block time
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, mingo@elte.hu,
-        acme@ghostprotocols.net, asharma@fb.com, devel@openvz.org,
-        dsahern@gmail.com, linux-perf-users@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>
-Date: Mon, 28 Nov 2011 12:42:11 +0100
-In-Reply-To: <1322471015-107825-8-git-send-email-avagin@openvz.org>
-References: <1322471015-107825-1-git-send-email-avagin@openvz.org>
-	 <1322471015-107825-8-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1753123Ab1K1LnX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 06:43:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752255Ab1K1LnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 06:43:22 -0500
+Message-ID: <4ED373C3.4050903@redhat.com>
+Date: Mon, 28 Nov 2011 19:42:59 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org
+Subject: Re: [PATCH 10/62] ata: remove the second argument of k[un]map_atomic()
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-11-git-send-email-amwang@redhat.com> <4ED35BFE.6080900@mvista.com>
+In-Reply-To: <4ED35BFE.6080900@mvista.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-28 at 12:03 +0300, Andrew Vagin wrote:
-> This tracepoint shows how long a task is sleeping in uninterruptible state.
-> 
-> E.g.
-> It may show how long and where a mutex is waited.
+于 2011年11月28日 18:01, Sergei Shtylyov 写道:
+> Hello.
+>
+> On 27-11-2011 9:26, Cong Wang wrote:
+>
+>> Signed-off-by: Cong Wang<amwang@redhat.com>
+>> ---
+>> drivers/ata/libata-sff.c | 8 ++++----
+>> 1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> IMO, you should do this in a single patch, not piecemeal to keep the kernel bisectable.
+>
 
-Fair enough, makes one wonder how much it would take to make
-account_scheduler_latency() go away..
+Hi,
 
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
-> ---
->  include/trace/events/sched.h |    7 +++++++
->  kernel/sched_fair.c          |    2 ++
->  2 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-> index 959ff18..be077cf 100644
-> --- a/include/trace/events/sched.h
-> +++ b/include/trace/events/sched.h
-> @@ -331,6 +331,13 @@ DEFINE_EVENT(sched_stat_template, sched_stat_iowait,
->  	     TP_ARGS(tsk, delay));
->  
->  /*
-> + * Tracepoint for accounting block time (time the task is in uninterruptible).
-> + */
-> +DEFINE_EVENT(sched_stat_template, sched_stat_block,
-> +	     TP_PROTO(struct task_struct *tsk, u64 delay),
-> +	     TP_ARGS(tsk, delay));
-> +
-> +/*
->   * Tracepoint for accounting runtime (time the task is executing
->   * on a CPU).
->   */
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 5c9e679..0d7b156 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -907,6 +907,8 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
->  				trace_sched_stat_iowait(tsk, delta);
->  			}
->  
-> +			trace_sched_stat_block(tsk, delta);
-> +
->  			/*
->  			 * Blocking time is in units of nanosecs, so shift by
->  			 * 20 to get a milliseconds-range estimation of the
+Please see patch 01/62,
 
+https://lkml.org/lkml/2011/11/28/35
+
+So even without it, the kernel can still compile, just with some warnings.
+
+Thanks.
