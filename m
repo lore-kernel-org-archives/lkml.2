@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab1K1OLR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:11:17 -0500
-Received: from mga03.intel.com ([143.182.124.21]:49496 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752443Ab1K1OJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:09:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
-   d="scan'208";a="79787542"
-Message-Id: <20111128135338.249672012@intel.com>
-User-Agent: quilt/0.48-1
-Date: Mon, 28 Nov 2011 21:53:38 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: <linux-fsdevel@vger.kernel.org>
-cc: Jan Kara <jack@suse.cz>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Christoph Hellwig <hch@lst.de>
-cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/7] dirty throttling bits for 3.3 (v2)
+	id S1753396Ab1K1OMc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:12:32 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50581 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981Ab1K1OMb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:12:31 -0500
+From: Juergen Beisert <jbe@pengutronix.de>
+Organization: Pengutronix - Linux Solutions for Science and Industry
+To: alsa-devel@alsa-project.org
+Subject: [PATCH][sound/SOC] Do not register platform sound device unconditionally
+Date: Mon, 28 Nov 2011 15:11:39 +0100
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201111281511.40633.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Registering a SOC device and also changing register unconditionally fails on
+kernels which support more than one machine in one binary. Do it only if the
+platform matches.
 
-There are now 7 dirty throttling improvements targeting for Linux 3.3.
+Signed-off-by: Juergen Beisert <jbe@pengutronix.de>
 
-Changes since v1:
-- added many comments and enriched changelog 
-- rename dirty_leaks to dirty_throttle_leaks
-- add the btrfs accounting fix for sub-page writes
-- account bdp_ratelimits at page dirty time (and use this_cpu_inc)
+diff --git a/sound/soc/imx/mx27vis-aic32x4.c b/sound/soc/imx/mx27vis-aic32x4.c
+index 054110b..c5cfb8a 100644
+--- a/sound/soc/imx/mx27vis-aic32x4.c
++++ b/sound/soc/imx/mx27vis-aic32x4.c
+@@ -96,6 +96,10 @@ static int __init mx27vis_aic32x4_init(void)
+ {
+ 	int ret;
+ 
++	if (!machine_is_imx27_visstrim_m10())
++		/* return happy. We run on a totally different machine */
++		return 0;
++
+ 	mx27vis_aic32x4_snd_device = platform_device_alloc("soc-audio", -1);
+ 	if (!mx27vis_aic32x4_snd_device)
+ 		return -ENOMEM;
 
- [PATCH 1/7] writeback: balanced_rate cannot exceed write bandwidth
- [PATCH 2/7] writeback: charge leaked page dirties to active tasks
- [PATCH 3/7] writeback: fix dirtied pages accounting on sub-page writes
- [PATCH 4/7] writeback: fix dirtied pages accounting on redirty
- [PATCH 5/7] btrfs: fix dirtied pages accounting on sub-page writes
- [PATCH 6/7] writeback: dirty ratelimit - think time compensation
- [PATCH 7/7] writeback: comment on the bdi dirty threshold
-
- fs/btrfs/file.c                  |    3 
- include/linux/sched.h            |    1 
- include/linux/writeback.h        |    4 +
- include/trace/events/writeback.h |   14 ++-
- kernel/exit.c                    |    2 
- kernel/fork.c                    |    1 
- mm/page-writeback.c              |  116 +++++++++++++++++++++++++----
- 7 files changed, 123 insertions(+), 18 deletions(-)
-
-Thanks,
-Fengguang
-
-
+-- 
+Pengutronix e.K.                              | Juergen Beisert             |
+Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
