@@ -1,77 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab1K1CxZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 21:53:25 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:43043 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905Ab1K1CxY (ORCPT
+	id S1756055Ab1K1C46 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 21:56:58 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36449 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755905Ab1K1C44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 21:53:24 -0500
-Date: Mon, 28 Nov 2011 13:53:17 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Dave Airlie <airlied@linux.ie>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: linux-next: build failure after merge of the drm tree
-Message-Id: <20111128135317.a99880b234c6c060a622fa31@canb.auug.org.au>
-In-Reply-To: <CAPM=9twsvX=hFS9S01-ht8JHhAAy4uP8N5NxPUDY9UpbsvQWmw@mail.gmail.com>
-References: <20111116113007.5656a7b4823ba085a46c57ae@canb.auug.org.au>
-	<20111125124913.405fc8360a185f3116adb5ec@canb.auug.org.au>
-	<20111125103011.18e167cd@lxorguk.ukuu.org.uk>
-	<CAPM=9twsvX=hFS9S01-ht8JHhAAy4uP8N5NxPUDY9UpbsvQWmw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Sun, 27 Nov 2011 21:56:56 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 28 Nov 2011 11:55:41 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
+        davem@davemloft.net, paul@paulmenage.org, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH v6 02/10] foundations of per-cgroup memory pressure
+ controlling.
+Message-Id: <20111128115541.bc8f2ffa.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1322242696-27682-3-git-send-email-glommer@parallels.com>
+References: <1322242696-27682-1-git-send-email-glommer@parallels.com>
+	<1322242696-27682-3-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_Nov_2011_13_53_17_+1100_i+4n=4q27SY6shMP"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_Nov_2011_13_53_17_+1100_i+4n=4q27SY6shMP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 25 Nov 2011 15:38:08 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-Hi Dave,
+> This patch replaces all uses of struct sock fields' memory_pressure,
+> memory_allocated, sockets_allocated, and sysctl_mem to acessor
+> macros. Those macros can either receive a socket argument, or a mem_cgroup
+> argument, depending on the context they live in.
+> 
+> Since we're only doing a macro wrapping here, no performance impact at all is
+> expected in the case where we don't have cgroups disabled.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: David S. Miller <davem@davemloft.net>
+> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
+> CC: Eric Dumazet <eric.dumazet@gmail.com>
 
-On Fri, 25 Nov 2011 10:34:19 +0000 Dave Airlie <airlied@gmail.com> wrote:
->
-> I just pushed jbarnes patch into my tree for now, at pushed out the
-> mainline gma500 code with it.
+I have some comments on the style. Maybe a nitpick but many patches were
+sent for fixing conding style in memcg recently.
 
-And it is a mess (see my linux-next reports).
++static inline int *sk_memory_pressure(const struct sock *sk)
++{
++	return sk->sk_prot->memory_pressure;
++}
++
++static inline long sk_prot_mem(const struct sock *sk, int index)
++{
++	long *prot = sk->sk_prot->sysctl_mem;
++	return prot[index];
++}
++
 
-> But if someone can send a patch to Greg to mark GMA500 broken in
-> staging that would be good.
+I don't think sk_prot_mem() is an easy to undestand name.
+sk_prot_memory_limit() ?
 
-See my reply to Alan.
+> +static inline int
+> +kcg_sockets_allocated_sum_positive(struct proto *prot, struct mem_cgroup *cg)
+> +{
+> +	return percpu_counter_sum_positive(prot->sockets_allocated);
+> +}
+> +
+> +static inline long
+> +kcg_memory_allocated(struct proto *prot, struct mem_cgroup *cg)
+> +{
+> +	return atomic_long_read(prot->memory_allocated);
+> +}
+>  
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I don't like 'kcg'. What it means ? 
+memory_cgrou_prot_socekts_allocated() ? and
+memory_cgroup_prot_memory_allocated() ?
 
---Signature=_Mon__28_Nov_2011_13_53_17_+1100_i+4n=4q27SY6shMP
-Content-Type: application/pgp-signature
+And the variable for memory cgroup should be 'memcg'.
+http://www.spinics.net/lists/linux-mm/msg26781.html
+So, please rename.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJO0vedAAoJEECxmPOUX5FEEAoP/01Qmo/rxxW4GLdRF690crGo
-AODFIcLjUm55CoExIoFEWMvwM3x0jQ8GETUQ+XePSG1FpevE0aFPA5kn2u8o6KGy
-66KFVAQEOXsYfD4dtXmnBpepkcnnNGf8MFCZfK3Fg6LkVLfla/y9VC1CtAeO9MpP
-xKpuxFBsUqF1c7tbUkPwKhMoUopQUh62AZceGBF9slSL9TgzLepQQKi7r0rMLVWn
-NHSYufEqvGjDKQaYTjfuZrgM54KRfxh61TqyCY7k4z+SpqnBLKT+jpvH0uJk6LUO
-YNgg0MZDipAa5OtN7ys2wJnAxY2bdQmSdjOhm5hpHERGYtfuvOqAwiP2Tnfyh2P2
-nMSwYo4RuKSqAfURwSNW6YvalzlCMD3itR4IRiqyfgSsx9xOJgQBuKC7JNsEGRS1
-hLxAaCbTj5peG1umrCCMj3fAeadjbXSFHxBpk7aTayaqW1clZubdpk+pUMxeduIq
-sEQ7GkPYxrhS7wo/KN6TZCGqs7hCI8g0Cn+d1fHe6Rra4l6Su4i29m9TYoqtq7TV
-VF3vEFl4KxElRdnO8eb9VERwTHSKxAwNLih1NrsL0x3BQSxYIQsYpOqEHpl7Or38
-D3tjizH884WIHOpKMNQW02Bt490dIKUVPbiSh01OKNLM2llgqxnPhed7woviZdAY
-Xjz6Tf+zUlpRUiO1MJZJ
-=8leR
------END PGP SIGNATURE-----
 
---Signature=_Mon__28_Nov_2011_13_53_17_+1100_i+4n=4q27SY6shMP--
+>  #ifdef CONFIG_PROC_FS
+>  /* Called with local bh disabled */
+> diff --git a/include/net/tcp.h b/include/net/tcp.h
+> index e147f42..ccaa3b6 100644
+<snip>
+
+ 	seq_printf(seq, "RAW: inuse %d\n",
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 34f5db1..89a2bfe 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -319,9 +319,11 @@ EXPORT_SYMBOL(tcp_memory_pressure);
+>  
+>  void tcp_enter_memory_pressure(struct sock *sk)
+>  {
+> -	if (!tcp_memory_pressure) {
+> +	int *memory_pressure = sk_memory_pressure(sk);
+> +
+
+Don't you need !memory_pressure check here ?
+
+Hmm, can this function be
+
++static inline int *sk_memory_pressure(const struct sock *sk)
++{
++	return sk->sk_prot->memory_pressure;
++}
+
+as
+
+static inline bool sk_under_prot_memory_pressure(const struct sock *sk)
+{
+	if (sk->sk_prot->memory_pressure &&
+	    *sk->sk_prot->memory_pressure)
+		return true;
+
+	return false;
+}
+
+and have sk_set/unset_prot_memory_pressure(),  ?
+
+
+
+> +	if (!*memory_pressure) {
+>  		NET_INC_STATS(sock_net(sk), LINUX_MIB_TCPMEMORYPRESSURES);
+> -		tcp_memory_pressure = 1;
+> +		*memory_pressure = 1;
+>  	}
+>  }
+>  EXPORT_SYMBOL(tcp_enter_memory_pressure);
+> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+> index 52b5c2d..3df862d 100644
+> --- a/net/ipv4/tcp_input.c
+> +++ b/net/ipv4/tcp_input.c
+> @@ -322,7 +322,7 @@ static void tcp_grow_window(struct sock *sk, const struct sk_buff *skb)
+>  	/* Check #1 */
+>  	if (tp->rcv_ssthresh < tp->window_clamp &&
+>  	    (int)tp->rcv_ssthresh < tcp_space(sk) &&
+> -	    !tcp_memory_pressure) {
+> +	    !sk_memory_pressure(sk)) {
+
+Don't you need to check !*sk_memory_pressure(sk) ?
+
+
+
+>  		int incr;
+>  
+>  		/* Check #2. Increase window, if skb with such overhead
+> @@ -411,8 +411,8 @@ static void tcp_clamp_window(struct sock *sk)
+>  
+>  	if (sk->sk_rcvbuf < sysctl_tcp_rmem[2] &&
+>  	    !(sk->sk_userlocks & SOCK_RCVBUF_LOCK) &&
+> -	    !tcp_memory_pressure &&
+> -	    atomic_long_read(&tcp_memory_allocated) < sysctl_tcp_mem[0]) {
+> +	    !sk_memory_pressure(sk) &&
+> +	    sk_memory_allocated(sk) < sk_prot_mem(sk, 0)) {
+>  		sk->sk_rcvbuf = min(atomic_read(&sk->sk_rmem_alloc),
+>  				    sysctl_tcp_rmem[2]);
+>  	}
+> @@ -4864,7 +4864,7 @@ static int tcp_prune_queue(struct sock *sk)
+>  
+>  	if (atomic_read(&sk->sk_rmem_alloc) >= sk->sk_rcvbuf)
+>  		tcp_clamp_window(sk);
+> -	else if (tcp_memory_pressure)
+> +	else if (sk_memory_pressure(sk))
+>  		tp->rcv_ssthresh = min(tp->rcv_ssthresh, 4U * tp->advmss);
+
+Ditto.
+
+
+>  
+>  	tcp_collapse_ofo_queue(sk);
+> @@ -4930,11 +4930,11 @@ static int tcp_should_expand_sndbuf(const struct sock *sk)
+>  		return 0;
+>  
+>  	/* If we are under global TCP memory pressure, do not expand.  */
+> -	if (tcp_memory_pressure)
+> +	if (sk_memory_pressure(sk))
+>  		return 0;
+
+again.
+
+Thanks,
+-Kame
+
