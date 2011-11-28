@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab1K1QBb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 11:01:31 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41119 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab1K1QBU (ORCPT
+	id S1753370Ab1K1QEO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 11:04:14 -0500
+Received: from smtp-68.nebula.fi ([83.145.220.68]:34807 "EHLO
+	smtp-68.nebula.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab1K1QEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 11:01:20 -0500
-Date: Mon, 28 Nov 2011 16:00:55 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, g.liakhovetski@gmx.de,
-        josh.wu@atmel.com, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] [media] V4L: atmel-isi: add code to enable/disable
-	ISI_MCK clock
-Message-ID: <20111128160055.GD11432@n2100.arm.linux.org.uk>
-References: <1322487284-3381-1-git-send-email-nicolas.ferre@atmel.com>
+	Mon, 28 Nov 2011 11:04:12 -0500
+Date: Mon, 28 Nov 2011 18:04:09 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Joe Perches <joe@perches.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sakari Ailus <sakari.ailus@nokia.com>
+Subject: Re: [trivial PATCH] omap24xxcam-dma: Fix logical test
+Message-ID: <20111128160409.GF29805@valkosipuli.localdomain>
+References: <1322422935.27199.3.camel@Joe-Laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322487284-3381-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1322422935.27199.3.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 02:34:44PM +0100, Nicolas Ferre wrote:
-> From: Josh Wu <josh.wu@atmel.com>
+On Sun, Nov 27, 2011 at 11:42:15AM -0800, Joe Perches wrote:
+> Likely misuse of & vs &&.
 > 
-> This patch
-> - add ISI_MCK clock enable/disable code.
-> - change field name in isi_platform_data structure
-> 
-> Signed-off-by: Josh Wu <josh.wu@atmel.com>
-> [g.liakhovetski@gmx.de: fix label names]
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Thanks, Joe!
+
+Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
+
 > ---
-> Guennadi,
+>  drivers/media/video/omap24xxcam-dma.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Here is the pach form Josh and yourself about the Atmel ISI driver
-> modifications. I have rebased it on top of 3.2-rc3 (and tested it on
-> linux-next also).
-> I plan to submit the board/device related patches (2-3/3 of this series) to
-> the arm-soc tree real soon. Do you whant me to include this one or can you
-> schedulle an inclusion in mainline for 3.3?
+> diff --git a/drivers/media/video/omap24xxcam-dma.c b/drivers/media/video/omap24xxcam-dma.c
+> index 1d54b86..3ea38a8 100644
+> --- a/drivers/media/video/omap24xxcam-dma.c
+> +++ b/drivers/media/video/omap24xxcam-dma.c
+> @@ -506,7 +506,7 @@ int omap24xxcam_sgdma_queue(struct omap24xxcam_sgdma *sgdma,
+>  	unsigned long flags;
+>  	struct sgdma_state *sg_state;
+>  
+> -	if ((sglen < 0) || ((sglen > 0) & !sglist))
+> +	if ((sglen < 0) || ((sglen > 0) && !sglist))
+>  		return -EINVAL;
+>  
+>  	spin_lock_irqsave(&sgdma->lock, flags);
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-While you're doing this, why not also prepare for the common clk API by
-adding support for clk_prepare()/clk_unprepare() to these drivers?
-
-We are actually now at the point where we should be saying a firm no to
-any new introductions of clk_enable()/clk_disable() without there being
-corresponding clk_prepare()/clk_unprepare() calls for that clk.
+-- 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	jabber/XMPP/Gmail: sailus@retiisi.org.uk
