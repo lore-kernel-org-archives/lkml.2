@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab1K1OPq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:15:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38268 "EHLO mx2.suse.de"
+	id S1754058Ab1K1OQD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:16:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38294 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753259Ab1K1OPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:15:44 -0500
-Date: Mon, 28 Nov 2011 15:15:43 +0100
+	id S1753259Ab1K1OQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:16:01 -0500
+Date: Mon, 28 Nov 2011 15:16:00 +0100
 From: Jan Kara <jack@suse.cz>
 To: Cong Wang <amwang@redhat.com>
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 37/62] jbd: remove the second argument of
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 48/62] udf: remove the second argument of
  k[un]map_atomic()
-Message-ID: <20111128141543.GB6366@quack.suse.cz>
+Message-ID: <20111128141600.GC6366@quack.suse.cz>
 References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
- <1322371662-26166-38-git-send-email-amwang@redhat.com>
+ <1322371662-26166-49-git-send-email-amwang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322371662-26166-38-git-send-email-amwang@redhat.com>
+In-Reply-To: <1322371662-26166-49-git-send-email-amwang@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 27-11-11 13:27:17, Cong Wang wrote:
+On Sun 27-11-11 13:27:28, Cong Wang wrote:
 > 
 > Signed-off-by: Cong Wang <amwang@redhat.com>
   Acked-by: Jan Kara <jack@suse.cz>
@@ -33,72 +33,26 @@ On Sun 27-11-11 13:27:17, Cong Wang wrote:
 										Honza
 
 > ---
->  fs/jbd/journal.c     |   12 ++++++------
->  fs/jbd/transaction.c |    4 ++--
->  2 files changed, 8 insertions(+), 8 deletions(-)
+>  fs/udf/file.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> index fea8dd6..de8ae3e 100644
-> --- a/fs/jbd/journal.c
-> +++ b/fs/jbd/journal.c
-> @@ -328,7 +328,7 @@ repeat:
->  		new_offset = offset_in_page(jh2bh(jh_in)->b_data);
->  	}
+> diff --git a/fs/udf/file.c b/fs/udf/file.c
+> index d8ffa7c..95b8d91 100644
+> --- a/fs/udf/file.c
+> +++ b/fs/udf/file.c
+> @@ -87,10 +87,10 @@ static int udf_adinicb_write_end(struct file *file,
+>  	char *kaddr;
+>  	struct udf_inode_info *iinfo = UDF_I(inode);
 >  
-> -	mapped_data = kmap_atomic(new_page, KM_USER0);
-> +	mapped_data = kmap_atomic(new_page);
->  	/*
->  	 * Check for escaping
->  	 */
-> @@ -337,7 +337,7 @@ repeat:
->  		need_copy_out = 1;
->  		do_escape = 1;
->  	}
-> -	kunmap_atomic(mapped_data, KM_USER0);
-> +	kunmap_atomic(mapped_data);
+> -	kaddr = kmap_atomic(page, KM_USER0);
+> +	kaddr = kmap_atomic(page);
+>  	memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr + offset,
+>  		kaddr + offset, copied);
+> -	kunmap_atomic(kaddr, KM_USER0);
+> +	kunmap_atomic(kaddr);
 >  
->  	/*
->  	 * Do we need to do a data copy?
-> @@ -354,9 +354,9 @@ repeat:
->  		}
->  
->  		jh_in->b_frozen_data = tmp;
-> -		mapped_data = kmap_atomic(new_page, KM_USER0);
-> +		mapped_data = kmap_atomic(new_page);
->  		memcpy(tmp, mapped_data + new_offset, jh2bh(jh_in)->b_size);
-> -		kunmap_atomic(mapped_data, KM_USER0);
-> +		kunmap_atomic(mapped_data);
->  
->  		new_page = virt_to_page(tmp);
->  		new_offset = offset_in_page(tmp);
-> @@ -368,9 +368,9 @@ repeat:
->  	 * copying, we can finally do so.
->  	 */
->  	if (do_escape) {
-> -		mapped_data = kmap_atomic(new_page, KM_USER0);
-> +		mapped_data = kmap_atomic(new_page);
->  		*((unsigned int *)(mapped_data + new_offset)) = 0;
-> -		kunmap_atomic(mapped_data, KM_USER0);
-> +		kunmap_atomic(mapped_data);
->  	}
->  
->  	set_bh_page(new_bh, new_page, new_offset);
-> diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
-> index 7e59c6e..e59a112 100644
-> --- a/fs/jbd/transaction.c
-> +++ b/fs/jbd/transaction.c
-> @@ -712,9 +712,9 @@ done:
->  			    "Possible IO failure.\n");
->  		page = jh2bh(jh)->b_page;
->  		offset = offset_in_page(jh2bh(jh)->b_data);
-> -		source = kmap_atomic(page, KM_USER0);
-> +		source = kmap_atomic(page);
->  		memcpy(jh->b_frozen_data, source+offset, jh2bh(jh)->b_size);
-> -		kunmap_atomic(source, KM_USER0);
-> +		kunmap_atomic(source);
->  	}
->  	jbd_unlock_bh_state(bh);
->  
+>  	return simple_write_end(file, mapping, pos, len, copied, page, fsdata);
+>  }
 > -- 
 > 1.7.4.4
 > 
