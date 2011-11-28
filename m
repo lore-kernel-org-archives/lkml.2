@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab1K1Mnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 07:43:41 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:47001 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466Ab1K1Mnj (ORCPT
+	id S1753892Ab1K1Mrx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 07:47:53 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:56172 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab1K1Mrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 07:43:39 -0500
-Message-ID: <4ED381E6.4070309@linux.vnet.ibm.com>
-Date: Mon, 28 Nov 2011 20:43:18 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	Mon, 28 Nov 2011 07:47:51 -0500
+Date: Mon, 28 Nov 2011 20:47:19 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Olaf Hering <olaf@aepfle.de>, linux-crypto@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 08/62] x86: remove the second argument of
+	k[un]map_atomic()
+Message-ID: <20111128124719.GA16828@gondor.apana.org.au>
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-9-git-send-email-amwang@redhat.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH 5/5] KVM: MMU: remove oos_shadow parameter
-References: <4ED3811F.1070101@linux.vnet.ibm.com>
-In-Reply-To: <4ED3811F.1070101@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112802-9264-0000-0000-00000048B453
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322371662-26166-9-git-send-email-amwang@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The unsync code should be stable now, maybe it is the time to remove this
-parameter to cleanup the code a little bit
+On Sun, Nov 27, 2011 at 01:26:48PM +0800, Cong Wang wrote:
+> 
+> Signed-off-by: Cong Wang <amwang@redhat.com>
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- Documentation/kernel-parameters.txt |    3 ---
- arch/x86/kvm/mmu.c                  |    5 -----
- 2 files changed, 0 insertions(+), 8 deletions(-)
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a0c5c5f..7402a24 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1178,9 +1178,6 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	kvm.ignore_msrs=[KVM] Ignore guest accesses to unhandled MSRs.
- 			Default is 0 (don't ignore, but inject #GP)
-
--	kvm.oos_shadow=	[KVM] Disable out-of-sync shadow paging.
--			Default is 1 (enabled)
--
- 	kvm.mmu_audit=	[KVM] This is a R/W parameter which allows audit
- 			KVM MMU at runtime.
- 			Default is 0 (off)
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 262a3af..b1178d1 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -93,9 +93,6 @@ static int dbg = 0;
- module_param(dbg, bool, 0644);
- #endif
-
--static int oos_shadow = 1;
--module_param(oos_shadow, bool, 0644);
--
- #ifndef MMU_DEBUG
- #define ASSERT(x) do { } while (0)
- #else
-@@ -2196,8 +2193,6 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
- 			return 1;
-
- 		if (!need_unsync && !s->unsync) {
--			if (!oos_shadow)
--				return 1;
- 			need_unsync = true;
- 		}
- 	}
+Thanks,
 -- 
-1.7.7.3
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
