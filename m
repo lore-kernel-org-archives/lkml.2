@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab1K1KLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 05:11:39 -0500
-Received: from mx01.edigma.com ([195.22.21.235]:55517 "EHLO mx01.edigma.com"
+	id S1751747Ab1K1KM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 05:12:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45978 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab1K1KLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 05:11:38 -0500
-Message-ID: <4ED35E52.5010008@edigma.com>
-Date: Mon, 28 Nov 2011 10:11:30 +0000
-From: Nuno Santos <nsantos@edigma.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1750821Ab1K1KM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 05:12:27 -0500
+Date: Mon, 28 Nov 2011 11:12:25 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/8] mm: memcg: lookup_page_cgroup (almost) never returns
+ NULL
+Message-ID: <20111128101225.GC18337@tiehlicka.suse.cz>
+References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
+ <1322062951-1756-5-git-send-email-hannes@cmpxchg.org>
+ <20111124095251.GD26036@tiehlicka.suse.cz>
+ <20111124100549.GH6843@cmpxchg.org>
+ <20111124102606.GF26036@tiehlicka.suse.cz>
+ <20111128091518.GA9356@cmpxchg.org>
+ <20111128093435.GC9356@cmpxchg.org>
 MIME-Version: 1.0
-To: Paulo Marques <pmarques@grupopie.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Floating point usage inside kernel
-References: <S1754322Ab1KYK6W/20111125105822Z+929@vger.kernel.org> <4ECF789F.3040001@edigma.com> <4ECF8528.9080800@gmail.com> <4ECFBF56.4000002@edigma.com> <4ECFCAD5.5040606@grupopie.com> <4ECFD488.4060805@edigma.com> <4ECFDA1D.3090303@grupopie.com>
-In-Reply-To: <4ECFDA1D.3090303@grupopie.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111128093435.GC9356@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, understood!
+On Mon 28-11-11 10:34:35, Johannes Weiner wrote:
+> On Mon, Nov 28, 2011 at 10:15:18AM +0100, Johannes Weiner wrote:
+> > On Thu, Nov 24, 2011 at 11:26:06AM +0100, Michal Hocko wrote:
+> > > On Thu 24-11-11 11:05:49, Johannes Weiner wrote:
+> > > > On Thu, Nov 24, 2011 at 10:52:51AM +0100, Michal Hocko wrote:
+> > > > > On Wed 23-11-11 16:42:27, Johannes Weiner wrote:
+[...]
+> > > > > > @@ -3326,6 +3321,7 @@ static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
+> > > > > >  	struct page_cgroup *pc;
+> > > > > >  
+> > > > > >  	pc = lookup_page_cgroup(page);
+> > > > > > +	/* Can be NULL while bootstrapping the page allocator */
+> > > > > >  	if (likely(pc) && PageCgroupUsed(pc))
+> > > > > >  		return pc;
+> > > > > >  	return NULL;
+> > > > 
+> > > > We could add a lookup_page_cgroup_safe() for this DEBUG_VM-only
+> > > > callsite as an optimization separately and remove the NULL check from
+> > > > lookup_page_cgroup() itself.  But this patch was purely about removing
+> > > > the actively misleading checks.
+> > > 
+> > > Yes, but I am not sure whether code duplication is worth it. Let's just
+> > > stick with current form. Maybe just move the comment when it can be NULL
+> > > to the lookup_page_cgroup directly?
+> > 
+> > Don't underestimate it, this function is used quite heavily while the
+> > case of the array being NULL is a minor fraction of all calls.  But
+> > it's for another patch, anyway.
+> 
+> Hm, how about this?
 
-Just one more question. To do this, do I need to change the data type 
-from double to int?
+yes, makes sense.
+Thanks
 
-Thanks,
+> 
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index a14655d..58405ca 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -28,9 +28,16 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
+>  	struct page_cgroup *base;
+>  
+>  	base = NODE_DATA(page_to_nid(page))->node_page_cgroup;
+> +#ifdef CONFIG_DEBUG_VM
+> +	/*
+> +	 * The sanity checks the page allocator does upon freeing a
+> +	 * page can reach here before the page_cgroup arrays are
+> +	 * allocated when feeding a range of pages to the allocator
+> +	 * for the first time during bootup or memory hotplug.
+> +	 */
+>  	if (unlikely(!base))
+>  		return NULL;
+> -
+> +#endif
+>  	offset = pfn - NODE_DATA(page_to_nid(page))->node_start_pfn;
+>  	return base + offset;
+>  }
+> @@ -87,9 +94,16 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
+>  {
+>  	unsigned long pfn = page_to_pfn(page);
+>  	struct mem_section *section = __pfn_to_section(pfn);
+> -
+> +#ifdef CONFIG_DEBUG_VM
+> +	/*
+> +	 * The sanity checks the page allocator does upon freeing a
+> +	 * page can reach here before the page_cgroup arrays are
+> +	 * allocated when feeding a range of pages to the allocator
+> +	 * for the first time during bootup or memory hotplug.
+> +	 */
+>  	if (!section->page_cgroup)
+>  		return NULL;
+> +#endif
+>  	return section->page_cgroup + pfn;
+>  }
+>  
 
-Nuno
-
-On 11/25/2011 06:10 PM, Paulo Marques wrote:
-> Nuno Santos wrote:
->>> [...]
->>> Unless you have overflow or need more than 16 bits of fractional
->>> precision, you'll have no problem with this approach.
->>>
->>> I hope this helps,
->> Sorry, i'm not sure if I have completely understand your suggestion. Are
->> you telling me to apply this transform only to my input data, or to all
->> the operations that are applied in the function used in kernel?
-> Imagine that your matrix coefficients are:
->
->   2.5,     1, 4.7
-> 45.3, 0.765,  10
->     0,     0,   1
->
-> and your input is:
->
-> 3420.56, 5410.76, 1
->
-> You start by converting the matrix coefficients:
->
-> 2.5 * 65536.0 = 163840
-> ....
->
-> so the matrix becomes:
->
->   163840 65536 308019
-> 2968781 50135 655360
->        0     0  65536
->
-> This can be done in userspace and the coefficients can be sent to the
-> kernel as fixed point numbers.
->
-> You do the same (this time on the kernel) with your input, so it becomes:
->
-> 224169820 354599567 65536
->
-> Now you can do:
->
-> q[0] = fixed_mul(p[0], a[0][0]) + fixed_mul(p[1], a[1][0]) +
-> fixed_mul(p[2], a[2][0]);
-> ....
->
-> where "fixed_mul" is a function that does the multiplication as I
-> explained earlier.
->
-> To convert the result back to an integer, just shift down by 16.
->
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
