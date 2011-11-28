@@ -1,98 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab1K1Xd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:33:59 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:36977 "EHLO e3.ny.us.ibm.com"
+	id S1755969Ab1K1XeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:34:05 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:47798 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754719Ab1K1Xd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:33:57 -0500
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 12/13] rcu: Document same-context read-side constraints
-Date: Mon, 28 Nov 2011 15:33:04 -0800
-Message-Id: <1322523185-456-12-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <20111128233212.GA32279@linux.vnet.ibm.com>
-References: <20111128233212.GA32279@linux.vnet.ibm.com>
-x-cbid: 11112823-8974-0000-0000-00000380646A
+	id S1755901Ab1K1XeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:34:00 -0500
+Subject: [PATCH 18/22] jbd2: Update structure definitions and flags to support
+	extended checksumming
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Mon, 28 Nov 2011 15:28:22 -0800
+Message-ID: <20111128232822.19194.23422.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
+References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11112823-6078-0000-0000-000004FE9729
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The intent is that a given RCU read-side critical section be confined
-to a single context.  For example, it is illegal to invoke rcu_read_lock()
-in an exception handler and then invoke rcu_read_unlock() from the
-context of the task that received the exception.
+Add structure definitions, flags, and constants to extend checksum protection
+to all journal blocks.
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- include/linux/rcupdate.h |   15 +++++++++++++++
- include/linux/srcu.h     |    5 +++++
- 2 files changed, 20 insertions(+), 0 deletions(-)
+ fs/jbd2/journal.c    |   37 +++++++++++++++++++++++++++++++++++++
+ include/linux/jbd2.h |    5 ++++-
+ 2 files changed, 41 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 5dd6fd8..81c04f4 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -265,6 +265,11 @@ extern int debug_lockdep_rcu_enabled(void);
-  *
-  * Checks debug_lockdep_rcu_enabled() to prevent false positives during boot
-  * and while lockdep is disabled.
-+ *
-+ * Note that rcu_read_lock() and the matching rcu_read_unlock() must
-+ * occur in the same context, for example, it is illegal to invoke
-+ * rcu_read_unlock() in process context if the matching rcu_read_lock()
-+ * was invoked from within an irq handler.
+
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index fbf86ee..bea3c6e 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -109,6 +109,34 @@ int jbd2_verify_csum_type(journal_t *j, journal_superblock_t *sb)
+ 	return sb->s_checksum_type == JBD2_CRC32C_CHKSUM;
+ }
+ 
++static __u32 jbd2_superblock_csum(journal_t *j, journal_superblock_t *sb)
++{
++	__u32 csum, old_csum;
++
++	old_csum = sb->s_checksum;
++	sb->s_checksum = 0;
++	csum = jbd2_chksum(j, ~0, (char *)sb, sizeof(journal_superblock_t));
++	sb->s_checksum = old_csum;
++
++	return cpu_to_be32(csum);
++}
++
++int jbd2_superblock_csum_verify(journal_t *j, journal_superblock_t *sb)
++{
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return 1;
++
++	return sb->s_checksum == jbd2_superblock_csum(j, sb);
++}
++
++void jbd2_superblock_csum_set(journal_t *j, journal_superblock_t *sb)
++{
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return;
++
++	sb->s_checksum = jbd2_superblock_csum(j, sb);
++}
++
+ /*
+  * Helper function used to manage commit timeouts
   */
- static inline int rcu_read_lock_held(void)
- {
-@@ -689,6 +694,11 @@ static inline void rcu_read_unlock(void)
-  * critical sections in interrupt context can use just rcu_read_lock(),
-  * though this should at least be commented to avoid confusing people
-  * reading the code.
-+ *
-+ * Note that rcu_read_lock_bh() and the matching rcu_read_unlock_bh()
-+ * must occur in the same context, for example, it is illegal to invoke
-+ * rcu_read_unlock_bh() from one task if the matching rcu_read_lock_bh()
-+ * was invoked from some other task.
-  */
- static inline void rcu_read_lock_bh(void)
- {
-@@ -716,6 +726,11 @@ static inline void rcu_read_unlock_bh(void)
-  * are being done using call_rcu_sched() or synchronize_rcu_sched().
-  * Read-side critical sections can also be introduced by anything that
-  * disables preemption, including local_irq_disable() and friends.
-+ *
-+ * Note that rcu_read_lock_sched() and the matching rcu_read_unlock_sched()
-+ * must occur in the same context, for example, it is illegal to invoke
-+ * rcu_read_unlock_sched() from process context if the matching
-+ * rcu_read_lock_sched() was invoked from an NMI handler.
-  */
- static inline void rcu_read_lock_sched(void)
- {
-diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-index d5334d0..83a4f06 100644
---- a/include/linux/srcu.h
-+++ b/include/linux/srcu.h
-@@ -158,6 +158,11 @@ static inline int srcu_read_lock_held(struct srcu_struct *sp)
-  * one way to indirectly wait on an SRCU grace period is to acquire
-  * a mutex that is held elsewhere while calling synchronize_srcu() or
-  * synchronize_srcu_expedited().
-+ *
-+ * Note that srcu_read_lock() and the matching srcu_read_unlock() must
-+ * occur in the same context, for example, it is illegal to invoke
-+ * srcu_read_unlock() in an irq handler if the matching srcu_read_lock()
-+ * was invoked in process context.
-  */
- static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
- {
--- 
-1.7.3.2
+@@ -1178,6 +1206,7 @@ void jbd2_journal_update_superblock(journal_t *journal, int wait)
+ 	sb->s_sequence = cpu_to_be32(journal->j_tail_sequence);
+ 	sb->s_start    = cpu_to_be32(journal->j_tail);
+ 	sb->s_errno    = cpu_to_be32(journal->j_errno);
++	jbd2_superblock_csum_set(journal, sb);
+ 	read_unlock(&journal->j_state_lock);
+ 
+ 	BUFFER_TRACE(bh, "marking dirty");
+@@ -1294,6 +1323,11 @@ static int journal_get_superblock(journal_t *journal)
+ 		}
+ 	}
+ 
++	if (!jbd2_superblock_csum_verify(journal, sb)) {
++		printk(KERN_ERR "JBD: journal checksum error\n");
++		goto out;
++	}
++
+ 	set_buffer_verified(bh);
+ 
+ 	return 0;
+@@ -1588,6 +1622,7 @@ int jbd2_journal_set_features (journal_t *journal, unsigned long compat,
+ 	sb->s_feature_compat    |= cpu_to_be32(compat);
+ 	sb->s_feature_ro_compat |= cpu_to_be32(ro);
+ 	sb->s_feature_incompat  |= cpu_to_be32(incompat);
++	jbd2_journal_update_superblock(journal, 0);
+ 
+ 	return 1;
+ #undef COMPAT_FEATURE_ON
+@@ -1618,6 +1653,7 @@ void jbd2_journal_clear_features(journal_t *journal, unsigned long compat,
+ 	sb->s_feature_compat    &= ~cpu_to_be32(compat);
+ 	sb->s_feature_ro_compat &= ~cpu_to_be32(ro);
+ 	sb->s_feature_incompat  &= ~cpu_to_be32(incompat);
++	jbd2_journal_update_superblock(journal, 0);
+ }
+ EXPORT_SYMBOL(jbd2_journal_clear_features);
+ 
+@@ -1666,6 +1702,7 @@ static int journal_convert_superblock_v1(journal_t *journal,
+ 
+ 	sb->s_nr_users = cpu_to_be32(1);
+ 	sb->s_header.h_blocktype = cpu_to_be32(JBD2_SUPERBLOCK_V2);
++	jbd2_superblock_csum_set(journal, sb);
+ 	journal->j_format_version = 2;
+ 
+ 	bh = journal->j_sb_buffer;
+diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
+index 88af51f..3bf4fe3 100644
+--- a/include/linux/jbd2.h
++++ b/include/linux/jbd2.h
+@@ -243,7 +243,10 @@ typedef struct journal_superblock_s
+ 	__be32	s_max_trans_data;	/* Limit of data blocks per trans. */
+ 
+ /* 0x0050 */
+-	__u32	s_padding[44];
++	__u8	s_checksum_type;	/* checksum type */
++	__u8	s_padding2[3];
++	__u32	s_padding[42];
++	__be32	s_checksum;		/* crc32c(superblock) */
+ 
+ /* 0x0100 */
+ 	__u8	s_users[16*48];		/* ids of all fs'es sharing the log */
 
