@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004Ab1K1HQE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:16:04 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53790 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab1K1HQC convert rfc822-to-8bit (ORCPT
+	id S1751984Ab1K1HUP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:20:15 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:44056 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751288Ab1K1HUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:16:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111127105000.GL2557@redhat.com>
-References: <1322188529-11609-1-git-send-email-kernelfans@gmail.com>
-	<1322361735-21428-1-git-send-email-kernelfans@gmail.com>
-	<4ED212C7.1080901@redhat.com>
-	<20111127105000.GL2557@redhat.com>
-Date: Mon, 28 Nov 2011 15:16:01 +0800
-Message-ID: <CAFgQCTscektJsC-2ThQn7FhHA7=Qf4t3t0+X+i0zT_yZZjwL0g@mail.gmail.com>
-Subject: Re: [Qemu-devel] [PATCH 2/2] kvm: exit to userspace with reason KVM_EXIT_VCPU_DEAD
-From: Liu ping fan <kernelfans@gmail.com>
-To: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>
-Cc: aliguori@us.ibm.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
-        linux-kernel@vger.kernel.org, ryanh@us.ibm.com, jan.kiszka@web.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Nov 2011 02:20:13 -0500
+Subject: Re: [PATCH 10/11] wireless: Remove redundant spi driver bus
+ initialization
+From: Luciano Coelho <coelho@ti.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org
+In-Reply-To: <1322148561-25138-10-git-send-email-lars@metafoo.de>
+References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
+	 <1322148561-25138-10-git-send-email-lars@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 Nov 2011 09:20:07 +0200
+Message-ID: <1322464807.6502.11.camel@cumari>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 27, 2011 at 6:50 PM, Gleb Natapov <gleb@redhat.com> wrote:
-> On Sun, Nov 27, 2011 at 12:36:55PM +0200, Avi Kivity wrote:
->> On 11/27/2011 04:42 AM, Liu Ping Fan wrote:
->> > From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
->> >
->> > The vcpu can be safely released when
->> > --1.guest tells us that the vcpu is not needed any longer.
->> > --2.vcpu hits the last instruction _halt_
->> >
->> > If both of the conditions are satisfied, kvm exits to userspace
->> > with the reason vcpu dead. So the user thread can exit safely.
->> >
->> >
->>
->> Seems to be completely unnecessary.  If you want to exit from the vcpu
->> thread, send it a signal.
->>
-Hi Avi and Gleb,
+On Thu, 2011-11-24 at 16:29 +0100, Lars-Peter Clausen wrote: 
+> In ancient times it was necessary to manually initialize the bus field of an
+> spi_driver to spi_bus_type. These days this is done in spi_driver_register(),
+> so we can drop the manual assignment.
+> 
+> The patch was generated using the following coccinelle semantic patch:
+> // <smpl>
+> @@
+> identifier _driver;
+> @@
+> struct spi_driver _driver = {
+> 	.driver = {
+> -		.bus = &spi_bus_type,
+> 	},
+> };
+> // </smpl>
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Dan Williams <dcbw@redhat.com>
+> Cc: "John W. Linville" <linville@tuxdriver.com>
+> Cc: Christian Lamparter <chunkeey@googlemail.com>
+> Cc: Luciano Coelho <coelho@ti.com>
+> Cc: libertas-dev@lists.infradead.org
+> Cc: linux-wireless@vger.kernel.org
+> ---
 
-First, I wanted to make sure my assumption is right, so I can grab
-your meaning more clearly -:). Could you elaborate it for me, thanks.
+[...]
 
-I had thought that when a vcpu was being removed from guest, kvm must
-satisfy the following conditions to safely remove the vcpu:
---1. The tasks on vcpu in GUEST  have already been migrated to other
-vcpus and ONLY idle_task left ---- The CPU_DEAD is the checkpoint.
---2. We must wait the idle task to hit native_halt() in GUEST, till
-that time, this vcpu is no needed even by idle_task. In KVM, the vcpu
-thread will finally sit on "kvm_vcpu_block(vcpu);"
-We CAN NOT suppose the sequence of the two condition because they come
-from different threads.  Am I right?
+> diff --git a/drivers/net/wireless/wl1251/spi.c b/drivers/net/wireless/wl1251/spi.c
+> index eaa5f95..6248c35 100644
+> --- a/drivers/net/wireless/wl1251/spi.c
+> +++ b/drivers/net/wireless/wl1251/spi.c
+> @@ -319,7 +319,6 @@ static int __devexit wl1251_spi_remove(struct spi_device *spi)
+>  static struct spi_driver wl1251_spi_driver = {
+>  	.driver = {
+>  		.name		= DRIVER_NAME,
+> -		.bus		= &spi_bus_type,
+>  		.owner		= THIS_MODULE,
+>  	},
+>  
+> diff --git a/drivers/net/wireless/wl12xx/spi.c b/drivers/net/wireless/wl12xx/spi.c
+> index 0f97186..12421a6 100644
+> --- a/drivers/net/wireless/wl12xx/spi.c
+> +++ b/drivers/net/wireless/wl12xx/spi.c
+> @@ -462,7 +462,6 @@ static int __devexit wl1271_remove(struct spi_device *spi)
+>  static struct spi_driver wl1271_spi_driver = {
+>  	.driver = {
+>  		.name		= "wl1271_spi",
+> -		.bus		= &spi_bus_type,
+>  		.owner		= THIS_MODULE,
+>  	},
 
-And here comes my question,
---1. I think the signal will make vcpu_run exit to user, but is it
-allow vcpu thread to finally call  "kernel/exit.c : void do_exit(long
-code)" in current code in kvm or in qemu?
---2. If we got CPU_DEAD event, and then send a signal to vcpu thread,
-could we ensure that we have already sit on "kvm_vcpu_block(vcpu);"
+For the wl12xx and wl1251 parts:
 
-Thanks and regards,
-ping fan
-
-> Also if guest "tells us that the vcpu is not needed any longer" (via
-> ACPI I presume) and vcpu actually doing something critical instead of
-> sitting in 1:hlt; jmp 1b loop then it is guest's problem if it stops
-> working after vcpu destruction.
->
+Acked-by: Luciano Coelho <coelho@ti.com>
 
 
-> --
->                        Gleb.
->
+-- 
+Cheers,
+Luca.
+
