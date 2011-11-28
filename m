@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab1K1WkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:40:19 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:48784 "EHLO e4.ny.us.ibm.com"
+	id S1754958Ab1K1Wkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 17:40:32 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:57768 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754767Ab1K1WkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:40:17 -0500
-Subject: [PATCH 09/14] Add two changes that improve the performance of x86
-	systems
+	id S1754923Ab1K1Wk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 17:40:26 -0500
+Subject: [PATCH v5.1 00/14] crc32c: Add faster algorithm and self-test code
 To: Andrew Morton <akpm@linux-foundation.org>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
         "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,81 +19,57 @@ Cc: Theodore Tso <tytso@mit.edu>,
         linux-crypto <linux-crypto@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
-Date: Mon, 28 Nov 2011 14:38:07 -0800
-Message-ID: <20111128223807.28705.45122.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
-References: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
+Date: Mon, 28 Nov 2011 14:36:59 -0800
+Message-ID: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11112822-3534-0000-0000-00000306A321
+x-cbid: 11112822-8974-0000-0000-0000038002DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	1. replace main loop with incrementing counter
-	   this change improves the performance of the selftest
-	   by about 5-6% on Nehalem CPUs. The apparent
-	   reason is that the compiler can use the loop index
-	   to perform an indexed memory access. This is
-	   reported to make the performance of PowerPC CPUs
-	   to get worse.
-	2. replace the rem_len loop with incrementing counter
-	   this change improves the performance of the selftest,
-	   which has more than the usual number of occurances,
-	   by about 1-2% on x86 CPUs. In actual work loads
-	   the length is most often a multiple of 4 bytes and
-	   this code does not get executed as often if at all.
-	   Again this change is reported to make the performance
-	   of PowerPC get worse.
+Hi all,
 
-Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
----
- lib/crc32.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
+software crc32c implementation.  It removes the crc32c implementation in
+crypto/ in favor of using the stamped-out one in lib/.  There is also a change
+to Kconfig so that the kernel builder can pick an implementation best suited
+for the hardware.
 
+The motivation for this patchset is that I am working on adding full metadata
+checksumming to ext4.  As far as performance impact of adding checksumming
+goes, I see nearly no change with a standard mail server ffsb simulation.  On a
+test that involves only file creation and deletion and extent tree writes, I
+see a drop of about 50 pcercent with the current kernel crc32c implementation;
+this improves to a drop of about 20 percent with the enclosed crc32c code.
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 6311712..2c8e8c0 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -66,6 +66,9 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- # endif
- 	const u32 *b;
- 	size_t rem_len;
-+# ifdef CONFIG_X86
-+	size_t i;
-+# endif
- 	const u32 *t0 = tab[0], *t1 = tab[1], *t2 = tab[2], *t3 = tab[3];
- 	const u32 *t4 = tab[4], *t5 = tab[5], *t6 = tab[6], *t7 = tab[7];
- 	u32 q;
-@@ -86,7 +89,12 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- # endif
- 
- 	b = (const u32 *)buf;
-+# ifdef CONFIG_X86
-+	--b;
-+	for (i = 0; i < len; i++) {
-+# else
- 	for (--b; len; --len) {
-+# endif
- 		q = crc ^ *++b; /* use pre increment for speed */
- # if CRC_LE_BITS == 32
- 		crc = DO_CRC4;
-@@ -100,9 +108,14 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- 	/* And the last few bytes */
- 	if (len) {
- 		u8 *p = (u8 *)(b + 1) - 1;
-+# ifdef CONFIG_X86
-+		for (i = 0; i < len; i++)
-+			DO_CRC(*++p); /* use pre increment for speed */
-+# else
- 		do {
- 			DO_CRC(*++p); /* use pre increment for speed */
- 		} while (--len);
-+# endif
- 	}
- 	return crc;
- #undef DO_CRC
+When metadata is usually a small fraction of total IO, this new implementation
+doesn't help much because metadata is usually a small fraction of total IO.
+However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
+tree), then this patch speeds up the operation substantially.
+
+Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
+should improve their speed as well.  I have not yet quantified that, however.
+This latest submission combines Bob's patches from late August 2011 with mine
+so that they can be one coherent patch set.  Please excuse my inability to
+combine some of the patches; I've been advised to leave Bob's patches alone and
+build atop them instead. :/
+
+Since the last posting, I've also collected some crc32c test results on a bunch
+of different x86/powerpc/sparc platforms.  The results can be viewed here:
+http://goo.gl/sgt3i ; the "crc32-kern-le" and "crc32c" columns describe the
+performance of the kernel's current crc32 and crc32c software implementations.
+The "crc32c-by8-le" column shows crc32c performance with this patchset applied.
+I expect crc32 performance to be roughly the same.
+
+The two _boost columns at the right side of the spreadsheet shows how much
+faster the new implementation is over the old one.  As you can see, crc32 rises
+substantially, and crc32c experiences a huge increase.  I'm hoping this patch
+set meets with everyone's approval and can go in soon.  Herbert Xu didn't
+appear to have any strong objections to last month's posting, so I'm wondering
+if Andrew has an opinion?
+
+--D
 
