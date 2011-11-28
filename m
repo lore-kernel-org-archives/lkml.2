@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab1K1LCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 06:02:36 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56493 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab1K1LCe (ORCPT
+	id S1752896Ab1K1LDE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 06:03:04 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:45091 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab1K1LDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 06:02:34 -0500
-Message-ID: <4ED36A37.3030409@linux.vnet.ibm.com>
-Date: Mon, 28 Nov 2011 16:32:15 +0530
+	Mon, 28 Nov 2011 06:03:02 -0500
+Message-ID: <4ED36A5D.5060405@linux.vnet.ibm.com>
+Date: Mon, 28 Nov 2011 16:32:53 +0530
 From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
@@ -16,169 +16,334 @@ Newsgroups: gmane.linux.power-management.general,gmane.linux.ports.ppc64.devel,g
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 CC: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCH v2 1/4] cpuidle: (powerpc) Add cpu_idle_wait() to
- allow switching of idle routines
-References: <20111117112815.9191.2322.stgit@localhost6.localdomain6>	<20111117112830.9191.1951.stgit@localhost6.localdomain6> <1322434096.23348.6.camel@pasglop>
-In-Reply-To: <1322434096.23348.6.camel@pasglop>
+Subject: Re: [RFC PATCH v2 2/4] cpuidle: (POWER) cpuidle driver for pSeries
+References: <20111117112815.9191.2322.stgit@localhost6.localdomain6>	<20111117112841.9191.97974.stgit@localhost6.localdomain6> <1322435008.23348.15.camel@pasglop>
+In-Reply-To: <1322435008.23348.15.camel@pasglop>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 11112801-3568-0000-0000-000000CB7A76
+x-cbid: 11112801-1396-0000-0000-0000004F3F9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
-
-Thanks a lot for the review.
-
-On 11/28/2011 04:18 AM, Benjamin Herrenschmidt wrote:
+On 11/28/2011 04:33 AM, Benjamin Herrenschmidt wrote:
 
 > On Thu, 2011-11-17 at 16:58 +0530, Deepthi Dharwar wrote:
->> This patch provides cpu_idle_wait() routine for the powerpc
->> platform which is required by the cpuidle subsystem. This
->> routine is requied to change the idle handler on SMP systems.
->> The equivalent routine for x86 is in arch/x86/kernel/process.c
->> but the powerpc implementation is different.
->>
->> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
->> Signed-off-by: Trinabh Gupta <g.trinabh@gmail.com>
->> Signed-off-by: Arun R Bharadwaj <arun.r.bharadwaj@gmail.com>
->> ---
+>> This patch implements a backhand cpuidle driver for pSeries
+>> based on pseries_dedicated_idle_loop and pseries_shared_idle_loop
+>> routines.  The driver is built only if CONFIG_CPU_IDLE is set. This
+>> cpuidle driver uses global registration of idle states and
+>> not per-cpu.
 > 
-> No, that patch also adds this idle boot override thing (can you pick a
-> shorter name for boot_option_idle_override btw ?) which seems unrelated
-> and without any explanation as to what it's supposed to be about.
+>  .../...
+> 
+>> +#define MAX_IDLE_STATE_COUNT	2
+>> +
+>> +static int max_cstate = MAX_IDLE_STATE_COUNT - 1;
+> 
+> Why "cstate" ? This isn't an x86 :-)
 
 
- Yes, we can pick a better and shorter name for this variable.
- This variable is used to determine if cpuidle framework
- needs to be enabled and pseries_driver to be loaded or not.
- We disable cpuidle framework only when powersave_off option is set or
- not enabled by the user.
+Sure, I shall change it right away :)
 
 > 
-> Additionally, I'm a bit worried (but maybe we already discussed that a
-> while back, I don't know) but cpu_idle_wait() has "wait" in the name,
-> which makes me think it might need to actually -wait- for all cpus to
-> have come out of the function.
+>> +static struct cpuidle_device __percpu *pseries_idle_cpuidle_devices;
+> 
+> Shorter name please. pseries_cpuidle_devs is fine.
 
 
-cpu_idle_wait is used to ensure that all the CPUs discard old idle
-handler and update to new one.  Required while changing idle
-handler on SMP systems.
+I ll do so.
 
-> Now your implementation doesn't provide that guarantee. It might be
-> fine, I don't know, but if it is, you'd better document it well in the
-> comments surrounding the code, because as it is, all you do is shoot an
-> interrupt which will cause the target CPU to eventually come out of idle
-> some time in the future.
+> 
+>> +static struct cpuidle_state *cpuidle_state_table;
+>> +
+>> +void update_smt_snooze_delay(int snooze)
+>> +{
+>> +	struct cpuidle_driver *drv = cpuidle_get_driver();
+>> +	if (drv)
+>> +		drv->states[0].target_residency = snooze;
+>> +}
+>> +
+>> +static inline void idle_loop_prolog(unsigned long *in_purr, ktime_t *kt_before)
+>> +{
+>> +
+>> +	*kt_before = ktime_get_real();
+>> +	*in_purr = mfspr(SPRN_PURR);
+>> +	/*
+>> +	 * Indicate to the HV that we are idle. Now would be
+>> +	 * a good time to find other work to dispatch.
+>> +	 */
+>> +	get_lppaca()->idle = 1;
+>> +	get_lppaca()->donate_dedicated_cpu = 1;
+>> +}
+> 
+> I notice that you call this on shared processors as well. The old ocde
+> used to not set donate_dedicated_cpu in that case. I assume that's not a
+> big deal and that the HV will just ignore it in the shared processor
+> case but please add a comment after you've verified it.
+>
 
 
-I was hoping that sending an explicit reschedule to the cpus would
-do the trick but sure we can add some documentation around the code.
+Yes, the old code does not set donate_dedicated_cpu. But yes I will
+try testing it in a shared proc config but also remove this
+initialization for shared idle loop.
+
+ 
+>> +static inline  s64 idle_loop_epilog(unsigned long in_purr, ktime_t kt_before)
+>> +{
+>> +	get_lppaca()->wait_state_cycles += mfspr(SPRN_PURR) - in_purr;
+>> +	get_lppaca()->donate_dedicated_cpu = 0;
+>> +	get_lppaca()->idle = 0;
+>> +
+>> +	return ktime_to_us(ktime_sub(ktime_get_real(), kt_before));
+>> +}
+>> +
+>> +
+>> +static int snooze_loop(struct cpuidle_device *dev,
+>> +			struct cpuidle_driver *drv,
+>> +			int index)
+>> +{
+>> +	unsigned long in_purr;
+>> +	ktime_t kt_before;
+>> +
+>> +	idle_loop_prolog(&in_purr, &kt_before);
+>> +
+>> +	local_irq_enable();
+>> +	set_thread_flag(TIF_POLLING_NRFLAG);
+>> +	while (!need_resched()) {
+>> +		ppc64_runlatch_off();
+>> +		HMT_low();
+>> +		HMT_very_low();
+>> +	}
+>> +	HMT_medium();
+>> +	clear_thread_flag(TIF_POLLING_NRFLAG);
+>> +	smp_mb();
+>> +	local_irq_disable();
+>> +
+>> +	dev->last_residency =
+>> +		(int)idle_loop_epilog(in_purr, kt_before);
+>> +	return index;
+>> +}
+> 
+> So your snooze loop has no timeout, is that handled by the cpuidle
+> driver using some kind of timer ? That sounds a lot less efficient than
+> passing a max delay to the snooze loop to handle getting into a deeper
+> state after a bit of snoozing rather than interrupting etc...
+
+
+My bad, snooze_loop is essential for a time out. Nope cpuidle
+driver doesn't have any timer mechanism. I ll fix it.
+Need to add loop for snooze time.
+
+>> +static int dedicated_cede_loop(struct cpuidle_device *dev,
+>> +				struct cpuidle_driver *drv,
+>> +				int index)
+>> +{
+>> +	unsigned long in_purr;
+>> +	ktime_t kt_before;
+>> +
+>> +	idle_loop_prolog(&in_purr, &kt_before);
+>> +
+>> +	ppc64_runlatch_off();
+>> +	HMT_medium();
+>> +	cede_processor();
+>> +
+>> +	dev->last_residency =
+>> +		(int)idle_loop_epilog(in_purr, kt_before);
+>> +	return index;
+>> +}
+>> +
+>> +static int shared_cede_loop(struct cpuidle_device *dev,
+>> +			struct cpuidle_driver *drv,
+>> +			int index)
+>> +{
+>> +	unsigned long in_purr;
+>> +	ktime_t kt_before;
+>> +
+>> +	idle_loop_prolog(&in_purr, &kt_before);
+>> +
+>> +	/*
+>> +	 * Yield the processor to the hypervisor.  We return if
+>> +	 * an external interrupt occurs (which are driven prior
+>> +	 * to returning here) or if a prod occurs from another
+>> +	 * processor. When returning here, external interrupts
+>> +	 * are enabled.
+>> +	 */
+>> +	cede_processor();
+>> +
+>> +	dev->last_residency =
+>> +		(int)idle_loop_epilog(in_purr, kt_before);
+>> +	return index;
+>> +}
+>> +
+>> +/*
+>> + * States for dedicated partition case.
+>> + */
+>> +static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
+>> +	{ /* Snooze */
+>> +		.name = "snooze",
+>> +		.desc = "snooze",
+>> +		.flags = CPUIDLE_FLAG_TIME_VALID,
+>> +		.exit_latency = 0,
+>> +		.target_residency = 0,
+>> +		.enter = &snooze_loop },
+>> +	{ /* CEDE */
+>> +		.name = "CEDE",
+>> +		.desc = "CEDE",
+>> +		.flags = CPUIDLE_FLAG_TIME_VALID,
+>> +		.exit_latency = 1,
+>> +		.target_residency = 10,
+>> +		.enter = &dedicated_cede_loop },
+>> +};
+>> +
+>> +/*
+>> + * States for shared partition case.
+>> + */
+>> +static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
+>> +	{ /* Shared Cede */
+>> +		.name = "Shared Cede",
+>> +		.desc = "Shared Cede",
+>> +		.flags = CPUIDLE_FLAG_TIME_VALID,
+>> +		.exit_latency = 0,
+>> +		.target_residency = 0,
+>> +		.enter = &shared_cede_loop },
+>> +};
+>> +
+>> +int pseries_notify_cpuidle_add_cpu(int cpu)
+>> +{
+>> +	struct cpuidle_device *dev =
+>> +			per_cpu_ptr(pseries_idle_cpuidle_devices, cpu);
+>> +	if (dev && cpuidle_get_driver()) {
+>> +		cpuidle_disable_device(dev);
+>> +		cpuidle_enable_device(dev);
+>> +	}
+>> +	return 0;
+>> +}
+>> +
+>> +/*
+>> + * pseries_idle_cpuidle_driver_init()
+>> + */
+>> +static int pseries_idle_cpuidle_driver_init(void)
+>> +{
+> 
+> Drop the "idle", those names are too long.
+
+
+ Sure.
+
+> 
+>> +	int cstate;
+> 
+> And use something else than 'cstate', we are among civilized people
+> here ;-)
+
+
+Yes :)
+
+> 
+>> +	struct cpuidle_driver *drv = &pseries_idle_driver;
+>> +
+>> +	drv->state_count = 0;
+>> +
+>> +	for (cstate = 0; cstate < MAX_IDLE_STATE_COUNT; ++cstate) {
+>> +
+>> +		if (cstate > max_cstate)
+>> +			break;
+>> +
+>> +		/* is the state not enabled? */
+>> +		if (cpuidle_state_table[cstate].enter == NULL)
+>> +			continue;
+>> +
+>> +		drv->states[drv->state_count] =	/* structure copy */
+>> +			cpuidle_state_table[cstate];
+>> +
+>> +		if (cpuidle_state_table == dedicated_states)
+>> +			drv->states[drv->state_count].target_residency =
+>> +				__get_cpu_var(smt_snooze_delay);
+>> +
+>> +		drv->state_count += 1;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/* pseries_idle_devices_uninit(void)
+>> + * unregister cpuidle devices and de-allocate memory
+>> + */
+>> +static void pseries_idle_devices_uninit(void)
+>> +{
+>> +	int i;
+>> +	struct cpuidle_device *dev;
+>> +
+>> +	for_each_possible_cpu(i) {
+>> +		dev = per_cpu_ptr(pseries_idle_cpuidle_devices, i);
+>> +		cpuidle_unregister_device(dev);
+>> +	}
+>> +
+>> +	free_percpu(pseries_idle_cpuidle_devices);
+>> +	return;
+>> +}
+>> +
+>> +/* pseries_idle_devices_init()
+>> + * allocate, initialize and register cpuidle device
+>> + */
+>> +static int pseries_idle_devices_init(void)
+>> +{
+>> +	int i;
+>> +	struct cpuidle_driver *drv = &pseries_idle_driver;
+>> +	struct cpuidle_device *dev;
+>> +
+>> +	pseries_idle_cpuidle_devices = alloc_percpu(struct cpuidle_device);
+>> +	if (pseries_idle_cpuidle_devices == NULL)
+>> +		return -ENOMEM;
+>> +
+>> +	for_each_possible_cpu(i) {
+>> +		dev = per_cpu_ptr(pseries_idle_cpuidle_devices, i);
+>> +		dev->state_count = drv->state_count;
+>> +		dev->cpu = i;
+>> +		if (cpuidle_register_device(dev)) {
+>> +			printk(KERN_DEBUG \
+>> +				"cpuidle_register_device %d failed!\n", i);
+>> +			return -EIO;
+>> +		}
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +/*
+>> + * pseries_idle_probe()
+>> + * Choose state table for shared versus dedicated partition
+>> + */
+>> +static int pseries_idle_probe(void)
+>> +{
+>> +	if (max_cstate == 0) {
+>> +		printk(KERN_DEBUG "pseries processor idle disabled.\n");
+>> +		return -EPERM;
+>> +	}
+>> +
+>> +	if (!firmware_has_feature(FW_FEATURE_SPLPAR)) {
+>> +		printk(KERN_DEBUG "Using default idle\n");
+>> +		return -ENODEV;
+>> +	}
+> 
+> Don't even printk here, this will happen on all !pseries machines and
+> the debug output isn't useful. Also move the check of max-cstate to
+> after the splpar test.
+
+
+I ll move the check above.
+
+ 
+> Overall, I quite like these patches, my comments are all pretty minor,
+> hopefully the next round should be the one.
+
+
+Thank you.
 
 > 
 > Cheers,
 > Ben.
-> 
->>  arch/powerpc/Kconfig                 |    4 ++++
->>  arch/powerpc/include/asm/processor.h |    2 ++
->>  arch/powerpc/include/asm/system.h    |    1 +
->>  arch/powerpc/kernel/idle.c           |   26 ++++++++++++++++++++++++++
->>  4 files changed, 33 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
->> index b177caa..87f8604 100644
->> --- a/arch/powerpc/Kconfig
->> +++ b/arch/powerpc/Kconfig
->> @@ -87,6 +87,10 @@ config ARCH_HAS_ILOG2_U64
->>  	bool
->>  	default y if 64BIT
->>  
->> +config ARCH_HAS_CPU_IDLE_WAIT
->> +	bool
->> +	default y
->> +
->>  config GENERIC_HWEIGHT
->>  	bool
->>  	default y
->> diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
->> index eb11a44..811b7e7 100644
->> --- a/arch/powerpc/include/asm/processor.h
->> +++ b/arch/powerpc/include/asm/processor.h
->> @@ -382,6 +382,8 @@ static inline unsigned long get_clean_sp(struct pt_regs *regs, int is_32)
->>  }
->>  #endif
->>  
->> +enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
->> +
->>  #endif /* __KERNEL__ */
->>  #endif /* __ASSEMBLY__ */
->>  #endif /* _ASM_POWERPC_PROCESSOR_H */
->> diff --git a/arch/powerpc/include/asm/system.h b/arch/powerpc/include/asm/system.h
->> index e30a13d..ff66680 100644
->> --- a/arch/powerpc/include/asm/system.h
->> +++ b/arch/powerpc/include/asm/system.h
->> @@ -221,6 +221,7 @@ extern unsigned long klimit;
->>  extern void *zalloc_maybe_bootmem(size_t size, gfp_t mask);
->>  
->>  extern int powersave_nap;	/* set if nap mode can be used in idle loop */
->> +void cpu_idle_wait(void);
->>  
->>  /*
->>   * Atomic exchange
->> diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
->> index 39a2baa..b478c72 100644
->> --- a/arch/powerpc/kernel/idle.c
->> +++ b/arch/powerpc/kernel/idle.c
->> @@ -39,9 +39,13 @@
->>  #define cpu_should_die()	0
->>  #endif
->>  
->> +unsigned long boot_option_idle_override = IDLE_NO_OVERRIDE;
->> +EXPORT_SYMBOL(boot_option_idle_override);
->> +
->>  static int __init powersave_off(char *arg)
->>  {
->>  	ppc_md.power_save = NULL;
->> +	boot_option_idle_override = IDLE_POWERSAVE_OFF;
->>  	return 0;
->>  }
->>  __setup("powersave=off", powersave_off);
->> @@ -102,6 +106,28 @@ void cpu_idle(void)
->>  	}
->>  }
->>  
->> +
->> +/*
->> + * cpu_idle_wait - Used to ensure that all the CPUs come out of the old
->> + * idle loop and start using the new idle loop.
->> + * Required while changing idle handler on SMP systems.
->> + * Caller must have changed idle handler to the new value before the call.
->> + */
->> +void cpu_idle_wait(void)
->> +{
->> +	int cpu;
->> +	smp_mb();
->> +
->> +	/* kick all the CPUs so that they exit out of old idle routine */
->> +	get_online_cpus();
->> +	for_each_online_cpu(cpu) {
->> +		if (cpu != smp_processor_id())
->> +			smp_send_reschedule(cpu);
->> +	}
->> +	put_online_cpus();
->> +}
->> +EXPORT_SYMBOL_GPL(cpu_idle_wait);
->> +
->>  int powersave_nap;
->>  
->>  #ifdef CONFIG_SYSCTL
->>
->> _______________________________________________
->> Linuxppc-dev mailing list
->> Linuxppc-dev@lists.ozlabs.org
->> https://lists.ozlabs.org/listinfo/linuxppc-dev
 > 
 > 
 
