@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab1K1UPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 15:15:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35994 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab1K1UPX convert rfc822-to-8bit (ORCPT
+	id S1754830Ab1K1UPi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:15:38 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59382 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754269Ab1K1UPh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 15:15:23 -0500
-Message-ID: <1322511307.2921.173.camel@twins>
-Subject: Re: [PATCH 4/9] ftrace: Add enable/disable ftrace_ops control
- interface
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, fweisbec@gmail.com, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net,
-        linux-kernel@vger.kernel.org
-Date: Mon, 28 Nov 2011 21:15:07 +0100
-In-Reply-To: <1322511125.17003.21.camel@frodo>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
-	 <1322417074-5834-5-git-send-email-jolsa@redhat.com>
-	 <1322508398.17003.9.camel@frodo>  <1322510552.2921.167.camel@twins>
-	 <1322511125.17003.21.camel@frodo>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 28 Nov 2011 15:15:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5j+=j7Gy+D0wzZ44NPAK1PYyp1gHU-GQQOBCLi4fRc9UmQ@mail.gmail.com>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+	<20111128191658.GA6028@albatros>
+	<CAGXu5j+=j7Gy+D0wzZ44NPAK1PYyp1gHU-GQQOBCLi4fRc9UmQ@mail.gmail.com>
+Date: Mon, 28 Nov 2011 12:15:36 -0800
+X-Google-Sender-Auth: jIVedqUVUJV1pnCJwPIaEhhHh2Y
+Message-ID: <CAGXu5jKHFaA6YawiospVcZWk5aVjGE+5p9TosrtQHgRYLbXuLw@mail.gmail.com>
+Subject: Re: [RFC -resend] Make Yama pid_ns aware
+From: Kees Cook <keescook@chromium.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-28 at 15:12 -0500, Steven Rostedt wrote:
-> Actually, from what I've been told, x86 seems to be the only arch that
-> does crazy things with NMIs. Most the other archs do NMI when the system
-> is dead. That is, there's no return to normal system processing once an
-> NMI is hit. 
+On Mon, Nov 28, 2011 at 11:35 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Nov 28, 2011 at 11:16 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+>> As Yama's sysctls are about defining a security policy for the system,
+>> it is reasonable to define it per container in case of LXC containers
+>> (or out-of-tree alternatives like OpenVZ).  In my opinion they belong
+>> to pid namespace.  With per-pid_ns sysctls it is possible to create
+>> multiple containers with different ptrace, /tmp, etc. policies.
+>> [...]
+>> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+>
+> Thanks! I'll include this in the next Yama patch set.
+>
+> Acked-by: Kees Cook <keescook@chromium.org>
 
-Sparc64 implements effective NMIs by playing games with their interrupt
-priority levels. local_irq_disable() disable the lower 15 (0-14) levels
-only, and their PMU interrupts at level 15.
+I should mention, this lives here now:
+http://git.kernel.org/?p=linux/kernel/git/kees/linux.git;a=shortlog;h=refs/heads/yama
 
-That generates an effective NMI (interrupt not blocked by
-local_irq_disable()).
+-Kees
+
+-- 
+Kees Cook
+ChromeOS Security
