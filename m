@@ -1,133 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab1K1Uad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 15:30:33 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:45712 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754065Ab1K1Uac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 15:30:32 -0500
-Date: Mon, 28 Nov 2011 21:30:06 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <Uwe.Kleine-Koenig@digi.com>,
-        Magnus Damm <damm@igel.co.jp>,
-        Amit Chatterjee <amit.chatterjee@ti.com>,
-        Pratheesh Gangadhar <pratheesh@ti.com>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH] uio: convert drivers/uio/* to use
- module_platform_driver()
-Message-ID: <20111128203006.GD2165@local>
-References: <1322291935.20464.5.camel@phoenix>
+	id S1754758Ab1K1UbP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 15:31:15 -0500
+Received: from fmmailgate04.web.de ([217.72.192.242]:56461 "EHLO
+	fmmailgate04.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402Ab1K1UbO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 15:31:14 -0500
+Date: Mon, 28 Nov 2011 21:31:13 +0100 (CET)
+From: "Nicolas Kalkhof" <nkalkhof@web.de>
+To: "Andi Kleen" <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <492649473.3864850.1322512273580.JavaMail.fmail@mwmweb020>
+Subject: Re: Too many poll_idle cpu calls in kernel 3.2 rc-series
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1322291935.20464.5.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: normal
+Sensitivity: Normal
+X-Provags-ID: V01U2FsdGVkX19XpxYdMAmW1ArwEp2RoB386ZUlWbBoNrgCJH8joGBwnkfFMkv67ZkM
+ uRH13VKkcKcskMC20JacfA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 26, 2011 at 03:18:55PM +0800, Axel Lin wrote:
-> This patch converts the drivers in drivers/uio/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: Uwe Kleine-König <Uwe.Kleine-Koenig@digi.com>
-> Cc: Magnus Damm <damm@igel.co.jp>
-> Cc: Amit Chatterjee <amit.chatterjee@ti.com>
-> Cc: Pratheesh Gangadhar <pratheesh@ti.com>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Andi,
 
-Looks alright to me.
+correct. The issue was introduced somewhere between 3.1 final and 3.2-rc1. I've tried to track down the bad commit but so far I haven't been successfull. The only workaround I found is to set the idle boot parameter to mwait and to disable CONFIG_INTEL_IDLE. Somehow the kernel seems to set idle to poll by default - no idea why :-(. I wonder if other mobile sandy bridge cpus are affected as well.
 
-Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+Regards,
+Nic
 
-Thanks,
-Hans
+-----Ursprüngliche Nachricht-----
+Von: "Andi Kleen" <andi@firstfloor.org>
+Gesendet: Nov 28, 2011 8:33:28 PM
+An: "Nicolas Kalkhof" <nkalkhof@web.de>
+Betreff: Re: Too many poll_idle cpu calls in kernel 3.2 rc-series
 
-> ---
->  drivers/uio/uio_pdrv.c        |   12 +-----------
->  drivers/uio/uio_pdrv_genirq.c |   13 +------------
->  drivers/uio/uio_pruss.c       |   14 +-------------
->  3 files changed, 3 insertions(+), 36 deletions(-)
-> 
-> diff --git a/drivers/uio/uio_pdrv.c b/drivers/uio/uio_pdrv.c
-> index ff50595..72d3646 100644
-> --- a/drivers/uio/uio_pdrv.c
-> +++ b/drivers/uio/uio_pdrv.c
-> @@ -104,17 +104,7 @@ static struct platform_driver uio_pdrv = {
->  	},
->  };
->  
-> -static int __init uio_pdrv_init(void)
-> -{
-> -	return platform_driver_register(&uio_pdrv);
-> -}
-> -
-> -static void __exit uio_pdrv_exit(void)
-> -{
-> -	platform_driver_unregister(&uio_pdrv);
-> -}
-> -module_init(uio_pdrv_init);
-> -module_exit(uio_pdrv_exit);
-> +module_platform_driver(uio_pdrv);
->  
->  MODULE_AUTHOR("Uwe Kleine-Koenig");
->  MODULE_DESCRIPTION("Userspace I/O platform driver");
-> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-> index 25de302..b98371d 100644
-> --- a/drivers/uio/uio_pdrv_genirq.c
-> +++ b/drivers/uio/uio_pdrv_genirq.c
-> @@ -273,18 +273,7 @@ static struct platform_driver uio_pdrv_genirq = {
->  	},
->  };
->  
-> -static int __init uio_pdrv_genirq_init(void)
-> -{
-> -	return platform_driver_register(&uio_pdrv_genirq);
-> -}
-> -
-> -static void __exit uio_pdrv_genirq_exit(void)
-> -{
-> -	platform_driver_unregister(&uio_pdrv_genirq);
-> -}
-> -
-> -module_init(uio_pdrv_genirq_init);
-> -module_exit(uio_pdrv_genirq_exit);
-> +module_platform_driver(uio_pdrv_genirq);
->  
->  MODULE_AUTHOR("Magnus Damm");
->  MODULE_DESCRIPTION("Userspace I/O platform driver with generic IRQ handling");
-> diff --git a/drivers/uio/uio_pruss.c b/drivers/uio/uio_pruss.c
-> index e67b566..33a7a27 100644
-> --- a/drivers/uio/uio_pruss.c
-> +++ b/drivers/uio/uio_pruss.c
-> @@ -227,19 +227,7 @@ static struct platform_driver pruss_driver = {
->  		   },
->  };
->  
-> -static int __init pruss_init_module(void)
-> -{
-> -	return platform_driver_register(&pruss_driver);
-> -}
-> -
-> -module_init(pruss_init_module);
-> -
-> -static void __exit pruss_exit_module(void)
-> -{
-> -	platform_driver_unregister(&pruss_driver);
-> -}
-> -
-> -module_exit(pruss_exit_module);
-> +module_platform_driver(pruss_driver);
->  
->  MODULE_LICENSE("GPL v2");
->  MODULE_VERSION(DRV_VERSION);
-> -- 
-> 1.7.5.4
-> 
-> 
-> 
-> 
+>"Nicolas Kalkhof" <nkalkhof@web.de> writes:
+>
+>> the kernel v3.2 series shows excessive poll_idle calls during system idle phases causing the cpu
+>> (mobile i7 2620M) to heat up and draw additional 10% more power.  All kernel versions between
+>> 3.2-rc1 and 3.2-rc3 are affected. Perf Top and Powertop both show the same issue.
+>> I've posted a similar bug report before: http://marc.info/?l=linux-kernel&m=132164909313594&w=2
+>> and used perf top -U to verify the poll_idle calls as requested.
+>
+>So it didn't happen with earlier kernels?
+>I would suggest a git bisect in this case.
+>
+>-Andi
+>
+>--
+>ak@linux.intel.com -- Speaking for myself only
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at http://www.tux.org/lkml/
+
+
+___________________________________________________________
+SMS schreiben mit WEB.DE FreeMail - einfach, schnell und
+kostenguenstig. Jetzt gleich testen! http://f.web.de/?mc=021192
