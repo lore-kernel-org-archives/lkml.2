@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab1K1Wuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:50:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25789 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab1K1Wut convert rfc822-to-8bit (ORCPT
+	id S1754785Ab1K1W4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 17:56:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49099 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754405Ab1K1W4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:50:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="80635780"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: "Luck, Tony" <tony.luck@intel.com>, Udo Steinberg <udo@hypervisor.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 28 Nov 2011 14:50:47 -0800
-Subject: RE: MCE/Package power limit notification
-Thread-Topic: MCE/Package power limit notification
-Thread-Index: Acyp8gd0e6JYG39eTne0/UWpnlDM9AELSydgAAAudfA=
-Message-ID: <493994B35A117E4F832F97C4719C4C04022D835792@orsmsx505.amr.corp.intel.com>
-References: <20111123160950.67860131@x220>
- <987664A83D2D224EAE907B061CE93D53027D89B577@orsmsx505.amr.corp.intel.com>
-In-Reply-To: <987664A83D2D224EAE907B061CE93D53027D89B577@orsmsx505.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Nov 2011 17:56:12 -0500
+Date: Mon, 28 Nov 2011 14:56:06 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC] prctl: Add PR_ codes to restore vDSO and tune up
+ mm_struct entires
+Message-ID: <20111128225606.GD3858@google.com>
+References: <20111124120051.GV1820@moon>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111124120051.GV1820@moon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Luck, Tony
-> Sent: Monday, November 28, 2011 2:46 PM
-> To: Udo Steinberg; Linux Kernel Mailing List
-> Cc: Yu, Fenghua
-> Subject: RE: MCE/Package power limit notification
-> 
-> > After half an hour of compiling code on an Intel SNB machine, at
-> which time
-> > the machine was more or less permanently running with turbo boost
-> active,
-> > I've gotten the following in my dmesg with Linux-3.1.0:
-> >
-> > CPU2: Package power limit notification (total events = 1)
-> > CPU3: Package power limit notification (total events = 1)
-> > CPU1: Package power limit notification (total events = 1)
-> > CPU0: Package power limit notification (total events = 1)
-> > ...
-> 
-> Udo,
-> 
-> Fenghua is looking at options to tone down these messages - reporting
-> as machine checks is unduly scary.
+Hello, Cyrill.
 
-Hi, Udo,
+On Thu, Nov 24, 2011 at 04:00:51PM +0400, Cyrill Gorcunov wrote:
+> +		case PR_SETUP_VDSO_AT:
+> +			if (arg3 | arg4 | arg5)
+> +				return -EINVAL;
+> +
+> +			if (!capable(CAP_SYS_ADMIN))
+> +				return -EPERM;
+> +
+> +#ifdef ARCH_HAS_SETUP_ADDITIONAL_PAGES
+> +			error = arch_setup_additional_pages_at((void *)arg2);
+> +#else
+> +			error = -ENOSYS;
+> +#endif
+> +			break;
 
-I sent out a patch to remove the mcelog info. Could you try it and see if it works for you?
-https://lkml.org/lkml/2011/11/14/239
+Hmmm... I'm not sure this is the best approach.  vdso is supposed to
+be able to be dependent on binprm too, so the proposed solution could
+work but I'm not sure whether it's a good one.  For now, can't we just
+copy the vdso and unmap it at the orignal address?
 
 Thanks.
 
--Fenghua
+-- 
+tejun
