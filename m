@@ -1,161 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab1K1OVa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:21:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53525 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab1K1OV2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:21:28 -0500
-Date: Mon, 28 Nov 2011 06:21:11 -0800
-From: tip-bot for Christine Chan <cschan@codeaurora.org>
-Message-ID: <tip-dc4218bd0fe499fce2896f88101ea42dac1f60fc@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
-        mingo@redhat.com, akpm@linux-foundation.org, cschan@codeaurora.org,
-        tglx@linutronix.de, sboyd@codeaurora.org
-Reply-To: mingo@redhat.com, hpa@zytor.com, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        cschan@codeaurora.org, tglx@linutronix.de, sboyd@codeaurora.org
-In-Reply-To: <1320724108-20788-4-git-send-email-sboyd@codeaurora.org>
-References: <1320724108-20788-4-git-send-email-sboyd@codeaurora.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/debugobjects] timer: Use debugobjects to catch deletion of uninitialized timers
-Git-Commit-ID: dc4218bd0fe499fce2896f88101ea42dac1f60fc
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 28 Nov 2011 06:21:17 -0800 (PST)
+	id S1754116Ab1K1OVb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:21:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23835 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467Ab1K1OV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:21:29 -0500
+Subject: Proposed removal of DECnet support (was: Re: [BUG] 3.2-rc2: BUG
+ kmalloc-8: Redzone overwritten)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Christine Caulfield <ccaulfie@redhat.com>
+Cc: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
+        levinsasha928@gmail.com, mpm@selenic.com, cl@linux-foundation.org,
+        penberg@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <4ED35B3E.7040105@redhat.com>
+References: <1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1321870915.2552.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1321873110.2710.13.camel@menhir>
+	 <20111126.155028.1986754382924402334.davem@davemloft.net>
+	 <4ED35B3E.7040105@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 28 Nov 2011 14:22:41 +0000
+Message-ID: <1322490161.2711.26.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  dc4218bd0fe499fce2896f88101ea42dac1f60fc
-Gitweb:     http://git.kernel.org/tip/dc4218bd0fe499fce2896f88101ea42dac1f60fc
-Author:     Christine Chan <cschan@codeaurora.org>
-AuthorDate: Mon, 7 Nov 2011 19:48:28 -0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 23 Nov 2011 18:49:23 +0100
+Hi,
 
-timer: Use debugobjects to catch deletion of uninitialized timers
+On Mon, 2011-11-28 at 09:58 +0000, Christine Caulfield wrote:
+> On 26/11/11 20:50, David Miller wrote:
+> > From: Steven Whitehouse<swhiteho@redhat.com>
+> > Date: Mon, 21 Nov 2011 10:58:30 +0000
+> >
+> >> I have to say that I've been wondering lately whether it has got to the
+> >> point where it is no longer useful. Has anybody actually tested it
+> >> lately against "real" DEC implementations?
+> >
+> > I doubt it :-)
+> >
+> 
+> DECnet is in use against real DEC implementations - I have checked it 
+> quite recently against a VAX running OpenVMS. How many people are 
+> actually using it for real work is a different question though.
+> 
+Ok, thats useful info.
 
-del_timer_sync() calls debug_object_assert_init() to assert that
-a timer has been initialized before calling lock_timer_base().
-lock_timer_base() would spin forever on a NULL(uninit-ed) base.
-The check is added to del_timer() to prevent silent failure, even
-though it would not get stuck in an infinite loop.
+> It's also true that it's not really supported by anyone as I orphaned it 
+> some time ago and nobody else seems to care enough to take it over. So 
+> if it's becoming a burden on people doing real kernel work then I don't 
+> think many tears will be wept for its removal.
+> 
+> Chrissie
 
-[ sboyd@codeaurora.org: Remove WARN, intialize timer function]
+Really the only issue with keeping it around is the maintenance burden I
+think. It doesn't look like anybody wants to take it on, but maybe we
+should give it another few days for someone to speak up, just in case
+they are on holiday or something at the moment.
 
-Signed-off-by: Christine Chan <cschan@codeaurora.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Link: http://lkml.kernel.org/r/1320724108-20788-4-git-send-email-sboyd@codeaurora.org
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/timer.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 48 insertions(+), 5 deletions(-)
+Also, I've updated the subject of the thread, to make it more obvious
+what is being discussed, as well as bcc'ing it again to the DECnet list,
 
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 317087d..5fc5a76 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -487,12 +487,40 @@ static int timer_fixup_free(void *addr, enum debug_obj_state state)
- 	}
- }
- 
-+/*
-+ * fixup_assert_init is called when:
-+ * - an untracked/uninit-ed object is found
-+ */
-+static int timer_fixup_assert_init(void *addr, enum debug_obj_state state)
-+{
-+	struct timer_list *timer = addr;
-+
-+	switch (state) {
-+	case ODEBUG_STATE_NOTAVAILABLE:
-+		if (timer->entry.prev == TIMER_ENTRY_STATIC) {
-+			/*
-+			 * This is not really a fixup. The timer was
-+			 * statically initialized. We just make sure that it
-+			 * is tracked in the object tracker.
-+			 */
-+			debug_object_init(timer, &timer_debug_descr);
-+			return 0;
-+		} else {
-+			setup_timer(timer, stub_timer, 0);
-+			return 1;
-+		}
-+	default:
-+		return 0;
-+	}
-+}
-+
- static struct debug_obj_descr timer_debug_descr = {
--	.name		= "timer_list",
--	.debug_hint	= timer_debug_hint,
--	.fixup_init	= timer_fixup_init,
--	.fixup_activate	= timer_fixup_activate,
--	.fixup_free	= timer_fixup_free,
-+	.name			= "timer_list",
-+	.debug_hint		= timer_debug_hint,
-+	.fixup_init		= timer_fixup_init,
-+	.fixup_activate		= timer_fixup_activate,
-+	.fixup_free		= timer_fixup_free,
-+	.fixup_assert_init	= timer_fixup_assert_init,
- };
- 
- static inline void debug_timer_init(struct timer_list *timer)
-@@ -515,6 +543,11 @@ static inline void debug_timer_free(struct timer_list *timer)
- 	debug_object_free(timer, &timer_debug_descr);
- }
- 
-+static inline void debug_timer_assert_init(struct timer_list *timer)
-+{
-+	debug_object_assert_init(timer, &timer_debug_descr);
-+}
-+
- static void __init_timer(struct timer_list *timer,
- 			 const char *name,
- 			 struct lock_class_key *key);
-@@ -538,6 +571,7 @@ EXPORT_SYMBOL_GPL(destroy_timer_on_stack);
- static inline void debug_timer_init(struct timer_list *timer) { }
- static inline void debug_timer_activate(struct timer_list *timer) { }
- static inline void debug_timer_deactivate(struct timer_list *timer) { }
-+static inline void debug_timer_assert_init(struct timer_list *timer) { }
- #endif
- 
- static inline void debug_init(struct timer_list *timer)
-@@ -559,6 +593,11 @@ static inline void debug_deactivate(struct timer_list *timer)
- 	trace_timer_cancel(timer);
- }
- 
-+static inline void debug_assert_init(struct timer_list *timer)
-+{
-+	debug_timer_assert_init(timer);
-+}
-+
- static void __init_timer(struct timer_list *timer,
- 			 const char *name,
- 			 struct lock_class_key *key)
-@@ -909,6 +948,8 @@ int del_timer(struct timer_list *timer)
- 	unsigned long flags;
- 	int ret = 0;
- 
-+	debug_assert_init(timer);
-+
- 	timer_stats_timer_clear_start_info(timer);
- 	if (timer_pending(timer)) {
- 		base = lock_timer_base(timer, &flags);
-@@ -939,6 +980,8 @@ int try_to_del_timer_sync(struct timer_list *timer)
- 	unsigned long flags;
- 	int ret = -1;
- 
-+	debug_assert_init(timer);
-+
- 	base = lock_timer_base(timer, &flags);
- 
- 	if (base->running_timer == timer)
+Steve.
+
+
