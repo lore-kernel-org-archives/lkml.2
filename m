@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab1K1I1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 03:27:36 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:7297 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab1K1I1e (ORCPT
+	id S1752649Ab1K1I3b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 03:29:31 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63801 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab1K1I3a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 03:27:34 -0500
-Date: Mon, 28 Nov 2011 09:27:21 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Jochen Friedrich <jochen@scram.de>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Manuel Lauss <manuel.lauss@googlemail.com>,
-        Barry Song <21cnbao@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: convert drivers/i2c/* to use 
- module_platform_driver()
-Message-ID: <20111128092721.15ac7b7d@endymion.delvare>
-In-Reply-To: <1322439206.2709.2.camel@phoenix>
-References: <1322439206.2709.2.camel@phoenix>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Nov 2011 03:29:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPM31RLcUUzCXqfrALgAc0g_A0uOq-Htaz50vcpqoo83Nc0tpA@mail.gmail.com>
+References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
+	<1320182360-20043-15-git-send-email-glommer@parallels.com>
+	<4EBD94A0.9070703@google.com>
+	<4EBE4A80.6090607@parallels.com>
+	<CAPM31RLUDpaxDAw00erwgmNogbuD+=LgkJ-5i9ncJw00nvryfQ@mail.gmail.com>
+	<CAKTCnzkFb2rRyOJ3Uxt13mXrB-9Ox=zgXAOZ5bZ_6Kwr64AbTA@mail.gmail.com>
+	<20111117085251.443fefa5.kamezawa.hiroyu@jp.fujitsu.com>
+	<4EC47632.2000904@parallels.com>
+	<CAKTCnznzpqUbMJEMwaewwjvMW1fG0J3=a8JxqKiHKNuffO7azg@mail.gmail.com>
+	<4EC52F32.2040708@parallels.com>
+	<20111121105957.9c85db16.kamezawa.hiroyu@jp.fujitsu.com>
+	<1322141073.2921.51.camel@twins>
+	<4ECE6BC4.7090600@parallels.com>
+	<1322152152.2921.64.camel@twins>
+	<4ECE731E.6030508@parallels.com>
+	<CAKTCnznU1jA9ME2F12pPSLosi3=sbiHPikPd3UDon3arBK6XLQ@mail.gmail.com>
+	<1322216360.2921.86.camel@twins>
+	<CAPM31RLcUUzCXqfrALgAc0g_A0uOq-Htaz50vcpqoo83Nc0tpA@mail.gmail.com>
+Date: Mon, 28 Nov 2011 13:59:29 +0530
+Message-ID: <CAKTCnz=Xk7fsvF6asN4v6m5ma4-B38a5+FGRNOmhr+ftGpxPmA@mail.gmail.com>
+Subject: Re: [PATCH v2 14/14] Change CPUACCT to default n
+From: Balbir Singh <bsingharora@gmail.com>
+To: Paul Turner <pjt@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        daniel.lezcano@free.fr, jbottomley@parallels.com, fweisbec@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Nov 2011 08:13:26 +0800, Axel Lin wrote:
-> This patch converts the drivers in drivers/i2c/* to use the
+On Sat, Nov 26, 2011 at 6:48 PM, Paul Turner <pjt@google.com> wrote:
+> On Fri, Nov 25, 2011 at 2:19 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> On Fri, 2011-11-25 at 11:08 +0530, Balbir Singh wrote:
+>>> It is not about $customer. I am OK with a design that allows
+>>> accounting independent of control. Put it another way when I look at
+>>> cgroups, I see the following functionality
+>>>
+>>> 1. Accounting and feedback
+>>> 2. Control
+>>>
+>>> Why do 1 and 2 have to co-exist. A good case would be that we might
+>>> need just stats and might want to implement control based on 1.
+>>
+>> I would say that 2 always requires 1 (provided they are of course on the
+>> same subject), for the very simple reason that you need to know the
+>> current state (as provided by 1) to control it (2).
+>>
+>> Therefore separating them leads to useless duplication.
+>
+> Almost all of the stats that are coming in here are completely useless
+> for control and don't belong in the cpu controller.
+>
+> While it's not as pure we really have 2 tiers of statistic:
+>
+> 1) Accounting needed for control
+> 2) Everything else
+>
+> What causes so much over-head for cpuacct currently is that it tries
+> to maintain a separate accounting of usage.  If this were removed from
+> the controller then it would be *much* cheaper, even with all extra
+> stats added here.
+>
 
-Now drivers/i2c/busses/* even.
+Sure, if we can integrate the stats without control, I am all for it :)
 
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> Cc: Jochen Friedrich <jochen@scram.de>
-> Cc: Peter Korsgaard <jacmet@sunsite.dk>
-> Cc: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
-> Cc: Manuel Lauss <manuel.lauss@googlemail.com>
-> Cc: Barry Song <21cnbao@gmail.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Acked-by: Peter Korsgaard <jacmet@sunsite.dk>
-> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
-> Acked-by: Jochen Friedrich<jochen@scram.de>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/i2c/busses/i2c-at91.c         |   17 ++---------------
->  drivers/i2c/busses/i2c-au1550.c       |   13 +------------
->  drivers/i2c/busses/i2c-cpm.c          |   13 +------------
->  drivers/i2c/busses/i2c-highlander.c   |   13 +------------
->  drivers/i2c/busses/i2c-ibm_iic.c      |   13 +------------
->  drivers/i2c/busses/i2c-iop3xx.c       |   16 +---------------
->  drivers/i2c/busses/i2c-isch.c         |   13 +------------
->  drivers/i2c/busses/i2c-ixp2000.c      |   13 +------------
->  drivers/i2c/busses/i2c-mpc.c          |   13 +------------
->  drivers/i2c/busses/i2c-mv64xxx.c      |   15 +--------------
->  drivers/i2c/busses/i2c-ocores.c       |   17 ++---------------
->  drivers/i2c/busses/i2c-octeon.c       |   16 +---------------
->  drivers/i2c/busses/i2c-pca-platform.c |   14 +-------------
->  drivers/i2c/busses/i2c-pmcmsp.c       |   17 ++---------------
->  drivers/i2c/busses/i2c-powermac.c     |   19 ++-----------------
->  drivers/i2c/busses/i2c-puv3.c         |   16 ++--------------
->  drivers/i2c/busses/i2c-sh7760.c       |   13 +------------
->  drivers/i2c/busses/i2c-simtec.c       |   18 ++----------------
->  drivers/i2c/busses/i2c-xiic.c         |   18 ++----------------
->  19 files changed, 26 insertions(+), 261 deletions(-)
-> (...)
-
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
-
-As said before, I'll let Ben pick the patch in his tree to minimize the
-risks of merge conflicts.
-
--- 
-Jean Delvare
+Balbir Singh
