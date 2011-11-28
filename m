@@ -1,159 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab1K1X0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:26:46 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:36620 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755320Ab1K1X0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:26:40 -0500
-Subject: [PATCH 01/22] ext4: Create a new BH_Verified flag to avoid
-	unnecessary metadata validation
-To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Mon, 28 Nov 2011 15:26:22 -0800
-Message-ID: <20111128232622.19194.42676.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
-References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112823-8974-0000-0000-000003805A5A
+	id S1755392Ab1K1X0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:26:53 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59703 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755253Ab1K1X0v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:26:51 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Constify WM8994 regulator_init_data
+Date: Mon, 28 Nov 2011 23:26:47 +0000
+Message-Id: <1322522807-4562-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a new BH_Verified flag to indicate that we've verified all the data in a
-buffer_head for correctness.  This allows us to bypass expensive verification
-steps when they are not necessary without missing them when they are.
+The driver has no need to modify the regulator_init_data so declare it
+const to allow machine code to do so.
 
-v2: The later jbd2 metadata checksumming patches need a BH_Verified flag for
-journal metadata, so put the flag in jbd2.h so that both drivers can share the
-same bit.
-
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- fs/ext4/extents.c          |   35 ++++++++++++++++++++++++++---------
- include/linux/jbd_common.h |    2 ++
- 2 files changed, 28 insertions(+), 9 deletions(-)
+ include/linux/mfd/wm8994/pdata.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 61fa9e1..00f97f4 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -396,6 +396,26 @@ int ext4_ext_check_inode(struct inode *inode)
- 	return ext4_ext_check(inode, ext_inode_hdr(inode), ext_depth(inode));
- }
+diff --git a/include/linux/mfd/wm8994/pdata.h b/include/linux/mfd/wm8994/pdata.h
+index 54e2fef..b00897a 100644
+--- a/include/linux/mfd/wm8994/pdata.h
++++ b/include/linux/mfd/wm8994/pdata.h
+@@ -23,7 +23,7 @@ struct wm8994_ldo_pdata {
+ 	int enable;
  
-+static int __ext4_ext_check_block(const char *function, unsigned int line,
-+				  struct inode *inode,
-+				  struct ext4_extent_header *eh,
-+				  int depth,
-+				  struct buffer_head *bh)
-+{
-+	int ret;
-+
-+	if (buffer_verified(bh))
-+		return 0;
-+	ret = ext4_ext_check(inode, eh, depth);
-+	if (ret)
-+		return ret;
-+	set_buffer_verified(bh);
-+	return ret;
-+}
-+
-+#define ext4_ext_check_block(inode, eh, depth, bh)	\
-+	__ext4_ext_check_block(__func__, __LINE__, inode, eh, depth, bh)
-+
- #ifdef EXT_DEBUG
- static void ext4_ext_show_path(struct inode *inode, struct ext4_ext_path *path)
- {
-@@ -652,8 +672,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 	i = depth;
- 	/* walk through the tree */
- 	while (i) {
--		int need_to_validate = 0;
--
- 		ext_debug("depth %d: num %d, max %d\n",
- 			  ppos, le16_to_cpu(eh->eh_entries), le16_to_cpu(eh->eh_max));
- 
-@@ -672,8 +690,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 				put_bh(bh);
- 				goto err;
- 			}
--			/* validate the extent entries */
--			need_to_validate = 1;
- 		}
- 		eh = ext_block_hdr(bh);
- 		ppos++;
-@@ -687,7 +703,7 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 		path[ppos].p_hdr = eh;
- 		i--;
- 
--		if (need_to_validate && ext4_ext_check(inode, eh, i))
-+		if (ext4_ext_check_block(inode, eh, i, bh))
- 			goto err;
- 	}
- 
-@@ -1328,7 +1344,8 @@ got_index:
- 			return -EIO;
- 		eh = ext_block_hdr(bh);
- 		/* subtract from p_depth to get proper eh_depth */
--		if (ext4_ext_check(inode, eh, path->p_depth - depth)) {
-+		if (ext4_ext_check_block(inode, eh,
-+					 path->p_depth - depth, bh)) {
- 			put_bh(bh);
- 			return -EIO;
- 		}
-@@ -1341,7 +1358,7 @@ got_index:
- 	if (bh == NULL)
- 		return -EIO;
- 	eh = ext_block_hdr(bh);
--	if (ext4_ext_check(inode, eh, path->p_depth - depth)) {
-+	if (ext4_ext_check_block(inode, eh, path->p_depth - depth, bh)) {
- 		put_bh(bh);
- 		return -EIO;
- 	}
-@@ -2572,8 +2589,8 @@ again:
- 				err = -EIO;
- 				break;
- 			}
--			if (ext4_ext_check(inode, ext_block_hdr(bh),
--							depth - i - 1)) {
-+			if (ext4_ext_check_block(inode, ext_block_hdr(bh),
-+							depth - i - 1, bh)) {
- 				err = -EIO;
- 				break;
- 			}
-diff --git a/include/linux/jbd_common.h b/include/linux/jbd_common.h
-index 6230f85..6133679 100644
---- a/include/linux/jbd_common.h
-+++ b/include/linux/jbd_common.h
-@@ -12,6 +12,7 @@ enum jbd_state_bits {
- 	BH_State,		/* Pins most journal_head state */
- 	BH_JournalHead,		/* Pins bh->b_private and jh->b_bh */
- 	BH_Unshadow,		/* Dummy bit, for BJ_Shadow wakeup filtering */
-+	BH_Verified,		/* Metadata block has been verified ok */
- 	BH_JBDPrivateStart,	/* First bit available for private use by FS */
+ 	const char *supply;
+-	struct regulator_init_data *init_data;
++	const struct regulator_init_data *init_data;
  };
  
-@@ -24,6 +25,7 @@ TAS_BUFFER_FNS(Revoked, revoked)
- BUFFER_FNS(RevokeValid, revokevalid)
- TAS_BUFFER_FNS(RevokeValid, revokevalid)
- BUFFER_FNS(Freed, freed)
-+BUFFER_FNS(Verified, verified)
- 
- static inline struct buffer_head *jh2bh(struct journal_head *jh)
- {
+ #define WM8994_CONFIGURE_GPIO 0x10000
+-- 
+1.7.7.3
 
