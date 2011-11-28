@@ -1,102 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab1K1LBH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 06:01:07 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:33259 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752143Ab1K1LBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 06:01:05 -0500
-Message-ID: <4ED369C8.9090101@parallels.com>
-Date: Mon, 28 Nov 2011 09:00:24 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1752843Ab1K1LCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 06:02:36 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56493 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab1K1LCe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 06:02:34 -0500
+Message-ID: <4ED36A37.3030409@linux.vnet.ibm.com>
+Date: Mon, 28 Nov 2011 16:32:15 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <lizf@cn.fujitsu.com>,
-        <ebiederm@xmission.com>, <davem@davemloft.net>, <paul@paulmenage.org>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v6 10/10] Disable task moving when using kernel memory
- accounting
-References: <1322242696-27682-1-git-send-email-glommer@parallels.com> <1322242696-27682-11-git-send-email-glommer@parallels.com> <20111128133203.2d52ee28.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111128133203.2d52ee28.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Newsgroups: gmane.linux.power-management.general,gmane.linux.ports.ppc64.devel,gmane.linux.kernel
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [RFC PATCH v2 1/4] cpuidle: (powerpc) Add cpu_idle_wait() to
+ allow switching of idle routines
+References: <20111117112815.9191.2322.stgit@localhost6.localdomain6>	<20111117112830.9191.1951.stgit@localhost6.localdomain6> <1322434096.23348.6.camel@pasglop>
+In-Reply-To: <1322434096.23348.6.camel@pasglop>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+x-cbid: 11112801-3568-0000-0000-000000CB7A76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2011 02:32 AM, KAMEZAWA Hiroyuki wrote:
-> On Fri, 25 Nov 2011 15:38:16 -0200
-> Glauber Costa<glommer@parallels.com>  wrote:
->
->> Since this code is still experimental, we are leaving the exact
->> details of how to move tasks between cgroups when kernel memory
->> accounting is used as future work.
+Hi Ben,
+
+Thanks a lot for the review.
+
+On 11/28/2011 04:18 AM, Benjamin Herrenschmidt wrote:
+
+> On Thu, 2011-11-17 at 16:58 +0530, Deepthi Dharwar wrote:
+>> This patch provides cpu_idle_wait() routine for the powerpc
+>> platform which is required by the cpuidle subsystem. This
+>> routine is requied to change the idle handler on SMP systems.
+>> The equivalent routine for x86 is in arch/x86/kernel/process.c
+>> but the powerpc implementation is different.
 >>
->> For now, we simply disallow movement if there are any pending
->> accounted memory.
->>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
+>> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+>> Signed-off-by: Trinabh Gupta <g.trinabh@gmail.com>
+>> Signed-off-by: Arun R Bharadwaj <arun.r.bharadwaj@gmail.com>
 >> ---
->>   mm/memcontrol.c |   23 ++++++++++++++++++++++-
->>   1 files changed, 22 insertions(+), 1 deletions(-)
+> 
+> No, that patch also adds this idle boot override thing (can you pick a
+> shorter name for boot_option_idle_override btw ?) which seems unrelated
+> and without any explanation as to what it's supposed to be about.
+
+
+ Yes, we can pick a better and shorter name for this variable.
+ This variable is used to determine if cpuidle framework
+ needs to be enabled and pseries_driver to be loaded or not.
+ We disable cpuidle framework only when powersave_off option is set or
+ not enabled by the user.
+
+> 
+> Additionally, I'm a bit worried (but maybe we already discussed that a
+> while back, I don't know) but cpu_idle_wait() has "wait" in the name,
+> which makes me think it might need to actually -wait- for all cpus to
+> have come out of the function.
+
+
+cpu_idle_wait is used to ensure that all the CPUs discard old idle
+handler and update to new one.  Required while changing idle
+handler on SMP systems.
+
+> Now your implementation doesn't provide that guarantee. It might be
+> fine, I don't know, but if it is, you'd better document it well in the
+> comments surrounding the code, because as it is, all you do is shoot an
+> interrupt which will cause the target CPU to eventually come out of idle
+> some time in the future.
+
+
+I was hoping that sending an explicit reschedule to the cpus would
+do the trick but sure we can add some documentation around the code.
+
+> 
+> Cheers,
+> Ben.
+> 
+>>  arch/powerpc/Kconfig                 |    4 ++++
+>>  arch/powerpc/include/asm/processor.h |    2 ++
+>>  arch/powerpc/include/asm/system.h    |    1 +
+>>  arch/powerpc/kernel/idle.c           |   26 ++++++++++++++++++++++++++
+>>  4 files changed, 33 insertions(+), 0 deletions(-)
 >>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 2df5d3c..ab7e57b 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -5451,10 +5451,19 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
->>   {
->>   	int ret = 0;
->>   	struct mem_cgroup *mem = mem_cgroup_from_cont(cgroup);
->> +	struct mem_cgroup *from = mem_cgroup_from_task(p);
+>> diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+>> index b177caa..87f8604 100644
+>> --- a/arch/powerpc/Kconfig
+>> +++ b/arch/powerpc/Kconfig
+>> @@ -87,6 +87,10 @@ config ARCH_HAS_ILOG2_U64
+>>  	bool
+>>  	default y if 64BIT
+>>  
+>> +config ARCH_HAS_CPU_IDLE_WAIT
+>> +	bool
+>> +	default y
 >> +
->> +#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)&&  defined(CONFIG_INET)
->> +	if (from != mem&&  !mem_cgroup_is_root(from)&&
->> +	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
->> +		printk(KERN_WARNING "Can't move tasks between cgroups: "
->> +			"Kernel memory held. task: %s\n", p->comm);
->> +		return 1;
+>>  config GENERIC_HWEIGHT
+>>  	bool
+>>  	default y
+>> diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
+>> index eb11a44..811b7e7 100644
+>> --- a/arch/powerpc/include/asm/processor.h
+>> +++ b/arch/powerpc/include/asm/processor.h
+>> @@ -382,6 +382,8 @@ static inline unsigned long get_clean_sp(struct pt_regs *regs, int is_32)
+>>  }
+>>  #endif
+>>  
+>> +enum idle_boot_override {IDLE_NO_OVERRIDE = 0, IDLE_POWERSAVE_OFF};
+>> +
+>>  #endif /* __KERNEL__ */
+>>  #endif /* __ASSEMBLY__ */
+>>  #endif /* _ASM_POWERPC_PROCESSOR_H */
+>> diff --git a/arch/powerpc/include/asm/system.h b/arch/powerpc/include/asm/system.h
+>> index e30a13d..ff66680 100644
+>> --- a/arch/powerpc/include/asm/system.h
+>> +++ b/arch/powerpc/include/asm/system.h
+>> @@ -221,6 +221,7 @@ extern unsigned long klimit;
+>>  extern void *zalloc_maybe_bootmem(size_t size, gfp_t mask);
+>>  
+>>  extern int powersave_nap;	/* set if nap mode can be used in idle loop */
+>> +void cpu_idle_wait(void);
+>>  
+>>  /*
+>>   * Atomic exchange
+>> diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+>> index 39a2baa..b478c72 100644
+>> --- a/arch/powerpc/kernel/idle.c
+>> +++ b/arch/powerpc/kernel/idle.c
+>> @@ -39,9 +39,13 @@
+>>  #define cpu_should_die()	0
+>>  #endif
+>>  
+>> +unsigned long boot_option_idle_override = IDLE_NO_OVERRIDE;
+>> +EXPORT_SYMBOL(boot_option_idle_override);
+>> +
+>>  static int __init powersave_off(char *arg)
+>>  {
+>>  	ppc_md.power_save = NULL;
+>> +	boot_option_idle_override = IDLE_POWERSAVE_OFF;
+>>  	return 0;
+>>  }
+>>  __setup("powersave=off", powersave_off);
+>> @@ -102,6 +106,28 @@ void cpu_idle(void)
+>>  	}
+>>  }
+>>  
+>> +
+>> +/*
+>> + * cpu_idle_wait - Used to ensure that all the CPUs come out of the old
+>> + * idle loop and start using the new idle loop.
+>> + * Required while changing idle handler on SMP systems.
+>> + * Caller must have changed idle handler to the new value before the call.
+>> + */
+>> +void cpu_idle_wait(void)
+>> +{
+>> +	int cpu;
+>> +	smp_mb();
+>> +
+>> +	/* kick all the CPUs so that they exit out of old idle routine */
+>> +	get_online_cpus();
+>> +	for_each_online_cpu(cpu) {
+>> +		if (cpu != smp_processor_id())
+>> +			smp_send_reschedule(cpu);
 >> +	}
->> +#endif
->
-> Hmm, the kernel memory is not guaranteed as being held by the 'task' ?
->
-> How about
-> "Now, moving task between cgroup is disallowed while the source cgroup
->   containes kmem reference." ?
->
-> Hmm.. we need to fix this task-move/rmdir issue before production use.
->
->
-> Thanks,
-> -Kame
->
-Hi Kame,
+>> +	put_online_cpus();
+>> +}
+>> +EXPORT_SYMBOL_GPL(cpu_idle_wait);
+>> +
+>>  int powersave_nap;
+>>  
+>>  #ifdef CONFIG_SYSCTL
+>>
+>> _______________________________________________
+>> Linuxppc-dev mailing list
+>> Linuxppc-dev@lists.ozlabs.org
+>> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
+> 
 
-Let me tell you the direction I am going wrt task movement: The only 
-reasons I haven't included so far, is that I believe it needs more 
-testing, and as you know, I am right now more interested in getting past 
-the initial barriers for inclusion. I am committed to fix anything that 
-needs to be fixed - stylish or non-stylish before we remove the 
-experimental flag.
 
-So what I intend to do, is to basically
-* lock the task,
-* scan through its file descriptors list,
-* identify which of them are sockets,
-* cast them to struct sock *,
-* see if it has a cgrp associated
-* see if cgrp == from
-
-At this point we can decrement sockets allocated by 1 in from, and 
-memory_allocated by sk_forward_alloc (increasing by equal quantities in 
-the destination cgroup)
-
-I belive it will work.
-
+Regards,
+Deepthi
 
