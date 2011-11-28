@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab1K1Ohq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:37:46 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58839 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab1K1Ohp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:37:45 -0500
-Message-ID: <1322491055.13921.1.camel@phoenix>
-Subject: [PATCH] power_supply: wm97xx_battery: Use DEFINE_MUTEX() for
- work_lock
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Marek Vasut <marek.vasut@gmail.com>
-Date: Mon, 28 Nov 2011 22:37:35 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1753580Ab1K1Oj7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:39:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56249 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751291Ab1K1Oj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:39:58 -0500
+Message-ID: <4ED39D3A.6020808@redhat.com>
+Date: Mon, 28 Nov 2011 16:39:54 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/5] KVM: x86: remove the dead code of KVM_EXIT_HYPERCALL
+References: <4ED3811F.1070101@linux.vnet.ibm.com> <4ED38182.6070505@linux.vnet.ibm.com> <20111128125637.GS2557@redhat.com>
+In-Reply-To: <20111128125637.GS2557@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-work_lock can be initialized automatically with
-DEFINE_MUTEX() rather than explicitly calling mutex_init().
+On 11/28/2011 02:56 PM, Gleb Natapov wrote:
+> On Mon, Nov 28, 2011 at 08:41:38PM +0800, Xiao Guangrong wrote:
+> > KVM_EXIT_HYPERCALL is not used anymore, so remove the code
+> > 
+> Why not remove the define as well?
+>
+>
 
-This patch also removes an unused bat_lock mutex.
+It's in kvm.h, best not to touch it in case someone has
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/power/wm97xx_battery.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+  case KVM_EXIT_HYPERCALL:
+       abort();
 
-diff --git a/drivers/power/wm97xx_battery.c b/drivers/power/wm97xx_battery.c
-index cf8681c..eaa454b 100644
---- a/drivers/power/wm97xx_battery.c
-+++ b/drivers/power/wm97xx_battery.c
-@@ -25,9 +25,8 @@
- #include <linux/irq.h>
- #include <linux/slab.h>
- 
--static DEFINE_MUTEX(bat_lock);
- static struct work_struct bat_work;
--static struct mutex work_lock;
-+static DEFINE_MUTEX(work_lock);
- static int bat_status = POWER_SUPPLY_STATUS_UNKNOWN;
- static enum power_supply_property *prop;
- 
-@@ -181,8 +180,6 @@ static int __devinit wm97xx_bat_probe(struct platform_device *dev)
- 	if (dev->id != -1)
- 		return -EINVAL;
- 
--	mutex_init(&work_lock);
--
- 	if (!pdata) {
- 		dev_err(&dev->dev, "No platform_data supplied\n");
- 		return -EINVAL;
 -- 
-1.7.5.4
-
-
+error compiling committee.c: too many arguments to function
 
