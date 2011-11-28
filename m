@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab1K1Ht2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:49:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7715 "EHLO mx1.redhat.com"
+	id S1752607Ab1K1Huq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:50:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22547 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab1K1Ht0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:49:26 -0500
+	id S1751877Ab1K1Hup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:50:45 -0500
 From: Cong Wang <amwang@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dean Nelson <dnelson@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Jiri Pirko <jpirko@redhat.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: [UPDATED PATCH 21/62] net: remove the second argument of k[un]map_atomic()
-Date: Mon, 28 Nov 2011 15:48:31 +0800
-Message-Id: <1322466513-10730-1-git-send-email-amwang@redhat.com>
-In-Reply-To: <1322371662-26166-22-git-send-email-amwang@redhat.com>
-References: <1322371662-26166-22-git-send-email-amwang@redhat.com>
+        Neil Brown <neilb@suse.de>, dm-devel@redhat.com,
+        linux-raid@vger.kernel.org
+Subject: [UPDATED PATCH 57/62] dm: remove the second argument of k[un]map_atomic()
+Date: Mon, 28 Nov 2011 15:50:12 +0800
+Message-Id: <1322466612-10919-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <1322371662-26166-58-git-send-email-amwang@redhat.com>
+References: <1322371662-26166-58-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Cong Wang <amwang@redhat.com>
----
- drivers/net/ethernet/intel/e1000/e1000_main.c |    6 ++----
- drivers/net/ethernet/intel/e1000e/netdev.c    |   10 ++++------
- drivers/net/ethernet/sun/cassini.c            |    4 ++--
- 3 files changed, 8 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/e1000/e1000_main.c b/drivers/net/ethernet/intel/e1000/e1000_main.c
-index cf480b5..b194beb 100644
---- a/drivers/net/ethernet/intel/e1000/e1000_main.c
-+++ b/drivers/net/ethernet/intel/e1000/e1000_main.c
-@@ -3878,11 +3878,9 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
- 				if (length <= copybreak &&
- 				    skb_tailroom(skb) >= length) {
- 					u8 *vaddr;
--					vaddr = kmap_atomic(buffer_info->page,
--					                    KM_SKB_DATA_SOFTIRQ);
-+					vaddr = kmap_atomic(buffer_info->page);
- 					memcpy(skb_tail_pointer(skb), vaddr, length);
--					kunmap_atomic(vaddr,
--					              KM_SKB_DATA_SOFTIRQ);
-+					kunmap_atomic(vaddr);
- 					/* re-use the page, so don't erase
- 					 * buffer_info->page */
- 					skb_put(skb, length);
-diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index a855db1..8603c87 100644
---- a/drivers/net/ethernet/intel/e1000e/netdev.c
-+++ b/drivers/net/ethernet/intel/e1000e/netdev.c
-@@ -1272,9 +1272,9 @@ static bool e1000_clean_rx_irq_ps(struct e1000_adapter *adapter,
- 			 */
- 			dma_sync_single_for_cpu(&pdev->dev, ps_page->dma,
- 						PAGE_SIZE, DMA_FROM_DEVICE);
--			vaddr = kmap_atomic(ps_page->page, KM_SKB_DATA_SOFTIRQ);
-+			vaddr = kmap_atomic(ps_page->page);
- 			memcpy(skb_tail_pointer(skb), vaddr, l1);
--			kunmap_atomic(vaddr, KM_SKB_DATA_SOFTIRQ);
-+			kunmap_atomic(vaddr);
- 			dma_sync_single_for_device(&pdev->dev, ps_page->dma,
- 						   PAGE_SIZE, DMA_FROM_DEVICE);
+Acked-by: Milan Broz <mbroz@redhat.com>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+
+---
+ drivers/md/dm-crypt.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 8c2a000..db6b516 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -590,9 +590,9 @@ static int crypt_iv_lmk_gen(struct crypt_config *cc, u8 *iv,
+ 	int r = 0;
  
-@@ -1465,12 +1465,10 @@ static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter,
- 				if (length <= copybreak &&
- 				    skb_tailroom(skb) >= length) {
- 					u8 *vaddr;
--					vaddr = kmap_atomic(buffer_info->page,
--					                   KM_SKB_DATA_SOFTIRQ);
-+					vaddr = kmap_atomic(buffer_info->page);
- 					memcpy(skb_tail_pointer(skb), vaddr,
- 					       length);
--					kunmap_atomic(vaddr,
--					              KM_SKB_DATA_SOFTIRQ);
-+					kunmap_atomic(vaddr);
- 					/* re-use the page, so don't erase
- 					 * buffer_info->page */
- 					skb_put(skb, length);
-diff --git a/drivers/net/ethernet/sun/cassini.c b/drivers/net/ethernet/sun/cassini.c
-index fd40988..c22a195 100644
---- a/drivers/net/ethernet/sun/cassini.c
-+++ b/drivers/net/ethernet/sun/cassini.c
-@@ -104,8 +104,8 @@
- #include <asm/byteorder.h>
- #include <asm/uaccess.h>
+ 	if (bio_data_dir(dmreq->ctx->bio_in) == WRITE) {
+-		src = kmap_atomic(sg_page(&dmreq->sg_in), KM_USER0);
++		src = kmap_atomic(sg_page(&dmreq->sg_in));
+ 		r = crypt_iv_lmk_one(cc, iv, dmreq, src + dmreq->sg_in.offset);
+-		kunmap_atomic(src, KM_USER0);
++		kunmap_atomic(src);
+ 	} else
+ 		memset(iv, 0, cc->iv_size);
  
--#define cas_page_map(x)      kmap_atomic((x), KM_SKB_DATA_SOFTIRQ)
--#define cas_page_unmap(x)    kunmap_atomic((x), KM_SKB_DATA_SOFTIRQ)
-+#define cas_page_map(x)      kmap_atomic((x))
-+#define cas_page_unmap(x)    kunmap_atomic((x))
- #define CAS_NCPUS            num_online_cpus()
+@@ -608,14 +608,14 @@ static int crypt_iv_lmk_post(struct crypt_config *cc, u8 *iv,
+ 	if (bio_data_dir(dmreq->ctx->bio_in) == WRITE)
+ 		return 0;
  
- #define cas_skb_release(x)  netif_rx(x)
+-	dst = kmap_atomic(sg_page(&dmreq->sg_out), KM_USER0);
++	dst = kmap_atomic(sg_page(&dmreq->sg_out));
+ 	r = crypt_iv_lmk_one(cc, iv, dmreq, dst + dmreq->sg_out.offset);
+ 
+ 	/* Tweak the first block of plaintext sector */
+ 	if (!r)
+ 		crypto_xor(dst + dmreq->sg_out.offset, iv, cc->iv_size);
+ 
+-	kunmap_atomic(dst, KM_USER0);
++	kunmap_atomic(dst);
+ 	return r;
+ }
+ 
 -- 
 1.7.4.4
 
