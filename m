@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1K1TLm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:11:42 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:65399 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab1K1TLl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:11:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-Date: Mon, 28 Nov 2011 19:11:36 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>, Russell King <rmk@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-References: <20111128105633.8a8c06afce3cdccb1ce0d7b7@canb.auug.org.au>
-In-Reply-To: <20111128105633.8a8c06afce3cdccb1ce0d7b7@canb.auug.org.au>
+	id S1754041Ab1K1TLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:11:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17971 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753967Ab1K1TLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 14:11:53 -0500
+Date: Mon, 28 Nov 2011 20:06:14 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Subject: [PATCH RFC 0/5] uprobes: kill xol vma
+Message-ID: <20111128190614.GA4602@redhat.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111281911.36341.arnd@arndb.de>
-X-Provags-ID: V02:K0:o20PkXhcX1JCyj/8h4E4ADrZRN1HrSApuQT6FK/Qy3y
- NY7BxyG0sJNLqTJGXclWInIhnzdc+X3wyEWEiDuNBk1iDbxXOJ
- u+O+E30oVWOwKKzHEeA92/oNzGwr85uOmnqmcOAm0nkjES/8ep
- vph1+yhbjiFV2bFTyv0l73SoGrZKx2Ve5hSUq4PhzlzwEAweu2
- hqHn+XYZ2kOozBJ3m0ko+lYKWRxdhu6znBLYbgAVxrJQ+91N4z
- QD29K3Ll1Gcfrpol/6MX2eXfac/bkSTxcuoLy5771nKdk+ydRz
- G8HDk97CXZLKIsOJwYf12ub+ua0UdosFJBzB4pEXAzbgNFREJN
- bYZsuTqZNAlqo+FOgk4k=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 27 November 2011, Stephen Rothwell wrote:
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/plat-omap/include/plat/common.h between commit 4e65331c6bb4
-> ("ARM: 7159/1: OMAP: Introduce local common.h files") from the  tree and
-> commit 13662dc5b177 ("ARM: OMAP: HWMOD: Unify DSS resets for OMAPs") from
-> the arm-soc tree.
-> 
-> I did the obvious fixup (see below) and can carry the fix as necessary.
+Hello.
 
-Your fix looks technically correct, thanks!
+On top of this series, not for inclusion yet, just to explain what
+I mean. May be someone can test it ;)
 
-Tony, I believe what you actually want here is to move omap_dss_reset
-into mach-omap2/common.h, right?
+This series kills xol_vma. Instead we use the per_cpu-like xol slots.
 
-I guess that I will at some point pull in the first commit from
-Russell's stable devel branch, so I can do that fixup instead.
+This is much more simple and efficient. And this of course solves
+many problems we currently have with xol_vma.
 
-	Arnd
+For example, we simply can not trust it. We do not know what actually
+we are going to execute in UTASK_SSTEP mode. An application can unmap
+this area and then do mmap(PROT_EXEC|PROT_WRITE, MAP_FIXED) to fool
+uprobes.
+
+The only disadvantage is that this adds a bit more arch-dependant
+code.
+
+The main question, can this work? I know very little in this area.
+And I am not sure if this can be ported to other architectures.
+
+Please comment.
+
+Oleg.
+
+ arch/x86/include/asm/fixmap.h      |    9 +
+ arch/x86/include/asm/thread_info.h |    4 
+ arch/x86/kernel/process.c          |    6 
+ arch/x86/kernel/uprobes.c          |   26 +++-
+ include/linux/mm_types.h           |    1 
+ include/linux/uprobes.h            |   27 ----
+ kernel/fork.c                      |    2 
+ kernel/uprobes.c                   |  239 +++----------------------------------
+ 8 files changed, 71 insertions(+), 243 deletions(-)
+
