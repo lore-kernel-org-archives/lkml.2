@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab1K1HDe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:03:34 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:32867 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751189Ab1K1HDd (ORCPT
+	id S1751801Ab1K1HLb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:11:31 -0500
+Received: from ganesha.gnumonks.org ([213.95.27.120]:58972 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab1K1HLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:03:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <1322062951-1756-5-git-send-email-hannes@cmpxchg.org>
-References: <1322062951-1756-1-git-send-email-hannes@cmpxchg.org>
-	<1322062951-1756-5-git-send-email-hannes@cmpxchg.org>
-Date: Mon, 28 Nov 2011 12:33:31 +0530
-Message-ID: <CAKTCnz=CObdw0z4Qf36=afwwApuTer5C4Jp21QUko-H__q-+aA@mail.gmail.com>
-Subject: Re: [patch 4/8] mm: memcg: lookup_page_cgroup (almost) never returns NULL
-From: Balbir Singh <bsingharora@gmail.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 28 Nov 2011 02:11:30 -0500
+From: jhbird.choi@samsung.com
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, jhbird.choi@gmail.com,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [RESEND PATCH] ARM: SAMSUNG: Add s3c_setparent_clksrc in s3c_set_clksrc
+Date: Mon, 28 Nov 2011 09:31:12 +0900
+Message-Id: <1322440272-32578-1-git-send-email-jhbird.choi@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 9:12 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> From: Johannes Weiner <jweiner@redhat.com>
->
-> Pages have their corresponding page_cgroup descriptors set up before
-> they are used in userspace, and thus managed by a memory cgroup.
->
-> The only time where lookup_page_cgroup() can return NULL is in the
-> page sanity checking code that executes while feeding pages into the
-> page allocator for the first time.
->
+From: Jonghwan Choi <jhbird.choi@samsung.com>
 
-This is a legacy check from the days when we allocated PC during fault
-time on demand. It might make sense to assert on !pc in DEBUG_VM mode
-at some point in the future
+Currently we have to run clk_set_parent to change clock source.
+But if there are sources & parent defined, it means we will select a parent
+in multiple clock sources. So sources & parent are already defined,
+set the parent clock int s3c_set_clksrc.
+Then we can reduce many clk_set_parent function in driver or setup_clock function.
 
-Balbir
+Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+---
+ arch/arm/plat-samsung/clock-clksrc.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-samsung/clock-clksrc.c b/arch/arm/plat-samsung/clock-clksrc.c
+index ae8b850..98bbefc 100644
+--- a/arch/arm/plat-samsung/clock-clksrc.c
++++ b/arch/arm/plat-samsung/clock-clksrc.c
+@@ -140,6 +140,13 @@ void __init_or_cpufreq s3c_set_clksrc(struct clksrc_clk *clk, bool announce)
+ 		return;
+ 	}
+ 
++	if (clk->sources && clk->clk.parent)
++		if (s3c_setparent_clksrc(&clk->clk, clk->clk.parent)) {
++			printk(KERN_ERR "%s: bad source is %s\n",
++					clk->clk.name, clk->clk.parent->name);
++			return;
++		}
++
+ 	clksrc = __raw_readl(clk->reg_src.reg);
+ 	clksrc &= mask;
+ 	clksrc >>= clk->reg_src.shift;
+-- 
+1.7.1
+
