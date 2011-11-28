@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab1K1TKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:10:20 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15625 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1K1TKT (ORCPT
+	id S1753931Ab1K1TLm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:11:42 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:65399 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab1K1TLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:10:19 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 28 Nov 2011 11:10:18 -0800
-Subject: Re: [PATCH] net: rfkill: convert net/rfkill/* to use
- module_platform_driver()
-From: Rhyland Klein <rklein@nvidia.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-In-Reply-To: <1322471704.2730.1.camel@phoenix>
-References: <1322471704.2730.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Nov 2011 11:09:47 -0800
-Message-ID: <1322507387.3888.1.camel@rklein-linux2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 28 Nov 2011 14:11:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+Date: Mon, 28 Nov 2011 19:11:36 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>, Russell King <rmk@arm.linux.org.uk>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+References: <20111128105633.8a8c06afce3cdccb1ce0d7b7@canb.auug.org.au>
+In-Reply-To: <20111128105633.8a8c06afce3cdccb1ce0d7b7@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111281911.36341.arnd@arndb.de>
+X-Provags-ID: V02:K0:o20PkXhcX1JCyj/8h4E4ADrZRN1HrSApuQT6FK/Qy3y
+ NY7BxyG0sJNLqTJGXclWInIhnzdc+X3wyEWEiDuNBk1iDbxXOJ
+ u+O+E30oVWOwKKzHEeA92/oNzGwr85uOmnqmcOAm0nkjES/8ep
+ vph1+yhbjiFV2bFTyv0l73SoGrZKx2Ve5hSUq4PhzlzwEAweu2
+ hqHn+XYZ2kOozBJ3m0ko+lYKWRxdhu6znBLYbgAVxrJQ+91N4z
+ QD29K3Ll1Gcfrpol/6MX2eXfac/bkSTxcuoLy5771nKdk+ydRz
+ G8HDk97CXZLKIsOJwYf12ub+ua0UdosFJBzB4pEXAzbgNFREJN
+ bYZsuTqZNAlqo+FOgk4k=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-28 at 01:15 -0800, Axel Lin wrote:
-> This patch converts the drivers in net/rfkill/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
+On Sunday 27 November 2011, Stephen Rothwell wrote:
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/plat-omap/include/plat/common.h between commit 4e65331c6bb4
+> ("ARM: 7159/1: OMAP: Introduce local common.h files") from the  tree and
+> commit 13662dc5b177 ("ARM: OMAP: HWMOD: Unify DSS resets for OMAPs") from
+> the arm-soc tree.
 > 
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: "John W. Linville" <linville@tuxdriver.com>
-> Cc: Johannes Berg <johannes@sipsolutions.net>
-> Cc: Antonio Ospite <ospite@studenti.unina.it>
-> Cc: Rhyland Klein <rklein@nvidia.com>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  net/rfkill/rfkill-gpio.c      |   13 +------------
->  net/rfkill/rfkill-regulator.c |   12 +-----------
->  2 files changed, 2 insertions(+), 23 deletions(-)
-> 
-> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-> index 128677d..ca355e7 100644
-> --- a/net/rfkill/rfkill-gpio.c
-> +++ b/net/rfkill/rfkill-gpio.c
-> @@ -220,18 +220,7 @@ static struct platform_driver rfkill_gpio_driver = {
->  	},
->  };
->  
-> -static int __init rfkill_gpio_init(void)
-> -{
-> -	return platform_driver_register(&rfkill_gpio_driver);
-> -}
-> -
-> -static void __exit rfkill_gpio_exit(void)
-> -{
-> -	platform_driver_unregister(&rfkill_gpio_driver);
-> -}
-> -
-> -module_init(rfkill_gpio_init);
-> -module_exit(rfkill_gpio_exit);
-> +module_platform_driver(rfkill_gpio_driver);
->  
->  MODULE_DESCRIPTION("gpio rfkill");
->  MODULE_AUTHOR("NVIDIA");
+> I did the obvious fixup (see below) and can carry the fix as necessary.
 
-Gpio part looks good to me.
+Your fix looks technically correct, thanks!
 
-Acked-by: Rhyland Klein <rklein@nvidia.com>
+Tony, I believe what you actually want here is to move omap_dss_reset
+into mach-omap2/common.h, right?
 
+I guess that I will at some point pull in the first commit from
+Russell's stable devel branch, so I can do that fixup instead.
+
+	Arnd
