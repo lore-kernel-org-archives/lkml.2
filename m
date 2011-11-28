@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab1K1Lok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 06:44:40 -0500
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:36233 "EHLO
+	id S1753693Ab1K1Log (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 06:44:36 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:36126 "EHLO
 	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab1K1Loh (ORCPT
+	with ESMTP id S1752783Ab1K1Loe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 06:44:37 -0500
+	Mon, 28 Nov 2011 06:44:34 -0500
 X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
 X-RZG-CLASS-ID: mo05
-Message-Id: <56373b3ee7f4973ee4f505ee3f947f64b3de1089.1322479017.git.n.voss@weinmann.de>
+Message-Id: <92ee310a6e5161954d60357cd6f71993f6dad616.1322479017.git.n.voss@weinmann.de>
 In-Reply-To: <cover.1322479017.git.n.voss@weinmann.de>
 References: <cover.1322479017.git.n.voss@weinmann.de>
 From: Nikolaus Voss <n.voss@weinmann.de>
-Date: Fri, 18 Nov 2011 12:38:00 +0100
-Subject: [PATCH v8 5/7] i2c-at91.c: add SMBUS_READ_BLOCK_DATA functionality
+Date: Mon, 28 Nov 2011 12:12:05 +0100
+Subject: [PATCH v8 7/7] i2c-at91: make ckdiv bug a property of the
+ platform_device
 To: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: ben-linux@fluff.org
@@ -22,128 +23,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SMBus emulation uses I2C_M_RECV_LEN flag to indicate a SMBus block
-read operation in which the length of a transfer is inicated by the
-first received byte.
-
-Make better use of clk_prepare()/clk_unprepare().
-
-More sensible transfer timeout.
+The twi IP of AT91RM9200 has a bug which limits ckdiv to be
+less than or equal to 5. Previously, this was checked in the
+driver with cpu_is_rm9200(). This patch moves this information
+into the platform_device as suggested by Arnd Bergmann.
 
 Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
 ---
- drivers/i2c/busses/i2c-at91.c |   44 +++++++++++++++++++++++++++-------------
- 1 files changed, 30 insertions(+), 14 deletions(-)
+ arch/arm/mach-at91/at91cap9_devices.c    |    9 +++++++++
+ arch/arm/mach-at91/at91rm9200_devices.c  |    9 +++++++++
+ arch/arm/mach-at91/at91sam9260_devices.c |    9 +++++++++
+ arch/arm/mach-at91/at91sam9261_devices.c |    9 +++++++++
+ arch/arm/mach-at91/at91sam9263_devices.c |    9 +++++++++
+ arch/arm/mach-at91/at91sam9g45_devices.c |   10 ++++++++++
+ arch/arm/mach-at91/at91sam9rl_devices.c  |    9 +++++++++
+ drivers/i2c/busses/i2c-at91.c            |    7 ++++---
+ 8 files changed, 68 insertions(+), 3 deletions(-)
 
+diff --git a/arch/arm/mach-at91/at91cap9_devices.c b/arch/arm/mach-at91/at91cap9_devices.c
+index adad70d..495fd24 100644
+--- a/arch/arm/mach-at91/at91cap9_devices.c
++++ b/arch/arm/mach-at91/at91cap9_devices.c
+@@ -496,9 +496,18 @@ static struct resource twi_resources[] = {
+ 	},
+ };
+ 
++static const struct platform_device_id twi_id = {
++	/*
++	 * driver_data is "1" for hardware with ckdiv upper limit == 5
++	 * (AT91RM9200 erratum 22), "0" for twi modules without this bug
++	 */
++	.driver_data	= 0,
++};
++
+ static struct platform_device at91cap9_twi_device = {
+ 	.name		= "at91_i2c",
+ 	.id		= -1,
++	.id_entry	= &twi_id,
+ 	.resource	= twi_resources,
+ 	.num_resources	= ARRAY_SIZE(twi_resources),
+ };
+diff --git a/arch/arm/mach-at91/at91rm9200_devices.c b/arch/arm/mach-at91/at91rm9200_devices.c
+index 66591fa..8db7383 100644
+--- a/arch/arm/mach-at91/at91rm9200_devices.c
++++ b/arch/arm/mach-at91/at91rm9200_devices.c
+@@ -493,9 +493,18 @@ static struct resource twi_resources[] = {
+ 	},
+ };
+ 
++static const struct platform_device_id twi_id = {
++	/*
++	 * driver_data is "1" for hardware with ckdiv upper limit == 5
++	 * (AT91RM9200 erratum 22), "0" for twi modules without this bug
++	 */
++	.driver_data	= 1,
++};
++
+ static struct platform_device at91rm9200_twi_device = {
+ 	.name		= "at91_i2c",
+ 	.id		= -1,
++	.id_entry	= &twi_id,
+ 	.resource	= twi_resources,
+ 	.num_resources	= ARRAY_SIZE(twi_resources),
+ };
+diff --git a/arch/arm/mach-at91/at91sam9260_devices.c b/arch/arm/mach-at91/at91sam9260_devices.c
+index 25e3464..1e9a075 100644
+--- a/arch/arm/mach-at91/at91sam9260_devices.c
++++ b/arch/arm/mach-at91/at91sam9260_devices.c
+@@ -498,9 +498,18 @@ static struct resource twi_resources[] = {
+ 	},
+ };
+ 
++static const struct platform_device_id twi_id = {
++	/*
++	 * driver_data is "1" for hardware with ckdiv upper limit == 5
++	 * (AT91RM9200 erratum 22), "0" for twi modules without this bug
++	 */
++	.driver_data	= 0,
++};
++
+ static struct platform_device at91sam9260_twi_device = {
+ 	.name		= "at91_i2c",
+ 	.id		= -1,
++	.id_entry	= &twi_id,
+ 	.resource	= twi_resources,
+ 	.num_resources	= ARRAY_SIZE(twi_resources),
+ };
+diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
+index ae78f4d..16f22b7 100644
+--- a/arch/arm/mach-at91/at91sam9261_devices.c
++++ b/arch/arm/mach-at91/at91sam9261_devices.c
+@@ -315,9 +315,18 @@ static struct resource twi_resources[] = {
+ 	},
+ };
+ 
++static const struct platform_device_id twi_id = {
++	/*
++	 * driver_data is "1" for hardware with ckdiv upper limit == 5
++	 * (AT91RM9200 erratum 22), "0" for twi modules without this bug
++	 */
++	.driver_data	= 0,
++};
++
+ static struct platform_device at91sam9261_twi_device = {
+ 	.name		= "at91_i2c",
+ 	.id		= -1,
++	.id_entry	= &twi_id,
+ 	.resource	= twi_resources,
+ 	.num_resources	= ARRAY_SIZE(twi_resources),
+ };
+diff --git a/arch/arm/mach-at91/at91sam9263_devices.c b/arch/arm/mach-at91/at91sam9263_devices.c
+index ad017eb..346d258 100644
+--- a/arch/arm/mach-at91/at91sam9263_devices.c
++++ b/arch/arm/mach-at91/at91sam9263_devices.c
+@@ -571,9 +571,18 @@ static struct resource twi_resources[] = {
+ 	},
+ };
+ 
++static const struct platform_device_id twi_id = {
++	/*
++	 * driver_data is "1" for hardware with ckdiv upper limit == 5
++	 * (AT91RM9200 erratum 22), "0" for twi modules without this bug
++	 */
++	.driver_data	= 0,
++};
++
+ static struct platform_device at91sam9263_twi_device = {
+ 	.name		= "at91_i2c",
+ 	.id		= -1,
++	.id_entry	= &twi_id,
+ 	.resource	= twi_resources,
+ 	.num_resources	= ARRAY_SIZE(twi_resources),
+ };
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 8743b14..5916f0e 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -650,9 +650,18 @@ static struct resource twi0_resources[] = {
+ 	},
+ };
+ 
++static const struct platform_device_id twi_id = {
++	/*
++	 * driver_data is "1" for hardware with ckdiv upper limit == 5
++	 * (AT91RM9200 erratum 22), "0" for twi modules without this bug
++	 */
++	.driver_data	= 0,
++};
++
+ static struct platform_device at91sam9g45_twi0_device = {
+ 	.name		= "at91_i2c",
+ 	.id		= 0,
++	.id_entry	= &twi_id,
+ 	.resource	= twi0_resources,
+ 	.num_resources	= ARRAY_SIZE(twi0_resources),
+ };
+@@ -673,6 +682,7 @@ static struct resource twi1_resources[] = {
+ static struct platform_device at91sam9g45_twi1_device = {
+ 	.name		= "at91_i2c",
+ 	.id		= 1,
++	.id_entry	= &twi_id,
+ 	.resource	= twi1_resources,
+ 	.num_resources	= ARRAY_SIZE(twi1_resources),
+ };
+diff --git a/arch/arm/mach-at91/at91sam9rl_devices.c b/arch/arm/mach-at91/at91sam9rl_devices.c
+index 628eb56..bec28b5 100644
+--- a/arch/arm/mach-at91/at91sam9rl_devices.c
++++ b/arch/arm/mach-at91/at91sam9rl_devices.c
+@@ -350,9 +350,18 @@ static struct resource twi_resources[] = {
+ 	},
+ };
+ 
++static const struct platform_device_id twi_id = {
++	/*
++	 * driver_data is "1" for hardware with ckdiv upper limit == 5
++	 * (AT91RM9200 erratum 22), "0" for twi modules without this bug
++	 */
++	.driver_data	= 0,
++};
++
+ static struct platform_device at91sam9rl_twi_device = {
+ 	.name		= "at91_i2c",
+ 	.id		= -1,
++	.id_entry	= &twi_id,
+ 	.resource	= twi_resources,
+ 	.num_resources	= ARRAY_SIZE(twi_resources),
+ };
 diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-index 1c9d329..3ef89e9 100644
+index 34deef4..4364dd1 100644
 --- a/drivers/i2c/busses/i2c-at91.c
 +++ b/drivers/i2c/busses/i2c-at91.c
-@@ -32,7 +32,7 @@
- #include "i2c-at91.h"
+@@ -27,8 +27,6 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
  
+-#include <mach/cpu.h>
+-
  #define TWI_CLK_HZ		100000			/* max 400 Kbits/s */
--#define AT91_I2C_TIMEOUT	msecs_to_jiffies(10)	/* transfer timeout */
-+#define AT91_I2C_TIMEOUT	msecs_to_jiffies(100)	/* transfer timeout */
+ #define AT91_I2C_TIMEOUT	msecs_to_jiffies(100)	/* transfer timeout */
  
- struct at91_twi_dev {
- 	struct device		*dev;
-@@ -41,6 +41,7 @@ struct at91_twi_dev {
- 	struct clk		*clk;
- 	u8			*buf;
- 	size_t			buf_len;
-+	struct i2c_msg		*msg;
+@@ -74,6 +72,7 @@ struct at91_twi_dev {
  	int			irq;
  	unsigned		transfer_status;
  	struct i2c_adapter	adapter;
-@@ -113,9 +114,18 @@ static void at91_twi_write_next_byte(struct at91_twi_dev *dev)
- static void at91_twi_read_next_byte(struct at91_twi_dev *dev)
- {
- 	*dev->buf = at91_twi_read(dev, AT91_TWI_RHR) & 0xff;
-+	--dev->buf_len;
++	bool			has_ckdiv_limit_bug;
+ };
+ 
+ static unsigned at91_twi_read(struct at91_twi_dev *dev, unsigned reg)
+@@ -110,7 +109,7 @@ static void __devinit at91_set_twi_clock(struct at91_twi_dev *dev, int twi_clk)
+ 	int ckdiv = fls(div >> 8);
+ 	const int cdiv = div >> ckdiv;
+ 
+-	if (cpu_is_at91rm9200() && (ckdiv > 5)) {
++	if (dev->has_ckdiv_limit_bug && (ckdiv > 5)) {
+ 		dev_warn(dev->dev, "AT91RM9200 erratum 22: using ckdiv = 5.\n");
+ 		ckdiv = 5;
+ 	}
+@@ -314,6 +313,8 @@ static int __devinit at91_twi_probe(struct platform_device *pdev)
+ 		goto err_release_region;
+ 	}
+ 
++	dev->has_ckdiv_limit_bug = pdev->id_entry->driver_data == 1;
 +
-+	/* handle I2C_SMBUS_BLOCK_DATA */
-+	if (unlikely(dev->msg->flags & I2C_M_RECV_LEN)) {
-+		dev->msg->flags &= ~I2C_M_RECV_LEN;
-+		dev->buf_len += *dev->buf;
-+		dev->msg->len = dev->buf_len + 1;
-+		dev_dbg(dev->dev, "received block length %d\n", dev->buf_len);
-+	}
+ 	init_completion(&dev->cmd_complete);
  
- 	/* send stop if second but last byte has been read */
--	if (--dev->buf_len == 1)
-+	if (dev->buf_len == 1)
- 		at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_STOP);
- 
- 	dev_dbg(dev->dev, "read 0x%x, to go %d\n", *dev->buf, dev->buf_len);
-@@ -144,17 +154,21 @@ static irqreturn_t atmel_twi_interrupt(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--static int at91_do_twi_transfer(struct at91_twi_dev *dev, bool is_read)
-+static int at91_do_twi_transfer(struct at91_twi_dev *dev)
- {
- 	int ret;
- 
-+	dev_dbg(dev->dev, "transfer: %s %d bytes.\n",
-+		(dev->msg->flags & I2C_M_RD) ? "read" : "write", dev->buf_len);
-+
- 	INIT_COMPLETION(dev->cmd_complete);
--	if (is_read) {
--		if (dev->buf_len <= 1)
--			at91_twi_write(dev, AT91_TWI_CR,
--				       AT91_TWI_START | AT91_TWI_STOP);
--		else
--			at91_twi_write(dev, AT91_TWI_CR, AT91_TWI_START);
-+	if (dev->msg->flags & I2C_M_RD) {
-+		unsigned start_flags = AT91_TWI_START;
-+
-+		/* if only one byte is to be read, immediately stop transfer */
-+		if (dev->buf_len <= 1 && !(dev->msg->flags & I2C_M_RECV_LEN))
-+			start_flags |= AT91_TWI_STOP;
-+		at91_twi_write(dev, AT91_TWI_CR, start_flags);
- 		at91_twi_write(dev, AT91_TWI_IER,
- 			       AT91_TWI_TXCOMP | AT91_TWI_RXRDY);
- 	} else {
-@@ -229,17 +243,17 @@ static int at91_twi_xfer(struct i2c_adapter *adap, struct i2c_msg *msg, int num)
- 
- 	dev->buf_len = m_start->len;
- 	dev->buf = m_start->buf;
-+	dev->msg = m_start;
- 
--	ret = at91_do_twi_transfer(dev, m_start->flags & I2C_M_RD);
--	if (ret < 0)
--		return ret;
-+	ret = at91_do_twi_transfer(dev);
- 
--	return num;
-+	return (ret < 0) ? ret : num;
- }
- 
- static u32 at91_twi_func(struct i2c_adapter *adapter)
- {
--	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL
-+		| I2C_FUNC_SMBUS_READ_BLOCK_DATA;
- }
- 
- static struct i2c_algorithm at91_twi_algorithm = {
-@@ -326,6 +340,7 @@ err_unuse_clocks:
- 	iounmap(dev->base);
- err_mem_ioremap:
- 	clk_disable(dev->clk);
-+	clk_unprepare(dev->clk);
- 	clk_put(dev->clk);
- err_free_mem:
- 	kfree(dev);
-@@ -343,6 +358,7 @@ static int __devexit at91_twi_remove(struct platform_device *pdev)
- 
- 	rc = i2c_del_adapter(&dev->adapter);
- 	clk_disable(dev->clk);
-+	clk_unprepare(dev->clk);
- 	clk_put(dev->clk);
- 	free_irq(dev->irq, dev);
- 	iounmap(dev->base);
+ 	dev->dev = &pdev->dev;
 -- 
 1.7.5.4
 
