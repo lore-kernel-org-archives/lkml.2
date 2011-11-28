@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1K1Wir (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:38:47 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:58992 "EHLO e5.ny.us.ibm.com"
+	id S1754706Ab1K1Wiy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 17:38:54 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:47829 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754099Ab1K1Wik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:38:40 -0500
-Subject: [PATCH 06/14] crc32.c in its original version freely mixed u32,
-	__le32 and __be32 types
+	id S1754618Ab1K1Wiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 17:38:51 -0500
+Subject: [PATCH 14/14] crc32: Select an algorithm via kconfig
 To: Andrew Morton <akpm@linux-foundation.org>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
         "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,70 +19,102 @@ Cc: Theodore Tso <tytso@mit.edu>,
         linux-crypto <linux-crypto@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
-Date: Mon, 28 Nov 2011 14:37:45 -0800
-Message-ID: <20111128223745.28705.87905.stgit@elm3c44.beaverton.ibm.com>
+Date: Mon, 28 Nov 2011 14:38:44 -0800
+Message-ID: <20111128223844.28705.41191.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
 References: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11112822-5930-0000-0000-000002A5BD18
+x-cbid: 11112822-9360-0000-0000-0000010BDB4A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-which caused warnings from sparse with __CHECK_ENDIAN__.
-This patch fixes these by forcing the types to u32.
+Allow the kernel builder to choose a crc32* algorithm for the kernel.
 
-Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- lib/crc32.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ lib/Kconfig     |   36 ++++++++++++++++++++++++++++++++++++
+ lib/crc32defs.h |   18 ++++++++++++++++++
+ 2 files changed, 54 insertions(+), 0 deletions(-)
 
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 2a87ea2..ff6bb9a 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -28,13 +28,13 @@
- #include "crc32defs.h"
+diff --git a/lib/Kconfig b/lib/Kconfig
+index cfddafc..e9b9134 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -70,6 +70,42 @@ config CRC32_SELFTEST
+ 	  and crc32_be over byte strings with random alignment and length
+ 	  and computes the total elapsed time and number of bytes processed.
  
- #if CRC_LE_BITS == 8
--# define tole(x) __constant_cpu_to_le32(x)
-+# define tole(x) (__force u32) __constant_cpu_to_le32(x)
- #else
- # define tole(x) (x)
- #endif
++choice
++	prompt "CRC32 implementation"
++	depends on CRC32
++	default CRC32_SLICEBY8
++
++config CRC32_SLICEBY8
++	bool "Slice by 8 bytes"
++	help
++	  Calculate checksum 8 bytes at a time with a clever slicing algorithm.
++	  This is the fastest algorithm, but comes with a 8KiB lookup table.
++	  Most modern processors have enough cache that this shouldn't be
++	  a problem.
++
++	  If you don't know which to choose, choose this one.
++
++config CRC32_SLICEBY4
++	bool "Slice by 4 bytes"
++	help
++	  Calculate checksum 4 bytes at a time with a clever slicing algorithm.
++	  This is a bit slower than slice by 8, but has a smaller 4KiB lookup
++	  table.
++
++config CRC32_SARWATE
++	bool "Sarwate's Algorithm (one byte at a time)"
++	help
++	  Calculate checksum a byte at a time using Sarwate's algorithm.  This
++	  is not particularly fast, but has a small 256 byte lookup table.
++
++config CRC32_BIT
++	bool "Classic Algorithm (one bit at a time)"
++	help
++	  Calculate checksum one bit at a time.  This is VERY slow, but has
++	  no lookup table.  This is provided as a debugging option.
++
++endchoice
++
+ config CRC7
+ 	tristate "CRC7 functions"
+ 	help
+diff --git a/lib/crc32defs.h b/lib/crc32defs.h
+index 6fd1917..64cba2c 100644
+--- a/lib/crc32defs.h
++++ b/lib/crc32defs.h
+@@ -13,6 +13,24 @@
+  */
+ #define CRC32C_POLY_LE 0x82F63B78
  
- #if CRC_BE_BITS == 8
--# define tobe(x) __constant_cpu_to_be32(x)
-+# define tobe(x) (__force u32) __constant_cpu_to_be32(x)
- #else
- # define tobe(x) (x)
- #endif
-@@ -128,9 +128,9 @@ u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
- # elif CRC_LE_BITS == 8
- 	const u32      (*tab)[] = crc32table_le;
- 
--	crc = __cpu_to_le32(crc);
-+	crc = (__force u32) __cpu_to_le32(crc);
- 	crc = crc32_body(crc, p, len, tab);
--	crc = __le32_to_cpu(crc);
-+	crc = __le32_to_cpu((__force __le32)crc);
- #endif
- 	return crc;
- }
-@@ -171,9 +171,9 @@ u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
- # elif CRC_BE_BITS == 8
- 	const u32      (*tab)[] = crc32table_be;
- 
--	crc = __cpu_to_be32(crc);
-+	crc = (__force u32) __cpu_to_be32(crc);
- 	crc = crc32_body(crc, p, len, tab);
--	crc = __be32_to_cpu(crc);
-+	crc = __be32_to_cpu((__force __be32)crc);
- # endif
- 	return crc;
- }
++/* Try to choose an implementation variant via Kconfig */
++#ifdef CONFIG_CRC32_SLICEBY8
++# define CRC_LE_BITS 64
++# define CRC_BE_BITS 64
++#endif
++#ifdef CONFIG_CRC32_SLICEBY4
++# define CRC_LE_BITS 32
++# define CRC_BE_BITS 32
++#endif
++#ifdef CONFIG_CRC32_SARWATE
++# define CRC_LE_BITS 8
++# define CRC_BE_BITS 8
++#endif
++#ifdef CONFIG_CRC32_BIT
++# define CRC_LE_BITS 1
++# define CRC_BE_BITS 1
++#endif
++
+ /*
+  * How many bits at a time to use.  Valid values are 1, 2, 4, 8, 32 and 64.
+  * For less performance-sensitive, use 4 or 8 to save table size.
 
