@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1K1W6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 17:58:32 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:54614 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab1K1W6b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 17:58:31 -0500
-Date: Mon, 28 Nov 2011 22:58:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] mfd: Enable register cache for wm8994 devices
-Message-ID: <20111128225829.GC16133@sirena.org.uk>
-References: <20111128224017.GA13163@opensource.wolfsonmicro.com>
- <1322520274-13789-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1322520274-13789-8-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1754681Ab1K1XDR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:03:17 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:59702 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752273Ab1K1XDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:03:16 -0500
+Date: Mon, 28 Nov 2011 15:02:07 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 9/9] tile: Make tile use the new
+ is_idle_task() API
+Message-ID: <20111128230207.GN2346@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111115202736.GA11030@linux.vnet.ibm.com>
+ <1321388885-11211-9-git-send-email-paulmck@linux.vnet.ibm.com>
+ <4ECD276F.3050801@tilera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322520274-13789-8-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Cookie: To stay youthful, stay useful.
+In-Reply-To: <4ECD276F.3050801@tilera.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+x-cbid: 11112823-5930-0000-0000-000002A5DFA5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 10:44:34PM +0000, Mark Brown wrote:
-> As part of this we provide information about the registers that exist in
-> the device to the regmap core, drop the small amount of cache that the
-> core had been using and let regmap do the sync.
+On Wed, Nov 23, 2011 at 12:03:43PM -0500, Chris Metcalf wrote:
+> (Narrowing cc's)
+> 
+> On 11/15/2011 3:30 PM, Paul E. McKenney wrote:
+> > From: Paul E. McKenney <paul.mckenney@linaro.org>
+> > 
+> > Change from direct comparison of ->pid with zero to is_idle_task().
+> > 
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  arch/tile/mm/fault.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+> 
+> Please cc me on changes to tile architecture files - thanks!
+> I picked this up while belatedly catching up on LKML.
 
-Oh, and I forgot that this one depends on a regmap patch (regmap: Track
-if the register cache is dirty and suppress unneeded syncs).  I've
-rebuilt the branch with the appropriate merge in it.
+My apologies -- I have added your Acked-by (thank you!) and will try
+harder to get the CCs right in the future.
+
+							Thanx, Paul
+
