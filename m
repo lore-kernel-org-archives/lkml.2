@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab1K1OCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 09:02:36 -0500
-Received: from mga03.intel.com ([143.182.124.21]:26801 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab1K1OCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 09:02:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,584,1315206000"; 
-   d="scan'208";a="79785159"
-Message-ID: <4ED39473.9080600@linux.intel.com>
-Date: Mon, 28 Nov 2011 06:02:27 -0800
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1752801Ab1K1OFP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 09:05:15 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:42704 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab1K1OFO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 09:05:14 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        paulus@samba.org, mingo@elte.hu, acme@ghostprotocols.net,
-        asharma@fb.com, devel@openvz.org, dsahern@gmail.com,
-        linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH 7/7] event: add tracepoint for accounting block time
-References: <1322471015-107825-1-git-send-email-avagin@openvz.org>  <1322471015-107825-8-git-send-email-avagin@openvz.org> <1322480531.2921.107.camel@twins>
-In-Reply-To: <1322480531.2921.107.camel@twins>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111129005341.c5caf7f353876a0dd4764d3c@canb.auug.org.au>
+References: <20111116113007.5656a7b4823ba085a46c57ae@canb.auug.org.au>
+	<20111125124913.405fc8360a185f3116adb5ec@canb.auug.org.au>
+	<20111125103011.18e167cd@lxorguk.ukuu.org.uk>
+	<CAPM=9twsvX=hFS9S01-ht8JHhAAy4uP8N5NxPUDY9UpbsvQWmw@mail.gmail.com>
+	<20111128135317.a99880b234c6c060a622fa31@canb.auug.org.au>
+	<20111128113056.2099e4c3@lxorguk.ukuu.org.uk>
+	<20111129001353.399142710ab77822b29552f0@canb.auug.org.au>
+	<20111128131847.48bffb93@lxorguk.ukuu.org.uk>
+	<20111129005341.c5caf7f353876a0dd4764d3c@canb.auug.org.au>
+Date: Mon, 28 Nov 2011 14:05:13 +0000
+Message-ID: <CAPM=9ty_SRGsGaRyDAZbXcdaLXOTapZ2v4J6hyBArfntA8HqDA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the drm tree
+From: Dave Airlie <airlied@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Dave Airlie <airlied@linux.ie>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2011 3:42 AM, Peter Zijlstra wrote:
-> On Mon, 2011-11-28 at 12:03 +0300, Andrew Vagin wrote:
->> This tracepoint shows how long a task is sleeping in uninterruptible state.
+On Mon, Nov 28, 2011 at 1:53 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Alan,
+>
+> On Mon, 28 Nov 2011 13:18:47 +0000 Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 >>
->> E.g.
->> It may show how long and where a mutex is waited.
-> 
-> Fair enough, makes one wonder how much it would take to make
-> account_scheduler_latency() go away..
+>> > > Well its very hard to sort stuff out when you are juggling a cross tree
+>> > > set of dependancies and someone pointlessly stops one of them being
+>> > > visible in next for ten days.
+>> >
+>> > The mess in the drm tree has nothing to do with the staging tree.
+>>
+>> I would suggest you re-read the paragraph above, and the mails I sent you
+>> about marking the staging gma500 tree broken (which given nothing
+>> happened in response to any of them I imagine you didn't).
+>
+> When I originally reported this problem, you responded:
+>
+>> gma500 is frozen pending Dave Airlie's applying the patches moving it out
+>> of staging.
+>>
+>> <Prod, prod>
+>
+> Which I assumed was aimed at Dave.  Then Jesse (whose changes broke the
+> code in staging) responded with a patch which I assumed that Dave would
+> do something with.  Then the next day you responded with:
+>
+>> If the staging gma500 is causing this still please resolve it by marking
+>> the GMA500 in staging "&& BROKEN" for the moment.
+>
+> And maybe I should have done something then.  I fall back on the excuse
+> that I have about 200 trees to merge every day and when I use to fix
+> things for people I used to have lots of 12-16 hour days ...
+>
+>> And if you still think that blocking the DRM tree from -next for ten days
+>> thus stopping all sorts of other integration work and forcing people's
+>> hands on moving from staging and the like didn't cause the problems and
+>> is the right policy then we'll just have to agree to differ.
+>
+> If you are trying to get something merged into the drm tree, you should
+> be working with the drm tree and with the drm maintainer, not
+> linux-next.  Linux-next is here to find integration problems between
+> trees and across architectures not to find problems with changes within
+> one tree.
+>
+> And I repeat, the breakage today is nothing to do with the staging tree,
+> it is in the drm tree and how your gma500 changes were merged there (and
+> to be clear, there is nothing wrong with the gma500 changes per se).
+>
+> In the future, I will try to remember to "kill staging first", but this
+> is the first time it has come up since staging started being built by an
+> allmodconfig build (which it used not to be - and that change was not my
+> choice).
 
-I would *love* to switch latencytop to using trace points / perf events.
-But as long as this just means I get yelled at more for using "internal
-ABIs" and the like at various occasions, I'm rather hesitant to turn
-more tools into using perf.
+Yeah I've tracked it down here, I had messed up the configs locally so
+Alan's code wasn't built, I'll pile some fixes on top of it today.
 
-(and we all know what the next steps to resolve this are, they just have
-not happened yet; not all hope is lost)
+Dave.
