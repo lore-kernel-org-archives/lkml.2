@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab1K1X1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:27:07 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:34396 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754982Ab1K1X06 (ORCPT
+	id S1755547Ab1K1X1Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:27:25 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39312 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab1K1X1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:26:58 -0500
-Subject: [PATCH 03/22] ext4: Record the checksum algorithm in use in the
-	superblock
+	Mon, 28 Nov 2011 18:27:19 -0500
+Subject: [PATCH 06/22] ext4: Calculate and verify inode checksums
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -21,86 +20,269 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Mon, 28 Nov 2011 15:26:36 -0800
-Message-ID: <20111128232636.19194.92115.stgit@elm3c44.beaverton.ibm.com>
+Date: Mon, 28 Nov 2011 15:26:56 -0800
+Message-ID: <20111128232656.19194.82262.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
 References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11112823-2398-0000-0000-0000025A8147
+x-cbid: 11112823-1780-0000-0000-000001440C31
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000235; HX=3.00000178; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00091607; UDB=6.00024321; UTC=2011-11-28
+ 23:27:17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Record the type of checksum algorithm we're using for metadata in the
-superblock, in case we ever want/need to change the algorithm.
+This patch introduces to ext4 the ability to calculate and verify inode
+checksums.  This requires the use of a new ro compatibility flag and some
+accompanying e2fsprogs patches to provide the relevant features in tune2fs and
+e2fsck.  The inode generation changes have been integrated into this patch.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ext4.h  |    5 ++++-
- fs/ext4/super.c |   18 ++++++++++++++++++
- 2 files changed, 22 insertions(+), 1 deletions(-)
+ fs/ext4/ext4.h   |   10 +++--
+ fs/ext4/ialloc.c |   13 ++++++
+ fs/ext4/inode.c  |  111 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+ fs/ext4/ioctl.c  |    7 +++
+ 4 files changed, 130 insertions(+), 11 deletions(-)
 
 
 diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 414c2f8..e496e72 100644
+index 4022320..6953d9f 100644
 --- a/fs/ext4/ext4.h
 +++ b/fs/ext4/ext4.h
-@@ -982,6 +982,9 @@ extern void ext4_set_bits(void *bm, int cur, int len);
- #define EXT4_ERRORS_PANIC		3	/* Panic */
- #define EXT4_ERRORS_DEFAULT		EXT4_ERRORS_CONTINUE
+@@ -633,7 +633,8 @@ struct ext4_inode {
+ 			__le16	l_i_file_acl_high;
+ 			__le16	l_i_uid_high;	/* these 2 fields */
+ 			__le16	l_i_gid_high;	/* were reserved2[0] */
+-			__u32	l_i_reserved2;
++			__le16	l_i_checksum_lo;/* crc32c(uuid+inum+inode) LE */
++			__le16	l_i_reserved;
+ 		} linux2;
+ 		struct {
+ 			__le16	h_i_reserved1;	/* Obsoleted fragment number/size which are removed in ext4 */
+@@ -649,7 +650,7 @@ struct ext4_inode {
+ 		} masix2;
+ 	} osd2;				/* OS dependent 2 */
+ 	__le16	i_extra_isize;
+-	__le16	i_pad1;
++	__le16	i_checksum_hi;	/* crc32c(uuid+inum+inode) BE */
+ 	__le32  i_ctime_extra;  /* extra Change time      (nsec << 2 | epoch) */
+ 	__le32  i_mtime_extra;  /* extra Modification time(nsec << 2 | epoch) */
+ 	__le32  i_atime_extra;  /* extra Access time      (nsec << 2 | epoch) */
+@@ -751,7 +752,7 @@ do {									       \
+ #define i_gid_low	i_gid
+ #define i_uid_high	osd2.linux2.l_i_uid_high
+ #define i_gid_high	osd2.linux2.l_i_gid_high
+-#define i_reserved2	osd2.linux2.l_i_reserved2
++#define i_checksum_lo	osd2.linux2.l_i_checksum_lo
  
-+/* Metadata checksum algorithm codes */
-+#define EXT4_CRC32C_CHKSUM		1
+ #elif defined(__GNU__)
+ 
+@@ -891,6 +892,9 @@ struct ext4_inode_info {
+ 	 */
+ 	tid_t i_sync_tid;
+ 	tid_t i_datasync_tid;
 +
++	/* crc32c(uuid+inum) */
++	__u32 i_uuid_inum_csum;
+ };
+ 
  /*
-  * Structure of the super block
-  */
-@@ -1068,7 +1071,7 @@ struct ext4_super_block {
- 	__le64  s_mmp_block;            /* Block for multi-mount protection */
- 	__le32  s_raid_stripe_width;    /* blocks on all data disks (N*stride)*/
- 	__u8	s_log_groups_per_flex;  /* FLEX_BG group size */
--	__u8	s_reserved_char_pad;
-+	__u8	s_checksum_type;	/* metadata checksum algorithm used */
- 	__le16  s_reserved_pad;
- 	__le64	s_kbytes_written;	/* nr of lifetime kilobytes written */
- 	__le32	s_snapshot_inum;	/* Inode number of active snapshot */
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 3858767..a56c14e 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -111,6 +111,16 @@ static struct file_system_type ext3_fs_type = {
- #define IS_EXT3_SB(sb) (0)
- #endif
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 00beb4f..6151a68 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -892,6 +892,19 @@ got:
+ 	inode->i_generation = sbi->s_next_generation++;
+ 	spin_unlock(&sbi->s_next_gen_lock);
  
-+static int ext4_verify_csum_type(struct super_block *sb,
-+				 struct ext4_super_block *es)
-+{
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return 1;
-+
-+	return es->s_checksum_type == EXT4_CRC32C_CHKSUM;
-+}
-+
- void *ext4_kvmalloc(size_t size, gfp_t flags)
- {
- 	void *ret;
-@@ -3182,6 +3192,14 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		goto cantfind_ext4;
- 	sbi->s_kbytes_written = le64_to_cpu(es->s_kbytes_written);
- 
-+	/* Check for a known checksum algorithm */
-+	if (!ext4_verify_csum_type(sb, es)) {
-+		ext4_msg(sb, KERN_ERR, "VFS: Found ext4 filesystem with "
-+			 "unknown checksum algorithm.");
-+		silent = 1;
-+		goto cantfind_ext4;
++	/* Precompute second piece of csum */
++	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
++			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
++		__u32 csum;
++		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++		__le32 inum = cpu_to_le32(inode->i_ino);
++		__le32 gen = cpu_to_le32(inode->i_generation);
++		csum = ext4_chksum(sbi, sbi->s_uuid_csum, (__u8 *)&inum,
++				   sizeof(inum));
++		ei->i_uuid_inum_csum = ext4_chksum(sbi, csum, (__u8 *)&gen,
++						   sizeof(gen));
 +	}
 +
- 	/* Set defaults before we parse the mount options */
- 	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
- 	set_opt(sb, INIT_INODE_TABLE);
+ 	ext4_clear_state_flags(ei); /* Only relevant on 32-bit archs */
+ 	ext4_set_inode_state(inode, EXT4_STATE_NEW);
+ 
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 47eeabc..d11b7cb 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -48,6 +48,73 @@
+ 
+ #define MPAGE_DA_EXTENT_TAIL 0x01
+ 
++static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
++			      struct ext4_inode_info *ei)
++{
++	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++	__u16 csum_lo;
++	__u16 csum_hi = 0;
++	__u32 csum;
++
++	csum_lo = raw->i_checksum_lo;
++	raw->i_checksum_lo = 0;
++	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
++	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
++		csum_hi = raw->i_checksum_hi;
++		raw->i_checksum_hi = 0;
++	}
++
++	csum = ext4_chksum(sbi, ei->i_uuid_inum_csum, (__u8 *)raw,
++			   EXT4_INODE_SIZE(inode->i_sb));
++
++	raw->i_checksum_lo = csum_lo;
++	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
++	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
++		raw->i_checksum_hi = csum_hi;
++
++	return csum;
++}
++
++static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw,
++				  struct ext4_inode_info *ei)
++{
++	__u32 provided, calculated;
++
++	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
++	    cpu_to_le32(EXT4_OS_LINUX) ||
++	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return 1;
++
++	provided = le16_to_cpu(raw->i_checksum_lo);
++	calculated = ext4_inode_csum(inode, raw, ei);
++	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
++	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
++		provided |= ((__u32)le16_to_cpu(raw->i_checksum_hi)) << 16;
++	else
++		calculated &= 0xFFFF;
++
++	return provided == calculated;
++}
++
++static void ext4_inode_csum_set(struct inode *inode, struct ext4_inode *raw,
++				struct ext4_inode_info *ei)
++{
++	__u32 csum;
++
++	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
++	    cpu_to_le32(EXT4_OS_LINUX) ||
++	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return;
++
++	csum = ext4_inode_csum(inode, raw, ei);
++	raw->i_checksum_lo = cpu_to_le16(csum & 0xFFFF);
++	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
++	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
++		raw->i_checksum_hi = cpu_to_le16(csum >> 16);
++}
++
+ static inline int ext4_begin_ordered_truncate(struct inode *inode,
+ 					      loff_t new_size)
+ {
+@@ -3785,6 +3852,39 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ 	if (ret < 0)
+ 		goto bad_inode;
+ 	raw_inode = ext4_raw_inode(&iloc);
++
++	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE) {
++		ei->i_extra_isize = le16_to_cpu(raw_inode->i_extra_isize);
++		if (EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize >
++		    EXT4_INODE_SIZE(inode->i_sb)) {
++			EXT4_ERROR_INODE(inode, "bad extra_isize (%u != %u)",
++				EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize,
++				EXT4_INODE_SIZE(inode->i_sb));
++			ret = -EIO;
++			goto bad_inode;
++		}
++	} else
++		ei->i_extra_isize = 0;
++
++	/* Precompute second piece of csum */
++	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
++			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
++		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++		__u32 csum;
++		__le32 inum = cpu_to_le32(inode->i_ino);
++		__le32 gen = raw_inode->i_generation;
++		csum = ext4_chksum(sbi, sbi->s_uuid_csum, (__u8 *)&inum,
++				   sizeof(inum));
++		ei->i_uuid_inum_csum = ext4_chksum(sbi, csum, (__u8 *)&gen,
++						   sizeof(gen));
++	}
++
++	if (!ext4_inode_csum_verify(inode, raw_inode, ei)) {
++		EXT4_ERROR_INODE(inode, "checksum invalid");
++		ret = -EIO;
++		goto bad_inode;
++	}
++
+ 	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
+ 	inode->i_uid = (uid_t)le16_to_cpu(raw_inode->i_uid_low);
+ 	inode->i_gid = (gid_t)le16_to_cpu(raw_inode->i_gid_low);
+@@ -3862,12 +3962,6 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ 	}
+ 
+ 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE) {
+-		ei->i_extra_isize = le16_to_cpu(raw_inode->i_extra_isize);
+-		if (EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize >
+-		    EXT4_INODE_SIZE(inode->i_sb)) {
+-			ret = -EIO;
+-			goto bad_inode;
+-		}
+ 		if (ei->i_extra_isize == 0) {
+ 			/* The extra space is currently unused. Use it. */
+ 			ei->i_extra_isize = sizeof(struct ext4_inode) -
+@@ -3879,8 +3973,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
+ 			if (*magic == cpu_to_le32(EXT4_XATTR_MAGIC))
+ 				ext4_set_inode_state(inode, EXT4_STATE_XATTR);
+ 		}
+-	} else
+-		ei->i_extra_isize = 0;
++	}
+ 
+ 	EXT4_INODE_GET_XTIME(i_ctime, inode, raw_inode);
+ 	EXT4_INODE_GET_XTIME(i_mtime, inode, raw_inode);
+@@ -4105,6 +4198,8 @@ static int ext4_do_update_inode(handle_t *handle,
+ 		raw_inode->i_extra_isize = cpu_to_le16(ei->i_extra_isize);
+ 	}
+ 
++	ext4_inode_csum_set(inode, raw_inode, ei);
++
+ 	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
+ 	rc = ext4_handle_dirty_metadata(handle, NULL, bh);
+ 	if (!err)
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index a567968..4217f99 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -150,6 +150,13 @@ flags_out:
+ 		if (!inode_owner_or_capable(inode))
+ 			return -EPERM;
+ 
++		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
++			ext4_warning(sb, "Setting inode version is not "
++				     "supported with metadata_csum enabled.");
++			return -ENOTTY;
++		}
++
+ 		err = mnt_want_write(filp->f_path.mnt);
+ 		if (err)
+ 			return err;
 
