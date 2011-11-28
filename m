@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab1K1Mtn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 07:49:43 -0500
-Received: from vm4.telegraphics.com.au ([98.124.60.149]:37810 "EHLO
-	vps4.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab1K1Mtm (ORCPT
+	id S1753993Ab1K1Muv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 07:50:51 -0500
+Received: from bipbip.grupopie.com ([195.23.16.24]:47432 "EHLO
+	bipbip.grupopie.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab1K1Muv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 07:49:42 -0500
-Date: Mon, 28 Nov 2011 23:49:35 +1100 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Axel Lin <axel.lin@gmail.com>
-cc: linux-kernel@vger.kernel.org,
-        Thomas Bogendoerfer <tsbogend@alpha.franken.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] scsi: convert drivers/scsi/* to use
- module_platform_driver()
-In-Reply-To: <1322315527.15832.1.camel@phoenix>
-Message-ID: <alpine.LNX.2.00.1111282345090.26744@nippy.intranet>
-References: <1322315527.15832.1.camel@phoenix>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 28 Nov 2011 07:50:51 -0500
+Message-ID: <4ED3839E.6080702@grupopie.com>
+Date: Mon, 28 Nov 2011 12:50:38 +0000
+From: Paulo Marques <pmarques@grupopie.com>
+Organization: Grupo PIE
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Nuno Santos <nsantos@edigma.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Floating point usage inside kernel
+References: <S1754322Ab1KYK6W/20111125105822Z+929@vger.kernel.org> <4ECF789F.3040001@edigma.com> <4ECF8528.9080800@gmail.com> <4ECFBF56.4000002@edigma.com> <4ECFCAD5.5040606@grupopie.com> <4ECFD488.4060805@edigma.com> <4ECFDA1D.3090303@grupopie.com> <4ED35E52.5010008@edigma.com>
+In-Reply-To: <4ED35E52.5010008@edigma.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nuno Santos wrote:
+> Ok, understood!
+> 
+> Just one more question. To do this, do I need to change the data type
+> from double to int?
 
-On Sat, 26 Nov 2011, Axel Lin wrote:
+You shouldn't have any "double" declarations on kernel code or the
+compiler might start using floating point instructions to handle it.
 
-> This patch converts the drivers in drivers/scsi/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-...
->  
-> -static int __init jazz_esp_init(void)
-...
-> +module_platform_driver(esp_jazz_driver);
+Things that the compiler can work out at compile time are probably ok,
+like converting constants:
 
-Doesn't this transform "jazz_esp_init" into "jazz_esp_driver_init"?
+#define FIXED(a)   (s32)((a) * 65536.0)
 
-If that's the convention, it seems odd that the module_platform_driver 
-macro doesn't do it...
+fixed = FIXED(1.25);
 
-Finn
+In this case compiler should make all the calculations at compile time
+and replace the macro "FIXED(1.25)" with the integer 81920.
+
+-- 
+Paulo Marques - www.grupopie.com
+
+"Don't worry, you'll be fine; I saw it work in a cartoon once..."
