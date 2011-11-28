@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab1K1A6n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 19:58:43 -0500
-Received: from matrixpower.ru ([195.178.208.66]:44873 "EHLO tservice.net.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752215Ab1K1A6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 19:58:42 -0500
-Date: Mon, 28 Nov 2011 03:58:37 +0300
-From: Evgeniy Polyakov <zbr@ioremap.net>
-To: Greg KH <gregkh@suse.de>
-Cc: Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Josef Bacik <josef@redhat.com>,
-        Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 24/62] pohmelfs: remove the second argument of
- k[un]map_atomic()
-Message-ID: <20111128005837.GA28109@ioremap.net>
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
- <1322371662-26166-25-git-send-email-amwang@redhat.com>
- <20111127093436.GD31631@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111127093436.GD31631@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755415Ab1K1BB3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 20:01:29 -0500
+Received: from mprc.pku.edu.cn ([162.105.203.9]:36865 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752499Ab1K1BB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 20:01:28 -0500
+Subject: Re: [PATCH] rtc: convert drivers/rtc/* to use
+ module_platform_driver()
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Ben Dooks <ben@simtec.co.uk>,
+        John Stultz <john.stultz@linaro.org>, rtc-linux@googlegroups.com
+In-Reply-To: <1322238658.6445.1.camel@phoenix>
+References: <1322238658.6445.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Mon, 28 Nov 2011 09:00:43 +0800
+Message-ID: <1322442043.8661.2.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good!
-Although this code is about to die, still worth fixing.
-Thank you.
-
-On Sun, Nov 27, 2011 at 01:34:36AM -0800, Greg KH (gregkh@suse.de) wrote:
-> On Sun, Nov 27, 2011 at 01:27:04PM +0800, Cong Wang wrote:
-> > 
-> > Signed-off-by: Cong Wang <amwang@redhat.com>
+On Sat, 2011-11-26 at 00:30 +0800, Axel Lin wrote:
+> This patch converts the drivers in drivers/rtc/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
 > 
-> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Cc: Mike Frysinger <vapier.adi@gmail.com>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Ben Dooks <ben@simtec.co.uk>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+For rtc-puv3.c,
+Acked-by: Guan Xuetao <gxt@mprc.pku.edu.cn>
 
--- 
-	Evgeniy Polyakov
+Thanks,
+Guan Xuetao
+
