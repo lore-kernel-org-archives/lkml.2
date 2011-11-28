@@ -1,209 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab1K1Hr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:47:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647Ab1K1Hr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:47:57 -0500
-From: Cong Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
-        Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org
-Subject: [UPDATED PATCH 17/62] md: remove the second argument of k[un]map_atomic()
-Date: Mon, 28 Nov 2011 15:47:40 +0800
-Message-Id: <1322466460-10628-1-git-send-email-amwang@redhat.com>
-In-Reply-To: <20111127170013.20d180a9@notabene.brown>
-References: <20111127170013.20d180a9@notabene.brown>
+	id S1752663Ab1K1Hsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:48:46 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:46360 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab1K1Hso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:48:44 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Mon, 28 Nov 2011 08:47:31 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanismch
+In-reply-to: <20111108184314.GB4754@phenom.ffwll.local>
+To: "'Daniel Vetter'" <daniel@ffwll.ch>
+Cc: "'Clark, Rob'" <rob@ti.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        "'Sumit Semwal'" <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, arnd@arndb.de, jesse.barker@linaro.org,
+        "'Sumit Semwal'" <sumit.semwal@linaro.org>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+Message-id: <000401ccada1$fbdcc030$f3964090$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: AcyeRiTYhO1yNMg+Rma38bGuKGfOAwPVWg8w
+References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
+ <1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
+ <4E98085A.8080803@samsung.com> <20111014152139.GA2908@phenom.ffwll.local>
+ <000001cc99ff$47cfe960$d76fbc20$%szyprowski@samsung.com>
+ <CAO8GWqnNMGwADVnO4-RfJu0TPzHhANBdyctv2RyhCxbBJ0beXw@mail.gmail.com>
+ <20111108174122.GA4754@phenom.ffwll.local>
+ <20111108175517.GG12913@n2100.arm.linux.org.uk>
+ <20111108184314.GB4754@phenom.ffwll.local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update: Separate md and dm code correctly.
+Hello,
 
-Acked-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Cong Wang <amwang@redhat.com>
----
- drivers/md/bitmap.c |   42 +++++++++++++++++++++---------------------
- 1 files changed, 21 insertions(+), 21 deletions(-)
+I'm sorry for the late reply, I must have missed this mail...
 
-diff --git a/drivers/md/bitmap.c b/drivers/md/bitmap.c
-index 7878712..4062823 100644
---- a/drivers/md/bitmap.c
-+++ b/drivers/md/bitmap.c
-@@ -457,7 +457,7 @@ void bitmap_update_sb(struct bitmap *bitmap)
- 		return;
- 	}
- 	spin_unlock_irqrestore(&bitmap->lock, flags);
--	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
-+	sb = kmap_atomic(bitmap->sb_page);
- 	sb->events = cpu_to_le64(bitmap->mddev->events);
- 	if (bitmap->mddev->events < bitmap->events_cleared)
- 		/* rocking back to read-only */
-@@ -467,7 +467,7 @@ void bitmap_update_sb(struct bitmap *bitmap)
- 	/* Just in case these have been changed via sysfs: */
- 	sb->daemon_sleep = cpu_to_le32(bitmap->mddev->bitmap_info.daemon_sleep/HZ);
- 	sb->write_behind = cpu_to_le32(bitmap->mddev->bitmap_info.max_write_behind);
--	kunmap_atomic(sb, KM_USER0);
-+	kunmap_atomic(sb);
- 	write_page(bitmap, bitmap->sb_page, 1);
- }
- 
-@@ -478,7 +478,7 @@ void bitmap_print_sb(struct bitmap *bitmap)
- 
- 	if (!bitmap || !bitmap->sb_page)
- 		return;
--	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
-+	sb = kmap_atomic(bitmap->sb_page);
- 	printk(KERN_DEBUG "%s: bitmap file superblock:\n", bmname(bitmap));
- 	printk(KERN_DEBUG "         magic: %08x\n", le32_to_cpu(sb->magic));
- 	printk(KERN_DEBUG "       version: %d\n", le32_to_cpu(sb->version));
-@@ -497,7 +497,7 @@ void bitmap_print_sb(struct bitmap *bitmap)
- 	printk(KERN_DEBUG "     sync size: %llu KB\n",
- 			(unsigned long long)le64_to_cpu(sb->sync_size)/2);
- 	printk(KERN_DEBUG "max write behind: %d\n", le32_to_cpu(sb->write_behind));
--	kunmap_atomic(sb, KM_USER0);
-+	kunmap_atomic(sb);
- }
- 
- /*
-@@ -525,7 +525,7 @@ static int bitmap_new_disk_sb(struct bitmap *bitmap)
- 	}
- 	bitmap->sb_page->index = 0;
- 
--	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
-+	sb = kmap_atomic(bitmap->sb_page);
- 
- 	sb->magic = cpu_to_le32(BITMAP_MAGIC);
- 	sb->version = cpu_to_le32(BITMAP_MAJOR_HI);
-@@ -533,7 +533,7 @@ static int bitmap_new_disk_sb(struct bitmap *bitmap)
- 	chunksize = bitmap->mddev->bitmap_info.chunksize;
- 	BUG_ON(!chunksize);
- 	if (!is_power_of_2(chunksize)) {
--		kunmap_atomic(sb, KM_USER0);
-+		kunmap_atomic(sb);
- 		printk(KERN_ERR "bitmap chunksize not a power of 2\n");
- 		return -EINVAL;
- 	}
-@@ -571,7 +571,7 @@ static int bitmap_new_disk_sb(struct bitmap *bitmap)
- 	bitmap->flags |= BITMAP_HOSTENDIAN;
- 	sb->version = cpu_to_le32(BITMAP_MAJOR_HOSTENDIAN);
- 
--	kunmap_atomic(sb, KM_USER0);
-+	kunmap_atomic(sb);
- 
- 	return 0;
- }
-@@ -603,7 +603,7 @@ static int bitmap_read_sb(struct bitmap *bitmap)
- 		return err;
- 	}
- 
--	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
-+	sb = kmap_atomic(bitmap->sb_page);
- 
- 	chunksize = le32_to_cpu(sb->chunksize);
- 	daemon_sleep = le32_to_cpu(sb->daemon_sleep) * HZ;
-@@ -664,7 +664,7 @@ success:
- 		bitmap->events_cleared = bitmap->mddev->events;
- 	err = 0;
- out:
--	kunmap_atomic(sb, KM_USER0);
-+	kunmap_atomic(sb);
- 	if (err)
- 		bitmap_print_sb(bitmap);
- 	return err;
-@@ -689,7 +689,7 @@ static int bitmap_mask_state(struct bitmap *bitmap, enum bitmap_state bits,
- 		return 0;
- 	}
- 	spin_unlock_irqrestore(&bitmap->lock, flags);
--	sb = kmap_atomic(bitmap->sb_page, KM_USER0);
-+	sb = kmap_atomic(bitmap->sb_page);
- 	old = le32_to_cpu(sb->state) & bits;
- 	switch (op) {
- 	case MASK_SET:
-@@ -703,7 +703,7 @@ static int bitmap_mask_state(struct bitmap *bitmap, enum bitmap_state bits,
- 	default:
- 		BUG();
- 	}
--	kunmap_atomic(sb, KM_USER0);
-+	kunmap_atomic(sb);
- 	return old;
- }
- 
-@@ -881,12 +881,12 @@ static void bitmap_file_set_bit(struct bitmap *bitmap, sector_t block)
- 	bit = file_page_offset(bitmap, chunk);
- 
- 	/* set the bit */
--	kaddr = kmap_atomic(page, KM_USER0);
-+	kaddr = kmap_atomic(page);
- 	if (bitmap->flags & BITMAP_HOSTENDIAN)
- 		set_bit(bit, kaddr);
- 	else
- 		__set_bit_le(bit, kaddr);
--	kunmap_atomic(kaddr, KM_USER0);
-+	kunmap_atomic(kaddr);
- 	pr_debug("set file bit %lu page %lu\n", bit, page->index);
- 	/* record page number so it gets flushed to disk when unplug occurs */
- 	set_page_attr(bitmap, page, BITMAP_PAGE_DIRTY);
-@@ -1050,10 +1050,10 @@ static int bitmap_init_from_disk(struct bitmap *bitmap, sector_t start)
- 				 * if bitmap is out of date, dirty the
- 				 * whole page and write it out
- 				 */
--				paddr = kmap_atomic(page, KM_USER0);
-+				paddr = kmap_atomic(page);
- 				memset(paddr + offset, 0xff,
- 				       PAGE_SIZE - offset);
--				kunmap_atomic(paddr, KM_USER0);
-+				kunmap_atomic(paddr);
- 				write_page(bitmap, page, 1);
- 
- 				ret = -EIO;
-@@ -1061,12 +1061,12 @@ static int bitmap_init_from_disk(struct bitmap *bitmap, sector_t start)
- 					goto err;
- 			}
- 		}
--		paddr = kmap_atomic(page, KM_USER0);
-+		paddr = kmap_atomic(page);
- 		if (bitmap->flags & BITMAP_HOSTENDIAN)
- 			b = test_bit(bit, paddr);
- 		else
- 			b = test_bit_le(bit, paddr);
--		kunmap_atomic(paddr, KM_USER0);
-+		kunmap_atomic(paddr);
- 		if (b) {
- 			/* if the disk bit is set, set the memory bit */
- 			int needed = ((sector_t)(i+1) << (CHUNK_BLOCK_SHIFT(bitmap))
-@@ -1207,10 +1207,10 @@ void bitmap_daemon_work(struct mddev *mddev)
- 			    bitmap->mddev->bitmap_info.external == 0) {
- 				bitmap_super_t *sb;
- 				bitmap->need_sync = 0;
--				sb = kmap_atomic(bitmap->sb_page, KM_USER0);
-+				sb = kmap_atomic(bitmap->sb_page);
- 				sb->events_cleared =
- 					cpu_to_le64(bitmap->events_cleared);
--				kunmap_atomic(sb, KM_USER0);
-+				kunmap_atomic(sb);
- 				write_page(bitmap, bitmap->sb_page, 1);
- 			}
- 			spin_lock_irqsave(&bitmap->lock, flags);
-@@ -1233,7 +1233,7 @@ void bitmap_daemon_work(struct mddev *mddev)
- 						  -1);
- 
- 				/* clear the bit */
--				paddr = kmap_atomic(page, KM_USER0);
-+				paddr = kmap_atomic(page);
- 				if (bitmap->flags & BITMAP_HOSTENDIAN)
- 					clear_bit(file_page_offset(bitmap, j),
- 						  paddr);
-@@ -1242,7 +1242,7 @@ void bitmap_daemon_work(struct mddev *mddev)
- 						file_page_offset(bitmap,
- 								 j),
- 						paddr);
--				kunmap_atomic(paddr, KM_USER0);
-+				kunmap_atomic(paddr);
- 			} else if (*bmc <= 2) {
- 				*bmc = 1; /* maybe clear the bit next time */
- 				set_page_attr(bitmap, page, BITMAP_PAGE_PENDING);
+On Tuesday, November 08, 2011 7:43 PM Daniel Vetter wrote:
+
+> On Tue, Nov 08, 2011 at 05:55:17PM +0000, Russell King - ARM Linux wrote:
+> > On Tue, Nov 08, 2011 at 06:42:27PM +0100, Daniel Vetter wrote:
+> > > Actually I think the importer should get a _mapped_ scatterlist when it
+> > > calls get_scatterlist. The simple reason is that for strange stuff like
+> > > memory remapped into e.g. omaps TILER doesn't have any sensible notion of
+> > > an address in physical memory. For the USB-example I think the right
+> > > approach is to attach the usb hci to the dma_buf, after all that is the
+> > > device that will read the data and move over the usb bus to the udl
+> > > device. Similar for any other device that sits behind a bus that can't do
+> > > dma (or it doesn't make sense to do dma).
+> > >
+> > > Imo if there's a use-case where the client needs to frob the sg_list
+> > > before calling dma_map_sg, we have an issue with the dma subsystem in
+> > > general.
+> >
+> > Let's clear something up about the DMA API, which I think is causing some
+> > misunderstanding here.  For this purpose, I'm going to talk about
+> > dma_map_single(), but the same applies to the scatterlist and _page
+> > variants as well.
+> >
+> > 	dma = dma_map_single(dev, cpuaddr, size, dir);
+> >
+> > dev := the device _performing_ the DMA operation.  You are quite correct
+> >        that in the case of a USB peripheral device, the device is normally
+> >        the USB HCI device.
+> >
+> > dma := dma address to be programmed into 'dev' which corresponds (by some
+> >        means) with 'cpuaddr'.  This may not be the physical address due
+> >        to bus offset translations or mappings setup in IOMMUs.
+> >
+> > Therefore, it is wrong to talk about a 'physical address' when talking
+> > about the DMA API.
+> >
+> > We can take this one step further.  Lets say that the USB HCI is not
+> > capable of performing memory accesses itself, but it is connected to a
+> > separate DMA engine device:
+> >
+> > 	mem <---> dma engine <---> usb hci <---> usb peripheral
+> >
+> > (such setups do exist, but despite having such implementations I've never
+> > tried to support it.)
+> >
+> > In this case, the dma engine, in response to control signals from the
+> > USB host controller, will generate the appropriate bus address to access
+> > memory and transfer the data into the USB HCI device.
+> >
+> > So, in this case, the struct device to be used for mapping memory for
+> > transfers to the usb peripheral is the DMA engine device, not the USB HCI
+> > device nor the USB peripheral device.
+> 
+> Thanks for the clarification. I think this is another reason why
+> get_scatterlist should return the sg_list already mapped into the device
+> address space - it's more consisten with the other dma apis. Another
+> reason to completely hide everything but mapped addresses is crazy stuff
+> like this
+> 
+> 	mem <---> tiling iommu <-+-> gpu
+> 	                         |
+> 	                         +-> scanout engine
+> 	                         |
+> 				 +-> mpeg decoder
+> 
+> where it doesn't really make sense to talk about the memory backing the
+> dma buffer because that's smeared all over the place due to tiling. IIRC
+> for the case of omap these devices can also access memory through other
+> paths and iommut that don't tile (but just remap like a normal iommu)
+
+I really don't get why you want to force the exporter to map the buffer into
+clients dma address space. Only the client device might know all the quirks
+required to do this correctly. Exporter should only provide a scatter-list 
+with the memory that belongs to the exported buffer (might be pinned). How
+do you want to solve the following case - the gpu hardware from your diagram
+and a simple usb webcam with generic driver. The application would like to
+export a buffer from the webcam to scanout engine. How the generic webcam 
+driver might know HOW to set up the tiller to create correct mappings for 
+the GPU/scanout? IMHO only a GPU driver is capable of doing that assuming
+it got just a scatter list from the webcam driver.
+
+Best regards
 -- 
-1.7.4.4
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
 
