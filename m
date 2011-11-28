@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab1K1XOs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:14:48 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48704 "EHLO
+	id S1755181Ab1K1XO6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:14:58 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:48733 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab1K1XOq (ORCPT
+	with ESMTP id S1755086Ab1K1XOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:14:46 -0500
+	Mon, 28 Nov 2011 18:14:54 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 09/25] perf session: Move threads to struct machine
-Date: Mon, 28 Nov 2011 21:14:10 -0200
-Message-Id: <1322522066-21879-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 17/25] perf report: Group options in a struct
+Date: Mon, 28 Nov 2011 21:14:18 -0200
+Message-Id: <1322522066-21879-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1322522066-21879-1-git-send-email-acme@infradead.org>
 References: <1322522066-21879-1-git-send-email-acme@infradead.org>
@@ -29,12 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The 'machine' abstraction was introduced with 'perf kvm' where we could
-have samples for the host and multiple guests, but at the time we ended
-up keeping the list of all machines threads all in
-session->host_machine.
-
-Move the threads rb_tree to struct machine to separate the namespaces.
+Paving the way to remove these globals when we change the perf_event_ops
+to receive as a first parameter a pointer to a perf_event_ops that will
+then provide access to perf_report via container_of.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -42,217 +39,257 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-mdg7sm6j3va09vtgj49gbsrp@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-2eh2vi2nb5z3tg1lvoxv09xu@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/build-id.c |    4 +-
- tools/perf/util/map.c      |    4 +++
- tools/perf/util/map.h      |    9 ++++++++
- tools/perf/util/session.c  |   47 +++++++++++++++++++++++++++++++++++++------
- tools/perf/util/session.h  |    3 --
- tools/perf/util/thread.c   |    6 ++--
- 6 files changed, 58 insertions(+), 15 deletions(-)
+ tools/perf/builtin-report.c |  111 +++++++++++++++++++++++--------------------
+ 1 files changed, 59 insertions(+), 52 deletions(-)
 
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index a91cd99..f2fe6ec 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -48,8 +48,8 @@ static int perf_event__exit_del_thread(union perf_event *event,
- 		    event->fork.ppid, event->fork.ptid);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index b7ab373..5d2e819 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -35,25 +35,25 @@
  
- 	if (thread) {
--		rb_erase(&thread->rb_node, &session->threads);
--		session->last_match = NULL;
-+		rb_erase(&thread->rb_node, &session->host_machine.threads);
-+		session->host_machine.last_match = NULL;
- 		thread__delete(thread);
+ #include <linux/bitmap.h>
+ 
+-static char		const *input_name = "perf.data";
+-
+-static bool		force, use_tui, use_stdio;
+-static bool		hide_unresolved;
+-static bool		dont_use_callchains;
+-static bool		show_full_info;
+-
+-static bool		show_threads;
+-static struct perf_read_values	show_threads_values;
+-
+-static const char	default_pretty_printing_style[] = "normal";
+-static const char	*pretty_printing_style = default_pretty_printing_style;
+-
+-static char		callchain_default_opt[] = "fractal,0.5,callee";
+-static bool		inverted_callchain;
+-static symbol_filter_t	annotate_init;
+-
+-static const char	*cpu_list;
+-static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
++static struct perf_report {
++	char const		*input_name;
++	bool			force, use_tui, use_stdio;
++	bool			hide_unresolved;
++	bool			dont_use_callchains;
++	bool			show_full_info;
++	bool			show_threads;
++	bool			inverted_callchain;
++	struct perf_read_values	show_threads_values;
++	const char		*pretty_printing_style;
++	symbol_filter_t		annotate_init;
++	const char		*cpu_list;
++	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
++} report = {
++	.input_name	       = "perf.data",
++	.pretty_printing_style = "normal",
++}, *rep = &report;
++
++static char callchain_default_opt[] = "fractal,0.5,callee";
+ 
+ static int perf_session__add_hist_entry(struct perf_session *session,
+ 					struct addr_location *al,
+@@ -114,16 +114,16 @@ static int process_sample_event(union perf_event *event,
+ 	struct addr_location al;
+ 
+ 	if (perf_event__preprocess_sample(event, session, &al, sample,
+-					  annotate_init) < 0) {
++					  rep->annotate_init) < 0) {
+ 		fprintf(stderr, "problem processing %d event, skipping it.\n",
+ 			event->header.type);
+ 		return -1;
  	}
  
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 78284b1..316aa0a 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -562,6 +562,10 @@ int machine__init(struct machine *self, const char *root_dir, pid_t pid)
- 	INIT_LIST_HEAD(&self->user_dsos);
- 	INIT_LIST_HEAD(&self->kernel_dsos);
+-	if (al.filtered || (hide_unresolved && al.sym == NULL))
++	if (al.filtered || (rep->hide_unresolved && al.sym == NULL))
+ 		return 0;
  
-+	self->threads = RB_ROOT;
-+	INIT_LIST_HEAD(&self->dead_threads);
-+	self->last_match = NULL;
-+
- 	self->kmaps.machine = self;
- 	self->pid	    = pid;
- 	self->root_dir      = strdup(root_dir);
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 890d855..bde6835 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -62,6 +62,9 @@ struct machine {
- 	struct rb_node	  rb_node;
- 	pid_t		  pid;
- 	char		  *root_dir;
-+	struct rb_root	  threads;
-+	struct list_head  dead_threads;
-+	struct thread	  *last_match;
- 	struct list_head  user_dsos;
- 	struct list_head  kernel_dsos;
- 	struct map_groups kmaps;
-@@ -190,6 +193,12 @@ struct symbol *map_groups__find_symbol_by_name(struct map_groups *mg,
- 					       struct map **mapp,
- 					       symbol_filter_t filter);
+-	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
++	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
+ 		return 0;
  
-+
-+struct thread *machine__findnew_thread(struct machine *machine, pid_t pid);
-+void machine__remove_thread(struct machine *machine, struct thread *th);
-+
-+size_t machine__fprintf(struct machine *machine, FILE *fp);
-+
- static inline
- struct symbol *machine__find_kernel_symbol(struct machine *self,
- 					   enum map_type type, u64 addr,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 85c1e6b7..a76666f 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -139,9 +139,6 @@ struct perf_session *perf_session__new(const char *filename, int mode,
- 		goto out;
- 
- 	memcpy(self->filename, filename, len);
--	self->threads = RB_ROOT;
--	INIT_LIST_HEAD(&self->dead_threads);
--	self->last_match = NULL;
- 	/*
- 	 * On 64bit we can mmap the data file in one go. No need for tiny mmap
- 	 * slices. On 32bit we use 32MB.
-@@ -184,17 +181,22 @@ out_delete:
- 	return NULL;
- }
- 
--static void perf_session__delete_dead_threads(struct perf_session *self)
-+static void machine__delete_dead_threads(struct machine *machine)
+ 	if (al.map != NULL)
+@@ -143,9 +143,9 @@ static int process_read_event(union perf_event *event,
  {
- 	struct thread *n, *t;
+ 	struct perf_evsel *evsel = perf_evlist__id2evsel(session->evlist,
+ 							 event->read.id);
+-	if (show_threads) {
++	if (rep->show_threads) {
+ 		const char *name = evsel ? event_name(evsel) : "unknown";
+-		perf_read_values_add_value(&show_threads_values,
++		perf_read_values_add_value(&rep->show_threads_values,
+ 					   event->read.pid, event->read.tid,
+ 					   event->read.id,
+ 					   name,
+@@ -173,7 +173,8 @@ static int perf_session__setup_sample_type(struct perf_session *self)
+ 				    "you call 'perf record' without -g?\n");
+ 			return -1;
+ 		}
+-	} else if (!dont_use_callchains && callchain_param.mode != CHAIN_NONE &&
++	} else if (!rep->dont_use_callchains &&
++		   callchain_param.mode != CHAIN_NONE &&
+ 		   !symbol_conf.use_callchain) {
+ 			symbol_conf.use_callchain = true;
+ 			if (callchain_register_param(&callchain_param) < 0) {
+@@ -241,11 +242,11 @@ static int perf_evlist__tty_browse_hists(struct perf_evlist *evlist,
+ 	    parent_pattern == default_parent_pattern) {
+ 		fprintf(stdout, "#\n# (%s)\n#\n", help);
  
--	list_for_each_entry_safe(t, n, &self->dead_threads, node) {
-+	list_for_each_entry_safe(t, n, &machine->dead_threads, node) {
- 		list_del(&t->node);
- 		thread__delete(t);
+-		if (show_threads) {
+-			bool style = !strcmp(pretty_printing_style, "raw");
+-			perf_read_values_display(stdout, &show_threads_values,
++		if (rep->show_threads) {
++			bool style = !strcmp(rep->pretty_printing_style, "raw");
++			perf_read_values_display(stdout, &rep->show_threads_values,
+ 						 style);
+-			perf_read_values_destroy(&show_threads_values);
++			perf_read_values_destroy(&rep->show_threads_values);
+ 		}
  	}
- }
  
--static void perf_session__delete_threads(struct perf_session *self)
-+static void perf_session__delete_dead_threads(struct perf_session *session)
-+{
-+	machine__delete_dead_threads(&session->host_machine);
-+}
-+
-+static void machine__delete_threads(struct machine *self)
- {
- 	struct rb_node *nd = rb_first(&self->threads);
+@@ -264,21 +265,23 @@ static int __cmd_report(void)
  
-@@ -207,6 +209,11 @@ static void perf_session__delete_threads(struct perf_session *self)
+ 	signal(SIGINT, sig_handler);
+ 
+-	session = perf_session__new(input_name, O_RDONLY, force, false, &event_ops);
++	session = perf_session__new(rep->input_name, O_RDONLY,
++				    rep->force, false, &event_ops);
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
+-	if (cpu_list) {
+-		ret = perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap);
++	if (rep->cpu_list) {
++		ret = perf_session__cpu_bitmap(session, rep->cpu_list,
++					       rep->cpu_bitmap);
+ 		if (ret)
+ 			goto out_delete;
  	}
- }
  
-+static void perf_session__delete_threads(struct perf_session *session)
-+{
-+	machine__delete_threads(&session->host_machine);
-+}
-+
- void perf_session__delete(struct perf_session *self)
+ 	if (use_browser <= 0)
+-		perf_session__fprintf_info(session, stdout, show_full_info);
++		perf_session__fprintf_info(session, stdout, rep->show_full_info);
+ 
+-	if (show_threads)
+-		perf_read_values_init(&show_threads_values);
++	if (rep->show_threads)
++		perf_read_values_init(&rep->show_threads_values);
+ 
+ 	ret = perf_session__setup_sample_type(session);
+ 	if (ret)
+@@ -327,7 +330,8 @@ static int __cmd_report(void)
+ 	}
+ 
+ 	if (nr_samples == 0) {
+-		ui__warning("The %s file has no samples!\n", input_name);
++		ui__warning("The %s file has no samples!\n",
++			    rep->input_name);
+ 		goto out_delete;
+ 	}
+ 
+@@ -364,7 +368,7 @@ parse_callchain_opt(const struct option *opt __used, const char *arg,
+ 	 * --no-call-graph
+ 	 */
+ 	if (unset) {
+-		dont_use_callchains = true;
++		rep->dont_use_callchains = true;
+ 		return 0;
+ 	}
+ 
+@@ -439,7 +443,7 @@ static const char * const report_usage[] = {
+ };
+ 
+ static const struct option options[] = {
+-	OPT_STRING('i', "input", &input_name, "file",
++	OPT_STRING('i', "input", &report.input_name, "file",
+ 		    "input file name"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show symbol address, etc)"),
+@@ -449,17 +453,18 @@ static const struct option options[] = {
+ 		   "file", "vmlinux pathname"),
+ 	OPT_STRING(0, "kallsyms", &symbol_conf.kallsyms_name,
+ 		   "file", "kallsyms pathname"),
+-	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
++	OPT_BOOLEAN('f', "force", &report.force, "don't complain, do it"),
+ 	OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
+ 		    "load module symbols - WARNING: use only with -k and LIVE kernel"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+-	OPT_BOOLEAN('T', "threads", &show_threads,
++	OPT_BOOLEAN('T', "threads", &report.show_threads,
+ 		    "Show per-thread event counters"),
+-	OPT_STRING(0, "pretty", &pretty_printing_style, "key",
++	OPT_STRING(0, "pretty", &report.pretty_printing_style, "key",
+ 		   "pretty printing style key: normal raw"),
+-	OPT_BOOLEAN(0, "tui", &use_tui, "Use the TUI interface"),
+-	OPT_BOOLEAN(0, "stdio", &use_stdio, "Use the stdio interface"),
++	OPT_BOOLEAN(0, "tui", &report.use_tui, "Use the TUI interface"),
++	OPT_BOOLEAN(0, "stdio", &report.use_stdio,
++		    "Use the stdio interface"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+@@ -471,7 +476,8 @@ static const struct option options[] = {
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", NULL, "output_type,min_percent, call_order",
+ 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold and callchain order. "
+ 		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
+-	OPT_BOOLEAN('G', "inverted", &inverted_callchain, "alias for inverted call graph"),
++	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
++		    "alias for inverted call graph"),
+ 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+ 		   "only consider symbols in these dsos"),
+ 	OPT_STRING('C', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+@@ -484,12 +490,13 @@ static const struct option options[] = {
+ 	OPT_STRING('t', "field-separator", &symbol_conf.field_sep, "separator",
+ 		   "separator for columns, no spaces will be added between "
+ 		   "columns '.' is reserved."),
+-	OPT_BOOLEAN('U', "hide-unresolved", &hide_unresolved,
++	OPT_BOOLEAN('U', "hide-unresolved", &report.hide_unresolved,
+ 		    "Only display entries resolved to a symbol"),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
+-	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+-	OPT_BOOLEAN('I', "show-info", &show_full_info,
++	OPT_STRING('c', "cpu", &report.cpu_list, "cpu",
++		   "list of cpus to profile"),
++	OPT_BOOLEAN('I', "show-info", &report.show_full_info,
+ 		    "Display extended information about perf.data file"),
+ 	OPT_BOOLEAN(0, "source", &symbol_conf.annotate_src,
+ 		    "Interleave source code with assembly code (default)"),
+@@ -506,15 +513,15 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
  {
- 	perf_session__destroy_kernel_maps(self);
-@@ -217,7 +224,7 @@ void perf_session__delete(struct perf_session *self)
- 	free(self);
- }
+ 	argc = parse_options(argc, argv, options, report_usage, 0);
  
--void perf_session__remove_thread(struct perf_session *self, struct thread *th)
-+void machine__remove_thread(struct machine *self, struct thread *th)
- {
- 	self->last_match = NULL;
- 	rb_erase(&th->rb_node, &self->threads);
-@@ -884,6 +891,11 @@ void perf_event_header__bswap(struct perf_event_header *self)
- 	self->size = bswap_16(self->size);
- }
+-	if (use_stdio)
++	if (report.use_stdio)
+ 		use_browser = 0;
+-	else if (use_tui)
++	else if (report.use_tui)
+ 		use_browser = 1;
  
-+struct thread *perf_session__findnew(struct perf_session *session, pid_t pid)
-+{
-+	return machine__findnew_thread(&session->host_machine, pid);
-+}
-+
- static struct thread *perf_session__register_idle_thread(struct perf_session *self)
- {
- 	struct thread *thread = perf_session__findnew(self, 0);
-@@ -1224,6 +1236,27 @@ size_t perf_session__fprintf_nr_events(struct perf_session *session, FILE *fp)
- 	return ret;
- }
+-	if (inverted_callchain)
++	if (report.inverted_callchain)
+ 		callchain_param.order = ORDER_CALLER;
  
-+size_t perf_session__fprintf(struct perf_session *session, FILE *fp)
-+{
-+	/*
-+	 * FIXME: Here we have to actually print all the machines in this
-+	 * session, not just the host...
-+	 */
-+	return machine__fprintf(&session->host_machine, fp);
-+}
-+
-+void perf_session__remove_thread(struct perf_session *session,
-+				 struct thread *th)
-+{
-+	/*
-+	 * FIXME: This one makes no sense, we need to remove the thread from
-+	 * the machine it belongs to, perf_session can have many machines, so
-+	 * doing it always on ->host_machine is wrong.  Fix when auditing all
-+	 * the 'perf kvm' code.
-+	 */
-+	machine__remove_thread(&session->host_machine, th);
-+}
-+
- struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
- 					      unsigned int type)
- {
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 6e393c9..76d462d 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -30,9 +30,6 @@ struct perf_session {
- 	struct perf_header	header;
- 	unsigned long		size;
- 	unsigned long		mmap_window;
--	struct rb_root		threads;
--	struct list_head	dead_threads;
--	struct thread		*last_match;
- 	struct machine		host_machine;
- 	struct rb_root		machines;
- 	struct perf_evlist	*evlist;
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index d5d3b22..fb4b7ea 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -61,7 +61,7 @@ static size_t thread__fprintf(struct thread *self, FILE *fp)
- 	       map_groups__fprintf(&self->mg, verbose, fp);
- }
- 
--struct thread *perf_session__findnew(struct perf_session *self, pid_t pid)
-+struct thread *machine__findnew_thread(struct machine *self, pid_t pid)
- {
- 	struct rb_node **p = &self->threads.rb_node;
- 	struct rb_node *parent = NULL;
-@@ -125,12 +125,12 @@ int thread__fork(struct thread *self, struct thread *parent)
- 	return 0;
- }
- 
--size_t perf_session__fprintf(struct perf_session *self, FILE *fp)
-+size_t machine__fprintf(struct machine *machine, FILE *fp)
- {
- 	size_t ret = 0;
- 	struct rb_node *nd;
- 
--	for (nd = rb_first(&self->threads); nd; nd = rb_next(nd)) {
-+	for (nd = rb_first(&machine->threads); nd; nd = rb_next(nd)) {
- 		struct thread *pos = rb_entry(nd, struct thread, rb_node);
- 
- 		ret += thread__fprintf(pos, fp);
+-	if (strcmp(input_name, "-") != 0)
++	if (strcmp(report.input_name, "-") != 0)
+ 		setup_browser(true);
+ 	else
+ 		use_browser = 0;
+@@ -525,7 +532,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ 	 */
+ 	if (use_browser > 0) {
+ 		symbol_conf.priv_size = sizeof(struct annotation);
+-		annotate_init	      = symbol__annotate_init;
++		report.annotate_init  = symbol__annotate_init;
+ 		/*
+  		 * For searching by name on the "Browse map details".
+  		 * providing it only in verbose mode not to bloat too
 -- 
 1.7.8.rc0.35.gee6df
 
