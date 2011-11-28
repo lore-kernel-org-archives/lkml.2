@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab1K1RE5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 12:04:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45866 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1K1RE4 convert rfc822-to-8bit (ORCPT
+	id S1753410Ab1K1RGV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 12:06:21 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:5273 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab1K1RGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 12:04:56 -0500
+	Mon, 28 Nov 2011 12:06:20 -0500
+Message-ID: <4ED3BF8A.1090300@caviumnetworks.com>
+Date: Mon, 28 Nov 2011 09:06:18 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <20111123175321.GI9581@n2100.arm.linux.org.uk>
-References: <1321888429-3519-1-git-send-email-rabin@rab.in>
- <1321888429-3519-4-git-send-email-rabin@rab.in> <20111122194213.GC9581@n2100.arm.linux.org.uk>
- <4ECC2A07.8050701@codeaurora.org> <20111122233949.GA24453@redhat.com>
- <20111122235041.GB24453@redhat.com> <20111123145509.GA4973@debian> <20111123175321.GI9581@n2100.arm.linux.org.uk>
-From: Rabin Vincent <rabin@rab.in>
-Date: Mon, 28 Nov 2011 22:34:15 +0530
-X-Google-Sender-Auth: 1meHs0cj-gy5kM1Cc7BzOH2z-iQ
-Message-ID: <CAH+eYFC6A7EeYV-C7fOnJcbMpQ009TNsmY+-QVK+n9zHn0PVkg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] ARM: add jump label support
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jason Baron <jbaron@redhat.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Clouter <alex@digriz.org.uk>,
+        "Daney, David" <David.Daney@caviumnetworks.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Matt Mackall <mpm@selenic.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH] char: hw_random: convert drivers/char/hw_random/* to
+ use module_platform_driver()
+References: <1322313066.6001.3.camel@phoenix>
+In-Reply-To: <1322313066.6001.3.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Nov 2011 17:06:19.0290 (UTC) FILETIME=[0C0DF7A0:01CCADF0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 23:23, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Nov 23, 2011 at 08:25:09PM +0530, Rabin Vincent wrote:
->> +cat << "END" | $@ -x c - -c -o /dev/null >/dev/null 2>&1 && echo "y"
->> +int main(void)
->> +{
->> +#ifdef __arm__
->> +     /*
->> +      * Not related to asm goto, but used by jump label
->> +      * and broken on some ARM GCC versions (see GCC Bug 48637).
->> +      */
->> +     static struct { int dummy; int state; } tp;
->> +     asm ("@ %c0" :: "i" (&tp.state));
->> +#endif
->> +
->> +entry:
->> +     asm goto ("" :::: entry);
->> +     return 0;
->> +}
->> +END
+On 11/26/2011 05:11 AM, Axel Lin wrote:
+> This patch converts the drivers in drivers/char/hw_random/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
 >
-> Is the presence of asm goto and %c something we want to test together or
-> separately?  I suspect it's something we want to do separately.
+> Cc: Alexander Clouter<alex@digriz.org.uk>
+> Cc: David Daney<ddaney@caviumnetworks.com>
+> Cc: David S. Miller<davem@davemloft.net>
+> Cc: Herbert Xu<herbert@gondor.apana.org.au>
+> Cc: Jamie Iles<jamie@jamieiles.com>
+> Cc: Josh Boyer<jwboyer@linux.vnet.ibm.com>
+> Cc: Matt Mackall<mpm@selenic.com>
+> Cc: Olof Johansson<olof@lixom.net>
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> ---
+>   drivers/char/hw_random/atmel-rng.c      |   12 +-----------
+>   drivers/char/hw_random/n2-drv.c         |   13 +------------
+>   drivers/char/hw_random/octeon-rng.c     |   13 +------------
+>   drivers/char/hw_random/pasemi-rng.c     |   12 +-----------
+>   drivers/char/hw_random/picoxcell-rng.c  |   12 +-----------
+>   drivers/char/hw_random/ppc4xx-rng.c     |   12 +-----------
+>   drivers/char/hw_random/timeriomem-rng.c |   13 +------------
+>   7 files changed, 7 insertions(+), 80 deletions(-)
+>
 
-Why would we want to do it separately?
+For the octeon-rng bit,
 
-The only reason I see is because the results of this test are assigned
-to a variable called CC_HAVE_ASM_GOTO and that is not an entirely
-accurate name (on ARM) after the addition of this test.  If that's the
-concern, perhaps this variable could just be renamed?
+Acked-by: David Daney<david.daney@cavium.com>
+
+Thanks,
+David Daney
+
+[...]
