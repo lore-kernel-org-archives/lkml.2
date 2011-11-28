@@ -1,157 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab1K1TMS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:12:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55414 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211Ab1K1TMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:12:15 -0500
-Date: Mon, 28 Nov 2011 20:06:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Subject: [PATCH 2/5] uprobes: introduce uprobe_switch_to()
-Message-ID: <20111128190655.GC4602@redhat.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com> <20111128190614.GA4602@redhat.com>
+	id S1754108Ab1K1TMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:12:36 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:59952 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab1K1TMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 14:12:35 -0500
+Message-ID: <4ED3DD1C.9010308@kernel.dk>
+Date: Mon, 28 Nov 2011 20:12:28 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111128190614.GA4602@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+CC: stephenmcameron@gmail.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com
+Subject: Re: [PATCH 1/2] cciss: Add IRQF_SHARED back in for the non-MSI(X)
+ interrupt handler
+References: <20111128161442.25472.71410.stgit@beardog.cce.hp.com>
+In-Reply-To: <20111128161442.25472.71410.stgit@beardog.cce.hp.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce uprobe_switch_to(), it is called by switch_to() paths if
-the "next" task is going to execute the xol insn.
+On 2011-11-28 17:14, Stephen M. Cameron wrote:
+> From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> 
+> IRQF_SHARED is required for older controllers that don't support MSI(X)
+> and which may end up sharing an interrupt.
+> 
+> Also remove deprecated IRQF_DISABLED.
 
-Currently we use TIF_SINGLESTEP (added to _TIF_WORK_CTXSW_NEXT) to
-detect this case in __switch_to_xtra() and call uprobe_switch_to(),
-may be we can add another flag.
+Thanks Stephen, applied this one and 2/2 as well.
 
-uprobe_switch_to() verifies that this task is actually UTASK_SSTEP
-and X86_EFLAGS_TF is set.
-
-Finally uprobe_switch_to() does set_xol_ip(). Currently this is not
-needed, but this means that set_xol_ip() is called every time the
-UTASK_SSTEP task migrates to another CPU.
-
-To ensure set_xol_ip() can't race with itself we add preempt_disable()
-into another caller, uprobe_notify_resume().
-
-Note! this patch assumes we can trust X86_EFLAGS_TF. I mean, afaiu
-even if the single-stepping insn races with irq/exception, this flag
-will be cleared if and only if this instruction was already executed.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/include/asm/thread_info.h |    4 ++++
- arch/x86/kernel/process.c          |    6 ++++++
- arch/x86/kernel/uprobes.c          |   14 ++++++++++++++
- include/linux/uprobes.h            |    1 +
- kernel/uprobes.c                   |    2 ++
- 5 files changed, 27 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index aeb3e04..af711a1 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -150,7 +150,11 @@ struct thread_info {
- 	(_TIF_IO_BITMAP|_TIF_NOTSC|_TIF_BLOCKSTEP)
- 
- #define _TIF_WORK_CTXSW_PREV (_TIF_WORK_CTXSW|_TIF_USER_RETURN_NOTIFY)
-+#ifdef CONFIG_UPROBES
-+#define _TIF_WORK_CTXSW_NEXT (_TIF_WORK_CTXSW|_TIF_DEBUG|_TIF_SINGLESTEP)
-+#else
- #define _TIF_WORK_CTXSW_NEXT (_TIF_WORK_CTXSW|_TIF_DEBUG)
-+#endif
- 
- #define PREEMPT_ACTIVE		0x10000000
- 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index b9b3b1a..233bf20 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -229,6 +229,12 @@ void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
- 		 */
- 		memset(tss->io_bitmap, 0xff, prev->io_bitmap_max);
- 	}
-+
-+#ifdef CONFIG_UPROBES
-+	if (test_tsk_thread_flag(next_p, TIF_SINGLESTEP))
-+		uprobe_switch_to(next_p);
-+#endif
-+
- 	propagate_user_return_notify(prev_p, next_p);
- }
- 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index cd086be..4140137 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -452,6 +452,20 @@ int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
- }
- #endif
- 
-+void uprobe_switch_to(struct task_struct *curr)
-+{
-+	struct uprobe_task *utask = curr->utask;
-+	struct pt_regs *regs = task_pt_regs(curr);
-+
-+	if (!utask || utask->state != UTASK_SSTEP)
-+		return;
-+
-+	if (!(regs->flags & X86_EFLAGS_TF))
-+		return;
-+
-+	set_xol_ip(regs);
-+}
-+
- /*
-  * Called by post_xol() to adjust the return address pushed by a call
-  * instruction executed out of line.
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index c9ff67a..d590d66 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -141,6 +141,7 @@ extern void uprobe_notify_resume(struct pt_regs *regs);
- extern bool uprobe_deny_signal(void);
- extern bool __weak can_skip_xol(struct pt_regs *regs, struct uprobe *u);
- extern void __weak set_xol_ip(struct pt_regs *regs);
-+extern void uprobe_switch_to(struct task_struct *);
- #else /* CONFIG_UPROBES is not defined */
- static inline int register_uprobe(struct inode *inode, loff_t offset,
- 				struct uprobe_consumer *consumer)
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index b596432..9c509dc 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -1399,8 +1399,10 @@ void uprobe_notify_resume(struct pt_regs *regs)
- 			goto cleanup_ret;
- 
- 		user_enable_single_step(current);
-+		preempt_disable();
- 		utask->state = UTASK_SSTEP;
- 		set_xol_ip(regs);
-+		preempt_enable();
- 	} else {
- 		u = utask->active_uprobe;
- 		if (utask->state == UTASK_SSTEP_ACK)
 -- 
-1.5.5.1
-
+Jens Axboe
 
