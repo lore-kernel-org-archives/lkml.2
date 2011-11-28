@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab1K1Tdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:33:50 -0500
-Received: from mga03.intel.com ([143.182.124.21]:19883 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754421Ab1K1Tda convert rfc822-to-8bit (ORCPT
+	id S1755053Ab1K1TdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:33:18 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36162 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754984Ab1K1TdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:33:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,585,1315206000"; 
-   d="scan'208";a="41827312"
-From: Andi Kleen <andi@firstfloor.org>
-To: "Nicolas Kalkhof" <nkalkhof@web.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Too many poll_idle cpu calls in kernel 3.2 rc-series
-References: <1587582695.5658131.1322424808507.JavaMail.fmail@mwmweb005>
-Date: Mon, 28 Nov 2011 11:33:28 -0800
-In-Reply-To: <1587582695.5658131.1322424808507.JavaMail.fmail@mwmweb005>
-	(Nicolas Kalkhof's message of "Sun, 27 Nov 2011 21:13:28 +0100 (CET)")
-Message-ID: <m28vn03uuv.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 Nov 2011 14:33:14 -0500
+From: Tejun Heo <tj@kernel.org>
+To: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
+        tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+        liqin.chen@sunplusct.com, lethal@linux-sh.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mingo@redhat.com, jonas@southpole.se, lennox.wu@gmail.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 21/23] score: Use HAVE_MEMBLOCK_NODE_MAP
+Date: Mon, 28 Nov 2011 11:31:23 -0800
+Message-Id: <1322508685-32532-22-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1322508685-32532-1-git-send-email-tj@kernel.org>
+References: <1322508685-32532-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Nicolas Kalkhof" <nkalkhof@web.de> writes:
+score used early_node_map[] just to prime free_area_init_nodes().  Now
+memblock can be used for the same purpose and early_node_map[] is
+scheduled to be dropped.  Use memblock instead.
 
-> the kernel v3.2 series shows excessive poll_idle calls during system idle phases causing the cpu
-> (mobile i7 2620M) to heat up and draw additional 10% more power.  All kernel versions between
-> 3.2-rc1 and 3.2-rc3 are affected. Perf Top and Powertop both show the same issue.
-> I've posted a similar bug report before: http://marc.info/?l=linux-kernel&m=132164909313594&w=2
-> and used perf top -U to verify the poll_idle calls as requested.
+While at it, replace 7 space indentations w/ tabs.
 
-So it didn't happen with earlier kernels? 
-I would suggest a git bisect in this case.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Chen Liqin <liqin.chen@sunplusct.com>
+Cc: Lennox Wu <lennox.wu@gmail.com>
+---
+ arch/score/Kconfig        |    9 ++++++---
+ arch/score/kernel/setup.c |    4 +++-
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
--Andi
-
+diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+index df169e8..5f8743b 100644
+--- a/arch/score/Kconfig
++++ b/arch/score/Kconfig
+@@ -1,9 +1,12 @@
+ menu "Machine selection"
+ 
+ config SCORE
+-       def_bool y
+-       select HAVE_GENERIC_HARDIRQS
+-       select GENERIC_IRQ_SHOW
++	def_bool y
++	select HAVE_GENERIC_HARDIRQS
++	select GENERIC_IRQ_SHOW
++	select HAVE_MEMBLOCK
++	select HAVE_MEMBLOCK_NODE_MAP
++	select ARCH_DISCARD_MEMBLOCK
+ 
+ choice
+ 	prompt "System type"
+diff --git a/arch/score/kernel/setup.c b/arch/score/kernel/setup.c
+index 6f898c0..b48459a 100644
+--- a/arch/score/kernel/setup.c
++++ b/arch/score/kernel/setup.c
+@@ -26,6 +26,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/initrd.h>
+ #include <linux/ioport.h>
++#include <linux/memblock.h>
+ #include <linux/mm.h>
+ #include <linux/seq_file.h>
+ #include <linux/screen_info.h>
+@@ -54,7 +55,8 @@ static void __init bootmem_init(void)
+ 	/* Initialize the boot-time allocator with low memory only. */
+ 	bootmap_size = init_bootmem_node(NODE_DATA(0), start_pfn,
+ 					 min_low_pfn, max_low_pfn);
+-	add_active_range(0, min_low_pfn, max_low_pfn);
++	memblock_add_node(PFN_PHYS(min_low_pfn),
++			  PFN_PHYS(max_low_pfn - min_low_pfn), 0);
+ 
+ 	free_bootmem(PFN_PHYS(start_pfn),
+ 		     (max_low_pfn - start_pfn) << PAGE_SHIFT);
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.3.1
+
