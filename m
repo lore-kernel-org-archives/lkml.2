@@ -1,45 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab1K1Hpg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:45:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19971 "EHLO mx1.redhat.com"
+	id S1752416Ab1K1HrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:47:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2549 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab1K1Hpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:45:34 -0500
-Message-ID: <4ED33C0D.3020001@redhat.com>
-Date: Mon, 28 Nov 2011 15:45:17 +0800
+	id S1751435Ab1K1HrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:47:22 -0500
 From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Cong Wang <amwang@redhat.com>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Lameter <cl@linux.com>, Tejun Heo <tj@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: =?UTF-8?q?=5BUPDATED=20PATCH=2001/62=5D=20highmem=3A=20mark=20k=5Bun=5Dmap=5Fatomic=28=29=20with=20two=20arguments=20as=20deprecated?=
+Date: Mon, 28 Nov 2011 15:46:23 +0800
+Message-Id: <1322466385-10527-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <1322371662-26166-2-git-send-email-amwang@redhat.com>
+References: <1322371662-26166-2-git-send-email-amwang@redhat.com>
 MIME-Version: 1.0
-To: Roland Dreier <roland@kernel.org>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org
-Subject: Re: [PATCH 16/62] infiniband: remove the second argument of k[un]map_atomic()
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-17-git-send-email-amwang@redhat.com> <CAL1RGDXkh4xJJNO+7fkDXJ4f7LgwvbrHKTueiozUkiK0dkRBZA@mail.gmail.com>
-In-Reply-To: <CAL1RGDXkh4xJJNO+7fkDXJ4f7LgwvbrHKTueiozUkiK0dkRBZA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年11月28日 15:38, Roland Dreier 写道:
-> These look fine, given the second argument is unused.  So
->
-> Acked-by: Roland Dreier<roland@purestorage.com>
->
+Update: keep kunmap_atomic() as a macro, otherwise BUILD_BUG_ON() won't work.
 
-Thanks, Roland!
+For backward compatibility, we still keep the deprecated form,
+and will warn the users if they still use the deprecated one, like this:
 
-> ... or is there some point when the<linux/highmem.h>  part is
-> going in and where it makes sense for me to apply this through
-> my tree?
->
+drivers/block/drbd/drbd_bitmap.c: In function ‘bm_page_io_async’:
+drivers/block/drbd/drbd_bitmap.c:973:3: warning: ‘kmap_atomic_deprecated’ is deprecated (declared at /home/wangcong/linux-2.6/include/linux/highmem.h:124)
+drivers/block/drbd/drbd_bitmap.c:977:3: warning: ‘kunmap_atomic_deprecated’ is deprecated (declared at /home/wangcong/linux-2.6/include/linux/highmem.h:144)
 
-I think this patchset should be taken as a whole, so either Andrew
-takes them all, or let Stephen to merge my tree[1] to linux-next.
+Thanks to Nick Bowler for the cpp trick!
 
-But I don't know if Andrew has different opinions.
+Cc: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: Nick Bowler <nbowler@elliptictech.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Cong Wang <amwang@redhat.com>
 
-1. git://github.com/congwang/linux.git #for-next
+---
+ include/linux/highmem.h |   52 +++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 46 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+index 3a93f73..11617a8 100644
+--- a/include/linux/highmem.h
++++ b/include/linux/highmem.h
+@@ -109,20 +109,60 @@ static inline void kmap_atomic_idx_pop(void)
+ #endif
+ 
+ /*
+- * Make both: kmap_atomic(page, idx) and kmap_atomic(page) work.
++ * NOTE:
++ * kmap_atomic() and kunmap_atomic() with two arguments are deprecated.
++ * We only keep them for backward compatibility, any usage of them
++ * are now warned.
+  */
+-#define kmap_atomic(page, args...) __kmap_atomic(page)
++
++#define PASTE(a, b) a ## b
++#define PASTE2(a, b) PASTE(a, b)
++
++#define NARG_(_2, _1, n, ...) n
++#define NARG(...) NARG_(__VA_ARGS__, 2, 1, :)
++
++static inline void *kmap_atomic(struct page *page)
++{
++	return __kmap_atomic(page);
++}
++
++static inline void __deprecated *kmap_atomic_deprecated(struct page *page,
++							enum km_type km)
++{
++	return __kmap_atomic(page);
++}
++
++#define kmap_atomic1(...) kmap_atomic(__VA_ARGS__)
++#define kmap_atomic2(...) kmap_atomic_deprecated(__VA_ARGS__)
++#define kmap_atomic(...) PASTE2(kmap_atomic, NARG(__VA_ARGS__)(__VA_ARGS__))
++
++static inline void __deprecated __kunmap_atomic_deprecated(void *addr,
++							enum km_type km)
++{
++	__kunmap_atomic(addr);
++}
+ 
+ /*
+  * Prevent people trying to call kunmap_atomic() as if it were kunmap()
+  * kunmap_atomic() should get the return value of kmap_atomic, not the page.
+  */
+-#define kunmap_atomic(addr, args...)				\
+-do {								\
+-	BUILD_BUG_ON(__same_type((addr), struct page *));	\
+-	__kunmap_atomic(addr);					\
++#define kunmap_atomic_deprecated(addr, km)                      \
++do {                                                            \
++	BUILD_BUG_ON(__same_type((addr), struct page *));       \
++	__kunmap_atomic_deprecated(addr, km);                   \
+ } while (0)
+ 
++#define kunmap_atomic_withcheck(addr)                           \
++do {                                                            \
++	BUILD_BUG_ON(__same_type((addr), struct page *));       \
++	__kunmap_atomic(addr);                                  \
++} while (0)
++
++#define kunmap_atomic1(...) kunmap_atomic_withcheck(__VA_ARGS__)
++#define kunmap_atomic2(...) kunmap_atomic_deprecated(__VA_ARGS__)
++#define kunmap_atomic(...) PASTE2(kunmap_atomic, NARG(__VA_ARGS__)(__VA_ARGS__))
++/**** End of C pre-processor tricks for deprecated macros ****/
++
+ /* when CONFIG_HIGHMEM is not set these will be plain clear/copy_page */
+ #ifndef clear_user_highpage
+ static inline void clear_user_highpage(struct page *page, unsigned long vaddr)
+-- 
+1.7.4.4
+
