@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab1K1Im5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 03:42:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56199 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab1K1Im4 (ORCPT
+	id S1753062Ab1K1In3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 03:43:29 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:16891
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752988Ab1K1In1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 03:42:56 -0500
-Date: Mon, 28 Nov 2011 09:42:36 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Micha <mirq-linux@rere.qmqm.pl>,
-        David Brown <davidb@codeaurora.org>, Ben Dooks <ben-linux@fluff.org>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Ian Molton <ian@mnementh.co.uk>, Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: convert drivers/mmc/host/* to use
- module_platform_driver()
-Message-ID: <20111128084236.GQ27267@pengutronix.de>
-References: <1322283343.14278.2.camel@phoenix>
+	Mon, 28 Nov 2011 03:43:27 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>, <linux-kernel@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <drivers@analog.com>,
+        Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH v2 5/7] ASoC: SigmaDSP: Provide diagnostic error messages
+Date: Mon, 28 Nov 2011 09:44:18 +0100
+Message-ID: <1322469860-8210-5-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1322469860-8210-1-git-send-email-lars@metafoo.de>
+References: <1322469860-8210-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1322283343.14278.2.camel@phoenix>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:42:07 up 15 days, 16:29, 25 users,  load average: 0.00, 0.12,
- 0.19
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 26, 2011 at 12:55:43PM +0800, Axel Lin wrote:
-> This patch converts the drivers in drivers/mmc/host/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: "Michał Mirosław" <mirq-linux@rere.qmqm.pl>
-> Cc: David Brown <davidb@codeaurora.org>
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Ian Molton <ian@mnementh.co.uk>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Provide some error messages when loading the firmware fails, so it is possible
+to diagnose the reason for the failure.
 
-For the mxcmmc driver:
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+---
+Changes since v1:
+	* Don't split error message string across multiple lines.
+---
+ sound/soc/codecs/sigmadsp.c |   13 ++++++++++---
+ 1 files changed, 10 insertions(+), 3 deletions(-)
 
+diff --git a/sound/soc/codecs/sigmadsp.c b/sound/soc/codecs/sigmadsp.c
+index acb97a9..c0ad885 100644
+--- a/sound/soc/codecs/sigmadsp.c
++++ b/sound/soc/codecs/sigmadsp.c
+@@ -124,18 +124,25 @@ int process_sigma_firmware(struct i2c_client *client, const char *name)
+ 	 * purposes and having the limit makes it easier to avoid integer
+ 	 * overflows later in the loading process.
+ 	 */
+-	if (fw->size < sizeof(*ssfw_head) || fw->size >= 0x4000000)
++	if (fw->size < sizeof(*ssfw_head) || fw->size >= 0x4000000) {
++		dev_err(&client->dev, "Failed to load firmware: Invalid size\n");
+ 		goto done;
++	}
+ 
+ 	ssfw_head = (void *)fw->data;
+-	if (memcmp(ssfw_head->magic, SIGMA_MAGIC, ARRAY_SIZE(ssfw_head->magic)))
++	if (memcmp(ssfw_head->magic, SIGMA_MAGIC, ARRAY_SIZE(ssfw_head->magic))) {
++		dev_err(&client->dev, "Failed to load firmware: Invalid magic\n");
+ 		goto done;
++	}
+ 
+ 	crc = crc32(0, fw->data + sizeof(*ssfw_head),
+ 			fw->size - sizeof(*ssfw_head));
+ 	pr_debug("%s: crc=%x\n", __func__, crc);
+-	if (crc != le32_to_cpu(ssfw_head->crc))
++	if (crc != le32_to_cpu(ssfw_head->crc)) {
++		dev_err(&client->dev, "Failed to load firmware: Wrong crc checksum: expected %x got %x\n",
++			le32_to_cpu(ssfw_head->crc), crc);
+ 		goto done;
++	}
+ 
+ 	ssfw.pos = sizeof(*ssfw_head);
+ 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.7.3
+
+
