@@ -1,56 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab1K1HLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 02:11:31 -0500
-Received: from ganesha.gnumonks.org ([213.95.27.120]:58972 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab1K1HLa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 02:11:30 -0500
-From: jhbird.choi@samsung.com
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, jhbird.choi@gmail.com,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [RESEND PATCH] ARM: SAMSUNG: Add s3c_setparent_clksrc in s3c_set_clksrc
-Date: Mon, 28 Nov 2011 09:31:12 +0900
-Message-Id: <1322440272-32578-1-git-send-email-jhbird.choi@samsung.com>
-X-Mailer: git-send-email 1.7.1
+	id S1751958Ab1K1HOv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 02:14:51 -0500
+Received: from ozlabs.org ([203.10.76.45]:40033 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751288Ab1K1HOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 02:14:50 -0500
+Date: Mon, 28 Nov 2011 18:14:46 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, David Miller <davem@davemloft.net>,
+        Matt Mackall <mpm@selenic.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: [PATCH] net: Fix corruption in /proc/*/net/dev_mcast
+Message-ID: <20111128181446.2ab784d0@kryten>
+In-Reply-To: <1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <1321866845.3831.7.camel@lappy>
+	<1321870529.2552.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonghwan Choi <jhbird.choi@samsung.com>
 
-Currently we have to run clk_set_parent to change clock source.
-But if there are sources & parent defined, it means we will select a parent
-in multiple clock sources. So sources & parent are already defined,
-set the parent clock int s3c_set_clksrc.
-Then we can reduce many clk_set_parent function in driver or setup_clock function.
+Hi,
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> I got the following output when running some tests (I'm not really sure
+> what exactly happened when this bug was triggered):
+> 
+> [13850.947279] =============================================================================
+> [13850.948024] BUG kmalloc-8: Redzone overwritten
+> [13850.948024] -----------------------------------------------------------------------------
+> [13850.948024] 
+> [13850.948024] INFO: 0xffff8800104f6d28-0xffff8800104f6d2b. First byte 0x0 instead of 0xcc
+> [13850.948024] INFO: Allocated in __seq_open_private+0x20/0x5e age=4436 cpu=0 pid=17295
+> [13850.948024] 	__slab_alloc.clone.46+0x3e7/0x456
+> [13850.948024] 	__kmalloc+0x8c/0x110
+> [13850.948024] 	__seq_open_private+0x20/0x5e
+> [13850.948024] 	seq_open_net+0x3b/0x5d
+> [13850.948024] 	dev_mc_seq_open+0x15/0x17
+> [13850.948024] 	proc_reg_open+0xad/0x127
+
+I just hit this during my testing. Isn't there another bug lurking?
+
+Anton
+--
+
+
+With slub debugging on I see red zone issues in /proc/*/net/dev_mcast:
+
+=============================================================================
+BUG kmalloc-8: Redzone overwritten
+-----------------------------------------------------------------------------
+
+INFO: 0xc0000000de9dec48-0xc0000000de9dec4b. First byte 0x0 instead of 0xcc
+INFO: Allocated in .__seq_open_private+0x30/0xa0 age=0 cpu=5 pid=3896
+	.__kmalloc+0x1e0/0x2d0
+	.__seq_open_private+0x30/0xa0
+	.seq_open_net+0x60/0xe0
+	.dev_mc_seq_open+0x4c/0x70
+	.proc_reg_open+0xd8/0x260
+	.__dentry_open.clone.11+0x2b8/0x400
+	.do_last+0xf4/0x950
+	.path_openat+0xf8/0x480
+	.do_filp_open+0x48/0xc0
+	.do_sys_open+0x140/0x250
+	syscall_exit+0x0/0x40
+
+dev_mc_seq_ops uses dev_seq_start/next/stop but only allocates
+sizeof(struct seq_net_private) of private data, whereas it expects
+sizeof(struct dev_iter_state):
+
+struct dev_iter_state {
+	struct seq_net_private p;
+	unsigned int pos; /* bucket << BUCKET_SPACE + offset */
+};
+
+Create dev_seq_open_ops and use it so we don't have to expose
+struct dev_iter_state.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
 ---
- arch/arm/plat-samsung/clock-clksrc.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/plat-samsung/clock-clksrc.c b/arch/arm/plat-samsung/clock-clksrc.c
-index ae8b850..98bbefc 100644
---- a/arch/arm/plat-samsung/clock-clksrc.c
-+++ b/arch/arm/plat-samsung/clock-clksrc.c
-@@ -140,6 +140,13 @@ void __init_or_cpufreq s3c_set_clksrc(struct clksrc_clk *clk, bool announce)
- 		return;
- 	}
+Index: linux-net/include/linux/netdevice.h
+===================================================================
+--- linux-net.orig/include/linux/netdevice.h	2011-11-28 17:55:51.469508056 +1100
++++ linux-net/include/linux/netdevice.h	2011-11-28 17:55:52.985535812 +1100
+@@ -2536,6 +2536,8 @@ extern void		net_disable_timestamp(void)
+ extern void *dev_seq_start(struct seq_file *seq, loff_t *pos);
+ extern void *dev_seq_next(struct seq_file *seq, void *v, loff_t *pos);
+ extern void dev_seq_stop(struct seq_file *seq, void *v);
++extern int dev_seq_open_ops(struct inode *inode, struct file *file,
++			    const struct seq_operations *ops);
+ #endif
  
-+	if (clk->sources && clk->clk.parent)
-+		if (s3c_setparent_clksrc(&clk->clk, clk->clk.parent)) {
-+			printk(KERN_ERR "%s: bad source is %s\n",
-+					clk->clk.name, clk->clk.parent->name);
-+			return;
-+		}
+ extern int netdev_class_create_file(struct class_attribute *class_attr);
+Index: linux-net/net/core/dev.c
+===================================================================
+--- linux-net.orig/net/core/dev.c	2011-11-28 17:55:51.481508276 +1100
++++ linux-net/net/core/dev.c	2011-11-28 17:55:52.989535885 +1100
+@@ -4282,6 +4282,12 @@ static int dev_seq_open(struct inode *in
+ 			    sizeof(struct dev_iter_state));
+ }
+ 
++int dev_seq_open_ops(struct inode *inode, struct file *file,
++		     const struct seq_operations *ops)
++{
++	return seq_open_net(inode, file, ops, sizeof(struct dev_iter_state));
++}
 +
- 	clksrc = __raw_readl(clk->reg_src.reg);
- 	clksrc &= mask;
- 	clksrc >>= clk->reg_src.shift;
--- 
-1.7.1
-
+ static const struct file_operations dev_seq_fops = {
+ 	.owner	 = THIS_MODULE,
+ 	.open    = dev_seq_open,
+Index: linux-net/net/core/dev_addr_lists.c
+===================================================================
+--- linux-net.orig/net/core/dev_addr_lists.c	2011-11-28 17:55:47.845441705 +1100
++++ linux-net/net/core/dev_addr_lists.c	2011-11-28 17:55:52.989535885 +1100
+@@ -696,8 +696,7 @@ static const struct seq_operations dev_m
+ 
+ static int dev_mc_seq_open(struct inode *inode, struct file *file)
+ {
+-	return seq_open_net(inode, file, &dev_mc_seq_ops,
+-			    sizeof(struct seq_net_private));
++	return dev_seq_open_ops(inode, file, &dev_mc_seq_ops);
+ }
+ 
+ static const struct file_operations dev_mc_seq_fops = {
