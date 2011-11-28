@@ -1,73 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab1K1TSw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 14:18:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41687 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab1K1TSv (ORCPT
+	id S1754032Ab1K1TTn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:19:43 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61781 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab1K1TTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 14:18:51 -0500
-X-Authority-Analysis: v=2.0 cv=dOUkaZlb c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Bwl9-wDNmxcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=q-z1TKzq93ajGum7SawA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH 3/9] ftrace: Fix shutdown to disable calls properly
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-In-Reply-To: <1322417074-5834-4-git-send-email-jolsa@redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
-	 <1322417074-5834-4-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Nov 2011 14:18:48 -0500
-Message-ID: <1322507928.17003.7.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Nov 2011 14:19:42 -0500
+Date: Mon, 28 Nov 2011 23:16:58 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        "Serge E. Hallyn" <serge@hallyn.com>
+Subject: [RFC -resend] Make Yama pid_ns aware
+Message-ID: <20111128191658.GA6028@albatros>
+References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319672956-17114-1-git-send-email-keescook@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-11-27 at 19:04 +0100, Jiri Olsa wrote:
-> Each ftrace_startup call increases the call record's flag,
-> so we need allways to decrease it when shutting down the
-> ftrace_ops.
+As Yama's sysctls are about defining a security policy for the system,
+it is reasonable to define it per container in case of LXC containers
+(or out-of-tree alternatives like OpenVZ).  In my opinion they belong
+to pid namespace.  With per-pid_ns sysctls it is possible to create
+multiple containers with different ptrace, /tmp, etc. policies.
 
-No, that's not how this works. I probably should comment this code
-better, because it caused me to reread it too ;)
+The patch is straightforward:
 
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->  kernel/trace/ftrace.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index c6d0293..0ca0c0d 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -1744,8 +1744,7 @@ static void ftrace_shutdown(struct ftrace_ops *ops, int command)
->  	if (ops != &global_ops || !global_start_up)
->  		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
->  
-> -	if (!ftrace_start_up)
-> -		command |= FTRACE_DISABLE_CALLS;
-> +	command |= FTRACE_DISABLE_CALLS;
+1) all sysctl variables are moved from global vars to pid_namespace
+fields.
 
-FTRACE_DISABLE_CALLS will disable *all* functions for all tracers. If
-you are tracing with ftrace and perf, and one calls this with
-FTRACE_DISABLE_CALLS then both will no long be tracing anything.
+2) each cloned pid ns gets the settings of the parent.
 
-When you call unregister_ftrace_function() it will disable the functions
-that you have enabled by the ops.
+3) the variables of current pid ns are visible through sysctl interface.
 
-Nacked-by: Steven Rostedt <rostedt@goodmis.org.
+proc_pid_dointvec_minmax() is stolen from its ipc_ns equivalent in
+ipc/ipc_sysctl.c.
 
--- Steve
+P.S.  As user namespaces are not merged yet and it's not clear when/whether
+they are merged, these changes belong to pid namespace for now.  When
+user namespaces are merged, per pid_ns variables should go to struct
+user_namespace.  It will not break ABI as userspace sees the same
+kernel.yama.* sysctls in both pid ns and user ns cases.
 
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+--
 
->  
->  	if (saved_ftrace_func != ftrace_trace_function) {
->  		saved_ftrace_func = ftrace_trace_function;
-
-
+diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+index 38d1032..46edaf8 100644
+--- a/include/linux/pid_namespace.h
++++ b/include/linux/pid_namespace.h
+@@ -30,6 +30,11 @@ struct pid_namespace {
+ #ifdef CONFIG_BSD_PROCESS_ACCT
+ 	struct bsd_acct_struct *bacct;
+ #endif
++#ifdef CONFIG_SECURITY_YAMA
++	int ptrace_scope;
++	int protected_sticky_symlinks;
++	int protected_nonaccess_hardlinks;
++#endif
+ };
+ 
+ extern struct pid_namespace init_pid_ns;
+diff --git a/kernel/pid.c b/kernel/pid.c
+index fa5f722..0cd8926 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -78,6 +78,11 @@ struct pid_namespace init_pid_ns = {
+ 	.last_pid = 0,
+ 	.level = 0,
+ 	.child_reaper = &init_task,
++#ifdef CONFIG_SECURITY_YAMA
++	.ptrace_scope = 1,
++	.protected_sticky_symlinks = 1,
++	.protected_nonaccess_hardlinks = 1,
++#endif
+ };
+ EXPORT_SYMBOL_GPL(init_pid_ns);
+ 
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index e9c9adc..73d47c4 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -101,6 +101,14 @@ static struct pid_namespace *create_pid_namespace(struct pid_namespace *parent_p
+ 	if (err)
+ 		goto out_put_parent_pid_ns;
+ 
++#ifdef CONFIG_SECURITY_YAMA
++	ns->ptrace_scope = parent_pid_ns->ptrace_scope;
++	ns->protected_sticky_symlinks =
++		parent_pid_ns->protected_sticky_symlinks;
++	ns->protected_nonaccess_hardlinks =
++		parent_pid_ns->protected_nonaccess_hardlinks;
++#endif
++
+ 	return ns;
+ 
+ out_put_parent_pid_ns:
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index a92538c..cf99a8c 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -16,10 +16,7 @@
+ #include <linux/ptrace.h>
+ #include <linux/prctl.h>
+ #include <linux/ratelimit.h>
+-
+-static int ptrace_scope = 1;
+-static int protected_sticky_symlinks = 1;
+-static int protected_nonaccess_hardlinks = 1;
++#include <linux/pid_namespace.h>
+ 
+ /* describe a PTRACE relationship for potential exception */
+ struct ptrace_relation {
+@@ -250,7 +247,7 @@ static int yama_ptrace_access_check(struct task_struct *child,
+ 
+ 	/* require ptrace target be a child of ptracer on attach */
+ 	if (mode == PTRACE_MODE_ATTACH &&
+-	    ptrace_scope &&
++	    current->nsproxy->pid_ns->ptrace_scope &&
+ 	    !capable(CAP_SYS_PTRACE) &&
+ 	    !task_is_descendant(current, child) &&
+ 	    !ptracer_exception_found(current, child))
+@@ -292,7 +289,7 @@ static int yama_inode_follow_link(struct dentry *dentry,
+ 	const struct inode *inode;
+ 	const struct cred *cred;
+ 
+-	if (!protected_sticky_symlinks)
++	if (!current->nsproxy->pid_ns->protected_sticky_symlinks)
+ 		return 0;
+ 
+ 	/* if inode isn't a symlink, don't try to evaluate blocking it */
+@@ -362,7 +359,7 @@ static int yama_path_link(struct dentry *old_dentry, struct path *new_dir,
+ 	const int mode = inode->i_mode;
+ 	const struct cred *cred = current_cred();
+ 
+-	if (!protected_nonaccess_hardlinks)
++	if (!current->nsproxy->pid_ns->protected_nonaccess_hardlinks)
+ 		return 0;
+ 
+ 	if (cred->fsuid != inode->i_uid &&
+@@ -395,6 +392,26 @@ static struct security_operations yama_ops = {
+ static int zero;
+ static int one = 1;
+ 
++static void *get_pid_data(ctl_table *table)
++{
++	char *which = table->data;
++	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
++	which = (which - (char *)&init_pid_ns) + (char *)pid_ns;
++	return which;
++}
++
++static int proc_pid_dointvec_minmax(ctl_table *table, int write,
++	void __user *buffer, size_t *lenp, loff_t *ppos)
++{
++	struct ctl_table pid_table;
++
++	memcpy(&pid_table, table, sizeof(pid_table));
++	pid_table.data = get_pid_data(table);
++
++	return proc_dointvec_minmax(&pid_table, write, buffer, lenp, ppos);
++}
++
++
+ struct ctl_path yama_sysctl_path[] = {
+ 	{ .procname = "kernel", },
+ 	{ .procname = "yama", },
+@@ -404,28 +421,28 @@ struct ctl_path yama_sysctl_path[] = {
+ static struct ctl_table yama_sysctl_table[] = {
+ 	{
+ 		.procname       = "protected_sticky_symlinks",
+-		.data           = &protected_sticky_symlinks,
++		.data           = &init_pid_ns.protected_sticky_symlinks,
+ 		.maxlen         = sizeof(int),
+ 		.mode           = 0644,
+-		.proc_handler   = proc_dointvec_minmax,
++		.proc_handler   = proc_pid_dointvec_minmax,
+ 		.extra1         = &zero,
+ 		.extra2         = &one,
+ 	},
+ 	{
+ 		.procname       = "protected_nonaccess_hardlinks",
+-		.data           = &protected_nonaccess_hardlinks,
++		.data           = &init_pid_ns.protected_nonaccess_hardlinks,
+ 		.maxlen         = sizeof(int),
+ 		.mode           = 0644,
+-		.proc_handler   = proc_dointvec_minmax,
++		.proc_handler   = proc_pid_dointvec_minmax,
+ 		.extra1         = &zero,
+ 		.extra2         = &one,
+ 	},
+ 	{
+ 		.procname       = "ptrace_scope",
+-		.data           = &ptrace_scope,
++		.data           = &init_pid_ns.ptrace_scope,
+ 		.maxlen         = sizeof(int),
+ 		.mode           = 0644,
+-		.proc_handler   = proc_dointvec_minmax,
++		.proc_handler   = proc_pid_dointvec_minmax,
+ 		.extra1         = &zero,
+ 		.extra2         = &one,
+ 	},
+---
