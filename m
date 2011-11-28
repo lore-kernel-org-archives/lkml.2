@@ -1,196 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab1K1C46 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 Nov 2011 21:56:58 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36449 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755905Ab1K1C44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 Nov 2011 21:56:56 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 28 Nov 2011 11:55:41 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com, ebiederm@xmission.com,
-        davem@davemloft.net, paul@paulmenage.org, gthelen@google.com,
-        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH v6 02/10] foundations of per-cgroup memory pressure
- controlling.
-Message-Id: <20111128115541.bc8f2ffa.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1322242696-27682-3-git-send-email-glommer@parallels.com>
-References: <1322242696-27682-1-git-send-email-glommer@parallels.com>
-	<1322242696-27682-3-git-send-email-glommer@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1756057Ab1K1DBM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 Nov 2011 22:01:12 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:39543 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755905Ab1K1DBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 Nov 2011 22:01:10 -0500
+X-Greylist: delayed 1475 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 Nov 2011 22:01:10 EST
+Date: Sun, 27 Nov 2011 21:36:34 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, Tao Ma <boyu.mt@taobao.com>,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 29/62] fs: remove the second argument of k[un]map_atomic()
+Message-ID: <20111128023634.GB9285@kvack.org>
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-30-git-send-email-amwang@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322371662-26166-30-git-send-email-amwang@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Nov 2011 15:38:08 -0200
-Glauber Costa <glommer@parallels.com> wrote:
-
-> This patch replaces all uses of struct sock fields' memory_pressure,
-> memory_allocated, sockets_allocated, and sysctl_mem to acessor
-> macros. Those macros can either receive a socket argument, or a mem_cgroup
-> argument, depending on the context they live in.
+On Sun, Nov 27, 2011 at 01:27:09PM +0800, Cong Wang wrote:
 > 
-> Since we're only doing a macro wrapping here, no performance impact at all is
-> expected in the case where we don't have cgroups disabled.
+> Signed-off-by: Cong Wang <amwang@redhat.com>
+
+Acked-by: Benjamin LaHaise <bcrl@kvack.org>
+
+		-ben
+
+> ---
+>  fs/aio.c            |   30 +++++++++++++++---------------
+>  fs/bio-integrity.c  |   10 +++++-----
+>  fs/exec.c           |    4 ++--
+>  fs/namei.c          |    4 ++--
+>  fs/pipe.c           |    8 ++++----
+>  fs/splice.c         |    7 ++-----
+>  include/linux/bio.h |    8 ++++----
+>  7 files changed, 34 insertions(+), 37 deletions(-)
 > 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Eric W. Biederman <ebiederm@xmission.com>
-> CC: Eric Dumazet <eric.dumazet@gmail.com>
-
-I have some comments on the style. Maybe a nitpick but many patches were
-sent for fixing conding style in memcg recently.
-
-+static inline int *sk_memory_pressure(const struct sock *sk)
-+{
-+	return sk->sk_prot->memory_pressure;
-+}
-+
-+static inline long sk_prot_mem(const struct sock *sk, int index)
-+{
-+	long *prot = sk->sk_prot->sysctl_mem;
-+	return prot[index];
-+}
-+
-
-I don't think sk_prot_mem() is an easy to undestand name.
-sk_prot_memory_limit() ?
-
-> +static inline int
-> +kcg_sockets_allocated_sum_positive(struct proto *prot, struct mem_cgroup *cg)
-> +{
-> +	return percpu_counter_sum_positive(prot->sockets_allocated);
-> +}
-> +
-> +static inline long
-> +kcg_memory_allocated(struct proto *prot, struct mem_cgroup *cg)
-> +{
-> +	return atomic_long_read(prot->memory_allocated);
-> +}
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 78c514c..34e0d9f 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -160,7 +160,7 @@ static int aio_setup_ring(struct kioctx *ctx)
 >  
-
-I don't like 'kcg'. What it means ? 
-memory_cgrou_prot_socekts_allocated() ? and
-memory_cgroup_prot_memory_allocated() ?
-
-And the variable for memory cgroup should be 'memcg'.
-http://www.spinics.net/lists/linux-mm/msg26781.html
-So, please rename.
-
-
-
->  #ifdef CONFIG_PROC_FS
->  /* Called with local bh disabled */
-> diff --git a/include/net/tcp.h b/include/net/tcp.h
-> index e147f42..ccaa3b6 100644
-<snip>
-
- 	seq_printf(seq, "RAW: inuse %d\n",
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 34f5db1..89a2bfe 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -319,9 +319,11 @@ EXPORT_SYMBOL(tcp_memory_pressure);
+>  	info->nr = nr_events;		/* trusted copy */
 >  
->  void tcp_enter_memory_pressure(struct sock *sk)
->  {
-> -	if (!tcp_memory_pressure) {
-> +	int *memory_pressure = sk_memory_pressure(sk);
-> +
-
-Don't you need !memory_pressure check here ?
-
-Hmm, can this function be
-
-+static inline int *sk_memory_pressure(const struct sock *sk)
-+{
-+	return sk->sk_prot->memory_pressure;
-+}
-
-as
-
-static inline bool sk_under_prot_memory_pressure(const struct sock *sk)
-{
-	if (sk->sk_prot->memory_pressure &&
-	    *sk->sk_prot->memory_pressure)
-		return true;
-
-	return false;
-}
-
-and have sk_set/unset_prot_memory_pressure(),  ?
-
-
-
-> +	if (!*memory_pressure) {
->  		NET_INC_STATS(sock_net(sk), LINUX_MIB_TCPMEMORYPRESSURES);
-> -		tcp_memory_pressure = 1;
-> +		*memory_pressure = 1;
+> -	ring = kmap_atomic(info->ring_pages[0], KM_USER0);
+> +	ring = kmap_atomic(info->ring_pages[0]);
+>  	ring->nr = nr_events;	/* user copy */
+>  	ring->id = ctx->user_id;
+>  	ring->head = ring->tail = 0;
+> @@ -168,32 +168,32 @@ static int aio_setup_ring(struct kioctx *ctx)
+>  	ring->compat_features = AIO_RING_COMPAT_FEATURES;
+>  	ring->incompat_features = AIO_RING_INCOMPAT_FEATURES;
+>  	ring->header_length = sizeof(struct aio_ring);
+> -	kunmap_atomic(ring, KM_USER0);
+> +	kunmap_atomic(ring);
+>  
+>  	return 0;
+>  }
+>  
+>  
+>  /* aio_ring_event: returns a pointer to the event at the given index from
+> - * kmap_atomic(, km).  Release the pointer with put_aio_ring_event();
+> + * kmap_atomic().  Release the pointer with put_aio_ring_event();
+>   */
+>  #define AIO_EVENTS_PER_PAGE	(PAGE_SIZE / sizeof(struct io_event))
+>  #define AIO_EVENTS_FIRST_PAGE	((PAGE_SIZE - sizeof(struct aio_ring)) / sizeof(struct io_event))
+>  #define AIO_EVENTS_OFFSET	(AIO_EVENTS_PER_PAGE - AIO_EVENTS_FIRST_PAGE)
+>  
+> -#define aio_ring_event(info, nr, km) ({					\
+> +#define aio_ring_event(info, nr) ({					\
+>  	unsigned pos = (nr) + AIO_EVENTS_OFFSET;			\
+>  	struct io_event *__event;					\
+>  	__event = kmap_atomic(						\
+> -			(info)->ring_pages[pos / AIO_EVENTS_PER_PAGE], km); \
+> +			(info)->ring_pages[pos / AIO_EVENTS_PER_PAGE]); \
+>  	__event += pos % AIO_EVENTS_PER_PAGE;				\
+>  	__event;							\
+>  })
+>  
+> -#define put_aio_ring_event(event, km) do {	\
+> +#define put_aio_ring_event(event) do {		\
+>  	struct io_event *__event = (event);	\
+>  	(void)__event;				\
+> -	kunmap_atomic((void *)((unsigned long)__event & PAGE_MASK), km); \
+> +	kunmap_atomic((void *)((unsigned long)__event & PAGE_MASK)); \
+>  } while(0)
+>  
+>  static void ctx_rcu_free(struct rcu_head *head)
+> @@ -1012,10 +1012,10 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
+>  	if (kiocbIsCancelled(iocb))
+>  		goto put_rq;
+>  
+> -	ring = kmap_atomic(info->ring_pages[0], KM_IRQ1);
+> +	ring = kmap_atomic(info->ring_pages[0]);
+>  
+>  	tail = info->tail;
+> -	event = aio_ring_event(info, tail, KM_IRQ0);
+> +	event = aio_ring_event(info, tail);
+>  	if (++tail >= info->nr)
+>  		tail = 0;
+>  
+> @@ -1036,8 +1036,8 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
+>  	info->tail = tail;
+>  	ring->tail = tail;
+>  
+> -	put_aio_ring_event(event, KM_IRQ0);
+> -	kunmap_atomic(ring, KM_IRQ1);
+> +	put_aio_ring_event(event);
+> +	kunmap_atomic(ring);
+>  
+>  	pr_debug("added to ring %p at [%lu]\n", iocb, tail);
+>  
+> @@ -1082,7 +1082,7 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
+>  	unsigned long head;
+>  	int ret = 0;
+>  
+> -	ring = kmap_atomic(info->ring_pages[0], KM_USER0);
+> +	ring = kmap_atomic(info->ring_pages[0]);
+>  	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
+>  		 (unsigned long)ring->head, (unsigned long)ring->tail,
+>  		 (unsigned long)ring->nr);
+> @@ -1094,18 +1094,18 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
+>  
+>  	head = ring->head % info->nr;
+>  	if (head != ring->tail) {
+> -		struct io_event *evp = aio_ring_event(info, head, KM_USER1);
+> +		struct io_event *evp = aio_ring_event(info, head);
+>  		*ent = *evp;
+>  		head = (head + 1) % info->nr;
+>  		smp_mb(); /* finish reading the event before updatng the head */
+>  		ring->head = head;
+>  		ret = 1;
+> -		put_aio_ring_event(evp, KM_USER1);
+> +		put_aio_ring_event(evp);
+>  	}
+>  	spin_unlock(&info->ring_lock);
+>  
+>  out:
+> -	kunmap_atomic(ring, KM_USER0);
+> +	kunmap_atomic(ring);
+>  	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
+>  		 (unsigned long)ring->head, (unsigned long)ring->tail);
+>  	return ret;
+> diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+> index c2183f3..e85c04b 100644
+> --- a/fs/bio-integrity.c
+> +++ b/fs/bio-integrity.c
+> @@ -357,7 +357,7 @@ static void bio_integrity_generate(struct bio *bio)
+>  	bix.sector_size = bi->sector_size;
+>  
+>  	bio_for_each_segment(bv, bio, i) {
+> -		void *kaddr = kmap_atomic(bv->bv_page, KM_USER0);
+> +		void *kaddr = kmap_atomic(bv->bv_page);
+>  		bix.data_buf = kaddr + bv->bv_offset;
+>  		bix.data_size = bv->bv_len;
+>  		bix.prot_buf = prot_buf;
+> @@ -371,7 +371,7 @@ static void bio_integrity_generate(struct bio *bio)
+>  		total += sectors * bi->tuple_size;
+>  		BUG_ON(total > bio->bi_integrity->bip_size);
+>  
+> -		kunmap_atomic(kaddr, KM_USER0);
+> +		kunmap_atomic(kaddr);
 >  	}
 >  }
->  EXPORT_SYMBOL(tcp_enter_memory_pressure);
-> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-> index 52b5c2d..3df862d 100644
-> --- a/net/ipv4/tcp_input.c
-> +++ b/net/ipv4/tcp_input.c
-> @@ -322,7 +322,7 @@ static void tcp_grow_window(struct sock *sk, const struct sk_buff *skb)
->  	/* Check #1 */
->  	if (tp->rcv_ssthresh < tp->window_clamp &&
->  	    (int)tp->rcv_ssthresh < tcp_space(sk) &&
-> -	    !tcp_memory_pressure) {
-> +	    !sk_memory_pressure(sk)) {
-
-Don't you need to check !*sk_memory_pressure(sk) ?
-
-
-
->  		int incr;
 >  
->  		/* Check #2. Increase window, if skb with such overhead
-> @@ -411,8 +411,8 @@ static void tcp_clamp_window(struct sock *sk)
+> @@ -498,7 +498,7 @@ static int bio_integrity_verify(struct bio *bio)
+>  	bix.sector_size = bi->sector_size;
 >  
->  	if (sk->sk_rcvbuf < sysctl_tcp_rmem[2] &&
->  	    !(sk->sk_userlocks & SOCK_RCVBUF_LOCK) &&
-> -	    !tcp_memory_pressure &&
-> -	    atomic_long_read(&tcp_memory_allocated) < sysctl_tcp_mem[0]) {
-> +	    !sk_memory_pressure(sk) &&
-> +	    sk_memory_allocated(sk) < sk_prot_mem(sk, 0)) {
->  		sk->sk_rcvbuf = min(atomic_read(&sk->sk_rmem_alloc),
->  				    sysctl_tcp_rmem[2]);
+>  	bio_for_each_segment(bv, bio, i) {
+> -		void *kaddr = kmap_atomic(bv->bv_page, KM_USER0);
+> +		void *kaddr = kmap_atomic(bv->bv_page);
+>  		bix.data_buf = kaddr + bv->bv_offset;
+>  		bix.data_size = bv->bv_len;
+>  		bix.prot_buf = prot_buf;
+> @@ -507,7 +507,7 @@ static int bio_integrity_verify(struct bio *bio)
+>  		ret = bi->verify_fn(&bix);
+>  
+>  		if (ret) {
+> -			kunmap_atomic(kaddr, KM_USER0);
+> +			kunmap_atomic(kaddr);
+>  			return ret;
+>  		}
+>  
+> @@ -517,7 +517,7 @@ static int bio_integrity_verify(struct bio *bio)
+>  		total += sectors * bi->tuple_size;
+>  		BUG_ON(total > bio->bi_integrity->bip_size);
+>  
+> -		kunmap_atomic(kaddr, KM_USER0);
+> +		kunmap_atomic(kaddr);
 >  	}
-> @@ -4864,7 +4864,7 @@ static int tcp_prune_queue(struct sock *sk)
 >  
->  	if (atomic_read(&sk->sk_rmem_alloc) >= sk->sk_rcvbuf)
->  		tcp_clamp_window(sk);
-> -	else if (tcp_memory_pressure)
-> +	else if (sk_memory_pressure(sk))
->  		tp->rcv_ssthresh = min(tp->rcv_ssthresh, 4U * tp->advmss);
-
-Ditto.
-
-
+>  	return ret;
+> diff --git a/fs/exec.c b/fs/exec.c
+> index 3625464..ca141db 100644
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -1334,13 +1334,13 @@ int remove_arg_zero(struct linux_binprm *bprm)
+>  			ret = -EFAULT;
+>  			goto out;
+>  		}
+> -		kaddr = kmap_atomic(page, KM_USER0);
+> +		kaddr = kmap_atomic(page);
 >  
->  	tcp_collapse_ofo_queue(sk);
-> @@ -4930,11 +4930,11 @@ static int tcp_should_expand_sndbuf(const struct sock *sk)
->  		return 0;
+>  		for (; offset < PAGE_SIZE && kaddr[offset];
+>  				offset++, bprm->p++)
+>  			;
 >  
->  	/* If we are under global TCP memory pressure, do not expand.  */
-> -	if (tcp_memory_pressure)
-> +	if (sk_memory_pressure(sk))
->  		return 0;
+> -		kunmap_atomic(kaddr, KM_USER0);
+> +		kunmap_atomic(kaddr);
+>  		put_arg_page(page);
+>  
+>  		if (offset == PAGE_SIZE)
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 5008f01..c02b2c6 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -3346,9 +3346,9 @@ retry:
+>  	if (err)
+>  		goto fail;
+>  
+> -	kaddr = kmap_atomic(page, KM_USER0);
+> +	kaddr = kmap_atomic(page);
+>  	memcpy(kaddr, symname, len-1);
+> -	kunmap_atomic(kaddr, KM_USER0);
+> +	kunmap_atomic(kaddr);
+>  
+>  	err = pagecache_write_end(NULL, mapping, 0, len-1, len-1,
+>  							page, fsdata);
+> diff --git a/fs/pipe.c b/fs/pipe.c
+> index 4065f07..2c59dfa 100644
+> --- a/fs/pipe.c
+> +++ b/fs/pipe.c
+> @@ -230,7 +230,7 @@ void *generic_pipe_buf_map(struct pipe_inode_info *pipe,
+>  {
+>  	if (atomic) {
+>  		buf->flags |= PIPE_BUF_FLAG_ATOMIC;
+> -		return kmap_atomic(buf->page, KM_USER0);
+> +		return kmap_atomic(buf->page);
+>  	}
+>  
+>  	return kmap(buf->page);
+> @@ -251,7 +251,7 @@ void generic_pipe_buf_unmap(struct pipe_inode_info *pipe,
+>  {
+>  	if (buf->flags & PIPE_BUF_FLAG_ATOMIC) {
+>  		buf->flags &= ~PIPE_BUF_FLAG_ATOMIC;
+> -		kunmap_atomic(map_data, KM_USER0);
+> +		kunmap_atomic(map_data);
+>  	} else
+>  		kunmap(buf->page);
+>  }
+> @@ -565,14 +565,14 @@ redo1:
+>  			iov_fault_in_pages_read(iov, chars);
+>  redo2:
+>  			if (atomic)
+> -				src = kmap_atomic(page, KM_USER0);
+> +				src = kmap_atomic(page);
+>  			else
+>  				src = kmap(page);
+>  
+>  			error = pipe_iov_copy_from_user(src, iov, chars,
+>  							atomic);
+>  			if (atomic)
+> -				kunmap_atomic(src, KM_USER0);
+> +				kunmap_atomic(src);
+>  			else
+>  				kunmap(page);
+>  
+> diff --git a/fs/splice.c b/fs/splice.c
+> index fa2defa..da01377 100644
+> --- a/fs/splice.c
+> +++ b/fs/splice.c
+> @@ -738,15 +738,12 @@ int pipe_to_file(struct pipe_inode_info *pipe, struct pipe_buffer *buf,
+>  		goto out;
+>  
+>  	if (buf->page != page) {
+> -		/*
+> -		 * Careful, ->map() uses KM_USER0!
+> -		 */
+>  		char *src = buf->ops->map(pipe, buf, 1);
+> -		char *dst = kmap_atomic(page, KM_USER1);
+> +		char *dst = kmap_atomic(page);
+>  
+>  		memcpy(dst + offset, src + buf->offset, this_len);
+>  		flush_dcache_page(page);
+> -		kunmap_atomic(dst, KM_USER1);
+> +		kunmap_atomic(dst);
+>  		buf->ops->unmap(pipe, buf, src);
+>  	}
+>  	ret = pagecache_write_end(file, mapping, sd->pos, this_len, this_len,
+> diff --git a/include/linux/bio.h b/include/linux/bio.h
+> index 847994a..6ed3ba4 100644
+> --- a/include/linux/bio.h
+> +++ b/include/linux/bio.h
+> @@ -101,10 +101,10 @@ static inline int bio_has_allocated_vec(struct bio *bio)
+>   * I/O completely on that queue (see ide-dma for example)
+>   */
+>  #define __bio_kmap_atomic(bio, idx, kmtype)				\
+> -	(kmap_atomic(bio_iovec_idx((bio), (idx))->bv_page, kmtype) +	\
+> +	(kmap_atomic(bio_iovec_idx((bio), (idx))->bv_page) +	\
+>  		bio_iovec_idx((bio), (idx))->bv_offset)
+>  
+> -#define __bio_kunmap_atomic(addr, kmtype) kunmap_atomic(addr, kmtype)
+> +#define __bio_kunmap_atomic(addr, kmtype) kunmap_atomic(addr)
+>  
+>  /*
+>   * merge helpers etc
+> @@ -317,7 +317,7 @@ static inline char *bvec_kmap_irq(struct bio_vec *bvec, unsigned long *flags)
+>  	 * balancing is a lot nicer this way
+>  	 */
+>  	local_irq_save(*flags);
+> -	addr = (unsigned long) kmap_atomic(bvec->bv_page, KM_BIO_SRC_IRQ);
+> +	addr = (unsigned long) kmap_atomic(bvec->bv_page);
+>  
+>  	BUG_ON(addr & ~PAGE_MASK);
+>  
+> @@ -328,7 +328,7 @@ static inline void bvec_kunmap_irq(char *buffer, unsigned long *flags)
+>  {
+>  	unsigned long ptr = (unsigned long) buffer & PAGE_MASK;
+>  
+> -	kunmap_atomic((void *) ptr, KM_BIO_SRC_IRQ);
+> +	kunmap_atomic((void *) ptr);
+>  	local_irq_restore(*flags);
+>  }
+>  
+> -- 
+> 1.7.4.4
 
-again.
-
-Thanks,
--Kame
-
+-- 
+"Thought is the essence of where you are now."
