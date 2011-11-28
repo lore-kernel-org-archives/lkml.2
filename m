@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab1K1X1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:27:25 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39312 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755476Ab1K1X1T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:27:19 -0500
-Subject: [PATCH 06/22] ext4: Calculate and verify inode checksums
+	id S1755465Ab1K1X1Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 18:27:16 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:40603 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755397Ab1K1X1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 18:27:11 -0500
+Subject: [PATCH 07/22] ext4: Create bitmap checksum helper functions
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,269 +19,47 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Mon, 28 Nov 2011 15:26:56 -0800
-Message-ID: <20111128232656.19194.82262.stgit@elm3c44.beaverton.ibm.com>
+Date: Mon, 28 Nov 2011 15:27:03 -0800
+Message-ID: <20111128232703.19194.55084.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
 References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11112823-1780-0000-0000-000001440C31
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000235; HX=3.00000178; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00091607; UDB=6.00024321; UTC=2011-11-28
- 23:27:17
+x-cbid: 11112823-1976-0000-0000-000006F0565A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces to ext4 the ability to calculate and verify inode
-checksums.  This requires the use of a new ro compatibility flag and some
-accompanying e2fsprogs patches to provide the relevant features in tune2fs and
-e2fsck.  The inode generation changes have been integrated into this patch.
+These helper functions will be used to calculate and verify the block and inode
+bitmap checksums.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ext4.h   |   10 +++--
- fs/ext4/ialloc.c |   13 ++++++
- fs/ext4/inode.c  |  111 ++++++++++++++++++++++++++++++++++++++++++++++++++----
- fs/ext4/ioctl.c  |    7 +++
- 4 files changed, 130 insertions(+), 11 deletions(-)
+ fs/ext4/bitmap.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 4022320..6953d9f 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -633,7 +633,8 @@ struct ext4_inode {
- 			__le16	l_i_file_acl_high;
- 			__le16	l_i_uid_high;	/* these 2 fields */
- 			__le16	l_i_gid_high;	/* were reserved2[0] */
--			__u32	l_i_reserved2;
-+			__le16	l_i_checksum_lo;/* crc32c(uuid+inum+inode) LE */
-+			__le16	l_i_reserved;
- 		} linux2;
- 		struct {
- 			__le16	h_i_reserved1;	/* Obsoleted fragment number/size which are removed in ext4 */
-@@ -649,7 +650,7 @@ struct ext4_inode {
- 		} masix2;
- 	} osd2;				/* OS dependent 2 */
- 	__le16	i_extra_isize;
--	__le16	i_pad1;
-+	__le16	i_checksum_hi;	/* crc32c(uuid+inum+inode) BE */
- 	__le32  i_ctime_extra;  /* extra Change time      (nsec << 2 | epoch) */
- 	__le32  i_mtime_extra;  /* extra Modification time(nsec << 2 | epoch) */
- 	__le32  i_atime_extra;  /* extra Access time      (nsec << 2 | epoch) */
-@@ -751,7 +752,7 @@ do {									       \
- #define i_gid_low	i_gid
- #define i_uid_high	osd2.linux2.l_i_uid_high
- #define i_gid_high	osd2.linux2.l_i_gid_high
--#define i_reserved2	osd2.linux2.l_i_reserved2
-+#define i_checksum_lo	osd2.linux2.l_i_checksum_lo
+diff --git a/fs/ext4/bitmap.c b/fs/ext4/bitmap.c
+index fa3af81..285d23a 100644
+--- a/fs/ext4/bitmap.c
++++ b/fs/ext4/bitmap.c
+@@ -29,3 +29,16 @@ unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
  
- #elif defined(__GNU__)
+ #endif  /*  EXT4FS_DEBUG  */
  
-@@ -891,6 +892,9 @@ struct ext4_inode_info {
- 	 */
- 	tid_t i_sync_tid;
- 	tid_t i_datasync_tid;
-+
-+	/* crc32c(uuid+inum) */
-+	__u32 i_uuid_inum_csum;
- };
- 
- /*
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 00beb4f..6151a68 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -892,6 +892,19 @@ got:
- 	inode->i_generation = sbi->s_next_generation++;
- 	spin_unlock(&sbi->s_next_gen_lock);
- 
-+	/* Precompute second piece of csum */
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+		__u32 csum;
-+		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+		__le32 inum = cpu_to_le32(inode->i_ino);
-+		__le32 gen = cpu_to_le32(inode->i_generation);
-+		csum = ext4_chksum(sbi, sbi->s_uuid_csum, (__u8 *)&inum,
-+				   sizeof(inum));
-+		ei->i_uuid_inum_csum = ext4_chksum(sbi, csum, (__u8 *)&gen,
-+						   sizeof(gen));
-+	}
-+
- 	ext4_clear_state_flags(ei); /* Only relevant on 32-bit archs */
- 	ext4_set_inode_state(inode, EXT4_STATE_NEW);
- 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 47eeabc..d11b7cb 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -48,6 +48,73 @@
- 
- #define MPAGE_DA_EXTENT_TAIL 0x01
- 
-+static __u32 ext4_inode_csum(struct inode *inode, struct ext4_inode *raw,
-+			      struct ext4_inode_info *ei)
++static __u32 ext4_bitmap_csum(struct super_block *sb, ext4_group_t group,
++			      struct buffer_head *bh, int sz)
 +{
-+	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+	__u16 csum_lo;
-+	__u16 csum_hi = 0;
 +	__u32 csum;
++	struct ext4_sb_info *sbi = EXT4_SB(sb);
 +
-+	csum_lo = raw->i_checksum_lo;
-+	raw->i_checksum_lo = 0;
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-+	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi)) {
-+		csum_hi = raw->i_checksum_hi;
-+		raw->i_checksum_hi = 0;
-+	}
-+
-+	csum = ext4_chksum(sbi, ei->i_uuid_inum_csum, (__u8 *)raw,
-+			   EXT4_INODE_SIZE(inode->i_sb));
-+
-+	raw->i_checksum_lo = csum_lo;
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-+	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-+		raw->i_checksum_hi = csum_hi;
++	group = cpu_to_le32(group);
++	csum = ext4_chksum(sbi, sbi->s_uuid_csum, (__u8 *)&group,
++			   sizeof(group));
++	csum = ext4_chksum(sbi, csum, (__u8 *)bh->b_data, sz);
 +
 +	return csum;
 +}
-+
-+static int ext4_inode_csum_verify(struct inode *inode, struct ext4_inode *raw,
-+				  struct ext4_inode_info *ei)
-+{
-+	__u32 provided, calculated;
-+
-+	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
-+	    cpu_to_le32(EXT4_OS_LINUX) ||
-+	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return 1;
-+
-+	provided = le16_to_cpu(raw->i_checksum_lo);
-+	calculated = ext4_inode_csum(inode, raw, ei);
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-+	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-+		provided |= ((__u32)le16_to_cpu(raw->i_checksum_hi)) << 16;
-+	else
-+		calculated &= 0xFFFF;
-+
-+	return provided == calculated;
-+}
-+
-+static void ext4_inode_csum_set(struct inode *inode, struct ext4_inode *raw,
-+				struct ext4_inode_info *ei)
-+{
-+	__u32 csum;
-+
-+	if (EXT4_SB(inode->i_sb)->s_es->s_creator_os !=
-+	    cpu_to_le32(EXT4_OS_LINUX) ||
-+	    !EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return;
-+
-+	csum = ext4_inode_csum(inode, raw, ei);
-+	raw->i_checksum_lo = cpu_to_le16(csum & 0xFFFF);
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE &&
-+	    EXT4_FITS_IN_INODE(raw, ei, i_checksum_hi))
-+		raw->i_checksum_hi = cpu_to_le16(csum >> 16);
-+}
-+
- static inline int ext4_begin_ordered_truncate(struct inode *inode,
- 					      loff_t new_size)
- {
-@@ -3785,6 +3852,39 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
- 	if (ret < 0)
- 		goto bad_inode;
- 	raw_inode = ext4_raw_inode(&iloc);
-+
-+	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE) {
-+		ei->i_extra_isize = le16_to_cpu(raw_inode->i_extra_isize);
-+		if (EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize >
-+		    EXT4_INODE_SIZE(inode->i_sb)) {
-+			EXT4_ERROR_INODE(inode, "bad extra_isize (%u != %u)",
-+				EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize,
-+				EXT4_INODE_SIZE(inode->i_sb));
-+			ret = -EIO;
-+			goto bad_inode;
-+		}
-+	} else
-+		ei->i_extra_isize = 0;
-+
-+	/* Precompute second piece of csum */
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+		__u32 csum;
-+		__le32 inum = cpu_to_le32(inode->i_ino);
-+		__le32 gen = raw_inode->i_generation;
-+		csum = ext4_chksum(sbi, sbi->s_uuid_csum, (__u8 *)&inum,
-+				   sizeof(inum));
-+		ei->i_uuid_inum_csum = ext4_chksum(sbi, csum, (__u8 *)&gen,
-+						   sizeof(gen));
-+	}
-+
-+	if (!ext4_inode_csum_verify(inode, raw_inode, ei)) {
-+		EXT4_ERROR_INODE(inode, "checksum invalid");
-+		ret = -EIO;
-+		goto bad_inode;
-+	}
-+
- 	inode->i_mode = le16_to_cpu(raw_inode->i_mode);
- 	inode->i_uid = (uid_t)le16_to_cpu(raw_inode->i_uid_low);
- 	inode->i_gid = (gid_t)le16_to_cpu(raw_inode->i_gid_low);
-@@ -3862,12 +3962,6 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
- 	}
- 
- 	if (EXT4_INODE_SIZE(inode->i_sb) > EXT4_GOOD_OLD_INODE_SIZE) {
--		ei->i_extra_isize = le16_to_cpu(raw_inode->i_extra_isize);
--		if (EXT4_GOOD_OLD_INODE_SIZE + ei->i_extra_isize >
--		    EXT4_INODE_SIZE(inode->i_sb)) {
--			ret = -EIO;
--			goto bad_inode;
--		}
- 		if (ei->i_extra_isize == 0) {
- 			/* The extra space is currently unused. Use it. */
- 			ei->i_extra_isize = sizeof(struct ext4_inode) -
-@@ -3879,8 +3973,7 @@ struct inode *ext4_iget(struct super_block *sb, unsigned long ino)
- 			if (*magic == cpu_to_le32(EXT4_XATTR_MAGIC))
- 				ext4_set_inode_state(inode, EXT4_STATE_XATTR);
- 		}
--	} else
--		ei->i_extra_isize = 0;
-+	}
- 
- 	EXT4_INODE_GET_XTIME(i_ctime, inode, raw_inode);
- 	EXT4_INODE_GET_XTIME(i_mtime, inode, raw_inode);
-@@ -4105,6 +4198,8 @@ static int ext4_do_update_inode(handle_t *handle,
- 		raw_inode->i_extra_isize = cpu_to_le16(ei->i_extra_isize);
- 	}
- 
-+	ext4_inode_csum_set(inode, raw_inode, ei);
-+
- 	BUFFER_TRACE(bh, "call ext4_handle_dirty_metadata");
- 	rc = ext4_handle_dirty_metadata(handle, NULL, bh);
- 	if (!err)
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index a567968..4217f99 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -150,6 +150,13 @@ flags_out:
- 		if (!inode_owner_or_capable(inode))
- 			return -EPERM;
- 
-+		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
-+				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+			ext4_warning(sb, "Setting inode version is not "
-+				     "supported with metadata_csum enabled.");
-+			return -ENOTTY;
-+		}
-+
- 		err = mnt_want_write(filp->f_path.mnt);
- 		if (err)
- 			return err;
 
