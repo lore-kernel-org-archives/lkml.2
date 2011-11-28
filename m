@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab1K1S77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 13:59:59 -0500
-Received: from blu0-omc1-s14.blu0.hotmail.com ([65.55.116.25]:30269 "EHLO
-	blu0-omc1-s14.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753299Ab1K1S76 (ORCPT
+	id S1754052Ab1K1TAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 14:00:18 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35476 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753299Ab1K1TAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 13:59:58 -0500
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 Nov 2011 13:59:58 EST
-X-Originating-IP: [87.194.136.79]
-X-Originating-Email: [piercing_male@hotmail.com]
-Message-ID: <BLU0-SMTP220EB3CE9494AA0EBBE58B098B20@phx.gbl>
-Subject: linear raid, is partial recovery possible?
-From: wilsonjonathan <piercing_male@hotmail.com>
-To: linux-kernel@vger.kernel.org
+	Mon, 28 Nov 2011 14:00:14 -0500
+Subject: Re: [PATCH 10/62] ata: remove the second argument of
+ k[un]map_atomic()
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: Sergei Shtylyov <sshtylyov@mvista.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-ide@vger.kernel.org
+In-Reply-To: <4ED37541.4040701@redhat.com>
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
+	 <1322371662-26166-11-git-send-email-amwang@redhat.com>
+	 <4ED35BFE.6080900@mvista.com> <4ED373C3.4050903@redhat.com>
+	 <4ED37541.4040701@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 28 Nov 2011 18:53:46 +0000
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Nov 2011 18:53:46.0807 (UTC) FILETIME=[0F12FC70:01CCADFF]
+Date: Mon, 28 Nov 2011 13:00:12 -0600
+Message-ID: <1322506812.5071.37.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quick question regarding linear raid.
+On Mon, 2011-11-28 at 19:49 +0800, Cong Wang wrote:
+> 于 2011年11月28日 19:42, Cong Wang 写道:
+> > 于 2011年11月28日 18:01, Sergei Shtylyov 写道:
+> >> Hello.
+> >>
+> >> On 27-11-2011 9:26, Cong Wang wrote:
+> >>
+> >>> Signed-off-by: Cong Wang<amwang@redhat.com>
+> >>> ---
+> >>> drivers/ata/libata-sff.c | 8 ++++----
+> >>> 1 files changed, 4 insertions(+), 4 deletions(-)
+> >>
+> >> IMO, you should do this in a single patch, not piecemeal to keep the kernel bisectable.
+> >>
+> >
+> > Hi,
+> >
+> > Please see patch 01/62,
+> >
+> > https://lkml.org/lkml/2011/11/28/35
+> >
+> > So even without it, the kernel can still compile, just with some warnings.
+> >
+> 
+> Ah, no, sorry that I replied too quickly. We have to have at least 01/62
+> to compile.
+> 
+> Actually I did make the patches as a whole, but Andrew Morton prefers to
+> split them, so I make V2 of them.
 
-If a disk fails on a linear raid I understand how the raid is
-non-recoverable, as a whole, as it has lost a chunk of data.
+I'd vote for as a whole as well, but if there's some legitimate reason
+why not, then take them through Jiri's trivial tree; it's pretty trivial
+anyway and at least going that way would keep them bisectable.
 
-However is it possible to recover the data from the non-failed portion
-of the raid as I assume linear works by starting at one end of the array
-and slowly progresses to the other?
-
-Or perhaps it is dependent on the file system on the array, eg. ext
-works by trying to place files distant to each other to help reduce the
-possibility of fragmentation?
-
-Perhaps the filesystem meta data, or some portion, may span between two
-physical drives which would corrupt its table?
-
-And obviously if a file spans two disks it would be missing part of its
-data?
-
-Does the raid underlying a file system do its own things, re-space,
-physical data layout, etc; or does/can a file system impact on the
-workings of an array?
-
-The more I look into software raid the more fasinated I become with it
-and its inner workings. While its way beyond me in some of the maths and
-the fact I am un-proficient in C it has really caught my intrigue, and
-all because I wanted to set up a small home server ;-)
+James
 
 
