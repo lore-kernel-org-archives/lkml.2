@@ -1,99 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab1K1Iqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 03:46:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47516 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab1K1Iqs convert rfc822-to-8bit (ORCPT
+	id S1753095Ab1K1Iw6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 03:52:58 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:32425 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab1K1Iw4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 03:46:48 -0500
-Date: Mon, 28 Nov 2011 10:46:43 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Liu ping fan <kernelfans@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, aliguori@us.ibm.com, kvm@vger.kernel.org,
-        qemu-devel@nongnu.org, linux-kernel@vger.kernel.org, ryanh@us.ibm.com,
-        jan.kiszka@web.de
-Subject: Re: [Qemu-devel] [PATCH 2/2] kvm: exit to userspace with reason
- KVM_EXIT_VCPU_DEAD
-Message-ID: <20111128084643.GP2557@redhat.com>
-References: <1322188529-11609-1-git-send-email-kernelfans@gmail.com>
- <1322361735-21428-1-git-send-email-kernelfans@gmail.com>
- <4ED212C7.1080901@redhat.com>
- <20111127105000.GL2557@redhat.com>
- <CAFgQCTscektJsC-2ThQn7FhHA7=Qf4t3t0+X+i0zT_yZZjwL0g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CAFgQCTscektJsC-2ThQn7FhHA7=Qf4t3t0+X+i0zT_yZZjwL0g@mail.gmail.com>
+	Mon, 28 Nov 2011 03:52:56 -0500
+X-AuditID: cbfee61b-b7bdbae000001970-52-4ed34be6808d
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: merez@codeaurora.org
+Cc: "'S, Venkatraman'" <svenkatr@ti.com>, linux-mmc@vger.kernel.org,
+        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        dh.han@samsung.com
+References: <aad7cb35699550e89526a5fb083c520d.squirrel@www.codeaurora.org>
+In-reply-to: <aad7cb35699550e89526a5fb083c520d.squirrel@www.codeaurora.org>
+Subject: RE: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 device
+Date: Mon, 28 Nov 2011 17:52:54 +0900
+Message-id: <000201ccadab$1e57b8a0$5b0729e0$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcytPIeCLj3bt5IQTDG04nR08dsqHQAbUtvw
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 03:16:01PM +0800, Liu ping fan wrote:
-> On Sun, Nov 27, 2011 at 6:50 PM, Gleb Natapov <gleb@redhat.com> wrote:
-> > On Sun, Nov 27, 2011 at 12:36:55PM +0200, Avi Kivity wrote:
-> >> On 11/27/2011 04:42 AM, Liu Ping Fan wrote:
-> >> > From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-> >> >
-> >> > The vcpu can be safely released when
-> >> > --1.guest tells us that the vcpu is not needed any longer.
-> >> > --2.vcpu hits the last instruction _halt_
-> >> >
-> >> > If both of the conditions are satisfied, kvm exits to userspace
-> >> > with the reason vcpu dead. So the user thread can exit safely.
-> >> >
-> >> >
-> >>
-> >> Seems to be completely unnecessary. šIf you want to exit from the vcpu
-> >> thread, send it a signal.
-> >>
-> Hi Avi and Gleb,
+Maya Erez wrote:
+> >> >> On Wed, Nov 2, 2011 at 1:33 PM, Seungwon Jeon <tgih.jun@samsung.com>
+> >> wrote:
+> >> >> > @@ -943,7 +950,8 @@ static int mmc_blk_err_check(struct mmc_card
+> >> *card,
+> >> >> >         * kind.  If it was a write, we may have transitioned to
+>       * program mode, which we have to wait for it to complete.
+>       */
+> >> >> > -       if (!mmc_host_is_spi(card->host) && rq_data_dir(req) !=
+> >> READ) {
+> >> >> > +       if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) !=
+> >> READ) ||
+> >> >> > +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR))
+> Since the header's direction is WRITE I don't think we also need to check
+> if mq_mrq->packed_cmd == MMC_PACKED_WR_HDR since it will be covered by the
+> original condition.
+The header is written. But origin request is about read.
+That means rq_data_dir(req) is READ. So new condition is needed.
+> >> {
+> >> >> >                u32 status;
+> >> >> >                do {
+> >> >> >                        int err = get_card_status(card, &status,
+> 5);
+> A general question, not related specifically to packed commands - Do you
+> know why the status is not checked to see which error we got?
+This status is for checking whether the card is ready for new data.
+> >> >> > @@ -980,12 +988,67 @@ static int mmc_blk_err_check(struct mmc_card
+> >> *card,
+> >> >> >        if (!brq->data.bytes_xfered)
+> >> >> >                return MMC_BLK_RETRY;
+> >> >> >
+> >> >> > +       if (mq_mrq->packed_cmd != MMC_PACKED_NONE) {
+> >> >> > +               if (unlikely(brq->data.blocks << 9 !=
+> >> brq->data.bytes_xfered))
+> >> >> > +                       return MMC_BLK_PARTIAL;
+> >> >> > +               else
+> >> >> > +                       return MMC_BLK_SUCCESS;
+> >> >> > +       }
+> >> >> > +
+> >> >> >        if (blk_rq_bytes(req) != brq->data.bytes_xfered)
+> >> >> >                return MMC_BLK_PARTIAL;
+> >> >> >
+> >> >> >        return MMC_BLK_SUCCESS;
+> >> >> >  }
+> >> >> >
+> >> >> > +static int mmc_blk_packed_err_check(struct mmc_card *card, +
+>                        struct mmc_async_req *areq)
+> >> >> > +{
+> >> >> > +       struct mmc_queue_req *mq_mrq = container_of(areq, struct
+> >> mmc_queue_req,
+> >> >> > +                                                   mmc_active); +
+>       int err, check, status;
+> >> >> > +       u8 ext_csd[512];
+> >> >> > +
+> >> >> > +       check = mmc_blk_err_check(card, areq);
+> >> >> > +
+> >> >> > +       if (check == MMC_BLK_SUCCESS)
+> >> >> > +               return check;
+> I think we need to check the status for all cases and not only in case of
+> MMC_BLK_PARTIAL. For example, in cases where the header was traferred
+> successfully but had logic errors (wrong number of sectors etc.)
+> mmc_blk_err_check will return MMC_BLK_SUCCESS although the packed commands
+> failed.
+Similarly, Sahitya Tummala is already mentioned this.
+Other error case will be checked in next version.
+The case you suggested is about read or write?
+Device may detect error and stop transferring the data.
+> >> >> > +
+> >> >> > +       if (check == MMC_BLK_PARTIAL) {
+> >> >> > +               err = get_card_status(card, &status, 0);
+> >> >> > +               if (err)
+> >> >> > +                       return MMC_BLK_ABORT;
+> >> >> > +
+> >> >> > +               if (status & R1_EXP_EVENT) {
+> >> >> > +                       err = mmc_send_ext_csd(card, ext_csd); +
+>                     if (err)
+> >> >> > +                               return MMC_BLK_ABORT;
+> >> >> > +
+> >> >> > +                       if ((ext_csd[EXT_CSD_EXP_EVENTS_STATUS +
+> 0]
+> why do we need the + 0?
+It is explicit expression, no more, no less.
+Actually, there is no need.
+> >> &
+> >> >> > +
+> >> EXT_CSD_PACKED_INDEXED_ERROR) {
+> >> >> > +                                       /* Make be 0-based */
+> The comment is not understood
+PACKED_FAILURE_INDEX starts from '1'
+It is converted to 0-base for use.
+> >> >> > +                                       mq_mrq->packed_fail_idx =
+> +
+> Thanks,
+> Maya Erez
+> --
+> Seny by a Consultant for Qualcomm innovation center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 > 
-> First, I wanted to make sure my assumption is right, so I can grab
-> your meaning more clearly -:). Could you elaborate it for me, thanks.
 > 
-> I had thought that when a vcpu was being removed from guest, kvm must
-> satisfy the following conditions to safely remove the vcpu:
-> --1. The tasks on vcpu in GUEST  have already been migrated to other
-> vcpus and ONLY idle_task left ---- The CPU_DEAD is the checkpoint.
-> --2. We must wait the idle task to hit native_halt() in GUEST, till
-> that time, this vcpu is no needed even by idle_task. In KVM, the vcpu
-> thread will finally sit on "kvm_vcpu_block(vcpu);"
-> We CAN NOT suppose the sequence of the two condition because they come
-> from different threads.  Am I right?
-> 
-No, KVM can remove vcpu whenever it told to do so (may be not in the
-middle of emulated io though). It is a guest responsibility to eject cpu
-only when it is safe to do so from guest's point of view.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> And here comes my question,
-> --1. I think the signal will make vcpu_run exit to user, but is it
-> allow vcpu thread to finally call  "kernel/exit.c : void do_exit(long
-> code)" in current code in kvm or in qemu?
-Yes. Why not?
-
-> --2. If we got CPU_DEAD event, and then send a signal to vcpu thread,
-> could we ensure that we have already sit on "kvm_vcpu_block(vcpu);"
-CPU_DEAD event is internal to a guest (one of them). KVM does not care
-about it. And to remove vcpu it does not have to sit in kvm_vcpu_block().
-And actually since signal kicks vcpu thread out from kernel into userspace
-you can be sure it is not sitting in kvm_vcpu_block(). 
-
-> 
-> Thanks and regards,
-> ping fan
-> 
-> > Also if guest "tells us that the vcpu is not needed any longer" (via
-> > ACPI I presume) and vcpu actually doing something critical instead of
-> > sitting in 1:hlt; jmp 1b loop then it is guest's problem if it stops
-> > working after vcpu destruction.
-> >
-> 
-> 
-> > --
-> > š š š š š š š š š š š šGleb.
-> >
-
---
-			Gleb.
