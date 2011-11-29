@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab1K2KTX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 05:19:23 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:33351 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750880Ab1K2KTU (ORCPT
+	id S1754396Ab1K2KVm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 05:21:42 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47125 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab1K2KVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 05:19:20 -0500
-Subject: Re: [PATCH 09/11] video: Remove redundant spi driver bus
- initialization
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-omap@vger.kernel.org
-In-Reply-To: <1322148561-25138-9-git-send-email-lars@metafoo.de>
-References: <1322148561-25138-1-git-send-email-lars@metafoo.de>
-	 <1322148561-25138-9-git-send-email-lars@metafoo.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-iZQzh1wzB1frnepnjzrw"
-Date: Tue, 29 Nov 2011 12:19:14 +0200
-Message-ID: <1322561954.1869.44.camel@deskari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Tue, 29 Nov 2011 05:21:39 -0500
+Date: Tue, 29 Nov 2011 11:21:37 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Marc Vertes <marc.vertes@sigfox.com>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org,
+        Dimitry Andric <dimitry.andric@tomtom.com>,
+        Ben Dooks <ben@simtec.co.uk>
+Subject: Re: [PATCH] watchdog: fix nowayout setting in s3c2410_wdt
+Message-ID: <20111129102136.GB5455@pengutronix.de>
+References: <4ed026d9.TvJLr8ihQ2VtvqPD%marc.vertes@sigfox.com>
+ <20111126102915.GA7517@pengutronix.de>
+ <20111129095643.GH23376@infomag.iguana.be>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xgyAXRrhYN0wYx8y"
+Content-Disposition: inline
+In-Reply-To: <20111129095643.GH23376@infomag.iguana.be>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-iZQzh1wzB1frnepnjzrw
-Content-Type: text/plain; charset="UTF-8"
+--xgyAXRrhYN0wYx8y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2011-11-24 at 16:29 +0100, Lars-Peter Clausen wrote:
-> In ancient times it was necessary to manually initialize the bus field of=
- an
-> spi_driver to spi_bus_type. These days this is done in spi_driver_registe=
-r(),
-> so we can drop the manual assignment.
+
+> +/* Use the following function to set the nowayout feature */
+> +static inline void watchdog_set_nowayout(struct watchdog_device *wdd, in=
+t nowayout)
+> +{
+> +	if (nowayout)
+> +		set_bit(WDOG_NO_WAY_OUT, &wdd->status);
+> +}
+
+Yes, this is better in case we might need to add something later.
+
+> but: .status =3D WATCHDOG_NOWAYOUT_INIT_STATUS, is also a nice one to hav=
+e.
 >=20
-> The patch was generated using the following coccinelle semantic patch:
-> // <smpl>
-> @@
-> identifier _driver;
-> @@
-> struct spi_driver _driver =3D {
-> 	.driver =3D {
-> -		.bus =3D &spi_bus_type,
-> 	},
-> };
-> // </smpl>
->=20
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Cc: linux-fbdev@vger.kernel.org
-> Cc: linux-omap@vger.kernel.org
+> I propose to add both options and to document them in the documentation.
+> Objections anyone?
 
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Sounds good to me.
 
- Tomi
+So, I'll drop NOWAYOUT-related patches from my STMP-series?
 
+Thanks,
 
---=-iZQzh1wzB1frnepnjzrw
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--xgyAXRrhYN0wYx8y
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: Digital signature
+Content-Disposition: inline
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIcBAABAgAGBQJO1LGiAAoJEPo9qoy8lh71JNoP/1a7hTOHWDHBm6YRo+vrSUEl
-ct2ULN8iXn85Ry/R9Cvjab5c6/j1uMxWii90UlCA32JYwNeGtv9K1QbW09LEFRsC
-ucRZEvETbHk5RXyRWnZIQlzmbSa/czlmn4lPnH+T5ZpBIrtq9H3JJmzUKmhUwkbm
-FXfOtKmiRP0ZcHtxYehYJw8PO1AeOgl9yLlErqofalnbfOWmXiNOHyNx33avvy8Q
-eK+zUCggZPvuNYiLLTAEQ/uOw236t/hcARy76LoCOYT8mVnz3gcLC2f6eGIIrQJB
-lKuNV7PQaAJfukj1tXIbTf5xNhSwjmXdsYqn70uqZairvXi7JtT45rK0tD+9562z
-QvxHv6r/cHYW6IYs93waRpo92jiPRMl0cvXUIzIac/ud8Br/S9+YrrNQV0BtYtVW
-ixj1Unx4bz/Waobxjwt529FZXMMBnSu2evtP4NKiBXDosRvNXNDi8prCx8g3F12V
-6m/Zfr9ScgWvZ8AX47vNQs/eNnVM9oSUGCrqPM/hXuOlYJezwBMoVW78P02Tf8Un
-dlcuZYdelMCz403Nw8wVoTM5vIcZFrJ+VY/Quz32Aem2efPl8epfLQopCOSpnzKn
-ohgR0kihhjgCL9cnQYM2Ya7hdHeFiMpt1/g/+RWTy40oKH2MEDB+sVrDxt/rJ3qt
-ogp91Pi01yqlMRGB1WjM
-=oJgf
+iEYEARECAAYFAk7UsjAACgkQD27XaX1/VRs+dACgw0IWeSvXFeO5NsiGo4RnDEwM
+wpEAoI4C0tUCLQdzJO8bhXBBdEzXhHxo
+=5uqh
 -----END PGP SIGNATURE-----
 
---=-iZQzh1wzB1frnepnjzrw--
-
+--xgyAXRrhYN0wYx8y--
