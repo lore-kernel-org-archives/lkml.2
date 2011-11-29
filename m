@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab1K2A1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 19:27:06 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:51369 "EHLO d1.icnet.pl"
+	id S1752657Ab1K2A3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 19:29:22 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38877 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750963Ab1K2A1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 19:27:05 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH 5/5 v2] ARM: OMAP1: recalculate loops per jiffy after dpll1 reprogram
-Date: Tue, 29 Nov 2011 01:25:32 +0100
-Message-Id: <1322526332-14088-1-git-send-email-jkrzyszt@tis.icnet.pl>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1322364751-29980-6-git-send-email-jkrzyszt@tis.icnet.pl>
-References: <1322364751-29980-6-git-send-email-jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1752443Ab1K2A3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 19:29:21 -0500
+Date: Mon, 28 Nov 2011 16:29:14 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH 2/4] rcu: Irq nesting is always 0 on
+ rcu_enter_idle_common
+Message-ID: <20111129002914.GP2346@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
+ <1322515487-18690-3-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322515487-18690-3-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11112900-5806-0000-0000-00000E881536
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise timing is inaccurate, resulting in devices which depend on 
-delay(), like omap-keypad, broken.
+On Mon, Nov 28, 2011 at 10:24:45PM +0100, Frederic Weisbecker wrote:
+> So pass 0 directly as a nesting value on the tracing calls.
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  kernel/rcutree.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index c2aaadf..b80cb41 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -350,11 +350,10 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
+>   */
+>  static void rcu_idle_enter_common(struct rcu_dynticks *rdtp)
+>  {
+> -	trace_rcu_dyntick("Start", rdtp->dynticks_nesting);
+> +	trace_rcu_dyntick("Start", 0);
+>  	if (!idle_cpu(smp_processor_id())) {
+>  		WARN_ON_ONCE(1);	/* must be idle task! */
+> -		trace_rcu_dyntick("Error on entry: not idle task",
+> -				   rdtp->dynticks_nesting);
+> +		trace_rcu_dyntick("Error on entry: not idle task", 0);
+>  		ftrace_dump(DUMP_ALL);
+>  	}
+>  	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
 
-Created and tested on top of linux-omap/fixes on Amstrad Delta.
+Queued, again updating to work around the mid-air collision.
 
-Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
----
-Hi,
-This version no longer depends on changes to init/calibrate.c, using the
-method kindly advised by Russell instead.  Then, patch 4/5 can be
-dropped.
+							Thanx, Paul
 
-However, the result of cpufreq_scale() differs from that of
-(re)calibrate_delay() by ca. 6%, i.e., 70.40 vs. 74.54. Please advise if
-this approximation is acceptable.
+------------------------------------------------------------------------
 
-Thanks, 
-Janusz
+rcu: Irq nesting is always 0 on rcu_enter_idle_common
 
+Because tasks don't nest, the ->dyntick_nesting must always be zero upon
+entry to rcu_idle_enter_common().  Therefore, pass "0" rather than the
+counter itself.
 
- arch/arm/mach-omap1/clock_data.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-diff --git a/arch/arm/mach-omap1/clock_data.c b/arch/arm/mach-omap1/clock_data.c
-index 201b1f2..e616042 100644
---- a/arch/arm/mach-omap1/clock_data.c
-+++ b/arch/arm/mach-omap1/clock_data.c
-@@ -16,6 +16,8 @@
- 
- #include <linux/kernel.h>
- #include <linux/clk.h>
-+#include <linux/cpufreq.h>
-+#include <linux/delay.h>
- #include <linux/io.h>
- 
- #include <asm/mach-types.h>  /* for machine_is_* */
-@@ -928,7 +930,9 @@ int __init omap1_clk_init(void)
- 
- void __init omap1_clk_late_init(void)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 54d9b4f..e0f5072 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -350,12 +350,11 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
+  */
+ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
  {
--	if (ck_dpll1.rate >= OMAP1_DPLL1_SANE_VALUE)
-+	unsigned long rate = ck_dpll1.rate;
-+
-+	if (rate >= OMAP1_DPLL1_SANE_VALUE)
- 		return;
+-	trace_rcu_dyntick("Start", oldval, rdtp->dynticks_nesting);
++	trace_rcu_dyntick("Start", oldval, 0);
+ 	if (!is_idle_task(current)) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
  
- 	/* Find the highest supported frequency and enable it */
-@@ -942,4 +946,5 @@ void __init omap1_clk_late_init(void)
- 	}
- 	propagate_rate(&ck_dpll1);
- 	omap1_show_rates();
-+	loops_per_jiffy = cpufreq_scale(loops_per_jiffy, rate, ck_dpll1.rate);
- }
--- 
-1.7.3.4
+-		trace_rcu_dyntick("Error on entry: not idle task",
+-				   oldval, rdtp->dynticks_nesting);
++		trace_rcu_dyntick("Error on entry: not idle task", oldval, 0);
+ 		ftrace_dump(DUMP_ALL);
+ 		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
+ 			  current->pid, current->comm,
 
