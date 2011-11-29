@@ -1,224 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab1K2DTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 22:19:09 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:19962
-	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752095Ab1K2DTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 22:19:08 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zzc89bh542M1432N98dK4015Lzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Li Yang-R58472 <r58472@freescale.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Shi Xuelin-B29237 <B29237@freescale.com>
-CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH][RFC] fsldma: fix performance degradation by optimizing
- spinlock use.
-Thread-Topic: [PATCH][RFC] fsldma: fix performance degradation by optimizing
- spinlock use.
-Thread-Index: AQHMqUjeyxVKMMi4pUOHPPVw43Ku8JW8E5yAgAbWp4CAAELQUA==
-Date: Tue, 29 Nov 2011 03:19:05 +0000
-Message-ID: <3F607A5180246847A760FD34122A1E052E07B7@039-SN1MPN1-003.039d.mgd.msft.net>
-References: <1321937705-19587-1-git-send-email-b29237@freescale.com>
- <20111122185924.GA23323@ovro.caltech.edu>
- <DBB740589CE8814680DECFE34BE197AB148CDD@039-SN1MPN1-006.039d.mgd.msft.net>
- <20111128163814.GA10919@ovro.caltech.edu>
-In-Reply-To: <20111128163814.GA10919@ovro.caltech.edu>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.68]
-Content-Type: text/plain; charset="utf-8"
+	id S1753718Ab1K2DWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 22:22:19 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:38216 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752455Ab1K2DWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 22:22:18 -0500
+Date: Mon, 28 Nov 2011 19:20:36 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon updates for 3.2
+Message-ID: <20111129032036.GA14086@ericsson.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAT3JUT8004279
 
-> Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing
-> spinlock use.
-> 
-> On Thu, Nov 24, 2011 at 08:12:25AM +0000, Shi Xuelin-B29237 wrote:
-> > Hi Ira,
-> >
-> > Thanks for your review.
-> >
-> > After second thought, I think your scenario may not occur.
-> > Because the cookie 20 we query must be returned by fsl_dma_tx_submit(...) in
-> practice.
-> > We never query a cookie not returned by fsl_dma_tx_submit(...).
-> >
-> 
-> I agree about this part.
-> 
-> > When we call fsl_tx_status(20), the chan->common.cookie is definitely wrote as
-> 20 and cpu2 could not read as 19.
-> >
-> 
-> This is what I don't agree about. However, I'm not an expert on CPU cache vs.
-> memory accesses in an multi-processor system. The section titled "CACHE
-> COHERENCY" in Documentation/memory-barriers.txt leads me to believe that the
-> scenario I described is possible.
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-For Freescale PowerPC, the chip automatically takes care of cache coherency.  Even if this is a concern, spinlock can't address it.
+Hi Linus,
 
-> 
-> What happens if CPU1's write of chan->common.cookie only goes into CPU1's
-> cache. It never makes it to main memory before CPU2 fetches the old value of 19.
-> 
-> I don't think you should see any performance impact from the smp_mb()
-> operation.
+Please pull hwmon subsystem updates for Linux 3.2 from:
 
-Smp_mb() do have impact on performance if it's in the hot path.  While it might be safer having it, I doubt it is really necessary.  If the CPU1 doesn't have the updated last_used, it's shouldn't have known there is a cookie 20 existed either.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-- Leo
+No functional changes; cleanup only.
 
-> 
-> Thanks,
-> Ira
-> 
-> > -----Original Message-----
-> > From: Ira W. Snyder [mailto:iws@ovro.caltech.edu]
-> > Sent: 2011Âπ¥11Êúà23Êó• 2:59
-> > To: Shi Xuelin-B29237
-> > Cc: dan.j.williams@intel.com; Li Yang-R58472; zw@zh-kernel.org;
-> > vinod.koul@intel.com; linuxppc-dev@lists.ozlabs.org;
-> > linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing
-> spinlock use.
-> >
-> > On Tue, Nov 22, 2011 at 12:55:05PM +0800, b29237@freescale.com wrote:
-> > > From: Forrest Shi <b29237@freescale.com>
-> > >
-> > >     dma status check function fsl_tx_status is heavily called in
-> > >     a tight loop and the desc lock in fsl_tx_status contended by
-> > >     the dma status update function. this caused the dma performance
-> > >     degrades much.
-> > >
-> > >     this patch releases the lock in the fsl_tx_status function.
-> > >     I believe it has no neglect impact on the following call of
-> > >     dma_async_is_complete(...).
-> > >
-> > >     we can see below three conditions will be identified as success
-> > >     a)  x < complete < use
-> > >     b)  x < complete+N < use+N
-> > >     c)  x < complete < use+N
-> > >     here complete is the completed_cookie, use is the last_used
-> > >     cookie, x is the querying cookie, N is MAX cookie
-> > >
-> > >     when chan->completed_cookie is being read, the last_used may
-> > >     be incresed. Anyway it has no neglect impact on the dma status
-> > >     decision.
-> > >
-> > >     Signed-off-by: Forrest Shi <xuelin.shi@freescale.com>
-> > > ---
-> > >  drivers/dma/fsldma.c |    5 -----
-> > >  1 files changed, 0 insertions(+), 5 deletions(-)
-> > >
-> > > diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c index
-> > > 8a78154..1dca56f 100644
-> > > --- a/drivers/dma/fsldma.c
-> > > +++ b/drivers/dma/fsldma.c
-> > > @@ -986,15 +986,10 @@ static enum dma_status fsl_tx_status(struct
-> dma_chan *dchan,
-> > >  	struct fsldma_chan *chan = to_fsl_chan(dchan);
-> > >  	dma_cookie_t last_complete;
-> > >  	dma_cookie_t last_used;
-> > > -	unsigned long flags;
-> > > -
-> > > -	spin_lock_irqsave(&chan->desc_lock, flags);
-> > >
-> >
-> > This will cause a bug. See below for a detailed explanation. You need this instead:
-> >
-> > 	/*
-> > 	 * On an SMP system, we must ensure that this CPU has seen the
-> > 	 * memory accesses performed by another CPU under the
-> > 	 * chan->desc_lock spinlock.
-> > 	 */
-> > 	smp_mb();
-> > >  	last_complete = chan->completed_cookie;
-> > >  	last_used = dchan->cookie;
-> > >
-> > > -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> > > -
-> > >  	dma_set_tx_state(txstate, last_complete, last_used, 0);
-> > >  	return dma_async_is_complete(cookie, last_complete, last_used);  }
-> >
-> > Facts:
-> > - dchan->cookie is the same member as chan->common.cookie (same memory
-> > location)
-> > - chan->common.cookie is the "last allocated cookie for a pending transaction"
-> > - chan->completed_cookie is the "last completed transaction"
-> >
-> > I have replaced "dchan->cookie" with "chan->common.cookie" in the below
-> explanation, to keep everything referenced from the same structure.
-> >
-> > Variable usage before your change. Everything is used locked.
-> > - RW chan->common.cookie		(fsl_dma_tx_submit)
-> > - R  chan->common.cookie		(fsl_tx_status)
-> > - R  chan->completed_cookie		(fsl_tx_status)
-> > - W  chan->completed_cookie		(dma_do_tasklet)
-> >
-> > Variable usage after your change:
-> > - RW chan->common.cookie		LOCKED
-> > - R  chan->common.cookie		NO LOCK
-> > - R  chan->completed_cookie		NO LOCK
-> > - W  chan->completed_cookie             LOCKED
-> >
-> > What if we assume that you have a 2 CPU system (such as a P2020). After your
-> changes, one possible sequence is:
-> >
-> > === CPU1 - allocate + submit descriptor: fsl_dma_tx_submit() ===
-> > spin_lock_irqsave
-> > descriptor->cookie = 20		(x in your example)
-> > chan->common.cookie = 20	(used in your example)
-> > spin_unlock_irqrestore
-> >
-> > === CPU2 - immediately calls fsl_tx_status() ===
-> > chan->common.cookie == 19
-> > chan->completed_cookie == 19
-> > descriptor->cookie == 20
-> >
-> > Since we don't have locks anymore, CPU2 may not have seen the write to
-> > chan->common.cookie yet.
-> >
-> > Also assume that the DMA hardware has not started processing the
-> > transaction yet. Therefore dma_do_tasklet() has not been called, and
-> > chan->completed_cookie has not been updated.
-> >
-> > In this case, dma_async_is_complete() (on CPU2) returns DMA_SUCCESS, even
-> though the DMA operation has not succeeded. The DMA operation has not even
-> started yet!
-> >
-> > The smp_mb() fixes this, since it forces CPU2 to have seen all memory operations
-> that happened before CPU1 released the spinlock. Spinlocks are implicit SMP
-> memory barriers.
-> >
-> > Therefore, the above example becomes:
-> > smp_mb();
-> > chan->common.cookie == 20
-> > chan->completed_cookie == 19
-> > descriptor->cookie == 20
-> >
-> > Then dma_async_is_complete() returns DMA_IN_PROGRESS, which is correct.
-> >
-> > Thanks,
-> > Ira
-> >
-> >
-> > _______________________________________________
-> > Linuxppc-dev mailing list
-> > Linuxppc-dev@lists.ozlabs.org
-> > https://lists.ozlabs.org/listinfo/linuxppc-dev
+Thanks,
+Guenter
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+------
+
+The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+
+  Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Axel Lin (1):
+      hwmon: convert drivers/hwmon/* to use module_platform_driver()
+
+Lars-Peter Clausen (1):
+      hwmon: Remove redundant spi driver bus initialization
+
+ drivers/hwmon/ad7314.c             |    1 -
+ drivers/hwmon/ads7871.c            |    1 -
+ drivers/hwmon/exynos4_tmu.c        |   12 +-----------
+ drivers/hwmon/gpio-fan.c           |   13 +------------
+ drivers/hwmon/jz4740-hwmon.c       |   12 +-----------
+ drivers/hwmon/ntc_thermistor.c     |   14 +-------------
+ drivers/hwmon/s3c-hwmon.c          |   13 +------------
+ drivers/hwmon/sch5627.c            |   13 +------------
+ drivers/hwmon/sch5636.c            |   13 +------------
+ drivers/hwmon/twl4030-madc-hwmon.c |   14 +-------------
+ drivers/hwmon/ultra45_env.c        |   13 +------------
+ drivers/hwmon/wm831x-hwmon.c       |   12 +-----------
+ drivers/hwmon/wm8350-hwmon.c       |   12 +-----------
+ 13 files changed, 11 insertions(+), 132 deletions(-)
+
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO1E+EAAoJEMsfJm/On5mBS+QP/3ygM38PihQartSA9/6KRh6h
+hbkO+2xQcARHJjq6yg6PbgeIi+Q8NhvLnb/XkyzvmhfigPdsxXYUZMCORVTRhYXo
+dySxp3SAL+a+2mZ7LJ+GImB4i6dxu9K0x/+pQAycghb3MXNuW4rNkLewx+ptRbR8
+9cl515/zKwt8CrtXp9z7LFDW6PGTdrkJwmkbvxx2mMr488D+ThkUwgMW9jB3QtP2
+DGtE65f1G73/YeRgE+mI6UkCjCOXgyZ8x9mO8+X+L4YnSG7l8Ij73WSzMWhS4Zqw
+oe1j9NsT+SflPIetp6htPCe6nl5+ckIVjluQl9zxBqVkG7RbBl9ZbZOaabk2/Hk+
+GHCMikEu28Uo65DrLH4tHh5wh/2lukj6ZjTc2gNCtd/z6wwfE0KQg/kwzihOgg3d
+mqn4Ot4Qn8Vqv4YttqQbiHOhK33eQ6NWJaTXzlKs8QMaGC+uldP/szfW/zFd/4Pu
+zCktKrDvKeAemJcjcE2u3Vysc912zHqPjAtQg5bP9VnpV+1Cola7JzYk1XJN8JQa
+yFtgxiPI3i3b8f9/+nxH17Gizrt7nO/vWh71D+QzVA9Qez230DWC9GNJ8bAlqLZx
+K0st4g9lWil38Fa+ngcdiqSmYOccubAgrNjteWs0T0e86LlTNUffYOa3PAmkV+ly
+xJh9C6OpzhS0v4/XxbdJ
+=IGIQ
+-----END PGP SIGNATURE-----
+
+--RnlQjJ0d97Da+TV1--
