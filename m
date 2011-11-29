@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab1K2R7S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 12:59:18 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:35226 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab1K2R7R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 12:59:17 -0500
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Shuichi Ihara <sihara@ddn.com>
-Subject: Re: [RFC PATCH] block: change max_segments default to USHRT_MAX
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1322517615-28530-1-git-send-email-snitzer@redhat.com>
-Date: Tue, 29 Nov 2011 12:59:01 -0500
-In-Reply-To: <1322517615-28530-1-git-send-email-snitzer@redhat.com> (Mike
-	Snitzer's message of "Mon, 28 Nov 2011 17:00:15 -0500")
-Message-ID: <yq1mxbehkt6.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
+	id S1756010Ab1K2SCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 13:02:00 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:56226 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754941Ab1K2SB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 13:01:59 -0500
+Date: Tue, 29 Nov 2011 09:44:48 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] rcu: Make new RCU dynticks API work with nohz
+ cpusets
+Message-ID: <20111129174448.GG2331@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
+ <20111129052225.GB14546@leaf>
+ <20111129054342.GA2375@linux.vnet.ibm.com>
+ <20111129084831.GA21034@leaf>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4ED51D71.008C,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129084831.GA21034@leaf>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11112917-5112-0000-0000-0000028FFAA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mike" == Mike Snitzer <snitzer@redhat.com> writes:
+On Tue, Nov 29, 2011 at 12:48:31AM -0800, Josh Triplett wrote:
+> On Mon, Nov 28, 2011 at 09:43:42PM -0800, Paul E. McKenney wrote:
+> > On Mon, Nov 28, 2011 at 09:22:25PM -0800, Josh Triplett wrote:
+> > > On Mon, Nov 28, 2011 at 10:24:43PM +0100, Frederic Weisbecker wrote:
+> > > > Hi Paul,
+> > > > 
+> > > > This is an attempt to make the current RCU dynticks API
+> > > > working with the nohz cpusets.
+> > > > 
+> > > > I believe the two first patches could be pushed in your trees.
+> > > > Patches 3 and 4 are rather something I plan to apply in mine,
+> > > > given they are not needed upstream yet.
+> > > > 
+> > > > Waiting for your comments.
+> > > > 
+> > > > Thanks.
+> > > > 
+> > > > Frederic Weisbecker (4):
+> > > >   rcu: Don't check irq nesting from rcu idle entry/exit
+> > > >   rcu: Irq nesting is always 0 on rcu_enter_idle_common
+> > > >   rcu: New rcu_user_enter() and rcu_user_exit() APIs
+> > > >   rcu: New rcu_user_enter_irq() and rcu_user_exit_irq() APIs
+> > > 
+> > > For the whole series:
+> > > 
+> > > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> > 
+> > Thank you, Josh!
+> > 
+> > Does that cover the conflict-resolved versions of the first two?
+> > 
+> > o	https://lkml.org/lkml/2011/11/28/626
+> > o	https://lkml.org/lkml/2011/11/28/624
+> 
+> Yes, for the ones with Frederic's further eagle-eyed fix.
 
-Mike> The reported problem was that a DM multipath device's max_segemnts
-Mike> was constrained to BLK_MAX_SEGMENTS (128) even though the
-Mike> underlying paths' max_segments were larger.  For example, SCSI
-Mike> establishes a max_segments of SCSI_MAX_SG_CHAIN_SEGMENTS (2048).
+Right, https://lkml.org/lkml/2011/11/28/626 above rather than my
+erroneous https://lkml.org/lkml/2011/11/28/621.
 
-I'd rather that we revisited the patches I posted a while back where we
-have different defaults for LLDs and stacking drivers.
+Though I thought it was falcon-eyed rather than eagle-eyed.  ;-)
 
-I'll freshen those up and post them later today. I have a few concalls
-to clear first...
+							Thanx, Paul
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
