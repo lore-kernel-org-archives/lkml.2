@@ -1,117 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab1K2FeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 00:34:00 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57813 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab1K2Fd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 00:33:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJ0PZbSq3a2vPNkbErW1j+9DE130D5gkrEgtfjT2ShhnuZ3aJA@mail.gmail.com>
-References: <1321524793-25117-1-git-send-email-dg77.kim@samsung.com>
-	<1321524793-25117-2-git-send-email-dg77.kim@samsung.com>
-	<CAN1soZzeZ9HwD66_X0Yzp+6MpRBGnzpePuCu07mkBWPUCJbkPg@mail.gmail.com>
-	<CAJ0PZbSq3a2vPNkbErW1j+9DE130D5gkrEgtfjT2ShhnuZ3aJA@mail.gmail.com>
-Date: Tue, 29 Nov 2011 13:33:56 +0800
-Message-ID: <CAN1soZwn5K3997fwh4b3HHcc9B6q32hm-q9M-X79vK_CatTAHA@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] power: Charger-Manager: add initial
- Charger-Manager driver
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: myungjoo.ham@gmail.com
-Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-pm@vger.kernel.org,
-        len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, rdunlap@xenotime.net,
-        cbouatmailru@gmail.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linaro-dev@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752248Ab1K2Fdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 00:33:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62970 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab1K2Fdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 00:33:53 -0500
+From: Cong Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Pekka Enberg <penberg@kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        WANG Cong <amwang@redhat.com>, linux-mm@kvack.org
+Subject: [V4 PATCH 1/2] tmpfs: add fallocate support
+Date: Tue, 29 Nov 2011 13:33:12 +0800
+Message-Id: <1322544793-2676-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 1:00 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-> On Tue, Nov 29, 2011 at 1:41 PM, Haojian Zhuang
-> <haojian.zhuang@gmail.com> wrote:
->> On Thu, Nov 17, 2011 at 6:13 PM, Donggeun Kim <dg77.kim@samsung.com> wrote:
->>> Because battery health monitoring should be done even when suspended,
->>> it needs to wake up and suspend periodically. Thus, userspace battery
->>> monitoring may incur too much overhead; every device and task is woken
->>> up periodically. Charger Manager uses suspend-again to provide
->>> in-suspend monitoring.
->>>
->>> This patch allows to monitor battery health in-suspend state.
->>>
->
->> Donggeun,
->>
->> I think that this patch is good for saving energy for charging while
->> suspend. I think that this driver also works under android. I have
->> some concerns on rtc wakeup.
->>
->> As we know, RTC event doesn't link to timer events in kernel. But
->> Android did. Android transfered timer event to rtc event while it
->> suspend. So it will occupy one rtc device.
->>
->> Whatever the device is phone or tablet, it may cost another rtc device
->> if it wants to implement power-up alarm feature. If we want to support
->> the charger manager feature, we have to add another rtc device. I
->> think that it's very hard to find any current platform with three rtc
->> devices. How about implement the similar mechanism like android?
->> Charger manager can register wakeup event into alarm mechanism like
->> android. And we only need two rtc devices.
->>
->> Loop more guys: list-arm-kernel & linaro.
->>
->> Thanks
->> Haojianbelow patch and comment whether
->
-> Hello Haojian,
->
-> No, we do not need to add another RTC device due to the usage of RTC
-> alarm from another device drivers or processes.
-> We can share an RTC device with others as long as others do not set
-> RTC alarm in the suspend-to-RAM context (specifically from prepare ops
-> to complete ops).
-> The reason why we have created cm_setup_timer() looking that awfully
-> complex is to let it coexist with other RTC alarm events and share the
-> precious RTC device.
-> Anyway, why do we even need two RTC devices in general?
->
-If we want the device to implement power-up alarm, we need two rtc devices.
+Systemd needs tmpfs to support fallocate [1], to be able
+to safely use mmap(), regarding SIGBUS, on files on the
+/dev/shm filesystem. The glibc fallback loop for -ENOSYS
+on fallocate is just ugly.
 
-Let me use an example in Android system.
-1. Application set time interval to receive mail after 10 minutes.
-2. Android suspend and it convert the timer event into RTC event.
-3. Battery is removed. After a while, we put the battery back. The
-battery insertion won't trigger phone up since it's depend on custom
-scenario.
-4. 10 minutes interval past and phone will be powered up since rtc
-wakeup. Absolutely it's incorrect. We only need a resume event, not a
-power up event.
+This patch adds fallocate support to tmpfs, and as we
+already have shmem_truncate_range(), it is also easy to
+add FALLOC_FL_PUNCH_HOLE support too.
 
-If we have two rtc devices, one is external rtc and the other is
-contained in SoC. While battery removed, only SoC rtc will lost power
-and external rtc can keep status for a long time. So let's check the
-item #4.
-4. Since status is lost in SoC rtc, system won't wakeup while 10
-minutes interval past.
+1. http://lkml.org/lkml/2011/10/20/275
 
-> If the RTC subsystem supports registering multiple alarm events,
-> that'd be nice and will make this one simpler as well; however, we do
-> not have it here for now.
->
-> We save previous RTC alarm if the configuration data says so
-> (rtc_wkalarm_save.enabled) and previously set alarm is later than the
-> current alarm and restore the RTC alarm value at wakeup.
->
-> If the previously set RTC alarm is earlier than the timer setup of
-> Charger Manager, we do not load the alarm value of Charger Manager and
-> let the previously set RTC alarm be active for a wakeup.
->
-But it's a little complex, isn't it?
+V3->V4:
+Handle 'undo' ENOSPC more correctly.
 
->
-> Cheers!
-> MyungJoo
->
+V2->V3:
+a) Read i_size directly after holding i_mutex;
+b) Call page_cache_release() too after shmem_getpage();
+c) Undo previous changes when -ENOSPC.
+
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: WANG Cong <amwang@redhat.com>
+
+---
+ mm/shmem.c |   90 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 90 insertions(+), 0 deletions(-)
+
+diff --git a/mm/shmem.c b/mm/shmem.c
+index d672250..90c835b 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -30,6 +30,7 @@
+ #include <linux/mm.h>
+ #include <linux/export.h>
+ #include <linux/swap.h>
++#include <linux/falloc.h>
+ 
+ static struct vfsmount *shm_mnt;
+ 
+@@ -1016,6 +1017,35 @@ failed:
+ 	return error;
+ }
+ 
++static void shmem_putpage_noswap(struct inode *inode, pgoff_t index)
++{
++	struct address_space *mapping = inode->i_mapping;
++	struct shmem_inode_info *info;
++	struct shmem_sb_info *sbinfo;
++	struct page *page;
++
++	page = find_lock_page(mapping, index);
++
++	if (page) {
++		info = SHMEM_I(inode);
++		sbinfo = SHMEM_SB(inode->i_sb);
++		shmem_acct_block(info->flags);
++		if (PageDirty(page)) {
++			ClearPageDirty(page);
++			delete_from_page_cache(page);
++			spin_lock(&info->lock);
++			info->alloced--;
++			inode->i_blocks -= BLOCKS_PER_PAGE;
++			spin_unlock(&info->lock);
++		}
++		if (sbinfo->max_blocks)
++			percpu_counter_add(&sbinfo->used_blocks, -1);
++		shmem_unacct_blocks(info->flags, 1);
++		unlock_page(page);
++		page_cache_release(page);
++	}
++}
++
+ static int shmem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ {
+ 	struct inode *inode = vma->vm_file->f_path.dentry->d_inode;
+@@ -1431,6 +1461,65 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
+ 	return error;
+ }
+ 
++static long shmem_fallocate(struct file *file, int mode,
++				loff_t offset, loff_t len)
++{
++	struct inode *inode = file->f_path.dentry->d_inode;
++	pgoff_t start = offset >> PAGE_CACHE_SHIFT;
++	pgoff_t end = DIV_ROUND_UP((offset + len), PAGE_CACHE_SIZE);
++	pgoff_t index = start;
++	loff_t i_size;
++	struct page *page = NULL;
++	int ret = 0;
++
++	if (IS_SWAPFILE(inode))
++		return -ETXTBSY;
++
++	mutex_lock(&inode->i_mutex);
++	i_size = inode->i_size;
++	if (mode & FALLOC_FL_PUNCH_HOLE) {
++		if (!(offset > i_size || (end << PAGE_CACHE_SHIFT) > i_size))
++			shmem_truncate_range(inode, offset,
++					     (end << PAGE_CACHE_SHIFT) - 1);
++		goto unlock;
++	}
++
++	if (!(mode & FALLOC_FL_KEEP_SIZE)) {
++		ret = inode_newsize_ok(inode, (offset + len));
++		if (ret)
++			goto unlock;
++	}
++
++	while (index < end) {
++		ret = shmem_getpage(inode, index, &page, SGP_WRITE, NULL);
++		if (ret) {
++			if (ret == -ENOSPC)
++				goto undo;
++			else
++				goto unlock;
++		}
++		if (page) {
++			unlock_page(page);
++			page_cache_release(page);
++		}
++		index++;
++	}
++	if (!(mode & FALLOC_FL_KEEP_SIZE) && (index << PAGE_CACHE_SHIFT) > i_size)
++		i_size_write(inode, index << PAGE_CACHE_SHIFT);
++
++	goto unlock;
++
++undo:
++	while (index > start) {
++		shmem_putpage_noswap(inode, index);
++		index--;
++	}
++
++unlock:
++	mutex_unlock(&inode->i_mutex);
++	return ret;
++}
++
+ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+ {
+ 	struct shmem_sb_info *sbinfo = SHMEM_SB(dentry->d_sb);
+@@ -2286,6 +2375,7 @@ static const struct file_operations shmem_file_operations = {
+ 	.fsync		= noop_fsync,
+ 	.splice_read	= shmem_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
++	.fallocate	= shmem_fallocate,
+ #endif
+ };
+ 
