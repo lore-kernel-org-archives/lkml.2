@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab1K2TnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 14:43:03 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:37217 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754477Ab1K2TnA (ORCPT
+	id S1756537Ab1K2TnR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 14:43:17 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:42494 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756373Ab1K2TnP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 14:43:00 -0500
-Message-ID: <4ED535A9.3070506@metafoo.de>
-Date: Tue, 29 Nov 2011 20:42:33 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
-MIME-Version: 1.0
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] coccinelle: Add patch to use kcalloc instead of kzalloc
- for array allocations
-References: <1322232368-28814-1-git-send-email-lars@metafoo.de> <1322592151.1534.78.camel@localhost.localdomain>
-In-Reply-To: <1322592151.1534.78.camel@localhost.localdomain>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Nov 2011 14:43:15 -0500
+Date: Tue, 29 Nov 2011 14:47:25 -0500 (EST)
+Message-Id: <20111129.144725.183069721.davem@davemloft.net>
+To: sjur.brandeland@stericsson.com
+Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org, sjurbren@gmail.com,
+        pebolle@tiscali.nl, netdev@vger.kernel.org
+Subject: Re: [RFCv2 9/9] caif-xshm: Add CAIF driver for Shared memory for
+ M7400
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1322595550-6473-10-git-send-email-sjur.brandeland@stericsson.com>
+References: <1322595550-6473-1-git-send-email-sjur.brandeland@stericsson.com>
+	<1322595550-6473-10-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 Nov 2011 11:43:07 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2011 07:42 PM, Thomas Meyer wrote:
-> Am Freitag, den 25.11.2011, 15:46 +0100 schrieb Lars-Peter Clausen:
->> This patch adds a coccinelle patch to convert array allocations which use
->> kzalloc to kcalloc. The advantage of kcalloc is, that will take care of
->> integer overflows which could result from the multiplication and it is also
->> nicer to read.
-> 
-> Hi Lars,
-> 
-> I did run your kcalloc spatch against 3.2-rc3. are you okay with if I
-> send the diffs to the LKML?
-> 
+From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Date: Tue, 29 Nov 2011 20:39:10 +0100
 
-Sure.
+> This patch introduces a caif shared memory link layer driver
+> for ST-Ericsson's Thor M7400 LTE modem.
+> 
+> M7400 uses a ring-buffer in shared memory for transporting data from the modem.
+> Each ring-buffer element contains an array of caif frames. caif_xshm calls
+> napi_schedule() when receiving notification about incoming data.
+> The napi-poll function copies data from the ring-buffer to SKBs until
+> ring-buffer is empty, or quota is exceeded.
+> 
+> If transmit ring-buffer is full, it also uses napi for scheduling transmission
+> of queued transmit buffer.
+> 
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> cc: netdev@vger.kernel.org
 
-Thanks
-- Lars
+I'm happy for this to go into the tree where the necessary xshm infrastructure
+goes first:
+
+Acked-by: David S. Miller <davem@davemloft.net>
