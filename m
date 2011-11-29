@@ -1,347 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1K2Dgo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 22:36:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5910 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752095Ab1K2Dgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 22:36:43 -0500
-Message-ID: <4ED45337.3010600@redhat.com>
-Date: Tue, 29 Nov 2011 11:36:23 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1753739Ab1K2DlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 22:41:17 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:41740
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751807Ab1K2DlP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 22:41:15 -0500
+X-SpamScore: -18
+X-BigFish: VS-18(zzc89bh542M1432N98dK4015Lzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h93fh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Shi Xuelin-B29237 <B29237@freescale.com>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Li Yang-R58472 <r58472@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH][RFC] fsldma: fix performance degradation by optimizing
+ spinlock use.
+Thread-Topic: [PATCH][RFC] fsldma: fix performance degradation by optimizing
+ spinlock use.
+Thread-Index: AQHMqUjerURab3Fr/EKddPxu6BzsrpW7rS8AgAc9FICAAE8r4A==
+Date: Tue, 29 Nov 2011 03:41:11 +0000
+Message-ID: <DBB740589CE8814680DECFE34BE197AB14A01E@039-SN1MPN1-006.039d.mgd.msft.net>
+References: <1321937705-19587-1-git-send-email-b29237@freescale.com>
+ <20111122185924.GA23323@ovro.caltech.edu>
+ <DBB740589CE8814680DECFE34BE197AB148CDD@039-SN1MPN1-006.039d.mgd.msft.net>
+ <20111128163814.GA10919@ovro.caltech.edu>
+In-Reply-To: <20111128163814.GA10919@ovro.caltech.edu>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.103]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Jiri Kosina <trivial@kernel.org>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [V2 PATCH 00/62] highmem: remove the second argument of kmap_atomic/kunmap_atomic
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
-In-Reply-To: <1322371662-26166-1-git-send-email-amwang@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pAT3fQbi004511
 
-Cc: Jiri Kosina <trivial@kernel.org>
+Hi Ira, 
 
-Hi, Jiri,
+see my comments below.
 
-I just made a branch which keeps all these patches as a single one,
+Thanks,
+Forrest
 
-git://github.com/congwang/linux.git #kmap_atomic-single
+-----Original Message-----
+From: Ira W. Snyder [mailto:iws@ovro.caltech.edu] 
+Sent: 2011å¹´11æœˆ29æ—¥ 0:38
+To: Shi Xuelin-B29237
+Cc: vinod.koul@intel.com; dan.j.williams@intel.com; linuxppc-dev@lists.ozlabs.org; Li Yang-R58472; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing spinlock use.
 
-(As the single patch is 233K and the split ones are already sent, so I don't send it to mailing list.)
+On Thu, Nov 24, 2011 at 08:12:25AM +0000, Shi Xuelin-B29237 wrote:
+> Hi Ira,
+> 
+> Thanks for your review.
+> 
+> After second thought, I think your scenario may not occur.
+> Because the cookie 20 we query must be returned by fsl_dma_tx_submit(...) in practice. 
+> We never query a cookie not returned by fsl_dma_tx_submit(...).
+> 
 
-So, unless Andrew Morton objects, could you take that single
-big patch into your tree? James Bottomley prefers this.
+I agree about this part.
 
-BTW, the split patches can still be found at,
+> When we call fsl_tx_status(20), the chan->common.cookie is definitely wrote as 20 and cpu2 could not read as 19.
+> 
 
-git://github.com/congwang/linux.git #for-next
+This is what I don't agree about. However, I'm not an expert on CPU cache vs. memory accesses in an multi-processor system. The section titled "CACHE COHERENCY" in Documentation/memory-barriers.txt leads me to believe that the scenario I described is possible.
 
+ 
+[Shi Xuelin-B29237] If query is used without rules, your scenario may happen. But in DMA usage here, the query is used something like sequentially. Only after chan->common.cookie is updated in fsl_dma_tx_submit(...) and returned, then it could be queried. So you scenario will not happen.
 
-Thanks!
+What happens if CPU1's write of chan->common.cookie only goes into CPU1's cache. It never makes it to main memory before CPU2 fetches the old value of 19.
+ 
+[Shi Xuelin-B29237] As you see, chan->common.cookie is updated in fsl_dma_tx_submit(...) and enclosed by spinlock. The spinlock implementation in PPC will guarantee the cache coherence among cores, something like you called implicit smp_mb.
 
-On 2011/11/27 13:26, Cong Wang wrote:
-> V1: https://lkml.org/lkml/2011/1/30/13
->
-> V1->V2: Split patches and rebase them to the latest linus tree.
->
-> Now the second argument of kmap_atomic()/kunmap_atomic() is totally
-> unused, this patchset removes it from all callers.
->
-> But for backward compatibility, we still keep the deprecated form,
-> and will warn the users if they still use the deprecated one, like this:
->
-> drivers/block/drbd/drbd_bitmap.c: In function â€˜bm_page_io_asyncâ€™:
-> drivers/block/drbd/drbd_bitmap.c:973:3: warning: â€˜kmap_atomic_deprecatedâ€™ is deprecated (declared at /home/wangcong/linux-2.6/include/linux/highmem.h:124)
-> drivers/block/drbd/drbd_bitmap.c:977:3: warning: â€˜kunmap_atomic_deprecatedâ€™ is deprecated (declared at /home/wangcong/linux-2.6/include/linux/highmem.h:144)
->
-> To schedule the final removal of these stuffs, I also write some doc into
-> feature-removal-schedule.txt, see the last patch in this thread.
->
-> Most of this patch is generated by the following commands:
->
-> find . -name '*.[c|h]' -exec sed -i -e 's#\bkmap_atomic(\(.*\),.*)#kmap_atomic(\1)#' '{}' \;
-> find . -name '*.[c|h]' -exec sed -i -e 's#\bkunmap_atomic(\(.*\),.*)#kunmap_atomic(\1)#' '{}' \;
->
-> the rest exceptions are fixed by hands.
->
-> This patch passes 'make allyesconfig' test on both ppc64 and x86_64.
->
-> BTW, all patches can be found on my github:
->
-> 	git@github.com:congwang/linux.git #for-next
->
-> and the final removal patches can be found here:
->
-> 	git@github.com:congwang/linux.git #for-3.5
->
->
-> Signed-off-by: Cong Wang<amwang@redhat.com>
-> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
->
-> ---
->
-> Cong Wang (62):
->    highmem: mark k[un]map_atomic() with two arguments as deprecated
->    include/linux/highmem.h: remove the second argument of
->      k[un]map_atomic()
->    arm: remove the second argument of k[un]map_atomic()
->    mips: remove the second argument of k[un]map_atomic()
->    powerpc: remove the second argument of k[un]map_atomic()
->    sh: remove the second argument of k[un]map_atomic()
->    um: remove the second argument of k[un]map_atomic()
->    x86: remove the second argument of k[un]map_atomic()
->    crypto: remove the second argument of k[un]map_atomic()
->    ata: remove the second argument of k[un]map_atomic()
->    block: remove the second argument of k[un]map_atomic()
->    crypto: remove the second argument of k[un]map_atomic()
->    edac: remove the second argument of k[un]map_atomic()
->    drm: remove the second argument of k[un]map_atomic()
->    ide: remove the second argument of k[un]map_atomic()
->    infiniband: remove the second argument of k[un]map_atomic()
->    md: remove the second argument of k[un]map_atomic()
->    media: remove the second argument of k[un]map_atomic()
->    memstick: remove the second argument of k[un]map_atomic()
->    mmc: remove the second argument of k[un]map_atomic()
->    net: remove the second argument of k[un]map_atomic()
->    scsi: remove the second argument of k[un]map_atomic()
->    hv: remove the second argument of k[un]map_atomic()
->    pohmelfs: remove the second argument of k[un]map_atomic()
->    rtl8192u: remove the second argument of k[un]map_atomic()
->    zram: remove the second argument of k[un]map_atomic()
->    target: remove the second argument of k[un]map_atomic()
->    vhost: remove the second argument of k[un]map_atomic()
->    fs: remove the second argument of k[un]map_atomic()
->    btrfs: remove the second argument of k[un]map_atomic()
->    ecryptfs: remove the second argument of k[un]map_atomic()
->    afs: remove the second argument of k[un]map_atomic()
->    exofs: remove the second argument of k[un]map_atomic()
->    ext2: remove the second argument of k[un]map_atomic()
->    fuse: remove the second argument of k[un]map_atomic()
->    gfs2: remove the second argument of k[un]map_atomic()
->    jbd: remove the second argument of k[un]map_atomic()
->    jbd2: remove the second argument of k[un]map_atomic()
->    logfs: remove the second argument of k[un]map_atomic()
->    minix: remove the second argument of k[un]map_atomic()
->    nfs: remove the second argument of k[un]map_atomic()
->    nilfs2: remove the second argument of k[un]map_atomic()
->    ntfs: remove the second argument of k[un]map_atomic()
->    ocfs2: remove the second argument of k[un]map_atomic()
->    reiserfs: remove the second argument of k[un]map_atomic()
->    squashfs: remove the second argument of k[un]map_atomic()
->    ubifs: remove the second argument of k[un]map_atomic()
->    udf: remove the second argument of k[un]map_atomic()
->    kdb: remove the second argument of k[un]map_atomic()
->    power: remove the second argument of k[un]map_atomic()
->    lib: remove the second argument of k[un]map_atomic()
->    mm: remove the second argument of k[un]map_atomic()
->    net: remove the second argument of k[un]map_atomic()
->    rds: remove the second argument of k[un]map_atomic()
->    sunrpc: remove the second argument of k[un]map_atomic()
->    tomoyo: remove the second argument of k[un]map_atomic()
->    md: remove the second argument of k[un]map_atomic()
->    gma500: remove the second argument of k[un]map_atomic()
->    zcache: remove the second argument of k[un]map_atomic()
->    drbd: remove the second argument of k[un]map_atomic()
->    highmem: kill all __kmap_atomic()
->    feature-removal-schedule.txt: add the deprecated form of
->      kmap_atomic()
->
->   Documentation/feature-removal-schedule.txt       |    8 ++
->   arch/arm/mm/copypage-fa.c                        |   12 ++--
->   arch/arm/mm/copypage-feroceon.c                  |   12 ++--
->   arch/arm/mm/copypage-v3.c                        |   12 ++--
->   arch/arm/mm/copypage-v4mc.c                      |    8 +-
->   arch/arm/mm/copypage-v4wb.c                      |   12 ++--
->   arch/arm/mm/copypage-v4wt.c                      |   12 ++--
->   arch/arm/mm/copypage-v6.c                        |   12 ++--
->   arch/arm/mm/copypage-xsc3.c                      |   12 ++--
->   arch/arm/mm/copypage-xscale.c                    |    8 +-
->   arch/arm/mm/highmem.c                            |    4 +-
->   arch/frv/include/asm/highmem.h                   |    2 +-
->   arch/frv/mm/highmem.c                            |    4 +-
->   arch/mips/include/asm/highmem.h                  |    2 +-
->   arch/mips/mm/c-r4k.c                             |    4 +-
->   arch/mips/mm/highmem.c                           |    4 +-
->   arch/mips/mm/init.c                              |    8 +-
->   arch/mn10300/include/asm/highmem.h               |    2 +-
->   arch/parisc/include/asm/cacheflush.h             |    2 +-
->   arch/powerpc/include/asm/highmem.h               |    2 +-
->   arch/powerpc/kvm/book3s_pr.c                     |    4 +-
->   arch/powerpc/mm/dma-noncoherent.c                |    5 +-
->   arch/powerpc/mm/hugetlbpage.c                    |    4 +-
->   arch/powerpc/mm/mem.c                            |    4 +-
->   arch/sh/mm/cache-sh4.c                           |    4 +-
->   arch/sh/mm/cache.c                               |   12 ++--
->   arch/sparc/include/asm/highmem.h                 |    2 +-
->   arch/sparc/mm/highmem.c                          |    4 +-
->   arch/tile/include/asm/highmem.h                  |    2 +-
->   arch/tile/mm/highmem.c                           |    4 +-
->   arch/um/kernel/skas/uaccess.c                    |    4 +-
->   arch/x86/crypto/aesni-intel_glue.c               |   24 +++---
->   arch/x86/include/asm/highmem.h                   |    2 +-
->   arch/x86/kernel/crash_dump_32.c                  |    6 +-
->   arch/x86/kvm/lapic.c                             |    8 +-
->   arch/x86/kvm/paging_tmpl.h                       |    4 +-
->   arch/x86/kvm/x86.c                               |    8 +-
->   arch/x86/lib/usercopy_32.c                       |    4 +-
->   arch/x86/mm/highmem_32.c                         |    4 +-
->   crypto/ahash.c                                   |    4 +-
->   crypto/async_tx/async_memcpy.c                   |    8 +-
->   crypto/blkcipher.c                               |    8 +-
->   crypto/ccm.c                                     |    4 +-
->   crypto/scatterwalk.c                             |    8 +-
->   crypto/shash.c                                   |    8 +-
->   drivers/ata/libata-sff.c                         |    8 +-
->   drivers/block/brd.c                              |   20 +++---
->   drivers/block/drbd/drbd_bitmap.c                 |   50 ++++++------
->   drivers/block/drbd/drbd_nl.c                     |    4 +-
->   drivers/block/loop.c                             |   16 ++--
->   drivers/block/pktcdvd.c                          |    8 +-
->   drivers/crypto/hifn_795x.c                       |   10 +-
->   drivers/edac/edac_mc.c                           |    4 +-
->   drivers/gpu/drm/drm_cache.c                      |    8 +-
->   drivers/gpu/drm/ttm/ttm_tt.c                     |   16 ++--
->   drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c              |    6 +-
->   drivers/ide/ide-taskfile.c                       |    4 +-
->   drivers/infiniband/ulp/iser/iser_memory.c        |    8 +-
->   drivers/md/bitmap.c                              |   42 +++++-----
->   drivers/md/dm-crypt.c                            |    8 +-
->   drivers/media/video/ivtv/ivtv-udma.c             |    4 +-
->   drivers/memstick/host/jmb38x_ms.c                |    4 +-
->   drivers/memstick/host/tifm_ms.c                  |    4 +-
->   drivers/mmc/host/at91_mci.c                      |    8 +-
->   drivers/mmc/host/msm_sdcc.c                      |    6 +-
->   drivers/mmc/host/sdhci.c                         |    4 +-
->   drivers/mmc/host/tifm_sd.c                       |   16 ++--
->   drivers/mmc/host/tmio_mmc.c                      |    1 -
->   drivers/mmc/host/tmio_mmc.h                      |    4 +-
->   drivers/net/ethernet/intel/e1000/e1000_main.c    |    6 +-
->   drivers/net/ethernet/intel/e1000e/netdev.c       |   10 +--
->   drivers/net/ethernet/sun/cassini.c               |    4 +-
->   drivers/scsi/arcmsr/arcmsr_hba.c                 |    8 +-
->   drivers/scsi/bnx2fc/bnx2fc_fcoe.c                |    5 +-
->   drivers/scsi/cxgbi/libcxgbi.c                    |    5 +-
->   drivers/scsi/fcoe/fcoe.c                         |    4 +-
->   drivers/scsi/fcoe/fcoe_transport.c               |    5 +-
->   drivers/scsi/gdth.c                              |    4 +-
->   drivers/scsi/ips.c                               |    6 +-
->   drivers/scsi/isci/request.c                      |   16 ++--
->   drivers/scsi/libfc/fc_fcp.c                      |    8 +-
->   drivers/scsi/libfc/fc_libfc.c                    |    8 +-
->   drivers/scsi/libfc/fc_libfc.h                    |    2 +-
->   drivers/scsi/libfc/fc_lport.c                    |    2 +-
->   drivers/scsi/libiscsi_tcp.c                      |    4 +-
->   drivers/scsi/libsas/sas_host_smp.c               |    8 +-
->   drivers/scsi/megaraid.c                          |    4 +-
->   drivers/scsi/mvsas/mv_sas.c                      |    4 +-
->   drivers/scsi/scsi_debug.c                        |   24 +++---
->   drivers/scsi/scsi_lib.c                          |    4 +-
->   drivers/scsi/sd_dif.c                            |   12 ++--
->   drivers/staging/gma500/mmu.c                     |   30 ++++----
->   drivers/staging/hv/netvsc_drv.c                  |    5 +-
->   drivers/staging/hv/rndis_filter.c                |    4 +-
->   drivers/staging/hv/storvsc_drv.c                 |   31 +++----
->   drivers/staging/pohmelfs/inode.c                 |    8 +-
->   drivers/staging/rtl8192u/ieee80211/cipher.c      |    8 +-
->   drivers/staging/rtl8192u/ieee80211/digest.c      |    8 +-
->   drivers/staging/rtl8192u/ieee80211/internal.h    |   17 ----
->   drivers/staging/rtl8192u/ieee80211/kmap_types.h  |   20 -----
->   drivers/staging/rtl8192u/ieee80211/scatterwalk.c |   19 +---
->   drivers/staging/zcache/zcache-main.c             |   16 ++--
->   drivers/staging/zram/xvmalloc.c                  |   39 +++++-----
->   drivers/staging/zram/zram_drv.c                  |   44 +++++-----
->   drivers/target/target_core_transport.c           |    4 +-
->   drivers/target/tcm_fc/tfc_io.c                   |   10 +--
->   drivers/vhost/vhost.c                            |    4 +-
->   fs/afs/fsclient.c                                |    8 +-
->   fs/afs/mntpt.c                                   |    4 +-
->   fs/aio.c                                         |   30 ++++----
->   fs/bio-integrity.c                               |   10 +-
->   fs/btrfs/compression.c                           |   12 ++--
->   fs/btrfs/extent_io.c                             |   16 ++--
->   fs/btrfs/file-item.c                             |    4 +-
->   fs/btrfs/inode.c                                 |   26 +++---
->   fs/btrfs/lzo.c                                   |    4 +-
->   fs/btrfs/scrub.c                                 |    8 +-
->   fs/btrfs/zlib.c                                  |    4 +-
->   fs/ecryptfs/mmap.c                               |    4 +-
->   fs/ecryptfs/read_write.c                         |    8 +-
->   fs/exec.c                                        |    4 +-
->   fs/exofs/dir.c                                   |    4 +-
->   fs/ext2/dir.c                                    |    4 +-
->   fs/fuse/dev.c                                    |    4 +-
->   fs/fuse/file.c                                   |    4 +-
->   fs/gfs2/aops.c                                   |   12 ++--
->   fs/gfs2/lops.c                                   |    8 +-
->   fs/gfs2/quota.c                                  |    4 +-
->   fs/jbd/journal.c                                 |   12 ++--
->   fs/jbd/transaction.c                             |    4 +-
->   fs/jbd2/commit.c                                 |    4 +-
->   fs/jbd2/journal.c                                |   12 ++--
->   fs/jbd2/transaction.c                            |    4 +-
->   fs/logfs/dir.c                                   |   18 ++--
->   fs/logfs/readwrite.c                             |   38 +++++-----
->   fs/logfs/segment.c                               |    4 +-
->   fs/minix/dir.c                                   |    4 +-
->   fs/namei.c                                       |    4 +-
->   fs/nfs/dir.c                                     |    8 +-
->   fs/nfs/nfs4proc.c                                |    4 +-
->   fs/nilfs2/cpfile.c                               |   94 +++++++++++-----------
->   fs/nilfs2/dat.c                                  |   38 +++++-----
->   fs/nilfs2/dir.c                                  |    4 +-
->   fs/nilfs2/ifile.c                                |    4 +-
->   fs/nilfs2/mdt.c                                  |    4 +-
->   fs/nilfs2/page.c                                 |    8 +-
->   fs/nilfs2/recovery.c                             |    4 +-
->   fs/nilfs2/segbuf.c                               |    4 +-
->   fs/nilfs2/sufile.c                               |   68 ++++++++--------
->   fs/ntfs/aops.c                                   |   20 +++---
->   fs/ntfs/attrib.c                                 |   20 +++---
->   fs/ntfs/file.c                                   |   16 ++--
->   fs/ntfs/super.c                                  |    8 +-
->   fs/ocfs2/aops.c                                  |   16 ++--
->   fs/pipe.c                                        |    8 +-
->   fs/reiserfs/stree.c                              |    4 +-
->   fs/reiserfs/tail_conversion.c                    |    4 +-
->   fs/splice.c                                      |    7 +-
->   fs/squashfs/file.c                               |    8 +-
->   fs/squashfs/symlink.c                            |    4 +-
->   fs/ubifs/file.c                                  |    4 +-
->   fs/udf/file.c                                    |    4 +-
->   include/crypto/scatterwalk.h                     |   28 +------
->   include/linux/bio.h                              |    8 +-
->   include/linux/highmem.h                          |   77 ++++++++++++-----
->   kernel/debug/kdb/kdb_support.c                   |    4 +-
->   kernel/power/snapshot.c                          |   28 +++---
->   lib/scatterlist.c                                |    4 +-
->   lib/swiotlb.c                                    |    5 +-
->   mm/bounce.c                                      |    4 +-
->   mm/filemap.c                                     |    8 +-
->   mm/ksm.c                                         |   12 ++--
->   mm/memory.c                                      |    4 +-
->   mm/shmem.c                                       |    4 +-
->   mm/swapfile.c                                    |   30 ++++----
->   mm/vmalloc.c                                     |    8 +-
->   net/core/kmap_skb.h                              |    4 +-
->   net/rds/ib_recv.c                                |    7 +-
->   net/rds/info.c                                   |    6 +-
->   net/rds/iw_recv.c                                |    7 +-
->   net/rds/loop.c                                   |    2 +-
->   net/rds/rds.h                                    |    2 +-
->   net/rds/recv.c                                   |    2 +-
->   net/rds/tcp_recv.c                               |   11 +--
->   net/sunrpc/auth_gss/gss_krb5_wrap.c              |    4 +-
->   net/sunrpc/socklib.c                             |    4 +-
->   net/sunrpc/xdr.c                                 |   20 +++---
->   net/sunrpc/xprtrdma/rpc_rdma.c                   |    8 +-
->   security/tomoyo/domain.c                         |    4 +-
->   189 files changed, 936 insertions(+), 992 deletions(-)
->   create mode 100644 drivers/net/team/Module.symvers
->   delete mode 100644 drivers/staging/rtl8192u/ieee80211/kmap_types.h
->
+I don't think you should see any performance impact from the smp_mb() operation.
 
+[Shi Xuelin-B29237] Only add smp_mb() doesn't work. It only sync on this step, but next step is the same as just getting into this function without smp_mb operation.
+
+Thanks,
+Ira
+
+> -----Original Message-----
+> From: Ira W. Snyder [mailto:iws@ovro.caltech.edu]
+> Sent: 2011å¹´11æœˆ23æ—¥ 2:59
+> To: Shi Xuelin-B29237
+> Cc: dan.j.williams@intel.com; Li Yang-R58472; zw@zh-kernel.org; 
+> vinod.koul@intel.com; linuxppc-dev@lists.ozlabs.org; 
+> linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing spinlock use.
+> 
+> On Tue, Nov 22, 2011 at 12:55:05PM +0800, b29237@freescale.com wrote:
+> > From: Forrest Shi <b29237@freescale.com>
+> > 
+> >     dma status check function fsl_tx_status is heavily called in
+> >     a tight loop and the desc lock in fsl_tx_status contended by
+> >     the dma status update function. this caused the dma performance
+> >     degrades much.
+> > 
+> >     this patch releases the lock in the fsl_tx_status function.
+> >     I believe it has no neglect impact on the following call of
+> >     dma_async_is_complete(...).
+> > 
+> >     we can see below three conditions will be identified as success
+> >     a)  x < complete < use
+> >     b)  x < complete+N < use+N
+> >     c)  x < complete < use+N
+> >     here complete is the completed_cookie, use is the last_used
+> >     cookie, x is the querying cookie, N is MAX cookie
+> > 
+> >     when chan->completed_cookie is being read, the last_used may
+> >     be incresed. Anyway it has no neglect impact on the dma status
+> >     decision.
+> > 
+> >     Signed-off-by: Forrest Shi <xuelin.shi@freescale.com>
+> > ---
+> >  drivers/dma/fsldma.c |    5 -----
+> >  1 files changed, 0 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c index 
+> > 8a78154..1dca56f 100644
+> > --- a/drivers/dma/fsldma.c
+> > +++ b/drivers/dma/fsldma.c
+> > @@ -986,15 +986,10 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
+> >  	struct fsldma_chan *chan = to_fsl_chan(dchan);
+> >  	dma_cookie_t last_complete;
+> >  	dma_cookie_t last_used;
+> > -	unsigned long flags;
+> > -
+> > -	spin_lock_irqsave(&chan->desc_lock, flags);
+> >  
+> 
+> This will cause a bug. See below for a detailed explanation. You need this instead:
+> 
+> 	/*
+> 	 * On an SMP system, we must ensure that this CPU has seen the
+> 	 * memory accesses performed by another CPU under the
+> 	 * chan->desc_lock spinlock.
+> 	 */
+> 	smp_mb();
+> >  	last_complete = chan->completed_cookie;
+> >  	last_used = dchan->cookie;
+> >  
+> > -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> > -
+> >  	dma_set_tx_state(txstate, last_complete, last_used, 0);
+> >  	return dma_async_is_complete(cookie, last_complete, last_used);  }
+> 
+> Facts:
+> - dchan->cookie is the same member as chan->common.cookie (same memory 
+> location)
+> - chan->common.cookie is the "last allocated cookie for a pending transaction"
+> - chan->completed_cookie is the "last completed transaction"
+> 
+> I have replaced "dchan->cookie" with "chan->common.cookie" in the below explanation, to keep everything referenced from the same structure.
+> 
+> Variable usage before your change. Everything is used locked.
+> - RW chan->common.cookie		(fsl_dma_tx_submit)
+> - R  chan->common.cookie		(fsl_tx_status)
+> - R  chan->completed_cookie		(fsl_tx_status)
+> - W  chan->completed_cookie		(dma_do_tasklet)
+> 
+> Variable usage after your change:
+> - RW chan->common.cookie		LOCKED
+> - R  chan->common.cookie		NO LOCK
+> - R  chan->completed_cookie		NO LOCK
+> - W  chan->completed_cookie             LOCKED
+> 
+> What if we assume that you have a 2 CPU system (such as a P2020). After your changes, one possible sequence is:
+> 
+> === CPU1 - allocate + submit descriptor: fsl_dma_tx_submit() === 
+> spin_lock_irqsave
+> descriptor->cookie = 20		(x in your example)
+> chan->common.cookie = 20	(used in your example)
+> spin_unlock_irqrestore
+> 
+> === CPU2 - immediately calls fsl_tx_status() ===
+> chan->common.cookie == 19
+> chan->completed_cookie == 19
+> descriptor->cookie == 20
+> 
+> Since we don't have locks anymore, CPU2 may not have seen the write to
+> chan->common.cookie yet.
+> 
+> Also assume that the DMA hardware has not started processing the 
+> transaction yet. Therefore dma_do_tasklet() has not been called, and
+> chan->completed_cookie has not been updated.
+> 
+> In this case, dma_async_is_complete() (on CPU2) returns DMA_SUCCESS, even though the DMA operation has not succeeded. The DMA operation has not even started yet!
+> 
+> The smp_mb() fixes this, since it forces CPU2 to have seen all memory operations that happened before CPU1 released the spinlock. Spinlocks are implicit SMP memory barriers.
+> 
+> Therefore, the above example becomes:
+> smp_mb();
+> chan->common.cookie == 20
+> chan->completed_cookie == 19
+> descriptor->cookie == 20
+> 
+> Then dma_async_is_complete() returns DMA_IN_PROGRESS, which is correct.
+> 
+> Thanks,
+> Ira
+> 
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
