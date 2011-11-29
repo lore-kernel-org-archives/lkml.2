@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab1LERax (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:30:53 -0500
-Received: from www17.your-server.de ([213.133.104.17]:38030 "EHLO
+	id S932712Ab1LERa5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:30:57 -0500
+Received: from www17.your-server.de ([213.133.104.17]:38035 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546Ab1LERav (ORCPT
+	with ESMTP id S932692Ab1LERax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:30:51 -0500
-Subject: [PATCH] [SCSI] hpsa: Use kcalloc instead of kzalloc to allocate
+	Mon, 5 Dec 2011 12:30:53 -0500
+Subject: [PATCH] [SCSI] libsas: Use kcalloc instead of kzalloc to allocate
  array
 From: Thomas Meyer <thomas@m3y3r.de>
-To: JBottomley@parallels.com, iss_storagedev@hp.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Tue, 29 Nov 2011 22:08:00 +0100
-Message-ID: <1322600880.1534.331.camel@localhost.localdomain>
+Message-ID: <1322600880.1534.330.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -33,37 +33,15 @@ in https://lkml.org/lkml/2011/11/25/107
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
---- a/drivers/scsi/hpsa.c 2011-11-28 19:36:47.956780228 +0100
-+++ b/drivers/scsi/hpsa.c 2011-11-28 20:04:07.554064368 +0100
-@@ -821,8 +821,8 @@ static void adjust_hpsa_scsi_table(struc
- 	int nadded, nremoved;
- 	struct Scsi_Host *sh = NULL;
+diff -u -p a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+--- a/drivers/scsi/libsas/sas_expander.c 2011-11-13 11:07:46.460470430 +0100
++++ b/drivers/scsi/libsas/sas_expander.c 2011-11-28 20:04:24.150985642 +0100
+@@ -306,7 +306,7 @@ static int sas_expander_discover(struct
+ 	struct expander_device *ex = &dev->ex_dev;
+ 	int res = -ENOMEM;
  
--	added = kzalloc(sizeof(*added) * HPSA_MAX_DEVICES, GFP_KERNEL);
--	removed = kzalloc(sizeof(*removed) * HPSA_MAX_DEVICES, GFP_KERNEL);
-+	added = kcalloc(HPSA_MAX_DEVICES, sizeof(*added), GFP_KERNEL);
-+	removed = kcalloc(HPSA_MAX_DEVICES, sizeof(*removed), GFP_KERNEL);
- 
- 	if (!added || !removed) {
- 		dev_warn(&h->pdev->dev, "out of memory in "
-@@ -994,8 +994,8 @@ static int hpsa_allocate_sg_chain_blocks
- 	if (h->chainsize <= 0)
- 		return 0;
- 
--	h->cmd_sg_list = kzalloc(sizeof(*h->cmd_sg_list) * h->nr_cmds,
--				GFP_KERNEL);
-+	h->cmd_sg_list = kcalloc(h->nr_cmds, sizeof(*h->cmd_sg_list),
-+				 GFP_KERNEL);
- 	if (!h->cmd_sg_list)
+-	ex->ex_phy = kzalloc(sizeof(*ex->ex_phy)*ex->num_phys, GFP_KERNEL);
++	ex->ex_phy = kcalloc(ex->num_phys, sizeof(*ex->ex_phy), GFP_KERNEL);
+ 	if (!ex->ex_phy)
  		return -ENOMEM;
- 	for (i = 0; i < h->nr_cmds; i++) {
-@@ -1866,7 +1866,7 @@ static void hpsa_update_scsi_devices(str
- 	int raid_ctlr_position;
- 	DECLARE_BITMAP(lunzerobits, HPSA_MAX_TARGETS_PER_CTLR);
  
--	currentsd = kzalloc(sizeof(*currentsd) * HPSA_MAX_DEVICES, GFP_KERNEL);
-+	currentsd = kcalloc(HPSA_MAX_DEVICES, sizeof(*currentsd), GFP_KERNEL);
- 	physdev_list = kzalloc(reportlunsize, GFP_KERNEL);
- 	logdev_list = kzalloc(reportlunsize, GFP_KERNEL);
- 	tmpdevice = kzalloc(sizeof(*tmpdevice), GFP_KERNEL);
