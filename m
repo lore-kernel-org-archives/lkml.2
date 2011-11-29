@@ -1,365 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab1K3AEv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 19:04:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11276 "EHLO mx1.redhat.com"
+	id S1757286Ab1K3AFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 19:05:35 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:2559 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757217Ab1K3AEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 19:04:38 -0500
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 08/16] PGP: Add signature parser [ver #2]
-To: keyrings@linux-nfs.org
-Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
-        zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
-        alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Tue, 29 Nov 2011 23:44:39 +0000
-Message-ID: <20111129234439.13625.26953.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20111129234258.13625.21153.stgit@warthog.procyon.org.uk>
-References: <20111129234258.13625.21153.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1757074Ab1K3AFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 19:05:32 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Subject: [PATCH v7 04/10] tcp memory pressure controls
+Date: Tue, 29 Nov 2011 21:56:55 -0200
+Message-Id: <1322611021-1730-5-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some PGP signature parsing helpers:
+This patch introduces memory pressure controls for the tcp
+protocol. It uses the generic socket memory pressure code
+introduced in earlier patches, and fills in the
+necessary data in cg_proto struct.
 
- (1) A function to parse V4 signature subpackets and pass the desired ones to
-     a processor function:
 
-	int pgp_parse_sig_subpkts(const u8 *data, size_t datalen,
-				  struct pgp_parse_sig_context *ctx);
-
- (2) A function to parse out basic signature parameters from any PGP signature
-     such that the algorithms and public key can be selected:
-
-	int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-				 struct pgp_sig_parameters *p);
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+CC: Eric W. Biederman <ebiederm@xmission.com>
 ---
+ Documentation/cgroups/memory.txt |    2 +
+ include/linux/memcontrol.h       |    3 ++
+ include/net/sock.h               |    2 +
+ include/net/tcp_memcontrol.h     |   17 +++++++++
+ mm/memcontrol.c                  |   36 +++++++++++++++++--
+ net/core/sock.c                  |   42 ++++++++++++++++++++--
+ net/ipv4/Makefile                |    1 +
+ net/ipv4/tcp_ipv4.c              |    8 ++++-
+ net/ipv4/tcp_memcontrol.c        |   73 ++++++++++++++++++++++++++++++++++++++
+ net/ipv6/tcp_ipv6.c              |    4 ++
+ 10 files changed, 181 insertions(+), 7 deletions(-)
+ create mode 100644 include/net/tcp_memcontrol.h
+ create mode 100644 net/ipv4/tcp_memcontrol.c
 
- include/linux/pgp.h       |   24 ++++
- security/keys/pgp_parse.c |  274 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 298 insertions(+), 0 deletions(-)
-
-
-diff --git a/include/linux/pgp.h b/include/linux/pgp.h
-index 7e86a06..29b9758 100644
---- a/include/linux/pgp.h
-+++ b/include/linux/pgp.h
-@@ -227,4 +227,28 @@ struct pgp_parse_pubkey {
- extern int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
- 				struct pgp_parse_pubkey *pk);
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 3cf9d96..1e43da4 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -299,6 +299,8 @@ and set kmem extension config option carefully.
+ thresholds. The Memory Controller allows them to be controlled individually
+ per cgroup, instead of globally.
  
-+struct pgp_parse_sig_context {
-+	unsigned long types_of_interest[128 / BITS_PER_LONG];
-+	int (*process_packet)(struct pgp_parse_sig_context *context,
-+			      enum pgp_sig_subpkt_type type,
-+			      const u8 *data,
-+			      size_t datalen);
++* tcp memory pressure: sockets memory pressure for the tcp protocol.
++
+ 3. User Interface
+ 
+ 0. Configuration
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 60964c3..fa2482a 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -85,6 +85,9 @@ extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+ extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+ extern struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm);
+ 
++extern struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont);
++extern struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *mem);
++
+ static inline
+ int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
+ {
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 49f0912..2e94346 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -64,6 +64,8 @@
+ #include <net/dst.h>
+ #include <net/checksum.h>
+ 
++int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss);
++void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ /*
+  * This structure really needs to be cleaned up.
+  * Most of it is for TCP, and not used by any of
+diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
+new file mode 100644
+index 0000000..5f5e158
+--- /dev/null
++++ b/include/net/tcp_memcontrol.h
+@@ -0,0 +1,17 @@
++#ifndef _TCP_MEMCG_H
++#define _TCP_MEMCG_H
++
++struct tcp_memcontrol {
++	struct cg_proto cg_proto;
++	/* per-cgroup tcp memory pressure knobs */
++	struct res_counter tcp_memory_allocated;
++	struct percpu_counter tcp_sockets_allocated;
++	/* those two are read-mostly, leave them at the end */
++	long tcp_prot_mem[3];
++	int tcp_memory_pressure;
 +};
 +
-+extern int pgp_parse_sig_packets(const u8 *data, size_t datalen,
-+				 struct pgp_parse_sig_context *ctx);
++struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
++int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
++void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
++#endif /* _TCP_MEMCG_H */
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 12a08bf..a31a278 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -50,6 +50,8 @@
+ #include <linux/cpu.h>
+ #include <linux/oom.h>
+ #include "internal.h"
++#include <net/sock.h>
++#include <net/tcp_memcontrol.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -295,6 +297,10 @@ struct mem_cgroup {
+ 	 */
+ 	struct mem_cgroup_stat_cpu nocpu_base;
+ 	spinlock_t pcp_counter_lock;
 +
-+struct pgp_sig_parameters {
-+	enum pgp_signature_type signature_type : 8;
-+	union {
-+		struct pgp_key_ID issuer;
-+		__be32 issuer32[2];
-+	};
-+	enum pgp_pubkey_algo pubkey_algo : 8;
-+	enum pgp_hash_algo hash_algo : 8;
-+};
++#ifdef CONFIG_INET
++	struct tcp_memcontrol tcp_mem;
++#endif
+ };
+ 
+ /* Stuffs for move charges at task migration. */
+@@ -386,6 +392,7 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ #ifdef CONFIG_INET
+ #include <net/sock.h>
++#include <net/ip.h>
+ 
+ void sock_update_memcg(struct sock *sk)
+ {
+@@ -407,13 +414,21 @@ void sock_update_memcg(struct sock *sk)
+ 	}
+ }
+ 
++struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
++{
++	if (!memcg || mem_cgroup_is_root(memcg))
++		return NULL;
 +
-+extern int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-+				struct pgp_sig_parameters *p);
++	return &memcg->tcp_mem.cg_proto;
++}
++EXPORT_SYMBOL(tcp_proto_cgroup);
 +
- #endif /* _LINUX_PGP_H */
-diff --git a/security/keys/pgp_parse.c b/security/keys/pgp_parse.c
-index fb8d64a..b7bfeb1 100644
---- a/security/keys/pgp_parse.c
-+++ b/security/keys/pgp_parse.c
-@@ -252,3 +252,277 @@ int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
+ #endif /* CONFIG_INET */
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+ 
+ 
+ static void mem_cgroup_get(struct mem_cgroup *memcg);
+ static void mem_cgroup_put(struct mem_cgroup *memcg);
+-static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg);
+ static void drain_all_stock_async(struct mem_cgroup *memcg);
+ 
+ static struct mem_cgroup_per_zone *
+@@ -793,7 +808,7 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+ 	preempt_enable();
+ }
+ 
+-static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
++struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+ {
+ 	return container_of(cgroup_subsys_state(cont,
+ 				mem_cgroup_subsys_id), struct mem_cgroup,
+@@ -4717,14 +4732,27 @@ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+ 
+ 	ret = cgroup_add_files(cont, ss, kmem_cgroup_files,
+ 			       ARRAY_SIZE(kmem_cgroup_files));
++
++	if (!ret)
++		ret = mem_cgroup_sockets_init(cont, ss);
+ 	return ret;
+ };
+ 
++static void kmem_cgroup_destroy(struct cgroup_subsys *ss,
++				struct cgroup *cont)
++{
++	mem_cgroup_sockets_destroy(cont, ss);
++}
+ #else
+ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+ {
  	return 0;
  }
- EXPORT_SYMBOL_GPL(pgp_parse_public_key);
 +
-+/**
-+ * pgp_parse_sig_subpkt_header - Parse a PGP V4 signature subpacket header
-+ * @_data: Start of the subpacket (updated to subpacket data)
-+ * @_datalen: Amount of data remaining in buffer (decreased)
-+ * @_type: Where the subpacket type will be returned
-+ *
-+ * Parse a PGP V4 signature subpacket header [RFC 4880: 5.2.3.1].
-+ *
-+ * Returns packet data size on success; non-zero on error.  If successful,
-+ * *_data and *_datalen will have been updated and *_headerlen will be set to
-+ * hold the length of the packet header.
-+ */
-+ssize_t pgp_parse_sig_subpkt_header(const u8 **_data, size_t *_datalen,
-+				    enum pgp_sig_subpkt_type *_type)
++static void kmem_cgroup_destroy(struct cgroup_subsys *ss,
++				struct cgroup *cont)
 +{
-+	enum pgp_sig_subpkt_type type;
-+	const u8 *data = *_data;
-+	size_t size, datalen = *_datalen;
++}
+ #endif
+ 
+ static struct cftype mem_cgroup_files[] = {
+@@ -4958,7 +4986,7 @@ static void mem_cgroup_put(struct mem_cgroup *memcg)
+ /*
+  * Returns the parent mem_cgroup in memcgroup hierarchy with hierarchy enabled.
+  */
+-static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg)
++struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg)
+ {
+ 	if (!memcg->res.parent)
+ 		return NULL;
+@@ -5082,6 +5110,8 @@ static void mem_cgroup_destroy(struct cgroup_subsys *ss,
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+ 
++	kmem_cgroup_destroy(ss, cont);
 +
-+	pr_devel("-->pgp_parse_sig_subpkt_header(,%zu,,)", datalen);
+ 	mem_cgroup_put(memcg);
+ }
+ 
+diff --git a/net/core/sock.c b/net/core/sock.c
+index e7e0808..7309fc3 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -135,6 +135,45 @@
+ #include <net/tcp.h>
+ #endif
+ 
++static DEFINE_RWLOCK(proto_list_lock);
++static LIST_HEAD(proto_list);
 +
-+	if (datalen < 2)
-+		goto short_subpacket;
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
++{
++	struct proto *proto;
++	int ret = 0;
 +
-+	pr_devel("subpkt hdr %02x, %02x\n", data[0], data[1]);
-+
-+	switch (data[0]) {
-+	case 0x00 ... 0xbf:
-+		/* One-byte length */
-+		size = data[0];
-+		data++;
-+		datalen--;
-+		break;
-+	case 0xc0 ... 0xfe:
-+		/* Two-byte length */
-+		if (datalen < 3)
-+			goto short_subpacket;
-+		size = (data[0] - 192) * 256;
-+		size += data[1] + 192;
-+		data += 2;
-+		datalen -= 2;
-+		break;
-+	case 0xff:
-+		if (datalen < 6)
-+			goto short_subpacket;
-+		size  = data[1] << 24;
-+		size |= data[2] << 16;
-+		size |= data[3] << 8;
-+		size |= data[4];
-+		data += 5;
-+		datalen -= 5;
-+		break;
++	read_lock(&proto_list_lock);
++	list_for_each_entry(proto, &proto_list, node) {
++		if (proto->init_cgroup)
++			ret = proto->init_cgroup(cgrp, ss);
++			if (ret)
++				goto out;
 +	}
 +
-+	/* The type octet is included in the size */
-+	if (size == 0) {
-+		pr_warning("Signature subpacket size can't be zero\n");
-+		return -EBADMSG;
-+	}
-+
-+	type = *data++ & ~PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK;
-+	datalen--;
-+	size--;
-+
-+	pr_devel("datalen=%zu size=%zu", datalen, size);
-+	if (datalen < size)
-+		goto short_subpacket;
-+
-+	*_data = data;
-+	*_datalen = datalen;
-+	*_type = type;
-+	pr_devel("Found subpkt type=%u size=%zd\n", type, size);
-+	return size;
-+
-+short_subpacket:
-+	pr_warning("Attempt to parse short signature subpacket\n");
-+	return -EBADMSG;
++	read_unlock(&proto_list_lock);
++	return ret;
++out:
++	list_for_each_entry_continue_reverse(proto, &proto_list, node)
++		if (proto->destroy_cgroup)
++			proto->destroy_cgroup(cgrp, ss);
++	read_unlock(&proto_list_lock);
++	return ret;
 +}
 +
-+/**
-+ * pgp_parse_sig_subpkts - Parse a set of PGP V4 signatute subpackets
-+ * @_data: Data to be parsed (updated)
-+ * @_datalen: Amount of data (updated)
-+ * @ctx: Parsing context
-+ *
-+ * Parse a set of PGP signature subpackets [RFC 4880: 5.2.3].
-+ */
-+int pgp_parse_sig_subpkts(const u8 *data, size_t datalen,
-+			  struct pgp_parse_sig_context *ctx)
++void mem_cgroup_sockets_destroy(struct cgroup *cgrp, struct cgroup_subsys *ss)
 +{
-+	enum pgp_sig_subpkt_type type;
-+	ssize_t pktlen;
-+	int ret;
++	struct proto *proto;
 +
-+	pr_devel("-->pgp_parse_sig_subpkts(,%zu,,)", datalen);
++	read_lock(&proto_list_lock);
++	list_for_each_entry_reverse(proto, &proto_list, node)
++		if (proto->destroy_cgroup)
++			proto->destroy_cgroup(cgrp, ss);
++	read_unlock(&proto_list_lock);
++}
++#endif
 +
-+	while (datalen > 2) {
-+		pktlen = pgp_parse_sig_subpkt_header(&data, &datalen, &type);
-+		if (pktlen < 0)
-+			return pktlen;
-+		if (test_bit(type, ctx->types_of_interest)) {
-+			ret = ctx->process_packet(ctx, type, data, pktlen);
-+			if (ret < 0)
-+				return ret;
-+		}
-+		data += pktlen;
-+		datalen -= pktlen;
-+	}
+ /*
+  * Each address family might have different locking rules, so we have
+  * one slock key per address family:
+@@ -2256,9 +2295,6 @@ void sk_common_release(struct sock *sk)
+ }
+ EXPORT_SYMBOL(sk_common_release);
+ 
+-static DEFINE_RWLOCK(proto_list_lock);
+-static LIST_HEAD(proto_list);
+-
+ #ifdef CONFIG_PROC_FS
+ #define PROTO_INUSE_NR	64	/* should be enough for the first time */
+ struct prot_inuse {
+diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
+index f2dc69c..dc67a99 100644
+--- a/net/ipv4/Makefile
++++ b/net/ipv4/Makefile
+@@ -47,6 +47,7 @@ obj-$(CONFIG_TCP_CONG_SCALABLE) += tcp_scalable.o
+ obj-$(CONFIG_TCP_CONG_LP) += tcp_lp.o
+ obj-$(CONFIG_TCP_CONG_YEAH) += tcp_yeah.o
+ obj-$(CONFIG_TCP_CONG_ILLINOIS) += tcp_illinois.o
++obj-$(CONFIG_CGROUP_MEM_RES_CTLR_KMEM) += tcp_memcontrol.o
+ obj-$(CONFIG_NETLABEL) += cipso_ipv4.o
+ 
+ obj-$(CONFIG_XFRM) += xfrm4_policy.o xfrm4_state.o xfrm4_input.o \
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index d1f4bf8..7fa08c5 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -73,6 +73,7 @@
+ #include <net/xfrm.h>
+ #include <net/netdma.h>
+ #include <net/secure_seq.h>
++#include <net/tcp_memcontrol.h>
+ 
+ #include <linux/inet.h>
+ #include <linux/ipv6.h>
+@@ -1918,6 +1919,7 @@ static int tcp_v4_init_sock(struct sock *sk)
+ 	sk_sockets_allocated_inc(sk);
+ 	local_bh_enable();
+ 
++	sock_update_memcg(sk);
+ 	return 0;
+ }
+ 
+@@ -2632,10 +2634,14 @@ struct proto tcp_prot = {
+ 	.compat_setsockopt	= compat_tcp_setsockopt,
+ 	.compat_getsockopt	= compat_tcp_getsockopt,
+ #endif
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	.init_cgroup		= tcp_init_cgroup,
++	.destroy_cgroup		= tcp_destroy_cgroup,
++	.proto_cgroup		= tcp_proto_cgroup,
++#endif
+ };
+ EXPORT_SYMBOL(tcp_prot);
+ 
+-
+ static int __net_init tcp_sk_init(struct net *net)
+ {
+ 	return inet_ctl_sock_create(&net->ipv4.tcp_sock,
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+new file mode 100644
+index 0000000..261e22c
+--- /dev/null
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -0,0 +1,73 @@
++#include <net/tcp.h>
++#include <net/tcp_memcontrol.h>
++#include <net/sock.h>
++#include <linux/memcontrol.h>
++#include <linux/module.h>
 +
-+	if (datalen != 0) {
-+		pr_warning("Excess octets in signature subpacket stream\n");
-+		return -EBADMSG;
-+	}
++static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
++{
++	return container_of(cg_proto, struct tcp_memcontrol, cg_proto);
++}
++
++static void memcg_tcp_enter_memory_pressure(struct sock *sk)
++{
++	if (!sk->sk_cgrp->memory_pressure)
++		*sk->sk_cgrp->memory_pressure = 1;
++}
++EXPORT_SYMBOL(memcg_tcp_enter_memory_pressure);
++
++int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
++{
++	/*
++	 * The root cgroup does not use res_counters, but rather,
++	 * rely on the data already collected by the network
++	 * subsystem
++	 */
++	struct res_counter *res_parent = NULL;
++	struct cg_proto *cg_proto;
++	struct tcp_memcontrol *tcp;
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
++	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
++
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return 0;
++
++	tcp = tcp_from_cgproto(cg_proto);
++	cg_proto->parent = tcp_prot.proto_cgroup(parent);
++
++	tcp->tcp_prot_mem[0] = sysctl_tcp_mem[0];
++	tcp->tcp_prot_mem[1] = sysctl_tcp_mem[1];
++	tcp->tcp_prot_mem[2] = sysctl_tcp_mem[2];
++	tcp->tcp_memory_pressure = 0;
++
++	if (cg_proto->parent)
++		res_parent = cg_proto->parent->memory_allocated;
++
++	res_counter_init(&tcp->tcp_memory_allocated, res_parent);
++	percpu_counter_init(&tcp->tcp_sockets_allocated, 0);
++
++	cg_proto->enter_memory_pressure = memcg_tcp_enter_memory_pressure;
++	cg_proto->memory_pressure = &tcp->tcp_memory_pressure;
++	cg_proto->sysctl_mem = tcp->tcp_prot_mem;
++	cg_proto->memory_allocated = &tcp->tcp_memory_allocated;
++	cg_proto->sockets_allocated = &tcp->tcp_sockets_allocated;
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL_GPL(pgp_parse_sig_subpkts);
++EXPORT_SYMBOL(tcp_init_cgroup);
 +
-+struct pgp_parse_sig_params_ctx {
-+	struct pgp_parse_sig_context base;
-+	struct pgp_sig_parameters *params;
-+	bool got_the_issuer;
-+};
-+
-+/*
-+ * Process a V4 signature subpacket.
-+ */
-+static int pgp_process_sig_params_subpkt(struct pgp_parse_sig_context *context,
-+					 enum pgp_sig_subpkt_type type,
-+					 const u8 *data,
-+					 size_t datalen)
++void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
 +{
-+	struct pgp_parse_sig_params_ctx *ctx =
-+		container_of(context, struct pgp_parse_sig_params_ctx, base);
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
++	struct cg_proto *cg_proto;
++	struct tcp_memcontrol *tcp;
 +
-+	if (ctx->got_the_issuer) {
-+		pr_warning("V4 signature packet has multiple issuers\n");
-+		return -EBADMSG;
-+	}
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return;
 +
-+	if (datalen != 8) {
-+		pr_warning("V4 signature issuer subpkt not 8 long (%zu)\n",
-+			   datalen);
-+		return -EBADMSG;
-+	}
-+
-+	memcpy(&ctx->params->issuer, data, 8);
-+	ctx->got_the_issuer = true;
-+	return 0;
++	tcp = tcp_from_cgproto(cg_proto);
++	percpu_counter_destroy(&tcp->tcp_sockets_allocated);
 +}
-+
-+/**
-+ * pgp_parse_sig_params - Parse basic parameters from a PGP signature packet
-+ * @_data: Content of packet (updated)
-+ * @_datalen: Length of packet remaining (updated)
-+ * @p: The basic parameters
-+ *
-+ * Parse the basic parameters from a PGP signature packet [RFC 4880: 5.2] that
-+ * are needed to start off a signature verification operation.  The only ones
-+ * actually necessary are the signature type (which affects how the data is
-+ * transformed) and the has algorithm.
-+ *
-+ * We also extract the public key algorithm and the issuer's key ID as we'll
-+ * need those to determine if we actually have the public key available.  If
-+ * not, then we can't verify the signature anyway.
-+ *
-+ * Returns 0 if successful or a negative error code.  *_data and *_datalen are
-+ * updated to point to the 16-bit subset of the hash value and the set of MPIs.
-+ */
-+int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
-+			 struct pgp_sig_parameters *p)
-+{
-+	enum pgp_signature_version version;
-+	const u8 *data = *_data;
-+	size_t datalen = *_datalen;
-+	int ret;
-+
-+	pr_devel("-->pgp_parse_sig_params(,%zu,,)", datalen);
-+
-+	if (datalen < 1)
-+		return -EBADMSG;
-+	version = *data;
-+
-+	if (version == PGP_SIG_VERSION_3) {
-+		const struct pgp_signature_v3_packet *v3 = (const void *)data;
-+
-+		if (datalen < sizeof(*v3)) {
-+			pr_warning("Short V3 signature packet\n");
-+			return -EBADMSG;
-+		}
-+		datalen -= sizeof(*v3);
-+		data += sizeof(*v3);
-+
-+		/* V3 has everything we need in the header */
-+		p->signature_type = v3->hashed.signature_type;
-+		p->issuer = v3->issuer;
-+		p->pubkey_algo = v3->pubkey_algo;
-+		p->hash_algo = v3->hash_algo;
-+
-+	} else if (version == PGP_SIG_VERSION_4) {
-+		const struct pgp_signature_v4_packet *v4 = (const void *)data;
-+		struct pgp_parse_sig_params_ctx ctx = {
-+			.base.process_packet = pgp_process_sig_params_subpkt,
-+			.params = p,
-+			.got_the_issuer = false,
-+		};
-+		size_t subdatalen;
-+
-+		if (datalen < sizeof(*v4) + 2 + 2 + 2) {
-+			pr_warning("Short V4 signature packet\n");
-+			return -EBADMSG;
-+		}
-+		datalen -= sizeof(*v4);
-+		data += sizeof(*v4);
-+
-+		/* V4 has most things in the header... */
-+		p->signature_type = v4->signature_type;
-+		p->pubkey_algo = v4->pubkey_algo;
-+		p->hash_algo = v4->hash_algo;
-+
-+		/* ... but we have to get the key ID from the subpackets, of
-+		 * which there are two sets. */
-+		__set_bit(PGP_SIG_ISSUER, ctx.base.types_of_interest);
-+
-+		subdatalen  = *data++ << 8;
-+		subdatalen |= *data++;
-+		datalen -= 2;
-+		if (subdatalen) {
-+			/* Hashed subpackets */
-+			pr_devel("hashed data: %zu (after %zu)\n",
-+				 subdatalen, sizeof(*v4));
-+			if (subdatalen > datalen + 2 + 2) {
-+				pr_warning("Short V4 signature packet [hdata]\n");
-+				return -EBADMSG;
-+			}
-+			ret = pgp_parse_sig_subpkts(data, subdatalen, &ctx.base);
-+			if (ret < 0)
-+				return ret;
-+			data += subdatalen;
-+			datalen += subdatalen;
-+		}
-+
-+		subdatalen  = *data++ << 8;
-+		subdatalen |= *data++;
-+		datalen -= 2;
-+		if (subdatalen) {
-+			/* Unhashed subpackets */
-+			pr_devel("unhashed data: %zu\n", subdatalen);
-+			if (subdatalen > datalen + 2) {
-+				pr_warning("Short V4 signature packet [udata]\n");
-+				return -EBADMSG;
-+			}
-+			ret = pgp_parse_sig_subpkts(data, subdatalen, &ctx.base);
-+			if (ret < 0)
-+				return ret;
-+			data += subdatalen;
-+			datalen += subdatalen;
-+		}
-+
-+		if (!ctx.got_the_issuer) {
-+			pr_warning("V4 signature packet lacks issuer\n");
-+			return -EBADMSG;
-+		}
-+	} else {
-+		pr_warning("Signature packet with unhandled version %d\n", version);
-+		return -EBADMSG;
-+	}
-+
-+	*_data = data;
-+	*_datalen = datalen;
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pgp_parse_sig_params);
++EXPORT_SYMBOL(tcp_destroy_cgroup);
+diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
+index e666768..ca8e8a6 100644
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -62,6 +62,7 @@
+ #include <net/netdma.h>
+ #include <net/inet_common.h>
+ #include <net/secure_seq.h>
++#include <net/tcp_memcontrol.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -2228,6 +2229,9 @@ struct proto tcpv6_prot = {
+ 	.compat_setsockopt	= compat_tcp_setsockopt,
+ 	.compat_getsockopt	= compat_tcp_getsockopt,
+ #endif
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	.proto_cgroup		= tcp_proto_cgroup,
++#endif
+ };
+ 
+ static const struct inet6_protocol tcpv6_protocol = {
+-- 
+1.7.6.4
 
