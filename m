@@ -1,460 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235Ab1K3AEn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 19:04:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11235 "EHLO mx1.redhat.com"
+	id S1757206Ab1K3AGZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 19:06:25 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:31176 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757045Ab1K3AEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 19:04:37 -0500
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 10/16] KEYS: DSA key signature verification [ver #2]
-To: keyrings@linux-nfs.org
-Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
-        zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
-        alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Tue, 29 Nov 2011 23:45:04 +0000
-Message-ID: <20111129234504.13625.82660.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20111129234258.13625.21153.stgit@warthog.procyon.org.uk>
-References: <20111129234258.13625.21153.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1757155Ab1K3AGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 19:06:22 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v7 06/10] tcp buffer limitation: per-cgroup limit
+Date: Tue, 29 Nov 2011 21:56:57 -0200
+Message-Id: <1322611021-1730-7-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signature verification routines for DSA crypto key subtype.
+This patch uses the "tcp.limit_in_bytes" field of the kmem_cgroup to
+effectively control the amount of kernel memory pinned by a cgroup.
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+This value is ignored in the root cgroup, and in all others,
+caps the value specified by the admin in the net namespaces'
+view of tcp_sysctl_mem.
+
+If namespaces are being used, the admin is allowed to set a
+value bigger than cgroup's maximum, the same way it is allowed
+to set pretty much unlimited values in a real box.
+
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Eric W. Biederman <ebiederm@xmission.com>
 ---
+ Documentation/cgroups/memory.txt |    1 +
+ include/net/tcp_memcontrol.h     |    2 +
+ net/ipv4/sysctl_net_ipv4.c       |   14 ++++
+ net/ipv4/tcp_memcontrol.c        |  134 +++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 149 insertions(+), 2 deletions(-)
 
- security/keys/Makefile            |    2 
- security/keys/crypto_dsa.h        |   11 +
- security/keys/crypto_dsa_verify.c |  384 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 396 insertions(+), 1 deletions(-)
- create mode 100644 security/keys/crypto_dsa_verify.c
-
-
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 8f48527..bde336e 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -23,5 +23,5 @@ obj-$(CONFIG_PROC_FS) += proc.o
- obj-$(CONFIG_SYSCTL) += sysctl.o
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index 1e43da4..4d9ed1f 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -78,6 +78,7 @@ Brief summary of control files.
  
- crypto_keys-y	:= crypto_type.o pgp_parse.o crypto_verify.o
--crypto_dsa-y	:= crypto_dsa_subtype.o
-+crypto_dsa-y	:= crypto_dsa_subtype.o crypto_dsa_verify.o
- crypto_rsa-y	:= crypto_rsa_subtype.o
-diff --git a/security/keys/crypto_dsa.h b/security/keys/crypto_dsa.h
-index 0455634..8c7c6e9 100644
---- a/security/keys/crypto_dsa.h
-+++ b/security/keys/crypto_dsa.h
-@@ -34,3 +34,14 @@ struct DSA_payload {
- 	u8		key_id_size;	/* Number of bytes in key_id */
- 	struct DSA_public_key	*public_key;
- };
+  memory.independent_kmem_limit	 # select whether or not kernel memory limits are
+ 				   independent of user limits
++ memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
+ 
+ 1. History
+ 
+diff --git a/include/net/tcp_memcontrol.h b/include/net/tcp_memcontrol.h
+index 5f5e158..3512082 100644
+--- a/include/net/tcp_memcontrol.h
++++ b/include/net/tcp_memcontrol.h
+@@ -14,4 +14,6 @@ struct tcp_memcontrol {
+ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg);
+ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
+ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
++unsigned long long tcp_max_memory(const struct mem_cgroup *memcg);
++void tcp_prot_mem(struct mem_cgroup *memcg, long val, int idx);
+ #endif /* _TCP_MEMCG_H */
+diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
+index bbd67ab..fe9bf91 100644
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -24,6 +24,7 @@
+ #include <net/cipso_ipv4.h>
+ #include <net/inet_frag.h>
+ #include <net/ping.h>
++#include <net/tcp_memcontrol.h>
+ 
+ static int zero;
+ static int tcp_retr1_max = 255;
+@@ -182,6 +183,9 @@ static int ipv4_tcp_mem(ctl_table *ctl, int write,
+ 	int ret;
+ 	unsigned long vec[3];
+ 	struct net *net = current->nsproxy->net_ns;
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	struct mem_cgroup *memcg;
++#endif
+ 
+ 	ctl_table tmp = {
+ 		.data = &vec,
+@@ -198,6 +202,16 @@ static int ipv4_tcp_mem(ctl_table *ctl, int write,
+ 	if (ret)
+ 		return ret;
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	rcu_read_lock();
++	memcg = mem_cgroup_from_task(current);
 +
-+/*
-+ * crypto_dsa_verify.c
-+ */
-+extern struct crypto_key_verify_context *DSA_verify_sig_begin(
-+	struct key *key, const u8 *sig, size_t siglen);
-+extern int DSA_verify_sig_add_data(struct crypto_key_verify_context *ctx,
-+				   const void *data, size_t datalen);
-+extern int DSA_verify_sig_end(struct crypto_key_verify_context *ctx,
-+			      const u8 *sig, size_t siglen);
-+extern void DSA_verify_sig_cancel(struct crypto_key_verify_context *ctx);
-diff --git a/security/keys/crypto_dsa_verify.c b/security/keys/crypto_dsa_verify.c
-new file mode 100644
-index 0000000..c9dc180
---- /dev/null
-+++ b/security/keys/crypto_dsa_verify.c
-@@ -0,0 +1,384 @@
-+/* DSA signature verification algorithm
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
++	tcp_prot_mem(memcg, vec[0], 0);
++	tcp_prot_mem(memcg, vec[1], 1);
++	tcp_prot_mem(memcg, vec[2], 2);
++	rcu_read_unlock();
++#endif
 +
-+#define DEBUG
-+#define pr_fmt(fmt) "DSA: "fmt
-+#include <keys/crypto-subtype.h>
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/mpi.h>
-+#include <linux/pgp.h>
-+#include <crypto/hash.h>
-+#include "internal.h"
-+#include "crypto_dsa.h"
+ 	net->ipv4.sysctl_tcp_mem[0] = vec[0];
+ 	net->ipv4.sysctl_tcp_mem[1] = vec[1];
+ 	net->ipv4.sysctl_tcp_mem[2] = vec[2];
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index 6dd6528..3edcf5f 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -6,6 +6,19 @@
+ #include <linux/memcontrol.h>
+ #include <linux/module.h>
+ 
++static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft);
++static int tcp_cgroup_write(struct cgroup *cont, struct cftype *cft,
++			    const char *buffer);
 +
-+#define DSA_NSIG	2	/* number of MPI's in DSA signature */
-+
-+struct DSA_signature {
-+	struct crypto_key_verify_context base;
-+	enum pgp_hash_algo hash_algo : 8;
-+	u8 signed_hash_msw[2];
-+	union {
-+		MPI mpi[2];
-+		struct {
-+			MPI r;
-+			MPI s;
-+		};
-+	};
-+	struct shash_desc hash;			/* This must go last! */
++static struct cftype tcp_files[] = {
++	{
++		.name = "kmem.tcp.limit_in_bytes",
++		.write_string = tcp_cgroup_write,
++		.read_u64 = tcp_cgroup_read,
++		.private = RES_LIMIT,
++	},
 +};
 +
-+struct DSA_sig_parse_context {
-+	struct pgp_parse_context pgp;
-+	struct pgp_sig_parameters params;
-+};
+ static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
+ {
+ 	return container_of(cg_proto, struct tcp_memcontrol, cg_proto);
+@@ -34,7 +47,7 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 
+ 	cg_proto = tcp_prot.proto_cgroup(memcg);
+ 	if (!cg_proto)
+-		return 0;
++		goto create_files;
+ 
+ 	tcp = tcp_from_cgproto(cg_proto);
+ 	cg_proto->parent = tcp_prot.proto_cgroup(parent);
+@@ -56,7 +69,9 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	cg_proto->memory_allocated = &tcp->tcp_memory_allocated;
+ 	cg_proto->sockets_allocated = &tcp->tcp_sockets_allocated;
+ 
+-	return 0;
++create_files:
++	return cgroup_add_files(cgrp, ss, tcp_files,
++				ARRAY_SIZE(tcp_files));
+ }
+ EXPORT_SYMBOL(tcp_init_cgroup);
+ 
+@@ -65,6 +80,7 @@ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+ 	struct cg_proto *cg_proto;
+ 	struct tcp_memcontrol *tcp;
++	u64 val;
+ 
+ 	cg_proto = tcp_prot.proto_cgroup(memcg);
+ 	if (!cg_proto)
+@@ -72,5 +88,119 @@ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 
+ 	tcp = tcp_from_cgproto(cg_proto);
+ 	percpu_counter_destroy(&tcp->tcp_sockets_allocated);
 +
-+static int DSA_parse_signature(struct pgp_parse_context *context,
-+			       enum pgp_packet_tag type,
-+			       u8 headerlen,
-+			       const u8 *data,
-+			       size_t datalen)
++	val = res_counter_read_u64(&tcp->tcp_memory_allocated, RES_USAGE);
++
++	if (val != RESOURCE_MAX)
++		jump_label_dec(&memcg_socket_limit_enabled);
+ }
+ EXPORT_SYMBOL(tcp_destroy_cgroup);
++
++static int tcp_update_limit(struct mem_cgroup *memcg, u64 val)
 +{
-+	struct DSA_sig_parse_context *ctx =
-+		container_of(context, struct DSA_sig_parse_context, pgp);
-+
-+	return pgp_parse_sig_params(&data, &datalen, &ctx->params);
-+}
-+
-+/*
-+ * Begin the process of verifying a DSA signature.
-+ *
-+ * This involves allocating the hash into which first the data and then the
-+ * metadata will be put, and parsing the signature to check that it matches the
-+ * key.
-+ */
-+struct crypto_key_verify_context *DSA_verify_sig_begin(
-+	struct key *key, const u8 *sigdata, size_t siglen)
-+{
-+	struct DSA_sig_parse_context p;
-+	struct DSA_signature *sig;
-+	struct crypto_shash *tfm;
-+	struct DSA_payload *dsa = key->payload.data;
++	struct net *net = current->nsproxy->net_ns;
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++	u64 old_lim;
++	int i;
 +	int ret;
 +
-+	kenter("{%d},,%zu", key_serial(key), siglen);
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return -EINVAL;
 +
-+	if (!dsa->public_key) {
-+		kleave(" = -ENOKEY [no public key]");
-+		return ERR_PTR(-ENOKEY);
-+	}
++	tcp = tcp_from_cgproto(cg_proto);
 +
-+	p.pgp.types_of_interest = (1 << PGP_PKT_SIGNATURE);
-+	p.pgp.process_packet = DSA_parse_signature;
-+	ret = pgp_parse_packets(sigdata, siglen, &p.pgp);
-+	if (ret < 0)
-+		return ERR_PTR(ret);
++	old_lim = res_counter_read_u64(&tcp->tcp_memory_allocated, RES_LIMIT);
++	ret = res_counter_set_limit(&tcp->tcp_memory_allocated, val);
++	if (ret)
++		return ret;
 +
-+	if (p.params.pubkey_algo != PGP_PUBKEY_DSA) {
-+		kleave(" = -ENOKEY [wrong pk algo]");
-+		return ERR_PTR(-ENOKEY);
-+	}
++	for (i = 0; i < 3; i++)
++		tcp->tcp_prot_mem[i] = min_t(long, val >> PAGE_SHIFT,
++					     net->ipv4.sysctl_tcp_mem[i]);
 +
-+	if (p.params.hash_algo >= PGP_HASH__LAST ||
-+	    !pgp_hash_algorithms[p.params.hash_algo]) {
-+		kleave(" = -ENOPKG [hash]");
-+		return ERR_PTR(-ENOPKG);
-+	}
++	if (val == RESOURCE_MAX)
++		jump_label_dec(&memcg_socket_limit_enabled);
++	else if (old_lim == RESOURCE_MAX)
++		jump_label_inc(&memcg_socket_limit_enabled);
 +
-+	pr_notice("Signature generated with %s hash\n",
-+		  pgp_hash_algorithms[p.params.hash_algo]);
-+
-+	if (memcmp(&p.params.issuer, dsa->key_id, 8) != 0) {
-+		kleave(" = -ENOKEY [wrong key ID]");
-+		return ERR_PTR(-ENOKEY);
-+	}
-+
-+	if (p.params.signature_type != PGP_SIG_BINARY_DOCUMENT_SIG &&
-+	    p.params.signature_type != PGP_SIG_STANDALONE_SIG) {
-+		/* We don't want to canonicalise */
-+		kleave(" = -EOPNOTSUPP [canon]");
-+		return ERR_PTR(-EOPNOTSUPP);
-+	}
-+
-+	/* Allocate the hashing algorithm we're going to need and find out how
-+	 * big the hash operational data will be.
-+	 */
-+	tfm = crypto_alloc_shash(pgp_hash_algorithms[p.params.hash_algo], 0, 0);
-+	if (IS_ERR(tfm))
-+		return PTR_ERR(tfm) == -ENOENT ?
-+			ERR_PTR(-ENOPKG) : ERR_CAST(tfm);
-+
-+	/* We allocate the hash operational data storage on the end of our
-+	 * context data.
-+	 */
-+	sig = kzalloc(sizeof(*sig) + crypto_shash_descsize(tfm), GFP_KERNEL);
-+	if (!sig) {
-+		crypto_free_shash(tfm);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	sig->base.key = key;
-+	sig->hash_algo = p.params.hash_algo;
-+	sig->hash.tfm = tfm;
-+	sig->hash.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
-+
-+	ret = crypto_shash_init(&sig->hash);
-+	if (ret < 0) {
-+		crypto_free_shash(sig->hash.tfm);
-+		kfree(sig);
-+		return ERR_PTR(ret);
-+	}
-+
-+	key_get(sig->base.key);
-+	kleave(" = %p", sig);
-+	return &sig->base;
-+}
-+
-+/*
-+ * Load data into the hash
-+ */
-+int DSA_verify_sig_add_data(struct crypto_key_verify_context *ctx,
-+			    const void *data, size_t datalen)
-+{
-+	struct DSA_signature *sig =
-+		container_of(ctx, struct DSA_signature, base);
-+
-+	return crypto_shash_update(&sig->hash, data, datalen);
-+}
-+
-+/*
-+ * Perform the actual mathematical DSA signature verification.
-+ */
-+static int DSA_verify(const MPI datahash,
-+		      const struct DSA_signature *sig,
-+		      const struct DSA_public_key *pub)
-+{
-+	MPI w = NULL, u1 = NULL, u2 = NULL, v = NULL;
-+	MPI base[3];
-+	MPI exp[3];
-+	int rc;
-+
-+	kenter("");
-+
-+	if (!(mpi_cmp_ui(sig->r, 0) > 0 && mpi_cmp(sig->r, pub->q) < 0)) {
-+		pr_warning("Assertion failed [0 < r < q]\n");
-+		return -EKEYREJECTED;
-+	}
-+
-+	if (!(mpi_cmp_ui(sig->s, 0) > 0 && mpi_cmp(sig->s, pub->q) < 0)) {
-+		pr_warning("Assertion failed [0 < s < q]\n");
-+		return -EKEYREJECTED;
-+	}
-+
-+	rc = -ENOMEM;
-+	w  = mpi_alloc(mpi_get_nlimbs(pub->q)); if (!w ) goto cleanup;
-+	u1 = mpi_alloc(mpi_get_nlimbs(pub->q)); if (!u1) goto cleanup;
-+	u2 = mpi_alloc(mpi_get_nlimbs(pub->q)); if (!u2) goto cleanup;
-+	v  = mpi_alloc(mpi_get_nlimbs(pub->p)); if (!v ) goto cleanup;
-+
-+	/* w = s^(-1) mod q */
-+	if (mpi_invm(w, sig->s, pub->q) < 0)
-+		goto cleanup;
-+
-+	/* u1 = (datahash * w) mod q */
-+	if (mpi_mulm(u1, datahash, w, pub->q) < 0)
-+		goto cleanup;
-+
-+	/* u2 = r * w mod q  */
-+	if (mpi_mulm(u2, sig->r, w, pub->q) < 0)
-+		goto cleanup;
-+
-+	/* v =  g^u1 * y^u2 mod p mod q */
-+	base[0] = pub->g;	exp[0] = u1;
-+	base[1] = pub->y;	exp[1] = u2;
-+	base[2] = NULL;		exp[2] = NULL;
-+
-+	if (mpi_mulpowm(v, base, exp, pub->p) < 0)
-+		goto cleanup;
-+
-+	if (mpi_fdiv_r(v, v, pub->q) < 0)
-+		goto cleanup;
-+
-+	rc = (mpi_cmp(v, sig->r) == 0) ? 0 : -EKEYREJECTED;
-+
-+cleanup:
-+	mpi_free(w);
-+	mpi_free(u1);
-+	mpi_free(u2);
-+	mpi_free(v);
-+	kleave(" = %d", rc);
-+	return rc;
-+}
-+
-+struct DSA_sig_digest_context {
-+	struct pgp_parse_context pgp;
-+	struct DSA_signature *sig;
-+};
-+
-+/*
-+ * Extract required metadata from the signature packet and add what we need to
-+ * to the hash.
-+ */
-+static int DSA_digest_signature(struct pgp_parse_context *context,
-+				enum pgp_packet_tag type,
-+				u8 headerlen,
-+				const u8 *data,
-+				size_t datalen)
-+{
-+	enum pgp_signature_version version;
-+	struct DSA_sig_digest_context *ctx =
-+		container_of(context, struct DSA_sig_digest_context, pgp);
-+	int i;
-+
-+	kenter("");
-+
-+	version = *data;
-+	if (version == PGP_SIG_VERSION_3) {
-+		/* We just include an excerpt of the metadata from a V3
-+		 * signature.
-+		 */
-+		crypto_shash_update(&ctx->sig->hash, data + 1, 5);
-+		data += sizeof(struct pgp_signature_v3_packet);
-+		datalen -= sizeof(struct pgp_signature_v3_packet);
-+	} else if (version == PGP_SIG_VERSION_4) {
-+		/* We add the whole metadata header and some of the hashed data
-+		 * for a V4 signature, plus a trailer.
-+		 */
-+		size_t hashedsz, unhashedsz;
-+		u8 trailer[6];
-+
-+		hashedsz = 4 + 2 + (data[4] << 8) + data[5];
-+		crypto_shash_update(&ctx->sig->hash, data, hashedsz);
-+
-+		trailer[0] = version;
-+		trailer[1] = 0xffU;
-+		trailer[2] = hashedsz >> 24;
-+		trailer[3] = hashedsz >> 16;
-+		trailer[4] = hashedsz >> 8;
-+		trailer[5] = hashedsz;
-+
-+		crypto_shash_update(&ctx->sig->hash, trailer, 6);
-+		data += hashedsz;
-+		datalen -= hashedsz;
-+
-+		unhashedsz = 2 + (data[0] << 8) + data[1];
-+		data += unhashedsz;
-+		datalen -= unhashedsz;
-+	}
-+
-+	if (datalen <= 2) {
-+		kleave(" = -EBADMSG");
-+		return -EBADMSG;
-+	}
-+
-+	/* There's a quick check on the hash available. */
-+	ctx->sig->signed_hash_msw[0] = *data++;
-+	ctx->sig->signed_hash_msw[1] = *data++;
-+	datalen -= 2;
-+
-+	/* And then the cryptographic data, which we'll need for the
-+	 * algorithm.
-+	 */
-+	for (i = 0; i < DSA_NSIG; i++) {
-+		unsigned int remaining = datalen;
-+		ctx->sig->mpi[i] = mpi_read_from_buffer(data, &remaining);
-+		if (!ctx->sig->mpi[i])
-+			return -ENOMEM;
-+		data += remaining;
-+		datalen -= remaining;
-+	}
-+
-+	if (datalen != 0) {
-+		kleave(" = -EBADMSG [trailer %zu]", datalen);
-+		return -EBADMSG;
-+	}
-+
-+	kleave(" = 0");
 +	return 0;
 +}
 +
-+/*
-+ * The data is now all loaded into the hash; load the metadata, finalise the
-+ * hash and perform the verification step.
-+ */
-+int DSA_verify_sig_end(struct crypto_key_verify_context *ctx,
-+		       const u8 *sigdata, size_t siglen)
++static int tcp_cgroup_write(struct cgroup *cont, struct cftype *cft,
++			    const char *buffer)
 +{
-+	struct DSA_signature *sig =
-+		container_of(ctx, struct DSA_signature, base);
-+	struct DSA_payload *dsa = sig->base.key->payload.data;
-+	struct DSA_sig_digest_context p;
-+	void *digest = NULL;
-+	MPI datahash = NULL;
-+	size_t digest_size;
-+	int ret;
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
++	unsigned long long val;
++	int ret = 0;
 +
-+	kenter("");
-+
-+	/* Firstly we add metadata, starting with some of the data from the
-+	 * signature packet */
-+	p.pgp.types_of_interest = (1 << PGP_PKT_SIGNATURE);
-+	p.pgp.process_packet = DSA_digest_signature;
-+	p.sig = sig;
-+	ret = pgp_parse_packets(sigdata, siglen, &p.pgp);
-+	if (ret < 0)
-+		goto error_free_ctx;
-+
-+	ret = -ENOMEM;
-+	digest_size = crypto_shash_digestsize(sig->hash.tfm);
-+	digest = kmalloc(digest_size, GFP_KERNEL);
-+	if (!digest)
-+		goto error_free_ctx;
-+
-+	crypto_shash_final(&sig->hash, digest);
-+
-+	ret = -ENOMEM;
-+	datahash = mpi_alloc((digest_size + BYTES_PER_MPI_LIMB - 1) /
-+			     BYTES_PER_MPI_LIMB);
-+	if (!datahash)
-+		goto error_free_digest;
-+
-+	ret = mpi_set_buffer(datahash, digest, digest_size, 0);
-+	if (ret < 0)
-+		goto error_free_mpi;
-+
-+	ret = DSA_verify(datahash, sig, dsa->public_key);
-+
-+error_free_mpi:
-+	mpi_free(datahash);
-+error_free_digest:
-+	kfree(digest);
-+error_free_ctx:
-+	DSA_verify_sig_cancel(ctx);
-+	kleave(" = %d", ret);
++	switch (cft->private) {
++	case RES_LIMIT:
++		/* see memcontrol.c */
++		ret = res_counter_memparse_write_strategy(buffer, &val);
++		if (ret)
++			break;
++		ret = tcp_update_limit(memcg, val);
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
 +	return ret;
 +}
 +
-+/*
-+ * Cancel an in-progress data loading
-+ */
-+void DSA_verify_sig_cancel(struct crypto_key_verify_context *_ctx)
++static u64 tcp_read_stat(struct mem_cgroup *memcg, int type, u64 default_val)
 +{
-+	struct DSA_signature *sig =
-+		container_of(_ctx, struct DSA_signature, base);
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
 +
-+	kenter("");
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return default_val;
 +
-+	/* !!! Do we need to tell the crypto layer to cancel too? */
-+	crypto_free_shash(sig->hash.tfm);
-+	key_put(sig->base.key);
-+	mpi_free(sig->r);
-+	mpi_free(sig->s);
-+	kfree(sig);
-+
-+	kleave("");
++	tcp = tcp_from_cgproto(cg_proto);
++	return res_counter_read_u64(&tcp->tcp_memory_allocated, type);
 +}
++
++static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
++	u64 val;
++
++	switch (cft->private) {
++	case RES_LIMIT:
++		val = tcp_read_stat(memcg, RES_LIMIT, RESOURCE_MAX);
++		break;
++	default:
++		BUG();
++	}
++	return val;
++}
++
++unsigned long long tcp_max_memory(const struct mem_cgroup *memcg)
++{
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++
++	cg_proto = tcp_prot.proto_cgroup((struct mem_cgroup *)memcg);
++	if (!cg_proto)
++		return 0;
++
++	tcp = tcp_from_cgproto(cg_proto);
++	return res_counter_read_u64(&tcp->tcp_memory_allocated, RES_LIMIT);
++}
++
++void tcp_prot_mem(struct mem_cgroup *memcg, long val, int idx)
++{
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return;
++
++	tcp = tcp_from_cgproto(cg_proto);
++
++	tcp->tcp_prot_mem[idx] = val;
++}
+-- 
+1.7.6.4
 
