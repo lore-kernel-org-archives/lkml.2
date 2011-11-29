@@ -1,154 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab1K1X4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 18:56:39 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50451 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab1K1X4h (ORCPT
+	id S1754360Ab1K2ACa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 19:02:30 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:37601 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459Ab1K2AC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 18:56:37 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 29 Nov 2011 08:55:18 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <lizf@cn.fujitsu.com>,
-        <ebiederm@xmission.com>, <davem@davemloft.net>, <paul@paulmenage.org>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v6 01/10] Basic kernel memory functionality for the
- Memory Controller
-Message-Id: <20111129085518.65befeee.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4ED36A6D.60900@parallels.com>
-References: <1322242696-27682-1-git-send-email-glommer@parallels.com>
-	<1322242696-27682-2-git-send-email-glommer@parallels.com>
-	<20111128112441.44a6e166.kamezawa.hiroyu@jp.fujitsu.com>
-	<4ED36A6D.60900@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 Nov 2011 19:02:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111128154801.05f7c199.akpm@linux-foundation.org>
+References: <1322125938-6944-2-git-send-email-dg77.kim@samsung.com>
+	<1322125938-6944-3-git-send-email-dg77.kim@samsung.com>
+	<20111128154801.05f7c199.akpm@linux-foundation.org>
+Date: Tue, 29 Nov 2011 09:02:28 +0900
+X-Google-Sender-Auth: zEvygOSx8HSk6SBX5oD5jiBzg4g
+Message-ID: <CAH9JG2U7zFK-DnvqFEaKetSr_cpfqqfy-MKWAX+w7Wr=U39k2g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+        gregkh@suse.de, myungjoo.ham@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Nov 2011 09:03:09 -0200
-Glauber Costa <glommer@parallels.com> wrote:
+On 11/29/11, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 24 Nov 2011 18:12:18 +0900
+> Donggeun Kim <dg77.kim@samsung.com> wrote:
+>
+>> The MUIC function in MAX8997 device can be used as
+>> a USB port detector and switch.
+>> This patch supports the MUIC feature of MAX8997.
+>>
+>> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+>> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>
+> Samuel, can you please merge this if/when it's ready?
 
-> On 11/28/2011 12:24 AM, KAMEZAWA Hiroyuki wrote:
-> > On Fri, 25 Nov 2011 15:38:07 -0200
-> > Glauber Costa<glommer@parallels.com>  wrote:
-> >
-> >> This patch lays down the foundation for the kernel memory component
-> >> of the Memory Controller.
-> >>
-> >> As of today, I am only laying down the following files:
-> >>
-> >>   * memory.independent_kmem_limit
-> >>   * memory.kmem.limit_in_bytes (currently ignored)
-> >>   * memory.kmem.usage_in_bytes (always zero)
-> >>
-> >> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >> Reviewed-by: Kirill A. Shutemov<kirill@shutemov.name>
-> >> CC: Paul Menage<paul@paulmenage.org>
-> >> CC: Greg Thelen<gthelen@google.com>
-> >> ---
-> >>   Documentation/cgroups/memory.txt |   36 ++++++++++++-
-> >>   init/Kconfig                     |   14 +++++
-> >>   mm/memcontrol.c                  |  107 ++++++++++++++++++++++++++++++++++++--
-> >>   3 files changed, 150 insertions(+), 7 deletions(-)
-> >>
-> >> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> >> index 06eb6d9..bf00cd2 100644
-> >> --- a/Documentation/cgroups/memory.txt
-> >> +++ b/Documentation/cgroups/memory.txt
-> >> @@ -44,8 +44,9 @@ Features:
-> >>    - oom-killer disable knob and oom-notifier
-> >>    - Root cgroup has no limit controls.
-> >>
-> >> - Kernel memory and Hugepages are not under control yet. We just manage
-> >> - pages on LRU. To add more controls, we have to take care of performance.
-> >> + Hugepages is not under control yet. We just manage pages on LRU. To add more
-> >> + controls, we have to take care of performance. Kernel memory support is work
-> >> + in progress, and the current version provides basically functionality.
-> >>
-> >>   Brief summary of control files.
-> >>
-> >> @@ -56,8 +57,11 @@ Brief summary of control files.
-> >>   				 (See 5.5 for details)
-> >>    memory.memsw.usage_in_bytes	 # show current res_counter usage for memory+Swap
-> >>   				 (See 5.5 for details)
-> >> + memory.kmem.usage_in_bytes	 # show current res_counter usage for kmem only.
-> >> +				 (See 2.7 for details)
-> >>    memory.limit_in_bytes		 # set/show limit of memory usage
-> >>    memory.memsw.limit_in_bytes	 # set/show limit of memory+Swap usage
-> >> + memory.kmem.limit_in_bytes	 # if allowed, set/show limit of kernel memory
-> >>    memory.failcnt			 # show the number of memory usage hits limits
-> >>    memory.memsw.failcnt		 # show the number of memory+Swap hits limits
-> >>    memory.max_usage_in_bytes	 # show max memory usage recorded
-> >> @@ -72,6 +76,9 @@ Brief summary of control files.
-> >>    memory.oom_control		 # set/show oom controls.
-> >>    memory.numa_stat		 # show the number of memory usage per numa node
-> >>
-> >> + memory.independent_kmem_limit	 # select whether or not kernel memory limits are
-> >> +				   independent of user limits
-> >> +
-> >>   1. History
-> >>
-> >>   The memory controller has a long history. A request for comments for the memory
-> >> @@ -255,6 +262,31 @@ When oom event notifier is registered, event will be delivered.
-> >>     per-zone-per-cgroup LRU (cgroup's private LRU) is just guarded by
-> >>     zone->lru_lock, it has no lock of its own.
-> >>
-> >> +2.7 Kernel Memory Extension (CONFIG_CGROUP_MEM_RES_CTLR_KMEM)
-> >> +
-> >> + With the Kernel memory extension, the Memory Controller is able to limit
-> >> +the amount of kernel memory used by the system. Kernel memory is fundamentally
-> >> +different than user memory, since it can't be swapped out, which makes it
-> >> +possible to DoS the system by consuming too much of this precious resource.
-> >> +Kernel memory limits are not imposed for the root cgroup.
-> >> +
-> >> +Memory limits as specified by the standard Memory Controller may or may not
-> >> +take kernel memory into consideration. This is achieved through the file
-> >> +memory.independent_kmem_limit. A Value different than 0 will allow for kernel
-> >> +memory to be controlled separately.
-> >> +
-> >> +When kernel memory limits are not independent, the limit values set in
-> >> +memory.kmem files are ignored.
-> >> +
-> >> +Currently no soft limit is implemented for kernel memory. It is future work
-> >> +to trigger slab reclaim when those limits are reached.
-> >> +
-> >> +CAUTION: As of this writing, the kmem extention may prevent tasks from moving
-> >> +among cgroups. If a task has kmem accounting in a cgroup, the task cannot be
-> >> +moved until the kmem resource is released. Also, until the resource is fully
-> >> +released, the cgroup cannot be destroyed. So, please consider your use cases
-> >> +and set kmem extention config option carefully.
-> >> +
-> >
-> > This seems that memcg 'has' kernel memory limiting feature for all kinds of kmem..
-> > Could you add a list of "currently controled kmems" section ?
-> > And update the list in later patch ?
-> >
-> > Thanks,
-> > -Kame
-> >
-> >
-> Hi Kame,
-> 
-> Thanks for your review.
-> Since none of your comments are blockers, I'd prefer to send follow up 
-> patches if you don't mind - assuming Dave won't have any restrictions 
-> himself that would prevent him from picking this series. If I have to 
-> resend it anyway, I'll be more than happy to address them all in my next 
-> submission
-> 
+Thank you!
 
-As you like. But please clarify my comment which pointed out bugs in patch 02/10
-and 06/10 aren't correct.
+FYI: Now we proposed the new subsystem to handle the external
+connector, "multistate switch'.
+and this drivers is the candidate one for this subsystem.
+Previous time, we sent the fsa9480, micro USB switch. this driver is
+also covered at multistate switch framework.
 
-Thanks,
--Kame
-
-
+Thank you,
+Kyungmin Park
+>
+>>
+>> ...
+>>
+>> +static irqreturn_t max8997_muic_irq_handler(int irq, void *data)
+>> +{
+>> +	struct max8997_muic_info *info = data;
+>> +
+>> +	dev_dbg(info->dev, "irq:%d\n", irq);
+>> +	info->irq = irq;
+>> +
+>> +	schedule_work(&info->irq_work);
+>> +
+>> +	return IRQ_HANDLED;
+>> +}
+>
+> The code does schedule_work() but I see no flush_work().  Is it
+> possible for the work to still be pending after device shutdown, or
+> even after rmmod?
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
