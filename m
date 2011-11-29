@@ -1,150 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab1K2Pb3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:31:29 -0500
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:10626 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752879Ab1K2Pb2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:31:28 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EADz41E5R8sT5/2dsb2JhbABDqniBBoFzAQUnExwjEAgRBjIUJQMhE4gHtzsSiiljBJRTkhM
-Date: Tue, 29 Nov 2011 16:27:59 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Marc Vertes <marc.vertes@sigfox.com>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org,
-        Dimitry Andric <dimitry.andric@tomtom.com>,
-        Ben Dooks <ben@simtec.co.uk>
-Subject: [PATCH v2] watchdog: add nowayout helpers to Watchdog Timer Driver
-	Kernel API
-Message-ID: <20111129152759.GA11299@infomag.iguana.be>
-References: <20111129111430.GA17609@infomag.iguana.be> <20111129114744.GA21542@infomag.iguana.be> <20111129115813.GF5455@pengutronix.de>
+	id S1754032Ab1K2Pf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:35:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41396 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab1K2Pfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 10:35:54 -0500
+Date: Tue, 29 Nov 2011 16:35:52 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Li Shaohua <shaohua.li@intel.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 8/9] readahead: basic support for backwards prefetching
+Message-ID: <20111129153552.GP5635@quack.suse.cz>
+References: <20111129130900.628549879@intel.com>
+ <20111129131456.925952168@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111129115813.GF5455@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111129131456.925952168@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Tue 29-11-11 21:09:08, Wu Fengguang wrote:
+> Add the backwards prefetching feature. It's pretty simple if we don't
+> support async prefetching and interleaved reads.
+> 
+> Here is the behavior with an 8-page read sequence from 10000 down to 0.
+> (The readahead size is a bit large since it's an NFS mount.)
+> 
+> readahead-random(dev=0:16, ino=3948605, req=10000+8, ra=10000+8-0, async=0) = 8
+> readahead-backwards(dev=0:16, ino=3948605, req=9992+8, ra=9968+32-0, async=0) = 32
+> readahead-backwards(dev=0:16, ino=3948605, req=9960+8, ra=9840+128-0, async=0) = 128
+> readahead-backwards(dev=0:16, ino=3948605, req=9832+8, ra=9584+256-0, async=0) = 256
+> readahead-backwards(dev=0:16, ino=3948605, req=9576+8, ra=9072+512-0, async=0) = 512
+> readahead-backwards(dev=0:16, ino=3948605, req=9064+8, ra=8048+1024-0, async=0) = 1024
+> readahead-backwards(dev=0:16, ino=3948605, req=8040+8, ra=6128+1920-0, async=0) = 1920
+> readahead-backwards(dev=0:16, ino=3948605, req=6120+8, ra=4208+1920-0, async=0) = 1920
+> readahead-backwards(dev=0:16, ino=3948605, req=4200+8, ra=2288+1920-0, async=0) = 1920
+> readahead-backwards(dev=0:16, ino=3948605, req=2280+8, ra=368+1920-0, async=0) = 1920
+> readahead-backwards(dev=0:16, ino=3948605, req=360+8, ra=0+368-0, async=0) = 368
+> 
+> And a simple 1-page read sequence from 10000 down to 0.
+> 
+> readahead-random(dev=0:16, ino=3948605, req=10000+1, ra=10000+1-0, async=0) = 1
+> readahead-backwards(dev=0:16, ino=3948605, req=9999+1, ra=9996+4-0, async=0) = 4
+> readahead-backwards(dev=0:16, ino=3948605, req=9995+1, ra=9980+16-0, async=0) = 16
+> readahead-backwards(dev=0:16, ino=3948605, req=9979+1, ra=9916+64-0, async=0) = 64
+> readahead-backwards(dev=0:16, ino=3948605, req=9915+1, ra=9660+256-0, async=0) = 256
+> readahead-backwards(dev=0:16, ino=3948605, req=9659+1, ra=9148+512-0, async=0) = 512
+> readahead-backwards(dev=0:16, ino=3948605, req=9147+1, ra=8124+1024-0, async=0) = 1024
+> readahead-backwards(dev=0:16, ino=3948605, req=8123+1, ra=6204+1920-0, async=0) = 1920
+> readahead-backwards(dev=0:16, ino=3948605, req=6203+1, ra=4284+1920-0, async=0) = 1920
+> readahead-backwards(dev=0:16, ino=3948605, req=4283+1, ra=2364+1920-0, async=0) = 1920
+> readahead-backwards(dev=0:16, ino=3948605, req=2363+1, ra=444+1920-0, async=0) = 1920
+> readahead-backwards(dev=0:16, ino=3948605, req=443+1, ra=0+444-0, async=0) = 444
+> 
+> CC: Andi Kleen <andi@firstfloor.org>
+> CC: Li Shaohua <shaohua.li@intel.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+  Someone already mentioned this earlier and I don't think I've seen a
+response: Do you have a realistic usecase for this? I don't think I've ever
+seen an application reading file backwards...
 
-The patch like it is in the linux-next branch of the watchdog tree since a couple of minutes.
+> --- linux-next.orig/include/linux/fs.h	2011-11-29 20:55:27.000000000 +0800
+> +++ linux-next/include/linux/fs.h	2011-11-29 20:57:07.000000000 +0800
+...
+> @@ -676,6 +677,20 @@ ondemand_readahead(struct address_space 
+>  	}
+>  
+>  	/*
+> +	 * backwards reading
+> +	 */
+> +	if (offset < ra->start && offset + req_size >= ra->start) {
+> +		ra->pattern = RA_PATTERN_BACKWARDS;
+> +		ra->size = get_next_ra_size(ra, max);
+> +		max = ra->start;
+> +		if (ra->size > max)
+> +			ra->size = max;
+> +		ra->async_size = 0;
+> +		ra->start -= ra->size;
+  IMHO much more obvious way to write this is:
+ra->size = get_next_ra_size(ra, max);
+if (ra->size > ra->start) {
+  ra->size = ra->start;
+  ra->start = 0;
+} else
+  ra->start -= ra->size;
 
-Kind regards,
-Wim.
 
-commit 3d17ee59111dd2311e5904294246d5b848342550
-Author: Wim Van Sebroeck <wim@iguana.be>
-Date:   Tue Nov 29 16:24:16 2011 +0100
-
-    watchdog: add nowayout helpers to Watchdog Timer Driver Kernel API
-    
-    Add two nowayout helpers for the Watchdog Timer Driver Kernel API.
-    And apply this to the already converted drivers.
-    Note: s3c2410_wdt lost the nowayout feature during the conversion.
-    
-    Reviewed-by: Wolfram Sang <w.sang@pengutronix.de>
-    Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-
-diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
-index 4f7c894..4b93c28 100644
---- a/Documentation/watchdog/watchdog-kernel-api.txt
-+++ b/Documentation/watchdog/watchdog-kernel-api.txt
-@@ -1,6 +1,6 @@
- The Linux WatchDog Timer Driver Core kernel API.
- ===============================================
--Last reviewed: 22-Jul-2011
-+Last reviewed: 29-Nov-2011
- 
- Wim Van Sebroeck <wim@iguana.be>
- 
-@@ -142,6 +142,14 @@ bit-operations. The status bits that are defined are:
- * WDOG_NO_WAY_OUT: this bit stores the nowayout setting for the watchdog.
-   If this bit is set then the watchdog timer will not be able to stop.
- 
-+  To set the WDOG_NO_WAY_OUT status bit (before registering your watchdog
-+  timer device) you can either:
-+  * set it statically in your watchdog_device struct with
-+	.status = WATCHDOG_NOWAYOUT_INIT_STATUS,
-+    (this will set the value the same as CONFIG_WATCHDOG_NOWAYOUT) or
-+  * use the following helper function:
-+  static inline void watchdog_set_nowayout(struct watchdog_device *wdd, int nowayout)
-+
- Note: The WatchDog Timer Driver Core supports the magic close feature and
- the nowayout feature. To use the magic close feature you must set the
- WDIOF_MAGICCLOSE bit in the options field of the watchdog's info structure.
-diff --git a/drivers/watchdog/s3c2410_wdt.c b/drivers/watchdog/s3c2410_wdt.c
-index a79e384..4bc3744 100644
---- a/drivers/watchdog/s3c2410_wdt.c
-+++ b/drivers/watchdog/s3c2410_wdt.c
-@@ -378,6 +378,8 @@ static int __devinit s3c2410wdt_probe(struct platform_device *pdev)
- 							"cannot start\n");
- 	}
- 
-+	watchdog_set_nowayout(&s3c2410_wdd, nowayout);
-+
- 	ret = watchdog_register_device(&s3c2410_wdd);
- 	if (ret) {
- 		dev_err(dev, "cannot register watchdog (%d)\n", ret);
-diff --git a/drivers/watchdog/wm831x_wdt.c b/drivers/watchdog/wm831x_wdt.c
-index beb3ad2..6cd1ba4 100644
---- a/drivers/watchdog/wm831x_wdt.c
-+++ b/drivers/watchdog/wm831x_wdt.c
-@@ -213,11 +213,9 @@ static int __devinit wm831x_wdt_probe(struct platform_device *pdev)
- 
- 	wm831x_wdt->info = &wm831x_wdt_info;
- 	wm831x_wdt->ops = &wm831x_wdt_ops;
-+	watchdog_set_nowayout(wm831x_wdt, nowayout);
- 	watchdog_set_drvdata(wm831x_wdt, driver_data);
- 
--	if (nowayout)
--		wm831x_wdt->status |= WDOG_NO_WAY_OUT;
--
- 	reg = wm831x_reg_read(wm831x, WM831X_WATCHDOG);
- 	reg &= WM831X_WDOG_TO_MASK;
- 	for (i = 0; i < ARRAY_SIZE(wm831x_wdt_cfgs); i++)
-diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
-index 111843f..43ba5b3 100644
---- a/include/linux/watchdog.h
-+++ b/include/linux/watchdog.h
-@@ -53,11 +53,7 @@ struct watchdog_info {
- 
- #ifdef __KERNEL__
- 
--#ifdef CONFIG_WATCHDOG_NOWAYOUT
--#define WATCHDOG_NOWAYOUT	1
--#else
--#define WATCHDOG_NOWAYOUT	0
--#endif
-+#include <linux/bitops.h>
- 
- struct watchdog_ops;
- struct watchdog_device;
-@@ -122,6 +118,21 @@ struct watchdog_device {
- #define WDOG_NO_WAY_OUT		3	/* Is 'nowayout' feature set ? */
- };
- 
-+#ifdef CONFIG_WATCHDOG_NOWAYOUT
-+#define WATCHDOG_NOWAYOUT		1
-+#define WATCHDOG_NOWAYOUT_INIT_STATUS	(1 << WDOG_NO_WAY_OUT)
-+#else
-+#define WATCHDOG_NOWAYOUT		0
-+#define WATCHDOG_NOWAYOUT_INIT_STATUS	0
-+#endif
-+
-+/* Use the following function to set the nowayout feature */
-+static inline void watchdog_set_nowayout(struct watchdog_device *wdd, int nowayout)
-+{
-+	if (nowayout)
-+		set_bit(WDOG_NO_WAY_OUT, &wdd->status);
-+}
-+
- /* Use the following functions to manipulate watchdog driver specific data */
- static inline void watchdog_set_drvdata(struct watchdog_device *wdd, void *data)
- {
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
