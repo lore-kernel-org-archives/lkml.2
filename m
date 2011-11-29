@@ -1,77 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab1K2LPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 06:15:23 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:49828 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411Ab1K2LPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 06:15:20 -0500
-Subject: Re: [PATCH] [media] convert drivers/media/* to use
- module_platform_driver()
-From: "Matti J. Aaltonen" <matti.j.aaltonen@nokia.com>
-Reply-To: matti.j.aaltonen@nokia.com
-To: ext Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Richard =?ISO-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@pelagicore.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Muralidharan Karicheri <m-karicheri2@ti.com>,
-        Anatolij Gustschin <agust@denx.de>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Jonathan Corbet <corbet@lwn.net>, Daniel Drake <dsd@laptop.org>,
-        linux-media@vger.kernel.org
-In-Reply-To: <1322290135.20464.1.camel@phoenix>
-References: <1322290135.20464.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Tue, 29 Nov 2011 13:24:37 +0200
-Message-ID: <1322565877.5588.8.camel@trdhcp003120.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1752875Ab1K2LQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 06:16:29 -0500
+Received: from fsmail-out.f-secure.com ([193.110.108.171]:52814 "EHLO
+	fsmail-out.f-secure.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab1K2LQ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 06:16:28 -0500
+X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Nov 2011 06:16:27 EST
+Message-ID: <4ED4BD22.3070003@f-secure.com>
+Date: Tue, 29 Nov 2011 13:08:18 +0200
+From: Tarkan Erimer <tarkan.erimer@f-secure.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [BUG] uvcvideo is broken on Linux-3.2-rc3
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
+ definitions=2011-11-29_03:2011-11-29,2011-11-29,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi,
 
-On Sat, 2011-11-26 at 14:48 +0800, ext Axel Lin wrote:
-> This patch converts the drivers in drivers/media/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: "Richard Röjfors" <richard.rojfors@pelagicore.com>
-> Cc: "Matti J. Aaltonen" <matti.j.aaltonen@nokia.com>
-> Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-> Cc: Manjunath Hadli <manjunath.hadli@ti.com>
-> Cc: Muralidharan Karicheri <m-karicheri2@ti.com>
-> Cc: Anatolij Gustschin <agust@denx.de>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Robert Jarzmik <robert.jarzmik@free.fr>
-> Cc: Jonathan Corbet <corbet@lwn.net>
-> Cc: Daniel Drake <dsd@laptop.org>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+When I initiate any webcam software like Cheese, Kamoso, skype etc. I'm 
+having the below message at dmesg :
+
+[ 1171.856931] uvcvideo: Failed to submit URB 0 (-28).
+[ 1191.728944] uvcvideo: Failed to submit URB 0 (-28).
+[ 1191.728959] uvcvideo 1-1.5:1.1: resume error -28
+[ 1192.028821] uvcvideo: Failed to query (GET_DEF) UVC control 3 on unit 
+2: -110 (exp. 2).
+[ 1192.106345] uvcvideo: Failed to query (GET_DEF) UVC control 3 on unit 
+2: -32 (exp. 2).
+[ 1605.542802] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.549179] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.555584] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.562031] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.568382] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.575002] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.581982] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.588635] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.595000] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.601328] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
+[ 1605.607702] uvcvideo: Failed to query (130) UVC probe control : -32 
+(exp. 26).
 
 
->  drivers/media/radio/radio-wl1273.c         |   17 +-----------
 
-For the above:
+Also, below is the output of "v4l-info" :
 
-Acked-by: Matti J. Aaltonen <matti.j.aaltonen@nokia.com>
 
- 
+linux-gpq3:~ # v4l-info
 
+### v4l2 device info [/dev/video0] ###
+general info
+     VIDIOC_QUERYCAP
+         driver                  : "uvcvideo"
+         card                    : "Laptop_Integrated_Webcam_HD"
+         bus_info                : "usb-0000:00:1a.0-1.5"
+         version                 : 3.2.0
+         capabilities            : 0x4000001 [VIDEO_CAPTURE,STREAMING]
+
+standards
+
+inputs
+     VIDIOC_ENUMINPUT(0)
+         index                   : 0
+         name                    : "Camera 1"
+         type                    : CAMERA
+         audioset                : 0
+         tuner                   : 0
+         std                     : 0x0 []
+         status                  : 0x0 []
+
+video capture
+     VIDIOC_ENUM_FMT(0,VIDEO_CAPTURE)
+         index                   : 0
+         type                    : VIDEO_CAPTURE
+         flags                   : 0
+         description             : "YUV 4:2:2 (YUYV)"
+         pixelformat             : 0x56595559 [YUYV]
+     VIDIOC_ENUM_FMT(1,VIDEO_CAPTURE)
+         index                   : 1
+         type                    : VIDEO_CAPTURE
+         flags                   : 1
+         description             : "MJPEG"
+         pixelformat             : 0x47504a4d [MJPG]
+     VIDIOC_G_FMT(VIDEO_CAPTURE)
+         type                    : VIDEO_CAPTURE
+         fmt.pix.width           : 640
+         fmt.pix.height          : 480
+         fmt.pix.pixelformat     : 0x56595559 [YUYV]
+         fmt.pix.field           : NONE
+         fmt.pix.bytesperline    : 1280
+         fmt.pix.sizeimage       : 614400
+         fmt.pix.colorspace      : SRGB
+         fmt.pix.priv            : 0
+
+controls
+     VIDIOC_QUERYCTRL(BASE+0)
+         id                      : 9963776
+         type                    : INTEGER
+         name                    : "Brightness"
+         minimum                 : -64
+         maximum                 : 64
+         step                    : 1
+         default_value           : 0
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+1)
+         id                      : 9963777
+         type                    : INTEGER
+         name                    : "Contrast"
+         minimum                 : 0
+         maximum                 : 95
+         step                    : 1
+         default_value           : 0
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+2)
+         id                      : 9963778
+         type                    : INTEGER
+         name                    : "Saturation"
+         minimum                 : 0
+         maximum                 : 100
+         step                    : 1
+         default_value           : 64
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+3)
+         id                      : 9963779
+         type                    : INTEGER
+         name                    : "Hue"
+         minimum                 : -2000
+         maximum                 : 2000
+         step                    : 1
+         default_value           : 0
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+12)
+         id                      : 9963788
+         type                    : BOOLEAN
+         name                    : "White Balance Temperature, Auto"
+         minimum                 : 0
+         maximum                 : 1
+         step                    : 1
+         default_value           : 1
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+16)
+         id                      : 9963792
+         type                    : INTEGER
+         name                    : "Gamma"
+         minimum                 : 100
+         maximum                 : 300
+         step                    : 1
+         default_value           : 100
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+24)
+         id                      : 9963800
+         type                    : MENU
+         name                    : "Power Line Frequency"
+         minimum                 : 0
+         maximum                 : 2
+         step                    : 1
+         default_value           : 0
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+26)
+         id                      : 9963802
+         type                    : INTEGER
+         name                    : "White Balance Temperature"
+         minimum                 : 2800
+         maximum                 : 6500
+         step                    : 1
+         default_value           : 4600
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+27)
+         id                      : 9963803
+         type                    : INTEGER
+         name                    : "Sharpness"
+         minimum                 : 1
+         maximum                 : 7
+         step                    : 1
+         default_value           : 2
+         flags                   : 0
+     VIDIOC_QUERYCTRL(BASE+28)
+         id                      : 9963804
+         type                    : INTEGER
+         name                    : "Backlight Compensation"
+         minimum                 : 0
+         maximum                 : 3
+         step                    : 1
+         default_value           : 3
+         flags                   : 0
+
+
+PS : The same hardware works perfectly with pre <= Linux-3.1
+
+
+Tarkan
 
