@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab1K2Hvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 02:51:40 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53679 "EHLO e8.ny.us.ibm.com"
+	id S1753042Ab1K2Hwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 02:52:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34234 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823Ab1K2Hvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 02:51:39 -0500
-Date: Tue, 29 Nov 2011 13:19:48 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Subject: Re: [PATCH v7 3.2-rc2 9/30] uprobes: Background page replacement.
-Message-ID: <20111129074948.GB13445@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
- <20111118110823.10512.74338.sendpatchset@srdronam.in.ibm.com>
- <1322489609.2921.132.camel@twins>
+	id S1752288Ab1K2Hwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 02:52:45 -0500
+Date: Tue, 29 Nov 2011 08:52:42 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: pomac@vapor.com
+Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, tino.keitel@tikei.de,
+        t.artem@lycos.com
+Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
+Message-ID: <20111129075242.GB2675@tiehlicka.suse.cz>
+References: <20111128222803.GA4925@pomac.netswarm.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322489609.2921.132.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11112907-9360-0000-0000-0000010E186D
+In-Reply-To: <20111128222803.GA4925@pomac.netswarm.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2011-11-28 15:13:29]:
+On Mon 28-11-11 23:28:03, pomac@vapor.com wrote:
+> Hi, 
+> 
+> All this time i have been thinking i'm the only one - and i've been to
+> loaded with work during working hours and tired when home =P
+> 
+> Anyways, I've neen seeing this since -rc1 on:
+> Intel(R) Core(TM) i5 CPU U520  @ 1.07GHz - x86-64
+> AMD Phenom(tm) II X6 1090T - x86-64
+> AMD Athlon(tm) 64 X2 Dual Core Processor 4400+ - x86-64
+> Intel(R) Core(TM)2 CPU T7200  @ 2.00GHz - i686
+> 
+> Configs available on demand - I've been running the same config for
+> quite some time though.
 
-> On Fri, 2011-11-18 at 16:38 +0530, Srikar Dronamraju wrote:
-> > +/**
-> > + * is_bkpt_insn - check if instruction is breakpoint instruction.
-> > + * @insn: instruction to be checked.
-> > + * Default implementation of is_bkpt_insn
-> > + * Returns true if @insn is a breakpoint instruction.
-> > + */
-> > +bool __weak is_bkpt_insn(u8 *insn)
-> > +{
-> > +       return (insn[0] == UPROBES_BKPT_INSN);
-> >  } 
-> 
-> This seems wrong, UPROBES_BKPT_INSN basically defined to be of
-> uprobe_opcode_t type, not u8.
-> 
-> So:
-> 
-> bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
-> {
-> 	return *insn == UPROBE_BKPT_INSN;
-> }
-> 
-> seems like the right way to write this.
-> 
+As I have written in other email could you post your config and collect
+the following data?
+for i in `seq 30`; 
+do 
+        cat /proc/stat > `date +'%s'`
+        sleep 1
+done
+export old_user=0 old_nice=0 old_sys=0 old_idle=0 old_iowait=0; 
 
-Agree, will fix this. 
-Thanks for bringing this up.
+# for all your available CPUs
+grep cpu0 * | while read cpu user nice sys idle iowait rest; 
+do 
+        echo $cpu $(($user-$old_user)) $(($nice-$old_nice)) $(($sys-$old_sys)) $(($idle-$old_idle)) $(($iowait-$old_iowait))
+        old_user=$user old_nice=$nice old_sys=$sys old_idle=$idle old_iowait=$iowait
+done
 
+Thanks
 -- 
-Thanks and Regards
-Srikar
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
