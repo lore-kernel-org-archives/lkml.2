@@ -1,64 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab1K2NKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 08:10:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57809 "EHLO mx2.suse.de"
+	id S1755302Ab1K2NP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 08:15:28 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:33256 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754356Ab1K2NKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 08:10:44 -0500
-Date: Tue, 29 Nov 2011 14:10:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: pomac@vapor.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        tino.keitel@tikei.de
-Subject: Re: Re: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
-Message-ID: <20111129131042.GC4043@tiehlicka.suse.cz>
-References: <20111128222803.GA4925@pomac.netswarm.net>
- <20111129075242.GB2675@tiehlicka.suse.cz>
- <2146795727.780801.1322566727488.JavaMail.mail@webmail05>
- <20111129123156.GA4043@tiehlicka.suse.cz>
- <20111129124406.GB4043@tiehlicka.suse.cz>
- <1833322904.224056.1322571256185.JavaMail.mail@webmail07>
+	id S1754920Ab1K2NP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 08:15:27 -0500
+Message-ID: <4ED4DA80.9080303@parallels.com>
+Date: Tue, 29 Nov 2011 17:13:36 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1833322904.224056.1322571256185.JavaMail.mail@webmail07>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "tao.peng@emc.com" <tao.peng@emc.com>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+ blocklayout routines
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6> <20111129091037.20730.59391.stgit@localhost6.localdomain6> <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com> <4ED4CDCE.9080804@parallels.com> <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
+In-Reply-To: <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 29-11-11 12:54:16, Artem S. Tashkinov wrote:
-> > On Nov 29, 2011, Michal Hocko  wrote: 
-> > 
-> > On Tue 29-11-11 13:31:56, Michal Hocko wrote:
-> > > On Tue 29-11-11 11:38:47, Artem S. Tashkinov wrote:
-> > [...]
-> > > > $ grep . -r /sys/devices/system/cpu/cpuidle/
-> > > > /sys/devices/system/cpu/cpuidle/current_driver:intel_idle
-> > > > /sys/devices/system/cpu/cpuidle/current_governor_ro:menu
-> > 
-> > Could you try with acpi_idle driver?
-> > echo acpi_idle > /sys/devices/system/cpu/cpuidle/current_driver
-> 
-> [root@localhost ~]# echo acpi_idle > /sys/devices/system/cpu/cpuidle/current_driver
-> -bash: /sys/devices/system/cpu/cpuidle/current_driver: Permission denied
+29.11.2011 16:40, tao.peng@emc.com пишет:
+>> -----Original Message-----
+>> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
+>> Sent: Tuesday, November 29, 2011 8:19 PM
+>> To: Peng, Tao
+>> Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; Pavel Emelianov; neilb@suse.de;
+>> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; James Bottomley; bfields@fieldses.org;
+>> davem@davemloft.net; devel@openvz.org
+>> Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from blocklayout routines
+>>
+>> 29.11.2011 16:00, tao.peng@emc.com пишет:
+>>>> -----Original Message-----
+>>>> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of
+>> Stanislav
+>>>> Kinsbursky
+>>>> Sent: Tuesday, November 29, 2011 6:11 PM
+>>>> To: Trond.Myklebust@netapp.com
+>>>> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de; netdev@vger.kernel.org; linux-
+>>>> kernel@vger.kernel.org; jbottomley@parallels.com; bfields@fieldses.org; davem@davemloft.net;
+>>>> devel@openvz.org
+>>>> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from blocklayout routines
+>>>>
+>>>> This is a cleanup patch. We don't need this reference anymore, because
+>>>> blocklayout pipes dentries now creates and destroys in per-net operations and
+>>>> on PipeFS mount/umount notification.
+>>>> Note that nfs4blocklayout_register_net() now returns 0 instead of -ENOENT in
+>>>> case of PipeFS superblock absence. This is ok, because blocklayout pipe dentry
+>>>> will be created on PipeFS mount event.
+>>> When is the "pipefs mount event" going to happen? When inserting kernel modules or when user issues
+>> mount command?
+>>>
+>>
+>> When user issues mount command.
+>> Kernel mounts of PipeFS has been removed with all these patch sets I've sent
+>> already.
+> Then it is going to break blocklayout user space program blkmapd, which is stared before mounting any file system and it tries to open the pipe file when started.
 
-It seems that this is cannot be set in runtime:
-SYSDEV_CLASS_ATTR(current_driver, 0444, show_current_driver, NULL);
+Sorry, but I don't get it. Probably we have misunderstanding here.
+You said, that "blkmapd ... tries to open the pipe file when started". This pipe 
+file is located on PipeFS, isn't it?
+If yes, then PipeFS have to be mounted already in user-space. And if it has been 
+mounted - then pipe dentry is present.
+IOW, pipe (without dentry) will be created on module load. Pipe dentry will be 
+created right after that (like it was before) if PipeFS was mounted from 
+user-space. If not - then pipe dentry will be created  on PipeFS (!) mount (not 
+NFS or pNFS mount) from user-space.
 
-Or maybe you need to boot with cpuidle_sysfs_switch. According to the
-documentation you might be able to change the governor. I have no idea
-whether this can help somehow but let's try that.
+Or I'm missing something in your reply?
 
-I haven't found any intel_idle machine in my lab so far and all other
-acpi_idle machines seem to work (or at least randomly selected ones) so
-this smells like a major difference in the setup.
+> Not sure if you implement the same logic on nfs pipe as well. But if you do, then nfs client user space program idmapd will fail to start for the same reason.
+>
+
+The same logic here.
+
+> Why not just fail to load module if you fail to initialize pipefs? When is rpc_get_sb_net() going to fail?
+>
+
+Sorry, but I don't understand, what is your idea. And why do we need to fail at all.
+BTW, rpc_get_sb_net() just checks, was PipeFS mounted in passed net, or not. If 
+not - not a problem. Dentries will be created on mount event. If yes, then it 
+returns locked PipeFS sb and the next step is dentry creation.
+
+>>
+>>
+>>> Thanks,
+>>> Tao
+>>>
+>>>>
+>>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>>>
+>>>> ---
+>>>>    fs/nfs/blocklayout/blocklayout.c |    9 +--------
+>>>>    1 files changed, 1 insertions(+), 8 deletions(-)
+>>>>
+>>>> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+>>>> index acf7ac9..8211ffd 100644
+>>>> --- a/fs/nfs/blocklayout/blocklayout.c
+>>>> +++ b/fs/nfs/blocklayout/blocklayout.c
+>>>> @@ -1032,7 +1032,7 @@ static struct dentry *nfs4blocklayout_register_net(struct net *net,
+>>>>
+>>>>    	pipefs_sb = rpc_get_sb_net(net);
+>>>>    	if (!pipefs_sb)
+>>>> -		return ERR_PTR(-ENOENT);
+>>>> +		return 0;
+>>>>    	dentry = nfs4blocklayout_register_sb(pipefs_sb, pipe);
+>>>>    	rpc_put_sb_net(net);
+>>>>    	return dentry;
+>>>> @@ -1083,7 +1083,6 @@ static struct pernet_operations nfs4blocklayout_net_ops = {
+>>>>
+>>>>    static int __init nfs4blocklayout_init(void)
+>>>>    {
+>>>> -	struct vfsmount *mnt;
+>>>>    	int ret;
+>>>>
+>>>>    	dprintk("%s: NFSv4 Block Layout Driver Registering...\n", __func__);
+>>>> @@ -1093,12 +1092,6 @@ static int __init nfs4blocklayout_init(void)
+>>>>    		goto out;
+>>>>
+>>>>    	init_waitqueue_head(&bl_wq);
+>>>> -
+>>>> -	mnt = rpc_get_mount();
+>>>> -	if (IS_ERR(mnt)) {
+>>>> -		ret = PTR_ERR(mnt);
+>>>> -		goto out_remove;
+>>>> -	}
+>>>>    	ret = rpc_pipefs_notifier_register(&nfs4blocklayout_block);
+>>>>    	if (ret)
+>>>>    		goto out_remove;
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>>
+>> --
+>> Best regards,
+>> Stanislav Kinsbursky
+>
+
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Best regards,
+Stanislav Kinsbursky
