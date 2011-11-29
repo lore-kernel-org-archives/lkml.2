@@ -1,82 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab1K2Ie2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 03:34:28 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:36455 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607Ab1K2Ie1 (ORCPT
+	id S1753395Ab1K2IfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 03:35:15 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:60002 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299Ab1K2IfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 03:34:27 -0500
-Subject: Re: iwlagn is getting very shaky
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Emmanuel Grumbach <egrumbach@gmail.com>
-Cc: Norbert Preining <preining@logic.at>,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, David Rientjes <rientjes@google.com>
-In-Reply-To: <CANUX_P2b_ZYr4hHigA+tGa9uakcq3hQXnOiP5isQtfcYxCaxcw@mail.gmail.com> (sfid-20111129_075940_672404_AD87EAAF)
-References: <20111125122143.GA30404@gamma.logic.tuwien.ac.at>
-	 <CANUX_P1hFzSVPQzd6gq3tLY7hu+LX5suph6uHP+hq6+7rdAK1w@mail.gmail.com>
-	 <20111125123720.GA31564@gamma.logic.tuwien.ac.at>
-	 <CANUX_P2mGQX9H-f7OFusjUrv8ey56JNzFVEdKJkAejsg9zVNkQ@mail.gmail.com>
-	 <CANUX_P1aAz-4TpgSzQ2G=RkJOxXCAVQBja3GNsj_HpMNmqxeUw@mail.gmail.com>
-	 <1322387175.4044.16.camel@jlt3.sipsolutions.net>
-	 <CANUX_P3uoNOj3j-REvYCZP382cHfq+DpBRi7fnzFfMG_dyHtTQ@mail.gmail.com>
-	 <20111128035627.GH1422@gamma.logic.tuwien.ac.at>
-	 <CANUX_P2kYiFCP8uAhLZC_kVEjoyxabRBx3Pn+ndtFus=6hJN7Q@mail.gmail.com>
-	 <20111128042343.GA4619@gamma.logic.tuwien.ac.at>
-	 <20111128232525.GA12719@gamma.logic.tuwien.ac.at>
-	 <CANUX_P2b_ZYr4hHigA+tGa9uakcq3hQXnOiP5isQtfcYxCaxcw@mail.gmail.com>
-	 (sfid-20111129_075940_672404_AD87EAAF)
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Nov 2011 09:31:12 +0100
-Message-ID: <1322555472.4110.8.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 29 Nov 2011 03:35:13 -0500
+Date: Tue, 29 Nov 2011 14:03:22 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>, tulasidhard@gmail.com
+Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
+Message-ID: <20111129083322.GD13445@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+ <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
+ <1322071812.14799.87.camel@twins>
+ <20111124134742.GH28065@linux.vnet.ibm.com>
+ <1322492384.2921.143.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1322492384.2921.143.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11112908-3270-0000-0000-00000232A547
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed that the logs are a bit odd wrt. timing.
-
-> > Intersperesed I see some other messages that are new to me:
-> > [ 4019.443129] Open BA session requested for 00:0a:79:eb:56:10 tid 0
-> > [ 4019.500149] activated addBA response timer on tid 0
-> > [ 4020.500033] addBA response timer expired on tid 0
-
-I guess the delay here is due to the synchronize_net()? That can take a
-while, 57ms seems a lot but I suppose it's possible.
-
-> > [ 4020.501626] Tx BA session stop requested for 00:0a:79:eb:56:10 tid 0
-> > [ 4023.740570] switched off addBA timer for tid 0
-> > [ 4023.740578] got addBA resp for tid 0 but we already gave up
+> > > > +                       ret = install_breakpoint(vma->vm_mm, uprobe);
+> > > > +                       if (ret == -EEXIST) {
+> > > > +                               atomic_inc(&vma->vm_mm->mm_uprobes_count);
+> > > > +                               ret = 0;
+> > > > +                       } 
+> > > 
+> > > Aren't you double counting that probe position here? The one that raced
+> > > you to inserting it will also have incremented that counter, no?
+> > > 
+> > 
+> > No we arent.
+> > Because register_uprobe can never race with mmap_uprobe and register
+> > before mmap_uprobe registers .(Once we start mmap_region,
+> > register_uprobe waits for the read_lock of mmap_sem.)
+> > 
+> > And we badly need this for mmap_uprobe case.  Because when we do mremap,
+> > or vma_adjust(), we do a munmap_uprobe() followed by mmap_uprobe() which
+> > would have decremented the count but not removed it. So when we do a
+> > mmap_uprobe, we need to increment the count. 
 > 
-> Here is the AP is finally replying
-
-It's kinda hard to believe that the AP took 4 seconds (!) to reply to
-the frame. Where could the frame get stuck? I don't see any other work
-processing happening etc. either. It's also curious that in those 3
-seconds between these messages, we didn't actually get around to
-stopping the session, that only happens just after:
-
-> > [ 4023.740619] Stopping Tx BA session for 00:0a:79:eb:56:10 tid 0
-
-(here)
-
-> > [ 4023.768544] Open BA session requested for 00:0a:79:eb:56:10 tid 0
+> Ok, so I didn't parse that properly last time around.. but it still
+> doesn't make sense, why would munmap_uprobe() decrement the count but
+> not uninstall the probe?
 > 
-> Here we are trying again
+> install_breakpoint() returning -EEXIST on two different conditions
+> doesn't help either.
 > 
-> > [ 4023.784292] activated addBA response timer on tid 0
-> > [ 4023.786294] switched off addBA timer for tid 0
+> So what I think you're doing is that you're optimizing the unmap case
+> since the memory is going to be thrown out fixing up the instruction is
+> a waste of time, but this leads to the asymmetry observed above. But you
 
-20ms response time here, that's much more reasonable.
+Yes, we are optimizing the unmap case, because we expect the memory to
+be thrown out.
+
+> fail to mention this in both the changelog or a comment near that
+> -EEXIST branch in mmap_uprobe.
+> 
+> Worse, you don't explain how the other -EEXIST (!consumers) thing
+> interacts here, and I just gave up trying to figure that out since it
+> made my head hurt.
+> 
+
+install_breakpoints cannot have !consumers to be true when called from
+register_uprobe. (Since unregister_uprobe() which does the removal of
+consumer cannot race with register_uprobe().)
+
+Now lets consider mmap_uprobe() being called from vm_adjust(), the
+preceding unmap_uprobe() has already decremented the count but left the
+count intact.
+
+if consumers is NULL, unregister_uprobes() has kicked already in, so
+there is no point in inserting the probe, Hence we return EEXIST. The
+following unregister_uprobe() (or the munmap_uprobe() which might race
+before unregister_uprobe) is also going to decrement the count.  So we
+have a case where the same breakpoint is accounted as removed twice. To
+offset this, we pretend as if the breakpoint is around by incrementing
+the count.
+
+Would it help if I add an extra check in mmap_uprobe?
+
+int mmap_uprobe(...) {
+....
+	       ret = install_breakpoint(vma->vm_mm, uprobe);
+	       if (ret == -EEXIST) {
+			if (!read_opcode(vma->vm_mm, vaddr, &opcode) &&
+					(opcode == UPROBES_BKPT_INSN))
+			       atomic_inc(&vma->vm_mm->mm_uprobes_count);
+		       ret = 0;
+	       } 
+....
+}
 
 
-Could something be hogging the workqueues?
+The extra read_opcode check will tell us if the breakpoint is still
+around and then only increment the count. (As in it will distinguish if
+the mmap_uprobe is from vm_adjust).
 
-johannes
+-- 
+Thanks and Regards
+Srikar
 
