@@ -1,32 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab1K2PBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:01:37 -0500
-Received: from mail.tnnet.fi ([217.112.240.26]:37316 "EHLO mail.tnnet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753466Ab1K2PBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:01:36 -0500
-Message-ID: <4ED4F3CB.FE390AFF@users.sourceforge.net>
-Date: Tue, 29 Nov 2011 17:01:31 +0200
-From: Jari Ruusu <jariruusu@users.sourceforge.net>
-To: linux-crypto@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Announce loop-AES-v3.6e file/swap crypto package
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754695Ab1K2PCA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:02:00 -0500
+Received: from ist.fellig.org ([84.200.228.103]:32887 "EHLO v0.fellig.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754269Ab1K2PB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 10:01:59 -0500
+X-Greylist: delayed 873 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Nov 2011 10:01:59 EST
+Subject: Re: Proposed removal of DECnet support (was: Re: [BUG] 3.2-rc2:
+	BUG kmalloc-8: Redzone overwritten)
+From: Philipp Schafft <lion@lion.leolix.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        David Miller <davem@davemloft.net>, Matt Mackall <mpm@selenic.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Chrissie Caulfield <ccaulfie@redhat.com>,
+        Linux-DECnet user <linux-decnet-user@lists.sourceforge.net>,
+        RoarAudio <roaraudio@lists.keep-cool.org>
+In-Reply-To: <1322490161.2711.26.camel@menhir>
+References: <1322490161.2711.26.camel@menhir>
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=-QqGfpRcyUr5aTlcWKTWh"
+Organization: PH2
+Date: Tue, 29 Nov 2011 15:47:19 +0100
+Mime-Version: 1.0
+X-Mailer: Evolution 2.6.3 
+Message-Id: <20111129144720.7374B7AD9E@priderock.keep-cool.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-loop-AES changes since previous release:
-- Worked around block layer interface breakage on 3.2-rc kernels.
 
-bzip2 compressed tarball is here:
+--=-QqGfpRcyUr5aTlcWKTWh
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6e.tar.bz2
-    md5sum b8bf83f3d21a6ad1ea49ac30f9ec130d
+reflum,
 
-    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.6e.tar.bz2.sign
+On Tue, 2011-11-29 at 15:34 +0100, Steven Whitehouse wrote:
 
--- 
-Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
+> Has anybody actually tested it
+> > >> lately against "real" DEC implementations?
+> > > I doubt it :-)
+> > DECnet is in use against real DEC implementations - I have checked it=20
+> > quite recently against a VAX running OpenVMS. How many people are=20
+> > actually using it for real work is a different question though.
+> >=20
+> Ok, thats useful info.
+
+I confirmed parts of it with tcpdump and the specs some weeks ago. The
+parts I worked on passed :) I also considered to send the tcpdump
+upstream a patch for protocol decoding.
+
+
+> > It's also true that it's not really supported by anyone as I orphaned i=
+t=20
+> > some time ago and nobody else seems to care enough to take it over. So=20
+> > if it's becoming a burden on people doing real kernel work then I don't=
+=20
+> > think many tears will be wept for its removal.
+> > Chrissie
+>=20
+> Really the only issue with keeping it around is the maintenance burden I
+> think. It doesn't look like anybody wants to take it on, but maybe we
+> should give it another few days for someone to speak up, just in case
+> they are on holiday or something at the moment.
+>=20
+> Also, I've updated the subject of the thread, to make it more obvious
+> what is being discussed, as well as bcc'ing it again to the DECnet list,
+
+I'm very interested in the module. However my problem is that I had
+nothing to do with kernel coding yet. However I'm currently searching a
+new maintainer for it (I got info about this thread by today).
+If somebody is interested in this and only needs some "motivation" or
+maybe someone would like to get me into kernel coding, please just
+reply :)
+
+--=20
+Philipp.
+ (Rah of PH2)
+
+--=-QqGfpRcyUr5aTlcWKTWh
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Comment: Because it's your freedom
+
+iQEVAwUATtTwd2CSpmW8W5B8AQIVnQf/bSVoNOvuLaxGDwXMmahSqdvjpjKrarjm
+Q+IAHtKWKsXoYLCdaJkCuTNfoHUJujCahTiEAI4WLpgZw2nKNOOolBJREVrJZatx
+mxgfYbXPU9nNC+P9DCPlX2mjDloWoivbD3jiPqU4/A/vqjl2bC2zLyP0mRxvEwGO
+znwgDhO3t5y83m6jtSJgu5FQ1qwxBW8ZHtWMMPKMdwGwK9+cRY32j4itnDHa4YY9
+wejjRnlHHnyzx5uH/ZwiGFRMppVsPjjQKwDv/J43UYKRls91L3CiX8L3BrRkDrMP
+rMBhrxyqE/ByTfIXBQ537m6ftgxWIw1pOvEWbbHypfmbxL1wBSvkeg==
+=I1G8
+-----END PGP SIGNATURE-----
+
+--=-QqGfpRcyUr5aTlcWKTWh--
