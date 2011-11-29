@@ -1,117 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab1K2SNM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 13:13:12 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59394 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756075Ab1K2SNL (ORCPT
+	id S1756115Ab1K2SQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 13:16:21 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:50656 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab1K2SQU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 13:13:11 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Allow regulators to register with no init_data
-Date: Tue, 29 Nov 2011 18:13:07 +0000
-Message-Id: <1322590387-27075-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 29 Nov 2011 13:16:20 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "jiayingz@google.com" <jiayingz@google.com>,
+        "lczerner@redhat.com" <lczerner@redhat.com>
+CC: "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Tue, 29 Nov 2011 13:15:56 -0500
+Subject: [PATCH]tracepoint: add drop_transaction/update_superblock_end to
+ jbd2
+Thread-Topic: [PATCH]tracepoint: add drop_transaction/update_superblock_end
+ to jbd2
+Thread-Index: AcyuwvA77y9ef/kARxya17pFWUbeHg==
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C57C90585@USINDEVS01.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1111290162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows read-only access to the device configuration which may be
-useful for diagnostics.
+Hi
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This patch adds trace_jbd2_drop_transaction and trace_jbd2_update_superblock_end
+because there are similar tracepoints in jbd and they are needed in jbd2 as well.
+
+Seiji
+
+
+ Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+
 ---
- drivers/regulator/core.c |   25 +++++++++++++++----------
- 1 files changed, 15 insertions(+), 10 deletions(-)
+ fs/jbd2/checkpoint.c        |    2 ++
+ fs/jbd2/journal.c           |    2 ++
+ include/trace/events/jbd2.h |   28 ++++++++++++++++++++++++++++
+ 3 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index ca2efca..87e5363 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -912,8 +912,12 @@ static int set_machine_constraints(struct regulator_dev *rdev,
- 	int ret = 0;
- 	struct regulator_ops *ops = rdev->desc->ops;
+diff --git a/fs/jbd2/checkpoint.c b/fs/jbd2/checkpoint.c
+index 16a698b..2bfd8b0 100644
+--- a/fs/jbd2/checkpoint.c
++++ b/fs/jbd2/checkpoint.c
+@@ -797,5 +797,7 @@ void __jbd2_journal_drop_transaction(journal_t *journal, transaction_t *transact
+ 	J_ASSERT(journal->j_committing_transaction != transaction);
+ 	J_ASSERT(journal->j_running_transaction != transaction);
  
--	rdev->constraints = kmemdup(constraints, sizeof(*constraints),
--				    GFP_KERNEL);
-+	if (constraints)
-+		rdev->constraints = kmemdup(constraints, sizeof(*constraints),
-+					    GFP_KERNEL);
-+	else
-+		rdev->constraints = kzalloc(sizeof(*constraints),
-+					    GFP_KERNEL);
- 	if (!rdev->constraints)
- 		return -ENOMEM;
- 
-@@ -922,7 +926,7 @@ static int set_machine_constraints(struct regulator_dev *rdev,
- 		goto out;
- 
- 	/* do we need to setup our suspend state */
--	if (constraints->initial_state) {
-+	if (rdev->constraints->initial_state) {
- 		ret = suspend_prepare(rdev, rdev->constraints->initial_state);
- 		if (ret < 0) {
- 			rdev_err(rdev, "failed to set suspend state\n");
-@@ -930,7 +934,7 @@ static int set_machine_constraints(struct regulator_dev *rdev,
- 		}
- 	}
- 
--	if (constraints->initial_mode) {
-+	if (rdev->constraints->initial_mode) {
- 		if (!ops->set_mode) {
- 			rdev_err(rdev, "no set_mode operation\n");
- 			ret = -EINVAL;
-@@ -2697,6 +2701,7 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
- 	struct device *dev, const struct regulator_init_data *init_data,
- 	void *driver_data, struct device_node *of_node)
- {
-+	const struct regulation_constraints *constraints = NULL;
- 	static atomic_t regulator_no = ATOMIC_INIT(0);
- 	struct regulator_dev *rdev;
- 	int ret, i;
-@@ -2712,9 +2717,6 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
- 	    regulator_desc->type != REGULATOR_CURRENT)
- 		return ERR_PTR(-EINVAL);
- 
--	if (!init_data)
--		return ERR_PTR(-EINVAL);
--
- 	/* Only one of each should be implemented */
- 	WARN_ON(regulator_desc->ops->get_voltage &&
- 		regulator_desc->ops->get_voltage_sel);
-@@ -2747,7 +2749,7 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
- 	INIT_DELAYED_WORK(&rdev->disable_work, regulator_disable_work);
- 
- 	/* preform any regulator specific init */
--	if (init_data->regulator_init) {
-+	if (init_data && init_data->regulator_init) {
- 		ret = init_data->regulator_init(rdev->reg_data);
- 		if (ret < 0)
- 			goto clean;
-@@ -2768,7 +2770,10 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
- 	dev_set_drvdata(&rdev->dev, rdev);
- 
- 	/* set regulator constraints */
--	ret = set_machine_constraints(rdev, &init_data->constraints);
-+	if (init_data)
-+		constraints = &init_data->constraints;
++	trace_jbd2_drop_transaction(journal, transaction);
 +
-+	ret = set_machine_constraints(rdev, constraints);
- 	if (ret < 0)
- 		goto scrub;
+ 	jbd_debug(1, "Dropping transaction %d, all done\n", transaction->t_tid);
+ }
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index f24df13..5953b3d 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1185,6 +1185,8 @@ void jbd2_journal_update_superblock(journal_t *journal, int wait)
+ 	} else
+ 		write_dirty_buffer(bh, WRITE);
  
-@@ -2777,7 +2782,7 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
- 	if (ret < 0)
- 		goto scrub;
++	trace_jbd2_update_superblock_end(journal, wait);
++
+ out:
+ 	/* If we have just flushed the log (by marking s_start==0), then
+ 	 * any future commit will have to be careful to update the
+diff --git a/include/trace/events/jbd2.h b/include/trace/events/jbd2.h
+index 7596441..ae59bc2 100644
+--- a/include/trace/events/jbd2.h
++++ b/include/trace/events/jbd2.h
+@@ -81,6 +81,13 @@ DEFINE_EVENT(jbd2_commit, jbd2_commit_logging,
+ 	TP_ARGS(journal, commit_transaction)
+ );
  
--	if (init_data->supply_regulator)
-+	if (init_data && init_data->supply_regulator)
- 		supply = init_data->supply_regulator;
- 	else if (regulator_desc->supply_name)
- 		supply = regulator_desc->supply_name;
++DEFINE_EVENT(jbd2_commit, jbd2_drop_transaction,
++
++	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
++
++	TP_ARGS(journal, commit_transaction)
++);
++
+ TRACE_EVENT(jbd2_end_commit,
+ 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
+ 
+@@ -229,6 +236,27 @@ TRACE_EVENT(jbd2_cleanup_journal_tail,
+ 		  __entry->block_nr, __entry->freed)
+ );
+ 
++TRACE_EVENT(jbd2_update_superblock_end,
++
++	TP_PROTO(journal_t *journal, int wait),
++
++	TP_ARGS(journal, wait),
++
++	TP_STRUCT__entry(
++		__field(	dev_t,  dev			)
++		__field(	int,    wait			)
++	),
++
++	TP_fast_assign(
++		__entry->dev		= journal->j_fs_dev->bd_dev;
++		__entry->wait		= wait;
++	),
++
++	TP_printk("dev %d,%d wait %d",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  __entry->wait)
++);
++
+ #endif /* _TRACE_JBD2_H */
+ 
+ /* This part must be outside protection */
 -- 
-1.7.7.3
-
+1.7.1
