@@ -1,68 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab1K2Qvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 11:51:54 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:1567 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755942Ab1K2Qvx convert rfc822-to-8bit (ORCPT
+	id S1756062Ab1K2REb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 12:04:31 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35443 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755994Ab1K2RE3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 11:51:53 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 29 Nov 2011 08:51:43 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Igor Grinberg <grinberg@compulab.co.il>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 29 Nov 2011 08:51:42 -0800
-Subject: RE: [PATCH 1/2] gpiolib: introduce gpio_set_pullup
-Thread-Topic: [PATCH 1/2] gpiolib: introduce gpio_set_pullup
-Thread-Index: AcyuQEaDpTOTsgoXTOug5hpM0vyKzQAdkNgw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174FDAFAC8@HQMAIL01.nvidia.com>
-References: <1322230120-14120-1-git-send-email-plagnioj@jcrosoft.com>
- <20111125153409.GA4975@sirena.org.uk> <4ED2045E.7010206@compulab.co.il>
- <20111129023708.GN15008@game.jcrosoft.org>
-In-Reply-To: <20111129023708.GN15008@game.jcrosoft.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 Nov 2011 12:04:29 -0500
 MIME-Version: 1.0
+In-Reply-To: <20111129142149.GE2822@amit-x200.redhat.com>
+References: <20111108214452.28884.14840.stgit@miche.sea.corp.google.com>
+	<20111108214504.28884.61814.stgit@miche.sea.corp.google.com>
+	<874nybqo0o.fsf@rustcorp.com.au>
+	<CAB8RdapbaueyWLJuJDE_ZdvLkRNM4sQHTxgmgO=jrnXZ6YPSmA@mail.gmail.com>
+	<20111123103852.GG16665@amit-x200.redhat.com>
+	<CAB8RdaoDxMCgTjuGP70bGrsrtgh=USYtU3Spo5OPtVMYAM5EzQ@mail.gmail.com>
+	<20111129142149.GE2822@amit-x200.redhat.com>
+Date: Tue, 29 Nov 2011 09:04:28 -0800
+Message-ID: <CAB8RdapuPRym2dH_9mgmGdzpCxnP1KpS+hS8JJ-geVkga5fMcw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] hvc_init(): Enforce one-time initialization.
+From: Miche Baker-Harvey <miche@google.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Anton Blanchard <anton@samba.org>, Mike Waychison <mikew@google.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Eric Northrup <digitaleric@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean-Christophe PLAGNIOL-VILLARD wrote at Monday, November 28, 2011 7:37 PM:
-> On 11:35 Sun 27 Nov     , Igor Grinberg wrote:
-> > On 11/25/11 17:34, Mark Brown wrote:
-> > > On Fri, Nov 25, 2011 at 03:08:39PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > >
-> > >> +/**
-> > >> + * gpio_set_pullup - sets @pullup for a @gpio
-> > >> + * @gpio: the gpio to set pullup
-> > >> + * @pullup: pullup level
-> > >> + */
-> > >> +int gpio_set_pullup(unsigned gpio, unsigned pullup)
-> > >
-> > > This has some overlap with the pinmux subsystem.  We also need
-> > > documentation of what the pullup values mean.
-> yes and no
-> 
-> as some gpio IP (only gpio i2c extender as example ) have it too
-> so you can not use the pinmux for this
+Amit,
+We aren't using either QEMU or kvmtool, but we are using KVM.  All
+theissues we are seeing happen when we try to establish multiple
+virtioconsoles at boot time.  The command line isn't relevant, but I
+cantell you the protocol that's passing between the host (kvm) and
+theguest (see the end of this message).
+We do go through the control_work_handler(), but it's not
+providingsynchronization.  Here's a trace of the
+control_work_handler() andhandle_control_message() calls; note that
+there are two concurrentcalls to control_work_handler().
+I decorated control_work_handler() with a "lifetime" marker, and
+passedthis value to handle_control_message(), so we can see which
+control
+messages are being handled from which instance of
+thecontrol_work_handler() thread.
+Notice that we enter control_work_handler() a second time before
+thehandling of the second PORT_ADD message is complete. The
+firstCONSOLE_PORT message is handled by the second
+control_work_handler()call, but the second is handled by the first
+control_work_handler() call.
 
-Why not?
+root@myubuntu:~# dmesg | grep MBH[3371055.808738]
+control_work_handler #1[3371055.809372] + #1 handle_control_message
+PORT_ADD[3371055.810169] - handle_control_message
+PORT_ADD[3371055.810170] + #1 handle_control_message PORT_ADD
+[3371055.810244]  control_work_handler #2[3371055.810245] + #2
+handle_control_message CONSOLE_PORT[3371055.810246]  got
+hvc_ports_mutex[3371055.810578] - handle_control_message
+PORT_ADD[3371055.810579] + #1 handle_control_message
+CONSOLE_PORT[3371055.810580]  trylock of hvc_ports_mutex
+failed[3371055.811352]  got hvc_ports_mutex[3371055.811370] -
+handle_control_message CONSOLE_PORT[3371055.816609] -
+handle_control_message CONSOLE_PORT  So, I'm guessing the bug is that
+there shouldn't be two instances ofcontrol_work_handler() running
+simultaneously?
+Thanks,
+Miche
 
-I believe the pinctrl subsystem should be applicable to any chip, be it
-the main SoC/CPU in the system, or any other chip. We don't currently
-have any non-SoC drivers, but that's just because nobody has written them
-yet; there's no technical reason they couldn't exist.
+Protocol:We set up the virtio console device registers during
+initialization,specifying the multiport feature, and some number of
+ports, n, where nis greater than 1.
+In the guest, virtcons_probe() finds our device, and successfully
+sendsthe VIRTIO_CONSOLE_DEVICE_READY=1 control message.
+On the host, we receive the VIRTIO_CONSOLE_DEVICE_READY message,
+andsend one VIRTIO_CONSOLE_PORT_ADD message via the Receive Control
+queuefor each port in the number of ports.  These messages are
+notserialized: they are all sent at once.
+The VIRTIO_CONSOLE_PORT_ADD messages are received
+inhandle_control_message() in virtio_console.c, and add_port() is
+calledfor each.  After each port is added, the guest
+sendsVIRTIO_CONSOLE_PORT_READY to the host, and in these messages, the
+idof the port is included in the message.
+On the host, in response to each VIRTIO_CONSOLE_PORT_READY=1
+message,we may send a VIRTIO_CONSOLE_CONSOLE_PORT message.
+On the guest, in response to each VIRTIO_CONSOLE_CONSOLE_PORT
+message,init_port_console() is called on the individual port.  The
+same id isused for these messages as was used for the PORT_READY
+messages.
+After each successful init_port_console(), the guest
+sendsVIRTIO_CONSOLE_PORT_OPEN back to the host.
 
--- 
-nvpublic
-
+On Tue, Nov 29, 2011 at 6:21 AM, Amit Shah <amit.shah@redhat.com> wrote:
+> Hi,
+>
+> On (Mon) 28 Nov 2011 [15:40:41], Miche Baker-Harvey wrote:
+>> Amit,
+>>
+>> You said that the work would be serialized "due to port additions
+>> being on work items on the same workqueue".  I'm not seeing that.
+>
+> You leave a lot of questions unanswered.  What's your environment?
+> Are you hot-plugging ports?  Are you using qemu?  What's your command
+> line?
+>
+>> I've double checked this by using a mutex_trylock in
+>> hvc_console::hvc_alloc(), and here's the relevant output from dmesg:
+>>
+>> root@myubuntu:~# dmesg | grep MBH
+>> [3307216.210274] MBH: got hvc_ports_mutex
+>> [3307216.210690] MBH: trylock of hvc_ports_mutex failed
+>> [3307216.211143] MBH: got hvc_ports_mutex
+>>
+>> This is in a system with two virtio console ports, each of which is a
+>> console.  I think if the VIRTIO_CONSOLE_CONSOLE_PORT message handling
+>> were actually being serialized, the trylock should never fail.
+>
+> Agreed.
+>
+>> What's the source of the serialization for the workqueue items?  At
+>> first reading it looks like the control_work_handler gets called for
+>> each virtio interrupt?
+>
+> It all depends on how you add ports.  If you're using qemu, they
+> happen via the control work handler.
+>
+>                Amit
+>
