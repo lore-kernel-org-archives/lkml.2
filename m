@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab1K2XNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 18:13:54 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:40632 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756530Ab1K2XNv (ORCPT
+	id S1756459Ab1K2XTa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 18:19:30 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33775 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485Ab1K2XT3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 18:13:51 -0500
-X-Sasl-enc: H3AW7I9FL9TaJ28dkE10kz/M1TADnUn35iCPorEX1bbg 1322608429
-Date: Wed, 30 Nov 2011 07:55:52 +0900
-From: Greg KH <greg@kroah.com>
-To: Anand Kanaginhal <anand_dk@hotmail.com>
-Cc: Linux PCI mailing <linux-pci@vger.kernel.org>,
-        linux kernel mailing <linux-kernel@vger.kernel.org>,
-        linux hotplug mailing <linux-hotplug@vger.kernel.org>
-Subject: Re: PCIe Hotplugging not working
-Message-ID: <20111129225552.GB27909@kroah.com>
-References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl>
- <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
- <20111129142214.GC14845@kroah.com>
- <BAY163-W63C79C972B0F87A46B0FDCFBB30@phx.gbl>
+	Tue, 29 Nov 2011 18:19:29 -0500
+Date: Tue, 29 Nov 2011 15:19:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Li Zefan <lizf@cn.fujitsu.com>, Andrey Vagin <avagin@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [RFC] cgroups: freezer -- Allow to attach a task to a frozen
+ cgroup
+Message-ID: <20111129231922.GA20313@google.com>
+References: <20111128120813.GK1775@moon>
+ <20111128160844.GB18864@google.com>
+ <20111129225853.GA693@count0.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BAY163-W63C79C972B0F87A46B0FDCFBB30@phx.gbl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111129225853.GA693@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 09:50:41AM -0800, Anand Kanaginhal wrote:
+Hello, Matt.
+
+On Tue, Nov 29, 2011 at 02:58:53PM -0800, Matt Helsley wrote:
+> >   transition notification too, at the very least, clarification of
 > 
-> Resending as earlier sends failed
+> Notification is a fine idea. However, not everything that's already
+> written expects them so correct usage of the cgroup freezer should not
+> require them -- IOW allowing the FROZEN -> FREEZING transition
+> isn't made OK just by adding notifications.
 
-You can not send html messages to vger.kernel.org mailing lists.
+The transition model doesn't have to be modified.  ie. we can try to
+freeze the task/process on migration request and actually moves it
+only when it actually reaches the target state.  Not entirely sure how
+well that can be implemented with the current cgroup callbacks tho.
+We can also make the new behavior selectable per-cgroup if all else
+fail.
 
-> > Why is a pci driver a "char" driver?  Do you have a pointer to the
-> > source of this?
+> > * There are some unclear corner cases and bugs the current cgroup
+> >   freezer has.  e.g. behavior w.r.t. kthreads is outright buggy.  It
+> >   would be great to figure out how to deal with them with or before
+> >   this change (ie. what happens when you transfer unfreezable
+> >   kthreads).
 > 
-> I am doing an test before putting it in its right place. Another
-> reason is that I am treating it as character device and using IOCTLs
-> for various operations.  I have attached the framework code here.
+> Huh? Shouldn't we just disable moving kthreads between cgroups? Allowing
+> userspace to freeze kthreads via cgroups seems like a *very* bad idea
+> (perhaps it's a thread critical for IO, or some driver, etc.).
 
-Just a note, but your framework is backwards, you should allocate your
-character device in your probe function, not in the module init
-function.
+That probably is the easiest solution.  Different cgroups can be
+grouped together so we need to be a bit careful but if none of the
+cgroups makes sense with kthread, we may just ban kthreads from any
+cgroup.
 
-Also, what type of driver is this, why do you need ioctls for it?
+Thanks.
 
-> > > 2. I run depmod and "modules.pcimap" also got updated with my module. 
-> > > 
-> > > However
-> > >  if I unplug and plug in the endpoint, my driver .probe and .remove functions
-> > >  are not being invoked. Is there something more to be done at the bus 
-> > > level to get the driver to hot plug ?
-> > 
-> > You need a pci hotplug controller driver, is that loaded?  That is what
-> > is responsible for eventually calling your remove function.
-> 
-> How do I figure out if a pci hotplug controller driver is installed? 
-
-How do you know that your hardware supports PCI hotplugging at all?
-
-You need a PCI hotplug controller in the system, generally if you have
-one, the driver will be loaded for it, but if you are using a custom
-kernel, you might have to build and install it yourself.
-
-> > > I have tried various kernel version, Currently I am trying on 2.6.38.12 (UBUNTU flavor).
-> > 
-> > We can't help you with distro-specific kernels, please use a kernel.org
-> > kernel and we will be glad to help you out.
-> 
-> I have tried with vanilla kernel as well with the same results.
-
-What release did you try?
-
-greg k-h
+-- 
+tejun
