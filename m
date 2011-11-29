@@ -1,133 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab1K2SQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 13:16:21 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:50656 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755147Ab1K2SQU convert rfc822-to-8bit (ORCPT
+	id S1756129Ab1K2SWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 13:22:39 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:16134
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754966Ab1K2SWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 13:16:20 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "jiayingz@google.com" <jiayingz@google.com>,
-        "lczerner@redhat.com" <lczerner@redhat.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Tue, 29 Nov 2011 13:15:56 -0500
-Subject: [PATCH]tracepoint: add drop_transaction/update_superblock_end to
- jbd2
-Thread-Topic: [PATCH]tracepoint: add drop_transaction/update_superblock_end
- to jbd2
-Thread-Index: AcyuwvA77y9ef/kARxya17pFWUbeHg==
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C57C90585@USINDEVS01.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 Nov 2011 13:22:37 -0500
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LVFPPK-01-MX1-02
+X-M-MSG: 
+Date: Tue, 29 Nov 2011 19:22:31 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "acme@redhat.com" <acme@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "dsahern@gmail.com" <dsahern@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v8)
+Message-ID: <20111129182231.GZ15738@erda.amd.com>
+References: <20110930134040.GA5575@quad>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1111290162
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110930134040.GA5575@quad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 30.09.11 09:40:40, Stephane Eranian wrote:
+> @@ -385,36 +1433,69 @@ static int perf_header__adds_write(struct perf_header *header,
+>         sec_start = header->data_offset + header->data_size;
+>         lseek(fd, sec_start + sec_size, SEEK_SET);
+> 
+> -       if (perf_header__has_feat(header, HEADER_TRACE_INFO)) {
+> -               struct perf_file_section *trace_sec;
+> -
+> -               trace_sec = &feat_sec[idx++];
+> +       err = do_write_feat(fd, header, HEADER_TRACE_INFO, &p, evlist);
+> +       if (err)
+> +               goto out_free;
+> 
+> -               /* Write trace info */
+> -               trace_sec->offset = lseek(fd, 0, SEEK_CUR);
+> -               read_tracing_data(fd, &evlist->entries);
+> -               trace_sec->size = lseek(fd, 0, SEEK_CUR) - trace_sec->offset;
+> +       err = do_write_feat(fd, header, HEADER_BUILD_ID, &p, evlist);
+> +       if (err) {
+> +               perf_header__clear_feat(header, HEADER_BUILD_ID);
+> +               goto out_free;
+>         }
 
-This patch adds trace_jbd2_drop_transaction and trace_jbd2_update_superblock_end
-because there are similar tracepoints in jbd and they are needed in jbd2 as well.
+Stephane,
 
-Seiji
+I am just looking at the code and got a question:
 
+Is there a reason for the different error handling for
+HEADER_TRACE_INFO and HEADER_BUILD_ID? All other types simply disable
+the feature and go on without returning an error (goto out_free).
 
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+-Robert
 
----
- fs/jbd2/checkpoint.c        |    2 ++
- fs/jbd2/journal.c           |    2 ++
- include/trace/events/jbd2.h |   28 ++++++++++++++++++++++++++++
- 3 files changed, 32 insertions(+), 0 deletions(-)
-
-diff --git a/fs/jbd2/checkpoint.c b/fs/jbd2/checkpoint.c
-index 16a698b..2bfd8b0 100644
---- a/fs/jbd2/checkpoint.c
-+++ b/fs/jbd2/checkpoint.c
-@@ -797,5 +797,7 @@ void __jbd2_journal_drop_transaction(journal_t *journal, transaction_t *transact
- 	J_ASSERT(journal->j_committing_transaction != transaction);
- 	J_ASSERT(journal->j_running_transaction != transaction);
- 
-+	trace_jbd2_drop_transaction(journal, transaction);
-+
- 	jbd_debug(1, "Dropping transaction %d, all done\n", transaction->t_tid);
- }
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index f24df13..5953b3d 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1185,6 +1185,8 @@ void jbd2_journal_update_superblock(journal_t *journal, int wait)
- 	} else
- 		write_dirty_buffer(bh, WRITE);
- 
-+	trace_jbd2_update_superblock_end(journal, wait);
-+
- out:
- 	/* If we have just flushed the log (by marking s_start==0), then
- 	 * any future commit will have to be careful to update the
-diff --git a/include/trace/events/jbd2.h b/include/trace/events/jbd2.h
-index 7596441..ae59bc2 100644
---- a/include/trace/events/jbd2.h
-+++ b/include/trace/events/jbd2.h
-@@ -81,6 +81,13 @@ DEFINE_EVENT(jbd2_commit, jbd2_commit_logging,
- 	TP_ARGS(journal, commit_transaction)
- );
- 
-+DEFINE_EVENT(jbd2_commit, jbd2_drop_transaction,
-+
-+	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
-+
-+	TP_ARGS(journal, commit_transaction)
-+);
-+
- TRACE_EVENT(jbd2_end_commit,
- 	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
- 
-@@ -229,6 +236,27 @@ TRACE_EVENT(jbd2_cleanup_journal_tail,
- 		  __entry->block_nr, __entry->freed)
- );
- 
-+TRACE_EVENT(jbd2_update_superblock_end,
-+
-+	TP_PROTO(journal_t *journal, int wait),
-+
-+	TP_ARGS(journal, wait),
-+
-+	TP_STRUCT__entry(
-+		__field(	dev_t,  dev			)
-+		__field(	int,    wait			)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= journal->j_fs_dev->bd_dev;
-+		__entry->wait		= wait;
-+	),
-+
-+	TP_printk("dev %d,%d wait %d",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->wait)
-+);
-+
- #endif /* _TRACE_JBD2_H */
- 
- /* This part must be outside protection */
 -- 
-1.7.1
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
