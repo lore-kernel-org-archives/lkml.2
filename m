@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab1K2Vh0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 16:37:26 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:41208 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756501Ab1K2Vfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 16:35:54 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
-        mtosatti@redhat.com, jeremy.fitzhardinge@citrix.com,
-        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5 V4] Add functions to check if the host has stopped the vm
-Date: Tue, 29 Nov 2011 16:35:36 -0500
-Message-Id: <1322602539-27004-3-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1322602539-27004-1-git-send-email-emunson@mgebm.net>
-References: <1322602539-27004-1-git-send-email-emunson@mgebm.net>
+	id S1755041Ab1K2VlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 16:41:07 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39151 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753869Ab1K2VlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 16:41:03 -0500
+Subject: Re: [PATCH v2] Integrated Flash Controller support
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: Li Yang-R58472 <r58472@freescale.com>, Artem.Bityutskiy@nokia.com,
+        "b35362@freescale.com>" <b35362@freescale.com>,
+        "linux-kernel@vger.kernel.org Kernel" <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, Scott Wood <scottwood@freescale.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>
+Date: Tue, 29 Nov 2011 23:40:57 +0200
+In-Reply-To: <8EDB3DC6-63E5-4D5C-BB52-15F32B85C5DD@kernel.crashing.org>
+References: <1320053901-23801-1-git-send-email-b35362@freescale.com>
+	 <CCF7C6DB-437C-4140-894F-2F497AD610DC@kernel.crashing.org>
+	 <8EDB3DC6-63E5-4D5C-BB52-15F32B85C5DD@kernel.crashing.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1322602860.2150.10.camel@koala>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a host stops or suspends a VM it will set a flag to show this.  The
-watchdog will use these functions to determine if a softlockup is real, or the
-result of a suspended VM.
+On Thu, 2011-11-24 at 08:24 -0600, Kumar Gala wrote:
+> On Nov 22, 2011, at 9:41 PM, Kumar Gala wrote:
+> 
+> > 
+> > On Oct 31, 2011, at 4:38 AM, <b35362@freescale.com> <b35362@freescale.com> wrote:
+> > 
+> >> From: Liu Shuo <b35362@freescale.com>
+> >> 
+> >> Integrated Flash Controller supports various flashes like NOR, NAND
+> >> and other devices using NOR, NAND and GPCM Machine available on it.
+> >> IFC supports four chip selects.
+> >> 
+> >> Signed-off-by: Dipen Dudhat <Dipen.Dudhat@freescale.com>
+> >> Signed-off-by: Scott Wood <scottwood@freescale.com>
+> >> Signed-off-by: Li Yang <leoli@freescale.com>
+> >> Signed-off-by: Liu Shuo <b35362@freescale.com>
+> >> ---
+> >> arch/powerpc/Kconfig               |    4 +
+> >> arch/powerpc/include/asm/fsl_ifc.h |  834 ++++++++++++++++++++++++++++++++++++
+> >> arch/powerpc/sysdev/Makefile       |    1 +
+> >> arch/powerpc/sysdev/fsl_ifc.c      |  322 ++++++++++++++
+> >> 4 files changed, 1161 insertions(+), 0 deletions(-)
+> >> create mode 100644 arch/powerpc/include/asm/fsl_ifc.h
+> >> create mode 100644 arch/powerpc/sysdev/fsl_ifc.c
+> > 
+> > Guys,
+> > 
+> > How are we handling this patchset since it touches drivers/mtd/nand?
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: arnd@arndb.de
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: jeremy.fitzhardinge@citrix.com
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/x86/include/asm/kvm_para.h |    1 +
- arch/x86/kernel/kvmclock.c      |   21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+I do not see it touching MTD from the diffstat above. I am a little bit
+confused why a flash controller is added to
+arch/powerpc/sysdev/fsl_ifc.c ?
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 734c376..e9d63a6 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -95,6 +95,7 @@ struct kvm_vcpu_pv_apf_data {
- extern void kvmclock_init(void);
- extern int kvm_register_clock(char *txt);
- 
-+bool kvm_check_and_clear_guest_paused(int cpu);
- 
- /* This instruction is vmcall.  On non-VT architectures, it will generate a
-  * trap that we will then rewrite to the appropriate instruction.
-diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-index 44842d7..f0c0599 100644
---- a/arch/x86/kernel/kvmclock.c
-+++ b/arch/x86/kernel/kvmclock.c
-@@ -22,6 +22,7 @@
- #include <asm/msr.h>
- #include <asm/apic.h>
- #include <linux/percpu.h>
-+#include <linux/hardirq.h>
- 
- #include <asm/x86_init.h>
- #include <asm/reboot.h>
-@@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
- 	preset_lpj = lpj;
- }
- 
-+bool kvm_check_and_clear_guest_paused(int cpu)
-+{
-+	bool ret = false;
-+	struct pvclock_vcpu_time_info *src;
-+
-+	/*
-+	 * per_cpu() is safe here because this function is only called from
-+	 * timer functions where preemption is already disabled.
-+	 */
-+	WARN_ON(!in_atomic());
-+	src = &per_cpu(hv_clock, cpu);
-+	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
-+		src->flags = src->flags & (~PVCLOCK_GUEST_STOPPED);
-+		ret = true;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
-+
- static struct clocksource kvm_clock = {
- 	.name = "kvm-clock",
- 	.read = kvm_clock_get_cycles,
--- 
-1.7.5.4
+Artem.
 
