@@ -1,224 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab1K2LRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 06:17:50 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:58583 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab1K2LRs convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Tue, 29 Nov 2011 06:17:48 -0500
-Message-Id: <4ED4CD690200007800064075@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 29 Nov 2011 11:17:45 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-64: slightly shorten line system call entry and
- exit paths
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753322Ab1K2LSG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 06:18:06 -0500
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:10336 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751663Ab1K2LSD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 06:18:03 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAPO+1E5R8sT5/2dsb2JhbABDqnSBBoIgExwjGBFMJQMhE4gHtyMSiiljBJRTkhM
+Date: Tue, 29 Nov 2011 12:14:30 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Marc Vertes <marc.vertes@sigfox.com>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org,
+        Dimitry Andric <dimitry.andric@tomtom.com>,
+        Ben Dooks <ben@simtec.co.uk>
+Subject: [PATCH] watchdog: add nowayout helpers to Watchdog Timer Driver
+	Kernel API
+Message-ID: <20111129111430.GA17609@infomag.iguana.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GET_THREAD_INFO() involves a memory read immediately followed by an
-"sub" on the value read, in turn (in several cases) immediately
-followed by a use of the calculated value as the base address of a
-memory access. This combination of instructions has a non-negligible
-potential for stalls.
+Add two nowayout helpers for the Watchdog Timer Driver Kernel API.
 
-In the system call entry point code, however, the (fixed) offset of
-the stack pointer from the end of the stack is generally known, and
-hence we can instead avoid the memory load and subtract, and instead
-do the memory reference using %rsp as the base register. To do so in
-a legible fashion, introduce a THREAD_INFO() macro which, provided a
-register (generally %rsp) and the known offset from the end of the
-stack, produces a suitable memory access operand.
-
-The patch attempts to only touch the fast paths (no auditing and
-alike), but manages to do so only in the 64-bit entry point case; the
-compatibility mode entry points have so many interdependencies between
-their various branch targets that it was necessary to also adjust the
-slow paths to eliminate the risk of having missed some register
-dependency during code analysis.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 ---
- arch/x86/ia32/ia32entry.S          |   36 +++++++++++++++---------------------
- arch/x86/include/asm/thread_info.h |    6 ++++++
- arch/x86/kernel/entry_64.S         |    8 +++-----
- 3 files changed, 24 insertions(+), 26 deletions(-)
-
---- 3.2-rc3/arch/x86/ia32/ia32entry.S
-+++ 3.2-rc3-x86_64-entry-thread-info/arch/x86/ia32/ia32entry.S
-@@ -134,7 +134,7 @@ ENTRY(ia32_sysenter_target)
- 	CFI_REL_OFFSET rsp,0
- 	pushfq_cfi
- 	/*CFI_REL_OFFSET rflags,0*/
--	movl	8*3-THREAD_SIZE+TI_sysenter_return(%rsp), %r10d
-+	movl	TI_sysenter_return+THREAD_INFO(%rsp,3*8-KERNEL_STACK_OFFSET),%r10d
- 	CFI_REGISTER rip,r10
- 	pushq_cfi $__USER32_CS
- 	/*CFI_REL_OFFSET cs,0*/
-@@ -150,9 +150,8 @@ ENTRY(ia32_sysenter_target)
-  	.section __ex_table,"a"
-  	.quad 1b,ia32_badarg
-  	.previous	
--	GET_THREAD_INFO(%r10)
--	orl    $TS_COMPAT,TI_status(%r10)
--	testl  $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
-+	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	CFI_REMEMBER_STATE
- 	jnz  sysenter_tracesys
- 	cmpq	$(IA32_NR_syscalls-1),%rax
-@@ -162,13 +161,12 @@ sysenter_do_call:
- sysenter_dispatch:
- 	call	*ia32_sys_call_table(,%rax,8)
- 	movq	%rax,RAX-ARGOFFSET(%rsp)
--	GET_THREAD_INFO(%r10)
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	testl	$_TIF_ALLWORK_MASK,TI_flags(%r10)
-+	testl	$_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz	sysexit_audit
- sysexit_from_sys_call:
--	andl    $~TS_COMPAT,TI_status(%r10)
-+	andl    $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	/* clear IF, that popfq doesn't enable interrupts early */
- 	andl  $~0x200,EFLAGS-R11(%rsp) 
- 	movl	RIP-R11(%rsp),%edx		/* User %eip */
-@@ -205,7 +203,7 @@ sysexit_from_sys_call:
- 	.endm
+diff --git a/Documentation/watchdog/00-INDEX b/Documentation/watchdog/00-INDEX
+index fc51128..fc9082a 100644
+--- a/Documentation/watchdog/00-INDEX
++++ b/Documentation/watchdog/00-INDEX
+@@ -1,5 +1,7 @@
+ 00-INDEX
+ 	- this file.
++convert_drivers_to_kernel_api.txt
++	- how-to for converting old watchdog drivers to the new kernel API.
+ hpwdt.txt
+ 	- information on the HP iLO2 NMI watchdog
+ pcwd-watchdog.txt
+diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
+index 4f7c894..1c443fe 100644
+--- a/Documentation/watchdog/watchdog-kernel-api.txt
++++ b/Documentation/watchdog/watchdog-kernel-api.txt
+@@ -1,6 +1,6 @@
+ The Linux WatchDog Timer Driver Core kernel API.
+ ===============================================
+-Last reviewed: 22-Jul-2011
++Last reviewed: 29-Nov-2011
  
- 	.macro auditsys_exit exit
--	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags(%r10)
-+	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz ia32_ret_from_sys_call
- 	TRACE_IRQS_ON
- 	sti
-@@ -215,12 +213,11 @@ sysexit_from_sys_call:
- 	movzbl %al,%edi		/* zero-extend that into %edi */
- 	inc %edi /* first arg, 0->1(AUDITSC_SUCCESS), 1->2(AUDITSC_FAILURE) */
- 	call audit_syscall_exit
--	GET_THREAD_INFO(%r10)
- 	movl RAX-ARGOFFSET(%rsp),%eax	/* reload syscall return value */
- 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
- 	cli
- 	TRACE_IRQS_OFF
--	testl %edi,TI_flags(%r10)
-+	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz \exit
- 	CLEAR_RREGS -ARGOFFSET
- 	jmp int_with_check
-@@ -238,7 +235,7 @@ sysexit_audit:
+ Wim Van Sebroeck <wim@iguana.be>
  
- sysenter_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
--	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%r10)
-+	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz	sysenter_auditsys
- #endif
- 	SAVE_REST
-@@ -309,9 +306,8 @@ ENTRY(ia32_cstar_target)
- 	.section __ex_table,"a"
- 	.quad 1b,ia32_badarg
- 	.previous	
--	GET_THREAD_INFO(%r10)
--	orl   $TS_COMPAT,TI_status(%r10)
--	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
-+	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	CFI_REMEMBER_STATE
- 	jnz   cstar_tracesys
- 	cmpq $IA32_NR_syscalls-1,%rax
-@@ -321,13 +317,12 @@ cstar_do_call:
- cstar_dispatch:
- 	call *ia32_sys_call_table(,%rax,8)
- 	movq %rax,RAX-ARGOFFSET(%rsp)
--	GET_THREAD_INFO(%r10)
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	testl $_TIF_ALLWORK_MASK,TI_flags(%r10)
-+	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz sysretl_audit
- sysretl_from_sys_call:
--	andl $~TS_COMPAT,TI_status(%r10)
-+	andl $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	RESTORE_ARGS 0,-ARG_SKIP,0,0,0
- 	movl RIP-ARGOFFSET(%rsp),%ecx
- 	CFI_REGISTER rip,rcx
-@@ -355,7 +350,7 @@ sysretl_audit:
+@@ -142,6 +142,14 @@ bit-operations. The status bits that are defined are:
+ * WDOG_NO_WAY_OUT: this bit stores the nowayout setting for the watchdog.
+   If this bit is set then the watchdog timer will not be able to stop.
  
- cstar_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
--	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%r10)
-+	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz cstar_auditsys
- #endif
- 	xchgl %r9d,%ebp
-@@ -420,9 +415,8 @@ ENTRY(ia32_syscall)
- 	/* note the registers are not zero extended to the sf.
- 	   this could be a problem. */
- 	SAVE_ARGS 0,1,0
--	GET_THREAD_INFO(%r10)
--	orl   $TS_COMPAT,TI_status(%r10)
--	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%r10)
-+	orl $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz ia32_tracesys
- 	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja ia32_badsys
---- 3.2-rc3/arch/x86/include/asm/thread_info.h
-+++ 3.2-rc3-x86_64-entry-thread-info/arch/x86/include/asm/thread_info.h
-@@ -231,6 +231,12 @@ static inline struct thread_info *curren
- 	movq PER_CPU_VAR(kernel_stack),reg ; \
- 	subq $(THREAD_SIZE-KERNEL_STACK_OFFSET),reg
- 
-+/*
-+ * Same if PER_CPU_VAR(kernel_stack) is, perhaps with some offset, already in
-+ * a certain register (to be used in assembler memory operands).
-+ */
-+#define THREAD_INFO(reg, off) KERNEL_STACK_OFFSET+(off)-THREAD_SIZE(reg)
++To set the WDOG_NO_WAY_OUT status bit (before registering your watchdog
++timer device) you can either:
++* set it statically in your watchdog_device struct with
++	.status = WATCHDOG_NOWAYOUT_INIT_STATUS,
++  (this will set the value the same as CONFIG_WATCHDOG_NOWAYOUT) or
++* use the following helper function:
++static inline void watchdog_set_nowayout(struct watchdog_device *wdd, int nowayout)
 +
- #endif
+ Note: The WatchDog Timer Driver Core supports the magic close feature and
+ the nowayout feature. To use the magic close feature you must set the
+ WDIOF_MAGICCLOSE bit in the options field of the watchdog's info structure.
+diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+index 111843f..43ba5b3 100644
+--- a/include/linux/watchdog.h
++++ b/include/linux/watchdog.h
+@@ -53,11 +53,7 @@ struct watchdog_info {
  
- #endif /* !X86_32 */
---- 3.2-rc3/arch/x86/kernel/entry_64.S
-+++ 3.2-rc3-x86_64-entry-thread-info/arch/x86/kernel/entry_64.S
-@@ -478,8 +478,7 @@ ENTRY(system_call_after_swapgs)
- 	movq  %rax,ORIG_RAX-ARGOFFSET(%rsp)
- 	movq  %rcx,RIP-ARGOFFSET(%rsp)
- 	CFI_REL_OFFSET rip,RIP-ARGOFFSET
--	GET_THREAD_INFO(%rcx)
--	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags(%rcx)
-+	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jnz tracesys
- system_call_fastpath:
- 	cmpq $__NR_syscall_max,%rax
-@@ -496,10 +495,9 @@ ret_from_sys_call:
- 	/* edi:	flagmask */
- sysret_check:
- 	LOCKDEP_SYS_EXIT
--	GET_THREAD_INFO(%rcx)
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	movl TI_flags(%rcx),%edx
-+	movl TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET),%edx
- 	andl %edi,%edx
- 	jnz  sysret_careful
- 	CFI_REMEMBER_STATE
-@@ -583,7 +581,7 @@ sysret_audit:
- 	/* Do syscall tracing */
- tracesys:
- #ifdef CONFIG_AUDITSYSCALL
--	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%rcx)
-+	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	jz auditsys
- #endif
- 	SAVE_REST
-
-
+ #ifdef __KERNEL__
+ 
+-#ifdef CONFIG_WATCHDOG_NOWAYOUT
+-#define WATCHDOG_NOWAYOUT	1
+-#else
+-#define WATCHDOG_NOWAYOUT	0
+-#endif
++#include <linux/bitops.h>
+ 
+ struct watchdog_ops;
+ struct watchdog_device;
+@@ -122,6 +118,21 @@ struct watchdog_device {
+ #define WDOG_NO_WAY_OUT		3	/* Is 'nowayout' feature set ? */
+ };
+ 
++#ifdef CONFIG_WATCHDOG_NOWAYOUT
++#define WATCHDOG_NOWAYOUT		1
++#define WATCHDOG_NOWAYOUT_INIT_STATUS	(1 << WDOG_NO_WAY_OUT)
++#else
++#define WATCHDOG_NOWAYOUT		0
++#define WATCHDOG_NOWAYOUT_INIT_STATUS	0
++#endif
++
++/* Use the following function to set the nowayout feature */
++static inline void watchdog_set_nowayout(struct watchdog_device *wdd, int nowayout)
++{
++	if (nowayout)
++		set_bit(WDOG_NO_WAY_OUT, &wdd->status);
++}
++
+ /* Use the following functions to manipulate watchdog driver specific data */
+ static inline void watchdog_set_drvdata(struct watchdog_device *wdd, void *data)
+ {
