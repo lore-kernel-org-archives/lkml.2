@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab1K2PDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:03:12 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:48088 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753466Ab1K2PDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:03:10 -0500
-Message-ID: <4ED4F428.9030807@hp.com>
-Date: Tue, 29 Nov 2011 10:03:04 -0500
-From: Vladislav Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+	id S1754821Ab1K2PD1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:03:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54316 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753410Ab1K2PDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 10:03:25 -0500
+Date: Tue, 29 Nov 2011 10:03:16 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [SCSI] sd: Lower printk level for drive cache information
+Message-ID: <20111129150112.GA2453@zod.bos.redhat.com>
+References: <20111128163053.GA24618@zod.bos.redhat.com>
+ <20111129044442.GA19616@infradead.org>
 MIME-Version: 1.0
-To: Xi Wang <xi.wang@gmail.com>
-CC: linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, security@kernel.org
-Subject: Re: [PATCH] sctp: integer overflow in sctp_auth_create_key()
-References: <426D7BA8-ECD0-44D6-A09F-2033F0C825FC@gmail.com> <4ED3AC7D.6090108@hp.com> <147F953A-CC69-41FF-ACD4-64E5E2956411@gmail.com>
-In-Reply-To: <147F953A-CC69-41FF-ACD4-64E5E2956411@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129044442.GA19616@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2011 02:33 AM, Xi Wang wrote:
-> I agree that this is not a security issue if key_len can never get large.
+On Mon, Nov 28, 2011 at 11:44:42PM -0500, Christoph Hellwig wrote:
+> On Mon, Nov 28, 2011 at 11:31:55AM -0500, Josh Boyer wrote:
+> > Numerous devices don't present cache data, particularly USB sticks.  The
+> > devices operate correctly despite this, so lower the printk severity to
+> > KERN_NOTICE.
 > 
-> So how about just removing the overflow check at all?
+> Do they?  The last reports on the list were for devices that didn't
+> present it but actually needed cache flushes despite not having the
+> cache mode page.
 
-That should be ok as well.  There is an overflow guard in the api
-entry point so that should guard against overflows from user space.
+We've seen a number of reports for liveusb images that spit out those
+printks, but seem to otherwise work fine.
 
-On the network end I miscalculated a little.  The key is actually made up
-of user_key (1 short) + 2 * key_vector (3 shorts) for a total of 7*MAX_USHORT;
-however, that still will not overflow 32 bits.
+Even if the devices need cache flushes, what is a typical user supposed
+to do about that?  I'm not particularly tied to this patch, but there is
+nothing a normal user can do with the information spit out by these
+printks, so making it KERN_ERR seems excessive.
 
--vlad
-
+josh
 > 
-> - xi
-> 
-> On Nov 28, 2011, at 10:45 AM, Vladislav Yasevich wrote:
->>
->> Hmm.  Yes, this is a more correct check.
->>
->> Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
->>
->>
->> However, I don't think this is a security issue.  As I've written before, this function is
->> called from 2 places:
->>
->>  1) setsockopt() code path
->>
->>  2) sctp_auth_asoc_set_secret() code path
->>
->> In case (1), sca_keylength is never going to exceed 65535 since it's
->> bounded by a u16 from the user api.  As such, The integer promotion will
->> not impact anything and the malloc() will never overflow.
->>
->> In case (2), sca_keylength is computed based on the key the user provided
->> (MAX_USHORT) and the combination of protocol negotiated data where that
->> combination has a max size of 3 * MAX_USHORT (see sctp_auth_make_key_vector()).
->> So, even this case, our maximum key length can be 4* MAX_USHORT which still
->> will always be below MAX_INT and will not overflow.
->>
->> So, I don't think there is big security consideration here, just a bad
->> check that just happens to always work.
->>
->> -vlad
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
