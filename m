@@ -1,150 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab1K2RbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 12:31:07 -0500
-Received: from nitrogen.vapor.com ([213.203.212.226]:45706 "EHLO
-	nitrogen.vapor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144Ab1K2RbD (ORCPT
+	id S1755101Ab1K2Rdr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 12:33:47 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:57998 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752377Ab1K2Rdp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 12:31:03 -0500
-Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
-From: Ian Kumlien <pomac@vapor.com>
-Reply-To: pomac@vapor.com
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, tino.keitel@tikei.de,
-        t.artem@lycos.com
-In-Reply-To: <20111129075242.GB2675@tiehlicka.suse.cz>
-References: <20111128222803.GA4925@pomac.netswarm.net>
-	 <20111129075242.GB2675@tiehlicka.suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-A7xipPIP4BSq9K663eOr"
-Date: Tue, 29 Nov 2011 18:31:00 +0100
-Message-ID: <1322587860.4061.6.camel@pi>
+	Tue, 29 Nov 2011 12:33:45 -0500
+X-IronPort-AV: E=Sophos;i="4.69,592,1315206000"; 
+   d="scan'208";a="603107390"
+Message-ID: <1322588023.4174.28.camel@lade.trondhjem.org>
+Subject: Re: ore: FIX breakage when MISC_FILESYSTEMS is not set
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Benny Halevy <bhalevy@tonian.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        NFS list <linux-nfs@vger.kernel.org>, open-osd <osd-dev@open-osd.org>
+Date: Tue, 29 Nov 2011 12:33:43 -0500
+In-Reply-To: <4ED4CE58.8090107@tonian.com>
+References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au>
+	 <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com>
+	 <4ED4238F.4090407@panasas.com> <4ED4CE58.8090107@tonian.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+X-OriginalArrivalTime: 29 Nov 2011 17:33:43.0926 (UTC) FILETIME=[0ABF4160:01CCAEBD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-11-29 at 14:21 +0200, Benny Halevy wrote: 
+> On 2011-11-29 02:13, Boaz Harrosh wrote:
+> > 
+> > As Reported by Randy Dunlap
+> > 
+> > When MISC_FILESYSTEMS is not enabled:
+> > 
+> > fs/built-in.o: In function `objio_alloc_io_state':
+> > objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
+> > fs/built-in.o: In function `_write_done':
+> > objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
+> > fs/built-in.o: In function `_read_done':
+> > ...
+> > 
+> > When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
+> > is not selected. exofs/Kconfig is never examined during Kconfig,
+> > and it can not do it's magic stuff to automatically select everything
+> 
+> nit: s/it's/its/
+> 
+> > needed.
+> > 
+> > The solution is to force all users of ORE (exofs, nfs) to manually
+> > select everything auto-magically selected before.
+> 
+> How about using "depend ORE" rather than "select ORE"?
 
---=-A7xipPIP4BSq9K663eOr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Right. Make PNFS_OBJLAYOUT and EXOFS_FS depend on ASYNC_XOR (or select
+it) and then make ORE depend on EXOFS_FS || PNFS_OBJLAYOUT.
 
-On tis, 2011-11-29 at 08:52 +0100, Michal Hocko wrote:
-> On Mon 28-11-11 23:28:03, pomac@vapor.com wrote:
-> > Hi,=20
-> >=20
-> > All this time i have been thinking i'm the only one - and i've been to
-> > loaded with work during working hours and tired when home =3DP
-> >=20
-> > Anyways, I've neen seeing this since -rc1 on:
-> > Intel(R) Core(TM) i5 CPU U520  @ 1.07GHz - x86-64
-> > AMD Phenom(tm) II X6 1090T - x86-64
-> > AMD Athlon(tm) 64 X2 Dual Core Processor 4400+ - x86-64
-> > Intel(R) Core(TM)2 CPU T7200  @ 2.00GHz - i686
-> >=20
-> > Configs available on demand - I've been running the same config for
-> > quite some time though.
->=20
-> As I have written in other email could you post your config and collect
-> the following data?
-> for i in `seq 30`;=20
-> do=20
->         cat /proc/stat > `date +'%s'`
->         sleep 1
-> done
-> export old_user=3D0 old_nice=3D0 old_sys=3D0 old_idle=3D0 old_iowait=3D0;=
-=20
->=20
-> # for all your available CPUs
-> grep cpu0 * | while read cpu user nice sys idle iowait rest;=20
-> do=20
->         echo $cpu $(($user-$old_user)) $(($nice-$old_nice)) $(($sys-$old_=
-sys)) $(($idle-$old_idle)) $(($iowait-$old_iowait))
->         old_user=3D$user old_nice=3D$nice old_sys=3D$sys old_idle=3D$idle=
- old_iowait=3D$iowait
-> done
+There should be no need to add the 'select ORE'...
 
-Sorry, the previous one was AMD X2 4400+ and now the T7200:
+> > (This is  why it is a bad idea to put libraries in random parts of
+> >  the tree)
+> > 
+> > Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> > Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+> > ---
+> >  fs/exofs/Kconfig |   17 +++++++++--------
+> >  fs/nfs/Kconfig   |    2 ++
+> >  2 files changed, 11 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/fs/exofs/Kconfig b/fs/exofs/Kconfig
+> > index da42f32..6b05d99 100644
+> > --- a/fs/exofs/Kconfig
+> > +++ b/fs/exofs/Kconfig
+> > @@ -1,17 +1,18 @@
+> > -# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
+> > -# for every ORE user we do it like this. Any user should add itself here
+> > -# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
+> > -# selected here, and we default to "ON". So in effect it is like been
+> > -# selected by any of the users.
+> > +# ORE - Objects Raid Engine (libore.ko)
+> > +# This library needs to be selected by it's users for example the below EXOFS
+> > +# filesystem.
+> 
+> nit:
+> This library needs to be selected by its users. For example, see
+> EXOFS_FS below.
+> 
+> Benny
+> 
+> > +# All users must do:
+> > +#	depends on SCSI_OSD_ULD
+> > +#	select ASYNC_XOR
+> > +#	select ORE
+> >  config ORE
+> >  	tristate
 
-1322587696:cpu0 1410110 148 368843 357890604 357890604
-1322587697:cpu0 0 0 1 0 0
-1322587698:cpu0 1 0 1 0 0
-1322587699:cpu0 2 0 1 0 0
-1322587700:cpu0 0 0 1 0 0
-1322587701:cpu0 0 0 1 0 0
-1322587702:cpu0 0 0 1 0 0
-1322587703:cpu0 1 0 0 0 0
-1322587704:cpu0 0 0 0 0 0
-1322587705:cpu0 0 0 1 0 0
-1322587706:cpu0 1 0 1 0 0
-1322587707:cpu0 0 0 1 0 0
-1322587708:cpu0 1 0 0 0 0
-1322587709:cpu0 1 0 0 0 0
-1322587711:cpu0 0 0 2 0 0
-1322587712:cpu0 0 0 0 0 0
-1322587713:cpu0 1 0 1 0 0
-1322587714:cpu0 1 0 0 0 0
-1322587715:cpu0 1 0 1 0 0
-1322587716:cpu0 1 0 0 0 0
-1322587717:cpu0 0 0 1 0 0
-1322587718:cpu0 1 0 1 0 0
-1322587719:cpu0 0 0 1 0 0
-1322587720:cpu0 0 0 0 0 0
-1322587721:cpu0 2 0 1 0 0
-1322587722:cpu0 1 0 0 0 0
-1322587723:cpu0 0 0 3 0 0
-1322587724:cpu0 1 0 0 0 0
-1322587725:cpu0 0 0 0 0 0
-1322587726:cpu0 0 0 1 0 0
+	depends on EXOFS_FS || PNFS_OBJLAYOUT
+	default y
 
-1322587696:cpu1 1395249 509 284978 357890604 95640
-1322587697:cpu1 0 0 0 0 0
-1322587698:cpu1 0 0 0 0 0
-1322587699:cpu1 0 0 0 0 0
-1322587700:cpu1 1 0 0 0 0
-1322587701:cpu1 1 0 0 0 0
-1322587702:cpu1 0 0 0 0 0
-1322587703:cpu1 0 0 1 0 0
-1322587704:cpu1 1 0 0 0 0
-1322587705:cpu1 0 0 1 0 0
-1322587706:cpu1 1 0 0 0 0
-1322587707:cpu1 0 0 0 0 0
-1322587708:cpu1 1 0 0 0 0
-1322587709:cpu1 1 0 1 0 0
-1322587711:cpu1 0 0 0 0 0
-1322587712:cpu1 0 0 0 0 0
-1322587713:cpu1 0 0 0 0 0
-1322587714:cpu1 0 0 0 0 0
-1322587715:cpu1 0 0 0 0 0
-1322587716:cpu1 0 0 1 0 0
-1322587717:cpu1 0 0 0 0 0
-1322587718:cpu1 0 0 0 0 0
-1322587719:cpu1 0 0 1 0 0
-1322587720:cpu1 1 0 0 0 0
-1322587721:cpu1 2 0 0 0 0
-1322587722:cpu1 0 0 0 0 0
-1322587723:cpu1 0 0 1 0 0
-1322587724:cpu1 0 0 0 0 0
-1322587725:cpu1 1 0 0 0 0
-1322587726:cpu1 0 0 0 0 0
 
-Btw, perf doesn't seem to yield anything..
+> >  
+> >  config EXOFS_FS
+> >  	tristate "exofs: OSD based file system support"
 
---=20
-Ian Kumlien  -- http://demius.net || http://pomac.netswarm.net
+	depends on SCSI_OSD_ULD && ASYNC_XOR
 
---=-A7xipPIP4BSq9K663eOr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> >  	help
+> >  	  EXOFS is a file system that uses an OSD storage device,
+> >  	  as its backing storage.
+> > diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+> > index dbcd821..3708d76 100644
+> > --- a/fs/nfs/Kconfig
+> > +++ b/fs/nfs/Kconfig
+> > @@ -96,6 +96,8 @@ config PNFS_BLOCK
+> >  config PNFS_OBJLAYOUT
+> >  	tristate
+> >  	depends on NFS_FS && NFS_V4_1 && SCSI_OSD_ULD
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+	depends on NFS_V4_1 && ASYNC_XOR && SCSI_OSD_ULD
 
-iEYEABECAAYFAk7VFtQACgkQ7F3Euyc51N+0MwCgpkE6OOcBt0imTQckpoSndGAJ
-8eUAn0RA167pv8uLppBf4JB1FumlmGZ5
-=hKKF
------END PGP SIGNATURE-----
+> >  	default m
+> >  
+> >  config ROOT_NFS
 
---=-A7xipPIP4BSq9K663eOr--
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
