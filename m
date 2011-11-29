@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730Ab1K2FVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 00:21:49 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38805 "EHLO
+	id S1752440Ab1K2FWd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 00:22:33 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:60519 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab1K2FVs (ORCPT
+	with ESMTP id S1752014Ab1K2FWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 00:21:48 -0500
-X-Originating-IP: 217.70.178.136
+	Tue, 29 Nov 2011 00:22:32 -0500
+X-Originating-IP: 217.70.178.139
 X-Originating-IP: 50.43.15.19
-Date: Mon, 28 Nov 2011 21:21:39 -0800
+Date: Mon, 28 Nov 2011 21:22:25 -0800
 From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4 RFC] rcu: New rcu_user_enter_irq() and
- rcu_user_exit_irq() APIs
-Message-ID: <20111129052139.GA14546@leaf>
+Subject: Re: [PATCH 0/4] rcu: Make new RCU dynticks API work with nohz cpusets
+Message-ID: <20111129052225.GB14546@leaf>
 References: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
- <1322515487-18690-5-git-send-email-fweisbec@gmail.com>
- <20111128215323.GF30852@leaf>
- <20111129010036.GS2346@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111129010036.GS2346@linux.vnet.ibm.com>
+In-Reply-To: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 05:00:36PM -0800, Paul E. McKenney wrote:
-> On Mon, Nov 28, 2011 at 01:53:23PM -0800, Josh Triplett wrote:
-> > On Mon, Nov 28, 2011 at 10:24:47PM +0100, Frederic Weisbecker wrote:
-> > > A CPU running in adaptive tickless mode wants to enter into
-> > > RCU extended quiescent state while running in userspace. This
-> > > way we can shut down the tick that is usually needed on each
-> > > CPU for the needs of RCU.
-> > 
-> > Very awesome.  I've wanted to see this change for a long time.  Thanks!
+On Mon, Nov 28, 2011 at 10:24:43PM +0100, Frederic Weisbecker wrote:
+> Hi Paul,
 > 
-> I am a fan, also.  ;-)
+> This is an attempt to make the current RCU dynticks API
+> working with the nohz cpusets.
 > 
-> [ . . . ]
+> I believe the two first patches could be pushed in your trees.
+> Patches 3 and 4 are rather something I plan to apply in mine,
+> given they are not needed upstream yet.
 > 
-> > > @@ -503,6 +515,18 @@ void rcu_user_exit(void)
-> > >  	__rcu_idle_exit();
-> > >  }
-> > >  
-> > > +void rcu_user_exit_irq(void)
-> > > +{
-> > > +	unsigned long flags;
-> > > +	struct rcu_dynticks *rdtp;
-> > > +
-> > > +	local_irq_save(flags);
-> > > +	rdtp = &__get_cpu_var(rcu_dynticks);
-> > > +	WARN_ON_ONCE(rdtp->dynticks_nesting != 1);
-> > > +	rdtp->dynticks_nesting = (LLONG_MAX / 2) + 1;
-> > > +	local_irq_restore(flags);
-> > > +}
-> > > +
-> > 
-> > Any chance that either of these two needs a memory barrier of some kind,
-> > to prevent leakage of operations from between them?  Or can you count on
-> > no RCU-protected operations occurring during (or leaking into) the
-> > extended quiescent state?
+> Waiting for your comments.
 > 
-> There is no need for a memory barrier on rdtp->dynticks_nesting because
-> it is used (aside from state dumping) only by the local CPU.  In contrast,
-> changes to ->dynticks are visible to other CPUs, hence the memory barriers
-> around changes to ->dynticks.
+> Thanks.
 > 
-> Information flows within the CPU from ->dynticks_nesting to ->dynticks,
-> which is externally visible.
+> Frederic Weisbecker (4):
+>   rcu: Don't check irq nesting from rcu idle entry/exit
+>   rcu: Irq nesting is always 0 on rcu_enter_idle_common
+>   rcu: New rcu_user_enter() and rcu_user_exit() APIs
+>   rcu: New rcu_user_enter_irq() and rcu_user_exit_irq() APIs
 
-Thanks for the clarification; just wanted to make sure I understood the
-various data involved here.
-
-Now that I understand that:
+For the whole series:
 
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
