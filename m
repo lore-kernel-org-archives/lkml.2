@@ -1,169 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab1K2B0q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 20:26:46 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:10114 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402Ab1K2B0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 20:26:45 -0500
-X-AuditID: cbfee611-b7c19ae000001aed-39-4ed4327a10f2
-Date: Tue, 29 Nov 2011 01:26:44 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH 2/4] max17042: Align register definitions with data sheet
- and init appnote
-To: "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        =?euc-kr?Q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "Jason.Wortham@maxim-ic.com" <Jason.Wortham@maxim-ic.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20111129012512876@myungjoo.ham
-Msgkey: 20111129012512876@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20111129012512876@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <29933944.99561322530003472.JavaMail.weblogic@epml27>
-DLP-Filter: Pass
-X-Brightmail-Tracker: AAAAAQAAAZE=
-X-CFilter-Loop: Reflected
+	id S1753533Ab1K2BbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 20:31:07 -0500
+Received: from claw.goop.org ([74.207.240.146]:35462 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab1K2BbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 20:31:05 -0500
+Message-ID: <4ED435D3.70300@goop.org>
+Date: Mon, 28 Nov 2011 17:30:59 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Jiri Kosina <jikos@jikos.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the hid tree
+References: <20111129120059.a1818d7eaf663546edc6dc34@canb.auug.org.au>
+In-Reply-To: <20111129120059.a1818d7eaf663546edc6dc34@canb.auug.org.au>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAT1Qskk003920
-
-Sender : dirk.brandewie@gmail.com<dirk.brandewie@gmail.com>
-Date : 2011-11-29 04:49 (GMT+09:00)
-Title : [PATCH 2/4] max17042: Align register definitions with data sheet and init appnote
-> 
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
-> 
-> align the register names with max17042 data sheet removing
-> registers that are marked reserved that are not used.
-> 
-> Add register definitions defined in the maxim initialization appnote
-> 
-> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-
-> ---
-> include/linux/power/max17042_battery.h |   37 ++++++++++++++++++++++++-------
-> 1 files changed, 28 insertions(+), 9 deletions(-)
-> 
-> diff --git a/include/linux/power/max17042_battery.h b/include/linux/power/max17042_battery.h
-> index fe99211..67eeada 100644
-> --- a/include/linux/power/max17042_battery.h
-> +++ b/include/linux/power/max17042_battery.h
-> @@ -40,11 +40,11 @@ enum max17042_register {
-> MAX17042_VCELL = 0x09,
-> MAX17042_Current = 0x0A,
-> MAX17042_AvgCurrent = 0x0B,
-> - MAX17042_Qresidual = 0x0C,
-> +
-> MAX17042_SOC = 0x0D,
-> MAX17042_AvSOC = 0x0E,
-> MAX17042_RemCap = 0x0F,
-> - MAX17402_FullCAP = 0x10,
-> + MAX17042_FullCAP = 0x10,
-> MAX17042_TTE = 0x11,
-> MAX17042_V_empty = 0x12,
-> 
-> @@ -62,14 +62,14 @@ enum max17042_register {
-> MAX17042_AvCap = 0x1F,
-> MAX17042_ManName = 0x20,
-> MAX17042_DevName = 0x21,
-> - MAX17042_DevChem = 0x22,
-> 
-> + MAX17042_FullCAPNom = 0x23,
-> MAX17042_TempNom = 0x24,
-> - MAX17042_TempCold = 0x25,
-> + MAX17042_TempLim = 0x25,
-> MAX17042_TempHot = 0x26,
-> MAX17042_AIN = 0x27,
-> MAX17042_LearnCFG = 0x28,
-> - MAX17042_SHFTCFG = 0x29,
-> + MAX17042_FilterCFG = 0x29,
-> MAX17042_RelaxCFG = 0x2A,
-> MAX17042_MiscCFG = 0x2B,
-> MAX17042_TGAIN = 0x2C,
-> @@ -77,22 +77,41 @@ enum max17042_register {
-> MAX17042_CGAIN = 0x2E,
-> MAX17042_COFF = 0x2F,
-> 
-> - MAX17042_Q_empty = 0x33,
-> + MAX17042_MaskSOC = 0x32,
-> + MAX17042_SOC_empty = 0x33,
-> MAX17042_T_empty = 0x34,
-> 
-> + MAX17042_FullCAP0       = 0x35,
-> + MAX17042_LAvg_empty = 0x36,
-> + MAX17042_FCTC = 0x37,
-> MAX17042_RCOMP0 = 0x38,
-> MAX17042_TempCo = 0x39,
-> - MAX17042_Rx = 0x3A,
-> - MAX17042_T_empty0 = 0x3B,
-> + MAX17042_EmptyTempCo = 0x3A,
-> + MAX17042_K_empty0 = 0x3B,
-> MAX17042_TaskPeriod = 0x3C,
-> MAX17042_FSTAT = 0x3D,
-> 
-> MAX17042_SHDNTIMER = 0x3F,
-> 
-> - MAX17042_VFRemCap = 0x4A,
-> + MAX17042_dQacc = 0x45,
-> + MAX17042_dPacc = 0x46,
-> +
-> + MAX17042_VFSOC0 = 0x48,
-> 
-> MAX17042_QH = 0x4D,
-> MAX17042_QL = 0x4E,
-> +
-> + MAX17042_VFSOC0Enable = 0x60,
-> + MAX17042_MLOCKReg1 = 0x62,
-> + MAX17042_MLOCKReg2 = 0x63,
-> +
-> + MAX17042_MODELChrTbl = 0x80,
-> +
-> + MAX17042_OCV = 0xEE,
-> +
-> + MAX17042_OCVInternal = 0xFB,
-> +
-> + MAX17042_VFSOC = 0xFF,
-> };
-> 
-> /*
-> -- 
-> 1.7.7.3
-> 
-> 
 
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
 
+On 11/28/2011 05:00 PM, Stephen Rothwell wrote:
+> Hi Jiri,
+>
+> After merging the hid tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> drivers/hid/hid-input.c: In function 'hidinput_hid_event':
+> drivers/hid/hid-input.c:865:6: error: 'struct hid_device' has no member
+named 'battery_val'
+> drivers/hid/hid-input.c:866:3: error: 'struct hid_device' has no member
+named 'battery_min'
+> drivers/hid/hid-input.c:866:3: error: 'struct hid_device' has no member
+named 'battery_max'
+>
+> Caused by commit 4f5ca836bef3 ("HID: hid-input: add support for HID
+> devices reporting Battery Strength"). Those members are only defined when
+> CONFIG_HID_BATTERY_STRENGTH is set.
+>
+> I have used the hid tree from next-20111128 for today.
 
- MyungJoo Ham («‘∏Ì¡÷)
+Oh, sorry about that.  Is this sufficient?
 
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: +82-10-6714-2858 / office: +82-31-279-8033
+Subject: [PATCH] hid-input: fix compile for !HID_BATTERY_STRENGTH
 
+As reported by Stephen Rothwell:
+drivers/hid/hid-input.c: In function 'hidinput_hid_event':
+drivers/hid/hid-input.c:865:6: error: 'struct hid_device' has no member
+named 'battery_val'
+drivers/hid/hid-input.c:866:3: error: 'struct hid_device' has no member
+named 'battery_min'
+drivers/hid/hid-input.c:866:3: error: 'struct hid_device' has no member
+named 'battery_max'
 
+Signed-off-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
+diff --git a/drivers/hid/hid-input.c b/drivers/hid/hid-input.c
+index 83afb86..d9cadb3 100644
+- --- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -861,12 +861,14 @@ void hidinput_hid_event(struct hid_device *hid,
+struct hid_field *field, struct
  
+     input = field->hidinput->input;
+ 
++#ifdef CONFIG_HID_BATTERY_STRENGTH
+     if (usage->hid == HID_DC_BATTERYSTRENGTH) {
+         hid->battery_val = value;
+         hid_dbg(hid, "battery value is %d (range %d-%d)\n",
+             value, hid->battery_min, hid->battery_max);
+         return;
+     }
++#endif
+ 
+     if (!usage->type)
+         return;
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+    J
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEkBAEBCgAGBQJO1DXKAAoJEAUkni6MUg7H2/wIPAk0oHGVawNScWJdJXMhMVca
+ApxAr1h2v5kgIzRlihkpOiK3opft/GzBYh54HHd4nPdC5D4KAmuOXeX2+fwVgIEG
+SlrwsGU4J9n9uH/e3qgJf2aANcWH+bQwqL58ZyLE0Yo+N3dBzDNaNGd8Gygw8jk+
+mGtsMAfjIwe5vDLmsIED1+hqGNUL8/vt+TnCcpNVWUdrUtCT7dpDifcoeblO/qrs
+5hWbpf+AOek7UEoHQ0qAbRLi8A1FcoMs20mHiSpkfVn2d2gUYUYZRjeW66xwuKB7
+Q9iYEoOEszj+07nkHvS8VZZFMIXKsBOvkDVrktQtgDTZzI71axbgKPK8UESjjH4U
+uMPpWmv8yA==
+=2NZE
+-----END PGP SIGNATURE-----
+
