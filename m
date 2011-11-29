@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab1K2OhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 09:37:00 -0500
-Received: from smtp-out-226.synserver.de ([212.40.185.226]:1055 "EHLO
-	smtp-out-226.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab1K2Og7 (ORCPT
+	id S1755822Ab1K2OiT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 09:38:19 -0500
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:56351 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab1K2OiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 09:36:59 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 24853
-Message-ID: <4ED4EE48.8070100@metafoo.de>
-Date: Tue, 29 Nov 2011 15:38:00 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
+	Tue, 29 Nov 2011 09:38:18 -0500
+Date: Tue, 29 Nov 2011 20:07:52 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Dave Anderson <anderson@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC Patch 1/2][slimdump] Append CRASH_REASON to VMCOREINFO
+ elf-note
+Message-ID: <20111129143752.GA3804@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20111123174225.GA5184@in.ibm.com>
+ <b52b5e28-5805-4614-97cf-278610e2c574@zmail15.collab.prod.int.phx2.redhat.com>
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH v3] sound/soc/codecs: add LAPIS Semiconductor ML26124
-References: <1322474755-18785-1-git-send-email-tomoya.rohm@gmail.com>	<4ED37CE3.6040008@metafoo.de> <CANKRQnh7MnSQdKXvPJvSPzf-7afXmHip9LqR1cKCgB6HXqcnBg@mail.gmail.com>
-In-Reply-To: <CANKRQnh7MnSQdKXvPJvSPzf-7afXmHip9LqR1cKCgB6HXqcnBg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b52b5e28-5805-4614-97cf-278610e2c574@zmail15.collab.prod.int.phx2.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11112914-1524-0000-0000-000000596181
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2011 01:17 PM, Tomoya MORINAGA wrote:
-> 2011/11/28 Lars-Peter Clausen <lars@metafoo.de>:
+On Wed, Nov 23, 2011 at 02:45:23PM -0500, Dave Anderson wrote:
 > 
->> Also none of the inputs is> routed to the ADC, which seems a bit strange.
-> This same as my referencing "wm8731.c".Could you give me more information?
 > 
+> ----- Original Message -----
+> > On Mon, Nov 21, 2011 at 10:19:31AM -0500, Dave Anderson wrote:
+> > > 
+> > > 
+> > > ----- Original Message -----
+> > > > Allow various crash paths to append the reason of crash into the
+> > > > VMCOREINFO elf-note through the field CRASH_REASON. We also make the
+> > > > fatal machine check exceptions append "PANIC_MCE" as the crash
+> > > > reason.  This string will be recognised by upstream tools like
+> > > > makedumpfile and crash to generate slimdump.
+> > > 
+> > > I don't understand -- how could "various paths" append a reason?
+> > > The patch below seems to return "PANIC_MCE" for every x86 crash.
+> > > What am I missing?
+> > > 
+> > > Dave
+> > >
+> > 
+> > Yes, presently it can only be "PANIC_MCE" for MCE crashes in x86 (not
+> > for every crash though).
+> 
+> Why only MCE crashes?  If your arch/x86/kernel/cpu/mcheck/mce.c is 
+> compiled into any x86 kernel, then its arch_add_crash_reason() will 
+> always override the weak version in kernel/kexec.c, right? 
+>
 
-The DAPM routes are used to do power management based on active path and for
-this the routes should more or less represent the routing of internal audio
-signals in your CODEC. I would expect the analog signals to go to the ADC on
-the CODEC. And if you don't connect them in your DAPM routings ASoC will
-probably not power-up the ADC since there are no active source signals.
+(Sorry for the delayed reply...there was a multiple-day outage in my
+email server).
 
-Also this doesn't make much sense:
-+	{"Input Mux", "Analog MIC in", "MICBIAS"},
-+	{"Input Mux", "Digital MIC in", "MICBIAS"},
+Yes, I think it should be better by using a variable to allow
+various crash paths of each architecture populate the reason (the
+function approach doesn't work, we can use a function pointer
+that just returns a pointer to a char array, but that's less
+preferable and convoluted).
 
-You have mux, but both possible settings of the mux connect to the same
-source, which pretty much makes the mux useless.
+I'll change the code to contain a char pointer in a generic file, say
+arch/x86/kernel/crash.c which will be populated by the MCE crash path.
+The code in kernel/kexec.c can just use this.
+
+Thanks for your comments.
+
+--K.Prasad
+ 
+
