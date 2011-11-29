@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1LCIVW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 03:21:22 -0500
-Received: from www17.your-server.de ([213.133.104.17]:58097 "EHLO
+	id S1753735Ab1LCIVU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 03:21:20 -0500
+Received: from www17.your-server.de ([213.133.104.17]:58099 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab1LCIU4 (ORCPT
+	with ESMTP id S1753096Ab1LCIU5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 03:20:56 -0500
-Subject: [PATCH] leds: Use kcalloc instead of kzalloc to allocate array
+	Sat, 3 Dec 2011 03:20:57 -0500
+Subject: [PATCH] bnx2x: Use kcalloc instead of kzalloc to allocate array
 From: Thomas Meyer <thomas@m3y3r.de>
-To: rpurdie@rpsys.net, linux-kernel@vger.kernel.org
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Tue, 29 Nov 2011 22:08:00 +0100
-Message-ID: <1322600880.1534.309.camel@localhost.localdomain>
+Message-ID: <1322600880.1534.320.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -31,15 +31,35 @@ in https://lkml.org/lkml/2011/11/25/107
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
---- a/drivers/leds/leds-mc13783.c 2011-11-13 11:07:27.873510772 +0100
-+++ b/drivers/leds/leds-mc13783.c 2011-11-28 19:59:58.327155325 +0100
-@@ -280,7 +280,7 @@ static int __devinit mc13783_led_probe(s
- 		return -EINVAL;
- 	}
+diff -u -p a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c 2011-11-13 11:07:33.983607086 +0100
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c 2011-11-28 19:52:50.979887113 +0100
+@@ -3278,14 +3278,14 @@ int __devinit bnx2x_alloc_mem_bp(struct
+ 	msix_table_size = bp->igu_sb_cnt + 1;
  
--	led = kzalloc(sizeof(*led) * pdata->num_leds, GFP_KERNEL);
-+	led = kcalloc(pdata->num_leds, sizeof(*led), GFP_KERNEL);
- 	if (led == NULL) {
- 		dev_err(&pdev->dev, "failed to alloc memory\n");
- 		return -ENOMEM;
+ 	/* fp array: RSS plus CNIC related L2 queues */
+-	fp = kzalloc((BNX2X_MAX_RSS_COUNT(bp) + NON_ETH_CONTEXT_USE) *
++	fp = kcalloc(BNX2X_MAX_RSS_COUNT(bp) + NON_ETH_CONTEXT_USE,
+ 		     sizeof(*fp), GFP_KERNEL);
+ 	if (!fp)
+ 		goto alloc_err;
+ 	bp->fp = fp;
+ 
+ 	/* msix table */
+-	tbl = kzalloc(msix_table_size * sizeof(*tbl), GFP_KERNEL);
++	tbl = kcalloc(msix_table_size, sizeof(*tbl), GFP_KERNEL);
+ 	if (!tbl)
+ 		goto alloc_err;
+ 	bp->msix_table = tbl;
+diff -u -p a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c 2011-11-28 19:36:47.716773832 +0100
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c 2011-11-28 19:52:53.063259517 +0100
+@@ -3342,7 +3342,7 @@ static inline int bnx2x_mcast_refresh_re
+ 		if (!list_empty(&o->registry.exact_match.macs))
+ 			return 0;
+ 
+-		elem = kzalloc(sizeof(*elem)*len, GFP_ATOMIC);
++		elem = kcalloc(len, sizeof(*elem), GFP_ATOMIC);
+ 		if (!elem) {
+ 			BNX2X_ERR("Failed to allocate registry memory\n");
+ 			return -ENOMEM;
