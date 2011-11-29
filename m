@@ -1,64 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab1K2Hwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 02:52:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34234 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752288Ab1K2Hwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 02:52:45 -0500
-Date: Tue, 29 Nov 2011 08:52:42 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: pomac@vapor.com
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, tino.keitel@tikei.de,
-        t.artem@lycos.com
-Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
-Message-ID: <20111129075242.GB2675@tiehlicka.suse.cz>
-References: <20111128222803.GA4925@pomac.netswarm.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753214Ab1K2Hwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 02:52:55 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:31893 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab1K2Hwy convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 29 Nov 2011 02:52:54 -0500
+Message-Id: <4ED49D610200007800063F68@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 29 Nov 2011 07:52:49 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: avoid double stack traces (from show_registers())
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20111128222803.GA4925@pomac.netswarm.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 28-11-11 23:28:03, pomac@vapor.com wrote:
-> Hi, 
-> 
-> All this time i have been thinking i'm the only one - and i've been to
-> loaded with work during working hours and tired when home =P
-> 
-> Anyways, I've neen seeing this since -rc1 on:
-> Intel(R) Core(TM) i5 CPU U520  @ 1.07GHz - x86-64
-> AMD Phenom(tm) II X6 1090T - x86-64
-> AMD Athlon(tm) 64 X2 Dual Core Processor 4400+ - x86-64
-> Intel(R) Core(TM)2 CPU T7200  @ 2.00GHz - i686
-> 
-> Configs available on demand - I've been running the same config for
-> quite some time though.
+What was called show_registers() so far already showed a stack trace
+for kernel faults, and kernel_stack_pointer() isn't even valid (ix86)
+or meaningful (x86-64) to be used here for faults from user mode,
+hence it was pointless for show_regs() to call show_trace() after
+show_registers(). Simply rename show_registers() to show_regs() and
+eliminate the old definition.
 
-As I have written in other email could you post your config and collect
-the following data?
-for i in `seq 30`; 
-do 
-        cat /proc/stat > `date +'%s'`
-        sleep 1
-done
-export old_user=0 old_nice=0 old_sys=0 old_idle=0 old_iowait=0; 
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-# for all your available CPUs
-grep cpu0 * | while read cpu user nice sys idle iowait rest; 
-do 
-        echo $cpu $(($user-$old_user)) $(($nice-$old_nice)) $(($sys-$old_sys)) $(($idle-$old_idle)) $(($iowait-$old_iowait))
-        old_user=$user old_nice=$nice old_sys=$sys old_idle=$idle old_iowait=$iowait
-done
+---
+ arch/x86/include/asm/kdebug.h  |    1 -
+ arch/x86/kernel/dumpstack.c    |    2 +-
+ arch/x86/kernel/dumpstack_32.c |    2 +-
+ arch/x86/kernel/dumpstack_64.c |    2 +-
+ arch/x86/kernel/kprobes.c      |    4 ++--
+ arch/x86/kernel/nmi.c          |    2 +-
+ arch/x86/kernel/process.c      |    6 ------
+ 7 files changed, 6 insertions(+), 13 deletions(-)
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+--- 3.2-rc3/arch/x86/include/asm/kdebug.h
++++ 3.2-rc3-x86-no-show_registers/arch/x86/include/asm/kdebug.h
+@@ -24,7 +24,6 @@ enum die_val {
+ extern void printk_address(unsigned long address, int reliable);
+ extern void die(const char *, struct pt_regs *,long);
+ extern int __must_check __die(const char *, struct pt_regs *, long);
+-extern void show_registers(struct pt_regs *regs);
+ extern void show_trace(struct task_struct *t, struct pt_regs *regs,
+ 		       unsigned long *sp, unsigned long bp);
+ extern void __show_regs(struct pt_regs *regs, int all);
+--- 3.2-rc3/arch/x86/kernel/dumpstack.c
++++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/dumpstack.c
+@@ -267,7 +267,7 @@ int __kprobes __die(const char *str, str
+ 			current->thread.trap_no, SIGSEGV) == NOTIFY_STOP)
+ 		return 1;
+ 
+-	show_registers(regs);
++	show_regs(regs);
+ #ifdef CONFIG_X86_32
+ 	if (user_mode_vm(regs)) {
+ 		sp = regs->sp;
+--- 3.2-rc3/arch/x86/kernel/dumpstack_32.c
++++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/dumpstack_32.c
+@@ -82,7 +82,7 @@ show_stack_log_lvl(struct task_struct *t
+ }
+ 
+ 
+-void show_registers(struct pt_regs *regs)
++void show_regs(struct pt_regs *regs)
+ {
+ 	int i;
+ 
+--- 3.2-rc3/arch/x86/kernel/dumpstack_64.c
++++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/dumpstack_64.c
+@@ -245,7 +245,7 @@ show_stack_log_lvl(struct task_struct *t
+ 	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+-void show_registers(struct pt_regs *regs)
++void show_regs(struct pt_regs *regs)
+ {
+ 	int i;
+ 	unsigned long sp;
+--- 3.2-rc3/arch/x86/kernel/kprobes.c
++++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/kprobes.c
+@@ -1092,9 +1092,9 @@ int __kprobes longjmp_break_handler(stru
+ 			       "current sp %p does not match saved sp %p\n",
+ 			       stack_addr(regs), kcb->jprobe_saved_sp);
+ 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
+-			show_registers(saved_regs);
++			show_regs(saved_regs);
+ 			printk(KERN_ERR "Current registers\n");
+-			show_registers(regs);
++			show_regs(regs);
+ 			BUG();
+ 		}
+ 		*regs = kcb->jprobe_saved_regs;
+--- 3.2-rc3/arch/x86/kernel/nmi.c
++++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/nmi.c
+@@ -244,7 +244,7 @@ io_check_error(unsigned char reason, str
+ 	pr_emerg(
+ 	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
+ 		 reason, smp_processor_id());
+-	show_registers(regs);
++	show_regs(regs);
+ 
+ 	if (panic_on_io_nmi)
+ 		panic("NMI IOCK error: Not continuing");
+--- 3.2-rc3/arch/x86/kernel/process.c
++++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/process.c
+@@ -84,12 +84,6 @@ void exit_thread(void)
+ 	}
+ }
+ 
+-void show_regs(struct pt_regs *regs)
+-{
+-	show_registers(regs);
+-	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs), 0);
+-}
+-
+ void show_regs_common(void)
+ {
+ 	const char *vendor, *product, *board;
+
+
+
