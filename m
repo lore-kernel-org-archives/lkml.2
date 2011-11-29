@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab1K2TRw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 14:17:52 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33699 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab1K2TR3 (ORCPT
+	id S1755686Ab1K2TYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 14:24:07 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:57978 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669Ab1K2TYF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 14:17:29 -0500
-Message-Id: <20111129191638.756761754@openvz.org>
-User-Agent: quilt/0.48-1
-Date: Tue, 29 Nov 2011 23:12:53 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [rfc 1/3] fs, proc: Add start_data, end_data, start_brk members to /proc/$pid/stat
-References: <20111129191252.769160532@openvz.org>
-Content-Disposition: inline; filename=fs-proc-Add-start_data-end_data-start_brk-members
+	Tue, 29 Nov 2011 14:24:05 -0500
+Subject: Re: [PATCH] sctp: integer overflow in sctp_auth_create_key()
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <4ED4F428.9030807@hp.com>
+Date: Tue, 29 Nov 2011 14:24:01 -0500
+Cc: linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, security@kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A1A6AF9D-8C35-4702-9693-7BCBEDE27219@gmail.com>
+References: <426D7BA8-ECD0-44D6-A09F-2033F0C825FC@gmail.com> <4ED3AC7D.6090108@hp.com> <147F953A-CC69-41FF-ACD4-64E5E2956411@gmail.com> <4ED4F428.9030807@hp.com>
+To: Vladislav Yasevich <vladislav.yasevich@hp.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It helps to dump and restore this mm_struct members.
+Thanks for clarifying this!
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- fs/proc/array.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+I will leave the check there and incorporate your comments into a new patch.
 
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -464,7 +464,7 @@ static int do_task_stat(struct seq_file
- 
- 	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
- %lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
--%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld\n",
-+%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
- 		pid_nr_ns(pid, ns),
- 		tcomm,
- 		state,
-@@ -511,7 +511,10 @@ static int do_task_stat(struct seq_file
- 		task->policy,
- 		(unsigned long long)delayacct_blkio_ticks(task),
- 		cputime_to_clock_t(gtime),
--		cputime_to_clock_t(cgtime));
-+		cputime_to_clock_t(cgtime),
-+		mm ? (permitted ? mm->start_data : 1) : 0,
-+		mm ? (permitted ? mm->end_data : 1) : 0,
-+		mm ? (permitted ? mm->start_brk : 1) : 0);
- 	if (mm)
- 		mmput(mm);
- 	return 0;
+- xi
+
+On Nov 29, 2011, at 10:03 AM, Vladislav Yasevich wrote:
+> 
+> That should be ok as well.  There is an overflow guard in the api
+> entry point so that should guard against overflows from user space.
+> 
+> On the network end I miscalculated a little.  The key is actually made up
+> of user_key (1 short) + 2 * key_vector (3 shorts) for a total of 7*MAX_USHORT;
+> however, that still will not overflow 32 bits.
+> 
+> -vlad
 
