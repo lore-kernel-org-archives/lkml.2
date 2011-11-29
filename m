@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab1K2HRJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 02:17:09 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36669 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab1K2HRG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 02:17:06 -0500
-Message-ID: <4ED486AF.5020707@linux.vnet.ibm.com>
-Date: Tue, 29 Nov 2011 12:45:59 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-Newsgroups: gmane.linux.power-management.general,gmane.linux.ports.ppc64.devel,gmane.linux.kernel
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCH v2 1/4] cpuidle: (powerpc) Add cpu_idle_wait() to
- allow switching of idle routines
-References: <20111117112815.9191.2322.stgit@localhost6.localdomain6>	<20111117112830.9191.1951.stgit@localhost6.localdomain6>	<1322434096.23348.6.camel@pasglop>	<4ED36A37.3030409@linux.vnet.ibm.com>	<1322512522.23348.43.camel@pasglop>	<4ED47EC2.2090802@linux.vnet.ibm.com> <1322550115.23348.72.camel@pasglop>
-In-Reply-To: <1322550115.23348.72.camel@pasglop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112907-3864-0000-0000-0000004ADB53
+	id S1752875Ab1K2HSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 02:18:17 -0500
+Received: from mga09.intel.com ([134.134.136.24]:47116 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751506Ab1K2HSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 02:18:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="80995189"
+From: Feng Tang <feng.tang@intel.com>
+To: ben-linux@fluff.org, khali@linux-fr.org, tomoya-linux@dsn.lapis-semi.com,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: joel.clark@intel.com, Feng Tang <feng.tang@intel.com>
+Subject: [PATCH 1/2] i2c-eg20t: correct the driver init order of pch_i2c_probe()
+Date: Tue, 29 Nov 2011 15:19:10 +0800
+Message-Id: <1322551151-28580-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2011 12:31 PM, Benjamin Herrenschmidt wrote:
+Before registering an adapter to i2c subsystem, we need make sure
+driver is ready for incoming i2c xfer, becasue the i2c_add_adapter()
+may trigger a i2c device driver's proble function which may start
+some real i2c xfer. I met this issue when integrating a TSC2007 i2c
+touch screen device with the i2c-eg20t driver.
 
-> On Tue, 2011-11-29 at 12:12 +0530, Deepthi Dharwar wrote:
->>
->> Yes, this could be problematic as there is small window for the
->> race condition to occur . Otherwise we need to manually schedule
->> it by running a kernel thread but this would definitely have a
->> overhead and would be an overkill. 
-> 
-> Depends what this "window" is. IE. What are you trying to protect
-> yourself against ? What's the risk ?
-> 
-> If it's just module unload, then stop_machine is probably your
-> friend :-)
-> 
-> Cheers,
-> Ben.
-> 
-> 
+This patch will call request_irq() and hw init before calling
+i2c_add_adapter().
 
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ drivers/i2c/busses/i2c-eg20t.c |   22 ++++++++++++----------
+ 1 files changed, 12 insertions(+), 10 deletions(-)
 
-Yup, it is the module unload that I am worried about. Otherwise
-manually doing it using kernel thread would be an overkill -:(
-
-Regards,
-Deepthi
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index 8cebef4..18936ac 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -893,6 +893,13 @@ static int __devinit pch_i2c_probe(struct pci_dev *pdev,
+ 	/* Set the number of I2C channel instance */
+ 	adap_info->ch_num = id->driver_data;
+ 
++	ret = request_irq(pdev->irq, pch_i2c_handler, IRQF_SHARED,
++		  KBUILD_MODNAME, adap_info);
++	if (ret) {
++		pch_pci_err(pdev, "request_irq FAILED\n");
++		goto err_request_irq;
++	}
++
+ 	for (i = 0; i < adap_info->ch_num; i++) {
+ 		pch_adap = &adap_info->pch_data[i].pch_adapter;
+ 		adap_info->pch_i2c_suspended = false;
+@@ -910,28 +917,23 @@ static int __devinit pch_i2c_probe(struct pci_dev *pdev,
+ 
+ 		pch_adap->dev.parent = &pdev->dev;
+ 
++		pch_i2c_init(&adap_info->pch_data[i]);
+ 		ret = i2c_add_adapter(pch_adap);
+ 		if (ret) {
+ 			pch_pci_err(pdev, "i2c_add_adapter[ch:%d] FAILED\n", i);
+-			goto err_i2c_add_adapter;
++			goto err_add_adapter;
+ 		}
+-
+-		pch_i2c_init(&adap_info->pch_data[i]);
+-	}
+-	ret = request_irq(pdev->irq, pch_i2c_handler, IRQF_SHARED,
+-		  KBUILD_MODNAME, adap_info);
+-	if (ret) {
+-		pch_pci_err(pdev, "request_irq FAILED\n");
+-		goto err_i2c_add_adapter;
+ 	}
+ 
+ 	pci_set_drvdata(pdev, adap_info);
+ 	pch_pci_dbg(pdev, "returns %d.\n", ret);
+ 	return 0;
+ 
+-err_i2c_add_adapter:
++err_add_adapter:
+ 	for (j = 0; j < i; j++)
+ 		i2c_del_adapter(&adap_info->pch_data[j].pch_adapter);
++	free_irq(pdev->irq, adap_info);
++err_request_irq:
+ 	pci_iounmap(pdev, base_addr);
+ err_pci_iomap:
+ 	pci_release_regions(pdev);
+-- 
+1.7.1
 
