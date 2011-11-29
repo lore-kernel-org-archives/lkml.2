@@ -1,97 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab1K2NgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 08:36:18 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:61077 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755419Ab1K2NgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 08:36:15 -0500
-X-IronPort-AV: E=Sophos;i="4.69,591,1315206000"; 
-   d="scan'208";a="603025663"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: RE: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from blocklayout routines
-Date: Tue, 29 Nov 2011 05:35:51 -0800
-Message-ID: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com>
-In-Reply-To: <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from blocklayout routines
-Thread-Index: AcyukY9ts3BtGyv/REqRoBBt3RXgUwAAFmgQAAJnQJA=
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6> <20111129091037.20730.59391.stgit@localhost6.localdomain6> <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com> <4ED4CDCE.9080804@parallels.com> <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: <tao.peng@emc.com>, <skinsbursky@parallels.com>
-Cc: <linux-nfs@vger.kernel.org>, <xemul@parallels.com>, <neilb@suse.de>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jbottomley@parallels.com>, <bfields@fieldses.org>,
-        <davem@davemloft.net>, <devel@openvz.org>
-X-OriginalArrivalTime: 29 Nov 2011 13:35:52.0636 (UTC) FILETIME=[D06537C0:01CCAE9B]
+	id S1755432Ab1K2NlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 08:41:23 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35224 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755270Ab1K2NlW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 08:41:22 -0500
+Message-ID: <1322573688.4395.11.camel@lappy>
+Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
+ descriptors
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Date: Tue, 29 Nov 2011 15:34:48 +0200
+In-Reply-To: <20111129125622.GB19157@redhat.com>
+References: <1322559196-11139-1-git-send-email-levinsasha928@gmail.com>
+	 <20111129125622.GB19157@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pATDaXsI008103
 
-> -----Original Message-----
-> From: tao.peng@emc.com [mailto:tao.peng@emc.com]
-> Sent: Tuesday, November 29, 2011 7:40 AM
-> To: skinsbursky@parallels.com
-> Cc: Myklebust, Trond; linux-nfs@vger.kernel.org; xemul@parallels.com;
-> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> jbottomley@parallels.com; bfields@fieldses.org; davem@davemloft.net;
-> devel@openvz.org
-> Subject: RE: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
-> from blocklayout routines
+On Tue, 2011-11-29 at 14:56 +0200, Michael S. Tsirkin wrote:
+> On Tue, Nov 29, 2011 at 11:33:16AM +0200, Sasha Levin wrote:
+> > Currently if VIRTIO_RING_F_INDIRECT_DESC is enabled we will use indirect
+> > descriptors even if we have plenty of space in the ring. This means that
+> > we take a performance hit at all times due to the overhead of creating
+> > indirect descriptors.
 > 
-> > -----Original Message-----
-> > From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
-> > Sent: Tuesday, November 29, 2011 8:19 PM
-> > To: Peng, Tao
-> > Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; Pavel
-> > Emelianov; neilb@suse.de; netdev@vger.kernel.org;
-> > linux-kernel@vger.kernel.org; James Bottomley; bfields@fieldses.org;
-> > davem@davemloft.net; devel@openvz.org
-> > Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
-> > from blocklayout routines
-> >
-> > 29.11.2011 16:00, tao.peng@emc.com Ð¿Ð¸ÑˆÐµÑ‚:
-> > >> -----Original Message-----
-> > >> From: linux-nfs-owner@vger.kernel.org
-> > >> [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of
-> > Stanislav
-> > >> Kinsbursky
-> > >> Sent: Tuesday, November 29, 2011 6:11 PM
-> > >> To: Trond.Myklebust@netapp.com
-> > >> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de;
-> > >> netdev@vger.kernel.org; linux- kernel@vger.kernel.org;
-> > >> jbottomley@parallels.com; bfields@fieldses.org;
-> > >> davem@davemloft.net; devel@openvz.org
-> > >> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
-> > >> from blocklayout routines
-> > >>
-> > >> This is a cleanup patch. We don't need this reference anymore,
-> > >> because blocklayout pipes dentries now creates and destroys in
-> > >> per-net operations and on PipeFS mount/umount notification.
-> > >> Note that nfs4blocklayout_register_net() now returns 0 instead of
-> > >> -ENOENT in case of PipeFS superblock absence. This is ok, because
-> > >> blocklayout pipe dentry will be created on PipeFS mount event.
-> > > When is the "pipefs mount event" going to happen? When inserting
-> > > kernel modules or when user issues
-> > mount command?
-> > >
-> >
-> > When user issues mount command.
-> > Kernel mounts of PipeFS has been removed with all these patch sets
-> > I've sent already.
-> Then it is going to break blocklayout user space program blkmapd, which is
-> stared before mounting any file system and it tries to open the pipe file
-> when started.
+> Is it the overhead of creating them or just allocating the pages?
 
-Why on earth is blkmapd doing this instead of listening for file creation notifications like the other rpc_pipefs daemons do?
+My guess here is that it's the allocation since creating them is very
+similar to creating regular descriptors.
 
-Trond
+> The logic you propose is basically add direct as long as
+> the ring is mostly empty. So if the problem is in allocations,
+> one simple optimization for this one workload is add a small
+> cache of memory to use for indirect bufs. Of course building
+> a good API for this is where we got blocked in the past...
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I thought the issue of using a single pool was that the sizes of
+indirect descriptors are dynamic, so you can't use a single kmemcache
+for all of them unless you're ok with having a bunch of wasted bytes.
+
+> 
+> > With this patch, we will use indirect descriptors only if we have less than
+> > either 16, or 12% of the total amount of descriptors available.
+> 
+> One notes that this to some level conflicts with patches that change
+> virtio net not to drain the vq before add buf, in that we are
+> required here to drain the vq to avoid indirect.
+
+You don't have to avoid indirects by all means, if the vq is so full it
+has to resort to indirect buffers we better let him do that.
+
+> 
+> Not necessarily a serious problem, but something to keep in mind:
+> a memory pool would not have this issue.
+> 
+> > 
+> > I did basic performance benchmark on virtio-net with vhost enabled.
+> > 
+> > Before:
+> > 	Recv   Send    Send
+> > 	Socket Socket  Message  Elapsed
+> > 	Size   Size    Size     Time     Throughput
+> > 	bytes  bytes   bytes    secs.    10^6bits/sec
+> > 
+> > 	 87380  16384  16384    10.00    4563.92
+> > 
+> > After:
+> > 	Recv   Send    Send
+> > 	Socket Socket  Message  Elapsed
+> > 	Size   Size    Size     Time     Throughput
+> > 	bytes  bytes   bytes    secs.    10^6bits/sec
+> > 
+> > 	 87380  16384  16384    10.00    5353.28
+> 
+> Is this with the kvm tool? what kind of benchmark is this?
+
+It's using the kvm tool and netperf. It's a simple TCP_STREAM test with
+vhost enabled and using a regular TAP device to connect between guest
+and host.
+
+> 
+> Need to verify the effect on block too, and do some more
+> benchmarks. In particular we are making the ring
+> in effect smaller, how will this affect small packet perf
+> with multiple streams?
+
+I couldn't get good block benchmarks on my hardware. They were all over
+the place even when I was trying to get the baseline. I'm guessing my
+disk is about to kick the bucket.
+
+This threshold should be dynamic and be based on the amount of avail
+descriptors over time, so for example, if the vring is 90% full over
+time the threshold will go up allowing for more indirect buffers.
+Currently it's static, but it's a first step to making it dynamic :)
+
+I'll do a benchmark with small packets.
+
+> A very simple test is to disable indirect buffers altogether.
+> qemu-kvm has a flag for this.
+> Is this an equivalent test?
+> If yes I'll try that.
+
+Yes, it should be equivalent to qemu without that flag.
+
+> 
+> 
+> > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > Cc: virtualization@lists.linux-foundation.org
+> > Cc: kvm@vger.kernel.org
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > ---
+> >  drivers/virtio/virtio_ring.c |   12 ++++++++++--
+> >  1 files changed, 10 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+> > index c7a2c20..5e0ce15 100644
+> > --- a/drivers/virtio/virtio_ring.c
+> > +++ b/drivers/virtio/virtio_ring.c
+> > @@ -82,6 +82,7 @@ struct vring_virtqueue
+> >  
+> >  	/* Host supports indirect buffers */
+> >  	bool indirect;
+> 
+> We can get rid of bool indirect now, just set indirect_threshold to 0,
+> right?
+
+Yup.
+
+> 
+> > +	unsigned int indirect_threshold;
+> 
+> Please add a comment. It should be something like
+> 'Min. number of free space in the ring to trigger direct descriptor use'
+
+Will do.
+
+> 
+> >  
+> >  	/* Host publishes avail event idx */
+> >  	bool event;
+> > @@ -176,8 +177,9 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
+> >  	BUG_ON(data == NULL);
+> >  
+> >  	/* If the host supports indirect descriptor tables, and we have multiple
+> > -	 * buffers, then go indirect. FIXME: tune this threshold */
+> > -	if (vq->indirect && (out + in) > 1 && vq->num_free) {
+> > +	 * buffers, then go indirect. */
+> > +	if (vq->indirect && (out + in) > 1 &&
+> > +	   (vq->num_free < vq->indirect_threshold)) {
+> 
+> If num_free is 0, this will allocate the buffer which is
+> not a good idea.
+> 
+> I think there's a regression here: with a small vq, we could
+> previously put in an indirect descriptor, with your patch
+> add_buf will fail. I think this is a real problem for block
+> which was the original reason indirect bufs were introduced.
+
+I defined the threshold so at least 16 descriptors will be used as
+indirect buffers, so if you have a small vq theres still a solid minimum
+of indirect descriptors it could use.
+
+> 
+> 
+> >  		head = vring_add_indirect(vq, sg, out, in, gfp);
+> >  		if (likely(head >= 0))
+> >  			goto add_head;
+> > @@ -485,6 +487,12 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+> >  #endif
+> >  
+> >  	vq->indirect = virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC);
+> > +	/*
+> > +	 * Use indirect descriptors only when we have less than either 12%
+> > +	 * or 16 of the descriptors in the ring available.
+> > +	 */
+> > +	if (vq->indirect)
+> > +		vq->indirect_threshold = max(16U, num >> 3);
+> 
+> Let's add some defines at top of the file please, maybe even
+> a module parameter.
+> 
+> >  	vq->event = virtio_has_feature(vdev, VIRTIO_RING_F_EVENT_IDX);
+> >  
+> >  	/* No callback?  Tell other side not to bother us. */
+> > -- 
+> > 1.7.8.rc3
+
+-- 
+
+Sasha.
+
