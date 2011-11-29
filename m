@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751408Ab1LJMwP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Dec 2011 07:52:15 -0500
-Received: from www17.your-server.de ([213.133.104.17]:55104 "EHLO
+	id S1751437Ab1LJM7k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Dec 2011 07:59:40 -0500
+Received: from www17.your-server.de ([213.133.104.17]:42474 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab1LJMvM (ORCPT
+	with ESMTP id S1751022Ab1LJM7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Dec 2011 07:51:12 -0500
-Subject: [PATCH] IPoIB: Use kcalloc instead of kzalloc to allocate array
+	Sat, 10 Dec 2011 07:59:35 -0500
+Subject: [PATCH] [media] uvcvideo: Use kcalloc instead of kzalloc to
+ allocate array
 From: Thomas Meyer <thomas@m3y3r.de>
-To: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+To: laurent.pinchart@ideasonboard.com, mchehab@infradead.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Tue, 29 Nov 2011 22:08:00 +0100
-Message-ID: <1322600880.1534.307.camel@localhost.localdomain>
+Message-ID: <1322600880.1534.315.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -31,15 +33,15 @@ in https://lkml.org/lkml/2011/11/25/107
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c 2011-11-13 11:07:26.816827448 +0100
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c 2011-11-28 19:51:19.444842130 +0100
-@@ -933,7 +933,7 @@ int ipoib_dev_init(struct net_device *de
- 	struct ipoib_dev_priv *priv = netdev_priv(dev);
+diff -u -p a/drivers/media/video/uvc/uvc_ctrl.c b/drivers/media/video/uvc/uvc_ctrl.c
+--- a/drivers/media/video/uvc/uvc_ctrl.c 2011-11-28 19:36:47.613437745 +0100
++++ b/drivers/media/video/uvc/uvc_ctrl.c 2011-11-28 19:58:26.309317018 +0100
+@@ -1861,7 +1861,7 @@ int uvc_ctrl_init_device(struct uvc_devi
+ 		if (ncontrols == 0)
+ 			continue;
  
- 	/* Allocate RX/TX "rings" to hold queued skbs */
--	priv->rx_ring =	kzalloc(ipoib_recvq_size * sizeof *priv->rx_ring,
-+	priv->rx_ring = kcalloc(ipoib_recvq_size, sizeof(*priv->rx_ring),
- 				GFP_KERNEL);
- 	if (!priv->rx_ring) {
- 		printk(KERN_WARNING "%s: failed to allocate RX ring (%d entries)\n",
+-		entity->controls = kzalloc(ncontrols * sizeof(*ctrl),
++		entity->controls = kcalloc(ncontrols, sizeof(*ctrl),
+ 					   GFP_KERNEL);
+ 		if (entity->controls == NULL)
+ 			return -ENOMEM;
