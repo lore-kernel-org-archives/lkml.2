@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab1K2AQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 19:16:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58305 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab1K2AQ2 (ORCPT
+	id S1754740Ab1K2ATn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 19:19:43 -0500
+Received: from natasha.panasas.com ([67.152.220.90]:58643 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab1K2ATl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 19:16:28 -0500
-Date: Mon, 28 Nov 2011 16:16:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Youquan Song <youquan.song@intel.com>
-Cc: linux-kernel@vger.kernel.org, aarcange@redhat.com, wli@holomorphy.com,
-        david.woodhouse@intel.com, allen.m.kay@intel.com, mtosatti@redhat.com,
-        chrisw@redhat.com, andi@firstfloor.org, chaohong.guo@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH 1/2] thp: Add compound tail page _mapcount when mapped
-Message-Id: <20111128161626.e4be400a.akpm@linux-foundation.org>
-In-Reply-To: <1322200030-26350-1-git-send-email-youquan.song@intel.com>
-References: <1322200030-26350-1-git-send-email-youquan.song@intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 28 Nov 2011 19:19:41 -0500
+Message-ID: <4ED4238F.4090407@panasas.com>
+Date: Mon, 28 Nov 2011 16:13:03 -0800
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Benny Halevy <bhalevy@tonian.com>,
+        Michal Marek <mmarek@suse.cz>, NFS list <linux-nfs@vger.kernel.org>,
+        open-osd <osd-dev@open-osd.org>
+Subject: ore: FIX breakage when MISC_FILESYSTEMS is not set
+References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au> <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com>
+In-Reply-To: <4ED422CC.60706@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Nov 2011 13:47:09 +0800
-Youquan Song <youquan.song@intel.com> wrote:
 
-> With 3.2-rc kernel, the IOMMU 2M page in KVM works. While I try to us IOMMU
-> 1GB page in KVM, I encounter a oops and 1GB page total fail to be used.
-> The root cause is that 1GB page allocation calls gup_huge_pud() while 2M
->  page calls gup_huge_pmd. If compound pages are used and the page is tail page,
-> gup_huge_pmd increase _mapcount to record tail page are mapped while
-> gup_huge_pud does not include this process. So when the mapped page is relesed,
-> it will result in kernel oops because the page does not mark mapped.
-> 
-> This patch add tail process for compound page in 1GB huge page which keeps the
-> same process as 2M page.
-> 
-> Reproduce like:
-> 1. Add grub boot option: hugepagesz=1G hugepages=8
-> 2. mount -t hugetlbfs -o pagesize=1G hugetlbfs /dev/hugepages
-> 3.qemu-kvm -m 2048 -hda os-kvm.img -cpu kvm64 -smp 4 -mem-path /dev/hugepages
->  -net none -device pci-assign,host=07:00.1
-> 
-> kernel BUG at mm/swap.c:114!
->
-> ...
->
-> --- a/arch/x86/mm/gup.c
-> +++ b/arch/x86/mm/gup.c
-> @@ -201,6 +201,8 @@ static noinline int gup_huge_pud(pud_t pud, unsigned long addr,
->  	do {
->  		VM_BUG_ON(compound_head(page) != head);
->  		pages[*nr] = page;
-> +		if (PageTail(page))
-> +			get_huge_page_tail(page);
->  		(*nr)++;
->  		page++;
->  		refs++;
+As Reported by Randy Dunlap
 
-Is the patch also applicable to 3.1.x?
+When MISC_FILESYSTEMS is not enabled:
+
+fs/built-in.o: In function `objio_alloc_io_state':
+objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
+fs/built-in.o: In function `_write_done':
+objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
+fs/built-in.o: In function `_read_done':
+...
+
+When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
+is not selected. exofs/Kconfig is never examined during Kconfig,
+and it can not do it's magic stuff to automatically select everything
+needed.
+
+The solution is to force all users of ORE (exofs, nfs) to manually
+select everything auto-magically selected before.
+
+(This is  why it is a bad idea to put libraries in random parts of
+ the tree)
+
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ fs/exofs/Kconfig |   17 +++++++++--------
+ fs/nfs/Kconfig   |    2 ++
+ 2 files changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/fs/exofs/Kconfig b/fs/exofs/Kconfig
+index da42f32..6b05d99 100644
+--- a/fs/exofs/Kconfig
++++ b/fs/exofs/Kconfig
+@@ -1,17 +1,18 @@
+-# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
+-# for every ORE user we do it like this. Any user should add itself here
+-# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
+-# selected here, and we default to "ON". So in effect it is like been
+-# selected by any of the users.
++# ORE - Objects Raid Engine (libore.ko)
++# This library needs to be selected by it's users for example the below EXOFS
++# filesystem.
++# All users must do:
++#	depends on SCSI_OSD_ULD
++#	select ASYNC_XOR
++#	select ORE
+ config ORE
+ 	tristate
+-	depends on EXOFS_FS || PNFS_OBJLAYOUT
+-	select ASYNC_XOR
+-	default SCSI_OSD_ULD
+ 
+ config EXOFS_FS
+ 	tristate "exofs: OSD based file system support"
+ 	depends on SCSI_OSD_ULD
++	select ASYNC_XOR
++	select ORE
+ 	help
+ 	  EXOFS is a file system that uses an OSD storage device,
+ 	  as its backing storage.
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index dbcd821..3708d76 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -96,6 +96,8 @@ config PNFS_BLOCK
+ config PNFS_OBJLAYOUT
+ 	tristate
+ 	depends on NFS_FS && NFS_V4_1 && SCSI_OSD_ULD
++	select ASYNC_XOR
++	select ORE
+ 	default m
+ 
+ config ROOT_NFS
+-- 
+1.7.6.4
+
+
