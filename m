@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab1K2RT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 12:19:29 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:35599 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752377Ab1K2RT1 convert rfc822-to-8bit (ORCPT
+	id S1754268Ab1K2RVd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 12:21:33 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49092 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab1K2RVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 12:19:27 -0500
-X-IronPort-AV: E=Sophos;i="4.69,592,1315206000"; 
-   d="scan'208";a="603102052"
-Message-ID: <1322587165.4174.20.camel@lade.trondhjem.org>
-Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
- blocklayout routines
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Peng Tao <bergwolf@gmail.com>, tao.peng@emc.com, skinsbursky@parallels.com,
-        linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
-Date: Tue, 29 Nov 2011 12:19:25 -0500
-In-Reply-To: <20111129164252.GA19528@fieldses.org>
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
-	 <20111129091037.20730.59391.stgit@localhost6.localdomain6>
-	 <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
-	 <4ED4CDCE.9080804@parallels.com>
-	 <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
-	 <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com>
-	 <CA+a=Yy5GKMu8rbh8y3fOtK6pmqygPNBr=a+p7LfcmTqtXFH3iA@mail.gmail.com>
-	 <1322579906.3619.1.camel@lade.trondhjem.org>
-	 <CA+a=Yy6kJe0NemSiRwM+t8gz5-UF5fOdwdS2so+q=nSYjBx--w@mail.gmail.com>
-	 <1322584830.4174.16.camel@lade.trondhjem.org>
-	 <20111129164252.GA19528@fieldses.org>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 29 Nov 2011 17:19:26.0447 (UTC) FILETIME=[0BA657F0:01CCAEBB]
+	Tue, 29 Nov 2011 12:21:32 -0500
+Date: Tue, 29 Nov 2011 18:22:53 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH 2/2] drm/i915: properly clflush pwrites to phys objects
+Message-ID: <20111129172253.GD11090@phenom.ffwll.local>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, stable@kernel.org
+References: <1322579369-26954-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1322579369-26954-2-git-send-email-daniel.vetter@ffwll.ch>
+ <c55c5d$185nps@AZSMGA002.ch.intel.com>
+ <20111129161652.GD5667@phenom.ffwll.local>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129161652.GD5667@phenom.ffwll.local>
+X-Operating-System: Linux phenom 3.1.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 11:42 -0500, J. Bruce Fields wrote: 
-> On Tue, Nov 29, 2011 at 11:40:30AM -0500, Trond Myklebust wrote:
-> > I mean that I'm perfectly entitled to do
+On Tue, Nov 29, 2011 at 05:16:52PM +0100, Daniel Vetter wrote:
+> On Tue, Nov 29, 2011 at 03:35:54PM +0000, Chris Wilson wrote:
+> > On Tue, 29 Nov 2011 16:09:29 +0100, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> > > Usually results in (rare) cursor corruptions on platforms
+> > > requiring physically addressed cursors.
 > > 
-> > 'modprobe -r blocklayoutdriver'
-> > 
-> > and when I do that, then I expect blkmapd to close the rpc pipe and wait
-> > for a new one to be created just like rpc.idmapd and rpc.gssd do when I
-> > remove the nfs and sunrpc modules.
+> > So the phys cursor pages are set to WC upon creation, are we just
+> > missing the mb()? Or more likely the CPUs don't have PAT and we are
+> > being lazy in not detecting the error.
 > 
-> The rpc pipefs mount doesn't hold a reference on the sunrpc module?
+> Yes, on reconsidering the tested-by is from a pentium m, which has working
+> pat, and we do a wbinvd in the i8xx chipset flush, so I don't know anymore
+> how this patch actually works.
+> 
+> But it seems to indeed fix the issue for at least one reporter and cursor
+> update is about as far away from a perf critical path as possible, so who
+> cares about such minor quibbles, it works ;-)
 
-I stand corrected: the mount does hold a reference to the sunrpc
-module. 
-However nothing holds a reference to the blocklayoutdriver module, so
-the main point that the "blocklayout" pipe can disappear from underneath
-the blkmapd stands.
-
+After some irc discussion with Dave Airlie I'll now try whether a simple
+wmb(); to flush the wc cache isn't good enough. Will take at least a week
+to run by testers and gathe feedback, though.
+-Daniel
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
