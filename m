@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab1K2Wgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 17:36:53 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:48454 "EHLO mx2.netapp.com"
+	id S1757015Ab1K2Wjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 17:39:43 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34606 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756866Ab1K2Wgw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 17:36:52 -0500
-X-IronPort-AV: E=Sophos;i="4.69,593,1315206000"; 
-   d="scan'208";a="603200286"
-Message-ID: <1322606193.11286.28.camel@lade.trondhjem.org>
-Subject: Re: ore: FIX breakage when MISC_FILESYSTEMS is not set
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Benny Halevy <bhalevy@tonian.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        NFS list <linux-nfs@vger.kernel.org>, open-osd <osd-dev@open-osd.org>
-Date: Tue, 29 Nov 2011 17:36:33 -0500
-In-Reply-To: <4ED55B3B.9050207@panasas.com>
-References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au>
-	  <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com>
-	  <4ED4238F.4090407@panasas.com> <4ED4CE58.8090107@tonian.com>
-	 <1322588023.4174.28.camel@lade.trondhjem.org>
-	 <4ED55B3B.9050207@panasas.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 29 Nov 2011 22:36:33.0771 (UTC) FILETIME=[58D193B0:01CCAEE7]
+	id S1752809Ab1K2Wjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 17:39:41 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Hibernate fix and PM documentation updates for 3.2
+Date: Tue, 29 Nov 2011 23:42:32 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111292342.32576.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 14:22 -0800, Boaz Harrosh wrote: 
-> On 11/29/2011 09:33 AM, Trond Myklebust wrote:
-> > On Tue, 2011-11-29 at 14:21 +0200, Benny Halevy wrote: 
-> >> On 2011-11-29 02:13, Boaz Harrosh wrote:
-> 
-> >>>
-> >>> The solution is to force all users of ORE (exofs, nfs) to manually
-> >>> select everything auto-magically selected before.
-> >>
-> >> How about using "depend ORE" rather than "select ORE"?
-> > 
-> > Right. Make PNFS_OBJLAYOUT and EXOFS_FS depend on ASYNC_XOR (or select
-> > it) and then make ORE depend on EXOFS_FS || PNFS_OBJLAYOUT.
-> > 
-> > There should be no need to add the 'select ORE'...
-> > 
-> 
-> No! guys!
-> 
-> One it will not solve my problem because any
-> solution that needs to inspect exofs/Kconfig file will
-> not work if MISC_FILESYSTEMS is not selected and your
-> solutions involve that.
+Hi Linus,
 
-Then move ORE _out_ of MISC_FILESYSTEMS. There is no reason why it needs
-to be there as long as the things it depends on are there.
+Please pull a hibernate fix and power management documentation updates (on top
+of commit f10cdea68b70bd85706baed0decab59618f9c353) for 3.2 from:
 
-> And two:
-> All the user needs to do is Select NFS4.1 everything
-> else should be done automatically. He should not need
-> to go to misc-filesystems and select ORE so he can have
-> pnfs-objects. That's a nightmare.
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-fixes
 
-The solution I proposed didn't involve having the user select anything
-other than NFSv4.1 and possibly ASYNC_XOR.
+with top-most commit f7bc83d87d242917ca0ee041ed509f57f361dd56
+(PM: Update comments describing device power management callbacks).
 
-> And anyway the current Kernel rule is that a user of a library
-> needs to select it and all it's dependencies, because select
-> is not recursive. Now I devised a little skim that can avoid
+The hibernate fix closes a massive memory leak from error and test code paths
+(which happens if hibernation is aborted early enough) and the documentation
+updates modify the documentation to follow the code again after some recent
+changes.
 
-...and this is _my_ nightmare. I dont' _want_ these selects anywhere in
-the NFS subsystem.
+Thanks!
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+ Documentation/power/devices.txt    |  111 +++++++++++-------
+ Documentation/power/runtime_pm.txt |   40 ++++---
+ include/linux/pm.h                 |  229 +++++++++++++++++++++---------------
+ kernel/power/hibernate.c           |   16 ++-
+ 4 files changed, 237 insertions(+), 159 deletions(-)
+
+---------------
+
+Rafael J. Wysocki (6):
+      PM / Hibernate: Do not leak memory in error/test code paths
+      PM / Domains: Document how PM domains are used by the PM core
+      PM / Sleep: Correct inaccurate information in devices.txt
+      PM / Runtime: Make documentation follow the new behavior of irq_safe
+      PM / Sleep: Update documentation related to system wakeup
+      PM: Update comments describing device power management callbacks
 
