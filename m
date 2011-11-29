@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662Ab1LERau (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:30:50 -0500
-Received: from www17.your-server.de ([213.133.104.17]:38023 "EHLO
+	id S932699Ab1LERax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:30:53 -0500
+Received: from www17.your-server.de ([213.133.104.17]:38030 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546Ab1LERat (ORCPT
+	with ESMTP id S932546Ab1LERav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:30:49 -0500
-Subject: [PATCH] [SCSI] bnx2fc: Use kcalloc instead of kzalloc to allocate
+	Mon, 5 Dec 2011 12:30:51 -0500
+Subject: [PATCH] [SCSI] hpsa: Use kcalloc instead of kzalloc to allocate
  array
 From: Thomas Meyer <thomas@m3y3r.de>
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: JBottomley@parallels.com, iss_storagedev@hp.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Tue, 29 Nov 2011 22:08:00 +0100
-Message-ID: <1322600880.1534.329.camel@localhost.localdomain>
+Message-ID: <1322600880.1534.331.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -33,26 +33,37 @@ in https://lkml.org/lkml/2011/11/25/107
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/scsi/bnx2fc/bnx2fc_io.c b/drivers/scsi/bnx2fc/bnx2fc_io.c
---- a/drivers/scsi/bnx2fc/bnx2fc_io.c 2011-11-13 11:07:46.087131212 +0100
-+++ b/drivers/scsi/bnx2fc/bnx2fc_io.c 2011-11-28 20:02:42.476121413 +0100
-@@ -270,15 +270,15 @@ struct bnx2fc_cmd_mgr *bnx2fc_cmd_mgr_al
- 		return NULL;
- 	}
+diff -u -p a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+--- a/drivers/scsi/hpsa.c 2011-11-28 19:36:47.956780228 +0100
++++ b/drivers/scsi/hpsa.c 2011-11-28 20:04:07.554064368 +0100
+@@ -821,8 +821,8 @@ static void adjust_hpsa_scsi_table(struc
+ 	int nadded, nremoved;
+ 	struct Scsi_Host *sh = NULL;
  
--	cmgr->free_list = kzalloc(sizeof(*cmgr->free_list) *
--				  arr_sz, GFP_KERNEL);
-+	cmgr->free_list = kcalloc(arr_sz, sizeof(*cmgr->free_list),
-+				  GFP_KERNEL);
- 	if (!cmgr->free_list) {
- 		printk(KERN_ERR PFX "failed to alloc free_list\n");
- 		goto mem_err;
- 	}
+-	added = kzalloc(sizeof(*added) * HPSA_MAX_DEVICES, GFP_KERNEL);
+-	removed = kzalloc(sizeof(*removed) * HPSA_MAX_DEVICES, GFP_KERNEL);
++	added = kcalloc(HPSA_MAX_DEVICES, sizeof(*added), GFP_KERNEL);
++	removed = kcalloc(HPSA_MAX_DEVICES, sizeof(*removed), GFP_KERNEL);
  
--	cmgr->free_list_lock = kzalloc(sizeof(*cmgr->free_list_lock) *
--				       arr_sz, GFP_KERNEL);
-+	cmgr->free_list_lock = kcalloc(arr_sz, sizeof(*cmgr->free_list_lock),
-+				       GFP_KERNEL);
- 	if (!cmgr->free_list_lock) {
- 		printk(KERN_ERR PFX "failed to alloc free_list_lock\n");
- 		goto mem_err;
+ 	if (!added || !removed) {
+ 		dev_warn(&h->pdev->dev, "out of memory in "
+@@ -994,8 +994,8 @@ static int hpsa_allocate_sg_chain_blocks
+ 	if (h->chainsize <= 0)
+ 		return 0;
+ 
+-	h->cmd_sg_list = kzalloc(sizeof(*h->cmd_sg_list) * h->nr_cmds,
+-				GFP_KERNEL);
++	h->cmd_sg_list = kcalloc(h->nr_cmds, sizeof(*h->cmd_sg_list),
++				 GFP_KERNEL);
+ 	if (!h->cmd_sg_list)
+ 		return -ENOMEM;
+ 	for (i = 0; i < h->nr_cmds; i++) {
+@@ -1866,7 +1866,7 @@ static void hpsa_update_scsi_devices(str
+ 	int raid_ctlr_position;
+ 	DECLARE_BITMAP(lunzerobits, HPSA_MAX_TARGETS_PER_CTLR);
+ 
+-	currentsd = kzalloc(sizeof(*currentsd) * HPSA_MAX_DEVICES, GFP_KERNEL);
++	currentsd = kcalloc(HPSA_MAX_DEVICES, sizeof(*currentsd), GFP_KERNEL);
+ 	physdev_list = kzalloc(reportlunsize, GFP_KERNEL);
+ 	logdev_list = kzalloc(reportlunsize, GFP_KERNEL);
+ 	tmpdevice = kzalloc(sizeof(*tmpdevice), GFP_KERNEL);
