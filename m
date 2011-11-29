@@ -1,146 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755476Ab1K2NeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 08:34:13 -0500
-Received: from mga03.intel.com ([143.182.124.21]:59231 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755508Ab1K2NeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 08:34:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,590,1315206000"; 
-   d="scan'208";a="80197594"
-Message-Id: <20111129131456.797240894@intel.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 29 Nov 2011 21:09:07 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>
-cc: Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/9] readahead: add vfs/readahead tracing event
-References: <20111129130900.628549879@intel.com>
-Content-Disposition: inline; filename=readahead-tracer.patch
+	id S1755562Ab1K2Nen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 08:34:43 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43341 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab1K2Nem convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 08:34:42 -0500
+Message-ID: <1322573615.2921.235.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu 24/28] rcu: Introduce bulk reference
+ count
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Date: Tue, 29 Nov 2011 14:33:35 +0100
+In-Reply-To: <1322505327.2921.156.camel@twins>
+References: <20111102203017.GA3830@linux.vnet.ibm.com>
+	 <1320265849-5744-24-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1322484071.2921.115.camel@twins>
+	 <20111128171513.GF2346@linux.vnet.ibm.com>
+	 <1322504279.2921.154.camel@twins>
+	 <20111128183124.GH2346@linux.vnet.ibm.com>
+	 <1322505327.2921.156.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is very useful for verifying whether the readahead algorithms are
-working to the expectation.
+On Mon, 2011-11-28 at 19:35 +0100, Peter Zijlstra wrote:
+> On Mon, 2011-11-28 at 10:31 -0800, Paul E. McKenney wrote:
+> > >   local_irq_save(flags);
+> > >   srcu_read_lock(&my_srcu_domain);
+> > >   local_irq_restore(flags);
+> > > 
+> > > and
+> > > 
+> > >   local_irq_save(flags);
+> > >   srcu_read_unlock(&my_srcu_domain);
+> > >   local_irq_restore(flags)
+> > > 
+> > > Doesn't look to be too hard, or confusing.
+> > 
+> > Ah, OK, I was under the mistaken impression that lockdep would splat
+> > if you did (for example) srcu_read_lock() in an exception handler and
+> > srcu_read_unlock() in the context of the task that took the exception. 
+> 
+> I don't think it will, lockdep does very little actual validation on the
+> RCU locks other than recording they're held. But if they do, the planned
+> TODO item will get inversed.
+> 
+> Should be easy enough to test I guess.
 
-Example output:
+OK, so I had me a little peek at lockdep and you're right, it will
+complain.
 
-# echo 1 > /debug/tracing/events/vfs/readahead/enable
-# cp test-file /dev/null
-# cat /debug/tracing/trace  # trimmed output
-readahead-initial(dev=0:15, ino=100177, req=0+2, ra=0+4-2, async=0) = 4
-readahead-subsequent(dev=0:15, ino=100177, req=2+2, ra=4+8-8, async=1) = 8
-readahead-subsequent(dev=0:15, ino=100177, req=4+2, ra=12+16-16, async=1) = 16
-readahead-subsequent(dev=0:15, ino=100177, req=12+2, ra=28+32-32, async=1) = 32
-readahead-subsequent(dev=0:15, ino=100177, req=28+2, ra=60+60-60, async=1) = 24
-readahead-subsequent(dev=0:15, ino=100177, req=60+2, ra=120+60-60, async=1) = 0
+Still uprobes can do:
 
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/trace/events/vfs.h |   64 +++++++++++++++++++++++++++++++++++
- mm/readahead.c             |    5 ++
- 2 files changed, 69 insertions(+)
+  local_irq_save(flags);
+  __srcu_read_lock(&mr_srcu_domain);
+  local_irq_restore(flags);
 
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-next/include/trace/events/vfs.h	2011-11-29 20:58:59.000000000 +0800
-@@ -0,0 +1,64 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM vfs
-+
-+#if !defined(_TRACE_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_VFS_H
-+
-+#include <linux/tracepoint.h>
-+
-+TRACE_EVENT(readahead,
-+	TP_PROTO(struct address_space *mapping,
-+		 pgoff_t offset,
-+		 unsigned long req_size,
-+		 enum readahead_pattern pattern,
-+		 pgoff_t start,
-+		 unsigned long size,
-+		 unsigned long async_size,
-+		 unsigned int actual),
-+
-+	TP_ARGS(mapping, offset, req_size, pattern, start, size, async_size,
-+		actual),
-+
-+	TP_STRUCT__entry(
-+		__field(	dev_t,		dev		)
-+		__field(	ino_t,		ino		)
-+		__field(	pgoff_t,	offset		)
-+		__field(	unsigned long,	req_size	)
-+		__field(	unsigned int,	pattern		)
-+		__field(	pgoff_t,	start		)
-+		__field(	unsigned int,	size		)
-+		__field(	unsigned int,	async_size	)
-+		__field(	unsigned int,	actual		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev		= mapping->host->i_sb->s_dev;
-+		__entry->ino		= mapping->host->i_ino;
-+		__entry->offset		= offset;
-+		__entry->req_size	= req_size;
-+		__entry->pattern	= pattern;
-+		__entry->start		= start;
-+		__entry->size		= size;
-+		__entry->async_size	= async_size;
-+		__entry->actual		= actual;
-+	),
-+
-+	TP_printk("readahead-%s(dev=%d:%d, ino=%lu, "
-+		  "req=%lu+%lu, ra=%lu+%d-%d, async=%d) = %d",
-+			ra_pattern_names[__entry->pattern],
-+			MAJOR(__entry->dev),
-+			MINOR(__entry->dev),
-+			__entry->ino,
-+			__entry->offset,
-+			__entry->req_size,
-+			__entry->start,
-+			__entry->size,
-+			__entry->async_size,
-+			__entry->start > __entry->offset,
-+			__entry->actual)
-+);
-+
-+#endif /* _TRACE_VFS_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
---- linux-next.orig/mm/readahead.c	2011-11-29 20:58:53.000000000 +0800
-+++ linux-next/mm/readahead.c	2011-11-29 20:59:20.000000000 +0800
-@@ -29,6 +29,9 @@ static const char * const ra_pattern_nam
- 	[RA_PATTERN_ALL]                = "all",
- };
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/vfs.h>
-+
- /*
-  * Initialise a struct file's readahead state.  Assumes that the caller has
-  * memset *ra to zero.
-@@ -215,6 +218,8 @@ static inline void readahead_event(struc
- 				for_mmap, for_metadata,
- 				pattern, start, size, async_size, actual);
- #endif
-+	trace_readahead(mapping, offset, req_size,
-+			pattern, start, size, async_size, actual);
- }
- 
- 
+However if you object to exposing the __srcu functions (which I can
+understand) you could expose these two functions as
+srcu_read_{,un}lock_raw() or so, to mirror the non-validation also found
+in rcu_dereference_raw()
 
 
