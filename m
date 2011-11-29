@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab1K2X6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 18:58:15 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:44712 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757048Ab1K2X6L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 18:58:11 -0500
-Date: Tue, 29 Nov 2011 18:53:42 -0500 (EST)
-Message-Id: <20111129.185342.105454076866922618.davem@davemloft.net>
-To: nicolas.ferre@atmel.com
-Cc: jamie@jamieiles.com, netdev@vger.kernel.org, plagnioj@jcrosoft.com,
-        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] at91_ether: use gpio_is_valid for phy IRQ line
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1322169674-4109-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1322128098-17724-1-git-send-email-jamie@jamieiles.com>
-	<1322169674-4109-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 Nov 2011 15:53:44 -0800 (PST)
+	id S1757137Ab1K3AAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 19:00:32 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:45492 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757045Ab1K3AA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 19:00:29 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org
+Subject: [PATCH v7 00/10] Request for Inclusion: per-cgroup tcp memory pressure 
+Date: Tue, 29 Nov 2011 21:56:51 -0200
+Message-Id: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Date: Thu, 24 Nov 2011 22:21:14 +0100
+Hi,
 
-> Use the generic gpiolib gpio_is_valid() function to test
-> if the phy IRQ line GPIO is actually provided.
-> 
-> For non-connected or non-existing phy IRQ lines, -EINVAL
-> value is used for phy_irq_pin field of struct at91_eth_data.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+This patchset implements per-cgroup tcp memory pressure controls. It did not change
+significantly since last submission: rather, it just merges the comments Kame had.
+Most of them are style-related and/or Documentation, but there are two real bugs he
+managed to spot (thanks)
 
-I'm assuming this goes through the ARM tree, because in both of my networking
-trees there is no ARM at91 implementation of gpio_is_valid().
+Please let me know if there is anything else I should address.
+
+
+Glauber Costa (10):
+  Basic kernel memory functionality for the Memory Controller
+  foundations of per-cgroup memory pressure controlling.
+  socket: initial cgroup code.
+  tcp memory pressure controls
+  per-netns ipv4 sysctl_tcp_mem
+  tcp buffer limitation: per-cgroup limit
+  Display current tcp memory allocation in kmem cgroup
+  Display current tcp failcnt in kmem cgroup
+  Display maximum tcp memory allocation in kmem cgroup
+  Disable task moving when using kernel memory accounting
+
+ Documentation/cgroups/memory.txt |   52 +++++++-
+ include/linux/memcontrol.h       |   19 +++
+ include/net/netns/ipv4.h         |    1 +
+ include/net/sock.h               |  298 +++++++++++++++++++++++++++++++++++++-
+ include/net/tcp.h                |    4 +-
+ include/net/tcp_memcontrol.h     |   19 +++
+ init/Kconfig                     |   14 ++
+ mm/memcontrol.c                  |  202 ++++++++++++++++++++++++--
+ net/core/sock.c                  |  120 +++++++++++----
+ net/ipv4/Makefile                |    1 +
+ net/ipv4/af_inet.c               |    2 +
+ net/ipv4/proc.c                  |    7 +-
+ net/ipv4/sysctl_net_ipv4.c       |   65 ++++++++-
+ net/ipv4/tcp.c                   |   11 +-
+ net/ipv4/tcp_input.c             |   12 +-
+ net/ipv4/tcp_ipv4.c              |   13 +-
+ net/ipv4/tcp_memcontrol.c        |  268 ++++++++++++++++++++++++++++++++++
+ net/ipv4/tcp_output.c            |    2 +-
+ net/ipv4/tcp_timer.c             |    2 +-
+ net/ipv6/af_inet6.c              |    2 +
+ net/ipv6/tcp_ipv6.c              |    7 +-
+ 21 files changed, 1036 insertions(+), 85 deletions(-)
+ create mode 100644 include/net/tcp_memcontrol.h
+ create mode 100644 net/ipv4/tcp_memcontrol.c
+
+-- 
+1.7.6.4
+
