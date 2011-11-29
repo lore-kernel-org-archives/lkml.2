@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab1K2QIm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 11:08:42 -0500
-Received: from telerate.info.com.np ([203.78.160.29]:46583 "EHLO
-	ns1.info.com.np" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab1K2QIl (ORCPT
+	id S1756004Ab1K2QPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 11:15:32 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33428 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab1K2QPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 11:08:41 -0500
-X-Greylist: delayed 511 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Nov 2011 11:08:41 EST
-X-Amavis-Alert: BAD HEADER SECTION, Improper use of control character (char 0D
-	hex): From: ...zZWtjZSBNRkYgVUsi?=" <ramala@infoclub.com.np>\r
-To: <info1@karlin.mff.cuni.cz>
-Subject: =?UTF-8?B?VsOtdGVqdGU=?=
-X-PHP-Originating-Script: 5033:class_send.php
-From: "=?UTF-8?B?Ik1hdGVtYXRpY2vDoSBzZWtjZSBNRkYgVUsi?=" 
-	<ramala@infoclub.com.np>
-Date: Tue, 29 Nov 2011 21:45:04 +0545
-Reply-To: "=?UTF-8?B?Ik1hdGVtYXRpY2vDoSBzZWtjZSBNRkYgVUsi?=" 
-	  <ramala@infoclub.com.np>
-X-Priority: 3 (Normal)
-User-Agent: InfoClub <http://nocc.sourceforge.net/>
+	Tue, 29 Nov 2011 11:15:31 -0500
+Date: Tue, 29 Nov 2011 17:16:52 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH 2/2] drm/i915: properly clflush pwrites to phys objects
+Message-ID: <20111129161652.GD5667@phenom.ffwll.local>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org, stable@kernel.org
+References: <1322579369-26954-1-git-send-email-daniel.vetter@ffwll.ch>
+ <1322579369-26954-2-git-send-email-daniel.vetter@ffwll.ch>
+ <c55c5d$185nps@AZSMGA002.ch.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <20111129160004.A18B6343E59@ns1.info.com.np>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c55c5d$185nps@AZSMGA002.ch.intel.com>
+X-Operating-System: Linux phenom 3.1.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 29, 2011 at 03:35:54PM +0000, Chris Wilson wrote:
+> On Tue, 29 Nov 2011 16:09:29 +0100, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> > Usually results in (rare) cursor corruptions on platforms
+> > requiring physically addressed cursors.
+> 
+> So the phys cursor pages are set to WC upon creation, are we just
+> missing the mb()? Or more likely the CPUs don't have PAT and we are
+> being lazy in not detecting the error.
 
-Vítejte | Matematická nebo MFF UK |
+Yes, on reconsidering the tested-by is from a pentium m, which has working
+pat, and we do a wbinvd in the i8xx chipset flush, so I don't know anymore
+how this patch actually works.
 
-Vážený uživateli e-mailový účet,
-
-Vaše poštovní schránka překročila limit úložiště, který je 20 GB jak od vašeho
-Správce, jsou aktuálně spuštěné v 20.9 GB, nemusí být schopen přijímat novou poštu, dokud neobnovil poštovní schránky.
-
-Ale k tomu zabránit musíte potvrdit váš účet okamžitě po vás obdrží toto oznámení. Potvrdit a udržovat váš účet aktivní během a po tomto procesu, odpovědi na tuto zprávu s níže informace o účtu společnosti. V opačném případě to může způsobit trvalé deaktivaci vašeho účtu z naší databáze nám umožnilo vytvořit více
-prostory pro se nadcházejících předplatitelů
-
-Potvrďte detaily o účtu.
-_____________________________________
-1. Jméno a příjmení:
-2. Úplné přihlašovací e-mailová adresa:
-3. Uživatelské jméno a heslo:
-4. Zadejte heslo znovu:
-_____________________________________
-
-Výstražný kód: ID67565
-
-Děkujeme vám za vaši rychlou reakci na toto oznámení Omlouváme se za nějaké potíže.
-
-S pozdravem
-Správce služby.
-
-___________________________________
-NOCC, http://nocc.sourceforge.net
-
-
-
-
-
+But it seems to indeed fix the issue for at least one reporter and cursor
+update is about as far away from a perf critical path as possible, so who
+cares about such minor quibbles, it works ;-)
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
