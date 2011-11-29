@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab1K2N5n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 08:57:43 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49353 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754854Ab1K2N5l (ORCPT
+	id S1755542Ab1K2OAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 09:00:08 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:59216 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab1K2OAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 08:57:41 -0500
+	Tue, 29 Nov 2011 09:00:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: MyungJoo Ham <myungjoo.ham@gmail.com>
+Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
+Date: Tue, 29 Nov 2011 13:59:58 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kalle Komierowski <karl.komierowski@stericsson.com>,
+        Johan PALSSON <johan.palsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com> <201111281753.45287.arnd@arndb.de> <CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
+In-Reply-To: <CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [46.116.19.40]
-In-Reply-To: <20111129131110.GC19157@redhat.com>
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com> <20111129131110.GC19157@redhat.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 29 Nov 2011 15:57:19 +0200
-Message-ID: <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111291359.59103.arnd@arndb.de>
+X-Provags-ID: V02:K0:gOxGKkExxRzBTl91osrkfZHr06fAHa9ZOPwANtyjT5V
+ d7csikiFoNcnzkzWfeo3/LKjaMaLFmDE4JVepP8vbjSMTT7lio
+ MszPzuKclc6lgap9WteICeSE+63caaWU4AiEPhYIABKD/oWzRK
+ Tsi9omyq1UqsKTnoCtKQJu16Ygq4q5rjwtwTIXfMtPbZvEBmcN
+ mQI+QgzHLXTRGN7gURzHY1y88WBU3Vx46Dr5JqILbi1OC4+IQ7
+ 90/qHF8vp3+JG2FCf1IIOA/sOKHrHZZFP3WMoSW+BqjxgHvacI
+ bBH7f3an4epHCxVLx6idvP24KkUng2yFJagFTWdELG9WQULSjM
+ svi0P/S0PdP1I7gNUUH0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 3:11 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Tue, Nov 29, 2011 at 02:31:26PM +0200, Ohad Ben-Cohen wrote:
->> Virtio is using memory barriers to control the ordering of
->> references to the vrings on SMP systems. When the guest is compiled
->> with SMP support, virtio is only using SMP barriers in order to
->> avoid incurring the overhead involved with mandatory barriers.
->>
->> Lately, though, virtio is being increasingly used with inter-processor
->> communication scenarios too, which involve running two (separate)
->> instances of operating systems on two (separate) processors, each of
->> which might either be UP or SMP.
+On Tuesday 29 November 2011, MyungJoo Ham wrote:
+> For the next iteration, I'm considering the followings. It'd be much
+> appreciated if I could get some comments about those beforehand.
 >
-> Is that using virtio-mmio?
+> 2. move the location from /drivers/misc to an independent location.
+> /drivers/switch? /drivers/multistate-switch? /drivers/msc?
+> /drivers/mswitch? ...
 
-No, I'm using this:
+Moving out of drivers/misc is a good idea. I don't have a strong
+preference for any of the alternatives, but would probably pick
+drivers/mswitch. drivers/switch is too generic, since we have lots
+of things that are called a switch already, and drivers/multistate-switch
+is much longer than any of the other alternatives. "msc" in turn
+seems a bit too short and is not a well-established acronym yet.
 
-https://lkml.org/lkml/2011/10/25/139
-
-> Sorry, could you pls explain what are 'two external processors'?
-> I think I know that if two x86 CPUs in an SMP system run kernels built
-> in an SMP configuration, smp_*mb barriers are enough.
-
-Sure:
-
-My setup is not SMP-based; it's two separate processors running in AMP
-configuration. The processors have completely different architectures,
-are not cache coherent, and only simply share some memory, which is
-used for communications using virtio as the shared memory "wire"
-protocol (i.e. we're not even doing virtualization: we have Linux on
-one processor, and some RTOS on another processor, and they use virtio
-to send and receive buffers).
-
-So it's not SMP effects we're controlling; we're pretty much doing
-MMIO and must use mandatory barriers (otherwise we see breakage).
-
-> Is an extra branch faster or slower than reverting d57ed95?
-
-Sorry, unfortunately I have no way to measure this, as I don't have
-any virtualization/x86 setup. I'm developing on ARM SoCs, where
-virtualization hardware is coming, but not here yet.
-
-> One wonders how the remote side knows enough to set this flag?
-
-The remote side is a dedicated firmware loaded in order to boot the
-other processor, so it really is intimate with the platform and its
-requirements (and it publishes the virtio device features for every
-supported virtio device).
-
->> Though I also wonder how big really is the perforamnce gain of d57ed95 ?
->
-> Want to check and tell us?
-
-Sorry, as I said, I have no way to do that... Any chance you did some
-measurements back then when d57ed95 was introduced ?
-
-I just guessed it did improve performance, otherwise you probably
-wouldn't have bothered. But if not, then reverting it is surely
-preferable to adding more complexity.
-
-Thanks!
-Ohad.
+	Arnd
