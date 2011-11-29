@@ -1,46 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab1K2PD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:03:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753410Ab1K2PDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:03:25 -0500
-Date: Tue, 29 Nov 2011 10:03:16 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [SCSI] sd: Lower printk level for drive cache information
-Message-ID: <20111129150112.GA2453@zod.bos.redhat.com>
-References: <20111128163053.GA24618@zod.bos.redhat.com>
- <20111129044442.GA19616@infradead.org>
+	id S1754775Ab1K2PF5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:05:57 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33537 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab1K2PFz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 10:05:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129044442.GA19616@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4ED4DA80.9080303@parallels.com>
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
+ <20111129091037.20730.59391.stgit@localhost6.localdomain6>
+ <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
+ <4ED4CDCE.9080804@parallels.com> <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
+ <4ED4DA80.9080303@parallels.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Tue, 29 Nov 2011 23:05:33 +0800
+Message-ID: <CA+a=Yy7GkbrvB3TsnCQUSnjvEU3DFOA8F8DT7U_xL9BGO2_Rtg@mail.gmail.com>
+Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+ blocklayout routines
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "tao.peng@emc.com" <tao.peng@emc.com>,
+        "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 11:44:42PM -0500, Christoph Hellwig wrote:
-> On Mon, Nov 28, 2011 at 11:31:55AM -0500, Josh Boyer wrote:
-> > Numerous devices don't present cache data, particularly USB sticks.  The
-> > devices operate correctly despite this, so lower the printk severity to
-> > KERN_NOTICE.
-> 
-> Do they?  The last reports on the list were for devices that didn't
-> present it but actually needed cache flushes despite not having the
-> cache mode page.
+On Tue, Nov 29, 2011 at 9:13 PM, Stanislav Kinsbursky
+<skinsbursky@parallels.com> wrote:
+> 29.11.2011 16:40, tao.peng@emc.com пишет:
+>
+>>> -----Original Message-----
+>>> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
+>>> Sent: Tuesday, November 29, 2011 8:19 PM
+>>> To: Peng, Tao
+>>> Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; Pavel
+>>> Emelianov; neilb@suse.de;
+>>> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; James Bottomley;
+>>> bfields@fieldses.org;
+>>> davem@davemloft.net; devel@openvz.org
+>>> Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
+>>> from blocklayout routines
+>>>
+>>> 29.11.2011 16:00, tao.peng@emc.com пишет:
+>>>>>
+>>>>> -----Original Message-----
+>>>>> From: linux-nfs-owner@vger.kernel.org
+>>>>> [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of
+>>>
+>>> Stanislav
+>>>>>
+>>>>> Kinsbursky
+>>>>> Sent: Tuesday, November 29, 2011 6:11 PM
+>>>>> To: Trond.Myklebust@netapp.com
+>>>>> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de;
+>>>>> netdev@vger.kernel.org; linux-
+>>>>> kernel@vger.kernel.org; jbottomley@parallels.com; bfields@fieldses.org;
+>>>>> davem@davemloft.net;
+>>>>> devel@openvz.org
+>>>>> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+>>>>> blocklayout routines
+>>>>>
+>>>>> This is a cleanup patch. We don't need this reference anymore, because
+>>>>> blocklayout pipes dentries now creates and destroys in per-net
+>>>>> operations and
+>>>>> on PipeFS mount/umount notification.
+>>>>> Note that nfs4blocklayout_register_net() now returns 0 instead of
+>>>>> -ENOENT in
+>>>>> case of PipeFS superblock absence. This is ok, because blocklayout pipe
+>>>>> dentry
+>>>>> will be created on PipeFS mount event.
+>>>>
+>>>> When is the "pipefs mount event" going to happen? When inserting kernel
+>>>> modules or when user issues
+>>>
+>>> mount command?
+>>>>
+>>>>
+>>>
+>>> When user issues mount command.
+>>> Kernel mounts of PipeFS has been removed with all these patch sets I've
+>>> sent
+>>> already.
+>>
+>> Then it is going to break blocklayout user space program blkmapd, which is
+>> stared before mounting any file system and it tries to open the pipe file
+>> when started.
+>
+>
+> Sorry, but I don't get it. Probably we have misunderstanding here.
+> You said, that "blkmapd ... tries to open the pipe file when started". This
+> pipe file is located on PipeFS, isn't it?
+> If yes, then PipeFS have to be mounted already in user-space. And if it has
+> been mounted - then pipe dentry is present.
+> IOW, pipe (without dentry) will be created on module load. Pipe dentry will
+> be created right after that (like it was before) if PipeFS was mounted from
+> user-space. If not - then pipe dentry will be created  on PipeFS (!) mount
+> (not NFS or pNFS mount) from user-space.
+Sorry, I misunderstood. I was thinking about mounting NFS or pNFS when
+you say "when user issues mount command". Thanks for the explanation.
 
-We've seen a number of reports for liveusb images that spit out those
-printks, but seem to otherwise work fine.
-
-Even if the devices need cache flushes, what is a typical user supposed
-to do about that?  I'm not particularly tied to this patch, but there is
-nothing a normal user can do with the information spit out by these
-printks, so making it KERN_ERR seems excessive.
-
-josh
-> 
+Regards,
+Tao
+>
+> Or I'm missing something in your reply?
+>
+>
+>> Not sure if you implement the same logic on nfs pipe as well. But if you
+>> do, then nfs client user space program idmapd will fail to start for the
+>> same reason.
+>>
+>
+> The same logic here.
+>
+>
+>> Why not just fail to load module if you fail to initialize pipefs? When is
+>> rpc_get_sb_net() going to fail?
+>>
+>
+> Sorry, but I don't understand, what is your idea. And why do we need to fail
+> at all.
+> BTW, rpc_get_sb_net() just checks, was PipeFS mounted in passed net, or not.
+> If not - not a problem. Dentries will be created on mount event. If yes,
+> then it returns locked PipeFS sb and the next step is dentry creation.
+>
+>
+>>>
+>>>
+>>>> Thanks,
+>>>> Tao
+>>>>
+>>>>>
+>>>>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>>>>>
+>>>>> ---
+>>>>>   fs/nfs/blocklayout/blocklayout.c |    9 +--------
+>>>>>   1 files changed, 1 insertions(+), 8 deletions(-)
+>>>>>
+>>>>> diff --git a/fs/nfs/blocklayout/blocklayout.c
+>>>>> b/fs/nfs/blocklayout/blocklayout.c
+>>>>> index acf7ac9..8211ffd 100644
+>>>>> --- a/fs/nfs/blocklayout/blocklayout.c
+>>>>> +++ b/fs/nfs/blocklayout/blocklayout.c
+>>>>> @@ -1032,7 +1032,7 @@ static struct dentry
+>>>>> *nfs4blocklayout_register_net(struct net *net,
+>>>>>
+>>>>>        pipefs_sb = rpc_get_sb_net(net);
+>>>>>        if (!pipefs_sb)
+>>>>> -               return ERR_PTR(-ENOENT);
+>>>>> +               return 0;
+>>>>>        dentry = nfs4blocklayout_register_sb(pipefs_sb, pipe);
+>>>>>        rpc_put_sb_net(net);
+>>>>>        return dentry;
+>>>>> @@ -1083,7 +1083,6 @@ static struct pernet_operations
+>>>>> nfs4blocklayout_net_ops = {
+>>>>>
+>>>>>   static int __init nfs4blocklayout_init(void)
+>>>>>   {
+>>>>> -       struct vfsmount *mnt;
+>>>>>        int ret;
+>>>>>
+>>>>>        dprintk("%s: NFSv4 Block Layout Driver Registering...\n",
+>>>>> __func__);
+>>>>> @@ -1093,12 +1092,6 @@ static int __init nfs4blocklayout_init(void)
+>>>>>                goto out;
+>>>>>
+>>>>>        init_waitqueue_head(&bl_wq);
+>>>>> -
+>>>>> -       mnt = rpc_get_mount();
+>>>>> -       if (IS_ERR(mnt)) {
+>>>>> -               ret = PTR_ERR(mnt);
+>>>>> -               goto out_remove;
+>>>>> -       }
+>>>>>        ret = rpc_pipefs_notifier_register(&nfs4blocklayout_block);
+>>>>>        if (ret)
+>>>>>                goto out_remove;
+>>>>>
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>>>
+>>>
+>>>
+>>> --
+>>> Best regards,
+>>> Stanislav Kinsbursky
+>>
+>>
+>
+>
+> --
+> Best regards,
+> Stanislav Kinsbursky
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
