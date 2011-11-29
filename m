@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab1K2N2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 08:28:01 -0500
-Received: from mga03.intel.com ([143.182.124.21]:46421 "EHLO mga03.intel.com"
+	id S1755394Ab1K2Ncm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 08:32:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59806 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755296Ab1K2N0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 08:26:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,590,1315206000"; 
-   d="scan'208";a="80197570"
-Message-Id: <20111129131456.145362960@intel.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 29 Nov 2011 21:09:02 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>
-cc: Linux Memory Management List <linux-mm@kvack.org>,
-        <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/9] readahead: snap readahead request to EOF
-References: <20111129130900.628549879@intel.com>
-Content-Disposition: inline; filename=readahead-eof
+	id S1753479Ab1K2Nck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 08:32:40 -0500
+Date: Tue, 29 Nov 2011 14:32:39 +0100
+From: Jan Kara <jack@suse.cz>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Mikulas Patocka <mpatocka@redhat.com>,
+        esandeen@redhat.com, Surbhi Palande <csurbhi@gmail.com>,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        Valerie Aurora <val@vaaconsulting.com>
+Subject: Re: [dm-devel] [PATCH] deadlock with suspend and quotas
+Message-ID: <20111129133239.GA9926@quack.suse.cz>
+References: <CAD-XujnH1UJXrEbYAKOSjvdwVnehj4_owuduhjR0RCUBqfrg0w@mail.gmail.com>
+ <Pine.LNX.4.64.1111281612030.11895@hs20-bc2-1.build.redhat.com>
+ <Pine.LNX.4.64.1111281754120.11895@hs20-bc2-1.build.redhat.com>
+ <20111129101901.GA5635@quack.suse.cz>
+ <20111129102156.GA7463@quack.suse.cz>
+ <Pine.LNX.4.64.1111290556270.12274@hs20-bc2-1.build.redhat.com>
+ <20111129111136.GC5635@quack.suse.cz>
+ <Pine.LNX.4.64.1111290746230.10352@hs20-bc2-1.build.redhat.com>
+ <20111129130913.GE5635@quack.suse.cz>
+ <20111129131811.GS7595@agk-dp.fab.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129131811.GS7595@agk-dp.fab.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the file size is 20kb and readahead request is [0, 16kb),
-it's better to expand the readahead request to [0, 20kb), which will
-likely save one followup I/O for [16kb, 20kb).
+On Tue 29-11-11 13:18:11, Alasdair G Kergon wrote:
+> On Tue, Nov 29, 2011 at 02:09:13PM +0100, Jan Kara wrote:
+> >   Hmm, then why do these operations suspend the filesystem if they
+> > apparently don't need it? Sorry for my ignorance, I never seriously worked
+> > with LVM code...
+> 
+> They don't suspend it if they don't need to.
+> 
+> dm-ioctl.h:
+> /*
+>  * Set this to avoid attempting to freeze any filesystem when suspending.
+>  */
+> #define DM_SKIP_LOCKFS_FLAG     (1 << 10) /* In */
+  Thanks. I was now checking in detail and indeed FIFREEZE fails if
+->freeze_fs is not set. And only xfs, ext3, ext4, reiserfs, jfs, nilfs2,
+and gfs2 provide this function. So I was correct in assuming that when
+filesystem supports FIFREEZE it must make sure no modifications happen to
+the filesystem. So I believe that my original plan for sync to skip frozen
+filesystem is correct.
 
-If the readahead request already covers EOF, trimm it down to EOF.
-Also don't set the PG_readahead mark to avoid an unnecessary future
-invocation of the readahead code.
-
-This special handling looks worthwhile because small to medium sized
-files are pretty common.
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/readahead.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
---- linux-next.orig/mm/readahead.c	2011-11-29 11:28:56.000000000 +0800
-+++ linux-next/mm/readahead.c	2011-11-29 11:29:05.000000000 +0800
-@@ -251,8 +251,16 @@ unsigned long max_sane_readahead(unsigne
- unsigned long ra_submit(struct file_ra_state *ra,
- 		       struct address_space *mapping, struct file *filp)
- {
-+	pgoff_t eof = ((i_size_read(mapping->host)-1) >> PAGE_CACHE_SHIFT) + 1;
-+	pgoff_t start = ra->start;
- 	int actual;
- 
-+	/* snap to EOF */
-+	if (start + ra->size + ra->size / 2 > eof) {
-+		ra->size = eof - start;
-+		ra->async_size = 0;
-+	}
-+
- 	actual = __do_page_cache_readahead(mapping, filp,
- 					ra->start, ra->size, ra->async_size);
- 
-
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
