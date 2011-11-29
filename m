@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab1K2Tth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 14:49:37 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:7370 "EHLO
-	VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753668Ab1K2Ttg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 14:49:36 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zzbb2dK9371K1432N98dKzz1202hzzz2dh2a8h668h839h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4ED53748.3060801@freescale.com>
-Date: Tue, 29 Nov 2011 13:49:28 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1756266Ab1K2TvB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 14:51:01 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:1228 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753752Ab1K2TvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 14:51:00 -0500
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4ED53793.80209@broadcom.com>
+Date: Tue, 29 Nov 2011 11:50:43 -0800
+From: "Jiandong Zheng" <jdzheng@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929
+ Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Li Yang-R58472 <r58472@freescale.com>
-CC: "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Shi Xuelin-B29237 <B29237@freescale.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing
- spinlock use.
-References: <1321937705-19587-1-git-send-email-b29237@freescale.com> <20111122185924.GA23323@ovro.caltech.edu> <DBB740589CE8814680DECFE34BE197AB148CDD@039-SN1MPN1-006.039d.mgd.msft.net> <20111128163814.GA10919@ovro.caltech.edu> <3F607A5180246847A760FD34122A1E052E07B7@039-SN1MPN1-003.039d.mgd.msft.net>
-In-Reply-To: <3F607A5180246847A760FD34122A1E052E07B7@039-SN1MPN1-003.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"
+To: "Axel Lin" <axel.lin@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David Woodhouse" <dwmw2@infradead.org>,
+        "Scott Branden" <sbranden@broadcom.com>,
+        "Wan ZongShun" <mcuos.com@gmail.com>,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        "Jamie Iles" <jamie@jamieiles.com>, "Olof Johansson" <olof@lixom.net>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Haojian Zhuang" <haojian.zhuang@gmail.com>,
+        "Artem Bityutskiy" <Artem.Bityutskiy@nokia.com>,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "Brian Norris" <computersforpeace@gmail.com>,
+        "Lars-Peter Clausen" <lars@metafoo.de>,
+        "Manuel Lauss" <manuel.lauss@googlemail.com>,
+        "Vimal Singh" <vimal.newwork@gmail.com>,
+        "Andres Salomon" <dilinger@queued.net>,
+        "Sukumar Ghorai" <s-ghorai@ti.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Subject: Re: [PATCH] mtd: convert drivers/mtd/* to use
+ module_platform_driver()
+References: <1322397903.2799.5.camel@phoenix>
+In-Reply-To: <1322397903.2799.5.camel@phoenix>
+X-WSS-ID: 62CBE6F43DS1803944-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2011 09:19 PM, Li Yang-R58472 wrote:
->> Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing
->> spinlock use.
->>
->> On Thu, Nov 24, 2011 at 08:12:25AM +0000, Shi Xuelin-B29237 wrote:
->>> Hi Ira,
->>>
->>> Thanks for your review.
->>>
->>> After second thought, I think your scenario may not occur.
->>> Because the cookie 20 we query must be returned by fsl_dma_tx_submit(...) in
->> practice.
->>> We never query a cookie not returned by fsl_dma_tx_submit(...).
->>>
->>
->> I agree about this part.
->>
->>> When we call fsl_tx_status(20), the chan->common.cookie is definitely wrote as
->> 20 and cpu2 could not read as 19.
->>>
->>
->> This is what I don't agree about. However, I'm not an expert on CPU cache vs.
->> memory accesses in an multi-processor system. The section titled "CACHE
->> COHERENCY" in Documentation/memory-barriers.txt leads me to believe that the
->> scenario I described is possible.
-> 
-> For Freescale PowerPC, the chip automatically takes care of cache coherency.  Even if this is a concern, spinlock can't address it.
+On 11/27/2011 4:45 AM, Axel Lin wrote:
+> This patch converts the drivers in drivers/mtd/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
+>
+> Cc: David Woodhouse<dwmw2@infradead.org>
+> Cc: Jiandong Zheng<jdzheng@broadcom.com>
+> Cc: Scott Branden<sbranden@broadcom.com>
+> Cc: Wan ZongShun<mcuos.com@gmail.com>
+> Cc: Dmitry Eremin-Solenikov<dbaryshkov@gmail.com>
+> Cc: Jamie Iles<jamie@jamieiles.com>
+> Cc: Olof Johansson<olof@lixom.net>
+> Cc: Kyungmin Park<kyungmin.park@samsung.com>
+> Cc: Haojian Zhuang<haojian.zhuang@gmail.com>
+> Cc: Artem Bityutskiy<Artem.Bityutskiy@nokia.com>
+> Cc: Ralf Baechle<ralf@linux-mips.org>
+> Cc: Brian Norris<computersforpeace@gmail.com>
+> Cc: Lars-Peter Clausen<lars@metafoo.de>
+> Cc: Manuel Lauss<manuel.lauss@googlemail.com>
+> Cc: Vimal Singh<vimal.newwork@gmail.com>
+> Cc: Andres Salomon<dilinger@queued.net>
+> Cc: Sukumar Ghorai<s-ghorai@ti.com>
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> ---
 
-Cache coherency is not the same thing as ordering -- and spinlocks do
-address ordering, because there are memory barriers in the lock
-implementation.
+>   drivers/mtd/nand/bcm_umi_nand.c     |   13 +------------
 
-If you're relying on some non-universal ordering guarantee that all
-chips with this device make, it needs to be documented explicitly what
-you're assuming and why it's valid.
+> diff --git a/drivers/mtd/nand/bcm_umi_nand.c b/drivers/mtd/nand/bcm_umi_nand.c
+> index 46b58d6..50387fd 100644
+> --- a/drivers/mtd/nand/bcm_umi_nand.c
+> +++ b/drivers/mtd/nand/bcm_umi_nand.c
+> @@ -546,18 +546,7 @@ static struct platform_driver nand_driver = {
+>          .resume = bcm_umi_nand_resume,
+>   };
+>
+> -static int __init nand_init(void)
+> -{
+> -       return platform_driver_register(&nand_driver);
+> -}
+> -
+> -static void __exit nand_exit(void)
+> -{
+> -       platform_driver_unregister(&nand_driver);
+> -}
+> -
+> -module_init(nand_init);
+> -module_exit(nand_exit);
+> +module_platform_driver(nand_driver);
+>
+>   MODULE_LICENSE("GPL");
+>   MODULE_AUTHOR("Broadcom");
 
--Scott
+Acked-by: Jiandong Zheng <jdzheng@broadcom.com>
+
 
