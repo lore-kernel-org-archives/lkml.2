@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1K2PLz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:11:55 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60284 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487Ab1K2PLy (ORCPT
+	id S1755041Ab1K2PMB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:12:01 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53670 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487Ab1K2PMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:11:54 -0500
+	Tue, 29 Nov 2011 10:12:00 -0500
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 To: intel-gfx@lists.freedesktop.org
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Daniel Vetter <daniel.vetter@ffwll.ch>, stable@kernel.org
-Subject: [PATCH 1/2] drm: add helper to clflush a virtual address range
-Date: Tue, 29 Nov 2011 16:09:28 +0100
-Message-Id: <1322579369-26954-1-git-send-email-daniel.vetter@ffwll.ch>
+Subject: [PATCH 2/2] drm/i915: properly clflush pwrites to phys objects
+Date: Tue, 29 Nov 2011 16:09:29 +0100
+Message-Id: <1322579369-26954-2-git-send-email-daniel.vetter@ffwll.ch>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1322579369-26954-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1322579369-26954-1-git-send-email-daniel.vetter@ffwll.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Useful when the page is already mapped to copy date in/out.
+Usually results in (rare) cursor corruptions on platforms
+requiring physically addressed cursors.
 
-For -stable because the next patch (fixing phys obj pwrite) needs this
-little helper function.
+Note to the stable team: This requires the drm core patch
+"drm: add helper to clflush a virtual address range" which
+creates the helper used here.
 
+Tested-and-reported-by: Bruno Prémont <bonbons@linux-vserver.org>
 Cc: stable@kernel.org
-Cc: dri-devel@lists.freedesktop.org
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=35460
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=21442
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
- drivers/gpu/drm/drm_cache.c |   23 +++++++++++++++++++++++
- include/drm/drmP.h          |    1 +
- 2 files changed, 24 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_cache.c b/drivers/gpu/drm/drm_cache.c
-index 5928653..c7c8f6b 100644
---- a/drivers/gpu/drm/drm_cache.c
-+++ b/drivers/gpu/drm/drm_cache.c
-@@ -98,3 +98,26 @@ drm_clflush_pages(struct page *pages[], unsigned long num_pages)
- #endif
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 39459d2..e395a7d 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -4123,6 +4123,7 @@ i915_gem_phys_pwrite(struct drm_device *dev,
+ 			return -EFAULT;
+ 	}
+ 
++	drm_clflush_virt_range(vaddr, args->size);
+ 	intel_gtt_chipset_flush();
+ 	return 0;
  }
- EXPORT_SYMBOL(drm_clflush_pages);
-+
-+void
-+drm_clflush_virt_range(char *addr, unsigned long length)
-+{
-+#if defined(CONFIG_X86)
-+	if (cpu_has_clflush) {
-+		char *end = addr + length;
-+		mb();
-+		for (; addr < end; addr += boot_cpu_data.x86_clflush_size)
-+			clflush(addr);
-+		clflush(end - 1);
-+		mb();
-+		return;
-+	}
-+
-+	if (on_each_cpu(drm_clflush_ipi_handler, NULL, 1) != 0)
-+		printk(KERN_ERR "Timed out waiting for cache flush.\n");
-+#else
-+	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
-+	WARN_ON_ONCE(1);
-+#endif
-+}
-+EXPORT_SYMBOL(drm_clflush_virt_range);
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index 1f9e951..ededdd0 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -1331,6 +1331,7 @@ extern int drm_authmagic(struct drm_device *dev, void *data,
- 
- /* Cache management (drm_cache.c) */
- void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
-+void drm_clflush_virt_range(char *addr, unsigned long length);
- 
- 				/* Locking IOCTL support (drm_lock.h) */
- extern int drm_lock(struct drm_device *dev, void *data,
 -- 
 1.7.7.3
 
