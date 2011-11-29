@@ -1,102 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847Ab1K2OkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 09:40:14 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41821 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755718Ab1K2OkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 09:40:11 -0500
-Subject: Re: [BUG] i2c-designware: (allyesconfig) error: multiple definition
-From: Christoph Fritz <chf.fritz@googlemail.com>
-To: "Purdila, Octavian" <octavian.purdila@intel.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <CAE1zotJy6eYMOuNqQx7eiFPnnJ5raDRSDqTaLcV8iie5MJ0wbg@mail.gmail.com>
-References: <1322567933.2182.16.camel@mars>
-	 <CAE1zotJy6eYMOuNqQx7eiFPnnJ5raDRSDqTaLcV8iie5MJ0wbg@mail.gmail.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Tue, 29 Nov 2011 15:40:04 +0100
-Message-ID: <1322577604.2182.28.camel@mars>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755896Ab1K2Okh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 09:40:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35992 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755728Ab1K2Okg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 09:40:36 -0500
+Date: Tue, 29 Nov 2011 15:40:34 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/9] readahead: record readahead patterns
+Message-ID: <20111129144034.GK5635@quack.suse.cz>
+References: <20111129130900.628549879@intel.com>
+ <20111129131456.278516066@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129131456.278516066@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 15:35 +0200, Purdila, Octavian wrote:
-> On Tue, Nov 29, 2011 at 1:58 PM, Christoph Fritz
-> <chf.fritz@googlemail.com> wrote:
-> > Hi,
-> >
-> >  I just hit this bug with allyesconfig:
-> >
-> > make[2]: `include/generated/mach-types.h' is up to date.
-> >  CALL    /xxx/linux-2.6/scripts/checksyscalls.sh
-> >  CHK     include/generated/compile.h
-> >  CHK     kernel/config_data.h
-> >  CHECK   /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c
-> >  CC      drivers/i2c/busses/i2c-designware-core.o
-> >  CHECK   /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-pcidrv.c
-> >  CC      drivers/i2c/busses/i2c-designware-pcidrv.o
-> >  CHECK   /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-platdrv.c
-> >  CC      drivers/i2c/busses/i2c-designware-platdrv.o
-> >  LD      drivers/i2c/busses/i2c-designware-pci.o
-> >  LD      drivers/i2c/busses/i2c-designware-platform.o
-> >  LD      drivers/i2c/busses/built-in.o
-> > drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_clear_int':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:694: multiple definition of `i2c_dw_clear_int'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:694: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_init':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:247: multiple definition of `i2c_dw_init'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:247: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `dw_readl':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:169: multiple definition of `dw_readl'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:169: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_isr':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:627: multiple definition of `i2c_dw_isr'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:627: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_xfer':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:498: multiple definition of `i2c_dw_xfer'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:498: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_is_enabled':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:679: multiple definition of `i2c_dw_is_enabled'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:679: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `dw_writel':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:177: multiple definition of `dw_writel'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:177: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_xfer_msg':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:362: multiple definition of `i2c_dw_xfer_msg'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:362: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_enable':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:674: multiple definition of `i2c_dw_enable'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:674: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_read_comp_param':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:704: multiple definition of `i2c_dw_read_comp_param'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:704: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_disable':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:683: multiple definition of `i2c_dw_disable'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:683: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_func':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:562: multiple definition of `i2c_dw_func'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:562: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_disable_int':
-> > /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:699: multiple definition of `i2c_dw_disable_int'
-> > drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:699: first defined here make[4]: *** [drivers/i2c/busses/built-in.o] Error 1
-> > make[3]: *** [drivers/i2c/busses] Error 2
-> > make[2]: *** [drivers/i2c] Error 2
-> > make[1]: *** [drivers] Error 2
-> > make: *** [sub-make] Error 2
-> >
-> >
+On Tue 29-11-11 21:09:03, Wu Fengguang wrote:
+> Record the readahead pattern in ra->pattern and extend the ra_submit()
+> parameters, to be used by the next readahead tracing/stats patches.
 > 
-> Hi Christoph,
+> 7 patterns are defined:
 > 
-> What tree are you using? I tried the following on Linus's tree (head
-> at 8748dfae379573cdbea4e765b55e608a1764f918):
+>       	pattern			readahead for
+> -----------------------------------------------------------
+> 	RA_PATTERN_INITIAL	start-of-file read
+> 	RA_PATTERN_SUBSEQUENT	trivial sequential read
+> 	RA_PATTERN_CONTEXT	interleaved sequential read
+> 	RA_PATTERN_OVERSIZE	oversize read
+> 	RA_PATTERN_MMAP_AROUND	mmap fault
+> 	RA_PATTERN_FADVISE	posix_fadvise()
+> 	RA_PATTERN_RANDOM	random read
+> 
+> Note that random reads will be recorded in file_ra_state now.
+> This won't deteriorate cache bouncing because the ra->prev_pos update
+> in do_generic_file_read() already pollutes the data cache, and
+> filemap_fault() will stop calling into us after MMAP_LOTSAMISS.
+> 
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Jens Axboe <axboe@kernel.dk>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+  The patch looks OK. You can add:
+Acked-by: Jan Kara <jack@suse.cz>
 
-I'm using the same, but compile for arm:
+								Honza
 
-ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make O=../o_test allyesconfig
-ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make O=../o_test oldconfig
-
-in .config change to:
-# CONFIG_DYNAMIC_DEBUG is not set
-# CONFIG_DEBUG_INFO_REDUCED is not set
-
-ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- make -j4 O=../o_test drivers/i2c/busses/
-
-
-Thanks,
-  -- Christoph
-
+> ---
+>  include/linux/fs.h |   36 +++++++++++++++++++++++++++++++++++-
+>  include/linux/mm.h |    4 +++-
+>  mm/filemap.c       |    3 ++-
+>  mm/readahead.c     |   29 ++++++++++++++++++++++-------
+>  4 files changed, 62 insertions(+), 10 deletions(-)
+> 
+> --- linux-next.orig/include/linux/fs.h	2011-11-28 21:21:05.000000000 +0800
+> +++ linux-next/include/linux/fs.h	2011-11-29 10:23:41.000000000 +0800
+> @@ -945,11 +945,45 @@ struct file_ra_state {
+>  					   there are only # of pages ahead */
+>  
+>  	unsigned int ra_pages;		/* Maximum readahead window */
+> -	unsigned int mmap_miss;		/* Cache miss stat for mmap accesses */
+> +	u16 mmap_miss;			/* Cache miss stat for mmap accesses */
+> +	u8 pattern;			/* one of RA_PATTERN_* */
+> +
+>  	loff_t prev_pos;		/* Cache last read() position */
+>  };
+>  
+>  /*
+> + * Which policy makes decision to do the current read-ahead IO?
+> + *
+> + * RA_PATTERN_INITIAL		readahead window is initially opened,
+> + *				normally when reading from start of file
+> + * RA_PATTERN_SUBSEQUENT	readahead window is pushed forward
+> + * RA_PATTERN_CONTEXT		no readahead window available, querying the
+> + *				page cache to decide readahead start/size.
+> + *				This typically happens on interleaved reads (eg.
+> + *				reading pages 0, 1000, 1, 1001, 2, 1002, ...)
+> + *				where one file_ra_state struct is not enough
+> + *				for recording 2+ interleaved sequential read
+> + *				streams.
+> + * RA_PATTERN_MMAP_AROUND	read-around on mmap page faults
+> + *				(w/o any sequential/random hints)
+> + * RA_PATTERN_FADVISE		triggered by POSIX_FADV_WILLNEED or FMODE_RANDOM
+> + * RA_PATTERN_OVERSIZE		a random read larger than max readahead size,
+> + *				do max readahead to break down the read size
+> + * RA_PATTERN_RANDOM		a small random read
+> + */
+> +enum readahead_pattern {
+> +	RA_PATTERN_INITIAL,
+> +	RA_PATTERN_SUBSEQUENT,
+> +	RA_PATTERN_CONTEXT,
+> +	RA_PATTERN_MMAP_AROUND,
+> +	RA_PATTERN_FADVISE,
+> +	RA_PATTERN_OVERSIZE,
+> +	RA_PATTERN_RANDOM,
+> +	RA_PATTERN_ALL,		/* for summary stats */
+> +	RA_PATTERN_MAX
+> +};
+> +
+> +/*
+>   * Check if @index falls in the readahead windows.
+>   */
+>  static inline int ra_has_index(struct file_ra_state *ra, pgoff_t index)
+> --- linux-next.orig/mm/readahead.c	2011-11-28 22:24:16.000000000 +0800
+> +++ linux-next/mm/readahead.c	2011-11-29 10:17:14.000000000 +0800
+> @@ -249,7 +249,10 @@ unsigned long max_sane_readahead(unsigne
+>   * Submit IO for the read-ahead request in file_ra_state.
+>   */
+>  unsigned long ra_submit(struct file_ra_state *ra,
+> -		       struct address_space *mapping, struct file *filp)
+> +			struct address_space *mapping,
+> +			struct file *filp,
+> +			pgoff_t offset,
+> +			unsigned long req_size)
+>  {
+>  	pgoff_t eof = ((i_size_read(mapping->host)-1) >> PAGE_CACHE_SHIFT) + 1;
+>  	pgoff_t start = ra->start;
+> @@ -390,6 +393,7 @@ static int try_context_readahead(struct 
+>  	if (size >= offset)
+>  		size *= 2;
+>  
+> +	ra->pattern = RA_PATTERN_CONTEXT;
+>  	ra->start = offset;
+>  	ra->size = get_init_ra_size(size + req_size, max);
+>  	ra->async_size = ra->size;
+> @@ -411,8 +415,10 @@ ondemand_readahead(struct address_space 
+>  	/*
+>  	 * start of file
+>  	 */
+> -	if (!offset)
+> +	if (!offset) {
+> +		ra->pattern = RA_PATTERN_INITIAL;
+>  		goto initial_readahead;
+> +	}
+>  
+>  	/*
+>  	 * It's the expected callback offset, assume sequential access.
+> @@ -420,6 +426,7 @@ ondemand_readahead(struct address_space 
+>  	 */
+>  	if ((offset == (ra->start + ra->size - ra->async_size) ||
+>  	     offset == (ra->start + ra->size))) {
+> +		ra->pattern = RA_PATTERN_SUBSEQUENT;
+>  		ra->start += ra->size;
+>  		ra->size = get_next_ra_size(ra, max);
+>  		ra->async_size = ra->size;
+> @@ -442,6 +449,7 @@ ondemand_readahead(struct address_space 
+>  		if (!start || start - offset > max)
+>  			return 0;
+>  
+> +		ra->pattern = RA_PATTERN_CONTEXT;
+>  		ra->start = start;
+>  		ra->size = start - offset;	/* old async_size */
+>  		ra->size += req_size;
+> @@ -453,14 +461,18 @@ ondemand_readahead(struct address_space 
+>  	/*
+>  	 * oversize read
+>  	 */
+> -	if (req_size > max)
+> +	if (req_size > max) {
+> +		ra->pattern = RA_PATTERN_OVERSIZE;
+>  		goto initial_readahead;
+> +	}
+>  
+>  	/*
+>  	 * sequential cache miss
+>  	 */
+> -	if (offset - (ra->prev_pos >> PAGE_CACHE_SHIFT) <= 1UL)
+> +	if (offset - (ra->prev_pos >> PAGE_CACHE_SHIFT) <= 1UL) {
+> +		ra->pattern = RA_PATTERN_INITIAL;
+>  		goto initial_readahead;
+> +	}
+>  
+>  	/*
+>  	 * Query the page cache and look for the traces(cached history pages)
+> @@ -471,9 +483,12 @@ ondemand_readahead(struct address_space 
+>  
+>  	/*
+>  	 * standalone, small random read
+> -	 * Read as is, and do not pollute the readahead state.
+>  	 */
+> -	return __do_page_cache_readahead(mapping, filp, offset, req_size, 0);
+> +	ra->pattern = RA_PATTERN_RANDOM;
+> +	ra->start = offset;
+> +	ra->size = req_size;
+> +	ra->async_size = 0;
+> +	goto readit;
+>  
+>  initial_readahead:
+>  	ra->start = offset;
+> @@ -491,7 +506,7 @@ readit:
+>  		ra->size += ra->async_size;
+>  	}
+>  
+> -	return ra_submit(ra, mapping, filp);
+> +	return ra_submit(ra, mapping, filp, offset, req_size);
+>  }
+>  
+>  /**
+> --- linux-next.orig/include/linux/mm.h	2011-11-28 21:21:05.000000000 +0800
+> +++ linux-next/include/linux/mm.h	2011-11-28 22:24:16.000000000 +0800
+> @@ -1456,7 +1456,9 @@ void page_cache_async_readahead(struct a
+>  unsigned long max_sane_readahead(unsigned long nr);
+>  unsigned long ra_submit(struct file_ra_state *ra,
+>  			struct address_space *mapping,
+> -			struct file *filp);
+> +			struct file *filp,
+> +			pgoff_t offset,
+> +			unsigned long req_size);
+>  
+>  /* Generic expand stack which grows the stack according to GROWS{UP,DOWN} */
+>  extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
+> --- linux-next.orig/mm/filemap.c	2011-11-28 21:21:05.000000000 +0800
+> +++ linux-next/mm/filemap.c	2011-11-29 10:17:14.000000000 +0800
+> @@ -1611,11 +1611,12 @@ static void do_sync_mmap_readahead(struc
+>  	/*
+>  	 * mmap read-around
+>  	 */
+> +	ra->pattern = RA_PATTERN_MMAP_AROUND;
+>  	ra_pages = max_sane_readahead(ra->ra_pages);
+>  	ra->start = max_t(long, 0, offset - ra_pages / 2);
+>  	ra->size = ra_pages;
+>  	ra->async_size = ra_pages / 4;
+> -	ra_submit(ra, mapping, file);
+> +	ra_submit(ra, mapping, file, offset, 1);
+>  }
+>  
+>  /*
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
