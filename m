@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932743Ab1LERbB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:31:01 -0500
-Received: from www17.your-server.de ([213.133.104.17]:38047 "EHLO
+	id S932732Ab1LERbA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:31:00 -0500
+Received: from www17.your-server.de ([213.133.104.17]:38049 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932692Ab1LERa5 (ORCPT
+	with ESMTP id S932714Ab1LERa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:30:57 -0500
-Subject: [PATCH] xHCI: Use kcalloc instead of kzalloc to allocate array
+	Mon, 5 Dec 2011 12:30:58 -0500
+Subject: [PATCH] USB: wusb: Use kcalloc instead of kzalloc to allocate array
 From: Thomas Meyer <thomas@m3y3r.de>
 To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Tue, 29 Nov 2011 22:08:00 +0100
-Message-ID: <1322600880.1534.337.camel@localhost.localdomain>
+Message-ID: <1322600880.1534.339.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -31,21 +31,15 @@ in https://lkml.org/lkml/2011/11/25/107
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
---- a/drivers/usb/host/xhci-mem.c 2011-11-28 19:36:48.020115250 +0100
-+++ b/drivers/usb/host/xhci-mem.c 2011-11-28 20:06:14.528280517 +0100
-@@ -2037,11 +2037,12 @@ static int xhci_setup_port_arrays(struct
- 	}
+diff -u -p a/drivers/usb/wusbcore/security.c b/drivers/usb/wusbcore/security.c
+--- a/drivers/usb/wusbcore/security.c 2011-11-13 11:07:52.997240138 +0100
++++ b/drivers/usb/wusbcore/security.c 2011-11-28 20:06:23.831675334 +0100
+@@ -354,7 +354,7 @@ int wusb_dev_4way_handshake(struct wusbh
+ 	struct wusb_keydvt_in keydvt_in;
+ 	struct wusb_keydvt_out keydvt_out;
  
- 	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
--	xhci->port_array = kzalloc(sizeof(*xhci->port_array)*num_ports, flags);
-+	xhci->port_array = kcalloc(num_ports, sizeof(*xhci->port_array),
-+				   flags);
- 	if (!xhci->port_array)
- 		return -ENOMEM;
- 
--	xhci->rh_bw = kzalloc(sizeof(*xhci->rh_bw)*num_ports, flags);
-+	xhci->rh_bw = kcalloc(num_ports, sizeof(*xhci->rh_bw), flags);
- 	if (!xhci->rh_bw)
- 		return -ENOMEM;
- 	for (i = 0; i < num_ports; i++) {
+-	hs = kzalloc(3*sizeof(hs[0]), GFP_KERNEL);
++	hs = kcalloc(3, sizeof(hs[0]), GFP_KERNEL);
+ 	if (hs == NULL) {
+ 		dev_err(dev, "can't allocate handshake data\n");
+ 		goto error_kzalloc;
