@@ -1,160 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab1K2PWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:22:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40474 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754796Ab1K2PWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:22:30 -0500
-Date: Tue, 29 Nov 2011 16:22:28 +0100
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/9] readahead: add vfs/readahead tracing event
-Message-ID: <20111129152228.GO5635@quack.suse.cz>
-References: <20111129130900.628549879@intel.com>
- <20111129131456.797240894@intel.com>
+	id S1753485Ab1K2P0b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:26:31 -0500
+Received: from smtp-out-2.desy.de ([131.169.56.85]:48799 "EHLO
+	smtp-out-2.desy.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab1K2P03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 10:26:29 -0500
+X-Greylist: delayed 522 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Nov 2011 10:26:29 EST
+Message-ID: <4ED4F798.9020106@desy.de>
+Date: Tue, 29 Nov 2011 16:17:44 +0100
+From: Ludvig Petrossian <lyudvig.petrosyan@desy.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129131456.797240894@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Anand Kanaginhal <anand_dk@hotmail.com>
+CC: Linux PCI mailing <linux-pci@vger.kernel.org>,
+        linux kernel mailing <linux-kernel@vger.kernel.org>,
+        linux hotplug mailing <linux-hotplug@vger.kernel.org>
+Subject: Re: PCIe Hotplugging not working
+References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl> <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
+In-Reply-To: <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 29-11-11 21:09:07, Wu Fengguang wrote:
-> This is very useful for verifying whether the readahead algorithms are
-> working to the expectation.
-> 
-> Example output:
-> 
-> # echo 1 > /debug/tracing/events/vfs/readahead/enable
-> # cp test-file /dev/null
-> # cat /debug/tracing/trace  # trimmed output
-> readahead-initial(dev=0:15, ino=100177, req=0+2, ra=0+4-2, async=0) = 4
-> readahead-subsequent(dev=0:15, ino=100177, req=2+2, ra=4+8-8, async=1) = 8
-> readahead-subsequent(dev=0:15, ino=100177, req=4+2, ra=12+16-16, async=1) = 16
-> readahead-subsequent(dev=0:15, ino=100177, req=12+2, ra=28+32-32, async=1) = 32
-> readahead-subsequent(dev=0:15, ino=100177, req=28+2, ra=60+60-60, async=1) = 24
-> readahead-subsequent(dev=0:15, ino=100177, req=60+2, ra=120+60-60, async=1) = 0
-> 
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Jens Axboe <axboe@kernel.dk>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-  Looks OK.
-
-  Acked-by: Jan Kara <jack@suse.cz>
-
-									Honza
-> ---
->  include/trace/events/vfs.h |   64 +++++++++++++++++++++++++++++++++++
->  mm/readahead.c             |    5 ++
->  2 files changed, 69 insertions(+)
-> 
-> --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-> +++ linux-next/include/trace/events/vfs.h	2011-11-29 20:58:59.000000000 +0800
-> @@ -0,0 +1,64 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM vfs
-> +
-> +#if !defined(_TRACE_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_VFS_H
-> +
-> +#include <linux/tracepoint.h>
-> +
-> +TRACE_EVENT(readahead,
-> +	TP_PROTO(struct address_space *mapping,
-> +		 pgoff_t offset,
-> +		 unsigned long req_size,
-> +		 enum readahead_pattern pattern,
-> +		 pgoff_t start,
-> +		 unsigned long size,
-> +		 unsigned long async_size,
-> +		 unsigned int actual),
-> +
-> +	TP_ARGS(mapping, offset, req_size, pattern, start, size, async_size,
-> +		actual),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	dev_t,		dev		)
-> +		__field(	ino_t,		ino		)
-> +		__field(	pgoff_t,	offset		)
-> +		__field(	unsigned long,	req_size	)
-> +		__field(	unsigned int,	pattern		)
-> +		__field(	pgoff_t,	start		)
-> +		__field(	unsigned int,	size		)
-> +		__field(	unsigned int,	async_size	)
-> +		__field(	unsigned int,	actual		)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->dev		= mapping->host->i_sb->s_dev;
-> +		__entry->ino		= mapping->host->i_ino;
-> +		__entry->offset		= offset;
-> +		__entry->req_size	= req_size;
-> +		__entry->pattern	= pattern;
-> +		__entry->start		= start;
-> +		__entry->size		= size;
-> +		__entry->async_size	= async_size;
-> +		__entry->actual		= actual;
-> +	),
-> +
-> +	TP_printk("readahead-%s(dev=%d:%d, ino=%lu, "
-> +		  "req=%lu+%lu, ra=%lu+%d-%d, async=%d) = %d",
-> +			ra_pattern_names[__entry->pattern],
-> +			MAJOR(__entry->dev),
-> +			MINOR(__entry->dev),
-> +			__entry->ino,
-> +			__entry->offset,
-> +			__entry->req_size,
-> +			__entry->start,
-> +			__entry->size,
-> +			__entry->async_size,
-> +			__entry->start > __entry->offset,
-> +			__entry->actual)
-> +);
-> +
-> +#endif /* _TRACE_VFS_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> --- linux-next.orig/mm/readahead.c	2011-11-29 20:58:53.000000000 +0800
-> +++ linux-next/mm/readahead.c	2011-11-29 20:59:20.000000000 +0800
-> @@ -29,6 +29,9 @@ static const char * const ra_pattern_nam
->  	[RA_PATTERN_ALL]                = "all",
->  };
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/vfs.h>
-> +
->  /*
->   * Initialise a struct file's readahead state.  Assumes that the caller has
->   * memset *ra to zero.
-> @@ -215,6 +218,8 @@ static inline void readahead_event(struc
->  				for_mmap, for_metadata,
->  				pattern, start, size, async_size, actual);
->  #endif
-> +	trace_readahead(mapping, offset, req_size,
-> +			pattern, start, size, async_size, actual);
->  }
->  
->  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+On 29/11/11 12:56, Anand Kanaginhal wrote:
+>
+> I am trying to get PCIe endpoint hot - plugging working
+>
+> The Set up is such that there is one endpoint (our custom device) connected to PCI  switch PLX 8609 8 port 8 lane switch. 
+> 1. I have my driver module compiled, copied into /lib/modules/`uname -r`/kernel/drivers/char/
+> 2. I run depmod and "modules.pcimap" also got updated with my module. 
+>
+> However
+>  if I unplug and plug in the endpoint, my driver .probe and .remove functions
+>  are not being invoked. Is there something more to be done at the bus 
+> level to get the driver to hot plug ?
+>
+> I have tried various kernel version, Currently I am trying on 2.6.38.12 (UBUNTU flavor).
+> First is there anything missing ? Also Please give me some pointers and debug direction.
+>
+> Thanks
+> Anand
+>
+>  		 	   		  --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Hi Anand
+
+Did You enable the pcie hotplug driver (pciehp)
+One can do it adding the next options to the /boot/grub/menu.lst
+pciehp.pciehp_force=1 pciehp.pciehp_debug=1
+(example of my menu.lst: kernel        /boot/vmlinuz-2.6.32-28-generic
+root=UUID=330631e1-99a3-46d3-bf52-f4ca23c6b6ef ro pciehp.pciehp_force=1
+pciehp.pciehp_debug=1 acpi=off noapic console=tty0 console=ttyS0 quiet )
+
+so You can see the pciehp outputs in /var/log/kern.log
+
+regards
+
+Ludwig
