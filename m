@@ -1,67 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab1K2DeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 22:34:08 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:50776 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab1K2DeG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 22:34:06 -0500
-Date: Tue, 29 Nov 2011 14:33:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: linux-next: build warning after merge of the l2-mtd tree
-Message-Id: <20111129143358.0859ae27c22f2c752a608f65@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__29_Nov_2011_14_33_58_+1100_10vryHzLGJr5.slU"
+	id S1753933Ab1K2Dgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 22:36:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5910 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752095Ab1K2Dgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 22:36:43 -0500
+Message-ID: <4ED45337.3010600@redhat.com>
+Date: Tue, 29 Nov 2011 11:36:23 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Jiri Kosina <trivial@kernel.org>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: [V2 PATCH 00/62] highmem: remove the second argument of kmap_atomic/kunmap_atomic
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <1322371662-26166-1-git-send-email-amwang@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Nov_2011_14_33_58_+1100_10vryHzLGJr5.slU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Cc: Jiri Kosina <trivial@kernel.org>
 
-Hi Artem,
+Hi, Jiri,
 
-After merging the l2-mtd tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+I just made a branch which keeps all these patches as a single one,
 
-drivers/mtd/devices/docg3.c: In function 'doc_write_page_ecc_init':
-drivers/mtd/devices/docg3.c:577:6: warning: suggest parentheses around oper=
-and of '!' or change '|' to '||' or '!' to '~' [-Wparentheses]
+git://github.com/congwang/linux.git #kmap_atomic-single
 
-Introduced by commit 496a5fc59dae ("mtd/docg3: add write functions").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+(As the single patch is 233K and the split ones are already sent, so I don't send it to mailing list.)
 
---Signature=_Tue__29_Nov_2011_14_33_58_+1100_10vryHzLGJr5.slU
-Content-Type: application/pgp-signature
+So, unless Andrew Morton objects, could you take that single
+big patch into your tree? James Bottomley prefers this.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+BTW, the split patches can still be found at,
 
-iQIcBAEBCAAGBQJO1FKmAAoJEECxmPOUX5FEmbQP/0KScJ0jzrjdsQ/X1pFd759w
-Y1CLG0hAnypSIP1kCoVGM0aFiuS86MH2w4Ljh3urdA25jpIigi3EZ9EcdY9Fbiga
-nFFxQsCiAP+w9hjz1BrCpNbN+wvA2B29TcWScBKO3aRl8guZSPYi4Z3H392o40JM
-mWEoW8XYJgEY4v7nlSeWG/9RqHzEPmSXWC4MclBdfjCcee6M8vlV7TKXyHswh+zv
-C79vFGDgkP4juFcPaeUVJJCl2uYipxiQ9eHQrdHxtb8dnIuDVnnEPcYCsYLoN6nv
-e2U7hjp4xP8pzzDq9ppJspwU2G6lR3Dx/c87iSoMz766NotK5N4OSj8EXrmvYr7O
-IRu4pZzE+WIQpYqPDvlcAc1sz/HRysWmXx92TBfA3+KoTXW6OFqEwpmehNNxjMyW
-XmE137y9mNBJlxBH/5rJr2lEu7aBoPVu99a+6iKqjGsmuSn7rDeoMuNTt+M9zLyW
-fjfzhdCiZYabnozRNytCBgydnAu2+fMhDsc+uJWvsZkluEbdfInGB4UdtV5u+mxu
-HKZ1kAbxdkcP3HXTnKAmz3ZFrnAwVMpdQBgu6rAoicLCGTV1PiDJflAaGldG9LWj
-DyOoyn2JZ7vL+CyJKsGMvvtldRfBVZF2P5gLREWHWx2OYxGo/KfLimYscRuba0rT
-+D6lIl4oFKDlwuQvh3A7
-=2jS0
------END PGP SIGNATURE-----
+git://github.com/congwang/linux.git #for-next
 
---Signature=_Tue__29_Nov_2011_14_33_58_+1100_10vryHzLGJr5.slU--
+
+Thanks!
+
+On 2011/11/27 13:26, Cong Wang wrote:
+> V1: https://lkml.org/lkml/2011/1/30/13
+>
+> V1->V2: Split patches and rebase them to the latest linus tree.
+>
+> Now the second argument of kmap_atomic()/kunmap_atomic() is totally
+> unused, this patchset removes it from all callers.
+>
+> But for backward compatibility, we still keep the deprecated form,
+> and will warn the users if they still use the deprecated one, like this:
+>
+> drivers/block/drbd/drbd_bitmap.c: In function ‘bm_page_io_async’:
+> drivers/block/drbd/drbd_bitmap.c:973:3: warning: ‘kmap_atomic_deprecated’ is deprecated (declared at /home/wangcong/linux-2.6/include/linux/highmem.h:124)
+> drivers/block/drbd/drbd_bitmap.c:977:3: warning: ‘kunmap_atomic_deprecated’ is deprecated (declared at /home/wangcong/linux-2.6/include/linux/highmem.h:144)
+>
+> To schedule the final removal of these stuffs, I also write some doc into
+> feature-removal-schedule.txt, see the last patch in this thread.
+>
+> Most of this patch is generated by the following commands:
+>
+> find . -name '*.[c|h]' -exec sed -i -e 's#\bkmap_atomic(\(.*\),.*)#kmap_atomic(\1)#' '{}' \;
+> find . -name '*.[c|h]' -exec sed -i -e 's#\bkunmap_atomic(\(.*\),.*)#kunmap_atomic(\1)#' '{}' \;
+>
+> the rest exceptions are fixed by hands.
+>
+> This patch passes 'make allyesconfig' test on both ppc64 and x86_64.
+>
+> BTW, all patches can be found on my github:
+>
+> 	git@github.com:congwang/linux.git #for-next
+>
+> and the final removal patches can be found here:
+>
+> 	git@github.com:congwang/linux.git #for-3.5
+>
+>
+> Signed-off-by: Cong Wang<amwang@redhat.com>
+> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
+>
+> ---
+>
+> Cong Wang (62):
+>    highmem: mark k[un]map_atomic() with two arguments as deprecated
+>    include/linux/highmem.h: remove the second argument of
+>      k[un]map_atomic()
+>    arm: remove the second argument of k[un]map_atomic()
+>    mips: remove the second argument of k[un]map_atomic()
+>    powerpc: remove the second argument of k[un]map_atomic()
+>    sh: remove the second argument of k[un]map_atomic()
+>    um: remove the second argument of k[un]map_atomic()
+>    x86: remove the second argument of k[un]map_atomic()
+>    crypto: remove the second argument of k[un]map_atomic()
+>    ata: remove the second argument of k[un]map_atomic()
+>    block: remove the second argument of k[un]map_atomic()
+>    crypto: remove the second argument of k[un]map_atomic()
+>    edac: remove the second argument of k[un]map_atomic()
+>    drm: remove the second argument of k[un]map_atomic()
+>    ide: remove the second argument of k[un]map_atomic()
+>    infiniband: remove the second argument of k[un]map_atomic()
+>    md: remove the second argument of k[un]map_atomic()
+>    media: remove the second argument of k[un]map_atomic()
+>    memstick: remove the second argument of k[un]map_atomic()
+>    mmc: remove the second argument of k[un]map_atomic()
+>    net: remove the second argument of k[un]map_atomic()
+>    scsi: remove the second argument of k[un]map_atomic()
+>    hv: remove the second argument of k[un]map_atomic()
+>    pohmelfs: remove the second argument of k[un]map_atomic()
+>    rtl8192u: remove the second argument of k[un]map_atomic()
+>    zram: remove the second argument of k[un]map_atomic()
+>    target: remove the second argument of k[un]map_atomic()
+>    vhost: remove the second argument of k[un]map_atomic()
+>    fs: remove the second argument of k[un]map_atomic()
+>    btrfs: remove the second argument of k[un]map_atomic()
+>    ecryptfs: remove the second argument of k[un]map_atomic()
+>    afs: remove the second argument of k[un]map_atomic()
+>    exofs: remove the second argument of k[un]map_atomic()
+>    ext2: remove the second argument of k[un]map_atomic()
+>    fuse: remove the second argument of k[un]map_atomic()
+>    gfs2: remove the second argument of k[un]map_atomic()
+>    jbd: remove the second argument of k[un]map_atomic()
+>    jbd2: remove the second argument of k[un]map_atomic()
+>    logfs: remove the second argument of k[un]map_atomic()
+>    minix: remove the second argument of k[un]map_atomic()
+>    nfs: remove the second argument of k[un]map_atomic()
+>    nilfs2: remove the second argument of k[un]map_atomic()
+>    ntfs: remove the second argument of k[un]map_atomic()
+>    ocfs2: remove the second argument of k[un]map_atomic()
+>    reiserfs: remove the second argument of k[un]map_atomic()
+>    squashfs: remove the second argument of k[un]map_atomic()
+>    ubifs: remove the second argument of k[un]map_atomic()
+>    udf: remove the second argument of k[un]map_atomic()
+>    kdb: remove the second argument of k[un]map_atomic()
+>    power: remove the second argument of k[un]map_atomic()
+>    lib: remove the second argument of k[un]map_atomic()
+>    mm: remove the second argument of k[un]map_atomic()
+>    net: remove the second argument of k[un]map_atomic()
+>    rds: remove the second argument of k[un]map_atomic()
+>    sunrpc: remove the second argument of k[un]map_atomic()
+>    tomoyo: remove the second argument of k[un]map_atomic()
+>    md: remove the second argument of k[un]map_atomic()
+>    gma500: remove the second argument of k[un]map_atomic()
+>    zcache: remove the second argument of k[un]map_atomic()
+>    drbd: remove the second argument of k[un]map_atomic()
+>    highmem: kill all __kmap_atomic()
+>    feature-removal-schedule.txt: add the deprecated form of
+>      kmap_atomic()
+>
+>   Documentation/feature-removal-schedule.txt       |    8 ++
+>   arch/arm/mm/copypage-fa.c                        |   12 ++--
+>   arch/arm/mm/copypage-feroceon.c                  |   12 ++--
+>   arch/arm/mm/copypage-v3.c                        |   12 ++--
+>   arch/arm/mm/copypage-v4mc.c                      |    8 +-
+>   arch/arm/mm/copypage-v4wb.c                      |   12 ++--
+>   arch/arm/mm/copypage-v4wt.c                      |   12 ++--
+>   arch/arm/mm/copypage-v6.c                        |   12 ++--
+>   arch/arm/mm/copypage-xsc3.c                      |   12 ++--
+>   arch/arm/mm/copypage-xscale.c                    |    8 +-
+>   arch/arm/mm/highmem.c                            |    4 +-
+>   arch/frv/include/asm/highmem.h                   |    2 +-
+>   arch/frv/mm/highmem.c                            |    4 +-
+>   arch/mips/include/asm/highmem.h                  |    2 +-
+>   arch/mips/mm/c-r4k.c                             |    4 +-
+>   arch/mips/mm/highmem.c                           |    4 +-
+>   arch/mips/mm/init.c                              |    8 +-
+>   arch/mn10300/include/asm/highmem.h               |    2 +-
+>   arch/parisc/include/asm/cacheflush.h             |    2 +-
+>   arch/powerpc/include/asm/highmem.h               |    2 +-
+>   arch/powerpc/kvm/book3s_pr.c                     |    4 +-
+>   arch/powerpc/mm/dma-noncoherent.c                |    5 +-
+>   arch/powerpc/mm/hugetlbpage.c                    |    4 +-
+>   arch/powerpc/mm/mem.c                            |    4 +-
+>   arch/sh/mm/cache-sh4.c                           |    4 +-
+>   arch/sh/mm/cache.c                               |   12 ++--
+>   arch/sparc/include/asm/highmem.h                 |    2 +-
+>   arch/sparc/mm/highmem.c                          |    4 +-
+>   arch/tile/include/asm/highmem.h                  |    2 +-
+>   arch/tile/mm/highmem.c                           |    4 +-
+>   arch/um/kernel/skas/uaccess.c                    |    4 +-
+>   arch/x86/crypto/aesni-intel_glue.c               |   24 +++---
+>   arch/x86/include/asm/highmem.h                   |    2 +-
+>   arch/x86/kernel/crash_dump_32.c                  |    6 +-
+>   arch/x86/kvm/lapic.c                             |    8 +-
+>   arch/x86/kvm/paging_tmpl.h                       |    4 +-
+>   arch/x86/kvm/x86.c                               |    8 +-
+>   arch/x86/lib/usercopy_32.c                       |    4 +-
+>   arch/x86/mm/highmem_32.c                         |    4 +-
+>   crypto/ahash.c                                   |    4 +-
+>   crypto/async_tx/async_memcpy.c                   |    8 +-
+>   crypto/blkcipher.c                               |    8 +-
+>   crypto/ccm.c                                     |    4 +-
+>   crypto/scatterwalk.c                             |    8 +-
+>   crypto/shash.c                                   |    8 +-
+>   drivers/ata/libata-sff.c                         |    8 +-
+>   drivers/block/brd.c                              |   20 +++---
+>   drivers/block/drbd/drbd_bitmap.c                 |   50 ++++++------
+>   drivers/block/drbd/drbd_nl.c                     |    4 +-
+>   drivers/block/loop.c                             |   16 ++--
+>   drivers/block/pktcdvd.c                          |    8 +-
+>   drivers/crypto/hifn_795x.c                       |   10 +-
+>   drivers/edac/edac_mc.c                           |    4 +-
+>   drivers/gpu/drm/drm_cache.c                      |    8 +-
+>   drivers/gpu/drm/ttm/ttm_tt.c                     |   16 ++--
+>   drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c              |    6 +-
+>   drivers/ide/ide-taskfile.c                       |    4 +-
+>   drivers/infiniband/ulp/iser/iser_memory.c        |    8 +-
+>   drivers/md/bitmap.c                              |   42 +++++-----
+>   drivers/md/dm-crypt.c                            |    8 +-
+>   drivers/media/video/ivtv/ivtv-udma.c             |    4 +-
+>   drivers/memstick/host/jmb38x_ms.c                |    4 +-
+>   drivers/memstick/host/tifm_ms.c                  |    4 +-
+>   drivers/mmc/host/at91_mci.c                      |    8 +-
+>   drivers/mmc/host/msm_sdcc.c                      |    6 +-
+>   drivers/mmc/host/sdhci.c                         |    4 +-
+>   drivers/mmc/host/tifm_sd.c                       |   16 ++--
+>   drivers/mmc/host/tmio_mmc.c                      |    1 -
+>   drivers/mmc/host/tmio_mmc.h                      |    4 +-
+>   drivers/net/ethernet/intel/e1000/e1000_main.c    |    6 +-
+>   drivers/net/ethernet/intel/e1000e/netdev.c       |   10 +--
+>   drivers/net/ethernet/sun/cassini.c               |    4 +-
+>   drivers/scsi/arcmsr/arcmsr_hba.c                 |    8 +-
+>   drivers/scsi/bnx2fc/bnx2fc_fcoe.c                |    5 +-
+>   drivers/scsi/cxgbi/libcxgbi.c                    |    5 +-
+>   drivers/scsi/fcoe/fcoe.c                         |    4 +-
+>   drivers/scsi/fcoe/fcoe_transport.c               |    5 +-
+>   drivers/scsi/gdth.c                              |    4 +-
+>   drivers/scsi/ips.c                               |    6 +-
+>   drivers/scsi/isci/request.c                      |   16 ++--
+>   drivers/scsi/libfc/fc_fcp.c                      |    8 +-
+>   drivers/scsi/libfc/fc_libfc.c                    |    8 +-
+>   drivers/scsi/libfc/fc_libfc.h                    |    2 +-
+>   drivers/scsi/libfc/fc_lport.c                    |    2 +-
+>   drivers/scsi/libiscsi_tcp.c                      |    4 +-
+>   drivers/scsi/libsas/sas_host_smp.c               |    8 +-
+>   drivers/scsi/megaraid.c                          |    4 +-
+>   drivers/scsi/mvsas/mv_sas.c                      |    4 +-
+>   drivers/scsi/scsi_debug.c                        |   24 +++---
+>   drivers/scsi/scsi_lib.c                          |    4 +-
+>   drivers/scsi/sd_dif.c                            |   12 ++--
+>   drivers/staging/gma500/mmu.c                     |   30 ++++----
+>   drivers/staging/hv/netvsc_drv.c                  |    5 +-
+>   drivers/staging/hv/rndis_filter.c                |    4 +-
+>   drivers/staging/hv/storvsc_drv.c                 |   31 +++----
+>   drivers/staging/pohmelfs/inode.c                 |    8 +-
+>   drivers/staging/rtl8192u/ieee80211/cipher.c      |    8 +-
+>   drivers/staging/rtl8192u/ieee80211/digest.c      |    8 +-
+>   drivers/staging/rtl8192u/ieee80211/internal.h    |   17 ----
+>   drivers/staging/rtl8192u/ieee80211/kmap_types.h  |   20 -----
+>   drivers/staging/rtl8192u/ieee80211/scatterwalk.c |   19 +---
+>   drivers/staging/zcache/zcache-main.c             |   16 ++--
+>   drivers/staging/zram/xvmalloc.c                  |   39 +++++-----
+>   drivers/staging/zram/zram_drv.c                  |   44 +++++-----
+>   drivers/target/target_core_transport.c           |    4 +-
+>   drivers/target/tcm_fc/tfc_io.c                   |   10 +--
+>   drivers/vhost/vhost.c                            |    4 +-
+>   fs/afs/fsclient.c                                |    8 +-
+>   fs/afs/mntpt.c                                   |    4 +-
+>   fs/aio.c                                         |   30 ++++----
+>   fs/bio-integrity.c                               |   10 +-
+>   fs/btrfs/compression.c                           |   12 ++--
+>   fs/btrfs/extent_io.c                             |   16 ++--
+>   fs/btrfs/file-item.c                             |    4 +-
+>   fs/btrfs/inode.c                                 |   26 +++---
+>   fs/btrfs/lzo.c                                   |    4 +-
+>   fs/btrfs/scrub.c                                 |    8 +-
+>   fs/btrfs/zlib.c                                  |    4 +-
+>   fs/ecryptfs/mmap.c                               |    4 +-
+>   fs/ecryptfs/read_write.c                         |    8 +-
+>   fs/exec.c                                        |    4 +-
+>   fs/exofs/dir.c                                   |    4 +-
+>   fs/ext2/dir.c                                    |    4 +-
+>   fs/fuse/dev.c                                    |    4 +-
+>   fs/fuse/file.c                                   |    4 +-
+>   fs/gfs2/aops.c                                   |   12 ++--
+>   fs/gfs2/lops.c                                   |    8 +-
+>   fs/gfs2/quota.c                                  |    4 +-
+>   fs/jbd/journal.c                                 |   12 ++--
+>   fs/jbd/transaction.c                             |    4 +-
+>   fs/jbd2/commit.c                                 |    4 +-
+>   fs/jbd2/journal.c                                |   12 ++--
+>   fs/jbd2/transaction.c                            |    4 +-
+>   fs/logfs/dir.c                                   |   18 ++--
+>   fs/logfs/readwrite.c                             |   38 +++++-----
+>   fs/logfs/segment.c                               |    4 +-
+>   fs/minix/dir.c                                   |    4 +-
+>   fs/namei.c                                       |    4 +-
+>   fs/nfs/dir.c                                     |    8 +-
+>   fs/nfs/nfs4proc.c                                |    4 +-
+>   fs/nilfs2/cpfile.c                               |   94 +++++++++++-----------
+>   fs/nilfs2/dat.c                                  |   38 +++++-----
+>   fs/nilfs2/dir.c                                  |    4 +-
+>   fs/nilfs2/ifile.c                                |    4 +-
+>   fs/nilfs2/mdt.c                                  |    4 +-
+>   fs/nilfs2/page.c                                 |    8 +-
+>   fs/nilfs2/recovery.c                             |    4 +-
+>   fs/nilfs2/segbuf.c                               |    4 +-
+>   fs/nilfs2/sufile.c                               |   68 ++++++++--------
+>   fs/ntfs/aops.c                                   |   20 +++---
+>   fs/ntfs/attrib.c                                 |   20 +++---
+>   fs/ntfs/file.c                                   |   16 ++--
+>   fs/ntfs/super.c                                  |    8 +-
+>   fs/ocfs2/aops.c                                  |   16 ++--
+>   fs/pipe.c                                        |    8 +-
+>   fs/reiserfs/stree.c                              |    4 +-
+>   fs/reiserfs/tail_conversion.c                    |    4 +-
+>   fs/splice.c                                      |    7 +-
+>   fs/squashfs/file.c                               |    8 +-
+>   fs/squashfs/symlink.c                            |    4 +-
+>   fs/ubifs/file.c                                  |    4 +-
+>   fs/udf/file.c                                    |    4 +-
+>   include/crypto/scatterwalk.h                     |   28 +------
+>   include/linux/bio.h                              |    8 +-
+>   include/linux/highmem.h                          |   77 ++++++++++++-----
+>   kernel/debug/kdb/kdb_support.c                   |    4 +-
+>   kernel/power/snapshot.c                          |   28 +++---
+>   lib/scatterlist.c                                |    4 +-
+>   lib/swiotlb.c                                    |    5 +-
+>   mm/bounce.c                                      |    4 +-
+>   mm/filemap.c                                     |    8 +-
+>   mm/ksm.c                                         |   12 ++--
+>   mm/memory.c                                      |    4 +-
+>   mm/shmem.c                                       |    4 +-
+>   mm/swapfile.c                                    |   30 ++++----
+>   mm/vmalloc.c                                     |    8 +-
+>   net/core/kmap_skb.h                              |    4 +-
+>   net/rds/ib_recv.c                                |    7 +-
+>   net/rds/info.c                                   |    6 +-
+>   net/rds/iw_recv.c                                |    7 +-
+>   net/rds/loop.c                                   |    2 +-
+>   net/rds/rds.h                                    |    2 +-
+>   net/rds/recv.c                                   |    2 +-
+>   net/rds/tcp_recv.c                               |   11 +--
+>   net/sunrpc/auth_gss/gss_krb5_wrap.c              |    4 +-
+>   net/sunrpc/socklib.c                             |    4 +-
+>   net/sunrpc/xdr.c                                 |   20 +++---
+>   net/sunrpc/xprtrdma/rpc_rdma.c                   |    8 +-
+>   security/tomoyo/domain.c                         |    4 +-
+>   189 files changed, 936 insertions(+), 992 deletions(-)
+>   create mode 100644 drivers/net/team/Module.symvers
+>   delete mode 100644 drivers/staging/rtl8192u/ieee80211/kmap_types.h
+>
+
