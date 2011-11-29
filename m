@@ -1,120 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab1K2N1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 08:27:31 -0500
-Received: from mga03.intel.com ([143.182.124.21]:46635 "EHLO mga03.intel.com"
+	id S1755575Ab1K2N1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 08:27:49 -0500
+Received: from mga03.intel.com ([143.182.124.21]:46421 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755343Ab1K2N0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 08:26:17 -0500
+	id S1755313Ab1K2N0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 08:26:16 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,590,1315206000"; 
-   d="scan'208";a="80197580"
-Message-Id: <20111129131456.925952168@intel.com>
+   d="scan'208";a="80197574"
+Message-Id: <20111129131456.405886521@intel.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 29 Nov 2011 21:09:08 +0800
+Date: Tue, 29 Nov 2011 21:09:04 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-cc: Andi Kleen <andi@firstfloor.org>, Li Shaohua <shaohua.li@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
+cc: Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>
 cc: Linux Memory Management List <linux-mm@kvack.org>,
         <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 8/9] readahead: basic support for backwards prefetching
+Subject: [PATCH 4/9] readahead: tag mmap page fault call sites
 References: <20111129130900.628549879@intel.com>
-Content-Disposition: inline; filename=readahead-backwards.patch
+Content-Disposition: inline; filename=readahead-for-mmap
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the backwards prefetching feature. It's pretty simple if we don't
-support async prefetching and interleaved reads.
+Introduce a bit field ra->for_mmap for tagging mmap reads.
+The tag will be cleared immediate after submitting the IO.
 
-Here is the behavior with an 8-page read sequence from 10000 down to 0.
-(The readahead size is a bit large since it's an NFS mount.)
-
-readahead-random(dev=0:16, ino=3948605, req=10000+8, ra=10000+8-0, async=0) = 8
-readahead-backwards(dev=0:16, ino=3948605, req=9992+8, ra=9968+32-0, async=0) = 32
-readahead-backwards(dev=0:16, ino=3948605, req=9960+8, ra=9840+128-0, async=0) = 128
-readahead-backwards(dev=0:16, ino=3948605, req=9832+8, ra=9584+256-0, async=0) = 256
-readahead-backwards(dev=0:16, ino=3948605, req=9576+8, ra=9072+512-0, async=0) = 512
-readahead-backwards(dev=0:16, ino=3948605, req=9064+8, ra=8048+1024-0, async=0) = 1024
-readahead-backwards(dev=0:16, ino=3948605, req=8040+8, ra=6128+1920-0, async=0) = 1920
-readahead-backwards(dev=0:16, ino=3948605, req=6120+8, ra=4208+1920-0, async=0) = 1920
-readahead-backwards(dev=0:16, ino=3948605, req=4200+8, ra=2288+1920-0, async=0) = 1920
-readahead-backwards(dev=0:16, ino=3948605, req=2280+8, ra=368+1920-0, async=0) = 1920
-readahead-backwards(dev=0:16, ino=3948605, req=360+8, ra=0+368-0, async=0) = 368
-
-And a simple 1-page read sequence from 10000 down to 0.
-
-readahead-random(dev=0:16, ino=3948605, req=10000+1, ra=10000+1-0, async=0) = 1
-readahead-backwards(dev=0:16, ino=3948605, req=9999+1, ra=9996+4-0, async=0) = 4
-readahead-backwards(dev=0:16, ino=3948605, req=9995+1, ra=9980+16-0, async=0) = 16
-readahead-backwards(dev=0:16, ino=3948605, req=9979+1, ra=9916+64-0, async=0) = 64
-readahead-backwards(dev=0:16, ino=3948605, req=9915+1, ra=9660+256-0, async=0) = 256
-readahead-backwards(dev=0:16, ino=3948605, req=9659+1, ra=9148+512-0, async=0) = 512
-readahead-backwards(dev=0:16, ino=3948605, req=9147+1, ra=8124+1024-0, async=0) = 1024
-readahead-backwards(dev=0:16, ino=3948605, req=8123+1, ra=6204+1920-0, async=0) = 1920
-readahead-backwards(dev=0:16, ino=3948605, req=6203+1, ra=4284+1920-0, async=0) = 1920
-readahead-backwards(dev=0:16, ino=3948605, req=4283+1, ra=2364+1920-0, async=0) = 1920
-readahead-backwards(dev=0:16, ino=3948605, req=2363+1, ra=444+1920-0, async=0) = 1920
-readahead-backwards(dev=0:16, ino=3948605, req=443+1, ra=0+444-0, async=0) = 444
-
-CC: Andi Kleen <andi@firstfloor.org>
-CC: Li Shaohua <shaohua.li@intel.com>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/fs.h |    2 ++
- mm/readahead.c     |   15 +++++++++++++++
- 2 files changed, 17 insertions(+)
+ include/linux/fs.h |    1 +
+ mm/filemap.c       |    6 +++++-
+ mm/readahead.c     |    1 +
+ 3 files changed, 7 insertions(+), 1 deletion(-)
 
---- linux-next.orig/include/linux/fs.h	2011-11-29 20:55:27.000000000 +0800
-+++ linux-next/include/linux/fs.h	2011-11-29 20:57:07.000000000 +0800
-@@ -968,6 +968,7 @@ struct file_ra_state {
-  *				streams.
-  * RA_PATTERN_MMAP_AROUND	read-around on mmap page faults
-  *				(w/o any sequential/random hints)
-+ * RA_PATTERN_BACKWARDS		reverse reading detected
-  * RA_PATTERN_FADVISE		triggered by POSIX_FADV_WILLNEED or FMODE_RANDOM
-  * RA_PATTERN_OVERSIZE		a random read larger than max readahead size,
-  *				do max readahead to break down the read size
-@@ -978,6 +979,7 @@ enum readahead_pattern {
- 	RA_PATTERN_SUBSEQUENT,
- 	RA_PATTERN_CONTEXT,
- 	RA_PATTERN_MMAP_AROUND,
-+	RA_PATTERN_BACKWARDS,
- 	RA_PATTERN_FADVISE,
- 	RA_PATTERN_OVERSIZE,
- 	RA_PATTERN_RANDOM,
---- linux-next.orig/mm/readahead.c	2011-11-29 20:57:03.000000000 +0800
-+++ linux-next/mm/readahead.c	2011-11-29 20:57:07.000000000 +0800
-@@ -23,6 +23,7 @@ static const char * const ra_pattern_nam
- 	[RA_PATTERN_SUBSEQUENT]         = "subsequent",
- 	[RA_PATTERN_CONTEXT]            = "context",
- 	[RA_PATTERN_MMAP_AROUND]        = "around",
-+	[RA_PATTERN_BACKWARDS]          = "backwards",
- 	[RA_PATTERN_FADVISE]            = "fadvise",
- 	[RA_PATTERN_OVERSIZE]           = "oversize",
- 	[RA_PATTERN_RANDOM]             = "random",
-@@ -676,6 +677,20 @@ ondemand_readahead(struct address_space 
- 	}
+--- linux-next.orig/include/linux/fs.h	2011-11-29 10:12:19.000000000 +0800
++++ linux-next/include/linux/fs.h	2011-11-29 10:13:08.000000000 +0800
+@@ -947,6 +947,7 @@ struct file_ra_state {
+ 	unsigned int ra_pages;		/* Maximum readahead window */
+ 	u16 mmap_miss;			/* Cache miss stat for mmap accesses */
+ 	u8 pattern;			/* one of RA_PATTERN_* */
++	unsigned int for_mmap:1;	/* readahead for mmap accesses */
  
+ 	loff_t prev_pos;		/* Cache last read() position */
+ };
+--- linux-next.orig/mm/filemap.c	2011-11-29 09:48:49.000000000 +0800
++++ linux-next/mm/filemap.c	2011-11-29 10:13:08.000000000 +0800
+@@ -1592,6 +1592,7 @@ static void do_sync_mmap_readahead(struc
+ 		return;
+ 
+ 	if (VM_SequentialReadHint(vma)) {
++		ra->for_mmap = 1;
+ 		page_cache_sync_readahead(mapping, ra, file, offset,
+ 					  ra->ra_pages);
+ 		return;
+@@ -1611,6 +1612,7 @@ static void do_sync_mmap_readahead(struc
  	/*
-+	 * backwards reading
-+	 */
-+	if (offset < ra->start && offset + req_size >= ra->start) {
-+		ra->pattern = RA_PATTERN_BACKWARDS;
-+		ra->size = get_next_ra_size(ra, max);
-+		max = ra->start;
-+		if (ra->size > max)
-+			ra->size = max;
-+		ra->async_size = 0;
-+		ra->start -= ra->size;
-+		goto readit;
-+	}
-+
-+	/*
- 	 * Query the page cache and look for the traces(cached history pages)
- 	 * that a sequential stream would leave behind.
+ 	 * mmap read-around
  	 */
++	ra->for_mmap = 1;
+ 	ra->pattern = RA_PATTERN_MMAP_AROUND;
+ 	ra_pages = max_sane_readahead(ra->ra_pages);
+ 	ra->start = max_t(long, 0, offset - ra_pages / 2);
+@@ -1636,9 +1638,11 @@ static void do_async_mmap_readahead(stru
+ 		return;
+ 	if (ra->mmap_miss > 0)
+ 		ra->mmap_miss--;
+-	if (PageReadahead(page))
++	if (PageReadahead(page)) {
++		ra->for_mmap = 1;
+ 		page_cache_async_readahead(mapping, ra, file,
+ 					   page, offset, ra->ra_pages);
++	}
+ }
+ 
+ /**
+--- linux-next.orig/mm/readahead.c	2011-11-29 09:48:49.000000000 +0800
++++ linux-next/mm/readahead.c	2011-11-29 10:13:08.000000000 +0800
+@@ -267,6 +267,7 @@ unsigned long ra_submit(struct file_ra_s
+ 	actual = __do_page_cache_readahead(mapping, filp,
+ 					ra->start, ra->size, ra->async_size);
+ 
++	ra->for_mmap = 0;
+ 	return actual;
+ }
+ 
 
 
