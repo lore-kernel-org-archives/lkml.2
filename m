@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752619Ab1K2GT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 01:19:56 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34281 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab1K2GTy (ORCPT
+	id S1753188Ab1K2GUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 01:20:45 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:34923 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752777Ab1K2GUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 01:19:54 -0500
-Date: Tue, 29 Nov 2011 10:19:49 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC] prctl: Add PR_ codes to restore vDSO and tune up mm_struct
- entires
-Message-ID: <20111129061949.GQ1775@moon>
-References: <20111124120051.GV1820@moon>
- <20111128225606.GD3858@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111128225606.GD3858@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 Nov 2011 01:20:41 -0500
+Date: Tue, 29 Nov 2011 01:17:00 -0500 (EST)
+Message-Id: <20111129.011700.785105982911525415.davem@davemloft.net>
+To: mkl@pengutronix.de
+Cc: axel.lin@gmail.com, linux-kernel@vger.kernel.org, wg@grandegger.com,
+        bhupesh.sharma@st.com, jkosina@suse.cz, grant.likely@secretlab.ca,
+        agust@denx.de, pebolle@tiscali.nl, kurt.van.dijck@eia.be,
+        adobriyan@gmail.com, linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] net/can: convert drivers/net/can/* to use
+ module_platform_driver()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4ED35FC4.3040007@pengutronix.de>
+References: <1322444551.2408.2.camel@phoenix>
+	<4ED35FC4.3040007@pengutronix.de>
+X-Mailer: Mew version 6.4 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 28 Nov 2011 22:17:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 02:56:06PM -0800, Tejun Heo wrote:
-> On Thu, Nov 24, 2011 at 04:00:51PM +0400, Cyrill Gorcunov wrote:
-> > +		case PR_SETUP_VDSO_AT:
-> > +			if (arg3 | arg4 | arg5)
-> > +				return -EINVAL;
-> > +
-> > +			if (!capable(CAP_SYS_ADMIN))
-> > +				return -EPERM;
-> > +
-> > +#ifdef ARCH_HAS_SETUP_ADDITIONAL_PAGES
-> > +			error = arch_setup_additional_pages_at((void *)arg2);
-> > +#else
-> > +			error = -ENOSYS;
-> > +#endif
-> > +			break;
-> 
-> Hmmm... I'm not sure this is the best approach.  vdso is supposed to
-> be able to be dependent on binprm too, so the proposed solution could
-> work but I'm not sure whether it's a good one.  For now, can't we just
-> copy the vdso and unmap it at the orignal address?
-> 
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Date: Mon, 28 Nov 2011 11:17:40 +0100
 
-Hi Tejun,
+> On 11/28/2011 02:42 AM, Axel Lin wrote:
+>> This patch converts the drivers in drivers/net/can/* to use the
+>> module_platform_driver() macro which makes the code smaller and a bit
+>> simpler.
+>> 
+>> Cc: Wolfgang Grandegger <wg@grandegger.com>
+>> Cc: "David S. Miller" <davem@davemloft.net>
+>> Cc: Bhupesh Sharma <bhupesh.sharma@st.com> 
+>> Cc: Jiri Kosina <jkosina@suse.cz>
+>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>> Cc: Anatolij Gustschin <agust@denx.de> 
+>> Cc: Paul Bolle <pebolle@tiscali.nl>
+>> Cc: Kurt Van Dijck <kurt.van.dijck@eia.be>
+>> Cc: Alexey Dobriyan <adobriyan@gmail.com> 
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> 
+> Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
 
-yeah, it might be not that good solution (RFC it was(c) ;) but I actually
-failed to find some more elegant way of handling it. So you propose to handle
-all the things directly in userspatce, ie unmap current, map previous vdso)?
-(I fear mapping vsyscall is not allowed from userspace but I'll check)
+Applied.
