@@ -1,218 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab1K2L71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 06:59:27 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:37154 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754920Ab1K2L70 (ORCPT
+	id S1754642Ab1K2MBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:01:40 -0500
+Received: from mexforward.lss.emc.com ([128.222.32.20]:50722 "EHLO
+	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab1K2MBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 06:59:26 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: make a deep copy of pinmux map
-Date: Tue, 29 Nov 2011 12:58:58 +0100
-Message-ID: <1322567938-28321-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	Tue, 29 Nov 2011 07:01:37 -0500
+From: <tao.peng@emc.com>
+To: <skinsbursky@parallels.com>, <Trond.Myklebust@netapp.com>
+CC: <linux-nfs@vger.kernel.org>, <xemul@parallels.com>, <neilb@suse.de>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jbottomley@parallels.com>, <bfields@fieldses.org>,
+        <davem@davemloft.net>, <devel@openvz.org>
+Date: Tue, 29 Nov 2011 07:00:56 -0500
+Subject: RE: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+	blocklayout routines
+Thread-Topic: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+	blocklayout routines
+Thread-Index: Acyud4YjBDEjN7kNQa+Ad8KA/5brxwAFNgfg
+Message-ID: <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
+ <20111129091037.20730.59391.stgit@localhost6.localdomain6>
+In-Reply-To: <20111129091037.20730.59391.stgit@localhost6.localdomain6>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
+X-EMM-MHVC: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pATC1mjL007436
 
-From: Linus Walleij <linus.walleij@linaro.org>
+> -----Original Message-----
+> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of Stanislav
+> Kinsbursky
+> Sent: Tuesday, November 29, 2011 6:11 PM
+> To: Trond.Myklebust@netapp.com
+> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; jbottomley@parallels.com; bfields@fieldses.org; davem@davemloft.net;
+> devel@openvz.org
+> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from blocklayout routines
+> 
+> This is a cleanup patch. We don't need this reference anymore, because
+> blocklayout pipes dentries now creates and destroys in per-net operations and
+> on PipeFS mount/umount notification.
+> Note that nfs4blocklayout_register_net() now returns 0 instead of -ENOENT in
+> case of PipeFS superblock absence. This is ok, because blocklayout pipe dentry
+> will be created on PipeFS mount event.
+When is the "pipefs mount event" going to happen? When inserting kernel modules or when user issues mount command?
 
-This makes a deep copy of the pinmux function map instead of
-keeping the copy supplied from the platform around. This makes
-it possible to tag the platforms map with __initdata as is also
-done as part of this patch.
+Thanks,
+Tao
 
-Rationale: a certain target platform (PXA) has numerous
-pinmux maps, many of which will be lying around unused after
-boot in a multi-platform binary. Instead, deep-copy the one
-we're going to use and tag them all __initdata so they go away
-after boot.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> ---
+>  fs/nfs/blocklayout/blocklayout.c |    9 +--------
+>  1 files changed, 1 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+> index acf7ac9..8211ffd 100644
+> --- a/fs/nfs/blocklayout/blocklayout.c
+> +++ b/fs/nfs/blocklayout/blocklayout.c
+> @@ -1032,7 +1032,7 @@ static struct dentry *nfs4blocklayout_register_net(struct net *net,
+> 
+>  	pipefs_sb = rpc_get_sb_net(net);
+>  	if (!pipefs_sb)
+> -		return ERR_PTR(-ENOENT);
+> +		return 0;
+>  	dentry = nfs4blocklayout_register_sb(pipefs_sb, pipe);
+>  	rpc_put_sb_net(net);
+>  	return dentry;
+> @@ -1083,7 +1083,6 @@ static struct pernet_operations nfs4blocklayout_net_ops = {
+> 
+>  static int __init nfs4blocklayout_init(void)
+>  {
+> -	struct vfsmount *mnt;
+>  	int ret;
+> 
+>  	dprintk("%s: NFSv4 Block Layout Driver Registering...\n", __func__);
+> @@ -1093,12 +1092,6 @@ static int __init nfs4blocklayout_init(void)
+>  		goto out;
+> 
+>  	init_waitqueue_head(&bl_wq);
+> -
+> -	mnt = rpc_get_mount();
+> -	if (IS_ERR(mnt)) {
+> -		ret = PTR_ERR(mnt);
+> -		goto out_remove;
+> -	}
+>  	ret = rpc_pipefs_notifier_register(&nfs4blocklayout_block);
+>  	if (ret)
+>  		goto out_remove;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Suggested-by: Arnd Bergmann <arnd.bergmann@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- Documentation/pinctrl.txt |    4 +-
- arch/arm/mach-u300/core.c |    2 +-
- drivers/pinctrl/pinmux.c  |   67 ++++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 60 insertions(+), 13 deletions(-)
-
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index 720dfea..d9d57c8 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -784,7 +784,7 @@ spi on the second function mapping:
- 
- #include <linux/pinctrl/machine.h>
- 
--static struct pinmux_map pmx_mapping[] = {
-+static struct pinmux_map __initdata pmx_mapping[] = {
- 	{
- 		.ctrl_dev_name = "pinctrl.0",
- 		.function = "spi0",
-@@ -821,7 +821,7 @@ Since the above construct is pretty common there is a helper macro to make
- it even more compact which assumes you want to use pinctrl.0 and position
- 0 for mapping, for example:
- 
--static struct pinmux_map pmx_mapping[] = {
-+static struct pinmux_map __initdata pmx_mapping[] = {
-        PINMUX_MAP_PRIMARY("I2CMAP", "i2c0", "foo-i2c.0"),
- };
- 
-diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index f399862..06bdae7 100644
---- a/arch/arm/mach-u300/core.c
-+++ b/arch/arm/mach-u300/core.c
-@@ -1613,7 +1613,7 @@ static struct platform_device pinmux_device = {
- };
- 
- /* Pinmux settings */
--static struct pinmux_map u300_pinmux_map[] = {
-+static struct pinmux_map __initdata u300_pinmux_map[] = {
- 	/* anonymous maps for chip power and EMIFs */
- 	PINMUX_MAP_PRIMARY_SYS_HOG("POWER", "power"),
- 	PINMUX_MAP_PRIMARY_SYS_HOG("EMIF0", "emif0"),
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 15ae972..e791566 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -21,6 +21,7 @@
- #include <linux/list.h>
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
-+#include <linux/string.h>
- #include <linux/sysfs.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-@@ -37,7 +38,7 @@ static DEFINE_MUTEX(pinmux_hoglist_mutex);
- static LIST_HEAD(pinmux_hoglist);
- 
- /* Global pinmux maps, we allow one set only */
--static struct pinmux_map const *pinmux_maps;
-+static struct pinmux_map *pinmux_maps;
- static unsigned pinmux_maps_num;
- 
- /**
-@@ -337,7 +338,9 @@ EXPORT_SYMBOL_GPL(pinmux_gpio_direction_output);
- 
- /**
-  * pinmux_register_mappings() - register a set of pinmux mappings
-- * @maps: the pinmux mappings table to register
-+ * @maps: the pinmux mappings table to register, this should be marked with
-+ *	__initdata so it can be discarded after boot, this function will
-+ *	perform a deep copy (including strings) for the mapping entries.
-  * @num_maps: the number of maps in the mapping table
-  *
-  * Only call this once during initialization of your machine, the function is
-@@ -348,32 +351,66 @@ EXPORT_SYMBOL_GPL(pinmux_gpio_direction_output);
- int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 				    unsigned num_maps)
- {
-+	int ret = 0;
- 	int i;
- 
--	if (pinmux_maps != NULL) {
-+	if (pinmux_maps_num != 0) {
- 		pr_err("pinmux mappings already registered, you can only "
- 		       "register one set of maps\n");
- 		return -EINVAL;
- 	}
- 
- 	pr_debug("add %d pinmux maps\n", num_maps);
-+
-+	/* Allocate a deep copy of the map array */
-+	pinmux_maps = kzalloc(sizeof(struct pinmux_map) * num_maps,
-+			      GFP_KERNEL);
-+	if (!pinmux_maps)
-+		return -ENOMEM;
-+
- 	for (i = 0; i < num_maps; i++) {
--		/* Sanity check the mapping */
-+		/* Sanity check the mapping while copying it */
- 		if (!maps[i].name) {
- 			pr_err("failed to register map %d: "
- 			       "no map name given\n", i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
- 		}
-+		pinmux_maps[i].name = kstrdup(maps[i].name, GFP_KERNEL);
-+		if (!pinmux_maps[i].name) {
-+			ret = -ENOMEM;
-+			goto err_out_free;
-+		}
-+
- 		if (!maps[i].ctrl_dev && !maps[i].ctrl_dev_name) {
- 			pr_err("failed to register map %s (%d): "
- 			       "no pin control device given\n",
- 			       maps[i].name, i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
-+		}
-+		if (maps[i].ctrl_dev)
-+			pinmux_maps[i].ctrl_dev = maps[i].ctrl_dev;
-+		if (maps[i].ctrl_dev_name) {
-+			pinmux_maps[i].ctrl_dev_name =
-+				kstrdup(maps[i].ctrl_dev_name, GFP_KERNEL);
-+			if (!pinmux_maps[i].ctrl_dev_name) {
-+				ret = -ENOMEM;
-+				goto err_out_free;
-+			}
- 		}
-+
- 		if (!maps[i].function) {
- 			pr_err("failed to register map %s (%d): "
- 			       "no function ID given\n", maps[i].name, i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
-+		}
-+		pinmux_maps[i].function =
-+			kstrdup(maps[i].function, GFP_KERNEL);
-+		if (!pinmux_maps[i].function) {
-+			ret = -ENOMEM;
-+			goto err_out_free;
- 		}
- 
- 		if (!maps[i].dev && !maps[i].dev_name)
-@@ -384,12 +421,22 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 			pr_debug("register map %s, function %s\n",
- 				 maps[i].name,
- 				 maps[i].function);
--	}
- 
--	pinmux_maps = maps;
--	pinmux_maps_num = num_maps;
-+		pinmux_maps_num++;
-+	}
- 
- 	return 0;
-+
-+err_out_free:
-+	for (i = 0; i < pinmux_maps_num; i++) {
-+		kfree(pinmux_maps[i].name);
-+		kfree(pinmux_maps[i].ctrl_dev_name);
-+		kfree(pinmux_maps[i].dev_name);
-+	}
-+	kfree(pinmux_maps);
-+	pinmux_maps = NULL;
-+	pinmux_maps_num = 0;
-+	return ret;
- }
- 
- /**
--- 
-1.7.3.2
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
