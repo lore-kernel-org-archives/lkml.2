@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab1K2Iln (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 03:41:43 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49821 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab1K2Ilm (ORCPT
+	id S1753322Ab1K2Isk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 03:48:40 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54877 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607Ab1K2Isi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 03:41:42 -0500
+	Tue, 29 Nov 2011 03:48:38 -0500
+X-Originating-IP: 217.70.178.147
+X-Originating-IP: 50.43.15.19
+Date: Tue, 29 Nov 2011 00:48:31 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] rcu: Make new RCU dynticks API work with nohz cpusets
+Message-ID: <20111129084831.GA21034@leaf>
+References: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
+ <20111129052225.GB14546@leaf>
+ <20111129054342.GA2375@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <fc4d77e6355cc462cfc2e700415cd56b9db816cb.1322551469.git.viresh.kumar@st.com>
-References: <fc4d77e6355cc462cfc2e700415cd56b9db816cb.1322551469.git.viresh.kumar@st.com>
-Date: Tue, 29 Nov 2011 09:41:41 +0100
-Message-ID: <CACRpkdZASL_TKjX+w=+Y9qutJKSk1JNd0Vou3iZXDXO9+td9Yw@mail.gmail.com>
-Subject: Re: [PATCH] dmaengine/amba-pl08x: Config ccfg and increment
- phychan_hold if phychan is true
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Viresh Kumar <viresh.kumar@st.com>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, armando.visconti@st.com, shiraz.hashim@st.com,
-        vipin.kumar@st.com, rajeev-dlh.kumar@st.com, deepak.sikri@st.com,
-        vipulkumar.samar@st.com, amit.virdi@st.com, pratyush.anand@st.com,
-        bhupesh.sharma@st.com, viresh.linux@gmail.com, bhavna.yadav@st.com,
-        vincenzo.frascino@st.com, mirko.gardi@st.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129054342.GA2375@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 8:26 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
+On Mon, Nov 28, 2011 at 09:43:42PM -0800, Paul E. McKenney wrote:
+> On Mon, Nov 28, 2011 at 09:22:25PM -0800, Josh Triplett wrote:
+> > On Mon, Nov 28, 2011 at 10:24:43PM +0100, Frederic Weisbecker wrote:
+> > > Hi Paul,
+> > > 
+> > > This is an attempt to make the current RCU dynticks API
+> > > working with the nohz cpusets.
+> > > 
+> > > I believe the two first patches could be pushed in your trees.
+> > > Patches 3 and 4 are rather something I plan to apply in mine,
+> > > given they are not needed upstream yet.
+> > > 
+> > > Waiting for your comments.
+> > > 
+> > > Thanks.
+> > > 
+> > > Frederic Weisbecker (4):
+> > >   rcu: Don't check irq nesting from rcu idle entry/exit
+> > >   rcu: Irq nesting is always 0 on rcu_enter_idle_common
+> > >   rcu: New rcu_user_enter() and rcu_user_exit() APIs
+> > >   rcu: New rcu_user_enter_irq() and rcu_user_exit_irq() APIs
+> > 
+> > For the whole series:
+> > 
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> 
+> Thank you, Josh!
+> 
+> Does that cover the conflict-resolved versions of the first two?
+> 
+> o	https://lkml.org/lkml/2011/11/28/626
+> o	https://lkml.org/lkml/2011/11/28/624
 
-> Currently, if plchan->phychan is true, we return immediately from
-> prep_phy_chan(). We must configure txd->ccfg and increment phychan_hold before
-> returning. Otherwise, request line number wouldn't be configured in this txd.
->
-> Reported-by: Rajeev Kumar <rajeev-dlh.kumar@st.com>
-> Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Yes, for the ones with Frederic's further eagle-eyed fix.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Thanks,
-Linus Walleij
+- Josh
