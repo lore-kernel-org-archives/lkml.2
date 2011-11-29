@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab1K2MNr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:13:47 -0500
-Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:45733 "EHLO
+	id S1755076Ab1K2MNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:13:55 -0500
+Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:45742 "EHLO
 	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754868Ab1K2MNn (ORCPT
+	with ESMTP id S1755008Ab1K2MNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:13:43 -0500
+	Tue, 29 Nov 2011 07:13:50 -0500
 From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Henrik Rydberg <rydberg@euromail.se>,
         Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] HID: multitouch: merge quanta driver into hid-multitouch
-Date: Tue, 29 Nov 2011 13:13:10 +0100
-Message-Id: <1322568792-4432-2-git-send-email-benjamin.tissoires@enac.fr>
+Cc: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+Subject: [PATCH 3/3] hid-multitouch: add support for new Hanvon panels
+Date: Tue, 29 Nov 2011 13:13:12 +0100
+Message-Id: <1322568792-4432-4-git-send-email-benjamin.tissoires@enac.fr>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1322568792-4432-1-git-send-email-benjamin.tissoires@enac.fr>
 References: <1322568792-4432-1-git-send-email-benjamin.tissoires@enac.fr>
@@ -23,389 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-
-This patch merge the last old-style hid multitouch driver to
-the generic one.
-It also adds 2 more quanta pids.
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 ---
- drivers/hid/Kconfig          |    7 +-
- drivers/hid/Makefile         |    1 -
- drivers/hid/hid-ids.h        |    4 +-
- drivers/hid/hid-multitouch.c |   23 +++-
- drivers/hid/hid-quanta.c     |  261 ------------------------------------------
- 5 files changed, 23 insertions(+), 273 deletions(-)
- delete mode 100644 drivers/hid/hid-quanta.c
+ drivers/hid/hid-core.c       |    1 +
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |    5 +++++
+ 3 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 741f92d..b8e98d0 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -355,6 +355,7 @@ config HID_MULTITOUCH
- 	  - MosArt dual-touch panels
- 	  - PenMount dual touch panels
- 	  - Pixcir dual touch panels
-+	  - Quanta panels
- 	  - eGalax dual-touch panels, including the Joojoo and Wetab tablets
- 	  - Stantum multitouch panels
- 	  - Touch International Panels
-@@ -471,12 +472,6 @@ config HID_PRIMAX
- 	Support for Primax devices that are not fully compliant with the
- 	HID standard.
- 
--config HID_QUANTA
--	tristate "Quanta Optical Touch panels"
--	depends on USB_HID
--	---help---
--	Support for Quanta Optical Touch dual-touch panels.
--
- config HID_ROCCAT
- 	tristate "Roccat special event support"
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 2be5500..aee5f58 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -60,7 +60,6 @@ obj-$(CONFIG_HID_MULTITOUCH)	+= hid-multitouch.o
- obj-$(CONFIG_HID_NTRIG)		+= hid-ntrig.o
- obj-$(CONFIG_HID_ORTEK)		+= hid-ortek.o
- obj-$(CONFIG_HID_PRODIKEYS)	+= hid-prodikeys.o
--obj-$(CONFIG_HID_QUANTA)	+= hid-quanta.o
- obj-$(CONFIG_HID_PANTHERLORD)	+= hid-pl.o
- obj-$(CONFIG_HID_PETALYNX)	+= hid-petalynx.o
- obj-$(CONFIG_HID_PICOLCD)	+= hid-picolcd.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index e3c9e61..24b6d4b 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1425,6 +1425,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_2) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HANVON, USB_DEVICE_ID_HANVON_MULTITOUCH) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_HANVON_ALT, USB_DEVICE_ID_HANVON_ALT_MULTITOUCH) },
+  	{ HID_USB_DEVICE(USB_VENDOR_ID_IDEACOM, USB_DEVICE_ID_IDEACOM_IDC6650) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK, USB_DEVICE_ID_HOLTEK_ON_LINE_GRIP) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_ILITEK, USB_DEVICE_ID_ILITEK_MULTITOUCH) },
 diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index cf8c866..ebfad17 100644
+index ebfad17..4b4f346 100644
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
-@@ -584,7 +584,9 @@
- #define USB_DEVICE_ID_PRODIGE_CORDLESS	0x3062
+@@ -359,6 +359,9 @@
+ #define USB_VENDOR_ID_HANVON		0x20b3
+ #define USB_DEVICE_ID_HANVON_MULTITOUCH	0x0a18
  
- #define USB_VENDOR_ID_QUANTA		0x0408
--#define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH	0x3000
-+#define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH		0x3000
-+#define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001		0x3001
-+#define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008		0x3008
- #define USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN	0x3001
- 
- #define USB_VENDOR_ID_ROCCAT		0x1e7d
++#define USB_VENDOR_ID_HANVON_ALT	0x22ed
++#define USB_DEVICE_ID_HANVON_ALT_MULTITOUCH	0x1010
++
+ #define USB_VENDOR_ID_HAPP		0x078b
+ #define USB_DEVICE_ID_UGCI_DRIVING	0x0010
+ #define USB_DEVICE_ID_UGCI_FLYING	0x0020
 diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index f0f3632..91c13bc 100644
+index bd6e410..2d321a5 100644
 --- a/drivers/hid/hid-multitouch.c
 +++ b/drivers/hid/hid-multitouch.c
-@@ -88,10 +88,11 @@ struct mt_device {
+@@ -745,6 +745,11 @@ static const struct hid_device_id mt_devices[] = {
+ 		HID_USB_DEVICE(USB_VENDOR_ID_GOODTOUCH,
+ 			USB_DEVICE_ID_GOODTOUCH_000f) },
  
- #define MT_CLS_SERIAL				0x0002
- #define MT_CLS_CONFIDENCE			0x0003
--#define MT_CLS_CONFIDENCE_MINUS_ONE		0x0004
--#define MT_CLS_DUAL_INRANGE_CONTACTID		0x0005
--#define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	0x0006
--#define MT_CLS_DUAL_NSMU_CONTACTID		0x0007
-+#define MT_CLS_CONFIDENCE_CONTACT_ID		0x0004
-+#define MT_CLS_CONFIDENCE_MINUS_ONE		0x0005
-+#define MT_CLS_DUAL_INRANGE_CONTACTID		0x0006
-+#define MT_CLS_DUAL_INRANGE_CONTACTNUMBER	0x0007
-+#define MT_CLS_DUAL_NSMU_CONTACTID		0x0008
- 
- /* vendor specific classes */
- #define MT_CLS_3M				0x0101
-@@ -140,6 +141,9 @@ static struct mt_class mt_classes[] = {
- 		.quirks = MT_QUIRK_ALWAYS_VALID},
- 	{ .name = MT_CLS_CONFIDENCE,
- 		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE },
-+	{ .name = MT_CLS_CONFIDENCE_CONTACT_ID,
-+		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE |
-+			MT_QUIRK_SLOT_IS_CONTACTID },
- 	{ .name = MT_CLS_CONFIDENCE_MINUS_ONE,
- 		.quirks = MT_QUIRK_VALID_IS_CONFIDENCE |
- 			MT_QUIRK_SLOT_IS_CONTACTID_MINUS_ONE },
-@@ -783,6 +787,17 @@ static const struct hid_device_id mt_devices[] = {
- 		HID_USB_DEVICE(USB_VENDOR_ID_CANDO,
- 			USB_DEVICE_ID_CANDO_PIXCIR_MULTI_TOUCH) },
- 
-+	/* Quanta-based panels */
-+	{ .driver_data = MT_CLS_CONFIDENCE_CONTACT_ID,
-+		HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
-+			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
-+	{ .driver_data = MT_CLS_CONFIDENCE_CONTACT_ID,
-+		HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
-+			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001) },
-+	{ .driver_data = MT_CLS_CONFIDENCE_CONTACT_ID,
-+		HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
-+			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008) },
++	/* Hanvon panels */
++	{ .driver_data = MT_CLS_DUAL_INRANGE_CONTACTID,
++		HID_USB_DEVICE(USB_VENDOR_ID_HANVON_ALT,
++			USB_DEVICE_ID_HANVON_ALT_MULTITOUCH) },
 +
- 	/* Stantum panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE,
- 		HID_USB_DEVICE(USB_VENDOR_ID_STANTUM,
-diff --git a/drivers/hid/hid-quanta.c b/drivers/hid/hid-quanta.c
-deleted file mode 100644
-index 87a54df..0000000
---- a/drivers/hid/hid-quanta.c
-+++ /dev/null
-@@ -1,261 +0,0 @@
--/*
-- *  HID driver for Quanta Optical Touch dual-touch panels
-- *
-- *  Copyright (c) 2009-2010 Stephane Chatty <chatty@enac.fr>
-- *
-- */
--
--/*
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of the GNU General Public License as published by the Free
-- * Software Foundation; either version 2 of the License, or (at your option)
-- * any later version.
-- */
--
--#include <linux/device.h>
--#include <linux/hid.h>
--#include <linux/module.h>
--#include <linux/slab.h>
--
--MODULE_AUTHOR("Stephane Chatty <chatty@enac.fr>");
--MODULE_DESCRIPTION("Quanta dual-touch panel");
--MODULE_LICENSE("GPL");
--
--#include "hid-ids.h"
--
--struct quanta_data {
--	__u16 x, y;
--	__u8 id;
--	bool valid;		/* valid finger data, or just placeholder? */
--	bool first;		/* is this the first finger in this frame? */
--	bool activity_now;	/* at least one active finger in this frame? */
--	bool activity;		/* at least one active finger previously? */
--};
--
--static int quanta_input_mapping(struct hid_device *hdev, struct hid_input *hi,
--		struct hid_field *field, struct hid_usage *usage,
--		unsigned long **bit, int *max)
--{
--	switch (usage->hid & HID_USAGE_PAGE) {
--
--	case HID_UP_GENDESK:
--		switch (usage->hid) {
--		case HID_GD_X:
--			hid_map_usage(hi, usage, bit, max,
--					EV_ABS, ABS_MT_POSITION_X);
--			/* touchscreen emulation */
--			input_set_abs_params(hi->input, ABS_X,
--						field->logical_minimum,
--						field->logical_maximum, 0, 0);
--			return 1;
--		case HID_GD_Y:
--			hid_map_usage(hi, usage, bit, max,
--					EV_ABS, ABS_MT_POSITION_Y);
--			/* touchscreen emulation */
--			input_set_abs_params(hi->input, ABS_Y,
--						field->logical_minimum,
--						field->logical_maximum, 0, 0);
--			return 1;
--		}
--		return 0;
--
--	case HID_UP_DIGITIZER:
--		switch (usage->hid) {
--		case HID_DG_CONFIDENCE:
--		case HID_DG_TIPSWITCH:
--		case HID_DG_INPUTMODE:
--		case HID_DG_DEVICEINDEX:
--		case HID_DG_CONTACTCOUNT:
--		case HID_DG_CONTACTMAX:
--		case HID_DG_TIPPRESSURE:
--		case HID_DG_WIDTH:
--		case HID_DG_HEIGHT:
--			return -1;
--		case HID_DG_INRANGE:
--			/* touchscreen emulation */
--			hid_map_usage(hi, usage, bit, max, EV_KEY, BTN_TOUCH);
--			return 1;
--		case HID_DG_CONTACTID:
--			hid_map_usage(hi, usage, bit, max,
--					EV_ABS, ABS_MT_TRACKING_ID);
--			return 1;
--		}
--		return 0;
--
--	case 0xff000000:
--		/* ignore vendor-specific features */
--		return -1;
--	}
--
--	return 0;
--}
--
--static int quanta_input_mapped(struct hid_device *hdev, struct hid_input *hi,
--		struct hid_field *field, struct hid_usage *usage,
--		unsigned long **bit, int *max)
--{
--	if (usage->type == EV_KEY || usage->type == EV_ABS)
--		clear_bit(usage->code, *bit);
--
--	return 0;
--}
--
--/*
-- * this function is called when a whole finger has been parsed,
-- * so that it can decide what to send to the input layer.
-- */
--static void quanta_filter_event(struct quanta_data *td, struct input_dev *input)
--{
--	
--	td->first = !td->first; /* touchscreen emulation */
--
--	if (!td->valid) {
--		/*
--		 * touchscreen emulation: if no finger in this frame is valid
--		 * and there previously was finger activity, this is a release
--		 */ 
--		if (!td->first && !td->activity_now && td->activity) {
--			input_event(input, EV_KEY, BTN_TOUCH, 0);
--			td->activity = false;
--		}
--		return;
--	}
--
--	input_event(input, EV_ABS, ABS_MT_TRACKING_ID, td->id);
--	input_event(input, EV_ABS, ABS_MT_POSITION_X, td->x);
--	input_event(input, EV_ABS, ABS_MT_POSITION_Y, td->y);
--
--	input_mt_sync(input);
--	td->valid = false;
--
--	/* touchscreen emulation: if first active finger in this frame... */
--	if (!td->activity_now) {
--		/* if there was no previous activity, emit touch event */
--		if (!td->activity) {
--			input_event(input, EV_KEY, BTN_TOUCH, 1);
--			td->activity = true;
--		}
--		td->activity_now = true;
--		/* and in any case this is our preferred finger */
--		input_event(input, EV_ABS, ABS_X, td->x);
--		input_event(input, EV_ABS, ABS_Y, td->y);
--	}
--}
--
--
--static int quanta_event(struct hid_device *hid, struct hid_field *field,
--				struct hid_usage *usage, __s32 value)
--{
--	struct quanta_data *td = hid_get_drvdata(hid);
--
--	if (hid->claimed & HID_CLAIMED_INPUT) {
--		struct input_dev *input = field->hidinput->input;
--
--		switch (usage->hid) {
--		case HID_DG_INRANGE:
--			td->valid = !!value;
--			break;
--		case HID_GD_X:
--			td->x = value;
--			break;
--		case HID_GD_Y:
--			td->y = value;
--			quanta_filter_event(td, input);
--			break;
--		case HID_DG_CONTACTID:
--			td->id = value;
--			break;
--		case HID_DG_CONTACTCOUNT:
--			/* touch emulation: this is the last field in a frame */
--			td->first = false;
--			td->activity_now = false;
--			break;
--		case HID_DG_CONFIDENCE:
--		case HID_DG_TIPSWITCH:
--			/* avoid interference from generic hidinput handling */
--			break;
--
--		default:
--			/* fallback to the generic hidinput handling */
--			return 0;
--		}
--	}
--
--	/* we have handled the hidinput part, now remains hiddev */
--	if (hid->claimed & HID_CLAIMED_HIDDEV && hid->hiddev_hid_event)
--		hid->hiddev_hid_event(hid, field, usage, value);
--
--	return 1;
--}
--
--static int quanta_probe(struct hid_device *hdev, const struct hid_device_id *id)
--{
--	int ret;
--	struct quanta_data *td;
--
--	td = kmalloc(sizeof(struct quanta_data), GFP_KERNEL);
--	if (!td) {
--		hid_err(hdev, "cannot allocate Quanta Touch data\n");
--		return -ENOMEM;
--	}
--	td->valid = false;
--	td->activity = false;
--	td->activity_now = false;
--	td->first = false;
--	hid_set_drvdata(hdev, td);
--
--	ret = hid_parse(hdev);
--	if (!ret)
--		ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
--
--	if (ret)
--		kfree(td);
--
--	return ret;
--}
--
--static void quanta_remove(struct hid_device *hdev)
--{
--	hid_hw_stop(hdev);
--	kfree(hid_get_drvdata(hdev));
--	hid_set_drvdata(hdev, NULL);
--}
--
--static const struct hid_device_id quanta_devices[] = {
--	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
--			USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
--			USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) },
--	{ }
--};
--MODULE_DEVICE_TABLE(hid, quanta_devices);
--
--static const struct hid_usage_id quanta_grabbed_usages[] = {
--	{ HID_ANY_ID, HID_ANY_ID, HID_ANY_ID },
--	{ HID_ANY_ID - 1, HID_ANY_ID - 1, HID_ANY_ID - 1}
--};
--
--static struct hid_driver quanta_driver = {
--	.name = "quanta-touch",
--	.id_table = quanta_devices,
--	.probe = quanta_probe,
--	.remove = quanta_remove,
--	.input_mapping = quanta_input_mapping,
--	.input_mapped = quanta_input_mapped,
--	.usage_table = quanta_grabbed_usages,
--	.event = quanta_event,
--};
--
--static int __init quanta_init(void)
--{
--	return hid_register_driver(&quanta_driver);
--}
--
--static void __exit quanta_exit(void)
--{
--	hid_unregister_driver(&quanta_driver);
--}
--
--module_init(quanta_init);
--module_exit(quanta_exit);
--
+ 	/* Ideacom panel */
+ 	{ .driver_data = MT_CLS_SERIAL,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_IDEACOM,
 -- 
 1.7.4.4
 
