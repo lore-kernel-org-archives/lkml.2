@@ -1,66 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1K2Td1 (ORCPT <rfc822;w@1wt.eu>);
+	id S1756275Ab1K2Tdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 14:33:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756224Ab1K2Td1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 Nov 2011 14:33:27 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:42300 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab1K2Td0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 14:33:26 -0500
-Date: Tue, 29 Nov 2011 14:35:28 -0500 (EST)
-Message-Id: <20111129.143528.342322755.davem@davemloft.net>
-To: xi.wang@gmail.com
-Cc: vladislav.yasevich@hp.com, linux-kernel@vger.kernel.org, sri@us.ibm.com,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        security@kernel.org
-Subject: Re: [PATCH v2] sctp: better integer overflow check in
- sctp_auth_create_key()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <125BB325-72D4-4FEF-A5CC-118680EC78D2@gmail.com>
-References: <4ED4F428.9030807@hp.com>
-	<A1A6AF9D-8C35-4702-9693-7BCBEDE27219@gmail.com>
-	<125BB325-72D4-4FEF-A5CC-118680EC78D2@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 Nov 2011 11:31:09 -0800 (PST)
+Date: Tue, 29 Nov 2011 21:35:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH-RFC v2] frv: switch to GENERIC_PCI_IOMAP
+Message-ID: <20111129193503.GA2960@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xi Wang <xi.wang@gmail.com>
-Date: Tue, 29 Nov 2011 14:26:30 -0500
+frv uses a version of pci_iomap that simply
+casts and returns back the start address.
+Looking closely, both ioremap and ioport_map seem to
+do this on this platform, so the generic pci_iomap
+will DTRT automatically.
 
-> The check from commit 30c2235c is incomplete and cannot prevent
-> cases like key_len = 0x80000000 (INT_MAX + 1).  In that case, the
-> left-hand side of the check (INT_MAX - key_len), which is unsigned,
-> becomes 0xffffffff (UINT_MAX) and bypasses the check.
-> 
-> However this shouldn't be a security issue.  The function is called
-> from the following two code paths:
-> 
->  1) setsockopt()
-> 
->  2) sctp_auth_asoc_set_secret()
-> 
-> In case (1), sca_keylength is never going to exceed 65535 since it's
-> bounded by a u16 from the user API.  As such, the key length will
-> never overflow.
-> 
-> In case (2), sca_keylength is computed based on the user key (1 short)
-> and 2 * key_vector (3 shorts) for a total of 7 * USHRT_MAX, which still
-> will not overflow.
-> 
-> In other words, this overflow check is not really necessary.  Just
-> make it more correct.
-> 
-> Signed-off-by: Xi Wang <xi.wang@gmail.com>
-> Cc: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-I already applied your patch, you cannot just post a patch as if
-it hasn't been applied to the tree, it doesn't work like that.
+Changes from v1:
+	add a missing include for asm-generic/pci_iomap.h
+	in asm/io.h
 
-Once I've applied one of your patches, it is "cast in stone" and
-cannot be reverted.  You must therefore develop relative to the
-change.
+This is a completely untested patch to switch frv
+over to the new pci_iomap (in -mm).
+
+This is on top of pci: use generic pci_iomap in most architectures,
+and converts just the frvc architecture.
+
+
+
+ arch/frv/Kconfig                  |    1 +
+ arch/frv/include/asm/io.h         |    2 +-
+ arch/frv/mb93090-mb00/Makefile    |    2 +-
+ arch/frv/mb93090-mb00/pci-iomap.c |   29 -----------------------------
+ 4 files changed, 3 insertions(+), 31 deletions(-)
+ delete mode 100644 arch/frv/mb93090-mb00/pci-iomap.c
+
+diff --git a/arch/frv/Kconfig b/arch/frv/Kconfig
+index bad27a6..dfde78b 100644
+--- a/arch/frv/Kconfig
++++ b/arch/frv/Kconfig
+@@ -317,6 +317,7 @@ config PCI
+ 	bool "Use PCI"
+ 	depends on MB93090_MB00
+ 	default y
++	select GENERIC_PCI_IOMAP
+ 	help
+ 	  Some FR-V systems (such as the MB93090-MB00 VDK) have PCI
+ 	  onboard. If you have one of these boards and you wish to use the PCI
+diff --git a/arch/frv/include/asm/io.h b/arch/frv/include/asm/io.h
+index ca7475e..8cb50a2 100644
+--- a/arch/frv/include/asm/io.h
++++ b/arch/frv/include/asm/io.h
+@@ -21,6 +21,7 @@
+ #include <asm/virtconvert.h>
+ #include <asm/string.h>
+ #include <asm/mb-regs.h>
++#include <asm-generic/pci_iomap.h>
+ #include <linux/delay.h>
+ 
+ /*
+@@ -370,7 +371,6 @@ static inline void iowrite32_rep(void __iomem *p, const void *src, unsigned long
+ 
+ /* Create a virtual mapping cookie for a PCI BAR (memory or IO) */
+ struct pci_dev;
+-extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
+ static inline void pci_iounmap(struct pci_dev *dev, void __iomem *p)
+ {
+ }
+diff --git a/arch/frv/mb93090-mb00/Makefile b/arch/frv/mb93090-mb00/Makefile
+index b73b542..21f1df1 100644
+--- a/arch/frv/mb93090-mb00/Makefile
++++ b/arch/frv/mb93090-mb00/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ ifeq "$(CONFIG_PCI)" "y"
+-obj-y := pci-frv.o pci-irq.o pci-vdk.o pci-iomap.o
++obj-y := pci-frv.o pci-irq.o pci-vdk.o
+ 
+ ifeq "$(CONFIG_MMU)" "y"
+ obj-y += pci-dma.o
+diff --git a/arch/frv/mb93090-mb00/pci-iomap.c b/arch/frv/mb93090-mb00/pci-iomap.c
+deleted file mode 100644
+index 35f6df2..0000000
+--- a/arch/frv/mb93090-mb00/pci-iomap.c
++++ /dev/null
+@@ -1,29 +0,0 @@
+-/* pci-iomap.c: description
+- *
+- * Copyright (C) 2006 Red Hat, Inc. All Rights Reserved.
+- * Written by David Howells (dhowells@redhat.com)
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; either version
+- * 2 of the License, or (at your option) any later version.
+- */
+-#include <linux/pci.h>
+-#include <linux/module.h>
+-
+-void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
+-{
+-	resource_size_t start = pci_resource_start(dev, bar);
+-	resource_size_t len = pci_resource_len(dev, bar);
+-	unsigned long flags = pci_resource_flags(dev, bar);
+-
+-	if (!len || !start)
+-		return NULL;
+-
+-	if ((flags & IORESOURCE_IO) || (flags & IORESOURCE_MEM))
+-		return (void __iomem *) start;
+-
+-	return NULL;
+-}
+-
+-EXPORT_SYMBOL(pci_iomap);
+-- 
+1.7.5.53.gc233e
