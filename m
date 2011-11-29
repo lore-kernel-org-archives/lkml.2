@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab1K2KsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 05:48:24 -0500
-Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:17139 "EHLO
-	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753919Ab1K2KsU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 05:48:20 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAKC21E5tg6dK/2dsb2JhbABDqnSBBoFyAQEFJxMcIxAIAw44FCUDIYgatzASiwwElFOJDYkG
-Date: Tue, 29 Nov 2011 11:44:52 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Marc Vertes <marc.vertes@sigfox.com>, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org,
-        Dimitry Andric <dimitry.andric@tomtom.com>,
-        Ben Dooks <ben@simtec.co.uk>
-Subject: Re: [PATCH] watchdog: fix nowayout setting in s3c2410_wdt
-Message-ID: <20111129104452.GI23376@infomag.iguana.be>
-References: <4ed026d9.TvJLr8ihQ2VtvqPD%marc.vertes@sigfox.com> <20111126102915.GA7517@pengutronix.de> <20111129095643.GH23376@infomag.iguana.be> <20111129102136.GB5455@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754688Ab1K2Kt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 05:49:58 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:30284 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab1K2Kty convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 29 Nov 2011 05:49:54 -0500
+Message-Id: <4ED4C6DF0200007800064018@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 29 Nov 2011 10:49:51 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: improve insn scheduling in SAVE_ARGS_IRQ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20111129102136.GB5455@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+In one case, use an address register that was computed earlier (and
+with a simpler instruction), thus reducing the risk of a stall.
 
-> > +/* Use the following function to set the nowayout feature */
-> > +static inline void watchdog_set_nowayout(struct watchdog_device *wdd, int nowayout)
-> > +{
-> > +	if (nowayout)
-> > +		set_bit(WDOG_NO_WAY_OUT, &wdd->status);
-> > +}
-> 
-> Yes, this is better in case we might need to add something later.
-> 
-> > but: .status = WATCHDOG_NOWAYOUT_INIT_STATUS, is also a nice one to have.
-> > 
-> > I propose to add both options and to document them in the documentation.
-> > Objections anyone?
-> 
-> Sounds good to me.
-> 
-> So, I'll drop NOWAYOUT-related patches from my STMP-series?
+In the second case, eliminate a branch by using a conditional move (as
+is already done in call_softirq and xen_do_hypervisor_callback).
 
-Yes, I'll make sure we do the necessary on the nowayout side :-). Will try to add a patch for it today.
-Could you resend the SMTP series after that you dropped the nowayout patches so I can review these?
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-Kind regards,
-Wim.
+---
+ arch/x86/kernel/entry_64.S |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+--- 3.2-rc3/arch/x86/kernel/entry_64.S
++++ 3.2-rc3-x86_64-entry-sched/arch/x86/kernel/entry_64.S
+@@ -319,7 +319,7 @@ ENDPROC(native_usergs_sysret64)
+ 	movq %rsp, %rsi
+ 
+ 	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
+-	testl $3, CS(%rdi)
++	testl $3, CS-RBP(%rsi)
+ 	je 1f
+ 	SWAPGS
+ 	/*
+@@ -329,11 +329,10 @@ ENDPROC(native_usergs_sysret64)
+ 	 * moving irq_enter into assembly, which would be too much work)
+ 	 */
+ 1:	incl PER_CPU_VAR(irq_count)
+-	jne 2f
+-	mov PER_CPU_VAR(irq_stack_ptr),%rsp
++	cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
+ 	CFI_DEF_CFA_REGISTER	rsi
+ 
+-2:	/* Store previous stack value */
++	/* Store previous stack value */
+ 	pushq %rsi
+ 	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
+ 			0x77 /* DW_OP_breg7 */, 0, \
+
+
 
