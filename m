@@ -1,288 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab1K3AFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 19:05:10 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:32471 "EHLO relay.sw.ru"
+	id S1757263Ab1K3AEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 19:04:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11276 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757217Ab1K3AFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 19:05:05 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
-        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
-        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v7 05/10] per-netns ipv4 sysctl_tcp_mem
-Date: Tue, 29 Nov 2011 21:56:56 -0200
-Message-Id: <1322611021-1730-6-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1322611021-1730-1-git-send-email-glommer@parallels.com>
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+	id S1757217Ab1K3AEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 19:04:38 -0500
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 08/16] PGP: Add signature parser [ver #2]
+To: keyrings@linux-nfs.org
+Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
+        zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
+        alan.cox@intel.com, David Howells <dhowells@redhat.com>
+Date: Tue, 29 Nov 2011 23:44:39 +0000
+Message-ID: <20111129234439.13625.26953.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20111129234258.13625.21153.stgit@warthog.procyon.org.uk>
+References: <20111129234258.13625.21153.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows each namespace to independently set up
-its levels for tcp memory pressure thresholds. This patch
-alone does not buy much: we need to make this values
-per group of process somehow. This is achieved in the
-patches that follows in this patchset.
+Add some PGP signature parsing helpers:
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Eric W. Biederman <ebiederm@xmission.com>
+ (1) A function to parse V4 signature subpackets and pass the desired ones to
+     a processor function:
+
+	int pgp_parse_sig_subpkts(const u8 *data, size_t datalen,
+				  struct pgp_parse_sig_context *ctx);
+
+ (2) A function to parse out basic signature parameters from any PGP signature
+     such that the algorithms and public key can be selected:
+
+	int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
+				 struct pgp_sig_parameters *p);
+
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- include/net/netns/ipv4.h   |    1 +
- include/net/tcp.h          |    1 -
- net/ipv4/af_inet.c         |    2 +
- net/ipv4/sysctl_net_ipv4.c |   51 +++++++++++++++++++++++++++++++++++++------
- net/ipv4/tcp.c             |   11 +-------
- net/ipv4/tcp_ipv4.c        |    1 -
- net/ipv4/tcp_memcontrol.c  |    9 +++++--
- net/ipv6/af_inet6.c        |    2 +
- net/ipv6/tcp_ipv6.c        |    1 -
- 9 files changed, 57 insertions(+), 22 deletions(-)
 
-diff --git a/include/net/netns/ipv4.h b/include/net/netns/ipv4.h
-index d786b4f..bbd023a 100644
---- a/include/net/netns/ipv4.h
-+++ b/include/net/netns/ipv4.h
-@@ -55,6 +55,7 @@ struct netns_ipv4 {
- 	int current_rt_cache_rebuild_count;
+ include/linux/pgp.h       |   24 ++++
+ security/keys/pgp_parse.c |  274 +++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 298 insertions(+), 0 deletions(-)
+
+
+diff --git a/include/linux/pgp.h b/include/linux/pgp.h
+index 7e86a06..29b9758 100644
+--- a/include/linux/pgp.h
++++ b/include/linux/pgp.h
+@@ -227,4 +227,28 @@ struct pgp_parse_pubkey {
+ extern int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
+ 				struct pgp_parse_pubkey *pk);
  
- 	unsigned int sysctl_ping_group_range[2];
-+	long sysctl_tcp_mem[3];
- 
- 	atomic_t rt_genid;
- 	atomic_t dev_addr_genid;
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index f080e0b..61c7e76 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -230,7 +230,6 @@ extern int sysctl_tcp_fack;
- extern int sysctl_tcp_reordering;
- extern int sysctl_tcp_ecn;
- extern int sysctl_tcp_dsack;
--extern long sysctl_tcp_mem[3];
- extern int sysctl_tcp_wmem[3];
- extern int sysctl_tcp_rmem[3];
- extern int sysctl_tcp_app_win;
-diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index 1b5096a..a8bbcff 100644
---- a/net/ipv4/af_inet.c
-+++ b/net/ipv4/af_inet.c
-@@ -1671,6 +1671,8 @@ static int __init inet_init(void)
- 	ip_static_sysctl_init();
- #endif
- 
-+	tcp_prot.sysctl_mem = init_net.ipv4.sysctl_tcp_mem;
++struct pgp_parse_sig_context {
++	unsigned long types_of_interest[128 / BITS_PER_LONG];
++	int (*process_packet)(struct pgp_parse_sig_context *context,
++			      enum pgp_sig_subpkt_type type,
++			      const u8 *data,
++			      size_t datalen);
++};
 +
- 	/*
- 	 *	Add all the base protocols.
- 	 */
-diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 69fd720..bbd67ab 100644
---- a/net/ipv4/sysctl_net_ipv4.c
-+++ b/net/ipv4/sysctl_net_ipv4.c
-@@ -14,6 +14,7 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/nsproxy.h>
-+#include <linux/swap.h>
- #include <net/snmp.h>
- #include <net/icmp.h>
- #include <net/ip.h>
-@@ -174,6 +175,36 @@ static int proc_allowed_congestion_control(ctl_table *ctl,
- 	return ret;
- }
- 
-+static int ipv4_tcp_mem(ctl_table *ctl, int write,
-+			   void __user *buffer, size_t *lenp,
-+			   loff_t *ppos)
-+{
-+	int ret;
-+	unsigned long vec[3];
-+	struct net *net = current->nsproxy->net_ns;
++extern int pgp_parse_sig_packets(const u8 *data, size_t datalen,
++				 struct pgp_parse_sig_context *ctx);
 +
-+	ctl_table tmp = {
-+		.data = &vec,
-+		.maxlen = sizeof(vec),
-+		.mode = ctl->mode,
++struct pgp_sig_parameters {
++	enum pgp_signature_type signature_type : 8;
++	union {
++		struct pgp_key_ID issuer;
++		__be32 issuer32[2];
 +	};
++	enum pgp_pubkey_algo pubkey_algo : 8;
++	enum pgp_hash_algo hash_algo : 8;
++};
 +
-+	if (!write) {
-+		ctl->data = &net->ipv4.sysctl_tcp_mem;
-+		return proc_doulongvec_minmax(ctl, write, buffer, lenp, ppos);
++extern int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
++				struct pgp_sig_parameters *p);
++
+ #endif /* _LINUX_PGP_H */
+diff --git a/security/keys/pgp_parse.c b/security/keys/pgp_parse.c
+index fb8d64a..b7bfeb1 100644
+--- a/security/keys/pgp_parse.c
++++ b/security/keys/pgp_parse.c
+@@ -252,3 +252,277 @@ int pgp_parse_public_key(const u8 **_data, size_t *_datalen,
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(pgp_parse_public_key);
++
++/**
++ * pgp_parse_sig_subpkt_header - Parse a PGP V4 signature subpacket header
++ * @_data: Start of the subpacket (updated to subpacket data)
++ * @_datalen: Amount of data remaining in buffer (decreased)
++ * @_type: Where the subpacket type will be returned
++ *
++ * Parse a PGP V4 signature subpacket header [RFC 4880: 5.2.3.1].
++ *
++ * Returns packet data size on success; non-zero on error.  If successful,
++ * *_data and *_datalen will have been updated and *_headerlen will be set to
++ * hold the length of the packet header.
++ */
++ssize_t pgp_parse_sig_subpkt_header(const u8 **_data, size_t *_datalen,
++				    enum pgp_sig_subpkt_type *_type)
++{
++	enum pgp_sig_subpkt_type type;
++	const u8 *data = *_data;
++	size_t size, datalen = *_datalen;
++
++	pr_devel("-->pgp_parse_sig_subpkt_header(,%zu,,)", datalen);
++
++	if (datalen < 2)
++		goto short_subpacket;
++
++	pr_devel("subpkt hdr %02x, %02x\n", data[0], data[1]);
++
++	switch (data[0]) {
++	case 0x00 ... 0xbf:
++		/* One-byte length */
++		size = data[0];
++		data++;
++		datalen--;
++		break;
++	case 0xc0 ... 0xfe:
++		/* Two-byte length */
++		if (datalen < 3)
++			goto short_subpacket;
++		size = (data[0] - 192) * 256;
++		size += data[1] + 192;
++		data += 2;
++		datalen -= 2;
++		break;
++	case 0xff:
++		if (datalen < 6)
++			goto short_subpacket;
++		size  = data[1] << 24;
++		size |= data[2] << 16;
++		size |= data[3] << 8;
++		size |= data[4];
++		data += 5;
++		datalen -= 5;
++		break;
 +	}
 +
-+	ret = proc_doulongvec_minmax(&tmp, write, buffer, lenp, ppos);
-+	if (ret)
-+		return ret;
++	/* The type octet is included in the size */
++	if (size == 0) {
++		pr_warning("Signature subpacket size can't be zero\n");
++		return -EBADMSG;
++	}
 +
-+	net->ipv4.sysctl_tcp_mem[0] = vec[0];
-+	net->ipv4.sysctl_tcp_mem[1] = vec[1];
-+	net->ipv4.sysctl_tcp_mem[2] = vec[2];
++	type = *data++ & ~PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK;
++	datalen--;
++	size--;
++
++	pr_devel("datalen=%zu size=%zu", datalen, size);
++	if (datalen < size)
++		goto short_subpacket;
++
++	*_data = data;
++	*_datalen = datalen;
++	*_type = type;
++	pr_devel("Found subpkt type=%u size=%zd\n", type, size);
++	return size;
++
++short_subpacket:
++	pr_warning("Attempt to parse short signature subpacket\n");
++	return -EBADMSG;
++}
++
++/**
++ * pgp_parse_sig_subpkts - Parse a set of PGP V4 signatute subpackets
++ * @_data: Data to be parsed (updated)
++ * @_datalen: Amount of data (updated)
++ * @ctx: Parsing context
++ *
++ * Parse a set of PGP signature subpackets [RFC 4880: 5.2.3].
++ */
++int pgp_parse_sig_subpkts(const u8 *data, size_t datalen,
++			  struct pgp_parse_sig_context *ctx)
++{
++	enum pgp_sig_subpkt_type type;
++	ssize_t pktlen;
++	int ret;
++
++	pr_devel("-->pgp_parse_sig_subpkts(,%zu,,)", datalen);
++
++	while (datalen > 2) {
++		pktlen = pgp_parse_sig_subpkt_header(&data, &datalen, &type);
++		if (pktlen < 0)
++			return pktlen;
++		if (test_bit(type, ctx->types_of_interest)) {
++			ret = ctx->process_packet(ctx, type, data, pktlen);
++			if (ret < 0)
++				return ret;
++		}
++		data += pktlen;
++		datalen -= pktlen;
++	}
++
++	if (datalen != 0) {
++		pr_warning("Excess octets in signature subpacket stream\n");
++		return -EBADMSG;
++	}
 +
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(pgp_parse_sig_subpkts);
 +
- static struct ctl_table ipv4_table[] = {
- 	{
- 		.procname	= "tcp_timestamps",
-@@ -433,13 +464,6 @@ static struct ctl_table ipv4_table[] = {
- 		.proc_handler	= proc_dointvec
- 	},
- 	{
--		.procname	= "tcp_mem",
--		.data		= &sysctl_tcp_mem,
--		.maxlen		= sizeof(sysctl_tcp_mem),
--		.mode		= 0644,
--		.proc_handler	= proc_doulongvec_minmax
--	},
--	{
- 		.procname	= "tcp_wmem",
- 		.data		= &sysctl_tcp_wmem,
- 		.maxlen		= sizeof(sysctl_tcp_wmem),
-@@ -721,6 +745,12 @@ static struct ctl_table ipv4_net_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= ipv4_ping_group_range,
- 	},
-+	{
-+		.procname	= "tcp_mem",
-+		.maxlen		= sizeof(init_net.ipv4.sysctl_tcp_mem),
-+		.mode		= 0644,
-+		.proc_handler	= ipv4_tcp_mem,
-+	},
- 	{ }
- };
- 
-@@ -734,6 +764,7 @@ EXPORT_SYMBOL_GPL(net_ipv4_ctl_path);
- static __net_init int ipv4_sysctl_init_net(struct net *net)
- {
- 	struct ctl_table *table;
-+	unsigned long limit;
- 
- 	table = ipv4_net_table;
- 	if (!net_eq(net, &init_net)) {
-@@ -769,6 +800,12 @@ static __net_init int ipv4_sysctl_init_net(struct net *net)
- 
- 	net->ipv4.sysctl_rt_cache_rebuild_count = 4;
- 
-+	limit = nr_free_buffer_pages() / 8;
-+	limit = max(limit, 128UL);
-+	net->ipv4.sysctl_tcp_mem[0] = limit / 4 * 3;
-+	net->ipv4.sysctl_tcp_mem[1] = limit;
-+	net->ipv4.sysctl_tcp_mem[2] = net->ipv4.sysctl_tcp_mem[0] * 2;
++struct pgp_parse_sig_params_ctx {
++	struct pgp_parse_sig_context base;
++	struct pgp_sig_parameters *params;
++	bool got_the_issuer;
++};
 +
- 	net->ipv4.ipv4_hdr = register_net_sysctl_table(net,
- 			net_ipv4_ctl_path, table);
- 	if (net->ipv4.ipv4_hdr == NULL)
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 34f5db1..5f618d1 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -282,11 +282,9 @@ int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
- struct percpu_counter tcp_orphan_count;
- EXPORT_SYMBOL_GPL(tcp_orphan_count);
- 
--long sysctl_tcp_mem[3] __read_mostly;
- int sysctl_tcp_wmem[3] __read_mostly;
- int sysctl_tcp_rmem[3] __read_mostly;
- 
--EXPORT_SYMBOL(sysctl_tcp_mem);
- EXPORT_SYMBOL(sysctl_tcp_rmem);
- EXPORT_SYMBOL(sysctl_tcp_wmem);
- 
-@@ -3272,14 +3270,9 @@ void __init tcp_init(void)
- 	sysctl_tcp_max_orphans = cnt / 2;
- 	sysctl_max_syn_backlog = max(128, cnt / 256);
- 
--	limit = nr_free_buffer_pages() / 8;
--	limit = max(limit, 128UL);
--	sysctl_tcp_mem[0] = limit / 4 * 3;
--	sysctl_tcp_mem[1] = limit;
--	sysctl_tcp_mem[2] = sysctl_tcp_mem[0] * 2;
--
- 	/* Set per-socket limits to no more than 1/128 the pressure threshold */
--	limit = ((unsigned long)sysctl_tcp_mem[1]) << (PAGE_SHIFT - 7);
-+	limit = ((unsigned long)init_net.ipv4.sysctl_tcp_mem[1])
-+		<< (PAGE_SHIFT - 7);
- 	max_share = min(4UL*1024*1024, limit);
- 
- 	sysctl_tcp_wmem[0] = SK_MEM_QUANTUM;
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 7fa08c5..559f1ff 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -2620,7 +2620,6 @@ struct proto tcp_prot = {
- 	.orphan_count		= &tcp_orphan_count,
- 	.memory_allocated	= &tcp_memory_allocated,
- 	.memory_pressure	= &tcp_memory_pressure,
--	.sysctl_mem		= sysctl_tcp_mem,
- 	.sysctl_wmem		= sysctl_tcp_wmem,
- 	.sysctl_rmem		= sysctl_tcp_rmem,
- 	.max_header		= MAX_TCP_HEADER,
-diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
-index 261e22c..6dd6528 100644
---- a/net/ipv4/tcp_memcontrol.c
-+++ b/net/ipv4/tcp_memcontrol.c
-@@ -1,6 +1,8 @@
- #include <net/tcp.h>
- #include <net/tcp_memcontrol.h>
- #include <net/sock.h>
-+#include <net/ip.h>
-+#include <linux/nsproxy.h>
- #include <linux/memcontrol.h>
- #include <linux/module.h>
- 
-@@ -28,6 +30,7 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	struct tcp_memcontrol *tcp;
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
-+	struct net *net = current->nsproxy->net_ns;
- 
- 	cg_proto = tcp_prot.proto_cgroup(memcg);
- 	if (!cg_proto)
-@@ -36,9 +39,9 @@ int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	tcp = tcp_from_cgproto(cg_proto);
- 	cg_proto->parent = tcp_prot.proto_cgroup(parent);
- 
--	tcp->tcp_prot_mem[0] = sysctl_tcp_mem[0];
--	tcp->tcp_prot_mem[1] = sysctl_tcp_mem[1];
--	tcp->tcp_prot_mem[2] = sysctl_tcp_mem[2];
-+	tcp->tcp_prot_mem[0] = net->ipv4.sysctl_tcp_mem[0];
-+	tcp->tcp_prot_mem[1] = net->ipv4.sysctl_tcp_mem[1];
-+	tcp->tcp_prot_mem[2] = net->ipv4.sysctl_tcp_mem[2];
- 	tcp->tcp_memory_pressure = 0;
- 
- 	if (cg_proto->parent)
-diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
-index d27c797..49b2145 100644
---- a/net/ipv6/af_inet6.c
-+++ b/net/ipv6/af_inet6.c
-@@ -1115,6 +1115,8 @@ static int __init inet6_init(void)
- 	if (err)
- 		goto static_sysctl_fail;
- #endif
-+	tcpv6_prot.sysctl_mem = init_net.ipv4.sysctl_tcp_mem;
++/*
++ * Process a V4 signature subpacket.
++ */
++static int pgp_process_sig_params_subpkt(struct pgp_parse_sig_context *context,
++					 enum pgp_sig_subpkt_type type,
++					 const u8 *data,
++					 size_t datalen)
++{
++	struct pgp_parse_sig_params_ctx *ctx =
++		container_of(context, struct pgp_parse_sig_params_ctx, base);
 +
- 	/*
- 	 *	ipngwg API draft makes clear that the correct semantics
- 	 *	for TCP and UDP is to consider one TCP and UDP instance
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index ca8e8a6..4973ccf 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -2215,7 +2215,6 @@ struct proto tcpv6_prot = {
- 	.memory_allocated	= &tcp_memory_allocated,
- 	.memory_pressure	= &tcp_memory_pressure,
- 	.orphan_count		= &tcp_orphan_count,
--	.sysctl_mem		= sysctl_tcp_mem,
- 	.sysctl_wmem		= sysctl_tcp_wmem,
- 	.sysctl_rmem		= sysctl_tcp_rmem,
- 	.max_header		= MAX_TCP_HEADER,
--- 
-1.7.6.4
++	if (ctx->got_the_issuer) {
++		pr_warning("V4 signature packet has multiple issuers\n");
++		return -EBADMSG;
++	}
++
++	if (datalen != 8) {
++		pr_warning("V4 signature issuer subpkt not 8 long (%zu)\n",
++			   datalen);
++		return -EBADMSG;
++	}
++
++	memcpy(&ctx->params->issuer, data, 8);
++	ctx->got_the_issuer = true;
++	return 0;
++}
++
++/**
++ * pgp_parse_sig_params - Parse basic parameters from a PGP signature packet
++ * @_data: Content of packet (updated)
++ * @_datalen: Length of packet remaining (updated)
++ * @p: The basic parameters
++ *
++ * Parse the basic parameters from a PGP signature packet [RFC 4880: 5.2] that
++ * are needed to start off a signature verification operation.  The only ones
++ * actually necessary are the signature type (which affects how the data is
++ * transformed) and the has algorithm.
++ *
++ * We also extract the public key algorithm and the issuer's key ID as we'll
++ * need those to determine if we actually have the public key available.  If
++ * not, then we can't verify the signature anyway.
++ *
++ * Returns 0 if successful or a negative error code.  *_data and *_datalen are
++ * updated to point to the 16-bit subset of the hash value and the set of MPIs.
++ */
++int pgp_parse_sig_params(const u8 **_data, size_t *_datalen,
++			 struct pgp_sig_parameters *p)
++{
++	enum pgp_signature_version version;
++	const u8 *data = *_data;
++	size_t datalen = *_datalen;
++	int ret;
++
++	pr_devel("-->pgp_parse_sig_params(,%zu,,)", datalen);
++
++	if (datalen < 1)
++		return -EBADMSG;
++	version = *data;
++
++	if (version == PGP_SIG_VERSION_3) {
++		const struct pgp_signature_v3_packet *v3 = (const void *)data;
++
++		if (datalen < sizeof(*v3)) {
++			pr_warning("Short V3 signature packet\n");
++			return -EBADMSG;
++		}
++		datalen -= sizeof(*v3);
++		data += sizeof(*v3);
++
++		/* V3 has everything we need in the header */
++		p->signature_type = v3->hashed.signature_type;
++		p->issuer = v3->issuer;
++		p->pubkey_algo = v3->pubkey_algo;
++		p->hash_algo = v3->hash_algo;
++
++	} else if (version == PGP_SIG_VERSION_4) {
++		const struct pgp_signature_v4_packet *v4 = (const void *)data;
++		struct pgp_parse_sig_params_ctx ctx = {
++			.base.process_packet = pgp_process_sig_params_subpkt,
++			.params = p,
++			.got_the_issuer = false,
++		};
++		size_t subdatalen;
++
++		if (datalen < sizeof(*v4) + 2 + 2 + 2) {
++			pr_warning("Short V4 signature packet\n");
++			return -EBADMSG;
++		}
++		datalen -= sizeof(*v4);
++		data += sizeof(*v4);
++
++		/* V4 has most things in the header... */
++		p->signature_type = v4->signature_type;
++		p->pubkey_algo = v4->pubkey_algo;
++		p->hash_algo = v4->hash_algo;
++
++		/* ... but we have to get the key ID from the subpackets, of
++		 * which there are two sets. */
++		__set_bit(PGP_SIG_ISSUER, ctx.base.types_of_interest);
++
++		subdatalen  = *data++ << 8;
++		subdatalen |= *data++;
++		datalen -= 2;
++		if (subdatalen) {
++			/* Hashed subpackets */
++			pr_devel("hashed data: %zu (after %zu)\n",
++				 subdatalen, sizeof(*v4));
++			if (subdatalen > datalen + 2 + 2) {
++				pr_warning("Short V4 signature packet [hdata]\n");
++				return -EBADMSG;
++			}
++			ret = pgp_parse_sig_subpkts(data, subdatalen, &ctx.base);
++			if (ret < 0)
++				return ret;
++			data += subdatalen;
++			datalen += subdatalen;
++		}
++
++		subdatalen  = *data++ << 8;
++		subdatalen |= *data++;
++		datalen -= 2;
++		if (subdatalen) {
++			/* Unhashed subpackets */
++			pr_devel("unhashed data: %zu\n", subdatalen);
++			if (subdatalen > datalen + 2) {
++				pr_warning("Short V4 signature packet [udata]\n");
++				return -EBADMSG;
++			}
++			ret = pgp_parse_sig_subpkts(data, subdatalen, &ctx.base);
++			if (ret < 0)
++				return ret;
++			data += subdatalen;
++			datalen += subdatalen;
++		}
++
++		if (!ctx.got_the_issuer) {
++			pr_warning("V4 signature packet lacks issuer\n");
++			return -EBADMSG;
++		}
++	} else {
++		pr_warning("Signature packet with unhandled version %d\n", version);
++		return -EBADMSG;
++	}
++
++	*_data = data;
++	*_datalen = datalen;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pgp_parse_sig_params);
 
