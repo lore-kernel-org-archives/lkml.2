@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753413Ab1K2DIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 22:08:14 -0500
-Received: from mga03.intel.com ([143.182.124.21]:20285 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752095Ab1K2DIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 22:08:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,588,1315206000"; 
-   d="scan'208";a="80048962"
-Date: Tue, 29 Nov 2011 11:08:09 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Li Shaohua <shaohua.li@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] readahead: basic support for backwards prefetching
-Message-ID: <20111129030809.GB19506@localhost>
-References: <20111121091819.394895091@intel.com>
- <20111121093846.887841399@intel.com>
- <20111121153309.d2a410fb.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111121153309.d2a410fb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753866Ab1K2DJe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 22:09:34 -0500
+Received: from victor.provo.novell.com ([137.65.250.26]:40426 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab1K2DJd (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Mon, 28 Nov 2011 22:09:33 -0500
+Subject: Re: [PATCH] Don't show error if Acer WMI is not found
+From: joeyli <jlee@suse.com>
+To: William Douglas <william.r.douglas@gmail.com>
+Cc: linux-kernel@vger.kernel.org, pascal@unilogicnetworks.net, jlee@novell.com,
+        joe@perches.com
+In-Reply-To: <8762i4dnkw.fsf@intel.com>
+References: <8762i4dnkw.fsf@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 29 Nov 2011 11:07:05 +0800
+Message-ID: <1322536025.6029.667.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 03:33:09PM -0800, Andrew Morton wrote:
-> On Mon, 21 Nov 2011 17:18:26 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
+於 一，2011-11-28 於 12:00 -0800，William Douglas 提到：
+> >From 486df5137ae34a4057d604e2b645d7b3848a562f Mon Sep 17 00:00:00 2001
+> From: William Douglas <william.douglas@intel.com>
+> Date: Mon, 28 Nov 2011 11:30:26 -0800
+> Subject: [PATCH] Don't show error if Acer WMI is not found.
 > 
-> > Add the backwards prefetching feature. It's pretty simple if we don't
-> > support async prefetching and interleaved reads.
+> This patch initiated by Pascal seemed to get left out when switching
+> to pr_<level>. I've updated the patch and am resubmitting it as it
+> reduces unnecessary boot noise.
 > 
-> Well OK, but I wonder how many applications out there read files in
-> reverse order.  Is it common enough to bother special-casing in the
-> kernel like this?
+> Signed-off-by: William Douglas <william.douglas@intel.com>
+> ---
+>  drivers/platform/x86/acer-wmi.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+> index b848277..607af16 100644
+> --- a/drivers/platform/x86/acer-wmi.c
+> +++ b/drivers/platform/x86/acer-wmi.c
+> @@ -1946,7 +1946,7 @@ static int __init acer_wmi_init(void)
+>  		AMW0_find_mailled();
+>  
+>  	if (!interface) {
+> -		pr_err("No or unsupported WMI interface, unable to load\n");
+> +		pr_info("No or unsupported WMI interface, unable to load\n");
+>  		return -ENODEV;
+>  	}
+>  
 
-Maybe not so many applications, but sure there are some real cases
-somewhere. I remember an IBM paper (that's many years ago, so cannot
-recall the exact title) on database shows a graph containing backwards
-reading curves among the other ones.
+Signed-off-by: Lee, Chun-Yi <jlee@novell.com>
 
-Recently Shaohua even run into a performance regression caused by glibc
-optimizing memcpy to access page in reverse order (15, 14, 13, ... 0).
+It looks good to me!
 
-Well this patch may not be the most pertinent fix to that particular
-issue. But you see the opportunity such access patterns arise from
-surprised areas. 
 
-Thanks,
-Fengguang
+Thanks for your patch
+Joey Lee
+
