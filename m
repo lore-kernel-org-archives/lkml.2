@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1K2Hwz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 02:52:55 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:31893 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab1K2Hwy convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Tue, 29 Nov 2011 02:52:54 -0500
-Message-Id: <4ED49D610200007800063F68@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 29 Nov 2011 07:52:49 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: avoid double stack traces (from show_registers())
+	id S1752586Ab1K2H6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 02:58:45 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37733 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab1K2H6o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 02:58:44 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 29 Nov 2011 16:57:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [V4 PATCH 1/2] tmpfs: add fallocate support
+Message-Id: <20111129165720.6034bf5c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4ED4888E.9040402@redhat.com>
+References: <1322544793-2676-1-git-send-email-amwang@redhat.com>
+	<20111129150210.ad266dd7.kamezawa.hiroyu@jp.fujitsu.com>
+	<4ED4888E.9040402@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What was called show_registers() so far already showed a stack trace
-for kernel faults, and kernel_stack_pointer() isn't even valid (ix86)
-or meaningful (x86-64) to be used here for faults from user mode,
-hence it was pointless for show_regs() to call show_trace() after
-show_registers(). Simply rename show_registers() to show_regs() and
-eliminate the old definition.
+On Tue, 29 Nov 2011 15:23:58 +0800
+Cong Wang <amwang@redhat.com> wrote:
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> 于 2011年11月29日 14:02, KAMEZAWA Hiroyuki 写道:
+> >
+> > You can't know whether the 'page' is allocated by alloc_page() in fallocate()
+> > or just found as exiting one.
+> > Then, yourwill corrupt existing pages in error path.
+> > Is it allowed ?
+> >
+> 
+> According to the comment,
+> 
+> /*
+>   * shmem_getpage_gfp - find page in cache, or get from swap, or allocate
+>   *
+>   * If we allocate a new one we do not mark it dirty. That's up to the
+>   * vm. If we swap it in we mark it dirty since we also free the swap
+>   * entry since a page cannot live in both the swap and page cache
+>   */
+> 
+> so we can know if the page is newly allocated by checking page dirty bit.
+> Or am I missing something?
+> 
 
----
- arch/x86/include/asm/kdebug.h  |    1 -
- arch/x86/kernel/dumpstack.c    |    2 +-
- arch/x86/kernel/dumpstack_32.c |    2 +-
- arch/x86/kernel/dumpstack_64.c |    2 +-
- arch/x86/kernel/kprobes.c      |    4 ++--
- arch/x86/kernel/nmi.c          |    2 +-
- arch/x86/kernel/process.c      |    6 ------
- 7 files changed, 6 insertions(+), 13 deletions(-)
+If swap-in doesn't happen and  a page is found...
 
---- 3.2-rc3/arch/x86/include/asm/kdebug.h
-+++ 3.2-rc3-x86-no-show_registers/arch/x86/include/asm/kdebug.h
-@@ -24,7 +24,6 @@ enum die_val {
- extern void printk_address(unsigned long address, int reliable);
- extern void die(const char *, struct pt_regs *,long);
- extern int __must_check __die(const char *, struct pt_regs *, long);
--extern void show_registers(struct pt_regs *regs);
- extern void show_trace(struct task_struct *t, struct pt_regs *regs,
- 		       unsigned long *sp, unsigned long bp);
- extern void __show_regs(struct pt_regs *regs, int all);
---- 3.2-rc3/arch/x86/kernel/dumpstack.c
-+++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/dumpstack.c
-@@ -267,7 +267,7 @@ int __kprobes __die(const char *str, str
- 			current->thread.trap_no, SIGSEGV) == NOTIFY_STOP)
- 		return 1;
- 
--	show_registers(regs);
-+	show_regs(regs);
- #ifdef CONFIG_X86_32
- 	if (user_mode_vm(regs)) {
- 		sp = regs->sp;
---- 3.2-rc3/arch/x86/kernel/dumpstack_32.c
-+++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/dumpstack_32.c
-@@ -82,7 +82,7 @@ show_stack_log_lvl(struct task_struct *t
- }
- 
- 
--void show_registers(struct pt_regs *regs)
-+void show_regs(struct pt_regs *regs)
- {
- 	int i;
- 
---- 3.2-rc3/arch/x86/kernel/dumpstack_64.c
-+++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/dumpstack_64.c
-@@ -245,7 +245,7 @@ show_stack_log_lvl(struct task_struct *t
- 	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
- }
- 
--void show_registers(struct pt_regs *regs)
-+void show_regs(struct pt_regs *regs)
- {
- 	int i;
- 	unsigned long sp;
---- 3.2-rc3/arch/x86/kernel/kprobes.c
-+++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/kprobes.c
-@@ -1092,9 +1092,9 @@ int __kprobes longjmp_break_handler(stru
- 			       "current sp %p does not match saved sp %p\n",
- 			       stack_addr(regs), kcb->jprobe_saved_sp);
- 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
--			show_registers(saved_regs);
-+			show_regs(saved_regs);
- 			printk(KERN_ERR "Current registers\n");
--			show_registers(regs);
-+			show_regs(regs);
- 			BUG();
- 		}
- 		*regs = kcb->jprobe_saved_regs;
---- 3.2-rc3/arch/x86/kernel/nmi.c
-+++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/nmi.c
-@@ -244,7 +244,7 @@ io_check_error(unsigned char reason, str
- 	pr_emerg(
- 	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
- 		 reason, smp_processor_id());
--	show_registers(regs);
-+	show_regs(regs);
- 
- 	if (panic_on_io_nmi)
- 		panic("NMI IOCK error: Not continuing");
---- 3.2-rc3/arch/x86/kernel/process.c
-+++ 3.2-rc3-x86-no-show_registers/arch/x86/kernel/process.c
-@@ -84,12 +84,6 @@ void exit_thread(void)
- 	}
- }
- 
--void show_regs(struct pt_regs *regs)
--{
--	show_registers(regs);
--	show_trace(NULL, regs, (unsigned long *)kernel_stack_pointer(regs), 0);
--}
--
- void show_regs_common(void)
- {
- 	const char *vendor, *product, *board;
+==
+       page = find_lock_page(mapping, index); <=============== you find a page
+       if (radix_tree_exceptional_entry(page)) {
+                swap = radix_to_swp_entry(page);
+                page = NULL;
+        }
 
+        if (sgp != SGP_WRITE &&
+            ((loff_t)index << PAGE_CACHE_SHIFT) >= i_size_read(inode)) {
+                error = -EINVAL;
+                goto failed;
+        }
 
+        if (page || (sgp == SGP_READ && !swap.val)) {
+                /*
+                 * Once we can get the page lock, it must be uptodate:
+                 * if there were an error in reading back from swap,
+                 * the page would not be inserted into the filecache.
+                 */
+                BUG_ON(page && !PageUptodate(page));
+                *pagep = page; <========================= return here.
+                return 0;
+        }
+==
+Page will not be marked as dirty.
+
+Thanks,
+-Kame
 
