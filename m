@@ -1,326 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab1K2Xes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 18:34:48 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:21621 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756425Ab1K2Xer (ORCPT
+	id S1756756Ab1K2XhP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 18:37:15 -0500
+Received: from natasha.panasas.com ([67.152.220.90]:50469 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755941Ab1K2XhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 18:34:47 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgAFABtr1U4YNOMa/2dsb2JhbABDmw+NTYIigQaCIBEeBhwBJhYWGAMCAQIBERYkDQEHAq5Jh1c9iHiLHgSIJ4IPih6FRYxq
-X-IronPort-AV: E=Sophos;i="4.69,594,1315195200"; 
-   d="scan'208";a="150168437"
-Message-ID: <4ED56C12.1040708@gmail.com>
-Date: Tue, 29 Nov 2011 18:34:42 -0500
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0.1) Gecko/20111121 Firefox/8.0.1 SeaMonkey/2.5
+	Tue, 29 Nov 2011 18:37:13 -0500
+Message-ID: <4ED56B1C.7040407@panasas.com>
+Date: Tue, 29 Nov 2011 15:30:36 -0800
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: CIFS mount: 3.2.0-rc3 suspend crash
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Benny Halevy <bhalevy@tonian.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        NFS list <linux-nfs@vger.kernel.org>, open-osd <osd-dev@open-osd.org>
+Subject: Re: ore: FIX breakage when MISC_FILESYSTEMS is not set
+References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au>  <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com>  <4ED4238F.4090407@panasas.com> <4ED4CE58.8090107@tonian.com> <1322588023.4174.28.camel@lade.trondhjem.org> <4ED55B3B.9050207@panasas.com> <4ED56D2E.6050405@xenotime.net>
+In-Reply-To: <4ED56D2E.6050405@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CIFS mount present, suspend2ram seems to be failing on 3.2.0-rc3.
-It may be similar to recent NFS suspend issues?
+On 11/29/2011 03:39 PM, Randy Dunlap wrote:
+> On 11/29/2011 02:22 PM, Boaz Harrosh wrote:
+>> On 11/29/2011 09:33 AM, Trond Myklebust wrote:
+>>> On Tue, 2011-11-29 at 14:21 +0200, Benny Halevy wrote: 
+>>>> On 2011-11-29 02:13, Boaz Harrosh wrote:
+>>
+>>>>>
+>>>>> The solution is to force all users of ORE (exofs, nfs) to manually
+>>>>> select everything auto-magically selected before.
+>>>>
+>>>> How about using "depend ORE" rather than "select ORE"?
+>>>
+>>> Right. Make PNFS_OBJLAYOUT and EXOFS_FS depend on ASYNC_XOR (or select
+>>> it) and then make ORE depend on EXOFS_FS || PNFS_OBJLAYOUT.
+>>>
+>>> There should be no need to add the 'select ORE'...
+>>>
+>>
+>> No! guys!
+>>
+>> One it will not solve my problem because any
+>> solution that needs to inspect exofs/Kconfig file will
+>> not work if MISC_FILESYSTEMS is not selected and your
+>> solutions involve that.
+>>
+>> And two:
+>> All the user needs to do is Select NFS4.1 everything
+>> else should be done automatically. He should not need
+>> to go to misc-filesystems and select ORE so he can have
+>> pnfs-objects. That's a nightmare.
+>>
+>> And anyway the current Kernel rule is that a user of a library
+>> needs to select it and all it's dependencies, because select
+>> is not recursive. Now I devised a little skim that can avoid
+> 
+> Since 'select' is not recursive, how does the "select ASYNC_XOR"
+> handle ensuring that what it selects (ASYNC_CORE and XOR_BLOCKS)
+> have been enabled?
+> 
 
-I have done couple of suspends, then did mount.cifs (at 555 seconds), 
-and then tried suspend again.  The problem is easy to duplicate.
+Not sure why it works than. I looked at config MD_RAID456
+and from it's selects I only need ASYNC_XOR.
+In later Kernels I will also need the RAID6_** stuff.
 
-The hardware is a netbook Asus EeePC.
-I guess will find out if:
-- cifs for real 3.2 fixes the problem
-- NFS fix for -rc4 work for CIFS as well...
+>> that, which is not conventional but works very nice. It was
+>> almost good enough only we have the problem that exofs is under
+>> that big MISC_FILESYSTEMS nub.
+>>
+>> So It's the regular Kernel way, for now.
+>>
+>> (The real solution is to move ORE to lib/ which would enable my
+>>  clever trick. But I don't want to go there only because of that)
+>>
+>> I'll fix the typos though
+> 
+> With the patch applied, I am still seeing this kconfig warning:
+> 
+> warning: (PNFS_OBJLAYOUT) selects ORE which has unmet direct dependencies (MISC_FILESYSTEMS)
+> 
 
-Thanks, Woody
+OK So I guess I need a much deeper change and move ORE to lib/ or I can do the
+below change.
 
+Please advise what you think is the best for now?
 
-[  153.974532] uhci_hcd 0000:00:1d.1: PCI INT B disabled
-[  153.974578] uhci_hcd 0000:00:1d.0: PCI INT A disabled
-[  153.975774] i915 0000:00:02.0: PCI INT A disabled
-[  153.977210] ACPI handle has no context!
-[  153.977302] atl2 0000:03:00.0: PCI INT A disabled
-[  153.977316] ACPI handle has no context!
-[  154.277181] snd_hda_intel 0000:00:1b.0: PCI INT A disabled
-[  154.288119] PM: suspend of devices complete after 414.210 msecs
-[  154.299212] ehci_hcd 0000:00:1d.7: PME# enabled
-[  154.299257] ehci_hcd 0000:00:1d.7: wake-up capability enabled by ACPI
-[  154.310114] uhci_hcd 0000:00:1d.3: wake-up capability enabled by ACPI
-[  154.310178] uhci_hcd 0000:00:1d.2: wake-up capability enabled by ACPI
-[  154.310235] uhci_hcd 0000:00:1d.1: wake-up capability enabled by ACPI
-[  154.310293] uhci_hcd 0000:00:1d.0: wake-up capability enabled by ACPI
-[  154.310418] PM: late suspend of devices complete after 22.283 msecs
-[  154.310451] ACPI: Preparing to enter system sleep state S3
-[  154.311671] PM: Saving platform NVS memory
-[  154.312968] Disabling non-boot CPUs ...
-[  154.312968] ACPI: Low-level resume complete
-[  154.312968] PM: Restoring platform NVS memory
-[  154.312968] Force enabled HPET at resume
-[  154.313366] ACPI: Waking up from system sleep state S3
-[  154.341485] snd_hda_intel 0000:00:1b.0: restoring config space at 
-offset 0x1 (was 0x100006, writing 0x100002)
-[  154.341550] pcieport 0000:00:1c.0: restoring config space at offset 
-0x9 (was 0x1fff1, writing 0x10511041)
-[  154.341566] pcieport 0000:00:1c.0: restoring config space at offset 
-0x8 (was 0xfff0, writing 0x10301020)
-[  154.341580] pcieport 0000:00:1c.0: restoring config space at offset 
-0x7 (was 0xf0, writing 0x3030)
-[  154.341603] pcieport 0000:00:1c.0: restoring config space at offset 
-0x1 (was 0x100104, writing 0x100507)
-[  154.341689] pcieport 0000:00:1c.1: restoring config space at offset 
-0x9 (was 0x1fff1, writing 0x10111001)
-[  154.341705] pcieport 0000:00:1c.1: restoring config space at offset 
-0x7 (was 0xf0, writing 0x2020)
-[  154.341728] pcieport 0000:00:1c.1: restoring config space at offset 
-0x1 (was 0x100106, writing 0x100507)
-[  154.341812] pcieport 0000:00:1c.2: restoring config space at offset 
-0x7 (was 0xf0, writing 0x1010)
-[  154.341834] pcieport 0000:00:1c.2: restoring config space at offset 
-0x1 (was 0x100106, writing 0x100507)
-[  154.341920] uhci_hcd 0000:00:1d.0: restoring config space at offset 
-0x1 (was 0x2800005, writing 0x2800001)
-[  154.341958] uhci_hcd 0000:00:1d.0: wake-up capability disabled by ACPI
-[  154.342004] uhci_hcd 0000:00:1d.1: restoring config space at offset 
-0x1 (was 0x2800005, writing 0x2800001)
-[  154.342086] uhci_hcd 0000:00:1d.1: wake-up capability disabled by ACPI
-[  154.342137] uhci_hcd 0000:00:1d.2: restoring config space at offset 
-0x1 (was 0x2800005, writing 0x2800001)
-[  154.342166] uhci_hcd 0000:00:1d.2: wake-up capability disabled by ACPI
-[  154.342211] uhci_hcd 0000:00:1d.3: restoring config space at offset 
-0x1 (was 0x2800005, writing 0x2800001)
-[  154.342239] uhci_hcd 0000:00:1d.3: wake-up capability disabled by ACPI
-[  154.342296] ehci_hcd 0000:00:1d.7: restoring config space at offset 
-0x1 (was 0x2900006, writing 0x2900002)
-[  154.342335] ehci_hcd 0000:00:1d.7: wake-up capability disabled by ACPI
-[  154.342349] ehci_hcd 0000:00:1d.7: PME# disabled
-[  154.342374] pci 0000:00:1e.0: restoring config space at offset 0xf 
-(was 0x60000, writing 0x600ff)
-[  154.342606] atl2 0000:03:00.0: restoring config space at offset 0x1 
-(was 0x100006, writing 0x100406)
-[  154.343209] PM: early resume of devices complete after 1.941 msecs
-[  154.343454] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[  154.343470] i915 0000:00:02.0: setting latency timer to 64
-[  154.347098] snd_hda_intel 0000:00:1b.0: PCI INT A -> GSI 16 (level, 
-low) -> IRQ 16
-[  154.347117] snd_hda_intel 0000:00:1b.0: setting latency timer to 64
-[  154.347218] snd_hda_intel 0000:00:1b.0: irq 43 for MSI/MSI-X
-[  154.347424] uhci_hcd 0000:00:1d.0: PCI INT A -> GSI 23 (level, low) 
--> IRQ 23
-[  154.347442] uhci_hcd 0000:00:1d.0: setting latency timer to 64
-[  154.347479] usb usb2: root hub lost power or was reset
-[  154.347543] uhci_hcd 0000:00:1d.1: PCI INT B -> GSI 19 (level, low) 
--> IRQ 19
-[  154.347559] uhci_hcd 0000:00:1d.1: setting latency timer to 64
-[  154.347593] usb usb3: root hub lost power or was reset
-[  154.347653] uhci_hcd 0000:00:1d.2: PCI INT C -> GSI 18 (level, low) 
--> IRQ 18
-[  154.347670] uhci_hcd 0000:00:1d.2: setting latency timer to 64
-[  154.347702] usb usb4: root hub lost power or was reset
-[  154.347760] uhci_hcd 0000:00:1d.3: PCI INT D -> GSI 16 (level, low) 
--> IRQ 16
-[  154.347776] uhci_hcd 0000:00:1d.3: setting latency timer to 64
-[  154.347808] usb usb5: root hub lost power or was reset
-[  154.347867] ehci_hcd 0000:00:1d.7: PCI INT A -> GSI 23 (level, low) 
--> IRQ 23
-[  154.347884] ehci_hcd 0000:00:1d.7: setting latency timer to 64
-[  154.347988] pci 0000:00:1e.0: setting latency timer to 64
-[  154.348125] ata_piix 0000:00:1f.2: PCI INT B -> GSI 19 (level, low) 
--> IRQ 19
-[  154.348140] ata_piix 0000:00:1f.2: setting latency timer to 64
-[  154.354172] atl2 0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[  154.354192] atl2 0000:03:00.0: setting latency timer to 64
-[  154.354309] atl2 0000:03:00.0: irq 44 for MSI/MSI-X
-[  154.354722] sd 1:0:0:0: [sda] Starting disk
-[  154.525453] ata2.00: ACPI cmd ef/03:44:00:00:00:a0 (SET FEATURES) 
-filtered out
-[  154.525470] ata2.00: ACPI cmd ef/03:0c:00:00:00:a0 (SET FEATURES) 
-filtered out
-[  154.531325] ata2.00: configured for UDMA/66
-[  154.591089] usb 1-5: reset high-speed USB device number 2 using ehci_hcd
-[  154.805066] PM: resume of devices complete after 461.739 msecs
-[  154.805801] Restarting tasks ... done.
-[  154.832376] video LNXVIDEO:00: Restoring backlight state
-[  155.964388] atl2: eth0 NIC Link is Up<100 Mbps Full Duplex>
-[  265.377852] PM: Syncing filesystems ... done.
-[  265.427397] Freezing user space processes ... (elapsed 0.01 seconds) 
-done.
-[  265.438118] Freezing remaining freezable tasks ... (elapsed 0.01 
-seconds) done.
-[  265.449211] Suspending console(s) (use no_console_suspend to debug)
-[  265.451744] sd 1:0:0:0: [sda] Stopping disk
-[  265.555169] ata_piix 0000:00:1f.2: PCI INT B disabled
-[  265.555281] ehci_hcd 0000:00:1d.7: PCI INT A disabled
-[  265.555336] uhci_hcd 0000:00:1d.3: PCI INT D disabled
-[  265.555384] uhci_hcd 0000:00:1d.2: PCI INT C disabled
-[  265.555432] uhci_hcd 0000:00:1d.1: PCI INT B disabled
-[  265.555479] uhci_hcd 0000:00:1d.0: PCI INT A disabled
-[  265.555639] snd_hda_intel 0000:00:1b.0: PCI INT A disabled
-[  265.556302] i915 0000:00:02.0: PCI INT A disabled
-[  265.558207] ACPI handle has no context!
-[  265.558302] atl2 0000:03:00.0: PCI INT A disabled
-[  265.558316] ACPI handle has no context!
-[  265.569117] PM: suspend of devices complete after 119.214 msecs
-[  265.580216] ehci_hcd 0000:00:1d.7: PME# enabled
-[  265.580261] ehci_hcd 0000:00:1d.7: wake-up capability enabled by ACPI
-[  265.591121] uhci_hcd 0000:00:1d.3: wake-up capability enabled by ACPI
-[  265.591186] uhci_hcd 0000:00:1d.2: wake-up capability enabled by ACPI
-[  265.591244] uhci_hcd 0000:00:1d.1: wake-up capability enabled by ACPI
-[  265.591302] uhci_hcd 0000:00:1d.0: wake-up capability enabled by ACPI
-[  265.591581] PM: late suspend of devices complete after 22.446 msecs
-[  265.591615] ACPI: Preparing to enter system sleep state S3
-[  265.592832] PM: Saving platform NVS memory
-[  265.594133] Disabling non-boot CPUs ...
-[  265.594133] ACPI: Low-level resume complete
-[  265.594133] PM: Restoring platform NVS memory
-[  265.594133] Force enabled HPET at resume
-[  265.594133] ACPI: Waking up from system sleep state S3
-[  265.621463] snd_hda_intel 0000:00:1b.0: restoring config space at 
-offset 0x1 (was 0x100006, writing 0x100002)
-[  265.621528] pcieport 0000:00:1c.0: restoring config space at offset 
-0x9 (was 0x1fff1, writing 0x10511041)
-[  265.621544] pcieport 0000:00:1c.0: restoring config space at offset 
-0x8 (was 0xfff0, writing 0x10301020)
-[  265.621559] pcieport 0000:00:1c.0: restoring config space at offset 
-0x7 (was 0xf0, writing 0x3030)
-[  265.621582] pcieport 0000:00:1c.0: restoring config space at offset 
-0x1 (was 0x100104, writing 0x100507)
-[  265.621667] pcieport 0000:00:1c.1: restoring config space at offset 
-0x9 (was 0x1fff1, writing 0x10111001)
-[  265.621684] pcieport 0000:00:1c.1: restoring config space at offset 
-0x7 (was 0xf0, writing 0x2020)
-[  265.621706] pcieport 0000:00:1c.1: restoring config space at offset 
-0x1 (was 0x100106, writing 0x100507)
-[  265.621791] pcieport 0000:00:1c.2: restoring config space at offset 
-0x7 (was 0xf0, writing 0x1010)
-[  265.621813] pcieport 0000:00:1c.2: restoring config space at offset 
-0x1 (was 0x100106, writing 0x100507)
-[  265.621899] uhci_hcd 0000:00:1d.0: restoring config space at offset 
-0x1 (was 0x2800005, writing 0x2800001)
-[  265.621938] uhci_hcd 0000:00:1d.0: wake-up capability disabled by ACPI
-[  265.621983] uhci_hcd 0000:00:1d.1: restoring config space at offset 
-0x1 (was 0x2800005, writing 0x2800001)
-[  265.622057] uhci_hcd 0000:00:1d.1: wake-up capability disabled by ACPI
-[  265.622111] uhci_hcd 0000:00:1d.2: restoring config space at offset 
-0x1 (was 0x2800005, writing 0x2800001)
-[  265.622139] uhci_hcd 0000:00:1d.2: wake-up capability disabled by ACPI
-[  265.622183] uhci_hcd 0000:00:1d.3: restoring config space at offset 
-0x1 (was 0x2800005, writing 0x2800001)
-[  265.622210] uhci_hcd 0000:00:1d.3: wake-up capability disabled by ACPI
-[  265.622267] ehci_hcd 0000:00:1d.7: restoring config space at offset 
-0x1 (was 0x2900006, writing 0x2900002)
-[  265.622305] ehci_hcd 0000:00:1d.7: wake-up capability disabled by ACPI
-[  265.622320] ehci_hcd 0000:00:1d.7: PME# disabled
-[  265.622344] pci 0000:00:1e.0: restoring config space at offset 0xf 
-(was 0x60000, writing 0x600ff)
-[  265.622575] atl2 0000:03:00.0: restoring config space at offset 0x1 
-(was 0x100006, writing 0x100406)
-[  265.623172] PM: early resume of devices complete after 1.925 msecs
-[  265.623416] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-[  265.623432] i915 0000:00:02.0: setting latency timer to 64
-[  265.627096] snd_hda_intel 0000:00:1b.0: PCI INT A -> GSI 16 (level, 
-low) -> IRQ 16
-[  265.627115] snd_hda_intel 0000:00:1b.0: setting latency timer to 64
-[  265.627215] snd_hda_intel 0000:00:1b.0: irq 43 for MSI/MSI-X
-[  265.627429] uhci_hcd 0000:00:1d.0: PCI INT A -> GSI 23 (level, low) 
--> IRQ 23
-[  265.627448] uhci_hcd 0000:00:1d.0: setting latency timer to 64
-[  265.627485] usb usb2: root hub lost power or was reset
-[  265.627548] uhci_hcd 0000:00:1d.1: PCI INT B -> GSI 19 (level, low) 
--> IRQ 19
-[  265.627564] uhci_hcd 0000:00:1d.1: setting latency timer to 64
-[  265.627597] usb usb3: root hub lost power or was reset
-[  265.627659] uhci_hcd 0000:00:1d.2: PCI INT C -> GSI 18 (level, low) 
--> IRQ 18
-[  265.627675] uhci_hcd 0000:00:1d.2: setting latency timer to 64
-[  265.627707] usb usb4: root hub lost power or was reset
-[  265.627766] uhci_hcd 0000:00:1d.3: PCI INT D -> GSI 16 (level, low) 
--> IRQ 16
-[  265.627781] uhci_hcd 0000:00:1d.3: setting latency timer to 64
-[  265.627814] usb usb5: root hub lost power or was reset
-[  265.627873] ehci_hcd 0000:00:1d.7: PCI INT A -> GSI 23 (level, low) 
--> IRQ 23
-[  265.627889] ehci_hcd 0000:00:1d.7: setting latency timer to 64
-[  265.627993] pci 0000:00:1e.0: setting latency timer to 64
-[  265.628130] ata_piix 0000:00:1f.2: PCI INT B -> GSI 19 (level, low) 
--> IRQ 19
-[  265.628145] ata_piix 0000:00:1f.2: setting latency timer to 64
-[  265.634153] atl2 0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
-[  265.634173] atl2 0000:03:00.0: setting latency timer to 64
-[  265.634290] atl2 0000:03:00.0: irq 44 for MSI/MSI-X
-[  265.634712] sd 1:0:0:0: [sda] Starting disk
-[  265.796709] ata2.00: ACPI cmd ef/03:44:00:00:00:a0 (SET FEATURES) 
-filtered out
-[  265.796726] ata2.00: ACPI cmd ef/03:0c:00:00:00:a0 (SET FEATURES) 
-filtered out
-[  265.803326] ata2.00: configured for UDMA/66
-[  265.880091] usb 1-5: reset high-speed USB device number 2 using ehci_hcd
-[  266.091960] PM: resume of devices complete after 468.673 msecs
-[  266.092731] Restarting tasks ... done.
-[  266.112098] video LNXVIDEO:00: Restoring backlight state
-[  267.219459] atl2: eth0 NIC Link is Up<100 Mbps Full Duplex>
-[  554.912659] FS-Cache: Loaded
-[  554.950749] FS-Cache: Netfs 'cifs' registered for caching
-[  555.047550] CIFS VFS: default security mechanism requested.  The 
-default security mechanism will be upgraded from ntlm to ntlmv2 in 
-kernel release 3.2
-[ 2094.090461] PM: Syncing filesystems ... done.
-[ 2094.155385] Freezing user space processes ... (elapsed 0.01 seconds) 
-done.
-[ 2094.166113] Freezing remaining freezable tasks ...
-[ 2114.175108] Freezing of tasks failed after 20.00 seconds (1 tasks 
-refusing to freeze, wq_busy=0):
-[ 2114.175586] cifsd           S ccb50b40     0  2219      2 0x00800000
-[ 2114.175611]  cc6cc000 00000046 00000000 ccb50b40 cc776b40 cc41d000 
-cc776780 cc61d960
-[ 2114.175635]  cc4d81c0 c178ec40 c178ec40 ccb50980 00000000 ccb50980 
-c1031e88 00000001
-[ 2114.175660]  c1031f9f c10230f5 c1559ee1 c17a7140 c1031e88 00000001 
-c1031f9f c10230f5
-[ 2114.175684] Call Trace:
-[ 2114.175710]  [<c1031e88>] ? get_parent_ip+0x8/0x20
-[ 2114.175723]  [<c1031f9f>] ? add_preempt_count+0x5f/0xa0
-[ 2114.175747]  [<c10230f5>] ? default_spin_lock_flags+0x5/0x10
-[ 2114.175770]  [<c1559ee1>] ? _raw_spin_lock_irqsave+0x31/0x50
-[ 2114.175782]  [<c1031e88>] ? get_parent_ip+0x8/0x20
-[ 2114.175794]  [<c1031f9f>] ? add_preempt_count+0x5f/0xa0
-[ 2114.175807]  [<c10230f5>] ? default_spin_lock_flags+0x5/0x10
-[ 2114.175820]  [<c1559ee1>] ? _raw_spin_lock_irqsave+0x31/0x50
-[ 2114.175832]  [<c1031e88>] ? get_parent_ip+0x8/0x20
-[ 2114.175846]  [<c15588c1>] ? schedule_timeout+0x111/0x1d0
-[ 2114.175860]  [<c1512500>] ? tcp_rcv_established+0x170/0x760
-[ 2114.175878]  [<c1041fa0>] ? usleep_range+0x40/0x40
-[ 2114.175897]  [<c14cb6e7>] ? sk_wait_data+0xa7/0xb0
-[ 2114.175920]  [<c104ffc0>] ? abort_exclusive_wait+0x90/0x90
-[ 2114.175943]  [<c1509948>] ? tcp_recvmsg+0x588/0xb80
-[ 2114.175956]  [<c1001c0a>] ? __switch_to+0xea/0x1d0
-[ 2114.175976]  [<c1008e97>] ? native_sched_clock+0x27/0x90
-[ 2114.175993]  [<c152685f>] ? inet_recvmsg+0x6f/0xb0
-[ 2114.176063]  [<c14c7f70>] ? sock_recvmsg+0xe0/0x120
-[ 2114.176086]  [<c1242df8>] ? timerqueue_add+0x58/0xb0
-[ 2114.176098]  [<c1031e88>] ? get_parent_ip+0x8/0x20
-[ 2114.176112]  [<c1031e88>] ? get_parent_ip+0x8/0x20
-[ 2114.176123]  [<c1031f07>] ? sub_preempt_count+0x67/0xa0
-[ 2114.176145]  [<c1559d1b>] ? _raw_spin_unlock_irqrestore+0x1b/0x40
-[ 2114.176165]  [<c1053a43>] ? hrtimer_try_to_cancel+0x43/0xa0
-[ 2114.176178]  [<c1053ab1>] ? hrtimer_cancel+0x11/0x20
-[ 2114.176191]  [<c155934c>] ? schedule_hrtimeout_range_clock+0xcc/0x170
-[ 2114.176206]  [<c10536c0>] ? update_rmtp+0x80/0x80
-[ 2114.176219]  [<c14c7fe7>] ? kernel_recvmsg+0x37/0x50
-[ 2114.176268]  [<d0611228>] ? cifs_readv_from_socket+0x148/0x2b0 [cifs]
-[ 2114.176283]  [<c1031e88>] ? get_parent_ip+0x8/0x20
-[ 2114.176309]  [<d06113ac>] ? cifs_read_from_socket+0x1c/0x20 [cifs]
-[ 2114.176333]  [<d0611522>] ? cifs_demultiplex_thread+0x112/0xc20 [cifs]
-[ 2114.176348]  [<c1031e88>] ? get_parent_ip+0x8/0x20
-[ 2114.176370]  [<d0611410>] ? dequeue_mid+0x60/0x60 [cifs]
-[ 2114.176391]  [<c104f9c9>] ? kthread+0x69/0x70
-[ 2114.176406]  [<c104f960>] ? kthread_worker_fn+0x150/0x150
-[ 2114.176420]  [<c155af76>] ? kernel_thread_helper+0x6/0xd
-[ 2114.176466]
-[ 2114.176473] Restarting tasks ... done.
-[ 2114.201577] video LNXVIDEO:00: Restoring backlight state
-[ 2114.210975] lxpanel[1452]: segfault at 0 ip b6ead703 sp bfea8924 
-error 4 in libc-2.13.so[b6e39000+13e000]
+Thanks Randy for yur help
+---
+From: Boaz Harrosh <bharrosh@panasas.com>
+Subject: [PATCH] ore: FIX breakage when MISC_FILESYSTEMS is not set
+
+As Reported by Randy Dunlap
+
+When MISC_FILESYSTEMS is not enabled:
+
+fs/built-in.o: In function `objio_alloc_io_state':
+objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
+fs/built-in.o: In function `_write_done':
+objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
+fs/built-in.o: In function `_read_done':
+...
+
+When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
+is not selected. exofs/Kconfig is never examined during Kconfig,
+and it can not do it's magic stuff to automatically select everything
+needed.
+
+We must split exofs/Kconfig in two the ore one is
+always included and the exofs one is left in it's
+old place in the menu.
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ fs/Kconfig           |    2 ++
+ fs/exofs/Kconfig     |   11 -----------
+ fs/exofs/ore.Kconfig |   12 ++++++++++++
+ 3 files changed, 14 insertions(+), 11 deletions(-)
+ create mode 100644 fs/exofs/ore.Kconfig
+
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 5f4c45d..fd7bfef 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -218,6 +218,8 @@ source "fs/exofs/Kconfig"
+ 
+ endif # MISC_FILESYSTEMS
+ 
++source "fs/exofs/ore.Kconfig"
++
+ menuconfig NETWORK_FILESYSTEMS
+ 	bool "Network File Systems"
+ 	default y
+diff --git a/fs/exofs/Kconfig b/fs/exofs/Kconfig
+index da42f32..86194b2 100644
+--- a/fs/exofs/Kconfig
++++ b/fs/exofs/Kconfig
+@@ -1,14 +1,3 @@
+-# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
+-# for every ORE user we do it like this. Any user should add itself here
+-# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
+-# selected here, and we default to "ON". So in effect it is like been
+-# selected by any of the users.
+-config ORE
+-	tristate
+-	depends on EXOFS_FS || PNFS_OBJLAYOUT
+-	select ASYNC_XOR
+-	default SCSI_OSD_ULD
+-
+ config EXOFS_FS
+ 	tristate "exofs: OSD based file system support"
+ 	depends on SCSI_OSD_ULD
+diff --git a/fs/exofs/ore.Kconfig b/fs/exofs/ore.Kconfig
+new file mode 100644
+index 0000000..1ca7fb7
+--- /dev/null
++++ b/fs/exofs/ore.Kconfig
+@@ -0,0 +1,12 @@
++# ORE - Objects Raid Engine (libore.ko)
++#
++# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
++# for every ORE user we do it like this. Any user should add itself here
++# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
++# selected here, and we default to "ON". So in effect it is like been
++# selected by any of the users.
++config ORE
++	tristate
++	depends on EXOFS_FS || PNFS_OBJLAYOUT
++	select ASYNC_XOR
++	default SCSI_OSD_ULD
+-- 
+1.7.6.4
