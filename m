@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab1K2GDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 01:03:15 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:43486 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab1K2GDL (ORCPT
+	id S1752442Ab1K2GDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 01:03:51 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53621 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab1K2GDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 01:03:11 -0500
-X-AuditID: b753bd60-a2688ba000000655-f9-4ed4759da794
-X-AuditID: b753bd60-a2688ba000000655-f9-4ed4759da794
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [PATCH -v2 4/4] x86: cleanup the range of stack overflow checking
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 29 Nov 2011 15:08:45 +0900
-Message-ID: <20111129060845.11076.40916.stgit@ltc219.sdl.hitachi.co.jp>
-In-Reply-To: <20111129060806.11076.74583.stgit@ltc219.sdl.hitachi.co.jp>
-References: <20111129060806.11076.74583.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 29 Nov 2011 01:03:50 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 29 Nov 2011 15:02:10 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [V4 PATCH 1/2] tmpfs: add fallocate support
+Message-Id: <20111129150210.ad266dd7.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1322544793-2676-1-git-send-email-amwang@redhat.com>
+References: <1322544793-2676-1-git-send-email-amwang@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The overflow checking of kernel stack checks if the stack pointer
-points to the available kernel stack range, which is derived from
-the original overflow checking.
+On Tue, 29 Nov 2011 13:33:12 +0800
+Cong Wang <amwang@redhat.com> wrote:
 
-It is clear that curbase address is always less than low boundary of
-available kernel stack. So, this patch removes the first condition
-that checks if the pointer is higher than curbase.
+> Systemd needs tmpfs to support fallocate [1], to be able
+> to safely use mmap(), regarding SIGBUS, on files on the
+> /dev/shm filesystem. The glibc fallback loop for -ENOSYS
+> on fallocate is just ugly.
+> 
+> This patch adds fallocate support to tmpfs, and as we
+> already have shmem_truncate_range(), it is also easy to
+> add FALLOC_FL_PUNCH_HOLE support too.
+> 
+> 1. http://lkml.org/lkml/2011/10/20/275
+> 
 
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
----
+one question.
 
- arch/x86/kernel/irq_64.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
-index 5448bf6..c8c9a78 100644
---- a/arch/x86/kernel/irq_64.c
-+++ b/arch/x86/kernel/irq_64.c
-@@ -46,10 +46,9 @@ static inline void stack_overflow_check(struct pt_regs *regs)
- 	if (user_mode_vm(regs))
- 		return;
- 
--	if (regs->sp >= curbase &&
--	    regs->sp <= curbase + THREAD_SIZE &&
--	    regs->sp >= curbase + sizeof(struct thread_info) +
--				  sizeof(struct pt_regs) + 128)
-+	if (regs->sp >= curbase + sizeof(struct thread_info) +
-+				  sizeof(struct pt_regs) + 128 &&
-+	    regs->sp <= curbase + THREAD_SIZE)
- 		return;
- 
- 	irq_stack_top = (u64)__get_cpu_var(irq_stack_union.irq_stack);
+> V3->V4:
+> Handle 'undo' ENOSPC more correctly.
+> 
+> V2->V3:
+> a) Read i_size directly after holding i_mutex;
+> b) Call page_cache_release() too after shmem_getpage();
+> c) Undo previous changes when -ENOSPC.
+> 
+> Cc: Pekka Enberg <penberg@kernel.org>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Lennart Poettering <lennart@poettering.net>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> 
+> ---
+>  mm/shmem.c |   90 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 90 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index d672250..90c835b 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/mm.h>
+>  #include <linux/export.h>
+>  #include <linux/swap.h>
+> +#include <linux/falloc.h>
+>  
+>  static struct vfsmount *shm_mnt;
+>  
+> @@ -1016,6 +1017,35 @@ failed:
+>  	return error;
+>  }
+>  
+> +static void shmem_putpage_noswap(struct inode *inode, pgoff_t index)
+> +{
+> +	struct address_space *mapping = inode->i_mapping;
+> +	struct shmem_inode_info *info;
+> +	struct shmem_sb_info *sbinfo;
+> +	struct page *page;
+> +
+> +	page = find_lock_page(mapping, index);
+> +
+
+You can't know whether the 'page' is allocated by alloc_page() in fallocate()
+or just found as exiting one.
+Then, yourwill corrupt existing pages in error path.
+Is it allowed ?
+
+Thanks,
+-Kame
 
