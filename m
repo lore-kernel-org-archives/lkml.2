@@ -1,166 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab1K2LWt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 06:22:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546Ab1K2LWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 06:22:43 -0500
-Date: Tue, 29 Nov 2011 12:22:33 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 8/9] ftrace, perf: Add FILTER_TRACE_FN event field type
-Message-ID: <20111129112233.GE1602@m.brq.redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
- <1322417074-5834-9-git-send-email-jolsa@redhat.com>
- <1322510483.17003.16.camel@frodo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753181Ab1K2LYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 06:24:15 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:20499 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206Ab1K2LYO convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 29 Nov 2011 06:24:14 -0500
+Message-Id: <4ED4CEEA020000780006407D@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 29 Nov 2011 11:24:10 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86-64: cleanup some assembly entry points
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1322510483.17003.16.camel@frodo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 03:01:23PM -0500, Steven Rostedt wrote:
-> BTW, Please Cc Peter Zijlstra too, as he maintains perf inside the
-> kernel.
+system_call_after_swapgs doesn't really benefit from forcing alignment
+from it - quite the opposite, native code needlessly so far got a big
+NOP instruction inserted in front of it. Xen being the only user of
+the separate entry point can well live with the branch going to three
+bytes into a cache line.
 
-thanks! ommited by mistake..
+The compatibility mode ptregs entry points for one can make use of the
+GLOBAL() macro, and should be suitably aligned. Their shared
+continuation point (ia32_ptregs_common) otoh doesn't need to be global
+at all, but should continue to be properly aligned.
 
-> 
-> On Sun, 2011-11-27 at 19:04 +0100, Jiri Olsa wrote:
-> > Adding FILTER_TRACE_FN event field type for function tracepoint
-> > event, so it can be properly recognized within filtering code.
-> 
-> -ECHANGELOGTOOSHORT
-> 
-> I'm not sure what this is for.
-> 
-> -- Steve
-> 
-> > 
-> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> > ---
-> >  include/linux/ftrace_event.h       |    1 +
-> >  kernel/trace/trace_events_filter.c |    7 ++++++-
-> >  kernel/trace/trace_export.c        |   25 ++++++++++++++++++++-----
-> >  3 files changed, 27 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> > index 2bf677c..dd478fc 100644
-> > --- a/include/linux/ftrace_event.h
-> > +++ b/include/linux/ftrace_event.h
-> > @@ -245,6 +245,7 @@ enum {
-> >  	FILTER_STATIC_STRING,
-> >  	FILTER_DYN_STRING,
-> >  	FILTER_PTR_STRING,
-> > +	FILTER_TRACE_FN,
-> >  };
-> >  
-> >  #define EVENT_STORAGE_SIZE 128
-> > diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-> > index fdc6d22..7b0b04c 100644
-> > --- a/kernel/trace/trace_events_filter.c
-> > +++ b/kernel/trace/trace_events_filter.c
-> > @@ -900,6 +900,11 @@ int filter_assign_type(const char *type)
-> >  	return FILTER_OTHER;
-> >  }
-> >  
-> > +static bool is_function_field(struct ftrace_event_field *field)
-> > +{
-> > +	return field->filter_type == FILTER_TRACE_FN;
-> > +}
-> > +
-> >  static bool is_string_field(struct ftrace_event_field *field)
-> >  {
-> >  	return field->filter_type == FILTER_DYN_STRING ||
-> > @@ -987,7 +992,7 @@ static int init_pred(struct filter_parse_state *ps,
-> >  			fn = filter_pred_strloc;
-> >  		else
-> >  			fn = filter_pred_pchar;
-> > -	} else {
-> > +	} else if (!is_function_field(field)) {
-> >  		if (field->is_signed)
-> >  			ret = strict_strtoll(pred->regex.pattern, 0, &val);
-> >  		else
-> > diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-> > index 62e86a5..7b035ab 100644
-> > --- a/kernel/trace/trace_export.c
-> > +++ b/kernel/trace/trace_export.c
-> > @@ -67,7 +67,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
-> >  	ret = trace_define_field(event_call, #type, #item,		\
-> >  				 offsetof(typeof(field), item),		\
-> >  				 sizeof(field.item),			\
-> > -				 is_signed_type(type), FILTER_OTHER);	\
-> > +				 is_signed_type(type), filter_type);	\
-> >  	if (ret)							\
-> >  		return ret;
-> >  
-> > @@ -77,7 +77,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
-> >  				 offsetof(typeof(field),		\
-> >  					  container.item),		\
-> >  				 sizeof(field.container.item),		\
-> > -				 is_signed_type(type), FILTER_OTHER);	\
-> > +				 is_signed_type(type), filter_type);	\
-> >  	if (ret)							\
-> >  		return ret;
-> >  
-> > @@ -91,7 +91,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
-> >  		ret = trace_define_field(event_call, event_storage, #item, \
-> >  				 offsetof(typeof(field), item),		\
-> >  				 sizeof(field.item),			\
-> > -				 is_signed_type(type), FILTER_OTHER);	\
-> > +				 is_signed_type(type), filter_type);	\
-> >  		mutex_unlock(&event_storage_mutex);			\
-> >  		if (ret)						\
-> >  			return ret;					\
-> > @@ -104,7 +104,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
-> >  				 offsetof(typeof(field),		\
-> >  					  container.item),		\
-> >  				 sizeof(field.container.item),		\
-> > -				 is_signed_type(type), FILTER_OTHER);	\
-> > +				 is_signed_type(type), filter_type);	\
-> >  	if (ret)							\
-> >  		return ret;
-> >  
-> > @@ -112,10 +112,24 @@ static void __always_unused ____ftrace_check_##name(void)	\
-> >  #define __dynamic_array(type, item)					\
-> >  	ret = trace_define_field(event_call, #type, #item,		\
-> >  				 offsetof(typeof(field), item),		\
-> > -				 0, is_signed_type(type), FILTER_OTHER);\
-> > +				 0, is_signed_type(type), filter_type);\
-> >  	if (ret)							\
-> >  		return ret;
-> >  
-> > +#define FILTER_TYPE_TRACE_FN           FILTER_TRACE_FN
-> > +#define FILTER_TYPE_TRACE_GRAPH_ENT    FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_GRAPH_RET    FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_CTX          FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_WAKE         FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_STACK                FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_USER_STACK   FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_BPRINT       FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_PRINT                FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_MMIO_RW      FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_MMIO_MAP     FILTER_OTHER
-> > +#define FILTER_TYPE_TRACE_BRANCH       FILTER_OTHER
-> > +#define FILTER_TYPE(arg)               FILTER_TYPE_##arg
-> > +
-> >  #undef FTRACE_ENTRY
-> >  #define FTRACE_ENTRY(name, struct_name, id, tstruct, print)		\
-> >  int									\
-> > @@ -123,6 +137,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
-> >  {									\
-> >  	struct struct_name field;					\
-> >  	int ret;							\
-> > +	int filter_type = FILTER_TYPE(id);				\
-> >  									\
-> >  	tstruct;							\
-> >  									\
-> 
-> 
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+
+---
+ arch/x86/ia32/ia32entry.S  |    7 ++++---
+ arch/x86/kernel/entry_64.S |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+--- 3.2-rc3/arch/x86/ia32/ia32entry.S
++++ 3.2-rc3-x86_64-entry-cleanup/arch/x86/ia32/ia32entry.S
+@@ -459,8 +459,8 @@ quiet_ni_syscall:
+ 	CFI_ENDPROC
+ 	
+ 	.macro PTREGSCALL label, func, arg
+-	.globl \label
+-\label:
++	ALIGN
++GLOBAL(\label)
+ 	leaq \func(%rip),%rax
+ 	leaq -ARGOFFSET+8(%rsp),\arg	/* 8 for return address */
+ 	jmp  ia32_ptregs_common	
+@@ -477,7 +477,8 @@ quiet_ni_syscall:
+ 	PTREGSCALL stub32_vfork, sys_vfork, %rdi
+ 	PTREGSCALL stub32_iopl, sys_iopl, %rsi
+ 
+-ENTRY(ia32_ptregs_common)
++	ALIGN
++ia32_ptregs_common:
+ 	popq %r11
+ 	CFI_ENDPROC
+ 	CFI_STARTPROC32	simple
+--- 3.2-rc3/arch/x86/kernel/entry_64.S
++++ 3.2-rc3-x86_64-entry-cleanup/arch/x86/kernel/entry_64.S
+@@ -465,7 +465,7 @@ ENTRY(system_call)
+ 	 * after the swapgs, so that it can do the swapgs
+ 	 * for the guest and jump here on syscall.
+ 	 */
+-ENTRY(system_call_after_swapgs)
++GLOBAL(system_call_after_swapgs)
+ 
+ 	movq	%rsp,PER_CPU_VAR(old_rsp)
+ 	movq	PER_CPU_VAR(kernel_stack),%rsp
+
+
+
