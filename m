@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab1K2SCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 13:02:13 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:57333 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754941Ab1K2SCK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 13:02:10 -0500
-Date: Tue, 29 Nov 2011 20:02:03 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] slab fixes for 3.2-rc4
-Message-ID: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755942Ab1K2SFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 13:05:14 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:30654
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755300Ab1K2SFM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 13:05:12 -0500
+X-SpamScore: -14
+X-BigFish: VS-14(zz9371K542M1432Nzz1202hzzz2fh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        NetDev <netdev@vger.kernel.org>
+Subject: RE: [PATCH] staging: hv: move hv_netvsc out of staging area
+Thread-Topic: [PATCH] staging: hv: move hv_netvsc out of staging area
+Thread-Index: AQHMrhYAwM3L0fT04kOVI1luO2DccpXC0+WggAGp0gD//6iQkA==
+Date: Tue, 29 Nov 2011 18:05:02 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0CCCD751@TK5EX14MBXC227.redmond.corp.microsoft.com>
+References: <1322516135-22221-1-git-send-email-haiyangz@microsoft.com>
+ <A1F3067C9B68744AA19F6802BAB8FFDC0CCCC087@TK5EX14MBXC227.redmond.corp.microsoft.com>
+ <20111129151638.GB24688@kroah.com>
+In-Reply-To: <20111129151638.GB24688@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.73]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, November 29, 2011 10:17 AM
+> To: Haiyang Zhang
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; NetDev
+> Subject: Re: [PATCH] staging: hv: move hv_netvsc out of staging area
+> > I have rebased the previous patch on the latest staging-next branch,
+> > and re-submitting it now.  In another email, the same patch was
+> > submitted without using the "-M" flag, in case anyone wants to read
+> > the unchanged code in the patch body.
+> 
+> This one was fine, now applied, thanks.
 
-Here's few important fixes to SLUB issues introduced in the merge window.
+Thank you!
 
-The most important ones are from Christoph Lameter and Eric Dumazet that fix
-stability issues on non-x86 architectures. The patches from Shaohua Li fix a
-performance regression in SLUB that was also introduced in the merge window.
+- Haiyang
 
- 			Pekka
-
-The following changes since commit 883381d9f1c5a6329bbb796e23ae52c939940310:
-
-   Merge branch 'dev' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2011-11-29 08:59:12 -0800)
-
-are available in the git repository at:
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/urgent
-
-Christoph Lameter (1):
-       slub: use irqsafe_cpu_cmpxchg for put_cpu_partial
-
-Eric Dumazet (1):
-       slub: avoid potential NULL dereference or corruption
-
-Shaohua Li (2):
-       slub: use correct parameter to add a page to partial list tail
-       slub: move discard_slab out of node lock
-
-  mm/slub.c |   42 ++++++++++++++++++++++++++----------------
-  1 files changed, 26 insertions(+), 16 deletions(-)
