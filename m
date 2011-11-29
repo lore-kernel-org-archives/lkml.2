@@ -1,69 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab1K2Pn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:43:56 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49151 "EHLO mail.skyhub.de"
+	id S1755961Ab1K2QEG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 11:04:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21473 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754219Ab1K2Pnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:43:55 -0500
-Date: Tue, 29 Nov 2011 16:43:52 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Lucas Stach <dev@lynxeye.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: Hangs with Linux 3.2.0-rc3
-Message-ID: <20111129154352.GC13958@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Lucas Stach <dev@lynxeye.de>, LKML <linux-kernel@vger.kernel.org>,
-	Andreas Herrmann <andreas.herrmann3@amd.com>
-References: <1322552218.1679.5.camel@tellur>
- <20111129080655.GA12809@x1.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111129080655.GA12809@x1.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752619Ab1K2QEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 11:04:04 -0500
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: linux-mm@kvack.org, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: [PATCH repost] mm,x86: remove debug_pagealloc_enabled
+Date: Tue, 29 Nov 2011 17:05:11 +0100
+Message-Id: <1322582711-14571-1-git-send-email-sgruszka@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 09:06:55AM +0100, Borislav Petkov wrote:
-> > Nov 29 00:22:04 tellur kernel: [13936.370598] WARNING: at kernel/watchdog.c:241 watchdog_overflow_callback+0x9b/0xa6()
-> > Nov 29 00:22:04 tellur kernel: [13936.370598] Hardware name: GA-970A-UD3
-> > Nov 29 00:22:04 tellur kernel: [13936.370598] Watchdog detected hard LOCKUP on cpu 0
-> > Nov 29 00:22:04 tellur kernel: [13936.370598] Modules linked in: tcp_lp ppdev parport_pc lp parport fuse nfs fscache auth_rpcgss nfs_acl ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat iptable_mangle tun lockd bridge stp llc bluetooth rfkill it87 adt7475 hwmon_vid ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm ir_lirc_codec lirc_dev ir_mce_kbd_decoder snd_timer snd ir_sony_decoder ir_jvc_decoder ir_rc6_decoder ata_generic pata_acpi edac_core serio_raw soundcore joydev ir_rc5_decoder pata_atiixp ir_nec_decoder r8169 mii mceusb rc_core virtio_net edac_mce_amd sp5100_tco i2c_piix4 xhci_hcd fam15h_power pcspkr snd_page_alloc microcode k10temp virtio_ring virtio kvm_amd kvm uinput sunrpc ipv6 usb_storage firewire_ohci uas firewire_core crc_itu_t nouveau ttm drm_kms_helper drm hwmon i2c_algo_bit i2c_core mxm_wmi video wmi [last unloaded: scsi_wait_scan]
-> > Nov 29 00:22:04 tellur kernel: [13936.370598] Pid: 0, comm: swapper Not tainted 3.2.0-rc3+ #39
-> > Nov 29 00:22:04 tellur kernel: [13936.370598] Call Trace:
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  <NMI>  [<ffffffff81050c5a>] warn_slowpath_common+0x83/0x9b
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff81050d15>] warn_slowpath_fmt+0x46/0x48
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff81015204>] ? native_sched_clock+0x34/0x36
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff810a7abb>] watchdog_overflow_callback+0x9b/0xa6
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff810d28c5>] __perf_event_overflow+0x100/0x17f
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff8107055b>] ? local_clock+0x27/0x2f
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff810d0cb6>] ? perf_event_update_userpage+0xf/0xa3
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff810d2f2e>] perf_event_overflow+0x14/0x16
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff8101c22a>] x86_pmu_handle_irq+0xbe/0xf9
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff814aa5ee>] perf_event_nmi_handler+0x19/0x1b
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff814a9f77>] nmi_handle+0x42/0x67
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff814aa028>] do_nmi+0x8c/0x26f
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffff814a9830>] nmi+0x20/0x30
-> > Nov 29 00:22:04 tellur kernel: [13936.370598]  [<ffffffffa023bf55>] ? rtl8169_interrupt+0x268/0x2a4 [r8169]
+When (no)bootmem finish operation, it pass pages to buddy allocator.
+Since debug_pagealloc_enabled is not set, we will do not protect pages,
+what is not what we want with CONFIG_DEBUG_PAGEALLOC=y.
 
-Btw,
+To fix remove debug_pagealloc_enabled. That variable was introduced by
+commit 12d6f21e "x86: do not PSE on CONFIG_DEBUG_PAGEALLOC=y" to get
+more CPA (change page attribude) code testing. But currently we have
+CONFIG_CPA_DEBUG, which test CPA.
 
-this looks like the box hanged itself after getting an net IRQ over your
-r8169 which reminds me of this other issue being debugged on lkml in
-conjunction with r8169:
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+---
+ arch/x86/mm/pageattr.c |    6 ------
+ include/linux/mm.h     |   10 ----------
+ init/main.c            |    5 -----
+ mm/debug-pagealloc.c   |    3 ---
+ 4 files changed, 0 insertions(+), 24 deletions(-)
 
-http://marc.info/?l=linux-kernel&m=132225246211817&w=2
-
-Can you try reproducing the issue without having network traffic. Also,
-according to the thread above, 3.1 kernel is also affected so it could
-make sense for you go back to 3.0 and see whether it happens with it
-too.
-
-HTH.
-
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index f9e5267..5031eef 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
+ 	}
+ 
+ 	/*
+-	 * If page allocator is not up yet then do not call c_p_a():
+-	 */
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+-	/*
+ 	 * The return value is ignored as the calls cannot fail.
+ 	 * Large pages for identity mappings are not used at boot time
+ 	 * and hence no memory allocations during large page split.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3dc3a8c..0a22db1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1537,23 +1537,13 @@ static inline void vm_stat_account(struct mm_struct *mm,
+ #endif /* CONFIG_PROC_FS */
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+-extern int debug_pagealloc_enabled;
+-
+ extern void kernel_map_pages(struct page *page, int numpages, int enable);
+-
+-static inline void enable_debug_pagealloc(void)
+-{
+-	debug_pagealloc_enabled = 1;
+-}
+ #ifdef CONFIG_HIBERNATION
+ extern bool kernel_page_present(struct page *page);
+ #endif /* CONFIG_HIBERNATION */
+ #else
+ static inline void
+ kernel_map_pages(struct page *page, int numpages, int enable) {}
+-static inline void enable_debug_pagealloc(void)
+-{
+-}
+ #ifdef CONFIG_HIBERNATION
+ static inline bool kernel_page_present(struct page *page) { return true; }
+ #endif /* CONFIG_HIBERNATION */
+diff --git a/init/main.c b/init/main.c
+index 217ed23..99c4ba3 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -282,10 +282,6 @@ static int __init unknown_bootoption(char *param, char *val)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-int __read_mostly debug_pagealloc_enabled = 0;
+-#endif
+-
+ static int __init init_setup(char *str)
+ {
+ 	unsigned int i;
+@@ -597,7 +593,6 @@ asmlinkage void __init start_kernel(void)
+ 	}
+ #endif
+ 	page_cgroup_init();
+-	enable_debug_pagealloc();
+ 	debug_objects_mem_init();
+ 	kmemleak_init();
+ 	setup_per_cpu_pageset();
+diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
+index 7cea557..789ff70 100644
+--- a/mm/debug-pagealloc.c
++++ b/mm/debug-pagealloc.c
+@@ -95,9 +95,6 @@ static void unpoison_pages(struct page *page, int n)
+ 
+ void kernel_map_pages(struct page *page, int numpages, int enable)
+ {
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+ 	if (enable)
+ 		unpoison_pages(page, numpages);
+ 	else
 -- 
-Regards/Gruss,
-Boris.
+1.7.1
+
