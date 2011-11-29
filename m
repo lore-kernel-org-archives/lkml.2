@@ -1,40 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab1K2PS2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:18:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27138 "EHLO mx1.redhat.com"
+	id S1755941Ab1K2PSp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:18:45 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:23701 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab1K2PS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:18:27 -0500
-Date: Tue, 29 Nov 2011 17:19:59 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-Message-ID: <20111129151958.GA31789@redhat.com>
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
- <20111129131110.GC19157@redhat.com>
- <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753679Ab1K2PSo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 10:18:44 -0500
+X-IronPort-AV: E=Sophos;i="4.69,591,1315206000"; 
+   d="scan'208";a="603058950"
+Message-ID: <1322579906.3619.1.camel@lade.trondhjem.org>
+Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+ blocklayout routines
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: tao.peng@emc.com, skinsbursky@parallels.com, linux-nfs@vger.kernel.org,
+        xemul@parallels.com, neilb@suse.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
+Date: Tue, 29 Nov 2011 10:18:26 -0500
+In-Reply-To: <CA+a=Yy5GKMu8rbh8y3fOtK6pmqygPNBr=a+p7LfcmTqtXFH3iA@mail.gmail.com>
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
+	 <20111129091037.20730.59391.stgit@localhost6.localdomain6>
+	 <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
+	 <4ED4CDCE.9080804@parallels.com>
+	 <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
+	 <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com>
+	 <CA+a=Yy5GKMu8rbh8y3fOtK6pmqygPNBr=a+p7LfcmTqtXFH3iA@mail.gmail.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 29 Nov 2011 15:18:27.0223 (UTC) FILETIME=[24D0AA70:01CCAEAA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 03:57:19PM +0200, Ohad Ben-Cohen wrote:
-> > Is an extra branch faster or slower than reverting d57ed95?
-> 
-> Sorry, unfortunately I have no way to measure this, as I don't have
-> any virtualization/x86 setup. I'm developing on ARM SoCs, where
-> virtualization hardware is coming, but not here yet.
+On Tue, 2011-11-29 at 23:10 +0800, Peng Tao wrote: 
+> On Tue, Nov 29, 2011 at 9:35 PM, Myklebust, Trond
+> <Trond.Myklebust@netapp.com> wrote:
+> >> -----Original Message-----
+> >> From: tao.peng@emc.com [mailto:tao.peng@emc.com]
+> >> Sent: Tuesday, November 29, 2011 7:40 AM
+> >> To: skinsbursky@parallels.com
+> >> Cc: Myklebust, Trond; linux-nfs@vger.kernel.org; xemul@parallels.com;
+> >> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >> jbottomley@parallels.com; bfields@fieldses.org; davem@davemloft.net;
+> >> devel@openvz.org
+> >> Subject: RE: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
+> >> from blocklayout routines
+> >>
+> >> > -----Original Message-----
+> >> > From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
+> >> > Sent: Tuesday, November 29, 2011 8:19 PM
+> >> > To: Peng, Tao
+> >> > Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; Pavel
+> >> > Emelianov; neilb@suse.de; netdev@vger.kernel.org;
+> >> > linux-kernel@vger.kernel.org; James Bottomley; bfields@fieldses.org;
+> >> > davem@davemloft.net; devel@openvz.org
+> >> > Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
+> >> > from blocklayout routines
+> >> >
+> >> > 29.11.2011 16:00, tao.peng@emc.com пишет:
+> >> > >> -----Original Message-----
+> >> > >> From: linux-nfs-owner@vger.kernel.org
+> >> > >> [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of
+> >> > Stanislav
+> >> > >> Kinsbursky
+> >> > >> Sent: Tuesday, November 29, 2011 6:11 PM
+> >> > >> To: Trond.Myklebust@netapp.com
+> >> > >> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de;
+> >> > >> netdev@vger.kernel.org; linux- kernel@vger.kernel.org;
+> >> > >> jbottomley@parallels.com; bfields@fieldses.org;
+> >> > >> davem@davemloft.net; devel@openvz.org
+> >> > >> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
+> >> > >> from blocklayout routines
+> >> > >>
+> >> > >> This is a cleanup patch. We don't need this reference anymore,
+> >> > >> because blocklayout pipes dentries now creates and destroys in
+> >> > >> per-net operations and on PipeFS mount/umount notification.
+> >> > >> Note that nfs4blocklayout_register_net() now returns 0 instead of
+> >> > >> -ENOENT in case of PipeFS superblock absence. This is ok, because
+> >> > >> blocklayout pipe dentry will be created on PipeFS mount event.
+> >> > > When is the "pipefs mount event" going to happen? When inserting
+> >> > > kernel modules or when user issues
+> >> > mount command?
+> >> > >
+> >> >
+> >> > When user issues mount command.
+> >> > Kernel mounts of PipeFS has been removed with all these patch sets
+> >> > I've sent already.
+> >> Then it is going to break blocklayout user space program blkmapd, which is
+> >> stared before mounting any file system and it tries to open the pipe file
+> >> when started.
+> >
+> > Why on earth is blkmapd doing this instead of listening for file creation notifications like the other rpc_pipefs daemons do?
+> Not sure how the original implementer chose this but I think it is
+> likely because we do not expect the pipe file to be created or deleted
+> dynamically.
 
-You can try using the micro-benchmark in tools/virtio/.
-That does not need virtualization.
+Unless blkmapd can pin the sunrpc module (which it shouldn't be able to)
+then that assumption would be wrong. Please look into fixing blkmapd...
 
+   Trond
 -- 
-MST
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
