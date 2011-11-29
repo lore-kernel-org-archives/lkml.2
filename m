@@ -1,59 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab1K2RVd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 12:21:33 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49092 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab1K2RVc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 12:21:32 -0500
-Date: Tue, 29 Nov 2011 18:22:53 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [PATCH 2/2] drm/i915: properly clflush pwrites to phys objects
-Message-ID: <20111129172253.GD11090@phenom.ffwll.local>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, stable@kernel.org
-References: <1322579369-26954-1-git-send-email-daniel.vetter@ffwll.ch>
- <1322579369-26954-2-git-send-email-daniel.vetter@ffwll.ch>
- <c55c5d$185nps@AZSMGA002.ch.intel.com>
- <20111129161652.GD5667@phenom.ffwll.local>
+	id S1754077Ab1K2RYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 12:24:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16407 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751877Ab1K2RYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 12:24:39 -0500
+Date: Tue, 29 Nov 2011 18:18:22 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Subject: Re: [PATCH 2/5] uprobes: introduce uprobe_switch_to()
+Message-ID: <20111129171822.GA28234@redhat.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com> <20111128190614.GA4602@redhat.com> <20111128190655.GC4602@redhat.com> <1322510018.2921.161.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111129161652.GD5667@phenom.ffwll.local>
-X-Operating-System: Linux phenom 3.1.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1322510018.2921.161.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 05:16:52PM +0100, Daniel Vetter wrote:
-> On Tue, Nov 29, 2011 at 03:35:54PM +0000, Chris Wilson wrote:
-> > On Tue, 29 Nov 2011 16:09:29 +0100, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> > > Usually results in (rare) cursor corruptions on platforms
-> > > requiring physically addressed cursors.
-> > 
-> > So the phys cursor pages are set to WC upon creation, are we just
-> > missing the mb()? Or more likely the CPUs don't have PAT and we are
-> > being lazy in not detecting the error.
-> 
-> Yes, on reconsidering the tested-by is from a pentium m, which has working
-> pat, and we do a wbinvd in the i8xx chipset flush, so I don't know anymore
-> how this patch actually works.
-> 
-> But it seems to indeed fix the issue for at least one reporter and cursor
-> update is about as far away from a perf critical path as possible, so who
-> cares about such minor quibbles, it works ;-)
+On 11/28, Peter Zijlstra wrote:
+>
+> On Mon, 2011-11-28 at 20:06 +0100, Oleg Nesterov wrote:
+> > +void uprobe_switch_to(struct task_struct *curr)
+> > +{
+> > +       struct uprobe_task *utask = curr->utask;
+> > +       struct pt_regs *regs = task_pt_regs(curr);
+> > +
+> > +       if (!utask || utask->state != UTASK_SSTEP)
+> > +               return;
+> > +
+> > +       if (!(regs->flags & X86_EFLAGS_TF))
+> > +               return;
+> > +
+> > +       set_xol_ip(regs);
+> > +}
+>
+> > void __weak set_xol_ip(struct pt_regs *regs)
+> >  {
+> > +       int cpu = smp_processor_id();
+> > +       struct uprobe_task *utask = current->utask;
+> > +       struct uprobe *uprobe = utask->active_uprobe;
+> > +
+> > +       memcpy(uprobe_xol_slots[cpu], uprobe->insn, MAX_UINSN_BYTES);
+> > +
+> > +       utask->xol_vaddr = fix_to_virt(UPROBE_XOL_FIRST_PAGE)
+> > +                               + UPROBES_XOL_SLOT_BYTES * cpu;
+> > +       set_instruction_pointer(regs, utask->xol_vaddr);
+> >  }
+>
+> So uprobe_switch_to() will always reset the IP to the start of the slot?
+> That sounds wrong, things like the RIP relative stuff needs multiple
+> instructions.
 
-After some irc discussion with Dave Airlie I'll now try whether a simple
-wmb(); to flush the wc cache isn't good enough. Will take at least a week
-to run by testers and gathe feedback, though.
--Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+Hmm. Could you explain? Especially the "multiple instructions" part.
+
+In any case we should reset the IP to the start of the slot.
+
+But yes, I'm afraid this is too simple. Before this patches pre_xol()
+is called when we already know ->xol_vaddr. But afaics x86 doesn't use
+this info (post_xol() does). So this looks equally correct or wrong.
+
+But perhaps we need another arch-dependent hook which takes ->xol_vaddr
+into account instead of simple memcpy(), to handle the RIP relative
+case.
+
+Or I misunderstood?
+
+
+Peter, all, I apologize in advance, I can't be responsive today.
+
+Oleg.
+
