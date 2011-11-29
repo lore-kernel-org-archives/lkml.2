@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab1K2W7G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 17:59:06 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:40468 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308Ab1K2W7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 17:59:03 -0500
-Date: Tue, 29 Nov 2011 14:58:53 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Matt Helsley <matthltc@us.ibm.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [RFC] cgroups: freezer -- Allow to attach a task to a frozen
- cgroup
-Message-ID: <20111129225853.GA693@count0.beaverton.ibm.com>
-References: <20111128120813.GK1775@moon>
- <20111128160844.GB18864@google.com>
+	id S1756337Ab1K2XAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 18:00:32 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34640 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753645Ab1K2XAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 18:00:30 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+Subject: Re: [PATCH] pm/next: Fix Build pm by ERR_PTR
+Date: Wed, 30 Nov 2011 00:03:20 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+References: <1322542614-15856-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
+In-Reply-To: <1322542614-15856-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111128160844.GB18864@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11112922-5518-0000-0000-000000B1E111
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111300003.20488.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 08:08:44AM -0800, Tejun Heo wrote:
-> On Mon, Nov 28, 2011 at 04:08:13PM +0400, Cyrill Gorcunov wrote:
-> > In checkpoint/restore we need an ability to attach pids to
-> > a frozen cgroup. Thus once pid reaches a frozen cgroup it is
-> > not rejected, but the task get frozen immediately.
-
-Frankly, I don't see the need for this. I think you should explain
-it with more detail at the very least.
-
-Why can't they be frozen before being checkpointed? Assuming you've
-used SEIZE and spawned a new parasite thread, just move that thread to a 
-cgroup for the parasitic threads then freeze the old cgroup.
-
-> > 
-> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> > ---
-> > 
-> > I would really appreciate complains and comments.
+On Tuesday, November 29, 2011, Nobuhiro Iwamatsu wrote:
+> ERR_PTR needs linux/err.h.
+> This add linux/err.h to linux/pm_domain.h.
 > 
-> First of all, both freezer and cgroup have non-trivial pending
-> patchsets (e.g. ->can_attach_task() is scheduled for removal) and I
-> have changes which basically try to achieve about the same thing, so
-> let's slow down a bit.  I think the problem is a bit more complex.
+> -----
+> In file included from drivers/sh/pm_runtime.c:15:
+> include/linux/pm_domain.h: In function 'dev_to_genpd':
+> include/linux/pm_domain.h:145: error: implicit declaration of function 'ERR_PTR'
+> include/linux/pm_domain.h:145: warning: return makes pointer from integer without a cast
+> In file included from include/linux/sh_clk.h:10,
+> from drivers/sh/pm_runtime.c:19:
+> include/linux/err.h: At top level:
+> include/linux/err.h:22: error: conflicting types for 'ERR_PTR'
+> include/linux/pm_domain.h:145: note: previous implicit declaration of 'ERR_PTR' was here
+> make[2]: *** [drivers/sh/pm_runtime.o] Error 1
+> make[1]: *** [drivers/sh] Error 2
+> -----
 > 
-> Some thoughts I have on cgroup freezer ATM,
+> Signed-off-by: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
+
+I've just added an analogous patch from Guennadi to linux-pm/linux-next.
+
+Thanks,
+Rafael
+
+
+> ---
+>  include/linux/pm_domain.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> * Currently, FROZEN -> FREEZING transition isn't possible.  That's why
-
-No, IMO that would consitute breaking the interface. Scripts, tools,
-applications, and tests have been written to rely on the fact that
-the cgroup cannot go from FROZEN to FREEZING -- only from FROZEN to
-THAWED.
-
->   event transition detection by polling is acceptable.  ie. once the
->   state is polled to be FROZEN, it stays frozen.  Allowing FREEZING ->
->   FROZEN transition would probably require improvements to state
-
-(I'm assuming this last sentence has a thinko in it...)
-
->   transition notification too, at the very least, clarification of
-
-Notification is a fine idea. However, not everything that's already
-written expects them so correct usage of the cgroup freezer should not
-require them -- IOW allowing the FROZEN -> FREEZING transition
-isn't made OK just by adding notifications.
-
->   rules.
+> diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
+> index cc1a245..919bee1 100644
+> --- a/include/linux/pm_domain.h
+> +++ b/include/linux/pm_domain.h
+> @@ -9,6 +9,7 @@
+>  #ifndef _LINUX_PM_DOMAIN_H
+>  #define _LINUX_PM_DOMAIN_H
+>  
+> +#include <linux/err.h>
+>  #include <linux/device.h>
+>  
+>  enum gpd_status {
 > 
-> * There are some unclear corner cases and bugs the current cgroup
->   freezer has.  e.g. behavior w.r.t. kthreads is outright buggy.  It
->   would be great to figure out how to deal with them with or before
->   this change (ie. what happens when you transfer unfreezable
->   kthreads).
-
-Huh? Shouldn't we just disable moving kthreads between cgroups? Allowing
-userspace to freeze kthreads via cgroups seems like a *very* bad idea
-(perhaps it's a thread critical for IO, or some driver, etc.).
-
-Cheers
-	-Matt Helsley
 
