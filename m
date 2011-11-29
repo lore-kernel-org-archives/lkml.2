@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab1K2H6p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 02:58:45 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37733 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab1K2H6o (ORCPT
+	id S1752875Ab1K2IGZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 03:06:25 -0500
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:33470 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751801Ab1K2IGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 02:58:44 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 29 Nov 2011 16:57:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: Re: [V4 PATCH 1/2] tmpfs: add fallocate support
-Message-Id: <20111129165720.6034bf5c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4ED4888E.9040402@redhat.com>
-References: <1322544793-2676-1-git-send-email-amwang@redhat.com>
-	<20111129150210.ad266dd7.kamezawa.hiroyu@jp.fujitsu.com>
-	<4ED4888E.9040402@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 29 Nov 2011 03:06:24 -0500
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk@arm.linux.org.uk>
+In-Reply-To: <201111281911.36341.arnd@arndb.de>
+References: <20111128105633.8a8c06afce3cdccb1ce0d7b7@canb.auug.org.au>
+	 <201111281911.36341.arnd@arndb.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-lyLvMVTx+RZKJbDjTWbn"
+Date: Tue, 29 Nov 2011 10:06:17 +0200
+Message-ID: <1322553977.1869.1.camel@deskari>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Nov 2011 15:23:58 +0800
-Cong Wang <amwang@redhat.com> wrote:
 
-> 于 2011年11月29日 14:02, KAMEZAWA Hiroyuki 写道:
-> >
-> > You can't know whether the 'page' is allocated by alloc_page() in fallocate()
-> > or just found as exiting one.
-> > Then, yourwill corrupt existing pages in error path.
-> > Is it allowed ?
-> >
-> 
-> According to the comment,
-> 
-> /*
->   * shmem_getpage_gfp - find page in cache, or get from swap, or allocate
->   *
->   * If we allocate a new one we do not mark it dirty. That's up to the
->   * vm. If we swap it in we mark it dirty since we also free the swap
->   * entry since a page cannot live in both the swap and page cache
->   */
-> 
-> so we can know if the page is newly allocated by checking page dirty bit.
-> Or am I missing something?
-> 
+--=-lyLvMVTx+RZKJbDjTWbn
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-If swap-in doesn't happen and  a page is found...
+Hi,
 
-==
-       page = find_lock_page(mapping, index); <=============== you find a page
-       if (radix_tree_exceptional_entry(page)) {
-                swap = radix_to_swp_entry(page);
-                page = NULL;
-        }
+On Mon, 2011-11-28 at 19:11 +0000, Arnd Bergmann wrote:
+> On Sunday 27 November 2011, Stephen Rothwell wrote:
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > arch/arm/plat-omap/include/plat/common.h between commit 4e65331c6bb4
+> > ("ARM: 7159/1: OMAP: Introduce local common.h files") from the  tree an=
+d
+> > commit 13662dc5b177 ("ARM: OMAP: HWMOD: Unify DSS resets for OMAPs") fr=
+om
+> > the arm-soc tree.
+> >=20
+> > I did the obvious fixup (see below) and can carry the fix as necessary.
+>=20
+> Your fix looks technically correct, thanks!
+>=20
+> Tony, I believe what you actually want here is to move omap_dss_reset
+> into mach-omap2/common.h, right?
 
-        if (sgp != SGP_WRITE &&
-            ((loff_t)index << PAGE_CACHE_SHIFT) >= i_size_read(inode)) {
-                error = -EINVAL;
-                goto failed;
-        }
+omap_dss_reset will never be used by omap1 boards, so I think
+mach-omap2/common.h would be a good place for it.
 
-        if (page || (sgp == SGP_READ && !swap.val)) {
-                /*
-                 * Once we can get the page lock, it must be uptodate:
-                 * if there were an error in reading back from swap,
-                 * the page would not be inserted into the filecache.
-                 */
-                BUG_ON(page && !PageUptodate(page));
-                *pagep = page; <========================= return here.
-                return 0;
-        }
-==
-Page will not be marked as dirty.
+ Tomi
 
-Thanks,
--Kame
+
+--=-lyLvMVTx+RZKJbDjTWbn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJO1JJ0AAoJEPo9qoy8lh71dKUP/0wFNnNLM9BRhTbISdtb+ayF
+Oxv1wvIlxZVv/jfAcrKZUYJ8mloa6vB8O3cKKfB9ggGk26SbrEeyt7VCm1pb2QMK
+CTko1W4lwVrThu3LO/XytEgw0sp3+0m2xkXnHcNobkdOXGsZuvX9CY1XiKSybh7l
+lbJXOMf+tpWWOIlNNzXKlyRqWpgXetyOW/0wcjKjeV29MZY3FTMw9AE/bN5i/X00
+Ab7bTg1iLu5eIADSXtd5TGNc0kEbtkdulCREkzdTz1iGU7avhayTS5Lm3SOyxH1f
+iRpsrkFBGRCxFDepq0V0n6MFg/thVFdU6GH85s7LKcrgvFOjGteh//gDb/DKnEsB
+PgCEIqykvGQMeIatXR7Lyb4hbdhzN+0NCVx8MukaETbQWWc/jYHTnuLmEjPzqhQ2
+shqJ2DX3HBtFl+c+ka5FqLp6f7uqyUuLzsNrC8dHHbroLKkjJcRvbmQD08w0/kkK
+YAu0+9R1ILtq+GkL77b/nXaHUqEan4QoT96tJqoCJxDy8uvr7yvxP4HoV5KzS0xb
+lbcWOk7IQ7n/SlVZEutdETvEj11UCSapJbWaUL6m7XAtfKMamBAcnD/b6KJ/5gPZ
+p8WQ/8IhFqWjP2IPsVHl5w0panlYGBpb12NVB3K7xNwRr6tqFmUkAUerZfM5E6uT
+r8Emy+kkuf4xKtz/5bqQ
+=66ee
+-----END PGP SIGNATURE-----
+
+--=-lyLvMVTx+RZKJbDjTWbn--
 
