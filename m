@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab1K2OAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 09:00:08 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:59216 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab1K2OAG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 09:00:06 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-Date: Tue, 29 Nov 2011 13:59:58 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>,
-        Johan PALSSON <johan.palsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com> <201111281753.45287.arnd@arndb.de> <CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
-In-Reply-To: <CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
+	id S1755570Ab1K2OBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 09:01:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33732 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754854Ab1K2OBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 09:01:53 -0500
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: Overlapping reserved regions at boot
+Date: Tue, 29 Nov 2011 15:01:51 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.9-default; KDE/4.6.0; i686; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111291359.59103.arnd@arndb.de>
-X-Provags-ID: V02:K0:gOxGKkExxRzBTl91osrkfZHr06fAHa9ZOPwANtyjT5V
- d7csikiFoNcnzkzWfeo3/LKjaMaLFmDE4JVepP8vbjSMTT7lio
- MszPzuKclc6lgap9WteICeSE+63caaWU4AiEPhYIABKD/oWzRK
- Tsi9omyq1UqsKTnoCtKQJu16Ygq4q5rjwtwTIXfMtPbZvEBmcN
- mQI+QgzHLXTRGN7gURzHY1y88WBU3Vx46Dr5JqILbi1OC4+IQ7
- 90/qHF8vp3+JG2FCf1IIOA/sOKHrHZZFP3WMoSW+BqjxgHvacI
- bBH7f3an4epHCxVLx6idvP24KkUng2yFJagFTWdELG9WQULSjM
- svi0P/S0PdP1I7gNUUH0=
+Message-Id: <201111291501.51657.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 29 November 2011, MyungJoo Ham wrote:
-> For the next iteration, I'm considering the followings. It'd be much
-> appreciated if I could get some comments about those beforehand.
->
-> 2. move the location from /drivers/misc to an independent location.
-> /drivers/switch? /drivers/multistate-switch? /drivers/msc?
-> /drivers/mswitch? ...
+Hello,
 
-Moving out of drivers/misc is a good idea. I don't have a strong
-preference for any of the alternatives, but would probably pick
-drivers/mswitch. drivers/switch is too generic, since we have lots
-of things that are called a switch already, and drivers/multistate-switch
-is much longer than any of the other alternatives. "msc" in turn
-seems a bit too short and is not a well-established acronym yet.
+while working on the upcoming SLES11 SP2, I ran into an issue with booting the 
+panic kernel on a kernel crash. In the first iteration I found out that the 
+initial register backing store gets overwritten with zeroes, causing a kernel 
+crash shortly afterwards.
 
-	Arnd
+Further investigation revealed that rsvd_region[] contains overlapping 
+entries: find_memmap_space() returns a pointer which lies between KERNEL_START 
+and _end. This is correct with the EFI memmap as patched by the kexec 
+purgatory code. That code removes vmlinux LOAD segments from the usable map, 
+but there is a pretty large hole between the gate section and the per-cpu 
+section.
+
+With the following patch, the panic kernel can boot and save the crash dump.
+
+Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+
+--- a/arch/ia64/kernel/setup.c
++++ b/arch/ia64/kernel/setup.c
+@@ -225,6 +225,23 @@
+ 	}
+ }
+ 
++/* merge overlaps */
++static int __init
++merge_regions (struct rsvd_region *rsvd_region, int max)
++{
++	int i;
++	for (i = 1; i < max; ++i) {
++		if (rsvd_region[i].start >= rsvd_region[i-1].end)
++			continue;
++		if (rsvd_region[i].end > rsvd_region[i-1].end)
++			rsvd_region[i-1].end = rsvd_region[i].end;
++		--max;
++		memmove(&rsvd_region[i], &rsvd_region[i+1],
++			(max - i) * sizeof(struct rsvd_region));
++	}
++	return max;
++}
++
+ /*
+  * Request address space for all standard resources
+  */
+@@ -275,6 +292,7 @@
+ 	if (ret == 0 && size > 0) {
+ 		if (!base) {
+ 			sort_regions(rsvd_region, *n);
++			*n = merge_regions(rsvd_region, *n);
+ 			base = kdump_find_rsvd_region(size,
+ 					rsvd_region, *n);
+ 		}
+@@ -392,6 +410,7 @@
+ 	BUG_ON(IA64_MAX_RSVD_REGIONS + 1 < n);
+ 
+ 	sort_regions(rsvd_region, num_rsvd_regions);
++	num_rsvd_regions = merge_regions(rsvd_region, num_rsvd_regions);
+ }
+ 
+ 
