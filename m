@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858Ab1K2Vfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 16:35:51 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:41183 "EHLO mail.mgebm.net"
+	id S1756895Ab1K2VgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 16:36:02 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:41217 "EHLO mail.mgebm.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756501Ab1K2Vft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 16:35:49 -0500
+	id S1756879Ab1K2Vf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 16:35:57 -0500
 From: Eric B Munson <emunson@mgebm.net>
 To: avi@redhat.com
 Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
@@ -13,39 +13,20 @@ Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
         mtosatti@redhat.com, jeremy.fitzhardinge@citrix.com,
         kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5 V4]  Avoid soft lockup message when KVM is stopped by host
-Date: Tue, 29 Nov 2011 16:35:34 -0500
-Message-Id: <1322602539-27004-1-git-send-email-emunson@mgebm.net>
+Subject: [PATCH 3/5 V4] Add ioctl for KVM_GUEST_STOPPED
+Date: Tue, 29 Nov 2011 16:35:37 -0500
+Message-Id: <1322602539-27004-4-git-send-email-emunson@mgebm.net>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1322602539-27004-1-git-send-email-emunson@mgebm.net>
+References: <1322602539-27004-1-git-send-email-emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from V3:
-Include CC's on patch 3
-Drop clear flag ioctl and have the watchdog clear the flag when it is reset
+Now that we have a flag that will tell the guest it was suspended, create an
+interface for that communication using a KVM ioctl.
 
-Changes from V2:
-A new kvm functions defined in kvm_para.h, the only change to pvclock is the
-initial flag definition
-
-Changes from V1:
-(Thanks Marcelo)
-Host code has all been moved to arch/x86/kvm/x86.c
-KVM_PAUSE_GUEST was renamed to KVM_GUEST_PAUSED
-
-When a guest kernel is stopped by the host hypervisor it can look like a soft
-lockup to the guest kernel.  This false warning can mask later soft lockup
-warnings which may be real.  This patch series adds a method for a host
-hypervisor to communicate to a guest kernel that it is being stopped.  The
-final patch in the series has the watchdog check this flag when it goes to
-issue a soft lockup warning and skip the warning if the guest knows it was
-stopped.
-
-It was attempted to solve this in Qemu, but the side effects of saving and
-restoring the clock and tsc for each vcpu put the wall clock of the guest behind
-by the amount of time of the pause.  This forces a guest to have ntp running
-in order to keep the wall clock accurate.
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
 
 Cc: mingo@redhat.com
 Cc: hpa@zytor.com
@@ -58,25 +39,76 @@ Cc: kvm@vger.kernel.org
 Cc: linux-arch@vger.kernel.org
 Cc: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org
+---
+ arch/x86/include/asm/kvm_host.h |    2 ++
+ arch/x86/kvm/x86.c              |   20 ++++++++++++++++++++
+ include/linux/kvm.h             |    2 ++
+ 3 files changed, 24 insertions(+), 0 deletions(-)
 
-Eric B Munson (5):
-  Add flag to indicate that a vm was stopped by the host
-  Add functions to check if the host has stopped the vm
-  Add ioctl for KVM_GUEST_STOPPED
-  Add generic stubs for kvm stop check functions
-  Add check for suspended vm in softlockup detector
-
- arch/x86/include/asm/kvm_host.h    |    2 ++
- arch/x86/include/asm/kvm_para.h    |    1 +
- arch/x86/include/asm/pvclock-abi.h |    1 +
- arch/x86/kernel/kvmclock.c         |   21 +++++++++++++++++++++
- arch/x86/kvm/x86.c                 |   20 ++++++++++++++++++++
- include/asm-generic/kvm_para.h     |   14 ++++++++++++++
- include/linux/kvm.h                |    2 ++
- kernel/watchdog.c                  |   12 ++++++++++++
- 8 files changed, 73 insertions(+), 0 deletions(-)
- create mode 100644 include/asm-generic/kvm_para.h
-
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index b4973f4..beb94c6 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -672,6 +672,8 @@ int kvm_pv_mmu_op(struct kvm_vcpu *vcpu, unsigned long bytes,
+ 		  gpa_t addr, unsigned long *ret);
+ u8 kvm_get_guest_memory_type(struct kvm_vcpu *vcpu, gfn_t gfn);
+ 
++int kvm_set_guest_paused(struct kvm_vcpu *vcpu);
++
+ extern bool tdp_enabled;
+ 
+ u64 vcpu_tsc_khz(struct kvm_vcpu *vcpu);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c38efd7..0127617 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3295,6 +3295,10 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+ 
+ 		goto out;
+ 	}
++	case KVM_GUEST_PAUSED: {
++		r = kvm_set_guest_paused(vcpu);
++		break;
++	}
+ 	default:
+ 		r = -EINVAL;
+ 	}
+@@ -6117,6 +6121,22 @@ int kvm_task_switch(struct kvm_vcpu *vcpu, u16 tss_selector, int reason,
+ }
+ EXPORT_SYMBOL_GPL(kvm_task_switch);
+ 
++/*
++ * kvm_set_guest_paused() indicates to the guest kernel that it has been
++ * stopped by the hypervisor.  This function will be called from the host only.
++ * EINVAL is returned when the host attempts to set the flag for a guest that
++ * does not support pv clocks.
++ */
++int kvm_set_guest_paused(struct kvm_vcpu *vcpu)
++{
++	struct pvclock_vcpu_time_info *src = &vcpu->arch.hv_clock;
++	if (!vcpu->arch.time_page)
++		return -EINVAL;
++	src->flags |= PVCLOCK_GUEST_STOPPED;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kvm_set_guest_paused);
++
+ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 				  struct kvm_sregs *sregs)
+ {
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index c3892fc..15578a2 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -762,6 +762,8 @@ struct kvm_clock_data {
+ #define KVM_CREATE_SPAPR_TCE	  _IOW(KVMIO,  0xa8, struct kvm_create_spapr_tce)
+ /* Available with KVM_CAP_RMA */
+ #define KVM_ALLOCATE_RMA	  _IOR(KVMIO,  0xa9, struct kvm_allocate_rma)
++/* VM is being stopped by host */
++#define KVM_GUEST_PAUSED	  _IO(KVMIO,   0xaa)
+ 
+ #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1 << 0)
+ 
 -- 
 1.7.5.4
 
