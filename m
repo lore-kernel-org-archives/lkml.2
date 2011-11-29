@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab1K2MW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:22:59 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52445 "EHLO
+	id S1755160Ab1K2MXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:23:19 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52507 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab1K2MWv (ORCPT
+	with ESMTP id S1754281Ab1K2MWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:22:51 -0500
+	Tue, 29 Nov 2011 07:22:53 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Russell King <linux@arm.linux.org.uk>
-Subject: [RFC PATCH 5/6] ARM: Remove current_mm per-cpu variable
-Date: Tue, 29 Nov 2011 12:22:31 +0000
-Message-Id: <1322569352-23584-6-git-send-email-catalin.marinas@arm.com>
+Subject: [RFC PATCH 6/6] ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on pre-ARMv6 CPUs
+Date: Tue, 29 Nov 2011 12:22:32 +0000
+Message-Id: <1322569352-23584-7-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
 References: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 29 Nov 2011 12:22:40.0191 (UTC) FILETIME=[964B4CF0:01CCAE91]
-X-MC-Unique: 111112912224803601
+X-OriginalArrivalTime: 29 Nov 2011 12:22:40.0598 (UTC) FILETIME=[96896760:01CCAE91]
+X-MC-Unique: 111112912225000201
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pATCNChX007578
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pATCNNcs007582
 
-The current_mm variable was used to store the new mm between the
-switch_mm() and switch_to() calls where an IPI to reset the context
-could have set the wrong mm. Since the interrupts are disabled during
-context switch, there is no need for this variable, current->active_mm
-already points to the current mm when interrupts are re-enabled.
+This patch removes the __ARCH_WANT_INTERRUPTS_ON_CTXSW definition for
+ARMv5 and earlier processors. On such processors, the context switch
+requires a full cache flush. To avoid high interrupt latencies, this
+patch defers the mm switching is deferred to the post-lock switch hook.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Russell King <linux@arm.linux.org.uk>
 ---
- arch/arm/include/asm/mmu_context.h |    7 -------
- arch/arm/mm/context.c              |   12 +-----------
- 2 files changed, 1 insertions(+), 18 deletions(-)
+ arch/arm/include/asm/mmu_context.h |   26 +++++++++++++++++++++-----
+ arch/arm/include/asm/system.h      |    9 ---------
+ 2 files changed, 21 insertions(+), 14 deletions(-)
 
 diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
-index 3e4b219..56710d8 100644
+index 56710d8..f52729c 100644
 --- a/arch/arm/include/asm/mmu_context.h
 +++ b/arch/arm/include/asm/mmu_context.h
-@@ -42,9 +42,6 @@ void __check_kvm_seq(struct mm_struct *mm);
- #define ASID_FIRST_VERSION	(1 << ASID_BITS)
+@@ -99,19 +99,35 @@ static inline void finish_arch_post_lock_switch(void)
  
- extern unsigned int cpu_last_asid;
--#ifdef CONFIG_SMP
--DECLARE_PER_CPU(struct mm_struct *, current_mm);
--#endif
+ #else	/* !CONFIG_CPU_HAS_ASID */
  
- void __init_new_context(struct task_struct *tsk, struct mm_struct *mm);
- void __new_context(struct mm_struct *mm);
-@@ -154,10 +151,6 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 		__flush_icache_all();
- #endif
- 	if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next)) || prev != next) {
--#ifdef CONFIG_SMP
--		struct mm_struct **crt_mm = &per_cpu(current_mm, cpu);
--		*crt_mm = next;
--#endif
- 		check_and_switch_context(next, tsk);
- 		if (cache_is_vivt())
- 			cpumask_clear_cpu(cpu, mm_cpumask(prev));
-diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
-index d80aef0..cbca8a4 100644
---- a/arch/arm/mm/context.c
-+++ b/arch/arm/mm/context.c
-@@ -18,9 +18,6 @@
- 
- static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
- unsigned int cpu_last_asid = ASID_FIRST_VERSION;
--#ifdef CONFIG_SMP
--DEFINE_PER_CPU(struct mm_struct *, current_mm);
--#endif
- 
- void cpu_set_reserved_ttbr0(void)
++#ifdef CONFIG_MMU
++
+ static inline void check_and_switch_context(struct mm_struct *mm,
+ 					    struct task_struct *tsk)
  {
-@@ -90,14 +87,7 @@ static void reset_context(void *info)
- {
- 	unsigned int asid;
- 	unsigned int cpu = smp_processor_id();
--	struct mm_struct *mm = per_cpu(current_mm, cpu);
+-#ifdef CONFIG_MMU
+ 	if (unlikely(mm->context.kvm_seq != init_mm.context.kvm_seq))
+ 		__check_kvm_seq(mm);
+-	cpu_switch_mm(mm->pgd, mm);
+-#endif
++
++	/*
++	 * Defer the cpu_switch_mm() call and continue running with the old
++	 * mm. Since we only support UP systems on non-ASID CPUs, the old mm
++	 * will remain valid until the finish_arch_post_lock_switch() call.
++	 */
++	set_ti_thread_flag(task_thread_info(tsk), TIF_SWITCH_MM);
+ }
+ 
+-#define init_new_context(tsk,mm)	0
++#define finish_arch_post_lock_switch \
++	finish_arch_post_lock_switch
++static inline void finish_arch_post_lock_switch(void)
++{
++	if (test_and_clear_thread_flag(TIF_SWITCH_MM)) {
++		struct mm_struct *mm = current->mm;
++		cpu_switch_mm(mm->pgd, mm);
++	}
++}
+ 
+-#define finish_arch_post_lock_switch()	do { } while (0)
++#endif	/* CONFIG_MMU */
++
++#define init_new_context(tsk,mm)	0
+ 
+ #endif	/* CONFIG_CPU_HAS_ASID */
+ 
+diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
+index 3daebde..ac7fade 100644
+--- a/arch/arm/include/asm/system.h
++++ b/arch/arm/include/asm/system.h
+@@ -218,15 +218,6 @@ static inline void set_copro_access(unsigned int val)
+ }
+ 
+ /*
+- * switch_mm() may do a full cache flush over the context switch,
+- * so enable interrupts over the context switch to avoid high
+- * latency.
+- */
+-#ifndef CONFIG_CPU_HAS_ASID
+-#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
+-#endif
 -
--	/*
--	 * Check if a current_mm was set on this CPU as it might still
--	 * be in the early booting stages and using the reserved ASID.
--	 */
--	if (!mm)
--		return;
-+	struct mm_struct *mm = current->active_mm;
- 
- 	smp_rmb();
- 	asid = cpu_last_asid + cpu;
+-/*
+  * switch_to(prev, next) should switch from task `prev' to `next'
+  * `prev' will never be the same as `next'.  schedule() itself
+  * contains the memory barrier to tell GCC not to cache `current'.
 
