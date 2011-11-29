@@ -1,64 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1K2LVW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 06:21:22 -0500
-Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:53109 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751975Ab1K2LVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 06:21:20 -0500
-Date: Tue, 29 Nov 2011 12:21:17 +0100
-From: Marc Vertes <marc.vertes@sigfox.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: ALSA: hda_intel - revert a quirk that affect VIA chipsets
-Message-ID: <4ed4c02d.IYpKuLbAirLT4yfU%marc.vertes@sigfox.com>
-User-Agent: Heirloom mailx 12.4 7/29/08
+	id S1753410Ab1K2LVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 06:21:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975Ab1K2LVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 06:21:51 -0500
+Date: Tue, 29 Nov 2011 12:21:40 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/9] ftrace: Fix shutdown to disable calls properly
+Message-ID: <20111129112140.GD1602@m.brq.redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+ <1322417074-5834-4-git-send-email-jolsa@redhat.com>
+ <1322507928.17003.7.camel@frodo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 13847724431156889530
-X-Ovh-Remote: 92.103.90.130 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -80
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefiedrudejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnegfrhhlucfvnfffucdlvddtmdenucfjughrpeffhffvuffkfgggtgfgsehtjeertddtredvnecuhfhrohhmpeforghrtgcugggvrhhtvghsuceomhgrrhgtrdhvvghrthgvshesshhighhfohigrdgtohhmqeenucffohhmrghinheprghlshgrqdhprhhojhgvtghtrdhorhhgne
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefhedrudehucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnegfrhhlucfvnfffucdlvddtmdenlhhinhhugidvgiculddqvddtmd
+Content-Disposition: inline
+In-Reply-To: <1322507928.17003.7.camel@frodo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This quirk sould be reverted. It has the following probems:
+On Mon, Nov 28, 2011 at 02:18:48PM -0500, Steven Rostedt wrote:
+> On Sun, 2011-11-27 at 19:04 +0100, Jiri Olsa wrote:
+> > Each ftrace_startup call increases the call record's flag,
+> > so we need allways to decrease it when shutting down the
+> > ftrace_ops.
+> 
+> No, that's not how this works. I probably should comment this code
+> better, because it caused me to reread it too ;)
+> 
+> > 
+> > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> > ---
+> >  kernel/trace/ftrace.c |    3 +--
+> >  1 files changed, 1 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> > index c6d0293..0ca0c0d 100644
+> > --- a/kernel/trace/ftrace.c
+> > +++ b/kernel/trace/ftrace.c
+> > @@ -1744,8 +1744,7 @@ static void ftrace_shutdown(struct ftrace_ops *ops, int command)
+> >  	if (ops != &global_ops || !global_start_up)
+> >  		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
+> >  
+> > -	if (!ftrace_start_up)
+> > -		command |= FTRACE_DISABLE_CALLS;
+> > +	command |= FTRACE_DISABLE_CALLS;
+> 
+> FTRACE_DISABLE_CALLS will disable *all* functions for all tracers. If
+> you are tracing with ftrace and perf, and one calls this with
+> FTRACE_DISABLE_CALLS then both will no long be tracing anything.
+> 
+> When you call unregister_ftrace_function() it will disable the functions
+> that you have enabled by the ops.
+> 
+> Nacked-by: Steven Rostedt <rostedt@goodmis.org.
 
-1) The quirk was intended to "ASUS MV2-MX SE" motherboards only, but the
-ID used matches a much broader range, potentially all boards containing a
-VIA chipset model in the family of vendor VIA 0x1106 and audio device ID
-0x3288, which encompasses VIA-VT82xx, VIA-VT1xx and VIA-VT20xx chipsets.
+ops, should read/test more carefully.. however the problem stays, here's
+one possible scenario of the issue:
 
-2) VIA chipsets rely on azx_via_get_position() to handle correctly dma
-transfers during capture. Using POS_FIX_LPIB instead of POS_FIX_VIACOMBO
-leads to partially corrupted input buffers during capture. The effects
-of this bug are not immediately visible, it took strong DSP expertise,
-some expensive signal generator and a spectrum analyzer to identify it
-and verify correct behaviour using original default.
+	- enable function trace like:
+		echo "mm_*" > ./set_ftrace_filter 
+		echo function > ./current_tracer 
+	- run:
+		./perf record  -e ftrace:function cal
+		- this runs: register_ftrace_function/unregister_ftrace_function
 
-3) It's almost certain that the quirk did not fix the real problem,
-if there was one. Refer to original submission:
-http://mailman.alsa-project.org/pipermail/alsa-devel/2010-February/025109.html
+	- bad result: after perf is finished, function trace will have all the functions enabled
 
-Signed-of-by: Marc Vertes <mvertes@sigfox.com>
+The reason is, that after the perf record calls unregister_ftrace_function,
+only the functions' record flags (struct dyn_ftrace::flags) are changed, but
+functions' mcount calls are not replaced accordingly.
 
---- linux-3.2-rc3/sound/pci/hda/hda_intel.c.orig	2011-11-24 05:20:28.000000000 +0100
-+++ linux-3.2-rc3/sound/pci/hda/hda_intel.c	2011-11-28 17:29:01.044095455 +0100
-@@ -2508,7 +2508,6 @@ static struct snd_pci_quirk position_fix
- 	SND_PCI_QUIRK(0x1043, 0x81b3, "ASUS", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1043, 0x81e7, "ASUS M2V", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
--	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1297, 0x3166, "Shuttle", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1458, 0xa022, "ga-ma770-ud3", POS_FIX_LPIB),
- 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+In our case, when function trace becomes again the only tracer, it will be
+plugged directly into the entry_BIT.S code, and thus getting all the functions
+from previous perf ftrace_ops without any filtering.
+
+I think we need to project the function record flags state into the
+function call replacement during the unregister_ftrace_function.
+
+jirka
+
+> 
+> -- Steve
+> 
+> 
+> >  
+> >  	if (saved_ftrace_func != ftrace_trace_function) {
+> >  		saved_ftrace_func = ftrace_trace_function;
+> 
+> 
