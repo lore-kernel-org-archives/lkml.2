@@ -1,139 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab1K2MlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:41:24 -0500
-Received: from mexforward.lss.emc.com ([128.222.32.20]:15902 "EHLO
-	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab1K2MlW (ORCPT
+	id S1755104Ab1K2MmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:42:15 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:31111
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753107Ab1K2MmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:41:22 -0500
-From: <tao.peng@emc.com>
-To: <skinsbursky@parallels.com>
-CC: <Trond.Myklebust@netapp.com>, <linux-nfs@vger.kernel.org>,
-        <xemul@parallels.com>, <neilb@suse.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jbottomley@parallels.com>,
-        <bfields@fieldses.org>, <davem@davemloft.net>, <devel@openvz.org>
-Date: Tue, 29 Nov 2011 07:40:19 -0500
-Subject: RE: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
- blocklayout routines
-Thread-Topic: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
- blocklayout routines
-Thread-Index: AcyukY9ts3BtGyv/REqRoBBt3RXgUwAAFmgQ
-Message-ID: <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
- <20111129091037.20730.59391.stgit@localhost6.localdomain6>
- <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
- <4ED4CDCE.9080804@parallels.com>
-In-Reply-To: <4ED4CDCE.9080804@parallels.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 29 Nov 2011 07:42:13 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVF9Y7-01-CQW-02
+X-M-MSG: 
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: <hpa@zytor.com>
+CC: <tglx@linutronix.de>, <mingo@elte.hu>, <suresh.b.siddha@intel.com>,
+        <eranian@google.com>, <brgerst@gmail.com>, <robert.richter@amd.com>,
+        <Andreas.Herrmann3@amd.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>
+Subject: [PATCH 1/9] x86, xsave: warn on #NM exceptions caused by the kernel
+Date: Tue, 29 Nov 2011 13:41:20 +0100
+Message-ID: <1322570488-21798-2-git-send-email-hans.rosenfeld@amd.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
+References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
 MIME-Version: 1.0
-X-EMM-MHVC: 1
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pATCfahg007696
 
-> -----Original Message-----
-> From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
-> Sent: Tuesday, November 29, 2011 8:19 PM
-> To: Peng, Tao
-> Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; Pavel Emelianov; neilb@suse.de;
-> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; James Bottomley; bfields@fieldses.org;
-> davem@davemloft.net; devel@openvz.org
-> Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from blocklayout routines
-> 
-> 29.11.2011 16:00, tao.peng@emc.com Ğ¿Ğ¸ÑˆĞµÑ‚:
-> >> -----Original Message-----
-> >> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of
-> Stanislav
-> >> Kinsbursky
-> >> Sent: Tuesday, November 29, 2011 6:11 PM
-> >> To: Trond.Myklebust@netapp.com
-> >> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de; netdev@vger.kernel.org; linux-
-> >> kernel@vger.kernel.org; jbottomley@parallels.com; bfields@fieldses.org; davem@davemloft.net;
-> >> devel@openvz.org
-> >> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from blocklayout routines
-> >>
-> >> This is a cleanup patch. We don't need this reference anymore, because
-> >> blocklayout pipes dentries now creates and destroys in per-net operations and
-> >> on PipeFS mount/umount notification.
-> >> Note that nfs4blocklayout_register_net() now returns 0 instead of -ENOENT in
-> >> case of PipeFS superblock absence. This is ok, because blocklayout pipe dentry
-> >> will be created on PipeFS mount event.
-> > When is the "pipefs mount event" going to happen? When inserting kernel modules or when user issues
-> mount command?
-> >
-> 
-> When user issues mount command.
-> Kernel mounts of PipeFS has been removed with all these patch sets I've sent
-> already.
-Then it is going to break blocklayout user space program blkmapd, which is stared before mounting any file system and it tries to open the pipe file when started.
-Not sure if you implement the same logic on nfs pipe as well. But if you do, then nfs client user space program idmapd will fail to start for the same reason.
+The kernel code handling the FPU states should handle the TS bit in such
+a way that #NM exceptions cannot happen inside the kernel. Any other
+kernel code using FPU features should use kernel_fpu_begin() and
+kernel_fpu_end(), which handles the TS bit and disallows preemption.
 
-Why not just fail to load module if you fail to initialize pipefs? When is rpc_get_sb_net() going to fail?
+So if a #NM exception ever comes from kernel mode, it would indicate a
+serious bug. Trapping this with WARN_ON_ONCE() could prove helpful in
+finding and eliminating such bugs.
 
-> 
-> 
-> > Thanks,
-> > Tao
-> >
-> >>
-> >> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> >>
-> >> ---
-> >>   fs/nfs/blocklayout/blocklayout.c |    9 +--------
-> >>   1 files changed, 1 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
-> >> index acf7ac9..8211ffd 100644
-> >> --- a/fs/nfs/blocklayout/blocklayout.c
-> >> +++ b/fs/nfs/blocklayout/blocklayout.c
-> >> @@ -1032,7 +1032,7 @@ static struct dentry *nfs4blocklayout_register_net(struct net *net,
-> >>
-> >>   	pipefs_sb = rpc_get_sb_net(net);
-> >>   	if (!pipefs_sb)
-> >> -		return ERR_PTR(-ENOENT);
-> >> +		return 0;
-> >>   	dentry = nfs4blocklayout_register_sb(pipefs_sb, pipe);
-> >>   	rpc_put_sb_net(net);
-> >>   	return dentry;
-> >> @@ -1083,7 +1083,6 @@ static struct pernet_operations nfs4blocklayout_net_ops = {
-> >>
-> >>   static int __init nfs4blocklayout_init(void)
-> >>   {
-> >> -	struct vfsmount *mnt;
-> >>   	int ret;
-> >>
-> >>   	dprintk("%s: NFSv4 Block Layout Driver Registering...\n", __func__);
-> >> @@ -1093,12 +1092,6 @@ static int __init nfs4blocklayout_init(void)
-> >>   		goto out;
-> >>
-> >>   	init_waitqueue_head(&bl_wq);
-> >> -
-> >> -	mnt = rpc_get_mount();
-> >> -	if (IS_ERR(mnt)) {
-> >> -		ret = PTR_ERR(mnt);
-> >> -		goto out_remove;
-> >> -	}
-> >>   	ret = rpc_pipefs_notifier_register(&nfs4blocklayout_block);
-> >>   	if (ret)
-> >>   		goto out_remove;
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> 
-> 
-> --
-> Best regards,
-> Stanislav Kinsbursky
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+---
+ arch/x86/kernel/traps.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 6913369..953d5f6 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -777,6 +777,8 @@ EXPORT_SYMBOL_GPL(math_state_restore);
+ dotraplinkage void __kprobes
+ do_device_not_available(struct pt_regs *regs, long error_code)
+ {
++	WARN_ON_ONCE(!user_mode_vm(regs));
++
+ #ifdef CONFIG_MATH_EMULATION
+ 	if (read_cr0() & X86_CR0_EM) {
+ 		struct math_emu_info info = { };
+-- 
+1.7.5.4
+
+
