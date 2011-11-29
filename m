@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab1K2OFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 09:05:30 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54029 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab1K2OF3 (ORCPT
+	id S1755677Ab1K2OGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 09:06:53 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49627 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349Ab1K2OGw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 09:05:29 -0500
-Date: Tue, 29 Nov 2011 15:05:23 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4 RFC] rcu: New rcu_user_enter_irq() and
- rcu_user_exit_irq() APIs
-Message-ID: <20111129140520.GB20387@somewhere>
-References: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
- <1322515487-18690-5-git-send-email-fweisbec@gmail.com>
- <20111128215323.GF30852@leaf>
- <20111129010036.GS2346@linux.vnet.ibm.com>
+	Tue, 29 Nov 2011 09:06:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129010036.GS2346@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <86k46m8z1s.fsf@sumi.keithp.com>
+References: <CACVkyFdhpU1sQb-T-pXYkV8Ot27+LYxV_=FGd=aPLLyrD3-1dg@mail.gmail.com>
+	<86k46m8z1s.fsf@sumi.keithp.com>
+Date: Tue, 29 Nov 2011 15:06:51 +0100
+Message-ID: <CAGPN=9TpFOJ8316faVi8jGzO0-apj-yXkxMQXyApE1=uUmD-AQ@mail.gmail.com>
+Subject: Re: drivers/gpu/drm/i915/intel_dp.c problem with commit dc22ee6fc18ce0f15424e753e8473c306ece95c1
+From: Patrik Kullman <patrik.kullman@gmail.com>
+To: Keith Packard <keith.packard@intel.com>
+Cc: Jerker Buud <b.jerker@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 05:00:36PM -0800, Paul E. McKenney wrote:
-> On Mon, Nov 28, 2011 at 01:53:23PM -0800, Josh Triplett wrote:
-> > On Mon, Nov 28, 2011 at 10:24:47PM +0100, Frederic Weisbecker wrote:
-> > > A CPU running in adaptive tickless mode wants to enter into
-> > > RCU extended quiescent state while running in userspace. This
-> > > way we can shut down the tick that is usually needed on each
-> > > CPU for the needs of RCU.
-> > 
-> > Very awesome.  I've wanted to see this change for a long time.  Thanks!
-> 
-> I am a fan, also.  ;-)
-> 
-> [ . . . ]
-> 
-> > > @@ -503,6 +515,18 @@ void rcu_user_exit(void)
-> > >  	__rcu_idle_exit();
-> > >  }
-> > >  
-> > > +void rcu_user_exit_irq(void)
-> > > +{
-> > > +	unsigned long flags;
-> > > +	struct rcu_dynticks *rdtp;
-> > > +
-> > > +	local_irq_save(flags);
-> > > +	rdtp = &__get_cpu_var(rcu_dynticks);
-> > > +	WARN_ON_ONCE(rdtp->dynticks_nesting != 1);
-> > > +	rdtp->dynticks_nesting = (LLONG_MAX / 2) + 1;
-> > > +	local_irq_restore(flags);
-> > > +}
-> > > +
-> > 
-> > Any chance that either of these two needs a memory barrier of some kind,
-> > to prevent leakage of operations from between them?  Or can you count on
-> > no RCU-protected operations occurring during (or leaking into) the
-> > extended quiescent state?
-> 
-> There is no need for a memory barrier on rdtp->dynticks_nesting because
-> it is used (aside from state dumping) only by the local CPU.  In contrast,
-> changes to ->dynticks are visible to other CPUs, hence the memory barriers
-> around changes to ->dynticks.
-> 
-> Information flows within the CPU from ->dynticks_nesting to ->dynticks,
-> which is externally visible.
-> 
-> Frederic, given my hamhandedness on the first patch and given that you
-> mentioned its being less time critical, I will let you forward port
-> patches #3 and #4.  I have pushed the first two patches to -rcu, branch
-> rcu/dyntick.  I will be testing over the evening.
+I checked out a clean v3.2-rc3, applied this patch and rebooted.
 
-Sure. Also #3 and #4 are not used upstream, so I should probably rather
-carry these in my tree once I do a rebase against yours.
+It still doesn't work and Caps Lock still doesn't respond, but I get
+very subtle flickering of the screen, 2-3 seconds apart, kind of like
+different shades of black.
+
+It 'feels' as if some graphics card/link/monitor negotiation is taking place.
+
+2011/11/26 Keith Packard <keith.packard@intel.com>:
+> On Sat, 26 Nov 2011 09:50:41 -0800, Jerker Buud <b.jerker@gmail.com> wrote:
+>
+>> 245,247c245,246
+>> <       if (!is_edp(intel_dp) &&
+>> <           (intel_dp_link_required(intel_dp, mode->clock)
+>> <            > intel_dp_max_data_rate(max_link_clock, max_lanes)))
+>> ---
+>> >       if (intel_dp_link_required(intel_dp, mode->clock)
+>> >           > intel_dp_max_data_rate(max_link_clock, max_lanes))
+>
+> Ok, I think I understand why this change is required.
+>
+> These machines are 'optimized' to provide the bare minimum connection
+> necessary between the CPU and the eDP panel -- a single lane is hooked
+> up, which is just enough to run the link at 18bpp, but not enough to run
+> it at 24bpp.
+>
+> The problem here (in intel_dp_link_required) is that this is being
+> called to see which modes can be supported on the panel. Without the
+> CRTC being configured with the appropriate bpp value, this code assumes
+> 24bpp.
+>
+> I thought Adam Jackson had some code around that automatically switched
+> From 24bpp to 18bpp when the link didn't have enough bandwidth for
+> 24bpp, but I can't find that now.
+>
+> In any case, I think we need to centralize the bpp selection inside
+> intel_dp.c instead of having it in both places. Then, we can make that
+> depend on the requested mode as well as the machine configuration.
+>
+> Here's a patch which uses the VBT configured bpp value in this case. I'd
+> love to hear whether this suffices to resolve your problem.
+>
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 294f557..3e15479 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -212,10 +212,16 @@ intel_dp_link_required(struct intel_dp *intel_dp, int pixel_clock)
+>  {
+>        struct drm_crtc *crtc = intel_dp->base.base.crtc;
+>        struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+> -       int bpp = 24;
+> +       struct drm_device *dev = intel_dp->base.base.dev;
+> +       struct drm_i915_private *dev_priv = dev->dev_private;
+> +       int bpp;
+>
+>        if (intel_crtc)
+>                bpp = intel_crtc->bpp;
+> +       else if (intel_dp->base.type == INTEL_OUTPUT_EDP)
+> +               bpp = dev_priv->edp.bpp;
+> +       else
+> +               bpp = 24;
+>
+>        return (pixel_clock * bpp + 9) / 10;
+>  }
+>
+> --
+> keith.packard@intel.com
