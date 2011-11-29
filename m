@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab1K2VYu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 16:24:50 -0500
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:38719 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781Ab1K2VYt (ORCPT
+	id S1756800Ab1K2VZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 16:25:31 -0500
+Received: from eazy.amigager.de ([213.239.192.238]:51041 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab1K2VZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 16:24:49 -0500
-Date: Tue, 29 Nov 2011 22:24:24 +0100
-From: Udo Steinberg <udo@hypervisor.org>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: MCE/Package power limit notification
-Message-ID: <20111129222424.498469fe@x220.fritz.box>
-In-Reply-To: <493994B35A117E4F832F97C4719C4C04022D835792@orsmsx505.amr.corp.intel.com>
-References: <20111123160950.67860131@x220>
-	<987664A83D2D224EAE907B061CE93D53027D89B577@orsmsx505.amr.corp.intel.com>
-	<493994B35A117E4F832F97C4719C4C04022D835792@orsmsx505.amr.corp.intel.com>
-X-Mailer: X-Mailer 5.0 Gold
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/bdMKFzN1vlUQMfkcD9fO89C"; protocol="application/pgp-signature"
+	Tue, 29 Nov 2011 16:25:29 -0500
+Date: Tue, 29 Nov 2011 22:25:54 +0100
+From: Tino Keitel <tino.keitel@tikei.de>
+To: linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Artem S. Tashkinov" <t.artem@lycos.com>
+Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
+ metering applications has gone crackers
+Message-ID: <20111129212554.GA2955@mac.home>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	"Artem S. Tashkinov" <t.artem@lycos.com>
+References: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
+ <20111124200553.GA13353@mac.home>
+ <20111127110400.GA4672@mac.home>
+ <201111271245.57772.rjw@sisk.pl>
+ <20111128195533.GA26460@mac.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111128195533.GA26460@mac.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/bdMKFzN1vlUQMfkcD9fO89C
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 28, 2011 at 20:55:34 +0100, Tino Keitel wrote:
+> On Sun, Nov 27, 2011 at 12:45:57 +0100, Rafael J. Wysocki wrote:
+> > On Sunday, November 27, 2011, Tino Keitel wrote:
+> > > On Thu, Nov 24, 2011 at 21:05:53 +0100, Tino Keitel wrote:
+> > > > On Thu, Nov 24, 2011 at 10:30:15 +0000, Artem S. Tashkinov wrote:
+> > > > > Hello,
+> > > > > 
+> > > > > I'd like to report a weird regression in Linux 3.2 (running rc3 now) - all CPU metering applications have gone terribly mad
+> > > > > under this kernel:
+> > > > 
+> > > > I get the same using top, htop and the gnome system monitor with kernel
+> > > > 3.2 on a Sandy Bridge quad core box, running Debian unstable.
+> > > 
+> > > I just tested 3.2-rc2, and see the same bug.
+> > 
+> > I'm seeing that too on one of my test boxes, but not all the time
+> > (i.e. there are periods in which the readings are correct).  The other boxes
+> > I've tested with 3.2-rc are fine in that respect.
+> > 
+> > Also, it seems that it shows 100%-(real load) when it is wrong.  So, it looks
+> > like there's an overflow somewhere in the CPU load measuring code, at least
+> > on some CPUs.
+> 
+> Hi,
+> 
+> I reverted this commit and so far it looks good:
+> 
+> commit a25cac5198d4ff2842ccca63b423962848ad24b2
+> Author: Michal Hocko <mhocko@suse.cz>
+> Date:   Wed Aug 24 09:40:25 2011 +0200
+> 
+>     proc: Consider NO_HZ when printing idle and iowait times
+> 
+> I'll report back tomorrow how the kernel behaves.
 
-On Mon, 28 Nov 2011 14:50:47 -0800 Yu, Fenghua (YF) wrote:
+Hi,
 
-YF> I sent out a patch to remove the mcelog info. Could you try it and see =
-if it works for you?
-YF> https://lkml.org/lkml/2011/11/14/239
-YF>=20
-YF> Thanks.
-YF>=20
-YF> -Fenghua
+looks fine so far with the git tree from commit
+401d0069cb344f401bc9d264c31db55876ff78c0 and
+a25cac5198d4ff2842ccca63b423962848ad24b2 reverted.
 
-Hi Fenghua,
-
-Thanks for the patch. It works and eliminates the MCE warnings. What exactly
-are the BIOS issues mentioned in the patch description? Is BIOS programming
-some MSRs the wrong way?
-
-Cheers,
-
-	- Udo
-
---Sig_/bdMKFzN1vlUQMfkcD9fO89C
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7VTYgACgkQnhRzXSM7nSlMPQCeOnIm/1O2pqVBeN0GSPLQHXf1
-5SUAnjVBM6MU36DfNU77LhhDnxE2pD24
-=BXpU
------END PGP SIGNATURE-----
-
---Sig_/bdMKFzN1vlUQMfkcD9fO89C--
+Regards,
+Tino
