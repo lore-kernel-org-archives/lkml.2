@@ -1,777 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab1K2Moz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:44:55 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:23176
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755172Ab1K2Mmu (ORCPT
+	id S1754389Ab1K2MsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:48:20 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42476 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab1K2MsS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:42:50 -0500
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LVF9Z8-01-CSA-02
-X-M-MSG: 
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: <hpa@zytor.com>
-CC: <tglx@linutronix.de>, <mingo@elte.hu>, <suresh.b.siddha@intel.com>,
-        <eranian@google.com>, <brgerst@gmail.com>, <robert.richter@amd.com>,
-        <Andreas.Herrmann3@amd.com>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH 5/9] x86, xsave: remove unused code
-Date: Tue, 29 Nov 2011 13:41:24 +0100
-Message-ID: <1322570488-21798-6-git-send-email-hans.rosenfeld@amd.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
-References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+	Tue, 29 Nov 2011 07:48:18 -0500
+Message-ID: <1322570881.2921.230.camel@twins>
+Subject: Re: [RFC PATCH 0/6] ARM: Remove the __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ definition
+From: Peter Zijlstra <peterz@infradead.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Date: Tue, 29 Nov 2011 13:48:01 +0100
+In-Reply-To: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
+References: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patches to rework the fpu/xsave handling and signal frame setup have
-made a lot of code unused. This patch removes all this now useless stuff.
+On Tue, 2011-11-29 at 12:22 +0000, Catalin Marinas wrote:
+> Hi,
+> 
+> This set of patches removes the use of __ARCH_WANT_INTERRUPTS_ON_CTXSW
+> on ARM.
+> 
+> As a background, the ARM architecture versions consist of two main sets
+> with regards to the MMU switching needs:
+> 
+> 1. ARMv5 and earlier have VIVT caches and they require a full cache and
+>    TLB flush at every context switch.
+> 2. ARMv6 and later have VIPT caches and the TLBs are tagged with an ASID
+>    (application specific ID). The number of ASIDs is limited to 256 and
+>    the allocation algorithm requires IPIs when all the ASIDs have been
+>    used.
+> 
+> Both cases above require interrupts enabled during context switch for
+> latency reasons (1) or deadlock avoidance (2).
+> 
+> The first patch in the series introduces a new scheduler hook invoked
+> after the rq->lock is released and interrupts enabled. The subsequent
+> two patches change the ARM context switching code (for processors in
+> category 2 above) to use a reserved TTBR value instead of a reserved
+> ASID. The 4th patch removes the __ARCH_WANT_INTERRUPTS_ON_CTXSW
+> definition for ASID-capable processors by deferring the new ASID
+> allocation to the post-lock switch hook.
+> 
+> The last patch also removes __ARCH_WANT_INTERRUPTS_ON_CTXSW for ARMv5
+> and earlier processors. It defers the cpu_switch_mm call to the
+> post-lock switch hook. Since this is only running on UP systems and the
+> preemption is disabled during context switching, it assumes that the old
+> mm is still valid until the post-lock switch hook.
 
-Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Yeah, see how there's a if (mm) mmdrop(mm) after that.
+
+> The series has been tested on Cortex-A9 (vexpress) and ARM926
+> (versatile). Comments are welcome.
+
+Yay!!! Although there's a tiny merge conflict between your tree and tip,
+we moved kernel/sched.c around, you'll find it in kernel/sched/core.c
+after you merge up.
+
 ---
- arch/x86/include/asm/i387.h  |  167 --------------------------------
- arch/x86/include/asm/xsave.h |   51 ----------
- arch/x86/kernel/i387.c       |  219 ------------------------------------------
- arch/x86/kernel/traps.c      |   22 ----
- arch/x86/kernel/xsave.c      |  163 -------------------------------
- 5 files changed, 0 insertions(+), 622 deletions(-)
+Subject: sched: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Tue Nov 29 13:44:40 CET 2011
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index daab77f..687e550 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -29,8 +29,6 @@
- # include <asm/sigcontext32.h>
- # include <asm/user32.h>
- #else
--# define save_i387_xstate_ia32		save_i387_xstate
--# define restore_i387_xstate_ia32	restore_i387_xstate
- # define _fpstate_ia32		_fpstate
- # define _xstate_ia32		_xstate
- # define sig_xstate_ia32_size   sig_xstate_size
-@@ -44,7 +42,6 @@ extern void fpu_init(void);
- extern void mxcsr_feature_mask_init(void);
- extern int init_fpu(struct task_struct *child);
- extern asmlinkage void math_state_restore(void);
--extern void __math_state_restore(void);
- extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
- 
- extern void convert_from_fxsr(struct user_i387_ia32_struct *, struct task_struct *);
-@@ -108,35 +105,6 @@ static inline void sanitize_i387_state(struct task_struct *tsk)
- }
- 
- #ifdef CONFIG_X86_64
--static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
--{
--	int err;
--
--	/* See comment in fxsave() below. */
--#ifdef CONFIG_AS_FXSAVEQ
--	asm volatile("1:  fxrstorq %[fx]\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err)
--		     : [fx] "m" (*fx), "0" (0));
--#else
--	asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err)
--		     : [fx] "R" (fx), "m" (*fx), "0" (0));
--#endif
--	return err;
--}
--
- static inline void fxrstor(struct i387_fxsave_struct *fx)
- {
- 	/* See comment in fxsave() below. */
-@@ -149,48 +117,6 @@ static inline void fxrstor(struct i387_fxsave_struct *fx)
+Now that the last user is dead, remove support for
+__ARCH_WANT_INTERRUPTS_ON_CTXSW.
+
+Much-thanks-to: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/fork.c        |    4 ----
+ kernel/sched/core.c  |   40 +---------------------------------------
+ kernel/sched/sched.h |    6 ------
+ 3 files changed, 1 insertion(+), 49 deletions(-)
+
+Index: linux-2.6/kernel/fork.c
+===================================================================
+--- linux-2.6.orig/kernel/fork.c
++++ linux-2.6/kernel/fork.c
+@@ -1191,11 +1191,7 @@ static struct task_struct *copy_process(
  #endif
- }
- 
--static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
--{
--	int err;
--
--	/*
--	 * Clear the bytes not touched by the fxsave and reserved
--	 * for the SW usage.
--	 */
--	err = __clear_user(&fx->sw_reserved,
--			   sizeof(struct _fpx_sw_bytes));
--	if (unlikely(err))
--		return -EFAULT;
--
--	/* See comment in fxsave() below. */
--#ifdef CONFIG_AS_FXSAVEQ
--	asm volatile("1:  fxsaveq %[fx]\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err), [fx] "=m" (*fx)
--		     : "0" (0));
+ #ifdef CONFIG_TRACE_IRQFLAGS
+ 	p->irq_events = 0;
+-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+-	p->hardirqs_enabled = 1;
 -#else
--	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err), "=m" (*fx)
--		     : [fx] "R" (fx), "0" (0));
+ 	p->hardirqs_enabled = 0;
 -#endif
--	if (unlikely(err) &&
--	    __clear_user(fx, sizeof(struct i387_fxsave_struct)))
--		err = -EFAULT;
--	/* No need to clear here because the caller clears USED_MATH */
--	return err;
--}
+ 	p->hardirq_enable_ip = 0;
+ 	p->hardirq_enable_event = 0;
+ 	p->hardirq_disable_ip = _THIS_IP_;
+Index: linux-2.6/kernel/sched/core.c
+===================================================================
+--- linux-2.6.orig/kernel/sched/core.c
++++ linux-2.6/kernel/sched/core.c
+@@ -1460,25 +1460,6 @@ static void ttwu_queue_remote(struct tas
+ 	if (llist_add(&p->wake_entry, &cpu_rq(cpu)->wake_list))
+ 		smp_send_reschedule(cpu);
+ }
 -
- static inline void fpu_fxsave(struct fpu *fpu)
- {
- 	/* Using "rex64; fxsave %0" is broken because, if the memory operand
-@@ -221,21 +147,6 @@ static inline void fpu_fxsave(struct fpu *fpu)
- #else  /* CONFIG_X86_32 */
- 
- /* perform fxrstor iff the processor has extended states, otherwise frstor */
--static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+-static int ttwu_activate_remote(struct task_struct *p, int wake_flags)
 -{
--	/*
--	 * The "nop" is needed to make the instructions the same
--	 * length.
--	 */
--	alternative_input(
--		"nop ; frstor %1",
--		"fxrstor %1",
--		X86_FEATURE_FXSR,
--		"m" (*fx));
+-	struct rq *rq;
+-	int ret = 0;
 -
--	return 0;
+-	rq = __task_rq_lock(p);
+-	if (p->on_cpu) {
+-		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
+-		ttwu_do_wakeup(rq, p, wake_flags);
+-		ret = 1;
+-	}
+-	__task_rq_unlock(rq);
+-
+-	return ret;
+-
 -}
--
- static inline void fxrstor(struct i387_fxsave_struct *fx)
- {
+-#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ #endif /* CONFIG_SMP */
+ 
+ static int ttwu_share_cache(int this_cpu, int cpu)
+@@ -1559,21 +1540,8 @@ try_to_wake_up(struct task_struct *p, un
+ 	 * If the owning (remote) cpu is still in the middle of schedule() with
+ 	 * this task as prev, wait until its done referencing the task.
+ 	 */
+-	while (p->on_cpu) {
+-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+-		/*
+-		 * In case the architecture enables interrupts in
+-		 * context_switch(), we cannot busy wait, since that
+-		 * would lead to deadlocks when an interrupt hits and
+-		 * tries to wake up @prev. So bail and do a complete
+-		 * remote wakeup.
+-		 */
+-		if (ttwu_activate_remote(p, wake_flags))
+-			goto stat;
+-#else
++	while (p->on_cpu)
+ 		cpu_relax();
+-#endif
+-	}
  	/*
-@@ -303,69 +214,6 @@ static inline void fpu_clean(struct fpu *fpu)
- 		[addr] "m" (safe_address));
- }
+ 	 * Pairs with the smp_wmb() in finish_lock_switch().
+ 	 */
+@@ -1916,13 +1884,7 @@ static void finish_task_switch(struct rq
+ 	 */
+ 	prev_state = prev->state;
+ 	finish_arch_switch(prev);
+-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+-	local_irq_disable();
+-#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ 	perf_event_task_sched_in(prev, current);
+-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+-	local_irq_enable();
+-#endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ 	finish_lock_switch(rq, prev);
  
--static inline void fpu_save_init(struct fpu *fpu)
--{
--	if (use_xsave()) {
--		struct xsave_struct *xstate = &fpu->state->xsave;
--
--		fpu_xsave(xstate, -1);
--
--		/*
--		 * xsave header may indicate the init state of the FP.
--		 */
--		if (!(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
--			return;
--	} else if (use_fxsr()) {
--		fpu_fxsave(fpu);
--	} else {
--		asm volatile("fnsave %[fx]; fwait"
--			     : [fx] "=m" (fpu->state->fsave));
--		return;
--	}
--
--	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
--		asm volatile("fnclex");
--
--	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
--	   is pending.  Clear the x87 state here by setting it to fixed
--	   values. safe_address is a random variable that should be in L1 */
--	alternative_input(
--		ASM_NOP8 ASM_NOP2,
--		"emms\n\t"	  	/* clear stack tags */
--		"fildl %P[addr]",	/* set F?P to defined value */
--		X86_FEATURE_FXSAVE_LEAK,
--		[addr] "m" (safe_address));
--}
--
--static inline void __save_init_fpu(struct task_struct *tsk)
--{
--	fpu_save_init(&tsk->thread.fpu);
--	task_thread_info(tsk)->status &= ~TS_USEDFPU;
--}
--
--static inline int fpu_restore_checking(struct fpu *fpu)
--{
--	if (use_xsave())
--		return xrstor_checking(&fpu->state->xsave, -1);
--	else
--		return fxrstor_checking(&fpu->state->fxsave);
--}
--
--/*
-- * Signal frame handlers...
-- */
--extern int save_i387_xstate(void __user *buf);
--extern int restore_i387_xstate(void __user *buf);
--
--static inline void __unlazy_fpu(struct task_struct *tsk)
--{
--	if (task_thread_info(tsk)->status & TS_USEDFPU) {
--		__save_init_fpu(tsk);
--		stts();
--	} else
--		tsk->fpu_counter = 0;
--}
--
- static inline void __clear_fpu(struct task_struct *tsk)
- {
- 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
-@@ -434,21 +282,6 @@ static inline void irq_ts_restore(int TS_state)
- /*
-  * These disable preemption on their own and are safe
-  */
--static inline void save_init_fpu(struct task_struct *tsk)
--{
--	preempt_disable();
--	__save_init_fpu(tsk);
--	stts();
--	preempt_enable();
--}
--
--static inline void unlazy_fpu(struct task_struct *tsk)
--{
--	preempt_disable();
--	__unlazy_fpu(tsk);
--	preempt_enable();
--}
--
- static inline void clear_fpu(struct task_struct *tsk)
- {
- 	preempt_disable();
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 42d02b9..8d5bb0e 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -65,26 +65,6 @@ static inline void restore_xstates(struct task_struct *tsk, u64 mask)
- 	preempt_enable();
- }
- 
--static inline int xrstor_checking(struct xsave_struct *fx, u64 mask)
--{
--	int err;
--	u32 lmask = mask;
--	u32 hmask = mask >> 32;
--
--	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b, 3b)
--		     : [err] "=r" (err)
--		     : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask), "0" (0)
--		     : "memory");
--
--	return err;
--}
--
- static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
- {
- 	u32 lmask = mask;
-@@ -95,37 +75,6 @@ static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
- 		     :   "memory");
- }
- 
--static inline int xsave_checking(struct xsave_struct __user *buf)
--{
--	int err;
--
--	/*
--	 * Clear the xsave header first, so that reserved fields are
--	 * initialized to zero.
--	 */
--	err = __clear_user(&buf->xsave_hdr,
--			   sizeof(struct xsave_hdr_struct));
--	if (unlikely(err))
--		return -EFAULT;
--
--	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
--		     "2:\n"
--		     ".section .fixup,\"ax\"\n"
--		     "3:  movl $-1,%[err]\n"
--		     "    jmp  2b\n"
--		     ".previous\n"
--		     _ASM_EXTABLE(1b,3b)
--		     : [err] "=r" (err)
--		     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
--		     : "memory");
--
--	if (unlikely(err) && __clear_user(buf, xstate_size))
--		err = -EFAULT;
--
--	/* No need to clear here because the caller clears USED_MATH */
--	return err;
--}
--
- static inline void xsave_state(struct xsave_struct *fx, u64 mask)
- {
- 	u32 lmask = mask;
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index e1b8a42..49d23a5 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -487,225 +487,6 @@ int fpregs_set(struct task_struct *target, const struct user_regset *regset,
- }
- 
- /*
-- * Signal frame handlers.
-- */
--
--static inline int save_i387_fsave(struct _fpstate_ia32 __user *buf)
--{
--	struct task_struct *tsk = current;
--	struct i387_fsave_struct *fp = &tsk->thread.fpu.state->fsave;
--
--	fp->status = fp->swd;
--	if (__copy_to_user(buf, fp, sizeof(struct i387_fsave_struct)))
--		return -1;
--	return 1;
--}
--
--static int save_i387_fxsave(struct _fpstate_ia32 __user *buf)
--{
--	struct task_struct *tsk = current;
--	struct i387_fxsave_struct *fx = &tsk->thread.fpu.state->fxsave;
--	struct user_i387_ia32_struct env;
--	int err = 0;
--
--	convert_from_fxsr(&env, tsk);
--	if (__copy_to_user(buf, &env, sizeof(env)))
--		return -1;
--
--	err |= __put_user(fx->swd, &buf->status);
--	err |= __put_user(X86_FXSR_MAGIC, &buf->magic);
--	if (err)
--		return -1;
--
--	if (__copy_to_user(&buf->_fxsr_env[0], fx, xstate_size))
--		return -1;
--	return 1;
--}
--
--static int save_i387_xsave(void __user *buf)
--{
--	struct task_struct *tsk = current;
--	struct _fpstate_ia32 __user *fx = buf;
--	int err = 0;
--
--
--	sanitize_i387_state(tsk);
--
--	/*
--	 * For legacy compatible, we always set FP/SSE bits in the bit
--	 * vector while saving the state to the user context.
--	 * This will enable us capturing any changes(during sigreturn) to
--	 * the FP/SSE bits by the legacy applications which don't touch
--	 * xstate_bv in the xsave header.
--	 *
--	 * xsave aware applications can change the xstate_bv in the xsave
--	 * header as well as change any contents in the memory layout.
--	 * xrestore as part of sigreturn will capture all the changes.
--	 */
--	tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv |= XSTATE_FPSSE;
--
--	if (save_i387_fxsave(fx) < 0)
--		return -1;
--
--	err = __copy_to_user(&fx->sw_reserved, &fx_sw_reserved_ia32,
--			     sizeof(struct _fpx_sw_bytes));
--	err |= __put_user(FP_XSTATE_MAGIC2,
--			  (__u32 __user *) (buf + sig_xstate_ia32_size
--					    - FP_XSTATE_MAGIC2_SIZE));
--	if (err)
--		return -1;
--
--	return 1;
--}
--
--int save_i387_xstate_ia32(void __user *buf)
--{
--	struct _fpstate_ia32 __user *fp = (struct _fpstate_ia32 __user *) buf;
--	struct task_struct *tsk = current;
--
--	if (!used_math())
--		return 0;
--
--	if (!access_ok(VERIFY_WRITE, buf, sig_xstate_ia32_size))
--		return -EACCES;
--	/*
--	 * This will cause a "finit" to be triggered by the next
--	 * attempted FPU operation by the 'current' process.
--	 */
--	clear_used_math();
--
--	if (!HAVE_HWFP) {
--		return fpregs_soft_get(current, NULL,
--				       0, sizeof(struct user_i387_ia32_struct),
--				       NULL, fp) ? -1 : 1;
--	}
--
--	unlazy_fpu(tsk);
--
--	if (cpu_has_xsave)
--		return save_i387_xsave(fp);
--	if (cpu_has_fxsr)
--		return save_i387_fxsave(fp);
--	else
--		return save_i387_fsave(fp);
--}
--
--static inline int restore_i387_fsave(struct _fpstate_ia32 __user *buf)
--{
--	struct task_struct *tsk = current;
--
--	return __copy_from_user(&tsk->thread.fpu.state->fsave, buf,
--				sizeof(struct i387_fsave_struct));
--}
--
--static int restore_i387_fxsave(struct _fpstate_ia32 __user *buf,
--			       unsigned int size)
--{
--	struct task_struct *tsk = current;
--	struct user_i387_ia32_struct env;
--	int err;
--
--	err = __copy_from_user(&tsk->thread.fpu.state->fxsave, &buf->_fxsr_env[0],
--			       size);
--	/* mxcsr reserved bits must be masked to zero for security reasons */
--	tsk->thread.fpu.state->fxsave.mxcsr &= mxcsr_feature_mask;
--	if (err || __copy_from_user(&env, buf, sizeof(env)))
--		return 1;
--	convert_to_fxsr(tsk, &env);
--
--	return 0;
--}
--
--static int restore_i387_xsave(void __user *buf)
--{
--	struct _fpx_sw_bytes fx_sw_user;
--	struct _fpstate_ia32 __user *fx_user =
--			((struct _fpstate_ia32 __user *) buf);
--	struct i387_fxsave_struct __user *fx =
--		(struct i387_fxsave_struct __user *) &fx_user->_fxsr_env[0];
--	struct xsave_hdr_struct *xsave_hdr =
--				&current->thread.fpu.state->xsave.xsave_hdr;
--	u64 mask;
--	int err;
--
--	if (check_for_xstate(fx, sig_xstate_ia32_size -
--			     offsetof(struct _fpstate_ia32, _fxsr_env),
--			     &fx_sw_user))
--		goto fx_only;
--
--	mask = fx_sw_user.xstate_bv;
--
--	err = restore_i387_fxsave(buf, fx_sw_user.xstate_size);
--
--	xsave_hdr->xstate_bv &= pcntxt_mask;
--	/*
--	 * These bits must be zero.
--	 */
--	xsave_hdr->reserved1[0] = xsave_hdr->reserved1[1] = 0;
--
--	/*
--	 * Init the state that is not present in the memory layout
--	 * and enabled by the OS.
--	 */
--	mask = ~(pcntxt_mask & ~mask);
--	xsave_hdr->xstate_bv &= mask;
--
--	return err;
--fx_only:
--	/*
--	 * Couldn't find the extended state information in the memory
--	 * layout. Restore the FP/SSE and init the other extended state
--	 * enabled by the OS.
--	 */
--	xsave_hdr->xstate_bv = XSTATE_FPSSE;
--	return restore_i387_fxsave(buf, sizeof(struct i387_fxsave_struct));
--}
--
--int restore_i387_xstate_ia32(void __user *buf)
--{
--	int err;
--	struct task_struct *tsk = current;
--	struct _fpstate_ia32 __user *fp = (struct _fpstate_ia32 __user *) buf;
--
--	if (HAVE_HWFP)
--		clear_fpu(tsk);
--
--	if (!buf) {
--		if (used_math()) {
--			clear_fpu(tsk);
--			clear_used_math();
--		}
--
--		return 0;
--	} else
--		if (!access_ok(VERIFY_READ, buf, sig_xstate_ia32_size))
--			return -EACCES;
--
--	if (!used_math()) {
--		err = init_fpu(tsk);
--		if (err)
--			return err;
--	}
--
--	if (HAVE_HWFP) {
--		if (cpu_has_xsave)
--			err = restore_i387_xsave(buf);
--		else if (cpu_has_fxsr)
--			err = restore_i387_fxsave(fp, sizeof(struct
--							   i387_fxsave_struct));
--		else
--			err = restore_i387_fsave(fp);
--	} else {
--		err = fpregs_soft_set(current, NULL,
--				      0, sizeof(struct user_i387_ia32_struct),
--				      NULL, fp) != 0;
--	}
--	set_used_math();
--
--	return err;
--}
--
--/*
-  * FPU state for core dumps.
-  * This is only used for a.out dumps now.
-  * It is declared generically using elf_fpregset_t (which is
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 95ae50d..f0946aa 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -719,28 +719,6 @@ asmlinkage void __attribute__((weak)) smp_threshold_interrupt(void)
- }
- 
- /*
-- * __math_state_restore assumes that cr0.TS is already clear and the
-- * fpu state is all ready for use.  Used during context switch.
-- */
--void __math_state_restore(void)
--{
--	struct thread_info *thread = current_thread_info();
--	struct task_struct *tsk = thread->task;
--
--	/*
--	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
--	 */
--	if (unlikely(fpu_restore_checking(&tsk->thread.fpu))) {
--		stts();
--		force_sig(SIGSEGV, tsk);
--		return;
--	}
--
--	thread->status |= TS_USEDFPU;	/* So we fnsave on switch_to() */
--	tsk->fpu_counter++;
--}
--
--/*
-  * 'math_state_restore()' saves the current math information in the
-  * old math state array, and gets the new ones from the current task
-  *
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index d35adf8..ca5812c 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -251,169 +251,6 @@ int save_xstates_sigframe(void __user *buf, unsigned int size)
- 	return 1;
- }
- 
--#ifdef CONFIG_X86_64
--int save_i387_xstate(void __user *buf)
--{
--	struct task_struct *tsk = current;
--	int err = 0;
--
--	if (!access_ok(VERIFY_WRITE, buf, sig_xstate_size))
--		return -EACCES;
--
--	BUG_ON(sig_xstate_size < xstate_size);
--
--	if ((unsigned long)buf % 64)
--		printk("save_i387_xstate: bad fpstate %p\n", buf);
--
--	if (!used_math())
--		return 0;
--
--	if (task_thread_info(tsk)->status & TS_USEDFPU) {
--		if (use_xsave())
--			err = xsave_checking(buf);
--		else
--			err = fxsave_user(buf);
--
--		if (err)
--			return err;
--		task_thread_info(tsk)->status &= ~TS_USEDFPU;
--		stts();
--	} else {
--		sanitize_i387_state(tsk);
--		if (__copy_to_user(buf, &tsk->thread.fpu.state->fxsave,
--				   xstate_size))
--			return -1;
--	}
--
--	clear_used_math(); /* trigger finit */
--
--	if (use_xsave()) {
--		struct _fpstate __user *fx = buf;
--		struct _xstate __user *x = buf;
--		u64 xstate_bv;
--
--		err = __copy_to_user(&fx->sw_reserved, &fx_sw_reserved,
--				     sizeof(struct _fpx_sw_bytes));
--
--		err |= __put_user(FP_XSTATE_MAGIC2,
--				  (__u32 __user *) (buf + sig_xstate_size
--						    - FP_XSTATE_MAGIC2_SIZE));
--
--		/*
--		 * Read the xstate_bv which we copied (directly from the cpu or
--		 * from the state in task struct) to the user buffers and
--		 * set the FP/SSE bits.
--		 */
--		err |= __get_user(xstate_bv, &x->xstate_hdr.xstate_bv);
--
--		/*
--		 * For legacy compatible, we always set FP/SSE bits in the bit
--		 * vector while saving the state to the user context. This will
--		 * enable us capturing any changes(during sigreturn) to
--		 * the FP/SSE bits by the legacy applications which don't touch
--		 * xstate_bv in the xsave header.
--		 *
--		 * xsave aware apps can change the xstate_bv in the xsave
--		 * header as well as change any contents in the memory layout.
--		 * xrestore as part of sigreturn will capture all the changes.
--		 */
--		xstate_bv |= XSTATE_FPSSE;
--
--		err |= __put_user(xstate_bv, &x->xstate_hdr.xstate_bv);
--
--		if (err)
--			return err;
--	}
--
--	return 1;
--}
--
--/*
-- * Restore the extended state if present. Otherwise, restore the FP/SSE
-- * state.
-- */
--static int restore_user_xstate(void __user *buf)
--{
--	struct _fpx_sw_bytes fx_sw_user;
--	u64 mask;
--	int err;
--
--	if (((unsigned long)buf % 64) ||
--	     check_for_xstate(buf, sig_xstate_size, &fx_sw_user))
--		goto fx_only;
--
--	mask = fx_sw_user.xstate_bv;
--
--	/*
--	 * restore the state passed by the user.
--	 */
--	err = xrstor_checking((__force struct xsave_struct *)buf, mask);
--	if (err)
--		return err;
--
--	/*
--	 * init the state skipped by the user.
--	 */
--	mask = pcntxt_mask & ~mask;
--	if (unlikely(mask))
--		xrstor_state(init_xstate_buf, mask);
--
--	return 0;
--
--fx_only:
--	/*
--	 * couldn't find the extended state information in the
--	 * memory layout. Restore just the FP/SSE and init all
--	 * the other extended state.
--	 */
--	xrstor_state(init_xstate_buf, pcntxt_mask & ~XSTATE_FPSSE);
--	return fxrstor_checking((__force struct i387_fxsave_struct *)buf);
--}
--
--/*
-- * This restores directly out of user space. Exceptions are handled.
-- */
--int restore_i387_xstate(void __user *buf)
--{
--	struct task_struct *tsk = current;
--	int err = 0;
--
--	if (!buf) {
--		if (used_math())
--			goto clear;
--		return 0;
--	} else
--		if (!access_ok(VERIFY_READ, buf, sig_xstate_size))
--			return -EACCES;
--
--	if (!used_math()) {
--		err = init_fpu(tsk);
--		if (err)
--			return err;
--	}
--
--	if (!(task_thread_info(current)->status & TS_USEDFPU)) {
--		clts();
--		task_thread_info(current)->status |= TS_USEDFPU;
--	}
--	if (use_xsave())
--		err = restore_user_xstate(buf);
--	else
--		err = fxrstor_checking((__force struct i387_fxsave_struct *)
--				       buf);
--	if (unlikely(err)) {
--		/*
--		 * Encountered an error while doing the restore from the
--		 * user buffer, clear the fpu state.
--		 */
--clear:
--		clear_fpu(tsk);
--		clear_used_math();
--	}
--	return err;
--}
+ 	fire_sched_in_preempt_notifiers(current);
+Index: linux-2.6/kernel/sched/sched.h
+===================================================================
+--- linux-2.6.orig/kernel/sched/sched.h
++++ linux-2.6/kernel/sched/sched.h
+@@ -685,11 +685,7 @@ static inline void prepare_lock_switch(s
+ 	 */
+ 	next->on_cpu = 1;
+ #endif
+-#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+-	raw_spin_unlock_irq(&rq->lock);
+-#else
+ 	raw_spin_unlock(&rq->lock);
 -#endif
--
- int restore_xstates_sigframe(void __user *buf, unsigned int size)
- {
- #if defined(CONFIG_X86_32) || defined(CONFIG_IA32_EMULATION)
--- 
-1.7.5.4
-
+ }
+ 
+ static inline void finish_lock_switch(struct rq *rq, struct task_struct *prev)
+@@ -703,9 +699,7 @@ static inline void finish_lock_switch(st
+ 	smp_wmb();
+ 	prev->on_cpu = 0;
+ #endif
+-#ifndef __ARCH_WANT_INTERRUPTS_ON_CTXSW
+ 	local_irq_enable();
+-#endif
+ }
+ #endif /* __ARCH_WANT_UNLOCKED_CTXSW */
+ 
 
