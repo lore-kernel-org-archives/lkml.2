@@ -1,113 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab1K2VQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 16:16:55 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38772 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756501Ab1K2VQy (ORCPT
+	id S1756777Ab1K2VVG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 16:21:06 -0500
+Received: from oproxy9.bluehost.com ([69.89.24.6]:40595 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756501Ab1K2VVC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 16:16:54 -0500
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage metering applications has gone crackers
-Date: Tue, 29 Nov 2011 22:16:48 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.3; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
-In-Reply-To: <1718181782.740375.1322130615898.JavaMail.mail@webmail19>
+	Tue, 29 Nov 2011 16:21:02 -0500
+Message-ID: <4ED55A78.9060704@xenotime.net>
+Date: Tue, 29 Nov 2011 14:19:36 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org, pebolle@tiscali.nl,
+        mad_soft@inbox.ru
+Subject: Re: [RFC v6]Trivial: Fix typos in various parts of the kernel, and
+ fix some comments.
+References: <1322541060-26444-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1322541060-26444-1-git-send-email-justinmattock@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111292216.48928.maciej.rutecki@gmail.com>
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 24 listopada 2011 o 11:30:15 Artem S. Tashkinov wrote:
-> Hello,
+On 11/28/2011 08:31 PM, Justin P. Mattock wrote:
+> From: "Justin P. Mattock" <justinmattock@gmail.com>
 > 
-> I'd like to report a weird regression in Linux 3.2 (running rc3 now) - all
-> CPU metering applications have gone terribly mad under this kernel:
+> The below patch fixes some typos in various parts of the kernel, as well as fixes some comments.
+> Please let me know if I missed anything, and I will try to get it changed and resent.
 > 
-> Here are two text snapshots of htop:
-> 
->   1  [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]
->     Tasks: 135 total, 1 running 2 
-> [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]    
-> Load average: 0.00 0.01 0.05 3 
-> [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]    
-> Uptime: 00:27:49 4 
-> [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]    
-> Load: 0.00 Mem[||||||||||||                                             
-> 544/8093MB]    
-> Avg[||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]
-> 
->  IORR  IOWR    IO   PID USER     PRI  NI  VIRT   RES   SHR S CPU% MEM%  
-> TIME+  Command 0     0     0  3529 root      20   0 70052 52244 19324 S
-> 300.  0.6  0:25.93 /usr/bin/X -br 0     0     0  3678 user      20   0
-> 33952 10220  8448 S 100.  0.1  0:03.58 gkrellm 0     0     0  3772 user   
->   20   0 32144 13960  9532 S 100.  0.2  0:07.46 konsole [kdeinit] --noxft
-> 0     0     0  6061 user      20   0  2780  1276   960 R 100.  0.0 
-> 0:00.01 htop 0     0     0     1 root      20   0  2884  1376  1168 S  0.0
->  0.0  0:01.00 /sbin/init 0     0     0     2 root      20   0     0     0 
->    0 S  0.0  0.0  0:00.00 kthreadd
-> 
-> 
->   1  [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]
->     Tasks: 135 total, 1 running 2 
-> [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]    
-> Load average: 0.00 0.01 0.05 3 
-> [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]    
-> Uptime: 00:28:43 4 
-> [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]    
-> Load: 0.00 Mem[||||||||||||                                             
-> 545/8093MB]    
-> Avg[||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||100.0%]
-> 
->  IORR  IOWR    IO   PID USER     PRI  NI  VIRT   RES   SHR S CPU% MEM%  
-> TIME+  Command 0     0     0  6061 user      20   0  2780  1288   972 R
-> 57.0  0.0  0:00.11 htop 0     0     0  5243 user      20   0  559M  318M
-> 30928 S 57.0  3.9  0:26.07 /opt/firefox/firefox 0     0     0  3687 user  
->    20   0  108M 39124 23564 S 57.0  0.5  0:06.50 kedit 0     0     0  3637
-> user      20   0 26960  5572  4288 S 57.0  0.1  0:00.02 klauncher
-> [kdeinit] --new-startup 0     0     0  3529 root      20   0 70052 52244
-> 19324 S  0.0  0.6  0:26.71 /usr/bin/X -br
-> 
-> Interestingly with this madness going on, the internal kernel average load
-> counter works properly:
-> 
-> [root@localhost ~]# uptime
->  16:20:38 up 44 min,  2 users,  load average: 0.02, 0.04, 0.05
-> 
-> Right at this moment all process viewers report 400% CPU load (I have 4 CPU
-> cores), either 400% loaded by user processes or 200% by system and 200% by
-> user processes.
-> 
-> Graphically it looks this way:
-> http://img717.imageshack.us/img717/6495/top2b.png
-> 
-> I'm not running any CPU intensive applications at the moment at all.
-> 
-> My .config file can be downloaded here: http://ompldr.org/iYmZneg
-> 
-> My distro is Fedora 14 i686.
-> 
-> Best wishes,
-> 
-> Artem
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: pebolle@tiscali.nl
+> Cc: mad_soft@inbox.ru
+> Cc: rdunlap@xenotime.net
 
-Seems be similar to:
-http://marc.info/?l=linux-kernel&m=132156832124314&w=2
-http://marc.info/?l=linux-kernel&m=132164909313594&w=2
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-Regards
+Thanks.
+
+> ---
+>  arch/arm/plat-omap/include/plat/serial.h           |    2 +-
+>  arch/powerpc/include/asm/io.h                      |    2 +-
+>  arch/powerpc/include/asm/keylargo.h                |    2 +-
+>  arch/powerpc/mm/numa.c                             |    2 +-
+>  arch/sparc/kernel/smp_64.c                         |    2 +-
+>  drivers/acpi/acpica/hwxface.c                      |    2 +-
+>  drivers/block/xen-blkback/xenbus.c                 |    2 +-
+>  drivers/char/ipmi/ipmi_bt_sm.c                     |    2 +-
+>  drivers/edac/ppc4xx_edac.c                         |    2 +-
+>  drivers/media/video/zoran/zoran_driver.c           |    2 +-
+>  drivers/message/fusion/lsi/mpi_ioc.h               |    2 +-
+>  drivers/net/irda/nsc-ircc.c                        |    2 +-
+>  drivers/net/irda/via-ircc.c                        |    4 ++--
+>  drivers/net/irda/w83977af_ir.c                     |    2 +-
+>  drivers/net/wimax/i2400m/i2400m.h                  |    2 +-
+>  drivers/net/wireless/rtlwifi/rtl8192de/hw.c        |    4 ++--
+>  drivers/parport/parport_mfc3.c                     |    2 +-
+>  drivers/scsi/aic7xxx/aicasm/aicasm.c               |    2 +-
+>  drivers/scsi/ips.c                                 |    2 +-
+>  drivers/scsi/qla4xxx/ql4_fw.h                      |    2 +-
+>  drivers/scsi/vmw_pvscsi.c                          |    2 +-
+>  .../comedi/drivers/addi-data/hwdrv_apci3200.c      |    2 +-
+>  drivers/staging/cxt1e1/libsbew.h                   |    2 +-
+>  drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ++--
+>  drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |    2 +-
+>  drivers/staging/iio/industrialio-trigger.c         |    2 +-
+>  drivers/staging/sep/sep_driver.c                   |    2 +-
+>  drivers/staging/tidspbridge/Kconfig                |    2 +-
+>  drivers/staging/tidspbridge/rmgr/dbdcd.c           |    2 +-
+>  drivers/usb/host/hwa-hc.c                          |    2 +-
+>  drivers/usb/host/imx21-hcd.c                       |    2 +-
+>  drivers/usb/otg/fsl_otg.c                          |    2 +-
+>  drivers/uwb/i1480/dfu/usb.c                        |    2 +-
+>  fs/btrfs/inode.c                                   |    2 +-
+>  fs/ext3/inode.c                                    |    2 +-
+>  fs/ext4/inode.c                                    |    2 +-
+>  fs/nfsd/nfs4state.c                                |    2 +-
+>  fs/ocfs2/file.c                                    |    2 +-
+>  fs/xfs/xfs_file.c                                  |    6 +++---
+>  fs/xfs/xfs_log_cil.c                               |    2 +-
+>  include/drm/drmP.h                                 |    2 +-
+>  include/linux/wanrouter.h                          |    2 +-
+>  include/net/mac80211.h                             |    2 +-
+>  net/ipv4/ip_fragment.c                             |    2 +-
+>  net/mac80211/work.c                                |    2 +-
+>  net/sctp/endpointola.c                             |    2 +-
+>  46 files changed, 51 insertions(+), 51 deletions(-)
+
+
 -- 
-Maciej Rutecki
-http://www.mrutecki.pl
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
