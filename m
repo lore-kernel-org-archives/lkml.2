@@ -1,214 +1,777 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab1K2MoP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:44:15 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52648 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755227Ab1K2MoM (ORCPT
+	id S1755248Ab1K2Moz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:44:55 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:23176
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755172Ab1K2Mmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:44:12 -0500
-Message-ID: <4ED4D398.3070506@gmail.com>
-Date: Tue, 29 Nov 2011 14:44:08 +0200
-From: Rares Aioanei <krnl.list@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	Tue, 29 Nov 2011 07:42:50 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LVF9Z8-01-CSA-02
+X-M-MSG: 
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: <hpa@zytor.com>
+CC: <tglx@linutronix.de>, <mingo@elte.hu>, <suresh.b.siddha@intel.com>,
+        <eranian@google.com>, <brgerst@gmail.com>, <robert.richter@amd.com>,
+        <Andreas.Herrmann3@amd.com>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>
+Subject: [PATCH 5/9] x86, xsave: remove unused code
+Date: Tue, 29 Nov 2011 13:41:24 +0100
+Message-ID: <1322570488-21798-6-git-send-email-hans.rosenfeld@amd.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
+References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
 MIME-Version: 1.0
-To: Tarkan Erimer <tarkan.erimer@f-secure.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] uvcvideo is broken on Linux-3.2-rc3
-References: <4ED4BD22.3070003@f-secure.com>
-In-Reply-To: <4ED4BD22.3070003@f-secure.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2011 01:08 PM, Tarkan Erimer wrote:
-> Hi,
->
-> When I initiate any webcam software like Cheese, Kamoso, skype etc. 
-> I'm having the below message at dmesg :
->
-> [ 1171.856931] uvcvideo: Failed to submit URB 0 (-28).
-> [ 1191.728944] uvcvideo: Failed to submit URB 0 (-28).
-> [ 1191.728959] uvcvideo 1-1.5:1.1: resume error -28
-> [ 1192.028821] uvcvideo: Failed to query (GET_DEF) UVC control 3 on 
-> unit 2: -110 (exp. 2).
-> [ 1192.106345] uvcvideo: Failed to query (GET_DEF) UVC control 3 on 
-> unit 2: -32 (exp. 2).
-> [ 1605.542802] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.549179] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.555584] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.562031] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.568382] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.575002] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.581982] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.588635] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.595000] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.601328] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
-> [ 1605.607702] uvcvideo: Failed to query (130) UVC probe control : -32 
-> (exp. 26).
->
->
->
-> Also, below is the output of "v4l-info" :
->
->
-> linux-gpq3:~ # v4l-info
->
-> ### v4l2 device info [/dev/video0] ###
-> general info
->     VIDIOC_QUERYCAP
->         driver                  : "uvcvideo"
->         card                    : "Laptop_Integrated_Webcam_HD"
->         bus_info                : "usb-0000:00:1a.0-1.5"
->         version                 : 3.2.0
->         capabilities            : 0x4000001 [VIDEO_CAPTURE,STREAMING]
->
-> standards
->
-> inputs
->     VIDIOC_ENUMINPUT(0)
->         index                   : 0
->         name                    : "Camera 1"
->         type                    : CAMERA
->         audioset                : 0
->         tuner                   : 0
->         std                     : 0x0 []
->         status                  : 0x0 []
->
-> video capture
->     VIDIOC_ENUM_FMT(0,VIDEO_CAPTURE)
->         index                   : 0
->         type                    : VIDEO_CAPTURE
->         flags                   : 0
->         description             : "YUV 4:2:2 (YUYV)"
->         pixelformat             : 0x56595559 [YUYV]
->     VIDIOC_ENUM_FMT(1,VIDEO_CAPTURE)
->         index                   : 1
->         type                    : VIDEO_CAPTURE
->         flags                   : 1
->         description             : "MJPEG"
->         pixelformat             : 0x47504a4d [MJPG]
->     VIDIOC_G_FMT(VIDEO_CAPTURE)
->         type                    : VIDEO_CAPTURE
->         fmt.pix.width           : 640
->         fmt.pix.height          : 480
->         fmt.pix.pixelformat     : 0x56595559 [YUYV]
->         fmt.pix.field           : NONE
->         fmt.pix.bytesperline    : 1280
->         fmt.pix.sizeimage       : 614400
->         fmt.pix.colorspace      : SRGB
->         fmt.pix.priv            : 0
->
-> controls
->     VIDIOC_QUERYCTRL(BASE+0)
->         id                      : 9963776
->         type                    : INTEGER
->         name                    : "Brightness"
->         minimum                 : -64
->         maximum                 : 64
->         step                    : 1
->         default_value           : 0
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+1)
->         id                      : 9963777
->         type                    : INTEGER
->         name                    : "Contrast"
->         minimum                 : 0
->         maximum                 : 95
->         step                    : 1
->         default_value           : 0
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+2)
->         id                      : 9963778
->         type                    : INTEGER
->         name                    : "Saturation"
->         minimum                 : 0
->         maximum                 : 100
->         step                    : 1
->         default_value           : 64
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+3)
->         id                      : 9963779
->         type                    : INTEGER
->         name                    : "Hue"
->         minimum                 : -2000
->         maximum                 : 2000
->         step                    : 1
->         default_value           : 0
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+12)
->         id                      : 9963788
->         type                    : BOOLEAN
->         name                    : "White Balance Temperature, Auto"
->         minimum                 : 0
->         maximum                 : 1
->         step                    : 1
->         default_value           : 1
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+16)
->         id                      : 9963792
->         type                    : INTEGER
->         name                    : "Gamma"
->         minimum                 : 100
->         maximum                 : 300
->         step                    : 1
->         default_value           : 100
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+24)
->         id                      : 9963800
->         type                    : MENU
->         name                    : "Power Line Frequency"
->         minimum                 : 0
->         maximum                 : 2
->         step                    : 1
->         default_value           : 0
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+26)
->         id                      : 9963802
->         type                    : INTEGER
->         name                    : "White Balance Temperature"
->         minimum                 : 2800
->         maximum                 : 6500
->         step                    : 1
->         default_value           : 4600
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+27)
->         id                      : 9963803
->         type                    : INTEGER
->         name                    : "Sharpness"
->         minimum                 : 1
->         maximum                 : 7
->         step                    : 1
->         default_value           : 2
->         flags                   : 0
->     VIDIOC_QUERYCTRL(BASE+28)
->         id                      : 9963804
->         type                    : INTEGER
->         name                    : "Backlight Compensation"
->         minimum                 : 0
->         maximum                 : 3
->         step                    : 1
->         default_value           : 3
->         flags                   : 0
->
->
-> PS : The same hardware works perfectly with pre <= Linux-3.1
-I can confirm this with a Microsoft LifeCam webcam and kernel 
-3.2.0-rc3-00023-g401d006.
+The patches to rework the fpu/xsave handling and signal frame setup have
+made a lot of code unused. This patch removes all this now useless stuff.
 
+Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+---
+ arch/x86/include/asm/i387.h  |  167 --------------------------------
+ arch/x86/include/asm/xsave.h |   51 ----------
+ arch/x86/kernel/i387.c       |  219 ------------------------------------------
+ arch/x86/kernel/traps.c      |   22 ----
+ arch/x86/kernel/xsave.c      |  163 -------------------------------
+ 5 files changed, 0 insertions(+), 622 deletions(-)
+
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index daab77f..687e550 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -29,8 +29,6 @@
+ # include <asm/sigcontext32.h>
+ # include <asm/user32.h>
+ #else
+-# define save_i387_xstate_ia32		save_i387_xstate
+-# define restore_i387_xstate_ia32	restore_i387_xstate
+ # define _fpstate_ia32		_fpstate
+ # define _xstate_ia32		_xstate
+ # define sig_xstate_ia32_size   sig_xstate_size
+@@ -44,7 +42,6 @@ extern void fpu_init(void);
+ extern void mxcsr_feature_mask_init(void);
+ extern int init_fpu(struct task_struct *child);
+ extern asmlinkage void math_state_restore(void);
+-extern void __math_state_restore(void);
+ extern int dump_fpu(struct pt_regs *, struct user_i387_struct *);
+ 
+ extern void convert_from_fxsr(struct user_i387_ia32_struct *, struct task_struct *);
+@@ -108,35 +105,6 @@ static inline void sanitize_i387_state(struct task_struct *tsk)
+ }
+ 
+ #ifdef CONFIG_X86_64
+-static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+-{
+-	int err;
+-
+-	/* See comment in fxsave() below. */
+-#ifdef CONFIG_AS_FXSAVEQ
+-	asm volatile("1:  fxrstorq %[fx]\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : [fx] "m" (*fx), "0" (0));
+-#else
+-	asm volatile("1:  rex64/fxrstor (%[fx])\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : [fx] "R" (fx), "m" (*fx), "0" (0));
+-#endif
+-	return err;
+-}
+-
+ static inline void fxrstor(struct i387_fxsave_struct *fx)
+ {
+ 	/* See comment in fxsave() below. */
+@@ -149,48 +117,6 @@ static inline void fxrstor(struct i387_fxsave_struct *fx)
+ #endif
+ }
+ 
+-static inline int fxsave_user(struct i387_fxsave_struct __user *fx)
+-{
+-	int err;
+-
+-	/*
+-	 * Clear the bytes not touched by the fxsave and reserved
+-	 * for the SW usage.
+-	 */
+-	err = __clear_user(&fx->sw_reserved,
+-			   sizeof(struct _fpx_sw_bytes));
+-	if (unlikely(err))
+-		return -EFAULT;
+-
+-	/* See comment in fxsave() below. */
+-#ifdef CONFIG_AS_FXSAVEQ
+-	asm volatile("1:  fxsaveq %[fx]\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err), [fx] "=m" (*fx)
+-		     : "0" (0));
+-#else
+-	asm volatile("1:  rex64/fxsave (%[fx])\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err), "=m" (*fx)
+-		     : [fx] "R" (fx), "0" (0));
+-#endif
+-	if (unlikely(err) &&
+-	    __clear_user(fx, sizeof(struct i387_fxsave_struct)))
+-		err = -EFAULT;
+-	/* No need to clear here because the caller clears USED_MATH */
+-	return err;
+-}
+-
+ static inline void fpu_fxsave(struct fpu *fpu)
+ {
+ 	/* Using "rex64; fxsave %0" is broken because, if the memory operand
+@@ -221,21 +147,6 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ #else  /* CONFIG_X86_32 */
+ 
+ /* perform fxrstor iff the processor has extended states, otherwise frstor */
+-static inline int fxrstor_checking(struct i387_fxsave_struct *fx)
+-{
+-	/*
+-	 * The "nop" is needed to make the instructions the same
+-	 * length.
+-	 */
+-	alternative_input(
+-		"nop ; frstor %1",
+-		"fxrstor %1",
+-		X86_FEATURE_FXSR,
+-		"m" (*fx));
+-
+-	return 0;
+-}
+-
+ static inline void fxrstor(struct i387_fxsave_struct *fx)
+ {
+ 	/*
+@@ -303,69 +214,6 @@ static inline void fpu_clean(struct fpu *fpu)
+ 		[addr] "m" (safe_address));
+ }
+ 
+-static inline void fpu_save_init(struct fpu *fpu)
+-{
+-	if (use_xsave()) {
+-		struct xsave_struct *xstate = &fpu->state->xsave;
+-
+-		fpu_xsave(xstate, -1);
+-
+-		/*
+-		 * xsave header may indicate the init state of the FP.
+-		 */
+-		if (!(xstate->xsave_hdr.xstate_bv & XSTATE_FP))
+-			return;
+-	} else if (use_fxsr()) {
+-		fpu_fxsave(fpu);
+-	} else {
+-		asm volatile("fnsave %[fx]; fwait"
+-			     : [fx] "=m" (fpu->state->fsave));
+-		return;
+-	}
+-
+-	if (unlikely(fpu->state->fxsave.swd & X87_FSW_ES))
+-		asm volatile("fnclex");
+-
+-	/* AMD K7/K8 CPUs don't save/restore FDP/FIP/FOP unless an exception
+-	   is pending.  Clear the x87 state here by setting it to fixed
+-	   values. safe_address is a random variable that should be in L1 */
+-	alternative_input(
+-		ASM_NOP8 ASM_NOP2,
+-		"emms\n\t"	  	/* clear stack tags */
+-		"fildl %P[addr]",	/* set F?P to defined value */
+-		X86_FEATURE_FXSAVE_LEAK,
+-		[addr] "m" (safe_address));
+-}
+-
+-static inline void __save_init_fpu(struct task_struct *tsk)
+-{
+-	fpu_save_init(&tsk->thread.fpu);
+-	task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-}
+-
+-static inline int fpu_restore_checking(struct fpu *fpu)
+-{
+-	if (use_xsave())
+-		return xrstor_checking(&fpu->state->xsave, -1);
+-	else
+-		return fxrstor_checking(&fpu->state->fxsave);
+-}
+-
+-/*
+- * Signal frame handlers...
+- */
+-extern int save_i387_xstate(void __user *buf);
+-extern int restore_i387_xstate(void __user *buf);
+-
+-static inline void __unlazy_fpu(struct task_struct *tsk)
+-{
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+-		__save_init_fpu(tsk);
+-		stts();
+-	} else
+-		tsk->fpu_counter = 0;
+-}
+-
+ static inline void __clear_fpu(struct task_struct *tsk)
+ {
+ 	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+@@ -434,21 +282,6 @@ static inline void irq_ts_restore(int TS_state)
+ /*
+  * These disable preemption on their own and are safe
+  */
+-static inline void save_init_fpu(struct task_struct *tsk)
+-{
+-	preempt_disable();
+-	__save_init_fpu(tsk);
+-	stts();
+-	preempt_enable();
+-}
+-
+-static inline void unlazy_fpu(struct task_struct *tsk)
+-{
+-	preempt_disable();
+-	__unlazy_fpu(tsk);
+-	preempt_enable();
+-}
+-
+ static inline void clear_fpu(struct task_struct *tsk)
+ {
+ 	preempt_disable();
+diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+index 42d02b9..8d5bb0e 100644
+--- a/arch/x86/include/asm/xsave.h
++++ b/arch/x86/include/asm/xsave.h
+@@ -65,26 +65,6 @@ static inline void restore_xstates(struct task_struct *tsk, u64 mask)
+ 	preempt_enable();
+ }
+ 
+-static inline int xrstor_checking(struct xsave_struct *fx, u64 mask)
+-{
+-	int err;
+-	u32 lmask = mask;
+-	u32 hmask = mask >> 32;
+-
+-	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x2f\n\t"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b, 3b)
+-		     : [err] "=r" (err)
+-		     : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask), "0" (0)
+-		     : "memory");
+-
+-	return err;
+-}
+-
+ static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
+ {
+ 	u32 lmask = mask;
+@@ -95,37 +75,6 @@ static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
+ 		     :   "memory");
+ }
+ 
+-static inline int xsave_checking(struct xsave_struct __user *buf)
+-{
+-	int err;
+-
+-	/*
+-	 * Clear the xsave header first, so that reserved fields are
+-	 * initialized to zero.
+-	 */
+-	err = __clear_user(&buf->xsave_hdr,
+-			   sizeof(struct xsave_hdr_struct));
+-	if (unlikely(err))
+-		return -EFAULT;
+-
+-	asm volatile("1: .byte " REX_PREFIX "0x0f,0xae,0x27\n"
+-		     "2:\n"
+-		     ".section .fixup,\"ax\"\n"
+-		     "3:  movl $-1,%[err]\n"
+-		     "    jmp  2b\n"
+-		     ".previous\n"
+-		     _ASM_EXTABLE(1b,3b)
+-		     : [err] "=r" (err)
+-		     : "D" (buf), "a" (-1), "d" (-1), "0" (0)
+-		     : "memory");
+-
+-	if (unlikely(err) && __clear_user(buf, xstate_size))
+-		err = -EFAULT;
+-
+-	/* No need to clear here because the caller clears USED_MATH */
+-	return err;
+-}
+-
+ static inline void xsave_state(struct xsave_struct *fx, u64 mask)
+ {
+ 	u32 lmask = mask;
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index e1b8a42..49d23a5 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -487,225 +487,6 @@ int fpregs_set(struct task_struct *target, const struct user_regset *regset,
+ }
+ 
+ /*
+- * Signal frame handlers.
+- */
+-
+-static inline int save_i387_fsave(struct _fpstate_ia32 __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	struct i387_fsave_struct *fp = &tsk->thread.fpu.state->fsave;
+-
+-	fp->status = fp->swd;
+-	if (__copy_to_user(buf, fp, sizeof(struct i387_fsave_struct)))
+-		return -1;
+-	return 1;
+-}
+-
+-static int save_i387_fxsave(struct _fpstate_ia32 __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	struct i387_fxsave_struct *fx = &tsk->thread.fpu.state->fxsave;
+-	struct user_i387_ia32_struct env;
+-	int err = 0;
+-
+-	convert_from_fxsr(&env, tsk);
+-	if (__copy_to_user(buf, &env, sizeof(env)))
+-		return -1;
+-
+-	err |= __put_user(fx->swd, &buf->status);
+-	err |= __put_user(X86_FXSR_MAGIC, &buf->magic);
+-	if (err)
+-		return -1;
+-
+-	if (__copy_to_user(&buf->_fxsr_env[0], fx, xstate_size))
+-		return -1;
+-	return 1;
+-}
+-
+-static int save_i387_xsave(void __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	struct _fpstate_ia32 __user *fx = buf;
+-	int err = 0;
+-
+-
+-	sanitize_i387_state(tsk);
+-
+-	/*
+-	 * For legacy compatible, we always set FP/SSE bits in the bit
+-	 * vector while saving the state to the user context.
+-	 * This will enable us capturing any changes(during sigreturn) to
+-	 * the FP/SSE bits by the legacy applications which don't touch
+-	 * xstate_bv in the xsave header.
+-	 *
+-	 * xsave aware applications can change the xstate_bv in the xsave
+-	 * header as well as change any contents in the memory layout.
+-	 * xrestore as part of sigreturn will capture all the changes.
+-	 */
+-	tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv |= XSTATE_FPSSE;
+-
+-	if (save_i387_fxsave(fx) < 0)
+-		return -1;
+-
+-	err = __copy_to_user(&fx->sw_reserved, &fx_sw_reserved_ia32,
+-			     sizeof(struct _fpx_sw_bytes));
+-	err |= __put_user(FP_XSTATE_MAGIC2,
+-			  (__u32 __user *) (buf + sig_xstate_ia32_size
+-					    - FP_XSTATE_MAGIC2_SIZE));
+-	if (err)
+-		return -1;
+-
+-	return 1;
+-}
+-
+-int save_i387_xstate_ia32(void __user *buf)
+-{
+-	struct _fpstate_ia32 __user *fp = (struct _fpstate_ia32 __user *) buf;
+-	struct task_struct *tsk = current;
+-
+-	if (!used_math())
+-		return 0;
+-
+-	if (!access_ok(VERIFY_WRITE, buf, sig_xstate_ia32_size))
+-		return -EACCES;
+-	/*
+-	 * This will cause a "finit" to be triggered by the next
+-	 * attempted FPU operation by the 'current' process.
+-	 */
+-	clear_used_math();
+-
+-	if (!HAVE_HWFP) {
+-		return fpregs_soft_get(current, NULL,
+-				       0, sizeof(struct user_i387_ia32_struct),
+-				       NULL, fp) ? -1 : 1;
+-	}
+-
+-	unlazy_fpu(tsk);
+-
+-	if (cpu_has_xsave)
+-		return save_i387_xsave(fp);
+-	if (cpu_has_fxsr)
+-		return save_i387_fxsave(fp);
+-	else
+-		return save_i387_fsave(fp);
+-}
+-
+-static inline int restore_i387_fsave(struct _fpstate_ia32 __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-
+-	return __copy_from_user(&tsk->thread.fpu.state->fsave, buf,
+-				sizeof(struct i387_fsave_struct));
+-}
+-
+-static int restore_i387_fxsave(struct _fpstate_ia32 __user *buf,
+-			       unsigned int size)
+-{
+-	struct task_struct *tsk = current;
+-	struct user_i387_ia32_struct env;
+-	int err;
+-
+-	err = __copy_from_user(&tsk->thread.fpu.state->fxsave, &buf->_fxsr_env[0],
+-			       size);
+-	/* mxcsr reserved bits must be masked to zero for security reasons */
+-	tsk->thread.fpu.state->fxsave.mxcsr &= mxcsr_feature_mask;
+-	if (err || __copy_from_user(&env, buf, sizeof(env)))
+-		return 1;
+-	convert_to_fxsr(tsk, &env);
+-
+-	return 0;
+-}
+-
+-static int restore_i387_xsave(void __user *buf)
+-{
+-	struct _fpx_sw_bytes fx_sw_user;
+-	struct _fpstate_ia32 __user *fx_user =
+-			((struct _fpstate_ia32 __user *) buf);
+-	struct i387_fxsave_struct __user *fx =
+-		(struct i387_fxsave_struct __user *) &fx_user->_fxsr_env[0];
+-	struct xsave_hdr_struct *xsave_hdr =
+-				&current->thread.fpu.state->xsave.xsave_hdr;
+-	u64 mask;
+-	int err;
+-
+-	if (check_for_xstate(fx, sig_xstate_ia32_size -
+-			     offsetof(struct _fpstate_ia32, _fxsr_env),
+-			     &fx_sw_user))
+-		goto fx_only;
+-
+-	mask = fx_sw_user.xstate_bv;
+-
+-	err = restore_i387_fxsave(buf, fx_sw_user.xstate_size);
+-
+-	xsave_hdr->xstate_bv &= pcntxt_mask;
+-	/*
+-	 * These bits must be zero.
+-	 */
+-	xsave_hdr->reserved1[0] = xsave_hdr->reserved1[1] = 0;
+-
+-	/*
+-	 * Init the state that is not present in the memory layout
+-	 * and enabled by the OS.
+-	 */
+-	mask = ~(pcntxt_mask & ~mask);
+-	xsave_hdr->xstate_bv &= mask;
+-
+-	return err;
+-fx_only:
+-	/*
+-	 * Couldn't find the extended state information in the memory
+-	 * layout. Restore the FP/SSE and init the other extended state
+-	 * enabled by the OS.
+-	 */
+-	xsave_hdr->xstate_bv = XSTATE_FPSSE;
+-	return restore_i387_fxsave(buf, sizeof(struct i387_fxsave_struct));
+-}
+-
+-int restore_i387_xstate_ia32(void __user *buf)
+-{
+-	int err;
+-	struct task_struct *tsk = current;
+-	struct _fpstate_ia32 __user *fp = (struct _fpstate_ia32 __user *) buf;
+-
+-	if (HAVE_HWFP)
+-		clear_fpu(tsk);
+-
+-	if (!buf) {
+-		if (used_math()) {
+-			clear_fpu(tsk);
+-			clear_used_math();
+-		}
+-
+-		return 0;
+-	} else
+-		if (!access_ok(VERIFY_READ, buf, sig_xstate_ia32_size))
+-			return -EACCES;
+-
+-	if (!used_math()) {
+-		err = init_fpu(tsk);
+-		if (err)
+-			return err;
+-	}
+-
+-	if (HAVE_HWFP) {
+-		if (cpu_has_xsave)
+-			err = restore_i387_xsave(buf);
+-		else if (cpu_has_fxsr)
+-			err = restore_i387_fxsave(fp, sizeof(struct
+-							   i387_fxsave_struct));
+-		else
+-			err = restore_i387_fsave(fp);
+-	} else {
+-		err = fpregs_soft_set(current, NULL,
+-				      0, sizeof(struct user_i387_ia32_struct),
+-				      NULL, fp) != 0;
+-	}
+-	set_used_math();
+-
+-	return err;
+-}
+-
+-/*
+  * FPU state for core dumps.
+  * This is only used for a.out dumps now.
+  * It is declared generically using elf_fpregset_t (which is
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 95ae50d..f0946aa 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -719,28 +719,6 @@ asmlinkage void __attribute__((weak)) smp_threshold_interrupt(void)
+ }
+ 
+ /*
+- * __math_state_restore assumes that cr0.TS is already clear and the
+- * fpu state is all ready for use.  Used during context switch.
+- */
+-void __math_state_restore(void)
+-{
+-	struct thread_info *thread = current_thread_info();
+-	struct task_struct *tsk = thread->task;
+-
+-	/*
+-	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
+-	 */
+-	if (unlikely(fpu_restore_checking(&tsk->thread.fpu))) {
+-		stts();
+-		force_sig(SIGSEGV, tsk);
+-		return;
+-	}
+-
+-	thread->status |= TS_USEDFPU;	/* So we fnsave on switch_to() */
+-	tsk->fpu_counter++;
+-}
+-
+-/*
+  * 'math_state_restore()' saves the current math information in the
+  * old math state array, and gets the new ones from the current task
+  *
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index d35adf8..ca5812c 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -251,169 +251,6 @@ int save_xstates_sigframe(void __user *buf, unsigned int size)
+ 	return 1;
+ }
+ 
+-#ifdef CONFIG_X86_64
+-int save_i387_xstate(void __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	int err = 0;
+-
+-	if (!access_ok(VERIFY_WRITE, buf, sig_xstate_size))
+-		return -EACCES;
+-
+-	BUG_ON(sig_xstate_size < xstate_size);
+-
+-	if ((unsigned long)buf % 64)
+-		printk("save_i387_xstate: bad fpstate %p\n", buf);
+-
+-	if (!used_math())
+-		return 0;
+-
+-	if (task_thread_info(tsk)->status & TS_USEDFPU) {
+-		if (use_xsave())
+-			err = xsave_checking(buf);
+-		else
+-			err = fxsave_user(buf);
+-
+-		if (err)
+-			return err;
+-		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+-		stts();
+-	} else {
+-		sanitize_i387_state(tsk);
+-		if (__copy_to_user(buf, &tsk->thread.fpu.state->fxsave,
+-				   xstate_size))
+-			return -1;
+-	}
+-
+-	clear_used_math(); /* trigger finit */
+-
+-	if (use_xsave()) {
+-		struct _fpstate __user *fx = buf;
+-		struct _xstate __user *x = buf;
+-		u64 xstate_bv;
+-
+-		err = __copy_to_user(&fx->sw_reserved, &fx_sw_reserved,
+-				     sizeof(struct _fpx_sw_bytes));
+-
+-		err |= __put_user(FP_XSTATE_MAGIC2,
+-				  (__u32 __user *) (buf + sig_xstate_size
+-						    - FP_XSTATE_MAGIC2_SIZE));
+-
+-		/*
+-		 * Read the xstate_bv which we copied (directly from the cpu or
+-		 * from the state in task struct) to the user buffers and
+-		 * set the FP/SSE bits.
+-		 */
+-		err |= __get_user(xstate_bv, &x->xstate_hdr.xstate_bv);
+-
+-		/*
+-		 * For legacy compatible, we always set FP/SSE bits in the bit
+-		 * vector while saving the state to the user context. This will
+-		 * enable us capturing any changes(during sigreturn) to
+-		 * the FP/SSE bits by the legacy applications which don't touch
+-		 * xstate_bv in the xsave header.
+-		 *
+-		 * xsave aware apps can change the xstate_bv in the xsave
+-		 * header as well as change any contents in the memory layout.
+-		 * xrestore as part of sigreturn will capture all the changes.
+-		 */
+-		xstate_bv |= XSTATE_FPSSE;
+-
+-		err |= __put_user(xstate_bv, &x->xstate_hdr.xstate_bv);
+-
+-		if (err)
+-			return err;
+-	}
+-
+-	return 1;
+-}
+-
+-/*
+- * Restore the extended state if present. Otherwise, restore the FP/SSE
+- * state.
+- */
+-static int restore_user_xstate(void __user *buf)
+-{
+-	struct _fpx_sw_bytes fx_sw_user;
+-	u64 mask;
+-	int err;
+-
+-	if (((unsigned long)buf % 64) ||
+-	     check_for_xstate(buf, sig_xstate_size, &fx_sw_user))
+-		goto fx_only;
+-
+-	mask = fx_sw_user.xstate_bv;
+-
+-	/*
+-	 * restore the state passed by the user.
+-	 */
+-	err = xrstor_checking((__force struct xsave_struct *)buf, mask);
+-	if (err)
+-		return err;
+-
+-	/*
+-	 * init the state skipped by the user.
+-	 */
+-	mask = pcntxt_mask & ~mask;
+-	if (unlikely(mask))
+-		xrstor_state(init_xstate_buf, mask);
+-
+-	return 0;
+-
+-fx_only:
+-	/*
+-	 * couldn't find the extended state information in the
+-	 * memory layout. Restore just the FP/SSE and init all
+-	 * the other extended state.
+-	 */
+-	xrstor_state(init_xstate_buf, pcntxt_mask & ~XSTATE_FPSSE);
+-	return fxrstor_checking((__force struct i387_fxsave_struct *)buf);
+-}
+-
+-/*
+- * This restores directly out of user space. Exceptions are handled.
+- */
+-int restore_i387_xstate(void __user *buf)
+-{
+-	struct task_struct *tsk = current;
+-	int err = 0;
+-
+-	if (!buf) {
+-		if (used_math())
+-			goto clear;
+-		return 0;
+-	} else
+-		if (!access_ok(VERIFY_READ, buf, sig_xstate_size))
+-			return -EACCES;
+-
+-	if (!used_math()) {
+-		err = init_fpu(tsk);
+-		if (err)
+-			return err;
+-	}
+-
+-	if (!(task_thread_info(current)->status & TS_USEDFPU)) {
+-		clts();
+-		task_thread_info(current)->status |= TS_USEDFPU;
+-	}
+-	if (use_xsave())
+-		err = restore_user_xstate(buf);
+-	else
+-		err = fxrstor_checking((__force struct i387_fxsave_struct *)
+-				       buf);
+-	if (unlikely(err)) {
+-		/*
+-		 * Encountered an error while doing the restore from the
+-		 * user buffer, clear the fpu state.
+-		 */
+-clear:
+-		clear_fpu(tsk);
+-		clear_used_math();
+-	}
+-	return err;
+-}
+-#endif
+-
+ int restore_xstates_sigframe(void __user *buf, unsigned int size)
+ {
+ #if defined(CONFIG_X86_32) || defined(CONFIG_IA32_EMULATION)
 -- 
---
-Rares Aioanei
+1.7.5.4
+
 
