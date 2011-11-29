@@ -1,103 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756373Ab1K2XEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 18:04:13 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:37972 "EHLO imr4.ericy.com"
+	id S1756547Ab1K2XLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 18:11:21 -0500
+Received: from mail-out1.uio.no ([129.240.10.57]:40446 "EHLO mail-out1.uio.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab1K2XEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 18:04:10 -0500
-Subject: Re: MFD: core assumes that all children are platform devices
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: =?ISO-8859-1?Q?Jean-Fran=E7ois?= Dagenais 
-	<jeff.dagenais@gmail.com>
-CC: =?ISO-8859-1?Q?Jean-Fran=E7ois?= Dagenais 
-	<dagenaisj@sonatest.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        open list <linux-kernel@vger.kernel.org>
-In-Reply-To: <F9D1750C-7D71-46D1-BE90-6D44CA26CB4F@gmail.com>
-References: <2F9D884C-6B95-4F81-8445-8056676B28D8@sonatest.com>
-	 <20111129185746.GA23986@ericsson.com>
-	 <F9D1750C-7D71-46D1-BE90-6D44CA26CB4F@gmail.com>
+	id S1756425Ab1K2XLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 18:11:19 -0500
+X-Greylist: delayed 1941 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Nov 2011 18:11:18 EST
+Message-ID: <1322606322.11286.30.camel@lade.trondhjem.org>
+Subject: Re: ore: FIX breakage when MISC_FILESYSTEMS is not set
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@tonian.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        NFS list <linux-nfs@vger.kernel.org>, open-osd <osd-dev@open-osd.org>
+Date: Tue, 29 Nov 2011 17:38:42 -0500
+In-Reply-To: <1322606193.11286.28.camel@lade.trondhjem.org>
+References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au>
+	 <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com>
+	 <4ED4238F.4090407@panasas.com> <4ED4CE58.8090107@tonian.com>
+	 <1322588023.4174.28.camel@lade.trondhjem.org>
+	 <4ED55B3B.9050207@panasas.com>
+	 <1322606193.11286.28.camel@lade.trondhjem.org>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Tue, 29 Nov 2011 15:02:49 -0800
-Message-ID: <1322607769.23607.18.camel@groeck-laptop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-UiO-Ratelimit-Test: rcpts/h 9 msgs/h 1 sum rcpts/h 9 sum msgs/h 1 total rcpts 1556 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 833FB9FB2B823E86972D5DDB1DCCF7B61C90C837
+X-UiO-SPAM-Test: remote_host: 98.250.106.145 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 25 max/h 3 blacklist 0 greylist 0 ratelimit 0
+X-UiOonly: 4A0A5FA02B86284CFE4502B906A87ECE7385672B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 16:40 -0500, Jean-François Dagenais wrote:
-> 
-> Sent from my iPod
-> 
-> On 2011-11-29, at 1:57 PM, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
-> 
-> > On Mon, Nov 28, 2011 at 11:23:00AM -0500, Jean-François Dagenais wrote:
-> >> Hi,
-> >> 
-> >> I have a pci driver that registers with UIO for it's operations. As a consequence, the pci device
-> >> instance has a child device of class uio.
-> >> 
-> >> My driver also declares a ds1wm instance that has it's register interface at an offset in BAR0
-> >> of the pci device, as an MFD cell.
-> >> 
-> >> When I call mfd_remove_devices, MFD proceeds to enumerate ALL the parent device's chilren
-> >> and assumes that they are MFD cells, and thus platform_device, which is not true in my case.
-> >> (...uio is a child of the parent pci device)
-> >> 
-> >> I had (luckily or unluckily) not seen signs of this broken assumption on certain setups I have
-> >> used, but in my current setup, this page-faults every time now.
-> >> 
-> >> This is a major thing and I have not found the assumption documented anywhere.
-> >> 
-> >> I could first declare a new child device on my pci device and then declare it as the parent to
-> >> the mfd cells...
-> >> 
-> > I had the same problem, with a Multi-function USB device. Took me a while to figure out that
-> > mfd_remove_devices() removed the USB child devices when I used the USB device as MFD parent device.
+On Tue, 2011-11-29 at 17:36 -0500, Trond Myklebust wrote: 
+> On Tue, 2011-11-29 at 14:22 -0800, Boaz Harrosh wrote: 
+> > On 11/29/2011 09:33 AM, Trond Myklebust wrote:
+> > > On Tue, 2011-11-29 at 14:21 +0200, Benny Halevy wrote: 
+> > >> On 2011-11-29 02:13, Boaz Harrosh wrote:
 > > 
-> > My solution was to do what you suggested - my MFD probe function now creates a platform device
-> > to be used as MFD parent device. Works nicely, it doesn't require much additional code,
-> > and I think it is cleaner than other possible solutions (at least the ones I came up with).
-> > We'll see how it flies with the MFD and USB maintainers once I submit the patch ;).
+> > >>>
+> > >>> The solution is to force all users of ORE (exofs, nfs) to manually
+> > >>> select everything auto-magically selected before.
+> > >>
+> > >> How about using "depend ORE" rather than "select ORE"?
+> > > 
+> > > Right. Make PNFS_OBJLAYOUT and EXOFS_FS depend on ASYNC_XOR (or select
+> > > it) and then make ORE depend on EXOFS_FS || PNFS_OBJLAYOUT.
+> > > 
+> > > There should be no need to add the 'select ORE'...
+> > > 
 > > 
-> >> Or, is there a way for the mfd-core, as it's doing the "for each child device", to recognize
-> >> non-MFD-cell children and skip them?
-> >> 
-> > Looking at your proposed patch, I personally prefer my solution.
-> I'd like to see your patch... You mean to say that you changed your driver, or the mfd core? If it's your driver's probe function, then the problem still exists out there and imposing an extra device alloc simply as a container is in my opinion both a hassle and a waste of resource. At the very least, this task should be done by the mfd core. It still seems pointless though, when you can filter out which children are the ones to remove, like what my patch does.
-
-I did not touch the mfd core; I am in general not in favor of changing
-core code if I can avoid it.
-
-You can clone my driver from git://github.com/groeck/diolan.git. The mfd
-core code is in diolan-u2c-core.c. Not in shape for submission, and the
-SPI part is completely untested, but the MFD code should be ok.
-
-> > Of course it would be nice
-> > if it was documented that MFD parent devices MUST be dedicated (platform) devices and must not
-> > have any non-MFD child devices. This would be a simple documentation patch and avoid making
-> > assumptions on MFD child device removal.
-> Well the patch uses already present assumptions, it just checks
-> for them.
+> > No! guys!
+> > 
+> > One it will not solve my problem because any
+> > solution that needs to inspect exofs/Kconfig file will
+> > not work if MISC_FILESYSTEMS is not selected and your
+> > solutions involve that.
 > 
-The assumption I referred to was your assumption or expectation that
-mfd_remove_devices() only removes a subset of child devices, not all of
-them.
+> Then move ORE _out_ of MISC_FILESYSTEMS. There is no reason why it needs
+> to be there as long as the things it depends on are there.
 
-> What's good is that my patch doesn't prevent you from using a container platform device either.
+Should read:
+There is no reason why ORE needs to depend on MISC_FILESYSTEMS. Only
+EXOFS_FS needs that...
+
+
+> > And two:
+> > All the user needs to do is Select NFS4.1 everything
+> > else should be done automatically. He should not need
+> > to go to misc-filesystems and select ORE so he can have
+> > pnfs-objects. That's a nightmare.
 > 
-> We'll see what Samuel thinks...
+> The solution I proposed didn't involve having the user select anything
+> other than NFSv4.1 and possibly ASYNC_XOR.
+> 
+> > And anyway the current Kernel rule is that a user of a library
+> > needs to select it and all it's dependencies, because select
+> > is not recursive. Now I devised a little skim that can avoid
+> 
+> ...and this is _my_ nightmare. I dont' _want_ these selects anywhere in
+> the NFS subsystem.
 
-Agreed. Either way, I think I'll stick with my approach - if nothing
-else for backward compatibility. I would not want to have a driver which
-depends on changed semantics of a kernel API function call.
-
-Thanks,
-Guenter
 
 
