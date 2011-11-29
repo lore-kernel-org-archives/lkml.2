@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab1K2S7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 13:59:07 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:53845 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754334Ab1K2S7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 13:59:05 -0500
-Date: Tue, 29 Nov 2011 10:57:46 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: =?iso-8859-1?Q?Jean-Fran=E7ois?= Dagenais <dagenaisj@sonatest.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: MFD: core assumes that all children are platform devices
-Message-ID: <20111129185746.GA23986@ericsson.com>
-References: <2F9D884C-6B95-4F81-8445-8056676B28D8@sonatest.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2F9D884C-6B95-4F81-8445-8056676B28D8@sonatest.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755400Ab1K2TEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 14:04:11 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:43595 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753699Ab1K2TEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 14:04:10 -0500
+From: Joe Perches <joe@perches.com>
+To: Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] acer-wmi: Message logging neatening
+Date: Tue, 29 Nov 2011 11:04:05 -0800
+Message-Id: <9be2717594eec36bdcc072a90d81b044500270e4.1322593277.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.405.gc1be0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 11:23:00AM -0500, Jean-François Dagenais wrote:
-> Hi,
-> 
-> I have a pci driver that registers with UIO for it's operations. As a consequence, the pci device
-> instance has a child device of class uio.
-> 
-> My driver also declares a ds1wm instance that has it's register interface at an offset in BAR0
-> of the pci device, as an MFD cell.
-> 
-> When I call mfd_remove_devices, MFD proceeds to enumerate ALL the parent device's chilren
-> and assumes that they are MFD cells, and thus platform_device, which is not true in my case.
-> (...uio is a child of the parent pci device)
-> 
-> I had (luckily or unluckily) not seen signs of this broken assumption on certain setups I have
-> used, but in my current setup, this page-faults every time now.
-> 
-> This is a major thing and I have not found the assumption documented anywhere.
-> 
-> I could first declare a new child device on my pci device and then declare it as the parent to
-> the mfd cells...
-> 
-I had the same problem, with a Multi-function USB device. Took me a while to figure out that
-mfd_remove_devices() removed the USB child devices when I used the USB device as MFD parent device.
+Use pr_warn not pr_warning.
+Coalesce formats.
 
-My solution was to do what you suggested - my MFD probe function now creates a platform device
-to be used as MFD parent device. Works nicely, it doesn't require much additional code,
-and I think it is cleaner than other possible solutions (at least the ones I came up with).
-We'll see how it flies with the MFD and USB maintainers once I submit the patch ;).
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/platform/x86/acer-wmi.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-> Or, is there a way for the mfd-core, as it's doing the "for each child device", to recognize
-> non-MFD-cell children and skip them?
-> 
-Looking at your proposed patch, I personally prefer my solution. Of course it would be nice
-if it was documented that MFD parent devices MUST be dedicated (platform) devices and must not
-have any non-MFD child devices. This would be a simple documentation patch and avoid making
-assumptions on MFD child device removal.
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index b848277..ea48346 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -978,7 +978,7 @@ static acpi_status wmid3_set_device_status(u32 value, u16 device)
+ 		return AE_ERROR;
+ 	}
+ 	if (obj->buffer.length != 8) {
+-		pr_warning("Unknown buffer length %d\n", obj->buffer.length);
++		pr_warn("Unknown buffer length %d\n", obj->buffer.length);
+ 		kfree(obj);
+ 		return AE_ERROR;
+ 	}
+@@ -987,8 +987,8 @@ static acpi_status wmid3_set_device_status(u32 value, u16 device)
+ 	kfree(obj);
+ 
+ 	if (return_value.error_code || return_value.ec_return_value) {
+-		pr_warning("Get Current Device Status failed: "
+-			"0x%x - 0x%x\n", return_value.error_code,
++		pr_warn("Get Current Device Status failed: 0x%x - 0x%x\n",
++			return_value.error_code,
+ 			return_value.ec_return_value);
+ 		return status;
+ 	}
+@@ -1011,7 +1011,7 @@ static acpi_status wmid3_set_device_status(u32 value, u16 device)
+ 		return AE_ERROR;
+ 	}
+ 	if (obj->buffer.length != 4) {
+-		pr_warning("Unknown buffer length %d\n", obj->buffer.length);
++		pr_warn("Unknown buffer length %d\n", obj->buffer.length);
+ 		kfree(obj);
+ 		return AE_ERROR;
+ 	}
+@@ -1020,8 +1020,8 @@ static acpi_status wmid3_set_device_status(u32 value, u16 device)
+ 	kfree(obj);
+ 
+ 	if (return_value.error_code || return_value.ec_return_value)
+-		pr_warning("Set Device Status failed: "
+-			"0x%x - 0x%x\n", return_value.error_code,
++		pr_warn("Set Device Status failed: 0x%x - 0x%x\n",
++			return_value.error_code,
+ 			return_value.ec_return_value);
+ 
+ 	return status;
+@@ -1460,8 +1460,8 @@ static ssize_t show_bool_threeg(struct device *dev,
+ 	u32 result; \
+ 	acpi_status status;
+ 
+-	pr_info("This threeg sysfs will be removed in 2012"
+-		" - used by: %s\n", current->comm);
++	pr_info("This threeg sysfs will be removed in 2012 - used by: %s\n",
++		current->comm);
+ 	status = get_u32(&result, ACER_CAP_THREEG);
+ 	if (ACPI_SUCCESS(status))
+ 		return sprintf(buf, "%u\n", result);
+@@ -1473,8 +1473,8 @@ static ssize_t set_bool_threeg(struct device *dev,
+ {
+ 	u32 tmp = simple_strtoul(buf, NULL, 10);
+ 	acpi_status status = set_u32(tmp, ACER_CAP_THREEG);
+-	pr_info("This threeg sysfs will be removed in 2012"
+-		" - used by: %s\n", current->comm);
++	pr_info("This threeg sysfs will be removed in 2012 - used by: %s\n",
++		current->comm);
+ 	if (ACPI_FAILURE(status))
+ 		return -EINVAL;
+ 	return count;
+@@ -1485,8 +1485,8 @@ static DEVICE_ATTR(threeg, S_IRUGO | S_IWUSR, show_bool_threeg,
+ static ssize_t show_interface(struct device *dev, struct device_attribute *attr,
+ 	char *buf)
+ {
+-	pr_info("This interface sysfs will be removed in 2012"
+-		" - used by: %s\n", current->comm);
++	pr_info("This interface sysfs will be removed in 2012 - used by: %s\n",
++		current->comm);
+ 	switch (interface->type) {
+ 	case ACER_AMW0:
+ 		return sprintf(buf, "AMW0\n");
+@@ -1954,8 +1954,7 @@ static int __init acer_wmi_init(void)
+ 
+ 	if (acpi_video_backlight_support()) {
+ 		interface->capability &= ~ACER_CAP_BRIGHTNESS;
+-		pr_info("Brightness must be controlled by "
+-		       "generic video driver\n");
++		pr_info("Brightness must be controlled by generic video driver\n");
+ 	}
+ 
+ 	if (wmi_has_guid(WMID_GUID3)) {
+@@ -1980,7 +1979,7 @@ static int __init acer_wmi_init(void)
+ 
+ 	err = platform_driver_register(&acer_platform_driver);
+ 	if (err) {
+-		pr_err("Unable to register platform driver.\n");
++		pr_err("Unable to register platform driver\n");
+ 		goto error_platform_register;
+ 	}
+ 
+-- 
+1.7.6.405.gc1be0
 
-Guenter 
