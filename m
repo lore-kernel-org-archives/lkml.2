@@ -1,119 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab1K2UK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 15:10:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756494Ab1K2UK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 15:10:58 -0500
-Subject: [PATCH v2] netlabel: Fix build problems when IPv6 is not enabled
-To: netdev@vger.kernel.org, rdunlap@xenotime.net
-From: Paul Moore <pmoore@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 29 Nov 2011 15:10:54 -0500
-Message-ID: <20111129201054.20141.86401.stgit@sifl>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756568Ab1K2UMo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 15:12:44 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52525 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756206Ab1K2UMn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 15:12:43 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: Allow regmap_update_bits() users to detect changes
+Date: Tue, 29 Nov 2011 20:11:46 +0000
+Message-Id: <1322597506-22784-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A recent fix to the the NetLabel code caused build problem with
-configurations that did not have IPv6 enabled; see below:
+Some users of regmap_update_bits() would like to be able to tell their
+users if they actually did an update so provide a variant which also
+returns a flag indicating if an update took place. We could return a
+tristate in the return value of regmap_update_bits() but this makes the
+API more cumbersome to use and doesn't fit with the general zero for
+success idiom we have.
 
- netlabel_kapi.c: In function 'netlbl_cfg_unlbl_map_add':
- netlabel_kapi.c:165:4:
-  error: implicit declaration of function 'netlbl_af6list_add'
-
-This patch fixes this problem by making the IPv6 specific code conditional
-on the IPv6 configuration flags as we done in the rest of NetLabel and the
-network stack as a whole.  We have to move some variable declarations
-around as a result so things may not be quite as pretty, but at least it
-builds cleanly now.
-
-Some additional IPv6 conditionals were added to the NetLabel code as well
-for the sake of consistency.
-
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- net/netlabel/netlabel_kapi.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
+ drivers/base/regmap/regmap.c |   58 ++++++++++++++++++++++++++++++++---------
+ include/linux/regmap.h       |    3 ++
+ 2 files changed, 48 insertions(+), 13 deletions(-)
 
-diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
-index 3735297..5952237 100644
---- a/net/netlabel/netlabel_kapi.c
-+++ b/net/netlabel/netlabel_kapi.c
-@@ -111,8 +111,6 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
- 	struct netlbl_domaddr_map *addrmap = NULL;
- 	struct netlbl_domaddr4_map *map4 = NULL;
- 	struct netlbl_domaddr6_map *map6 = NULL;
--	const struct in_addr *addr4, *mask4;
--	const struct in6_addr *addr6, *mask6;
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index a862090..add5da6 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -569,18 +569,9 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
+ }
+ EXPORT_SYMBOL_GPL(regmap_bulk_read);
  
- 	entry = kzalloc(sizeof(*entry), GFP_ATOMIC);
- 	if (entry == NULL)
-@@ -133,9 +131,9 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
- 		INIT_LIST_HEAD(&addrmap->list6);
+-/**
+- * regmap_update_bits: Perform a read/modify/write cycle on the register map
+- *
+- * @map: Register map to update
+- * @reg: Register to update
+- * @mask: Bitmask to change
+- * @val: New value for bitmask
+- *
+- * Returns zero for success, a negative number on error.
+- */
+-int regmap_update_bits(struct regmap *map, unsigned int reg,
+-		       unsigned int mask, unsigned int val)
++static int _regmap_update_bits(struct regmap *map, unsigned int reg,
++			       unsigned int mask, unsigned int val,
++			       bool *change)
+ {
+ 	int ret;
+ 	unsigned int tmp, orig;
+@@ -594,16 +585,57 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ 	tmp = orig & ~mask;
+ 	tmp |= val & mask;
  
- 		switch (family) {
--		case AF_INET:
--			addr4 = addr;
--			mask4 = mask;
-+		case AF_INET: {
-+			const struct in_addr *addr4 = addr;
-+			const struct in_addr *mask4 = mask;
- 			map4 = kzalloc(sizeof(*map4), GFP_ATOMIC);
- 			if (map4 == NULL)
- 				goto cfg_unlbl_map_add_failure;
-@@ -148,9 +146,11 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
- 			if (ret_val != 0)
- 				goto cfg_unlbl_map_add_failure;
- 			break;
--		case AF_INET6:
--			addr6 = addr;
--			mask6 = mask;
-+			}
-+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
-+		case AF_INET6: {
-+			const struct in6_addr *addr6 = addr;
-+			const struct in6_addr *mask6 = mask;
- 			map6 = kzalloc(sizeof(*map6), GFP_ATOMIC);
- 			if (map6 == NULL)
- 				goto cfg_unlbl_map_add_failure;
-@@ -167,6 +167,8 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
- 			if (ret_val != 0)
- 				goto cfg_unlbl_map_add_failure;
- 			break;
-+			}
-+#endif /* IPv6 */
- 		default:
- 			goto cfg_unlbl_map_add_failure;
- 			break;
-@@ -225,9 +227,11 @@ int netlbl_cfg_unlbl_static_add(struct net *net,
- 	case AF_INET:
- 		addr_len = sizeof(struct in_addr);
- 		break;
-+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
- 	case AF_INET6:
- 		addr_len = sizeof(struct in6_addr);
- 		break;
-+#endif /* IPv6 */
- 	default:
- 		return -EPFNOSUPPORT;
- 	}
-@@ -266,9 +270,11 @@ int netlbl_cfg_unlbl_static_del(struct net *net,
- 	case AF_INET:
- 		addr_len = sizeof(struct in_addr);
- 		break;
-+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
- 	case AF_INET6:
- 		addr_len = sizeof(struct in6_addr);
- 		break;
-+#endif /* IPv6 */
- 	default:
- 		return -EPFNOSUPPORT;
- 	}
+-	if (tmp != orig)
++	if (tmp != orig) {
+ 		ret = _regmap_write(map, reg, tmp);
++		*change = true;
++	} else {
++		*change = false;
++	}
+ 
+ out:
+ 	mutex_unlock(&map->lock);
+ 
+ 	return ret;
+ }
++
++/**
++ * regmap_update_bits: Perform a read/modify/write cycle on the register map
++ *
++ * @map: Register map to update
++ * @reg: Register to update
++ * @mask: Bitmask to change
++ * @val: New value for bitmask
++ *
++ * Returns zero for success, a negative number on error.
++ */
++int regmap_update_bits(struct regmap *map, unsigned int reg,
++		       unsigned int mask, unsigned int val)
++{
++	bool change;
++	return _regmap_update_bits(map, reg, mask, val, &change);
++}
+ EXPORT_SYMBOL_GPL(regmap_update_bits);
+ 
++/**
++ * regmap_update_bits_check: Perform a read/modify/write cycle on the
++ *                           register map and report if updated
++ *
++ * @map: Register map to update
++ * @reg: Register to update
++ * @mask: Bitmask to change
++ * @val: New value for bitmask
++ * @change: Boolean indicating if a write was done
++ *
++ * Returns zero for success, a negative number on error.
++ */
++int regmap_update_bits_check(struct regmap *map, unsigned int reg,
++			     unsigned int mask, unsigned int val,
++			     bool *change)
++{
++	return _regmap_update_bits(map, reg, mask, val, change);
++}
++EXPORT_SYMBOL_GPL(regmap_update_bits_check);
++
+ static int __init regmap_initcall(void)
+ {
+ 	regmap_debugfs_initcall();
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 81dfe0a..a83e4a0 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -138,6 +138,9 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
+ 		     size_t val_count);
+ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ 		       unsigned int mask, unsigned int val);
++int regmap_update_bits_check(struct regmap *map, unsigned int reg,
++			     unsigned int mask, unsigned int val,
++			     bool *change);
+ 
+ int regcache_sync(struct regmap *map);
+ void regcache_cache_only(struct regmap *map, bool enable);
+-- 
+1.7.7.3
 
