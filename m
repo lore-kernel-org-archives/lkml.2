@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab1K2UJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 15:09:48 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:58834 "EHLO smtp.outflux.net"
+	id S1756610Ab1K2UKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 15:10:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3248 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756260Ab1K2UJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 15:09:47 -0500
-Date: Tue, 29 Nov 2011 12:06:27 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [rfc 1/3] fs, proc: Add start_data, end_data, start_brk members
- to /proc/$pid/stat
-Message-ID: <20111129200627.GO5169@outflux.net>
-References: <20111129191252.769160532@openvz.org>
- <20111129191638.756761754@openvz.org>
+	id S1756260Ab1K2UKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 15:10:03 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: netdev@vger.kernel.org
+Cc: rdunlap@xenotime.net, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] netlabel: Fix build problems when IPv6 is not enabled
+Date: Tue, 29 Nov 2011 15:09:54 -0500
+Message-ID: <6332789.nzDA7IAKHR@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.7.3 (Linux/3.0.9-gentoo; KDE/4.7.3; x86_64; ; )
+In-Reply-To: <20111129200818.19875.72359.stgit@sifl>
+References: <20111129200818.19875.72359.stgit@sifl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129191638.756761754@openvz.org>
-Organization: Google
-X-HELO: www.outflux.net
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 11:12:53PM +0400, Cyrill Gorcunov wrote:
-> It helps to dump and restore this mm_struct members.
+On Tuesday, November 29, 2011 03:08:18 PM Paul Moore wrote:
+> A recent fix to the the NetLabel code caused build problem with
+> configurations that did not have IPv6 enabled; see below:
 > 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+>  netlabel_kapi.c: In function 'netlbl_cfg_unlbl_map_add':
+>  netlabel_kapi.c:165:4:
+>   error: implicit declaration of function 'netlbl_af6list_add'
+> 
+> This patch fixes this problem by making the IPv6 specific code conditional
+> on the IPv6 configuration flags as we done in the rest of NetLabel and the
+> network stack as a whole.  We have to move some variable declarations
+> around as a result so things may not be quite as pretty, but at least it
+> builds cleanly now.
+> 
+> Some additional IPv6 conditionals were added to the NetLabel code as well
+> for the sake of consistency.
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Paul Moore <pmoore@redhat.com>
 > ---
->  fs/proc/array.c |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6.git/fs/proc/array.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/proc/array.c
-> +++ linux-2.6.git/fs/proc/array.c
-> @@ -464,7 +464,7 @@ static int do_task_stat(struct seq_file
->  
->  	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
->  %lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
-> -%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld\n",
-> +%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
->  		pid_nr_ns(pid, ns),
->  		tcomm,
->  		state,
-> @@ -511,7 +511,10 @@ static int do_task_stat(struct seq_file
->  		task->policy,
->  		(unsigned long long)delayacct_blkio_ticks(task),
->  		cputime_to_clock_t(gtime),
-> -		cputime_to_clock_t(cgtime));
-> +		cputime_to_clock_t(cgtime),
-> +		mm ? (permitted ? mm->start_data : 1) : 0,
-> +		mm ? (permitted ? mm->end_data : 1) : 0,
-> +		mm ? (permitted ? mm->start_brk : 1) : 0);
->  	if (mm)
->  		mmput(mm);
->  	return 0;
+>  net/netlabel/netlabel_kapi.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
 
-Thanks for using "permitted" here. :)
+Sorry, please disregard this patch; I sent the wrong version.
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
-
+> diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
+> index 3735297..e4bbe94 100644
+> --- a/net/netlabel/netlabel_kapi.c
+> +++ b/net/netlabel/netlabel_kapi.c
+> @@ -148,6 +148,7 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
+>  			if (ret_val != 0)
+>  				goto cfg_unlbl_map_add_failure;
+>  			break;
+> +#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+>  		case AF_INET6:
+>  			addr6 = addr;
+>  			mask6 = mask;
+> @@ -167,6 +168,7 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
+>  			if (ret_val != 0)
+>  				goto cfg_unlbl_map_add_failure;
+>  			break;
+> +#endif /* IPv6 */
+>  		default:
+>  			goto cfg_unlbl_map_add_failure;
+>  			break;
+> @@ -225,9 +227,11 @@ int netlbl_cfg_unlbl_static_add(struct net *net,
+>  	case AF_INET:
+>  		addr_len = sizeof(struct in_addr);
+>  		break;
+> +#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+>  	case AF_INET6:
+>  		addr_len = sizeof(struct in6_addr);
+>  		break;
+> +#endif /* IPv6 */
+>  	default:
+>  		return -EPFNOSUPPORT;
+>  	}
+> @@ -266,9 +270,11 @@ int netlbl_cfg_unlbl_static_del(struct net *net,
+>  	case AF_INET:
+>  		addr_len = sizeof(struct in_addr);
+>  		break;
+> +#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+>  	case AF_INET6:
+>  		addr_len = sizeof(struct in6_addr);
+>  		break;
+> +#endif /* IPv6 */
+>  	default:
+>  		return -EPFNOSUPPORT;
+>  	}
 -- 
-Kees Cook
+paul moore
+virtualization @ redhat
+
