@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab1K2Jzf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 04:55:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61763 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026Ab1K2Jze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 04:55:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,590,1315206000"; 
-   d="scan'208";a="96447254"
-Date: Tue, 29 Nov 2011 10:59:54 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com
-Subject: Re: [PATCH 2/2] misc: add driver support for MAX8997 MUIC
-Message-ID: <20111129095954.GP5443@sortiz-mobl>
-References: <1322125938-6944-2-git-send-email-dg77.kim@samsung.com>
- <1322125938-6944-3-git-send-email-dg77.kim@samsung.com>
- <20111128154801.05f7c199.akpm@linux-foundation.org>
+	id S1754273Ab1K2KBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 05:01:18 -0500
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:56256 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753188Ab1K2KBQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 05:01:16 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av4EAA2r1E5tg6dK/2dsb2JhbABDqnOBBoFyAQEBAwEBAiQTHCMQCAMOOBQUEQMhE4gFAga3RhKLDASSM4IgiQ2JBg
+Date: Tue, 29 Nov 2011 10:56:43 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Marc Vertes <marc.vertes@sigfox.com>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org,
+        Dimitry Andric <dimitry.andric@tomtom.com>,
+        Ben Dooks <ben@simtec.co.uk>
+Subject: Re: [PATCH] watchdog: fix nowayout setting in s3c2410_wdt
+Message-ID: <20111129095643.GH23376@infomag.iguana.be>
+References: <4ed026d9.TvJLr8ihQ2VtvqPD%marc.vertes@sigfox.com> <20111126102915.GA7517@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111128154801.05f7c199.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111126102915.GA7517@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Hi Wolfram,
 
-On Mon, Nov 28, 2011 at 03:48:01PM -0800, Andrew Morton wrote:
-> On Thu, 24 Nov 2011 18:12:18 +0900
-> Donggeun Kim <dg77.kim@samsung.com> wrote:
-> 
-> > The MUIC function in MAX8997 device can be used as
-> > a USB port detector and switch.
-> > This patch supports the MUIC feature of MAX8997.
+> > Set nowayout flag in probe function, otherwise option is useless.
 > > 
-> > Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-> > Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > Signed-off-by: Marc Vertes <marc.vertes@sigfox.com>
 > 
-> Samuel, can you please merge this if/when it's ready?
+> Similar as
+> 
+> http://www.spinics.net/lists/linux-watchdog/msg00704.html
+> 
+> which depends on
+> 
+> http://www.spinics.net/lists/linux-watchdog/msg00703.html
+> 
+> which has the advantage that it can be used for static initialization.
 
-I will take it once I review it, yes.
+Hmm, I was more thinking about a wrapper function like the following:
 
-Cheers,
-Samuel.
+diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+index 111843f..d8ef9b2 100644
+--- a/include/linux/watchdog.h
++++ b/include/linux/watchdog.h
+@@ -53,6 +53,8 @@ struct watchdog_info {
+ 
+ #ifdef __KERNEL__
+ 
++#include <linux/bitops.h>
++
+ #ifdef CONFIG_WATCHDOG_NOWAYOUT
+ #define WATCHDOG_NOWAYOUT	1
+ #else
+@@ -122,6 +124,13 @@ struct watchdog_device {
+ #define WDOG_NO_WAY_OUT		3	/* Is 'nowayout' feature set ? */
+ };
+ 
++/* Use the following function to set the nowayout feature */
++static inline void watchdog_set_nowayout(struct watchdog_device *wdd, int nowayout)
++{
++	if (nowayout)
++		set_bit(WDOG_NO_WAY_OUT, &wdd->status);
++}
++
+ /* Use the following functions to manipulate watchdog driver specific data */
+ static inline void watchdog_set_drvdata(struct watchdog_device *wdd, void *data)
+ {
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+but: .status = WATCHDOG_NOWAYOUT_INIT_STATUS, is also a nice one to have.
+
+I propose to add both options and to document them in the documentation.
+Objections anyone?
+
+Kind regards,
+Wim.
+
