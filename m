@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab1K2VWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 16:22:12 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53843 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756501Ab1K2VWL (ORCPT
+	id S1756793Ab1K2VYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 16:24:50 -0500
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:38719 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781Ab1K2VYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 16:22:11 -0500
-X-Authority-Analysis: v=2.0 cv=Xd0LPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=x9VNfy9Nl58A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=18kCY76J9N-rlaogxnQA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: Perhaps a side effect regarding NMI returns
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Paul Turner <pjt@google.com>
-In-Reply-To: <CA+55aFw8cAeixca_LWJN7C5W52i7uC-WN-CdND37hvCYHVdRVw@mail.gmail.com>
-References: <1322539673.17003.45.camel@frodo>
-	 <CA+55aFwehof2kZCENTOFFobWqVvm04BZer6Cc-fQfVvcCE1NVQ@mail.gmail.com>
-	 <m2r50qlmgk.fsf@firstfloor.org>
-	 <CA+55aFxyBYFbx=AGgJ35Dx+U8KVPktesHetYnQrYpt1QGKTrbQ@mail.gmail.com>
-	 <20111129203111.GQ24062@one.firstfloor.org>
-	 <CA+55aFxUFkHGXk_eEN1GYsZWe5_G9uoCP6DkL6bw9+wWP2_fcw@mail.gmail.com>
-	 <1322600301.17003.84.camel@frodo>
-	 <CA+55aFw8cAeixca_LWJN7C5W52i7uC-WN-CdND37hvCYHVdRVw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 29 Nov 2011 16:22:09 -0500
-Message-ID: <1322601729.17003.86.camel@frodo>
+	Tue, 29 Nov 2011 16:24:49 -0500
+Date: Tue, 29 Nov 2011 22:24:24 +0100
+From: Udo Steinberg <udo@hypervisor.org>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: MCE/Package power limit notification
+Message-ID: <20111129222424.498469fe@x220.fritz.box>
+In-Reply-To: <493994B35A117E4F832F97C4719C4C04022D835792@orsmsx505.amr.corp.intel.com>
+References: <20111123160950.67860131@x220>
+	<987664A83D2D224EAE907B061CE93D53027D89B577@orsmsx505.amr.corp.intel.com>
+	<493994B35A117E4F832F97C4719C4C04022D835792@orsmsx505.amr.corp.intel.com>
+X-Mailer: X-Mailer 5.0 Gold
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/bdMKFzN1vlUQMfkcD9fO89C"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 13:05 -0800, Linus Torvalds wrote:
+--Sig_/bdMKFzN1vlUQMfkcD9fO89C
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> Too late for 3.2 obviously, since I don't think anybody has actually
-> reported the "delayed NMI's" as a real problem - so even if it's a
-> bug, it's not a bug we should try to fix at this stage.
+On Mon, 28 Nov 2011 14:50:47 -0800 Yu, Fenghua (YF) wrote:
 
-Oh no, I had no plans to get this into 3.2. I'm optimistic just to get
-this into 3.3.
+YF> I sent out a patch to remove the mcelog info. Could you try it and see =
+if it works for you?
+YF> https://lkml.org/lkml/2011/11/14/239
+YF>=20
+YF> Thanks.
+YF>=20
+YF> -Fenghua
 
-Thanks!
+Hi Fenghua,
 
--- Steve
+Thanks for the patch. It works and eliminates the MCE warnings. What exactly
+are the BIOS issues mentioned in the patch description? Is BIOS programming
+some MSRs the wrong way?
 
+Cheers,
 
+	- Udo
+
+--Sig_/bdMKFzN1vlUQMfkcD9fO89C
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7VTYgACgkQnhRzXSM7nSlMPQCeOnIm/1O2pqVBeN0GSPLQHXf1
+5SUAnjVBM6MU36DfNU77LhhDnxE2pD24
+=BXpU
+-----END PGP SIGNATURE-----
+
+--Sig_/bdMKFzN1vlUQMfkcD9fO89C--
