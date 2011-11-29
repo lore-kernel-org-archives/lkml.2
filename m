@@ -1,97 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab1K2LVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 06:21:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24916 "EHLO mx1.redhat.com"
+	id S1753801Ab1K2LWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 06:22:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61071 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975Ab1K2LVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 06:21:51 -0500
-Date: Tue, 29 Nov 2011 12:21:40 +0100
+	id S1752546Ab1K2LWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 06:22:43 -0500
+Date: Tue, 29 Nov 2011 12:22:33 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: fweisbec@gmail.com, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/9] ftrace: Fix shutdown to disable calls properly
-Message-ID: <20111129112140.GD1602@m.brq.redhat.com>
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 8/9] ftrace, perf: Add FILTER_TRACE_FN event field type
+Message-ID: <20111129112233.GE1602@m.brq.redhat.com>
 References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
- <1322417074-5834-4-git-send-email-jolsa@redhat.com>
- <1322507928.17003.7.camel@frodo>
+ <1322417074-5834-9-git-send-email-jolsa@redhat.com>
+ <1322510483.17003.16.camel@frodo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322507928.17003.7.camel@frodo>
+In-Reply-To: <1322510483.17003.16.camel@frodo>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 02:18:48PM -0500, Steven Rostedt wrote:
-> On Sun, 2011-11-27 at 19:04 +0100, Jiri Olsa wrote:
-> > Each ftrace_startup call increases the call record's flag,
-> > so we need allways to decrease it when shutting down the
-> > ftrace_ops.
+On Mon, Nov 28, 2011 at 03:01:23PM -0500, Steven Rostedt wrote:
+> BTW, Please Cc Peter Zijlstra too, as he maintains perf inside the
+> kernel.
+
+thanks! ommited by mistake..
+
 > 
-> No, that's not how this works. I probably should comment this code
-> better, because it caused me to reread it too ;)
+> On Sun, 2011-11-27 at 19:04 +0100, Jiri Olsa wrote:
+> > Adding FILTER_TRACE_FN event field type for function tracepoint
+> > event, so it can be properly recognized within filtering code.
+> 
+> -ECHANGELOGTOOSHORT
+> 
+> I'm not sure what this is for.
+> 
+> -- Steve
 > 
 > > 
 > > Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > > ---
-> >  kernel/trace/ftrace.c |    3 +--
-> >  1 files changed, 1 insertions(+), 2 deletions(-)
+> >  include/linux/ftrace_event.h       |    1 +
+> >  kernel/trace/trace_events_filter.c |    7 ++++++-
+> >  kernel/trace/trace_export.c        |   25 ++++++++++++++++++++-----
+> >  3 files changed, 27 insertions(+), 6 deletions(-)
 > > 
-> > diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> > index c6d0293..0ca0c0d 100644
-> > --- a/kernel/trace/ftrace.c
-> > +++ b/kernel/trace/ftrace.c
-> > @@ -1744,8 +1744,7 @@ static void ftrace_shutdown(struct ftrace_ops *ops, int command)
-> >  	if (ops != &global_ops || !global_start_up)
-> >  		ops->flags &= ~FTRACE_OPS_FL_ENABLED;
+> > diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+> > index 2bf677c..dd478fc 100644
+> > --- a/include/linux/ftrace_event.h
+> > +++ b/include/linux/ftrace_event.h
+> > @@ -245,6 +245,7 @@ enum {
+> >  	FILTER_STATIC_STRING,
+> >  	FILTER_DYN_STRING,
+> >  	FILTER_PTR_STRING,
+> > +	FILTER_TRACE_FN,
+> >  };
 > >  
-> > -	if (!ftrace_start_up)
-> > -		command |= FTRACE_DISABLE_CALLS;
-> > +	command |= FTRACE_DISABLE_CALLS;
-> 
-> FTRACE_DISABLE_CALLS will disable *all* functions for all tracers. If
-> you are tracing with ftrace and perf, and one calls this with
-> FTRACE_DISABLE_CALLS then both will no long be tracing anything.
-> 
-> When you call unregister_ftrace_function() it will disable the functions
-> that you have enabled by the ops.
-> 
-> Nacked-by: Steven Rostedt <rostedt@goodmis.org.
-
-ops, should read/test more carefully.. however the problem stays, here's
-one possible scenario of the issue:
-
-	- enable function trace like:
-		echo "mm_*" > ./set_ftrace_filter 
-		echo function > ./current_tracer 
-	- run:
-		./perf record  -e ftrace:function cal
-		- this runs: register_ftrace_function/unregister_ftrace_function
-
-	- bad result: after perf is finished, function trace will have all the functions enabled
-
-The reason is, that after the perf record calls unregister_ftrace_function,
-only the functions' record flags (struct dyn_ftrace::flags) are changed, but
-functions' mcount calls are not replaced accordingly.
-
-In our case, when function trace becomes again the only tracer, it will be
-plugged directly into the entry_BIT.S code, and thus getting all the functions
-from previous perf ftrace_ops without any filtering.
-
-I think we need to project the function record flags state into the
-function call replacement during the unregister_ftrace_function.
-
-jirka
-
-> 
-> -- Steve
-> 
-> 
+> >  #define EVENT_STORAGE_SIZE 128
+> > diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+> > index fdc6d22..7b0b04c 100644
+> > --- a/kernel/trace/trace_events_filter.c
+> > +++ b/kernel/trace/trace_events_filter.c
+> > @@ -900,6 +900,11 @@ int filter_assign_type(const char *type)
+> >  	return FILTER_OTHER;
+> >  }
 > >  
-> >  	if (saved_ftrace_func != ftrace_trace_function) {
-> >  		saved_ftrace_func = ftrace_trace_function;
+> > +static bool is_function_field(struct ftrace_event_field *field)
+> > +{
+> > +	return field->filter_type == FILTER_TRACE_FN;
+> > +}
+> > +
+> >  static bool is_string_field(struct ftrace_event_field *field)
+> >  {
+> >  	return field->filter_type == FILTER_DYN_STRING ||
+> > @@ -987,7 +992,7 @@ static int init_pred(struct filter_parse_state *ps,
+> >  			fn = filter_pred_strloc;
+> >  		else
+> >  			fn = filter_pred_pchar;
+> > -	} else {
+> > +	} else if (!is_function_field(field)) {
+> >  		if (field->is_signed)
+> >  			ret = strict_strtoll(pred->regex.pattern, 0, &val);
+> >  		else
+> > diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+> > index 62e86a5..7b035ab 100644
+> > --- a/kernel/trace/trace_export.c
+> > +++ b/kernel/trace/trace_export.c
+> > @@ -67,7 +67,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+> >  	ret = trace_define_field(event_call, #type, #item,		\
+> >  				 offsetof(typeof(field), item),		\
+> >  				 sizeof(field.item),			\
+> > -				 is_signed_type(type), FILTER_OTHER);	\
+> > +				 is_signed_type(type), filter_type);	\
+> >  	if (ret)							\
+> >  		return ret;
+> >  
+> > @@ -77,7 +77,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+> >  				 offsetof(typeof(field),		\
+> >  					  container.item),		\
+> >  				 sizeof(field.container.item),		\
+> > -				 is_signed_type(type), FILTER_OTHER);	\
+> > +				 is_signed_type(type), filter_type);	\
+> >  	if (ret)							\
+> >  		return ret;
+> >  
+> > @@ -91,7 +91,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+> >  		ret = trace_define_field(event_call, event_storage, #item, \
+> >  				 offsetof(typeof(field), item),		\
+> >  				 sizeof(field.item),			\
+> > -				 is_signed_type(type), FILTER_OTHER);	\
+> > +				 is_signed_type(type), filter_type);	\
+> >  		mutex_unlock(&event_storage_mutex);			\
+> >  		if (ret)						\
+> >  			return ret;					\
+> > @@ -104,7 +104,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
+> >  				 offsetof(typeof(field),		\
+> >  					  container.item),		\
+> >  				 sizeof(field.container.item),		\
+> > -				 is_signed_type(type), FILTER_OTHER);	\
+> > +				 is_signed_type(type), filter_type);	\
+> >  	if (ret)							\
+> >  		return ret;
+> >  
+> > @@ -112,10 +112,24 @@ static void __always_unused ____ftrace_check_##name(void)	\
+> >  #define __dynamic_array(type, item)					\
+> >  	ret = trace_define_field(event_call, #type, #item,		\
+> >  				 offsetof(typeof(field), item),		\
+> > -				 0, is_signed_type(type), FILTER_OTHER);\
+> > +				 0, is_signed_type(type), filter_type);\
+> >  	if (ret)							\
+> >  		return ret;
+> >  
+> > +#define FILTER_TYPE_TRACE_FN           FILTER_TRACE_FN
+> > +#define FILTER_TYPE_TRACE_GRAPH_ENT    FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_GRAPH_RET    FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_CTX          FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_WAKE         FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_STACK                FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_USER_STACK   FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_BPRINT       FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_PRINT                FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_MMIO_RW      FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_MMIO_MAP     FILTER_OTHER
+> > +#define FILTER_TYPE_TRACE_BRANCH       FILTER_OTHER
+> > +#define FILTER_TYPE(arg)               FILTER_TYPE_##arg
+> > +
+> >  #undef FTRACE_ENTRY
+> >  #define FTRACE_ENTRY(name, struct_name, id, tstruct, print)		\
+> >  int									\
+> > @@ -123,6 +137,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+> >  {									\
+> >  	struct struct_name field;					\
+> >  	int ret;							\
+> > +	int filter_type = FILTER_TYPE(id);				\
+> >  									\
+> >  	tstruct;							\
+> >  									\
 > 
 > 
