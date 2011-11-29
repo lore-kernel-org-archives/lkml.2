@@ -1,542 +1,699 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab1K2Eaz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 23:30:55 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:38313 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827Ab1K2Eay (ORCPT
+	id S1753869Ab1K2EbW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 23:31:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65266 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab1K2EbT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 23:30:54 -0500
-X-AuditID: cbfee611-b7c19ae000001aed-96-4ed45da2177d
-Date: Tue, 29 Nov 2011 04:30:52 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH 3/4] max17042: Add POR init procedure from Maxim appnote
-To: "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        =?euc-kr?Q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "Jason.Wortham@maxim-ic.com" <Jason.Wortham@maxim-ic.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20111129042700032@myungjoo.ham
-Msgkey: 20111129042700032@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20111129042700032@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <13353478.106091322541052039.JavaMail.weblogic@epml22>
-DLP-Filter: Pass
-X-Brightmail-Tracker: AAAAAQAAAZE=
-X-CFilter-Loop: Reflected
+	Mon, 28 Nov 2011 23:31:19 -0500
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+        linux-kernel@vger.kernel.org, pebolle@tiscali.nl, mad_soft@inbox.ru,
+        rdunlap@xenotime.net
+Subject: [RFC v6]Trivial: Fix typos in various parts of the kernel, and fix some comments.
+Date: Mon, 28 Nov 2011 20:31:00 -0800
+Message-Id: <1322541060-26444-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pAT4VKWU004616
 
-Sender : dirk.brandewie@gmail.com<dirk.brandewie@gmail.com>
-Date : 2011-11-29 04:49 (GMT+09:00)
-Title : [PATCH 3/4] max17042: Add POR init procedure from Maxim appnote
-> 
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
-> 
-> Add power on reset (POR) init procedure defined by the maxim
-> appnote. Using this procedure ensures that the part is
-> configured/initialized correctly at POR and improves early accuracy of
-> the fuel gauge and informs the fuel gauge with the battery
-> characterization parameters.  The battery characterization parameters
-> come from the maxim characterization procedure.
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-Did you omit your sign-off?
+The below patch fixes some typos in various parts of the kernel, as well as fixes some comments.
+Please let me know if I missed anything, and I will try to get it changed and resent.
 
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: pebolle@tiscali.nl
+Cc: mad_soft@inbox.ru
+Cc: rdunlap@xenotime.net
+---
+ arch/arm/plat-omap/include/plat/serial.h           |    2 +-
+ arch/powerpc/include/asm/io.h                      |    2 +-
+ arch/powerpc/include/asm/keylargo.h                |    2 +-
+ arch/powerpc/mm/numa.c                             |    2 +-
+ arch/sparc/kernel/smp_64.c                         |    2 +-
+ drivers/acpi/acpica/hwxface.c                      |    2 +-
+ drivers/block/xen-blkback/xenbus.c                 |    2 +-
+ drivers/char/ipmi/ipmi_bt_sm.c                     |    2 +-
+ drivers/edac/ppc4xx_edac.c                         |    2 +-
+ drivers/media/video/zoran/zoran_driver.c           |    2 +-
+ drivers/message/fusion/lsi/mpi_ioc.h               |    2 +-
+ drivers/net/irda/nsc-ircc.c                        |    2 +-
+ drivers/net/irda/via-ircc.c                        |    4 ++--
+ drivers/net/irda/w83977af_ir.c                     |    2 +-
+ drivers/net/wimax/i2400m/i2400m.h                  |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/hw.c        |    4 ++--
+ drivers/parport/parport_mfc3.c                     |    2 +-
+ drivers/scsi/aic7xxx/aicasm/aicasm.c               |    2 +-
+ drivers/scsi/ips.c                                 |    2 +-
+ drivers/scsi/qla4xxx/ql4_fw.h                      |    2 +-
+ drivers/scsi/vmw_pvscsi.c                          |    2 +-
+ .../comedi/drivers/addi-data/hwdrv_apci3200.c      |    2 +-
+ drivers/staging/cxt1e1/libsbew.h                   |    2 +-
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ++--
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |    2 +-
+ drivers/staging/iio/industrialio-trigger.c         |    2 +-
+ drivers/staging/sep/sep_driver.c                   |    2 +-
+ drivers/staging/tidspbridge/Kconfig                |    2 +-
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |    2 +-
+ drivers/usb/host/hwa-hc.c                          |    2 +-
+ drivers/usb/host/imx21-hcd.c                       |    2 +-
+ drivers/usb/otg/fsl_otg.c                          |    2 +-
+ drivers/uwb/i1480/dfu/usb.c                        |    2 +-
+ fs/btrfs/inode.c                                   |    2 +-
+ fs/ext3/inode.c                                    |    2 +-
+ fs/ext4/inode.c                                    |    2 +-
+ fs/nfsd/nfs4state.c                                |    2 +-
+ fs/ocfs2/file.c                                    |    2 +-
+ fs/xfs/xfs_file.c                                  |    6 +++---
+ fs/xfs/xfs_log_cil.c                               |    2 +-
+ include/drm/drmP.h                                 |    2 +-
+ include/linux/wanrouter.h                          |    2 +-
+ include/net/mac80211.h                             |    2 +-
+ net/ipv4/ip_fragment.c                             |    2 +-
+ net/mac80211/work.c                                |    2 +-
+ net/sctp/endpointola.c                             |    2 +-
+ 46 files changed, 51 insertions(+), 51 deletions(-)
 
-> Summary:
-> ---
-> drivers/power/max17042_battery.c       |  348 ++++++++++++++++++++++++++++++++
-> include/linux/power/max17042_battery.h |   56 +++++
-> 2 files changed, 404 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-> index 33fdce0..1eef5f9 100644
-> --- a/drivers/power/max17042_battery.c
-> +++ b/drivers/power/max17042_battery.c
-> @@ -26,10 +26,34 @@
-> #include 
-> #include 
-> #include 
-> +#include 
-> #include 
-> #include 
-> #include 
-> 
-> +/* Status register bits */
-> +#define STATUS_POR_BIT         (1 << 1)
-> +#define STATUS_BST_BIT         (1 << 3)
-> +#define STATUS_VMN_BIT         (1 << 8)
-> +#define STATUS_TMN_BIT         (1 << 9)
-> +#define STATUS_SMN_BIT         (1 << 10)
-> +#define STATUS_BI_BIT          (1 << 11)
-> +#define STATUS_VMX_BIT         (1 << 12)
-> +#define STATUS_TMX_BIT         (1 << 13)
-> +#define STATUS_SMX_BIT         (1 << 14)
-> +#define STATUS_BR_BIT          (1 << 15)
-> +
-> +#define VFSOC0_LOCK 0x0000
-> +#define VFSOC0_UNLOCK 0x0080
-> +#define MODEL_UNLOCK1 0X0059
-> +#define MODEL_UNLOCK2 0X00C4
-> +#define MODEL_LOCK1 0X0000
-> +#define MODEL_LOCK2 0X0000
-> +
-> +#define dQ_ACC_DIV 0x4
-> +#define dP_ACC_100 0x1900
-> +#define dP_ACC_200 0x3200
-> +
-> struct max17042_chip {
-> struct i2c_client *client;
-> struct power_supply battery;
-> @@ -181,6 +205,324 @@ static int max17042_get_property(struct power_supply *psy,
-> return 0;
-> }
-> 
-> +static int max17042_write_verify_reg(struct i2c_client *client,
-> + u8 reg, u16 value)
-> +{
-> + int retries = 8;
-> + int ret;
-> + u16 read_value;
-> +
-> + do {
-> + ret = i2c_smbus_write_word_data(client, reg, value);
-> + read_value =  max17042_read_reg(client, reg);
-> + if (read_value != value) {
-> + ret = -EIO;
-> + retries--;
-> + }
-> + } while (retries && read_value != value);
-> +
-> + if (ret < 0)
-> + dev_err(&client->dev, "%s: err %d ", __func__, ret);
-> +
-> + return ret;
-> +}
-> +
-> +static inline void max17042_override_por(
-> + struct i2c_client *client, u8 reg, u16 value)
-> +{
-> + if (value)
-> + max17042_write_reg(client, reg, value);
-> +}
-> +
-> +static inline void max10742_unlock_model(struct max17042_chip *chip)
-> +{
-> + struct i2c_client *client = chip->client;
-> + max17042_write_reg(client, MAX17042_MLOCKReg1, MODEL_UNLOCK1);
-> + max17042_write_reg(client, MAX17042_MLOCKReg2, MODEL_UNLOCK2);
-> +}
-> +
-> +static inline void max10742_lock_model(struct max17042_chip *chip)
-> +{
-> + struct i2c_client *client = chip->client;
-> + max17042_write_reg(client, MAX17042_MLOCKReg1, MODEL_LOCK1);
-> + max17042_write_reg(client, MAX17042_MLOCKReg2, MODEL_LOCK2);
-> +}
-> +
-> +static inline void max17042_write_model_data(struct max17042_chip *chip,
-> + u8 addr, int size)
-> +{
-> + struct i2c_client *client = chip->client;
-> + int i;
-> + for (i = 0; i < size; i++)
-> + max17042_write_reg(client, addr + i,
-> + chip->pdata->config_data->cell_char_tbl[i]);
-> +}
-> +
-> +static inline void max17042_read_model_data(struct max17042_chip *chip,
-> + u8 addr, u16 *data, int size)
-> +{
-> + struct i2c_client *client = chip->client;
-> + int i;
-> +
-> + for (i = 0; i < size; i++)
-> + data[i] = max17042_read_reg(client, addr + i);
-> +}
-> +
-> +static inline int max17042_model_data_compare(struct max17042_chip *chip,
-> + u16 *data1, u16 *data2, int size)
-> +{
-> + int i;
-> +
-> + if (memcmp(data1, data2, size)) {
-> + dev_err(&chip->client->dev, "%s compare failed ", __func__);
-> + for (i = 0; i < size; i++)
-> + dev_info(&chip->client->dev, "0x%x, 0x%x",
-> + data1[i], data2[i]);
-> + dev_info(&chip->client->dev, " ");
-> + return -EINVAL;
-> + }
-> + return 0;
-> +}
-> +
-> +static int max17042_init_model(struct max17042_chip *chip)
-> +{
-> + int ret;
-> + int table_size =
-> + sizeof(chip->pdata->config_data->cell_char_tbl)/sizeof(u16);
-> + u16 *temp_data;
-> +
-> + temp_data = kzalloc(table_size, GFP_KERNEL);
-> + if (!temp_data)
-> + return -ENOMEM;
-> +
-> + max10742_unlock_model(chip);
-> + max17042_write_model_data(chip, MAX17042_MODELChrTbl,
-> + table_size);
-> + max17042_read_model_data(chip, MAX17042_MODELChrTbl, temp_data,
-> + table_size);
-> +
-> + ret = max17042_model_data_compare(
-> + chip,
-> + chip->pdata->config_data->cell_char_tbl,
-> + temp_data,
-> + table_size);
-> +
-> + max10742_lock_model(chip);
-> + kfree(temp_data);
-> +
-> + return ret;
-> +}
-> +
-> +static int max17042_verify_model_lock(struct max17042_chip *chip)
-> +{
-> + int i;
-> + int table_size =
-> + sizeof(chip->pdata->config_data->cell_char_tbl)/sizeof(u16);
-> + u16 *temp_data;
-> +
-> + temp_data = kzalloc(table_size, GFP_KERNEL);
-> + if (!temp_data)
-> + return -ENOMEM;
-> +
-> + max17042_read_model_data(chip, MAX17042_MODELChrTbl, temp_data,
-> + table_size);
-> + for (i = 0; i < table_size; i++)
-> + if (temp_data[i])
-> + return -EINVAL;
-> + kfree(temp_data);
-> + return 0;
-> +}
-> +
-> +static void max17042_write_config_regs(struct max17042_chip *chip)
-> +{
-> + struct max17042_config_data *config = chip->pdata->config_data;
-> +
-> + max17042_write_reg(chip->client, MAX17042_CONFIG, config->config);
-> + max17042_write_reg(chip->client, MAX17042_LearnCFG, config->learn_cfg);
-> + max17042_write_reg(chip->client, MAX17042_FilterCFG,
-> + config->filter_cfg);
-> + max17042_write_reg(chip->client, MAX17042_RelaxCFG, config->relax_cfg);
-> +}
-> +
-> +static void  max17042_write_custom_regs(struct max17042_chip *chip)
-> +{
-> + struct max17042_config_data *config = chip->pdata->config_data;
-> +
-> + max17042_write_verify_reg(chip->client, MAX17042_RCOMP0,
-> + config->rcomp0);
-> + max17042_write_verify_reg(chip->client, MAX17042_TempCo,
-> + config->tcompc0);
-> + max17042_write_reg(chip->client, MAX17042_EmptyTempCo,
-> + config->empty_tempco);
-> + max17042_write_verify_reg(chip->client, MAX17042_K_empty0,
-> + config->kempty0);
-> + max17042_write_verify_reg(chip->client, MAX17042_ICHGTerm,
-> + config->ichgt_term);
-> +}
-> +
-> +static void max17042_update_capacity_regs(struct max17042_chip *chip)
-> +{
-> + struct max17042_config_data *config = chip->pdata->config_data;
-> +
-> + max17042_write_verify_reg(chip->client, MAX17042_FullCAP,
-> + config->fullcap);
-> + max17042_write_reg(chip->client, MAX17042_DesignCap,
-> + config->design_cap);
-> + max17042_write_verify_reg(chip->client, MAX17042_FullCAPNom,
-> + config->fullcapnom);
-> +}
-> +
-> +static void max17042_reset_vfsoc0_reg(struct max17042_chip *chip)
-> +{
-> + u16 vfSoc;
-> +
-> + vfSoc = max17042_read_reg(chip->client, MAX17042_VFSOC);
-> + max17042_write_reg(chip->client, MAX17042_VFSOC0Enable, VFSOC0_UNLOCK);
-> + max17042_write_verify_reg(chip->client, MAX17042_VFSOC0, vfSoc);
-> + max17042_write_reg(chip->client, MAX17042_VFSOC0Enable, VFSOC0_LOCK);
-> +}
-> +
-> +static void max17042_load_new_capacity_params(struct max17042_chip *chip)
-> +{
-> + u16 full_cap0, rep_cap, dq_acc, vfSoc;
-> + u32 rem_cap;
-> +
-> + struct max17042_config_data *config = chip->pdata->config_data;
-> +
-> + full_cap0 = max17042_read_reg(chip->client, MAX17042_FullCAP0);
-> + vfSoc = max17042_read_reg(chip->client, MAX17042_VFSOC);
-> +
-> + /* fg_vfSoc needs to shifted by 8 bits to get the
-> + * perc in 1% accuracy, to get the right rem_cap multiply
-> + * full_cap0, fg_vfSoc and devide by 100
-> + */
-> + rem_cap = ((vfSoc >> 8) * full_cap0) / 100;
-> + max17042_write_verify_reg(chip->client, MAX17042_RemCap, (u16)rem_cap);
-> +
-> + rep_cap = (u16)rem_cap;
-> + max17042_write_verify_reg(chip->client, MAX17042_RepCap, rep_cap);
-> +
-> + /* Write dQ_acc to 200% of Capacity and dP_acc to 200% */
-> + dq_acc = config->fullcap / dQ_ACC_DIV;
-> + max17042_write_verify_reg(chip->client, MAX17042_dQacc, dq_acc);
-> + max17042_write_verify_reg(chip->client, MAX17042_dPacc, dP_ACC_200);
-> +
-> + max17042_write_verify_reg(chip->client, MAX17042_FullCAP,
-> + config->fullcap);
-> + max17042_write_reg(chip->client, MAX17042_DesignCap,
-> + config->design_cap);
-> + max17042_write_verify_reg(chip->client, MAX17042_FullCAPNom,
-> + config->fullcapnom);
-> +}
-> +
-> +/*
-> + * Block write all the override values coming from platform data.
-> + * This function MUST be called before the POR initialization proceedure
-> + * specified by maxim.
-> + */
-> +static inline void max17042_override_por_values(struct max17042_chip *chip)
-> +{
-> + struct i2c_client *client = chip->client;
-> + struct max17042_config_data *config = chip->pdata->config_data;
-> +
-> + max17042_override_por(client, MAX17042_TGAIN, config->tgain);
-> + max17042_override_por(client, MAx17042_TOFF, config->toff);
-> + max17042_override_por(client, MAX17042_CGAIN, config->cgain);
-> + max17042_override_por(client, MAX17042_COFF, config->coff);
-> +
-> + max17042_override_por(client, MAX17042_VALRT_Th, config->valrt_thresh);
-> + max17042_override_por(client, MAX17042_TALRT_Th, config->talrt_thresh);
-> + max17042_override_por(client, MAX17042_SALRT_Th,
-> + config->soc_alrt_thresh);
-> + max17042_override_por(client, MAX17042_CONFIG, config->config);
-> + max17042_override_por(client, MAX17042_SHDNTIMER, config->shdntimer);
-> +
-> + max17042_override_por(client, MAX17042_DesignCap, config->design_cap);
-> + max17042_override_por(client, MAX17042_ICHGTerm, config->ichgt_term);
-> +
-> + max17042_override_por(client, MAX17042_AtRate, config->at_rate);
-> + max17042_override_por(client, MAX17042_LearnCFG, config->learn_cfg);
-> + max17042_override_por(client, MAX17042_FilterCFG, config->filter_cfg);
-> + max17042_override_por(client, MAX17042_RelaxCFG, config->relax_cfg);
-> + max17042_override_por(client, MAX17042_MiscCFG, config->misc_cfg);
-> + max17042_override_por(client, MAX17042_MaskSOC, config->masksoc);
-> +
-> + max17042_override_por(client, MAX17042_FullCAP, config->fullcap);
-> + max17042_override_por(client, MAX17042_FullCAPNom, config->fullcapnom);
-> + max17042_override_por(client, MAX17042_SOC_empty, config->socempty);
-> + max17042_override_por(client, MAX17042_LAvg_empty, config->lavg_empty);
-> + max17042_override_por(client, MAX17042_dQacc, config->dqacc);
-> + max17042_override_por(client, MAX17042_dPacc, config->dpacc);
-> +
-> + max17042_override_por(client, MAX17042_V_empty, config->vempty);
-> + max17042_override_por(client, MAX17042_TempNom, config->temp_nom);
-> + max17042_override_por(client, MAX17042_TempLim, config->temp_lim);
-> + max17042_override_por(client, MAX17042_FCTC, config->fctc);
-> + max17042_override_por(client, MAX17042_RCOMP0, config->rcomp0);
-> + max17042_override_por(client, MAX17042_TempCo, config->tcompc0);
-> + max17042_override_por(client, MAX17042_EmptyTempCo,
-> + config->empty_tempco);
-> + max17042_override_por(client, MAX17042_K_empty0, config->kempty0);
-> +}
-> +
-> +static int max17042_init_chip(struct max17042_chip *chip)
-> +{
-> + int val;
-> + int ret;
-> +
-> + val = max17042_read_reg(chip->client, MAX17042_STATUS);
-> +
-> + if (val & STATUS_POR_BIT) {
-> +
-> + max17042_override_por_values(chip);
-> + /* After Power up, the MAX17042 requires 500mS in order
-> + * to perform signal debouncing and initial SOC reporting
-> + */
-> + msleep(500);
-> +
-> + /* Initialize configaration */
-> + max17042_write_config_regs(chip);
-> +
-> + /* write cell characterization data */
-> + ret = max17042_init_model(chip);
-> + if (ret) {
-> + dev_err(&chip->client->dev, "%s init failed ",
-> + __func__);
-> + return -EIO;
-> + }
-> + max17042_verify_model_lock(chip);
-> + if (ret) {
-> + dev_err(&chip->client->dev, "%s lock verify failed ",
-> + __func__);
-> + return -EIO;
-> + }
-> + /* write custom parameters */
-> + max17042_write_custom_regs(chip);
-> +
-> + /* update capacity params */
-> + max17042_update_capacity_regs(chip);
-> +
-> + /* delay must be atleast 350mS to allow VFSOC
-> + * to be calculated from the new configuration
-> + */
-> + msleep(350);
-> +
-> + /* reset vfsoc0 reg */
-> + max17042_reset_vfsoc0_reg(chip);
-> +
-> +
-> + /* load new capacity params */
-> + max17042_load_new_capacity_params(chip);
-> +
-> + /* Init complete, Clear the POR bit */
-> + val = max17042_read_reg(chip->client, MAX17042_STATUS);
-> + max17042_write_reg(chip->client, MAX17042_STATUS,
-> + val & (~STATUS_POR_BIT));
-> + }
-> + return 0;
-> +}
-> +
-> +
-> static void max17042_init_worker(struct work_struct *work)
-> {
-> struct max17042_chip *chip = container_of(work,
-> @@ -194,6 +536,12 @@ static void max17042_init_worker(struct work_struct *work)
-> max17042_set_reg(client, chip->pdata->init_data,
-> chip->pdata->num_init_data);
-> 
-> + if (chip->pdata->enable_por_init && chip->pdata->config_data) {
-> + ret = max17042_init_chip(chip);
-> + if (ret)
-> + return;
-> + }
-> +
-> if (!chip->pdata->enable_current_sense) {
-> max17042_write_reg(client, MAX17042_CGAIN, 0x0000);
-> max17042_write_reg(client, MAX17042_MiscCFG, 0x0003);
-> diff --git a/include/linux/power/max17042_battery.h b/include/linux/power/max17042_battery.h
-> index 67eeada..e01b167 100644
-> --- a/include/linux/power/max17042_battery.h
-> +++ b/include/linux/power/max17042_battery.h
-> @@ -27,6 +27,8 @@
-> #define MAX17042_BATTERY_FULL (100)
-> #define MAX17042_DEFAULT_SNS_RESISTOR (10000)
-> 
-> +#define MAX17042_CHARACTERIZATION_DATA_SIZE 48
-> +
-> enum max17042_register {
-> MAX17042_STATUS = 0x00,
-> MAX17042_VALRT_Th = 0x01,
-> @@ -124,10 +126,64 @@ struct max17042_reg_data {
-> u16 data;
-> };
-> 
-> +struct max17042_config_data {
-> + /* External current sense resistor value in milli-ohms */
-> + u32 cur_sense_val;
-> +
-> + /* A/D measurement */
-> + u16 tgain; /* 0x2C */
-> + u16 toff; /* 0x2D */
-> + u16 cgain; /* 0x2E */
-> + u16 coff; /* 0x2F */
-> +
-> + /* Alert / Status */
-> + u16 valrt_thresh; /* 0x01 */
-> + u16 talrt_thresh; /* 0x02 */
-> + u16 soc_alrt_thresh; /* 0x03 */
-> + u16 config; /* 0x01D */
-> + u16 shdntimer; /* 0x03F */
-> +
-> + /* App data */
-> + u16 design_cap; /* 0x18 */
-> + u16 ichgt_term; /* 0x1E */
-> +
-> + /* MG3 config */
-> + u16 at_rate; /* 0x04 */
-> + u16 learn_cfg; /* 0x28 */
-> + u16 filter_cfg; /* 0x29 */
-> + u16 relax_cfg; /* 0x2A */
-> + u16 misc_cfg; /* 0x2B */
-> + u16 masksoc; /* 0x32 */
-> +
-> + /* MG3 save and restore */
-> + u16 fullcap; /* 0x10 */
-> + u16 fullcapnom; /* 0x23 */
-> + u16 socempty; /* 0x33 */
-> + u16 lavg_empty; /* 0x36 */
-> + u16 dqacc; /* 0x45 */
-> + u16 dpacc; /* 0x46 */
-> +
-> + /* Cell technology from power_supply.h */
-> + u16 cell_technology;
-> +
-> + /* Cell Data */
-> + u16 vempty; /* 0x12 */
-> + u16 temp_nom; /* 0x24 */
-> + u16 temp_lim; /* 0x25 */
-> + u16 fctc; /* 0x37 */
-> + u16 rcomp0; /* 0x38 */
-> + u16 tcompc0; /* 0x39 */
-> + u16 empty_tempco; /* 0x3A */
-> + u16 kempty0; /* 0x3B */
-> + u16 cell_char_tbl[MAX17042_CHARACTERIZATION_DATA_SIZE];
-> +} __packed;
-> +
-> struct max17042_platform_data {
-> struct max17042_reg_data *init_data;
-> + struct max17042_config_data *config_data;
-> int num_init_data; /* Number of enties in init_data array */
-> bool enable_current_sense;
-> + bool enable_por_init; /* Use POR init from Maxim appnote */
-> 
-> /*
-> * R_sns in micro-ohms.
-> -- 
-> 1.7.7.3
-> 
-> 
-
- MyungJoo Ham («‘∏Ì¡÷)
-
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: +82-10-6714-2858 / office: +82-31-279-8033
-
-
-
+diff --git a/arch/arm/plat-omap/include/plat/serial.h b/arch/arm/plat-omap/include/plat/serial.h
+index 1ab9fd6..ac44bde 100644
+--- a/arch/arm/plat-omap/include/plat/serial.h
++++ b/arch/arm/plat-omap/include/plat/serial.h
+@@ -2,7 +2,7 @@
+  * arch/arm/plat-omap/include/mach/serial.h
+  *
+  * Copyright (C) 2009 Texas Instruments
+- * Addded OMAP4 support- Santosh Shilimkar <santosh.shilimkar@ti.com>
++ * Added OMAP4 support- Santosh Shilimkar <santosh.shilimkar@ti.com>
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+diff --git a/arch/powerpc/include/asm/io.h b/arch/powerpc/include/asm/io.h
+index 45698d5..a3855b8 100644
+--- a/arch/powerpc/include/asm/io.h
++++ b/arch/powerpc/include/asm/io.h
+@@ -394,7 +394,7 @@ __do_out_asm(_rec_outl, "stwbrx")
+ #endif /* CONFIG_PPC32 */
  
+ /* The "__do_*" operations below provide the actual "base" implementation
+- * for each of the defined acccessor. Some of them use the out_* functions
++ * for each of the defined accessors. Some of them use the out_* functions
+  * directly, some of them still use EEH, though we might change that in the
+  * future. Those macros below provide the necessary argument swapping and
+  * handling of the IO base for PIO.
+diff --git a/arch/powerpc/include/asm/keylargo.h b/arch/powerpc/include/asm/keylargo.h
+index d8520ef..fc195d0 100644
+--- a/arch/powerpc/include/asm/keylargo.h
++++ b/arch/powerpc/include/asm/keylargo.h
+@@ -51,7 +51,7 @@
+ 
+ #define KL_GPIO_SOUND_POWER		(KEYLARGO_GPIO_0+0x05)
+ 
+-/* Hrm... this one is only to be used on Pismo. It seeem to also
++/* Hrm... this one is only to be used on Pismo. It seems to also
+  * control the timebase enable on other machines. Still to be
+  * experimented... --BenH.
+  */
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index b22a83a..ae0a611 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -521,7 +521,7 @@ static int of_get_assoc_arrays(struct device_node *memory,
+ 	aa->n_arrays = *prop++;
+ 	aa->array_sz = *prop++;
+ 
+-	/* Now that we know the number of arrrays and size of each array,
++	/* Now that we know the number of arrays and size of each array,
+ 	 * revalidate the size of the property read in.
+ 	 */
+ 	if (len < (aa->n_arrays * aa->array_sz + 2) * sizeof(unsigned int))
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index 7560772..3b1bd7c 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -840,7 +840,7 @@ static void tsb_sync(void *info)
+ 	struct trap_per_cpu *tp = &trap_block[raw_smp_processor_id()];
+ 	struct mm_struct *mm = info;
+ 
+-	/* It is not valid to test "currrent->active_mm == mm" here.
++	/* It is not valid to test "current->active_mm == mm" here.
+ 	 *
+ 	 * The value of "current" is not changed atomically with
+ 	 * switch_mm().  But that's OK, we just need to check the
+diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
+index c2793a8..d707756 100644
+--- a/drivers/acpi/acpica/hwxface.c
++++ b/drivers/acpi/acpica/hwxface.c
+@@ -356,7 +356,7 @@ ACPI_EXPORT_SYMBOL(acpi_read_bit_register)
+  *
+  * PARAMETERS:  register_id     - ID of ACPI Bit Register to access
+  *              Value           - Value to write to the register, in bit
+- *                                position zero. The bit is automaticallly
++ *                                position zero. The bit is automatically
+  *                                shifted to the correct position.
+  *
+  * RETURN:      Status
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index f759ad4..8069322 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -613,7 +613,7 @@ static void frontend_changed(struct xenbus_device *dev,
+ 	case XenbusStateConnected:
+ 		/*
+ 		 * Ensure we connect even when two watches fire in
+-		 * close successsion and we miss the intermediate value
++		 * close succession and we miss the intermediate value
+ 		 * of frontend_state.
+ 		 */
+ 		if (dev->state == XenbusStateConnected)
+diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+index 3ed20e8..cdd4c09f 100644
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -560,7 +560,7 @@ static enum si_sm_result bt_event(struct si_sm_data *bt, long time)
+ 		BT_CONTROL(BT_H_BUSY);		/* set */
+ 
+ 		/*
+-		 * Uncached, ordered writes should just proceeed serially but
++		 * Uncached, ordered writes should just proceed serially but
+ 		 * some BMCs don't clear B2H_ATN with one hit.  Fast-path a
+ 		 * workaround without too much penalty to the general case.
+ 		 */
+diff --git a/drivers/edac/ppc4xx_edac.c b/drivers/edac/ppc4xx_edac.c
+index 3840096..fc75706 100644
+--- a/drivers/edac/ppc4xx_edac.c
++++ b/drivers/edac/ppc4xx_edac.c
+@@ -142,7 +142,7 @@
+ 
+ /*
+  * The ibm,sdram-4xx-ddr2 Device Control Registers (DCRs) are
+- * indirectly acccessed and have a base and length defined by the
++ * indirectly accessed and have a base and length defined by the
+  * device tree. The base can be anything; however, we expect the
+  * length to be precisely two registers, the first for the address
+  * window and the second for the data window.
+diff --git a/drivers/media/video/zoran/zoran_driver.c b/drivers/media/video/zoran/zoran_driver.c
+index d4d05d2..f6d2641 100644
+--- a/drivers/media/video/zoran/zoran_driver.c
++++ b/drivers/media/video/zoran/zoran_driver.c
+@@ -1550,7 +1550,7 @@ static int zoran_enum_fmt(struct zoran *zr, struct v4l2_fmtdesc *fmt, int flag)
+ 		if (zoran_formats[i].flags & flag && num++ == fmt->index) {
+ 			strncpy(fmt->description, zoran_formats[i].name,
+ 				sizeof(fmt->description) - 1);
+-			/* fmt struct pre-zeroed, so adding '\0' not neeed */
++			/* fmt struct pre-zeroed, so adding '\0' not needed */
+ 			fmt->pixelformat = zoran_formats[i].fourcc;
+ 			if (zoran_formats[i].flags & ZORAN_FORMAT_COMPRESSED)
+ 				fmt->flags |= V4L2_FMT_FLAG_COMPRESSED;
+diff --git a/drivers/message/fusion/lsi/mpi_ioc.h b/drivers/message/fusion/lsi/mpi_ioc.h
+index fd62228..19fb21b 100644
+--- a/drivers/message/fusion/lsi/mpi_ioc.h
++++ b/drivers/message/fusion/lsi/mpi_ioc.h
+@@ -857,7 +857,7 @@ typedef struct _EVENT_DATA_SAS_DISCOVERY
+ #define MPI_EVENT_SAS_DSCVRY_PHY_BITS_MASK                  (0xFFFF0000)
+ #define MPI_EVENT_SAS_DSCVRY_PHY_BITS_SHIFT                 (16)
+ 
+-/* SAS Discovery Errror Event data */
++/* SAS Discovery Error Event data */
+ 
+ typedef struct _EVENT_DATA_DISCOVERY_ERROR
+ {
+diff --git a/drivers/net/irda/nsc-ircc.c b/drivers/net/irda/nsc-ircc.c
+index b56636d..2a4f2f1 100644
+--- a/drivers/net/irda/nsc-ircc.c
++++ b/drivers/net/irda/nsc-ircc.c
+@@ -1664,7 +1664,7 @@ static int nsc_ircc_dma_xmit_complete(struct nsc_ircc_cb *self)
+ 	switch_bank(iobase, BANK0);
+         outb(inb(iobase+MCR) & ~MCR_DMA_EN, iobase+MCR);
+ 	
+-	/* Check for underrrun! */
++	/* Check for underrun! */
+ 	if (inb(iobase+ASCR) & ASCR_TXUR) {
+ 		self->netdev->stats.tx_errors++;
+ 		self->netdev->stats.tx_fifo_errors++;
+diff --git a/drivers/net/irda/via-ircc.c b/drivers/net/irda/via-ircc.c
+index 6d64790..2d456dd 100644
+--- a/drivers/net/irda/via-ircc.c
++++ b/drivers/net/irda/via-ircc.c
+@@ -942,14 +942,14 @@ static int via_ircc_dma_xmit_complete(struct via_ircc_cb *self)
+ 	iobase = self->io.fir_base;
+ 	/* Disable DMA */
+ //      DisableDmaChannel(self->io.dma);
+-	/* Check for underrrun! */
++	/* Check for underrun! */
+ 	/* Clear bit, by writing 1 into it */
+ 	Tx_status = GetTXStatus(iobase);
+ 	if (Tx_status & 0x08) {
+ 		self->netdev->stats.tx_errors++;
+ 		self->netdev->stats.tx_fifo_errors++;
+ 		hwreset(self);
+-// how to clear underrrun ?
++	/* how to clear underrun? */
+ 	} else {
+ 		self->netdev->stats.tx_packets++;
+ 		ResetChip(iobase, 3);
+diff --git a/drivers/net/irda/w83977af_ir.c b/drivers/net/irda/w83977af_ir.c
+index c436660..7d43506 100644
+--- a/drivers/net/irda/w83977af_ir.c
++++ b/drivers/net/irda/w83977af_ir.c
+@@ -677,7 +677,7 @@ static void w83977af_dma_xmit_complete(struct w83977af_ir *self)
+ 	switch_bank(iobase, SET0);
+ 	outb(inb(iobase+HCR) & ~HCR_EN_DMA, iobase+HCR);
+ 	
+-	/* Check for underrrun! */
++	/* Check for underrun! */
+ 	if (inb(iobase+AUDR) & AUDR_UNDR) {
+ 		IRDA_DEBUG(0, "%s(), Transmit underrun!\n", __func__ );
+ 		
+diff --git a/drivers/net/wimax/i2400m/i2400m.h b/drivers/net/wimax/i2400m/i2400m.h
+index c421a61..c806d45 100644
+--- a/drivers/net/wimax/i2400m/i2400m.h
++++ b/drivers/net/wimax/i2400m/i2400m.h
+@@ -75,7 +75,7 @@
+  *        device is up and running or shutdown (through ifconfig up /
+  *        down). Bus-generic only.
+  *
+- *  - control ops: control.c - implements various commmands for
++ *  - control ops: control.c - implements various commands for
+  *        controlling the device. bus-generic only.
+  *
+  *  - device model glue: driver.c - implements helpers for the
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+index f5bd3a3..9d89d7c 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192de/hw.c
+@@ -466,8 +466,8 @@ void rtl92de_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
+ 		bool int_migration = *(bool *) (val);
+ 
+ 		if (int_migration) {
+-			/* Set interrrupt migration timer and
+-			 * corresponging Tx/Rx counter.
++			/* Set interrupt migration timer and
++			 * corresponding Tx/Rx counter.
+ 			 * timer 25ns*0xfa0=100us for 0xf packets.
+ 			 * 0x306:Rx, 0x307:Tx */
+ 			rtl_write_dword(rtlpriv, REG_INT_MIG, 0xfe000fa0);
+diff --git a/drivers/parport/parport_mfc3.c b/drivers/parport/parport_mfc3.c
+index 362db31..1c0c642 100644
+--- a/drivers/parport/parport_mfc3.c
++++ b/drivers/parport/parport_mfc3.c
+@@ -397,7 +397,7 @@ static void __exit parport_mfc3_exit(void)
+ 
+ 
+ MODULE_AUTHOR("Joerg Dorchain <joerg@dorchain.net>");
+-MODULE_DESCRIPTION("Parport Driver for Multiface 3 expansion cards Paralllel Port");
++MODULE_DESCRIPTION("Parport Driver for Multiface 3 expansion cards Parallel Port");
+ MODULE_SUPPORTED_DEVICE("Multiface 3 Parallel Port");
+ MODULE_LICENSE("GPL");
+ 
+diff --git a/drivers/scsi/aic7xxx/aicasm/aicasm.c b/drivers/scsi/aic7xxx/aicasm/aicasm.c
+index e4a7787..2e3117a 100644
+--- a/drivers/scsi/aic7xxx/aicasm/aicasm.c
++++ b/drivers/scsi/aic7xxx/aicasm/aicasm.c
+@@ -1,5 +1,5 @@
+ /*
+- * Aic7xxx SCSI host adapter firmware asssembler
++ * Aic7xxx SCSI host adapter firmware assembler
+  *
+  * Copyright (c) 1997, 1998, 2000, 2001 Justin T. Gibbs.
+  * Copyright (c) 2001, 2002 Adaptec Inc.
+diff --git a/drivers/scsi/ips.c b/drivers/scsi/ips.c
+index 218f71a..d77891e 100644
+--- a/drivers/scsi/ips.c
++++ b/drivers/scsi/ips.c
+@@ -4494,7 +4494,7 @@ ips_init_scb(ips_ha_t * ha, ips_scb_t * scb)
+ /*                                                                          */
+ /*   Initialize a CCB to default values                                     */
+ /*                                                                          */
+-/* ASSUMED to be callled from within a lock                                 */
++/* ASSUMED to be called from within a lock                                 */
+ /*                                                                          */
+ /****************************************************************************/
+ static ips_scb_t *
+diff --git a/drivers/scsi/qla4xxx/ql4_fw.h b/drivers/scsi/qla4xxx/ql4_fw.h
+index cbd5a20..866af45 100644
+--- a/drivers/scsi/qla4xxx/ql4_fw.h
++++ b/drivers/scsi/qla4xxx/ql4_fw.h
+@@ -744,7 +744,7 @@ struct dev_db_entry {
+ 	uint8_t res4[0x36];	/* 8A-BF */
+ 	uint8_t iscsi_name[0xE0];	/* C0-19F : xxzzy Make this a
+ 					 * pointer to a string so we
+-					 * don't have to reserve soooo
++					 * don't have to reserve so
+ 					 * much RAM */
+ 	uint8_t link_local_ipv6_addr[0x10]; /* 1A0-1AF */
+ 	uint8_t res5[0x10];	/* 1B0-1BF */
+diff --git a/drivers/scsi/vmw_pvscsi.c b/drivers/scsi/vmw_pvscsi.c
+index a18996d..7264116 100644
+--- a/drivers/scsi/vmw_pvscsi.c
++++ b/drivers/scsi/vmw_pvscsi.c
+@@ -1144,7 +1144,7 @@ static void pvscsi_release_resources(struct pvscsi_adapter *adapter)
+  *
+  * These are statically allocated.  Trying to be clever was not worth it.
+  *
+- * Dynamic allocation can fail, and we can't go deeep into the memory
++ * Dynamic allocation can fail, and we can't go deep into the memory
+  * allocator, since we're a SCSI driver, and trying too hard to allocate
+  * memory might generate disk I/O.  We also don't want to fail disk I/O
+  * in that case because we can't get an allocation - the I/O could be
+diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.c
+index c75a1a1..f9545b0 100644
+--- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.c
++++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci3200.c
+@@ -3598,7 +3598,7 @@ int i_APCI3200_InterruptHandleEos(struct comedi_device *dev)
+ 			n = comedi_buf_write_alloc(s->async,
+ 				(7 + 12) * sizeof(unsigned int));
+ 
+-			/*  If not enougth memory available, event is set to Comedi Buffer Errror */
++			/*  If not enough memory available, event is set to Comedi Buffer Error */
+ 			if (n > ((7 + 12) * sizeof(unsigned int))) {
+ 				printk("\ncomedi_buf_write_alloc n = %i", n);
+ 				s->async->events |= COMEDI_CB_ERROR;
+diff --git a/drivers/staging/cxt1e1/libsbew.h b/drivers/staging/cxt1e1/libsbew.h
+index 5c99646..ae8f06d 100644
+--- a/drivers/staging/cxt1e1/libsbew.h
++++ b/drivers/staging/cxt1e1/libsbew.h
+@@ -323,7 +323,7 @@ struct sbecom_port_param
+ #define CFG_CH_DINV_TX      0x02
+ 
+ 
+-/* Posssible resettable chipsets/functions */
++/* Possible resettable chipsets/functions */
+ #define RESET_DEV_TEMUX     1
+ #define RESET_DEV_TECT3     RESET_DEV_TEMUX
+ #define RESET_DEV_PLL       2
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index b3d743a..917bbb0 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -344,10 +344,10 @@ static void ft1000_reset_asic(struct net_device *dev)
+ 	}
+ 	mdelay(1);
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+-		// set watermark to -1 in order to not generate an interrrupt
++		// set watermark to -1 in order to not generate an interrupt
+ 		ft1000_write_reg(dev, FT1000_REG_WATERMARK, 0xffff);
+ 	} else {
+-		// set watermark to -1 in order to not generate an interrrupt
++		// set watermark to -1 in order to not generate an interrupt
+ 		ft1000_write_reg(dev, FT1000_REG_MAG_WATERMARK, 0xffff);
+ 	}
+ 	// clear interrupts
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index aaf44c3..43b1d36 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -601,7 +601,7 @@ static void ft1000_reset_asic(struct net_device *dev)
+ 
+ 	mdelay(1);
+ 
+-	/* set watermark to -1 in order to not generate an interrrupt */
++	/* set watermark to -1 in order to not generate an interrupt */
+ 	ft1000_write_register(ft1000dev, 0xffff, FT1000_REG_MAG_WATERMARK);
+ 
+ 	/* clear interrupts */
+diff --git a/drivers/staging/iio/industrialio-trigger.c b/drivers/staging/iio/industrialio-trigger.c
+index 2c626e0..68a4d4e 100644
+--- a/drivers/staging/iio/industrialio-trigger.c
++++ b/drivers/staging/iio/industrialio-trigger.c
+@@ -295,7 +295,7 @@ void iio_dealloc_pollfunc(struct iio_poll_func *pf)
+ EXPORT_SYMBOL_GPL(iio_dealloc_pollfunc);
+ 
+ /**
+- * iio_trigger_read_currrent() - trigger consumer sysfs query which trigger
++ * iio_trigger_read_current() - trigger consumer sysfs query which trigger
+  *
+  * For trigger consumers the current_trigger interface allows the trigger
+  * used by the device to be queried.
+diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+index 8ac3fae..f47571e 100644
+--- a/drivers/staging/sep/sep_driver.c
++++ b/drivers/staging/sep/sep_driver.c
+@@ -1235,7 +1235,7 @@ static void sep_build_lli_table(struct sep_device *sep,
+ 	/* Counter of lli array entry */
+ 	u32 array_counter;
+ 
+-	/* Init currrent table data size and lli array entry counter */
++	/* Init current table data size and lli array entry counter */
+ 	curr_table_data_size = 0;
+ 	array_counter = 0;
+ 	*num_table_entries_ptr = 1;
+diff --git a/drivers/staging/tidspbridge/Kconfig b/drivers/staging/tidspbridge/Kconfig
+index 93de4f2..21a559e 100644
+--- a/drivers/staging/tidspbridge/Kconfig
++++ b/drivers/staging/tidspbridge/Kconfig
+@@ -78,7 +78,7 @@ config TIDSPBRIDGE_NTFY_PWRERR
+ 	bool "Notify power errors"
+ 	depends on TIDSPBRIDGE
+ 	help
+-	  Enable notifications to registered clients on the event of power errror
++	  Enable notifications to registered clients on the event of power error
+ 	  trying to suspend bridge driver. Say Y, to signal this event as a fatal
+ 	  error, this will require a bridge restart to recover.
+ 
+diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+index a7e407e..fda2402 100644
+--- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
++++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+@@ -285,7 +285,7 @@ int dcd_enumerate_object(s32 index, enum dsp_dcdobjtype obj_type,
+ 			enum_refs = 0;
+ 
+ 			/*
+-			 * TODO: Revisit, this is not an errror case but code
++			 * TODO: Revisit, this is not an error case but code
+ 			 * expects non-zero value.
+ 			 */
+ 			status = ENODATA;
+diff --git a/drivers/usb/host/hwa-hc.c b/drivers/usb/host/hwa-hc.c
+index 9bfac65..b5c56a9 100644
+--- a/drivers/usb/host/hwa-hc.c
++++ b/drivers/usb/host/hwa-hc.c
+@@ -481,7 +481,7 @@ static int __hwahc_op_set_ptk(struct wusbhc *wusbhc, u8 port_idx, u32 tkid,
+ 		encryption_value = 0;
+ 	}
+ 
+-	/* Set the encryption type for commmunicating with the device */
++	/* Set the encryption type for communicating with the device */
+ 	result = usb_control_msg(wa->usb_dev, usb_sndctrlpipe(wa->usb_dev, 0),
+ 			USB_REQ_SET_ENCRYPTION,
+ 			USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+diff --git a/drivers/usb/host/imx21-hcd.c b/drivers/usb/host/imx21-hcd.c
+index 2ee18cf..dbf0f15 100644
+--- a/drivers/usb/host/imx21-hcd.c
++++ b/drivers/usb/host/imx21-hcd.c
+@@ -473,7 +473,7 @@ static void free_epdmem(struct imx21 *imx21, struct usb_host_endpoint *ep)
+ /* End handling 				*/
+ /* ===========================================	*/
+ 
+-/* Endpoint now idle - release it's ETD(s) or asssign to queued request */
++/* Endpoint now idle - release its ETD(s) or assign to queued request */
+ static void ep_idle(struct imx21 *imx21, struct ep_priv *ep_priv)
+ {
+ 	int i;
+diff --git a/drivers/usb/otg/fsl_otg.c b/drivers/usb/otg/fsl_otg.c
+index 0f420b2..2d9cc44 100644
+--- a/drivers/usb/otg/fsl_otg.c
++++ b/drivers/usb/otg/fsl_otg.c
+@@ -639,7 +639,7 @@ static int fsl_otg_set_power(struct otg_transceiver *otg_p, unsigned mA)
+  * Delayed pin detect interrupt processing.
+  *
+  * When the Mini-A cable is disconnected from the board,
+- * the pin-detect interrupt happens before the disconnnect
++ * the pin-detect interrupt happens before the disconnect
+  * interrupts for the connected device(s).  In order to
+  * process the disconnect interrupt(s) prior to switching
+  * roles, the pin-detect interrupts are delayed, and handled
+diff --git a/drivers/uwb/i1480/dfu/usb.c b/drivers/uwb/i1480/dfu/usb.c
+index ba86643..a315d4d 100644
+--- a/drivers/uwb/i1480/dfu/usb.c
++++ b/drivers/uwb/i1480/dfu/usb.c
+@@ -104,7 +104,7 @@ void i1480_usb_destroy(struct i1480_usb *i1480_usb)
+  *
+  * Data buffers to USB cannot be on the stack or in vmalloc'ed areas,
+  * so we copy it to the local i1480 buffer before proceeding. In any
+- * case, we have a max size we can send, soooo.
++ * case, we have a max size we can send.
+  */
+ static
+ int i1480_usb_write(struct i1480 *i1480, u32 memory_address,
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 526dd51..985a584 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -1943,7 +1943,7 @@ enum btrfs_orphan_cleanup_state {
+ };
+ 
+ /*
+- * This is called in transaction commmit time. If there are no orphan
++ * This is called in transaction commit time. If there are no orphan
+  * files in the subvolume, it removes orphan item and frees block_rsv
+  * structure.
+  */
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 85fe655..15cb470 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -2490,7 +2490,7 @@ int ext3_can_truncate(struct inode *inode)
+  * transaction, and VFS/VM ensures that ext3_truncate() cannot run
+  * simultaneously on behalf of the same inode.
+  *
+- * As we work through the truncate and commmit bits of it to the journal there
++ * As we work through the truncate and commit bits of it to the journal there
+  * is one core, guiding principle: the file's tree must always be consistent on
+  * disk.  We must be able to restart the truncate after a crash.
+  *
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index fffec40..e20352f 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -3503,7 +3503,7 @@ int ext4_punch_hole(struct file *file, loff_t offset, loff_t length)
+  * transaction, and VFS/VM ensures that ext4_truncate() cannot run
+  * simultaneously on behalf of the same inode.
+  *
+- * As we work through the truncate and commmit bits of it to the journal there
++ * As we work through the truncate and commit bits of it to the journal there
+  * is one core, guiding principle: the file's tree must always be consistent on
+  * disk.  We must be able to restart the truncate after a crash.
+  *
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 47e94e3..9ca16dc 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -658,7 +658,7 @@ static int nfsd4_sanitize_slot_size(u32 size)
+ /*
+  * XXX: If we run out of reserved DRC memory we could (up to a point)
+  * re-negotiate active sessions and reduce their slot usage to make
+- * rooom for new connections. For now we just fail the create session.
++ * room for new connections. For now we just fail the create session.
+  */
+ static int nfsd4_get_drc_mem(int slotsize, u32 num)
+ {
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index de4ea1a..199c606 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2108,7 +2108,7 @@ static int ocfs2_prepare_inode_for_write(struct file *file,
+ 		 * remove_suid() calls ->setattr without any hint that
+ 		 * we may have already done our cluster locking. Since
+ 		 * ocfs2_setattr() *must* take cluster locks to
+-		 * proceeed, this will lead us to recursively lock the
++		 * proceed, this will lead us to recursively lock the
+ 		 * inode. There's also the dinode i_size state which
+ 		 * can be lost via setattr during extending writes (we
+ 		 * set inode->i_size at the end of a write. */
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index 753ed9b..f675f3d 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -209,10 +209,10 @@ xfs_file_fsync(
+ 
+ 	/*
+ 	 * First check if the VFS inode is marked dirty.  All the dirtying
+-	 * of non-transactional updates no goes through mark_inode_dirty*,
+-	 * which allows us to distinguish beteeen pure timestamp updates
++	 * of non-transactional updates do not go through mark_inode_dirty*,
++	 * which allows us to distinguish between pure timestamp updates
+ 	 * and i_size updates which need to be caught for fdatasync.
+-	 * After that also theck for the dirty state in the XFS inode, which
++	 * After that also check for the dirty state in the XFS inode, which
+ 	 * might gets cleared when the inode gets written out via the AIL
+ 	 * or xfs_iflush_cluster.
+ 	 */
+diff --git a/fs/xfs/xfs_log_cil.c b/fs/xfs/xfs_log_cil.c
+index c7755d5..3ba29b1 100644
+--- a/fs/xfs/xfs_log_cil.c
++++ b/fs/xfs/xfs_log_cil.c
+@@ -256,7 +256,7 @@ xfs_cil_prepare_item(
+  * Insert the log items into the CIL and calculate the difference in space
+  * consumed by the item. Add the space to the checkpoint ticket and calculate
+  * if the change requires additional log metadata. If it does, take that space
+- * as well. Remove the amount of space we addded to the checkpoint ticket from
++ * as well. Remove the amount of space we added to the checkpoint ticket from
+  * the current transaction ticket so that the accounting works out correctly.
+  */
+ static void
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 1f9e951..e8acca8 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -820,7 +820,7 @@ struct drm_driver {
+ 	 * Specifically, the timestamp in @vblank_time should correspond as
+ 	 * closely as possible to the time when the first video scanline of
+ 	 * the video frame after the end of VBLANK will start scanning out,
+-	 * the time immmediately after end of the VBLANK interval. If the
++	 * the time immediately after end of the VBLANK interval. If the
+ 	 * @crtc is currently inside VBLANK, this will be a time in the future.
+ 	 * If the @crtc is currently scanning out a frame, this will be the
+ 	 * past start time of the current scanout. This is meant to adhere
+diff --git a/include/linux/wanrouter.h b/include/linux/wanrouter.h
+index e0aa396..3157cc1 100644
+--- a/include/linux/wanrouter.h
++++ b/include/linux/wanrouter.h
+@@ -309,7 +309,7 @@ typedef struct wandev_conf
+ #define WANOPT_EVEN	2
+ 
+ /* CHDLC Protocol Options */
+-/* DF Commmented out for now.
++/* DF Commented out for now.
+ 
+ #define WANOPT_CHDLC_NO_DCD		IGNORE_DCD_FOR_LINK_STAT
+ #define WANOPT_CHDLC_NO_CTS		IGNORE_CTS_FOR_LINK_STAT
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index 72eddd1..bd3487d 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1423,7 +1423,7 @@ ieee80211_get_alt_retry_rate(const struct ieee80211_hw *hw,
+  * DOC: Beacon filter support
+  *
+  * Some hardware have beacon filter support to reduce host cpu wakeups
+- * which will reduce system power consumption. It usuallly works so that
++ * which will reduce system power consumption. It usually works so that
+  * the firmware creates a checksum of the beacon but omits all constantly
+  * changing elements (TSF, TIM etc). Whenever the checksum changes the
+  * beacon is forwarded to the host, otherwise it will be just dropped. That
+diff --git a/net/ipv4/ip_fragment.c b/net/ipv4/ip_fragment.c
+index fdaabf2..1f23a57 100644
+--- a/net/ipv4/ip_fragment.c
++++ b/net/ipv4/ip_fragment.c
+@@ -392,7 +392,7 @@ static int ip_frag_queue(struct ipq *qp, struct sk_buff *skb)
+ 	/* Is this the final fragment? */
+ 	if ((flags & IP_MF) == 0) {
+ 		/* If we already have some bits beyond end
+-		 * or have different end, the segment is corrrupted.
++		 * or have different end, the segment is corrupted.
+ 		 */
+ 		if (end < qp->q.len ||
+ 		    ((qp->q.last_in & INET_FRAG_LAST_IN) && end != qp->q.len))
+diff --git a/net/mac80211/work.c b/net/mac80211/work.c
+index 6c53b6d..2accea3 100644
+--- a/net/mac80211/work.c
++++ b/net/mac80211/work.c
+@@ -1094,7 +1094,7 @@ static void ieee80211_work_work(struct work_struct *work)
+ 		local->tmp_channel = NULL;
+ 		/* If tmp_channel wasn't operating channel, then
+ 		 * we need to go back on-channel.
+-		 * NOTE:  If we can ever be here while scannning,
++		 * NOTE:  If we can ever be here while scanning,
+ 		 * or if the hw_config() channel config logic changes,
+ 		 * then we may need to do a more thorough check to see if
+ 		 * we still need to do a hardware config.  Currently,
+diff --git a/net/sctp/endpointola.c b/net/sctp/endpointola.c
+index c8cc24e..68a385d 100644
+--- a/net/sctp/endpointola.c
++++ b/net/sctp/endpointola.c
+@@ -415,7 +415,7 @@ static void sctp_endpoint_bh_rcv(struct work_struct *work)
+ 	sctp_subtype_t subtype;
+ 	sctp_state_t state;
+ 	int error = 0;
+-	int first_time = 1;	/* is this the first time through the looop */
++	int first_time = 1;	/* is this the first time through the loop */
+ 
+ 	if (ep->base.dead)
+ 		return;
+-- 
+1.7.5.4
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
