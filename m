@@ -1,117 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab1K2MVx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:21:53 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64811 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab1K2MVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:21:51 -0500
-Message-ID: <4ED4CE58.8090107@tonian.com>
-Date: Tue, 29 Nov 2011 14:21:44 +0200
-From: Benny Halevy <bhalevy@tonian.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1754210Ab1K2MWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:22:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13378 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752796Ab1K2MWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 07:22:11 -0500
+Date: Tue, 29 Nov 2011 13:21:54 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/9] ftrace, perf: Add FILTER_TRACE_FN event field type
+Message-ID: <20111129122154.GF1602@m.brq.redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+ <1322417074-5834-9-git-send-email-jolsa@redhat.com>
+ <1322510483.17003.16.camel@frodo>
+ <20111129112233.GE1602@m.brq.redhat.com>
+ <1322567500.2921.227.camel@twins>
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        NFS list <linux-nfs@vger.kernel.org>, open-osd <osd-dev@open-osd.org>
-Subject: Re: ore: FIX breakage when MISC_FILESYSTEMS is not set
-References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au> <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com> <4ED4238F.4090407@panasas.com>
-In-Reply-To: <4ED4238F.4090407@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322567500.2921.227.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-29 02:13, Boaz Harrosh wrote:
+On Tue, Nov 29, 2011 at 12:51:40PM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-11-29 at 12:22 +0100, Jiri Olsa wrote:
+> > On Mon, Nov 28, 2011 at 03:01:23PM -0500, Steven Rostedt wrote:
+> > > BTW, Please Cc Peter Zijlstra too, as he maintains perf inside the
+> > > kernel.
+> > 
+> > thanks! ommited by mistake..
 > 
-> As Reported by Randy Dunlap
-> 
-> When MISC_FILESYSTEMS is not enabled:
-> 
-> fs/built-in.o: In function `objio_alloc_io_state':
-> objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
-> fs/built-in.o: In function `_write_done':
-> objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
-> fs/built-in.o: In function `_read_done':
-> ...
-> 
-> When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
-> is not selected. exofs/Kconfig is never examined during Kconfig,
-> and it can not do it's magic stuff to automatically select everything
+> I hope not trimming the email was a mistake too? :-)
 
-nit: s/it's/its/
-
-> needed.
-> 
-> The solution is to force all users of ORE (exofs, nfs) to manually
-> select everything auto-magically selected before.
-
-How about using "depend ORE" rather than "select ORE"?
-
-> 
-> (This is  why it is a bad idea to put libraries in random parts of
->  the tree)
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-> ---
->  fs/exofs/Kconfig |   17 +++++++++--------
->  fs/nfs/Kconfig   |    2 ++
->  2 files changed, 11 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/exofs/Kconfig b/fs/exofs/Kconfig
-> index da42f32..6b05d99 100644
-> --- a/fs/exofs/Kconfig
-> +++ b/fs/exofs/Kconfig
-> @@ -1,17 +1,18 @@
-> -# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
-> -# for every ORE user we do it like this. Any user should add itself here
-> -# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
-> -# selected here, and we default to "ON". So in effect it is like been
-> -# selected by any of the users.
-> +# ORE - Objects Raid Engine (libore.ko)
-> +# This library needs to be selected by it's users for example the below EXOFS
-> +# filesystem.
-
-nit:
-This library needs to be selected by its users. For example, see
-EXOFS_FS below.
-
-Benny
-
-> +# All users must do:
-> +#	depends on SCSI_OSD_ULD
-> +#	select ASYNC_XOR
-> +#	select ORE
->  config ORE
->  	tristate
-> -	depends on EXOFS_FS || PNFS_OBJLAYOUT
-> -	select ASYNC_XOR
-> -	default SCSI_OSD_ULD
->  
->  config EXOFS_FS
->  	tristate "exofs: OSD based file system support"
->  	depends on SCSI_OSD_ULD
-> +	select ASYNC_XOR
-> +	select ORE
->  	help
->  	  EXOFS is a file system that uses an OSD storage device,
->  	  as its backing storage.
-> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-> index dbcd821..3708d76 100644
-> --- a/fs/nfs/Kconfig
-> +++ b/fs/nfs/Kconfig
-> @@ -96,6 +96,8 @@ config PNFS_BLOCK
->  config PNFS_OBJLAYOUT
->  	tristate
->  	depends on NFS_FS && NFS_V4_1 && SCSI_OSD_ULD
-> +	select ASYNC_XOR
-> +	select ORE
->  	default m
->  
->  config ROOT_NFS
+Acked-by: Jiri Olsa <jolsa@redhat.com>
