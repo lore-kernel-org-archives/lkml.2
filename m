@@ -1,125 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab1K2PGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:06:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57470 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab1K2PGI convert rfc822-to-8bit (ORCPT
+	id S1754665Ab1K2PKj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:10:39 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:36909 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab1K2PKi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:06:08 -0500
-Message-ID: <1322579127.2921.240.camel@twins>
-Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>, tulasidhard@gmail.com
-Date: Tue, 29 Nov 2011 16:05:27 +0100
-In-Reply-To: <1322567326.2921.226.camel@twins>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
-	 <1322071812.14799.87.camel@twins>
-	 <20111124134742.GH28065@linux.vnet.ibm.com>
-	 <1322492384.2921.143.camel@twins>
-	 <20111129083322.GD13445@linux.vnet.ibm.com>
-	 <1322567326.2921.226.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 29 Nov 2011 10:10:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com>
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
+ <20111129091037.20730.59391.stgit@localhost6.localdomain6>
+ <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
+ <4ED4CDCE.9080804@parallels.com> <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
+ <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Tue, 29 Nov 2011 23:10:16 +0800
+Message-ID: <CA+a=Yy5GKMu8rbh8y3fOtK6pmqygPNBr=a+p7LfcmTqtXFH3iA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+ blocklayout routines
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: tao.peng@emc.com, skinsbursky@parallels.com, linux-nfs@vger.kernel.org,
+        xemul@parallels.com, neilb@suse.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 12:48 +0100, Peter Zijlstra wrote:
-> There's 2 main cases, 
->         A) vma_adjust() vs unregister_uprobe() and 
->         B) mmap() vs unregister_uprobe().
-> 
-> The result of A should be -1 reference in total, since we're removing
-> the one probe.
+On Tue, Nov 29, 2011 at 9:35 PM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+>> -----Original Message-----
+>> From: tao.peng@emc.com [mailto:tao.peng@emc.com]
+>> Sent: Tuesday, November 29, 2011 7:40 AM
+>> To: skinsbursky@parallels.com
+>> Cc: Myklebust, Trond; linux-nfs@vger.kernel.org; xemul@parallels.com;
+>> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+>> jbottomley@parallels.com; bfields@fieldses.org; davem@davemloft.net;
+>> devel@openvz.org
+>> Subject: RE: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
+>> from blocklayout routines
+>>
+>> > -----Original Message-----
+>> > From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
+>> > Sent: Tuesday, November 29, 2011 8:19 PM
+>> > To: Peng, Tao
+>> > Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; Pavel
+>> > Emelianov; neilb@suse.de; netdev@vger.kernel.org;
+>> > linux-kernel@vger.kernel.org; James Bottomley; bfields@fieldses.org;
+>> > davem@davemloft.net; devel@openvz.org
+>> > Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
+>> > from blocklayout routines
+>> >
+>> > 29.11.2011 16:00, tao.peng@emc.com пишет:
+>> > >> -----Original Message-----
+>> > >> From: linux-nfs-owner@vger.kernel.org
+>> > >> [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of
+>> > Stanislav
+>> > >> Kinsbursky
+>> > >> Sent: Tuesday, November 29, 2011 6:11 PM
+>> > >> To: Trond.Myklebust@netapp.com
+>> > >> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de;
+>> > >> netdev@vger.kernel.org; linux- kernel@vger.kernel.org;
+>> > >> jbottomley@parallels.com; bfields@fieldses.org;
+>> > >> davem@davemloft.net; devel@openvz.org
+>> > >> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
+>> > >> from blocklayout routines
+>> > >>
+>> > >> This is a cleanup patch. We don't need this reference anymore,
+>> > >> because blocklayout pipes dentries now creates and destroys in
+>> > >> per-net operations and on PipeFS mount/umount notification.
+>> > >> Note that nfs4blocklayout_register_net() now returns 0 instead of
+>> > >> -ENOENT in case of PipeFS superblock absence. This is ok, because
+>> > >> blocklayout pipe dentry will be created on PipeFS mount event.
+>> > > When is the "pipefs mount event" going to happen? When inserting
+>> > > kernel modules or when user issues
+>> > mount command?
+>> > >
+>> >
+>> > When user issues mount command.
+>> > Kernel mounts of PipeFS has been removed with all these patch sets
+>> > I've sent already.
+>> Then it is going to break blocklayout user space program blkmapd, which is
+>> stared before mounting any file system and it tries to open the pipe file
+>> when started.
+>
+> Why on earth is blkmapd doing this instead of listening for file creation notifications like the other rpc_pipefs daemons do?
+Not sure how the original implementer chose this but I think it is
+likely because we do not expect the pipe file to be created or deleted
+dynamically.
 
-This might not be correct for A[23], please double check.
-
->  The result of B should be 0 since we're removing the
-> probe and we shouldn't be installing new ones.
-> 
-> A1)
->         vma_adjust()
->           munmap_uprobe()
->                                 unregister_uprobe()
->           mmap_uprobe()
->                                   delete_uprobe()
-> 
-> 
->         munmap will to -1, mmap will do +1, __unregister_uprobe() which is
-> serialized against vma_adjust() will do -1 on either the old or new vma,
-> resulting in a grand total of: -1+1-1=-1, OK
-> 
-> A2) breakpoint is in old, not in new, again two cases:
-> 
-> A2a) __unregister_uprobe() sees old
-> 
->         munmap -1, __unregister_uprobe -1, mmap 0: -2 FAIL
-> 
-> A2b) __unregister_uprobe() sees new
-> 
->         munmap -1, __unregister_uprobe 0, mmap 0: -1 OK
-> 
-> A3) breakpoint is in new, not in old, again two cases:
-> 
-> A3a) __unregister_uprobe() sees old
-> 
->         munmap 0, __unregister_uprobe 0, mmap: 1: 1 FAIL
-> 
-> A3b) __unregister_uprobe() seed new
-> 
->         munmap 0, __unregister_uprobe -1, mmap: 1: 0 FAIL
-
-There's more cases, I forgot the details of how the prio_tree stuff
-works, so please consider if its possible to also have:
-
-  __unregister_uprobe() will observe neither old nor new
-
-This could happen if we first munmap, __unregister_uprobe() will iterate
-past where mmap() will insert the new vma, mmap will insert the new vma,
-and __unregister_uprobe() will now not observe it.
-
-and
-
-  __unregister_uprobe() will observe both old _and_ new
-
-This latter could happen by favourably interleaving the prio_tree
-iteration with the munmap and mmap operations, so that we first observe
-the old vma, do the munmap, do the mmap, and then have the
-find_next_vma_info() thing find the new vma.
-
-> B1)
->                                 unregister_uprobe()
->         mmap()
->           mmap_uprobe()
->                                   __unregister_uprobe()
->                                   delete_uprobe()
-> 
->         mmap +1, __unregister_uprobe() -1: 0 OK
-> 
-> B2)
->                                 unregister_uprobe()
->         mmap()
->                                   __unregister_uprobe()
->           mmap_uprobe()
->                                   delete_uprobe()
-> 
->         mmap +1, __unregister_uprobe() 0: +1 FAIL 
+-- 
+Thanks,
+Tao
