@@ -1,113 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab1K2MVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:21:18 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:30338 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751877Ab1K2MVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:21:17 -0500
-Message-ID: <4ED4CDCE.9080804@parallels.com>
-Date: Tue, 29 Nov 2011 16:19:26 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	id S1754065Ab1K2MVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:21:53 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64811 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab1K2MVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 07:21:51 -0500
+Message-ID: <4ED4CE58.8090107@tonian.com>
+Date: Tue, 29 Nov 2011 14:21:44 +0200
+From: Benny Halevy <bhalevy@tonian.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: "tao.peng@emc.com" <tao.peng@emc.com>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
- blocklayout routines
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6> <20111129091037.20730.59391.stgit@localhost6.localdomain6> <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
-In-Reply-To: <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        NFS list <linux-nfs@vger.kernel.org>, open-osd <osd-dev@open-osd.org>
+Subject: Re: ore: FIX breakage when MISC_FILESYSTEMS is not set
+References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au> <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com> <4ED4238F.4090407@panasas.com>
+In-Reply-To: <4ED4238F.4090407@panasas.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-29.11.2011 16:00, tao.peng@emc.com пишет:
->> -----Original Message-----
->> From: linux-nfs-owner@vger.kernel.org [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of Stanislav
->> Kinsbursky
->> Sent: Tuesday, November 29, 2011 6:11 PM
->> To: Trond.Myklebust@netapp.com
->> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de; netdev@vger.kernel.org; linux-
->> kernel@vger.kernel.org; jbottomley@parallels.com; bfields@fieldses.org; davem@davemloft.net;
->> devel@openvz.org
->> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from blocklayout routines
->>
->> This is a cleanup patch. We don't need this reference anymore, because
->> blocklayout pipes dentries now creates and destroys in per-net operations and
->> on PipeFS mount/umount notification.
->> Note that nfs4blocklayout_register_net() now returns 0 instead of -ENOENT in
->> case of PipeFS superblock absence. This is ok, because blocklayout pipe dentry
->> will be created on PipeFS mount event.
-> When is the "pipefs mount event" going to happen? When inserting kernel modules or when user issues mount command?
->
+On 2011-11-29 02:13, Boaz Harrosh wrote:
+> 
+> As Reported by Randy Dunlap
+> 
+> When MISC_FILESYSTEMS is not enabled:
+> 
+> fs/built-in.o: In function `objio_alloc_io_state':
+> objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
+> fs/built-in.o: In function `_write_done':
+> objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
+> fs/built-in.o: In function `_read_done':
+> ...
+> 
+> When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
+> is not selected. exofs/Kconfig is never examined during Kconfig,
+> and it can not do it's magic stuff to automatically select everything
 
-When user issues mount command.
-Kernel mounts of PipeFS has been removed with all these patch sets I've sent 
-already.
+nit: s/it's/its/
 
+> needed.
+> 
+> The solution is to force all users of ORE (exofs, nfs) to manually
+> select everything auto-magically selected before.
 
-> Thanks,
-> Tao
->
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>
->> ---
->>   fs/nfs/blocklayout/blocklayout.c |    9 +--------
->>   1 files changed, 1 insertions(+), 8 deletions(-)
->>
->> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
->> index acf7ac9..8211ffd 100644
->> --- a/fs/nfs/blocklayout/blocklayout.c
->> +++ b/fs/nfs/blocklayout/blocklayout.c
->> @@ -1032,7 +1032,7 @@ static struct dentry *nfs4blocklayout_register_net(struct net *net,
->>
->>   	pipefs_sb = rpc_get_sb_net(net);
->>   	if (!pipefs_sb)
->> -		return ERR_PTR(-ENOENT);
->> +		return 0;
->>   	dentry = nfs4blocklayout_register_sb(pipefs_sb, pipe);
->>   	rpc_put_sb_net(net);
->>   	return dentry;
->> @@ -1083,7 +1083,6 @@ static struct pernet_operations nfs4blocklayout_net_ops = {
->>
->>   static int __init nfs4blocklayout_init(void)
->>   {
->> -	struct vfsmount *mnt;
->>   	int ret;
->>
->>   	dprintk("%s: NFSv4 Block Layout Driver Registering...\n", __func__);
->> @@ -1093,12 +1092,6 @@ static int __init nfs4blocklayout_init(void)
->>   		goto out;
->>
->>   	init_waitqueue_head(&bl_wq);
->> -
->> -	mnt = rpc_get_mount();
->> -	if (IS_ERR(mnt)) {
->> -		ret = PTR_ERR(mnt);
->> -		goto out_remove;
->> -	}
->>   	ret = rpc_pipefs_notifier_register(&nfs4blocklayout_block);
->>   	if (ret)
->>   		goto out_remove;
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+How about using "depend ORE" rather than "select ORE"?
 
+> 
+> (This is  why it is a bad idea to put libraries in random parts of
+>  the tree)
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+> ---
+>  fs/exofs/Kconfig |   17 +++++++++--------
+>  fs/nfs/Kconfig   |    2 ++
+>  2 files changed, 11 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/exofs/Kconfig b/fs/exofs/Kconfig
+> index da42f32..6b05d99 100644
+> --- a/fs/exofs/Kconfig
+> +++ b/fs/exofs/Kconfig
+> @@ -1,17 +1,18 @@
+> -# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
+> -# for every ORE user we do it like this. Any user should add itself here
+> -# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
+> -# selected here, and we default to "ON". So in effect it is like been
+> -# selected by any of the users.
+> +# ORE - Objects Raid Engine (libore.ko)
+> +# This library needs to be selected by it's users for example the below EXOFS
+> +# filesystem.
 
--- 
-Best regards,
-Stanislav Kinsbursky
+nit:
+This library needs to be selected by its users. For example, see
+EXOFS_FS below.
+
+Benny
+
+> +# All users must do:
+> +#	depends on SCSI_OSD_ULD
+> +#	select ASYNC_XOR
+> +#	select ORE
+>  config ORE
+>  	tristate
+> -	depends on EXOFS_FS || PNFS_OBJLAYOUT
+> -	select ASYNC_XOR
+> -	default SCSI_OSD_ULD
+>  
+>  config EXOFS_FS
+>  	tristate "exofs: OSD based file system support"
+>  	depends on SCSI_OSD_ULD
+> +	select ASYNC_XOR
+> +	select ORE
+>  	help
+>  	  EXOFS is a file system that uses an OSD storage device,
+>  	  as its backing storage.
+> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+> index dbcd821..3708d76 100644
+> --- a/fs/nfs/Kconfig
+> +++ b/fs/nfs/Kconfig
+> @@ -96,6 +96,8 @@ config PNFS_BLOCK
+>  config PNFS_OBJLAYOUT
+>  	tristate
+>  	depends on NFS_FS && NFS_V4_1 && SCSI_OSD_ULD
+> +	select ASYNC_XOR
+> +	select ORE
+>  	default m
+>  
+>  config ROOT_NFS
