@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab1K2WAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 17:00:43 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:48826 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab1K2WAl (ORCPT
+	id S1756879Ab1K2WFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 17:05:35 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:51776 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755099Ab1K2WFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 17:00:41 -0500
-Date: Wed, 30 Nov 2011 09:00:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: linux-next: build failure after merge of the final tree (drm
- tree related)
-Message-Id: <20111130090033.4b10973c16373a5438514f6b@canb.auug.org.au>
-In-Reply-To: <20111129151638.a083e93e21c7917f221af760@canb.auug.org.au>
-References: <20111129151638.a083e93e21c7917f221af760@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__30_Nov_2011_09_00_33_+1100_HFTMyivagFrQlSaW"
+	Tue, 29 Nov 2011 17:05:31 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Michael S. Tsirkin" <mst@redhat.com>, Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH-RFC 1/2] tile: don't panic on iomap
+Date: Tue, 29 Nov 2011 22:05:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <cover.1322592494.git.mst@redhat.com> <a3bc9cb56040258dabc7b466ea217f4515b68b7d.1322592495.git.mst@redhat.com>
+In-Reply-To: <a3bc9cb56040258dabc7b466ea217f4515b68b7d.1322592495.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111292205.11544.arnd@arndb.de>
+X-Provags-ID: V02:K0:nbprdxhndoQXeBEl9Gi8Pp7B+umzdbtwxvgjYXWRmOo
+ j2feTO/BCWfyYHqUD6xvFHCVAg0Mnyo8jkMp54fNQ1TNuQHZ5D
+ DNl7Zft+Zr/voEtQw/RnqNYv+dr78SQwQAmroy79x5E4hCx0wc
+ EuK7vb2a+B9O3laMXVRpffkx7mBNmgULoTw4hTFG1qIfe2xDKa
+ j6voWghyOORQ+7It5kxecIlPgCbSJR8MajL6Bq1ghOEAOdJVMa
+ OV99M4+FEvpNxvG6tvM4F1mmToNpytFlTdFwJBNKSjpnwt0ZwQ
+ JUG7au1jtvX+ApUBbFfbaNfEoaBqcOrS/RpCOBLcagZg2PY1ZO
+ FCl/C64dZWALPX4uzxkw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__30_Nov_2011_09_00_33_+1100_HFTMyivagFrQlSaW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 29 November 2011, Michael S. Tsirkin wrote:
+> diff --git a/arch/tile/include/asm/io.h b/arch/tile/include/asm/io.h
+> index c9ea165..be6090d 100644
+> --- a/arch/tile/include/asm/io.h
+> +++ b/arch/tile/include/asm/io.h
+> @@ -204,7 +204,8 @@ static inline long ioport_panic(void)
+>  
+>  static inline void __iomem *ioport_map(unsigned long port, unsigned int len)
+>  {
+> -       return (void __iomem *) ioport_panic();
+> +       pr_info("Trying to map an IO resource - it does not exit on tile.\n");
+> +       return NULL;
+>  }
 
-Hi Dave,
+Why not just set CONFIG_NO_IOPORT and make this unavailable at compile time?
 
-On Tue, 29 Nov 2011 15:16:38 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 29 Nov 2011 15:11:10 +1100
-> Subject: [PATCH] drm: fix up for BIG ENDIAN breakage
->=20
-> Commit 308e5bcbdb10 ("drm: add an fb creation ioctl that takes a pixel
-> format v5") missed one spot needing to be fixed up in the __BIG_ENDIAN
-> case.
->=20
-> Fixes build error:
->=20
-> drivers/gpu/drm/radeon/radeon_fb.c: In function 'radeonfb_create_pinned_o=
-bject':
-> drivers/gpu/drm/radeon/radeon_fb.c:144:18: error: 'struct drm_mode_fb_cmd=
-2' has no member named 'bpp'
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-
-Not a biggie, but I noticed that when you added this patch to your tree
-you lost the authorship ...
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__30_Nov_2011_09_00_33_+1100_HFTMyivagFrQlSaW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO1VYBAAoJEECxmPOUX5FEd9cQAIRfLiiwq2DhENnD0YexYFiJ
-hgkP2slrhsZk4vT53DfrO53uh5E+BvqEzF3DUJSCkTSdzTTOPz+YL+8GQ+EkeAvU
-xnXNIVgN8coKIfSW6vWS6Mjg0j1ot4NuIUFQZzT3qKWJr8W37qAMZaTkfyMpHA4z
-IHPrujrNEONCyjhUbjLLetKISzGvsLorTFuZ6H66+yYkVqioc3lBGc1G7rUnqeS+
-vKOTrRzL2kG1dr2JT9dAInuYqcYhGc7JBNMEighXvBjqCTAbnJiSrpTkBZrPrbF2
-GHRYWEMUIwPg6eK9iKOjunwoO5e+3Xi+dVoSiZ/vgRycW0Q11O4VxQWkPkkPY4JA
-T8MHxUTTrOFEzBBYB0xly4+M0BsJ1f89jEREcwAmtg2kTXqm9kNK13Q69lJENPwx
-Cg8w62Qw9TxlpbXZkax6ouN1q7xIGA9Jyn5yttT1XtNbMd7lshW8KBeVCBl7XoyA
-U5sDSKnWA5f0xbEoVL7DpIouXsQ78ZVILIbPbVRj5jpV75qpwoLrBJVMLgqoA8U3
-y39i/nJOfryffEVYRp1fv9tV/v3CmdrHaAnBcQ0AgdCUUBC+pr61cQQ7qBZKx2jE
-X6y9NMOWR0JpwoXo6RSBMN88/ZabUfLN2R8+f/P0APx2G50hDpWiijTck4x8kR5w
-AmHwkstpnCblu8rRxsxm
-=/gK6
------END PGP SIGNATURE-----
-
---Signature=_Wed__30_Nov_2011_09_00_33_+1100_HFTMyivagFrQlSaW--
+	Arnd
