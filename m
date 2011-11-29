@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab1K2Hdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 02:33:55 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45941 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab1K2Hdx convert rfc822-to-8bit (ORCPT
+	id S1752475Ab1K2HeU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 02:34:20 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51782 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab1K2HeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 02:33:53 -0500
-Subject: Re: [PATCH] sctp: integer overflow in sctp_auth_create_key()
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Xi Wang <xi.wang@gmail.com>
-In-Reply-To: <4ED3AC7D.6090108@hp.com>
-Date: Tue, 29 Nov 2011 02:33:50 -0500
-Cc: linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, security@kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <147F953A-CC69-41FF-ACD4-64E5E2956411@gmail.com>
-References: <426D7BA8-ECD0-44D6-A09F-2033F0C825FC@gmail.com> <4ED3AC7D.6090108@hp.com>
-To: Vladislav Yasevich <vladislav.yasevich@hp.com>
-X-Mailer: Apple Mail (2.1084)
+	Tue, 29 Nov 2011 02:34:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwehof2kZCENTOFFobWqVvm04BZer6Cc-fQfVvcCE1NVQ@mail.gmail.com>
+References: <1322539673.17003.45.camel@frodo> <CA+55aFwehof2kZCENTOFFobWqVvm04BZer6Cc-fQfVvcCE1NVQ@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 28 Nov 2011 23:33:46 -0800
+Message-ID: <CAPM31RLSqD8uChMeQeKJWNDx2Ogb4MhN=gJFzdmCayh7ohU5MA@mail.gmail.com>
+Subject: Re: Perhaps a side effect regarding NMI returns
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I agree that this is not a security issue if key_len can never get large.
+On Mon, Nov 28, 2011 at 8:53 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Nov 28, 2011 at 8:07 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>>
+>> If enabling interrupts also enables NMIs, then there's no side effect.
+>
+> The only thing that enables NMI's again is 'iret', afaik. Of course,
+> it can be *any* iret, so once you enable interrupts, you can get a
+> timer interrupt, and the timer interrupt returning with iret will
+> re-enable NMI's then too.
+>
 
-So how about just removing the overflow check at all?
+I double checked versus the manuals tonight after seeing this and I
+believe this correct -- an iret is required; some of the verbage is
+reasonably explicit to this fact.
 
-- xi
+> I would suggest that the actual NMI handler itself should probably
+> never use that paranoid exit at all, and just always use a regular
+> iret. Screw scheduling and TIF checks.
+>
+> Probably only the exceptions that can happen *during* NMI (eg debug,
+> stack exception, double-fault etc) should use the paranoid versions
+> that try to avoid using iret.
+>
+> Because I think you're right - we shouldn't call schedule() from
+> within the NMI handler, even if we do enable interrupts and switch to
+> the normal stack. Even if it probably does happen to work normally.
+>
+> But I have to admit to not necessarily thinking it through a lot.
+>
 
-On Nov 28, 2011, at 10:45 AM, Vladislav Yasevich wrote:
-> 
-> Hmm.  Yes, this is a more correct check.
-> 
-> Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
-> 
-> 
-> However, I don't think this is a security issue.  As I've written before, this function is
-> called from 2 places:
-> 
->  1) setsockopt() code path
-> 
->  2) sctp_auth_asoc_set_secret() code path
-> 
-> In case (1), sca_keylength is never going to exceed 65535 since it's
-> bounded by a u16 from the user api.  As such, The integer promotion will
-> not impact anything and the malloc() will never overflow.
-> 
-> In case (2), sca_keylength is computed based on the key the user provided
-> (MAX_USHORT) and the combination of protocol negotiated data where that
-> combination has a max size of 3 * MAX_USHORT (see sctp_auth_make_key_vector()).
-> So, even this case, our maximum key length can be 4* MAX_USHORT which still
-> will always be below MAX_INT and will not overflow.
-> 
-> So, I don't think there is big security consideration here, just a bad
-> check that just happens to always work.
-> 
-> -vlad
+At a high level I think we could apply the same logic from the first
+paragraph; namely that we will see a timer tick within a jiffy (where
+we will have an opportunity to process TIF flags) and it's better to
+push schedule() out than the NMI handler.
 
+That said, if TIF_RESCHED has been set by a higher priority RT task
+this temporary inversion may not be appreciated.  It's probably worth
+fixing properly.
+
+- Paul
