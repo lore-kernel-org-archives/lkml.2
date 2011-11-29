@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab1K2KxL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 05:53:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42138 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631Ab1K2KxI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 05:53:08 -0500
-Message-ID: <1322563948.2921.199.camel@twins>
-Subject: Re: [PATCH v7 3.2-rc2 3/30] uprobes: register/unregister probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Date: Tue, 29 Nov 2011 11:52:28 +0100
-In-Reply-To: <20111129074807.GA13445@linux.vnet.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
-	 <1322494194.2921.147.camel@twins>
-	 <20111129074807.GA13445@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1754767Ab1K2Kwl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 05:52:41 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:54482 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754635Ab1K2Kwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 05:52:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 1/7] mm: oom_kill: remove memcg argument from oom_kill_task()
+Date: Tue, 29 Nov 2011 11:51:59 +0100
+Message-Id: <1322563925-1667-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1322563925-1667-1-git-send-email-hannes@cmpxchg.org>
+References: <1322563925-1667-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 13:18 +0530, Srikar Dronamraju wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2011-11-28 16:29:54]:
-> 
-> > On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
-> > > +static void __unregister_uprobe(struct inode *inode, loff_t offset,
-> > > +                                               struct uprobe *uprobe)
-> > > +{
-> > > +       struct list_head try_list;
-> > > +       struct address_space *mapping;
-> > > +       struct vma_info *vi, *tmpvi;
-> > > +       struct vm_area_struct *vma;
-> > > +       struct mm_struct *mm;
-> > > +       loff_t vaddr;
-> > > +
-> > > +       mapping = inode->i_mapping;
-> > > +       INIT_LIST_HEAD(&try_list);
-> > > +       while ((vi = find_next_vma_info(&try_list, offset,
-> > > +                                               mapping, false)) != NULL) {
-> > > +               if (IS_ERR(vi))
-> > > +                       break;
-> > 
-> > So what kind of half-assed state are we left in if we try an unregister
-> > under memory pressure and how do we deal with that?
-> > 
-> 
-> Agree, Even I had this concern and wanted to see if there are ways to
-> deal with this.
+From: Johannes Weiner <jweiner@redhat.com>
 
-If you do have this, please mention it in the Changelog and/or put /*
-XXX */ in the code or so to point it out that there's a problem here.
+The memcg argument of oom_kill_task() hasn't been used since 341aea2
+'oom-kill: remove boost_dying_task_prio()'.  Kill it.
 
-> Do you have any other approaches that we could try?
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/oom_kill.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-You could use the stuff from patch 29 to effectively disable the uprobe
-and return -ENOMEM to whoemever is unregistering. Basically failing the
-unreg.
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 471dedb..fd9e303 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -423,7 +423,7 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+ }
+ 
+ #define K(x) ((x) << (PAGE_SHIFT-10))
+-static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
++static int oom_kill_task(struct task_struct *p)
+ {
+ 	struct task_struct *q;
+ 	struct mm_struct *mm;
+@@ -522,7 +522,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 		}
+ 	} while_each_thread(p, t);
+ 
+-	return oom_kill_task(victim, mem);
++	return oom_kill_task(victim);
+ }
+ 
+ /*
+-- 
+1.7.6.4
 
-That way you can leave the uprobe in existance and half installed but
-functionally fully disabled. Userspace (assuming we go back that far)
-can then either re-try the removal later, or even reinstate it by doing
-a register again or so.
-
-Its still not pretty, but its better than pretending the unreg
-completed.
