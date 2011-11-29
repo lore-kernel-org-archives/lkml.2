@@ -1,61 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238Ab1K3AIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 19:08:51 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:48070
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757072Ab1K3AIt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 19:08:49 -0500
-X-SpamScore: -6
-X-BigFish: VS-6(zz9371K98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: Li Yang-R58472 <r58472@freescale.com>,
-        Shi Xuelin-B29237 <B29237@freescale.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing
- spinlock use.
-Thread-Topic: [PATCH][RFC] fsldma: fix performance degradation by optimizing
- spinlock use.
-Thread-Index: AQHMrvQ5ooeCzZcUA0elGysglgicRA==
-Date: Wed, 30 Nov 2011 00:08:44 +0000
-Message-ID: <CAOZdJXWX9EHfcXTuVag+-MvUvqnA7bA5RjmLx4jE5Cu5JmQdvg@mail.gmail.com>
-References: <1321937705-19587-1-git-send-email-b29237@freescale.com>
-	<20111122185924.GA23323@ovro.caltech.edu>
-	<DBB740589CE8814680DECFE34BE197AB148CDD@039-SN1MPN1-006.039d.mgd.msft.net>
-	<20111128163814.GA10919@ovro.caltech.edu>
-	<3F607A5180246847A760FD34122A1E052E07B7@039-SN1MPN1-003.039d.mgd.msft.net>
-	<20111129172539.GB15331@ovro.caltech.edu>
-In-Reply-To: <20111129172539.GB15331@ovro.caltech.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [50.17.22.104]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <F9EEEE6510D45C40BCC5CFBCE09B5760@freescale.net>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1757265Ab1K3AJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 19:09:55 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:43618 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757096Ab1K3AJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 19:09:53 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v7 08/10] Display current tcp failcnt in kmem cgroup
+Date: Tue, 29 Nov 2011 21:56:59 -0200
+Message-Id: <1322611021-1730-9-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 11:25 AM, Ira W. Snyder <iws@ovro.caltech.edu> wrote:
+This patch introduces kmem.tcp.failcnt file, living in the
+kmem_cgroup filesystem. Following the pattern in the other
+memcg resources, this files keeps a counter of how many times
+allocation failed due to limits being hit in this cgroup.
+The root cgroup will always show a failcnt of 0.
 
-> I believe that you are correct, for powerpc. However, anything outside
-> of arch/powerpc shouldn't assume it only runs on powerpc. I wouldn't be
-> surprised to see fsldma running on an iMX someday (ARM processor).
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Eric W. Biederman <ebiederm@xmission.com>
+---
+ net/ipv4/tcp_memcontrol.c |   31 +++++++++++++++++++++++++++++++
+ 1 files changed, 31 insertions(+), 0 deletions(-)
 
-I certainly would.  The i.MX chips have their own DMA controller.  The
-DMA controller that fsldma.c works with is unique to Freescale's 83xx,
-85xx, and QorIQ chips.
-
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index bc232fc..f7350fa1 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -9,6 +9,7 @@
+ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft);
+ static int tcp_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 			    const char *buffer);
++static int tcp_cgroup_reset(struct cgroup *cont, unsigned int event);
+ 
+ static struct cftype tcp_files[] = {
+ 	{
+@@ -22,6 +23,12 @@ static struct cftype tcp_files[] = {
+ 		.read_u64 = tcp_cgroup_read,
+ 		.private = RES_USAGE,
+ 	},
++	{
++		.name = "kmem.tcp.failcnt",
++		.private = RES_FAILCNT,
++		.trigger = tcp_cgroup_reset,
++		.read_u64 = tcp_cgroup_read,
++	},
+ };
+ 
+ static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
+@@ -193,12 +200,36 @@ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
+ 	case RES_USAGE:
+ 		val = tcp_read_usage(memcg);
+ 		break;
++	case RES_FAILCNT:
++		val = tcp_read_stat(memcg, RES_FAILCNT, 0);
++		break;
+ 	default:
+ 		BUG();
+ 	}
+ 	return val;
+ }
+ 
++static int tcp_cgroup_reset(struct cgroup *cont, unsigned int event)
++{
++	struct mem_cgroup *memcg;
++	struct tcp_memcontrol *tcp;
++	struct cg_proto *cg_proto;
++
++	memcg = mem_cgroup_from_cont(cont);
++	cg_proto = tcp_prot.proto_cgroup(memcg);
++	if (!cg_proto)
++		return 0;
++	tcp = tcp_from_cgproto(cg_proto);
++
++	switch (event) {
++	case RES_FAILCNT:
++		res_counter_reset_failcnt(&tcp->tcp_memory_allocated);
++		break;
++	}
++
++	return 0;
++}
++
+ unsigned long long tcp_max_memory(const struct mem_cgroup *memcg)
+ {
+ 	struct tcp_memcontrol *tcp;
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
+1.7.6.4
+
