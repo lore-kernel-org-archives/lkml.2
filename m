@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab1K2MaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:30:00 -0500
-Received: from mga14.intel.com ([143.182.124.37]:36642 "EHLO mga14.intel.com"
+	id S1754002Ab1K2Mb7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:31:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54127 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752357Ab1K2M35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:29:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,590,1315206000"; 
-   d="scan'208";a="80181643"
-Date: Tue, 29 Nov 2011 20:29:51 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jens Axboe <jens.axboe@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 5/8] readahead: add /debug/readahead/stats
-Message-ID: <20111129122951.GA17432@localhost>
-References: <20111121091819.394895091@intel.com>
- <20111121093846.636765408@intel.com>
- <20111121152958.e4fd76d4.akpm@linux-foundation.org>
- <20111129032323.GC19506@localhost>
- <20111128204950.29404d0b.akpm@linux-foundation.org>
- <20111129064109.GA8612@localhost>
+	id S1752357Ab1K2Mb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 07:31:58 -0500
+Date: Tue, 29 Nov 2011 13:31:56 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: pomac@vapor.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        tino.keitel@tikei.de
+Subject: Re: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
+Message-ID: <20111129123156.GA4043@tiehlicka.suse.cz>
+References: <20111128222803.GA4925@pomac.netswarm.net>
+ <20111129075242.GB2675@tiehlicka.suse.cz>
+ <2146795727.780801.1322566727488.JavaMail.mail@webmail05>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111129064109.GA8612@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <2146795727.780801.1322566727488.JavaMail.mail@webmail05>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
->  		pgoff_t offset, unsigned long nr_to_read)
->  {
-> +	struct file_ra_state fadvice_ra = {
-> +		.pattern	= RA_PATTERN_FADVISE,
-> +	};
->  	int ret = 0;
+On Tue 29-11-11 11:38:47, Artem S. Tashkinov wrote:
+> On Nov 29, 2011, Michal Hocko <mhocko@suse.cz> wrote: 
 >  
->  	if (unlikely(!mapping->a_ops->readpage && !mapping->a_ops->readpages))
-> @@ -222,8 +397,9 @@ int force_page_cache_readahead(struct ad
->  
->  		if (this_chunk > nr_to_read)
->  			this_chunk = nr_to_read;
-> -		err = __do_page_cache_readahead(mapping, filp,
-> -						offset, this_chunk, 0);
-> +		fadvice_ra.start = offset;
-> +		fadvice_ra.size = this_chunk;
-> +		err = ra_submit(&fadvice_ra, mapping, filp, offset, nr_to_read);
->  		if (err < 0) {
->  			ret = err;
->  			break;
+> > As I have written in other email could you post your config and collect
+> > the following data?
+> > for i in `seq 30`; 
+> > do 
+> >         cat /proc/stat > `date +'%s'`
+> >         sleep 1
+> > done
+> > export old_user=0 old_nice=0 old_sys=0 old_idle=0 old_iowait=0; 
+> > 
+> > # for all your available CPUs
+> > grep cpu0 * | while read cpu user nice sys idle iowait rest; 
+> > do 
+> >         echo $cpu $(($user-$old_user)) $(($nice-$old_nice)) $(($sys-$old_sys)) $(($idle-$old_idle)) $(($iowait-$old_iowait))
+> >         old_user=$user old_nice=$nice old_sys=$sys old_idle=$idle old_iowait=$iowait
+> > done
+> 
+> 1322566208:cpu0 5199 0 2931 357890604 2541
+> 1322566209:cpu0 0 0 1 0 0
+> 1322566210:cpu0 0 0 0 0 0
+> 1322566211:cpu0 0 0 0 0 0
+> 1322566212:cpu0 0 0 0 0 0
+> 1322566213:cpu0 0 0 0 0 0
+> 1322566214:cpu0 1 0 0 0 0
+> 1322566215:cpu0 2 0 0 0 0
+> 1322566216:cpu0 3 0 0 0 0
+> 1322566217:cpu0 2 0 0 0 0
+> 1322566218:cpu0 4 0 0 0 0
+> 1322566219:cpu0 1 0 0 0 0
+> 1322566220:cpu0 2 0 0 0 0
+> 1322566221:cpu0 2 0 1 0 0
+> 1322566222:cpu0 1 0 0 0 0
+> 1322566223:cpu0 2 0 0 0 0
+> 1322566224:cpu0 1 0 1 0 0
+> 1322566225:cpu0 1 0 0 0 0
+> 1322566226:cpu0 2 0 0 0 0
+> 1322566227:cpu0 1 0 1 0 0
+> 1322566228:cpu0 2 0 0 0 0
+> 1322566229:cpu0 2 0 0 0 0
+> 1322566230:cpu0 6 0 3 0 0
+> 1322566231:cpu0 1 0 0 0 0
+> 1322566232:cpu0 2 0 0 0 0
+> 1322566233:cpu0 3 0 0 0 0
+> 1322566234:cpu0 2 0 0 0 0
+> 1322566235:cpu0 2 0 2 0 0
+> 1322566236:cpu0 0 0 1 0 0
+> 1322566237:cpu0 1 0 0 0 0
 
-It looks that we can safely use filp->f_ra:
+Hmm, really strange. It looks that idle/iowait is not accounted at
+all. Which would explain why the numbers you are seeing are so weird.
 
-@@ -214,6 +386,7 @@ int force_page_cache_readahead(struct ad
-        if (unlikely(!mapping->a_ops->readpage && !mapping->a_ops->readpages))
-                return -EINVAL;
 
-+       filp->f_ra.pattern = RA_PATTERN_FADVISE;
-        nr_to_read = max_sane_readahead(nr_to_read);
-        while (nr_to_read) {
-                int err;
-@@ -222,8 +395,9 @@ int force_page_cache_readahead(struct ad
-               
-                if (this_chunk > nr_to_read)
-                        this_chunk = nr_to_read;
--               err = __do_page_cache_readahead(mapping, filp,
--                                               offset, this_chunk, 0);
-+               filp->f_ra.start = offset;
-+               filp->f_ra.size = this_chunk;
-+               err = ra_submit(&filp->f_ra, mapping, filp, offset, nr_to_read);
-                if (err < 0) {
-                        ret = err;
-                        break;
+> 
+> $ grep . -r /sys/devices/system/cpu/cpuidle/
+> /sys/devices/system/cpu/cpuidle/current_driver:intel_idle
+> /sys/devices/system/cpu/cpuidle/current_governor_ro:menu
 
-But still, it adds one more function call to the fadvise path.
+I will check whether I have a machine with intel_idle somewhere around.
 
-Thanks,
-Fengguang
+> 
+> $ grep . -r /sys/devices/system/cpu/cpufreq/
+> /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate_min:10000
+> /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate:10000
+> /sys/devices/system/cpu/cpufreq/ondemand/up_threshold:95
+> /sys/devices/system/cpu/cpufreq/ondemand/sampling_down_factor:1
+> /sys/devices/system/cpu/cpufreq/ondemand/ignore_nice_load:0
+> /sys/devices/system/cpu/cpufreq/ondemand/powersave_bias:0
+> /sys/devices/system/cpu/cpufreq/ondemand/io_is_busy:1
+> 
+> One thing I have to note, it takes some time (from 30 seconds to 10
+> minutes) before this bug starts manifesting itself.
+
+
+
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
