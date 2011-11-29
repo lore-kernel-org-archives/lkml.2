@@ -1,52 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab1K2UJv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 15:09:51 -0500
-Received: from mga14.intel.com ([143.182.124.37]:8945 "EHLO mga14.intel.com"
+	id S1756654Ab1K2UK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 15:10:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52231 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756260Ab1K2UJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 15:09:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,592,1315206000"; 
-   d="scan'208";a="42226817"
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Paul Turner <pjt@google.com>
-Subject: Re: Perhaps a side effect regarding NMI returns
-References: <1322539673.17003.45.camel@frodo>
-	<CA+55aFwehof2kZCENTOFFobWqVvm04BZer6Cc-fQfVvcCE1NVQ@mail.gmail.com>
-Date: Tue, 29 Nov 2011 12:09:47 -0800
-In-Reply-To: <CA+55aFwehof2kZCENTOFFobWqVvm04BZer6Cc-fQfVvcCE1NVQ@mail.gmail.com>
-	(Linus Torvalds's message of "Mon, 28 Nov 2011 20:53:55 -0800")
-Message-ID: <m2r50qlmgk.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1756494Ab1K2UK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 15:10:58 -0500
+Subject: [PATCH v2] netlabel: Fix build problems when IPv6 is not enabled
+To: netdev@vger.kernel.org, rdunlap@xenotime.net
+From: Paul Moore <pmoore@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 29 Nov 2011 15:10:54 -0500
+Message-ID: <20111129201054.20141.86401.stgit@sifl>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+A recent fix to the the NetLabel code caused build problem with
+configurations that did not have IPv6 enabled; see below:
 
-Not sure what problem Steven thinks is there. Once you 
-switched the stack any nesting is fine.
+ netlabel_kapi.c: In function 'netlbl_cfg_unlbl_map_add':
+ netlabel_kapi.c:165:4:
+  error: implicit declaration of function 'netlbl_af6list_add'
 
-> I would suggest that the actual NMI handler itself should probably
-> never use that paranoid exit at all, and just always use a regular
-> iret. Screw scheduling and TIF checks.
+This patch fixes this problem by making the IPv6 specific code conditional
+on the IPv6 configuration flags as we done in the rest of NetLabel and the
+network stack as a whole.  We have to move some variable declarations
+around as a result so things may not be quite as pretty, but at least it
+builds cleanly now.
 
-The reason I added them originally is to prevent the race of remote
-kernel events being delayed for a long time. With Frederic's nohz work
-this will be more important in the future. Today it would be eventually
-picked up by the regular timer interrupts.
+Some additional IPv6 conditionals were added to the NetLabel code as well
+for the sake of consistency.
 
--Andi
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+---
+ net/netlabel/netlabel_kapi.c |   22 ++++++++++++++--------
+ 1 files changed, 14 insertions(+), 8 deletions(-)
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
+index 3735297..5952237 100644
+--- a/net/netlabel/netlabel_kapi.c
++++ b/net/netlabel/netlabel_kapi.c
+@@ -111,8 +111,6 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
+ 	struct netlbl_domaddr_map *addrmap = NULL;
+ 	struct netlbl_domaddr4_map *map4 = NULL;
+ 	struct netlbl_domaddr6_map *map6 = NULL;
+-	const struct in_addr *addr4, *mask4;
+-	const struct in6_addr *addr6, *mask6;
+ 
+ 	entry = kzalloc(sizeof(*entry), GFP_ATOMIC);
+ 	if (entry == NULL)
+@@ -133,9 +131,9 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
+ 		INIT_LIST_HEAD(&addrmap->list6);
+ 
+ 		switch (family) {
+-		case AF_INET:
+-			addr4 = addr;
+-			mask4 = mask;
++		case AF_INET: {
++			const struct in_addr *addr4 = addr;
++			const struct in_addr *mask4 = mask;
+ 			map4 = kzalloc(sizeof(*map4), GFP_ATOMIC);
+ 			if (map4 == NULL)
+ 				goto cfg_unlbl_map_add_failure;
+@@ -148,9 +146,11 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
+ 			if (ret_val != 0)
+ 				goto cfg_unlbl_map_add_failure;
+ 			break;
+-		case AF_INET6:
+-			addr6 = addr;
+-			mask6 = mask;
++			}
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
++		case AF_INET6: {
++			const struct in6_addr *addr6 = addr;
++			const struct in6_addr *mask6 = mask;
+ 			map6 = kzalloc(sizeof(*map6), GFP_ATOMIC);
+ 			if (map6 == NULL)
+ 				goto cfg_unlbl_map_add_failure;
+@@ -167,6 +167,8 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
+ 			if (ret_val != 0)
+ 				goto cfg_unlbl_map_add_failure;
+ 			break;
++			}
++#endif /* IPv6 */
+ 		default:
+ 			goto cfg_unlbl_map_add_failure;
+ 			break;
+@@ -225,9 +227,11 @@ int netlbl_cfg_unlbl_static_add(struct net *net,
+ 	case AF_INET:
+ 		addr_len = sizeof(struct in_addr);
+ 		break;
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+ 	case AF_INET6:
+ 		addr_len = sizeof(struct in6_addr);
+ 		break;
++#endif /* IPv6 */
+ 	default:
+ 		return -EPFNOSUPPORT;
+ 	}
+@@ -266,9 +270,11 @@ int netlbl_cfg_unlbl_static_del(struct net *net,
+ 	case AF_INET:
+ 		addr_len = sizeof(struct in_addr);
+ 		break;
++#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+ 	case AF_INET6:
+ 		addr_len = sizeof(struct in6_addr);
+ 		break;
++#endif /* IPv6 */
+ 	default:
+ 		return -EPFNOSUPPORT;
+ 	}
+
