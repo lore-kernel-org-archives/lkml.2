@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab1K2WY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 17:24:58 -0500
-Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:26305 "EHLO
+	id S1756960Ab1K2W10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 17:27:26 -0500
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:10161 "EHLO
 	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752456Ab1K2WYy (ORCPT
+	by vger.kernel.org with ESMTP id S1752456Ab1K2W1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 17:24:54 -0500
+	Tue, 29 Nov 2011 17:27:25 -0500
 From: Daniel Drake <dsd@laptop.org>
 To: akpm@linux-foundation.org
 To: x86@kernel.org
@@ -15,128 +15,159 @@ To: hpa@zytor.com
 To: tglx@linutronix.de
 Cc: dilinger@queued.net
 Cc: linux-kernel@vger.kernel.org
-Cc: linux-acpi@vger.kernel.org
-Subject: [PATCH resend 2] x86, olpc-xo15-sci: Enable lid close wakeup control through sysfs
-Message-Id: <20111129222447.E56959D401E@zog.reactivated.net>
-Date: Tue, 29 Nov 2011 22:24:47 +0000 (GMT)
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=EUGoCtSHQ9oA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=sG27Gc5CmooiAte3vVwA:9 a=BtY_y2sVrqI5HisCwvEA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: [PATCH resend 2] x86, olpc: add debugfs interface for EC commands
+Message-Id: <20111129222721.1EC339D401E@zog.reactivated.net>
+Date: Tue, 29 Nov 2011 22:27:20 +0000 (GMT)
+X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=KEUfc1fKKR8A:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=z9N-Lmhe6hI0i5wcIpgA:9 a=lRrSHur630LihywNtb8A:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Like most systems, OLPC's ACPI LID switch wakes up the system when the
-lid is opened, but not when it is closed.
+Add a debugfs interface for sending commands to the OLPC EC and reading
+their responses. This is useful for EC development and debugging.
 
-Under OLPC's opportunistic suspend model, the lid may be closed while
-the system was oportunistically suspended with the screen running.
-In this event, we want to wake up to turn the screen off.
-
-Enable control of normal ACPI wakeups through lid close events through
-a new sysfs attribute "lid_wake_on_closed". When set, and when
-LID wakeups are enabled through ACPI, the system will wake up on both
-open and close lid events.
+Based on code by Paul Fox.
 
 Signed-off-by: Daniel Drake <dsd@laptop.org>
 ---
- arch/x86/platform/olpc/olpc-xo15-sci.c |   55 ++++++++++++++++++++++++++++++++
- 1 files changed, 55 insertions(+), 0 deletions(-)
+ arch/x86/platform/olpc/olpc.c |  101 +++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 101 insertions(+), 0 deletions(-)
 
 Resending after 6 weeks with no feedback.
 
-diff --git a/arch/x86/platform/olpc/olpc-xo15-sci.c b/arch/x86/platform/olpc/olpc-xo15-sci.c
-index 2b235b7..649230c 100644
---- a/arch/x86/platform/olpc/olpc-xo15-sci.c
-+++ b/arch/x86/platform/olpc/olpc-xo15-sci.c
-@@ -24,6 +24,50 @@
- #define XO15_SCI_DEVICE_NAME		"OLPC XO-1.5 SCI"
+diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
+index 7cce722..860aff9 100644
+--- a/arch/x86/platform/olpc/olpc.c
++++ b/arch/x86/platform/olpc/olpc.c
+@@ -20,6 +20,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/of.h>
+ #include <linux/syscore_ops.h>
++#include <linux/debugfs.h>
  
- static unsigned long xo15_sci_gpe;
-+static bool lid_wake_on_close;
+ #include <asm/geode.h>
+ #include <asm/setup.h>
+@@ -31,6 +32,13 @@ EXPORT_SYMBOL_GPL(olpc_platform_info);
+ 
+ static DEFINE_SPINLOCK(ec_lock);
+ 
++/* debugfs interface to EC commands */
++#define EC_MAX_CMD_ARGS (5 + 1)	/* cmd byte + 5 args */
++#define EC_MAX_CMD_REPLY (8)
++static struct dentry *ec_debugfs_dir;
++static unsigned char ec_debugfs_resp[EC_MAX_CMD_REPLY];
++static unsigned int ec_debugfs_resp_bytes;
 +
-+static int set_lid_wake_behavior(bool wake_on_close)
+ /* EC event mask to be applied during suspend (defining wakeup sources). */
+ static u16 ec_wakeup_mask;
+ 
+@@ -269,6 +277,98 @@ int olpc_ec_sci_query(u16 *sci_value)
+ }
+ EXPORT_SYMBOL_GPL(olpc_ec_sci_query);
+ 
++static ssize_t ec_gen_write(struct file *file, const char __user *buf,
++			    size_t size, loff_t *ppos)
 +{
-+	struct acpi_object_list arg_list;
-+	union acpi_object arg;
-+	acpi_status status;
++	int i, m;
++	unsigned char ec_cmd[EC_MAX_CMD_ARGS];
++	unsigned int ec_cmd_int[EC_MAX_CMD_ARGS];
++	char cmdbuf[64];
++	int ec_cmd_bytes;
 +
-+	arg_list.count = 1;
-+	arg_list.pointer = &arg;
-+	arg.type = ACPI_TYPE_INTEGER;
-+	arg.integer.value = wake_on_close;
-+	status = acpi_evaluate_object(NULL, "\\_SB.PCI0.LID.LIDW", &arg_list,
-+				      NULL);
-+	if (ACPI_FAILURE(status)) {
-+		pr_warning(PFX "failed to set lid behaviour\n");
-+		return 1;
++	size = simple_write_to_buffer(cmdbuf, sizeof(cmdbuf), ppos, buf, size);
++
++	m = sscanf(cmdbuf, "%x:%u %x %x %x %x %x", &ec_cmd_int[0],
++		   &ec_debugfs_resp_bytes,
++		   &ec_cmd_int[1], &ec_cmd_int[2], &ec_cmd_int[3],
++		   &ec_cmd_int[4], &ec_cmd_int[5]);
++	if (m <= 0 || ec_debugfs_resp_bytes > EC_MAX_CMD_REPLY) {
++		printk(KERN_DEBUG "olpc-ec: bad ec cmd:  "
++		       "cmd:response-count [arg1 [arg2 ...]]\n");
++		return -EINVAL;
 +	}
 +
-+	lid_wake_on_close = wake_on_close;
-+	return 0;
++	/* convert scanf'd ints to char */
++	for (i = 0; i < EC_MAX_CMD_ARGS; i++)
++		ec_cmd[i] = ec_cmd_int[i];
++
++	ec_cmd_bytes = m - 2;
++
++	printk(KERN_DEBUG "olpc-ec: debugfs cmd 0x%02x with %d args "
++	       "%02x %02x %02x %02x %02x, want %d returns\n",
++	       ec_cmd[0], ec_cmd_bytes, ec_cmd[1], ec_cmd[2], ec_cmd[3],
++	       ec_cmd[4], ec_cmd[5], ec_debugfs_resp_bytes);
++
++	olpc_ec_cmd((unsigned char) ec_cmd[0],
++		(ec_cmd_bytes == 0) ? NULL : &ec_cmd[1],
++		ec_cmd_bytes, ec_debugfs_resp, ec_debugfs_resp_bytes);
++
++	printk(KERN_DEBUG "olpc-ec: response "
++	       "%02x %02x %02x %02x %02x %02x %02x %02x (%d bytes expected)\n",
++	       ec_debugfs_resp[0], ec_debugfs_resp[1], ec_debugfs_resp[2],
++	       ec_debugfs_resp[3], ec_debugfs_resp[4], ec_debugfs_resp[5],
++	       ec_debugfs_resp[6], ec_debugfs_resp[7], ec_debugfs_resp_bytes);
++
++	return size;
 +}
 +
-+static ssize_t lid_wake_on_close_show(struct kobject *s,
-+				      struct kobj_attribute *attr, char *buf)
++static ssize_t ec_gen_read(struct file *file, char __user *buf,
++			   size_t size, loff_t *ppos)
 +{
-+	return sprintf(buf, "%u\n", lid_wake_on_close);
++	unsigned int i, r;
++	char *rp;
++	char respbuf[64];
++
++	rp = respbuf;
++	rp += sprintf(rp, "%02x", ec_debugfs_resp[0]);
++	for (i = 1; i < ec_debugfs_resp_bytes; i++)
++		rp += sprintf(rp, ", %02x", ec_debugfs_resp[i]);
++	rp += sprintf(rp, "\n");
++
++	r = rp - respbuf;
++
++	return simple_read_from_buffer(buf, size, ppos, respbuf, r);
 +}
 +
-+static ssize_t lid_wake_on_close_store(struct kobject *s,
-+				       struct kobj_attribute *attr,
-+				       const char *buf, size_t n)
++static const struct file_operations ec_debugfs_genops = {
++	.write	 = ec_gen_write,
++	.read	 = ec_gen_read,
++};
++
++static char ec_debugfs_help_text[] =
++	"generic write:   CC:N A A A A ...\n"
++	" CC is the (hex) command, N is the (optional) count of expected\n"
++	" reply bytes, and A A A A are optional (hex) arguments.\n"
++	"generic read:  will show hex reply bytes, *whether or not* they\n"
++	" came from the immediately previous command\n";
++
++static struct debugfs_blob_wrapper ec_debugfs_help = {
++	ec_debugfs_help_text,
++	sizeof(ec_debugfs_help_text)
++};
++
++static void setup_debugfs(void)
 +{
-+	unsigned int val;
-+	if (!sscanf(buf, "%u", &val) == 1)
-+		return -EINVAL;
++	ec_debugfs_dir = debugfs_create_dir("olpc-ec", 0);
++	if (ec_debugfs_dir == ERR_PTR(-ENODEV))
++		return;
 +
-+	set_lid_wake_behavior(!!val);
-+	return n;
++	debugfs_create_file("generic", 0600, ec_debugfs_dir, NULL,
++			    &ec_debugfs_genops);
++
++	debugfs_create_blob("help", 0444, ec_debugfs_dir, &ec_debugfs_help);
 +}
 +
-+static struct kobj_attribute lid_wake_on_close_attr =
-+	__ATTR(lid_wake_on_close, 0644,
-+	       lid_wake_on_close_show, lid_wake_on_close_store);
- 
- static void battery_status_changed(void)
+ static int olpc_ec_suspend(void)
  {
-@@ -91,6 +135,7 @@ static int xo15_sci_add(struct acpi_device *device)
- {
- 	unsigned long long tmp;
- 	acpi_status status;
-+	int r;
+ 	return olpc_ec_mask_write(ec_wakeup_mask);
+@@ -372,6 +472,7 @@ static int __init olpc_init(void)
+ 	}
  
- 	if (!device)
- 		return -EINVAL;
-@@ -112,6 +157,10 @@ static int xo15_sci_add(struct acpi_device *device)
- 
- 	dev_info(&device->dev, "Initialized, GPE = 0x%lx\n", xo15_sci_gpe);
- 
-+	r = sysfs_create_file(&device->dev.kobj, &lid_wake_on_close_attr.attr);
-+	if (r)
-+		goto err_sysfs;
-+
- 	/* Flush queue, and enable all SCI events */
- 	process_sci_queue();
- 	olpc_ec_mask_write(EC_SCI_SRC_ALL);
-@@ -123,6 +172,11 @@ static int xo15_sci_add(struct acpi_device *device)
- 		device_init_wakeup(&device->dev, true);
+ 	register_syscore_ops(&olpc_syscore_ops);
++	setup_debugfs();
  
  	return 0;
-+
-+err_sysfs:
-+	acpi_remove_gpe_handler(NULL, xo15_sci_gpe, xo15_sci_gpe_handler);
-+	cancel_work_sync(&sci_work);
-+	return r;
  }
- 
- static int xo15_sci_remove(struct acpi_device *device, int type)
-@@ -130,6 +184,7 @@ static int xo15_sci_remove(struct acpi_device *device, int type)
- 	acpi_disable_gpe(NULL, xo15_sci_gpe);
- 	acpi_remove_gpe_handler(NULL, xo15_sci_gpe, xo15_sci_gpe_handler);
- 	cancel_work_sync(&sci_work);
-+	sysfs_remove_file(&device->dev.kobj, &lid_wake_on_close_attr.attr);
- 	return 0;
- }
- 
 -- 
 1.7.7.3
 
