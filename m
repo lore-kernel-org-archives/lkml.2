@@ -1,125 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab1K2QEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 11:04:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21473 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab1K2QEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 11:04:04 -0500
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: linux-mm@kvack.org, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: [PATCH repost] mm,x86: remove debug_pagealloc_enabled
-Date: Tue, 29 Nov 2011 17:05:11 +0100
-Message-Id: <1322582711-14571-1-git-send-email-sgruszka@redhat.com>
+	id S1755983Ab1K2QIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 11:08:42 -0500
+Received: from telerate.info.com.np ([203.78.160.29]:46583 "EHLO
+	ns1.info.com.np" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab1K2QIl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 11:08:41 -0500
+X-Greylist: delayed 511 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Nov 2011 11:08:41 EST
+X-Amavis-Alert: BAD HEADER SECTION, Improper use of control character (char 0D
+	hex): From: ...zZWtjZSBNRkYgVUsi?=" <ramala@infoclub.com.np>\r
+To: <info1@karlin.mff.cuni.cz>
+Subject: =?UTF-8?B?VsOtdGVqdGU=?=
+X-PHP-Originating-Script: 5033:class_send.php
+From: "=?UTF-8?B?Ik1hdGVtYXRpY2vDoSBzZWtjZSBNRkYgVUsi?=" 
+	<ramala@infoclub.com.np>
+Date: Tue, 29 Nov 2011 21:45:04 +0545
+Reply-To: "=?UTF-8?B?Ik1hdGVtYXRpY2vDoSBzZWtjZSBNRkYgVUsi?=" 
+	  <ramala@infoclub.com.np>
+X-Priority: 3 (Normal)
+User-Agent: InfoClub <http://nocc.sourceforge.net/>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20111129160004.A18B6343E59@ns1.info.com.np>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When (no)bootmem finish operation, it pass pages to buddy allocator.
-Since debug_pagealloc_enabled is not set, we will do not protect pages,
-what is not what we want with CONFIG_DEBUG_PAGEALLOC=y.
 
-To fix remove debug_pagealloc_enabled. That variable was introduced by
-commit 12d6f21e "x86: do not PSE on CONFIG_DEBUG_PAGEALLOC=y" to get
-more CPA (change page attribude) code testing. But currently we have
-CONFIG_CPA_DEBUG, which test CPA.
+Vítejte | Matematická nebo MFF UK |
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
----
- arch/x86/mm/pageattr.c |    6 ------
- include/linux/mm.h     |   10 ----------
- init/main.c            |    5 -----
- mm/debug-pagealloc.c   |    3 ---
- 4 files changed, 0 insertions(+), 24 deletions(-)
+Vážený uživateli e-mailový účet,
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index f9e5267..5031eef 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
- 	}
- 
- 	/*
--	 * If page allocator is not up yet then do not call c_p_a():
--	 */
--	if (!debug_pagealloc_enabled)
--		return;
--
--	/*
- 	 * The return value is ignored as the calls cannot fail.
- 	 * Large pages for identity mappings are not used at boot time
- 	 * and hence no memory allocations during large page split.
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 3dc3a8c..0a22db1 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1537,23 +1537,13 @@ static inline void vm_stat_account(struct mm_struct *mm,
- #endif /* CONFIG_PROC_FS */
- 
- #ifdef CONFIG_DEBUG_PAGEALLOC
--extern int debug_pagealloc_enabled;
--
- extern void kernel_map_pages(struct page *page, int numpages, int enable);
--
--static inline void enable_debug_pagealloc(void)
--{
--	debug_pagealloc_enabled = 1;
--}
- #ifdef CONFIG_HIBERNATION
- extern bool kernel_page_present(struct page *page);
- #endif /* CONFIG_HIBERNATION */
- #else
- static inline void
- kernel_map_pages(struct page *page, int numpages, int enable) {}
--static inline void enable_debug_pagealloc(void)
--{
--}
- #ifdef CONFIG_HIBERNATION
- static inline bool kernel_page_present(struct page *page) { return true; }
- #endif /* CONFIG_HIBERNATION */
-diff --git a/init/main.c b/init/main.c
-index 217ed23..99c4ba3 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -282,10 +282,6 @@ static int __init unknown_bootoption(char *param, char *val)
- 	return 0;
- }
- 
--#ifdef CONFIG_DEBUG_PAGEALLOC
--int __read_mostly debug_pagealloc_enabled = 0;
--#endif
--
- static int __init init_setup(char *str)
- {
- 	unsigned int i;
-@@ -597,7 +593,6 @@ asmlinkage void __init start_kernel(void)
- 	}
- #endif
- 	page_cgroup_init();
--	enable_debug_pagealloc();
- 	debug_objects_mem_init();
- 	kmemleak_init();
- 	setup_per_cpu_pageset();
-diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
-index 7cea557..789ff70 100644
---- a/mm/debug-pagealloc.c
-+++ b/mm/debug-pagealloc.c
-@@ -95,9 +95,6 @@ static void unpoison_pages(struct page *page, int n)
- 
- void kernel_map_pages(struct page *page, int numpages, int enable)
- {
--	if (!debug_pagealloc_enabled)
--		return;
--
- 	if (enable)
- 		unpoison_pages(page, numpages);
- 	else
--- 
-1.7.1
+Vaše poštovní schránka překročila limit úložiště, který je 20 GB jak od vašeho
+Správce, jsou aktuálně spuštěné v 20.9 GB, nemusí být schopen přijímat novou poštu, dokud neobnovil poštovní schránky.
+
+Ale k tomu zabránit musíte potvrdit váš účet okamžitě po vás obdrží toto oznámení. Potvrdit a udržovat váš účet aktivní během a po tomto procesu, odpovědi na tuto zprávu s níže informace o účtu společnosti. V opačném případě to může způsobit trvalé deaktivaci vašeho účtu z naší databáze nám umožnilo vytvořit více
+prostory pro se nadcházejících předplatitelů
+
+Potvrďte detaily o účtu.
+_____________________________________
+1. Jméno a příjmení:
+2. Úplné přihlašovací e-mailová adresa:
+3. Uživatelské jméno a heslo:
+4. Zadejte heslo znovu:
+_____________________________________
+
+Výstražný kód: ID67565
+
+Děkujeme vám za vaši rychlou reakci na toto oznámení Omlouváme se za nějaké potíže.
+
+S pozdravem
+Správce služby.
+
+___________________________________
+NOCC, http://nocc.sourceforge.net
+
+
+
+
 
