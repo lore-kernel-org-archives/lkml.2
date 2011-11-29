@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab1K2Gro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 01:47:44 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:45828 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab1K2Grn (ORCPT
+	id S1752283Ab1K2G4G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 01:56:06 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:34837 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab1K2G4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 01:47:43 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.15 with qID pAT6lP7d027611, This message is released by code: ctlocs8528
-From: hayeswang <hayeswang@realtek.com>
-To: "'Francois Romieu'" <romieu@fr.zoreil.com>, <booster@wolke7.net>
-CC: "'Jonathan Nieder'" <jrnieder@gmail.com>,
-        "'Eric Dumazet'" <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
-        "'nic_swsd'" <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        "'Armin Kazmi'" <armin.kazmi@tu-dortmund.de>
-References: <20111124044137.GA18262@elie.hsd1.il.comcast.net> <4ECFE7A7.5070300@wolke7.net> <20111125201936.GA26692@elie.hsd1.il.comcast.net> <1322253122.2550.3.camel@edumazet-laptop> <20111125222211.GA13719@electric-eye.fr.zoreil.com> <1322262357.2550.12.camel@edumazet-laptop> <20111126004447.GA14744@electric-eye.fr.zoreil.com> <1322280423.10212.3.camel@edumazet-laptop> <20111127092808.GE21635@elie.hsd1.il.comcast.net> <4ED2A573.1020807@wolke7.net> <20111127231147.GA1784@electric-eye.fr.zoreil.com>
-Subject: RE: [bug?] r8169: hangs under heavy load
-Date: Tue, 29 Nov 2011 14:47:24 +0800
-X-BOX-Message-Id: pAT6lP7d027611
-Message-ID: <D95C09DB1A7E493E89FE5A0B3879CEB0@realtek.com.tw>
+	Tue, 29 Nov 2011 01:56:04 -0500
+Date: Tue, 29 Nov 2011 12:23:15 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: Shan Hai <haishan.bai@gmail.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        tglx@linutronix.de
+Subject: Re: [PATCH 1/1] sched/rt: code cleanup, remove a redundant function
+ call
+Message-ID: <20111129065315.GA15774@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+References: <1322535836-13590-1-git-send-email-haishan.bai@gmail.com>
+ <1322535836-13590-2-git-send-email-haishan.bai@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: AcytWs16pKPsPwEfTy6rlDsyTPEmgQBBcScg
-In-Reply-To: <20111127231147.GA1784@electric-eye.fr.zoreil.com>
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1322535836-13590-2-git-send-email-haishan.bai@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11112906-3864-0000-0000-0000004AC94C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francois Romieu [mailto:romieu@fr.zoreil.com] 
-[...]
-> 
-> Hayes, does the 8168c require something special to recover 
-> from Rx FIFO
-> overflow ?
-> 
+* Shan Hai <haishan.bai@gmail.com> [2011-11-29 11:03:56]:
 
-For the 8168c and the later chips, our hardware engineer says that don't enable
-the RxFIFOOver of IntrMask and don't clear the RxFIFOOver of IntrStatus. The
-hardware will automatically escape Rx fifo full situation. Although you try to
-clear the RxFIFOOver of IntrStatus, maybe the bit wouldn't be cleared. Just
-disregard it.
- 
-Best Regards,
-Hayes
+> The second time call to sched_rt_period is redundant, because the value of the
+> rt_runtime was already read and it was protected by the rurt_runtime_lock.
+> 
+> Signed-off-by: Shan Hai <haishan.bai@gmail.com>
+
+Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+
+> ---
+>  kernel/sched_rt.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index 056cbd2..2171ac8 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -645,7 +645,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
+>  	if (rt_rq->rt_throttled)
+>  		return rt_rq_throttled(rt_rq);
+> 
+> -	if (sched_rt_runtime(rt_rq) >= sched_rt_period(rt_rq))
+> +	if (runtime >= sched_rt_period(rt_rq))
+>  		return 0;
+> 
+>  	balance_runtime(rt_rq);
+> -- 
+> 1.7.4.1
 
