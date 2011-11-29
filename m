@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1K2Kt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 05:49:58 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:30284 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab1K2Kty convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Tue, 29 Nov 2011 05:49:54 -0500
-Message-Id: <4ED4C6DF0200007800064018@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Tue, 29 Nov 2011 10:49:51 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86-64: improve insn scheduling in SAVE_ARGS_IRQ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754793Ab1K2Kwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 05:52:43 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:54489 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754638Ab1K2Kwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 05:52:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Balbir Singh <bsingharora@gmail.com>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 3/7] mm: memcg: clean up fault accounting
+Date: Tue, 29 Nov 2011 11:52:01 +0100
+Message-Id: <1322563925-1667-4-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1322563925-1667-1-git-send-email-hannes@cmpxchg.org>
+References: <1322563925-1667-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In one case, use an address register that was computed earlier (and
-with a simpler instruction), thus reducing the risk of a stall.
+From: Johannes Weiner <jweiner@redhat.com>
 
-In the second case, eliminate a branch by using a conditional move (as
-is already done in call_softirq and xen_do_hypervisor_callback).
+The fault accounting functions have a single, memcg-internal user, so
+they don't need to be global.  In fact, their one-line bodies can be
+directly folded into the caller.  And since faults happen one at a
+time, use this_cpu_inc() directly instead of this_cpu_add(foo, 1).
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-
+Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Balbir Singh <bsingharora@gmail.com>
 ---
- arch/x86/kernel/entry_64.S |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ mm/memcontrol.c |   14 ++------------
+ 1 files changed, 2 insertions(+), 12 deletions(-)
 
---- 3.2-rc3/arch/x86/kernel/entry_64.S
-+++ 3.2-rc3-x86_64-entry-sched/arch/x86/kernel/entry_64.S
-@@ -319,7 +319,7 @@ ENDPROC(native_usergs_sysret64)
- 	movq %rsp, %rsi
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 473b99f..d825af9 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -589,16 +589,6 @@ static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
+ 	this_cpu_add(memcg->stat->count[MEM_CGROUP_STAT_SWAPOUT], val);
+ }
  
- 	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
--	testl $3, CS(%rdi)
-+	testl $3, CS-RBP(%rsi)
- 	je 1f
- 	SWAPGS
- 	/*
-@@ -329,11 +329,10 @@ ENDPROC(native_usergs_sysret64)
- 	 * moving irq_enter into assembly, which would be too much work)
- 	 */
- 1:	incl PER_CPU_VAR(irq_count)
--	jne 2f
--	mov PER_CPU_VAR(irq_stack_ptr),%rsp
-+	cmovzq PER_CPU_VAR(irq_stack_ptr),%rsp
- 	CFI_DEF_CFA_REGISTER	rsi
+-void mem_cgroup_pgfault(struct mem_cgroup *memcg, int val)
+-{
+-	this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGFAULT], val);
+-}
+-
+-void mem_cgroup_pgmajfault(struct mem_cgroup *memcg, int val)
+-{
+-	this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGMAJFAULT], val);
+-}
+-
+ static unsigned long mem_cgroup_read_events(struct mem_cgroup *memcg,
+ 					    enum mem_cgroup_events_index idx)
+ {
+@@ -913,10 +903,10 @@ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
  
--2:	/* Store previous stack value */
-+	/* Store previous stack value */
- 	pushq %rsi
- 	CFI_ESCAPE	0x0f /* DW_CFA_def_cfa_expression */, 6, \
- 			0x77 /* DW_OP_breg7 */, 0, \
-
-
+ 	switch (idx) {
+ 	case PGMAJFAULT:
+-		mem_cgroup_pgmajfault(memcg, 1);
++		this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGFAULT]);
+ 		break;
+ 	case PGFAULT:
+-		mem_cgroup_pgfault(memcg, 1);
++		this_cpu_inc(memcg->stat->events[MEM_CGROUP_EVENTS_PGMAJFAULT]);
+ 		break;
+ 	default:
+ 		BUG();
+-- 
+1.7.6.4
 
