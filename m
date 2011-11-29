@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab1K2TOt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 14:14:49 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55677 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471Ab1K2TOs (ORCPT
+	id S1755809Ab1K2TRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 14:17:30 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45721 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755367Ab1K2TR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 14:14:48 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] x86, CPU: Drop superfluous get_cpu_cap prototype
-Date: Tue, 29 Nov 2011 20:14:43 +0100
-Message-Id: <1322594083-14507-1-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.8.rc0
+	Tue, 29 Nov 2011 14:17:28 -0500
+Message-Id: <20111129191638.835932727@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 29 Nov 2011 23:12:54 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
+References: <20111129191252.769160532@openvz.org>
+Content-Disposition: inline; filename=fs-proc-Introduce-the-Children-line-in-proc-pid-stat
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Pavel Emelyanov <xemul@parallels.com>
 
-get_cpu_cap() external function prototype was declared twice so lose one
-of them.
+There is no easy way to make a reverse parent->children chain
+from the task status, in turn children->parent provided with "PPid"
+field.
 
-Cleanup header while at it.
+So instead of walking over all pids in system to figure out what
+children the task have -- we add explicit "Children" member to
+/proc/<pid>/status since kernel already knows this kind of information
+but it was not yet exported.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 ---
- arch/x86/kernel/cpu/cpu.h |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ fs/proc/array.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/cpu.h b/arch/x86/kernel/cpu/cpu.h
-index 1b22dcc..8bacc78 100644
---- a/arch/x86/kernel/cpu/cpu.h
-+++ b/arch/x86/kernel/cpu/cpu.h
-@@ -1,5 +1,4 @@
- #ifndef ARCH_X86_CPU_H
--
- #define ARCH_X86_CPU_H
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -158,6 +158,18 @@ static inline const char *get_task_state(struct task_struct *tsk)
+ 	return *p;
+ }
  
- struct cpu_model_info {
-@@ -35,6 +34,4 @@ extern const struct cpu_dev *const __x86_cpu_dev_start[],
++static void task_children(struct seq_file *m, struct task_struct *p, struct pid_namespace *ns)
++{
++	struct task_struct *c;
++
++	seq_printf(m, "Children:");
++	read_lock(&tasklist_lock);
++	list_for_each_entry(c, &p->children, sibling)
++		seq_printf(m, " %d", pid_nr_ns(task_pid(c), ns));
++	read_unlock(&tasklist_lock);
++	seq_putc(m, '\n');
++}
++
+ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 				struct pid *pid, struct task_struct *p)
+ {
+@@ -192,6 +204,8 @@ static inline void task_state(struct seq_file *m, struct pid_namespace *ns,
+ 		cred->uid, cred->euid, cred->suid, cred->fsuid,
+ 		cred->gid, cred->egid, cred->sgid, cred->fsgid);
  
- extern void get_cpu_cap(struct cpuinfo_x86 *c);
- extern void cpu_detect_cache_sizes(struct cpuinfo_x86 *c);
--extern void get_cpu_cap(struct cpuinfo_x86 *c);
--
--#endif
-+#endif /* ARCH_X86_CPU_H */
++	task_children(m, p, ns);
++
+ 	task_lock(p);
+ 	if (p->files)
+ 		fdt = files_fdtable(p->files);
 -- 
-1.7.8.rc0
+1.7.7.3
+
 
