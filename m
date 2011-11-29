@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab1K2PKj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:10:39 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:36909 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab1K2PKi convert rfc822-to-8bit (ORCPT
+	id S1754879Ab1K2PLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:11:55 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60284 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487Ab1K2PLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:10:38 -0500
-MIME-Version: 1.0
-In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com>
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
- <20111129091037.20730.59391.stgit@localhost6.localdomain6>
- <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
- <4ED4CDCE.9080804@parallels.com> <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
- <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Tue, 29 Nov 2011 23:10:16 +0800
-Message-ID: <CA+a=Yy5GKMu8rbh8y3fOtK6pmqygPNBr=a+p7LfcmTqtXFH3iA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
- blocklayout routines
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: tao.peng@emc.com, skinsbursky@parallels.com, linux-nfs@vger.kernel.org,
-        xemul@parallels.com, neilb@suse.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 Nov 2011 10:11:54 -0500
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: intel-gfx@lists.freedesktop.org
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, stable@kernel.org
+Subject: [PATCH 1/2] drm: add helper to clflush a virtual address range
+Date: Tue, 29 Nov 2011 16:09:28 +0100
+Message-Id: <1322579369-26954-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 9:35 PM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
->> -----Original Message-----
->> From: tao.peng@emc.com [mailto:tao.peng@emc.com]
->> Sent: Tuesday, November 29, 2011 7:40 AM
->> To: skinsbursky@parallels.com
->> Cc: Myklebust, Trond; linux-nfs@vger.kernel.org; xemul@parallels.com;
->> neilb@suse.de; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
->> jbottomley@parallels.com; bfields@fieldses.org; davem@davemloft.net;
->> devel@openvz.org
->> Subject: RE: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
->> from blocklayout routines
->>
->> > -----Original Message-----
->> > From: Stanislav Kinsbursky [mailto:skinsbursky@parallels.com]
->> > Sent: Tuesday, November 29, 2011 8:19 PM
->> > To: Peng, Tao
->> > Cc: Trond.Myklebust@netapp.com; linux-nfs@vger.kernel.org; Pavel
->> > Emelianov; neilb@suse.de; netdev@vger.kernel.org;
->> > linux-kernel@vger.kernel.org; James Bottomley; bfields@fieldses.org;
->> > davem@davemloft.net; devel@openvz.org
->> > Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
->> > from blocklayout routines
->> >
->> > 29.11.2011 16:00, tao.peng@emc.com пишет:
->> > >> -----Original Message-----
->> > >> From: linux-nfs-owner@vger.kernel.org
->> > >> [mailto:linux-nfs-owner@vger.kernel.org] On Behalf Of
->> > Stanislav
->> > >> Kinsbursky
->> > >> Sent: Tuesday, November 29, 2011 6:11 PM
->> > >> To: Trond.Myklebust@netapp.com
->> > >> Cc: linux-nfs@vger.kernel.org; xemul@parallels.com; neilb@suse.de;
->> > >> netdev@vger.kernel.org; linux- kernel@vger.kernel.org;
->> > >> jbottomley@parallels.com; bfields@fieldses.org;
->> > >> davem@davemloft.net; devel@openvz.org
->> > >> Subject: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference
->> > >> from blocklayout routines
->> > >>
->> > >> This is a cleanup patch. We don't need this reference anymore,
->> > >> because blocklayout pipes dentries now creates and destroys in
->> > >> per-net operations and on PipeFS mount/umount notification.
->> > >> Note that nfs4blocklayout_register_net() now returns 0 instead of
->> > >> -ENOENT in case of PipeFS superblock absence. This is ok, because
->> > >> blocklayout pipe dentry will be created on PipeFS mount event.
->> > > When is the "pipefs mount event" going to happen? When inserting
->> > > kernel modules or when user issues
->> > mount command?
->> > >
->> >
->> > When user issues mount command.
->> > Kernel mounts of PipeFS has been removed with all these patch sets
->> > I've sent already.
->> Then it is going to break blocklayout user space program blkmapd, which is
->> stared before mounting any file system and it tries to open the pipe file
->> when started.
->
-> Why on earth is blkmapd doing this instead of listening for file creation notifications like the other rpc_pipefs daemons do?
-Not sure how the original implementer chose this but I think it is
-likely because we do not expect the pipe file to be created or deleted
-dynamically.
+Useful when the page is already mapped to copy date in/out.
 
+For -stable because the next patch (fixing phys obj pwrite) needs this
+little helper function.
+
+Cc: stable@kernel.org
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/drm_cache.c |   23 +++++++++++++++++++++++
+ include/drm/drmP.h          |    1 +
+ 2 files changed, 24 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_cache.c b/drivers/gpu/drm/drm_cache.c
+index 5928653..c7c8f6b 100644
+--- a/drivers/gpu/drm/drm_cache.c
++++ b/drivers/gpu/drm/drm_cache.c
+@@ -98,3 +98,26 @@ drm_clflush_pages(struct page *pages[], unsigned long num_pages)
+ #endif
+ }
+ EXPORT_SYMBOL(drm_clflush_pages);
++
++void
++drm_clflush_virt_range(char *addr, unsigned long length)
++{
++#if defined(CONFIG_X86)
++	if (cpu_has_clflush) {
++		char *end = addr + length;
++		mb();
++		for (; addr < end; addr += boot_cpu_data.x86_clflush_size)
++			clflush(addr);
++		clflush(end - 1);
++		mb();
++		return;
++	}
++
++	if (on_each_cpu(drm_clflush_ipi_handler, NULL, 1) != 0)
++		printk(KERN_ERR "Timed out waiting for cache flush.\n");
++#else
++	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
++	WARN_ON_ONCE(1);
++#endif
++}
++EXPORT_SYMBOL(drm_clflush_virt_range);
+diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+index 1f9e951..ededdd0 100644
+--- a/include/drm/drmP.h
++++ b/include/drm/drmP.h
+@@ -1331,6 +1331,7 @@ extern int drm_authmagic(struct drm_device *dev, void *data,
+ 
+ /* Cache management (drm_cache.c) */
+ void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
++void drm_clflush_virt_range(char *addr, unsigned long length);
+ 
+ 				/* Locking IOCTL support (drm_lock.h) */
+ extern int drm_lock(struct drm_device *dev, void *data,
 -- 
-Thanks,
-Tao
+1.7.7.3
+
