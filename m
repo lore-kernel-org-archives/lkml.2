@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab1K2Vlj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 16:41:39 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48677 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371Ab1K2Vli (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 16:41:38 -0500
-Date: Tue, 29 Nov 2011 21:41:36 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Wen Yan Xin <WenYan_Xin@symantec.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zongliang Li <Zongliang_Li@symantec.com>,
-        Gang He <Gang_He@symantec.com>,
-        Yong Jun Chai <YongJun_Chai@symantec.com>
-Subject: Re: what's the replace for the big kernel lock after kernel version
- 2.6.39 for system call.
-Message-ID: <20111129214136.GR2203@ZenIV.linux.org.uk>
-References: <S1752501Ab1KYJXy/20111125092354Z+1871@vger.kernel.org>
- <F0BE05962279964D949D53875492E2E24FC27D7C30@APJ1XCHEVSPIN32.SYMC.SYMANTEC.COM>
-MIME-Version: 1.0
+	id S1756855Ab1K2Vnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 16:43:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:43919 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751706Ab1K2Vnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 16:43:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="81317764"
+Date: Tue, 29 Nov 2011 13:43:43 -0800
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: Udo Steinberg <udo@hypervisor.org>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, "Luck, Tony" <tony.luck@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: MCE/Package power limit notification
+Message-ID: <20111129214342.GB5412@linux-os.sc.intel.com>
+References: <20111123160950.67860131@x220> <987664A83D2D224EAE907B061CE93D53027D89B577@orsmsx505.amr.corp.intel.com> <493994B35A117E4F832F97C4719C4C04022D835792@orsmsx505.amr.corp.intel.com> <20111129222424.498469fe@x220.fritz.box>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <F0BE05962279964D949D53875492E2E24FC27D7C30@APJ1XCHEVSPIN32.SYMC.SYMANTEC.COM>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111129222424.498469fe@x220.fritz.box>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 01:03:07AM -0800, Wen Yan Xin wrote:
-> Hi all,
+On Tue, Nov 29, 2011 at 01:24:24PM -0800, Udo Steinberg wrote:
+> On Mon, 28 Nov 2011 14:50:47 -0800 Yu, Fenghua (YF) wrote:
 > 
-> I have a trouble of working on kernel 2.6.39 and later. Originally when our kernel module startups, it hooks some file system call, like sys_open... , and the big kernel lock - lock_kernel() - will be held before creating the hook to prevent user application use system calls, and be released after the hook created.
+> YF> I sent out a patch to remove the mcelog info. Could you try it and see if it works for you?
+> YF> https://lkml.org/lkml/2011/11/14/239
+> YF> 
+> YF> Thanks.
+> YF> 
+> YF> -Fenghua
 > 
+> Hi Fenghua,
 > 
-> But after the kernel 2.6.39, the big kernel lock has been removed. I'm thinking there should be one or more lock that should be used. 
-> 
-> So, my question is which lock should be held now, when we hook the system call of file system?
-> 
-> I'd really appreciate your answer in advance.
+> Thanks for the patch. It works and eliminates the MCE warnings. What exactly
+> are the BIOS issues mentioned in the patch description? Is BIOS programming
+> some MSRs the wrong way?
 
-1) your rootkit has always been racy; taking BKL does *NOT* prevent another
-CPU from entering a system call.
+Hi, Udo,
 
-2) none; just don't do it.
+Could you please check counters in /sys/devices/system/cpu/cpu#/thermal_throttle
+and see which counters report the thermal events?
+
+The thought of the patch is to remove the errors in mcelog and report the errors
+in respective counters. Therefore, the events are not reported as scary hardware
+issues but are still captured in counters.
+
+I think BIOS/firmware sets up power limit or thermal throttle incorrectly and
+triggers events incorrectly. You may try updated BIOS to see if the events go
+away.
+
+Thanks.
+
+-Fenghua
