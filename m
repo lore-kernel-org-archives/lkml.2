@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab1K2Smm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 13:42:42 -0500
-Received: from www17.your-server.de ([213.133.104.17]:60918 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab1K2Sml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 13:42:41 -0500
-Message-ID: <1322592151.1534.78.camel@localhost.localdomain>
-Subject: Re: [PATCH] coccinelle: Add patch to use kcalloc instead of kzalloc
- for array allocations
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org
-Date: Tue, 29 Nov 2011 19:42:31 +0100
-In-Reply-To: <1322232368-28814-1-git-send-email-lars@metafoo.de>
-References: <1322232368-28814-1-git-send-email-lars@metafoo.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-ysWIb+0M7YwK+nF2PPbz"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	id S1754992Ab1K2Swn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 13:52:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31195 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752605Ab1K2Swl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 13:52:41 -0500
+Date: Tue, 29 Nov 2011 20:54:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH-RFC 0/2] tile: switch to generic pci_iomap
+Message-ID: <cover.1322592494.git.mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
+User-Agent: Mutt/1.5.21 (2010-09-15)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here's a completely untested patch to switch tile
+over to the new pci_iomap (in -mm).
 
---=-ysWIb+0M7YwK+nF2PPbz
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This is on top of pci: use generic pci_iomap in most architectures,
+and converts just the tile architecture.
 
-Am Freitag, den 25.11.2011, 15:46 +0100 schrieb Lars-Peter Clausen:
-> This patch adds a coccinelle patch to convert array allocations which use
-> kzalloc to kcalloc. The advantage of kcalloc is, that will take care of
-> integer overflows which could result from the multiplication and it is al=
-so
-> nicer to read.
+Seems straightforward enough but completely untested - could someone
+with access to appropriate systems respond and say whether
+the first patch in the series is OK?
+The second one should then be trivial.
 
-Hi Lars,
-
-I did run your kcalloc spatch against 3.2-rc3. are you okay with if I
-send the diffs to the LKML?
-
-mfg
-thohmas
-
-
---=-ysWIb+0M7YwK+nF2PPbz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJO1SeXAAoJEK2Y/UtDbsHsFnwIAIm2IprSleF5kgPiLFjI532D
-W7XGPYFVO0XFLLTga5F+od1GYes6K26RGo51P6JRMq1UWA2elTwPhMTsqw3WP4kl
-jVN2r8Mf9HODe0XOFiIXF4/DYEI6OeE8xOfZdbTkp7hM1pO/TJOvzHgerkZIXr/8
-dWfmYwOM1vi4wAxs+z9CnpJW4bR7q14s+s7hqHk994oSL+VBV2OSB/7GKIHB7djL
-+IkrXPZJbOnFTiJzfdjNdtGGkFCvzduHnC6nAGbVZkCPz8go3fs58Y8kccMqRgd2
-/I3bJlF1XI6UcX/FhakAHClu10q7BZMUWHmNjGvTb98RMz0tj6At43zEAScxvz4=
-=UmpY
------END PGP SIGNATURE-----
-
---=-ysWIb+0M7YwK+nF2PPbz--
-
+-- 
+1.7.5.53.gc233e
