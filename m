@@ -1,102 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1K2PCA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 10:02:00 -0500
-Received: from ist.fellig.org ([84.200.228.103]:32887 "EHLO v0.fellig.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754269Ab1K2PB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 10:01:59 -0500
-X-Greylist: delayed 873 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 Nov 2011 10:01:59 EST
-Subject: Re: Proposed removal of DECnet support (was: Re: [BUG] 3.2-rc2:
-	BUG kmalloc-8: Redzone overwritten)
-From: Philipp Schafft <lion@lion.leolix.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        David Miller <davem@davemloft.net>, Matt Mackall <mpm@selenic.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Chrissie Caulfield <ccaulfie@redhat.com>,
-        Linux-DECnet user <linux-decnet-user@lists.sourceforge.net>,
-        RoarAudio <roaraudio@lists.keep-cool.org>
-In-Reply-To: <1322490161.2711.26.camel@menhir>
-References: <1322490161.2711.26.camel@menhir>
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=-QqGfpRcyUr5aTlcWKTWh"
-Organization: PH2
-Date: Tue, 29 Nov 2011 15:47:19 +0100
-Mime-Version: 1.0
-X-Mailer: Evolution 2.6.3 
-Message-Id: <20111129144720.7374B7AD9E@priderock.keep-cool.org>
+	id S1754710Ab1K2PDM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 10:03:12 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:48088 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab1K2PDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 10:03:10 -0500
+Message-ID: <4ED4F428.9030807@hp.com>
+Date: Tue, 29 Nov 2011 10:03:04 -0500
+From: Vladislav Yasevich <vladislav.yasevich@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Xi Wang <xi.wang@gmail.com>
+CC: linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH] sctp: integer overflow in sctp_auth_create_key()
+References: <426D7BA8-ECD0-44D6-A09F-2033F0C825FC@gmail.com> <4ED3AC7D.6090108@hp.com> <147F953A-CC69-41FF-ACD4-64E5E2956411@gmail.com>
+In-Reply-To: <147F953A-CC69-41FF-ACD4-64E5E2956411@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/29/2011 02:33 AM, Xi Wang wrote:
+> I agree that this is not a security issue if key_len can never get large.
+> 
+> So how about just removing the overflow check at all?
 
---=-QqGfpRcyUr5aTlcWKTWh
-Content-Type: text/plain
-Content-Transfer-Encoding: quoted-printable
+That should be ok as well.  There is an overflow guard in the api
+entry point so that should guard against overflows from user space.
 
-reflum,
+On the network end I miscalculated a little.  The key is actually made up
+of user_key (1 short) + 2 * key_vector (3 shorts) for a total of 7*MAX_USHORT;
+however, that still will not overflow 32 bits.
 
-On Tue, 2011-11-29 at 15:34 +0100, Steven Whitehouse wrote:
+-vlad
 
-> Has anybody actually tested it
-> > >> lately against "real" DEC implementations?
-> > > I doubt it :-)
-> > DECnet is in use against real DEC implementations - I have checked it=20
-> > quite recently against a VAX running OpenVMS. How many people are=20
-> > actually using it for real work is a different question though.
-> >=20
-> Ok, thats useful info.
+> 
+> - xi
+> 
+> On Nov 28, 2011, at 10:45 AM, Vladislav Yasevich wrote:
+>>
+>> Hmm.  Yes, this is a more correct check.
+>>
+>> Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+>>
+>>
+>> However, I don't think this is a security issue.  As I've written before, this function is
+>> called from 2 places:
+>>
+>>  1) setsockopt() code path
+>>
+>>  2) sctp_auth_asoc_set_secret() code path
+>>
+>> In case (1), sca_keylength is never going to exceed 65535 since it's
+>> bounded by a u16 from the user api.  As such, The integer promotion will
+>> not impact anything and the malloc() will never overflow.
+>>
+>> In case (2), sca_keylength is computed based on the key the user provided
+>> (MAX_USHORT) and the combination of protocol negotiated data where that
+>> combination has a max size of 3 * MAX_USHORT (see sctp_auth_make_key_vector()).
+>> So, even this case, our maximum key length can be 4* MAX_USHORT which still
+>> will always be below MAX_INT and will not overflow.
+>>
+>> So, I don't think there is big security consideration here, just a bad
+>> check that just happens to always work.
+>>
+>> -vlad
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-I confirmed parts of it with tcpdump and the specs some weeks ago. The
-parts I worked on passed :) I also considered to send the tcpdump
-upstream a patch for protocol decoding.
-
-
-> > It's also true that it's not really supported by anyone as I orphaned i=
-t=20
-> > some time ago and nobody else seems to care enough to take it over. So=20
-> > if it's becoming a burden on people doing real kernel work then I don't=
-=20
-> > think many tears will be wept for its removal.
-> > Chrissie
->=20
-> Really the only issue with keeping it around is the maintenance burden I
-> think. It doesn't look like anybody wants to take it on, but maybe we
-> should give it another few days for someone to speak up, just in case
-> they are on holiday or something at the moment.
->=20
-> Also, I've updated the subject of the thread, to make it more obvious
-> what is being discussed, as well as bcc'ing it again to the DECnet list,
-
-I'm very interested in the module. However my problem is that I had
-nothing to do with kernel coding yet. However I'm currently searching a
-new maintainer for it (I got info about this thread by today).
-If somebody is interested in this and only needs some "motivation" or
-maybe someone would like to get me into kernel coding, please just
-reply :)
-
---=20
-Philipp.
- (Rah of PH2)
-
---=-QqGfpRcyUr5aTlcWKTWh
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Comment: Because it's your freedom
-
-iQEVAwUATtTwd2CSpmW8W5B8AQIVnQf/bSVoNOvuLaxGDwXMmahSqdvjpjKrarjm
-Q+IAHtKWKsXoYLCdaJkCuTNfoHUJujCahTiEAI4WLpgZw2nKNOOolBJREVrJZatx
-mxgfYbXPU9nNC+P9DCPlX2mjDloWoivbD3jiPqU4/A/vqjl2bC2zLyP0mRxvEwGO
-znwgDhO3t5y83m6jtSJgu5FQ1qwxBW8ZHtWMMPKMdwGwK9+cRY32j4itnDHa4YY9
-wejjRnlHHnyzx5uH/ZwiGFRMppVsPjjQKwDv/J43UYKRls91L3CiX8L3BrRkDrMP
-rMBhrxyqE/ByTfIXBQ537m6ftgxWIw1pOvEWbbHypfmbxL1wBSvkeg==
-=I1G8
------END PGP SIGNATURE-----
-
---=-QqGfpRcyUr5aTlcWKTWh--
