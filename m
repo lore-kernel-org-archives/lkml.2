@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1LCIVU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 03:21:20 -0500
-Received: from www17.your-server.de ([213.133.104.17]:58099 "EHLO
+	id S1753615Ab1LCIVQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 03:21:16 -0500
+Received: from www17.your-server.de ([213.133.104.17]:60526 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1LCIU5 (ORCPT
+	with ESMTP id S1752840Ab1LCIU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 03:20:57 -0500
-Subject: [PATCH] bnx2x: Use kcalloc instead of kzalloc to allocate array
+	Sat, 3 Dec 2011 03:20:59 -0500
+Subject: [PATCH] rt2x00: Use kcalloc instead of kzalloc to allocate array
 From: Thomas Meyer <thomas@m3y3r.de>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: IvDoorn@gmail.com, gwingerde@gmail.com, helmut.schaa@googlemail.com,
+        linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Tue, 29 Nov 2011 22:08:00 +0100
-Message-ID: <1322600880.1534.320.camel@localhost.localdomain>
+Message-ID: <1322600880.1534.325.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -31,35 +34,20 @@ in https://lkml.org/lkml/2011/11/25/107
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c 2011-11-13 11:07:33.983607086 +0100
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c 2011-11-28 19:52:50.979887113 +0100
-@@ -3278,14 +3278,14 @@ int __devinit bnx2x_alloc_mem_bp(struct
- 	msix_table_size = bp->igu_sb_cnt + 1;
+diff -u -p a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c 2011-11-28 19:36:47.770108588 +0100
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c 2011-11-28 19:54:53.495525543 +0100
+@@ -831,11 +831,11 @@ static int rt2x00lib_probe_hw_modes(stru
+ 	if (spec->supported_rates & SUPPORT_RATE_OFDM)
+ 		num_rates += 8;
  
- 	/* fp array: RSS plus CNIC related L2 queues */
--	fp = kzalloc((BNX2X_MAX_RSS_COUNT(bp) + NON_ETH_CONTEXT_USE) *
-+	fp = kcalloc(BNX2X_MAX_RSS_COUNT(bp) + NON_ETH_CONTEXT_USE,
- 		     sizeof(*fp), GFP_KERNEL);
- 	if (!fp)
- 		goto alloc_err;
- 	bp->fp = fp;
+-	channels = kzalloc(sizeof(*channels) * spec->num_channels, GFP_KERNEL);
++	channels = kcalloc(spec->num_channels, sizeof(*channels), GFP_KERNEL);
+ 	if (!channels)
+ 		return -ENOMEM;
  
- 	/* msix table */
--	tbl = kzalloc(msix_table_size * sizeof(*tbl), GFP_KERNEL);
-+	tbl = kcalloc(msix_table_size, sizeof(*tbl), GFP_KERNEL);
- 	if (!tbl)
- 		goto alloc_err;
- 	bp->msix_table = tbl;
-diff -u -p a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c 2011-11-28 19:36:47.716773832 +0100
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c 2011-11-28 19:52:53.063259517 +0100
-@@ -3342,7 +3342,7 @@ static inline int bnx2x_mcast_refresh_re
- 		if (!list_empty(&o->registry.exact_match.macs))
- 			return 0;
+-	rates = kzalloc(sizeof(*rates) * num_rates, GFP_KERNEL);
++	rates = kcalloc(num_rates, sizeof(*rates), GFP_KERNEL);
+ 	if (!rates)
+ 		goto exit_free_channels;
  
--		elem = kzalloc(sizeof(*elem)*len, GFP_ATOMIC);
-+		elem = kcalloc(len, sizeof(*elem), GFP_ATOMIC);
- 		if (!elem) {
- 			BNX2X_ERR("Failed to allocate registry memory\n");
- 			return -ENOMEM;
