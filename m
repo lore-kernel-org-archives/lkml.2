@@ -1,100 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1K2DXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 22:23:11 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:39951 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab1K2DXJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 22:23:09 -0500
-Date: Tue, 29 Nov 2011 14:22:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Kuo <rkuo@codeaurora.org>
-Subject: linux-next: manual merge of the vhost tree with the hexagon tree
-Message-Id: <20111129142259.78d3e10678c8e9d8376d52aa@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__29_Nov_2011_14_22_59_+1100_IZPZ3tB7bMZaxAFU"
+	id S1754074Ab1K2DXa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 22:23:30 -0500
+Received: from mga14.intel.com ([143.182.124.37]:59327 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752499Ab1K2DX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 22:23:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,589,1315206000"; 
+   d="scan'208";a="80052285"
+Date: Tue, 29 Nov 2011 11:23:23 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 5/8] readahead: add /debug/readahead/stats
+Message-ID: <20111129032323.GC19506@localhost>
+References: <20111121091819.394895091@intel.com>
+ <20111121093846.636765408@intel.com>
+ <20111121152958.e4fd76d4.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111121152958.e4fd76d4.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__29_Nov_2011_14_22_59_+1100_IZPZ3tB7bMZaxAFU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 21, 2011 at 03:29:58PM -0800, Andrew Morton wrote:
+> On Mon, 21 Nov 2011 17:18:24 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > The accounting code will be compiled in by default (CONFIG_READAHEAD_STATS=y),
+> > and will remain inactive unless enabled explicitly with either boot option
+> > 
+> > 	readahead_stats=1
+> > 
+> > or through the debugfs interface
+> > 
+> > 	echo 1 > /debug/readahead/stats_enable
+> 
+> It's unfortunate that these two things have different names.
 
-Hi Michael,
+Yes unfortunately.
 
-Today's linux-next merge of the vhost tree got a conflict in
-arch/hexagon/Kconfig between commit 5237bae0d8c9 ("various Kconfig
-cleanup and old platform build code removal") from the hexagon tree and
-commit4673ca8eb369  ("lib: move GENERIC_IOMAP to lib/Kconfig") from the
-vhost tree.
+> I'd have thought that the debugfs knob was sufficient - no need for the
+> boot option.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The boot option intents to catch the boot time readaheads.
+However it's not that big deal, I'll drop the boot option.
 
-diff --cc arch/hexagon/Kconfig
-index a35ec47,9059e39..0000000
---- a/arch/hexagon/Kconfig
-+++ b/arch/hexagon/Kconfig
-@@@ -24,7 -26,8 +24,8 @@@ config HEXAGO
-  	select HAVE_ARCH_KGDB
-  	select HAVE_ARCH_TRACEHOOK
-  	select NO_IOPORT
- +	select STACKTRACE_SUPPORT
-+ 	select GENERIC_IOMAP
- -	# mostly generic routines, with some accelerated ones
-  	---help---
-  	  Qualcomm Hexagon is a processor architecture designed for high
-  	  performance and low power across a wide variety of applications.
-@@@ -71,9 -74,15 +72,6 @@@ config GENERIC_CSU
-  config GENERIC_IRQ_PROBE
-  	def_bool y
- =20
-- config GENERIC_IOMAP
-- 	def_bool y
--=20
- -#config ZONE_DMA
- -#	bool
- -#	default y
- -
- -config HAS_DMA
- -	bool
- -	select HAVE_DMA_ATTRS
- -	default y
- -
-  config NEED_SG_DMA_LENGTH
-  	def_bool y
- =20
+> > The added overheads are two readahead_stats() calls per readahead.
+> > Which is trivial costs unless there are concurrent random reads on
+> > super fast SSDs, which may lead to cache bouncing when updating the
+> > global ra_stats[][]. Considering that normal users won't need this
+> > except when debugging performance problems, it's disabled by default.
+> > So it looks reasonable to keep this debug code simple rather than trying
+> > to improve its scalability.
+> 
+> I may be wrong, but I don't think the CPU cost of this code matters a
+> lot.  People will rarely turn it on and disk IO is a lot slower than
+> CPU actions and it's waaaaaaay more important to get high-quality info
+> about readahead than it is to squeeze out a few CPU cycles.
 
---Signature=_Tue__29_Nov_2011_14_22_59_+1100_IZPZ3tB7bMZaxAFU
-Content-Type: application/pgp-signature
+Agreed in general.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> > @@ -51,6 +62,182 @@ EXPORT_SYMBOL_GPL(file_ra_state_init);
+> >  
+> >  #define list_to_page(head) (list_entry((head)->prev, struct page, lru))
+> >  
+> > +#ifdef CONFIG_READAHEAD_STATS
+> > +#include <linux/seq_file.h>
+> > +#include <linux/debugfs.h>
+> > +
+> > +static u32 readahead_stats_enable __read_mostly;
+> > +
+> > +static int __init config_readahead_stats(char *str)
+> > +{
+> > +	int enable = 1;
+> > +	get_option(&str, &enable);
+> > +	readahead_stats_enable = enable;
+> > +	return 0;
+> > +}
+> > +early_param("readahead_stats", config_readahead_stats);
+> 
+> Why use early_param() rather than plain old __setup()?
 
-iQIcBAEBCAAGBQJO1FATAAoJEECxmPOUX5FEfK0P/1xcdJOQOe2uee80yAPx5VQE
-IYNWO11mtcTxoSBIyKiU0i3x7F5G49F3pLQB23WBexsqKS80nYr4+KWh4EW6ZKz8
-NeJ5GSR8x67CEyCVEP7KgDl99cI2XvAL44E30E5ePB/gPu/zwDK1iRiqr2oV6Dve
-5U9JcWdZ7JRYnXSB1g668ZsWDKFECkedT88QA1kkD62PysDjCRobLOPBNI27R0YR
-CJQdrFd0vnZBHSYnjIFE1c32Rau84/9HAw+He5hS2InioBoW0DIYFWaw1Jwmybgh
-F1gRtcVdnt2oo9KmLc06HtV4fUuVhD7CGbYgwVp1hXDVfxTk57aBQu81ZNeD0pdp
-Tg1lY7Al1iJFawJqfgokuTy/WncQt1HRlTERxr8Z//OpphwAZGUtILKKZ7Y39UBv
-YXqyv9DwfCiDxDAF8ZzUqVZloM4HfSmCfYAv+rNIVCSPMpMHEQSSFQDLECPgildD
-kfFqDFiF5Mnwo2zIVlU9t2rH5MEKtKfdMGtD6Gs6T4k63gAvhc+6QARGF1xJv5yD
-a+739KrEQbVatI8OmZCMIeqclTyljkOhUzvyMdbA3gRIebWxbnifRGBY21+uYs0n
-GuLxZwr55HiRIJu0Qygs8+ZQqeprkKyAPw44+mLlArhzYEcL/VUfHBq9iDyzi+Wi
-JzMLmyf9PEFa4wXnL/Rt
-=8iJN
------END PGP SIGNATURE-----
+Heh it's a no-brain copy from other code ;)
+Anyway, the readahead_stats boot parameter will be dropped.
 
---Signature=_Tue__29_Nov_2011_14_22_59_+1100_IZPZ3tB7bMZaxAFU--
+> > +enum ra_account {
+> > +	/* number of readaheads */
+> > +	RA_ACCOUNT_COUNT,	/* readahead request */
+> > +	RA_ACCOUNT_EOF,		/* readahead request covers EOF */
+> > +	RA_ACCOUNT_CHIT,	/* readahead request covers some cached pages */
+> 
+> I don't like chit :)  "cache_hit" would be better.  Or just "hit".
+
+Yeah it's not good. I renamed it to RA_ACCOUNT_CACHE_HIT.
+
+> > +	RA_ACCOUNT_ASIZE,	/* readahead async size */
+
+Also renamed that to RA_ACCOUNT_ASYNC_SIZE.
+
+> > +	RA_ACCOUNT_ACTUAL,	/* readahead actual IO size */
+> > +	/* end mark */
+> > +	RA_ACCOUNT_MAX,
+> > +};
+> > +
+> >
+> > ...
+> >
+> > +static void readahead_event(struct address_space *mapping,
+> > +			    pgoff_t offset,
+> > +			    unsigned long req_size,
+> > +			    unsigned int ra_flags,
+> > +			    pgoff_t start,
+> > +			    unsigned int size,
+> > +			    unsigned int async_size,
+> > +			    unsigned int actual)
+> > +{
+> > +#ifdef CONFIG_READAHEAD_STATS
+> > +	if (readahead_stats_enable) {
+> > +		readahead_stats(mapping, offset, req_size, ra_flags,
+> > +				start, size, async_size, actual);
+> > +		readahead_stats(mapping, offset, req_size,
+> > +				RA_PATTERN_ALL << READAHEAD_PATTERN_SHIFT,
+> > +				start, size, async_size, actual);
+> > +	}
+> > +#endif
+> > +}
+> 
+> The stub should be inlined, methinks.  The overhead of evaluating and
+> preparing eight arguments is significant.  I don't think the compiler
+> is yet smart enough to save us.
+
+The parameter list actually becomes even out of control when doing the
+bit fields:
+
++       readahead_event(mapping, offset, req_size,
++                       ra->pattern, ra->for_mmap, ra->for_metadata,
++                       ra->start + ra->size >= eof,
++                       ra->start, ra->size, ra->async_size, actual);
+
+So I end up passing file_ra_state around. The added cost is, I'll have
+to dynamically create a file_ra_state for the fadvise case, which
+should be acceptable since it's a cold path.
+
+> >
+> > ...
+> >
+> > --- linux-next.orig/Documentation/kernel-parameters.txt	2011-11-21 17:08:38.000000000 +0800
+> > +++ linux-next/Documentation/kernel-parameters.txt	2011-11-21 17:08:51.000000000 +0800
+> > @@ -2251,6 +2251,12 @@ bytes respectively. Such letter suffixes
+> >  			This default max readahead size may be overrode
+> >  			in some cases, notably NFS, btrfs and software RAID.
+> >  
+> > +	readahead_stats[=0|1]
+> > +			Enable/disable readahead stats accounting.
+> > +
+> > +			It's also possible to enable/disable it after boot:
+> > +			echo 1 > /sys/kernel/debug/readahead/stats_enable
+> 
+> Can the current setting be read back?
+
+Yes. This is possible:
+
+        echo 0 > /sys/kernel/debug/readahead/stats_enable
+
+Thanks,
+Fengguang
