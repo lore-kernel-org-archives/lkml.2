@@ -1,90 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab1K2H1S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 02:27:18 -0500
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:35902 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751099Ab1K2H1Q (ORCPT
+	id S1752143Ab1K2Hdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 02:33:55 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45941 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab1K2Hdx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 02:27:16 -0500
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <linus.walleij@linaro.org>
-Cc: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <armando.visconti@st.com>,
-        <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
-        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>
-Subject: [PATCH] dmaengine/amba-pl08x: Config ccfg and increment phychan_hold if phychan is true
-Date: Tue, 29 Nov 2011 12:56:50 +0530
-Message-ID: <fc4d77e6355cc462cfc2e700415cd56b9db816cb.1322551469.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 29 Nov 2011 02:33:53 -0500
+Subject: Re: [PATCH] sctp: integer overflow in sctp_auth_create_key()
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <4ED3AC7D.6090108@hp.com>
+Date: Tue, 29 Nov 2011 02:33:50 -0500
+Cc: linux-kernel@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, security@kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <147F953A-CC69-41FF-ACD4-64E5E2956411@gmail.com>
+References: <426D7BA8-ECD0-44D6-A09F-2033F0C825FC@gmail.com> <4ED3AC7D.6090108@hp.com>
+To: Vladislav Yasevich <vladislav.yasevich@hp.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if plchan->phychan is true, we return immediately from
-prep_phy_chan(). We must configure txd->ccfg and increment phychan_hold before
-returning. Otherwise, request line number wouldn't be configured in this txd.
+I agree that this is not a security issue if key_len can never get large.
 
-Reported-by: Rajeev Kumar <rajeev-dlh.kumar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
----
- drivers/dma/amba-pl08x.c |   21 ++++++++++++---------
- 1 files changed, 12 insertions(+), 9 deletions(-)
+So how about just removing the overflow check at all?
 
-diff --git a/drivers/dma/amba-pl08x.c b/drivers/dma/amba-pl08x.c
-index 41c62fd..9ebceca 100644
---- a/drivers/dma/amba-pl08x.c
-+++ b/drivers/dma/amba-pl08x.c
-@@ -854,8 +854,10 @@ static int prep_phy_channel(struct pl08x_dma_chan *plchan,
- 	int ret;
- 
- 	/* Check if we already have a channel */
--	if (plchan->phychan)
--		return 0;
-+	if (plchan->phychan) {
-+		ch = plchan->phychan;
-+		goto got_channel;
-+	}
- 
- 	ch = pl08x_get_phy_channel(pl08x, plchan);
- 	if (!ch) {
-@@ -880,21 +882,22 @@ static int prep_phy_channel(struct pl08x_dma_chan *plchan,
- 			return -EBUSY;
- 		}
- 		ch->signal = ret;
--
--		/* Assign the flow control signal to this channel */
--		if (txd->direction == DMA_MEM_TO_DEV)
--			txd->ccfg |= ch->signal << PL080_CONFIG_DST_SEL_SHIFT;
--		else if (txd->direction == DMA_DEV_TO_MEM)
--			txd->ccfg |= ch->signal << PL080_CONFIG_SRC_SEL_SHIFT;
- 	}
- 
-+	plchan->phychan = ch;
- 	dev_dbg(&pl08x->adev->dev, "allocated physical channel %d and signal %d for xfer on %s\n",
- 		 ch->id,
- 		 ch->signal,
- 		 plchan->name);
- 
-+got_channel:
-+	/* Assign the flow control signal to this channel */
-+	if (txd->direction == DMA_MEM_TO_DEV)
-+		txd->ccfg |= ch->signal << PL080_CONFIG_DST_SEL_SHIFT;
-+	else if (txd->direction == DMA_DEV_TO_MEM)
-+		txd->ccfg |= ch->signal << PL080_CONFIG_SRC_SEL_SHIFT;
-+
- 	plchan->phychan_hold++;
--	plchan->phychan = ch;
- 
- 	return 0;
- }
--- 
-1.7.2.2
+- xi
+
+On Nov 28, 2011, at 10:45 AM, Vladislav Yasevich wrote:
+> 
+> Hmm.  Yes, this is a more correct check.
+> 
+> Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+> 
+> 
+> However, I don't think this is a security issue.  As I've written before, this function is
+> called from 2 places:
+> 
+>  1) setsockopt() code path
+> 
+>  2) sctp_auth_asoc_set_secret() code path
+> 
+> In case (1), sca_keylength is never going to exceed 65535 since it's
+> bounded by a u16 from the user api.  As such, The integer promotion will
+> not impact anything and the malloc() will never overflow.
+> 
+> In case (2), sca_keylength is computed based on the key the user provided
+> (MAX_USHORT) and the combination of protocol negotiated data where that
+> combination has a max size of 3 * MAX_USHORT (see sctp_auth_make_key_vector()).
+> So, even this case, our maximum key length can be 4* MAX_USHORT which still
+> will always be below MAX_INT and will not overflow.
+> 
+> So, I don't think there is big security consideration here, just a bad
+> check that just happens to always work.
+> 
+> -vlad
 
