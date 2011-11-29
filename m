@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab1K2MXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 07:23:19 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52507 "EHLO
+	id S1754868Ab1K2MWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 07:22:51 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52294 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281Ab1K2MWx (ORCPT
+	with ESMTP id S1754281Ab1K2MWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 07:22:53 -0500
+	Tue, 29 Nov 2011 07:22:46 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Russell King <linux@arm.linux.org.uk>
-Subject: [RFC PATCH 6/6] ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on pre-ARMv6 CPUs
-Date: Tue, 29 Nov 2011 12:22:32 +0000
-Message-Id: <1322569352-23584-7-git-send-email-catalin.marinas@arm.com>
+Subject: [RFC PATCH 1/6] sched: Introduce the finish_arch_post_lock_switch() scheduler hook
+Date: Tue, 29 Nov 2011 12:22:27 +0000
+Message-Id: <1322569352-23584-2-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
 References: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 29 Nov 2011 12:22:40.0598 (UTC) FILETIME=[96896760:01CCAE91]
-X-MC-Unique: 111112912225000201
+X-OriginalArrivalTime: 29 Nov 2011 12:22:38.0473 (UTC) FILETIME=[95452790:01CCAE91]
+X-MC-Unique: 111112912224303001
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pATCNNcs007582
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pATCNcPU007586
 
-This patch removes the __ARCH_WANT_INTERRUPTS_ON_CTXSW definition for
-ARMv5 and earlier processors. On such processors, the context switch
-requires a full cache flush. To avoid high interrupt latencies, this
-patch defers the mm switching is deferred to the post-lock switch hook.
+This hook is called by the scheduler after rq->lock has been released
+and interrupts enabled. It will be used in subsequent patches on the ARM
+architecture.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/arm/include/asm/mmu_context.h |   26 +++++++++++++++++++++-----
- arch/arm/include/asm/system.h      |    9 ---------
- 2 files changed, 21 insertions(+), 14 deletions(-)
+ kernel/sched.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
-index 56710d8..f52729c 100644
---- a/arch/arm/include/asm/mmu_context.h
-+++ b/arch/arm/include/asm/mmu_context.h
-@@ -99,19 +99,35 @@ static inline void finish_arch_post_lock_switch(void)
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 0e9344a..7b46a39 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -983,6 +983,9 @@ static inline u64 global_rt_runtime(void)
+ #ifndef finish_arch_switch
+ # define finish_arch_switch(prev)	do { } while (0)
+ #endif
++#ifndef finish_arch_post_lock_switch
++# define finish_arch_post_lock_switch()	do { } while (0)
++#endif
  
- #else	/* !CONFIG_CPU_HAS_ASID */
- 
-+#ifdef CONFIG_MMU
-+
- static inline void check_and_switch_context(struct mm_struct *mm,
- 					    struct task_struct *tsk)
+ static inline int task_current(struct rq *rq, struct task_struct *p)
  {
--#ifdef CONFIG_MMU
- 	if (unlikely(mm->context.kvm_seq != init_mm.context.kvm_seq))
- 		__check_kvm_seq(mm);
--	cpu_switch_mm(mm->pgd, mm);
--#endif
-+
-+	/*
-+	 * Defer the cpu_switch_mm() call and continue running with the old
-+	 * mm. Since we only support UP systems on non-ASID CPUs, the old mm
-+	 * will remain valid until the finish_arch_post_lock_switch() call.
-+	 */
-+	set_ti_thread_flag(task_thread_info(tsk), TIF_SWITCH_MM);
- }
+@@ -3203,6 +3206,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 	local_irq_enable();
+ #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+ 	finish_lock_switch(rq, prev);
++	finish_arch_post_lock_switch();
  
--#define init_new_context(tsk,mm)	0
-+#define finish_arch_post_lock_switch \
-+	finish_arch_post_lock_switch
-+static inline void finish_arch_post_lock_switch(void)
-+{
-+	if (test_and_clear_thread_flag(TIF_SWITCH_MM)) {
-+		struct mm_struct *mm = current->mm;
-+		cpu_switch_mm(mm->pgd, mm);
-+	}
-+}
- 
--#define finish_arch_post_lock_switch()	do { } while (0)
-+#endif	/* CONFIG_MMU */
-+
-+#define init_new_context(tsk,mm)	0
- 
- #endif	/* CONFIG_CPU_HAS_ASID */
- 
-diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
-index 3daebde..ac7fade 100644
---- a/arch/arm/include/asm/system.h
-+++ b/arch/arm/include/asm/system.h
-@@ -218,15 +218,6 @@ static inline void set_copro_access(unsigned int val)
- }
- 
- /*
-- * switch_mm() may do a full cache flush over the context switch,
-- * so enable interrupts over the context switch to avoid high
-- * latency.
-- */
--#ifndef CONFIG_CPU_HAS_ASID
--#define __ARCH_WANT_INTERRUPTS_ON_CTXSW
--#endif
--
--/*
-  * switch_to(prev, next) should switch from task `prev' to `next'
-  * `prev' will never be the same as `next'.  schedule() itself
-  * contains the memory barrier to tell GCC not to cache `current'.
+ 	fire_sched_in_preempt_notifiers(current);
+ 	if (mm)
 
