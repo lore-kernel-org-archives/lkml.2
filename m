@@ -1,256 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab1K2Nde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 08:33:34 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:53691 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753479Ab1K2Ndd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 08:33:33 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] pinctrl: make a deep copy of pinmux map
-Date: Tue, 29 Nov 2011 14:33:07 +0100
-Message-ID: <1322573587-13625-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755476Ab1K2NeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 08:34:13 -0500
+Received: from mga03.intel.com ([143.182.124.21]:59231 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755508Ab1K2NeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 08:34:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,590,1315206000"; 
+   d="scan'208";a="80197594"
+Message-Id: <20111129131456.797240894@intel.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 29 Nov 2011 21:09:07 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>
+cc: Linux Memory Management List <linux-mm@kvack.org>,
+        <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 7/9] readahead: add vfs/readahead tracing event
+References: <20111129130900.628549879@intel.com>
+Content-Disposition: inline; filename=readahead-tracer.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+This is very useful for verifying whether the readahead algorithms are
+working to the expectation.
 
-This makes a deep copy of the pinmux function map instead of
-keeping the copy supplied from the platform around. This makes
-it possible to tag the platforms map with __initdata as is also
-done as part of this patch.
+Example output:
 
-Rationale: a certain target platform (PXA) has numerous
-pinmux maps, many of which will be lying around unused after
-boot in a multi-platform binary. Instead, deep-copy the one
-we're going to use and tag them all __initdata so they go away
-after boot.
+# echo 1 > /debug/tracing/events/vfs/readahead/enable
+# cp test-file /dev/null
+# cat /debug/tracing/trace  # trimmed output
+readahead-initial(dev=0:15, ino=100177, req=0+2, ra=0+4-2, async=0) = 4
+readahead-subsequent(dev=0:15, ino=100177, req=2+2, ra=4+8-8, async=1) = 8
+readahead-subsequent(dev=0:15, ino=100177, req=4+2, ra=12+16-16, async=1) = 16
+readahead-subsequent(dev=0:15, ino=100177, req=12+2, ra=28+32-32, async=1) = 32
+readahead-subsequent(dev=0:15, ino=100177, req=28+2, ra=60+60-60, async=1) = 24
+readahead-subsequent(dev=0:15, ino=100177, req=60+2, ra=120+60-60, async=1) = 0
 
-ChangeLog v1->v2:
-- Fixup the deep copy, missed a few items on the struct,
-  plus mark bool member non-const since we're making runtime
-  copies if this stuff now.
-
-Suggested-by: Arnd Bergmann <arnd.bergmann@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- Documentation/pinctrl.txt       |    4 +-
- arch/arm/mach-u300/core.c       |    2 +-
- drivers/pinctrl/pinmux.c        |   85 ++++++++++++++++++++++++++++++++++-----
- include/linux/pinctrl/machine.h |    2 +-
- 4 files changed, 79 insertions(+), 14 deletions(-)
+ include/trace/events/vfs.h |   64 +++++++++++++++++++++++++++++++++++
+ mm/readahead.c             |    5 ++
+ 2 files changed, 69 insertions(+)
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index 720dfea..d9d57c8 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -784,7 +784,7 @@ spi on the second function mapping:
- 
- #include <linux/pinctrl/machine.h>
- 
--static struct pinmux_map pmx_mapping[] = {
-+static struct pinmux_map __initdata pmx_mapping[] = {
- 	{
- 		.ctrl_dev_name = "pinctrl.0",
- 		.function = "spi0",
-@@ -821,7 +821,7 @@ Since the above construct is pretty common there is a helper macro to make
- it even more compact which assumes you want to use pinctrl.0 and position
- 0 for mapping, for example:
- 
--static struct pinmux_map pmx_mapping[] = {
-+static struct pinmux_map __initdata pmx_mapping[] = {
-        PINMUX_MAP_PRIMARY("I2CMAP", "i2c0", "foo-i2c.0"),
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-next/include/trace/events/vfs.h	2011-11-29 20:58:59.000000000 +0800
+@@ -0,0 +1,64 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM vfs
++
++#if !defined(_TRACE_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_VFS_H
++
++#include <linux/tracepoint.h>
++
++TRACE_EVENT(readahead,
++	TP_PROTO(struct address_space *mapping,
++		 pgoff_t offset,
++		 unsigned long req_size,
++		 enum readahead_pattern pattern,
++		 pgoff_t start,
++		 unsigned long size,
++		 unsigned long async_size,
++		 unsigned int actual),
++
++	TP_ARGS(mapping, offset, req_size, pattern, start, size, async_size,
++		actual),
++
++	TP_STRUCT__entry(
++		__field(	dev_t,		dev		)
++		__field(	ino_t,		ino		)
++		__field(	pgoff_t,	offset		)
++		__field(	unsigned long,	req_size	)
++		__field(	unsigned int,	pattern		)
++		__field(	pgoff_t,	start		)
++		__field(	unsigned int,	size		)
++		__field(	unsigned int,	async_size	)
++		__field(	unsigned int,	actual		)
++	),
++
++	TP_fast_assign(
++		__entry->dev		= mapping->host->i_sb->s_dev;
++		__entry->ino		= mapping->host->i_ino;
++		__entry->offset		= offset;
++		__entry->req_size	= req_size;
++		__entry->pattern	= pattern;
++		__entry->start		= start;
++		__entry->size		= size;
++		__entry->async_size	= async_size;
++		__entry->actual		= actual;
++	),
++
++	TP_printk("readahead-%s(dev=%d:%d, ino=%lu, "
++		  "req=%lu+%lu, ra=%lu+%d-%d, async=%d) = %d",
++			ra_pattern_names[__entry->pattern],
++			MAJOR(__entry->dev),
++			MINOR(__entry->dev),
++			__entry->ino,
++			__entry->offset,
++			__entry->req_size,
++			__entry->start,
++			__entry->size,
++			__entry->async_size,
++			__entry->start > __entry->offset,
++			__entry->actual)
++);
++
++#endif /* _TRACE_VFS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+--- linux-next.orig/mm/readahead.c	2011-11-29 20:58:53.000000000 +0800
++++ linux-next/mm/readahead.c	2011-11-29 20:59:20.000000000 +0800
+@@ -29,6 +29,9 @@ static const char * const ra_pattern_nam
+ 	[RA_PATTERN_ALL]                = "all",
  };
  
-diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index f399862..06bdae7 100644
---- a/arch/arm/mach-u300/core.c
-+++ b/arch/arm/mach-u300/core.c
-@@ -1613,7 +1613,7 @@ static struct platform_device pinmux_device = {
- };
- 
- /* Pinmux settings */
--static struct pinmux_map u300_pinmux_map[] = {
-+static struct pinmux_map __initdata u300_pinmux_map[] = {
- 	/* anonymous maps for chip power and EMIFs */
- 	PINMUX_MAP_PRIMARY_SYS_HOG("POWER", "power"),
- 	PINMUX_MAP_PRIMARY_SYS_HOG("EMIF0", "emif0"),
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 15ae972..22a253a 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -21,6 +21,7 @@
- #include <linux/list.h>
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
-+#include <linux/string.h>
- #include <linux/sysfs.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-@@ -37,7 +38,7 @@ static DEFINE_MUTEX(pinmux_hoglist_mutex);
- static LIST_HEAD(pinmux_hoglist);
- 
- /* Global pinmux maps, we allow one set only */
--static struct pinmux_map const *pinmux_maps;
-+static struct pinmux_map *pinmux_maps;
- static unsigned pinmux_maps_num;
- 
- /**
-@@ -337,7 +338,9 @@ EXPORT_SYMBOL_GPL(pinmux_gpio_direction_output);
- 
- /**
-  * pinmux_register_mappings() - register a set of pinmux mappings
-- * @maps: the pinmux mappings table to register
-+ * @maps: the pinmux mappings table to register, this should be marked with
-+ *	__initdata so it can be discarded after boot, this function will
-+ *	perform a deep copy (including strings) for the mapping entries.
-  * @num_maps: the number of maps in the mapping table
-  *
-  * Only call this once during initialization of your machine, the function is
-@@ -348,33 +351,85 @@ EXPORT_SYMBOL_GPL(pinmux_gpio_direction_output);
- int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 				    unsigned num_maps)
- {
-+	int ret = 0;
- 	int i;
- 
--	if (pinmux_maps != NULL) {
-+	if (pinmux_maps_num != 0) {
- 		pr_err("pinmux mappings already registered, you can only "
- 		       "register one set of maps\n");
- 		return -EINVAL;
- 	}
- 
- 	pr_debug("add %d pinmux maps\n", num_maps);
++#define CREATE_TRACE_POINTS
++#include <trace/events/vfs.h>
 +
-+	/* Allocate a deep copy of the map array */
-+	pinmux_maps = kzalloc(sizeof(struct pinmux_map) * num_maps,
-+			      GFP_KERNEL);
-+	if (!pinmux_maps)
-+		return -ENOMEM;
-+
- 	for (i = 0; i < num_maps; i++) {
--		/* Sanity check the mapping */
-+		/* Sanity check the mapping while copying it */
- 		if (!maps[i].name) {
- 			pr_err("failed to register map %d: "
- 			       "no map name given\n", i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
-+		}
-+		pinmux_maps[i].name = kstrdup(maps[i].name, GFP_KERNEL);
-+		if (!pinmux_maps[i].name) {
-+			ret = -ENOMEM;
-+			goto err_out_free;
- 		}
-+
- 		if (!maps[i].ctrl_dev && !maps[i].ctrl_dev_name) {
- 			pr_err("failed to register map %s (%d): "
- 			       "no pin control device given\n",
- 			       maps[i].name, i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
-+		}
-+		pinmux_maps[i].ctrl_dev = maps[i].ctrl_dev;
-+		if (maps[i].ctrl_dev_name) {
-+			pinmux_maps[i].ctrl_dev_name =
-+				kstrdup(maps[i].ctrl_dev_name, GFP_KERNEL);
-+			if (!pinmux_maps[i].ctrl_dev_name) {
-+				ret = -ENOMEM;
-+				goto err_out_free;
-+			}
- 		}
-+
- 		if (!maps[i].function) {
- 			pr_err("failed to register map %s (%d): "
- 			       "no function ID given\n", maps[i].name, i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
- 		}
-+		pinmux_maps[i].function =
-+			kstrdup(maps[i].function, GFP_KERNEL);
-+		if (!pinmux_maps[i].function) {
-+			ret = -ENOMEM;
-+			goto err_out_free;
-+		}
-+
-+		if (maps[i].group) {
-+			pinmux_maps[i].group =
-+				kstrdup(maps[i].group, GFP_KERNEL);
-+			if (!pinmux_maps[i].group) {
-+				ret = -ENOMEM;
-+				goto err_out_free;
-+			}
-+		}
-+		pinmux_maps[i].dev = maps[i].dev;
-+		if (maps[i].dev_name) {
-+			pinmux_maps[i].dev_name =
-+				kstrdup(maps[i].dev_name, GFP_KERNEL);
-+			if (!pinmux_maps[i].dev_name) {
-+				ret = -ENOMEM;
-+				goto err_out_free;
-+			}
-+		}
-+		pinmux_maps[i].hog_on_boot = maps[i].hog_on_boot;
- 
- 		if (!maps[i].dev && !maps[i].dev_name)
- 			pr_debug("add system map %s function %s with no device\n",
-@@ -384,12 +439,22 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 			pr_debug("register map %s, function %s\n",
- 				 maps[i].name,
- 				 maps[i].function);
--	}
- 
--	pinmux_maps = maps;
--	pinmux_maps_num = num_maps;
-+		pinmux_maps_num++;
-+	}
- 
- 	return 0;
-+
-+err_out_free:
-+	for (i = 0; i < pinmux_maps_num; i++) {
-+		kfree(pinmux_maps[i].name);
-+		kfree(pinmux_maps[i].ctrl_dev_name);
-+		kfree(pinmux_maps[i].dev_name);
-+	}
-+	kfree(pinmux_maps);
-+	pinmux_maps = NULL;
-+	pinmux_maps_num = 0;
-+	return ret;
+ /*
+  * Initialise a struct file's readahead state.  Assumes that the caller has
+  * memset *ra to zero.
+@@ -215,6 +218,8 @@ static inline void readahead_event(struc
+ 				for_mmap, for_metadata,
+ 				pattern, start, size, async_size, actual);
+ #endif
++	trace_readahead(mapping, offset, req_size,
++			pattern, start, size, async_size, actual);
  }
  
- /**
-diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-index 8886353..f537231 100644
---- a/include/linux/pinctrl/machine.h
-+++ b/include/linux/pinctrl/machine.h
-@@ -48,7 +48,7 @@ struct pinmux_map {
- 	const char *group;
- 	struct device *dev;
- 	const char *dev_name;
--	const bool hog_on_boot;
-+	bool hog_on_boot;
- };
  
- /*
--- 
-1.7.3.2
+
 
