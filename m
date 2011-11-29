@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab1K2OYu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 09:24:50 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:49449 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab1K2OYt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 09:24:49 -0500
-From: Arnd Bergmann <arnd.bergmann@linaro.org>
-Organization: Linaro Limited 
-To: Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] pinctrl: make a deep copy of pinmux map
-Date: Tue, 29 Nov 2011 14:24:41 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-References: <1322567938-28321-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1322567938-28321-1-git-send-email-linus.walleij@stericsson.com>
+	id S1755793Ab1K2OaE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 09:30:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34782 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755733Ab1K2OaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 09:30:02 -0500
+Date: Tue, 29 Nov 2011 15:29:58 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/9] readahead: snap readahead request to EOF
+Message-ID: <20111129142958.GJ5635@quack.suse.cz>
+References: <20111129130900.628549879@intel.com>
+ <20111129131456.145362960@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111291424.41178.arnd.bergmann@linaro.org>
-X-Provags-ID: V02:K0:6Gw2LeU04Vc9cGKy0Z+ZUvGJHw0nMQvdUVMXNsZBZIB
- hUlbKrS5lBd+KTKSr2FxxAhLCQItpzvneLXS25PwShOrozANxp
- cIBYSrTSTDu8OevSL9Q7/aPAWzg16+qOQnrcB7SKGPGRm+F5Vc
- iLmLjR+5sFpXZX6wawMj9ZvByYPIgix8R4pbnVOFEmiQgb+7Zf
- b19qEXydM2GxyAYWTjAQkV/KskAFbWSIh5UvdbZHRsrNnqnQLo
- lvEJ7uoodiZ9cuNcJQ+VDhaFUwUrqA7P4aZY4UU+8WnJ8UviEk
- d/XDiW+yeXuKlA/gIBShZ4FGOlHqgbUY9Oo+NAdKXscmxAnOik
- Sx42jhS5Lt9XAMKqI129hJNw4YEX2KDwvBQUnlIEr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129131456.145362960@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 29 November 2011, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Tue 29-11-11 21:09:02, Wu Fengguang wrote:
+> If the file size is 20kb and readahead request is [0, 16kb),
+> it's better to expand the readahead request to [0, 20kb), which will
+> likely save one followup I/O for [16kb, 20kb).
 > 
-> This makes a deep copy of the pinmux function map instead of
-> keeping the copy supplied from the platform around. This makes
-> it possible to tag the platforms map with __initdata as is also
-> done as part of this patch.
+> If the readahead request already covers EOF, trimm it down to EOF.
+> Also don't set the PG_readahead mark to avoid an unnecessary future
+> invocation of the readahead code.
 > 
-> Rationale: a certain target platform (PXA) has numerous
-> pinmux maps, many of which will be lying around unused after
-> boot in a multi-platform binary. Instead, deep-copy the one
-> we're going to use and tag them all __initdata so they go away
-> after boot.
+> This special handling looks worthwhile because small to medium sized
+> files are pretty common.
 > 
-> Suggested-by: Arnd Bergmann <arnd.bergmann@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-
-Very nice!
-
->  /**
->   * pinmux_register_mappings() - register a set of pinmux mappings
-> - * @maps: the pinmux mappings table to register
-> + * @maps: the pinmux mappings table to register, this should be marked with
-> + *	__initdata so it can be discarded after boot, this function will
-> + *	perform a deep copy (including strings) for the mapping entries.
->   * @num_maps: the number of maps in the mapping table
->   *
-
-Is it actually necessary to copy the strings? I always thought they
-end up in the constant data section even if the data structure that
-they are defined in is in initdata.
-
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/readahead.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> --- linux-next.orig/mm/readahead.c	2011-11-29 11:28:56.000000000 +0800
+> +++ linux-next/mm/readahead.c	2011-11-29 11:29:05.000000000 +0800
+> @@ -251,8 +251,16 @@ unsigned long max_sane_readahead(unsigne
+>  unsigned long ra_submit(struct file_ra_state *ra,
+>  		       struct address_space *mapping, struct file *filp)
+>  {
+> +	pgoff_t eof = ((i_size_read(mapping->host)-1) >> PAGE_CACHE_SHIFT) + 1;
+> +	pgoff_t start = ra->start;
+>  	int actual;
+>  
+> +	/* snap to EOF */
+> +	if (start + ra->size + ra->size / 2 > eof) {
+> +		ra->size = eof - start;
+> +		ra->async_size = 0;
+> +	}
 > +
-> +	/* Allocate a deep copy of the map array */
-> +	pinmux_maps = kzalloc(sizeof(struct pinmux_map) * num_maps,
-> +			      GFP_KERNEL);
+>  	actual = __do_page_cache_readahead(mapping, filp,
+>  					ra->start, ra->size, ra->async_size);
+  Hmm, wouldn't it be cleaner to do this already in ondemand_readahead()?
+All other updates of readahead window seem to be there. Also shouldn't we
+take maximum readahead size into account? Reading 3/2 of max readahead
+window seems like a relatively big deal for large files...
 
-I guess it's easier to use kmemdup here. At least there is no
-point in zeroing the array when the next step is to overwrite it.
-
-	Arnd
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
