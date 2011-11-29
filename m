@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765Ab1LERcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:32:15 -0500
-Received: from www17.your-server.de ([213.133.104.17]:50186 "EHLO
+	id S932782Ab1LERcq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:32:46 -0500
+Received: from www17.your-server.de ([213.133.104.17]:50066 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932645Ab1LERb4 (ORCPT
+	with ESMTP id S932715Ab1LERa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:31:56 -0500
-Subject: [PATCH] Btrfs: Use kcalloc instead of kzalloc to allocate array
+	Mon, 5 Dec 2011 12:30:59 -0500
+Subject: [PATCH] usb: gadget: renesas_usbhs: Use kcalloc instead of kzalloc
+ to allocate array
 From: Thomas Meyer <thomas@m3y3r.de>
-To: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Tue, 29 Nov 2011 22:08:00 +0100
-Message-ID: <1322600880.1534.343.camel@localhost.localdomain>
+Message-ID: <1322600880.1534.338.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -32,15 +32,15 @@ in https://lkml.org/lkml/2011/11/25/107
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
---- a/fs/btrfs/volumes.c 2011-11-28 19:36:48.113451068 +0100
-+++ b/fs/btrfs/volumes.c 2011-11-28 19:48:10.374677247 +0100
-@@ -2450,7 +2450,7 @@ static int __btrfs_alloc_chunk(struct bt
- 	max_chunk_size = min(div_factor(fs_devices->total_rw_bytes, 1),
- 			     max_chunk_size);
- 
--	devices_info = kzalloc(sizeof(*devices_info) * fs_devices->rw_devices,
-+	devices_info = kcalloc(fs_devices->rw_devices, sizeof(*devices_info),
- 			       GFP_NOFS);
- 	if (!devices_info)
+diff -u -p a/drivers/usb/renesas_usbhs/mod_host.c b/drivers/usb/renesas_usbhs/mod_host.c
+--- a/drivers/usb/renesas_usbhs/mod_host.c 2011-11-28 19:36:48.033448938 +0100
++++ b/drivers/usb/renesas_usbhs/mod_host.c 2011-11-28 20:04:59.954526908 +0100
+@@ -1268,7 +1268,7 @@ int usbhs_mod_host_probe(struct usbhs_pr
  		return -ENOMEM;
+ 	}
+ 
+-	pipe_info = kzalloc(sizeof(*pipe_info) * pipe_size, GFP_KERNEL);
++	pipe_info = kcalloc(pipe_size, sizeof(*pipe_info), GFP_KERNEL);
+ 	if (!pipe_info) {
+ 		dev_err(dev, "Could not allocate pipe_info\n");
+ 		goto usbhs_mod_host_probe_err;
