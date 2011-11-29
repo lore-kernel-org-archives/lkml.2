@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756820Ab1K2V3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 16:29:46 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:60916 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755621Ab1K2V3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 16:29:45 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt extensions
-Date: Tue, 29 Nov 2011 21:29:20 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xensource.com, linaro-dev@lists.linaro.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        android-virt@lists.cs.columbia.edu,
-        embeddedxen-devel@lists.sourceforge.net
-References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop>
+	id S1756813Ab1K2VbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 16:31:14 -0500
+Received: from mga01.intel.com ([192.55.52.88]:17362 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756377Ab1K2VbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 16:31:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,593,1315206000"; 
+   d="scan'208";a="90327981"
+From: Andi Kleen <andi@firstfloor.org>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Cc: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@elte.hu>,
+        <suresh.b.siddha@intel.com>, <eranian@google.com>, <brgerst@gmail.com>,
+        <robert.richter@amd.com>, <Andreas.Herrmann3@amd.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] rework of extended state handling, LWP support
+References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
+Date: Tue, 29 Nov 2011 13:31:09 -0800
+In-Reply-To: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com> (Hans
+	Rosenfeld's message of "Tue, 29 Nov 2011 13:41:19 +0100")
+Message-ID: <m2ipm2lioy.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111292129.20444.arnd@arndb.de>
-X-Provags-ID: V02:K0:u8QXi2JlxcuqOLSfaWZ+jXEtmsCZnv6W8WiXa97XIrN
- GS4W96JSnre3lXtRwVYObxrtbNBFGmXUDzewzmiQ6uOCSQ5WEG
- hhDgac2sNSc7TraxHW9OWqAwjYnOLXNDM3297f8l1M8x8S9raI
- 8yrQrO/yV+rVt+ancWLhk5qs+DEhTqABIivbtUD1wJzhP3Hw7y
- YPHRacWnLRAuUDwYXvy5/zK8NuyuQtjZMV08Qu497CyRBspg1X
- Gh42C/LABezAgATGy/H8MrD/TYb4tGOmGdd+baRQwssleHgLs1
- TXfI5wGfGxURcrLm3jwkNXCbsqwicE/2osBXzw1ZMHuyAfraIg
- KntVhSLyTHT6EBMiS/zg=
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 29 November 2011, Stefano Stabellini wrote:
-> Hi all,
-> a few weeks ago I (and a few others) started hacking on a
-> proof-of-concept hypervisor port to Cortex-A15 which uses and requires
-> ARMv7 virtualization extensions. The intention of this work was to find
-> out how to best support ARM v7+ on Xen. See
-> http://old-list-archives.xen.org/archives/html/xen-arm/2011-09/msg00013.html
-> for more details. 
-> 
-> I am pleased to announce that significant progress has been made, and
-> that we now have a nascent Xen port for Cortex-A15. The port is based on
-> xen-unstable (HG CS 8d6edc3d26d2) and written from scratch exploiting
-> the latest virtualization, LPAE, GIC and generic timer support in
-> hardware.
+Hans Rosenfeld <hans.rosenfeld@amd.com> writes:
+>
+> The lazy allocation of the xstate area has been removed. The support for
+> extended states that cannot be saved/restored lazily, like AMD's LWP,
+> need this. Since optimized library functions using SSE etc. are widely
+> used today, most processes would have an xstate area anyway, making the
+> memory overhead negligible.
 
-Very nice!
+Do you have any data on that?  It sounds dubious for specialized
+workloads.
 
-Do you have a pointer to the kernel sources for the Linux guest?
-Since Xen and KVM are both in an early working state right now,
-it would be very nice if we could agree on the guest model to make
-sure that it's always possible to run the same kernel in both
-(and potentially other future) hypervisors without modifications.
+-Andi
 
-	Arnd
+-- 
+ak@linux.intel.com -- Speaking for myself only
