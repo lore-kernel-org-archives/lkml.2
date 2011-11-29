@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1K2Kqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 05:46:40 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56252 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab1K2Kqi (ORCPT
+	id S1754665Ab1K2KsY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 05:48:24 -0500
+Received: from mailrelay005.isp.belgacom.be ([195.238.6.171]:17139 "EHLO
+	mailrelay005.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753919Ab1K2KsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 05:46:38 -0500
-Date: Tue, 29 Nov 2011 10:46:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] gpiolib: Add decode of WM8994 GPIO configuration
-Message-ID: <20111129104635.GA12111@sirena.org.uk>
-References: <1322503501-26947-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <CACRpkdb-5N0nOCCozNX9kOq8xhz5O+2JR5s7j_fkFfh3SU-AqA@mail.gmail.com>
+	Tue, 29 Nov 2011 05:48:20 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAKC21E5tg6dK/2dsb2JhbABDqnSBBoFyAQEFJxMcIxAIAw44FCUDIYgatzASiwwElFOJDYkG
+Date: Tue, 29 Nov 2011 11:44:52 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Marc Vertes <marc.vertes@sigfox.com>, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org,
+        Dimitry Andric <dimitry.andric@tomtom.com>,
+        Ben Dooks <ben@simtec.co.uk>
+Subject: Re: [PATCH] watchdog: fix nowayout setting in s3c2410_wdt
+Message-ID: <20111129104452.GI23376@infomag.iguana.be>
+References: <4ed026d9.TvJLr8ihQ2VtvqPD%marc.vertes@sigfox.com> <20111126102915.GA7517@pengutronix.de> <20111129095643.GH23376@infomag.iguana.be> <20111129102136.GB5455@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdb-5N0nOCCozNX9kOq8xhz5O+2JR5s7j_fkFfh3SU-AqA@mail.gmail.com>
-X-Cookie: Justice, n.:
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20111129102136.GB5455@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 09:31:18AM +0100, Linus Walleij wrote:
-> On Mon, Nov 28, 2011 at 7:05 PM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
+Hi Wolfram,
 
-> "gpiolib: Add decode of WM8994 GPIO configuration"
+> > +/* Use the following function to set the nowayout feature */
+> > +static inline void watchdog_set_nowayout(struct watchdog_device *wdd, int nowayout)
+> > +{
+> > +	if (nowayout)
+> > +		set_bit(WDOG_NO_WAY_OUT, &wdd->status);
+> > +}
+> 
+> Yes, this is better in case we might need to add something later.
+> 
+> > but: .status = WATCHDOG_NOWAYOUT_INIT_STATUS, is also a nice one to have.
+> > 
+> > I propose to add both options and to document them in the documentation.
+> > Objections anyone?
+> 
+> Sounds good to me.
+> 
+> So, I'll drop NOWAYOUT-related patches from my STMP-series?
 
-> Nitpicky: I would write "gpio/wm8994: add decode of gpio configuration" but
-> that's up to you.
+Yes, I'll make sure we do the necessary on the nowayout side :-). Will try to add a patch for it today.
+Could you resend the SMTP series after that you dropped the nowayout patches so I can review these?
 
-The brief survey of changelogs have "gpiolib".
+Kind regards,
+Wim.
 
-> Perhaps some commit blurb about the niceness of decoding stuff here?
-
-I'm not sure that really adds anything; I think the concept of decoding
-things into human readable text is standard enough.
