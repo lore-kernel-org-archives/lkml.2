@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468Ab1K2FRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 00:17:07 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:38550 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809Ab1K2FRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 00:17:05 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: "Lars-Peter Clausen" <lars@metafoo.de>
-Subject: Re: [PATCH v2 7/7] ASoC: SigmaDSP: Add regmap support
-Date: Tue, 29 Nov 2011 00:17:03 -0500
-User-Agent: KMail/1.13.7 (Linux/3.1.0; KDE/4.6.5; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        drivers@analog.com
-References: <1322469860-8210-1-git-send-email-lars@metafoo.de> <1322469860-8210-7-git-send-email-lars@metafoo.de>
-In-Reply-To: <1322469860-8210-7-git-send-email-lars@metafoo.de>
+	id S1751730Ab1K2FVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 00:21:49 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38805 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab1K2FVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 00:21:48 -0500
+X-Originating-IP: 217.70.178.136
+X-Originating-IP: 50.43.15.19
+Date: Mon, 28 Nov 2011 21:21:39 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4 RFC] rcu: New rcu_user_enter_irq() and
+ rcu_user_exit_irq() APIs
+Message-ID: <20111129052139.GA14546@leaf>
+References: <1322515487-18690-1-git-send-email-fweisbec@gmail.com>
+ <1322515487-18690-5-git-send-email-fweisbec@gmail.com>
+ <20111128215323.GF30852@leaf>
+ <20111129010036.GS2346@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2450757.PcOoelOeIC";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111290017.05980.vapier@gentoo.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129010036.GS2346@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2450757.PcOoelOeIC
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 28, 2011 at 05:00:36PM -0800, Paul E. McKenney wrote:
+> On Mon, Nov 28, 2011 at 01:53:23PM -0800, Josh Triplett wrote:
+> > On Mon, Nov 28, 2011 at 10:24:47PM +0100, Frederic Weisbecker wrote:
+> > > A CPU running in adaptive tickless mode wants to enter into
+> > > RCU extended quiescent state while running in userspace. This
+> > > way we can shut down the tick that is usually needed on each
+> > > CPU for the needs of RCU.
+> > 
+> > Very awesome.  I've wanted to see this change for a long time.  Thanks!
+> 
+> I am a fan, also.  ;-)
+> 
+> [ . . . ]
+> 
+> > > @@ -503,6 +515,18 @@ void rcu_user_exit(void)
+> > >  	__rcu_idle_exit();
+> > >  }
+> > >  
+> > > +void rcu_user_exit_irq(void)
+> > > +{
+> > > +	unsigned long flags;
+> > > +	struct rcu_dynticks *rdtp;
+> > > +
+> > > +	local_irq_save(flags);
+> > > +	rdtp = &__get_cpu_var(rcu_dynticks);
+> > > +	WARN_ON_ONCE(rdtp->dynticks_nesting != 1);
+> > > +	rdtp->dynticks_nesting = (LLONG_MAX / 2) + 1;
+> > > +	local_irq_restore(flags);
+> > > +}
+> > > +
+> > 
+> > Any chance that either of these two needs a memory barrier of some kind,
+> > to prevent leakage of operations from between them?  Or can you count on
+> > no RCU-protected operations occurring during (or leaking into) the
+> > extended quiescent state?
+> 
+> There is no need for a memory barrier on rdtp->dynticks_nesting because
+> it is used (aside from state dumping) only by the local CPU.  In contrast,
+> changes to ->dynticks are visible to other CPUs, hence the memory barriers
+> around changes to ->dynticks.
+> 
+> Information flows within the CPU from ->dynticks_nesting to ->dynticks,
+> which is externally visible.
 
-On Monday 28 November 2011 03:44:20 Lars-Peter Clausen wrote:
-> --- a/sound/soc/codecs/sigmadsp.h
-> +++ b/sound/soc/codecs/sigmadsp.h
->=20
->  extern int process_sigma_firmware(struct i2c_client *client, const char
-> *name);
-> +extern int process_sigma_firmware_regmap(struct device *dev,
-> +		struct regmap *regmap, const char *name);
+Thanks for the clarification; just wanted to make sure I understood the
+various data involved here.
 
-having the deprecated name be renamed and the "_regmap" one not have that=20
-suffix, but eh
+Now that I understand that:
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-=2Dmike
-
---nextPart2450757.PcOoelOeIC
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJO1GrRAAoJEEFjO5/oN/WB9mwP/ixAQTOh6m/tNsdhXD8A0SbR
-ZWTpmMZ/bpr9BnCtWP08lDjoVkZ8KHSvY4/wsJqejKmP+FX2Db2SSatv81U+xVXI
-Q8vZ4Jg5aTvNgeW5yGZtwkKcf2B09lazOVmi9CQR+xWRI+jfZ5lSc1R3Wcg3WX4b
-pUXOhrU8nmeJTAWHyj6937sjp09V8cqWQ40FAE1T18fdFJM+urdbWkDfokOYuMdq
-QeAYXloD6C6PG+150CHV986kUwSsm19ilGPSHdGhH/HBGgMsaH7wpC4YQpwC+0VI
-YNNOQkzhlxf/SoHJtzpjLEHi2tz6pNI9EqfkmnswGWznGjvIlyzSVCZQO8NYkQTi
-R1Zejxi3BYeQavtEXNFeUhDzwd6Kj8O7g46HoVhemhsReiy3msDRlnoMexnLBglM
-DBN56ewMWijh2ohO3p9uraPGKcW9yRHF8068wGeU3P+UXqdK0mQA66opcLv/+fw/
-NLkte1F3n993fKg8uhFNnvUrkmf4cx8YHbOzalf1HxqXdRDbePptYKnuvmpTHWcA
-z9TEmKGRy3Ih82MOjSXg0vlL6GcPCg4dLttVYx7TfyLs6qu9azcFW4EWLjtTHVQD
-F+bWiIo9XGUmUdJWdtw6behelQIFsv8TKcU5X1ReZ5GwM05Z8l9XAFoYegs4h8Lf
-06GnUVYBf2s4u+6Ca25l
-=EFXo
------END PGP SIGNATURE-----
-
---nextPart2450757.PcOoelOeIC--
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
