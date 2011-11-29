@@ -1,207 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab1K2QZf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 11:25:35 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:50712 "EHLO e5.ny.us.ibm.com"
+	id S1755999Ab1K2QeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 11:34:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7938 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab1K2QZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 11:25:34 -0500
-Date: Tue, 29 Nov 2011 21:52:37 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>, tulasidhard@gmail.com
-Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
-Message-ID: <20111129162237.GA18380@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
- <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
- <1322071812.14799.87.camel@twins>
- <20111124134742.GH28065@linux.vnet.ibm.com>
- <1322492384.2921.143.camel@twins>
- <20111129083322.GD13445@linux.vnet.ibm.com>
- <1322567326.2921.226.camel@twins>
+	id S1754793Ab1K2QeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 11:34:19 -0500
+Message-ID: <4ED5096A.8060706@redhat.com>
+Date: Tue, 29 Nov 2011 10:33:46 -0600
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1322567326.2921.226.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11112916-5930-0000-0000-000002B5243D
+To: Jan Kara <jack@suse.cz>
+CC: Alasdair G Kergon <agk@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
+        Surbhi Palande <csurbhi@gmail.com>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        Valerie Aurora <val@vaaconsulting.com>
+Subject: Re: [dm-devel] [PATCH] deadlock with suspend and quotas
+References: <CAD-XujnH1UJXrEbYAKOSjvdwVnehj4_owuduhjR0RCUBqfrg0w@mail.gmail.com> <Pine.LNX.4.64.1111281612030.11895@hs20-bc2-1.build.redhat.com> <Pine.LNX.4.64.1111281754120.11895@hs20-bc2-1.build.redhat.com> <20111129101901.GA5635@quack.suse.cz> <20111129102156.GA7463@quack.suse.cz> <Pine.LNX.4.64.1111290556270.12274@hs20-bc2-1.build.redhat.com> <20111129111136.GC5635@quack.suse.cz> <Pine.LNX.4.64.1111290746230.10352@hs20-bc2-1.build.redhat.com> <20111129130913.GE5635@quack.suse.cz> <20111129131811.GS7595@agk-dp.fab.redhat.com> <20111129133239.GA9926@quack.suse.cz>
+In-Reply-To: <20111129133239.GA9926@quack.suse.cz>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The rules that I am using are: 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-mmap_uprobe() increments the count if 
-	- it successfully adds a breakpoint.
-	- it not add a breakpoint, but sees that there is a underlying
-	  breakpoint (via a read_opcode call).
+On 11/29/11 7:32 AM, Jan Kara wrote:
+> On Tue 29-11-11 13:18:11, Alasdair G Kergon wrote:
+>> On Tue, Nov 29, 2011 at 02:09:13PM +0100, Jan Kara wrote:
+>>>   Hmm, then why do these operations suspend the filesystem if they
+>>> apparently don't need it? Sorry for my ignorance, I never seriously worked
+>>> with LVM code...
+>>
+>> They don't suspend it if they don't need to.
+>>
+>> dm-ioctl.h:
+>> /*
+>>  * Set this to avoid attempting to freeze any filesystem when suspending.
+>>  */
+>> #define DM_SKIP_LOCKFS_FLAG     (1 << 10) /* In */
+>   Thanks. I was now checking in detail and indeed FIFREEZE fails if
+> ->freeze_fs is not set. And only xfs, ext3, ext4, reiserfs, jfs, nilfs2,
+> and gfs2 provide this function. So I was correct in assuming that when
+> filesystem supports FIFREEZE it must make sure no modifications happen to
+> the filesystem. So I believe that my original plan for sync to skip frozen
+> filesystem is correct.
 
-munmap_uprobe() decrements the count if 
-	- it sees a underlying breakpoint,  (via  a read_opcode call)
-	- Subsequent unregister_uprobe wouldnt find the breakpoint
-	  unless a mmap_uprobe kicks in, since the old vma would be
-	  dropped just after munmap_uprobe.
+Jan, FWIW I agree with this as well.
 
-register_uprobe increments the count if:
-	- it successfully adds a breakpoint.
+- -Eric
+ 
+> 								Honza
 
-unregister_uprobe decrements the count if:
-	- it sees a underlying breakpoint and removes successfully. 
-			(via a read_opcode call)
-	- Subsequent munmap_uprobe wouldnt find the breakpoint
-	  since there is no underlying breakpoint after the
-	  breakpoint removal.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG/MacGPG2 v2.0.17 (Darwin)
+Comment: GPGTools - http://gpgtools.org
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-> > 
-> > if consumers is NULL, unregister_uprobes() has kicked already in, so
-> > there is no point in inserting the probe, Hence we return EEXIST. The
-> > following unregister_uprobe() (or the munmap_uprobe() which might race
-> > before unregister_uprobe) is also going to decrement the count.  So we
-> > have a case where the same breakpoint is accounted as removed twice. To
-> > offset this, we pretend as if the breakpoint is around by incrementing
-> > the count.
-> 
-> There's 2 main cases, 
-> 	A) vma_adjust() vs unregister_uprobe() and 
-> 	B) mmap() vs unregister_uprobe().
-> 
-> The result of A should be -1 reference in total, since we're removing
-> the one probe. 
-
-If the breakpoint was never there, then a value of 0 should also be
-correct.  See case A3a and A3b.
-
-> The result of B should be 0 since we're removing the
-> probe and we shouldn't be installing new ones.
-> 
-> A1)
-> 	vma_adjust()
-> 	  munmap_uprobe()
-> 				unregister_uprobe()
-> 	  mmap_uprobe()
-> 				  delete_uprobe()
-> 
-> 
-> 	munmap will to -1, mmap will do +1, __unregister_uprobe() which is
-> serialized against vma_adjust() will do -1 on either the old or new vma,
-> resulting in a grand total of: -1+1-1=-1, OK
-
-Right.
-
-> 
-> A2) breakpoint is in old, not in new, again two cases:
-> 
-> A2a) __unregister_uprobe() sees old
-
-So  unregister_uprobe is called on the vma before vma_adjust.
-
-> 
-> 	munmap -1, __unregister_uprobe -1, mmap 0: -2 FAIL
-> 
-
-So munmap wouldnt decrement because, munmap_uprobe checks to see if the
-breakpoint is still around before it increments.
-
-unregister unlike munmap removes the breakpoint too.
-
-> A2b) __unregister_uprobe() sees new
-> 
-
-So the order would be munmap(), mmap() and unregister_uprobe()
-
-> 	munmap -1, __unregister_uprobe 0, mmap 0: -1 OK
-
-Right, Since the old vma is gone, the new vma doesnt have the
-breakpoint.
-
-> 
-> A3) breakpoint is in new, not in old, again two cases:
-> 
-
-> A3a) __unregister_uprobe() sees old
-> 
-So  unregister_uprobe is called on the vma before vma_adjust.
-
-> 	munmap 0, __unregister_uprobe 0, mmap: 1: 1 FAIL
-
-
-If mmap_uprobe() increments it would mean that breakpoint was already
-there. (-EEXIST + read_opcode); since there was no breakpoint, it will
-not increment..
-
-0 is the correct value here, Not -1. because there was no probe inserted
-or removed.
-
-> 
-> A3b) __unregister_uprobe() seed new
-So the order would be munmap(), mmap() and unregister_uprobe()
-> 
-> 	munmap 0, __unregister_uprobe -1, mmap: 1: 0 FAIL
-> 
-
-If mmap_uprobe() increments it would mean that breakpoint was already
-there.  __unregister_uprobe will decrement.  Since we added a new probe
-and deleted it, the value 0 is correct here.
-
-> B1)
-> 				unregister_uprobe()
-> 	mmap()
-> 	  mmap_uprobe()
-> 				  __unregister_uprobe()
-> 				  delete_uprobe()
-> 
-> 	mmap +1, __unregister_uprobe() -1: 0 OK
-> 
-> B2)
-> 				unregister_uprobe()
-> 	mmap()
-> 				  __unregister_uprobe()
-> 	  mmap_uprobe()
-> 				  delete_uprobe()
-> 
-> 	mmap +1, __unregister_uprobe() 0: +1 FAIL
-
-I think you meant __unregister_uprobe happened before mmap_uprobe.
-
-If mmap_uprobe() increments it would mean that breakpoint was already
-there. (-EEXIST + read_opcode); since there was no breakpoint, it will
-not increment..
-> 
-> 
-> > Would it help if I add an extra check in mmap_uprobe?
-> > 
-> > int mmap_uprobe(...) {
-> > ....
-> > 	       ret = install_breakpoint(vma->vm_mm, uprobe);
-> > 	       if (ret == -EEXIST) {
-> > 			if (!read_opcode(vma->vm_mm, vaddr, &opcode) &&
-> > 					(opcode == UPROBES_BKPT_INSN))
-> > 			       atomic_inc(&vma->vm_mm->mm_uprobes_count);
-> > 		       ret = 0;
-> > 	       } 
-> > ....
-> > }
-> 
-> > The extra read_opcode check will tell us if the breakpoint is still
-> > around and then only increment the count. (As in it will distinguish if
-> > the mmap_uprobe is from vm_adjust).
-> 
-> No, I don't see that fixing A2a for example.
-
-This check should help A3a and B2 cases.
-
+iQIcBAEBAgAGBQJO1QlpAAoJECCuFpLhPd7g3wEP/1C7T280LLZHubBMolF1dEp0
+qJPQAcMUCcwMn+ewMZF5Pg/Li5WxveLNydzUWURrmnXolHddkvmoUESeJt6ugraT
+i0bgb3ICRKpYi/1GEsW8UZQMXWIjdg5qyEvagDou/oy7qPXeND+JTvSYdqoti0Fn
+pKv9ZUuU2arPrdDqCHP0lmiU1mF85/h/liB09GdFll3nLvSahJK5N9Cr6d0jG4VL
+9faJSKI4EgVvyDPWx+L4mA5aIbPveQY0LbzpS+QSGswkd4ylVvLCV76oYj4jEH7R
+hbv8OjgWTEKV8wgqmFFF/HXwzmJqzfT0rFCgbe4ZCJdnNujRe2h/wg5Gpkbj3lWc
+htwUZfKKg9Vm9PheqMVxbRYEbWXB+g2Seiv/5fHNNG3WeFuPo15ftcu3Kjj7z/gS
+zY1PnkHJj7/fF9tyZyTGb/AXicJyLJN7gWvf8pWNETXd4PfuDHgD70iQfWbZdKfe
+0a+G4AGhXJ9zrjImM1vnsq09AMTQApL+Lm+VxdPfUbFBZd9pSC+xbBDKvOl8qy3A
+Gllbjtbwi/3hV2S8t4vSLLowRTZqkLC+VHphnyLlwVeHAUsqZXQ58ZrFNx2NaYdL
+UGkEty8zHGL08Yglwfd2iSlzDb/0OmCurXSZcAAXH47AAzPxZgN80KFbwc2PsGG7
+DC9hxrb1bGZojdDTsuku
+=UWkJ
+-----END PGP SIGNATURE-----
