@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab1K2RR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 12:17:26 -0500
-Received: from mga03.intel.com ([143.182.124.21]:39035 "EHLO mga03.intel.com"
+	id S1754333Ab1K2RT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 12:19:29 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:35599 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753200Ab1K2RRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 12:17:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,591,1315206000"; 
-   d="scan'208";a="80281777"
-Date: Tue, 29 Nov 2011 17:29:08 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: dirk.brandewie@gmail.com
-Cc: linux-kernel@vger.kernel.org, cbouatmailru@gmail.com, dg77.kim@samsung.com,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
-        Jason.Wortham@maxim-ic.com
-Subject: Re: [PATCH 4/4] x86-mrst: Add battery fuel guage platform data
-Message-ID: <20111129172908.3cadbc7d@bob.linux.org.uk>
-In-Reply-To: <1322509793-10800-5-git-send-email-dirk.brandewie@gmail.com>
-References: <1322509793-10800-1-git-send-email-dirk.brandewie@gmail.com>
-	<1322509793-10800-5-git-send-email-dirk.brandewie@gmail.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
+	id S1752377Ab1K2RT1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 12:19:27 -0500
+X-IronPort-AV: E=Sophos;i="4.69,592,1315206000"; 
+   d="scan'208";a="603102052"
+Message-ID: <1322587165.4174.20.camel@lade.trondhjem.org>
+Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+ blocklayout routines
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Peng Tao <bergwolf@gmail.com>, tao.peng@emc.com, skinsbursky@parallels.com,
+        linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
+Date: Tue, 29 Nov 2011 12:19:25 -0500
+In-Reply-To: <20111129164252.GA19528@fieldses.org>
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
+	 <20111129091037.20730.59391.stgit@localhost6.localdomain6>
+	 <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com>
+	 <4ED4CDCE.9080804@parallels.com>
+	 <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com>
+	 <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com>
+	 <CA+a=Yy5GKMu8rbh8y3fOtK6pmqygPNBr=a+p7LfcmTqtXFH3iA@mail.gmail.com>
+	 <1322579906.3619.1.camel@lade.trondhjem.org>
+	 <CA+a=Yy6kJe0NemSiRwM+t8gz5-UF5fOdwdS2so+q=nSYjBx--w@mail.gmail.com>
+	 <1322584830.4174.16.camel@lade.trondhjem.org>
+	 <20111129164252.GA19528@fieldses.org>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Nov 2011 17:19:26.0447 (UTC) FILETIME=[0BA657F0:01CCAEBB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Nov 2011 11:49:53 -0800
-dirk.brandewie@gmail.com wrote:
-
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On Tue, 2011-11-29 at 11:42 -0500, J. Bruce Fields wrote: 
+> On Tue, Nov 29, 2011 at 11:40:30AM -0500, Trond Myklebust wrote:
+> > I mean that I'm perfectly entitled to do
+> > 
+> > 'modprobe -r blocklayoutdriver'
+> > 
+> > and when I do that, then I expect blkmapd to close the rpc pipe and wait
+> > for a new one to be created just like rpc.idmapd and rpc.gssd do when I
+> > remove the nfs and sunrpc modules.
 > 
-> Add platform data to configure the MAX17042 at POR.  The accuracy of
-> the MAX17042 is improved by initializing the fuel gauge with the
-> battery characterization data.Summary:
+> The rpc pipefs mount doesn't hold a reference on the sunrpc module?
 
+I stand corrected: the mount does hold a reference to the sunrpc
+module. 
+However nothing holds a reference to the blocklayoutdriver module, so
+the main point that the "blocklayout" pipe can disappear from underneath
+the blkmapd stands.
 
-Please cc the x86 maintainers on the final version of this as there is
-stuff queued there from me for updating bits of mrst.c as well.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Alan
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
