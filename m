@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab1K2JYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 04:24:05 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39705 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab1K2JYB convert rfc822-to-8bit (ORCPT
+	id S1753585Ab1K2J2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 04:28:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59791 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab1K2J2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 04:24:01 -0500
-Message-ID: <1322558612.2921.182.camel@twins>
-Subject: Re: [PATCH 0/4] delayacct: save max CPU/IO/SWAP/RECLAIM delays
-From: Peter Zijlstra <peterz@infradead.org>
-To: Satoru Moriya <satoru.moriya@hds.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "nagar@watson.ibm.com" <nagar@watson.ibm.com>,
-        "kobayashi.kk@ncos.nec.co.jp" <kobayashi.kk@ncos.nec.co.jp>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Tue, 29 Nov 2011 10:23:32 +0100
-In-Reply-To: <65795E11DBF1E645A09CEC7EAEE94B9CB574E70D@USINDEVS02.corp.hds.com>
-References: <65795E11DBF1E645A09CEC7EAEE94B9CB574E70D@USINDEVS02.corp.hds.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 29 Nov 2011 04:28:51 -0500
+Date: Tue, 29 Nov 2011 01:22:08 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kwlee@mtekvision.com, joel.clark@intel.com
+Subject: Re: [PATCH 1/2] Input: tsc2007 - Disable irq when the irq thread is
+ handling data
+Message-ID: <20111129092208.GA21758@core.coreip.homeip.net>
+References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322554378-348-1-git-send-email-feng.tang@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-28 at 17:44 -0500, Satoru Moriya wrote:
-> In the latency sensitive systems, we usually focus on the worst latency.
-> And so, it is useful to save max delays into the per-task delay
-> accounting functionality.
-> 
-> Example output:
-> (on 100 concurrent dd reading sparse files w/ 1 dd writing a file)
-> 
-> CPU             count     real total  virtual total    delay total      delay_max  delay average
->                   222       45993008       74603882        7637295        3691858          0.034ms
-> IO              count    delay total      delay max  delay average
->                     2       21812073       12728672             10ms
-> SWAP            count    delay total      delay max  delay average
->                     0              0              0              0ms
-> RECLAIM         count    delay total      delay_max  delay average
->                     2         348488         211985              0ms
-> 
-> Any comments are welcome.
+Hi Feng,
 
-No!!!
+On Tue, Nov 29, 2011 at 04:12:57PM +0800, Feng Tang wrote:
+> The TSC2007 data sheet say in some case the HW may fire some false
+> interrrupt, which I also met during integrating one TSC2007 device.
+> So add the disable_irq/enable_irq protection around data handling.
 
-Linus told us to be bastards, so there you have it.
+IRQF_ONESHOT should prevent IRQ from firing again while thread is
+servicing it. Did you actually observe it not working?
 
-There's way too many different accounting crap thingies around. And now
-I get a patch without any justification what so ever. So no, piss off.
+Thanks.
+
+> 
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>  drivers/input/touchscreen/tsc2007.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/tsc2007.c b/drivers/input/touchscreen/tsc2007.c
+> index 1f674cb..789f216 100644
+> --- a/drivers/input/touchscreen/tsc2007.c
+> +++ b/drivers/input/touchscreen/tsc2007.c
+> @@ -171,6 +171,13 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
+>  	struct ts_event tc;
+>  	u32 rt;
+>  
+> +	/*
+> +	 * Disable the irq, as it may fire several other IRQs during
+> +	 * this thread is handling data, as suggested by the TSC2007
+> +	 * datasheet, p19, "Touch Detect" chapter
+> +	 */
+> +	disable_irq_nosync(irq);
+> +
+>  	while (!ts->stopped && tsc2007_is_pen_down(ts)) {
+>  
+>  		/* pen is down, continue with the measurement */
+> @@ -221,6 +228,7 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
+>  	if (ts->clear_penirq)
+>  		ts->clear_penirq();
+>  
+> +	enable_irq(irq);
+>  	return IRQ_HANDLED;
+>  }
+>  
+> -- 
+> 1.7.1
+> 
+> 
+
+-- 
+Dmitry
