@@ -1,150 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab1K2HYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 02:24:23 -0500
-Received: from mga01.intel.com ([192.55.52.88]:6294 "EHLO mga01.intel.com"
+	id S1752357Ab1K2HYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 02:24:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53410 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab1K2HYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 02:24:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,590,1315206000"; 
-   d="scan'208";a="96397595"
-Message-ID: <4ED488A3.2000508@linux.intel.com>
-Date: Tue, 29 Nov 2011 15:24:19 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1751801Ab1K2HYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 02:24:23 -0500
+Message-ID: <4ED4888E.9040402@redhat.com>
+Date: Tue, 29 Nov 2011 15:23:58 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: hpa@zytor.com, Ingo Molnar <mingo@elte.hu>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: add IRQ context simulation in module mce-inject
-References: <4ec2fc2492784d824@agluck-desktop.sc.intel.com>
-In-Reply-To: <4ec2fc2492784d824@agluck-desktop.sc.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
+Subject: Re: [V4 PATCH 1/2] tmpfs: add fallocate support
+References: <1322544793-2676-1-git-send-email-amwang@redhat.com> <20111129150210.ad266dd7.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111129150210.ad266dd7.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: multipart/mixed;
+ boundary="------------050609090604090007010505"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011/11/16 7:56, Luck, Tony 写道:
-> mce-inject provides a mechanism to simulate errors so that test
-> scripts can check for correct operation of the kernel without
-> requiring any specialized hardware to create rare events.
->
-> The existing code can simulate events in normal process context
-> and also in NMI context - but not in IRQ context. This patch
-> fills that gap.
->
-> Signed-off-by: Chen Gong<gong.chen@linux.intel.com>
-> Acked-by: Tony Luck<tony.luck@intel.com>
->
-> ---
-> [Re-wrote the commit comment - Chen Gong's original text is below,
->   in case I missed any critical aspect - Tony]
-> module mce-inject is an interface which is used by user space app
-> such as mce-inject. According to it one can inject all kinds of
-> error combinations into the kernel. In this way, one can check
-> error condition coverage in the kernel. To satisify this needs,
-> module mce-inject must simulate enough scenarios such as process
-> context, IRQ context, even NMI context, to ensure related kernel
-> codes are strong and reliable. In current implementation, IRQ
-> context hasn't been simulated. This patch is for this purpose.
->
->   arch/x86/include/asm/mce.h              |    9 ++++---
->   arch/x86/kernel/cpu/mcheck/mce-inject.c |   34 +++++++++++++++++++++++++++---
->   2 files changed, 35 insertions(+), 8 deletions(-)
->
-> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> index c9321f3..312d770 100644
-> --- a/arch/x86/include/asm/mce.h
-> +++ b/arch/x86/include/asm/mce.h
-> @@ -50,10 +50,11 @@
->   #define MCJ_CTX_MASK		3
->   #define MCJ_CTX(flags)		((flags)&  MCJ_CTX_MASK)
->   #define MCJ_CTX_RANDOM		0    /* inject context: random */
-> -#define MCJ_CTX_PROCESS		1    /* inject context: process */
-> -#define MCJ_CTX_IRQ		2    /* inject context: IRQ */
-> -#define MCJ_NMI_BROADCAST	4    /* do NMI broadcasting */
-> -#define MCJ_EXCEPTION		8    /* raise as exception */
-> +#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
-> +#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
-> +#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
-> +#define MCJ_EXCEPTION		0x8  /* raise as exception */
-> +#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
->
->   /* Fields are zero when not available */
->   struct mce {
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> index 6199232..505461e 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-> @@ -17,6 +17,7 @@
->   #include<linux/kernel.h>
->   #include<linux/string.h>
->   #include<linux/fs.h>
-> +#include<linux/preempt.h>
->   #include<linux/smp.h>
->   #include<linux/notifier.h>
->   #include<linux/kdebug.h>
-> @@ -92,6 +93,18 @@ static int mce_raise_notify(unsigned int cmd, struct pt_regs *regs)
->   	return NMI_HANDLED;
->   }
->
-> +static void mce_irq_ipi(void *info)
-> +{
-> +	int cpu = smp_processor_id();
-> +	struct mce *m =&__get_cpu_var(injectm);
-> +
-> +	if (cpumask_test_cpu(cpu, mce_inject_cpumask)&&
-> +			m->inject_flags&  MCJ_EXCEPTION) {
-> +		cpumask_clear_cpu(cpu, mce_inject_cpumask);
-> +		raise_exception(m, NULL);
-> +	}
-> +}
-> +
->   /* Inject mce on current CPU */
->   static int raise_local(void)
->   {
-> @@ -139,9 +152,10 @@ static void raise_mce(struct mce *m)
->   		return;
->
->   #ifdef CONFIG_X86_LOCAL_APIC
-> -	if (m->inject_flags&  MCJ_NMI_BROADCAST) {
-> +	if (m->inject_flags&  (MCJ_IRQ_BRAODCAST | MCJ_NMI_BROADCAST)) {
->   		unsigned long start;
->   		int cpu;
-> +
->   		get_online_cpus();
->   		cpumask_copy(mce_inject_cpumask, cpu_online_mask);
->   		cpumask_clear_cpu(get_cpu(), mce_inject_cpumask);
-> @@ -151,13 +165,25 @@ static void raise_mce(struct mce *m)
->   			    MCJ_CTX(mcpu->inject_flags) != MCJ_CTX_RANDOM)
->   				cpumask_clear_cpu(cpu, mce_inject_cpumask);
->   		}
-> -		if (!cpumask_empty(mce_inject_cpumask))
-> -			apic->send_IPI_mask(mce_inject_cpumask, NMI_VECTOR);
-> +		if (!cpumask_empty(mce_inject_cpumask)) {
-> +			if (m->inject_flags&  MCJ_IRQ_BRAODCAST) {
-> +				/*
-> +				 * don't wait because mce_irq_ipi is necessary
-> +				 * to be sync with following raise_local
-> +				 */
-> +				preempt_disable();
-> +				smp_call_function_many(mce_inject_cpumask,
-> +					mce_irq_ipi, NULL, 0);
-> +				preempt_enable();
-> +			} else if (m->inject_flags&  MCJ_NMI_BROADCAST)
-> +				apic->send_IPI_mask(mce_inject_cpumask,
-> +						NMI_VECTOR);
-> +		}
->   		start = jiffies;
->   		while (!cpumask_empty(mce_inject_cpumask)) {
->   			if (!time_before(jiffies, start + 2*HZ)) {
->   				printk(KERN_ERR
-> -				"Timeout waiting for mce inject NMI %lx\n",
-> +				"Timeout waiting for mce inject %lx\n",
->   					*cpumask_bits(mce_inject_cpumask));
->   				break;
->   			}
+This is a multi-part message in MIME format.
+--------------050609090604090007010505
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-Hi, would you please help to merge this patch into -x86 tree? If you miss it.
-Thx in advance!
+于 2011年11月29日 14:02, KAMEZAWA Hiroyuki 写道:
+>
+> You can't know whether the 'page' is allocated by alloc_page() in fallocate()
+> or just found as exiting one.
+> Then, yourwill corrupt existing pages in error path.
+> Is it allowed ?
+>
+
+According to the comment,
+
+/*
+  * shmem_getpage_gfp - find page in cache, or get from swap, or allocate
+  *
+  * If we allocate a new one we do not mark it dirty. That's up to the
+  * vm. If we swap it in we mark it dirty since we also free the swap
+  * entry since a page cannot live in both the swap and page cache
+  */
+
+so we can know if the page is newly allocated by checking page dirty bit.
+Or am I missing something?
+
+But whoops, I sent a wrong version of this patch, the below one is
+the correct one. Sorry for this.
+
+
+--------------050609090604090007010505
+Content-Type: text/plain;
+ name="0001-tmpfs-add-fallocate-support.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="0001-tmpfs-add-fallocate-support.patch"
+
+U3ViamVjdDogW1Y0IFBBVENIIDEvMl0gdG1wZnM6IGFkZCBmYWxsb2NhdGUgc3VwcG9ydAoK
+U3lzdGVtZCBuZWVkcyB0bXBmcyB0byBzdXBwb3J0IGZhbGxvY2F0ZSBbMV0sIHRvIGJlIGFi
+bGUKdG8gc2FmZWx5IHVzZSBtbWFwKCksIHJlZ2FyZGluZyBTSUdCVVMsIG9uIGZpbGVzIG9u
+IHRoZQovZGV2L3NobSBmaWxlc3lzdGVtLiBUaGUgZ2xpYmMgZmFsbGJhY2sgbG9vcCBmb3Ig
+LUVOT1NZUwpvbiBmYWxsb2NhdGUgaXMganVzdCB1Z2x5LgoKVGhpcyBwYXRjaCBhZGRzIGZh
+bGxvY2F0ZSBzdXBwb3J0IHRvIHRtcGZzLCBhbmQgYXMgd2UKYWxyZWFkeSBoYXZlIHNobWVt
+X3RydW5jYXRlX3JhbmdlKCksIGl0IGlzIGFsc28gZWFzeSB0bwphZGQgRkFMTE9DX0ZMX1BV
+TkNIX0hPTEUgc3VwcG9ydCB0b28uCgoxLiBodHRwOi8vbGttbC5vcmcvbGttbC8yMDExLzEw
+LzIwLzI3NQoKVjMtPlY0OgpIYW5kbGUgJ3VuZG8nIEVOT1NQQyBtb3JlIGNvcnJlY3RseS4K
+ClYyLT5WMzoKYSkgUmVhZCBpX3NpemUgZGlyZWN0bHkgYWZ0ZXIgaG9sZGluZyBpX211dGV4
+OwpiKSBDYWxsIHBhZ2VfY2FjaGVfcmVsZWFzZSgpIHRvbyBhZnRlciBzaG1lbV9nZXRwYWdl
+KCk7CmMpIFVuZG8gcHJldmlvdXMgY2hhbmdlcyB3aGVuIC1FTk9TUEMuCgpDYzogUGVra2Eg
+RW5iZXJnIDxwZW5iZXJnQGtlcm5lbC5vcmc+CkNjOiBDaHJpc3RvcGggSGVsbHdpZyA8aGNo
+QGxzdC5kZT4KQ2M6IEh1Z2ggRGlja2lucyA8aHVnaGRAZ29vZ2xlLmNvbT4KQ2M6IERhdmUg
+SGFuc2VuIDxkYXZlQGxpbnV4LnZuZXQuaWJtLmNvbT4KQ2M6IExlbm5hcnQgUG9ldHRlcmlu
+ZyA8bGVubmFydEBwb2V0dGVyaW5nLm5ldD4KQ2M6IEtheSBTaWV2ZXJzIDxrYXkuc2lldmVy
+c0B2cmZ5Lm9yZz4KQ2M6IEtPU0FLSSBNb3RvaGlybyA8a29zYWtpLm1vdG9oaXJvQGpwLmZ1
+aml0c3UuY29tPgpTaWduZWQtb2ZmLWJ5OiBXQU5HIENvbmcgPGFtd2FuZ0ByZWRoYXQuY29t
+PgoKLS0tCmNvbW1pdCBjYTA1NWFkMzQzYTBkNjI5ZjhmMWZhZDFkZjMwNzk2ZDIyOTJmNmEy
+CkF1dGhvcjogQ29uZyBXYW5nIDxhbXdhbmdAcmVkaGF0LmNvbT4KRGF0ZTogICBXZWQgTm92
+IDIzIDEzOjE2OjI2IDIwMTEgKzA4MDAKCiAgICB0bXBmczogYWRkIGZhbGxvY2F0ZSBzdXBw
+b3J0Ci0tLQogbW0vc2htZW0uYyB8ICAgOTAgKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrCiAxIGZpbGVzIGNoYW5nZWQsIDkw
+IGluc2VydGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvbW0vc2htZW0u
+YyBiL21tL3NobWVtLmMKaW5kZXggZDY3MjI1MC4uNmE2ZmM2NiAxMDA2NDQKLS0tIGEvbW0v
+c2htZW0uYworKysgYi9tbS9zaG1lbS5jCkBAIC0zMCw2ICszMCw3IEBACiAjaW5jbHVkZSA8
+bGludXgvbW0uaD4KICNpbmNsdWRlIDxsaW51eC9leHBvcnQuaD4KICNpbmNsdWRlIDxsaW51
+eC9zd2FwLmg+CisjaW5jbHVkZSA8bGludXgvZmFsbG9jLmg+CiAKIHN0YXRpYyBzdHJ1Y3Qg
+dmZzbW91bnQgKnNobV9tbnQ7CiAKQEAgLTEwMTYsNiArMTAxNywzNSBAQCBmYWlsZWQ6CiAJ
+cmV0dXJuIGVycm9yOwogfQogCitzdGF0aWMgdm9pZCBzaG1lbV9wdXRwYWdlX25vc3dhcChz
+dHJ1Y3QgaW5vZGUgKmlub2RlLCBwZ29mZl90IGluZGV4LCBib29sIG5ldykKK3sKKwlzdHJ1
+Y3QgYWRkcmVzc19zcGFjZSAqbWFwcGluZyA9IGlub2RlLT5pX21hcHBpbmc7CisJc3RydWN0
+IHNobWVtX2lub2RlX2luZm8gKmluZm87CisJc3RydWN0IHNobWVtX3NiX2luZm8gKnNiaW5m
+bzsKKwlzdHJ1Y3QgcGFnZSAqcGFnZTsKKworCXBhZ2UgPSBmaW5kX2xvY2tfcGFnZShtYXBw
+aW5nLCBpbmRleCk7CisKKwlpZiAocGFnZSkgeworCQlpbmZvID0gU0hNRU1fSShpbm9kZSk7
+CisJCXNiaW5mbyA9IFNITUVNX1NCKGlub2RlLT5pX3NiKTsKKwkJc2htZW1fYWNjdF9ibG9j
+ayhpbmZvLT5mbGFncyk7CisJCWlmICghbmV3ICYmIFBhZ2VEaXJ0eShwYWdlKSkgeworCQkJ
+Q2xlYXJQYWdlRGlydHkocGFnZSk7CisJCQlkZWxldGVfZnJvbV9wYWdlX2NhY2hlKHBhZ2Up
+OworCQkJc3Bpbl9sb2NrKCZpbmZvLT5sb2NrKTsKKwkJCWluZm8tPmFsbG9jZWQtLTsKKwkJ
+CWlub2RlLT5pX2Jsb2NrcyAtPSBCTE9DS1NfUEVSX1BBR0U7CisJCQlzcGluX3VubG9jaygm
+aW5mby0+bG9jayk7CisJCX0KKwkJaWYgKHNiaW5mby0+bWF4X2Jsb2NrcykKKwkJCXBlcmNw
+dV9jb3VudGVyX2FkZCgmc2JpbmZvLT51c2VkX2Jsb2NrcywgLTEpOworCQlzaG1lbV91bmFj
+Y3RfYmxvY2tzKGluZm8tPmZsYWdzLCAxKTsKKwkJdW5sb2NrX3BhZ2UocGFnZSk7CisJCXBh
+Z2VfY2FjaGVfcmVsZWFzZShwYWdlKTsKKwl9Cit9CisKIHN0YXRpYyBpbnQgc2htZW1fZmF1
+bHQoc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEsIHN0cnVjdCB2bV9mYXVsdCAqdm1mKQog
+ewogCXN0cnVjdCBpbm9kZSAqaW5vZGUgPSB2bWEtPnZtX2ZpbGUtPmZfcGF0aC5kZW50cnkt
+PmRfaW5vZGU7CkBAIC0xNDMxLDYgKzE0NjEsNjUgQEAgc3RhdGljIHNzaXplX3Qgc2htZW1f
+ZmlsZV9zcGxpY2VfcmVhZChzdHJ1Y3QgZmlsZSAqaW4sIGxvZmZfdCAqcHBvcywKIAlyZXR1
+cm4gZXJyb3I7CiB9CiAKK3N0YXRpYyBsb25nIHNobWVtX2ZhbGxvY2F0ZShzdHJ1Y3QgZmls
+ZSAqZmlsZSwgaW50IG1vZGUsCisJCQkJbG9mZl90IG9mZnNldCwgbG9mZl90IGxlbikKK3sK
+KwlzdHJ1Y3QgaW5vZGUgKmlub2RlID0gZmlsZS0+Zl9wYXRoLmRlbnRyeS0+ZF9pbm9kZTsK
+KwlwZ29mZl90IHN0YXJ0ID0gb2Zmc2V0ID4+IFBBR0VfQ0FDSEVfU0hJRlQ7CisJcGdvZmZf
+dCBlbmQgPSBESVZfUk9VTkRfVVAoKG9mZnNldCArIGxlbiksIFBBR0VfQ0FDSEVfU0laRSk7
+CisJcGdvZmZfdCBpbmRleCA9IHN0YXJ0OworCWxvZmZfdCBpX3NpemU7CisJc3RydWN0IHBh
+Z2UgKnBhZ2UgPSBOVUxMOworCWludCByZXQgPSAwOworCisJaWYgKElTX1NXQVBGSUxFKGlu
+b2RlKSkKKwkJcmV0dXJuIC1FVFhUQlNZOworCisJbXV0ZXhfbG9jaygmaW5vZGUtPmlfbXV0
+ZXgpOworCWlfc2l6ZSA9IGlub2RlLT5pX3NpemU7CisJaWYgKG1vZGUgJiBGQUxMT0NfRkxf
+UFVOQ0hfSE9MRSkgeworCQlpZiAoIShvZmZzZXQgPiBpX3NpemUgfHwgKGVuZCA8PCBQQUdF
+X0NBQ0hFX1NISUZUKSA+IGlfc2l6ZSkpCisJCQlzaG1lbV90cnVuY2F0ZV9yYW5nZShpbm9k
+ZSwgb2Zmc2V0LAorCQkJCQkgICAgIChlbmQgPDwgUEFHRV9DQUNIRV9TSElGVCkgLSAxKTsK
+KwkJZ290byB1bmxvY2s7CisJfQorCisJaWYgKCEobW9kZSAmIEZBTExPQ19GTF9LRUVQX1NJ
+WkUpKSB7CisJCXJldCA9IGlub2RlX25ld3NpemVfb2soaW5vZGUsIChvZmZzZXQgKyBsZW4p
+KTsKKwkJaWYgKHJldCkKKwkJCWdvdG8gdW5sb2NrOworCX0KKworCXdoaWxlIChpbmRleCA8
+IGVuZCkgeworCQlyZXQgPSBzaG1lbV9nZXRwYWdlKGlub2RlLCBpbmRleCwgJnBhZ2UsIFNH
+UF9XUklURSwgTlVMTCk7CisJCWlmIChyZXQpIHsKKwkJCWlmIChyZXQgPT0gLUVOT1NQQykK
+KwkJCQlnb3RvIHVuZG87CisJCQllbHNlCisJCQkJZ290byB1bmxvY2s7CisJCX0KKwkJaWYg
+KHBhZ2UpIHsKKwkJCXVubG9ja19wYWdlKHBhZ2UpOworCQkJcGFnZV9jYWNoZV9yZWxlYXNl
+KHBhZ2UpOworCQl9CisJCWluZGV4Kys7CisJfQorCWlmICghKG1vZGUgJiBGQUxMT0NfRkxf
+S0VFUF9TSVpFKSAmJiAoaW5kZXggPDwgUEFHRV9DQUNIRV9TSElGVCkgPiBpX3NpemUpCisJ
+CWlfc2l6ZV93cml0ZShpbm9kZSwgaW5kZXggPDwgUEFHRV9DQUNIRV9TSElGVCk7CisKKwln
+b3RvIHVubG9jazsKKwordW5kbzoKKwl3aGlsZSAoaW5kZXggPiBzdGFydCkgeworCQlzaG1l
+bV9wdXRwYWdlX25vc3dhcChpbm9kZSwgaW5kZXgsIHRydWUpOworCQlpbmRleC0tOworCX0K
+KwordW5sb2NrOgorCW11dGV4X3VubG9jaygmaW5vZGUtPmlfbXV0ZXgpOworCXJldHVybiBy
+ZXQ7Cit9CisKIHN0YXRpYyBpbnQgc2htZW1fc3RhdGZzKHN0cnVjdCBkZW50cnkgKmRlbnRy
+eSwgc3RydWN0IGtzdGF0ZnMgKmJ1ZikKIHsKIAlzdHJ1Y3Qgc2htZW1fc2JfaW5mbyAqc2Jp
+bmZvID0gU0hNRU1fU0IoZGVudHJ5LT5kX3NiKTsKQEAgLTIyODYsNiArMjM3NSw3IEBAIHN0
+YXRpYyBjb25zdCBzdHJ1Y3QgZmlsZV9vcGVyYXRpb25zIHNobWVtX2ZpbGVfb3BlcmF0aW9u
+cyA9IHsKIAkuZnN5bmMJCT0gbm9vcF9mc3luYywKIAkuc3BsaWNlX3JlYWQJPSBzaG1lbV9m
+aWxlX3NwbGljZV9yZWFkLAogCS5zcGxpY2Vfd3JpdGUJPSBnZW5lcmljX2ZpbGVfc3BsaWNl
+X3dyaXRlLAorCS5mYWxsb2NhdGUJPSBzaG1lbV9mYWxsb2NhdGUsCiAjZW5kaWYKIH07CiAK
+
+--------------050609090604090007010505--
