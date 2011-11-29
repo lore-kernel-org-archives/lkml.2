@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab1LERa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:30:57 -0500
-Received: from www17.your-server.de ([213.133.104.17]:38035 "EHLO
+	id S932743Ab1LERbB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:31:01 -0500
+Received: from www17.your-server.de ([213.133.104.17]:38047 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932692Ab1LERax (ORCPT
+	with ESMTP id S932692Ab1LERa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:30:53 -0500
-Subject: [PATCH] [SCSI] libsas: Use kcalloc instead of kzalloc to allocate
- array
+	Mon, 5 Dec 2011 12:30:57 -0500
+Subject: [PATCH] xHCI: Use kcalloc instead of kzalloc to allocate array
 From: Thomas Meyer <thomas@m3y3r.de>
-To: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Date: Tue, 29 Nov 2011 22:08:00 +0100
-Message-ID: <1322600880.1534.330.camel@localhost.localdomain>
+Message-ID: <1322600880.1534.337.camel@localhost.localdomain>
 X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 7bit
 X-Authenticated-Sender: thomas@m3y3r.de
@@ -33,15 +31,21 @@ in https://lkml.org/lkml/2011/11/25/107
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
---- a/drivers/scsi/libsas/sas_expander.c 2011-11-13 11:07:46.460470430 +0100
-+++ b/drivers/scsi/libsas/sas_expander.c 2011-11-28 20:04:24.150985642 +0100
-@@ -306,7 +306,7 @@ static int sas_expander_discover(struct
- 	struct expander_device *ex = &dev->ex_dev;
- 	int res = -ENOMEM;
+diff -u -p a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+--- a/drivers/usb/host/xhci-mem.c 2011-11-28 19:36:48.020115250 +0100
++++ b/drivers/usb/host/xhci-mem.c 2011-11-28 20:06:14.528280517 +0100
+@@ -2037,11 +2037,12 @@ static int xhci_setup_port_arrays(struct
+ 	}
  
--	ex->ex_phy = kzalloc(sizeof(*ex->ex_phy)*ex->num_phys, GFP_KERNEL);
-+	ex->ex_phy = kcalloc(ex->num_phys, sizeof(*ex->ex_phy), GFP_KERNEL);
- 	if (!ex->ex_phy)
+ 	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
+-	xhci->port_array = kzalloc(sizeof(*xhci->port_array)*num_ports, flags);
++	xhci->port_array = kcalloc(num_ports, sizeof(*xhci->port_array),
++				   flags);
+ 	if (!xhci->port_array)
  		return -ENOMEM;
  
+-	xhci->rh_bw = kzalloc(sizeof(*xhci->rh_bw)*num_ports, flags);
++	xhci->rh_bw = kcalloc(num_ports, sizeof(*xhci->rh_bw), flags);
+ 	if (!xhci->rh_bw)
+ 		return -ENOMEM;
+ 	for (i = 0; i < num_ports; i++) {
