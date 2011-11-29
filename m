@@ -1,126 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab1K2Sel (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 13:34:41 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53081 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab1K2Sei (ORCPT
+	id S1756195Ab1K2Sf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 13:35:27 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37937 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756086Ab1K2Sf0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 13:34:38 -0500
-Date: Tue, 29 Nov 2011 19:34:28 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>, deepthi@linux.vnet.ibm.com
-Subject: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1
-Message-ID: <20111129183428.GE8200@aftab>
-References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
- <201111212249.31196.rjw@sisk.pl>
- <20111122135412.GA29905@phenom.dumpdata.com>
- <20111129180414.GA11459@phenom.dumpdata.com>
+	Tue, 29 Nov 2011 13:35:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129180414.GA11459@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111129182231.GZ15738@erda.amd.com>
+References: <20110930134040.GA5575@quad>
+	<20111129182231.GZ15738@erda.amd.com>
+Date: Tue, 29 Nov 2011 10:35:24 -0800
+Message-ID: <CABPqkBTR3tEGh7LymuS_JJR5SuCZfjTxZP-6qNxmZtBf0Zt9bg@mail.gmail.com>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v8)
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "acme@redhat.com" <acme@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "dsahern@gmail.com" <dsahern@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 01:04:14PM -0500, Konrad Rzeszutek Wilk wrote:
-> This patch:
-> 
-> commit d91ee5863b71e8c90eaf6035bff3078a85e2e7b5
-> Author: Len Brown <len.brown@intel.com>
-> Date:   Fri Apr 1 18:28:35 2011 -0400
-> 
->     cpuidle: replace xen access to x86 pm_idle and default_idle
-> 
->     ..scribble on pm_idle and access default_idle,
->    have it simply disable_cpuidle() so acpi_idle will not load and
->    architecture default HLT will be used.
-> 
-> idea was to have one call - disable_cpuidle() which would make
-> pm_idle not be molested by other code. It disallows cpuidle_idle_call
-> and acpi_idle_call to not set pm_idle (which is excellent). But the
+Robert,
 
-what is acpi_idle_call, I can't find it anywhere.
+On Tue, Nov 29, 2011 at 10:22 AM, Robert Richter <robert.richter@amd.com> wrote:
+> On 30.09.11 09:40:40, Stephane Eranian wrote:
+>> @@ -385,36 +1433,69 @@ static int perf_header__adds_write(struct perf_header *header,
+>>         sec_start = header->data_offset + header->data_size;
+>>         lseek(fd, sec_start + sec_size, SEEK_SET);
+>>
+>> -       if (perf_header__has_feat(header, HEADER_TRACE_INFO)) {
+>> -               struct perf_file_section *trace_sec;
+>> -
+>> -               trace_sec = &feat_sec[idx++];
+>> +       err = do_write_feat(fd, header, HEADER_TRACE_INFO, &p, evlist);
+>> +       if (err)
+>> +               goto out_free;
+>>
+>> -               /* Write trace info */
+>> -               trace_sec->offset = lseek(fd, 0, SEEK_CUR);
+>> -               read_tracing_data(fd, &evlist->entries);
+>> -               trace_sec->size = lseek(fd, 0, SEEK_CUR) - trace_sec->offset;
+>> +       err = do_write_feat(fd, header, HEADER_BUILD_ID, &p, evlist);
+>> +       if (err) {
+>> +               perf_header__clear_feat(header, HEADER_BUILD_ID);
+>> +               goto out_free;
+>>         }
+>
+> Stephane,
+>
+> I am just looking at the code and got a question:
+>
+> Is there a reason for the different error handling for
+> HEADER_TRACE_INFO and HEADER_BUILD_ID? All other types simply disable
+> the feature and go on without returning an error (goto out_free).
+>
+You're looking at an old version of that code. I fixed that later on.
+If you look in tip
+you'll see that TRACE_INFO  follows the same logic.
 
-> amd_e400_idle and mwait_idle can still setup pm_idle which we really
-> do not want.
+        sec_start = header->data_offset + header->data_size;
+        lseek(fd, sec_start + sec_size, SEEK_SET);
 
-This is not the case: rather select_idle_routine()/idle_setup() sets
-pm_idle.
+        err = do_write_feat(fd, header, HEADER_TRACE_INFO, &p, evlist);
+        if (err)
+                goto out_free;
 
-[..]
+        err = do_write_feat(fd, header, HEADER_BUILD_ID, &p, evlist);
+        if (err) {
+                perf_header__clear_feat(header, HEADER_BUILD_ID);
+                goto out_free;
+        }
 
-> +bool set_pm_idle_to_default()
-> +{
-> +	if (!pm_idle) {
-> +		pm_idle = default_idle;
-> +		return true;
-> +	}
-> +	return false;
-> +}
-
-I don't understand what you're trying to achieve here? Do you want
-default_idle to be always the pm_idle for xen or what is the deal here?
-
-If yes, then simply do:
-
-bool set_pm_idle_to_default(void)	// remember to add "void" for no function args
-{
-	bool ret = !!pm_idle;
-
-	pm_idle = default_idle;
-
-	return ret;
-
-}
-
-...
-
->  void stop_this_cpu(void *dummy)
->  {
->  	local_irq_disable();
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index 46d6d21..7506181 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -448,6 +448,6 @@ void __init xen_arch_setup(void)
->  #endif
->  	disable_cpuidle();
->  	boot_option_idle_override = IDLE_HALT;
-> -
-> +	WARN_ON(!set_pm_idle_to_default());
-
-and then do
-
-	WARN_ON(set_pm_idle_to_default());
-
-instead of having arbitrary confusing logic. This way you can warn
-whether something else set pm_idle already. Or?
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+The 'clear_feat' is missing for TRACE_INFO, that's all. The question is:
+is case do_write_feat(trace_info) fails, is there still a way to parse the file
+correctly? If not, then perf should bail out, if yes, then we need to add the
+clear_feat(TRACE_INFO) in case of error.
