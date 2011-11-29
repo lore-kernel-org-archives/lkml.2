@@ -1,99 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756610Ab1K2UKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 15:10:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3248 "EHLO mx1.redhat.com"
+	id S1756583Ab1K2UJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 15:09:51 -0500
+Received: from mga14.intel.com ([143.182.124.37]:8945 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756260Ab1K2UKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 15:10:03 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: netdev@vger.kernel.org
-Cc: rdunlap@xenotime.net, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netlabel: Fix build problems when IPv6 is not enabled
-Date: Tue, 29 Nov 2011 15:09:54 -0500
-Message-ID: <6332789.nzDA7IAKHR@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.7.3 (Linux/3.0.9-gentoo; KDE/4.7.3; x86_64; ; )
-In-Reply-To: <20111129200818.19875.72359.stgit@sifl>
-References: <20111129200818.19875.72359.stgit@sifl>
+	id S1756260Ab1K2UJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 15:09:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,592,1315206000"; 
+   d="scan'208";a="42226817"
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+        Paul Turner <pjt@google.com>
+Subject: Re: Perhaps a side effect regarding NMI returns
+References: <1322539673.17003.45.camel@frodo>
+	<CA+55aFwehof2kZCENTOFFobWqVvm04BZer6Cc-fQfVvcCE1NVQ@mail.gmail.com>
+Date: Tue, 29 Nov 2011 12:09:47 -0800
+In-Reply-To: <CA+55aFwehof2kZCENTOFFobWqVvm04BZer6Cc-fQfVvcCE1NVQ@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 28 Nov 2011 20:53:55 -0800")
+Message-ID: <m2r50qlmgk.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 29, 2011 03:08:18 PM Paul Moore wrote:
-> A recent fix to the the NetLabel code caused build problem with
-> configurations that did not have IPv6 enabled; see below:
-> 
->  netlabel_kapi.c: In function 'netlbl_cfg_unlbl_map_add':
->  netlabel_kapi.c:165:4:
->   error: implicit declaration of function 'netlbl_af6list_add'
-> 
-> This patch fixes this problem by making the IPv6 specific code conditional
-> on the IPv6 configuration flags as we done in the rest of NetLabel and the
-> network stack as a whole.  We have to move some variable declarations
-> around as a result so things may not be quite as pretty, but at least it
-> builds cleanly now.
-> 
-> Some additional IPv6 conditionals were added to the NetLabel code as well
-> for the sake of consistency.
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Paul Moore <pmoore@redhat.com>
-> ---
->  net/netlabel/netlabel_kapi.c |    6 ++++++
->  1 files changed, 6 insertions(+), 0 deletions(-)
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-Sorry, please disregard this patch; I sent the wrong version.
+Not sure what problem Steven thinks is there. Once you 
+switched the stack any nesting is fine.
 
-> diff --git a/net/netlabel/netlabel_kapi.c b/net/netlabel/netlabel_kapi.c
-> index 3735297..e4bbe94 100644
-> --- a/net/netlabel/netlabel_kapi.c
-> +++ b/net/netlabel/netlabel_kapi.c
-> @@ -148,6 +148,7 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
->  			if (ret_val != 0)
->  				goto cfg_unlbl_map_add_failure;
->  			break;
-> +#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
->  		case AF_INET6:
->  			addr6 = addr;
->  			mask6 = mask;
-> @@ -167,6 +168,7 @@ int netlbl_cfg_unlbl_map_add(const char *domain,
->  			if (ret_val != 0)
->  				goto cfg_unlbl_map_add_failure;
->  			break;
-> +#endif /* IPv6 */
->  		default:
->  			goto cfg_unlbl_map_add_failure;
->  			break;
-> @@ -225,9 +227,11 @@ int netlbl_cfg_unlbl_static_add(struct net *net,
->  	case AF_INET:
->  		addr_len = sizeof(struct in_addr);
->  		break;
-> +#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
->  	case AF_INET6:
->  		addr_len = sizeof(struct in6_addr);
->  		break;
-> +#endif /* IPv6 */
->  	default:
->  		return -EPFNOSUPPORT;
->  	}
-> @@ -266,9 +270,11 @@ int netlbl_cfg_unlbl_static_del(struct net *net,
->  	case AF_INET:
->  		addr_len = sizeof(struct in_addr);
->  		break;
-> +#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
->  	case AF_INET6:
->  		addr_len = sizeof(struct in6_addr);
->  		break;
-> +#endif /* IPv6 */
->  	default:
->  		return -EPFNOSUPPORT;
->  	}
+> I would suggest that the actual NMI handler itself should probably
+> never use that paranoid exit at all, and just always use a regular
+> iret. Screw scheduling and TIF checks.
+
+The reason I added them originally is to prevent the race of remote
+kernel events being delayed for a long time. With Frederic's nohz work
+this will be more important in the future. Today it would be eventually
+picked up by the regular timer interrupts.
+
+-Andi
+
 -- 
-paul moore
-virtualization @ redhat
-
+ak@linux.intel.com -- Speaking for myself only
