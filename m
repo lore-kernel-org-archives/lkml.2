@@ -1,198 +1,348 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab1K2UFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 15:05:21 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:34200 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754334Ab1K2UFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 15:05:20 -0500
-From: Joe Perches <joe@perches.com>
-To: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] pinmux: Message logging neatening
-Date: Tue, 29 Nov 2011 12:05:16 -0800
-Message-Id: <1d60ae08aa337a80604cf605565f74bc34bb3b32.1322596881.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.405.gc1be0
+	id S1756404Ab1K2UGr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 15:06:47 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40486 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756302Ab1K2UGp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 15:06:45 -0500
+Message-ID: <4ED53B47.1030703@pengutronix.de>
+Date: Tue, 29 Nov 2011 21:06:31 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Oliver Hartkopp <socketcan@hartkopp.net>,
+        Urs Thuermann <urs.thuermann@volkswagen.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] can: Update logging style
+References: <30551d0a6a0f7f7799a6981c81c770a528f430d2.1322592708.git.joe@perches.com>
+In-Reply-To: <30551d0a6a0f7f7799a6981c81c770a528f430d2.1322592708.git.joe@perches.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig0EEC2B802DDCE32A2E224DA0"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Coalesce formats.  Argument aligning.
-Rename pr_warning to pr_warn.
-Add a couple missing newlines to format strings.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig0EEC2B802DDCE32A2E224DA0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/pinctrl/pinmux.c |   60 +++++++++++++++++++--------------------------
- 1 files changed, 25 insertions(+), 35 deletions(-)
+On 11/29/2011 07:54 PM, Joe Perches wrote:
+> Use pr_fmt, pr_<level> and pr_<level>_ratelimited.
+> Coalesce format strings.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 15ae972..8e3fb08 100644
---- a/drivers/pinctrl/pinmux.c
-+++ b/drivers/pinctrl/pinmux.c
-@@ -9,6 +9,7 @@
-  *
-  * License terms: GNU General Public License (GPL) version 2
-  */
-+
- #define pr_fmt(fmt) "pinmux core: " fmt
- 
- #include <linux/kernel.h>
-@@ -155,9 +156,8 @@ static int pin_request(struct pinctrl_dev *pctldev,
- 		status = 0;
- 
- 	if (status)
--		dev_err(&pctldev->dev, "->request on device %s failed "
--		       "for pin %d\n",
--		       pctldev->desc->name, pin);
-+		dev_err(&pctldev->dev, "->request on device %s failed for pin %d\n",
-+			pctldev->desc->name, pin);
- out_free_pin:
- 	if (status) {
- 		spin_lock(&desc->lock);
-@@ -351,8 +351,7 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 	int i;
- 
- 	if (pinmux_maps != NULL) {
--		pr_err("pinmux mappings already registered, you can only "
--		       "register one set of maps\n");
-+		pr_err("pinmux mappings already registered, you can only register one set of maps\n");
- 		return -EINVAL;
- 	}
- 
-@@ -360,30 +359,27 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
- 	for (i = 0; i < num_maps; i++) {
- 		/* Sanity check the mapping */
- 		if (!maps[i].name) {
--			pr_err("failed to register map %d: "
--			       "no map name given\n", i);
-+			pr_err("failed to register map %d: no map name given\n",
-+			       i);
- 			return -EINVAL;
- 		}
- 		if (!maps[i].ctrl_dev && !maps[i].ctrl_dev_name) {
--			pr_err("failed to register map %s (%d): "
--			       "no pin control device given\n",
-+			pr_err("failed to register map %s (%d): no pin control device given\n",
- 			       maps[i].name, i);
- 			return -EINVAL;
- 		}
- 		if (!maps[i].function) {
--			pr_err("failed to register map %s (%d): "
--			       "no function ID given\n", maps[i].name, i);
-+			pr_err("failed to register map %s (%d): no function ID given\n",
-+			       maps[i].name, i);
- 			return -EINVAL;
- 		}
- 
- 		if (!maps[i].dev && !maps[i].dev_name)
- 			pr_debug("add system map %s function %s with no device\n",
--				 maps[i].name,
--				 maps[i].function);
-+				 maps[i].name, maps[i].function);
- 		else
- 			pr_debug("register map %s, function %s\n",
--				 maps[i].name,
--				 maps[i].function);
-+				 maps[i].name, maps[i].function);
- 	}
- 
- 	pinmux_maps = maps;
-@@ -424,8 +420,7 @@ static int acquire_pins(struct pinctrl_dev *pctldev,
- 		ret = pin_request(pctldev, pins[i], func, NULL);
- 		if (ret) {
- 			dev_err(&pctldev->dev,
--				"could not get pin %d for function %s "
--				"on device %s - conflicting mux mappings?\n",
-+				"could not get pin %d for function %s on device %s - conflicting mux mappings?\n",
- 				pins[i], func ? : "(undefined)",
- 				pinctrl_dev_get_name(pctldev));
- 			/* On error release all taken pins */
-@@ -455,8 +450,7 @@ static void release_pins(struct pinctrl_dev *pctldev,
- 	ret = pctlops->get_group_pins(pctldev, group_selector,
- 				      &pins, &num_pins);
- 	if (ret) {
--		dev_err(&pctldev->dev, "could not get pins to release for "
--			"group selector %d\n",
-+		dev_err(&pctldev->dev, "could not get pins to release for group selector %d\n",
- 			group_selector);
- 		return;
- 	}
-@@ -508,8 +502,7 @@ static int pinmux_check_pin_group(struct pinctrl_dev *pctldev,
- 		ret = pinctrl_get_group_selector(pctldev, groups[0]);
- 		if (ret < 0) {
- 			dev_err(&pctldev->dev,
--				"function %s wants group %s but the pin "
--				"controller does not seem to have that group\n",
-+				"function %s wants group %s but the pin controller does not seem to have that group\n",
- 				pmxops->get_function_name(pctldev, func_selector),
- 				groups[0]);
- 			return ret;
-@@ -517,8 +510,7 @@ static int pinmux_check_pin_group(struct pinctrl_dev *pctldev,
- 
- 		if (num_groups > 1)
- 			dev_dbg(&pctldev->dev,
--				"function %s support more than one group, "
--				"default-selecting first group %s (%d)\n",
-+				"function %s support more than one group, default-selecting first group %s (%d)\n",
- 				pmxops->get_function_name(pctldev, func_selector),
- 				groups[0],
- 				ret);
-@@ -610,8 +602,7 @@ static int pinmux_enable_muxmap(struct pinctrl_dev *pctldev,
- 
- 	if (pmx->pctldev && pmx->pctldev != pctldev) {
- 		dev_err(&pctldev->dev,
--			"different pin control devices given for device %s, "
--			"function %s\n",
-+			"different pin control devices given for device %s, function %s\n",
- 			devname,
- 			map->function);
- 		return -EINVAL;
-@@ -694,8 +685,8 @@ struct pinmux *pinmux_get(struct device *dev, const char *name)
- 	if (dev)
- 		devname = dev_name(dev);
- 
--	pr_debug("get mux %s for device %s\n", name,
--		 devname ? devname : "(none)");
-+	pr_debug("get mux %s for device %s\n",
-+		 name, devname ? devname : "(none)");
- 
- 	/*
- 	 * create the state cookie holder struct pinmux for each
-@@ -727,17 +718,16 @@ struct pinmux *pinmux_get(struct device *dev, const char *name)
- 			else if (map->ctrl_dev_name)
- 				devname = map->ctrl_dev_name;
- 
--			pr_warning("could not find a pinctrl device for pinmux "
--				   "function %s, fishy, they shall all have one\n",
--				   map->function);
--			pr_warning("given pinctrl device name: %s",
--				   devname ? devname : "UNDEFINED");
-+			pr_warn("could not find a pinctrl device for pinmux function %s, fishy, they shall all have one\n",
-+				map->function);
-+			pr_warn("given pinctrl device name: %s\n",
-+				devname ? devname : "UNDEFINED");
- 
- 			/* Continue to check the other mappings anyway... */
- 			continue;
- 		}
- 
--		pr_debug("in map, found pctldev %s to handle function %s",
-+		pr_debug("in map, found pctldev %s to handle function %s\n",
- 			 dev_name(&pctldev->dev), map->function);
- 
- 
-@@ -914,8 +904,8 @@ static int pinmux_hog_map(struct pinctrl_dev *pctldev,
- 		 * without any problems, so then we can hog pinmuxes for
- 		 * all devices that just want a static pin mux at this point.
- 		 */
--		dev_err(&pctldev->dev, "map %s wants to hog a non-system "
--			"pinmux, this is not going to work\n", map->name);
-+		dev_err(&pctldev->dev, "map %s wants to hog a non-system pinmux, this is not going to work\n",
-+			map->name);
- 		return -EINVAL;
- 	}
- 
--- 
-1.7.6.405.gc1be0
+The banners will probably looking a bit different, but I think nobody is
+screen scraping that output :)
 
+Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
+> ---
+>  net/can/af_can.c |   31 ++++++++++++++-----------------
+>  net/can/bcm.c    |   14 ++++++++------
+>  net/can/gw.c     |    6 ++++--
+>  net/can/proc.c   |    8 ++++----
+>  net/can/raw.c    |    8 +++++---
+>  5 files changed, 35 insertions(+), 32 deletions(-)
+>=20
+> diff --git a/net/can/af_can.c b/net/can/af_can.c
+> index 0ce2ad0..c4f0da5 100644
+> --- a/net/can/af_can.c
+> +++ b/net/can/af_can.c
+> @@ -40,6 +40,8 @@
+>   *
+>   */
+> =20
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/kmod.h>
+> @@ -62,8 +64,8 @@
+> =20
+>  #include "af_can.h"
+> =20
+> -static __initdata const char banner[] =3D KERN_INFO
+> -	"can: controller area network core (" CAN_VERSION_STRING ")\n";
+> +static __initdata const char banner[] =3D
+> +	"controller area network core (" CAN_VERSION_STRING ")";
+> =20
+>  MODULE_DESCRIPTION("Controller Area Network PF_CAN core");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> @@ -161,8 +163,8 @@ static int can_create(struct net *net, struct socke=
+t *sock, int protocol,
+>  		 * return -EPROTONOSUPPORT
+>  		 */
+>  		if (err)
+> -			printk_ratelimited(KERN_ERR "can: request_module "
+> -			       "(can-proto-%d) failed.\n", protocol);
+> +			pr_err_ratelimited("request_module (can-proto-%d) failed\n",
+> +					   protocol);
+> =20
+>  		cp =3D can_get_proto(protocol);
+>  	}
+> @@ -505,8 +507,7 @@ void can_rx_unregister(struct net_device *dev, cani=
+d_t can_id, canid_t mask,
+> =20
+>  	d =3D find_dev_rcv_lists(dev);
+>  	if (!d) {
+> -		printk(KERN_ERR "BUG: receive list not found for "
+> -		       "dev %s, id %03X, mask %03X\n",
+> +		pr_err("BUG: receive list not found for dev %s, id %03X, mask %03X\n=
+",
+>  		       DNAME(dev), can_id, mask);
+>  		goto out;
+>  	}
+> @@ -532,8 +533,7 @@ void can_rx_unregister(struct net_device *dev, cani=
+d_t can_id, canid_t mask,
+>  	 */
+> =20
+>  	if (!next) {
+> -		printk(KERN_ERR "BUG: receive list entry not found for "
+> -		       "dev %s, id %03X, mask %03X\n",
+> +		pr_err("BUG: receive list entry not found for dev %s, id %03X, mask =
+%03X\n",
+>  		       DNAME(dev), can_id, mask);
+>  		r =3D NULL;
+>  		goto out;
+> @@ -701,8 +701,7 @@ int can_proto_register(const struct can_proto *cp)
+>  	int err =3D 0;
+> =20
+>  	if (proto < 0 || proto >=3D CAN_NPROTO) {
+> -		printk(KERN_ERR "can: protocol number %d out of range\n",
+> -		       proto);
+> +		pr_err("protocol number %d out of range\n", proto);
+>  		return -EINVAL;
+>  	}
+> =20
+> @@ -713,8 +712,7 @@ int can_proto_register(const struct can_proto *cp)
+>  	mutex_lock(&proto_tab_lock);
+> =20
+>  	if (proto_tab[proto]) {
+> -		printk(KERN_ERR "can: protocol %d already registered\n",
+> -		       proto);
+> +		pr_err("protocol %d already registered\n", proto);
+>  		err =3D -EBUSY;
+>  	} else
+>  		RCU_INIT_POINTER(proto_tab[proto], cp);
+> @@ -769,8 +767,7 @@ static int can_notifier(struct notifier_block *nb, =
+unsigned long msg,
+>  		/* create new dev_rcv_lists for this device */
+>  		d =3D kzalloc(sizeof(*d), GFP_KERNEL);
+>  		if (!d) {
+> -			printk(KERN_ERR
+> -			       "can: allocation of receive list failed\n");
+> +			pr_err("allocation of receive list failed\n");
+>  			return NOTIFY_DONE;
+>  		}
+>  		BUG_ON(dev->ml_priv);
+> @@ -790,8 +787,8 @@ static int can_notifier(struct notifier_block *nb, =
+unsigned long msg,
+>  				dev->ml_priv =3D NULL;
+>  			}
+>  		} else
+> -			printk(KERN_ERR "can: notifier: receive list not "
+> -			       "found for dev %s\n", dev->name);
+> +			pr_err("notifier: receive list not found for dev %s\n",
+> +			       dev->name);
+> =20
+>  		spin_unlock(&can_rcvlists_lock);
+> =20
+> @@ -824,7 +821,7 @@ static struct notifier_block can_netdev_notifier __=
+read_mostly =3D {
+> =20
+>  static __init int can_init(void)
+>  {
+> -	printk(banner);
+> +	pr_info("%s\n", banner);
+> =20
+>  	memset(&can_rx_alldev_list, 0, sizeof(can_rx_alldev_list));
+> =20
+> diff --git a/net/can/bcm.c b/net/can/bcm.c
+> index 151b773..540c804 100644
+> --- a/net/can/bcm.c
+> +++ b/net/can/bcm.c
+> @@ -39,6 +39,8 @@
+>   *
+>   */
+> =20
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/interrupt.h>
+> @@ -77,8 +79,8 @@
+>  		     (CAN_SFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG))
+> =20
+>  #define CAN_BCM_VERSION CAN_VERSION
+> -static __initdata const char banner[] =3D KERN_INFO
+> -	"can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n";
+> +static __initdata const char banner[] =3D
+> +	"broadcast manager protocol (rev " CAN_BCM_VERSION " t)";
+> =20
+>  MODULE_DESCRIPTION("PF_CAN broadcast manager protocol");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> @@ -729,8 +731,8 @@ static void bcm_rx_unreg(struct net_device *dev, st=
+ruct bcm_op *op)
+>  		/* mark as removed subscription */
+>  		op->rx_reg_dev =3D NULL;
+>  	} else
+> -		printk(KERN_ERR "can-bcm: bcm_rx_unreg: registered device "
+> -		       "mismatch %p %p\n", op->rx_reg_dev, dev);
+> +		pr_err("%s: registered device mismatch %p %p\n",
+> +		       __func__, op->rx_reg_dev, dev);
+>  }
+> =20
+>  /*
+> @@ -1606,11 +1608,11 @@ static int __init bcm_module_init(void)
+>  {
+>  	int err;
+> =20
+> -	printk(banner);
+> +	pr_info("%s\n", banner);
+> =20
+>  	err =3D can_proto_register(&bcm_can_proto);
+>  	if (err < 0) {
+> -		printk(KERN_ERR "can: registration of bcm protocol failed\n");
+> +		pr_err("registration of bcm protocol failed\n");
+>  		return err;
+>  	}
+> =20
+> diff --git a/net/can/gw.c b/net/can/gw.c
+> index 3d79b12..e17253f 100644
+> --- a/net/can/gw.c
+> +++ b/net/can/gw.c
+> @@ -39,6 +39,8 @@
+>   *
+>   */
+> =20
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/types.h>
+> @@ -59,7 +61,7 @@
+> =20
+>  #define CAN_GW_VERSION "20101209"
+>  static __initdata const char banner[] =3D
+> -	KERN_INFO "can: netlink gateway (rev " CAN_GW_VERSION ")\n";
+> +	"netlink gateway (rev " CAN_GW_VERSION ")";
+> =20
+>  MODULE_DESCRIPTION("PF_CAN netlink gateway");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> @@ -913,7 +915,7 @@ static int cgw_remove_job(struct sk_buff *skb,  str=
+uct nlmsghdr *nlh, void *arg)
+> =20
+>  static __init int cgw_module_init(void)
+>  {
+> -	printk(banner);
+> +	pr_info("%s\n", banner);
+> =20
+>  	cgw_cache =3D kmem_cache_create("can_gw", sizeof(struct cgw_job),
+>  				      0, 0, NULL);
+> diff --git a/net/can/proc.c b/net/can/proc.c
+> index ba873c3..c3aedf5 100644
+> --- a/net/can/proc.c
+> +++ b/net/can/proc.c
+> @@ -39,6 +39,8 @@
+>   *
+>   */
+> =20
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/proc_fs.h>
+>  #include <linux/list.h>
+> @@ -118,8 +120,7 @@ static unsigned long calc_rate(unsigned long oldjif=
+, unsigned long newjif,
+> =20
+>  	/* see can_stat_update() - this should NEVER happen! */
+>  	if (count > (ULONG_MAX / HZ)) {
+> -		printk(KERN_ERR "can: calc_rate: count exceeded! %ld\n",
+> -		       count);
+> +		pr_err("%s: count exceeded! %ld\n", __func__, count);
+>  		return 99999999;
+>  	}
+> =20
+> @@ -475,8 +476,7 @@ void can_init_proc(void)
+>  	can_dir =3D proc_mkdir("can", init_net.proc_net);
+> =20
+>  	if (!can_dir) {
+> -		printk(KERN_INFO "can: failed to create /proc/net/can . "
+> -		       "CONFIG_PROC_FS missing?\n");
+> +		pr_info("failed to create /proc/net/can . CONFIG_PROC_FS missing?\n"=
+);
+>  		return;
+>  	}
+> =20
+> diff --git a/net/can/raw.c b/net/can/raw.c
+> index cde1b4a..2875c55 100644
+> --- a/net/can/raw.c
+> +++ b/net/can/raw.c
+> @@ -39,6 +39,8 @@
+>   *
+>   */
+> =20
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/uio.h>
+> @@ -56,7 +58,7 @@
+> =20
+>  #define CAN_RAW_VERSION CAN_VERSION
+>  static __initdata const char banner[] =3D
+> -	KERN_INFO "can: raw protocol (rev " CAN_RAW_VERSION ")\n";
+> +	"raw protocol (rev " CAN_RAW_VERSION ")";
+> =20
+>  MODULE_DESCRIPTION("PF_CAN raw protocol");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> @@ -783,11 +785,11 @@ static __init int raw_module_init(void)
+>  {
+>  	int err;
+> =20
+> -	printk(banner);
+> +	pr_info("%s\n", banner);
+> =20
+>  	err =3D can_proto_register(&raw_can_proto);
+>  	if (err < 0)
+> -		printk(KERN_ERR "can: registration of raw protocol failed\n");
+> +		pr_err("registration of raw protocol failed\n");
+> =20
+>  	return err;
+>  }
+
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enig0EEC2B802DDCE32A2E224DA0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk7VO00ACgkQjTAFq1RaXHO9fACfRsS1j2ApsgbQqiBhP6ntgLbG
+WlIAnR1siXn6tKw0Rt0L88P1lsTq/c8E
+=AwtC
+-----END PGP SIGNATURE-----
+
+--------------enig0EEC2B802DDCE32A2E224DA0--
