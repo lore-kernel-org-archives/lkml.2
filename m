@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab1K2Jeg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 04:34:36 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47973 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1K2Jee (ORCPT
+	id S1753693Ab1K2Jpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 04:45:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63271 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab1K2Jpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 04:34:34 -0500
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: [PATCH] virtio-ring: Use threshold for switching to indirect descriptors
-Date: Tue, 29 Nov 2011 11:33:16 +0200
-Message-Id: <1322559196-11139-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.rc3
+	Tue, 29 Nov 2011 04:45:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
+References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
+	<201111251402.28016.arnd@arndb.de>
+	<CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
+	<201111281753.45287.arnd@arndb.de>
+	<CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
+Date: Tue, 29 Nov 2011 10:45:43 +0100
+Message-ID: <CACRpkdZsitv8rfcidS2auATg7_VGtDZt7z-we1UJcP2C32dujg@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
+From: Linus Walleij <linus.walleij@linaro.org>
+To: MyungJoo Ham <myungjoo.ham@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kalle Komierowski <karl.komierowski@stericsson.com>,
+        Johan PALSSON <johan.palsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently if VIRTIO_RING_F_INDIRECT_DESC is enabled we will use indirect
-descriptors even if we have plenty of space in the ring. This means that
-we take a performance hit at all times due to the overhead of creating
-indirect descriptors.
+On Tue, Nov 29, 2011 at 10:11 AM, MyungJoo Ham <myungjoo.ham@gmail.com> wrote:
 
-With this patch, we will use indirect descriptors only if we have less than
-either 16, or 12% of the total amount of descriptors available.
+> For the next iteration, I'm considering the followings. It'd be much
+> appreciated if I could get some comments about those beforehand.
+> 1. ABI documentation
 
-I did basic performance benchmark on virtio-net with vhost enabled.
+Good!
 
-Before:
-	Recv   Send    Send
-	Socket Socket  Message  Elapsed
-	Size   Size    Size     Time     Throughput
-	bytes  bytes   bytes    secs.    10^6bits/sec
+> 2. move the location from /drivers/misc to an independent location.
+> /drivers/switch? /drivers/multistate-switch? /drivers/msc?
+> /drivers/mswitch? ...
 
-	 87380  16384  16384    10.00    4563.92
+drivers/switch if I have my say. It looks intuitive.
 
-After:
-	Recv   Send    Send
-	Socket Socket  Message  Elapsed
-	Size   Size    Size     Time     Throughput
-	bytes  bytes   bytes    secs.    10^6bits/sec
+> 3. Allow the notifiee device drivers to register its specific
+> interest. The interface would look like:
+> int switch_register_interest(struct switch_dev *sdev, const char
+> *cable_name, struct notifier_block *b);
+> (the rationale is that the notifiee device does not need to know the
+> detail about the switch dev configuration but for the name of the
+> switch dev or notifier).
+> or even
+> int switch_register_interest(const char *switch_name, const char
+> *cable_name, struct notifier_block *b);
+> and allow notifee to forget about the sdev pointer as well. (and all
+> the other APIs are for implementing notifier, not notifiee)
 
-	 87380  16384  16384    10.00    5353.28
+Good.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- drivers/virtio/virtio_ring.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+I will likely ack this once the code looks real nice, FWIW.
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index c7a2c20..5e0ce15 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -82,6 +82,7 @@ struct vring_virtqueue
- 
- 	/* Host supports indirect buffers */
- 	bool indirect;
-+	unsigned int indirect_threshold;
- 
- 	/* Host publishes avail event idx */
- 	bool event;
-@@ -176,8 +177,9 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
- 	BUG_ON(data == NULL);
- 
- 	/* If the host supports indirect descriptor tables, and we have multiple
--	 * buffers, then go indirect. FIXME: tune this threshold */
--	if (vq->indirect && (out + in) > 1 && vq->num_free) {
-+	 * buffers, then go indirect. */
-+	if (vq->indirect && (out + in) > 1 &&
-+	   (vq->num_free < vq->indirect_threshold)) {
- 		head = vring_add_indirect(vq, sg, out, in, gfp);
- 		if (likely(head >= 0))
- 			goto add_head;
-@@ -485,6 +487,12 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
- #endif
- 
- 	vq->indirect = virtio_has_feature(vdev, VIRTIO_RING_F_INDIRECT_DESC);
-+	/*
-+	 * Use indirect descriptors only when we have less than either 12%
-+	 * or 16 of the descriptors in the ring available.
-+	 */
-+	if (vq->indirect)
-+		vq->indirect_threshold = max(16U, num >> 3);
- 	vq->event = virtio_has_feature(vdev, VIRTIO_RING_F_EVENT_IDX);
- 
- 	/* No callback?  Tell other side not to bother us. */
--- 
-1.7.8.rc3
-
+Yours,
+Linus Walleij
