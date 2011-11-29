@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab1K2OWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 09:22:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755648Ab1K2OWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 09:22:21 -0500
-Date: Tue, 29 Nov 2011 19:51:49 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Miche Baker-Harvey <miche@google.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Anton Blanchard <anton@samba.org>, Mike Waychison <mikew@google.com>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Eric Northrup <digitaleric@google.com>
-Subject: Re: [PATCH v3 2/3] hvc_init(): Enforce one-time initialization.
-Message-ID: <20111129142149.GE2822@amit-x200.redhat.com>
-References: <20111108214452.28884.14840.stgit@miche.sea.corp.google.com>
- <20111108214504.28884.61814.stgit@miche.sea.corp.google.com>
- <874nybqo0o.fsf@rustcorp.com.au>
- <CAB8RdapbaueyWLJuJDE_ZdvLkRNM4sQHTxgmgO=jrnXZ6YPSmA@mail.gmail.com>
- <20111123103852.GG16665@amit-x200.redhat.com>
- <CAB8RdaoDxMCgTjuGP70bGrsrtgh=USYtU3Spo5OPtVMYAM5EzQ@mail.gmail.com>
+	id S1755785Ab1K2OX7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 09:23:59 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:52817 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755736Ab1K2OX4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 09:23:56 -0500
+X-Sasl-enc: GXbO1Ep1Q65DPfnzGaOYXYXfdAiqUbH3cfQdDVcHzT+J 1322576635
+Date: Tue, 29 Nov 2011 23:22:14 +0900
+From: Greg KH <greg@kroah.com>
+To: Anand Kanaginhal <anand_dk@hotmail.com>
+Cc: Linux PCI mailing <linux-pci@vger.kernel.org>,
+        linux kernel mailing <linux-kernel@vger.kernel.org>,
+        linux hotplug mailing <linux-hotplug@vger.kernel.org>
+Subject: Re: PCIe Hotplugging not working
+Message-ID: <20111129142214.GC14845@kroah.com>
+References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl>
+ <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CAB8RdaoDxMCgTjuGP70bGrsrtgh=USYtU3Spo5OPtVMYAM5EzQ@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On (Mon) 28 Nov 2011 [15:40:41], Miche Baker-Harvey wrote:
-> Amit,
+On Tue, Nov 29, 2011 at 03:56:12AM -0800, Anand Kanaginhal wrote:
 > 
-> You said that the work would be serialized "due to port additions
-> being on work items on the same workqueue".  I'm not seeing that.
-
-You leave a lot of questions unanswered.  What's your environment?
-Are you hot-plugging ports?  Are you using qemu?  What's your command
-line?
-
-> I've double checked this by using a mutex_trylock in
-> hvc_console::hvc_alloc(), and here's the relevant output from dmesg:
 > 
-> root@myubuntu:~# dmesg | grep MBH
-> [3307216.210274] MBH: got hvc_ports_mutex
-> [3307216.210690] MBH: trylock of hvc_ports_mutex failed
-> [3307216.211143] MBH: got hvc_ports_mutex
+> I am trying to get PCIe endpoint hot - plugging working
 > 
-> This is in a system with two virtio console ports, each of which is a
-> console.  I think if the VIRTIO_CONSOLE_CONSOLE_PORT message handling
-> were actually being serialized, the trylock should never fail.
+> The Set up is such that there is one endpoint (our custom device) connected to PCI  switch PLX 8609 8 port 8 lane switch. 
+> 1. I have my driver module compiled, copied into /lib/modules/`uname -r`/kernel/drivers/char/
 
-Agreed.
+Why is a pci driver a "char" driver?  Do you have a pointer to the
+source of this?
 
-> What's the source of the serialization for the workqueue items?  At
-> first reading it looks like the control_work_handler gets called for
-> each virtio interrupt?
+> 2. I run depmod and "modules.pcimap" also got updated with my module. 
+> 
+> However
+>  if I unplug and plug in the endpoint, my driver .probe and .remove functions
+>  are not being invoked. Is there something more to be done at the bus 
+> level to get the driver to hot plug ?
 
-It all depends on how you add ports.  If you're using qemu, they
-happen via the control work handler.
+You need a pci hotplug controller driver, is that loaded?  That is what
+is responsible for eventually calling your remove function.
 
-		Amit
+> I have tried various kernel version, Currently I am trying on 2.6.38.12 (UBUNTU flavor).
+
+We can't help you with distro-specific kernels, please use a kernel.org
+kernel and we will be glad to help you out.
+
+greg k-h
