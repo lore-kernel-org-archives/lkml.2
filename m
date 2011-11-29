@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab1K2Gq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 01:46:56 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11740 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971Ab1K2Gqz (ORCPT
+	id S1753020Ab1K2Gro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 01:47:44 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:45828 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab1K2Grn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 01:46:55 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 28 Nov 2011 22:46:32 -0800
-Date: Tue, 29 Nov 2011 08:46:30 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Russell King <linux@arm.linux.org.uk>, Paul Mundt <lethal@linux-sh.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        David Brown <davidb@codeaurora.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Change ARCH_NR_GPIO into a Kconfig variable
-Message-ID: <20111129064630.GW19069@tbergstrom-lnx.Nvidia.com>
-References: <1320339647-30255-1-git-send-email-pdeschrijver@nvidia.com>
+	Tue, 29 Nov 2011 01:47:43 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.15 with qID pAT6lP7d027611, This message is released by code: ctlocs8528
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>, <booster@wolke7.net>
+CC: "'Jonathan Nieder'" <jrnieder@gmail.com>,
+        "'Eric Dumazet'" <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
+        "'nic_swsd'" <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        "'Armin Kazmi'" <armin.kazmi@tu-dortmund.de>
+References: <20111124044137.GA18262@elie.hsd1.il.comcast.net> <4ECFE7A7.5070300@wolke7.net> <20111125201936.GA26692@elie.hsd1.il.comcast.net> <1322253122.2550.3.camel@edumazet-laptop> <20111125222211.GA13719@electric-eye.fr.zoreil.com> <1322262357.2550.12.camel@edumazet-laptop> <20111126004447.GA14744@electric-eye.fr.zoreil.com> <1322280423.10212.3.camel@edumazet-laptop> <20111127092808.GE21635@elie.hsd1.il.comcast.net> <4ED2A573.1020807@wolke7.net> <20111127231147.GA1784@electric-eye.fr.zoreil.com>
+Subject: RE: [bug?] r8169: hangs under heavy load
+Date: Tue, 29 Nov 2011 14:47:24 +0800
+X-BOX-Message-Id: pAT6lP7d027611
+Message-ID: <D95C09DB1A7E493E89FE5A0B3879CEB0@realtek.com.tw>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1320339647-30255-1-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcytWs16pKPsPwEfTy6rlDsyTPEmgQBBcScg
+In-Reply-To: <20111127231147.GA1784@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 06:00:44PM +0100, Peter De Schrijver wrote:
-> This patchset converts ARCH_NR_GPIO to a Kconfig variable as suggested by
-> Russel King. It also converts some platforms to the new model.
+Francois Romieu [mailto:romieu@fr.zoreil.com] 
+[...]
 > 
-> Peter De Schrijver (3):
->   ARM: ARCH_NR_GPIO: Make ARCH_NR_GPIO a Kconfig variable
->   ARM: mach-shmobile: Use CONFIG_ARCH_NR_GPIO
->   ARM: mach-ux500 Use CONFIG_ARCH_NR_GPIO
+> Hayes, does the 8168c require something special to recover 
+> from Rx FIFO
+> overflow ?
+> 
 
-Ping? What should we do with this?
+For the 8168c and the later chips, our hardware engineer says that don't enable
+the RxFIFOOver of IntrMask and don't clear the RxFIFOOver of IntrStatus. The
+hardware will automatically escape Rx fifo full situation. Although you try to
+clear the RxFIFOOver of IntrStatus, maybe the bit wouldn't be cleared. Just
+disregard it.
+ 
+Best Regards,
+Hayes
 
-Cheers,
-
-Peter.
