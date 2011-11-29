@@ -1,290 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab1K2Syh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 13:54:37 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:35474 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754419Ab1K2Syf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 13:54:35 -0500
-From: Joe Perches <joe@perches.com>
-To: Oliver Hartkopp <socketcan@hartkopp.net>,
-        Urs Thuermann <urs.thuermann@volkswagen.de>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] can: Update logging style
-Date: Tue, 29 Nov 2011 10:54:29 -0800
-Message-Id: <30551d0a6a0f7f7799a6981c81c770a528f430d2.1322592708.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.405.gc1be0
+	id S1755366Ab1K2S7H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 13:59:07 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:53845 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754334Ab1K2S7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 13:59:05 -0500
+Date: Tue, 29 Nov 2011 10:57:46 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: =?iso-8859-1?Q?Jean-Fran=E7ois?= Dagenais <dagenaisj@sonatest.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: MFD: core assumes that all children are platform devices
+Message-ID: <20111129185746.GA23986@ericsson.com>
+References: <2F9D884C-6B95-4F81-8445-8056676B28D8@sonatest.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2F9D884C-6B95-4F81-8445-8056676B28D8@sonatest.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pr_fmt, pr_<level> and pr_<level>_ratelimited.
-Coalesce format strings.
+On Mon, Nov 28, 2011 at 11:23:00AM -0500, Jean-François Dagenais wrote:
+> Hi,
+> 
+> I have a pci driver that registers with UIO for it's operations. As a consequence, the pci device
+> instance has a child device of class uio.
+> 
+> My driver also declares a ds1wm instance that has it's register interface at an offset in BAR0
+> of the pci device, as an MFD cell.
+> 
+> When I call mfd_remove_devices, MFD proceeds to enumerate ALL the parent device's chilren
+> and assumes that they are MFD cells, and thus platform_device, which is not true in my case.
+> (...uio is a child of the parent pci device)
+> 
+> I had (luckily or unluckily) not seen signs of this broken assumption on certain setups I have
+> used, but in my current setup, this page-faults every time now.
+> 
+> This is a major thing and I have not found the assumption documented anywhere.
+> 
+> I could first declare a new child device on my pci device and then declare it as the parent to
+> the mfd cells...
+> 
+I had the same problem, with a Multi-function USB device. Took me a while to figure out that
+mfd_remove_devices() removed the USB child devices when I used the USB device as MFD parent device.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/can/af_can.c |   31 ++++++++++++++-----------------
- net/can/bcm.c    |   14 ++++++++------
- net/can/gw.c     |    6 ++++--
- net/can/proc.c   |    8 ++++----
- net/can/raw.c    |    8 +++++---
- 5 files changed, 35 insertions(+), 32 deletions(-)
+My solution was to do what you suggested - my MFD probe function now creates a platform device
+to be used as MFD parent device. Works nicely, it doesn't require much additional code,
+and I think it is cleaner than other possible solutions (at least the ones I came up with).
+We'll see how it flies with the MFD and USB maintainers once I submit the patch ;).
 
-diff --git a/net/can/af_can.c b/net/can/af_can.c
-index 0ce2ad0..c4f0da5 100644
---- a/net/can/af_can.c
-+++ b/net/can/af_can.c
-@@ -40,6 +40,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/kmod.h>
-@@ -62,8 +64,8 @@
- 
- #include "af_can.h"
- 
--static __initdata const char banner[] = KERN_INFO
--	"can: controller area network core (" CAN_VERSION_STRING ")\n";
-+static __initdata const char banner[] =
-+	"controller area network core (" CAN_VERSION_STRING ")";
- 
- MODULE_DESCRIPTION("Controller Area Network PF_CAN core");
- MODULE_LICENSE("Dual BSD/GPL");
-@@ -161,8 +163,8 @@ static int can_create(struct net *net, struct socket *sock, int protocol,
- 		 * return -EPROTONOSUPPORT
- 		 */
- 		if (err)
--			printk_ratelimited(KERN_ERR "can: request_module "
--			       "(can-proto-%d) failed.\n", protocol);
-+			pr_err_ratelimited("request_module (can-proto-%d) failed\n",
-+					   protocol);
- 
- 		cp = can_get_proto(protocol);
- 	}
-@@ -505,8 +507,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
- 
- 	d = find_dev_rcv_lists(dev);
- 	if (!d) {
--		printk(KERN_ERR "BUG: receive list not found for "
--		       "dev %s, id %03X, mask %03X\n",
-+		pr_err("BUG: receive list not found for dev %s, id %03X, mask %03X\n",
- 		       DNAME(dev), can_id, mask);
- 		goto out;
- 	}
-@@ -532,8 +533,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
- 	 */
- 
- 	if (!next) {
--		printk(KERN_ERR "BUG: receive list entry not found for "
--		       "dev %s, id %03X, mask %03X\n",
-+		pr_err("BUG: receive list entry not found for dev %s, id %03X, mask %03X\n",
- 		       DNAME(dev), can_id, mask);
- 		r = NULL;
- 		goto out;
-@@ -701,8 +701,7 @@ int can_proto_register(const struct can_proto *cp)
- 	int err = 0;
- 
- 	if (proto < 0 || proto >= CAN_NPROTO) {
--		printk(KERN_ERR "can: protocol number %d out of range\n",
--		       proto);
-+		pr_err("protocol number %d out of range\n", proto);
- 		return -EINVAL;
- 	}
- 
-@@ -713,8 +712,7 @@ int can_proto_register(const struct can_proto *cp)
- 	mutex_lock(&proto_tab_lock);
- 
- 	if (proto_tab[proto]) {
--		printk(KERN_ERR "can: protocol %d already registered\n",
--		       proto);
-+		pr_err("protocol %d already registered\n", proto);
- 		err = -EBUSY;
- 	} else
- 		RCU_INIT_POINTER(proto_tab[proto], cp);
-@@ -769,8 +767,7 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
- 		/* create new dev_rcv_lists for this device */
- 		d = kzalloc(sizeof(*d), GFP_KERNEL);
- 		if (!d) {
--			printk(KERN_ERR
--			       "can: allocation of receive list failed\n");
-+			pr_err("allocation of receive list failed\n");
- 			return NOTIFY_DONE;
- 		}
- 		BUG_ON(dev->ml_priv);
-@@ -790,8 +787,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
- 				dev->ml_priv = NULL;
- 			}
- 		} else
--			printk(KERN_ERR "can: notifier: receive list not "
--			       "found for dev %s\n", dev->name);
-+			pr_err("notifier: receive list not found for dev %s\n",
-+			       dev->name);
- 
- 		spin_unlock(&can_rcvlists_lock);
- 
-@@ -824,7 +821,7 @@ static struct notifier_block can_netdev_notifier __read_mostly = {
- 
- static __init int can_init(void)
- {
--	printk(banner);
-+	pr_info("%s\n", banner);
- 
- 	memset(&can_rx_alldev_list, 0, sizeof(can_rx_alldev_list));
- 
-diff --git a/net/can/bcm.c b/net/can/bcm.c
-index 151b773..540c804 100644
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -39,6 +39,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
-@@ -77,8 +79,8 @@
- 		     (CAN_SFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG))
- 
- #define CAN_BCM_VERSION CAN_VERSION
--static __initdata const char banner[] = KERN_INFO
--	"can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n";
-+static __initdata const char banner[] =
-+	"broadcast manager protocol (rev " CAN_BCM_VERSION " t)";
- 
- MODULE_DESCRIPTION("PF_CAN broadcast manager protocol");
- MODULE_LICENSE("Dual BSD/GPL");
-@@ -729,8 +731,8 @@ static void bcm_rx_unreg(struct net_device *dev, struct bcm_op *op)
- 		/* mark as removed subscription */
- 		op->rx_reg_dev = NULL;
- 	} else
--		printk(KERN_ERR "can-bcm: bcm_rx_unreg: registered device "
--		       "mismatch %p %p\n", op->rx_reg_dev, dev);
-+		pr_err("%s: registered device mismatch %p %p\n",
-+		       __func__, op->rx_reg_dev, dev);
- }
- 
- /*
-@@ -1606,11 +1608,11 @@ static int __init bcm_module_init(void)
- {
- 	int err;
- 
--	printk(banner);
-+	pr_info("%s\n", banner);
- 
- 	err = can_proto_register(&bcm_can_proto);
- 	if (err < 0) {
--		printk(KERN_ERR "can: registration of bcm protocol failed\n");
-+		pr_err("registration of bcm protocol failed\n");
- 		return err;
- 	}
- 
-diff --git a/net/can/gw.c b/net/can/gw.c
-index 3d79b12..e17253f 100644
---- a/net/can/gw.c
-+++ b/net/can/gw.c
-@@ -39,6 +39,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/types.h>
-@@ -59,7 +61,7 @@
- 
- #define CAN_GW_VERSION "20101209"
- static __initdata const char banner[] =
--	KERN_INFO "can: netlink gateway (rev " CAN_GW_VERSION ")\n";
-+	"netlink gateway (rev " CAN_GW_VERSION ")";
- 
- MODULE_DESCRIPTION("PF_CAN netlink gateway");
- MODULE_LICENSE("Dual BSD/GPL");
-@@ -913,7 +915,7 @@ static int cgw_remove_job(struct sk_buff *skb,  struct nlmsghdr *nlh, void *arg)
- 
- static __init int cgw_module_init(void)
- {
--	printk(banner);
-+	pr_info("%s\n", banner);
- 
- 	cgw_cache = kmem_cache_create("can_gw", sizeof(struct cgw_job),
- 				      0, 0, NULL);
-diff --git a/net/can/proc.c b/net/can/proc.c
-index ba873c3..c3aedf5 100644
---- a/net/can/proc.c
-+++ b/net/can/proc.c
-@@ -39,6 +39,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/proc_fs.h>
- #include <linux/list.h>
-@@ -118,8 +120,7 @@ static unsigned long calc_rate(unsigned long oldjif, unsigned long newjif,
- 
- 	/* see can_stat_update() - this should NEVER happen! */
- 	if (count > (ULONG_MAX / HZ)) {
--		printk(KERN_ERR "can: calc_rate: count exceeded! %ld\n",
--		       count);
-+		pr_err("%s: count exceeded! %ld\n", __func__, count);
- 		return 99999999;
- 	}
- 
-@@ -475,8 +476,7 @@ void can_init_proc(void)
- 	can_dir = proc_mkdir("can", init_net.proc_net);
- 
- 	if (!can_dir) {
--		printk(KERN_INFO "can: failed to create /proc/net/can . "
--		       "CONFIG_PROC_FS missing?\n");
-+		pr_info("failed to create /proc/net/can . CONFIG_PROC_FS missing?\n");
- 		return;
- 	}
- 
-diff --git a/net/can/raw.c b/net/can/raw.c
-index cde1b4a..2875c55 100644
---- a/net/can/raw.c
-+++ b/net/can/raw.c
-@@ -39,6 +39,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/uio.h>
-@@ -56,7 +58,7 @@
- 
- #define CAN_RAW_VERSION CAN_VERSION
- static __initdata const char banner[] =
--	KERN_INFO "can: raw protocol (rev " CAN_RAW_VERSION ")\n";
-+	"raw protocol (rev " CAN_RAW_VERSION ")";
- 
- MODULE_DESCRIPTION("PF_CAN raw protocol");
- MODULE_LICENSE("Dual BSD/GPL");
-@@ -783,11 +785,11 @@ static __init int raw_module_init(void)
- {
- 	int err;
- 
--	printk(banner);
-+	pr_info("%s\n", banner);
- 
- 	err = can_proto_register(&raw_can_proto);
- 	if (err < 0)
--		printk(KERN_ERR "can: registration of raw protocol failed\n");
-+		pr_err("registration of raw protocol failed\n");
- 
- 	return err;
- }
--- 
-1.7.6.405.gc1be0
+> Or, is there a way for the mfd-core, as it's doing the "for each child device", to recognize
+> non-MFD-cell children and skip them?
+> 
+Looking at your proposed patch, I personally prefer my solution. Of course it would be nice
+if it was documented that MFD parent devices MUST be dedicated (platform) devices and must not
+have any non-MFD child devices. This would be a simple documentation patch and avoid making
+assumptions on MFD child device removal.
 
+Guenter 
