@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693Ab1K2Jpq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 04:45:46 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63271 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab1K2Jpo (ORCPT
+	id S1754102Ab1K2JqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 04:46:16 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39986 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922Ab1K2JqN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 04:45:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
-References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
-	<201111251402.28016.arnd@arndb.de>
-	<CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
-	<201111281753.45287.arnd@arndb.de>
-	<CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
-Date: Tue, 29 Nov 2011 10:45:43 +0100
-Message-ID: <CACRpkdZsitv8rfcidS2auATg7_VGtDZt7z-we1UJcP2C32dujg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-From: Linus Walleij <linus.walleij@linaro.org>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Mike Lockwood <lockwood@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>,
-        Johan PALSSON <johan.palsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 29 Nov 2011 04:46:13 -0500
+Message-ID: <1322559944.2921.192.camel@twins>
+Subject: Re: [patch 3/6] sched, nohz: sched group, domain aware nohz idle
+ load balancing
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.jf.intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>
+Date: Tue, 29 Nov 2011 10:45:44 +0100
+In-Reply-To: <1322524692.21329.69.camel@sbsiddha-desk.sc.intel.com>
+References: <20111118230323.592022417@sbsiddha-desk.sc.intel.com>
+	 <20111118230553.995756330@sbsiddha-desk.sc.intel.com>
+	 <1322135629.2921.13.camel@twins>
+	 <1322524692.21329.69.camel@sbsiddha-desk.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 10:11 AM, MyungJoo Ham <myungjoo.ham@gmail.com> wrote:
+On Mon, 2011-11-28 at 15:58 -0800, Suresh Siddha wrote:
+> On Thu, 2011-11-24 at 03:53 -0800, Peter Zijlstra wrote:
+> > On Fri, 2011-11-18 at 15:03 -0800, Suresh Siddha wrote:
+> > > Make nohz idle load balancing more scalabale by using the nr_busy_cpus in
+> > > the struct sched_group_power.
+> > > 
+> > > Idle load balance is kicked on one of the idle cpu's when there is atleast
+> > > one idle cpu and
+> > > 
+> > >  - a busy rq having more than one task or
+> > > 
+> > >  - a busy scheduler group having multiple busy cpus that exceed the sched group
+> > >    power or
+> > > 
+> > >  - for the SD_ASYM_PACKING domain, if the lower numbered cpu's in that
+> > >    domain are idle compared to the busy ones.
+> > > 
+> > > This will help in kicking the idle load balancing request only when
+> > > there is a real imbalance. And once it is mostly balanced, these kicks will
+> > > be minimized.
+> > > 
+> > > These changes helped improve the workload that is context switch intensive
+> > > between number of task pairs by 2x on a 8 socket NHM-EX based system.
+> > 
+> > OK, but the nohz idle balance will still iterate the whole machine
+> > instead of smaller parts, right?
+> 
+> In the current series, yes. one idle cpu spending a bit more time doing
+> idle load balancing might be better compared to waking up multiple idle
+> cpu's from deep c-states.
+> 
+> But if needed, we can easily partition the nohz idle load balancer load
+> to multiple idle cpu's. But we need a balance between the right
+> partition size vs how many idle cpu's we need to bring out of tickless
+> mode to do this idle load balancing.
+> 
+> Current proposed series already has the infrastructure to identify
+> which scheduler domain has the imbalance. Perhaps we can use that to do
+> the nohz idle load balancing only for that domain.
 
-> For the next iteration, I'm considering the followings. It'd be much
-> appreciated if I could get some comments about those beforehand.
-> 1. ABI documentation
+Yeah, trouble with that is if tehre's inter-domain balance things, like
+for example balance for power, where you want to idle a domain. If you
+only ever look within the one domain, you'll never see the possibility
+to move your last one task to this other domain.
 
-Good!
-
-> 2. move the location from /drivers/misc to an independent location.
-> /drivers/switch? /drivers/multistate-switch? /drivers/msc?
-> /drivers/mswitch? ...
-
-drivers/switch if I have my say. It looks intuitive.
-
-> 3. Allow the notifiee device drivers to register its specific
-> interest. The interface would look like:
-> int switch_register_interest(struct switch_dev *sdev, const char
-> *cable_name, struct notifier_block *b);
-> (the rationale is that the notifiee device does not need to know the
-> detail about the switch dev configuration but for the name of the
-> switch dev or notifier).
-> or even
-> int switch_register_interest(const char *switch_name, const char
-> *cable_name, struct notifier_block *b);
-> and allow notifee to forget about the sdev pointer as well. (and all
-> the other APIs are for implementing notifier, not notifiee)
-
-Good.
-
-I will likely ack this once the code looks real nice, FWIW.
-
-Yours,
-Linus Walleij
+Pesky stuff that.
