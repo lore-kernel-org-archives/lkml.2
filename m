@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab1K2L6d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 06:58:33 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:58404 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752143Ab1K2L63 convert rfc822-to-8bit (ORCPT
+	id S1754900Ab1K2L7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 06:59:00 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44532 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab1K2L66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 06:58:29 -0500
-X-IronPort-AV: E=Sophos;i="4.69,590,1315206000"; 
-   d="scan'208";a="603003393"
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
-Date: Tue, 29 Nov 2011 03:58:07 -0800
-Message-ID: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC20@SACMVEXC2-PRD.hq.netapp.com>
-In-Reply-To: <20111129082501.GA569@onthe.net.au>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
-Thread-Index: AcyucHix8hIBSevqTgm6HYZc2OMs6AAHKQNw
-References: <1321861008-20611-1-git-send-email-chris@onthe.net.au> <20111129082501.GA569@onthe.net.au>
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "Chris Dunlop" <chris@onthe.net.au>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        "Eric Van Hensbergen" <ericvh@gmail.com>,
-        "Ron Minnich" <rminnich@sandia.gov>,
-        "Latchesar Ionkov" <lucho@ionkov.net>,
-        "David Howells" <dhowells@redhat.com>,
-        "Jan Harkes" <jaharkes@cs.cmu.edu>,
-        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
-        "Dave Kleikamp" <shaggy@kernel.org>,
-        "Petr Vandrovec" <petr@vandrovec.name>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "Al Viro" <viro@zeniv.linux.org.uk>,
-        <v9fs-developer@lists.sourceforge.net>,
-        <linux-afs@lists.infradead.org>, <codalist@TELEMANN.coda.cs.cmu.edu>,
-        <jfs-discussion@lists.sourceforge.net>, <linux-nfs@vger.kernel.org>
-X-OriginalArrivalTime: 29 Nov 2011 11:58:08.0618 (UTC) FILETIME=[292B14A0:01CCAE8E]
+	Tue, 29 Nov 2011 06:58:58 -0500
+Subject: [BUG] i2c-designware: (allyesconfig) error: multiple definition
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: Ben Dooks <ben-linux@fluff.org>, Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Octavian Purdila <octavian.purdila@intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Date: Tue, 29 Nov 2011 12:58:53 +0100
+Message-ID: <1322567933.2182.16.camel@mars>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Chris Dunlop [mailto:chris@onthe.net.au]
-> Sent: Tuesday, November 29, 2011 3:25 AM
-> To: linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org; Eric
-Van
-> Hensbergen; Ron Minnich; Latchesar Ionkov; David Howells; Jan Harkes;
-> maintainer:CODA FILE SYSTEM; Dave Kleikamp; Petr Vandrovec; Myklebust,
-> Trond; Greg Kroah-Hartman; Al Viro;
-v9fs-developer@lists.sourceforge.net;
-> linux-afs@lists.infradead.org; codalist@TELEMANN.coda.cs.cmu.edu; jfs-
-> discussion@lists.sourceforge.net; linux-nfs@vger.kernel.org
-> Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
-> 
-> Hi,
-> 
-> I haven't seen any response to this patch which fixes an Oops in
-> d_revalidate. I hit this using NFS, but various other file systems
-look to be
-> likewise vulnerable, hence the broadness of the patch. The sequence
-leading
-> to the Oops is:
-> 
-> lookup_one_len() [fs/namei.c]
->    calls __lookup_hash() [fs/namei.c] with nd == NULL,
->       which can then call the file system specific d_revalidate(),
-passing in nd ==
-> NULL
->          which will then Oops if nd is used without checking
+Hi,
 
-That's because you are "fixing" the wrong bug and if you'd checked the
-list archives, you'd know that this has already been discussed several
-times...
+ I just hit this bug with allyesconfig:
 
-By allowing stacked filesystems to pass nd==NULL (the VFS doesn't do
-this), you're circumventing  the lookup intent mechanisms and will hit
-all sorts of problems further down the road. If you want to fix the
-problem, then please fix the broken stacking filesystems to stop using
-lookup_one_len...
+make[2]: `include/generated/mach-types.h' is up to date.
+  CALL    /xxx/linux-2.6/scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CHK     kernel/config_data.h
+  CHECK   /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c
+  CC      drivers/i2c/busses/i2c-designware-core.o
+  CHECK   /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-pcidrv.c
+  CC      drivers/i2c/busses/i2c-designware-pcidrv.o
+  CHECK   /xxx/linux-2.6/drivers/i2c/busses/i2c-designware-platdrv.c
+  CC      drivers/i2c/busses/i2c-designware-platdrv.o
+  LD      drivers/i2c/busses/i2c-designware-pci.o
+  LD      drivers/i2c/busses/i2c-designware-platform.o
+  LD      drivers/i2c/busses/built-in.o
+drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_clear_int':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:694: multiple definition of `i2c_dw_clear_int'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:694: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_init':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:247: multiple definition of `i2c_dw_init'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:247: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `dw_readl':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:169: multiple definition of `dw_readl'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:169: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_isr':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:627: multiple definition of `i2c_dw_isr'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:627: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_xfer':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:498: multiple definition of `i2c_dw_xfer'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:498: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_is_enabled':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:679: multiple definition of `i2c_dw_is_enabled'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:679: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `dw_writel':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:177: multiple definition of `dw_writel'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:177: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_xfer_msg':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:362: multiple definition of `i2c_dw_xfer_msg'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:362: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_enable':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:674: multiple definition of `i2c_dw_enable'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:674: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_read_comp_param':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:704: multiple definition of `i2c_dw_read_comp_param'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:704: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_disable':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:683: multiple definition of `i2c_dw_disable'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:683: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_func':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:562: multiple definition of `i2c_dw_func'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:562: first defined here drivers/i2c/busses/i2c-designware-pci.o: In function `i2c_dw_disable_int':
+/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:699: multiple definition of `i2c_dw_disable_int'
+drivers/i2c/busses/i2c-designware-platform.o:/xxx/linux-2.6/drivers/i2c/busses/i2c-designware-core.c:699: first defined here make[4]: *** [drivers/i2c/busses/built-in.o] Error 1
+make[3]: *** [drivers/i2c/busses] Error 2
+make[2]: *** [drivers/i2c] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
 
-Trond
+
