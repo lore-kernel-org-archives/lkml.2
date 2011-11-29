@@ -1,139 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab1K2Tlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 14:41:52 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61444 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab1K2Tja (ORCPT
+	id S1756419Ab1K2TnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 14:43:03 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:37217 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754477Ab1K2TnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 14:39:30 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>, sjurbren@gmail.com,
-        Paul Bolle <pebolle@tiscali.nl>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFCv2 2/9] xshm: Channel config definitions for ST-E M7400 driver.
-Date: Tue, 29 Nov 2011 20:39:03 +0100
-Message-Id: <1322595550-6473-3-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1322595550-6473-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1322595550-6473-1-git-send-email-sjur.brandeland@stericsson.com>
+	Tue, 29 Nov 2011 14:43:00 -0500
+Message-ID: <4ED535A9.3070506@metafoo.de>
+Date: Tue, 29 Nov 2011 20:42:33 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
+To: Thomas Meyer <thomas@m3y3r.de>
+CC: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] coccinelle: Add patch to use kcalloc instead of kzalloc
+ for array allocations
+References: <1322232368-28814-1-git-send-email-lars@metafoo.de> <1322592151.1534.78.camel@localhost.localdomain>
+In-Reply-To: <1322592151.1534.78.camel@localhost.localdomain>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Netlink parameters used for configuring channels from user space.
+On 11/29/2011 07:42 PM, Thomas Meyer wrote:
+> Am Freitag, den 25.11.2011, 15:46 +0100 schrieb Lars-Peter Clausen:
+>> This patch adds a coccinelle patch to convert array allocations which use
+>> kzalloc to kcalloc. The advantage of kcalloc is, that will take care of
+>> integer overflows which could result from the multiplication and it is also
+>> nicer to read.
+> 
+> Hi Lars,
+> 
+> I did run your kcalloc spatch against 3.2-rc3. are you okay with if I
+> send the diffs to the LKML?
+> 
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
- include/linux/xshm/xshm_netlink.h |   95 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 95 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/xshm/xshm_netlink.h
+Sure.
 
-diff --git a/include/linux/xshm/xshm_netlink.h b/include/linux/xshm/xshm_netlink.h
-new file mode 100644
-index 0000000..80b01de
---- /dev/null
-+++ b/include/linux/xshm/xshm_netlink.h
-@@ -0,0 +1,95 @@
-+/*
-+ * Copyright (C) ST-Ericsson AB 2011
-+ * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#ifndef XSHM_NL_H_
-+#define XSHM_NL_H_
-+
-+#define XSHM_PROTO_VERSION 1
-+#define XSHM_PROTO_SUB_VERSION 0
-+#define XSHM_NETLINK_VERSION 1
-+/**
-+ * enum XSHM_COMMANDS - Attributes used for configuring XSHM device.
-+ *
-+ * @XSHM_C_ADD_STREAM_CHANNEL: Adds a Stream Channel.
-+ * This will cause an instance of XSHM-CHR to be created.
-+ * @XSHM_C_ADD_PACKET_CHANNEL: Adds a Packet Channel.
-+ * This will cause an instance of CAIF-SHM to be created.
-+ * @XSHM_C_COMMIT: formats and write Channel configuration data to
-+ *	Shared Memory.
-+ * @XSHM_C_SET_ADDR: Writes the TOC address to GENO register.
-+ * @XSHM_C_REGISTER:  Initiates registration of the channel devices.
-+ *	This will cause xshm - character devices or
-+ *	CAIF network instances to be created.
-+ * @XSHM_C_RESET:  Reset the configuration data and removes the
-+ *	platform devices and their associated channel configuration.
-+ *	ipc_ready and caif_ready is set to false.
-+ *
-+ * A normal sequence of events is: [XSHM_C_RESET], [XSHM_C_ADD_X_CHANNEL],
-+ *	XSHM_C_COMMIT, XSHM_C_REGISTER, XSHM_C_SET_ADDR.
-+ */
-+enum XSHM_COMMANDS {
-+	XSHM_C_ADD_STREAM_CHANNEL = 1,
-+	XSHM_C_ADD_PACKET_CHANNEL,
-+	XSHM_C_RESET,
-+	XSHM_C_SET_ADDR,
-+	XSHM_C_COMMIT,
-+	XSHM_C_REGISTER,
-+	__XSHM_C_VERIFY,
-+	__XSHM_C_MAX
-+};
-+
-+/**
-+ * enum XSHM_ATTRIBUTES - Attributes used for configuring XSHM device.
-+ * @XSHM_A_VERSION: Version of XSHM netlink protocol. Type NLA_U8
-+ * @XSHM_A_SUB_VERSION: Sub-version of XSHM netlink protocol. Type NLA_U8
-+ * @XSHM_A_NAME: Name of the channel, max 15 characters. Type NLA_NUL_STRING
-+ * @XSHM_A_EXCL_GROUP: Devices may be part of a group. Devices from the
-+ *	same group are allowed to be open simultaneously,
-+ *	but devices from different groups cannot be opened
-+ *	at the same time. Type NLA_U8.
-+ * @XSHM_A_RX_CHANNEL: The RX direction attributes. Type NLA_NESTED.
-+ *	Each channel may contain the attributes - XSHM_A_CHANNEL_SIZE,
-+ *	XSHM_A_CHANNEL_BUFFERS, XSHM_A_ALIGNMENT, XSHM_A_MTU.
-+ *
-+ * @XSHM_A_TX_CHANNEL: The TX direction attributes. Type NLA_NESTED.
-+ *
-+ * @XSHM_A_CHANNEL_SIZE: Size of the data area for a channel. Specified
-+ *	for RX, TX. Type NLA_U32,
-+ * @XSHM_A_CHANNEL_BUFFERS: Numer of buffers for a packet channel.
-+ *	This attribute is only used for packet channels.  Specified for RX, TX.
-+ *	Type NLA_U32,
-+ * @XSHM_A_ALIGNMENT: Alignment for each packet in a buffer. This attribute
-+ *	 is only used for packet channels.  Specified for RX, TX.Type NLA_U8,
-+ * @XSHM_A_MTU: Maximum Transfer Unit for packets in a buffer.
-+ *	This is only appplicable for packet channels.
-+ *	Specified for RX, TX.Type NLA_U16,
-+ * @XSHM_A_PACKETS: Maximum number of packets in a buffer. Type NLA_U8
-+ * @XSHM_A_PRIORITY: Priority of the channel, legal range is 0-7 where
-+ *	0 is lowest priority. Type NLA_U8.
-+ * @XSHM_A_LATENCY: Latency for channel, value:0 means low latency
-+ *	 and low bandwidth,
-+ *	 value 1 means high latency and high bandwidth. Type NLA_U8.
-+ */
-+enum XSHM_ATTRIBUTES {
-+	__XSHM_A_FLAGS = 1,		/* Test flags: NLA_U32 */
-+	XSHM_A_VERSION,
-+	XSHM_A_SUB_VERSION,
-+	XSHM_A_NAME,
-+	XSHM_A_EXCL_GROUP,
-+	XSHM_A_RX_CHANNEL,
-+	XSHM_A_TX_CHANNEL,
-+	XSHM_A_CHANNEL_SIZE,
-+	XSHM_A_CHANNEL_BUFFERS,
-+	XSHM_A_ALIGNMENT,
-+	XSHM_A_MTU,
-+	XSHM_A_PACKETS,
-+	XSHM_A_PRIORITY,
-+	XSHM_A_LATENCY,
-+	__XSHM_A_MAX,
-+};
-+#define XSHM_A_MAX (__XSHM_A_MAX - 1)
-+
-+#endif /* XSHM_NL_H_ */
--- 
-1.7.0.4
-
+Thanks
+- Lars
