@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab1K2Dm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 22:42:27 -0500
-Received: from mga03.intel.com ([143.182.124.21]:24845 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455Ab1K2Dm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 22:42:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,589,1315206000"; 
-   d="scan'208";a="80056705"
-Date: Tue, 29 Nov 2011 11:42:22 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
+	id S1754210Ab1K2DqU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 22:46:20 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:40893 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752251Ab1K2DqS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 Nov 2011 22:46:18 -0500
+Date: Tue, 29 Nov 2011 14:46:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        linux-fsdevel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] readahead: replace ra->mmap_miss with ra->ra_flags
-Message-ID: <20111129034222.GD19506@localhost>
-References: <20111121091819.394895091@intel.com>
- <20111121093846.378529145@intel.com>
- <20111121150116.094cf194.akpm@linux-foundation.org>
- <20111123124745.GB7174@localhost>
- <20111123123150.8a1ac462.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111123123150.8a1ac462.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: linux-next: manual merge of the akpm tree with the vhost tree
+Message-Id: <20111129144610.896c4efc877512776823ffaf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__29_Nov_2011_14_46_10_+1100_PjDkuFiX+Y67v_hL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 12:31:50PM -0800, Andrew Morton wrote:
-> On Wed, 23 Nov 2011 20:47:45 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > > should be ulong, which is compatible with the bitops.h code.
-> > > Or perhaps we should use a bitfield and let the compiler do the work.
-> > 
-> > What if we do
-> > 
-> >         u16     mmap_miss;
-> >         u16     ra_flags;
-> > 
-> > That would get rid of this patch. I'd still like to pack the various
-> > flags as well as pattern into one single ra_flags, which makes it
-> > convenient to pass things around (as one single parameter).
-> 
-> I'm not sure that this will improve things much...
-> 
-> Again, how does the code look if you use a bitfield and let the
-> compiler do the worK?
+--Signature=_Tue__29_Nov_2011_14_46_10_+1100_PjDkuFiX+Y67v_hL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It results in much clean code, as you may find in the V2 patches :-)
+Hi Andrew,
 
-Thanks,
-Fengguang
+Today's linux-next merge of the akpn tree got a conflict in
+arch/x86/Kconfig between commit 4673ca8eb369 ("lib: move GENERIC_IOMAP to
+lib/Kconfig") from the vhost tree and commit c7b45fe332ee ("mm,slub,x86:
+decouple size of struct page from CONFIG_CMPXCHG_LOCAL") from the akpm
+tree.
+
+Just overlapping additions.  I fixed it up and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+
+--Signature=_Tue__29_Nov_2011_14_46_10_+1100_PjDkuFiX+Y67v_hL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO1FWCAAoJEECxmPOUX5FEWz8P/jpZASvddOFJs8G6pR8nwtoR
+4k5AE2MuD73awHtBE/Usv2kJFDn8ZMDQX6tjGZdIlIgSAS4GRCIrVPTl+oC7hHa1
+VSEj4yT64oec6Sh6mnAUo2t4Sz4yQYsPLVsAB1HHyuEi+gZrbLNHbqViCXLIyN88
+mXnRTEd+pTcCmdUTPqOLHTrYvjkvHalEEa3FZ16xJMXyDDQd8dBsLpaxZIvtrwHP
+BJqSr263ZVeAUAKrOzeaW/de5xbKoBt3BZPSiYikN5HWZxR+60R+hZ1O+PIgdZd3
+Q95U+1OFRXd8+U2xN1PhCHrRgw7vOb20H7j5WqWZ4+Ihq66Z+bTKFaZ9LKGDNBSw
+rsmxdZhKOx/BQZb6tNtoQEUMHDOtoil7vfykz+qgYZipCrQ+mgj+4rNb65U18lTu
+3aX3z/FpuwgaOxL0bt7bmzXqAgrKXtwZyduQri19dwM6B9wENiD5UZ8zURzV8BVB
+FymQ7xDHQ8UopyOpnmofo6dFlYXr1mlwLxval1dFLtoY2dvC5sDzZbSih74momFe
+P7SqMMp3f48UOPJ/QhAj7oVMo5JWIjfsVZmbKiNW0QlAhyvoBaidi/WkeqrLA6/Q
+ip6wVOwcZH3DpGe/YB3T9xG53PgDJ19T6HZx2kvbT7CIKUDCUrhuysdmNi159hdd
+RIZqCz55KvoRelwsuuV4
+=4Vvy
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__29_Nov_2011_14_46_10_+1100_PjDkuFiX+Y67v_hL--
