@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510Ab1K3SoC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 13:44:02 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:56229 "EHLO e5.ny.us.ibm.com"
+	id S1751601Ab1K3SxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 13:53:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8610 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab1K3SoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 13:44:00 -0500
-Message-ID: <1322678599.2414.1.camel@js-netbook>
-Subject: Re: clocksource.c "margin"
-From: John Stultz <johnstul@us.ibm.com>
-To: "Yang Honggang(Joseph)" <ganggexiongqi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 30 Nov 2011 10:43:19 -0800
-In-Reply-To: <4ED6C5CE.2030105@gmail.com>
-References: <4ED6C5CE.2030105@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11113018-5930-0000-0000-000002C1C896
+	id S1750895Ab1K3SxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 13:53:21 -0500
+Date: Wed, 30 Nov 2011 19:47:48 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Subject: Re: [PATCH RFC 0/5] uprobes: kill xol vma
+Message-ID: <20111130184748.GA7886@redhat.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com> <20111128190614.GA4602@redhat.com> <20111129103040.GF13445@linux.vnet.ibm.com> <20111129182643.GB7339@redhat.com> <91601168bd8039233da8d91a07560f20.squirrel@www.firstfloor.org> <1322670031.2921.286.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322670031.2921.286.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 19:09 -0500, Yang Honggang(Joseph) wrote:
-> Hi John Stultz,
-> I'm very sorry to trouble you. A problem puzzled me when I reading your 
-> code in kernel/time/clocksource.c.
-> In the following functions, your said in the comments that >>5 was used 
-> to leave a margin of 12.5%.
-> I don't know how to get the result. I think is should be >> 3 in order 
-> to leave a margin of 12.5%.
-> The operation of >> 5 only left 3.125% margin.
-> 
-> __clocksource_updatefreq_scale
-> ...
-> sec = (cs->mask - (cs->mask >> 5));
-> ...
-> clocksource_max_deferment
-> ...
->      /*
->       * To ensure that the clocksource does not wrap whilst we are idle,
->       * limit the time the clocksource can be deferred by 12.5%. Please
->       * note a margin of 12.5% is used because this can be computed with
->       * a shift, versus say 10% which would require division.
->       */
->      return max_nsecs - (max_nsecs >> 5);
-> ...
+On 11/30, Peter Zijlstra wrote:
+>
+> What we
+> could do though is do a UPROBES_XOL_SLOT_BYTES * nr_cpu_ids bootmem
+> allocation or so.
 
-Indeed. This looks wrong.
+Agreed, this looks much better.
 
-Would you like to send a patch in correcting this issue? If not, let me
-know and I'll do so.
+I'd prefer to do this in a separate patch to keep this change as simple
+as possible.
 
-thanks
--john
-
+Oleg.
 
