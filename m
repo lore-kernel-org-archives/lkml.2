@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756306Ab1K3Iav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 03:30:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58352 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383Ab1K3Iau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 03:30:50 -0500
-Message-ID: <4ED5E9E1.9050709@suse.cz>
-Date: Wed, 30 Nov 2011 09:31:29 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1756640Ab1K3Idi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 03:33:38 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56219 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab1K3Idf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 03:33:35 -0500
+Date: Wed, 30 Nov 2011 16:33:24 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: John Kacur <jkacur@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark.williams@gmail.com>,
+        RT <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lockdep splat with 3.2-rc2-rt3+
+Message-ID: <20111130083324.GA1632@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20111120113621.7d738d55@gmail.com>
+ <CAONaPpEdxdZLTDzf11ojT7tqHoVqsp3YFwx_UJafvRpyKHCjrQ@mail.gmail.com>
+ <CAONaPpHnu8VADg_EGQNrqsyhrVsJ2oOFMB4FyK-94qu5n-NEEQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        NFS list <linux-nfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Benny Halevy <bhalevy@tonian.com>,
-        linux-next@vger.kernel.org, open-osd <osd-dev@open-osd.org>
-Subject: Re: [PATCH v3] ore: FIX breakage when MISC_FILESYSTEMS is not set
-References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au> <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com> <4ED4238F.4090407@panasas.com> <4ED56C59.208@panasas.com>
-In-Reply-To: <4ED56C59.208@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAONaPpHnu8VADg_EGQNrqsyhrVsJ2oOFMB4FyK-94qu5n-NEEQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 30.11.2011 00:35, Boaz Harrosh napsal(a):
+On Thu, Nov 24, 2011 at 11:50:06PM +0100, John Kacur wrote:
+> So, as a little experiment, on v3.2.0-rc2-rt3
+> I redefined MAX_LOCKDEP_ENTRIES from 16384UL to 32768UL
 > 
-> As Reported by Randy Dunlap
+> Then from /proc/lockdep_stats
 > 
-> When MISC_FILESYSTEMS is not enabled:
+> I got
+>  direct dependencies:                 18026 [max: 32768]
 > 
-> fs/built-in.o: In function `objio_alloc_io_state':
-> objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
-> fs/built-in.o: In function `_write_done':
-> objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
-> fs/built-in.o: In function `_read_done':
-> ...
-> 
-> When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
-> is not selected. exofs/Kconfig is never examined during Kconfig,
-> and it can not do it's magic stuff to automatically select everything
-> needed.
-> 
-> We must split exofs/Kconfig in two. The ore one is always included.
-> And the exofs one is left in it's old place in the menu.
-> 
-> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
-> ---
->  fs/Kconfig           |    2 ++
->  fs/exofs/Kconfig     |   11 -----------
->  fs/exofs/ore.Kconfig |   12 ++++++++++++
->  3 files changed, 14 insertions(+), 11 deletions(-)
->  create mode 100644 fs/exofs/ore.Kconfig
-> 
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index 5f4c45d..fd7bfef 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -218,6 +218,8 @@ source "fs/exofs/Kconfig"
->  
->  endif # MISC_FILESYSTEMS
->  
-> +source "fs/exofs/ore.Kconfig"
-> +
+> The fact that 18026 is only a little larger than the normal max (by 1642)
+> to me is another indication that, this is not a case of something in
+> lockdep going out of control that needs to be fixed, but just another
+> indication that in some circumstances it would be legitimate to raise
+> the value.
 
-I suggest you name it Kconfig.ore. We have a couple of Kconfig.* files
-in the tree, so let's be consistent.
+Yeah, seems the reason is in RT we have no dedicated softirq-context
+anymore, IOW, both process-context and softirq-context are taken as
+process-context. That will increase the usage of lockdep entries
+because we expand the scope of process-context.
 
-Michal
+Thanks,
+Yong
