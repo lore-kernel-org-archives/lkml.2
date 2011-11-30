@@ -1,49 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab1K3LJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 06:09:23 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61381 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab1K3LJU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 06:09:20 -0500
-Message-ID: <4ED6C5CE.2030105@gmail.com>
-Date: Wed, 30 Nov 2011 19:09:50 -0500
-From: "Yang Honggang(Joseph)" <ganggexiongqi@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
-MIME-Version: 1.0
-To: johnstul@us.ibm.com
-CC: linux-kernel@vger.kernel.org
-Subject: clocksource.c "margin"
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752894Ab1K3XEA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:04:00 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:37053 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752261Ab1K3XD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 18:03:56 -0500
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org,
+        Roland McGrath <roland@hack.frob.com>,
+        James Morris <jmorris@namei.org>, kernel-hardening@lists.openwall.com
+Subject: [PATCH 1/2] security: create task_free security callback
+Date: Wed, 30 Nov 2011 15:01:37 -0800
+Message-Id: <1322694098-21872-2-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1322694098-21872-1-git-send-email-keescook@chromium.org>
+References: <1322694098-21872-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John Stultz,
-I'm very sorry to trouble you. A problem puzzled me when I reading your 
-code in kernel/time/clocksource.c.
-In the following functions, your said in the comments that >>5 was used 
-to leave a margin of 12.5%.
-I don't know how to get the result. I think is should be >> 3 in order 
-to leave a margin of 12.5%.
-The operation of >> 5 only left 3.125% margin.
+The current LSM interface to cred_free is not sufficient for allowing
+an LSM to track the life and death of a task. This patch adds the
+task_free hook so that an LSM can clean up resources on task death.
 
-__clocksource_updatefreq_scale
-...
-sec = (cs->mask - (cs->mask >> 5));
-...
-clocksource_max_deferment
-...
-     /*
-      * To ensure that the clocksource does not wrap whilst we are idle,
-      * limit the time the clocksource can be deferred by 12.5%. Please
-      * note a margin of 12.5% is used because this can be computed with
-      * a shift, versus say 10% which would require division.
-      */
-     return max_nsecs - (max_nsecs >> 5);
-...
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ include/linux/security.h |    9 +++++++++
+ kernel/fork.c            |    1 +
+ security/capability.c    |    4 ++++
+ security/security.c      |    5 +++++
+ 4 files changed, 19 insertions(+), 0 deletions(-)
 
-Best regards,
-Joseph
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 19d8e04..256befc 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -650,6 +650,10 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	manual page for definitions of the @clone_flags.
+  *	@clone_flags contains the flags indicating what should be shared.
+  *	Return 0 if permission is granted.
++ * @task_free:
++ *	@task task being freed
++ *	Handle release of task-related resources. (Note that this can be called
++ *  from interrupt context.)
+  * @cred_alloc_blank:
+  *	@cred points to the credentials.
+  *	@gfp indicates the atomicity of any memory allocations.
+@@ -1500,6 +1504,7 @@ struct security_operations {
+ 	int (*dentry_open) (struct file *file, const struct cred *cred);
+ 
+ 	int (*task_create) (unsigned long clone_flags);
++	void (*task_free) (struct task_struct *task);
+ 	int (*cred_alloc_blank) (struct cred *cred, gfp_t gfp);
+ 	void (*cred_free) (struct cred *cred);
+ 	int (*cred_prepare)(struct cred *new, const struct cred *old,
+@@ -1762,6 +1767,7 @@ int security_file_send_sigiotask(struct task_struct *tsk,
+ int security_file_receive(struct file *file);
+ int security_dentry_open(struct file *file, const struct cred *cred);
+ int security_task_create(unsigned long clone_flags);
++void security_task_free(struct task_struct *task);
+ int security_cred_alloc_blank(struct cred *cred, gfp_t gfp);
+ void security_cred_free(struct cred *cred);
+ int security_prepare_creds(struct cred *new, const struct cred *old, gfp_t gfp);
+@@ -2273,6 +2279,9 @@ static inline int security_task_create(unsigned long clone_flags)
+ 	return 0;
+ }
+ 
++static inline void security_task_free(struct task_struct *task)
++{ }
++
+ static inline int security_cred_alloc_blank(struct cred *cred, gfp_t gfp)
+ {
+ 	return 0;
+diff --git a/kernel/fork.c b/kernel/fork.c
+index da4a6a1..d707601 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -189,6 +189,7 @@ void __put_task_struct(struct task_struct *tsk)
+ 	WARN_ON(atomic_read(&tsk->usage));
+ 	WARN_ON(tsk == current);
+ 
++	security_task_free(tsk);
+ 	exit_creds(tsk);
+ 	delayacct_tsk_free(tsk);
+ 	put_signal_struct(tsk->signal);
+diff --git a/security/capability.c b/security/capability.c
+index 2984ea4..e4206b5 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -359,6 +359,9 @@ static int cap_task_create(unsigned long clone_flags)
+ 	return 0;
+ }
+ 
++static void cap_task_free(struct task_struct *task)
++{ }
++
+ static int cap_cred_alloc_blank(struct cred *cred, gfp_t gfp)
+ {
+ 	return 0;
+@@ -955,6 +958,7 @@ void __init security_fixup_ops(struct security_operations *ops)
+ 	set_to_cap_if_null(ops, file_receive);
+ 	set_to_cap_if_null(ops, dentry_open);
+ 	set_to_cap_if_null(ops, task_create);
++	set_to_cap_if_null(ops, task_free);
+ 	set_to_cap_if_null(ops, cred_alloc_blank);
+ 	set_to_cap_if_null(ops, cred_free);
+ 	set_to_cap_if_null(ops, cred_prepare);
+diff --git a/security/security.c b/security/security.c
+index 0c6cc69..49a7227 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -749,6 +749,11 @@ int security_task_create(unsigned long clone_flags)
+ 	return security_ops->task_create(clone_flags);
+ }
+ 
++void security_task_free(struct task_struct *task)
++{
++	security_ops->task_free(task);
++}
++
+ int security_cred_alloc_blank(struct cred *cred, gfp_t gfp)
+ {
+ 	return security_ops->cred_alloc_blank(cred, gfp);
+-- 
+1.7.0.4
+
