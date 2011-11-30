@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab1K3X5n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:57:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56476 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407Ab1K3X5m (ORCPT
+	id S1753210Ab1K3X7n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:59:43 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54608 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab1K3X7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:57:42 -0500
-Date: Wed, 30 Nov 2011 15:57:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: George Spelvin <linux@horizon.com>, jack@suse.cz,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.1-rc10 oops in nameidata_to_filp
-Message-Id: <20111130155741.c6b3378d.akpm@linux-foundation.org>
-In-Reply-To: <20111124175002.GM2203@ZenIV.linux.org.uk>
-References: <20111124145141.GB22640@quack.suse.cz>
-	<20111124164406.22919.qmail@science.horizon.com>
-	<20111124173829.GL2203@ZenIV.linux.org.uk>
-	<20111124175002.GM2203@ZenIV.linux.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 30 Nov 2011 18:59:41 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Len Brown <lenb@kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: 3.2.0-rc3-next-20111128 lockdep splat during boot..
+In-Reply-To: Your message of "Thu, 01 Dec 2011 00:17:18 +0100."
+             <201112010017.19156.rjw@sisk.pl>
+From: Valdis.Kletnieks@vt.edu
+References: <23526.1322620187@turing-police.cc.vt.edu>
+            <201112010017.19156.rjw@sisk.pl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed; boundary="==_Exmh_1322697572_2875P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Wed, 30 Nov 2011 18:59:32 -0500
+Message-ID: <28342.1322697572@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020A.4ED6C366.0053,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(sorry for the delay)
+--==_Exmh_1322697572_2875P
+Content-Type: text/plain; charset=us-ascii
 
-On Thu, 24 Nov 2011 17:50:03 +0000
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Thu, 01 Dec 2011 00:17:18 +0100, "Rafael J. Wysocki" said:
+> On Wednesday, November 30, 2011, Valdis.Kletnieks@vt.edu wrote:
+> > Seen this twice out of two boots while initrd was waiting for me to
+> > enter the passphrase for encrypted LVM.  No idea *who* to toss this
+> > one at - got ACPI, PM, SCSI and vtconsole all listed in tracebacks, so
+> > I'm tossing this at everybody and hope it sticks. ;)
+> 
+> This was caused by one of my patches in linux-next and was linux-next-only.
+> 
+> I've already replaced the offending patch with a new version.
 
-> On Thu, Nov 24, 2011 at 05:38:29PM +0000, Al Viro wrote:
-> > Said that, I'm not buying the theory of open assigning to ->f_mapping and
-> > screwing it up; all such assignments end up with ->i_mapping of *some*
-> > inode, as far as I can see from cursory grep over the tree.  Just in case:
-> > do you have CONFIG_FS_POSIX_ACL set?
-> 
-> BTW, why are we going through that dance with ->host->i_mapping anyway?
-> It had been introduced by commit by akpm back in 2004 and from my reading
-> of the commit message it was an overkill even back then.  Basically,
-> that call got moved to the point past the call of ->open() (good, ->f_mapping
-> could've been changed by it) *and* converted from ->f_mapping to
-> ->f_mapping->host->i_mapping, which is useless.  Definitely so in the
-> case mentioned in that commit (blkdev_open() sets ->f_mapping 
-> bdev->bd_inode->i_mapping and that thing will have ->host pointing
-> back to bdev->bd_inode).  Commit was in BK, its copy in historical tree
-> is commit 1c211088833a27daa4512348bcae9890e8cf92d4
-> Author: Andrew Morton <akpm@osdl.org>
-> Date:   Wed May 26 17:35:42 2004 -0700
-> 
->     [PATCH] Fix the setting of file->f_ra on block-special files
->     
->     We need to set file->f_ra _after_ calling blkdev_open(), when inode->i_mapping
->     points at the right thing.  And we need to get it from
->     inode->i_mapping->host->i_mapping too, which represents the underlying device.
->     
->     Also, don't test for null file->f_mapping in the O_DIRECT checks.
->     
->     Signed-off-by: Andrew Morton <akpm@osdl.org>
-> 
-> and the only difference wrt setting ->f_mapping on bdev open back then
-> is that it used to be done in do_open() instead of blkdev_open() itself.
-> So I don't understand what that part of changes had been for...  Andrew?
+OK, thanks.
 
-Beats me, sorry.  Here's the thread:
-http://www.gossamer-threads.com/lists/linux/kernel/443511?do=post_view_flat#443511
+--==_Exmh_1322697572_2875P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFO1sNkcC3lWbTT17ARApziAJ4xipIL+k6xkkdghUHcg5YTqMcCtQCeOWJ3
+nb56IOqtP6pioI7BGhCg+c8=
+=hnPv
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1322697572_2875P--
+
