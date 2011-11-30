@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1K3T5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:57:32 -0500
+	id S1752852Ab1K3T5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:57:41 -0500
 Received: from mail-yw0-f46.google.com ([209.85.213.46]:46897 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab1K3T51 (ORCPT
+	with ESMTP id S1752283Ab1K3T5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:57:27 -0500
+	Wed, 30 Nov 2011 14:57:38 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 04/25] dynamic_debug: make dynamic-debug supersede DEBUG ccflag
-Date: Wed, 30 Nov 2011 12:56:33 -0700
-Message-Id: <1322683014-13285-5-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 08/25] dynamic_debug: drop explicit !=NULL checks
+Date: Wed, 30 Nov 2011 12:56:37 -0700
+Message-Id: <1322683014-13285-9-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
 References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
@@ -23,108 +23,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-if CONFIG_DYNAMIC_DEBUG is defined, honor it over DEBUG, so that
-pr_debug()s are controllable, instead of always-on.  When DEBUG is
-also defined, change _DPRINTK_FLAGS_DEFAULT to enable printing by
-default.
 
-Also adding _DPRINTK_FLAGS_INCL_MODNAME would be nice, but there are
-numerous cases of pr_debug(NAME ": ...), which would result in double
-printing of module-name.  So defer this until things settle.
-
-CC: Joe Perches <joe@perches.com>
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- include/linux/device.h        |    8 ++++----
- include/linux/dynamic_debug.h |    4 ++++
- include/linux/netdevice.h     |    8 ++++----
- include/linux/printk.h        |    8 ++++----
- 4 files changed, 16 insertions(+), 12 deletions(-)
+ lib/dynamic_debug.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 3136ede..c9468c1 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -872,14 +872,14 @@ int _dev_info(const struct device *dev, const char *fmt, ...)
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 4c6d0b7..6904fdc 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -115,27 +115,26 @@ static void ddebug_change(const struct ddebug_query *query,
+ 	list_for_each_entry(dt, &ddebug_tables, link) {
  
- #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
+ 		/* match against the module name */
+-		if (query->module != NULL &&
+-		    strcmp(query->module, dt->mod_name))
++		if (query->module && strcmp(query->module, dt->mod_name))
+ 			continue;
  
--#if defined(DEBUG)
--#define dev_dbg(dev, format, arg...)		\
--	dev_printk(KERN_DEBUG, dev, format, ##arg)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- #define dev_dbg(dev, format, ...)		     \
- do {						     \
- 	dynamic_dev_dbg(dev, format, ##__VA_ARGS__); \
- } while (0)
-+#elif defined(DEBUG)
-+#define dev_dbg(dev, format, arg...)		\
-+	dev_printk(KERN_DEBUG, dev, format, ##arg)
- #else
- #define dev_dbg(dev, format, arg...)				\
- ({								\
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index f71a6b04..29ea09a 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -26,7 +26,11 @@ struct _ddebug {
- #define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
- #define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
- #define _DPRINTK_FLAGS_INCL_TID		(1<<4)
-+#if defined DEBUG
-+#define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT
-+#else
- #define _DPRINTK_FLAGS_DEFAULT 0
-+#endif
- 	unsigned int flags:8;
- } __attribute__((aligned(8)));
+ 		for (i = 0 ; i < dt->num_ddebugs ; i++) {
+ 			struct _ddebug *dp = &dt->ddebugs[i];
  
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index cbeb586..f8b71a3c 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2643,14 +2643,14 @@ int netdev_info(const struct net_device *dev, const char *format, ...);
- #define MODULE_ALIAS_NETDEV(device) \
- 	MODULE_ALIAS("netdev-" device)
+ 			/* match against the source filename */
+-			if (query->filename != NULL &&
++			if (query->filename &&
+ 			    strcmp(query->filename, dp->filename) &&
+ 			    strcmp(query->filename, basename(dp->filename)))
+ 				continue;
  
--#if defined(DEBUG)
--#define netdev_dbg(__dev, format, args...)			\
--	netdev_printk(KERN_DEBUG, __dev, format, ##args)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- #define netdev_dbg(__dev, format, args...)			\
- do {								\
- 	dynamic_netdev_dbg(__dev, format, ##args);		\
- } while (0)
-+#elif defined(DEBUG)
-+#define netdev_dbg(__dev, format, args...)			\
-+	netdev_printk(KERN_DEBUG, __dev, format, ##args)
- #else
- #define netdev_dbg(__dev, format, args...)			\
- ({								\
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index f0e22f7..f9abd93 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -180,13 +180,13 @@ extern void dump_stack(void) __cold;
- #endif
+ 			/* match against the function */
+-			if (query->function != NULL &&
++			if (query->function &&
+ 			    strcmp(query->function, dp->function))
+ 				continue;
  
- /* If you are writing a driver, please use dev_dbg instead */
--#if defined(DEBUG)
--#define pr_debug(fmt, ...) \
--	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
--#elif defined(CONFIG_DYNAMIC_DEBUG)
-+#if defined(CONFIG_DYNAMIC_DEBUG)
- /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
- #define pr_debug(fmt, ...) \
- 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
-+#elif defined(DEBUG)
-+#define pr_debug(fmt, ...) \
-+	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
- #else
- #define pr_debug(fmt, ...) \
- 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+ 			/* match against the format */
+-			if (query->format != NULL &&
+-			    strstr(dp->format, query->format) == NULL)
++			if (query->format &&
++			    !strstr(dp->format, query->format))
+ 				continue;
+ 
+ 			/* match against the line number range */
 -- 
 1.7.7.3
 
