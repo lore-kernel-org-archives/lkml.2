@@ -1,51 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab1K3ITJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 03:19:09 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:51633 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab1K3ITC (ORCPT
+	id S1756133Ab1K3IVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 03:21:43 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45673 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab1K3IVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 03:19:02 -0500
-Date: Wed, 30 Nov 2011 16:18:48 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Alexander Clouter <alex@digriz.org.uk>,
-        David Daney <ddaney@caviumnetworks.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Matt Mackall <mpm@selenic.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH] char: hw_random: convert drivers/char/hw_random/* to
-	use module_platform_driver()
-Message-ID: <20111130081848.GC692@gondor.apana.org.au>
-References: <1322313066.6001.3.camel@phoenix>
+	Wed, 30 Nov 2011 03:21:41 -0500
+Message-ID: <4ED5E753.1030506@solonet.org.ua>
+Date: Wed, 30 Nov 2011 10:20:35 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322313066.6001.3.camel@phoenix>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH resend] s3c24xx: cpufreq: Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ selected.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 26, 2011 at 09:11:06PM +0800, Axel Lin wrote:
-> This patch converts the drivers in drivers/char/hw_random/* to use the
-> module_platform_driver() macro which makes the code smaller and a bit
-> simpler.
-> 
-> Cc: Alexander Clouter <alex@digriz.org.uk>
-> Cc: David Daney <ddaney@caviumnetworks.com>
-> Cc: David S. Miller <davem@davemloft.net>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: Jamie Iles <jamie@jamieiles.com>
-> Cc: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: Olof Johansson <olof@lixom.net>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
 
-Both patches applied.  Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+---
+
+Patch is against 3.2-rc3.
+CONFIG_S3C2410_IOTIMING wasn't present in Kconfig but was referenced by
+Makefile. Because of this the file s3c2410-iotiming.c was not ever compiled
+and enabling CONFIG_CPU_FREQ_S3C24XX_DEBUGFS option caused undefined
+reference to function s3c2410_iotiming_debugfs defined in that file.
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 44789ef..81d7025 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2104,9 +2104,31 @@ config CPU_FREQ_S3C24XX_DEBUG
+ 	help
+ 	  Enable s3c_freq_dbg for the Samsung S3C CPUfreq core
+ +config S3C2410_IOTIMING
++	bool "CPUfreq iotiming for Samsung S3C2410 series CPUs"
++	depends on ARCH_S3C2410 && CPU_FREQ && CPU_FREQ_S3C24XX && EXPERIMENTAL
++	help
++	  This enables the CPUfreq driver for the Samsung S3C24XX to change
++	  IO timing according to the CPU frequency.
++
++	  For details, take a look at <file:Documentation/cpu-freq>.
++
++	  If in doubt, say Y.
++
++config S3C2412_IOTIMING
++	bool "CPUfreq iotiming for Samsung S3C2412 series CPUs"
++	depends on ARCH_S3C2412 && CPU_FREQ && CPU_FREQ_S3C24XX && EXPERIMENTAL
++	help
++	  This enables the CPUfreq driver for the Samsung S3C2412 to change
++	  IO timing according to the CPU frequency.
++
++	  For details, take a look at <file:Documentation/cpu-freq>.
++
++	  If in doubt, say Y.
++
+ config CPU_FREQ_S3C24XX_IODEBUG
+ 	bool "Debug CPUfreq Samsung driver IO timing"
+-	depends on CPU_FREQ_S3C24XX
++	depends on CPU_FREQ_S3C24XX && (S3C2410_IOTIMING || S3C2412_IOTIMING)
+ 	help
+ 	  Enable s3c_freq_iodbg for the Samsung S3C CPUfreq core
+ diff --git a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+index dac4760..c465252 100644
+--- a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
++++ b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+@@ -202,13 +202,23 @@ extern int s3c_plltab_register(struct
+cpufreq_frequency_table *plls,
+ extern struct s3c_cpufreq_config *s3c_cpufreq_getconfig(void);
+ extern struct s3c_iotimings *s3c_cpufreq_getiotimings(void);
+ -extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
+-				     struct s3c_cpufreq_config *cfg,
+-				     union s3c_iobank *iob);
+-
+-extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
+-				     struct s3c_cpufreq_config *cfg,
+-				     union s3c_iobank *iob);
++#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
++	#ifdef CONFIG_S3C2410_IOTIMING
++	extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
++					     struct s3c_cpufreq_config *cfg,
++					     union s3c_iobank *iob);
++	#else
++	#define s3c2410_iotiming_debugfs	NULL
++	#endif
++
++	#ifdef CONFIG_S3C2412_IOTIMING
++	extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
++					     struct s3c_cpufreq_config *cfg,
++					     union s3c_iobank *iob);
++	#else
++	#define s3c2412_iotiming_debugfs	NULL
++	#endif
++#endif
+  #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ #define s3c_cpufreq_debugfs_call(x) x
+@@ -241,10 +251,7 @@ extern void s3c2410_iotiming_set(struct
+s3c_cpufreq_config *cfg,
+ #endif /* CONFIG_S3C2410_IOTIMING */
+  /* S3C2412 compatible routines */
+-
+-extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+-				struct s3c_iotimings *timings);
+-
++#ifdef CONFIG_S3C2412_IOTIMING
+ extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+ 				struct s3c_iotimings *timings);
+ @@ -253,6 +260,11 @@ extern int s3c2412_iotiming_calc(struct
+s3c_cpufreq_config *cfg,
+  extern void s3c2412_iotiming_set(struct s3c_cpufreq_config *cfg,
+ 				 struct s3c_iotimings *iot);
++#else
++#define s3c2412_iotiming_calc NULL
++#define s3c2412_iotiming_get NULL
++#define s3c2412_iotiming_set NULL
++#endif
+  #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUG
+ #define s3c_freq_dbg(x...) printk(KERN_INFO x)
