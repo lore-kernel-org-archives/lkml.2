@@ -1,43 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab1K3Unk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 15:43:40 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43624 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751975Ab1K3Unj (ORCPT
+	id S1752717Ab1K3Uns (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 15:43:48 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13152 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab1K3Unp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 15:43:39 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Add WM1811A device ID to wm8994 driver
-Date: Wed, 30 Nov 2011 20:43:36 +0000
-Message-Id: <1322685816-15006-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	Wed, 30 Nov 2011 15:43:45 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 30 Nov 2011 12:43:44 -0800
+From: riyer@nvidia.com
+To: dmitry.torokhov@gmail.com
+Cc: rydberg@euromail.se, swarren@nvidia.com, ldewangan@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Rakesh Iyer <riyer@nvidia.com>
+Subject: [PATCH v1] Input: tegra-kbc - report wakeup key for some platforms.
+Date: Wed, 30 Nov 2011 12:43:31 -0800
+Message-Id: <1322685811-14060-1-git-send-email-riyer@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The WM1811A is a variant of the WM1811 with pin configuration changes.
+From: Rakesh Iyer <riyer@nvidia.com>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Tegra kbc cannot detect exact keypress causing wakeup in interrupt mode.
+Allow wakeup keypress to be reported for certain platforms.
+
+Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
 ---
- drivers/mfd/wm8994-core.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/arm/mach-tegra/include/mach/kbc.h |    1 +
+ drivers/input/keyboard/tegra-kbc.c     |   20 ++++++++++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index f49b1ac..92aa22f 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -611,6 +611,7 @@ static int wm8994_i2c_remove(struct i2c_client *i2c)
+diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
+index 4f3572a..20bb054 100644
+--- a/arch/arm/mach-tegra/include/mach/kbc.h
++++ b/arch/arm/mach-tegra/include/mach/kbc.h
+@@ -53,6 +53,7 @@ struct tegra_kbc_platform_data {
+ 	struct tegra_kbc_pin_cfg pin_cfg[KBC_MAX_GPIO];
+ 	const struct matrix_keymap_data *keymap_data;
  
- static const struct i2c_device_id wm8994_i2c_id[] = {
- 	{ "wm1811", WM1811 },
-+	{ "wm1811a", WM1811 },
- 	{ "wm8994", WM8994 },
- 	{ "wm8958", WM8958 },
- 	{ }
++	u32 wakeup_key;
+ 	bool wakeup;
+ 	bool use_fn_map;
+ 	bool use_ghost_filter;
+diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+index cf3228b..ceb1185 100644
+--- a/drivers/input/keyboard/tegra-kbc.c
++++ b/drivers/input/keyboard/tegra-kbc.c
+@@ -52,6 +52,7 @@
+ /* KBC Interrupt Register */
+ #define KBC_INT_0	0x4
+ #define KBC_INT_FIFO_CNT_INT_STATUS	(1 << 2)
++#define KBC_INT_KEYPRESS_INT_STATUS	(1 << 0)
+ 
+ #define KBC_ROW_CFG0_0	0x8
+ #define KBC_COL_CFG0_0	0x18
+@@ -74,10 +75,12 @@ struct tegra_kbc {
+ 	unsigned int cp_to_wkup_dly;
+ 	bool use_fn_map;
+ 	bool use_ghost_filter;
++	bool keypress_caused_wake;
+ 	const struct tegra_kbc_platform_data *pdata;
+ 	unsigned short keycode[KBC_MAX_KEY * 2];
+ 	unsigned short current_keys[KBC_MAX_KPENT];
+ 	unsigned int num_pressed_keys;
++	u32 wakeup_key;
+ 	struct timer_list timer;
+ 	struct clk *clk;
+ };
+@@ -409,6 +412,9 @@ static irqreturn_t tegra_kbc_isr(int irq, void *args)
+ 		 */
+ 		tegra_kbc_set_fifo_interrupt(kbc, false);
+ 		mod_timer(&kbc->timer, jiffies + kbc->cp_dly_jiffies);
++	} else if (val & KBC_INT_KEYPRESS_INT_STATUS) {
++		/* We can be here only through system resume path */
++		kbc->keypress_caused_wake = true;
+ 	}
+ 
+ 	spin_unlock_irqrestore(&kbc->lock, flags);
+@@ -674,9 +680,10 @@ static int __devinit tegra_kbc_probe(struct platform_device *pdev)
+ 	keymap_data = pdata->keymap_data ?: &tegra_kbc_default_keymap_data;
+ 	matrix_keypad_build_keymap(keymap_data, KBC_ROW_SHIFT,
+ 				   input_dev->keycode, input_dev->keybit);
++	kbc->wakeup_key = pdata->wakeup_key;
+ 
+-	err = request_irq(kbc->irq, tegra_kbc_isr, IRQF_TRIGGER_HIGH,
+-			  pdev->name, kbc);
++	err = request_irq(kbc->irq, tegra_kbc_isr,
++			  IRQF_NO_SUSPEND | IRQF_TRIGGER_HIGH, pdev->name, kbc);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "failed to request keyboard IRQ\n");
+ 		goto err_put_clk;
+@@ -738,7 +745,6 @@ static int tegra_kbc_suspend(struct device *dev)
+ 
+ 	mutex_lock(&kbc->idev->mutex);
+ 	if (device_may_wakeup(&pdev->dev)) {
+-		disable_irq(kbc->irq);
+ 		del_timer_sync(&kbc->timer);
+ 		tegra_kbc_set_fifo_interrupt(kbc, false);
+ 
+@@ -754,6 +760,7 @@ static int tegra_kbc_suspend(struct device *dev)
+ 		tegra_kbc_setup_wakekeys(kbc, true);
+ 		msleep(30);
+ 
++		kbc->keypress_caused_wake = false;
+ 		enable_irq_wake(kbc->irq);
+ 	} else {
+ 		if (kbc->idev->users)
+@@ -780,7 +787,12 @@ static int tegra_kbc_resume(struct device *dev)
+ 
+ 		tegra_kbc_set_fifo_interrupt(kbc, true);
+ 
+-		enable_irq(kbc->irq);
++		if (kbc->keypress_caused_wake && kbc->wakeup_key) {
++			input_report_key(kbc->idev, kbc->wakeup_key, 1);
++			input_sync(kbc->idev);
++			input_report_key(kbc->idev, kbc->wakeup_key, 0);
++			input_sync(kbc->idev);
++		}
+ 	} else {
+ 		if (kbc->idev->users)
+ 			err = tegra_kbc_start(kbc);
 -- 
-1.7.7.3
+1.7.4.1
 
