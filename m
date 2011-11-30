@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab1K3RiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 12:38:01 -0500
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:23749
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754596Ab1K3Rh7 (ORCPT
+	id S1751360Ab1K3RoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:44:24 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46614 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab1K3RoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 12:37:59 -0500
-X-SpamScore: -12
-X-BigFish: VPS-12(zz146fK1432N98dKzz1202hzz8275bhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVHIB1-01-4Y3-02
-X-M-MSG: 
-Date: Wed, 30 Nov 2011 18:37:46 +0100
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@elte.hu>,
-        <suresh.b.siddha@intel.com>, <eranian@google.com>, <brgerst@gmail.com>,
-        <robert.richter@amd.com>, <Andreas.Herrmann3@amd.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] rework of extended state handling, LWP support
-Message-ID: <20111130173745.GT878@escobedo.osrc.amd.com>
-References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
- <m2ipm2lioy.fsf@firstfloor.org>
+	Wed, 30 Nov 2011 12:44:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <m2ipm2lioy.fsf@firstfloor.org>
-Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
- Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
- Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
- 43632
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <1322654092.2921.256.camel@twins>
+References: <alpine.DEB.2.00.1111300011260.7107@cl320.eecs.utk.edu> <1322654092.2921.256.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 Nov 2011 09:44:01 -0800
+X-Google-Sender-Auth: n398LtoIxicQLcefDD6ZihdtSbQ
+Message-ID: <CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com>
+Subject: Re: perf_event self-monitoring overhead regression
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 01:31:09PM -0800, Andi Kleen wrote:
-> Hans Rosenfeld <hans.rosenfeld@amd.com> writes:
-> >
-> > The lazy allocation of the xstate area has been removed. The support for
-> > extended states that cannot be saved/restored lazily, like AMD's LWP,
-> > need this. Since optimized library functions using SSE etc. are widely
-> > used today, most processes would have an xstate area anyway, making the
-> > memory overhead negligible.
-> 
-> Do you have any data on that?  It sounds dubious for specialized
-> workloads.
+On Wed, Nov 30, 2011 at 3:54 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>
+> I CC'ed Linus since he's way too skilled at this git thing and always
+> has good advice. There might be very good bisect advice in the lkml
+> archives but I'm not sure there's anything like a HOWTO/FAQ on the
+> subject other than the git-bisect manpage (ought there be one?).
 
-What kind of specialized workload do you mean?
+Basically, "git bisect" will never really work unless you have a very
+un-ambiguous case: the way bisection works (and the reason it is so
+efficient) really requires that the good/bad decision be entirely
+black-and-white with absolutely no room for error.
 
+I suspect that in some performance-related thing like this, that kind
+of black-and-white situation simply doesn't end up existing. For all
+we know, it could be at least partly about cache layout etc, and
+trying to bisect it is likely futile, unless you have a *really* good
+testcase.
 
-Hans
+So bisect works really well for clear bugs that are 100% repeatable
+and have a very clear "did it happen or not" signature, but I'd be
+very leery indeed of using it with some performance anomaly.
 
+That said, maybe you can get the timings to be unambiguous enough by
+using 'rdtsc' in user space, and try the bisect again.
 
--- 
-%SYSTEM-F-ANARCHISM, The operating system has been overthrown
-
+                        Linus
