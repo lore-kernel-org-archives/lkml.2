@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab1K3T5R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:57:17 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51698 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab1K3T5Q (ORCPT
+	id S1752339Ab1K3T5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:57:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56503 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab1K3T5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:57:16 -0500
+	Wed, 30 Nov 2011 14:57:19 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [patch 00/25] dynamic-debug during module initialization
-Date: Wed, 30 Nov 2011 12:56:29 -0700
-Message-Id: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 01/25] kernel/module.c: fix compile err, warnings under ifdef DEBUGP
+Date: Wed, 30 Nov 2011 12:56:30 -0700
+Message-Id: <1322683014-13285-2-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
+References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds
-- dynamic-debug during module initialization
-- multiple queries
+From: Jim Cromie <jim.cromie@gmail.com>
 
-Unlike previous versions, this drops pending-query approach in
-favor of "fake module parameter" approach proposed by Thomas Renninger.
-    https://lkml.org/lkml/2010/9/15/397
+resubmit of https://lkml.org/lkml/2010/9/15/399 4/4 patch
+with tiny mod.
 
-Its based upon v3.2-rc3, cuz it includes a few adjustments to
-dynamic_debug.h which are not in driver-core-next atm.
+Fixes these warnings, err if DEBUGP is defined in kernel/module.c:
 
+kernel/module.c: In function ‘layout_sections’:
+kernel/module.c:1776: error: ‘name’ undeclared (first use in this function)
+kernel/module.c:1776: error: (Each undeclared identifier is reported only once
+kernel/module.c:1776: error: for each function it appears in.)
+kernel/module.c: In function ‘move_module’:
+kernel/module.c:2394: warning: format ‘%lx’ expects type ‘long unsigned int’,
+but argument 2 has type ‘Elf64_Addr’
 
-1	bug-fix for kernel/module.c under DEBUGP
-2	whitespace cleanup
-3-12	dynamic-debug cleanups, should be relatively uncontroversial
-13-17	multiple queries in ddebug_query="..."
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ kernel/module.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-18-25	fake module parameter
-20	maybe fold into 18 (kept separate since 18 is Thomas's work)
-23	*.dyndbg=...
-25	BUILD_BUG_DECL (likely discussion point ;-)
-
-[jimc@groucho linux-2.6]$ git diff --stat v3.2-rc3..HEAD
- Documentation/dynamic-debug-howto.txt |   76 ++++++--
- drivers/pnp/base.h                    |    8 +-
- drivers/pnp/core.c                    |   13 ++
- include/linux/device.h                |    8 +-
- include/linux/dynamic_debug.h         |   31 +++-
- include/linux/kernel.h                |   10 +
- include/linux/moduleparam.h           |    4 +
- include/linux/netdevice.h             |    8 +-
- include/linux/printk.h                |    8 +-
- kernel/module.c                       |   47 ++---
- kernel/params.c                       |   27 ++-
- lib/dynamic_debug.c                   |  349 +++++++++++++++++++++++++--------
- 12 files changed, 430 insertions(+), 159 deletions(-)
-
+diff --git a/kernel/module.c b/kernel/module.c
+index 178333c..30ffed4 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1978,7 +1978,7 @@ static void layout_sections(struct module *mod, struct load_info *info)
+ 			    || strstarts(sname, ".init"))
+ 				continue;
+ 			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
+-			DEBUGP("\t%s\n", name);
++			DEBUGP("\t%s\n", sname);
+ 		}
+ 		switch (m) {
+ 		case 0: /* executable */
+@@ -2639,8 +2639,8 @@ static int move_module(struct module *mod, struct load_info *info)
+ 			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
+ 		/* Update sh_addr to point to copy in image. */
+ 		shdr->sh_addr = (unsigned long)dest;
+-		DEBUGP("\t0x%lx %s\n",
+-		       shdr->sh_addr, info->secstrings + shdr->sh_name);
++		DEBUGP("\t0x%p %s\n",
++		       (void *)shdr->sh_addr, info->secstrings + shdr->sh_name);
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.7.3
 
