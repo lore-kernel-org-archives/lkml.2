@@ -1,42 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab1K3Pk6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 10:40:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53844 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab1K3Pkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 10:40:55 -0500
-Date: Wed, 30 Nov 2011 15:40:46 +0000
-From: Andy Whitcroft <apw@canonical.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>, Chris Mason <chris.mason@oracle.com>,
-        Josef Bacik <josef@redhat.com>, Miao Xie <miaox@cn.fujitsu.com>,
-        Ivan Vilata i Balaguer <ivan@selidor.net>, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no
- read/write devices V2
-Message-ID: <20111130154046.GG6165@shadowen.org>
-References: <1312205910-13053-1-git-send-email-apw@canonical.com>
- <20111128121041.GA19498@elie.hsd1.il.comcast.net>
- <20111128122416.GA25996@localhost>
- <4ED434A9.8020809@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED434A9.8020809@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757304Ab1K3Pol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 10:44:41 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:42653
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755394Ab1K3Poi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 10:44:38 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, kys@microsoft.com, davem@davemloft.net,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH 2/2] net/hyperv: Add support for promiscuous mode setting
+Date: Wed, 30 Nov 2011 07:19:08 -0800
+Message-Id: <1322666348-6554-2-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1322666348-6554-1-git-send-email-haiyangz@microsoft.com>
+References: <1322666348-6554-1-git-send-email-haiyangz@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 09:26:01AM +0800, Li Zefan wrote:
+Add code to accept promiscuous mode setting, and pass it to
+RNDIS filter.
 
-> This patch has the same problem with your previous one, that it will set
-> f_bavail to 0. I've sent out a new patch yesterday.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/net/hyperv/hyperv_net.h   |   24 +++++++++++++++++++
+ drivers/net/hyperv/netvsc_drv.c   |   46 ++++++++++++++++++++++++++++++++++--
+ drivers/net/hyperv/rndis_filter.c |   23 +-----------------
+ 3 files changed, 68 insertions(+), 25 deletions(-)
 
-Ahh, sounds great thanks.  Often a patch is a good way to start a
-discussion to a more correct patch.  Specially when one is not an expert
-in the area.
+diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
+index ac1ec84..49b131f 100644
+--- a/drivers/net/hyperv/hyperv_net.h
++++ b/drivers/net/hyperv/hyperv_net.h
+@@ -87,6 +87,27 @@ struct netvsc_device_info {
+ 	int  ring_size;
+ };
+ 
++enum rndis_device_state {
++	RNDIS_DEV_UNINITIALIZED = 0,
++	RNDIS_DEV_INITIALIZING,
++	RNDIS_DEV_INITIALIZED,
++	RNDIS_DEV_DATAINITIALIZED,
++};
++
++struct rndis_device {
++	struct netvsc_device *net_dev;
++
++	enum rndis_device_state state;
++	bool link_state;
++	atomic_t new_req_id;
++
++	spinlock_t request_lock;
++	struct list_head req_list;
++
++	unsigned char hw_mac_adr[ETH_ALEN];
++};
++
++
+ /* Interface */
+ int netvsc_device_add(struct hv_device *device, void *additional_info);
+ int netvsc_device_remove(struct hv_device *device);
+@@ -109,6 +130,9 @@ int rndis_filter_receive(struct hv_device *dev,
+ int rndis_filter_send(struct hv_device *dev,
+ 			struct hv_netvsc_packet *pkt);
+ 
++int rndis_filter_set_packet_filter(struct rndis_device *dev, u32 new_filter);
++
++
+ #define NVSP_INVALID_PROTOCOL_VERSION	((u32)0xFFFFFFFF)
+ 
+ #define NVSP_PROTOCOL_VERSION_1		2
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index 93b0e91..b69c3a4 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -56,11 +56,51 @@ static int ring_size = 128;
+ module_param(ring_size, int, S_IRUGO);
+ MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
+ 
+-/* no-op so the netdev core doesn't return -EINVAL when modifying the the
+- * multicast address list in SIOCADDMULTI. hv is setup to get all multicast
+- * when it calls RndisFilterOnOpen() */
++struct set_multicast_work {
++	struct work_struct work;
++	struct net_device *net;
++};
++
++static void do_set_multicast(struct work_struct *w)
++{
++	struct set_multicast_work *swk =
++		container_of(w, struct set_multicast_work, work);
++	struct net_device *net = swk->net;
++
++	struct net_device_context *ndevctx = netdev_priv(net);
++	struct netvsc_device *nvdev;
++	struct rndis_device *rdev;
++
++	nvdev = hv_get_drvdata(ndevctx->device_ctx);
++	if (nvdev == NULL)
++		return;
++
++	rdev = nvdev->extension;
++	if (rdev == NULL)
++		return;
++
++	if (net->flags & IFF_PROMISC)
++		rndis_filter_set_packet_filter(rdev,
++			NDIS_PACKET_TYPE_PROMISCUOUS);
++	else
++		rndis_filter_set_packet_filter(rdev,
++			NDIS_PACKET_TYPE_BROADCAST |
++			NDIS_PACKET_TYPE_ALL_MULTICAST |
++			NDIS_PACKET_TYPE_DIRECTED);
++
++	kfree(w);
++}
++
+ static void netvsc_set_multicast_list(struct net_device *net)
+ {
++	struct set_multicast_work *swk =
++		kmalloc(sizeof(struct set_multicast_work), GFP_ATOMIC);
++	if (swk == NULL)
++		return;
++
++	swk->net = net;
++	INIT_WORK(&swk->work, do_set_multicast);
++	schedule_work(&swk->work);
+ }
+ 
+ static int netvsc_open(struct net_device *net)
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index bafccb3..418e7aa 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -30,26 +30,6 @@
+ #include "hyperv_net.h"
+ 
+ 
+-enum rndis_device_state {
+-	RNDIS_DEV_UNINITIALIZED = 0,
+-	RNDIS_DEV_INITIALIZING,
+-	RNDIS_DEV_INITIALIZED,
+-	RNDIS_DEV_DATAINITIALIZED,
+-};
+-
+-struct rndis_device {
+-	struct netvsc_device *net_dev;
+-
+-	enum rndis_device_state state;
+-	bool link_state;
+-	atomic_t new_req_id;
+-
+-	spinlock_t request_lock;
+-	struct list_head req_list;
+-
+-	unsigned char hw_mac_adr[ETH_ALEN];
+-};
+-
+ struct rndis_request {
+ 	struct list_head list_ent;
+ 	struct completion  wait_event;
+@@ -522,8 +502,7 @@ static int rndis_filter_query_device_link_status(struct rndis_device *dev)
+ 	return ret;
+ }
+ 
+-static int rndis_filter_set_packet_filter(struct rndis_device *dev,
+-				      u32 new_filter)
++int rndis_filter_set_packet_filter(struct rndis_device *dev, u32 new_filter)
+ {
+ 	struct rndis_request *request;
+ 	struct rndis_set_request *set;
+-- 
+1.7.4.1
 
--apw
