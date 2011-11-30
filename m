@@ -1,67 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757988Ab1K3RP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 12:15:59 -0500
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:56961 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757888Ab1K3RP5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 12:15:57 -0500
-Date: Wed, 30 Nov 2011 22:45:24 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
-        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
-        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
-Subject: Re: [RFC Patch 0/2] Slimdump framework using CRASH_REASON - v2
-Message-ID: <20111130171524.GA2632@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20111121095405.GA2289@in.ibm.com>
- <20111121151727.GF313@redhat.com>
- <20111123173318.GB2515@in.ibm.com>
- <20111128142402.GA20758@redhat.com>
+	id S1758003Ab1K3RQU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:16:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31672 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757888Ab1K3RQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 12:16:16 -0500
+Date: Wed, 30 Nov 2011 18:10:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Subject: Re: [PATCH 2/5] uprobes: introduce uprobe_switch_to()
+Message-ID: <20111130171029.GA3742@redhat.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com> <20111128190614.GA4602@redhat.com> <20111128190655.GC4602@redhat.com> <1322510018.2921.161.camel@twins> <20111129171822.GA28234@redhat.com> <1322655112.2921.267.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111128142402.GA20758@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11113017-8936-0000-0000-0000053A875A
+In-Reply-To: <1322655112.2921.267.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 09:24:02AM -0500, Vivek Goyal wrote:
-> On Wed, Nov 23, 2011 at 11:03:18PM +0530, K.Prasad wrote:
-> > On Mon, Nov 21, 2011 at 10:17:27AM -0500, Vivek Goyal wrote:
-> > > On Mon, Nov 21, 2011 at 03:24:05PM +0530, K.Prasad wrote:
-[snipped]
-> > 
-> > The kernel message buffers can be obtained by using the --dump-dmesg
-> > option of makedumpfile but again that's risky. We wouldn't know if it'll
-> > cause access to the faulty memory (which is how the previous method of having
-> > a new elf-notes in a pristine location is much safer).
-> > 
-> > The method in this patch is quite primitive in that informs the user
-> > nothing more than a one-line cause of crash. One should take help from other
-> > tools (such as service processor/firmware/ACPI logs, or previous corrected
-> > error logs) to infer the location of bad memory.
-> 
-> And how does one get to firmware/ACPI logs? Many system don't have service
-> processor also.
-> 
-> I think extracting kernel buffers by default in case of MCE is reasonable.
-> This should allow somebody to figure out some MCE related information.
-> 
-> You might want to modify makedumpfile so that it does not try to access
-> pages marked poisoned.
+On 11/30, Peter Zijlstra wrote:
 >
+> On Tue, 2011-11-29 at 18:18 +0100, Oleg Nesterov wrote:
+> > On 11/28, Peter Zijlstra wrote:
+> > >
+> > > So uprobe_switch_to() will always reset the IP to the start of the slot?
+> > > That sounds wrong, things like the RIP relative stuff needs multiple
+> > > instructions.
+> >
+> > Hmm. Could you explain? Especially the "multiple instructions" part.
+> >
+> > In any case we should reset the IP to the start of the slot.
+> >
+> > But yes, I'm afraid this is too simple. Before this patches pre_xol()
+> > is called when we already know ->xol_vaddr. But afaics x86 doesn't use
+> > this info (post_xol() does). So this looks equally correct or wrong.
+> >
+> > But perhaps we need another arch-dependent hook which takes ->xol_vaddr
+> > into account instead of simple memcpy(), to handle the RIP relative
+> > case.
+> >
+> > Or I misunderstood?
+>
+> Suppose you need multiple instructions to replace the one you patched
+> out,
 
-I'm not sure how easy or difficult it would be to skip hw-poisoned pages
-from user-space i.e. makedumpfile. I'll start working on the relevant
-changes though, and keep the community posted with the patches.
+Ah, I see, thanks...
+
+Yes, in this case set_xol_ip() should add the offset,
+regs->ip % UPROBES_XOL_SLOT_BYTES.
+
+But the current code doesn't use multiple instructions and it relies
+on the single-stepping, so I think currently this is correct.
+
+> for example because the instruction was RIP relative (the effect
+> relied on the IP the instruction is at, eg. short jumps instead of
+> absolute jumps).
+>
+> One way to translate these instructions is something like
+>
+>   push eax
+>   mov eax, $previous_ip
+>   $ins eax+offset
+>   pop eax
+
+I can be easily wrong, but afaics this particular case is covered by
+pre_xol/post_xol. But I guess this doesn't matter.
+
+Yes, I thought about multiple insns in xol slot too.
+
+> Also, the thing Srikar mentioned is boosted probes, in that case you
+> forgo the whole single step thing and rewrite the probe as:
+>
+>   $ins
+>   jmp $next_insn
+
+Yes! it would be nice to avoid the stepping if possible. But so far
+I am not sure how/when this can work...
+
+> Now in the former case you still single step so the context switch hook
+> can function as proposed (triggered off of TIF_SINGLESTEP). However if
+> you get preempted after the mov you want to continue with the $ins, not
+> restart at push.
+
+This is not clear to me. Single step with multiple insns?
+
+> So uprobe_switch_to() will have to preserve the
+> relative offset within the slot.
+
+Yes, agreed.
+
+> On the second example there's no singlestepping left, so we need to
+> create a new TIF flag, when you first set up the probe you toggle that
+> flag and on the first context switch where the IP is outside of the slot
+> you clear it. But still you need to maintain relative offset within the
+> slot when you move it around.
+
+Yes. Currently uprobe_switch_to() checks X86_EFLAGS_TF() to verify that
+it is correct to change regs->ip. But if we know that, say, this insn
+can't jump/call/rep we can simply check regs->ip. And in this case we
+can avoid the stepping.
 
 Thanks,
-K.Prasad
+
+Oleg.
 
