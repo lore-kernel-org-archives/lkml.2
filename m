@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab1K3TXq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:23:46 -0500
-Received: from usmamail.tilera.com ([206.83.70.75]:19801 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab1K3TXo (ORCPT
+	id S1752001Ab1K3Tin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:38:43 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65079 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab1K3Til convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:23:44 -0500
-Message-ID: <4ED682BF.200@tilera.com>
-Date: Wed, 30 Nov 2011 14:23:43 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 30 Nov 2011 14:38:41 -0500
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [PATCH-RFC 1/2 v2] tile: don't panic on iomap
-References: <V0IAN#zrMHA.5780@exchange1.tad.internal.tilera.com>
-In-Reply-To: <V0IAN#zrMHA.5780@exchange1.tad.internal.tilera.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111121153716.GA16417@S2100-06.ap.freescale.net>
+References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
+ <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca> <20111121153716.GA16417@S2100-06.ap.freescale.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 30 Nov 2011 12:38:19 -0700
+X-Google-Sender-Auth: GvEIez2F8QazOrUERvVOtGnYcsw
+Message-ID: <CACxGe6teGPmgOiwSVQ_PebXo=9x8EVwjH2qQYi5LU813BvY3Ow@mail.gmail.com>
+Subject: Re: [RFC 6/8] of: add clock providers
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2011 4:08 AM, Michael S. Tsirkin wrote:
-> I think panic on iomap is there just for debugging.
-> If we return NULL instead, the generic pci_iomap will
-> do the same thing as the custom one that tile currently has
-> (that is, return NULL on an IO BAR)
-> so tile won't need to roll its own anymore.
+On Mon, Nov 21, 2011 at 8:37 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
+>> +struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
+>> +{
+>> +     int index = 0;
+>> +
+>> +     if (name)
+>> +             index = of_property_match_string(np, "clock-input-names", name);
 >
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
+> If it fails to match name, we may want to force 'index' back to 0.
+
+Actually, if it fails to match, the function should fail.  Fixed.
+Fixed all the editorial comments too.  Thanks.
+
 >
-> Note: the other patch in the series is unchanged.
-> Changes from v1:
->   - tweaked pr_info message
->
->  arch/tile/include/asm/io.h |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/tile/include/asm/io.h b/arch/tile/include/asm/io.h
-> index c9ea165..d2152de 100644
-> --- a/arch/tile/include/asm/io.h
-> +++ b/arch/tile/include/asm/io.h
-> @@ -204,7 +204,8 @@ static inline long ioport_panic(void)
->  
->  static inline void __iomem *ioport_map(unsigned long port, unsigned int len)
->  {
-> -	return (void __iomem *) ioport_panic();
-> +	pr_info("ioport_map: mapping IO resources is unsupported on tile.\n");
-> +	return NULL;
->  }
->  
->  static inline void ioport_unmap(void __iomem *addr)
+> Also according to binding document above,
+> s/clock-input-names/clock-input-name?  Hope you do not want to
+> change binding document to get them aligned.  I have written code
+> per binding document :)
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+I've changed to match the binding documentation.
 
-I agree with Arnd that this isn't necessarily the best solution (build-time
-failures are always preferable) but given that he's planning some more
-ambitious work, this seems reasonable to me.
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Thanks for the review,
+g.
