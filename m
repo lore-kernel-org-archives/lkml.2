@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab1K3XZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:25:38 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45981 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab1K3XZh (ORCPT
+	id S1753078Ab1K3X1e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:27:34 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45718 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107Ab1K3X1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:25:37 -0500
-Date: Wed, 30 Nov 2011 15:25:29 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: NeilBrown <neilb@suse.de>, MyungJoo Ham <myungjoo.ham@gmail.com>,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>,
-        Johan PALSSON <johan.palsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-Message-ID: <20111130232529.GB3220@core.coreip.homeip.net>
-References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
- <201111251402.28016.arnd@arndb.de>
- <CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
- <201111281753.45287.arnd@arndb.de>
- <CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
- <20111130135847.68a6e4c6@notabene.brown>
- <CAJ0PZbRpoz+uK4QUAO4RG5bhsSpNvm5U-ROtbduXhnFTLMZ1VQ@mail.gmail.com>
- <20111201095633.700e2923@notabene.brown>
- <20111130231740.GA25340@opensource.wolfsonmicro.com>
+	Wed, 30 Nov 2011 18:27:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111130231740.GA25340@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [93.172.53.1]
+In-Reply-To: <CAK=WgbazBq4GVo16sZsrZirgMYbwMcWtPaqn90c6d9Phr0gh3A@mail.gmail.com>
+References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
+ <20111129131110.GC19157@redhat.com> <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
+ <20111129151607.GE30966@redhat.com> <CAK=WgbZK+k4uuyMPHUfr_PMyrR5ceRTvuDRpmhXfgwpSUOPw0g@mail.gmail.com>
+ <20111130145958.GE21413@redhat.com> <CAK=WgbYyFdLftE_kp2_JOThVhn-FzGsDqVqKn0Jwm2teQyZBNA@mail.gmail.com>
+ <20111130161555.GB25812@redhat.com> <CAK=WgbazBq4GVo16sZsrZirgMYbwMcWtPaqn90c6d9Phr0gh3A@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 1 Dec 2011 01:27:10 +0200
+Message-ID: <CAK=WgbbZH3ZFzbwwyVBGEvwHPbogDW6+Kb_1pRam2jj5oJHuDA@mail.gmail.com>
+Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 11:17:41PM +0000, Mark Brown wrote:
-> On Thu, Dec 01, 2011 at 09:56:33AM +1100, NeilBrown wrote:
-> > On Wed, 30 Nov 2011 15:40:48 +0900 MyungJoo Ham <myungjoo.ham@gmail.com>
-> > wrote:
-> 
-> > > I'm focusing on an external connector or port that each physical port
-> > > may inhabit multiple cables at a time although it should support a
-> > > port that may inhabit a single cable only at a time. However, the
-> > > class could be used for other general "multistate mux" that connects
-> > > different device drivers.
-> 
-> >  maybe I'm just slow, but I'm having a lot of trouble imagining a single port
-> >  that could have multiple cables plugged in at the same time.  And this
-> >  blockage is stopping me from reflecting usefully on your other points.
-> 
-> >  Are you able to show me a picture or a diagram or something so I can
-> >  visualise what you are talking about?
-> >  To me: once you plug one cable into a port, it is full and there is no room
-> >  for any more cables.
-> 
-> One obvious example is the sort of big multi-way docking connector that
-> many mobile devices have (iPod and friends being one of the most
-> common).  These are essentially the same as docking station connections
-> on a laptop in terms of what they bring out - a variety of audio, video
-> and communication connections - which may go to a docking station or
-> some kind of breakout or adaptor cable and may have sub-ports hanging
-> off them (eg, it's common for tablets to have docking stations with HDMI
-> and audio sockets on them).
-> 
-> There are also lower pin count equivalents like the multiplexed "USB"
-> sockets on some phones which can also carry other functions with
-> adaptors, and even something like a headset is really a microphone and
-> headphones on a single jack.
+On Wed, Nov 30, 2011 at 6:24 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Wed, Nov 30, 2011 at 6:15 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+>> How are the rings mapped? normal memory, right?
+>
+> No, device memory.
 
-Physical jack does not have to map 1:1 on logical jack. So 1 physical
-docking connector can be represented by 1 logical video connector, line
-in, line out, microphone and maybe else.
+Ok, I have more info.
 
--- 
-Dmitry
+Originally remoteproc was mapping the rings using ioremap, and that
+meant ARM Device memory.
+
+Recently, though, we moved to CMA (allocating memory for the rings via
+dma_alloc_coherent), and that isn't Device memory anymore: it's
+uncacheable Normal memory (on ARM v6+).
+
+We still require mandatory barriers though: one very reproducible
+problem I personally face is that the avail index doesn't get updated
+before the kick. As a result, the remote processor misses a buffer
+that was just added (the kick wakes it up only to find that the avail
+index wasn't changed yet). In this case, it probably happens because
+the mailbox, used to kick the remote processor, is mapped as Device
+memory, and therefore the kick can be reordered before the updates to
+the ring  can be observed.
+
+I did get two additional reports about reordering issues, on different
+setups than my own, and which I can't personally reproduce: the one
+I've described earlier (avail index gets updated before the avail
+array) and one in the receive path (reading a used buffer which we
+already read). I couldn't personally verify those, but both issues
+were reported to be gone when mandatory barriers were used.
+
+I expect those reports only to increase: the diversity of platforms
+that are now looking into adopting virtio for this kind of
+inter-process communication is quite huge, with several different
+architectures and even more hardware implementations on the way (not
+only ARM).
+
+Thanks,
+Ohad.
