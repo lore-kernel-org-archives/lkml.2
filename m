@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab1K3RJg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 12:09:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10205 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab1K3RJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 12:09:35 -0500
-Date: Wed, 30 Nov 2011 12:09:03 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Jan Kara <jack@suse.cz>
-cc: Alasdair G Kergon <agk@redhat.com>, esandeen@redhat.com,
-        Surbhi Palande <csurbhi@gmail.com>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        Valerie Aurora <val@vaaconsulting.com>
-Subject: Re: [dm-devel] [PATCH] deadlock with suspend and quotas
-In-Reply-To: <20111130165339.GF4541@quack.suse.cz>
-Message-ID: <Pine.LNX.4.64.1111301203180.5759@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1111290556270.12274@hs20-bc2-1.build.redhat.com>
- <20111129111136.GC5635@quack.suse.cz> <Pine.LNX.4.64.1111290746230.10352@hs20-bc2-1.build.redhat.com>
- <20111129130913.GE5635@quack.suse.cz> <20111129131811.GS7595@agk-dp.fab.redhat.com>
- <20111129133239.GA9926@quack.suse.cz> <Pine.LNX.4.64.1111300143340.31264@hs20-bc2-1.build.redhat.com>
- <20111130111657.GA4541@quack.suse.cz> <Pine.LNX.4.64.1111300700190.27712@hs20-bc2-1.build.redhat.com>
- <20111130130514.GU7595@agk-dp.fab.redhat.com> <20111130165339.GF4541@quack.suse.cz>
+	id S1757988Ab1K3RP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:15:59 -0500
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:56961 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757888Ab1K3RP5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 12:15:57 -0500
+Date: Wed, 30 Nov 2011 22:45:24 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, anderson@redhat.com,
+        tachibana@mxm.nes.nec.co.jp, oomichi@mxs.nes.nec.co.jp,
+        Valdis.Kletnieks@vt.edu, Nick Bowler <nbowler@elliptictech.com>
+Subject: Re: [RFC Patch 0/2] Slimdump framework using CRASH_REASON - v2
+Message-ID: <20111130171524.GA2632@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20111121095405.GA2289@in.ibm.com>
+ <20111121151727.GF313@redhat.com>
+ <20111123173318.GB2515@in.ibm.com>
+ <20111128142402.GA20758@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111128142402.GA20758@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11113017-8936-0000-0000-0000053A875A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 30 Nov 2011, Jan Kara wrote:
-
-> On Wed 30-11-11 13:05:14, Alasdair G Kergon wrote:
-> > On Wed, Nov 30, 2011 at 07:14:18AM -0500, Mikulas Patocka wrote:
-> > > On Wed, 30 Nov 2011, Jan Kara wrote:
-> > > > > So if you skip sync of frozen filesystems, you introduce a data
-> > > > > corruption if someone takes a snapshot of ext2.
-> > > >   Yes, because ext2 cannot really be frozen, it is (errorneously) marked
-> > > > as such but it is not frozen...
+On Mon, Nov 28, 2011 at 09:24:02AM -0500, Vivek Goyal wrote:
+> On Wed, Nov 23, 2011 at 11:03:18PM +0530, K.Prasad wrote:
+> > On Mon, Nov 21, 2011 at 10:17:27AM -0500, Vivek Goyal wrote:
+> > > On Mon, Nov 21, 2011 at 03:24:05PM +0530, K.Prasad wrote:
+[snipped]
 > > 
-> > This is just getting into semantics.  AFAIK (and it was before my involvement)
-> > LVM used the term 'lockfs' for this operation when it was introduced to ext2.
-> > It later got renamed in-kernel to 'frozen' to bring it into line with newer
-> > filesystems.  But userspace and the interface still retain the original
-> > 'lockfs' name.
+> > The kernel message buffers can be obtained by using the --dump-dmesg
+> > option of makedumpfile but again that's risky. We wouldn't know if it'll
+> > cause access to the faulty memory (which is how the previous method of having
+> > a new elf-notes in a pristine location is much safer).
 > > 
-> > There is no further I/O sent to the filesystem during the 'lockfs' operation:
-> > LVM uses dm to block that.
->   OK, so can we (at least in this discussion) discussion distinguish two
-> things?
-> a) Filesystems is frozen/locked - means filesystem is in a consistent state
->   and disallows new dirty data to be created until fs is thawed/unlocked.
-
-Agreed. Note that if you observed any sync-related deadlocks when 
-suspended, it means that the filesystem has some code path that allows 
-creating dirty data on frozen filesystem.
-
-This was observed on ext4 on RHEL-6 ... and maybe on upstream too. (I 
-couldn't reproduce it on upstream, but maybe other people who started 
-these sync-related patches could?)
-
-> b) Device is frozen/locked - device does not process incoming writes, they
->   are held in the queue until the device is thawed/unlocked.
+> > The method in this patch is quite primitive in that informs the user
+> > nothing more than a one-line cause of crash. One should take help from other
+> > tools (such as service processor/firmware/ACPI logs, or previous corrected
+> > error logs) to infer the location of bad memory.
 > 
->   They are two different things and we seem to conflate them in the
-> discussion. In particular you can freeze a device under any filesystem
-> while you cannot freeze every filesystem. Freezing the device is enough for
-> LVM operations (e.g. snapshot) but if filesystem is not frozen, you have
-> to run fsck / journal replay to make result usable. Do we agree here?
+> And how does one get to firmware/ACPI logs? Many system don't have service
+> processor also.
 > 
-> 								Honza
+> I think extracting kernel buffers by default in case of MCE is reasonable.
+> This should allow somebody to figure out some MCE related information.
+> 
+> You might want to modify makedumpfile so that it does not try to access
+> pages marked poisoned.
+>
 
-True. You have to run fsck on non-journaled filesystems when taking a 
-snapshot.
+I'm not sure how easy or difficult it would be to skip hw-poisoned pages
+from user-space i.e. makedumpfile. I'll start working on the relevant
+changes though, and keep the community posted with the patches.
 
-Mikulas
+Thanks,
+K.Prasad
+
