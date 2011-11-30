@@ -1,120 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab1K3UhB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 15:37:01 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:56172 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab1K3UhA convert rfc822-to-8bit (ORCPT
+	id S1752469Ab1K3UlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 15:41:09 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:42138 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab1K3UlG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 15:37:00 -0500
+	Wed, 30 Nov 2011 15:41:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAGPN=9TpFOJ8316faVi8jGzO0-apj-yXkxMQXyApE1=uUmD-AQ@mail.gmail.com>
-References: <CACVkyFdhpU1sQb-T-pXYkV8Ot27+LYxV_=FGd=aPLLyrD3-1dg@mail.gmail.com>
-	<86k46m8z1s.fsf@sumi.keithp.com>
-	<CAGPN=9TpFOJ8316faVi8jGzO0-apj-yXkxMQXyApE1=uUmD-AQ@mail.gmail.com>
-Date: Wed, 30 Nov 2011 21:36:59 +0100
-Message-ID: <CAGPN=9SBgWLHsUsfrCVCtVDpAcuW_4oe_4_X2tHCcZPatJdRgw@mail.gmail.com>
-Subject: Re: drivers/gpu/drm/i915/intel_dp.c problem with commit dc22ee6fc18ce0f15424e753e8473c306ece95c1
-From: Patrik Kullman <patrik.kullman@gmail.com>
-To: Keith Packard <keith.packard@intel.com>
-Cc: Jerker Buud <b.jerker@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111130065000.GT2203@ZenIV.linux.org.uk>
+References: <20111130065000.GT2203@ZenIV.linux.org.uk>
+Date: Wed, 30 Nov 2011 15:41:04 -0500
+X-Google-Sender-Auth: BJ1dY4QuNss70GJAt0t5L39PAyA
+Message-ID: <CAP=VYLozbbfO=90GxuGe9k_V6OghwFdR3uVE-=dpX5be4qPhgw@mail.gmail.com>
+Subject: Re: [RFC][PATCH] trimming includes from linux/security.h
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure if this is somehow related, but I experienced a weird issue
-with the HDMI-output today.
-
-I connected the computer to a (Acer) projector at work to hold a
-presentation, but it didn't work.
-In GNOME Displays, I could see a connected "Acer Technologies" screen,
-its supported resolutions listed, I could even move the cursor as if a
-screen was connected. Everything about Linux/GNOME seems to "think"
-everything was working.
-
-On the projector side of things, the Acer-logo was showing and the
-source (HDMI1/2) was showing.
-It didn't say "No Signal" as it can, but it didn't either come as far
-as to "Process signal", which usually appears a moment before
-everything is up and running.
-
-Booting up Windows, everything worked perfectly.
-
-When I got home, I connected the computer to my LCD TV and watched a
-video without any issues.
-Even sound through HDMI works great.
-
-Please let me know if you think this might be related or if I should
-start a new thread about this.
-
-2011/11/29 Patrik Kullman <patrik.kullman@gmail.com>:
-> I checked out a clean v3.2-rc3, applied this patch and rebooted.
+On Wed, Nov 30, 2011 at 1:50 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>        linux/security.h pulls a lot of garbage; most of it can be avoided
+> by several more struct ....; added in there, the rest is a matter of adding
+> explicit includes in places that (weirdly) relied on security.h to pull
+> what they wanted.  Plus taking round_hit_to_min() to the only place using
+> it (mm/mmap.c)...
 >
-> It still doesn't work and Caps Lock still doesn't respond, but I get
-> very subtle flickering of the screen, 2-3 seconds apart, kind of like
-> different shades of black.
+>        NOTE: it almost certainly won't build on some configs; it *does*
+> survive allmodconfig on amd64, but that's all it had been tested on.  Help
+> with review and (build-)testing would be very appreciated...  Fortunately,
+> all breakage will show up on build, which makes finding it less painful.
 >
-> It 'feels' as if some graphics card/link/monitor negotiation is taking place.
->
-> 2011/11/26 Keith Packard <keith.packard@intel.com>:
->> On Sat, 26 Nov 2011 09:50:41 -0800, Jerker Buud <b.jerker@gmail.com> wrote:
->>
->>> 245,247c245,246
->>> <       if (!is_edp(intel_dp) &&
->>> <           (intel_dp_link_required(intel_dp, mode->clock)
->>> <            > intel_dp_max_data_rate(max_link_clock, max_lanes)))
->>> ---
->>> >       if (intel_dp_link_required(intel_dp, mode->clock)
->>> >           > intel_dp_max_data_rate(max_link_clock, max_lanes))
->>
->> Ok, I think I understand why this change is required.
->>
->> These machines are 'optimized' to provide the bare minimum connection
->> necessary between the CPU and the eDP panel -- a single lane is hooked
->> up, which is just enough to run the link at 18bpp, but not enough to run
->> it at 24bpp.
->>
->> The problem here (in intel_dp_link_required) is that this is being
->> called to see which modes can be supported on the panel. Without the
->> CRTC being configured with the appropriate bpp value, this code assumes
->> 24bpp.
->>
->> I thought Adam Jackson had some code around that automatically switched
->> From 24bpp to 18bpp when the link didn't have enough bandwidth for
->> 24bpp, but I can't find that now.
->>
->> In any case, I think we need to centralize the bpp selection inside
->> intel_dp.c instead of having it in both places. Then, we can make that
->> depend on the requested mode as well as the machine configuration.
->>
->> Here's a patch which uses the VBT configured bpp value in this case. I'd
->> love to hear whether this suffices to resolve your problem.
->>
->> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
->> index 294f557..3e15479 100644
->> --- a/drivers/gpu/drm/i915/intel_dp.c
->> +++ b/drivers/gpu/drm/i915/intel_dp.c
->> @@ -212,10 +212,16 @@ intel_dp_link_required(struct intel_dp *intel_dp, int pixel_clock)
->>  {
->>        struct drm_crtc *crtc = intel_dp->base.base.crtc;
->>        struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
->> -       int bpp = 24;
->> +       struct drm_device *dev = intel_dp->base.base.dev;
->> +       struct drm_i915_private *dev_priv = dev->dev_private;
->> +       int bpp;
->>
->>        if (intel_crtc)
->>                bpp = intel_crtc->bpp;
->> +       else if (intel_dp->base.type == INTEL_OUTPUT_EDP)
->> +               bpp = dev_priv->edp.bpp;
->> +       else
->> +               bpp = 24;
->>
->>        return (pixel_clock * bpp + 9) / 10;
->>  }
->>
->> --
->> keith.packard@intel.com
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+Hi Al,
+
+I did some testing on this for powerpc and arm.  The one snag I came
+across was that security.h uses things like current->mm and fields in
+task_struct, so you get fallout like I've pasted below.  But to put
+sched.h (and all its 300 sub-includes) back into security.h kind of
+defeats the purpose of what you were trying to do, I think.
+
+A proper fix would be to somehow really make security.h  a real
+standalone header, via using defines instead of inlines or similar?
+
+For now, I just added sched.h to the files that were breaking, but
+it seems wrong to penalize random C files for the breakage in the
+security.h header file.
+
+This tree seems to survive most powerpc and arm defconfigs:
+
+http://git.kernel.org/?p=linux/kernel/git/paulg/linux.git;a=shortlog;h=refs/heads/al-security-Nov30
+
+but as I said above, I'm not really liking the last commit on it
+that adds sched.h to 20-odd files.
+
+Paul.
+---
+
+In file included from /home/paul/git/linux-head/fs/super.c:28:
+/home/paul/git/linux-head/include/linux/security.h: In function
+'security_real_capable':
+/home/paul/git/linux-head/include/linux/security.h:1890: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1890: warning: type
+defaults to 'int' in declaration of '_________p1'
+/home/paul/git/linux-head/include/linux/security.h:1890: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1890: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1890: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1890: warning: type
+defaults to 'int' in declaration of 'type name'
+/home/paul/git/linux-head/include/linux/security.h:1890: warning: type
+defaults to 'int' in declaration of 'type name'
+/home/paul/git/linux-head/include/linux/security.h:1890: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1890: warning: type
+defaults to 'int' in declaration of 'type name'
+/home/paul/git/linux-head/include/linux/security.h:1890: warning:
+passing argument 2 of 'cap_capable' from incompatible pointer type
+/home/paul/git/linux-head/include/linux/security.h:71: note: expected
+'const struct cred *' but argument is of type 'int *'
+/home/paul/git/linux-head/include/linux/security.h: In function
+'security_real_capable_noaudit':
+/home/paul/git/linux-head/include/linux/security.h:1901: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1901: warning: type
+defaults to 'int' in declaration of '_________p1'
+/home/paul/git/linux-head/include/linux/security.h:1901: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1901: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1901: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1901: warning: type
+defaults to 'int' in declaration of 'type name'
+/home/paul/git/linux-head/include/linux/security.h:1901: warning: type
+defaults to 'int' in declaration of 'type name'
+/home/paul/git/linux-head/include/linux/security.h:1901: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1901: warning: type
+defaults to 'int' in declaration of 'type name'
+/home/paul/git/linux-head/include/linux/security.h:1902: warning:
+passing argument 2 of 'cap_capable' from incompatible pointer type
+/home/paul/git/linux-head/include/linux/security.h:71: note: expected
+'const struct cred *' but argument is of type 'int *'
+/home/paul/git/linux-head/include/linux/security.h: In function
+'security_vm_enough_memory':
+/home/paul/git/linux-head/include/linux/security.h:1931: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h:1932: error:
+dereferencing pointer to incomplete type
+/home/paul/git/linux-head/include/linux/security.h: In function
+'security_vm_enough_memory_kern':
+/home/paul/git/linux-head/include/linux/security.h:1945: error:
+dereferencing pointer to incomplete type
+make[3]: *** [fs/super.o] Error 1
