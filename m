@@ -1,176 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab1K3SLD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 13:11:03 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:35965 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab1K3SK7 (ORCPT
+	id S1752010Ab1K3SPa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 13:15:30 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:63925 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab1K3SP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 13:10:59 -0500
-Date: Wed, 30 Nov 2011 12:59:36 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>, deepthi@linux.vnet.ibm.com
-Subject: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1
-Message-ID: <20111130175936.GA15168@phenom.dumpdata.com>
-References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
- <201111212249.31196.rjw@sisk.pl>
- <20111122135412.GA29905@phenom.dumpdata.com>
- <20111129180414.GA11459@phenom.dumpdata.com>
- <20111129183428.GE8200@aftab>
+	Wed, 30 Nov 2011 13:15:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Subject: Re: [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt extensions
+Date: Wed, 30 Nov 2011 18:15:01 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "android-virt@lists.cs.columbia.edu" 
+	<android-virt@lists.cs.columbia.edu>,
+        "embeddedxen-devel@lists.sourceforge.net" 
+	<embeddedxen-devel@lists.sourceforge.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop> <201111301432.54463.arnd@arndb.de> <1322670473.31810.129.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1322670473.31810.129.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129183428.GE8200@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4ED67183.0042,ss=1,re=0.000,fgs=0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111301815.01297.arnd@arndb.de>
+X-Provags-ID: V02:K0:0QF1cQvBrkFixJKucsdEWFs++J4ZdGCXd6xZLH0sUdP
+ 21sqNZwWW2YwtvqbQU2Vs+iQ4BgIvZVvo/jsjy2ecSHgQveLPk
+ Tjz7jIsFzmcDdfNKxCi3i0SWyVisDmPvpwSOiWUs3+qYfYotgY
+ SzSFXIT4rrefbhicv0lGTuxjkL8QLX8Rt+d+4AMJRi2qoyJNZk
+ hjHtyd8Tvl4d8Pr4lm8BaAqnC29b/z/Ofz4aoYhjXHxQaVhYP1
+ sa9U+vGtMYMM4pgmbuMUug7CKpm50HgsgC8Pyanp79QMu5i4kc
+ GJLL0GRZ3vW3xUL2hHubZN0QyoqMEefw/Q7qX0RdMYvcLoHidJ
+ nlIloH22xJUm+hwTXhNE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 07:34:28PM +0100, Borislav Petkov wrote:
-> On Tue, Nov 29, 2011 at 01:04:14PM -0500, Konrad Rzeszutek Wilk wrote:
-> > This patch:
+On Wednesday 30 November 2011, Ian Campbell wrote:
+> On Wed, 2011-11-30 at 14:32 +0000, Arnd Bergmann wrote:
+> > On Wednesday 30 November 2011, Ian Campbell wrote:
+> > What I suggested to the KVM developers is to start out with the
+> > vexpress platform, but then generalize it to the point where it fits
+> > your needs. All hardware that one expects a guest to have (GIC, timer,
+> > ...) will still show up in the same location as on a real vexpress,
+> > while anything that makes no sense or is better paravirtualized (LCD,
+> > storage, ...) just becomes optional and has to be described in the
+> > device tree if it's actually there.
+> 
+> That's along the lines of what I was thinking as well.
+> 
+> The DT contains the address of GIC, timer etc as well right? So at least
+> in principal we needn't provide e.g. the GIC at the same address as any
+> real platform but in practice I expect we will.
 
+Yes.
 
-Borislav,
+> In principal we could also offer the user options as to which particular
+> platform a guest looks like.
 
-Thanks for your review comments. How does this patch look? I believe
-I touched upon all of the things you mentioned.
+At least when using a qemu based simulation. Most platforms have some
+characteristics that are not meaningful in a classic virtualization
+scenario, but it would certainly be helpful to use the virtualization
+extensions to run a kernel that was built for a particular platform
+faster than with pure qemu, when you want to test that kernel image.
 
->From eb6dbd80078312c428dde69e9313606b7513a2e6 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Mon, 21 Nov 2011 18:02:02 -0500
-Subject: [PATCH] xen/pm_idle: Make pm_idle be default_idle under Xen.
+It has been suggested in the past that it would be nice to run the
+guest kernel built for the same platform as the host kernel by
+default, but I think it would be much better to have just one
+platform that we end up using for guests on any host platform,
+unless there is a strong reason to do otherwise.
 
-This patch:
+There is also ongoing restructuring in the ARM Linux kernel to
+allow running the same kernel binary on multiple platforms. While
+there is still a lot of work to be done, you should assume that
+we will finish it before you see lots of users in production, there
+is no need to plan for the current one-kernel-per-board case.
 
-commit d91ee5863b71e8c90eaf6035bff3078a85e2e7b5
-Author: Len Brown <len.brown@intel.com>
-Date:   Fri Apr 1 18:28:35 2011 -0400
+> > Ok. It would of course still be possible to agree on an argument passing
+> > convention so that we can share the macros used to issue the hcalls,
+> > even if the individual commands are all different.
+> 
+> I think it likely that we can all agree on a common calling convention
+> for N-argument hypercalls. It doubt there are that many useful choices
+> with conflicting requirements yet strongly compelling advantages.
 
-    cpuidle: replace xen access to x86 pm_idle and default_idle
+Exactly. I think it's only lack of communication that has resulted in
+different interfaces for each hypervisor on the other architectures.
 
-    ..scribble on pm_idle and access default_idle,
-   have it simply disable_cpuidle() so acpi_idle will not load and
-   architecture default HLT will be used.
+KVM and Xen at least both fall into the single-return-value category,
+so we should be able to agree on a calling conventions. KVM does not
+have an hcall API on ARM yet, and I see no reason not to use the
+same implementation that you have in the Xen guest.
 
-idea was to have one call - disable_cpuidle() which would make
-pm_idle not be molested by other code. It disallows cpuidle_idle_call
-to be set to pm_idle (which is excellent). But in the select_idle_routine()
-and idle_setup(), the pm_idle can still be set to either:
-amd_e400_idle, mwait_idle or default_idle. This depends on some
-CPU flags (MWAIT) and in AMD case on the type of CPU.
+Stefano, can you split out the generic parts of your asm/xen/hypercall.h
+file into a common asm/hypercall.h and submit it for review to the
+arm kernel list?
 
-In case of mwait_idle we can hit some instances where the hypervisor
-(Amazon EC2 specifically) sets the MWAIT and we get:
-
-Brought up 2 CPUs
-invalid opcode: 0000 [#1] SMP
-CPU 1
-Modules linked in:
-
-Pid: 0, comm: swapper Not tainted 3.1.0-0.rc6.git0.3.fc16.x86_64 #1
-RIP: e030:[<ffffffff81015d1d>]  [<ffffffff81015d1d>] mwait_idle+0x6f/0xb4
-RSP: e02b:ffff8801d28ddf10  EFLAGS: 00010082
-RAX: ffff8801d28dc010 RBX: ffff8801d28ddfd8 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000001
-RBP: ffff8801d28ddf10 R08: 0000000000000000 R09: 0000000000000001
-R10: 0000000000000001 R11: ffff8801d28ddfd8 R12: ffffffff81b590d0
-R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffff8801dff81000(0000) knlGS:0000000000000000
-CS:  e033 DS: 002b ES: 002b CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 0000000001a05000 CR4: 0000000000002660
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000000
-Process swapper (pid: 0, threadinfo ffff8801d28dc000, task ffff8801d28cae60)
-Stack:
- ffff8801d28ddf40 ffffffff8100e2ed ffff8801dff8e390 c136dfe72feab515
- 0000000000000000 0000000000000000 ffff8801d28ddf50 ffffffff8149ee78
- 0000000000000000 0000000000000000 0000000000000000 0000000000000000
-Call Trace:
- [<ffffffff8100e2ed>] cpu_idle+0xae/0xe8
- [<ffffffff8149ee78>] cpu_bringup_and_idle+0xe/0x10
-RIP  [<ffffffff81015d1d>] mwait_idle+0x6f/0xb4
- RSP <ffff8801d28ddf10>
-
-In case of amd_e400_idle we don't get so spectacular crashes, but
-we do end up making an MSR which is trapped in the hypervisor,
-and then follow it up with a yield hypercall. Meaning we end up
-going to hypervisor twice instead of just once.
-
-The previous behavior before v3.0 was that pm_idle was set
-to default_idle irregardless of select_idle_routine/idle_setup.
-
-We want to do that, but only for one specific case: Xen.
-This patch does that.
-
-Fixes RH BZ #739499 and Ubuntu #881076
-Reported-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/include/asm/system.h |    1 +
- arch/x86/kernel/process.c     |    8 ++++++++
- arch/x86/xen/setup.c          |    2 +-
- 3 files changed, 10 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-index c2ff2a1..2d2f01c 100644
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -401,6 +401,7 @@ extern unsigned long arch_align_stack(unsigned long sp);
- extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
- 
- void default_idle(void);
-+bool set_pm_idle_to_default(void);
- 
- void stop_this_cpu(void *dummy);
- 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 1f7f8c8..31f47ba 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -404,6 +404,14 @@ void default_idle(void)
- EXPORT_SYMBOL(default_idle);
- #endif
- 
-+bool set_pm_idle_to_default(void)
-+{
-+	bool ret = !!pm_idle;
-+
-+	pm_idle = default_idle;
-+
-+	return ret;
-+}
- void stop_this_cpu(void *dummy)
- {
- 	local_irq_disable();
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 46d6d21..79dfb57 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -448,6 +448,6 @@ void __init xen_arch_setup(void)
- #endif
- 	disable_cpuidle();
- 	boot_option_idle_override = IDLE_HALT;
--
-+	WARN_ON(set_pm_idle_to_default());
- 	fiddle_vdso();
- }
--- 
-1.7.7.3
-
+	Arnd
