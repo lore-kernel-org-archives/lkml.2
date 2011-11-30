@@ -1,108 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab1K3SPa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 13:15:30 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:63925 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab1K3SP1 (ORCPT
+	id S1752276Ab1K3SQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 13:16:38 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:42765 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab1K3SQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 13:15:27 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Subject: Re: [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt extensions
-Date: Wed, 30 Nov 2011 18:15:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "android-virt@lists.cs.columbia.edu" 
-	<android-virt@lists.cs.columbia.edu>,
-        "embeddedxen-devel@lists.sourceforge.net" 
-	<embeddedxen-devel@lists.sourceforge.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop> <201111301432.54463.arnd@arndb.de> <1322670473.31810.129.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1322670473.31810.129.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111301815.01297.arnd@arndb.de>
-X-Provags-ID: V02:K0:0QF1cQvBrkFixJKucsdEWFs++J4ZdGCXd6xZLH0sUdP
- 21sqNZwWW2YwtvqbQU2Vs+iQ4BgIvZVvo/jsjy2ecSHgQveLPk
- Tjz7jIsFzmcDdfNKxCi3i0SWyVisDmPvpwSOiWUs3+qYfYotgY
- SzSFXIT4rrefbhicv0lGTuxjkL8QLX8Rt+d+4AMJRi2qoyJNZk
- hjHtyd8Tvl4d8Pr4lm8BaAqnC29b/z/Ofz4aoYhjXHxQaVhYP1
- sa9U+vGtMYMM4pgmbuMUug7CKpm50HgsgC8Pyanp79QMu5i4kc
- GJLL0GRZ3vW3xUL2hHubZN0QyoqMEefw/Q7qX0RdMYvcLoHidJ
- nlIloH22xJUm+hwTXhNE=
+	Wed, 30 Nov 2011 13:16:37 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Ian.Campbell@citrix.com, lidongyang@novell.com, JBeulich@novell.com
+Cc: axboe@kernel.dk, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3/4] xen/blkback: Move processing of BLKIF_OP_DISCARD from dispatch_rw_block_io
+Date: Wed, 30 Nov 2011 13:15:55 -0500
+Message-Id: <1322676956-15691-4-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1322676956-15691-1-git-send-email-konrad.wilk@oracle.com>
+References: <1322676956-15691-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020206.4ED672FC.0121,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 November 2011, Ian Campbell wrote:
-> On Wed, 2011-11-30 at 14:32 +0000, Arnd Bergmann wrote:
-> > On Wednesday 30 November 2011, Ian Campbell wrote:
-> > What I suggested to the KVM developers is to start out with the
-> > vexpress platform, but then generalize it to the point where it fits
-> > your needs. All hardware that one expects a guest to have (GIC, timer,
-> > ...) will still show up in the same location as on a real vexpress,
-> > while anything that makes no sense or is better paravirtualized (LCD,
-> > storage, ...) just becomes optional and has to be described in the
-> > device tree if it's actually there.
-> 
-> That's along the lines of what I was thinking as well.
-> 
-> The DT contains the address of GIC, timer etc as well right? So at least
-> in principal we needn't provide e.g. the GIC at the same address as any
-> real platform but in practice I expect we will.
+. and move it to its own function that will deal with the
+discard operation.
 
-Yes.
+Suggested-by: Jan Beulich <JBeulich@novell.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/block/xen-blkback/blkback.c |   54 +++++++++++++++-------------------
+ 1 files changed, 24 insertions(+), 30 deletions(-)
 
-> In principal we could also offer the user options as to which particular
-> platform a guest looks like.
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 9d2261b..b058de7 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -416,12 +416,16 @@ static int xen_blkbk_map(struct blkif_request *req,
+ 	return ret;
+ }
+ 
+-static void xen_blk_discard(struct xen_blkif *blkif, struct blkif_request *req)
++static int dispatch_discard_io(struct xen_blkif *blkif,
++				struct blkif_request *req)
+ {
+ 	int err = 0;
+ 	int status = BLKIF_RSP_OKAY;
+ 	struct block_device *bdev = blkif->vbd.bdev;
+ 
++	blkif->st_ds_req++;
++
++	xen_blkif_get(blkif);
+ 	if (blkif->blk_backend_type == BLKIF_BACKEND_PHY) {
+ 		unsigned long secure = (blkif->vbd.discard_secure &&
+ 			(req->u.discard.flag & BLKIF_DISCARD_SECURE)) ?
+@@ -453,6 +457,8 @@ static void xen_blk_discard(struct xen_blkif *blkif, struct blkif_request *req)
+ 		status = BLKIF_RSP_ERROR;
+ 
+ 	make_response(blkif, req->u.discard.id, req->operation, status);
++	xen_blkif_put(blkif);
++	return err;
+ }
+ 
+ static void xen_blk_drain_io(struct xen_blkif *blkif)
+@@ -576,8 +582,11 @@ __do_block_io_op(struct xen_blkif *blkif)
+ 
+ 		/* Apply all sanity checks to /private copy/ of request. */
+ 		barrier();
+-
+-		if (dispatch_rw_block_io(blkif, &req, pending_req))
++		if (unlikely(req.operation == BLKIF_OP_DISCARD)) {
++			free_req(pending_req);
++			if (dispatch_discard_io(blkif, &req))
++				break;
++		} else if (dispatch_rw_block_io(blkif, &req, pending_req))
+ 			break;
+ 
+ 		/* Yield point for this unbounded loop. */
+@@ -636,24 +645,16 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+ 		blkif->st_f_req++;
+ 		operation = WRITE_FLUSH;
+ 		break;
+-	case BLKIF_OP_DISCARD:
+-		blkif->st_ds_req++;
+-		operation = REQ_DISCARD;
+-		break;
+ 	default:
+ 		operation = 0; /* make gcc happy */
+ 		goto fail_response;
+ 		break;
+ 	}
+ 
+-	if (unlikely(operation == REQ_DISCARD))
+-		nseg = 0;
+-	else
+-		/* Check that the number of segments is sane. */
+-		nseg = req->u.rw.nr_segments;
++	/* Check that the number of segments is sane. */
++	nseg = req->u.rw.nr_segments;
+ 
+-	if (unlikely(nseg == 0 && operation != WRITE_FLUSH &&
+-				operation != REQ_DISCARD) ||
++	if (unlikely(nseg == 0 && operation != WRITE_FLUSH) ||
+ 	    unlikely(nseg > BLKIF_MAX_SEGMENTS_PER_REQUEST)) {
+ 		pr_debug(DRV_PFX "Bad number of segments in request (%d)\n",
+ 			 nseg);
+@@ -714,7 +715,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+ 	 * the hypercall to unmap the grants - that is all done in
+ 	 * xen_blkbk_unmap.
+ 	 */
+-	if (nseg && xen_blkbk_map(req, pending_req, seg))
++	if (xen_blkbk_map(req, pending_req, seg))
+ 		goto fail_flush;
+ 
+ 	/*
+@@ -746,23 +747,16 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+ 
+ 	/* This will be hit if the operation was a flush or discard. */
+ 	if (!bio) {
+-		BUG_ON(operation != WRITE_FLUSH && operation != REQ_DISCARD);
++		BUG_ON(operation != WRITE_FLUSH);
+ 
+-		if (operation == WRITE_FLUSH) {
+-			bio = bio_alloc(GFP_KERNEL, 0);
+-			if (unlikely(bio == NULL))
+-				goto fail_put_bio;
++		bio = bio_alloc(GFP_KERNEL, 0);
++		if (unlikely(bio == NULL))
++			goto fail_put_bio;
+ 
+-			biolist[nbio++] = bio;
+-			bio->bi_bdev    = preq.bdev;
+-			bio->bi_private = pending_req;
+-			bio->bi_end_io  = end_block_io_op;
+-		} else if (operation == REQ_DISCARD) {
+-			xen_blk_discard(blkif, req);
+-			xen_blkif_put(blkif);
+-			free_req(pending_req);
+-			return 0;
+-		}
++		biolist[nbio++] = bio;
++		bio->bi_bdev    = preq.bdev;
++		bio->bi_private = pending_req;
++		bio->bi_end_io  = end_block_io_op;
+ 	}
+ 
+ 	/*
+-- 
+1.7.7.3
 
-At least when using a qemu based simulation. Most platforms have some
-characteristics that are not meaningful in a classic virtualization
-scenario, but it would certainly be helpful to use the virtualization
-extensions to run a kernel that was built for a particular platform
-faster than with pure qemu, when you want to test that kernel image.
-
-It has been suggested in the past that it would be nice to run the
-guest kernel built for the same platform as the host kernel by
-default, but I think it would be much better to have just one
-platform that we end up using for guests on any host platform,
-unless there is a strong reason to do otherwise.
-
-There is also ongoing restructuring in the ARM Linux kernel to
-allow running the same kernel binary on multiple platforms. While
-there is still a lot of work to be done, you should assume that
-we will finish it before you see lots of users in production, there
-is no need to plan for the current one-kernel-per-board case.
-
-> > Ok. It would of course still be possible to agree on an argument passing
-> > convention so that we can share the macros used to issue the hcalls,
-> > even if the individual commands are all different.
-> 
-> I think it likely that we can all agree on a common calling convention
-> for N-argument hypercalls. It doubt there are that many useful choices
-> with conflicting requirements yet strongly compelling advantages.
-
-Exactly. I think it's only lack of communication that has resulted in
-different interfaces for each hypervisor on the other architectures.
-
-KVM and Xen at least both fall into the single-return-value category,
-so we should be able to agree on a calling conventions. KVM does not
-have an hcall API on ARM yet, and I see no reason not to use the
-same implementation that you have in the Xen guest.
-
-Stefano, can you split out the generic parts of your asm/xen/hypercall.h
-file into a common asm/hypercall.h and submit it for review to the
-arm kernel list?
-
-	Arnd
