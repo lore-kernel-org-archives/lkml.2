@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab1K3CRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 21:17:33 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:39778 "EHLO
+	id S1757606Ab1K3CRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 21:17:42 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:55817 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756637Ab1K3CR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 21:17:29 -0500
+	id S1756637Ab1K3CRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 21:17:39 -0500
 From: Joe Perches <joe@perches.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 15/28] exec: checkpatch wanking
-Date: Tue, 29 Nov 2011 18:14:13 -0800
-Message-Id: <7b4138e77a35e6708bb166cec276a4f36a7a3d46.1322609673.git.joe@perches.com>
+Subject: [PATCH 16/28] namespace: checkpatch wanking
+Date: Tue, 29 Nov 2011 18:14:14 -0800
+Message-Id: <a3527806b3af190204da9de1df1bfe4421ed6101.1322609673.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1322609672.git.joe@perches.com>
 References: <cover.1322609672.git.joe@perches.com>
@@ -19,349 +19,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a few style things, all but 1 false positive,
-the #include <asm/mmu_context.h> warning, has been
-cleaned.
+Fix a few style things.
 
-$ ./scripts/checkpatch.pl --terse -f fs/exec.c | cut -f3- -d":" |sort|uniq -c
-      4  ERROR: code indent should use tabs where possible
-      1  ERROR: do not initialise globals to 0 or NULL
+$ ./scripts/checkpatch.pl -f --terse --nosummary fs/namespace.c | \
+  cut -f3- -d":" | sort | uniq -c
+      1  ERROR: do not initialise statics to 0 or NULL
       2  ERROR: do not use assignment in if condition
-     10  ERROR: "foo * bar" should be "foo *bar"
-      1  ERROR: space required after that ',' (ctx:OxV)
-      3  ERROR: space required after that ',' (ctx:VxV)
-      1  ERROR: space required before the open parenthesis '('
-      2  ERROR: spaces required around that '<=' (ctx:VxV)
-      1  ERROR: spaces required around that '<' (ctx:VxV)
-      2  ERROR: spaces required around that '==' (ctx:VxV)
-      2  ERROR: spaces required around that '=' (ctx:VxV)
-      5  ERROR: trailing whitespace
+      1  ERROR: "foo * bar" should be "foo *bar"
+      1  ERROR: need consistent spacing around '|' (ctx:VxW)
       1  WARNING: braces {} are not necessary for single statement blocks
-      6  WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
-      3  WARNING: line over 80 characters
-      4  WARNING: please, no space before tabs
-      4  WARNING: please, no spaces at the start of a line
-      1  WARNING: Use #include <linux/mmu_context.h> instead of <asm/mmu_context.h>
+      3  WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
+      4  WARNING: line over 80 characters
+      9  WARNING: please, no space before tabs
       1  WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
+      1  WARNING: Use #include <linux/unistd.h> instead of <asm/unistd.h>
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/exec.c |   83 +++++++++++++++++++++++++++++++------------------------------
- 1 files changed, 42 insertions(+), 41 deletions(-)
+ fs/namespace.c |   52 +++++++++++++++++++++++++++-------------------------
+ 1 files changed, 27 insertions(+), 25 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 0839da4..1365d02 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -19,7 +19,7 @@
-  * current->executable is only used by the procfs.  This allows a dispatch
-  * table to check for several different types  of binary formats.  We keep
-  * trying until we recognize the file or we run out of supported binary
-- * formats. 
-+ * formats.
-  */
- 
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-@@ -58,7 +58,7 @@
- #include <linux/oom.h>
- #include <linux/compat.h>
- 
+diff --git a/fs/namespace.c b/fs/namespace.c
+index f9a164d..30bc685 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -33,8 +33,8 @@
+ #include <linux/idr.h>
+ #include <linux/fs_struct.h>
+ #include <linux/fsnotify.h>
 -#include <asm/uaccess.h>
+-#include <asm/unistd.h>
 +#include <linux/uaccess.h>
- #include <asm/mmu_context.h>
- #include <asm/tlb.h>
++#include <linux/unistd.h>
+ #include "pnode.h"
  #include "internal.h"
-@@ -66,7 +66,7 @@
- int core_uses_pid;
- char core_pattern[CORENAME_MAX_SIZE] = "core";
- unsigned int core_pipe_limit;
--int suid_dumpable = 0;
-+int suid_dumpable;
  
- struct core_name {
- 	char *corename;
-@@ -79,7 +79,7 @@ static atomic_t call_count = ATOMIC_INIT(1);
- static LIST_HEAD(formats);
- static DEFINE_RWLOCK(binfmt_lock);
+@@ -45,7 +45,7 @@ static int event;
+ static DEFINE_IDA(mnt_id_ida);
+ static DEFINE_IDA(mnt_group_ida);
+ static DEFINE_SPINLOCK(mnt_id_lock);
+-static int mnt_id_start = 0;
++static int mnt_id_start;
+ static int mnt_group_start = 1;
  
--int __register_binfmt(struct linux_binfmt * fmt, int insert)
-+int __register_binfmt(struct linux_binfmt *fmt, int insert)
+ static struct list_head *mount_hashtable __read_mostly;
+@@ -511,7 +511,8 @@ struct vfsmount *lookup_mnt(struct path *path)
+ 	struct vfsmount *child_mnt;
+ 
+ 	br_read_lock(&vfsmount_lock);
+-	if ((child_mnt = __lookup_mnt(path->mnt, path->dentry, 1)))
++	child_mnt = __lookup_mnt(path->mnt, path->dentry, 1);
++	if (child_mnt)
+ 		mntget(child_mnt);
+ 	br_read_unlock(&vfsmount_lock);
+ 	return child_mnt;
+@@ -671,7 +672,8 @@ static struct vfsmount *skip_mnt_tree(struct vfsmount *p)
+ }
+ 
+ struct vfsmount *
+-vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void *data)
++vfs_kern_mount(struct file_system_type *type, int flags, const char *name,
++	       void *data)
  {
- 	if (!fmt)
- 		return -EINVAL;
-@@ -87,21 +87,19 @@ int __register_binfmt(struct linux_binfmt * fmt, int insert)
- 	insert ? list_add(&fmt->lh, &formats) :
- 		 list_add_tail(&fmt->lh, &formats);
- 	write_unlock(&binfmt_lock);
--	return 0;	
-+	return 0;
+ 	struct vfsmount *mnt;
+ 	struct dentry *root;
+@@ -1174,7 +1176,6 @@ int may_umount_tree(struct vfsmount *mnt)
+ 
+ 	return 1;
  }
 -
- EXPORT_SYMBOL(__register_binfmt);
+ EXPORT_SYMBOL(may_umount_tree);
  
--void unregister_binfmt(struct linux_binfmt * fmt)
-+void unregister_binfmt(struct linux_binfmt *fmt)
- {
- 	write_lock(&binfmt_lock);
- 	list_del(&fmt->lh);
- 	write_unlock(&binfmt_lock);
+ /**
+@@ -1201,7 +1202,6 @@ int may_umount(struct vfsmount *mnt)
+ 	up_read(&namespace_sem);
+ 	return ret;
  }
 -
- EXPORT_SYMBOL(unregister_binfmt);
+ EXPORT_SYMBOL(may_umount);
  
--static inline void put_binfmt(struct linux_binfmt * fmt)
-+static inline void put_binfmt(struct linux_binfmt *fmt)
- {
- 	module_put(fmt->module);
- }
-@@ -143,8 +141,8 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
- 	fsnotify_open(file);
+ void release_mounts(struct list_head *head)
+@@ -1307,9 +1307,8 @@ static int do_umount(struct vfsmount *mnt, int flags)
+ 	 * about for the moment.
+ 	 */
  
- 	error = -ENOEXEC;
--	if(file->f_op) {
--		struct linux_binfmt * fmt;
-+	if (file->f_op) {
-+		struct linux_binfmt *fmt;
+-	if (flags & MNT_FORCE && sb->s_op->umount_begin) {
++	if (flags & MNT_FORCE && sb->s_op->umount_begin)
+ 		sb->s_op->umount_begin(sb);
+-	}
  
- 		read_lock(&binfmt_lock);
- 		list_for_each_entry(fmt, &formats, lh) {
-@@ -164,7 +162,7 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
- exit:
- 	fput(file);
- out:
--  	return error;
-+	return error;
- }
- 
- #ifdef CONFIG_MMU
-@@ -811,13 +809,12 @@ int kernel_read(struct file *file, loff_t offset,
- 	set_fs(old_fs);
- 	return result;
- }
--
- EXPORT_SYMBOL(kernel_read);
- 
- static int exec_mmap(struct mm_struct *mm)
- {
- 	struct task_struct *tsk;
--	struct mm_struct * old_mm, *active_mm;
-+	struct mm_struct *old_mm, *active_mm;
- 
- 	/* Notify parent that we're no longer interested in the old VM */
- 	tsk = current;
-@@ -1012,7 +1009,7 @@ no_thread_group:
-  * These functions flushes out all traces of the currently running executable
-  * so that a new one can be started
-  */
--static void flush_old_files(struct files_struct * files)
-+static void flush_old_files(struct files_struct *files)
- {
- 	long j = -1;
- 	struct fdtable *fdt;
-@@ -1031,10 +1028,9 @@ static void flush_old_files(struct files_struct * files)
- 			continue;
- 		fdt->close_on_exec->fds_bits[j] = 0;
- 		spin_unlock(&files->file_lock);
--		for ( ; set ; i++,set >>= 1) {
--			if (set & 1) {
-+		for (; set; i++, set >>= 1) {
-+			if (set & 1)
- 				sys_close(i);
--			}
- 		}
- 		spin_lock(&files->file_lock);
- 
-@@ -1069,7 +1065,7 @@ void set_task_comm(struct task_struct *tsk, char *buf)
- 	perf_event_comm(tsk);
- }
- 
--int flush_old_exec(struct linux_binprm * bprm)
-+int flush_old_exec(struct linux_binprm *bprm)
- {
- 	int retval;
- 
-@@ -1112,7 +1108,7 @@ void would_dump(struct linux_binprm *bprm, struct file *file)
- }
- EXPORT_SYMBOL(would_dump);
- 
--void setup_new_exec(struct linux_binprm * bprm)
-+void setup_new_exec(struct linux_binprm *bprm)
- {
- 	int i, ch;
- 	const char *name;
-@@ -1131,7 +1127,7 @@ void setup_new_exec(struct linux_binprm * bprm)
- 	name = bprm->filename;
- 
- 	/* Copies the binary name from after last slash */
--	for (i=0; (ch = *(name++)) != '\0';) {
-+	for (i = 0; (ch = *(name++)) != '\0';) {
- 		if (ch == '/')
- 			i = 0; /* overwrite what we wrote */
- 		else
-@@ -1168,7 +1164,7 @@ void setup_new_exec(struct linux_binprm * bprm)
- 	   group */
- 
- 	current->self_exec_id++;
--			
-+
- 	flush_signal_handlers(current, 0);
- 	flush_old_files(current->files);
- }
-@@ -1263,8 +1259,8 @@ int check_unsafe_exec(struct linux_binprm *bprm)
- 	return res;
- }
- 
--/* 
-- * Fill the binprm structure from the inode. 
-+/*
-+ * Fill the binprm structure from the inode.
-  * Check permissions, then read the first 128 (BINPRM_BUF_SIZE) bytes
+ 	/*
+ 	 * No sense to grab the lock for this test, but test itself looks
+@@ -1541,8 +1540,8 @@ static int invent_group_ids(struct vfsmount *mnt, bool recurse)
+  *  @source_mnt : mount tree to be attached
+  *  @nd         : place the mount tree @source_mnt is attached
+  *  @parent_nd  : if non-null, detach the source_mnt from its parent and
+- *  		   store the parent mount and mountpoint dentry.
+- *  		   (done when source_mnt is moved)
++ *		   store the parent mount and mountpoint dentry.
++ *		   (done when source_mnt is moved)
   *
-  * This may be called multiple times for binary chains (scripts for example).
-@@ -1272,7 +1268,7 @@ int check_unsafe_exec(struct linux_binprm *bprm)
- int prepare_binprm(struct linux_binprm *bprm)
- {
- 	umode_t mode;
--	struct inode * inode = bprm->file->f_path.dentry->d_inode;
-+	struct inode *inode = bprm->file->f_path.dentry->d_inode;
- 	int retval;
- 
- 	mode = inode->i_mode;
-@@ -1311,7 +1307,6 @@ int prepare_binprm(struct linux_binprm *bprm)
- 	memset(bprm->buf, 0, BINPRM_BUF_SIZE);
- 	return kernel_read(bprm->file, 0, bprm->buf, BINPRM_BUF_SIZE);
- }
--
- EXPORT_SYMBOL(prepare_binprm);
- 
+  *  NOTE: in the table below explains the semantics when a source mount
+  *  of a given type is attached to a destination mount of a given type.
+@@ -1562,8 +1561,8 @@ static int invent_group_ids(struct vfsmount *mnt, bool recurse)
+  * destination mount.
+  *
+  * (++)  the cloned mount is propagated to all the mounts in the propagation
+- * 	 tree of the destination mount and the cloned mount is added to
+- * 	 the peer group of the source mount.
++ *	 tree of the destination mount and the cloned mount is added to
++ *	 the peer group of the source mount.
+  * (+)   the cloned mount is created under the destination mount and is marked
+  *       as shared. The cloned mount is added to the peer group of the source
+  *       mount.
+@@ -1572,10 +1571,10 @@ static int invent_group_ids(struct vfsmount *mnt, bool recurse)
+  *       of the same master as that of the source mount. The cloned mount
+  *       is marked as 'shared and slave'.
+  * (*)   the cloned mount is made a slave of the same master as that of the
+- * 	 source mount.
++ *	 source mount.
+  *
+  * ---------------------------------------------------------------------------
+- * |         		MOVE MOUNT OPERATION                                 |
++ * |			MOVE MOUNT OPERATION                                 |
+  * |**************************************************************************
+  * | source-->| shared        |       private  |       slave    | unbindable |
+  * | dest     |               |                |                |            |
+@@ -1588,11 +1587,11 @@ static int invent_group_ids(struct vfsmount *mnt, bool recurse)
+  * ***************************************************************************
+  *
+  * (+)  the mount is moved to the destination. And is then propagated to
+- * 	all the mounts in the propagation tree of the destination mount.
++ *	all the mounts in the propagation tree of the destination mount.
+  * (+*)  the mount is moved to the destination.
+  * (+++)  the mount is moved to the destination and is then propagated to
+- * 	all the mounts belonging to the destination mount's propagation tree.
+- * 	the mount is marked as 'shared and slave'.
++ *	all the mounts belonging to the destination mount's propagation tree.
++ *	the mount is marked as 'shared and slave'.
+  * (*)	the mount continues to be a slave at the new location.
+  *
+  * if the source mount is a tree, the operations explained above is
+@@ -1977,7 +1976,8 @@ EXPORT_SYMBOL_GPL(do_kern_mount);
  /*
-@@ -1361,10 +1356,10 @@ EXPORT_SYMBOL(remove_arg_zero);
- /*
-  * cycle the list of binary formats handler, until one recognizes the image
+  * add a mount into a namespace's mount tree
   */
--int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
-+int search_binary_handler(struct linux_binprm *bprm, struct pt_regs *regs)
+-static int do_add_mount(struct vfsmount *newmnt, struct path *path, int mnt_flags)
++static int
++do_add_mount(struct vfsmount *newmnt, struct path *path, int mnt_flags)
  {
- 	unsigned int depth = bprm->recursion_depth;
--	int try,retval;
-+	int try, retval;
- 	struct linux_binfmt *fmt;
- 	pid_t old_pid;
+ 	int err;
  
-@@ -1382,10 +1377,11 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 	rcu_read_unlock();
+@@ -2123,7 +2123,6 @@ void mark_mounts_for_expiry(struct list_head *mounts)
  
- 	retval = -ENOENT;
--	for (try=0; try<2; try++) {
-+	for (try = 0; try < 2; try++) {
- 		read_lock(&binfmt_lock);
- 		list_for_each_entry(fmt, &formats, lh) {
--			int (*fn)(struct linux_binprm *, struct pt_regs *) = fmt->load_binary;
-+			int (*fn)(struct linux_binprm *, struct pt_regs *) =
-+				fmt->load_binary;
- 			if (!fn)
- 				continue;
- 			if (!try_module_get(fmt->module))
-@@ -1425,7 +1421,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 		if (retval != -ENOEXEC || bprm->mm == NULL) {
- 			break;
- 		} else {
--#define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
-+
-+#define printable(c)							\
-+	(((c) == '\t') || ((c) == '\n') || (0x20 <= (c) && (c) <= 0x7e))
-+
- 			if (printable(bprm->buf[0]) &&
- 			    printable(bprm->buf[1]) &&
- 			    printable(bprm->buf[2]) &&
-@@ -1433,7 +1432,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 				break; /* -ENOEXEC */
- 			if (try)
- 				break; /* -ENOEXEC */
--			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
-+			request_module("binfmt-%04x",
-+				       *(unsigned short *)(&bprm->buf[2]));
- 		}
- #else
- 		break;
-@@ -1441,7 +1441,6 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 	}
- 	return retval;
+ 	release_mounts(&umounts);
  }
 -
- EXPORT_SYMBOL(search_binary_handler);
+ EXPORT_SYMBOL_GPL(mark_mounts_for_expiry);
  
  /*
-@@ -1510,11 +1509,13 @@ static int do_execve_common(const char *filename,
- 		goto out_file;
- 
- 	bprm->argc = count(argv, MAX_ARG_STRINGS);
--	if ((retval = bprm->argc) < 0)
-+	retval = bprm->argc;
-+	if (retval < 0)
- 		goto out;
- 
- 	bprm->envc = count(envp, MAX_ARG_STRINGS);
--	if ((retval = bprm->envc) < 0)
-+	retval = bprm->envc;
-+	if (retval < 0)
- 		goto out;
- 
- 	retval = prepare_binprm(bprm);
-@@ -1534,7 +1535,7 @@ static int do_execve_common(const char *filename,
- 	if (retval < 0)
- 		goto out;
- 
--	retval = search_binary_handler(bprm,regs);
-+	retval = search_binary_handler(bprm, regs);
- 	if (retval < 0)
- 		goto out;
- 
-@@ -1613,7 +1614,6 @@ void set_binfmt(struct linux_binfmt *new)
- 	if (new)
- 		__module_get(new->module);
- }
--
- EXPORT_SYMBOL(set_binfmt);
- 
- static int expand_corename(struct core_name *cn)
-@@ -2090,7 +2090,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 	struct core_state core_state;
- 	struct core_name cn;
- 	struct mm_struct *mm = current->mm;
--	struct linux_binfmt * binfmt;
-+	struct linux_binfmt *binfmt;
- 	const struct cred *old_cred;
- 	struct cred *cred;
- 	int retval = 0;
-@@ -2145,7 +2145,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 
- 	ispipe = format_corename(&cn, signr);
- 
-- 	if (ispipe) {
-+	if (ispipe) {
- 		int dump_count;
- 		char **helper_argv;
- 
-@@ -2198,7 +2198,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		if (retval) {
- 			pr_info("Core dump to %s pipe failed\n", cn.corename);
- 			goto close_fail;
-- 		}
-+		}
- 	} else {
- 		struct inode *inode;
- 
-@@ -2264,7 +2264,8 @@ fail:
+@@ -2132,7 +2131,8 @@ EXPORT_SYMBOL_GPL(mark_mounts_for_expiry);
+  * search the list of submounts for a given mountpoint, and move any
+  * shrinkable submounts to the 'graveyard' list.
   */
- int dump_write(struct file *file, const void *addr, int nr)
+-static int select_submounts(struct vfsmount *parent, struct list_head *graveyard)
++static int
++select_submounts(struct vfsmount *parent, struct list_head *graveyard)
  {
--	return access_ok(VERIFY_READ, addr, nr) && file->f_op->write(file, addr, nr, &file->f_pos) == nr;
-+	return access_ok(VERIFY_READ, addr, nr) &&
-+	       file->f_op->write(file, addr, nr, &file->f_pos) == nr;
- }
- EXPORT_SYMBOL(dump_write);
+ 	struct vfsmount *this_parent = parent;
+ 	struct list_head *next;
+@@ -2143,7 +2143,8 @@ repeat:
+ resume:
+ 	while (next != &this_parent->mnt_mounts) {
+ 		struct list_head *tmp = next;
+-		struct vfsmount *mnt = list_entry(tmp, struct vfsmount, mnt_child);
++		struct vfsmount *mnt = list_entry(tmp, struct vfsmount,
++						  mnt_child);
  
+ 		next = tmp->next;
+ 		if (!(mnt->mnt_flags & MNT_SHRINKABLE))
+@@ -2222,7 +2223,7 @@ static long exact_copy_from_user(void *to, const void __user * from,
+ 	return n;
+ }
+ 
+-int copy_mount_options(const void __user * data, unsigned long *where)
++int copy_mount_options(const void __user *data, unsigned long *where)
+ {
+ 	int i;
+ 	unsigned long page;
+@@ -2232,7 +2233,8 @@ int copy_mount_options(const void __user * data, unsigned long *where)
+ 	if (!data)
+ 		return 0;
+ 
+-	if (!(page = __get_free_page(GFP_KERNEL)))
++	page = __get_free_page(GFP_KERNEL);
++	if (!page)
+ 		return -ENOMEM;
+ 
+ 	/* We only care that *some* data at the address the user
+@@ -2336,7 +2338,7 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
+ 		mnt_flags |= MNT_READONLY;
+ 
+ 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE | MS_BORN |
+-		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
++		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME | MS_KERNMOUNT |
+ 		   MS_STRICTATIME);
+ 
+ 	if (flags & MS_REMOUNT)
 -- 
 1.7.6.405.gc1be0
 
