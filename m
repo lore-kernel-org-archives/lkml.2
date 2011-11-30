@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab1K3T6U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:58:20 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33731 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab1K3T6P (ORCPT
+	id S1753499Ab1K3T61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:58:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56503 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab1K3T6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:58:15 -0500
+	Wed, 30 Nov 2011 14:58:23 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 22/25] dynamic_debug: add modname arg to exec_query callchain
-Date: Wed, 30 Nov 2011 12:56:51 -0700
-Message-Id: <1322683014-13285-23-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 25/25] dynamic_debug: protect "dyndbg" fake module param name at compile-time
+Date: Wed, 30 Nov 2011 12:56:54 -0700
+Message-Id: <1322683014-13285-26-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
 References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
@@ -23,144 +23,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Extract module name from param-name, and pass to ddebug_exec_query(),
-ddebug_exec_queries() and ddebug_parse_query() as separate parameter.
-This has 2 purposes:
+Add BUILD_BUG_DECL(name, cond) to cause compile error if condition is
+true.  Unlike other flavors of BUILD_BUG_*, this works at file scope;
+it declares an unused 0-sized var: __BUILD_BUG_DECL_##name, whose
+declaration is readily found if compile errors happen.
 
-1. support multiple queries:
-   $modname.dyndbg="func foo +fp; func bar +fp"
-
-In ddebug_parse_query(), the module name is added into the query
-struct before each query-string is parsed, so "module $module" must be
-omitted from the query-string (param-value), otherwize the
-set-only-once test added previously will issue an error.
-
-2. With module-name passed by ddebug_boot_parse_args() into
-ddebug_exec_queries(), we no longer need to sprintf "module modname"
-into the query-string, and can just drop the sprintf buffer.
+Use this macro in module_param_named() to insure that "dyndbg" is
+reserved and not used by modules as a param name, and drop the
+run-time check for same.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+ include/linux/kernel.h      |   10 ++++++++++
+ include/linux/moduleparam.h |    1 +
+ lib/dynamic_debug.c         |    8 --------
+ 3 files changed, 11 insertions(+), 8 deletions(-)
 
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index e8b1597..62f210b 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -665,6 +665,7 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ #define BUILD_BUG_ON_ZERO(e) (0)
+ #define BUILD_BUG_ON_NULL(e) ((void*)0)
+ #define BUILD_BUG_ON(condition)
++#define BUILD_BUG_DECL(name, condition)
+ #else /* __CHECKER__ */
+ 
+ /* Force a compilation error if a constant expression is not a power of 2 */
+@@ -703,6 +704,15 @@ extern int __build_bug_on_failed;
+ 		if (condition) __build_bug_on_failed = 1;	\
+ 	} while(0)
+ #endif
++/* 
++ * BUILD_BUG_DECL is usable at file scope (by avoiding do {} loop).
++ * If condition is true, causes a compile error, otherwize it declares
++ * a 0-sized array (so it doesn't waste space)
++ */
++#define BUILD_BUG_DECL(name, condition)					\
++	static struct __BUILD_BUG_DECL_ ##name {			\
++		int __BUILD_BUG_DECL_ ##name[1 - 2*!!(condition)];	\
++  } __BUILD_BUG_DECL_ ##name[0] __attribute__((unused))
+ #endif	/* __CHECKER__ */
+ 
+ /* Trap pasters of __FUNCTION__ at compile-time */
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index e62e5ce..490e557 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -118,6 +118,7 @@ struct kparam_array
+  * structure.  This allows exposure under a different name.
+  */
+ #define module_param_named(name, value, type, perm)			   \
++	BUILD_BUG_DECL(name, !__builtin_strcmp(#name, "dyndbg"));	   \
+ 	param_check_##type(name, &(value));				   \
+ 	module_param_cb(name, &param_ops_##type, &value, perm);		   \
+ 	__MODULE_PARM_TYPE(name, #type)
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 9dcbb61..fc3f68a 100644
+index a077cd4..9b07a3b 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -340,7 +340,7 @@ static int check_set(const char **dest, char *src, char *name)
-  * Returns 0 on success, <0 on error.
-  */
- static int ddebug_parse_query(char *words[], int nwords,
--			       struct ddebug_query *query)
-+			struct ddebug_query *query, const char *modname)
- {
- 	unsigned int i;
- 	int rc;
-@@ -350,6 +350,10 @@ static int ddebug_parse_query(char *words[], int nwords,
- 		return -EINVAL;
- 	memset(query, 0, sizeof(*query));
- 
-+	if (modname)
-+		/* support $modname.dyndbg=<multiple queries> */
-+		query->module = modname;
-+
- 	for (i = 0 ; i < nwords ; i += 2) {
- 		if (!strcmp(words[i], "func"))
- 			rc = check_set(&query->function, words[i+1], "func");
-@@ -449,7 +453,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
- 	return 0;
- }
- 
--static int ddebug_exec_query(char *query_string)
-+static int ddebug_exec_query(char *query_string, const char *modname)
- {
- 	unsigned int flags = 0, mask = 0;
- 	struct ddebug_query query;
-@@ -463,7 +467,7 @@ static int ddebug_exec_query(char *query_string)
- 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
- 	if (nwords <= 0)
- 		return -EINVAL;
--	if (ddebug_parse_query(words, nwords-1, &query))
-+	if (ddebug_parse_query(words, nwords-1, &query, modname))
- 		return -EINVAL;
- 	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
- 		return -EINVAL;
-@@ -479,7 +483,7 @@ static int ddebug_exec_query(char *query_string)
-    last error or number of matching callsites.  Module name is either
-    in param (for boot arg) or perhaps in query string.
- */
--static int ddebug_exec_queries(char *query)
-+static int ddebug_exec_queries(char *query, char *modname)
- {
- 	char *split;
- 	int i, errs = 0, exitcode = 0, rc, nfound = 0;
-@@ -496,7 +500,7 @@ static int ddebug_exec_queries(char *query)
- 		if (verbose)
- 			pr_info("query %d: \"%s\"\n", i, query);
- 
--		rc = ddebug_exec_query(query);
-+		rc = ddebug_exec_query(query, modname);
- 		if (rc < 0) {
- 			errs++;
- 			exitcode = rc;
-@@ -662,7 +666,7 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
- 	if (verbose)
- 		pr_info("read %d bytes from userspace\n", (int)len);
- 
--	ret = ddebug_exec_queries(tmpbuf);
-+	ret = ddebug_exec_queries(tmpbuf, NULL);
- 	kfree(tmpbuf);
- 	if (ret < 0)
- 		return ret;
-@@ -882,7 +886,7 @@ EXPORT_SYMBOL_GPL(ddebug_add_module);
- void ddebug_module_parse_args(const char *modname, char* modargs,
+@@ -887,7 +887,6 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
  			      struct kernel_param *params, unsigned num)
  {
--	char ddebug[DDEBUG_STRING_SIZE], *param, *val, *args_it, *arg_dup_ptr;
-+	char *param, *val, *args_it, *arg_dup_ptr;
- 	int i;
+ 	char *param, *val, *args_it, *arg_dup_ptr;
+-	int i;
  
  	if (!modargs || !*modargs)
-@@ -894,7 +898,6 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
- 	 */
- 	arg_dup_ptr = args_it = kstrdup(modargs, GFP_KERNEL);
- 	args_it = skip_spaces(args_it);
--
+ 		return; /* no args, return now, avoid pr_infos */
+@@ -901,13 +900,6 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
  	if (verbose)
  		pr_info("%s ARGS: %s\n", modname, args_it);
  
-@@ -913,9 +916,7 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
- 		if (verbose)
- 			pr_info("Param: %s, val: %s\n", param, val);
- 
--		snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s %s",
--			modname, (val ? val : "+p"));
--		ddebug_exec_queries(ddebug);
-+		ddebug_exec_queries((val ? val : "+p"), modname);
- 	}
- 	kfree(arg_dup_ptr);
- 	if (verbose)
-@@ -945,9 +946,7 @@ static __init void ddebug_boot_parse_args(void)
- 		if (verbose)
- 			pr_info("Param: %s, val: %s\n", param, val);
- 
--		snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s %s",
--			module, (val ? val : "+p"));
--		ddebug_exec_queries(ddebug);
-+		ddebug_exec_queries((val ? val : "+p"), module);
- 	}
- }
- 
-@@ -1047,7 +1046,7 @@ static int __init dynamic_debug_init(void)
- 
- 	/* ddebug_query boot param got passed -> set it up */
- 	if (ddebug_setup_string[0] != '\0') {
--		ret = ddebug_exec_queries(ddebug_setup_string);
-+		ret = ddebug_exec_queries(ddebug_setup_string, NULL);
- 		if (ret < 0)
- 			pr_warn("Invalid ddebug boot param %s",
- 				ddebug_setup_string);
+-	/* warn if modules declare ddebug param - todo BUILD_BUG ?? */
+-	for (i = 0; i < num; i++) {
+-		if (!strcmp("ddebug", params[i].name))
+-			pr_warning("Module %s uses reserved keyword "
+-				   "*ddebug* as parameter\n", modname);
+-	}
+-
+ 	while (*args_it) {
+ 		args_it = next_arg(args_it, &param, &val);
+ 		if (strcmp(param, "dyndbg"))
 -- 
 1.7.7.3
 
