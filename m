@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659Ab1K3LhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 06:37:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41147 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753505Ab1K3LhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 06:37:21 -0500
-Date: Wed, 30 Nov 2011 12:37:19 +0100
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/9] readahead: snap readahead request to EOF
-Message-ID: <20111130113719.GC4541@quack.suse.cz>
-References: <20111129130900.628549879@intel.com>
- <20111129131456.145362960@intel.com>
- <20111129142958.GJ5635@quack.suse.cz>
- <20111130010604.GD11147@localhost>
+	id S1757736Ab1K3LiT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 06:38:19 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:35199 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592Ab1K3LiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 06:38:16 -0500
+X-IronPort-AV: E=Sophos;i="4.69,596,1315180800"; 
+   d="scan'208";a="9204066"
+Date: Wed, 30 Nov 2011 11:39:11 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "android-virt@lists.cs.columbia.edu" 
+	<android-virt@lists.cs.columbia.edu>,
+        "embeddedxen-devel@lists.sourceforge.net" 
+	<embeddedxen-devel@lists.sourceforge.net>
+Subject: Re: [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt extensions
+In-Reply-To: <201111292129.20444.arnd@arndb.de>
+Message-ID: <alpine.DEB.2.00.1111301053300.31179@kaball-desktop>
+References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop> <201111292129.20444.arnd@arndb.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111130010604.GD11147@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 30-11-11 09:06:04, Wu Fengguang wrote:
-> >   Hmm, wouldn't it be cleaner to do this already in ondemand_readahead()?
-> > All other updates of readahead window seem to be there.
+On Tue, 29 Nov 2011, Arnd Bergmann wrote:
+> On Tuesday 29 November 2011, Stefano Stabellini wrote:
+> > Hi all,
+> > a few weeks ago I (and a few others) started hacking on a
+> > proof-of-concept hypervisor port to Cortex-A15 which uses and requires
+> > ARMv7 virtualization extensions. The intention of this work was to find
+> > out how to best support ARM v7+ on Xen. See
+> > http://old-list-archives.xen.org/archives/html/xen-arm/2011-09/msg00013.html
+> > for more details. 
+> > 
+> > I am pleased to announce that significant progress has been made, and
+> > that we now have a nascent Xen port for Cortex-A15. The port is based on
+> > xen-unstable (HG CS 8d6edc3d26d2) and written from scratch exploiting
+> > the latest virtualization, LPAE, GIC and generic timer support in
+> > hardware.
 > 
-> Yeah it's not that clean, however the intention is to cover the other
-> call site -- mmap read-around, too.
-  Ah, OK.
+> Very nice!
+> 
+> Do you have a pointer to the kernel sources for the Linux guest?
 
-> > Also shouldn't we
-> > take maximum readahead size into account? Reading 3/2 of max readahead
-> > window seems like a relatively big deal for large files...
-> 
-> Good point, the max readahead size is actually a must, in order to
-> prevent it expanding the readahead size for ever in the backwards
-> reading case.
-> 
-> This limits the size expansion to 1/4 max readahead. That means, if
-> the next expected readahead size will be less than 1/4 max size, it
-> will be merged into the current readahead window to avoid one small IO.
-> 
-> The backwards reading is not special cased here because it's not
-> frequent anyway.
-> 
->  unsigned long ra_submit(struct file_ra_state *ra,
->  		       struct address_space *mapping, struct file *filp)
->  {
-> +	pgoff_t eof = ((i_size_read(mapping->host)-1) >> PAGE_CACHE_SHIFT) + 1;
-> +	pgoff_t start = ra->start;
-> +	unsigned long size = ra->size;
->  	int actual;
->  
-> +	/* snap to EOF */
-> +	size += min(size, ra->ra_pages / 4);
-  I'd probably choose:
-	size += min(size / 2, ra->ra_pages / 4);
-  to increase current window only to 3/2 and not twice but I don't have a
-strong opinion. Otherwise I think the code is fine now so you can add:
-  Acked-by: Jan Kara <jack@suse.cz>
+We have very few changes to the Linux kernel at the moment (only 3
+commits!), just enough to be able to issue hypercalls and start a PV
+console.
 
-> +	if (start + size > eof) {
-> +		ra->size = eof - start;
-> +		ra->async_size = 0;
-> +	}
-> +
->  	actual = __do_page_cache_readahead(mapping, filp,
->  					ra->start, ra->size, ra->async_size);
 
-									Honza
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+A git branch is available here (not ready for submission):
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git arm
+
+the branch above is based on git://linux-arm.org/linux-2.6.git arm-lpae,
+even though guests don't really need lpae support to run on Xen.
+
+
+> Since Xen and KVM are both in an early working state right now,
+> it would be very nice if we could agree on the guest model to make
+> sure that it's always possible to run the same kernel in both
+> (and potentially other future) hypervisors without modifications.
+
+Yes, that would be ideal.
+We don't plan on making many changes other than enabling PV frontends
+and backends. 
