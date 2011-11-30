@@ -1,109 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab1K3SKl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 13:10:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54192 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab1K3SKg convert rfc822-to-8bit (ORCPT
+	id S1752438Ab1K3SLD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 13:11:03 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:35965 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab1K3SK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 13:10:36 -0500
+	Wed, 30 Nov 2011 13:10:59 -0500
+Date: Wed, 30 Nov 2011 12:59:36 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>, deepthi@linux.vnet.ibm.com
+Subject: Re: 3.2-rc2+: Reported regressions from 3.0 and 3.1
+Message-ID: <20111130175936.GA15168@phenom.dumpdata.com>
+References: <lx6sezwGldO.A.IhF.UBpWOB@chimera>
+ <201111212249.31196.rjw@sisk.pl>
+ <20111122135412.GA29905@phenom.dumpdata.com>
+ <20111129180414.GA11459@phenom.dumpdata.com>
+ <20111129183428.GE8200@aftab>
 MIME-Version: 1.0
-In-Reply-To: <20111130173739.GI14515@moon>
-References: <20111129191252.769160532@openvz.org>
-	<20111129191638.912537377@openvz.org>
-	<20111129201938.GP5169@outflux.net>
-	<20111129202951.GG1775@moon>
-	<20111129203714.GH1775@moon>
-	<CAGXu5jKDLExXWi+_Hjc+8s7FeuDgQdZcPipMH80LQs+tRyJm2A@mail.gmail.com>
-	<20111130173739.GI14515@moon>
-Date: Wed, 30 Nov 2011 10:10:35 -0800
-X-Google-Sender-Auth: rVemrdF-HDfgkstfkNtiKVA_6hA
-Message-ID: <CAGXu5jL=46_MyxrrB8G4FntnLJBtt+DbvVX0kEXh9n8Ss+Yfsw@mail.gmail.com>
-Subject: Re: [rfc 3/3] prctl: Add PR_SET_MM codes to tune up mm_struct entires
-From: Kees Cook <keescook@chromium.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129183428.GE8200@aftab>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4ED67183.0042,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 9:37 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Tue, Nov 29, 2011 at 12:40:57PM -0800, Kees Cook wrote:
->> >
->> > On the other hands these fields are set up by elf hanlder code, which
->> > does mmap these areas, so we have to check that particular member
->> > belongs to existing VMA and never cross user-space area, and together
->> > with root-only approach would not it be enough? I'm sure missing something
->> > that is why I'm asking.
->>
->> Right, if you verify that the addresses are actually inside valid
->> userspace vmas, that is likely to be right, though there are probably
->> other things I haven't thought of. The trouble is avoiding vdso, stack
->> guard page, vsyscall, and anything else that isn't meant for the mm to
->> have direct access to.
->>
->
-> Hi Kees,
->
-> what about this one? Note that these mm_struct members don't affect
-> kernel much (at least as far as I see, except maybe brk,start_brk and
-> start_stack values), so I've added some sanity checks here, hope they
-> would fit. Still main protection is root-only access only. The kernel
-> itself uses vma_area::start/end members for overlows tests internally
-> so I think even passing crazy data here won't crash the kernel itself.
+On Tue, Nov 29, 2011 at 07:34:28PM +0100, Borislav Petkov wrote:
+> On Tue, Nov 29, 2011 at 01:04:14PM -0500, Konrad Rzeszutek Wilk wrote:
+> > This patch:
 
-Right, though besides just crashing the kernel, I'm trying to look at
-this from the perspective of a paranoid admin that doesn't even trust
-the root user. Is there some way this new interface could be used to
-provide the building blocks for gaining kernel execute control?
-(Imagine a system running with modules disabled, STRICT_DEVMEM
-enabled, etc.)
 
-> What do you think?
+Borislav,
 
-This looks way better, yes. I have this feeling like these validations
-should be more centralized or tied to the mm code more directly to
-avoid drift, but I don't have any constructive suggestions
-unfortunately. Maybe other folks do?
+Thanks for your review comments. How does this patch look? I believe
+I touched upon all of the things you mentioned.
 
-> +       switch (opt) {
-> +       case PR_SET_MM_START_CODE:
-> +       case PR_SET_MM_END_CODE:
-> +
-> +               vm_req_flags = VM_READ | VM_EXEC;
-> +               vm_bad_flags = VM_WRITE | VM_MAYSHARE;
-> +
-> +               if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
-> +                   (vma->vm_flags & vm_bad_flags))
-> +                       goto out;
+>From eb6dbd80078312c428dde69e9313606b7513a2e6 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 21 Nov 2011 18:02:02 -0500
+Subject: [PATCH] xen/pm_idle: Make pm_idle be default_idle under Xen.
 
-Another random thought: given this very regular set of checks you're
-doing, perhaps the flags should be part of a data structure instead,
-just to reduce the size of this routine?
+This patch:
 
-struct mm_flags {
-  int req_flags;
-  int bad_flags;
-};
+commit d91ee5863b71e8c90eaf6035bff3078a85e2e7b5
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Apr 1 18:28:35 2011 -0400
 
-struct mm_flags opt_flags[] = {
-...
- { VM_READ | VM_EXEC, VM_WRITE | VM_MAYSHARE }, /* PR_SET_MM_START_CODE */
- { VM_READ | VM_EXEC, VM_WRITE | VM_MAYSHARE }, /* PR_SET_MM_END_CODE */
-...
+    cpuidle: replace xen access to x86 pm_idle and default_idle
 
-then do validation before the switch statement all in one place, and
-leave the switch for more programmatic checks?
+    ..scribble on pm_idle and access default_idle,
+   have it simply disable_cpuidle() so acpi_idle will not load and
+   architecture default HLT will be used.
 
--Kees
+idea was to have one call - disable_cpuidle() which would make
+pm_idle not be molested by other code. It disallows cpuidle_idle_call
+to be set to pm_idle (which is excellent). But in the select_idle_routine()
+and idle_setup(), the pm_idle can still be set to either:
+amd_e400_idle, mwait_idle or default_idle. This depends on some
+CPU flags (MWAIT) and in AMD case on the type of CPU.
 
+In case of mwait_idle we can hit some instances where the hypervisor
+(Amazon EC2 specifically) sets the MWAIT and we get:
+
+Brought up 2 CPUs
+invalid opcode: 0000 [#1] SMP
+CPU 1
+Modules linked in:
+
+Pid: 0, comm: swapper Not tainted 3.1.0-0.rc6.git0.3.fc16.x86_64 #1
+RIP: e030:[<ffffffff81015d1d>]  [<ffffffff81015d1d>] mwait_idle+0x6f/0xb4
+RSP: e02b:ffff8801d28ddf10  EFLAGS: 00010082
+RAX: ffff8801d28dc010 RBX: ffff8801d28ddfd8 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000001
+RBP: ffff8801d28ddf10 R08: 0000000000000000 R09: 0000000000000001
+R10: 0000000000000001 R11: ffff8801d28ddfd8 R12: ffffffff81b590d0
+R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+FS:  0000000000000000(0000) GS:ffff8801dff81000(0000) knlGS:0000000000000000
+CS:  e033 DS: 002b ES: 002b CR0: 000000008005003b
+CR2: 0000000000000000 CR3: 0000000001a05000 CR4: 0000000000002660
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000000
+Process swapper (pid: 0, threadinfo ffff8801d28dc000, task ffff8801d28cae60)
+Stack:
+ ffff8801d28ddf40 ffffffff8100e2ed ffff8801dff8e390 c136dfe72feab515
+ 0000000000000000 0000000000000000 ffff8801d28ddf50 ffffffff8149ee78
+ 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+Call Trace:
+ [<ffffffff8100e2ed>] cpu_idle+0xae/0xe8
+ [<ffffffff8149ee78>] cpu_bringup_and_idle+0xe/0x10
+RIP  [<ffffffff81015d1d>] mwait_idle+0x6f/0xb4
+ RSP <ffff8801d28ddf10>
+
+In case of amd_e400_idle we don't get so spectacular crashes, but
+we do end up making an MSR which is trapped in the hypervisor,
+and then follow it up with a yield hypercall. Meaning we end up
+going to hypervisor twice instead of just once.
+
+The previous behavior before v3.0 was that pm_idle was set
+to default_idle irregardless of select_idle_routine/idle_setup.
+
+We want to do that, but only for one specific case: Xen.
+This patch does that.
+
+Fixes RH BZ #739499 and Ubuntu #881076
+Reported-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/include/asm/system.h |    1 +
+ arch/x86/kernel/process.c     |    8 ++++++++
+ arch/x86/xen/setup.c          |    2 +-
+ 3 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
+index c2ff2a1..2d2f01c 100644
+--- a/arch/x86/include/asm/system.h
++++ b/arch/x86/include/asm/system.h
+@@ -401,6 +401,7 @@ extern unsigned long arch_align_stack(unsigned long sp);
+ extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+ 
+ void default_idle(void);
++bool set_pm_idle_to_default(void);
+ 
+ void stop_this_cpu(void *dummy);
+ 
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 1f7f8c8..31f47ba 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -404,6 +404,14 @@ void default_idle(void)
+ EXPORT_SYMBOL(default_idle);
+ #endif
+ 
++bool set_pm_idle_to_default(void)
++{
++	bool ret = !!pm_idle;
++
++	pm_idle = default_idle;
++
++	return ret;
++}
+ void stop_this_cpu(void *dummy)
+ {
+ 	local_irq_disable();
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index 46d6d21..79dfb57 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -448,6 +448,6 @@ void __init xen_arch_setup(void)
+ #endif
+ 	disable_cpuidle();
+ 	boot_option_idle_override = IDLE_HALT;
+-
++	WARN_ON(set_pm_idle_to_default());
+ 	fiddle_vdso();
+ }
 -- 
-Kees Cook
-ChromeOS Security
+1.7.7.3
+
