@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1K3T61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:58:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56503 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab1K3T6X (ORCPT
+	id S1753332Ab1K3T6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:58:17 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46897 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753287Ab1K3T6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:58:23 -0500
+	Wed, 30 Nov 2011 14:58:12 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 25/25] dynamic_debug: protect "dyndbg" fake module param name at compile-time
-Date: Wed, 30 Nov 2011 12:56:54 -0700
-Message-Id: <1322683014-13285-26-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 21/25] dynamic_debug: handle $module.dyndbg="+mfp" boot-line args
+Date: Wed, 30 Nov 2011 12:56:50 -0700
+Message-Id: <1322683014-13285-22-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
 References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
@@ -23,88 +23,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Add BUILD_BUG_DECL(name, cond) to cause compile error if condition is
-true.  Unlike other flavors of BUILD_BUG_*, this works at file scope;
-it declares an unused 0-sized var: __BUILD_BUG_DECL_##name, whose
-declaration is readily found if compile errors happen.
+Handle explicit flag-arg given on boot-line, defaulting to "+p"
+otherwize.  Note that the operator char is required in the flag-arg,
+so these are legal, and the same (the latter being slightly odd):
 
-Use this macro in module_param_named() to insure that "dyndbg" is
-reserved and not used by modules as a param name, and drop the
-run-time check for same.
+  $module.dyndbg="=p"	# set p flag, clear others
+  $module.dyndbg==p	# same
+
+Note that modprobed modules will receive flag-args from the boot-line
+*after* those given in /etc/modprobe.d/*.  This may be surprising;
+boot-line args can alter previous flag settings, but is defensible, as
+former are invocation specific, whereas latter are system-wide.
+Options given on modprobe invocation are last, and correctly override
+all previous flag settings.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- include/linux/kernel.h      |   10 ++++++++++
- include/linux/moduleparam.h |    1 +
- lib/dynamic_debug.c         |    8 --------
- 3 files changed, 11 insertions(+), 8 deletions(-)
+ Documentation/dynamic-debug-howto.txt |   11 ++++++-----
+ lib/dynamic_debug.c                   |    6 ++++--
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e8b1597..62f210b 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -665,6 +665,7 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
- #define BUILD_BUG_ON_ZERO(e) (0)
- #define BUILD_BUG_ON_NULL(e) ((void*)0)
- #define BUILD_BUG_ON(condition)
-+#define BUILD_BUG_DECL(name, condition)
- #else /* __CHECKER__ */
+diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+index 8363a56..56e496a 100644
+--- a/Documentation/dynamic-debug-howto.txt
++++ b/Documentation/dynamic-debug-howto.txt
+@@ -250,8 +250,9 @@ lost.  Instead, a "dyndbg" module parameter can be passed:
+ 	  module.dyndbg=+mfp
+ 	  module.dyndbg	# defaults to +p
  
- /* Force a compilation error if a constant expression is not a power of 2 */
-@@ -703,6 +704,15 @@ extern int __build_bug_on_failed;
- 		if (condition) __build_bug_on_failed = 1;	\
- 	} while(0)
- #endif
-+/* 
-+ * BUILD_BUG_DECL is usable at file scope (by avoiding do {} loop).
-+ * If condition is true, causes a compile error, otherwize it declares
-+ * a 0-sized array (so it doesn't waste space)
-+ */
-+#define BUILD_BUG_DECL(name, condition)					\
-+	static struct __BUILD_BUG_DECL_ ##name {			\
-+		int __BUILD_BUG_DECL_ ##name[1 - 2*!!(condition)];	\
-+  } __BUILD_BUG_DECL_ ##name[0] __attribute__((unused))
- #endif	/* __CHECKER__ */
+-	- as an ordinary module parameter via modprobe modprobe module
+-	  $> modprobe module dyndbg +pmfl # defaults to +p
++	- as an ordinary module parameter via modprobe
++	  modprobe module dyndbg=+pmfl
++	  modprobe module dyndbg # defaults to +p
  
- /* Trap pasters of __FUNCTION__ at compile-time */
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index e62e5ce..490e557 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -118,6 +118,7 @@ struct kparam_array
-  * structure.  This allows exposure under a different name.
-  */
- #define module_param_named(name, value, type, perm)			   \
-+	BUILD_BUG_DECL(name, !__builtin_strcmp(#name, "dyndbg"));	   \
- 	param_check_##type(name, &(value));				   \
- 	module_param_cb(name, &param_ops_##type, &value, perm);		   \
- 	__MODULE_PARM_TYPE(name, #type)
+ 	- or the parameter can be used permanently via modprobe.conf(.local)
+ 	  options module dyndbg=+pmflt
+@@ -261,8 +262,8 @@ The $modname.dyndbg="value" should exclude "module $modname", as the
+ $modname is taken from the param-name, and only 1 spec of each type is
+ allowed.
+ 
+-The ddebug option is not implemented as an ordinary module parameter
+-and thus will not show up in /sys/module/module_name/parameters/ddebug
++The dyndbg option is not implemented as an ordinary module parameter
++and thus will not show up in /sys/module/module_name/parameters/dyndbg
+ The settings can be reverted later via the sysfs interface if the
+ debug messages are no longer needed:
+ 
+@@ -272,7 +273,7 @@ $module.dyndbg="..." on boot-line works on built-in modules as well as
+ those loaded by modprobe (from either early or normal userspace), and
+ somewhat overlaps debug_query functionality.
+ 
+-Modprobed modules get ddebug flags given on boot-line after those
++Modprobed modules get dyndbg flags given on boot-line after those
+ given via modprobe (either explicitly, or from /etc/modprobe.d/*).
+ This can surprise if boot-line arg subtracts flags.
+ 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index a077cd4..9b07a3b 100644
+index afc9bd3..9dcbb61 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -887,7 +887,6 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
- 			      struct kernel_param *params, unsigned num)
- {
- 	char *param, *val, *args_it, *arg_dup_ptr;
--	int i;
+@@ -913,7 +913,8 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
+ 		if (verbose)
+ 			pr_info("Param: %s, val: %s\n", param, val);
  
- 	if (!modargs || !*modargs)
- 		return; /* no args, return now, avoid pr_infos */
-@@ -901,13 +900,6 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
- 	if (verbose)
- 		pr_info("%s ARGS: %s\n", modname, args_it);
+-		snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s +p", modname);
++		snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s %s",
++			modname, (val ? val : "+p"));
+ 		ddebug_exec_queries(ddebug);
+ 	}
+ 	kfree(arg_dup_ptr);
+@@ -944,7 +945,8 @@ static __init void ddebug_boot_parse_args(void)
+ 		if (verbose)
+ 			pr_info("Param: %s, val: %s\n", param, val);
  
--	/* warn if modules declare ddebug param - todo BUILD_BUG ?? */
--	for (i = 0; i < num; i++) {
--		if (!strcmp("ddebug", params[i].name))
--			pr_warning("Module %s uses reserved keyword "
--				   "*ddebug* as parameter\n", modname);
--	}
--
- 	while (*args_it) {
- 		args_it = next_arg(args_it, &param, &val);
- 		if (strcmp(param, "dyndbg"))
+-		snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s +p", module);
++		snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s %s",
++			module, (val ? val : "+p"));
+ 		ddebug_exec_queries(ddebug);
+ 	}
+ }
 -- 
 1.7.7.3
 
