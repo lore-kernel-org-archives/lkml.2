@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab1K3T5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:57:51 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36603 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab1K3T5t (ORCPT
+	id S1752761Ab1K3T5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:57:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56503 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab1K3T5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:57:49 -0500
+	Wed, 30 Nov 2011 14:57:32 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 12/25] dynamic_debug: reduce lineno field to a saner 18 bits
-Date: Wed, 30 Nov 2011 12:56:41 -0700
-Message-Id: <1322683014-13285-13-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 06/25] dynamic_debug: replace strcpy with strlcpy, in ddebug_setup_query()
+Date: Wed, 30 Nov 2011 12:56:35 -0700
+Message-Id: <1322683014-13285-7-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
 References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
@@ -23,29 +23,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-lineno:24 allows files with 4 million lines, an insane file-size, even
-for never-to-get-in-tree machine generated code.  Reduce this to 18
-bits, which still allows 256k lines.  This is still insanely big, but
-its not raving mad.
+replace strcpy with strlcpy, and add define for the size constant.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- include/linux/dynamic_debug.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ lib/dynamic_debug.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index fc39640..7e3c53a 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -15,7 +15,7 @@ struct _ddebug {
- 	const char *function;
- 	const char *filename;
- 	const char *format;
--	unsigned int lineno:24;
-+	unsigned int lineno:18;
- 	/*
-  	 * The flags field controls the behaviour at the callsite.
-  	 * The bits here are changed dynamically when the user
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 8c88b89..101e2e5 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -525,14 +525,16 @@ EXPORT_SYMBOL(__dynamic_netdev_dbg);
+ 
+ #endif
+ 
+-static __initdata char ddebug_setup_string[1024];
++#define DDEBUG_STRING_SIZE 1024
++static __initdata char ddebug_setup_string[DDEBUG_STRING_SIZE];
++
+ static __init int ddebug_setup_query(char *str)
+ {
+ 	if (strlen(str) >= 1024) {
+ 		pr_warn("ddebug boot param string too large\n");
+ 		return 0;
+ 	}
+-	strcpy(ddebug_setup_string, str);
++	strlcpy(ddebug_setup_string, str, DDEBUG_STRING_SIZE);
+ 	return 1;
+ }
+ 
 -- 
 1.7.7.3
 
