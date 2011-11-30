@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab1K3T6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:58:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56503 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab1K3T6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753385Ab1K3T6U (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 30 Nov 2011 14:58:20 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33731 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab1K3T6P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 14:58:15 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 24/25] kernel/module: replace DEBUGP with pr_debug
-Date: Wed, 30 Nov 2011 12:56:53 -0700
-Message-Id: <1322683014-13285-25-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 22/25] dynamic_debug: add modname arg to exec_query callchain
+Date: Wed, 30 Nov 2011 12:56:51 -0700
+Message-Id: <1322683014-13285-23-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
 References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
@@ -23,247 +23,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Use more flexible pr_debug
+Extract module name from param-name, and pass to ddebug_exec_query(),
+ddebug_exec_queries() and ddebug_parse_query() as separate parameter.
+This has 2 purposes:
+
+1. support multiple queries:
+   $modname.dyndbg="func foo +fp; func bar +fp"
+
+In ddebug_parse_query(), the module name is added into the query
+struct before each query-string is parsed, so "module $module" must be
+omitted from the query-string (param-value), otherwize the
+set-only-once test added previously will issue an error.
+
+2. With module-name passed by ddebug_boot_parse_args() into
+ddebug_exec_queries(), we no longer need to sprintf "module modname"
+into the query-string, and can just drop the sprintf buffer.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- kernel/module.c |   44 +++++++++++++++++++-------------------------
- kernel/params.c |   14 ++++----------
- 2 files changed, 23 insertions(+), 35 deletions(-)
+ lib/dynamic_debug.c |   29 ++++++++++++++---------------
+ 1 files changed, 14 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 3806d7e..de3a056 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -62,12 +62,6 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/module.h>
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 9dcbb61..fc3f68a 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -340,7 +340,7 @@ static int check_set(const char **dest, char *src, char *name)
+  * Returns 0 on success, <0 on error.
+  */
+ static int ddebug_parse_query(char *words[], int nwords,
+-			       struct ddebug_query *query)
++			struct ddebug_query *query, const char *modname)
+ {
+ 	unsigned int i;
+ 	int rc;
+@@ -350,6 +350,10 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 		return -EINVAL;
+ 	memset(query, 0, sizeof(*query));
  
--#if 0
--#define DEBUGP printk
--#else
--#define DEBUGP(fmt , a...)
--#endif
--
- #ifndef ARCH_SHF_SMALL
- #define ARCH_SHF_SMALL 0
- #endif
-@@ -410,7 +404,7 @@ const struct kernel_symbol *find_symbol(const char *name,
- 		return fsa.sym;
- 	}
- 
--	DEBUGP("Failed to find symbol %s\n", name);
-+	pr_debug("Failed to find symbol %s\n", name);
- 	return NULL;
- }
- EXPORT_SYMBOL_GPL(find_symbol);
-@@ -600,11 +594,11 @@ static int already_uses(struct module *a, struct module *b)
- 
- 	list_for_each_entry(use, &b->source_list, source_list) {
- 		if (use->source == a) {
--			DEBUGP("%s uses %s!\n", a->name, b->name);
-+			pr_debug("%s uses %s!\n", a->name, b->name);
- 			return 1;
- 		}
- 	}
--	DEBUGP("%s does not use %s!\n", a->name, b->name);
-+	pr_debug("%s does not use %s!\n", a->name, b->name);
++	if (modname)
++		/* support $modname.dyndbg=<multiple queries> */
++		query->module = modname;
++
+ 	for (i = 0 ; i < nwords ; i += 2) {
+ 		if (!strcmp(words[i], "func"))
+ 			rc = check_set(&query->function, words[i+1], "func");
+@@ -449,7 +453,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
  	return 0;
  }
  
-@@ -619,7 +613,7 @@ static int add_module_usage(struct module *a, struct module *b)
+-static int ddebug_exec_query(char *query_string)
++static int ddebug_exec_query(char *query_string, const char *modname)
  {
- 	struct module_use *use;
+ 	unsigned int flags = 0, mask = 0;
+ 	struct ddebug_query query;
+@@ -463,7 +467,7 @@ static int ddebug_exec_query(char *query_string)
+ 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
+ 	if (nwords <= 0)
+ 		return -EINVAL;
+-	if (ddebug_parse_query(words, nwords-1, &query))
++	if (ddebug_parse_query(words, nwords-1, &query, modname))
+ 		return -EINVAL;
+ 	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
+ 		return -EINVAL;
+@@ -479,7 +483,7 @@ static int ddebug_exec_query(char *query_string)
+    last error or number of matching callsites.  Module name is either
+    in param (for boot arg) or perhaps in query string.
+ */
+-static int ddebug_exec_queries(char *query)
++static int ddebug_exec_queries(char *query, char *modname)
+ {
+ 	char *split;
+ 	int i, errs = 0, exitcode = 0, rc, nfound = 0;
+@@ -496,7 +500,7 @@ static int ddebug_exec_queries(char *query)
+ 		if (verbose)
+ 			pr_info("query %d: \"%s\"\n", i, query);
  
--	DEBUGP("Allocating new usage for %s.\n", a->name);
-+	pr_debug("Allocating new usage for %s.\n", a->name);
- 	use = kmalloc(sizeof(*use), GFP_ATOMIC);
- 	if (!use) {
- 		printk(KERN_WARNING "%s: out of memory loading\n", a->name);
-@@ -663,7 +657,7 @@ static void module_unload_free(struct module *mod)
- 	mutex_lock(&module_mutex);
- 	list_for_each_entry_safe(use, tmp, &mod->target_list, target_list) {
- 		struct module *i = use->target;
--		DEBUGP("%s unusing %s\n", mod->name, i->name);
-+		pr_debug("%s unusing %s\n", mod->name, i->name);
- 		module_put(i);
- 		list_del(&use->source_list);
- 		list_del(&use->target_list);
-@@ -761,7 +755,7 @@ static void wait_for_zero_refcount(struct module *mod)
- 	/* Since we might sleep for some time, release the mutex first */
- 	mutex_unlock(&module_mutex);
- 	for (;;) {
--		DEBUGP("Looking at refcount...\n");
-+		pr_debug("Looking at refcount...\n");
- 		set_current_state(TASK_UNINTERRUPTIBLE);
- 		if (module_refcount(mod) == 0)
- 			break;
-@@ -804,7 +798,7 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
- 	if (mod->state != MODULE_STATE_LIVE) {
- 		/* FIXME: if (force), slam module count and wake up
-                    waiter --RR */
--		DEBUGP("%s already dying\n", mod->name);
-+		pr_debug("%s already dying\n", mod->name);
- 		ret = -EBUSY;
- 		goto out;
- 	}
-@@ -1057,7 +1051,7 @@ static int check_version(Elf_Shdr *sechdrs,
+-		rc = ddebug_exec_query(query);
++		rc = ddebug_exec_query(query, modname);
+ 		if (rc < 0) {
+ 			errs++;
+ 			exitcode = rc;
+@@ -662,7 +666,7 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 	if (verbose)
+ 		pr_info("read %d bytes from userspace\n", (int)len);
  
- 		if (versions[i].crc == maybe_relocated(*crc, crc_owner))
- 			return 1;
--		DEBUGP("Found checksum %lX vs module %lX\n",
-+		pr_debug("Found checksum %lX vs module %lX\n",
- 		       maybe_relocated(*crc, crc_owner), versions[i].crc);
- 		goto bad_version;
- 	}
-@@ -1834,7 +1828,7 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
- 		case SHN_COMMON:
- 			/* We compiled with -fno-common.  These are not
- 			   supposed to happen.  */
--			DEBUGP("Common symbol: %s\n", name);
-+			pr_debug("Common symbol: %s\n", name);
- 			printk("%s: please compile with -fno-common\n",
- 			       mod->name);
- 			ret = -ENOEXEC;
-@@ -1842,7 +1836,7 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+-	ret = ddebug_exec_queries(tmpbuf);
++	ret = ddebug_exec_queries(tmpbuf, NULL);
+ 	kfree(tmpbuf);
+ 	if (ret < 0)
+ 		return ret;
+@@ -882,7 +886,7 @@ EXPORT_SYMBOL_GPL(ddebug_add_module);
+ void ddebug_module_parse_args(const char *modname, char* modargs,
+ 			      struct kernel_param *params, unsigned num)
+ {
+-	char ddebug[DDEBUG_STRING_SIZE], *param, *val, *args_it, *arg_dup_ptr;
++	char *param, *val, *args_it, *arg_dup_ptr;
+ 	int i;
  
- 		case SHN_ABS:
- 			/* Don't need to do anything */
--			DEBUGP("Absolute symbol: 0x%08lx\n",
-+			pr_debug("Absolute symbol: 0x%08lx\n",
- 			       (long)sym[i].st_value);
- 			break;
- 
-@@ -1966,7 +1960,7 @@ static void layout_sections(struct module *mod, struct load_info *info)
- 	for (i = 0; i < info->hdr->e_shnum; i++)
- 		info->sechdrs[i].sh_entsize = ~0UL;
- 
--	DEBUGP("Core section allocation order:\n");
-+	pr_debug("Core section allocation order:\n");
- 	for (m = 0; m < ARRAY_SIZE(masks); ++m) {
- 		for (i = 0; i < info->hdr->e_shnum; ++i) {
- 			Elf_Shdr *s = &info->sechdrs[i];
-@@ -1978,7 +1972,7 @@ static void layout_sections(struct module *mod, struct load_info *info)
- 			    || strstarts(sname, ".init"))
- 				continue;
- 			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
--			DEBUGP("\t%s\n", sname);
-+			pr_debug("\t%s\n", sname);
- 		}
- 		switch (m) {
- 		case 0: /* executable */
-@@ -1995,7 +1989,7 @@ static void layout_sections(struct module *mod, struct load_info *info)
- 		}
- 	}
- 
--	DEBUGP("Init section allocation order:\n");
-+	pr_debug("Init section allocation order:\n");
- 	for (m = 0; m < ARRAY_SIZE(masks); ++m) {
- 		for (i = 0; i < info->hdr->e_shnum; ++i) {
- 			Elf_Shdr *s = &info->sechdrs[i];
-@@ -2008,7 +2002,7 @@ static void layout_sections(struct module *mod, struct load_info *info)
- 				continue;
- 			s->sh_entsize = (get_offset(mod, &mod->init_size, s, i)
- 					 | INIT_OFFSET_MASK);
--			DEBUGP("\t%s\n", sname);
-+			pr_debug("\t%s\n", sname);
- 		}
- 		switch (m) {
- 		case 0: /* executable */
-@@ -2189,7 +2183,7 @@ static void layout_symtab(struct module *mod, struct load_info *info)
- 	symsect->sh_flags |= SHF_ALLOC;
- 	symsect->sh_entsize = get_offset(mod, &mod->init_size, symsect,
- 					 info->index.sym) | INIT_OFFSET_MASK;
--	DEBUGP("\t%s\n", info->secstrings + symsect->sh_name);
-+	pr_debug("\t%s\n", info->secstrings + symsect->sh_name);
- 
- 	src = (void *)info->hdr + symsect->sh_offset;
- 	nsrc = symsect->sh_size / sizeof(*src);
-@@ -2211,7 +2205,7 @@ static void layout_symtab(struct module *mod, struct load_info *info)
- 	strsect->sh_flags |= SHF_ALLOC;
- 	strsect->sh_entsize = get_offset(mod, &mod->init_size, strsect,
- 					 info->index.str) | INIT_OFFSET_MASK;
--	DEBUGP("\t%s\n", info->secstrings + strsect->sh_name);
-+	pr_debug("\t%s\n", info->secstrings + strsect->sh_name);
- 
- 	/* Append room for core symbols' strings at end of core part. */
- 	info->stroffs = mod->core_size;
-@@ -2621,7 +2615,7 @@ static int move_module(struct module *mod, struct load_info *info)
- 	mod->module_init = ptr;
- 
- 	/* Transfer each section which specifies SHF_ALLOC */
--	DEBUGP("final section addresses:\n");
-+	pr_debug("final section addresses:\n");
- 	for (i = 0; i < info->hdr->e_shnum; i++) {
- 		void *dest;
- 		Elf_Shdr *shdr = &info->sechdrs[i];
-@@ -2639,7 +2633,7 @@ static int move_module(struct module *mod, struct load_info *info)
- 			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
- 		/* Update sh_addr to point to copy in image. */
- 		shdr->sh_addr = (unsigned long)dest;
--		DEBUGP("\t0x%p %s\n",
-+		pr_debug("\t0x%p %s\n",
- 		       (void *)shdr->sh_addr, info->secstrings + shdr->sh_name);
- 	}
- 
-@@ -2811,7 +2805,7 @@ static struct module *load_module(void __user *umod,
- 	struct module *mod;
- 	long err;
- 
--	DEBUGP("load_module: umod=%p, len=%lu, uargs=%p\n",
-+	pr_debug("load_module: umod=%p, len=%lu, uargs=%p\n",
- 	       umod, len, uargs);
- 
- 	/* Copy in the blobs from userspace, check they are vaguely sane. */
-diff --git a/kernel/params.c b/kernel/params.c
-index 010f167..b7f5ff6 100644
---- a/kernel/params.c
-+++ b/kernel/params.c
-@@ -25,12 +25,6 @@
- #include <linux/slab.h>
- #include <linux/ctype.h>
- 
--#if 0
--#define DEBUGP printk
--#else
--#define DEBUGP(fmt, a...)
--#endif
+ 	if (!modargs || !*modargs)
+@@ -894,7 +898,6 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
+ 	 */
+ 	arg_dup_ptr = args_it = kstrdup(modargs, GFP_KERNEL);
+ 	args_it = skip_spaces(args_it);
 -
- /* Protects all parameters, and incidentally kmalloced_param list. */
- static DEFINE_MUTEX(param_lock);
+ 	if (verbose)
+ 		pr_info("%s ARGS: %s\n", modname, args_it);
  
-@@ -106,7 +100,7 @@ static int parse_one(char *param,
- 			/* No one handled NULL, so do it here. */
- 			if (!val && params[i].ops->set != param_set_bool)
- 				return -EINVAL;
--			DEBUGP("They are equal!  Calling %p\n",
-+			pr_debug("They are equal!  Calling %p\n",
- 			       params[i].ops->set);
- 			mutex_lock(&param_lock);
- 			err = params[i].ops->set(val, &params[i]);
-@@ -126,11 +120,11 @@ static int parse_one(char *param,
+@@ -913,9 +916,7 @@ void ddebug_module_parse_args(const char *modname, char* modargs,
+ 		if (verbose)
+ 			pr_info("Param: %s, val: %s\n", param, val);
+ 
+-		snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s %s",
+-			modname, (val ? val : "+p"));
+-		ddebug_exec_queries(ddebug);
++		ddebug_exec_queries((val ? val : "+p"), modname);
  	}
+ 	kfree(arg_dup_ptr);
+ 	if (verbose)
+@@ -945,9 +946,7 @@ static __init void ddebug_boot_parse_args(void)
+ 		if (verbose)
+ 			pr_info("Param: %s, val: %s\n", param, val);
  
- 	if (handle_unknown) {
--		DEBUGP("Unknown argument: calling %p\n", handle_unknown);
-+		pr_debug("Unknown argument: calling %p\n", handle_unknown);
- 		return handle_unknown(param, val);
+-		snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s %s",
+-			module, (val ? val : "+p"));
+-		ddebug_exec_queries(ddebug);
++		ddebug_exec_queries((val ? val : "+p"), module);
  	}
- 
--	DEBUGP("Unknown argument `%s'\n", param);
-+	pr_debug("Unknown argument `%s'\n", param);
- 	return -ENOENT;
  }
  
-@@ -195,7 +189,7 @@ int parse_args(const char *name,
- {
- 	char *param, *val;
+@@ -1047,7 +1046,7 @@ static int __init dynamic_debug_init(void)
  
--	DEBUGP("Parsing ARGS: %s\n", args);
-+	pr_debug("Parsing ARGS: %s\n", args);
- 
- 	/* Chew leading spaces */
- 	args = skip_spaces(args);
+ 	/* ddebug_query boot param got passed -> set it up */
+ 	if (ddebug_setup_string[0] != '\0') {
+-		ret = ddebug_exec_queries(ddebug_setup_string);
++		ret = ddebug_exec_queries(ddebug_setup_string, NULL);
+ 		if (ret < 0)
+ 			pr_warn("Invalid ddebug boot param %s",
+ 				ddebug_setup_string);
 -- 
 1.7.7.3
 
