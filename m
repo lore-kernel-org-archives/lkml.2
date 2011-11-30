@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab1K3RVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 12:21:52 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:43171 "EHLO
+	id S1758034Ab1K3RV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:21:59 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:43215 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755565Ab1K3RVt (ORCPT
+	with ESMTP id S1755565Ab1K3RVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 12:21:49 -0500
+	Wed, 30 Nov 2011 12:21:53 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: ke.yu@intel.com, kevin.tian@intel.com, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl
 Cc: xen-devel@lists.xensource.com, jeremy@goop.org, konrad@kernel.org,
         stefan.bader@canonical.com, Ian.Campbell@citrix.com,
-        mike.mcclurg@citrix.com, liang.tang@oracle.com
-Subject: [RFC PATCH] Exporting ACPI Pxx/Cxx states to other kernel subsystems (v1).
-Date: Wed, 30 Nov 2011 12:20:56 -0500
-Message-Id: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
+        mike.mcclurg@citrix.com, liang.tang@oracle.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/8] ACPI: processor: cache acpi_power_register in cx structure
+Date: Wed, 30 Nov 2011 12:20:58 -0500
+Message-Id: <1322673664-14642-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
+References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4ED66623.005F,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090207.4ED66623.0063,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Kevin Tian <kevin.tian@intel.com>
 
-The following patches are a solution to a problem we have encountered
-when using the Xen hypervisor:
- - Need Pxx/Cxx states to save on power consumption when using Xen (we
-   do want those datacenters to consume less power!),
- - Also need to figure out the Turbo mode so that the scheduler can properly
-   boost a core for CPU bound guests.
+This patch save acpi_power_register in cx structure because we need
+pass this to the Xen ACPI processor driver.
 
-In essence the Xen hypervisor requires that information to work efficiently.
+Signed-off-by: Yu Ke <ke.yu@intel.com>
+Signed-off-by: Tian Kevin <kevin.tian@intel.com>
+Signed-off-by: Tang Liang <liang.tang@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/acpi/processor_idle.c |    2 +-
+ include/acpi/processor.h      |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
-There are some other ways of solving this problem as well that have
-been tossed around. I am enumerating them here, but I don't have the
-full records of the disadvantages/advantges so hopefully some other people
-can chime in.
- - Parse the information in userspace. I am not really sure how that would
-   work, but one thought was export in SysFS the Pxx/Cxx states and other ones
-   (hand-waving here) and the libvirt/xend/xl toolstack would parse those as
-   needed and push them up (say when the guest is started). But it does have
-   a disadvantage that it would not work well with CPU hotplug, nor with the
-   physical CPU != virtual CPU discountinty (that is Linux sees only one CPU,
-   and the ACPI Pxx says there are eight of them - with different values than
-   the CPU0).
- - Make the ACPI subsystem export some of this functionality so that there
-   can be multiple ACPI processor drivers and they can share common code.
-   This is what this patch series follows. This does mean exporting some
-   ACPI "stuff" outside drivers/acpi. 
- - Implement the ACPI DSDT parsing in the hypervisor. The couple of reasons
-   that pop in my head for not going that route is foremost it seems an
-   overkill just so that this specific information (Pxx/Cxx) can pushed in
-   the hypervisor.  We already use the Linux ACPI to figure out the IRQ routing,
-   or for ACPI states changes like button pushing, docking events, etc.
-   Making it all be done in the hypervisor seems well, an overkill.
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index 0e8e2de..d88974a 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -418,7 +418,7 @@ static int acpi_processor_get_power_info_cst(struct acpi_processor *pr)
+ 		if (reg->space_id != ACPI_ADR_SPACE_SYSTEM_IO &&
+ 		    (reg->space_id != ACPI_ADR_SPACE_FIXED_HARDWARE))
+ 			continue;
+-
++		memcpy(&(cx.reg), reg, sizeof(*reg));
+ 		/* There should be an easy way to extract an integer... */
+ 		obj = &(element->package.elements[1]);
+ 		if (obj->type != ACPI_TYPE_INTEGER)
+diff --git a/include/acpi/processor.h b/include/acpi/processor.h
+index 12657bb..bd99fb6 100644
+--- a/include/acpi/processor.h
++++ b/include/acpi/processor.h
+@@ -65,6 +65,7 @@ struct acpi_processor_cx {
+ 	u64 time;
+ 	u8 bm_sts_skip;
+ 	char desc[ACPI_CX_DESC_LEN];
++	struct acpi_power_register reg;
+ };
+ 
+ struct acpi_processor_power {
+-- 
+1.7.7.3
 
-The original authors of the code are Intel folks. Liang has been working
-on this to see if the abstraction can be improved, but I am by no means
-an ACPI expert - so feedback, guidance or input would be much appreciated.
-
-
-Liang:
- ACPI: processor: Don't setup cpu idle driver and handler
-
-I think it can be actually dropped - now that disable_cpuidle() functionality
-exists and we use it? 
-
-Kevin Tian (6):
-      ACPI: processor: export necessary interfaces
-      ACPI: processor: cache acpi_power_register in cx structure
-      ACPI: processor: Don't setup cpu idle driver and handler when we do not want them.
-      ACPI: add processor driver for Xen virtual CPUs.
-      ACPI: xen processor: add PM notification interfaces.
-      ACPI: xen processor: set ignore_ppc to handle PPC event for Xen vcpu.
-
-Tang Liang (2):
-      ACPI: processor: add __acpi_processor_[un]register_driver helpers.
-      ACPI: processor: override the interface of register acpi processor handler for Xen vcpu
-
- drivers/acpi/Makefile            |    1 +
- drivers/acpi/processor_driver.c  |   48 +++++--
- drivers/acpi/processor_idle.c    |   10 +-
- drivers/acpi/processor_perflib.c |    6 +-
- drivers/acpi/processor_xen.c     |  246 ++++++++++++++++++++++++++++++++++
- drivers/xen/Kconfig              |    5 +
- drivers/xen/Makefile             |    3 +
- drivers/xen/acpi_processor.c     |  269 ++++++++++++++++++++++++++++++++++++++
- include/acpi/processor.h         |   20 +++-
- include/xen/acpi.h               |  104 +++++++++++++++
- 10 files changed, 690 insertions(+), 22 deletions(-)
