@@ -1,133 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757793Ab1K3Q15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 11:27:57 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:30332 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab1K3Q1z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 11:27:55 -0500
-X-IronPort-AV: E=Sophos;i="4.69,597,1315180800"; 
-   d="scan'208";a="9212840"
-Subject: Re: [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt
- extensions
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "android-virt@lists.cs.columbia.edu" 
-	<android-virt@lists.cs.columbia.edu>,
-        "embeddedxen-devel@lists.sourceforge.net" 
-	<embeddedxen-devel@lists.sourceforge.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 30 Nov 2011 16:27:53 +0000
-In-Reply-To: <201111301432.54463.arnd@arndb.de>
-References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop>
-	 <201111301303.23851.arnd@arndb.de>
-	 <1322659535.31810.97.camel@zakaz.uk.xensource.com>
-	 <201111301432.54463.arnd@arndb.de>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1322670473.31810.129.camel@zakaz.uk.xensource.com>
+	id S1757872Ab1K3Qe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 11:34:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15420 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756422Ab1K3Qe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 11:34:57 -0500
+Date: Wed, 30 Nov 2011 11:34:23 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Alasdair G Kergon <agk@redhat.com>
+cc: Jan Kara <jack@suse.cz>, esandeen@redhat.com, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        Valerie Aurora <val@vaaconsulting.com>
+Subject: Re: [dm-devel] [PATCH] deadlock with suspend and quotas
+In-Reply-To: <20111130133332.GV7595@agk-dp.fab.redhat.com>
+Message-ID: <Pine.LNX.4.64.1111301123320.5759@hs20-bc2-1.build.redhat.com>
+References: <Pine.LNX.4.64.1111251522230.4118@hs20-bc2-1.build.redhat.com>
+ <20111128150400.GE6366@quack.suse.cz> <CAD-XujnH1UJXrEbYAKOSjvdwVnehj4_owuduhjR0RCUBqfrg0w@mail.gmail.com>
+ <Pine.LNX.4.64.1111281612030.11895@hs20-bc2-1.build.redhat.com>
+ <Pine.LNX.4.64.1111281754120.11895@hs20-bc2-1.build.redhat.com>
+ <20111129101901.GA5635@quack.suse.cz> <20111130133332.GV7595@agk-dp.fab.redhat.com>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 14:32 +0000, Arnd Bergmann wrote:
-> On Wednesday 30 November 2011, Ian Campbell wrote:
-> > On Wed, 2011-11-30 at 13:03 +0000, Arnd Bergmann wrote:
-> > For domU the DT would presumably be constructed by the toolstack (in
-> > dom0 userspace) as appropriate for the guest configuration. I guess this
-> > needn't correspond to any particular "real" hardware platform.
+On Wed, 30 Nov 2011, Alasdair G Kergon wrote:
+
+> On Tue, Nov 29, 2011 at 11:19:01AM +0100, Jan Kara wrote:
+> > On Mon 28-11-11 18:32:18, Mikulas Patocka wrote:
+> > > - skipping sync on frozen filesystem violates sync semantics. 
+> > > Applications, such as databases, assume that when sync finishes, data were 
+> > > written to stable storage. If we skip sync when the filesystem is frozen, 
+> > > we can cause data corruption in these applications (if the system crashes 
+> > > after we skipped a sync).
 > 
-> Correct, but it needs to correspond to some platform that is supported
-> by the guest OS, which leaves the choice between emulating a real
-> hardware platform, adding a completely new platform specifically for
-> virtual machines, or something in between the two.
+> >   Here I don't agree. Filesystem must guarantee there are no dirty data on
+> > a frozen filesystem. Ext4 and XFS do this, ext3 would need proper
+> > page_mkwrite() implementation for this but that's the problem of ext3, not
+> > freezing code in general. If there are no dirty data, sync code (and also
+> > flusher thread) is free to return without doing anything.
+>  
+> Consider, during a 'create a snapshot' operation:
+>    I/O flow:  application -> filesystem -> LV -> disk
 > 
-> What I suggested to the KVM developers is to start out with the
-> vexpress platform, but then generalize it to the point where it fits
-> your needs. All hardware that one expects a guest to have (GIC, timer,
-> ...) will still show up in the same location as on a real vexpress,
-> while anything that makes no sense or is better paravirtualized (LCD,
-> storage, ...) just becomes optional and has to be described in the
-> device tree if it's actually there.
-
-That's along the lines of what I was thinking as well.
-
-The DT contains the address of GIC, timer etc as well right? So at least
-in principal we needn't provide e.g. the GIC at the same address as any
-real platform but in practice I expect we will.
-
-In principal we could also offer the user options as to which particular
-platform a guest looks like.
-
-> > > This would also be the place where you tell the guest that it should
-> > > look for PV devices. I'm not familiar with how Xen announces PV
-> > > devices to the guest on other architectures, but you have the
-> > > choice between providing a full "binding", i.e. a formal specification
-> > > in device tree format for the guest to detect PV devices in the
-> > > same way as physical or emulated devices, or just providing a single
-> > > place in the device tree in which the guest detects the presence
-> > > of a xen device bus and then uses hcalls to find the devices on that
-> > > bus.
-> > 
-> > On x86 there is an emulated PCI device which serves as the hooking point
-> > for the PV drivers. For ARM I don't think it would be unreasonable to
-> > have a DT entry instead. I think it would be fine just represent the
-> > root of the "xenbus" and further discovery would occur using the normal
-> > xenbus mechanisms (so not a full binding). AIUI for buses which are
-> > enumerable this is the preferred DT scheme to use.
+> dm lockfs is issued by LVM.
+>   When this returns, the filesystem should be locked i.e. not issue any
+>   further I/O to the LV.  (But if it did happen to issue I/O, it
+>   wouldn't be a problem, as it would just get queued by dm and have no
+>   impact on the snapshot creation operation.)
 > 
-> In general that is the case, yes. One could argue that any software
-> protocol between Xen and the guest is as good as any other, so it
-> makes sense to use the device tree to describe all devices here.
-> The counterargument to that is that Linux and other OSs already
-> support Xenbus, so there is no need to come up with a new binding.
-
-Right.
-
-> I don't care much either way, but I think it would be good to
-> use similar solutions across all hypervisors. The two options
-> that I've seen discussed for KVM were to use either a virtual PCI
-> bus with individual virtio-pci devices as on the PC, or to
-> use the new virtio-mmio driver and individually put virtio devices
-> into the device tree.
+> The application is still running and might still be issuing writes to
+> the filesystem and might itself issue 'sync'.  But a 'sync' would only
+> be meaningful for already-completed writes and the lockfs process should
+> have already seen that they have hit disk.  So a sync issued while a
+> device is locked can always be skipped.  Have I missed something in this
+> reasoning, Mikulas?
 > 
-> > > Another topic is the question whether there are any hcalls that
-> > > we should try to standardize before we get another architecture
-> > > with multiple conflicting hcall APIs as we have on x86 and powerpc.
-> > 
-> > The hcall API we are currently targeting is the existing Xen API (at
-> > least the generic parts of it). These generally deal with fairly Xen
-> > specific concepts like grant tables etc.
-> 
-> Ok. It would of course still be possible to agree on an argument passing
-> convention so that we can share the macros used to issue the hcalls,
-> even if the individual commands are all different.
+> Alasdair
 
-I think it likely that we can all agree on a common calling convention
-for N-argument hypercalls. It doubt there are that many useful choices
-with conflicting requirements yet strongly compelling advantages.
+You can't skip sync.
 
->  I think I also
-> remember talk about the need for a set of hypervisor independent calls
-> that everyone should implement, but I can't remember what those were.
+The problem is this (assume that you have non-journaled filesystem):
 
-I'd not heard of this, maybe I just wasn't looking the right way though.
+- A process issues a write() call. The write call goes to 
+__generic_file_aio_write, suppose that the process goes immediatelly after 
+"vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);" and then is rescheduled.
 
-> Maybe we can split the number space into a range of some generic and
-> some vendor specific hcalls?
+- You suspend the filesystem
 
-Ian.
+- A process that issued write() is scheduled to run, note that it already 
+passed "vfs_check_frozen", so it goes on even on syspended filesystem. 
+This process creates a dirty page in the page cache.
 
+- The process eventually returns to userspace from the write() syscall, 
+the filesystem is still suspended. write() doesn't guarantee that the data 
+hit disk, so there is no problem so far.
+
+- The applications calls sync. Now, if you skip sync on the suspended 
+filesystem, you violate sync semantics: when a process calls write() and 
+sync(), it can assume that data are written to stable storage.
+
+So, in order to keep sync working, you must wait for the filesystem to 
+thaw and then write the dirty data.
+
+Mikulas
