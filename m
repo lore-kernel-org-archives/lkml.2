@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab1K3Mkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 07:40:40 -0500
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:49459 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab1K3Mkj convert rfc822-to-8bit (ORCPT
+	id S1752557Ab1K3Mpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 07:45:45 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:57895 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751193Ab1K3Mpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 07:40:39 -0500
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 Nov 2011 07:40:39 EST
-Message-Id: <4ED6309E020000A100008348@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 Beta 
-Date: Wed, 30 Nov 2011 13:33:18 +0100
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Subject: Q: ext3 barrier=1
+	Wed, 30 Nov 2011 07:45:42 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+Rhf5E49KR8SX3Y8SasAmYWGm/PAngQJrC//DNai
+	QcIYU4T2rMDLdd
+Subject: Re: [PATCH RT] tasklet/rt: Prevent tasklets from going into
+ infinite spin in RT
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Clark Williams <williams@redhat.com>
+In-Reply-To: <alpine.LFD.2.02.1111301117240.2735@ionos>
+References: <1322618120.17003.104.camel@frodo>
+	 <1322627551.17283.11.camel@marge.simson.net>
+	 <alpine.LFD.2.02.1111301117240.2735@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Nov 2011 13:45:30 +0100
+Message-ID: <1322657130.5297.12.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, 2011-11-30 at 11:24 +0100, Thomas Gleixner wrote:
+> On Wed, 30 Nov 2011, Mike Galbraith wrote:
 
-I have a question on "barrier=1" (and SLES11 SP1):
+> > @@ -486,12 +495,43 @@ extern void softirq_check_pending_idle(v
+> >   */
+> >  DECLARE_PER_CPU(struct list_head [NR_SOFTIRQS], softirq_work_list);
+> >  
+> > -DECLARE_PER_CPU(struct task_struct *, ksoftirqd);
+> > +struct softirqdata {
+> > +	int			mask;
+> > +	struct task_struct	*tsk;
+> > +};
+> > +
+> > +DECLARE_PER_CPU(struct softirqdata [NR_SOFTIRQ_THREADS], ksoftirqd);
+> > +
+> > +static inline bool this_cpu_ksoftirqd(struct task_struct *p)
+> > +{
+> > +	int i;
+> > +
+> > +	for (i = 0; i < NR_SOFTIRQ_THREADS; i++) {
+> > +		if (p == __get_cpu_var(ksoftirqd)[i].tsk)
+> > +			return true;
+> 
+> You are not serious about that loop, are you ?
 
-Background: We had a serious latency problem while heavy writes were happening, specifically some LVM commands that use direct I/O were about 1000 times slower than usual. The ext3 filesystem to write on had "barrier=1" enabled. Writes were sent to a storage system that uses a battery-backed write-back cache.
+Well, it's a short loop, especially when NR_SOFTIRQ_THREADS = 1 (poof).
 
-In my understanding the barrier partially prevents reordering of a devices I/O requests, mostly to support journaled filesystems that rely on write-ordering.
+> > @@ -131,11 +155,18 @@ void softirq_check_pending_idle(void)
+> >   */
+> >  static void wakeup_softirqd(void)
+> >  {
+> > -	/* Interrupts are disabled: no need to stop preemption */
+> > -	struct task_struct *tsk = __this_cpu_read(ksoftirqd);
+> > +	struct task_struct *tsk;
+> > +	u32 pending = local_softirq_pending(), mask, i;
+> >  
+> > -	if (tsk && tsk->state != TASK_RUNNING)
+> > -		wake_up_process(tsk);
+> > +	/* Interrupts are disabled: no need to stop preemption */
+> > +	for (i = 0; pending && i < NR_SOFTIRQ_THREADS; i++) {
+> > +		mask = __get_cpu_var(ksoftirqd)[i].mask;
+> > +		if (!(pending & mask))
+> > +			continue;
+> > +		tsk = __get_cpu_var(ksoftirqd)[i].tsk;
+> > +		if (tsk && tsk->state != TASK_RUNNING)
+> > +			wake_up_process(tsk);
+> > +	}
+> >  }
+> 
+> Dammned serious is seems. :)
 
-However as it seems, "barrier=1" also does flush (maybe invalidate also?) the write cache of the storage device. In our case that does not make sense, and mostly (as the storage system is used by many clients) it reduces the throughput (at least writes) of the storage system significantly.
+Deadly serious :)
 
-Now my question is: Shouldn't the barriers per filesystem be treated independently of cache flushes of the storage (systems)?
+For the problem at hand (timer wakeups), NR_SOFTIRQ_THREADS could be 2.
 
-Also: If several filesystems that are using the same device (e.g. disk partitions) are written to simultaneously, won't the barriers (that are issued for the whole device) restrict reordering too much?
-
-I mean (FS is filesystem, w is write, | is barrier):
-
-FS1: wwwwwww|wwwwww|wwwwwwww|wwwwwww
-FS2: wwww|wwwwww|wwwwww|wwwwwww|wwwwww
-FS3: wwwwww|wwwwww|wwwwww|wwwwwww|wwww
-would have the following ordering restrictions:
-     ....|.|......||...|.|..|..|.|....
-
-That is, the barriers also prevent reordering of unrelated data streams.
-
-flushing/invalidating the write-back cache of a device will only make sense if the device has a write-back cache that doesn't have a battery-backed memory.
-
-So I feel that filesystem barriers make sense even with battery-backed external disk caches (as the issuing host may go down), but cache flushes/invalidations on the disk system don't (because neither a reboot/crash of the issuing host, nor a power failure on the storage system will make a difference regarding the data streams).
-
-Also the scope of the barriers for filesystems is quite different to the scope of device caches: Many systems, devices, and partitions may use one single cache, so flushing that cache may affect otherwise unrelated data streams.
-
-Any comments on those ideas/question?
-
-As I'm not subscribed to the kernel mailing list, plese be so kind to CC: any replies.
-
-Thank you!
-
-Regards,
-Ulrich
+> I was looking into that as well, though I did not want to inflict it
+> on 3.0 at this point.
+> 
+> Thanks,
+> 
+> 	tglx
 
 
