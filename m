@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab1K3JA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 04:00:59 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:52520 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757078Ab1K3JA4 (ORCPT
+	id S1757281Ab1K3JBy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 04:01:54 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:45766 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757007Ab1K3JBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 04:00:56 -0500
+	Wed, 30 Nov 2011 04:01:52 -0500
 From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
         Virtualization <virtualization@lists.linux-foundation.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Xen <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Xen <xen-devel@lists.xensource.com>,
         LKML <linux-kernel@vger.kernel.org>
 Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>,
@@ -27,338 +27,161 @@ Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Sasha Levin <levinsasha928@gmail.com>,
         Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Wed, 30 Nov 2011 14:30:38 +0530
-Message-Id: <20111130090038.23386.4505.sendpatchset@oc5400248562.ibm.com>
+Date: Wed, 30 Nov 2011 14:29:59 +0530
+Message-Id: <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com>
 In-Reply-To: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com>
 References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com>
-Subject: [PATCH RFC V3 4/4] kvm : pv-ticketlocks support for linux guests running on KVM hypervisor
-x-cbid: 11113009-2398-0000-0000-000002641A02
+Subject: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM hypervisor to support pv-ticketlocks
+x-cbid: 11113009-3352-0000-0000-0000011241D9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends Linux guests running on KVM hypervisor to support
-pv-ticketlocks. 
-During smp_boot_cpus  paravirtualied KVM guest detects if the hypervisor has
-required feature (KVM_FEATURE_KICK_VCPU) to support pv-ticketlocks. If so,
- support for pv-ticketlocks is registered via pv_lock_ops.
+Add a hypercall to KVM hypervisor to support pv-ticketlocks 
 
+KVM_HC_KICK_CPU allows the calling vcpu to kick another vcpu out of halt state.
+    
+The presence of these hypercalls is indicated to guest via
+KVM_FEATURE_KICK_VCPU/KVM_CAP_KICK_VCPU.
+
+Qemu needs a corresponding patch to pass up the presence of this feature to 
+guest via cpuid. Patch to qemu will be sent separately.
+
+There is no Xen/KVM hypercall interface to await kick from.
+    
 Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
 Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
 Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 ---
 diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 8b1d65d..7e419ad 100644
+index 734c376..8b1d65d 100644
 --- a/arch/x86/include/asm/kvm_para.h
 +++ b/arch/x86/include/asm/kvm_para.h
-@@ -195,10 +195,21 @@ void kvm_async_pf_task_wait(u32 token);
- void kvm_async_pf_task_wake(u32 token);
- u32 kvm_read_and_reset_pf_reason(void);
- extern void kvm_disable_steal_time(void);
--#else
--#define kvm_guest_init() do { } while (0)
+@@ -16,12 +16,14 @@
+ #define KVM_FEATURE_CLOCKSOURCE		0
+ #define KVM_FEATURE_NOP_IO_DELAY	1
+ #define KVM_FEATURE_MMU_OP		2
 +
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
-+void __init kvm_spinlock_init(void);
-+#else /* CONFIG_PARAVIRT_SPINLOCKS */
-+static void kvm_spinlock_init(void)
-+{
-+}
-+#endif /* CONFIG_PARAVIRT_SPINLOCKS */
-+
-+#else /* CONFIG_KVM_GUEST */
-+#define kvm_guest_init() do {} while (0)
- #define kvm_async_pf_task_wait(T) do {} while(0)
- #define kvm_async_pf_task_wake(T) do {} while(0)
-+#define kvm_spinlock_init() do {} while (0)
-+
- static inline u32 kvm_read_and_reset_pf_reason(void)
- {
- 	return 0;
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index a9c2116..dffeea3 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -33,6 +33,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/kprobes.h>
-+#include <linux/debugfs.h>
- #include <asm/timer.h>
- #include <asm/cpu.h>
- #include <asm/traps.h>
-@@ -545,6 +546,7 @@ static void __init kvm_smp_prepare_boot_cpu(void)
- #endif
- 	kvm_guest_cpu_init();
- 	native_smp_prepare_boot_cpu();
-+	kvm_spinlock_init();
+ /* This indicates that the new set of kvmclock msrs
+  * are available. The use of 0x11 and 0x12 is deprecated
+  */
+ #define KVM_FEATURE_CLOCKSOURCE2        3
+ #define KVM_FEATURE_ASYNC_PF		4
+ #define KVM_FEATURE_STEAL_TIME		5
++#define KVM_FEATURE_KICK_VCPU		6
+ 
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c38efd7..6e1c8b4 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2103,6 +2103,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+ 	case KVM_CAP_XSAVE:
+ 	case KVM_CAP_ASYNC_PF:
+ 	case KVM_CAP_GET_TSC_KHZ:
++	case KVM_CAP_KICK_VCPU:
+ 		r = 1;
+ 		break;
+ 	case KVM_CAP_COALESCED_MMIO:
+@@ -2577,7 +2578,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
+ 			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
+ 			     (1 << KVM_FEATURE_ASYNC_PF) |
+-			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
++			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
++			     (1 << KVM_FEATURE_KICK_VCPU);
+ 
+ 		if (sched_info_on())
+ 			entry->eax |= (1 << KVM_FEATURE_STEAL_TIME);
+@@ -5305,6 +5307,26 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+ 	return 1;
  }
  
- static void __cpuinit kvm_guest_cpu_online(void *dummy)
-@@ -627,3 +629,248 @@ static __init int activate_jump_labels(void)
- 	return 0;
- }
- arch_initcall(activate_jump_labels);
-+
-+#ifdef CONFIG_PARAVIRT_SPINLOCKS
-+
-+enum kvm_contention_stat {
-+	TAKEN_SLOW,
-+	TAKEN_SLOW_PICKUP,
-+	RELEASED_SLOW,
-+	RELEASED_SLOW_KICKED,
-+	NR_CONTENTION_STATS
-+};
-+
-+#ifdef CONFIG_KVM_DEBUG_FS
-+
-+static struct kvm_spinlock_stats
-+{
-+	u32 contention_stats[NR_CONTENTION_STATS];
-+
-+#define HISTO_BUCKETS	30
-+	u32 histo_spin_blocked[HISTO_BUCKETS+1];
-+
-+	u64 time_blocked;
-+} spinlock_stats;
-+
-+static u8 zero_stats;
-+
-+static inline void check_zero(void)
-+{
-+	u8 ret;
-+	u8 old = ACCESS_ONCE(zero_stats);
-+	if (unlikely(old)) {
-+		ret = cmpxchg(&zero_stats, old, 0);
-+		/* This ensures only one fellow resets the stat */
-+		if (ret == old)
-+			memset(&spinlock_stats, 0, sizeof(spinlock_stats));
-+	}
-+}
-+
-+static inline void add_stats(enum kvm_contention_stat var, int val)
-+{
-+	check_zero();
-+	spinlock_stats.contention_stats[var] += val;
-+}
-+
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return sched_clock();
-+}
-+
-+static void __spin_time_accum(u64 delta, u32 *array)
-+{
-+	unsigned index = ilog2(delta);
-+
-+	check_zero();
-+
-+	if (index < HISTO_BUCKETS)
-+		array[index]++;
-+	else
-+		array[HISTO_BUCKETS]++;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+	u32 delta = sched_clock() - start;
-+
-+	__spin_time_accum(delta, spinlock_stats.histo_spin_blocked);
-+	spinlock_stats.time_blocked += delta;
-+}
-+
-+static struct dentry *d_spin_debug;
-+static struct dentry *d_kvm_debug;
-+
-+struct dentry *kvm_init_debugfs(void)
-+{
-+	d_kvm_debug = debugfs_create_dir("kvm", NULL);
-+	if (!d_kvm_debug)
-+		printk(KERN_WARNING "Could not create 'kvm' debugfs directory\n");
-+
-+	return d_kvm_debug;
-+}
-+
-+static int __init kvm_spinlock_debugfs(void)
-+{
-+	struct dentry *d_kvm = kvm_init_debugfs();
-+
-+	if (d_kvm == NULL)
-+		return -ENOMEM;
-+
-+	d_spin_debug = debugfs_create_dir("spinlocks", d_kvm);
-+
-+	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
-+
-+	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[TAKEN_SLOW]);
-+	debugfs_create_u32("taken_slow_pickup", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[TAKEN_SLOW_PICKUP]);
-+
-+	debugfs_create_u32("released_slow", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[RELEASED_SLOW]);
-+	debugfs_create_u32("released_slow_kicked", 0444, d_spin_debug,
-+		   &spinlock_stats.contention_stats[RELEASED_SLOW_KICKED]);
-+
-+	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
-+			   &spinlock_stats.time_blocked);
-+
-+	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
-+		     spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
-+
-+	return 0;
-+}
-+fs_initcall(kvm_spinlock_debugfs);
-+#else  /* !CONFIG_KVM_DEBUG_FS */
-+#define TIMEOUT			(1 << 10)
-+static inline void add_stats(enum kvm_contention_stat var, u32 val)
-+{
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return 0;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+}
-+#endif  /* CONFIG_KVM_DEBUG_FS */
-+
-+struct kvm_lock_waiting {
-+	struct arch_spinlock *lock;
-+	__ticket_t want;
-+};
-+
-+/* cpus 'waiting' on a spinlock to become available */
-+static cpumask_t waiting_cpus;
-+
-+/* Track spinlock on which a cpu is waiting */
-+static DEFINE_PER_CPU(struct kvm_lock_waiting, lock_waiting);
-+
-+static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-+{
-+	struct kvm_lock_waiting *w = &__get_cpu_var(lock_waiting);
-+	int cpu = smp_processor_id();
-+	u64 start;
-+	unsigned long flags;
-+
-+	start = spin_time_start();
-+
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
-+	local_irq_save(flags);
-+
-+	/*
-+	 * The ordering protocol on this is that the "lock" pointer
-+	 * may only be set non-NULL if the "want" ticket is correct.
-+	 * If we're updating "want", we must first clear "lock".
-+	 */
-+	w->lock = NULL;
-+	smp_wmb();
-+	w->want = want;
-+	smp_wmb();
-+	w->lock = lock;
-+
-+	add_stats(TAKEN_SLOW, 1);
-+
-+	/*
-+	 * This uses set_bit, which is atomic but we should not rely on its
-+	 * reordering gurantees. So barrier is needed after this call.
-+	 */
-+	cpumask_set_cpu(cpu, &waiting_cpus);
-+
-+	barrier();
-+
-+	/*
-+	 * Mark entry to slowpath before doing the pickup test to make
-+	 * sure we don't deadlock with an unlocker.
-+	 */
-+	__ticket_enter_slowpath(lock);
-+
-+	/*
-+	 * check again make sure it didn't become free while
-+	 * we weren't looking.
-+	 */
-+	if (ACCESS_ONCE(lock->tickets.head) == want) {
-+		add_stats(TAKEN_SLOW_PICKUP, 1);
-+		goto out;
-+	}
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+
-+	/* halt until it's our turn and kicked. */
-+	halt();
-+
-+	local_irq_save(flags);
-+out:
-+	cpumask_clear_cpu(cpu, &waiting_cpus);
-+	w->lock = NULL;
-+	local_irq_restore(flags);
-+	spin_time_accum_blocked(start);
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
-+
-+/* Kick a cpu */
-+static inline void kvm_kick_cpu(int cpu)
-+{
-+	kvm_hypercall1(KVM_HC_KICK_CPU, cpu);
-+}
-+
-+/* Kick vcpu waiting on @lock->head to reach value @ticket */
-+static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
-+{
-+	int cpu;
-+
-+	add_stats(RELEASED_SLOW, 1);
-+
-+	for_each_cpu(cpu, &waiting_cpus) {
-+		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
-+		if (ACCESS_ONCE(w->lock) == lock &&
-+		    ACCESS_ONCE(w->want) == ticket) {
-+			add_stats(RELEASED_SLOW_KICKED, 1);
-+			kvm_kick_cpu(cpu);
-+			break;
-+		}
-+	}
-+}
-+
 +/*
-+ * Setup pv_lock_ops to exploit KVM_FEATURE_KICK_VCPU if present.
++ * kvm_pv_kick_cpu_op:  Kick a vcpu.
++ *
++ * @cpu - vcpu to be kicked.
 + */
-+void __init kvm_spinlock_init(void)
++static void kvm_pv_kick_cpu_op(struct kvm *kvm, int cpu)
 +{
-+	if (!kvm_para_available())
-+		return;
-+	/* Does host kernel support KVM_FEATURE_KICK_VCPU? */
-+	if (!kvm_para_has_feature(KVM_FEATURE_KICK_VCPU))
-+		return;
++	struct kvm_vcpu *vcpu = kvm_get_vcpu(kvm, cpu);
++	struct kvm_mp_state mp_state;
 +
-+	jump_label_inc(&paravirt_ticketlocks_enabled);
-+
-+	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
-+	pv_lock_ops.unlock_kick = kvm_unlock_kick;
++	mp_state.mp_state = KVM_MP_STATE_RUNNABLE;
++	if (vcpu) {
++		vcpu->kicked = 1;
++		/* Ensure kicked is always set before wakeup */
++		barrier();
++	}
++	kvm_arch_vcpu_ioctl_set_mpstate(vcpu, &mp_state);
++	kvm_vcpu_kick(vcpu);
 +}
-+#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
++
+ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ {
+ 	unsigned long nr, a0, a1, a2, a3, ret;
+@@ -5341,6 +5363,10 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
+ 	case KVM_HC_MMU_OP:
+ 		r = kvm_pv_mmu_op(vcpu, a0, hc_gpa(vcpu, a1, a2), &ret);
+ 		break;
++	case KVM_HC_KICK_CPU:
++		kvm_pv_kick_cpu_op(vcpu->kvm, a0);
++		ret = 0;
++		break;
+ 	default:
+ 		ret = -KVM_ENOSYS;
+ 		break;
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index f47fcd3..e760035 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -558,6 +558,7 @@ struct kvm_ppc_pvinfo {
+ #define KVM_CAP_PPC_HIOR 67
+ #define KVM_CAP_PPC_PAPR 68
+ #define KVM_CAP_S390_GMAP 71
++#define KVM_CAP_KICK_VCPU 72
+ 
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index d526231..ff3b6ff 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -154,6 +154,11 @@ struct kvm_vcpu {
+ #endif
+ 
+ 	struct kvm_vcpu_arch arch;
++
++	/*
++	 * blocked vcpu wakes up by checking this flag set by unlocker.
++	 */
++	int kicked;
+ };
+ 
+ static inline int kvm_vcpu_exiting_guest_mode(struct kvm_vcpu *vcpu)
+diff --git a/include/linux/kvm_para.h b/include/linux/kvm_para.h
+index 47a070b..19f10bd 100644
+--- a/include/linux/kvm_para.h
++++ b/include/linux/kvm_para.h
+@@ -19,6 +19,7 @@
+ #define KVM_HC_MMU_OP			2
+ #define KVM_HC_FEATURES			3
+ #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
++#define KVM_HC_KICK_CPU			5
+ 
+ /*
+  * hypercalls use architecture specific
 diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 8f4b6db..a89546b 100644
+index d9cfb78..8f4b6db 100644
 --- a/virt/kvm/kvm_main.c
 +++ b/virt/kvm/kvm_main.c
-@@ -1518,6 +1518,12 @@ void kvm_vcpu_block(struct kvm_vcpu *vcpu)
- 			kvm_make_request(KVM_REQ_UNHALT, vcpu);
- 			break;
- 		}
-+		if (vcpu->kicked) {
-+			vcpu->kicked = 0;
-+			barrier();
-+			kvm_make_request(KVM_REQ_UNHALT, vcpu);
-+			break;
-+		}
- 		if (kvm_cpu_has_pending_timer(vcpu))
- 			break;
- 		if (signal_pending(current))
+@@ -226,6 +226,7 @@ int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id)
+ 	vcpu->kvm = kvm;
+ 	vcpu->vcpu_id = id;
+ 	vcpu->pid = NULL;
++	vcpu->kicked = 0;
+ 	init_waitqueue_head(&vcpu->wq);
+ 	kvm_async_pf_vcpu_init(vcpu);
+ 
 
