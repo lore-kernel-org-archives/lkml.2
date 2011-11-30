@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab1K3CQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 21:16:15 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:59094 "EHLO
+	id S1757561Ab1K3CQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 21:16:24 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:36591 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756637Ab1K3CQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 21:16:11 -0500
+	id S1756637Ab1K3CQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 21:16:21 -0500
 From: Joe Perches <joe@perches.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/28] dcache: Use current logging style
-Date: Tue, 29 Nov 2011 18:14:07 -0800
-Message-Id: <31eb7095cd8703290ec522a356d9876c5f68e8d8.1322609672.git.joe@perches.com>
+Subject: [PATCH 10/28] fcntl: Use current logging style
+Date: Tue, 29 Nov 2011 18:14:08 -0800
+Message-Id: <bd7e5e5bfb6786bd030a94b3b749a00b84ecf266.1322609673.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1322609672.git.joe@perches.com>
 References: <cover.1322609672.git.joe@perches.com>
@@ -20,47 +20,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Add and use pr_fmt and pr_<level>.
-No change in output with #define pr_fmt(fmt) fmt
+Output message now prefixed with "fcntl: " and
+%s:, __func__, (kill_fasync_rcu) now used as well.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/dcache.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ fs/fcntl.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 3abfec7..6055631 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -14,6 +14,8 @@
-  * the dcache entry is deleted or garbage collected.
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 22764c7..5d16b1d 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -4,6 +4,8 @@
+  *  Copyright (C) 1991, 1992  Linus Torvalds
   */
  
-+#define pr_fmt(fmt) fmt
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
  #include <linux/syscalls.h>
- #include <linux/string.h>
+ #include <linux/init.h>
  #include <linux/mm.h>
-@@ -890,10 +892,7 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
- 			__d_shrink(dentry);
+@@ -797,8 +799,8 @@ static void kill_fasync_rcu(struct fasync_struct *fa, int sig, int band)
+ 		unsigned long flags;
  
- 			if (dentry->d_count != 0) {
--				printk(KERN_ERR
--				       "BUG: Dentry %p{i=%lx,n=%s}"
--				       " still in use (%d)"
--				       " [unmount of %s %s]\n",
-+				pr_err("BUG: Dentry %p{i=%lx,n=%s} still in use (%d) [unmount of %s %s]\n",
- 				       dentry,
- 				       dentry->d_inode ?
- 				       dentry->d_inode->i_ino : 0UL,
-@@ -2164,7 +2163,7 @@ static void dentry_unlock_parents_for_move(struct dentry *dentry,
- static void __d_move(struct dentry * dentry, struct dentry * target)
- {
- 	if (!dentry->d_inode)
--		printk(KERN_WARNING "VFS: moving negative dcache entry\n");
-+		pr_warn("VFS: moving negative dcache entry\n");
- 
- 	BUG_ON(d_ancestor(dentry, target));
- 	BUG_ON(d_ancestor(target, dentry));
+ 		if (fa->magic != FASYNC_MAGIC) {
+-			printk(KERN_ERR "kill_fasync: bad magic number in "
+-			       "fasync_struct!\n");
++			pr_err("%s: bad magic number in fasync_struct!\n",
++			       __func__);
+ 			return;
+ 		}
+ 		spin_lock_irqsave(&fa->fa_lock, flags);
 -- 
 1.7.6.405.gc1be0
 
