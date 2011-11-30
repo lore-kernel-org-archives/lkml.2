@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab1K3LPP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 06:15:15 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:44679 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753348Ab1K3LPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 06:15:12 -0500
-X-Sasl-enc: 4d5g7Cd/4wxwzVI0Xo6HlokKebQZo3MCwUkBDe0nqkVj 1322651711
-Date: Wed, 30 Nov 2011 09:15:07 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Natanji <natanji@gmail.com>
-Cc: Henning Schild <henning@wh9.tu-dresden.de>, Tom Gundersen <teg@jklm.no>,
-        ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, maciej.rutecki@gmail.com, lenb@kernel.org
-Subject: Re: [ibm-acpi-devel] Regression in thinkpad-acpi events
-Message-ID: <20111130111507.GA32079@khazad-dum.debian.net>
-References: <4EBAC3B5.5060405@gmail.com>
- <201111142031.06663.maciej.rutecki@gmail.com>
- <4EC16F8E.7060601@gmail.com>
- <201111142118.47256.maciej.rutecki@gmail.com>
- <CAG-2HqVnsmSyHVCvEVf+sZw5NxhR8qSDDB0AtR+igwCCFiwfgQ@mail.gmail.com>
- <20111115230305.GA23325@khazad-dum.debian.net>
- <20111127022346.32f11849@schlepp.lan>
- <4ED5F5D7.8020208@gmail.com>
+	id S1757642Ab1K3LR7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 06:17:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40218 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753348Ab1K3LRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 06:17:55 -0500
+Date: Wed, 30 Nov 2011 12:16:57 +0100
+From: Jan Kara <jack@suse.cz>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Alasdair G Kergon <agk@redhat.com>,
+        esandeen@redhat.com, Surbhi Palande <csurbhi@gmail.com>,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        Valerie Aurora <val@vaaconsulting.com>
+Subject: Re: [dm-devel] [PATCH] deadlock with suspend and quotas
+Message-ID: <20111130111657.GA4541@quack.suse.cz>
+References: <Pine.LNX.4.64.1111281754120.11895@hs20-bc2-1.build.redhat.com>
+ <20111129101901.GA5635@quack.suse.cz>
+ <20111129102156.GA7463@quack.suse.cz>
+ <Pine.LNX.4.64.1111290556270.12274@hs20-bc2-1.build.redhat.com>
+ <20111129111136.GC5635@quack.suse.cz>
+ <Pine.LNX.4.64.1111290746230.10352@hs20-bc2-1.build.redhat.com>
+ <20111129130913.GE5635@quack.suse.cz>
+ <20111129131811.GS7595@agk-dp.fab.redhat.com>
+ <20111129133239.GA9926@quack.suse.cz>
+ <Pine.LNX.4.64.1111300143340.31264@hs20-bc2-1.build.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4ED5F5D7.8020208@gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
+In-Reply-To: <Pine.LNX.4.64.1111300143340.31264@hs20-bc2-1.build.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Nov 2011, Natanji wrote:
-> The standard Arch kernel does not use tuxonice, you need to build your
-> kernel manually if you want it. I also don't receive these events before
-> the first hibernation, so you might be having a different problem.
+On Wed 30-11-11 01:52:22, Mikulas Patocka wrote:
+> > > dm-ioctl.h:
+> > > /*
+> > >  * Set this to avoid attempting to freeze any filesystem when suspending.
+> > >  */
+> > > #define DM_SKIP_LOCKFS_FLAG     (1 << 10) /* In */
+> >   Thanks. I was now checking in detail and indeed FIFREEZE fails if
+> > ->freeze_fs is not set. And only xfs, ext3, ext4, reiserfs, jfs, nilfs2,
+> > and gfs2 provide this function. So I was correct in assuming that when
+> > filesystem supports FIFREEZE it must make sure no modifications happen to
+> > the filesystem. So I believe that my original plan for sync to skip frozen
+> > filesystem is correct.
+> > 
+> > 								Honza
+> 
+> LVM doesn't suspend with FIFREEZE, it calls freeze_bdev directly from 
+> drivers/md/dm.c (and it works for all filesystems, including ext2).
+  Ah, I see. Sorry I missed this. But then I can only reiterate that
+drivers/md/dm.c is IMHO broken. Either it cares about filesystem being
+really frozen - and then it should refuse the operation for e.g. ext2
+because it cannot be frozen - or it does not care about filesystem being
+frozen and then there's no point in calling freeze_super(). Possibly, you
+might still want to e.g. try snapshotting even if freeze_super() would
+return EOPNOTSUPP but that should be handled inside dm, not by errorneously
+marking filesystem as frozen when it is not. Or am I still missing
+something?
 
-Just a hunch: check /proc/interrupts.  One of them must be assigned to acpi,
-and it *must* increase when you press hotkeys, etc.
+> So if you skip sync of frozen filesystems, you introduce a data
+> corruption if someone takes a snapshot of ext2.
+  Yes, because ext2 cannot really be frozen, it is (errorneously) marked
+as such but it is not frozen...
 
-Does it?
-
+								Honza
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
