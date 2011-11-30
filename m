@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab1K3KOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 05:14:01 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:50720 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab1K3KN7 (ORCPT
+	id S1757492Ab1K3KSV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 05:18:21 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38589 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753024Ab1K3KSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 05:13:59 -0500
-Date: Wed, 30 Nov 2011 15:43:38 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Heechul Yun <heechul@illinois.edu>
-Cc: pjt@google.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-Subject: Re: [PATCH] sched: Proper initialization of root_task_group
-Message-ID: <20111130101338.GA4543@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <20111130054227.GA7808@heechul-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20111130054227.GA7808@heechul-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11113000-6102-0000-0000-0000004AD7E5
+	Wed, 30 Nov 2011 05:18:18 -0500
+Message-ID: <1322648286.6774.0.camel@phoenix>
+Subject: [PATCH] NFC: pn533: Staticise pn533_data_exchange()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org
+Date: Wed, 30 Nov 2011 18:18:06 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Heechul Yun <heechul@illinois.edu> [2011-11-29 23:42:29]:
+It is not used outside this driver so no need to make the symbol global.
 
-> Hi,
-> 
-> The following patch fix a initialization issue.
-> 
-> Thanks
-> 
-> Heechul
-> 
-> ---
-> The root_task_group.cfs_bandwidth and root_task_group.shares
-> were initialized multiple times unnecessarily which are corrected
-> by this patch.
-> 
-> Signed-off-by: Heechul Yun <heechul@illinois.edu>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/nfc/pn533.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+diff --git a/drivers/nfc/pn533.c b/drivers/nfc/pn533.c
+index bd02384..ea10f54 100644
+--- a/drivers/nfc/pn533.c
++++ b/drivers/nfc/pn533.c
+@@ -1339,7 +1339,7 @@ error:
+ 	return 0;
+ }
+ 
+-int pn533_data_exchange(struct nfc_dev *nfc_dev, u32 target_idx,
++static int pn533_data_exchange(struct nfc_dev *nfc_dev, u32 target_idx,
+ 						struct sk_buff *skb,
+ 						data_exchange_cb_t cb,
+ 						void *cb_context)
+-- 
+1.7.5.4
 
 
-Thanks,
-Kamalesh.
 
