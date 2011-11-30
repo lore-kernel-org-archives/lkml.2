@@ -1,160 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1K3XaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:30:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56086 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab1K3XaD (ORCPT
+	id S1752759Ab1K3Xg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:36:29 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:7375 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab1K3Xg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:30:03 -0500
-Date: Wed, 30 Nov 2011 15:30:01 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Drake <dsd@laptop.org>
-Cc: x86@kernel.org, mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        dilinger@queued.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH resend 2] x86, olpc: add debugfs interface for EC
- commands
-Message-Id: <20111130153001.d5a74fb9.akpm@linux-foundation.org>
-In-Reply-To: <20111129222721.1EC339D401E@zog.reactivated.net>
-References: <20111129222721.1EC339D401E@zog.reactivated.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Nov 2011 18:36:28 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6546"; a="142444445"
+Date: Wed, 30 Nov 2011 15:36:26 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] msm misc changes for 3.3
+Message-ID: <20111130233626.GA26687@huya.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Nov 2011 22:27:20 +0000 (GMT)
-Daniel Drake <dsd@laptop.org> wrote:
+The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
 
-> Add a debugfs interface for sending commands to the OLPC EC and reading
-> their responses. This is useful for EC development and debugging.
+  Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
 
-It would be nice to expand on what an "EC" is.  For those people who
-don't know.  This group doesn't include me, of course.
+are available in the git repository at:
+  git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-misc
 
-> Based on code by Paul Fox.
+Stephen Boyd (3):
+      ARM: msm: Consolidate and move DEBUG_LL to DEBUG_LL choice
+      msm: Support DEBUG_LL on MSM8660 and MSM8960
+      msm: platsmp: Mark ioremapped memory as __iomem
 
-It would be good solicit and include Paul's signed-off-by:.  And/or to cc
-him on the patch.
+ arch/arm/Kconfig.debug                          |   37 ++++++++++++++++
+ arch/arm/mach-msm/Kconfig                       |   35 +--------------
+ arch/arm/mach-msm/include/mach/debug-macro.S    |   51 ++++++++++++++--------
+ arch/arm/mach-msm/include/mach/msm_iomap-7x00.h |   12 -----
+ arch/arm/mach-msm/include/mach/msm_iomap-7x30.h |   12 -----
+ arch/arm/mach-msm/include/mach/msm_iomap-8960.h |    5 ++
+ arch/arm/mach-msm/include/mach/msm_iomap-8x50.h |   12 -----
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h |    5 ++
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |   12 +++++
+ arch/arm/mach-msm/include/mach/uncompress.h     |   39 ++++++++++++++----
+ arch/arm/mach-msm/io.c                          |   15 +++++-
+ arch/arm/mach-msm/platsmp.c                     |    2 +-
+ 12 files changed, 138 insertions(+), 99 deletions(-)
 
-> diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
-> index 7cce722..860aff9 100644
-> --- a/arch/x86/platform/olpc/olpc.c
-> +++ b/arch/x86/platform/olpc/olpc.c
-> @@ -20,6 +20,7 @@
->  #include <linux/platform_device.h>
->  #include <linux/of.h>
->  #include <linux/syscore_ops.h>
-> +#include <linux/debugfs.h>
->  
->  #include <asm/geode.h>
->  #include <asm/setup.h>
-> @@ -31,6 +32,13 @@ EXPORT_SYMBOL_GPL(olpc_platform_info);
->  
->  static DEFINE_SPINLOCK(ec_lock);
->  
-> +/* debugfs interface to EC commands */
-> +#define EC_MAX_CMD_ARGS (5 + 1)	/* cmd byte + 5 args */
-> +#define EC_MAX_CMD_REPLY (8)
-> +static struct dentry *ec_debugfs_dir;
-> +static unsigned char ec_debugfs_resp[EC_MAX_CMD_REPLY];
-> +static unsigned int ec_debugfs_resp_bytes;
-> +
->  /* EC event mask to be applied during suspend (defining wakeup sources). */
->  static u16 ec_wakeup_mask;
->  
-> @@ -269,6 +277,98 @@ int olpc_ec_sci_query(u16 *sci_value)
->  }
->  EXPORT_SYMBOL_GPL(olpc_ec_sci_query);
->  
-> +static ssize_t ec_gen_write(struct file *file, const char __user *buf,
-> +			    size_t size, loff_t *ppos)
-> +{
-> +	int i, m;
-> +	unsigned char ec_cmd[EC_MAX_CMD_ARGS];
-> +	unsigned int ec_cmd_int[EC_MAX_CMD_ARGS];
-> +	char cmdbuf[64];
-> +	int ec_cmd_bytes;
-> +
-> +	size = simple_write_to_buffer(cmdbuf, sizeof(cmdbuf), ppos, buf, size);
-> +
-> +	m = sscanf(cmdbuf, "%x:%u %x %x %x %x %x", &ec_cmd_int[0],
-> +		   &ec_debugfs_resp_bytes,
-> +		   &ec_cmd_int[1], &ec_cmd_int[2], &ec_cmd_int[3],
-> +		   &ec_cmd_int[4], &ec_cmd_int[5]);
-> +	if (m <= 0 || ec_debugfs_resp_bytes > EC_MAX_CMD_REPLY) {
-
-I think you need "if (m < 2" here.  We require that
-ec_debugfs_resp_bytes was written to.
-
-> +		printk(KERN_DEBUG "olpc-ec: bad ec cmd:  "
-> +		       "cmd:response-count [arg1 [arg2 ...]]\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* convert scanf'd ints to char */
-> +	for (i = 0; i < EC_MAX_CMD_ARGS; i++)
-> +		ec_cmd[i] = ec_cmd_int[i];
-
-Here we're potentially reading uninitialised stack slots.  It would be
-better to constrain this loop to just the number of items we know are
-present and valid.
-
-> +	ec_cmd_bytes = m - 2;
-> +
-> +	printk(KERN_DEBUG "olpc-ec: debugfs cmd 0x%02x with %d args "
-> +	       "%02x %02x %02x %02x %02x, want %d returns\n",
-> +	       ec_cmd[0], ec_cmd_bytes, ec_cmd[1], ec_cmd[2], ec_cmd[3],
-> +	       ec_cmd[4], ec_cmd[5], ec_debugfs_resp_bytes);
-> +
-> +	olpc_ec_cmd((unsigned char) ec_cmd[0],
-> +		(ec_cmd_bytes == 0) ? NULL : &ec_cmd[1],
-> +		ec_cmd_bytes, ec_debugfs_resp, ec_debugfs_resp_bytes);
-> +
-> +	printk(KERN_DEBUG "olpc-ec: response "
-> +	       "%02x %02x %02x %02x %02x %02x %02x %02x (%d bytes expected)\n",
-> +	       ec_debugfs_resp[0], ec_debugfs_resp[1], ec_debugfs_resp[2],
-> +	       ec_debugfs_resp[3], ec_debugfs_resp[4], ec_debugfs_resp[5],
-> +	       ec_debugfs_resp[6], ec_debugfs_resp[7], ec_debugfs_resp_bytes);
-> +
-> +	return size;
-> +}
-> +
-> +static ssize_t ec_gen_read(struct file *file, char __user *buf,
-> +			   size_t size, loff_t *ppos)
-> +{
-> +	unsigned int i, r;
-> +	char *rp;
-> +	char respbuf[64];
-> +
-> +	rp = respbuf;
-> +	rp += sprintf(rp, "%02x", ec_debugfs_resp[0]);
-> +	for (i = 1; i < ec_debugfs_resp_bytes; i++)
-> +		rp += sprintf(rp, ", %02x", ec_debugfs_resp[i]);
-> +	rp += sprintf(rp, "\n");
-> +
-> +	r = rp - respbuf;
-> +
-> +	return simple_read_from_buffer(buf, size, ppos, respbuf, r);
-> +}
-> +
-> +static const struct file_operations ec_debugfs_genops = {
-> +	.write	 = ec_gen_write,
-> +	.read	 = ec_gen_read,
-> +};
-> +
-> +static char ec_debugfs_help_text[] =
-> +	"generic write:   CC:N A A A A ...\n"
-> +	" CC is the (hex) command, N is the (optional) count of expected\n"
-> +	" reply bytes, and A A A A are optional (hex) arguments.\n"
-> +	"generic read:  will show hex reply bytes, *whether or not* they\n"
-> +	" came from the immediately previous command\n";
-
-erk, this is a bit silly.  Surely we don't document debugfs files by
-embedding that documentation into other debugfs files.  It would be
-saner (and smaller!) to document it under Documentation/ somewhere. 
-Plus we can provide much better documentation in that context.
-
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
