@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192Ab1K3VHk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 16:07:40 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16047 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab1K3VHi convert rfc822-to-8bit (ORCPT
+	id S1752622Ab1K3VTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 16:19:20 -0500
+Received: from usmamail.tilera.com ([206.83.70.75]:8811 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab1K3VTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 16:07:38 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 30 Nov 2011 13:07:33 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Rakesh Iyer <riyer@nvidia.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>
-CC: "rydberg@euromail.se" <rydberg@euromail.se>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Wed, 30 Nov 2011 13:07:13 -0800
-Subject: RE: [PATCH v1] Input: tegra-kbc - report wakeup key for some
- platforms.
-Thread-Topic: [PATCH v1] Input: tegra-kbc - report wakeup key for some
- platforms.
-Thread-Index: AcyvoMDPHO1cXi9EQr6YIFY7VUZQaAAAzUnA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174FDAFF82@HQMAIL01.nvidia.com>
-References: <1322685811-14060-1-git-send-email-riyer@nvidia.com>
-In-Reply-To: <1322685811-14060-1-git-send-email-riyer@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Nov 2011 16:19:18 -0500
+Message-ID: <4ED69DD4.3060403@tilera.com>
+Date: Wed, 30 Nov 2011 16:19:16 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH-RFC 2/2] tile: switch to GENERIC_PCI_IOMAP
+References: <cover.1322592494.git.mst@redhat.com> <c5893cb30ae99a7e3c48b3fd209c770cd55c87ef.1322592495.git.mst@redhat.com>
+In-Reply-To: <c5893cb30ae99a7e3c48b3fd209c770cd55c87ef.1322592495.git.mst@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rakesh Iyer wrote at Wednesday, November 30, 2011 1:44 PM:
-> Tegra kbc cannot detect exact keypress causing wakeup in interrupt mode.
-> Allow wakeup keypress to be reported for certain platforms.
-> 
-> Signed-off-by: Rakesh Iyer <riyer@nvidia.com>
+On 11/29/2011 1:54 PM, Michael S. Tsirkin wrote:
+> tile now has working stubs for ioport_map and ioremap
+> such that the generic pci_iomap will DTRT: cast to
+> pointer on memory and return NULL and log message on IO map.
+>
+> Switch it over to GENERIC_PCI_IOMAP.
+>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  arch/tile/Kconfig           |    1 +
+>  arch/tile/include/asm/pci.h |    2 +-
+>  arch/tile/kernel/pci.c      |   21 ---------------------
+>  3 files changed, 2 insertions(+), 22 deletions(-)
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
 -- 
-nvpublic
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
