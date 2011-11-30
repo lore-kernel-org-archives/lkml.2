@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab1K3TDW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:03:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50378 "EHLO mx1.redhat.com"
+	id S1751795Ab1K3TM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:12:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28303 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab1K3TDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:03:20 -0500
-Date: Wed, 30 Nov 2011 19:57:51 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Subject: Re: [PATCH v7 3.2-rc2 8/30] x86: analyze instruction and determine
-	fixups.
-Message-ID: <20111130185751.GA8160@redhat.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com> <20111118110808.10512.72719.sendpatchset@srdronam.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111118110808.10512.72719.sendpatchset@srdronam.in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751104Ab1K3TMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 14:12:54 -0500
+From: Matthew Garrett <mjg@redhat.com>
+To: minyard@acm.org
+Cc: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] ipmi: Increase KCS timeouts
+Date: Wed, 30 Nov 2011 14:12:27 -0500
+Message-Id: <1322680347-25743-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 66.187.233.202
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18, Srikar Dronamraju wrote:
->
-> +static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe,
-> +							struct insn *insn)
-> +{
-> [...snip...]
-> +	if (insn->immediate.nbytes) {
-> +		cursor++;
-> +		memmove(cursor, cursor + insn->displacement.nbytes,
-> +						insn->immediate.nbytes);
-> +	}
-> +	return;
-> +}
+We currently time out and retry KCS transactions after 1 second of waiting
+for IBF or OBF. This appears to be too short for some hardware. The IPMI
+spec says "All system software wait loops should include error timeouts. For
+simplicity, such timeouts are not shown explicitly in the flow diagrams. A
+five-second timeout or greater is recommended". Change the timeout to five
+seconds to satisfy the slow hardware.
 
-Of course I don not understand this code. But it seems that it can
-rewrite uprobe->insn ?
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/char/ipmi/ipmi_kcs_sm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-If yes, don't we need to save the original insn for unregister_uprobe?
-
-Oleg.
+diff --git a/drivers/char/ipmi/ipmi_kcs_sm.c b/drivers/char/ipmi/ipmi_kcs_sm.c
+index cf82fed..e53fc24 100644
+--- a/drivers/char/ipmi/ipmi_kcs_sm.c
++++ b/drivers/char/ipmi/ipmi_kcs_sm.c
+@@ -118,8 +118,8 @@ enum kcs_states {
+ #define MAX_KCS_WRITE_SIZE IPMI_MAX_MSG_LENGTH
+ 
+ /* Timeouts in microseconds. */
+-#define IBF_RETRY_TIMEOUT 1000000
+-#define OBF_RETRY_TIMEOUT 1000000
++#define IBF_RETRY_TIMEOUT 5000000
++#define OBF_RETRY_TIMEOUT 5000000
+ #define MAX_ERROR_RETRIES 10
+ #define ERROR0_OBF_WAIT_JIFFIES (2*HZ)
+ 
+-- 
+1.7.7.1
 
