@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab1K3T6I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:58:08 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36603 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185Ab1K3T6C (ORCPT
+	id S1753468Ab1K3T75 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:59:57 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56503 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753192Ab1K3T6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:58:02 -0500
+	Wed, 30 Nov 2011 14:58:04 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 17/25] dynamic_debug: process multiple debug-queries on a line
-Date: Wed, 30 Nov 2011 12:56:46 -0700
-Message-Id: <1322683014-13285-18-git-send-email-jim.cromie@gmail.com>
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
+        Thomas Renninger <trenn@suse.de>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 18/25] dynamic_debug: Introduce global fake module param module.ddebug
+Date: Wed, 30 Nov 2011 12:56:47 -0700
+Message-Id: <1322683014-13285-19-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
 References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
@@ -23,211 +25,332 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Insert ddebug_exec_queries() in place of ddebug_exec_query().  It
-splits the query string on [;\n], and calls ddebug_exec_query() on
-each.  All queries are processed independent of errors, allowing a
-query to fail, for example when a module is not installed.  Empty
-lines and comments are skipped.  Errors are counted, and the last
-error seen (negative) or the number of callsites found (0 or positive)
-is returned.  Return code checks are altered accordingly.
+Rework Thomas Renninger's $module.ddebug boot-time debugging feature,
+from https://lkml.org/lkml/2010/9/15/397
 
-With this, multiple queries can be given in ddebug_query, allowing
-more selective enabling of callsites.  As a side effect, a set of
-commands can be batched in:
+Dynamic Debug allows enabling of pr_debug and dev_dbg messages at
+runtime.  This is controlled via $DBGFS/dynamic_debug/control.  One
+major drawback is that the whole initialization of a module cannot be
+tracked, because ddebug is only aware of debug strings of loaded
+modules.  But this is the most interesting part...
 
-	cat cmd-file > $DBGMT/dynamic_debug/control
+This patch introduces a fake module parameter module.ddebug (not shown
+in /sys/module/*/parameters, thus it does not use any resources).  If
+a module passes ddebug as a module parameter (e.g. via module.ddebug
+kernel boot param or via "modprobe module ddebug"), all debug strings
+of this module get activated by issuing "module module_name +p"
+internally (not via sysfs) when the module gets loaded.
+A later patch extends this with an arg: module.ddebug="+mfp"
 
-We dont want a ddebug_query syntax error to kill the dynamic debug
-facility, so dynamic_debug_init() zeros ddebug_exec_queries()'s return
-code after logging the appropriate message, so that ddebug tables are
-preserved and $DBGMT/dynamic_debug/control file is created.  This
-would be appropriate even without accepting multiple queries.
+Modules must not use "ddebug" as module parameter or it will get
+ignored.  If it's tried, a warning will show up at module load time
+that it will get ignored (only works for not built-in modules).
+TBD: how to use BUILD_BUG_ON() to detect this earlier ...
 
-This patch also alters ddebug_change() to return number of callsites
-matched (which typically is the same as number of callsites changed).
-ddebug_exec_query() also returns the number found, or a negative value
-if theres a parse error on the query.
-
-Splitting on [;\n] prevents their use in format-specs, but selecting
-callsites on punctuation is brittle anyway, meaningful and selective
-substrings are more typical.
-
-Note: splitting queries on ';' before handling trailing #comments
-means that a ';' also terminates a comment, and text after the ';' is
-treated as another query.  This trailing query will almost certainly
-result in a parse error and thus have no effect other than the error
-message.  The double corner case with unexpected results is:
-
-     ddebug_query="func foo +p # enable foo ; +p"
+Originally tested (by Thomas) with (additional added pr_debug messages):
+options hp-wmi ddebug
+in modprobe.conf
+-> works and pr_debug messages issued at module initialization time show
+up. Also "p" flag gets set for the whole hp-wmi module:
+grep hp-wmi /sys/../dynamic_debug/control
+also tested with compiled-in modules, e.g. pnp.ddebug and an additional
+patch later in the patch series which instruments pnp code to work with ddebug.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+CC: Thomas Renninger <trenn@suse.de>
+CC: Rusty Russell <rusty@rustcorp.com.au>
 ---
- Documentation/dynamic-debug-howto.txt |   17 +++-----
- lib/dynamic_debug.c                   |   73 ++++++++++++++++++++++++++-------
- 2 files changed, 65 insertions(+), 25 deletions(-)
+ Documentation/dynamic-debug-howto.txt |   28 +++++++++++-
+ include/linux/dynamic_debug.h         |   17 +++++++
+ include/linux/moduleparam.h           |    3 +
+ kernel/module.c                       |    1 +
+ kernel/params.c                       |   13 +++++-
+ lib/dynamic_debug.c                   |   82 ++++++++++++++++++++++++++++++++-
+ 6 files changed, 140 insertions(+), 4 deletions(-)
 
 diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
-index 378b5d1..989a892 100644
+index 989a892..269065d 100644
 --- a/Documentation/dynamic-debug-howto.txt
 +++ b/Documentation/dynamic-debug-howto.txt
-@@ -12,7 +12,7 @@ dynamically enabled per-callsite.
- Dynamic debug has even more useful features:
+@@ -219,7 +219,7 @@ Note also that there is no convenient syntax to remove all
+ the flags at once, you need to use "-flmpt".
  
-  * Simple query language allows turning on and off debugging statements by
--   matching any combination of:
-+   matching any combination of 0 or 1 of:
  
-    - source filename
-    - function name
-@@ -92,18 +92,15 @@ nullarbor:~ # echo -c 'file svcsock.c\nline 1603 +p' >
- nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
- 				<debugfs>/dynamic_debug/control
+-Debug messages during boot process
++Debug messages during Boot Process
+ ==================================
  
--Commands are bounded by a write() system call.  If you want to do
--multiple commands you need to do a separate "echo" for each, like:
-+Command submissions are bounded by a write() system call.
-+Multiple commands can be written together, separated by ';' or '\n'.
+ To be able to activate debug messages during the boot process,
+@@ -238,6 +238,32 @@ PCI (or other devices) initialization also is a hot candidate for using
+ this boot parameter for debugging purposes.
  
--nullarbor:~ # echo 'file svcsock.c line 1603 +p' > /proc/dprintk ;\
--> echo 'file svcsock.c line 1563 +p' > /proc/dprintk
-+  ~# echo "func pnpacpi_get_resources +p; func pnp_assign_mem +p" \
-+     > <debugfs>/dynamic_debug/control
  
--or even like:
-+If your query set is big, you can batch them too:
++Debug Messages at Module Initialization Time
++============================================
++
++Enabling debug messages inside a module is only possible if the module itself
++is loaded already. If you unload a module, the dynamic debug flags associated
++to its debug messages are lost.
++Therefore, enabling debug messages that get processed at module initialization
++time through the <debugfs>/dynamic_debug/control interface is not possible.
++Instead, a "ddebug" module paramter can be passed:
++
++	- via kernel boot parameter:
++	  module.ddebug
++
++	- as an ordinary module parameter via modprobe
++	  modprobe module ddebug
++
++	- or the parameter can be used permanently via modprobe.conf(.local)
++	  options module ddebug
++
++The ddebug option is not implemented as an ordinary module parameter and thus
++will not show up in /sys/module/module_name/parameters/ddebug
++The settings can get reverted through the sysfs interface again when the
++module got loaded as soon as debug messages are not needed anymore:
++echo "module module_name -p" > <debugfs>/dynamic_debug/control
++as described in the "Command Language Reference" chapter above.
++
+ Examples
+ ========
  
--nullarbor:~ # (
--> echo 'file svcsock.c line 1603 +p' ;\
--> echo 'file svcsock.c line 1563 +p' ;\
--> ) > /proc/dprintk
-+  ~# cat query-batch-file > <debugfs>/dynamic_debug/control
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index 7e3c53a..d6f5b5c 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -39,11 +39,18 @@ struct _ddebug {
+ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+ 				const char *modname);
  
- At the syntactical level, a command comprises a sequence of match
- specifications, followed by a flags change specification.
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 1a0e9bd..516ad4e 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -124,13 +124,13 @@ do {									\
- } while (0)
++struct kernel_param;
++
+ #if defined(CONFIG_DYNAMIC_DEBUG)
+ extern int ddebug_remove_module(const char *mod_name);
++
+ extern __printf(2, 3)
+ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...);
  
- /*
-- * Search the tables for _ddebug's which match the given
-- * `query' and apply the `flags' and `mask' to them.  Tells
-- * the user which ddebug's were changed, or whether none
-- * were matched.
-+ * Search the tables for _ddebug's which match the given `query' and
-+ * apply the `flags' and `mask' to them.  Returns number of matching
-+ * callsites, normally the same as number of changes.  If verbose,
-+ * logs the changes.  Takes ddebug_lock.
-  */
--static void ddebug_change(const struct ddebug_query *query,
--			   unsigned int flags, unsigned int mask)
-+static int ddebug_change(const struct ddebug_query *query,
-+			unsigned int flags, unsigned int mask)
++extern int ddebug_exec_query(char *query_string);
++extern void ddebug_module_parse_args(const char *name, char* args,
++				struct kernel_param *params, unsigned num);
++
+ struct device;
+ 
+ extern __printf(3, 4)
+@@ -98,6 +105,16 @@ static inline int ddebug_remove_module(const char *mod)
  {
- 	int i;
- 	struct ddebug_table *dt;
-@@ -192,6 +192,8 @@ static void ddebug_change(const struct ddebug_query *query,
- 
- 	if (!nfound && verbose)
- 		pr_info("no matches for query\n");
-+
-+	return nfound;
+ 	return 0;
  }
- 
- /*
-@@ -449,7 +451,7 @@ static int ddebug_exec_query(char *query_string)
- 	unsigned int flags = 0, mask = 0;
- 	struct ddebug_query query;
- #define MAXWORDS 9
--	int nwords;
-+	int nwords, nfound;
- 	char *words[MAXWORDS];
- 
- 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
-@@ -461,8 +463,47 @@ static int ddebug_exec_query(char *query_string)
- 		return -EINVAL;
- 
- 	/* actually go and implement the change */
--	ddebug_change(&query, flags, mask);
--	return 0;
-+	nfound = ddebug_change(&query, flags, mask);
-+	vpr_info_dq((&query), (nfound) ? "applied" : "no-match");
-+
-+	return nfound;
-+}
-+
-+/* handle multiple queries in query string, continue on error, return
-+   last error or number of matching callsites.  Module name is either
-+   in param (for boot arg) or perhaps in query string.
-+*/
-+static int ddebug_exec_queries(char *query)
++static inline int ddebug_exec_query(char *query_string)
 +{
-+	char *split;
-+	int i, errs = 0, exitcode = 0, rc, nfound = 0;
-+
-+	for (i = 0; query; query = split) {
-+		split = strpbrk(query, ";\n");
-+		if (split)
-+			*split++ = '\0';
-+
-+		query = skip_spaces(query);
-+		if (!query || !*query || *query == '#')
-+			continue;
-+
-+		if (verbose)
-+			pr_info("query %d: \"%s\"\n", i, query);
-+
-+		rc = ddebug_exec_query(query);
-+		if (rc < 0) {
-+			errs++;
-+			exitcode = rc;
-+		} else
-+			nfound += rc;
-+		i++;
-+	}
-+	pr_info("processed %d queries, with %d matches, %d errs\n",
-+		 i, nfound, errs);
-+
-+	if (exitcode)
-+		return exitcode;
-+	return nfound;
- }
++	return 0;
++}
++static inline void ddebug_module_parse_args(const char *name, char* args,
++					struct kernel_param *params,
++					unsigned num)
++{
++	return 0;
++}
  
- #define PREFIX_SIZE 64
-@@ -615,9 +656,9 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
- 	if (verbose)
- 		pr_info("read %d bytes from userspace\n", (int)len);
+ #define dynamic_pr_debug(fmt, ...)					\
+ 	do { if (0) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__); } while (0)
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index 7939f63..e62e5ce 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -433,4 +433,7 @@ static inline void module_param_sysfs_remove(struct module *mod)
+ { }
+ #endif
  
--	ret = ddebug_exec_query(tmpbuf);
-+	ret = ddebug_exec_queries(tmpbuf);
- 	kfree(tmpbuf);
--	if (ret)
-+	if (ret < 0)
- 		return ret;
- 
- 	*offp += len;
-@@ -927,13 +968,15 @@ static int __init dynamic_debug_init(void)
- 
- 	/* ddebug_query boot param got passed -> set it up */
- 	if (ddebug_setup_string[0] != '\0') {
--		ret = ddebug_exec_query(ddebug_setup_string);
--		if (ret)
-+		ret = ddebug_exec_queries(ddebug_setup_string);
-+		if (ret < 0)
- 			pr_warn("Invalid ddebug boot param %s",
- 				ddebug_setup_string);
- 		else
--			pr_info("ddebug initialized with string %s",
--				ddebug_setup_string);
-+			pr_info("%d changes by ddebug_query\n", ret);
++/* For being able to parse parameters the same way params.c does */
++extern char *next_arg(char *args, char **param, char **val);
 +
-+		/* keep tables even on ddebug_query parse error */
-+		ret = 0;
+ #endif /* _LINUX_MODULE_PARAMS_H */
+diff --git a/kernel/module.c b/kernel/module.c
+index 30ffed4..3806d7e 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2892,6 +2892,7 @@ static struct module *load_module(void __user *umod,
+ 	list_add_rcu(&mod->list, &modules);
+ 	mutex_unlock(&module_mutex);
+ 
++	ddebug_module_parse_args(mod->name, mod->args, mod->kp, mod->num_kp);
+ 	/* Module is ready to execute: parsing args may do that. */
+ 	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
+ 	if (err < 0)
+diff --git a/kernel/params.c b/kernel/params.c
+index 65aae11..313ea84 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -98,6 +98,7 @@ static int parse_one(char *param,
+ {
+ 	unsigned int i;
+ 	int err;
++	char *tmp;
+ 
+ 	/* Find parameter */
+ 	for (i = 0; i < num_params; i++) {
+@@ -114,6 +115,16 @@ static int parse_one(char *param,
+ 		}
  	}
  
++	/*
++	 * Ignore ddebug module params and module.ddebug boot params:
++	 * Documentation/dynamic-debug-howto.txt
++	 */
++	tmp = strstr(param, ".ddebug");
++	if (parameq(param, "ddebug") || (tmp && strlen(tmp) == 7)) {
++		DEBUGP("Ignoring ddebug parameter %s\n", param);
++		return 0;
++	}
++
+ 	if (handle_unknown) {
+ 		DEBUGP("Unknown argument: calling %p\n", handle_unknown);
+ 		return handle_unknown(param, val);
+@@ -125,7 +136,7 @@ static int parse_one(char *param,
+ 
+ /* You can use " around spaces, but can't escape ". */
+ /* Hyphens and underscores equivalent in parameter names. */
+-static char *next_arg(char *args, char **param, char **val)
++char *next_arg(char *args, char **param, char **val)
+ {
+ 	unsigned int i, equals = 0;
+ 	int in_quote = 0, quoted = 0;
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 516ad4e..bb66251 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -13,6 +13,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
+ 
+ #include <linux/kernel.h>
++#include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/kallsyms.h>
+@@ -34,6 +35,8 @@
+ #include <linux/device.h>
+ #include <linux/netdevice.h>
+ 
++#include <asm/setup.h>
++
+ extern struct _ddebug __start___verbose[];
+ extern struct _ddebug __stop___verbose[];
+ 
+@@ -446,7 +449,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 	return 0;
+ }
+ 
+-static int ddebug_exec_query(char *query_string)
++int ddebug_exec_query(char *query_string)
+ {
+ 	unsigned int flags = 0, mask = 0;
+ 	struct ddebug_query query;
+@@ -454,6 +457,9 @@ static int ddebug_exec_query(char *query_string)
+ 	int nwords, nfound;
+ 	char *words[MAXWORDS];
+ 
++	if (verbose)
++		printk(KERN_INFO "%s: got query: %s\n", __func__, query_string);
++
+ 	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
+ 	if (nwords <= 0)
+ 		return -EINVAL;
+@@ -618,7 +624,7 @@ static __initdata char ddebug_setup_string[DDEBUG_STRING_SIZE];
+ 
+ static __init int ddebug_setup_query(char *str)
+ {
+-	if (strlen(str) >= 1024) {
++	if (strlen(str) >= DDEBUG_STRING_SIZE) {
+ 		pr_warn("ddebug boot param string too large\n");
+ 		return 0;
+ 	}
+@@ -872,6 +878,76 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+ }
+ EXPORT_SYMBOL_GPL(ddebug_add_module);
+ 
++/* We search for *ddebug* module params */
++void ddebug_module_parse_args(const char *name, char* args,
++			      struct kernel_param *params, unsigned num)
++{
++	char ddebug[DDEBUG_STRING_SIZE], *param, *val, *args_it, *arg_dup_ptr;
++	int i;
++
++	/*
++	 * We must not modify the passed args string and need to store the
++	 * kstrdup pointer to be able to free memory later, TBD: find a way
++	 * to do this nicer
++	 */
++	arg_dup_ptr = args_it = kstrdup(args, GFP_KERNEL);
++
++	if (verbose)
++		printk(KERN_INFO "%s: Parsing ARGS: -%s- of %s\n",
++		       __func__, args_it, name);
++
++	for (i = 0; i < num; i++) {
++		if (!strcmp("ddebug", params[i].name))
++			pr_warning("Module %s uses reserved keyword "
++				   "*ddebug* as parameter\n", name);
++	}
++
++	/* Chew leading spaces */
++	args_it = skip_spaces(args_it);
++
++	while (*args_it) {
++		args_it = next_arg(args_it, &param, &val);
++		if (verbose)
++			printk(KERN_INFO "%s: Param: %s, val: %s\n",
++			       __func__, param, val);
++		if (!strcmp(param, "ddebug")) {
++			pr_info("Enabling debugging for module %s\n", name);
++			snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s +p",
++				 name);
++			ddebug_exec_query(ddebug);
++		}
++	}
++	kfree(arg_dup_ptr);
++	if (verbose)
++		printk(KERN_INFO "%s: Finished %s parsing\n",  __func__, name);
++}
++/* We search for module.ddebug kernel boot params */
++static void ddebug_boot_parse_args(void)
++{
++	char tmp_cmd_arr[COMMAND_LINE_SIZE], *tmp_cmd_ptr, *param, *val, *tmp;
++	char module[MODULE_NAME_LEN], ddebug[DDEBUG_STRING_SIZE];
++
++	/* next_arg touches the passed buffer and chops each argument */
++	strlcpy(tmp_cmd_arr, saved_command_line, COMMAND_LINE_SIZE);
++	/* Chew leading spaces */
++	tmp_cmd_ptr = skip_spaces(tmp_cmd_arr);
++
++	while (*tmp_cmd_ptr) {
++		tmp_cmd_ptr = next_arg(tmp_cmd_ptr, &param, &val);
++		if (verbose)
++			printk(KERN_INFO "%s: Param: %s, val: %s\n",
++			       __func__, param, val);
++		tmp = strstr(param, ".ddebug");
++		if (tmp && strlen(tmp) == 7) {
++			strlcpy(module, param, tmp - param + 1);
++			pr_info("Enabling debugging for module %s\n", module);
++			snprintf(ddebug, DDEBUG_STRING_SIZE, "module %s +p",
++				 module);
++			ddebug_exec_query(ddebug);
++		}
++	}
++}
++
+ static void ddebug_table_free(struct ddebug_table *dt)
+ {
+ 	list_del_init(&dt->link);
+@@ -979,6 +1055,8 @@ static int __init dynamic_debug_init(void)
+ 		ret = 0;
+ 	}
+ 
++	ddebug_boot_parse_args();
++
  out_free:
+ 	if (ret)
+ 		ddebug_remove_all_tables();
 -- 
 1.7.7.3
 
