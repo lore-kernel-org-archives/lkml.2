@@ -1,201 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab1K3D6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 22:58:06 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54806 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab1K3D6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 22:58:02 -0500
-Date: Wed, 30 Nov 2011 13:42:05 +1100
-From: David Gibson <dwg@au1.ibm.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: joerg.roedel@amd.com, dwmw2@infradead.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        chrisw@redhat.com, agraf@suse.de, scottwood@freescale.com,
-        B08248@freescale.com, benh@kernel.crashing.org
-Subject: Re: [PATCH 1/4] iommu: Add iommu_device_group callback and
- iommu_group sysfs entry
-Message-ID: <20111130024205.GF5435@truffala.fritz.box>
-Mail-Followup-To: David Gibson <dwg@au1.ibm.com>,
-	Alex Williamson <alex.williamson@redhat.com>, joerg.roedel@amd.com,
-	dwmw2@infradead.org, iommu@lists.linux-foundation.org,
-	linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
-	scottwood@freescale.com, B08248@freescale.com,
-	benh@kernel.crashing.org
-References: <20111021195412.8438.9951.stgit@s20.home>
- <20111021195605.8438.81609.stgit@s20.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111021195605.8438.81609.stgit@s20.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11112917-5490-0000-0000-00000039D104
+	id S1752783Ab1K3ETp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 23:19:45 -0500
+Received: from gate.crashing.org ([63.228.1.57]:35827 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996Ab1K3ETo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 23:19:44 -0500
+Message-ID: <1322626752.21641.22.camel@pasglop>
+Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
+ lead to system crash/freeze
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "tiejun.chen" <tiejun.chen@windriver.com>
+Cc: Yong Zhang <yong.zhang0@gmail.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, paulus@samba.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linuxppc-dev@lists.ozlabs.org, Anton Blanchard <anton@au1.ibm.com>
+Date: Wed, 30 Nov 2011 15:19:12 +1100
+In-Reply-To: <4E0D9B5E.3010901@windriver.com>
+References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com>
+	 <1308911347.531.56.camel@gandalf.stny.rr.com>
+	 <4E074671.7060100@hitachi.com> <20110627100104.GA24705@in.ibm.com>
+	 <BANLkTimYej4_dmBqvPBCLej=JA5atLrZVA@mail.gmail.com>
+	 <4E0D9B5E.3010901@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 21, 2011 at 01:56:05PM -0600, Alex Williamson wrote:
-> An IOMMU group is a set of devices for which the IOMMU cannot
-> distinguish transactions.  For PCI devices, a group often occurs
-> when a PCI bridge is involved.  Transactions from any device
-> behind the bridge appear to be sourced from the bridge itself.
-> We leave it to the IOMMU driver to define the grouping restraints
-> for their platform.
+On Fri, 2011-07-01 at 18:03 +0800, tiejun.chen wrote:
 > 
-> Using this new interface, the group for a device can be retrieved
-> using the iommu_device_group() callback.  Users will compare the
-> value returned against the value returned for other devices to
-> determine whether they are part of the same group.  Devices with
-> no group are not translated by the IOMMU.  There should be no
-> expectations about the group numbers as they may be arbitrarily
-> assigned by the IOMMU driver and may not be persistent across boots.
+> Here emulate_step() is called to emulate 'stwu'. Actually this is equivalent to
+> 1> update pr_regs->gpr[1] = mem(old r1 + (-A))
+> 2> 'stw <old r1>, mem<(old r1 + (-A)) >
 > 
-> We also provide a sysfs interface to the group numbers here so
-> that userspace can understand IOMMU dependencies between devices
-> for managing safe, userspace drivers.
-
-Finally giving these patches a close read.  Sorry it's been so long.
+> You should notice the stack based on new r1 would be covered with mem<old r1
+> +(-A)>. So after this, the kernel exit from post_krpobe, something would be
+> broken. This should depend on sizeof(-A).
 > 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
+> For kprobe show_interrupts, you can see pregs->nip is re-written violently so
+> kernel issued.
 > 
->  drivers/iommu/iommu.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/iommu.h |    7 ++++++
->  2 files changed, 68 insertions(+), 0 deletions(-)
+> But sometimes we may only re-write some violate registers the kernel still
+> alive. And so this is just why the kernel works well for some kprobed point
+> after you change some kernel options/toolchains.
 > 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index 2fb2963..10615ad 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -25,8 +25,60 @@
->  #include <linux/errno.h>
->  #include <linux/iommu.h>
->  
-> +static ssize_t show_iommu_group(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
-> +{
-> +	unsigned int groupid;
-> +
-> +	if (iommu_device_group(dev, &groupid))
-> +		return 0;
-> +
-> +	return sprintf(buf, "%u", groupid);
-> +}
-> +static DEVICE_ATTR(iommu_group, S_IRUGO, show_iommu_group, NULL);
+> If I'm correct its difficult to kprobe these stwu sp operation since the
+> sizeof(-A) is undermined for the kernel. So we have to implement in-depend
+> interrupt stack like PPC64.
 
-Hrm.  Assuming the group is is an unsigned int seems dangerous to me.
-More seriously, we really want these to be unique across the whole
-system, but they're allocated by the iommu driver which can't
-guarantee that if it's not the only one present.  Seems to me it would
-be safer to have an actual iommu_group structure allocated for each
-group, and use the pointer to it as the ID to hand around (with NULL
-meaning "no iommu" / untranslated).  The structure could contain a
-more human readable - or more relevant to platform documentation - ID
-where appropriate.
+So I've spent a lot of time trying to find a better way to fix that bug
+and I think I might have finally found one :-)
 
-> +static int add_remove_iommu_group(struct device *dev, void *data)
-> +{
-> +	unsigned int groupid;
-> +	int add = *(int *)data;
-> +
-> +	if (iommu_device_group(dev, &groupid) == 0) {
-> +		if (add)
-> +			return device_create_file(dev, &dev_attr_iommu_group);
-> +		else
-> +			device_remove_file(dev, &dev_attr_iommu_group);
-> +	}
-> +
-> +	return 0;
-> +}
+ - When you try to emulate stwcx on the kernel stack (and only there),
+don't actually perform the store. Set a TIF flag instead to indicate
+special processing in the exception return path and store the address to
+update somewhere either in a free slot of the stack frame itself of
+somewhere in the thread struct (the former would be easier). You may as
+well do some sanity checking on the value while at it to catch errors
+early.
 
-Multiplexing add and remove together seems pointlessly obfuscated.
+ - In the exception return code, we already test for various TIF flags
+(*** see comment below, it's even buggy today for preempt ***), so we
+add a test for that flag and go to do_work.
 
-> +static int iommu_device_notifier(struct notifier_block *nb,
-> +				 unsigned long action, void *data)
-> +{
-> +	struct device *dev = data;
-> +	int add;
-> +
-> +	if (action == BUS_NOTIFY_ADD_DEVICE) {
-> +		add = 1;
-> +		return add_remove_iommu_group(dev, &add);
-> +	} else if (action == BUS_NOTIFY_DEL_DEVICE) {
-> +		add = 0;
-> +		return add_remove_iommu_group(dev, &add);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct notifier_block iommu_device_nb = {
-> +	.notifier_call = iommu_device_notifier,
-> +};
-> +
->  static void iommu_bus_init(struct bus_type *bus, struct iommu_ops *ops)
->  {
+ - At the end of do_work, we check for this TIF flag. If it's not set or
+any other flag is set, move on as usual. However, if it's the only flag
+still set:
 
-I don't know of any current examples, but I do worry that makin this
-per bus-type rather than bus-instance might bite us in the arse later
-on.
+ - Copy the exception frame we're about to unwind to just -below- the
+new r1 value we want to write to. Then perform the write, and change
+r1 to point to that copy of the frame.
 
-> +	int add = 1;
-> +
-> +	bus_register_notifier(bus, &iommu_device_nb);
-> +	bus_for_each_dev(bus, NULL, &add, add_remove_iommu_group);
->  }
->  
->  /**
-> @@ -186,3 +238,12 @@ int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
->  	return domain->ops->unmap(domain, iova, gfp_order);
->  }
->  EXPORT_SYMBOL_GPL(iommu_unmap);
-> +
-> +int iommu_device_group(struct device *dev, unsigned int *groupid)
-> +{
-> +	if (iommu_present(dev->bus) && dev->bus->iommu_ops->device_group)
-> +		return dev->bus->iommu_ops->device_group(dev, groupid);
-> +
-> +	return -ENODEV;
-> +}
-> +EXPORT_SYMBOL_GPL(iommu_device_group);
-> diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-> index 432acc4..93617e7 100644
-> --- a/include/linux/iommu.h
-> +++ b/include/linux/iommu.h
-> @@ -61,6 +61,7 @@ struct iommu_ops {
->  				    unsigned long iova);
->  	int (*domain_has_cap)(struct iommu_domain *domain,
->  			      unsigned long cap);
-> +	int (*device_group)(struct device *dev, unsigned int *groupid);
->  };
->  
->  extern int bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops);
-> @@ -81,6 +82,7 @@ extern int iommu_domain_has_cap(struct iommu_domain *domain,
->  				unsigned long cap);
->  extern void iommu_set_fault_handler(struct iommu_domain *domain,
->  					iommu_fault_handler_t handler);
-> +extern int iommu_device_group(struct device *dev, unsigned int *groupid);
->  
->  /**
->   * report_iommu_fault() - report about an IOMMU fault to the IOMMU framework
-> @@ -179,6 +181,11 @@ static inline void iommu_set_fault_handler(struct iommu_domain *domain,
->  {
->  }
->  
-> +static inline int iommu_device_group(struct device *dev, unsigned int *groupid);
-> +{
-> +	return -ENODEV;
-> +}
-> +
->  #endif /* CONFIG_IOMMU_API */
->  
->  #endif /* __LINUX_IOMMU_H */
-> 
+ - Branch to restore: which will unwind everything from that copy of
+the frame, and eventually set r1 to GPR(1) in the copy which contains
+the new value of r1.
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+This is the less intrusive approach and should work just fine, it's also
+more robust than anything I've been able to think of and the approach
+would work for 32 and 64-bit similarily.
+
+(***) Above comment about a bug: If you look at entry_64.S version of
+ret_from_except_lite you'll notice that in the !preempt case, after
+we've checked MSR_PR we test for any TIF flag in _TIF_USER_WORK_MASK to
+decide whether to go to do_work or not. However, in the preempt case, we
+do a convoluted trick to test SIGPENDING only if PR was set and always
+test NEED_RESCHED ... but we forget to test any other bit of
+_TIF_USER_WORK_MASK !!! So that means that with preempt, we completely
+fail to test for things like single step, syscall tracing, etc...
+
+I think this should be fixed at the same time, by simplifying the code
+by doing:
+
+ - Test PR. If set, go to test_work_user, else continue (or the other
+way around and call it test_work_kernel)
+
+ - In test_work_user, always test for _TIF_USER_WORK_MASK to decide to
+go to do_work, maybe call it do_user_work
+
+ - In test_work_kernel, test for _TIF_KERNEL_WORK_MASK which is set to
+our new flag along with NEED_RESCHED if preempt is enabled and branch to
+do_kernel_work.
+
+do_user_work is basically the same as today's user_work
+
+do_kernel_work is basically the same as today preempt block with added
+code to handle the new flag as described above.
+
+Is anybody volunteering for fixing that ? I don't have the bandwidth
+right now, but if nobody shows up I suppose I'll have to eventually deal
+with it myself :-)
+
+Cheers,
+Ben.
+
 
