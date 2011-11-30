@@ -1,113 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab1K3NE2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 08:04:28 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:60891 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab1K3NE0 (ORCPT
+	id S1753232Ab1K3NEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 08:04:47 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:51457 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752433Ab1K3NEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 08:04:26 -0500
-Message-ID: <4ED629CB.401@linux.vnet.ibm.com>
-Date: Wed, 30 Nov 2011 14:04:11 +0100
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Wu Fengguang <fengguang.wu@intel.com>
-CC: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Ankit Jain <radical@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 2/8] readahead: make default readahead size a kernel parameter
-References: <20111121091819.394895091@intel.com> <20111121093846.251104145@intel.com> <20111121100137.GC5084@infradead.org> <20111121113540.GB8895@localhost> <20111124222822.GG29519@quack.suse.cz> <20111125003633.GP2386@dastard> <20111128023922.GA2141@localhost>
-In-Reply-To: <20111128023922.GA2141@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-x-cbid: 11113013-0542-0000-0000-0000003B48EB
+	Wed, 30 Nov 2011 08:04:45 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/3gn4LBl/3ou/IHRcpmawUgV7j9w19qpTqa/UVwC
+	sQEhq3/8v8CAMX
+Subject: Re: [PATCH RT] tasklet/rt: Prevent tasklets from going into
+ infinite spin in RT
+From: Mike Galbraith <efault@gmx.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Clark Williams <williams@redhat.com>
+In-Reply-To: <1322657130.5297.12.camel@marge.simson.net>
+References: <1322618120.17003.104.camel@frodo>
+	 <1322627551.17283.11.camel@marge.simson.net>
+	 <alpine.LFD.2.02.1111301117240.2735@ionos>
+	 <1322657130.5297.12.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Nov 2011 14:04:35 +0100
+Message-ID: <1322658275.5297.17.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-11-30 at 13:45 +0100, Mike Galbraith wrote:
+> On Wed, 2011-11-30 at 11:24 +0100, Thomas Gleixner wrote:
+> > On Wed, 30 Nov 2011, Mike Galbraith wrote:
 
+> > > @@ -131,11 +155,18 @@ void softirq_check_pending_idle(void)
+> > >   */
+> > >  static void wakeup_softirqd(void)
+> > >  {
+> > > -	/* Interrupts are disabled: no need to stop preemption */
+> > > -	struct task_struct *tsk = __this_cpu_read(ksoftirqd);
+> > > +	struct task_struct *tsk;
+> > > +	u32 pending = local_softirq_pending(), mask, i;
+> > >  
+> > > -	if (tsk && tsk->state != TASK_RUNNING)
+> > > -		wake_up_process(tsk);
+> > > +	/* Interrupts are disabled: no need to stop preemption */
+> > > +	for (i = 0; pending && i < NR_SOFTIRQ_THREADS; i++) {
+> > > +		mask = __get_cpu_var(ksoftirqd)[i].mask;
+> > > +		if (!(pending & mask))
+> > > +			continue;
+> > > +		tsk = __get_cpu_var(ksoftirqd)[i].tsk;
+> > > +		if (tsk && tsk->state != TASK_RUNNING)
+> > > +			wake_up_process(tsk);
+> > > +	}
+> > >  }
+> > 
+> > Dammned serious is seems. :)
 
-On 11/28/2011 03:39 AM, Wu Fengguang wrote:
-> On Fri, Nov 25, 2011 at 08:36:33AM +0800, Dave Chinner wrote:
->> On Thu, Nov 24, 2011 at 11:28:22PM +0100, Jan Kara wrote:
->>> On Mon 21-11-11 19:35:40, Wu Fengguang wrote:
->>>> On Mon, Nov 21, 2011 at 06:01:37PM +0800, Christoph Hellwig wrote:
->>>>> On Mon, Nov 21, 2011 at 05:18:21PM +0800, Wu Fengguang wrote:
->>>>>> From: Nikanth Karthikesan<knikanth@suse.de>
->>>>>>
-[...]
+'course here I should have just used the busy bits directly.
 
->>
->> And one that has already been in use for exactly this purpose for
->> years. Indeed, it's far more flexible because you can give different
->> types of devices different default readahead settings quite easily,
->> and it you can set different defaults for just about any tunable
->> parameter (e.g. readahead, ctq depth, max IO sizes, etc) in the same
->> way.
->
-> I'm interested in this usage, too. Would you share some of your rules?
->
-
-FYI - This is an example of a rules Suse delivers in SLES @ s390 for a 
-while now. With little modifications it could be used for all Dave 
-mentioned above.
-
-cat /etc/udev/rules.d/60-readahead.rules
-# 
- 
- 
-
-# Rules to set an increased default max readahead size for s390 disk 
-devices 
- 
-
-# This file should be installed in /etc/udev/rules.d 
- 
- 
-
-# 
- 
- 
-
- 
- 
- 
-
-SUBSYSTEM!="block", GOTO="ra_end" 
- 
- 
-
- 
- 
- 
-
-ACTION!="add", GOTO="ra_end" 
- 
- 
-
-# on device add set initial readahead to 512 (instead of in kernel 128) 
- 
- 
-
-KERNEL=="sd*[!0-9]", ATTR{queue/read_ahead_kb}="512" 
- 
- 
-
-KERNEL=="dasd*[!0-9]", ATTR{queue/read_ahead_kb}="512" 
- 
- 
-
-
-LABEL="ra_end"
-
--- 
-
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance
+	-Mike
 
