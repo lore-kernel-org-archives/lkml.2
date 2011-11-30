@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab1K3KHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 05:07:31 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:53538 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab1K3KHN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 05:07:13 -0500
-From: Josh Wu <josh.wu@atmel.com>
-To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org,
-        nicolas.ferre@atmel.com, linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH 2/2] [media] V4L: atmel-isi: add clk_prepare()/clk_unprepare() functions
-Date: Wed, 30 Nov 2011 18:06:44 +0800
-Message-Id: <1322647604-30662-2-git-send-email-josh.wu@atmel.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1322647604-30662-1-git-send-email-josh.wu@atmel.com>
-References: <1322647604-30662-1-git-send-email-josh.wu@atmel.com>
-X-OriginalArrivalTime: 30 Nov 2011 10:06:47.0337 (UTC) FILETIME=[C53A4190:01CCAF47]
+	id S1757369Ab1K3KKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 05:10:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36079 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753042Ab1K3KKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 05:10:32 -0500
+Date: Wed, 30 Nov 2011 11:10:28 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: [3.2-rc3] 100% CPU usage while in del_timer_sync from
+ iwl3945_rs_free_sta
+Message-ID: <20111130101028.GA2906@tiehlicka.suse.cz>
+References: <20111129100727.GD2675@tiehlicka.suse.cz>
+ <20111129113906.GA7299@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129113906.GA7299@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 29-11-11 12:39:07, Stanislaw Gruszka wrote:
+> Hi Michal
+> 
+> On Tue, Nov 29, 2011 at 11:07:27AM +0100, Michal Hocko wrote:
+> > [I am not sure whether this is ieee80211 or iwl3945 issue so put both
+> > maintainers into loop]
+> The only changed we had in iwlegacy between 3.1 and 3.2-rc, was only 
+> adjustment to mac80211 changes. However I think this is iwlegacy issue,
+> just for some reason bug did not trigger before.
 
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
----
- drivers/media/video/atmel-isi.c |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+I have double checked 3.1 and cannot reproduce it.
+Anyway, I have put:
 
-diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
-index ea4eef4..5da4381 100644
---- a/drivers/media/video/atmel-isi.c
-+++ b/drivers/media/video/atmel-isi.c
-@@ -922,7 +922,9 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
- 			isi->fb_descriptors_phys);
+diff --git a/drivers/net/wireless/iwlegacy/iwl-3945-rs.c b/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
+index 8faeaf2..9221ed4 100644
+--- a/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
++++ b/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
+@@ -432,6 +432,7 @@ static void iwl3945_rs_free_sta(void *iwl_priv, struct ieee80211_sta *sta,
+ 	 * to use iwl_priv to print out debugging) since it may not be fully
+ 	 * initialized at this point.
+ 	 */
++	printk("XXX: deleting time: %x\n", rs_sta->rate_scale_flush.base);
+ 	del_timer_sync(&rs_sta->rate_scale_flush);
+ }
  
- 	iounmap(isi->regs);
-+	clk_unprepare(isi->mck);
- 	clk_put(isi->mck);
-+	clk_unprepare(isi->pclk);
- 	clk_put(isi->pclk);
- 	kfree(isi);
- 
-@@ -955,6 +957,12 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 	if (IS_ERR(pclk))
- 		return PTR_ERR(pclk);
- 
-+	ret = clk_prepare(pclk);
-+	if (ret) {
-+		clk_put(pclk);
-+		return ret;
-+	}
-+
- 	isi = kzalloc(sizeof(struct atmel_isi), GFP_KERNEL);
- 	if (!isi) {
- 		ret = -ENOMEM;
-@@ -978,10 +986,14 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 		goto err_clk_get;
- 	}
- 
-+	ret = clk_prepare(isi->mck);
-+	if (ret)
-+		goto err_set_mck_rate;
-+
- 	/* Set ISI_MCK's frequency, it should be faster than pixel clock */
- 	ret = clk_set_rate(isi->mck, pdata->mck_hz);
- 	if (ret < 0)
--		goto err_set_mck_rate;
-+		goto err_unprepare_mck;
- 
- 	isi->p_fb_descriptors = dma_alloc_coherent(&pdev->dev,
- 				sizeof(struct fbd) * MAX_BUFFER_NUM,
-@@ -1058,11 +1070,14 @@ err_alloc_ctx:
- 			isi->p_fb_descriptors,
- 			isi->fb_descriptors_phys);
- err_alloc_descriptors:
-+err_unprepare_mck:
-+	clk_unprepare(isi->mck);
- err_set_mck_rate:
- 	clk_put(isi->mck);
- err_clk_get:
- 	kfree(isi);
- err_alloc_isi:
-+	clk_unprepare(pclk);
- 	clk_put(pclk);
- 
- 	return ret;
+And the timer base is really NULL when the issue happens. So, somebody
+probably removed the timer already?
+
+> Is this problem 100% reproducible for you ? 
+
+Yes, it seems to be sufficient to suspend to RAM while associated and
+turn off the AP before waking up the machine.
+I wasn't able to reproduce just by turning of the AP while associated
+without suspend.
+
+> If so I'll try to reproduce it locally, otherwise I'll review related
+> code to find reason of that problem.
+> 
+> Thanks
+> Stanislaw 
+
+Thanks
+
 -- 
-1.6.3.3
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
