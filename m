@@ -1,53 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1K3Rh1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 12:37:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:54930 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab1K3RhU (ORCPT
+	id S1754392Ab1K3Rhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:37:47 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38096 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab1K3Rhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 12:37:20 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL] at91 fixes for 3.2-rc4
-Date: Wed, 30 Nov 2011 17:37:15 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-References: <4ED65F6D.4020402@atmel.com>
-In-Reply-To: <4ED65F6D.4020402@atmel.com>
+	Wed, 30 Nov 2011 12:37:45 -0500
+Date: Wed, 30 Nov 2011 21:37:39 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [rfc 3/3] prctl: Add PR_SET_MM codes to tune up mm_struct entires
+Message-ID: <20111130173739.GI14515@moon>
+References: <20111129191252.769160532@openvz.org>
+ <20111129191638.912537377@openvz.org>
+ <20111129201938.GP5169@outflux.net>
+ <20111129202951.GG1775@moon>
+ <20111129203714.GH1775@moon>
+ <CAGXu5jKDLExXWi+_Hjc+8s7FeuDgQdZcPipMH80LQs+tRyJm2A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111301737.15895.arnd@arndb.de>
-X-Provags-ID: V02:K0:vWZn+C4QZA78CknGrlk6m9MIpcgLYjqnE9VIWNHX20Z
- MQ4sPvpNeCn/t6cRafK5QCKnsXXKZ50vbN8VV59EQkXSKlPmgX
- HiieuNq/oJFLlXGVCB5/9y002qIB5QBHpUW5reBHc4JGS+gvev
- 9ep4A96PxpWUW+NS2CjKzWfHVRJpVq1FvzTA21zYh1Wh3XkA1q
- HyO115VXxxymPspfGIl/pL0iUgQbGRerEbNKRHLpxWVHAJ/lM7
- XSMh9QCfEs2RMf9R9RYVRW3/gSvjLa08xWnZY64g/7achhh8Jf
- Ier/oCkkj1S7dRlJg9Qez67iPMQ2TIQJLp0krZg26uJRDZj95K
- DNaiopId74OMUHqlooZU=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5jKDLExXWi+_Hjc+8s7FeuDgQdZcPipMH80LQs+tRyJm2A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 November 2011, Nicolas Ferre wrote:
-> Here are a few fixes for AT91. I have noted 3.2-rc4 in the subject but it
-> is true that it can go in another -rc revision as I have seen your recent
-> pull request to Linus...
+On Tue, Nov 29, 2011 at 12:40:57PM -0800, Kees Cook wrote:
+> >
+> > On the other hands these fields are set up by elf hanlder code, which
+> > does mmap these areas, so we have to check that particular member
+> > belongs to existing VMA and never cross user-space area, and together
+> > with root-only approach would not it be enough? I'm sure missing something
+> > that is why I'm asking.
 > 
-> The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+> Right, if you verify that the addresses are actually inside valid
+> userspace vmas, that is likely to be right, though there are probably
+> other things I haven't thought of. The trouble is avoiding vdso, stack
+> guard page, vsyscall, and anything else that isn't meant for the mm to
+> have direct access to.
 > 
->   Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
-> 
-> are available in the git repository at:
->   git://github.com/at91linux/linux-at91.git at91-fixes
 
-Ok, I'll pull it as soon as Linus has taken the previous bunch and
-then I'll submit it together with the other fixes I will certainly
-get.
+Hi Kees,
 
-	Arnd
+what about this one? Note that these mm_struct members don't affect
+kernel much (at least as far as I see, except maybe brk,start_brk and
+start_stack values), so I've added some sanity checks here, hope they
+would fit. Still main protection is root-only access only. The kernel
+itself uses vma_area::start/end members for overlows tests internally
+so I think even passing crazy data here won't crash the kernel itself.
+What do you think?
+
+	Cyrill
+---
+prctl: Add PR_SET_MM codes to tune up mm_struct entires v2
+
+A few members of mm_struct such as start_code, end_code,
+start_data, end_data, start_stack, start_brk, brk provided
+by the kernel via /proc/$pid/stat and we use it at checkpoint
+time.
+
+At restore time we need a mechanism to restore those values
+back and for this sake PR_SET_MM prctl code is introduced.
+
+Note because of being a dangerous operation this inteface
+is allowed for CAP_SYS_ADMIN only.
+
+v2:
+ - Add a check for vma start address, testing for vma ending
+   address is not enough. From Kees Cook.
+
+ - Add some sanity tests for assigned addresses.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Kees Cook <keescook@chromium.org>
+---
+ include/linux/prctl.h |   12 +++++
+ kernel/sys.c          |  118 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 130 insertions(+)
+
+Index: linux-2.6.git/include/linux/prctl.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/prctl.h
++++ linux-2.6.git/include/linux/prctl.h
+@@ -102,4 +102,16 @@
+ 
+ #define PR_MCE_KILL_GET 34
+ 
++/*
++ * Tune up process memory map specifics.
++ */
++#define PR_SET_MM		35
++# define PR_SET_MM_START_CODE		1
++# define PR_SET_MM_END_CODE		2
++# define PR_SET_MM_START_DATA		3
++# define PR_SET_MM_END_DATA		4
++# define PR_SET_MM_START_STACK		5
++# define PR_SET_MM_START_BRK		6
++# define PR_SET_MM_BRK			7
++
+ #endif /* _LINUX_PRCTL_H */
+Index: linux-2.6.git/kernel/sys.c
+===================================================================
+--- linux-2.6.git.orig/kernel/sys.c
++++ linux-2.6.git/kernel/sys.c
+@@ -1692,6 +1692,118 @@ SYSCALL_DEFINE1(umask, int, mask)
+ 	return mask;
+ }
+ 
++static int prctl_set_mm(int opt, unsigned long addr)
++{
++	unsigned long rlim = rlimit(RLIMIT_DATA);
++	unsigned long vm_req_flags;
++	unsigned long vm_bad_flags;
++	struct vm_area_struct *vma;
++	struct mm_struct *mm;
++	int error = 0;
++
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	if (addr >= TASK_SIZE)
++		return -EINVAL;
++
++	mm = get_task_mm(current);
++	if (!mm)
++		return -ENOENT;
++
++	down_read(&mm->mmap_sem);
++	vma = find_vma(mm, addr);
++
++	if (opt != PR_SET_MM_START_BRK &&
++	    opt != PR_SET_MM_BRK) {
++		/* It must be existing VMA */
++		if (!vma || vma->vm_start > addr)
++			goto out;
++	}
++
++	error = -EINVAL;
++	switch (opt) {
++	case PR_SET_MM_START_CODE:
++	case PR_SET_MM_END_CODE:
++
++		vm_req_flags = VM_READ | VM_EXEC;
++		vm_bad_flags = VM_WRITE | VM_MAYSHARE;
++
++		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
++		    (vma->vm_flags & vm_bad_flags))
++			goto out;
++
++		if (opt == PR_SET_MM_START_CODE)
++			current->mm->start_code = addr;
++		else
++			current->mm->end_code = addr;
++		break;
++
++	case PR_SET_MM_START_DATA:
++	case PR_SET_MM_END_DATA:
++
++		vm_req_flags = VM_READ | VM_WRITE;
++		vm_bad_flags = VM_EXEC | VM_MAYSHARE;
++
++		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
++		    (vma->vm_flags & vm_bad_flags))
++			goto out;
++
++		if (opt == PR_SET_MM_START_DATA)
++			current->mm->start_data = addr;
++		else
++			current->mm->end_data = addr;
++		break;
++
++	case PR_SET_MM_START_STACK:
++
++#ifdef CONFIG_STACK_GROWSUP
++		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSUP;
++#else
++		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSDOWN;
++#endif
++		if ((vma->vm_flags & vm_req_flags) != vm_req_flags)
++			goto out;
++
++		current->mm->start_stack = addr;
++		break;
++
++	case PR_SET_MM_START_BRK:
++		if (addr <= mm->end_data)
++			goto out;
++
++		if (rlim < RLIM_INFINITY &&
++		    (mm->brk - addr) + (mm->end_data - mm->start_data) > rlim)
++			goto out;
++
++		current->mm->start_brk = addr;
++		break;
++
++	case PR_SET_MM_BRK:
++		if (addr <= mm->end_data)
++			goto out;
++
++		if (rlim < RLIM_INFINITY &&
++		    (addr - mm->start_brk) + (mm->end_data - mm->start_data) > rlim)
++			goto out;
++
++		current->mm->brk = addr;
++		break;
++
++	default:
++		error = -EINVAL;
++		goto out;
++	}
++
++	error = 0;
++
++out:
++	up_read(&mm->mmap_sem);
++	mmput(mm);
++
++	return error;
++}
++
+ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 		unsigned long, arg4, unsigned long, arg5)
+ {
+@@ -1841,6 +1953,12 @@ SYSCALL_DEFINE5(prctl, int, option, unsi
+ 			else
+ 				error = PR_MCE_KILL_DEFAULT;
+ 			break;
++		case PR_SET_MM: {
++			if (arg4 | arg5)
++				return -EINVAL;
++			error = prctl_set_mm(arg2, arg3);
++			break;
++		}
+ 		default:
+ 			error = -EINVAL;
+ 			break;
