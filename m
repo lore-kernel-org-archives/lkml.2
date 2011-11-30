@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab1K3Idi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 03:33:38 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56219 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751774Ab1K3Idf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 03:33:35 -0500
-Date: Wed, 30 Nov 2011 16:33:24 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark.williams@gmail.com>,
-        RT <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: lockdep splat with 3.2-rc2-rt3+
-Message-ID: <20111130083324.GA1632@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111120113621.7d738d55@gmail.com>
- <CAONaPpEdxdZLTDzf11ojT7tqHoVqsp3YFwx_UJafvRpyKHCjrQ@mail.gmail.com>
- <CAONaPpHnu8VADg_EGQNrqsyhrVsJ2oOFMB4FyK-94qu5n-NEEQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAONaPpHnu8VADg_EGQNrqsyhrVsJ2oOFMB4FyK-94qu5n-NEEQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756796Ab1K3IeO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 03:34:14 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:46554 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751774Ab1K3IeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 03:34:13 -0500
+Message-ID: <1322642051.2123.11.camel@Joe-Laptop>
+Subject: Re: [PATCH 16/28] namespace: checkpatch wanking
+From: Joe Perches <joe@perches.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 30 Nov 2011 00:34:11 -0800
+In-Reply-To: <20111130065014.GU2203@ZenIV.linux.org.uk>
+References: <cover.1322609672.git.joe@perches.com>
+	 <a3527806b3af190204da9de1df1bfe4421ed6101.1322609673.git.joe@perches.com>
+	 <20111130022245.GS2203@ZenIV.linux.org.uk>
+	 <1322624351.17214.5.camel@Joe-Laptop>
+	 <20111130065014.GU2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 24, 2011 at 11:50:06PM +0100, John Kacur wrote:
-> So, as a little experiment, on v3.2.0-rc2-rt3
-> I redefined MAX_LOCKDEP_ENTRIES from 16384UL to 32768UL
-> 
-> Then from /proc/lockdep_stats
-> 
-> I got
->  direct dependencies:                 18026 [max: 32768]
-> 
-> The fact that 18026 is only a little larger than the normal max (by 1642)
-> to me is another indication that, this is not a case of something in
-> lockdep going out of control that needs to be fixed, but just another
-> indication that in some circumstances it would be legitimate to raise
-> the value.
+On Wed, 2011-11-30 at 06:50 +0000, Al Viro wrote:
+> -	if (!(page = __get_free_page(GFP_KERNEL)))
+> +	page = __get_free_page(GFP_KERNEL);
+> +	if (!page)
+>  		return -ENOMEM;
+> Not sure...  In general I'd agree, but in this case...
 
-Yeah, seems the reason is in RT we have no dedicated softirq-context
-anymore, IOW, both process-context and softirq-context are taken as
-process-context. That will increase the usage of lockdep entries
-because we expand the scope of process-context.
+Shrug.  I'm not sure there's much of a case other than
+line count for keeping this a one-liner.
 
-Thanks,
-Yong
+If you want these sorts of changes to be redone after
+vfsmount-guts gets promoted, let me know.
+
