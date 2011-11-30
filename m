@@ -1,95 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab1K3NXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 08:23:41 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38490 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab1K3NXj convert rfc822-to-8bit (ORCPT
+	id S1755563Ab1K3NZj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 08:25:39 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:54412 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab1K3NZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 08:23:39 -0500
+	Wed, 30 Nov 2011 08:25:37 -0500
+X-IronPort-AV: E=Sophos;i="4.69,596,1315180800"; 
+   d="scan'208";a="9207145"
+Subject: Re: [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt
+ extensions
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "android-virt@lists.cs.columbia.edu" 
+	<android-virt@lists.cs.columbia.edu>,
+        "embeddedxen-devel@lists.sourceforge.net" 
+	<embeddedxen-devel@lists.sourceforge.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 30 Nov 2011 13:25:34 +0000
+In-Reply-To: <201111301303.23851.arnd@arndb.de>
+References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop>
+	 <201111292129.20444.arnd@arndb.de>
+	 <alpine.DEB.2.00.1111301053300.31179@kaball-desktop>
+	 <201111301303.23851.arnd@arndb.de>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1322659535.31810.97.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-X-Originating-IP: [41.212.118.124]
-In-Reply-To: <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
-References: <1319048598-15030-1-git-send-email-dsahern@gmail.com>
- <20111019183848.GE2229@ghostprotocols.net> <4E9F1AA0.4010706@gmail.com>
- <20111019192011.GG2229@ghostprotocols.net> <4E9F4B50.1060207@gmail.com>
- <20111020130041.GB1772@ghostprotocols.net> <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
-From: Brian Marete <marete@toshnix.com>
-Date: Wed, 30 Nov 2011 16:23:17 +0300
-Message-ID: <CAHVUoiTeCuFLCkyEzCMJ6g1wAp+FWDR3qkSrqE3vJAYwLsRC9Q@mail.gmail.com>
-Subject: Re: [PATCH] perf top: fix crash on annotate request
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 1:01 AM, Brian Marete <marete@toshnix.com> wrote:
->
-> Hello,
->
-> On Thu, Oct 20, 2011 at 4:00 PM, Arnaldo Carvalho de Melo
-> <acme@ghostprotocols.net> wrote:
-> > I.e. the map_ip for this method is messing up things, what symbol is
-> > this? I.e. please provide:
-> >
-> > p *sym
-> > p *map
->
-> I have am experiencing the same segfault using perf from the latest
-> linus' tree. The gdb backtrace is below. Which patch fixes it? Or is
-> it already fixed in some git tree on kernel.org?
->
-> Thanks
->
-> Program received signal SIGSEGV, Segmentation fault.
-> 0x000000000042e27e in symbol__inc_addr_samples (sym=0x1279e70, map=0x9677a0,
->    evidx=0, addr=256544) at util/annotate.c:73
-> 73              h->addr[offset]++;
-> #0  0x000000000042e27e in symbol__inc_addr_samples (sym=0x1279e70, map=
->    0x9677a0, evidx=0, addr=256544) at util/annotate.c:73
-> #1  0x00000000004215e4 in record_precise_ip (he=0x1e7b260, counter=0,
->    ip=256544) at builtin-top.c:223
-> #2  0x0000000000422ba1 in perf_event__process_sample (event=0x7ffff7ec4c60,
->    evsel=0x837a10, sample=0x7fffffffe340, session=0x837e80)
->    at builtin-top.c:801
-> #3  0x0000000000422c8c in perf_session__mmap_read_idx (self=0x837e80, idx=1)
->    at builtin-top.c:825
-> #4  0x0000000000422d43 in perf_session__mmap_read (self=0x837e80)
->    at builtin-top.c:839
-> #5  0x0000000000423295 in __cmd_top () at builtin-top.c:1003
-> #6  0x0000000000423940 in cmd_top (argc=0, argv=0x7fffffffe720, prefix=0x0)
->    at builtin-top.c:1274
-> #7  0x000000000040ffdc in run_builtin (p=0x6a4bc8, argc=1, argv=0x7fffffffe720)
->    at perf.c:286
-> #8  0x00000000004101af in handle_internal_command (argc=1, argv=0x7fffffffe720)
->    at perf.c:358
-> #9  0x00000000004102b5 in run_argv (argcp=0x7fffffffe60c, argv=0x7fffffffe600)
->    at perf.c:402
-> #10 0x00000000004104f8 in main (argc=1, argv=0x7fffffffe720) at perf.c:512
->
-> # Output of p *sym
-> $1 = {rb_node = {rb_parent_color = 19423281, rb_right = 0x0, rb_left = 0x0},
->  start = 1124896, end = 1126163, namelen = 16, binding = 0 '\000',
->  ignore = false, name = 0x1279e70 "1`(\001"}
->
-> # Output of p *map
-> $2 = {{rb_node = {rb_parent_color = 9861408, rb_right = 0x967860, rb_left =
->    0x9676e0}, node = {next = 0x967920, prev = 0x967860}}, start = 4142972928,
->  end = 4144365568, type = 0 '\000', referenced = true, priv = 0, pgoff = 0,
->  map_ip = 0x44fc69 <map__map_ip>, unmap_ip = 0x44fc92 <map__unmap_ip>, dso =
->    0x8e5490, groups = 0x964cd8}
+On Wed, 2011-11-30 at 13:03 +0000, Arnd Bergmann wrote:
+> On Wednesday 30 November 2011, Stefano Stabellini wrote:
+> > On Tue, 29 Nov 2011, Arnd Bergmann wrote:
+> > > On Tuesday 29 November 2011, Stefano Stabellini wrote:
+> > > 
+> > > Do you have a pointer to the kernel sources for the Linux guest?
+> > 
+> > We have very few changes to the Linux kernel at the moment (only 3
+> > commits!), just enough to be able to issue hypercalls and start a PV
+> > console.
+> > 
+> > A git branch is available here (not ready for submission):
+> > 
+> > git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git arm
+> 
+> Ok, interesting. There really isn't much of the platform support
+> that I was expecting there. I finally found the information
+> I was looking for in the xen construct_dom0() function:
+> 
+>  167     regs->r0 = 0; /* SBZ */
+>  168     regs->r1 = 2272; /* Machine NR: Versatile Express */
+>  169     regs->r2 = 0xc0000100; /* ATAGS */
+> 
+> What this means is that you are emulating the current ARM/Keil reference
+> board, at least to the degree that is necessary to get the guest started.
+> 
+> This is the same choice people have made for KVM, but it's not
+> necessarily the best option in the long run. In particular, this
+> board has a lot of hardware that you claim to have by putting the
+> machine number there, when you don't really want to emulate it.
 
-Hello. I can still reproduce this every time with the tip Linus' tree.
-Is there a tree that fixes this? I beginning to wonder if anyone uses
-`perf top' :)
+This code is actually setting up dom0 which (for the most part) sees the
+real hardware.
 
-Thanks.
+The hardcoding of the platform is just a short term hack.
 
---
-Brian Gitonga Marete
-Toshnix Systems
-Tel: +254722151590
+> Pawell Moll is working on a variant of the vexpress code that uses
+> the flattened device tree to describe the present hardware [1], and
+> I think that would be a much better target for an official release.
+> Ideally, the hypervisor should provide the device tree binary (dtb)
+> to the guest OS describing the hardware that is actually there.
+
+Agreed. Our intention was to use DT so this fits perfectly with our
+plans.
+
+For dom0 we would expose a (possibly filtered) version of the DT given
+to us by the firmware (e.g. we might hide a serial port to reserve it
+for Xen's use, we'd likely fiddle with the memory map etc).
+
+For domU the DT would presumably be constructed by the toolstack (in
+dom0 userspace) as appropriate for the guest configuration. I guess this
+needn't correspond to any particular "real" hardware platform.
+
+> This would also be the place where you tell the guest that it should
+> look for PV devices. I'm not familiar with how Xen announces PV
+> devices to the guest on other architectures, but you have the
+> choice between providing a full "binding", i.e. a formal specification
+> in device tree format for the guest to detect PV devices in the
+> same way as physical or emulated devices, or just providing a single
+> place in the device tree in which the guest detects the presence
+> of a xen device bus and then uses hcalls to find the devices on that
+> bus.
+
+On x86 there is an emulated PCI device which serves as the hooking point
+for the PV drivers. For ARM I don't think it would be unreasonable to
+have a DT entry instead. I think it would be fine just represent the
+root of the "xenbus" and further discovery would occur using the normal
+xenbus mechanisms (so not a full binding). AIUI for buses which are
+enumerable this is the preferred DT scheme to use.
+
+> Another topic is the question whether there are any hcalls that
+> we should try to standardize before we get another architecture
+> with multiple conflicting hcall APIs as we have on x86 and powerpc.
+
+The hcall API we are currently targeting is the existing Xen API (at
+least the generic parts of it). These generally deal with fairly Xen
+specific concepts like grant tables etc.
+
+Ian.
+
+> 
+> 	Arnd
+> 
+> [1] http://www.spinics.net/lists/arm-kernel/msg149604.html
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
+
+
