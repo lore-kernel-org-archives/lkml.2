@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab1K3Jur (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 04:50:47 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:58425 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412Ab1K3Jun (ORCPT
+	id S1756869Ab1K3J5h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 04:57:37 -0500
+Received: from claranet-outbound-smtp00.uk.clara.net ([195.8.89.33]:49210 "EHLO
+	claranet-outbound-smtp00.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753500Ab1K3J5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 04:50:43 -0500
-Date: Wed, 30 Nov 2011 20:50:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the vhost tree with the hexagon
- tree
-Message-Id: <20111130205030.ed1e48bf5588a1aeeb2f4a3d@canb.auug.org.au>
-In-Reply-To: <20111130064553.GA2393@codeaurora.org>
-References: <20111129142259.78d3e10678c8e9d8376d52aa@canb.auug.org.au>
-	<20111130064553.GA2393@codeaurora.org>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__30_Nov_2011_20_50_30_+1100_jsCO=y6F_4xuNS1N"
+	Wed, 30 Nov 2011 04:57:35 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+To: Jason Baron <jbaron@redhat.com>
+Subject: Re: Enabling dynamic debug at module load
+Date: Wed, 30 Nov 2011 09:57:29 +0000
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1.fc15.x86_64; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, jim.cromie@gmail.com
+References: <201111290947.03046.tvrtko.ursulin@onelan.co.uk> <20111129182916.GB6610@redhat.com>
+In-Reply-To: <20111129182916.GB6610@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111300957.29417.tvrtko.ursulin@onelan.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__30_Nov_2011_20_50_30_+1100_jsCO=y6F_4xuNS1N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 29 Nov 2011 18:29:16 Jason Baron wrote:
+> On Tue, Nov 29, 2011 at 09:47:03AM +0000, Tvrtko Ursulin wrote:
+> > Hi Jason,
+> > 
+> > What happened to the proposed patch to enable dynamic debug lines at
+> > module load time?
+> > 
+> > After hitting this problem when trying to figure out why w83627ehf does
+> > not load I found that apparently there is no way to enable pr_debug's
+> > called from its module_init and googling discovered this thread:
+> > https://lkml.org/lkml/2010/5/26/192
+> > 
+> > Thanks,
+> > 
+> > Tvrtko
+> 
+> Hi Tvrtko,
+> 
+> Jim Cromie and I have been working on a set of patches to address this
+> issue. I'm aware this is an important issue (And yes, it's taken far too
+> long to address it). We are trying to post something shortly.
 
-Hi Richard,
+It's not a regular nuisance for me, I just spotted the flaw and wanted to bring 
+it up in case it slipped form everyone radars. If it was actively bugging me I 
+would be happy to offer a hand. This way it is good to know it's being worked 
+on so thanks for letting us know.
 
-On Wed, 30 Nov 2011 00:45:53 -0600 Richard Kuo <rkuo@codeaurora.org> wrote:
->
-> On Tue, Nov 29, 2011 at 02:22:59PM +1100, Stephen Rothwell wrote:
-> >=20
-> > Today's linux-next merge of the vhost tree got a conflict in
-> > arch/hexagon/Kconfig between commit 5237bae0d8c9 ("various Kconfig
-> > cleanup and old platform build code removal") from the hexagon tree and
-> > commit4673ca8eb369  ("lib: move GENERIC_IOMAP to lib/Kconfig") from the
-> > vhost tree.
-> >=20
-> > Just context changes.  I fixed it up (see below) and can carry the fix =
-as
-> > necessary.
->=20
-> I was figuring this would happen.  What would be the best way for me to
-> fix this?  Maybe rebase my patches on top of the vhost tree?
+Regards,
 
-No, just ignore it.  Linus will fix it up when he merges the trees into
-his.  Its pretty trivial anyway.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__30_Nov_2011_20_50_30_+1100_jsCO=y6F_4xuNS1N
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO1fxmAAoJEECxmPOUX5FE3WIQAI1b2vM45UIY/Ef0xp52fm6o
-dQqIP+cOtMpkSJZhSMOYMPccehMAJdqTxsTB7ObjpsOCBRKWw0O6E2DksATlAgrY
-ZDMa4KGPrHhtnzyfdR4+SH6lx5C/Sp0JqGe/QuPhG4eT0xxCfolp0qYoqxNcpteH
-KlEN0PYuENoojMEMr+ctMvn0MJnsu1RwlbDnhJf10Asq4e0FbKUi7KFTd36ZNOKB
-Ys51HdU6nFR1MZzHMfSFLHKDwt7gw8gFy5aBL/1bUYGX2R/ovzxsxzUJGoZ8nPku
-I/GJPWKban49O6ZH214yRIXwht2Cex+GsoWMbmv+2mi5lmEqzd3EVgzLy1xPgrFn
-IuRwVpBM3mAbi3XnF6jamt1RhGhdMhTv+lON33qmStsksOjy9BfS7EHWi7cqd1mb
-8ksrvUiBo8SJA7CGPtjF0vWV4ChwD43Kwlvzp2AGumIWbYxurwileWelLeeRQFSF
-/PF8reo0L6+UfYH6QsdjfKWEUiqccFkLxnUyYYqrUC2srKnnq8oJPj7sZn7MQnjb
-XhY/ErZ/X/un1S0UeLa0CwyJiYWRaVaoTZDncnKQvSDTMln/bESjZyCkllR2w5LJ
-Cb91FMYCVw9U7P6ztOrUx5dTvwnpXSZlU7DzGtCHDG5n5zFYZKtx71O1EHyoqlSP
-6xQEakZONcOd2w8x3ckk
-=+due
------END PGP SIGNATURE-----
-
---Signature=_Wed__30_Nov_2011_20_50_30_+1100_jsCO=y6F_4xuNS1N--
+Tvrtko
