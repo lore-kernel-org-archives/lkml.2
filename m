@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab1K3RWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 12:22:04 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:43205 "EHLO
+	id S1758077Ab1K3RWv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:22:51 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:43199 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758005Ab1K3RVw (ORCPT
+	with ESMTP id S1757984Ab1K3RVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 12:21:52 -0500
+	Wed, 30 Nov 2011 12:21:51 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: ke.yu@intel.com, kevin.tian@intel.com, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl
@@ -14,264 +14,505 @@ Cc: xen-devel@lists.xensource.com, jeremy@goop.org, konrad@kernel.org,
         stefan.bader@canonical.com, Ian.Campbell@citrix.com,
         mike.mcclurg@citrix.com, liang.tang@oracle.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 7/8] ACPI: xen processor: add PM notification interfaces.
-Date: Wed, 30 Nov 2011 12:21:03 -0500
-Message-Id: <1322673664-14642-8-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 5/8] ACPI: add processor driver for Xen virtual CPUs.
+Date: Wed, 30 Nov 2011 12:21:01 -0500
+Message-Id: <1322673664-14642-6-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
 References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4ED66624.00B5,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090203.4ED66624.0027,ss=1,re=-2.300,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kevin Tian <kevin.tian@intel.com>
 
-Since cpu power is controlled by VMM in Xen, to provide
-that information to the VMM, we have to use hypercall to exchange
-power management state between domain with hypervisor.
+Because the processor is controlled by the VMM in xen,
+we need new acpi processor driver for Xen virtual CPU.
+
+Specifically we need to be able to pass the CXX/PXX states
+to the hypervisor, and as well deal with the peculiarity
+that the amount of CPUs that Linux parses in the ACPI
+is different from the amount visible to the Linux kernel.
 
 Signed-off-by: Yu Ke <ke.yu@intel.com>
 Signed-off-by: Tian Kevin <kevin.tian@intel.com>
 Signed-off-by: Tang Liang <liang.tang@oracle.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/acpi_processor.c |  216 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 216 insertions(+), 0 deletions(-)
+ drivers/acpi/Makefile        |    1 +
+ drivers/acpi/processor_xen.c |  244 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/xen/Kconfig          |    5 +
+ drivers/xen/Makefile         |    3 +
+ drivers/xen/acpi_processor.c |   53 +++++++++
+ include/xen/acpi.h           |  104 ++++++++++++++++++
+ 6 files changed, 410 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/acpi/processor_xen.c
+ create mode 100644 drivers/xen/acpi_processor.c
+ create mode 100644 include/xen/acpi.h
 
-diff --git a/drivers/xen/acpi_processor.c b/drivers/xen/acpi_processor.c
-index 8fa7914..23730d8 100644
---- a/drivers/xen/acpi_processor.c
-+++ b/drivers/xen/acpi_processor.c
-@@ -24,6 +24,7 @@
- #include <acpi/processor.h>
- #include <xen/acpi.h>
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index ecb26b4..1f39861f 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -66,6 +66,7 @@ obj-$(CONFIG_ACPI_CUSTOM_METHOD)+= custom_method.o
+ # processor has its own "processor." module_param namespace
+ processor-y			:= processor_driver.o processor_throttling.o
+ processor-y			+= processor_idle.o processor_thermal.o
++processor-y			+= processor_xen.o
+ processor-$(CONFIG_CPU_FREQ)	+= processor_perflib.o
  
-+#include <xen/interface/platform.h>
- #include <asm/xen/hypercall.h>
- #include <asm/xen/hypervisor.h>
- 
-@@ -50,4 +51,219 @@ int processor_cntl_xen_notify(struct acpi_processor *pr, int event, int type)
- }
- EXPORT_SYMBOL(processor_cntl_xen_notify);
- 
-+static inline void xen_convert_pct_reg(struct xen_pct_register *xpct,
-+	struct acpi_pct_register *apct)
+ obj-$(CONFIG_ACPI_PROCESSOR_AGGREGATOR) += acpi_pad.o
+diff --git a/drivers/acpi/processor_xen.c b/drivers/acpi/processor_xen.c
+new file mode 100644
+index 0000000..fc3cc0b
+--- /dev/null
++++ b/drivers/acpi/processor_xen.c
+@@ -0,0 +1,244 @@
++/*
++ * processor_xen.c - ACPI Processor Driver for xen
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or (at
++ *  your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ */
++
++#include <acpi/acpi_drivers.h>
++#include <acpi/processor.h>
++#include <xen/acpi.h>
++#include <linux/export.h>
++
++#define PREFIX "ACPI: "
++
++#define ACPI_PROCESSOR_CLASS            "processor"
++#define ACPI_PROCESSOR_NOTIFY_PERFORMANCE 0x80
++#define ACPI_PROCESSOR_NOTIFY_POWER	0x81
++#define ACPI_PROCESSOR_NOTIFY_THROTTLING	0x82
++
++#define _COMPONENT              ACPI_PROCESSOR_COMPONENT
++ACPI_MODULE_NAME("processor_xen");
++
++#if defined(CONFIG_ACPI_PROCESSOR_XEN) || \
++defined(CONFIG_ACPI_PROCESSOR_XEN_MODULE)
++static const struct acpi_device_id processor_device_ids[] = {
++	{ACPI_PROCESSOR_OBJECT_HID, 0},
++	{"ACPI0007", 0},
++	{"", 0},
++};
++
++static int xen_acpi_processor_add(struct acpi_device *device);
++static void xen_acpi_processor_notify(struct acpi_device *device, u32 event);
++
++struct acpi_driver xen_acpi_processor_driver = {
++	.name = "processor",
++	.class = ACPI_PROCESSOR_CLASS,
++	.ids = processor_device_ids,
++	.ops = {
++		.add = xen_acpi_processor_add,
++		.remove = acpi_processor_remove,
++		.suspend = acpi_processor_suspend,
++		.resume = acpi_processor_resume,
++		.notify = xen_acpi_processor_notify,
++		},
++};
++
++#ifdef CONFIG_CPU_FREQ
++/*
++ * Existing ACPI module does parse performance states at some point,
++ * when acpi-cpufreq driver is loaded which however is something
++ * we'd like to disable to avoid confliction with xen PM
++ * logic. So we have to collect raw performance information here
++ * when ACPI processor object is found and started.
++ */
++static int xen_acpi_processor_get_performance(struct acpi_processor *pr)
 +{
-+	xpct->descriptor = apct->descriptor;
-+	xpct->length     = apct->length;
-+	xpct->space_id   = apct->space_id;
-+	xpct->bit_width  = apct->bit_width;
-+	xpct->bit_offset = apct->bit_offset;
-+	xpct->reserved   = apct->reserved;
-+	xpct->address    = apct->address;
-+}
-+
-+static inline void xen_convert_pss_states(struct xen_processor_px *xpss,
-+	struct acpi_processor_px *apss, int state_count)
-+{
-+	int i;
-+	for (i = 0; i < state_count; i++) {
-+		xpss->core_frequency     = apss->core_frequency;
-+		xpss->power              = apss->power;
-+		xpss->transition_latency = apss->transition_latency;
-+		xpss->bus_master_latency = apss->bus_master_latency;
-+		xpss->control            = apss->control;
-+		xpss->status             = apss->status;
-+		xpss++;
-+		apss++;
-+	}
-+}
-+
-+static inline void xen_convert_psd_pack(struct xen_psd_package *xpsd,
-+	struct acpi_psd_package *apsd)
-+{
-+	xpsd->num_entries    = apsd->num_entries;
-+	xpsd->revision       = apsd->revision;
-+	xpsd->domain         = apsd->domain;
-+	xpsd->coord_type     = apsd->coord_type;
-+	xpsd->num_processors = apsd->num_processors;
-+}
-+
-+static int xen_cx_notifier(struct acpi_processor *pr, int action)
-+{
-+	int ret, count = 0, i;
-+	struct xen_platform_op op = {
-+		.cmd			= XENPF_set_processor_pminfo,
-+		.interface_version	= XENPF_INTERFACE_VERSION,
-+		.u.set_pminfo.id	= pr->acpi_id,
-+		.u.set_pminfo.type	= XEN_PM_CX,
-+	};
-+	struct xen_processor_cx *data, *buf;
-+	struct acpi_processor_cx *cx;
-+	struct acpi_power_register *reg;
-+
-+	if (action == PROCESSOR_PM_CHANGE)
-+		return -EINVAL;
-+
-+	/* Convert to Xen defined structure and hypercall */
-+	buf = kzalloc(pr->power.count * sizeof(struct xen_processor_cx)\
-+		, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	data = buf;
-+	for (i = 1; i <= pr->power.count; i++) {
-+		cx = &pr->power.states[i];
-+		reg = &cx->reg;
-+		/* Skip invalid cstate entry */
-+		if (!cx->valid)
-+			continue;
-+
-+		data->type = cx->type;
-+		data->latency = cx->latency;
-+		data->power = cx->power;
-+		data->reg.space_id = reg->space_id;
-+		data->reg.bit_width = reg->bit_width;
-+		data->reg.bit_offset = reg->bit_offset;
-+		data->reg.access_size = reg->access_size;
-+		data->reg.address = reg->address;
-+
-+		/* Get dependency relationships, _CSD is not supported yet */
-+		data->dpcnt = 0;
-+		set_xen_guest_handle(data->dp, NULL);
-+
-+		data++;
-+		count++;
-+	}
-+
-+	if (!count) {
-+		printk(KERN_ERR "No available Cx info for cpu %d\n",
-+				pr->acpi_id);
-+		kfree(buf);
-+		return -EINVAL;
-+	}
-+
-+	op.u.set_pminfo.power.count = count;
-+	op.u.set_pminfo.power.flags.bm_control = pr->flags.bm_control;
-+	op.u.set_pminfo.power.flags.bm_check = pr->flags.bm_check;
-+	op.u.set_pminfo.power.flags.has_cst = pr->flags.has_cst;
-+	op.u.set_pminfo.power.flags.power_setup_done =
-+		pr->flags.power_setup_done;
-+
-+	set_xen_guest_handle(op.u.set_pminfo.power.states, buf);
-+	ret = HYPERVISOR_dom0_op(&op);
-+	kfree(buf);
-+	return ret;
-+}
-+
-+static int xen_px_notifier(struct acpi_processor *pr, int action)
-+{
-+	int ret = -EINVAL;
-+	struct xen_platform_op op = {
-+		.cmd			= XENPF_set_processor_pminfo,
-+		.interface_version	= XENPF_INTERFACE_VERSION,
-+		.u.set_pminfo.id	= pr->acpi_id,
-+		.u.set_pminfo.type	= XEN_PM_PX,
-+	};
-+	struct xen_processor_performance *perf;
-+	struct xen_processor_px *states = NULL;
-+	struct acpi_processor_performance *px;
++	int ret;
++	struct acpi_processor_performance *perf;
 +	struct acpi_psd_package *pdomain;
 +
++	if (pr->performance)
++		return -EBUSY;
++
++	perf = kzalloc(sizeof(struct acpi_processor_performance), GFP_KERNEL);
++	if (!perf)
++		return -ENOMEM;
++
++	pr->performance = perf;
++	/* Get basic performance state information */
++	ret = acpi_processor_get_performance_info(pr);
++	if (ret < 0)
++		goto err_out;
++
++	/* invoke raw psd parse interface directly, as it's useless to
++	 * construct a shared map around dom0's vcpu ID.
++	 */
++	pdomain = &pr->performance->domain_info;
++	pdomain->num_processors = 0;
++	ret = acpi_processor_get_psd(pr);
++	if (ret < 0) {
++		/*
++		 * _PSD is optional - assume no coordination if absent (or
++		 * broken), matching native kernels' behavior.
++		 */
++		pdomain->num_entries = ACPI_PSD_REV0_ENTRIES;
++		pdomain->revision = ACPI_PSD_REV0_REVISION;
++		pdomain->domain = pr->acpi_id;
++		pdomain->coord_type = DOMAIN_COORD_TYPE_SW_ALL;
++		pdomain->num_processors = 1;
++	}
++
++	processor_cntl_xen_notify(pr, PROCESSOR_PM_INIT, PM_TYPE_PERF);
++
++	/* Last step is to notify BIOS that xen exists */
++	acpi_processor_notify_smm(THIS_MODULE);
++
++	return 0;
++err_out:
++	pr->performance = NULL;
++	kfree(perf);
++	return ret;
++}
++#endif /* CONFIG_CPU_FREQ */
++
++static int __cpuinit xen_acpi_processor_add(struct acpi_device *device)
++{
++	struct acpi_processor *pr = NULL;
++	int result = 0;
++
++	result = acpi_processor_add(device);
++	if (result < 0)
++		return result;
++
++	pr = acpi_driver_data(device);
 +	if (!pr)
 +		return -EINVAL;
 +
-+	perf = &op.u.set_pminfo.perf;
-+	px = pr->performance;
++	if (pr->id == -1) {
++		int device_declaration;
++		int apic_id = -1;
 +
-+	switch (action) {
-+	case PROCESSOR_PM_CHANGE:
-+		/* ppc dynamic handle */
-+		perf->flags = XEN_PX_PPC;
-+		perf->platform_limit = pr->performance_platform_limit;
++		if (!strcmp(acpi_device_hid(device), ACPI_PROCESSOR_OBJECT_HID))
++			device_declaration = 0;
++		else
++			device_declaration = 1;
 +
-+		ret = HYPERVISOR_dom0_op(&op);
-+		break;
-+
-+	case PROCESSOR_PM_INIT:
-+		/* px normal init */
-+		perf->flags = XEN_PX_PPC |
-+			      XEN_PX_PCT |
-+			      XEN_PX_PSS |
-+			      XEN_PX_PSD;
-+
-+		/* ppc */
-+		perf->platform_limit = pr->performance_platform_limit;
-+
-+		/* pct */
-+		xen_convert_pct_reg(&perf->control_register,
-+				&px->control_register);
-+		xen_convert_pct_reg(&perf->status_register,
-+				&px->status_register);
-+
-+		/* pss */
-+		perf->state_count = px->state_count;
-+		states = kzalloc(px->state_count*\
-+			sizeof(struct xen_processor_px), GFP_KERNEL);
-+		if (!states)
-+			return -ENOMEM;
-+		xen_convert_pss_states(states, px->states, px->state_count);
-+		set_xen_guest_handle(perf->states, states);
-+
-+		/* psd */
-+		pdomain = &px->domain_info;
-+		/* Some sanity check */
-+		if ((pdomain->revision != ACPI_PSD_REV0_REVISION) ||
-+			(pdomain->num_entries != ACPI_PSD_REV0_ENTRIES) ||
-+			((pdomain->coord_type != DOMAIN_COORD_TYPE_SW_ALL) &&
-+			(pdomain->coord_type != DOMAIN_COORD_TYPE_SW_ANY) &&
-+			(pdomain->coord_type != DOMAIN_COORD_TYPE_HW_ALL))) {
-+			ret = -EINVAL;
-+			kfree(states);
-+			break;
++		apic_id = acpi_get_cpuid(pr->handle,
++			device_declaration, pr->acpi_id);
++		if (apic_id == -1) {
++			/* Processor is not present in MADT table */
++			return 0;
 +		}
 +
-+		xen_convert_psd_pack(&perf->domain_info, pdomain);
-+		if (pdomain->coord_type == DOMAIN_COORD_TYPE_SW_ALL)
-+			perf->shared_type = CPUFREQ_SHARED_TYPE_ALL;
-+		else if (pdomain->coord_type == DOMAIN_COORD_TYPE_SW_ANY)
-+			perf->shared_type = CPUFREQ_SHARED_TYPE_ANY;
-+		else if (pdomain->coord_type == DOMAIN_COORD_TYPE_HW_ALL)
-+			perf->shared_type = CPUFREQ_SHARED_TYPE_HW;
-+		else {
-+			ret = -EINVAL;
-+			kfree(states);
-+			break;
-+		}
-+
-+		ret = HYPERVISOR_dom0_op(&op);
-+		kfree(states);
-+		break;
-+
-+	default:
-+		break;
++		/*
++		 * It's possible to have pr->id as '-1' even when it's actually
++		 * present in MADT table, e.g. due to limiting dom0 max vcpus
++		 * less than physical present number. In such case we still want
++		 * to parse ACPI processor object information, so mimic the
++		 * pr->id to CPU-0. This should be safe because we only care
++		 * about raw ACPI information, which only relies on pr->acpi_id.
++		 * For other information relying on pr->id and gathered through
++		 * SMP function call, it's safe to let them run on CPU-0 since
++		 * underlying Xen will collect them. Only a valid pr->id can
++		 * make later invocations forward progress.
++		 */
++		pr->id = 0;
 +	}
 +
-+	return ret;
-+}
++	if (likely(!pr->flags.power_setup_done)) {
++		/* reset idle boot option which we don't care */
++		boot_option_idle_override = IDLE_NO_OVERRIDE;
++		acpi_processor_power_init(pr, device);
++		/* set to IDLE_HALT for trapping into Xen */
++		boot_option_idle_override = IDLE_HALT;
 +
-+static int __init xen_acpi_processor_extcntl_init(void)
-+{
-+	unsigned int pmbits;
++		if (pr->flags.power)
++			processor_cntl_xen_notify(pr,
++					PROCESSOR_PM_INIT, PM_TYPE_IDLE);
++	}
 +
-+	/* Only xen dom0 is allowed to handle ACPI processor info */
-+	if (!xen_initial_domain())
-+		return 0;
-+
-+	pmbits = (xen_start_info->flags & SIF_PM_MASK) >> 8;
-+
-+	if (pmbits & XEN_PROCESSOR_PM_CX)
-+		xen_ops.pm_ops[PM_TYPE_IDLE] = xen_cx_notifier;
-+	if (pmbits & XEN_PROCESSOR_PM_PX)
-+		xen_ops.pm_ops[PM_TYPE_PERF] = xen_px_notifier;
++#ifdef CONFIG_CPU_FREQ
++	if (likely(!pr->performance))
++		xen_acpi_processor_get_performance(pr);
++#endif
 +
 +	return 0;
 +}
 +
-+subsys_initcall(xen_acpi_processor_extcntl_init);
- MODULE_LICENSE("GPL");
++static void xen_acpi_processor_notify(struct acpi_device *device, u32 event)
++{
++	struct acpi_processor *pr = acpi_driver_data(device);
++
++	if (!pr)
++		return;
++
++	acpi_processor_notify(device, event);
++
++	switch (event) {
++	case ACPI_PROCESSOR_NOTIFY_PERFORMANCE:
++#ifdef CONFIG_CPU_FREQ
++		processor_cntl_xen_notify(pr,
++				PROCESSOR_PM_CHANGE, PM_TYPE_PERF);
++#endif
++		break;
++	case ACPI_PROCESSOR_NOTIFY_POWER:
++		processor_cntl_xen_notify(pr,
++				PROCESSOR_PM_CHANGE, PM_TYPE_IDLE);
++		break;
++	default:
++		break;
++	}
++
++	return;
++}
++
++/* init and exit */
++
++/* we don't install acpi cpuidle driver because dom0 itself is running
++ * as a guest which has no knowledge whether underlying is actually idle
++ */
++int xen_acpi_processor_init(void)
++{
++	int result = 0;
++
++	result = acpi_bus_register_driver(&xen_acpi_processor_driver);
++	if (result < 0)
++		return result;
++		/* mark ready for handling ppc */
++
++	return 0;
++}
++
++void xen_acpi_processor_exit(void)
++{
++
++	acpi_bus_unregister_driver(&xen_acpi_processor_driver);
++}
++#endif
++
++#if defined(CONFIG_ACPI_PROCESSOR_XEN) || \
++defined(CONFIG_ACPI_PROCESSOR_XEN_MODULE)
++void xen_processor_driver_register(void)
++{
++	if (xen_initial_domain()) {
++		__acpi_processor_register_driver = xen_acpi_processor_init;
++		__acpi_processor_unregister_driver = xen_acpi_processor_exit;
++	}
++}
++#else
++void xen_processor_driver_register(void)
++{
++}
++#endif
+diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+index 8795480..640bbf5 100644
+--- a/drivers/xen/Kconfig
++++ b/drivers/xen/Kconfig
+@@ -117,6 +117,11 @@ config XEN_SYS_HYPERVISOR
+ 	 virtual environment, /sys/hypervisor will still be present,
+ 	 but will have no xen contents.
+ 
++config ACPI_PROCESSOR_XEN
++	tristate
++	depends on XEN_DOM0 && ACPI_PROCESSOR && CPU_FREQ
++	default m
++
+ config XEN_XENBUS_FRONTEND
+ 	tristate
+ 
+diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+index 974fffd..f67450c 100644
+--- a/drivers/xen/Makefile
++++ b/drivers/xen/Makefile
+@@ -19,6 +19,9 @@ obj-$(CONFIG_XEN_TMEM)			+= tmem.o
+ obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
+ obj-$(CONFIG_XEN_DOM0)			+= pci.o
+ obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
++ifdef CONFIG_ACPI_PROCESSOR_XEN
++obj-$(CONFIG_ACPI_PROCESSOR)		+= acpi_processor.o
++endif
+ 
+ xen-evtchn-y				:= evtchn.o
+ xen-gntdev-y				:= gntdev.o
+diff --git a/drivers/xen/acpi_processor.c b/drivers/xen/acpi_processor.c
+new file mode 100644
+index 0000000..8fa7914
+--- /dev/null
++++ b/drivers/xen/acpi_processor.c
+@@ -0,0 +1,53 @@
++/*
++ *  acpi_processor.c - interface to notify Xen on acpi processor object
++ *                     info parsing
++ *
++ *  Copyright (C) 2008, Intel corporation
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or (at
++ *  your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful, but
++ *  WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ *  General Public License for more details.
++ *
++ */
++
++#include <linux/acpi.h>
++#include <linux/module.h>
++#include <linux/cpufreq.h>
++#include <acpi/processor.h>
++#include <xen/acpi.h>
++
++#include <asm/xen/hypercall.h>
++#include <asm/xen/hypervisor.h>
++
++static struct processor_cntl_xen_ops xen_ops;
++int processor_cntl_xen_notify(struct acpi_processor *pr, int event, int type)
++{
++	int ret = -EINVAL;
++
++	switch (event) {
++	case PROCESSOR_PM_INIT:
++	case PROCESSOR_PM_CHANGE:
++		if ((type >= PM_TYPE_MAX) ||
++			!xen_ops.pm_ops[type])
++			break;
++
++		ret = xen_ops.pm_ops[type](pr, event);
++		break;
++	default:
++		printk(KERN_ERR "Unsupport processor events %d.\n", event);
++		break;
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL(processor_cntl_xen_notify);
++
++MODULE_LICENSE("GPL");
+diff --git a/include/xen/acpi.h b/include/xen/acpi.h
+new file mode 100644
+index 0000000..99e1270
+--- /dev/null
++++ b/include/xen/acpi.h
+@@ -0,0 +1,104 @@
++/******************************************************************************
++ * acpi.h
++ * acpi file for domain 0 kernel
++ *
++ * Copyright (c) 2011 Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
++ * Copyright (c) 2011 Yu Ke <ke.yu@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version 2
++ * as published by the Free Software Foundation; or, when distributed
++ * separately from the Linux kernel or incorporated into other
++ * software packages, subject to the following license:
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this source file (the "Software"), to deal in the Software without
++ * restriction, including without limitation the rights to use, copy, modify,
++ * merge, publish, distribute, sublicense, and/or sell copies of the Software,
++ * and to permit persons to whom the Software is furnished to do so, subject to
++ * the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
++ * IN THE SOFTWARE.
++ */
++
++#ifndef _XEN_ACPI_H
++#define _XEN_ACPI_H
++
++#include <linux/types.h>
++#include <acpi/acpi_drivers.h>
++#include <acpi/processor.h>
++
++/*
++ * Following are interfaces for xen acpi processor control
++ */
++#if defined(CONFIG_ACPI_PROCESSOR_XEN) || \
++defined(CONFIG_ACPI_PROCESSOR_XEN_MODULE)
++/* Events notified to xen */
++#define PROCESSOR_PM_INIT	1
++#define PROCESSOR_PM_CHANGE	2
++#define PROCESSOR_HOTPLUG	3
++
++/* Objects for the PM events */
++#define PM_TYPE_IDLE		0
++#define PM_TYPE_PERF		1
++#define PM_TYPE_THR		2
++#define PM_TYPE_MAX		3
++
++#define XEN_MAX_ACPI_ID 255
++
++/* Processor hotplug events */
++#define HOTPLUG_TYPE_ADD	0
++#define HOTPLUG_TYPE_REMOVE	1
++
++extern int (*__acpi_processor_register_driver)(void);
++extern void (*__acpi_processor_unregister_driver)(void);
++#endif
++
++#ifndef CONFIG_CPU_FREQ
++static inline int xen_acpi_processor_get_performance(struct acpi_processor *pr)
++{
++	printk(KERN_WARNING
++		"Warning: xen_acpi_processor_get_performance not supported\n"
++		"Consider compiling CPUfreq support into your kernel.\n");
++	return 0;
++}
++#endif
++
++#if defined(CONFIG_ACPI_PROCESSOR_XEN) || \
++defined(CONFIG_ACPI_PROCESSOR_XEN_MODULE)
++
++struct processor_cntl_xen_ops {
++	/* Transfer processor PM events to xen */
++int (*pm_ops[PM_TYPE_MAX])(struct acpi_processor *pr, int event);
++	/* Notify physical processor status to xen */
++	int (*hotplug)(struct acpi_processor *pr, int type);
++};
++
++extern int processor_cntl_xen_notify(struct acpi_processor *pr,
++			int event, int type);
++extern int processor_cntl_xen_power_cache(int cpu, int cx,
++		struct acpi_power_register *reg);
++#else
++
++static inline int processor_cntl_xen_notify(struct acpi_processor *pr,
++			int event, int type)
++{
++	return 0;
++}
++static inline int processor_cntl_xen_power_cache(int cpu, int cx,
++		struct acpi_power_register *reg)
++{
++	return 0;
++}
++#endif /* CONFIG_ACPI_PROCESSOR_XEN */
++
++#endif	/* _XEN_ACPI_H */
 -- 
 1.7.7.3
 
