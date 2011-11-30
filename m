@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab1K3X4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:56:48 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43278 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab1K3X4r convert rfc822-to-8bit (ORCPT
+	id S1753186Ab1K3X5n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:57:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56476 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752407Ab1K3X5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:56:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111130233733.GA11577@maxin>
-References: <20111130233733.GA11577@maxin>
-From: Mike Waychison <mikew@google.com>
-Date: Wed, 30 Nov 2011 15:56:25 -0800
-Message-ID: <CAGTjWtCy_syX18y23mUD7HZJe3fdjUDCY7YDMwKesFFjd4VwZQ@mail.gmail.com>
-Subject: Re: [PATCH] firmware: google: fix gsmi.c build warning
-To: "Maxin B. John" <maxin.john@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, paul.gortmaker@windriver.com,
-        dlaurie@google.com, adurbin@google.com
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 30 Nov 2011 18:57:42 -0500
+Date: Wed, 30 Nov 2011 15:57:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: George Spelvin <linux@horizon.com>, jack@suse.cz,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.1-rc10 oops in nameidata_to_filp
+Message-Id: <20111130155741.c6b3378d.akpm@linux-foundation.org>
+In-Reply-To: <20111124175002.GM2203@ZenIV.linux.org.uk>
+References: <20111124145141.GB22640@quack.suse.cz>
+	<20111124164406.22919.qmail@science.horizon.com>
+	<20111124173829.GL2203@ZenIV.linux.org.uk>
+	<20111124175002.GM2203@ZenIV.linux.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 3:37 PM, Maxin B. John <maxin.john@gmail.com> wrote:
-> Use min_t() macro instead of min() to fix a build warning:
->
+(sorry for the delay)
 
-Looks good.  Greg, could you please pull this into your drivers tree?
+On Thu, 24 Nov 2011 17:50:03 +0000
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
->  CC      drivers/firmware/google/gsmi.o
-> drivers/firmware/google/gsmi.c: In function ‘gsmi_get_variable’:
-> drivers/firmware/google/gsmi.c:348: warning: comparison of distinct
-> pointer types lacks a cast
->
-> Signed-off-by: Maxin B. John <maxin.john@gmail.com>
-> ---
-> diff --git a/drivers/firmware/google/gsmi.c b/drivers/firmware/google/gsmi.c
-> index c4e7c59..91ddf0f 100644
-> --- a/drivers/firmware/google/gsmi.c
-> +++ b/drivers/firmware/google/gsmi.c
-> @@ -345,7 +345,8 @@ static efi_status_t gsmi_get_variable(efi_char16_t *name,
->                memcpy(&param, gsmi_dev.param_buf->start, sizeof(param));
->
->                /* The size reported is the min of all of our buffers */
-> -               *data_size = min(*data_size, gsmi_dev.data_buf->length);
-> +               *data_size = min_t(unsigned long, *data_size,
-> +                                               gsmi_dev.data_buf->length);
->                *data_size = min_t(unsigned long, *data_size, param.data_len);
->
->                /* Copy data back to return buffer. */
+> On Thu, Nov 24, 2011 at 05:38:29PM +0000, Al Viro wrote:
+> > Said that, I'm not buying the theory of open assigning to ->f_mapping and
+> > screwing it up; all such assignments end up with ->i_mapping of *some*
+> > inode, as far as I can see from cursory grep over the tree.  Just in case:
+> > do you have CONFIG_FS_POSIX_ACL set?
+> 
+> BTW, why are we going through that dance with ->host->i_mapping anyway?
+> It had been introduced by commit by akpm back in 2004 and from my reading
+> of the commit message it was an overkill even back then.  Basically,
+> that call got moved to the point past the call of ->open() (good, ->f_mapping
+> could've been changed by it) *and* converted from ->f_mapping to
+> ->f_mapping->host->i_mapping, which is useless.  Definitely so in the
+> case mentioned in that commit (blkdev_open() sets ->f_mapping 
+> bdev->bd_inode->i_mapping and that thing will have ->host pointing
+> back to bdev->bd_inode).  Commit was in BK, its copy in historical tree
+> is commit 1c211088833a27daa4512348bcae9890e8cf92d4
+> Author: Andrew Morton <akpm@osdl.org>
+> Date:   Wed May 26 17:35:42 2004 -0700
+> 
+>     [PATCH] Fix the setting of file->f_ra on block-special files
+>     
+>     We need to set file->f_ra _after_ calling blkdev_open(), when inode->i_mapping
+>     points at the right thing.  And we need to get it from
+>     inode->i_mapping->host->i_mapping too, which represents the underlying device.
+>     
+>     Also, don't test for null file->f_mapping in the O_DIRECT checks.
+>     
+>     Signed-off-by: Andrew Morton <akpm@osdl.org>
+> 
+> and the only difference wrt setting ->f_mapping on bdev open back then
+> is that it used to be done in do_open() instead of blkdev_open() itself.
+> So I don't understand what that part of changes had been for...  Andrew?
+
+Beats me, sorry.  Here's the thread:
+http://www.gossamer-threads.com/lists/linux/kernel/443511?do=post_view_flat#443511
