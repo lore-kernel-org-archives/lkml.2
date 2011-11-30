@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab1K3GG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 01:06:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44081 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab1K3GGY (ORCPT
+	id S1754127Ab1K3GV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 01:21:26 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47605 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752314Ab1K3GVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 01:06:24 -0500
-Date: Tue, 29 Nov 2011 22:07:28 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: linux-next: build failure after merge of the final tree (akpm
- tree related)
-Message-Id: <20111129220728.b3351335.akpm@linux-foundation.org>
-In-Reply-To: <20111130.004010.1075431174091251814.davem@davemloft.net>
-References: <20111130155226.b571cfd7887f03f9e8e1285b@canb.auug.org.au>
-	<20111130.004010.1075431174091251814.davem@davemloft.net>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Nov 2011 01:21:25 -0500
+X-Sasl-enc: 5zccWjDPNbJ+ww55i1SR578PsSq+/OkmzP1fMOMAVIvH 1322634083
+Date: Wed, 30 Nov 2011 15:21:04 +0900
+From: Greg KH <greg@kroah.com>
+To: Federico Vaga <federico.vaga@gmail.com>
+Cc: Alessandro Rubini <rubini@gnudd.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dcobas@cern.ch, siglesia@cern.ch,
+        manohar.vanga@cern.ch
+Subject: Re: [RFC PATCH 2/7] include/linux: add headers for drivers/zio
+Message-ID: <20111130062104.GA11393@kroah.com>
+References: <cover.1322328073.git.rubini@gnudd.com>
+ <09c2b3834c06fc45d8cca26d980482c8dad7af5a.1322328075.git.rubini@gnudd.com>
+ <20111126200216.GC11421@kroah.com>
+ <1491684.cGqJrVR8Lo@harkonnen>
+ <20111127093224.GB31086@kroah.com>
+ <CAH5GJ0o_T3DpZ=AK5dsDjQobes2KRF4uVyyr-HxzA6tri_AYoA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH5GJ0o_T3DpZ=AK5dsDjQobes2KRF4uVyyr-HxzA6tri_AYoA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Nov 2011 00:40:10 -0500 (EST) David Miller <davem@davemloft.net> wrote:
+On Mon, Nov 28, 2011 at 03:56:45PM +0100, Federico Vaga wrote:
+> I don't reply to each point because I suppose the point is: "kobject
+> or device for sysfs?", maybe I misunderstood.
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Wed, 30 Nov 2011 15:52:26 +1100
+That is correct.
+
+> I know that it is not a good thing reply with a new question, but I
+> think it can clarify the problem.
 > 
-> > And many more similar.
-> > 
-> > Caused (or exposed) by commit 9222aa56c0ce
-> > ("include/net/netprio_cgroup.h: various fixes") from the akpm tree.
-> > 
-> > I have reverted that commit for today.
-> 
-> Andrew, please submit networking bug fixes to the networking maintainers
-> in order to avoid problems like this in the future.
-> 
-> Unlike other subsystems, I guarentee to handle it within 24 hours, often
-> much faster.
-> 
+> Why device is it preferred to export some sysfs attributes when sysfs
+> ask me kobject?
 
-This is my attempt to address the issues I mentioned last week.  It is
-still under development and doesn't work yet.  I thought it did.
+If your code is working properly, you don't have to ever make sysfs
+calls, only driver core calls, for sysfs files.  There might be a few
+minor exceptions, but I think the coverage is all there now.
 
-I'm now trying to get my brain around what that code is doing with
-Kconfig symbols and net_prio_subsys_id.  I'm suspecting it's all to
-make cgroup-subsys-within-a-module appear to work.
+> As I tested both device and kobject, I'll do a parallel implementation
+> with device.
 
-afaict net_prio_subsys_id is an enum if CONFIG_NETPRIO_CGROUP=y and is
-an `extern int' when CONFIG_NETPRIO_CGROUP=m.  It's unclear to me why
-the extern int version or net_prio_subsys_id exists at all, really.
+As you are using a tree of devices, please use struct device, I can't
+accept the code otherwise.
 
+greg k-h
