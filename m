@@ -1,121 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab1K3XPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:15:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55899 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab1K3XPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:15:52 -0500
-Date: Wed, 30 Nov 2011 15:15:51 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Drake <dsd@laptop.org>
-Cc: x86@kernel.org, mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
-        dilinger@queued.net, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH resend 2] x86, olpc-xo15-sci: Enable lid close wakeup
- control through sysfs
-Message-Id: <20111130151551.97371bdb.akpm@linux-foundation.org>
-In-Reply-To: <20111129222447.E56959D401E@zog.reactivated.net>
-References: <20111129222447.E56959D401E@zog.reactivated.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752997Ab1K3XR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:17:26 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:36339 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752462Ab1K3XRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 18:17:24 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Subject: [Update 3x][PATCH 4/7] PM / Runtime: Use device PM QoS constraints (v2)
+Date: Thu, 1 Dec 2011 00:20:15 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Kevin Hilman <khilman@ti.com>, jean.pihet@newoldbits.com
+References: <201111070101.33960.rjw@sisk.pl> <201111191456.40453.rjw@sisk.pl> <201111191500.34517.rjw@sisk.pl>
+In-Reply-To: <201111191500.34517.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201112010020.15845.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Nov 2011 22:24:47 +0000 (GMT)
-Daniel Drake <dsd@laptop.org> wrote:
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-> Like most systems, OLPC's ACPI LID switch wakes up the system when the
-> lid is opened, but not when it is closed.
-> 
-> Under OLPC's opportunistic suspend model, the lid may be closed while
-> the system was oportunistically suspended with the screen running.
-> In this event, we want to wake up to turn the screen off.
-> 
-> Enable control of normal ACPI wakeups through lid close events through
-> a new sysfs attribute "lid_wake_on_closed". When set, and when
-> LID wakeups are enabled through ACPI, the system will wake up on both
-> open and close lid events.
-> 
-> Signed-off-by: Daniel Drake <dsd@laptop.org>
-> ---
->  arch/x86/platform/olpc/olpc-xo15-sci.c |   55 ++++++++++++++++++++++++++++++++
->  1 files changed, 55 insertions(+), 0 deletions(-)
-> 
-> Resending after 6 weeks with no feedback.
-> 
-> diff --git a/arch/x86/platform/olpc/olpc-xo15-sci.c b/arch/x86/platform/olpc/olpc-xo15-sci.c
-> index 2b235b7..649230c 100644
-> --- a/arch/x86/platform/olpc/olpc-xo15-sci.c
-> +++ b/arch/x86/platform/olpc/olpc-xo15-sci.c
-> @@ -24,6 +24,50 @@
->  #define XO15_SCI_DEVICE_NAME		"OLPC XO-1.5 SCI"
->  
->  static unsigned long xo15_sci_gpe;
-> +static bool lid_wake_on_close;
+Make the runtime PM core use device PM QoS constraints to check if
+it is allowed to suspend a given device, so that an error code is
+returned if the device's own PM QoS constraint is negative or one of
+its children has already been suspended for too long.  If this is
+not the case, the maximum estimated time the device is allowed to be
+suspended, computed as the minimum of the device's PM QoS constraint
+and the PM QoS constraints of its children (reduced by the difference
+between the current time and their suspend times) is stored in a new
+device's PM field power.max_time_suspended_ns that can be used by
+the device's subsystem or PM domain to decide whether or not to put
+the device into lower-power (and presumably higher-latency) states
+later (if the constraint is 0, which means "no constraint", the
+power.max_time_suspended_ns is set to -1).
 
-I'd have thought that a few code comments which describe what all this
-is doing wouldn't hurt.  Oh well.
+Additionally, the time of execution of the subsystem-level
+.runtime_suspend() callback for the device is recorded in the new
+power.suspend_time field for later use by the device's subsystem or
+PM domain along with power.max_time_suspended_ns (it also is used
+by the core code when the device's parent is suspended).
 
-> +static int set_lid_wake_behavior(bool wake_on_close)
-> +{
-> +	struct acpi_object_list arg_list;
-> +	union acpi_object arg;
-> +	acpi_status status;
-> +
-> +	arg_list.count = 1;
-> +	arg_list.pointer = &arg;
-> +	arg.type = ACPI_TYPE_INTEGER;
-> +	arg.integer.value = wake_on_close;
-> +	status = acpi_evaluate_object(NULL, "\\_SB.PCI0.LID.LIDW", &arg_list,
-> +				      NULL);
-> +	if (ACPI_FAILURE(status)) {
-> +		pr_warning(PFX "failed to set lid behaviour\n");
-> +		return 1;
-> +	}
-> +
-> +	lid_wake_on_close = wake_on_close;
-> +	return 0;
-> +}
-> +
-> +static ssize_t lid_wake_on_close_show(struct kobject *s,
-> +				      struct kobj_attribute *attr, char *buf)
-> +{
-> +	return sprintf(buf, "%u\n", lid_wake_on_close);
-> +}
-> +
-> +static ssize_t lid_wake_on_close_store(struct kobject *s,
-> +				       struct kobj_attribute *attr,
-> +				       const char *buf, size_t n)
-> +{
-> +	unsigned int val;
-> +	if (!sscanf(buf, "%u", &val) == 1)
-> +		return -EINVAL;
-> +
-> +	set_lid_wake_behavior(!!val);
-> +	return n;
-> +}
+Introduce a new helper function,
+pm_runtime_update_max_time_suspended(), allowing subsystems and PM
+domains (or device drivers) to update the power.max_time_suspended_ns
+field, for example after changing the power state of a suspended
+device.
 
-Let me fix that for you.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
---- a/arch/x86/platform/olpc/olpc-xo15-sci.c~x86-olpc-xo15-sci-enable-lid-close-wakeup-control-through-sysfs-fix
-+++ a/arch/x86/platform/olpc/olpc-xo15-sci.c
-@@ -58,7 +58,8 @@ static ssize_t lid_wake_on_close_store(s
- 				       const char *buf, size_t n)
- {
- 	unsigned int val;
--	if (!sscanf(buf, "%u", &val) == 1)
-+
-+	if (sscanf(buf, "%u", &val) != 1)
- 		return -EINVAL;
+Hi,
+
+I had to rework the patch so that device_for_each_child() was not
+run under dev->power.lock, which caused lockdep to complain loudly.
+
+Thanks,
+Rafael
+
+---
+ drivers/base/power/qos.c     |   24 ++++--
+ drivers/base/power/runtime.c |  148 +++++++++++++++++++++++++++++++++++++------
+ include/linux/pm.h           |    2 
+ include/linux/pm_qos.h       |    3 
+ include/linux/pm_runtime.h   |    5 +
+ 5 files changed, 154 insertions(+), 28 deletions(-)
+
+Index: linux/include/linux/pm.h
+===================================================================
+--- linux.orig/include/linux/pm.h
++++ linux/include/linux/pm.h
+@@ -521,6 +521,8 @@ struct dev_pm_info {
+ 	unsigned long		active_jiffies;
+ 	unsigned long		suspended_jiffies;
+ 	unsigned long		accounting_timestamp;
++	ktime_t			suspend_time;
++	s64			max_time_suspended_ns;
+ #endif
+ 	struct pm_subsys_data	*subsys_data;  /* Owned by the subsystem. */
+ 	struct pm_qos_constraints *constraints;
+Index: linux/drivers/base/power/runtime.c
+===================================================================
+--- linux.orig/drivers/base/power/runtime.c
++++ linux/drivers/base/power/runtime.c
+@@ -279,6 +279,47 @@ static int rpm_callback(int (*cb)(struct
+ 	return retval != -EACCES ? retval : -EIO;
+ }
  
- 	set_lid_wake_behavior(!!val);
++struct rpm_qos_data {
++	ktime_t time_now;
++	s64 constraint_ns;
++};
++
++/**
++ * rpm_update_qos_constraint - Update a given PM QoS constraint data.
++ * @dev: Device whose timing data to use.
++ * @data: PM QoS constraint data to update.
++ *
++ * Use the suspend timing data of @dev to update PM QoS constraint data pointed
++ * to by @data.
++ */
++static int rpm_update_qos_constraint(struct device *dev, void *data)
++{
++	struct rpm_qos_data *qos = data;
++	unsigned long flags;
++	s64 delta_ns;
++	int ret = 0;
++
++	spin_lock_irqsave(&dev->power.lock, flags);
++
++	if (dev->power.max_time_suspended_ns < 0)
++		goto out;
++
++	delta_ns = dev->power.max_time_suspended_ns -
++		ktime_to_ns(ktime_sub(qos->time_now, dev->power.suspend_time));
++	if (delta_ns <= 0) {
++		ret = -EBUSY;
++		goto out;
++	}
++
++	if (qos->constraint_ns > delta_ns || qos->constraint_ns == 0)
++		qos->constraint_ns = delta_ns;
++
++ out:
++	spin_unlock_irqrestore(&dev->power.lock, flags);
++
++	return ret;
++}
++
+ /**
+  * rpm_suspend - Carry out runtime suspend of given device.
+  * @dev: Device to suspend.
+@@ -305,6 +346,7 @@ static int rpm_suspend(struct device *de
+ {
+ 	int (*callback)(struct device *);
+ 	struct device *parent = NULL;
++	struct rpm_qos_data qos;
+ 	int retval;
+ 
+ 	trace_rpm_suspend(dev, rpmflags);
+@@ -400,8 +442,38 @@ static int rpm_suspend(struct device *de
+ 		goto out;
+ 	}
+ 
++	qos.constraint_ns = __dev_pm_qos_read_value(dev);
++	if (qos.constraint_ns < 0) {
++		/* Negative constraint means "never suspend". */
++		retval = -EPERM;
++		goto out;
++	}
++	qos.constraint_ns *= NSEC_PER_USEC;
++	qos.time_now = ktime_get();
++
+ 	__update_runtime_status(dev, RPM_SUSPENDING);
+ 
++	if (!dev->power.ignore_children) {
++		if (dev->power.irq_safe)
++			spin_unlock(&dev->power.lock);
++		else
++			spin_unlock_irq(&dev->power.lock);
++
++		retval = device_for_each_child(dev, &qos,
++					       rpm_update_qos_constraint);
++
++		if (dev->power.irq_safe)
++			spin_lock(&dev->power.lock);
++		else
++			spin_lock_irq(&dev->power.lock);
++
++		if (retval)
++			goto fail;
++	}
++
++	dev->power.suspend_time = qos.time_now;
++	dev->power.max_time_suspended_ns = qos.constraint_ns ? : -1;
++
+ 	if (dev->pm_domain)
+ 		callback = dev->pm_domain->ops.runtime_suspend;
+ 	else if (dev->type && dev->type->pm)
+@@ -414,27 +486,9 @@ static int rpm_suspend(struct device *de
+ 		callback = NULL;
+ 
+ 	retval = rpm_callback(callback, dev);
+-	if (retval) {
+-		__update_runtime_status(dev, RPM_ACTIVE);
+-		dev->power.deferred_resume = false;
+-		if (retval == -EAGAIN || retval == -EBUSY) {
+-			dev->power.runtime_error = 0;
++	if (retval)
++		goto fail;
+ 
+-			/*
+-			 * If the callback routine failed an autosuspend, and
+-			 * if the last_busy time has been updated so that there
+-			 * is a new autosuspend expiration time, automatically
+-			 * reschedule another autosuspend.
+-			 */
+-			if ((rpmflags & RPM_AUTO) &&
+-			    pm_runtime_autosuspend_expiration(dev) != 0)
+-				goto repeat;
+-		} else {
+-			pm_runtime_cancel_pending(dev);
+-		}
+-		wake_up_all(&dev->power.wait_queue);
+-		goto out;
+-	}
+  no_callback:
+ 	__update_runtime_status(dev, RPM_SUSPENDED);
+ 	pm_runtime_deactivate_timer(dev);
+@@ -466,6 +520,29 @@ static int rpm_suspend(struct device *de
+ 	trace_rpm_return_int(dev, _THIS_IP_, retval);
+ 
+ 	return retval;
++
++ fail:
++	__update_runtime_status(dev, RPM_ACTIVE);
++	dev->power.suspend_time = ktime_set(0, 0);
++	dev->power.max_time_suspended_ns = -1;
++	dev->power.deferred_resume = false;
++	if (retval == -EAGAIN || retval == -EBUSY) {
++		dev->power.runtime_error = 0;
++
++		/*
++		 * If the callback routine failed an autosuspend, and
++		 * if the last_busy time has been updated so that there
++		 * is a new autosuspend expiration time, automatically
++		 * reschedule another autosuspend.
++		 */
++		if ((rpmflags & RPM_AUTO) &&
++		    pm_runtime_autosuspend_expiration(dev) != 0)
++			goto repeat;
++	} else {
++		pm_runtime_cancel_pending(dev);
++	}
++	wake_up_all(&dev->power.wait_queue);
++	goto out;
+ }
+ 
+ /**
+@@ -620,6 +697,9 @@ static int rpm_resume(struct device *dev
+ 	if (dev->power.no_callbacks)
+ 		goto no_callback;	/* Assume success. */
+ 
++	dev->power.suspend_time = ktime_set(0, 0);
++	dev->power.max_time_suspended_ns = -1;
++
+ 	__update_runtime_status(dev, RPM_RESUMING);
+ 
+ 	if (dev->pm_domain)
+@@ -1279,6 +1359,9 @@ void pm_runtime_init(struct device *dev)
+ 	setup_timer(&dev->power.suspend_timer, pm_suspend_timer_fn,
+ 			(unsigned long)dev);
+ 
++	dev->power.suspend_time = ktime_set(0, 0);
++	dev->power.max_time_suspended_ns = -1;
++
+ 	init_waitqueue_head(&dev->power.wait_queue);
+ }
+ 
+@@ -1296,3 +1379,28 @@ void pm_runtime_remove(struct device *de
+ 	if (dev->power.irq_safe && dev->parent)
+ 		pm_runtime_put_sync(dev->parent);
+ }
++
++/**
++ * pm_runtime_update_max_time_suspended - Update device's suspend time data.
++ * @dev: Device to handle.
++ * @delta_ns: Value to subtract from the device's max_time_suspended_ns field.
++ *
++ * Update the device's power.max_time_suspended_ns field by subtracting
++ * @delta_ns from it.  The resulting value of power.max_time_suspended_ns is
++ * never negative.
++ */
++void pm_runtime_update_max_time_suspended(struct device *dev, s64 delta_ns)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&dev->power.lock, flags);
++
++	if (delta_ns > 0 && dev->power.max_time_suspended_ns > 0) {
++		if (dev->power.max_time_suspended_ns > delta_ns)
++			dev->power.max_time_suspended_ns -= delta_ns;
++		else
++			dev->power.max_time_suspended_ns = 0;
++	}
++
++	spin_unlock_irqrestore(&dev->power.lock, flags);
++}
+Index: linux/include/linux/pm_runtime.h
+===================================================================
+--- linux.orig/include/linux/pm_runtime.h
++++ linux/include/linux/pm_runtime.h
+@@ -45,6 +45,8 @@ extern void pm_runtime_irq_safe(struct d
+ extern void __pm_runtime_use_autosuspend(struct device *dev, bool use);
+ extern void pm_runtime_set_autosuspend_delay(struct device *dev, int delay);
+ extern unsigned long pm_runtime_autosuspend_expiration(struct device *dev);
++extern void pm_runtime_update_max_time_suspended(struct device *dev,
++						 s64 delta_ns);
+ 
+ static inline bool pm_children_suspended(struct device *dev)
+ {
+@@ -148,6 +150,9 @@ static inline void pm_runtime_set_autosu
+ static inline unsigned long pm_runtime_autosuspend_expiration(
+ 				struct device *dev) { return 0; }
+ 
++static inline void pm_runtime_update_max_time_suspended(struct device *dev,
++							s64 delta_ns) {}
++
+ #endif /* !CONFIG_PM_RUNTIME */
+ 
+ static inline int pm_runtime_idle(struct device *dev)
+Index: linux/drivers/base/power/qos.c
+===================================================================
+--- linux.orig/drivers/base/power/qos.c
++++ linux/drivers/base/power/qos.c
+@@ -47,21 +47,29 @@ static DEFINE_MUTEX(dev_pm_qos_mtx);
+ static BLOCKING_NOTIFIER_HEAD(dev_pm_notifiers);
+ 
+ /**
+- * dev_pm_qos_read_value - Get PM QoS constraint for a given device.
++ * __dev_pm_qos_read_value - Get PM QoS constraint for a given device.
++ * @dev: Device to get the PM QoS constraint value for.
++ *
++ * This routine must be called with dev->power.lock held.
++ */
++s32 __dev_pm_qos_read_value(struct device *dev)
++{
++	struct pm_qos_constraints *c = dev->power.constraints;
++
++	return c ? pm_qos_read_value(c) : 0;
++}
++
++/**
++ * dev_pm_qos_read_value - Get PM QoS constraint for a given device (locked).
+  * @dev: Device to get the PM QoS constraint value for.
+  */
+ s32 dev_pm_qos_read_value(struct device *dev)
+ {
+-	struct pm_qos_constraints *c;
+ 	unsigned long flags;
+-	s32 ret = 0;
++	s32 ret;
+ 
+ 	spin_lock_irqsave(&dev->power.lock, flags);
+-
+-	c = dev->power.constraints;
+-	if (c)
+-		ret = pm_qos_read_value(c);
+-
++	ret = __dev_pm_qos_read_value(dev);
+ 	spin_unlock_irqrestore(&dev->power.lock, flags);
+ 
+ 	return ret;
+Index: linux/include/linux/pm_qos.h
+===================================================================
+--- linux.orig/include/linux/pm_qos.h
++++ linux/include/linux/pm_qos.h
+@@ -78,6 +78,7 @@ int pm_qos_remove_notifier(int pm_qos_cl
+ int pm_qos_request_active(struct pm_qos_request *req);
+ s32 pm_qos_read_value(struct pm_qos_constraints *c);
+ 
++s32 __dev_pm_qos_read_value(struct device *dev);
+ s32 dev_pm_qos_read_value(struct device *dev);
+ int dev_pm_qos_add_request(struct device *dev, struct dev_pm_qos_request *req,
+ 			   s32 value);
+@@ -119,6 +120,8 @@ static inline int pm_qos_request_active(
+ static inline s32 pm_qos_read_value(struct pm_qos_constraints *c)
+ 			{ return 0; }
+ 
++static inline s32 __dev_pm_qos_read_value(struct device *dev)
++			{ return 0; }
+ static inline s32 dev_pm_qos_read_value(struct device *dev)
+ 			{ return 0; }
+ static inline int dev_pm_qos_add_request(struct device *dev,
 
-It's kinda irritating that this will cheerfully accept bogus input of
-the form "42foo".  This happens about eleven billion times in sysfs
-write() handlers but afaik we've never implemented a nice
-sysfs_int_from_buffer() thingy which handles all the possible errors.
