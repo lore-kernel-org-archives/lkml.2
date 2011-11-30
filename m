@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab1K3CSl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 21:18:41 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50421 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757617Ab1K3CSh (ORCPT
+	id S1757533Ab1K3CWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 21:22:51 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36396 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757446Ab1K3CWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 21:18:37 -0500
-From: Marcos Paulo de Souza <marcos.mage@gmail.com>
-To: gregkh@suse.de
-Cc: forest@alittletooquiet.net, driver@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Marcos Paulo de Souza <marcos.mage@gmail.com>
-Subject: [PATCH 1/5] staging: vt6656: main_usb.c: Use kzalloc instead kmalloc
-Date: Wed, 30 Nov 2011 00:17:15 -0200
-Message-Id: <1322619435-10034-1-git-send-email-marcos.mage@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Tue, 29 Nov 2011 21:22:47 -0500
+Date: Wed, 30 Nov 2011 02:22:45 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/28] namespace: checkpatch wanking
+Message-ID: <20111130022245.GS2203@ZenIV.linux.org.uk>
+References: <cover.1322609672.git.joe@perches.com>
+ <a3527806b3af190204da9de1df1bfe4421ed6101.1322609673.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a3527806b3af190204da9de1df1bfe4421ed6101.1322609673.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
+On Tue, Nov 29, 2011 at 06:14:14PM -0800, Joe Perches wrote:
+> Fix a few style things.
+> 
+> $ ./scripts/checkpatch.pl -f --terse --nosummary fs/namespace.c | \
+>   cut -f3- -d":" | sort | uniq -c
+>       1  ERROR: do not initialise statics to 0 or NULL
+>       2  ERROR: do not use assignment in if condition
+>       1  ERROR: "foo * bar" should be "foo *bar"
+>       1  ERROR: need consistent spacing around '|' (ctx:VxW)
+>       1  WARNING: braces {} are not necessary for single statement blocks
+>       3  WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
+>       4  WARNING: line over 80 characters
+>       9  WARNING: please, no space before tabs
+>       1  WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
+>       1  WARNING: Use #include <linux/unistd.h> instead of <asm/unistd.h>
 
-Cc: Greg kroah-Hartman <gregkh@suse.de>
-Cc: Forest Bond <forest@alittletooquiet.net>
-Cc: driver@driverdev.osuosl.org
-
----
- drivers/staging/vt6656/main_usb.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
-index 27521b6..201dd1d 100644
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -900,7 +900,7 @@ static BOOL device_alloc_bufs(PSDevice pDevice) {
-     }
- 
-     // allocate rcb mem
--    pDevice->pRCBMem = kmalloc((sizeof(RCB) * pDevice->cbRD), GFP_KERNEL);
-+	pDevice->pRCBMem = kzalloc((sizeof(RCB) * pDevice->cbRD), GFP_KERNEL);
-     if (pDevice->pRCBMem == NULL) {
-         DBG_PRT(MSG_LEVEL_ERR,KERN_ERR "%s : alloc rx usb context failed\n", pDevice->dev->name);
-         goto free_tx;
-@@ -912,7 +912,6 @@ static BOOL device_alloc_bufs(PSDevice pDevice) {
-     pDevice->FirstRecvMngList = NULL;
-     pDevice->LastRecvMngList = NULL;
-     pDevice->NumRecvFreeList = 0;
--    memset(pDevice->pRCBMem, 0, (sizeof(RCB) * pDevice->cbRD));
-     pRCB = (PRCB) pDevice->pRCBMem;
- 
-     for (ii = 0; ii < pDevice->cbRD; ii++) {
--- 
-1.7.4.4
-
+NAK.  First of all, wanking it certainly is; moreover, it creates shitloads
+of conflicts with patches in vfs.git#vfsmount-guts
