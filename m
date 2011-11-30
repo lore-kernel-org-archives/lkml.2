@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1K3TyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:54:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:36114 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751039Ab1K3TyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:54:02 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Michal Hocko <mhocko@suse.cz>
-Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
-Date: Wed, 30 Nov 2011 20:56:54 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, pomac@vapor.com,
-        linux-kernel@vger.kernel.org, tino.keitel@tikei.de
-References: <20111128222803.GA4925@pomac.netswarm.net> <201111292351.16233.rjw@sisk.pl> <20111130101227.GA3187@tiehlicka.suse.cz>
-In-Reply-To: <20111130101227.GA3187@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111302056.54697.rjw@sisk.pl>
+	id S1752195Ab1K3T5R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:57:17 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51698 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab1K3T5Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 14:57:16 -0500
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com
+Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [patch 00/25] dynamic-debug during module initialization
+Date: Wed, 30 Nov 2011 12:56:29 -0700
+Message-Id: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 30, 2011, Michal Hocko wrote:
-> On Tue 29-11-11 23:51:16, Rafael J. Wysocki wrote:
-> > On Tuesday, November 29, 2011, Michal Hocko wrote:
-> > > On Tue 29-11-11 12:54:16, Artem S. Tashkinov wrote:
-> > > > > On Nov 29, 2011, Michal Hocko  wrote: 
-> > > > > 
-> > > > > On Tue 29-11-11 13:31:56, Michal Hocko wrote:
-> > > > > > On Tue 29-11-11 11:38:47, Artem S. Tashkinov wrote:
-> > > > > [...]
-> > > > > > > $ grep . -r /sys/devices/system/cpu/cpuidle/
-> > > > > > > /sys/devices/system/cpu/cpuidle/current_driver:intel_idle
-> > > > > > > /sys/devices/system/cpu/cpuidle/current_governor_ro:menu
-> > > > > 
-> > > > > Could you try with acpi_idle driver?
-> > > > > echo acpi_idle > /sys/devices/system/cpu/cpuidle/current_driver
-> > > > 
-> > > > [root@localhost ~]# echo acpi_idle > /sys/devices/system/cpu/cpuidle/current_driver
-> > > > -bash: /sys/devices/system/cpu/cpuidle/current_driver: Permission denied
-> > > 
-> > > It seems that this is cannot be set in runtime:
-> > > SYSDEV_CLASS_ATTR(current_driver, 0444, show_current_driver, NULL);
-> > > 
-> > > Or maybe you need to boot with cpuidle_sysfs_switch. According to the
-> > > documentation you might be able to change the governor. I have no idea
-> > > whether this can help somehow but let's try that.
-> > > 
-> > > I haven't found any intel_idle machine in my lab so far and all other
-> > > acpi_idle machines seem to work (or at least randomly selected ones) so
-> > > this smells like a major difference in the setup.
-> > 
-> > I'm able to reproduce that with acpi_driver on one box, but not on demand.
-> 
-> And do you see the same thing (no idle/io_wait) updates?
+This patchset adds
+- dynamic-debug during module initialization
+- multiple queries
 
-Actaully, I was wrong.  The box I'm seeing the issue on also has "none"
-in /sys/devices/system/cpu/cpuidle/current_driver.  Sorry for the confusion.
+Unlike previous versions, this drops pending-query approach in
+favor of "fake module parameter" approach proposed by Thomas Renninger.
+    https://lkml.org/lkml/2010/9/15/397
 
-Thanks,
-Rafael
+Its based upon v3.2-rc3, cuz it includes a few adjustments to
+dynamic_debug.h which are not in driver-core-next atm.
+
+
+1	bug-fix for kernel/module.c under DEBUGP
+2	whitespace cleanup
+3-12	dynamic-debug cleanups, should be relatively uncontroversial
+13-17	multiple queries in ddebug_query="..."
+
+18-25	fake module parameter
+20	maybe fold into 18 (kept separate since 18 is Thomas's work)
+23	*.dyndbg=...
+25	BUILD_BUG_DECL (likely discussion point ;-)
+
+[jimc@groucho linux-2.6]$ git diff --stat v3.2-rc3..HEAD
+ Documentation/dynamic-debug-howto.txt |   76 ++++++--
+ drivers/pnp/base.h                    |    8 +-
+ drivers/pnp/core.c                    |   13 ++
+ include/linux/device.h                |    8 +-
+ include/linux/dynamic_debug.h         |   31 +++-
+ include/linux/kernel.h                |   10 +
+ include/linux/moduleparam.h           |    4 +
+ include/linux/netdevice.h             |    8 +-
+ include/linux/printk.h                |    8 +-
+ kernel/module.c                       |   47 ++---
+ kernel/params.c                       |   27 ++-
+ lib/dynamic_debug.c                   |  349 +++++++++++++++++++++++++--------
+ 12 files changed, 430 insertions(+), 159 deletions(-)
+
+
