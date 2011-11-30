@@ -1,82 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab1K3QyO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 11:54:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40416 "EHLO mx1.redhat.com"
+	id S1757959Ab1K3RAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:00:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47850 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248Ab1K3QyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 11:54:11 -0500
-Date: Wed, 30 Nov 2011 11:53:40 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Alasdair G Kergon <agk@redhat.com>
-cc: Jan Kara <jack@suse.cz>, esandeen@redhat.com, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        Valerie Aurora <val@vaaconsulting.com>
-Subject: Re: [dm-devel] [PATCH] deadlock with suspend and quotas
-In-Reply-To: <20111130140913.GX7595@agk-dp.fab.redhat.com>
-Message-ID: <Pine.LNX.4.64.1111301136360.5759@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1111251522230.4118@hs20-bc2-1.build.redhat.com>
- <20111128150400.GE6366@quack.suse.cz> <CAD-XujnH1UJXrEbYAKOSjvdwVnehj4_owuduhjR0RCUBqfrg0w@mail.gmail.com>
- <Pine.LNX.4.64.1111281612030.11895@hs20-bc2-1.build.redhat.com>
- <Pine.LNX.4.64.1111281754120.11895@hs20-bc2-1.build.redhat.com>
- <20111129101901.GA5635@quack.suse.cz> <20111130140913.GX7595@agk-dp.fab.redhat.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757888Ab1K3RAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 12:00:13 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4ED64B8B.1050806@canonical.com>
+References: <4ED64B8B.1050806@canonical.com> <20111129234258.13625.21153.stgit@warthog.procyon.org.uk> <20111129234323.13625.34554.stgit@warthog.procyon.org.uk>
+To: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
+        arjan.van.de.ven@intel.com, alan.cox@intel.com
+Subject: Re: [PATCH 02/16] MPILIB: Add a missing ENOMEM check [ver #2]
+Date: Wed, 30 Nov 2011 17:00:01 +0000
+Message-ID: <21008.1322672401@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Serge Hallyn <serge.hallyn@canonical.com> wrote:
 
-
-On Wed, 30 Nov 2011, Alasdair G Kergon wrote:
-
-> On Tue, Nov 29, 2011 at 11:19:01AM +0100, Jan Kara wrote:
-> > So I believe the consensus was that we should not block sync or flusher
-
-Well, I think that not blocking sync actually doesn't help at all.
-
-Suppose at first that you have a perfectly-barriered filesystem --- that 
-is filesystem, that contains barriers around all code paths that could 
-possibly create dirty data. In this case it is impossible to have dirty 
-data while the filesystem is suspended. --- In this case you can call 
-sync on suspened filesystem as much as you like, sync never finds ady 
-dirty data, consequently it never tries to write anything and it can't 
-deadlock. So skipping sync has no effect.
-
-Suppose as a second case that you have imperfectly-barriered filesystem 
---- that means there exists a code path that creates dirty data while the 
-filesystem is suspended. In this case if you skip sync, you are violating 
-sync semantics, because the application can create dirty data while 
-suspended, call sync while still suspended and assume that the dirty data 
-was written.
-
-So --- in case 1 skipping sync has no effect and in case 2 you trade one 
-bug for another --- you avoid deadlock and you introduce violations of 
-sync semantics.
-
-Mikulas
-
-> Consensus where?
+> >   	p = buffer = kmalloc(n, GFP_KERNEL);
+> > +	if (p<  0)
+> > +		return NULL;
 > 
-> > thread on frozen filesystem. Firstly, it's kind of ugly from user
-> > perspective (you cannot sync filesystems on your system while one
-> > filesystem is frozen???), secondly, in case of flusher thread it has some
-> > serious implications if there are more filesystems on the same device - you
-> > would effectively stop any writeback to the device possibly hanging the
-> > whole system due to dirty limit being exceeded. So at least in these two
-> > cases we should just ignore frozen filesystem.
-> 
-> The sync only needs to block on a particular fs if there is data to flush.
-> 
-> A sync that originated in a way that can only be independent of any
-> application that is changing the fs may skip that fs if it is frozen.
-> 
-> It's the user's responsibility only to freeze filesystems for very brief
-> periods of time if they are still being changed.
-> 
-> ?
->  
-> Alasdair
-> 
+> Sorry, maybe i'm having a confused morning, but shouldn't this check be for
+> p==NULL rather than p<0?
+
+Bah.  You are, of course, right.  Updated for the next version.
+
+David
