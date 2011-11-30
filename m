@@ -1,69 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab1K3X1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:27:34 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45718 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab1K3X1c (ORCPT
+	id S1753162Ab1K3XaE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:30:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56086 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab1K3XaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:27:32 -0500
-MIME-Version: 1.0
-X-Originating-IP: [93.172.53.1]
-In-Reply-To: <CAK=WgbazBq4GVo16sZsrZirgMYbwMcWtPaqn90c6d9Phr0gh3A@mail.gmail.com>
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
- <20111129131110.GC19157@redhat.com> <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
- <20111129151607.GE30966@redhat.com> <CAK=WgbZK+k4uuyMPHUfr_PMyrR5ceRTvuDRpmhXfgwpSUOPw0g@mail.gmail.com>
- <20111130145958.GE21413@redhat.com> <CAK=WgbYyFdLftE_kp2_JOThVhn-FzGsDqVqKn0Jwm2teQyZBNA@mail.gmail.com>
- <20111130161555.GB25812@redhat.com> <CAK=WgbazBq4GVo16sZsrZirgMYbwMcWtPaqn90c6d9Phr0gh3A@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 1 Dec 2011 01:27:10 +0200
-Message-ID: <CAK=WgbbZH3ZFzbwwyVBGEvwHPbogDW6+Kb_1pRam2jj5oJHuDA@mail.gmail.com>
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 30 Nov 2011 18:30:03 -0500
+Date: Wed, 30 Nov 2011 15:30:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Drake <dsd@laptop.org>
+Cc: x86@kernel.org, mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
+        dilinger@queued.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 2] x86, olpc: add debugfs interface for EC
+ commands
+Message-Id: <20111130153001.d5a74fb9.akpm@linux-foundation.org>
+In-Reply-To: <20111129222721.1EC339D401E@zog.reactivated.net>
+References: <20111129222721.1EC339D401E@zog.reactivated.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 6:24 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Wed, Nov 30, 2011 at 6:15 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->> How are the rings mapped? normal memory, right?
->
-> No, device memory.
+On Tue, 29 Nov 2011 22:27:20 +0000 (GMT)
+Daniel Drake <dsd@laptop.org> wrote:
 
-Ok, I have more info.
+> Add a debugfs interface for sending commands to the OLPC EC and reading
+> their responses. This is useful for EC development and debugging.
 
-Originally remoteproc was mapping the rings using ioremap, and that
-meant ARM Device memory.
+It would be nice to expand on what an "EC" is.  For those people who
+don't know.  This group doesn't include me, of course.
 
-Recently, though, we moved to CMA (allocating memory for the rings via
-dma_alloc_coherent), and that isn't Device memory anymore: it's
-uncacheable Normal memory (on ARM v6+).
+> Based on code by Paul Fox.
 
-We still require mandatory barriers though: one very reproducible
-problem I personally face is that the avail index doesn't get updated
-before the kick. As a result, the remote processor misses a buffer
-that was just added (the kick wakes it up only to find that the avail
-index wasn't changed yet). In this case, it probably happens because
-the mailbox, used to kick the remote processor, is mapped as Device
-memory, and therefore the kick can be reordered before the updates to
-the ring  can be observed.
+It would be good solicit and include Paul's signed-off-by:.  And/or to cc
+him on the patch.
 
-I did get two additional reports about reordering issues, on different
-setups than my own, and which I can't personally reproduce: the one
-I've described earlier (avail index gets updated before the avail
-array) and one in the receive path (reading a used buffer which we
-already read). I couldn't personally verify those, but both issues
-were reported to be gone when mandatory barriers were used.
+> diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
+> index 7cce722..860aff9 100644
+> --- a/arch/x86/platform/olpc/olpc.c
+> +++ b/arch/x86/platform/olpc/olpc.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/of.h>
+>  #include <linux/syscore_ops.h>
+> +#include <linux/debugfs.h>
+>  
+>  #include <asm/geode.h>
+>  #include <asm/setup.h>
+> @@ -31,6 +32,13 @@ EXPORT_SYMBOL_GPL(olpc_platform_info);
+>  
+>  static DEFINE_SPINLOCK(ec_lock);
+>  
+> +/* debugfs interface to EC commands */
+> +#define EC_MAX_CMD_ARGS (5 + 1)	/* cmd byte + 5 args */
+> +#define EC_MAX_CMD_REPLY (8)
+> +static struct dentry *ec_debugfs_dir;
+> +static unsigned char ec_debugfs_resp[EC_MAX_CMD_REPLY];
+> +static unsigned int ec_debugfs_resp_bytes;
+> +
+>  /* EC event mask to be applied during suspend (defining wakeup sources). */
+>  static u16 ec_wakeup_mask;
+>  
+> @@ -269,6 +277,98 @@ int olpc_ec_sci_query(u16 *sci_value)
+>  }
+>  EXPORT_SYMBOL_GPL(olpc_ec_sci_query);
+>  
+> +static ssize_t ec_gen_write(struct file *file, const char __user *buf,
+> +			    size_t size, loff_t *ppos)
+> +{
+> +	int i, m;
+> +	unsigned char ec_cmd[EC_MAX_CMD_ARGS];
+> +	unsigned int ec_cmd_int[EC_MAX_CMD_ARGS];
+> +	char cmdbuf[64];
+> +	int ec_cmd_bytes;
+> +
+> +	size = simple_write_to_buffer(cmdbuf, sizeof(cmdbuf), ppos, buf, size);
+> +
+> +	m = sscanf(cmdbuf, "%x:%u %x %x %x %x %x", &ec_cmd_int[0],
+> +		   &ec_debugfs_resp_bytes,
+> +		   &ec_cmd_int[1], &ec_cmd_int[2], &ec_cmd_int[3],
+> +		   &ec_cmd_int[4], &ec_cmd_int[5]);
+> +	if (m <= 0 || ec_debugfs_resp_bytes > EC_MAX_CMD_REPLY) {
 
-I expect those reports only to increase: the diversity of platforms
-that are now looking into adopting virtio for this kind of
-inter-process communication is quite huge, with several different
-architectures and even more hardware implementations on the way (not
-only ARM).
+I think you need "if (m < 2" here.  We require that
+ec_debugfs_resp_bytes was written to.
 
-Thanks,
-Ohad.
+> +		printk(KERN_DEBUG "olpc-ec: bad ec cmd:  "
+> +		       "cmd:response-count [arg1 [arg2 ...]]\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* convert scanf'd ints to char */
+> +	for (i = 0; i < EC_MAX_CMD_ARGS; i++)
+> +		ec_cmd[i] = ec_cmd_int[i];
+
+Here we're potentially reading uninitialised stack slots.  It would be
+better to constrain this loop to just the number of items we know are
+present and valid.
+
+> +	ec_cmd_bytes = m - 2;
+> +
+> +	printk(KERN_DEBUG "olpc-ec: debugfs cmd 0x%02x with %d args "
+> +	       "%02x %02x %02x %02x %02x, want %d returns\n",
+> +	       ec_cmd[0], ec_cmd_bytes, ec_cmd[1], ec_cmd[2], ec_cmd[3],
+> +	       ec_cmd[4], ec_cmd[5], ec_debugfs_resp_bytes);
+> +
+> +	olpc_ec_cmd((unsigned char) ec_cmd[0],
+> +		(ec_cmd_bytes == 0) ? NULL : &ec_cmd[1],
+> +		ec_cmd_bytes, ec_debugfs_resp, ec_debugfs_resp_bytes);
+> +
+> +	printk(KERN_DEBUG "olpc-ec: response "
+> +	       "%02x %02x %02x %02x %02x %02x %02x %02x (%d bytes expected)\n",
+> +	       ec_debugfs_resp[0], ec_debugfs_resp[1], ec_debugfs_resp[2],
+> +	       ec_debugfs_resp[3], ec_debugfs_resp[4], ec_debugfs_resp[5],
+> +	       ec_debugfs_resp[6], ec_debugfs_resp[7], ec_debugfs_resp_bytes);
+> +
+> +	return size;
+> +}
+> +
+> +static ssize_t ec_gen_read(struct file *file, char __user *buf,
+> +			   size_t size, loff_t *ppos)
+> +{
+> +	unsigned int i, r;
+> +	char *rp;
+> +	char respbuf[64];
+> +
+> +	rp = respbuf;
+> +	rp += sprintf(rp, "%02x", ec_debugfs_resp[0]);
+> +	for (i = 1; i < ec_debugfs_resp_bytes; i++)
+> +		rp += sprintf(rp, ", %02x", ec_debugfs_resp[i]);
+> +	rp += sprintf(rp, "\n");
+> +
+> +	r = rp - respbuf;
+> +
+> +	return simple_read_from_buffer(buf, size, ppos, respbuf, r);
+> +}
+> +
+> +static const struct file_operations ec_debugfs_genops = {
+> +	.write	 = ec_gen_write,
+> +	.read	 = ec_gen_read,
+> +};
+> +
+> +static char ec_debugfs_help_text[] =
+> +	"generic write:   CC:N A A A A ...\n"
+> +	" CC is the (hex) command, N is the (optional) count of expected\n"
+> +	" reply bytes, and A A A A are optional (hex) arguments.\n"
+> +	"generic read:  will show hex reply bytes, *whether or not* they\n"
+> +	" came from the immediately previous command\n";
+
+erk, this is a bit silly.  Surely we don't document debugfs files by
+embedding that documentation into other debugfs files.  It would be
+saner (and smaller!) to document it under Documentation/ somewhere. 
+Plus we can provide much better documentation in that context.
+
+
