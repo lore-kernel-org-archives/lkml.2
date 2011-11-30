@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab1K3RvM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 12:51:12 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60926 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab1K3RvI convert rfc822-to-8bit (ORCPT
+	id S1751672Ab1K3RvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:51:19 -0500
+Received: from na3sys010aog106.obsmtp.com ([74.125.245.80]:44461 "HELO
+	na3sys010aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750984Ab1K3RvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 12:51:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <4ED67387.90902@xenotime.net>
-References: <20111129152040.3040fe9780886ee0e066a131@canb.auug.org.au>
-	<4ED5417C.1030908@xenotime.net>
-	<1322673417.31541.1.camel@segulix>
-	<4ED67387.90902@xenotime.net>
-Date: Wed, 30 Nov 2011 17:51:07 +0000
-Message-ID: <CAPM=9tzOQxGG8mL=WQiyDFddusmH05_ghALosks0_N=-UUCisA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Nov 29 (drm)
-From: Dave Airlie <airlied@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: =?ISO-8859-1?Q?S=E9rgio_Basto?= <sergio@serjux.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Nov 2011 12:51:13 -0500
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: [GIT PULL] please pull infiniband.git
+Date: Wed, 30 Nov 2011 09:50:59 -0800
+Message-Id: <1322675459-24792-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/30 Randy Dunlap <rdunlap@xenotime.net>:
-> On 11/30/2011 09:16 AM, Sérgio Basto wrote:
->> Randy, not dri-devel@lists.sourceforge.net, anymore
->> now is dri-devel@lists.freedesktop.org
->
-> Argh, thanks.
-> That was thunderbird trying to be too helpful. :(
+Hi Linus,
 
-Ah well I got it and it should be fixed now.
+Please pull from
 
-Dave.
+    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+
+This will get a few fixes:
+
+ - Fixes for missing RCU read locking due to net neighbour changes
+ - Fix for IPoIB softlockup in error path
+ - Low-level driver fixes to cxgb4 and qib
+
+Thanks!
+
+Eric Dumazet (1):
+      IB: Fix RCU lockdep splats
+
+Jonathan Lallinger (1):
+      RDMA/cxgb4: Fix iw_cxgb4 count_rcqes() logic
+
+Kumar Sanghvi (1):
+      RDMA/cxgb4: Fix retry with MPAv1 logic for MPAv2
+
+Mike Marciniszyn (3):
+      IB/qib: Don't use schedule_work()
+      IB/qib: Fix over-scheduling of QSFP work
+      IB/ipoib: Prevent hung task or softlockup processing multicast response
+
+Roland Dreier (1):
+      Merge branches 'cxgb4', 'ipoib', 'misc' and 'qib' into for-next
+
+ drivers/infiniband/core/addr.c                 |    9 ++++++---
+ drivers/infiniband/hw/cxgb3/iwch_cm.c          |    4 ++++
+ drivers/infiniband/hw/cxgb4/cm.c               |   10 +++++++++-
+ drivers/infiniband/hw/cxgb4/cq.c               |    2 +-
+ drivers/infiniband/hw/nes/nes_cm.c             |    6 ++++--
+ drivers/infiniband/hw/qib/qib_iba7322.c        |   18 +++++++++---------
+ drivers/infiniband/hw/qib/qib_qsfp.c           |   12 ------------
+ drivers/infiniband/ulp/ipoib/ipoib_ib.c        |   13 ++++++++-----
+ drivers/infiniband/ulp/ipoib/ipoib_main.c      |   20 ++++++++++++--------
+ drivers/infiniband/ulp/ipoib/ipoib_multicast.c |   13 +++++++++----
+ 10 files changed, 62 insertions(+), 45 deletions(-)
