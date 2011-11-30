@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757836Ab1K3L6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 06:58:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754689Ab1K3L6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 06:58:30 -0500
-Date: Wed, 30 Nov 2011 13:59:58 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH-RFC 1/2] tile: don't panic on iomap
-Message-ID: <20111130115956.GA21413@redhat.com>
-References: <cover.1322592494.git.mst@redhat.com>
- <201111292205.11544.arnd@arndb.de>
- <20111130071321.GB17781@redhat.com>
- <201111300909.18431.arnd@arndb.de>
+	id S1757840Ab1K3MAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 07:00:19 -0500
+Received: from bay0-omc1-s19.bay0.hotmail.com ([65.54.190.30]:8354 "EHLO
+	bay0-omc1-s19.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757724Ab1K3MAQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 07:00:16 -0500
+Message-ID: <BAY163-W20B75700404320F942FB93FBB00@phx.gbl>
+X-Originating-IP: [82.43.252.147]
+From: Anand Kanaginhal <anand_dk@hotmail.com>
+To: <greg@kroah.com>, linux kernel mailing <linux-kernel@vger.kernel.org>
+Subject: RE: PCIe Hotplugging not working
+Date: Wed, 30 Nov 2011 04:00:15 -0800
+Importance: Normal
+In-Reply-To: <20111129225552.GB27909@kroah.com>
+References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl>,<BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>,<20111129142214.GC14845@kroah.com>,<BAY163-W63C79C972B0F87A46B0FDCFBB30@phx.gbl>,<20111129225552.GB27909@kroah.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111300909.18431.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 30 Nov 2011 12:00:15.0916 (UTC) FILETIME=[9F74F6C0:01CCAF57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 09:09:18AM +0000, Arnd Bergmann wrote:
-> On Wednesday 30 November 2011, Michael S. Tsirkin wrote:
-> > 
-> > On Tue, Nov 29, 2011 at 10:05:11PM +0000, Arnd Bergmann wrote:
-> > > On Tuesday 29 November 2011, Michael S. Tsirkin wrote:
-> > > > diff --git a/arch/tile/include/asm/io.h b/arch/tile/include/asm/io.h
-> > > > index c9ea165..be6090d 100644
-> > > > --- a/arch/tile/include/asm/io.h
-> > > > +++ b/arch/tile/include/asm/io.h
-> > > > @@ -204,7 +204,8 @@ static inline long ioport_panic(void)
-> > > >  
-> > > >  static inline void __iomem *ioport_map(unsigned long port, unsigned int len)
-> > > >  {
-> > > > -       return (void __iomem *) ioport_panic();
-> > > > +       pr_info("Trying to map an IO resource - it does not exit on tile.\n");
-> > > > +       return NULL;
-> > > >  }
-> > > 
-> > > Why not just set CONFIG_NO_IOPORT and make this unavailable at compile time?
-> > > 
-> > >       Arnd
-> > 
-> > Well I think CONFIG_NO_IOPORT only has effect if you pull in asm-generic/io.h.
-> > This might work but I have no idea.
-> 
-> NO_IOPORT ha nothing to do with asm-generic, it just makes lib/iomap.c leave out
-> the calls to ioport_map, and prevent all drivers that call ioport_map from being
-> built.
-
-Yes. But lib/iomap.c isn't even linked unless GENERIC_IOMAP is set.
-
-> > Presumably whoever wrote that architecture considered and discarded setting GENERIC_IOMAP.
-> 
-> The tile PCI controller is apparently special in that it does not map the
-> PIO region into MMIO space, or make it available in any other way, so generic
-> iomap with IOCOND is pointless. Setting NO_IPORT will still mean that drivers
-> using ioport_map will not be built. This mostly impacts the legacy (non-AHCI)
-> ATA controllers, which I assume are not used on tile anyway.
-> 
-> 	Arnd
 
 
-I don't object to setting NO_IPORT at all, but this won't help address
-the problem this patch is fixing, which is to use a generic pci_iomap
-on tile.
 
--- 
-MST
+----------------------------------------
+> Date: Wed, 30 Nov 2011 07:55:52 +0900
+> From: greg@kroah.com
+> To: anand_dk@hotmail.com
+> CC: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; linux-hotplug@vger.kernel.org
+> Subject: Re: PCIe Hotplugging not working
+>
+> On Tue, Nov 29, 2011 at 09:50:41AM -0800, Anand Kanaginhal wrote:
+>>
+>> Resending as earlier sends failed
+>
+> You can not send html messages to vger.kernel.org mailing lists.
+ Thanks for the info, I will keep that in mind.
+
+>>> Why is a pci driver a "char" driver? Do you have a pointer to the
+>>> source of this?
+>>
+>> I am doing an test before putting it in its right place. Another
+>> reason is that I am treating it as character device and using IOCTLs
+>> for various operations. I have attached the framework code here.
+>
+> Just a note, but your framework is backwards, you should allocate your
+> character device in your probe function, not in the module init
+> function.
+>
+> Also, what type of driver is this, why do you need ioctls for it?
+
+I understand that it is slightly unconventional to do this. However this module is a very thin kernel layer for custom device and custom application, which interact with the system via the IOCTLs.
+The module and a dummy device needs to be present to answer apps needs, thats the reason for keeping the device create in mod init. There would be many occasions and of these end point devices appear and disappear when the system is running. There are some other of these requirerments which make it simpler to implement it this way.
+
+>>>> 2. I run depmod and "modules.pcimap" also got updated with my module.
+>>>>
+>>>> However
+>>>> if I unplug and plug in the endpoint, my driver .probe and .remove functions
+>>>> are not being invoked. Is there something more to be done at the bus
+>>>> level to get the driver to hot plug ?
+>>>
+>>> You need a pci hotplug controller driver, is that loaded? That is what
+>>> is responsible for eventually calling your remove function.
+>>
+>> How do I figure out if a pci hotplug controller driver is installed?
+>
+> How do you know that your hardware supports PCI hotplugging at all?
+>
+> You need a PCI hotplug controller in the system, generally if you have
+> one, the driver will be loaded for it, but if you are using a custom
+> kernel, you might have to build and install it yourself.
+
+The PEX 8609 device that we are using supports Hot-Plug through a serial Hot-Plug interface brought out through I2C port.
+now the only point is whether the controller driver for this is loaded in the system. 
+
+>>>> I have tried various kernel version, Currently I am trying on 2.6.38.12 (UBUNTU flavor).
+>>>
+>>> We can't help you with distro-specific kernels, please use a kernel.org
+>>> kernel and we will be glad to help you out.
+>>
+>> I have tried with vanilla kernel as well with the same results.
+>
+> What release did you try?
+We had tried 2.6.38.8 from kernel.org and an earlier version if I recall correctly was based on 2.6.18.
+
+> greg k-h
+ 		 	   		  
