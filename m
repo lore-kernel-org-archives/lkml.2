@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab1K3NEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 08:04:47 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:51457 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752433Ab1K3NEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 08:04:45 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/3gn4LBl/3ou/IHRcpmawUgV7j9w19qpTqa/UVwC
-	sQEhq3/8v8CAMX
-Subject: Re: [PATCH RT] tasklet/rt: Prevent tasklets from going into
- infinite spin in RT
-From: Mike Galbraith <efault@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Clark Williams <williams@redhat.com>
-In-Reply-To: <1322657130.5297.12.camel@marge.simson.net>
-References: <1322618120.17003.104.camel@frodo>
-	 <1322627551.17283.11.camel@marge.simson.net>
-	 <alpine.LFD.2.02.1111301117240.2735@ionos>
-	 <1322657130.5297.12.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Nov 2011 14:04:35 +0100
-Message-ID: <1322658275.5297.17.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1754084Ab1K3NFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 08:05:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59504 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752010Ab1K3NFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 08:05:48 -0500
+Date: Wed, 30 Nov 2011 13:05:14 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Mikulas Patocka <mpatocka@redhat.com>, Jan Kara <jack@suse.cz>,
+        Alasdair G Kergon <agk@redhat.com>, esandeen@redhat.com,
+        Surbhi Palande <csurbhi@gmail.com>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        Valerie Aurora <val@vaaconsulting.com>
+Subject: Re: [dm-devel] [PATCH] deadlock with suspend and quotas
+Message-ID: <20111130130514.GU7595@agk-dp.fab.redhat.com>
+Mail-Followup-To: Mikulas Patocka <mpatocka@redhat.com>,
+	Jan Kara <jack@suse.cz>, Alasdair G Kergon <agk@redhat.com>,
+	esandeen@redhat.com, Surbhi Palande <csurbhi@gmail.com>,
+	linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+	linux-fsdevel@vger.kernel.org,
+	Christopher Chaltain <christopher.chaltain@canonical.com>,
+	Valerie Aurora <val@vaaconsulting.com>
+References: <20111129102156.GA7463@quack.suse.cz> <Pine.LNX.4.64.1111290556270.12274@hs20-bc2-1.build.redhat.com> <20111129111136.GC5635@quack.suse.cz> <Pine.LNX.4.64.1111290746230.10352@hs20-bc2-1.build.redhat.com> <20111129130913.GE5635@quack.suse.cz> <20111129131811.GS7595@agk-dp.fab.redhat.com> <20111129133239.GA9926@quack.suse.cz> <Pine.LNX.4.64.1111300143340.31264@hs20-bc2-1.build.redhat.com> <20111130111657.GA4541@quack.suse.cz> <Pine.LNX.4.64.1111300700190.27712@hs20-bc2-1.build.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1111300700190.27712@hs20-bc2-1.build.redhat.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 13:45 +0100, Mike Galbraith wrote:
-> On Wed, 2011-11-30 at 11:24 +0100, Thomas Gleixner wrote:
-> > On Wed, 30 Nov 2011, Mike Galbraith wrote:
+On Wed, Nov 30, 2011 at 07:14:18AM -0500, Mikulas Patocka wrote:
+> On Wed, 30 Nov 2011, Jan Kara wrote:
+> > > So if you skip sync of frozen filesystems, you introduce a data
+> > > corruption if someone takes a snapshot of ext2.
+> >   Yes, because ext2 cannot really be frozen, it is (errorneously) marked
+> > as such but it is not frozen...
 
-> > > @@ -131,11 +155,18 @@ void softirq_check_pending_idle(void)
-> > >   */
-> > >  static void wakeup_softirqd(void)
-> > >  {
-> > > -	/* Interrupts are disabled: no need to stop preemption */
-> > > -	struct task_struct *tsk = __this_cpu_read(ksoftirqd);
-> > > +	struct task_struct *tsk;
-> > > +	u32 pending = local_softirq_pending(), mask, i;
-> > >  
-> > > -	if (tsk && tsk->state != TASK_RUNNING)
-> > > -		wake_up_process(tsk);
-> > > +	/* Interrupts are disabled: no need to stop preemption */
-> > > +	for (i = 0; pending && i < NR_SOFTIRQ_THREADS; i++) {
-> > > +		mask = __get_cpu_var(ksoftirqd)[i].mask;
-> > > +		if (!(pending & mask))
-> > > +			continue;
-> > > +		tsk = __get_cpu_var(ksoftirqd)[i].tsk;
-> > > +		if (tsk && tsk->state != TASK_RUNNING)
-> > > +			wake_up_process(tsk);
-> > > +	}
-> > >  }
-> > 
-> > Dammned serious is seems. :)
+This is just getting into semantics.  AFAIK (and it was before my involvement)
+LVM used the term 'lockfs' for this operation when it was introduced to ext2.
+It later got renamed in-kernel to 'frozen' to bring it into line with newer
+filesystems.  But userspace and the interface still retain the original
+'lockfs' name.
 
-'course here I should have just used the busy bits directly.
+There is no further I/O sent to the filesystem during the 'lockfs' operation:
+LVM uses dm to block that.
 
-	-Mike
+Alasdair
 
