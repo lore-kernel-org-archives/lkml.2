@@ -1,98 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab1K3Mpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 07:45:45 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:57895 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751193Ab1K3Mpm (ORCPT
+	id S1752868Ab1K3Mq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 07:46:27 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:51868 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab1K3Mq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 07:45:42 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+Rhf5E49KR8SX3Y8SasAmYWGm/PAngQJrC//DNai
-	QcIYU4T2rMDLdd
-Subject: Re: [PATCH RT] tasklet/rt: Prevent tasklets from going into
- infinite spin in RT
-From: Mike Galbraith <efault@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Clark Williams <williams@redhat.com>
-In-Reply-To: <alpine.LFD.2.02.1111301117240.2735@ionos>
-References: <1322618120.17003.104.camel@frodo>
-	 <1322627551.17283.11.camel@marge.simson.net>
-	 <alpine.LFD.2.02.1111301117240.2735@ionos>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Nov 2011 13:45:30 +0100
-Message-ID: <1322657130.5297.12.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	Wed, 30 Nov 2011 07:46:26 -0500
+Subject: [RFC PATCH v3 0/4] cpuidle: (POWER) cpuidle driver for pSeries 
+To: benh@kernel.crashing.org, len.brown@intel.com
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Date: Wed, 30 Nov 2011 18:16:12 +0530
+Message-ID: <20111130124608.972.87712.stgit@deepthi-ThinkPad-T420>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+x-cbid: 11113003-3568-0000-0000-000000CE97CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 11:24 +0100, Thomas Gleixner wrote:
-> On Wed, 30 Nov 2011, Mike Galbraith wrote:
+This patch series ports the cpuidle framework for ppc64 platform and
+implements a cpuidle back-end driver for ppc64 (pSeries) platform.
+Currently idle states are managed by pseries_{dedicated,shared}_idle_sleep()
+routines in arch/powerpc/platforms/pseries/setup.c.  There are
+two idle states (snooze and cede) that are exploited by
+these routines based on simple heuristics.
 
-> > @@ -486,12 +495,43 @@ extern void softirq_check_pending_idle(v
-> >   */
-> >  DECLARE_PER_CPU(struct list_head [NR_SOFTIRQS], softirq_work_list);
-> >  
-> > -DECLARE_PER_CPU(struct task_struct *, ksoftirqd);
-> > +struct softirqdata {
-> > +	int			mask;
-> > +	struct task_struct	*tsk;
-> > +};
-> > +
-> > +DECLARE_PER_CPU(struct softirqdata [NR_SOFTIRQ_THREADS], ksoftirqd);
-> > +
-> > +static inline bool this_cpu_ksoftirqd(struct task_struct *p)
-> > +{
-> > +	int i;
-> > +
-> > +	for (i = 0; i < NR_SOFTIRQ_THREADS; i++) {
-> > +		if (p == __get_cpu_var(ksoftirqd)[i].tsk)
-> > +			return true;
-> 
-> You are not serious about that loop, are you ?
+Moving the idle states over to cpuidle framework can take advantage of
+the advanced heuristics, tunables, and features provided by cpuidle
+framework. Additional idle states like extended cede with hints would be
+included and exploited using the cpuidle framework. The statistics and 
+tracing infrastructure provided by the cpuidle framework also helps in 
+enabling power management related tools and help tune the system and 
+applications.
 
-Well, it's a short loop, especially when NR_SOFTIRQ_THREADS = 1 (poof).
+This series aims to maintain compatibility and functionality to
+existing pSeries idle cpu management code.  There are no new functions
+or idle states added as part of this series.
 
-> > @@ -131,11 +155,18 @@ void softirq_check_pending_idle(void)
-> >   */
-> >  static void wakeup_softirqd(void)
-> >  {
-> > -	/* Interrupts are disabled: no need to stop preemption */
-> > -	struct task_struct *tsk = __this_cpu_read(ksoftirqd);
-> > +	struct task_struct *tsk;
-> > +	u32 pending = local_softirq_pending(), mask, i;
-> >  
-> > -	if (tsk && tsk->state != TASK_RUNNING)
-> > -		wake_up_process(tsk);
-> > +	/* Interrupts are disabled: no need to stop preemption */
-> > +	for (i = 0; pending && i < NR_SOFTIRQ_THREADS; i++) {
-> > +		mask = __get_cpu_var(ksoftirqd)[i].mask;
-> > +		if (!(pending & mask))
-> > +			continue;
-> > +		tsk = __get_cpu_var(ksoftirqd)[i].tsk;
-> > +		if (tsk && tsk->state != TASK_RUNNING)
-> > +			wake_up_process(tsk);
-> > +	}
-> >  }
-> 
-> Dammned serious is seems. :)
+The previous version of this patch can be found at
+https://lkml.org/lkml/2011/11/17/127
 
-Deadly serious :)
+Changes from the previous version (v2):
 
-For the problem at hand (timer wakeups), NR_SOFTIRQ_THREADS could be 2.
+	1] Rebased to latest 3.2-rc3
 
-> I was looking into that as well, though I did not want to inflict it
-> on 3.0 at this point.
-> 
-> Thanks,
-> 
-> 	tglx
+	2] Incorporated the changes from the feedback provided by Ben
+	   in the previous version of this series.
 
+This patch series includes:
+
+[1/4] - Provides arch specific cpu_idle_wait() function required by cpuidle
+  subsystem.
+[2/4] - pseries_idle cpuidle driver
+[3/4] - Enables cpuidle for pSeries and directly calls cpuidle_idle_call()
+[4/4] - Handles powersave=off kernel boot parameter and disables registration
+  of pseries_idle cpuidle driver.
+
+This series has been tested on ppc64 pSeries POWER7 system with the snooze
+and cede states
+
+--
+
+ arch/powerpc/Kconfig                            |    4 
+ arch/powerpc/include/asm/processor.h            |    3 
+ arch/powerpc/include/asm/system.h               |    9 +
+ arch/powerpc/kernel/idle.c                      |   27 ++
+ arch/powerpc/kernel/sysfs.c                     |    2 
+ arch/powerpc/platforms/Kconfig                  |    6 
+ arch/powerpc/platforms/pseries/Kconfig          |    9 +
+ arch/powerpc/platforms/pseries/Makefile         |    1 
+ arch/powerpc/platforms/pseries/processor_idle.c |  329 +++++++++++++++++++++++
+ arch/powerpc/platforms/pseries/pseries.h        |    3 
+ arch/powerpc/platforms/pseries/setup.c          |  104 +------
+ arch/powerpc/platforms/pseries/smp.c            |    1 
+ include/linux/cpuidle.h                         |    2 
+ 13 files changed, 411 insertions(+), 89 deletions(-)
+ create mode 100644 arch/powerpc/platforms/pseries/processor_idle.c
+
+
+
+-Deepthi 
 
