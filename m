@@ -1,107 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab1K3HN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 02:13:28 -0500
-Received: from smtp1.onthe.net.au ([203.22.196.249]:41798 "EHLO
-	smtp1.onthe.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab1K3HNZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 02:13:25 -0500
-Date: Wed, 30 Nov 2011 18:13:19 +1100
-From: Chris Dunlop <chris@onthe.net.au>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        David Howells <dhowells@redhat.com>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        Petr Vandrovec <petr@vandrovec.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
-        codalist@TELEMANN.coda.cs.cmu.edu,
-        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
-Message-ID: <20111130071319.GA16711@onthe.net.au>
-References: <1321861008-20611-1-git-send-email-chris@onthe.net.au>
- <20111129082501.GA569@onthe.net.au>
- <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC20@SACMVEXC2-PRD.hq.netapp.com>
+	id S1755313Ab1K3HQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 02:16:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34245 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913Ab1K3HQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 02:16:45 -0500
+Date: Wed, 30 Nov 2011 09:18:06 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Subject: Re: [PATCHv3 RFC] virtio-pci: flexible configuration layout
+Message-ID: <20111130071805.GC17781@redhat.com>
+References: <20111122183621.GA5235@redhat.com>
+ <87hb1v1scp.fsf@rustcorp.com.au>
+ <20111123084640.GE22734@redhat.com>
+ <87ty5uxso3.fsf@rustcorp.com.au>
+ <20111124070728.GH29994@redhat.com>
+ <87vcq5t69c.fsf@rustcorp.com.au>
+ <20111128084009.GB20084@redhat.com>
+ <87sjl6tsnm.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC20@SACMVEXC2-PRD.hq.netapp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87sjl6tsnm.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 03:58:07AM -0800, Myklebust, Trond wrote:
->> -----Original Message-----
->> From: Chris Dunlop [mailto:chris@onthe.net.au]
->> Sent: Tuesday, November 29, 2011 3:25 AM
->> 
->> I haven't seen any response to this patch which fixes an Oops in
->> d_revalidate. I hit this using NFS, but various other file systems look to be
->> likewise vulnerable, hence the broadness of the patch. The sequence leading
->> to the Oops is:
->> 
->> lookup_one_len() [fs/namei.c]
->>    calls __lookup_hash() [fs/namei.c] with nd == NULL,
->>       which can then call the file system specific d_revalidate(), passing in nd == NULL
->>          which will then Oops if nd is used without checking
+On Wed, Nov 30, 2011 at 09:58:45AM +1030, Rusty Russell wrote:
+> > I think I see a way to do that in a relatively painless way.
+> > Do you prefer seeing driver patches or spec? Or are you not interested
+> > in reusing the same structure at all?
 > 
-> That's because you are "fixing" the wrong bug and if you'd checked the
-> list archives, you'd know that this has already been discussed several
-> times...
+> I think we should look at code at this point; my gut says we're going to
+> be not-quite-similar-enough-to-be-useful.  At which point, a clean-slate
+> approach is more appealing.  But the code will show, one way or another.
+> 
+> Thanks,
+> Rusty.
 
-Augh! Apologies.
+Makes sense, absolutely. So I'll hack on it and post and we can
+judge the result.
 
-> By allowing stacked filesystems to pass nd==NULL (the VFS doesn't do
-> this), you're circumventing  the lookup intent mechanisms and will hit
-> all sorts of problems further down the road. If you want to fix the
-> problem, then please fix the broken stacking filesystems to stop using
-> lookup_one_len...
+One small comment that I'm afraid was lost in the noise
+is that we should not add any 64 bit fields in the common area,
+because there's no generic iowrite64/ioread64.
 
-OK.
-
-To avoid other people further wasting their and your time on
-exactly the same thing future, how something like the following
-patch, based on your comment in:
-
-http://article.gmane.org/gmane.linux.nfs/40370
-
-...and, if that's acceptable, is it worthwhile doing for the
-other file systems which are likewise currently vulnerable when
-abused by broken layered file systems?
-
-Chris
-
-----------------------------------------------------------------------
-Don't oops when abused by broken layered file systems
-
-Signed-off-by: Chris Dunlop <chris@onthe.net.au>
----
- fs/nfs/dir.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index b238d95..f872f29 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1103,6 +1103,12 @@ static int nfs_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
- 	struct nfs_fattr *fattr = NULL;
- 	int error;
- 
-+	/*
-+	 * We don't support layered filesystems that don't do intents
-+	 */
-+	if (nd == NULL)
-+		return -EIO;
-+
- 	if (nd->flags & LOOKUP_RCU)
- 		return -ECHILD;
- 
 -- 
-1.7.0.4
-----------------------------------------------------------------------
-
+MST
