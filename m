@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab1K3O6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 09:58:13 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:45851 "EHLO www.hansjkoch.de"
+	id S1757163Ab1K3O6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 09:58:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23550 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab1K3O6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 09:58:12 -0500
-Date: Wed, 30 Nov 2011 15:57:42 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Greg KH <gregkh@suse.de>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] uio: make phys maps optionally cacheable
-Message-ID: <20111130145742.GC15616@local>
-References: <1322619165-4330-1-git-send-email-jeff.dagenais@gmail.com>
- <20111130114310.GC15275@local>
- <0A290EA2-D5E1-489B-8B3D-3C8B79826C38@gmail.com>
+	id S1757112Ab1K3O6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 09:58:22 -0500
+Date: Wed, 30 Nov 2011 16:59:59 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
+Message-ID: <20111130145958.GE21413@redhat.com>
+References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
+ <20111129131110.GC19157@redhat.com>
+ <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
+ <20111129151607.GE30966@redhat.com>
+ <CAK=WgbZK+k4uuyMPHUfr_PMyrR5ceRTvuDRpmhXfgwpSUOPw0g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <0A290EA2-D5E1-489B-8B3D-3C8B79826C38@gmail.com>
+In-Reply-To: <CAK=WgbZK+k4uuyMPHUfr_PMyrR5ceRTvuDRpmhXfgwpSUOPw0g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 09:11:31AM -0500, Jean-Francois Dagenais wrote:
+On Wed, Nov 30, 2011 at 01:45:05PM +0200, Ohad Ben-Cohen wrote:
+> > So you put virtio rings in MMIO memory?
+> 
+> I'll be precise: the vrings are created in non-cacheable memory, which
+> both processors have access to.
+> 
+> > Could you please give a couple of examples of breakage?
+> 
+> Sure. Basically, the order of the vring memory operations appear
+> differently to the observing processor. For example, avail->idx gets
+> updated before the new entry is put in the available array...
 
-[...]
-> > 
-> > OK, but I won't accept a change to the UIO core without an in-kernel user.
-> > Please post a driver that actually needs this. This was already discussed
-> > four weeks ago, see here: https://lkml.org/lkml/2011/10/28/247
-> Well, my employer is paying for my time to get our product working, not to maintain
-> the kernel. I have succeeded in arguing that the the changes I make to the kernel in
-> order to make our branch of the kernel work could benefit everyone, and when the
-> kernel get better, it's more adopted, then more support comes, bla bla... right.
+I see. And this happens because the ARM processor reorders
+memory writes to this uncacheable memory?
+And in an SMP configuration, writes are somehow not reordered?
 
-The embedded Linux nightmare... More arguments here:
+For example, if we had such an AMP configuration with and x86
+processor, wmb() (sfence) would be wrong and smp_wmb() would be sufficient.
 
-http://lwn.net/Articles/232379/
+Just checking that this is not a bug in the smp_wmb implementation
+for the specific platform.
 
-[...]
->  Everyone wins if you apply Kumar's patch.
-
-It won't be applied without an in-kernel user. Same story.
-
-Thanks,
-Hans
+-- 
+MST
