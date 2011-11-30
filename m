@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab1K3CTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 21:19:01 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:44822 "EHLO
+	id S932133Ab1K3CTJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 21:19:09 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:36102 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932083Ab1K3CS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 21:18:57 -0500
+	id S932083Ab1K3CTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 21:19:06 -0500
 From: Joe Perches <joe@perches.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 23/28] stat: checkpatch wanking
-Date: Tue, 29 Nov 2011 18:14:21 -0800
-Message-Id: <5d748cf8232664cdad000479009db0ca89febd64.1322609673.git.joe@perches.com>
+Subject: [PATCH 24/28] super: checkpatch wanking
+Date: Tue, 29 Nov 2011 18:14:22 -0800
+Message-Id: <bb9c0232160debe962edf4bc57031da899819004.1322609673.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.405.gc1be0
 In-Reply-To: <cover.1322609672.git.joe@perches.com>
 References: <cover.1322609672.git.joe@perches.com>
@@ -21,151 +21,216 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Now checkpatch clean.
 
-$ ./scripts/checkpatch.pl -f --terse --nosummary fs/stat.c | \
+$ ./scripts/checkpatch.pl -f --terse --nosummary fs/super.c | \
   cut -f3- -d":" | sort | uniq -c
-      3  ERROR: space required after that ',' (ctx:VxO)
-      3  ERROR: space required after that ',' (ctx:VxV)
-      3  ERROR: space required before that '&' (ctx:OxV)
+      1  ERROR: code indent should use tabs where possible
+      1  ERROR: do not initialise statics to 0 or NULL
+      2  ERROR: "foo * bar" should be "foo *bar"
+      2  ERROR: space required after that ',' (ctx:OxV)
       3  ERROR: trailing whitespace
-      6  WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
-      2  WARNING: line over 80 characters
-      1  WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
-      1  WARNING: Use #include <linux/unistd.h> instead of <asm/unistd.h>
+     14  WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
+      1  WARNING: line over 80 characters
+      1  WARNING: please, no space before tabs
+      2  WARNING: please, no spaces at the start of a line
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/stat.c |   29 ++++++++++++-----------------
- 1 files changed, 12 insertions(+), 17 deletions(-)
+ fs/super.c |   40 ++++++++++++++--------------------------
+ 1 files changed, 14 insertions(+), 26 deletions(-)
 
-diff --git a/fs/stat.c b/fs/stat.c
-index ff9be35..829d9e9 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -16,9 +16,8 @@
- #include <linux/security.h>
- #include <linux/syscalls.h>
- #include <linux/pagemap.h>
--
--#include <asm/uaccess.h>
--#include <asm/unistd.h>
-+#include <linux/uaccess.h>
-+#include <linux/unistd.h>
- 
- void generic_fillattr(struct inode *inode, struct kstat *stat)
- {
-@@ -36,7 +35,6 @@ void generic_fillattr(struct inode *inode, struct kstat *stat)
- 	stat->blksize = (1 << inode->i_blkbits);
- 	stat->blocks = inode->i_blocks;
+diff --git a/fs/super.c b/fs/super.c
+index 23ff118..b550808 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -172,7 +172,8 @@ static struct super_block *alloc_super(struct file_system_type *type)
+ 		s->s_count = 1;
+ 		atomic_set(&s->s_active, 1);
+ 		mutex_init(&s->s_vfs_rename_mutex);
+-		lockdep_set_class(&s->s_vfs_rename_mutex, &type->s_vfs_rename_key);
++		lockdep_set_class(&s->s_vfs_rename_mutex,
++				  &type->s_vfs_rename_key);
+ 		mutex_init(&s->s_dquot.dqio_mutex);
+ 		mutex_init(&s->s_dquot.dqonoff_mutex);
+ 		init_rwsem(&s->s_dquot.dqptr_sem);
+@@ -267,7 +268,6 @@ void deactivate_locked_super(struct super_block *s)
+ 		up_write(&s->s_umount);
+ 	}
  }
 -
- EXPORT_SYMBOL(generic_fillattr);
+ EXPORT_SYMBOL(deactivate_locked_super);
  
- int vfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
-@@ -54,7 +52,6 @@ int vfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- 	generic_fillattr(inode, stat);
- 	return 0;
- }
--
- EXPORT_SYMBOL(vfs_getattr);
- 
- int vfs_fstat(unsigned int fd, struct kstat *stat)
-@@ -116,11 +113,12 @@ EXPORT_SYMBOL(vfs_lstat);
-  * For backward compatibility?  Maybe this should be moved
-  * into arch/i386 instead?
+ /**
+@@ -280,12 +280,11 @@ EXPORT_SYMBOL(deactivate_locked_super);
   */
--static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * statbuf)
-+static int cp_old_stat(struct kstat *stat,
-+		       struct __old_kernel_stat __user *statbuf)
+ void deactivate_super(struct super_block *s)
  {
- 	static int warncount = 5;
- 	struct __old_kernel_stat tmp;
--	
+-        if (!atomic_add_unless(&s->s_active, -1, 1)) {
++	if (!atomic_add_unless(&s->s_active, -1, 1)) {
+ 		down_write(&s->s_umount);
+ 		deactivate_locked_super(s);
+ 	}
+ }
+-
+ EXPORT_SYMBOL(deactivate_super);
+ 
+ /**
+@@ -293,7 +292,7 @@ EXPORT_SYMBOL(deactivate_super);
+  *	@s: reference we are trying to make active
+  *
+  *	Tries to acquire an active reference.  grab_super() is used when we
+- * 	had just found a superblock in super_blocks or fs_type->fs_supers
++ *	had just found a superblock in super_blocks or fs_type->fs_supers
+  *	and want to turn it into a full-blown active reference.  grab_super()
+  *	is called with sb_lock held and drops it.  Returns 1 in case of
+  *	success, 0 if we had failed (superblock contents was already dead or
+@@ -351,17 +350,16 @@ bool grab_super_passive(struct super_block *sb)
+ /*
+  * Superblock locking.  We really ought to get rid of these two.
+  */
+-void lock_super(struct super_block * sb)
++void lock_super(struct super_block *sb)
+ {
+ 	mutex_lock(&sb->s_lock);
+ }
++EXPORT_SYMBOL(lock_super);
+ 
+-void unlock_super(struct super_block * sb)
++void unlock_super(struct super_block *sb)
+ {
+ 	mutex_unlock(&sb->s_lock);
+ }
+-
+-EXPORT_SYMBOL(lock_super);
+ EXPORT_SYMBOL(unlock_super);
+ 
+ /**
+@@ -405,7 +403,6 @@ void generic_shutdown_super(struct super_block *sb)
+ 	spin_unlock(&sb_lock);
+ 	up_write(&sb->s_umount);
+ }
+-
+ EXPORT_SYMBOL(generic_shutdown_super);
+ 
+ /**
+@@ -416,9 +413,9 @@ EXPORT_SYMBOL(generic_shutdown_super);
+  *	@data:	argument to each of them
+  */
+ struct super_block *sget(struct file_system_type *type,
+-			int (*test)(struct super_block *,void *),
+-			int (*set)(struct super_block *,void *),
+-			void *data)
++			 int (*test)(struct super_block *, void *),
++			 int (*set)(struct super_block *, void *),
++			 void *data)
+ {
+ 	struct super_block *s = NULL;
+ 	struct super_block *old;
+@@ -452,7 +449,7 @@ retry:
+ 			return ERR_PTR(-ENOMEM);
+ 		goto retry;
+ 	}
+-		
 +
- 	if (warncount > 0) {
- 		warncount--;
- 		pr_warn("VFS: Warning: %s using old stat() call. Recompile your binary.\n",
-@@ -145,12 +143,12 @@ static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * sta
- #if BITS_PER_LONG == 32
- 	if (stat->size > MAX_NON_LFS)
- 		return -EOVERFLOW;
--#endif	
-+#endif
- 	tmp.st_size = stat->size;
- 	tmp.st_atime = stat->atime.tv_sec;
- 	tmp.st_mtime = stat->mtime.tv_sec;
- 	tmp.st_ctime = stat->ctime.tv_sec;
--	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
-+	return copy_to_user(statbuf, &tmp, sizeof(tmp)) ? -EFAULT : 0;
+ 	err = set(s, data);
+ 	if (err) {
+ 		spin_unlock(&sb_lock);
+@@ -469,7 +466,6 @@ retry:
+ 	register_shrinker(&s->s_shrink);
+ 	return s;
  }
+-
+ EXPORT_SYMBOL(sget);
  
- SYSCALL_DEFINE2(stat, const char __user *, filename,
-@@ -179,7 +177,8 @@ SYSCALL_DEFINE2(lstat, const char __user *, filename,
- 	return cp_old_stat(&stat, statbuf);
+ void drop_super(struct super_block *sb)
+@@ -477,7 +473,6 @@ void drop_super(struct super_block *sb)
+ 	up_read(&sb->s_umount);
+ 	put_super(sb);
  }
+-
+ EXPORT_SYMBOL(drop_super);
  
--SYSCALL_DEFINE2(fstat, unsigned int, fd, struct __old_kernel_stat __user *, statbuf)
-+SYSCALL_DEFINE2(fstat, unsigned int, fd, struct __old_kernel_stat __user *,
-+		statbuf)
+ /**
+@@ -587,13 +582,12 @@ void iterate_supers_type(struct file_system_type *type,
+ 		__put_super(p);
+ 	spin_unlock(&sb_lock);
+ }
+-
+ EXPORT_SYMBOL(iterate_supers_type);
+ 
+ /**
+  *	get_super - get the superblock of a device
+  *	@bdev: device to get the superblock for
+- *	
++ *
+  *	Scans the superblock list and finds the superblock of the file system
+  *	mounted on the device given. %NULL is returned if no match is found.
+  */
+@@ -627,7 +621,6 @@ rescan:
+ 	spin_unlock(&sb_lock);
+ 	return NULL;
+ }
+-
+ EXPORT_SYMBOL(get_super);
+ 
+ /**
+@@ -660,7 +653,7 @@ restart:
+ 	spin_unlock(&sb_lock);
+ 	return NULL;
+ }
+- 
++
+ struct super_block *user_get_super(dev_t dev)
  {
- 	struct kstat stat;
- 	int error = vfs_fstat(fd, &stat);
-@@ -227,7 +226,7 @@ static int cp_new_stat(struct kstat *stat, struct stat __user *statbuf)
- #if BITS_PER_LONG == 32
- 	if (stat->size > MAX_NON_LFS)
- 		return -EOVERFLOW;
--#endif	
-+#endif
- 	tmp.st_size = stat->size;
- 	tmp.st_atime = stat->atime.tv_sec;
- 	tmp.st_mtime = stat->mtime.tv_sec;
-@@ -239,7 +238,7 @@ static int cp_new_stat(struct kstat *stat, struct stat __user *statbuf)
+ 	struct super_block *sb;
+@@ -799,7 +792,7 @@ void emergency_remount(void)
+ 
+ static DEFINE_IDA(unnamed_dev_ida);
+ static DEFINE_SPINLOCK(unnamed_dev_lock);/* protects the above */
+-static int unnamed_dev_start = 0; /* don't bother trying below it */
++static int unnamed_dev_start;	/* don't bother trying below it */
+ 
+ int get_anon_bdev(dev_t *p)
+ {
+@@ -851,7 +844,6 @@ int set_anon_super(struct super_block *s, void *data)
+ 		s->s_bdi = &noop_backing_dev_info;
+ 	return error;
+ }
+-
+ EXPORT_SYMBOL(set_anon_super);
+ 
+ void kill_anon_super(struct super_block *sb)
+@@ -860,7 +852,6 @@ void kill_anon_super(struct super_block *sb)
+ 	generic_shutdown_super(sb);
+ 	free_anon_bdev(dev);
+ }
+-
+ EXPORT_SYMBOL(kill_anon_super);
+ 
+ void kill_litter_super(struct super_block *sb)
+@@ -869,7 +860,6 @@ void kill_litter_super(struct super_block *sb)
+ 		d_genocide(sb->s_root);
+ 	kill_anon_super(sb);
+ }
+-
+ EXPORT_SYMBOL(kill_litter_super);
+ 
+ static int ns_test_super(struct super_block *sb, void *data)
+@@ -906,7 +896,6 @@ struct dentry *mount_ns(struct file_system_type *fs_type, int flags,
+ 
+ 	return dget(sb->s_root);
+ }
+-
+ EXPORT_SYMBOL(mount_ns);
+ 
+ #ifdef CONFIG_BLOCK
+@@ -1016,7 +1005,6 @@ void kill_block_super(struct super_block *sb)
+ 	WARN_ON_ONCE(!(mode & FMODE_EXCL));
+ 	blkdev_put(bdev, mode | FMODE_EXCL);
+ }
+-
+ EXPORT_SYMBOL(kill_block_super);
  #endif
- 	tmp.st_blocks = stat->blocks;
- 	tmp.st_blksize = stat->blksize;
--	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
-+	return copy_to_user(statbuf, &tmp, sizeof(tmp)) ? -EFAULT : 0;
- }
  
- SYSCALL_DEFINE2(newstat, const char __user *, filename,
-@@ -363,7 +362,7 @@ static long cp_new_stat64(struct kstat *stat, struct stat64 __user *statbuf)
- 	tmp.st_size = stat->size;
- 	tmp.st_blocks = stat->blocks;
- 	tmp.st_blksize = stat->blksize;
--	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
-+	return copy_to_user(statbuf, &tmp, sizeof(tmp)) ? -EFAULT : 0;
- }
- 
- SYSCALL_DEFINE2(stat64, const char __user *, filename,
-@@ -432,7 +431,6 @@ void inode_add_bytes(struct inode *inode, loff_t bytes)
- 	__inode_add_bytes(inode, bytes);
- 	spin_unlock(&inode->i_lock);
- }
--
- EXPORT_SYMBOL(inode_add_bytes);
- 
- void inode_sub_bytes(struct inode *inode, loff_t bytes)
-@@ -447,7 +445,6 @@ void inode_sub_bytes(struct inode *inode, loff_t bytes)
- 	inode->i_bytes -= bytes;
- 	spin_unlock(&inode->i_lock);
- }
--
- EXPORT_SYMBOL(inode_sub_bytes);
- 
- loff_t inode_get_bytes(struct inode *inode)
-@@ -459,7 +456,6 @@ loff_t inode_get_bytes(struct inode *inode)
- 	spin_unlock(&inode->i_lock);
- 	return ret;
- }
--
- EXPORT_SYMBOL(inode_get_bytes);
- 
- void inode_set_bytes(struct inode *inode, loff_t bytes)
-@@ -469,5 +465,4 @@ void inode_set_bytes(struct inode *inode, loff_t bytes)
- 	inode->i_blocks = bytes >> 9;
- 	inode->i_bytes = bytes & 511;
- }
--
- EXPORT_SYMBOL(inode_set_bytes);
 -- 
 1.7.6.405.gc1be0
 
