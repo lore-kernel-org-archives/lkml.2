@@ -1,130 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab1K3IVn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 03:21:43 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45673 "EHLO
+	id S1756244Ab1K3IWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 03:22:25 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38455 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab1K3IVl (ORCPT
+	with ESMTP id S1751522Ab1K3IWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 03:21:41 -0500
-Message-ID: <4ED5E753.1030506@solonet.org.ua>
-Date: Wed, 30 Nov 2011 10:20:35 +0200
+	Wed, 30 Nov 2011 03:22:21 -0500
+Message-ID: <4ED5E77B.4090000@solonet.org.ua>
+Date: Wed, 30 Nov 2011 10:21:15 +0200
 From: Denis Kuzmenko <linux@solonet.org.ua>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
+To: linux-arm-kernel@lists.infradead.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc@vger.kernel.org
-Subject: [PATCH resend] s3c24xx: cpufreq: Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
- selected.
+        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
+Subject: [PATCH resend2] arm: s3c24xx: Add new LCD (W35i) support for Mini2440
+ board
+References: <4EC588A8.3030907@solonet.org.ua>
+In-Reply-To: <4EC588A8.3030907@solonet.org.ua>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
+Add new LCD (W35i) support for Mini2440 board
 
 Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
 ---
 
-Patch is against 3.2-rc3.
-CONFIG_S3C2410_IOTIMING wasn't present in Kconfig but was referenced by
-Makefile. Because of this the file s3c2410-iotiming.c was not ever compiled
-and enabling CONFIG_CPU_FREQ_S3C24XX_DEBUGFS option caused undefined
-reference to function s3c2410_iotiming_debugfs defined in that file.
+I need to refer this patch but can't find it on lkml.org
+Maybe I haven't send it...
+Sorry for bothering if I did so.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 44789ef..81d7025 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2104,9 +2104,31 @@ config CPU_FREQ_S3C24XX_DEBUG
- 	help
- 	  Enable s3c_freq_dbg for the Samsung S3C CPUfreq core
- +config S3C2410_IOTIMING
-+	bool "CPUfreq iotiming for Samsung S3C2410 series CPUs"
-+	depends on ARCH_S3C2410 && CPU_FREQ && CPU_FREQ_S3C24XX && EXPERIMENTAL
-+	help
-+	  This enables the CPUfreq driver for the Samsung S3C24XX to change
-+	  IO timing according to the CPU frequency.
-+
-+	  For details, take a look at <file:Documentation/cpu-freq>.
-+
-+	  If in doubt, say Y.
-+
-+config S3C2412_IOTIMING
-+	bool "CPUfreq iotiming for Samsung S3C2412 series CPUs"
-+	depends on ARCH_S3C2412 && CPU_FREQ && CPU_FREQ_S3C24XX && EXPERIMENTAL
-+	help
-+	  This enables the CPUfreq driver for the Samsung S3C2412 to change
-+	  IO timing according to the CPU frequency.
-+
-+	  For details, take a look at <file:Documentation/cpu-freq>.
-+
-+	  If in doubt, say Y.
-+
- config CPU_FREQ_S3C24XX_IODEBUG
- 	bool "Debug CPUfreq Samsung driver IO timing"
--	depends on CPU_FREQ_S3C24XX
-+	depends on CPU_FREQ_S3C24XX && (S3C2410_IOTIMING || S3C2412_IOTIMING)
- 	help
- 	  Enable s3c_freq_iodbg for the Samsung S3C CPUfreq core
- diff --git a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
-b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
-index dac4760..c465252 100644
---- a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
-+++ b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
-@@ -202,13 +202,23 @@ extern int s3c_plltab_register(struct
-cpufreq_frequency_table *plls,
- extern struct s3c_cpufreq_config *s3c_cpufreq_getconfig(void);
- extern struct s3c_iotimings *s3c_cpufreq_getiotimings(void);
- -extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
--				     struct s3c_cpufreq_config *cfg,
--				     union s3c_iobank *iob);
--
--extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
--				     struct s3c_cpufreq_config *cfg,
--				     union s3c_iobank *iob);
-+#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
-+	#ifdef CONFIG_S3C2410_IOTIMING
-+	extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
-+					     struct s3c_cpufreq_config *cfg,
-+					     union s3c_iobank *iob);
-+	#else
-+	#define s3c2410_iotiming_debugfs	NULL
-+	#endif
-+
-+	#ifdef CONFIG_S3C2412_IOTIMING
-+	extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
-+					     struct s3c_cpufreq_config *cfg,
-+					     union s3c_iobank *iob);
-+	#else
-+	#define s3c2412_iotiming_debugfs	NULL
-+	#endif
-+#endif
-  #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
- #define s3c_cpufreq_debugfs_call(x) x
-@@ -241,10 +251,7 @@ extern void s3c2410_iotiming_set(struct
-s3c_cpufreq_config *cfg,
- #endif /* CONFIG_S3C2410_IOTIMING */
-  /* S3C2412 compatible routines */
--
--extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
--				struct s3c_iotimings *timings);
--
-+#ifdef CONFIG_S3C2412_IOTIMING
- extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
- 				struct s3c_iotimings *timings);
- @@ -253,6 +260,11 @@ extern int s3c2412_iotiming_calc(struct
-s3c_cpufreq_config *cfg,
-  extern void s3c2412_iotiming_set(struct s3c_cpufreq_config *cfg,
- 				 struct s3c_iotimings *iot);
-+#else
-+#define s3c2412_iotiming_calc NULL
-+#define s3c2412_iotiming_get NULL
-+#define s3c2412_iotiming_set NULL
-+#endif
-  #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUG
- #define s3c_freq_dbg(x...) printk(KERN_INFO x)
+diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c
+b/arch/arm/mach-s3c2440/mach-mini2440.c
+index fc2dc0b..951eadd 100644
+--- a/arch/arm/mach-s3c2440/mach-mini2440.c
++++ b/arch/arm/mach-s3c2440/mach-mini2440.c
+@@ -167,6 +167,24 @@ static struct s3c2410fb_display mini2440_lcd_cfg[]
+__initdata = {
+ 		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
+ 				   S3C2410_LCDCON5_HWSWP),
+ 	},
++	/* mini2440 + 3.5" TFT (LCD-W35i, LQ035Q1DG06 type) + touchscreen*/
++	[3] = {
++		_LCD_DECLARE(
++			/* clock */
++			7,
++			/* xres, margin_right, margin_left, hsync */
++			320, 68, 66, 4,
++			/* yres, margin_top, margin_bottom, vsync */
++			240, 4, 4, 9,
++			/* refresh rate */
++			60),
++		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
++				   S3C2410_LCDCON5_INVVDEN |
++				   S3C2410_LCDCON5_INVVFRAME |
++				   S3C2410_LCDCON5_INVVLINE |
++				   S3C2410_LCDCON5_INVVCLK |
++				   S3C2410_LCDCON5_HWSWP),
++	},
+ };
+  /* todo - put into gpio header */
