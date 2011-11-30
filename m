@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216Ab1K3AMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 19:12:25 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:46765 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756807Ab1K3AMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 19:12:24 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
-        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
-        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v7 10/10] Disable task moving when using kernel memory accounting
-Date: Tue, 29 Nov 2011 21:57:01 -0200
-Message-Id: <1322611021-1730-11-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1322611021-1730-1-git-send-email-glommer@parallels.com>
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+	id S1757278Ab1K3AUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 19:20:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41502 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757072Ab1K3AUQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 19:20:16 -0500
+Date: Tue, 29 Nov 2011 16:20:14 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/5] mm: exclude reserved pages from dirtyable memory
+Message-Id: <20111129162014.aa290174.akpm@linux-foundation.org>
+In-Reply-To: <1322055258-3254-2-git-send-email-hannes@cmpxchg.org>
+References: <1322055258-3254-1-git-send-email-hannes@cmpxchg.org>
+	<1322055258-3254-2-git-send-email-hannes@cmpxchg.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this code is still experimental, we are leaving the exact
-details of how to move tasks between cgroups when kernel memory
-accounting is used as future work.
+On Wed, 23 Nov 2011 14:34:14 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-For now, we simply disallow movement if there are any pending
-accounted memory.
+> From: Johannes Weiner <jweiner@redhat.com>
+> 
+> The amount of dirtyable pages should not include the full number of
+> free pages: there is a number of reserved pages that the page
+> allocator and kswapd always try to keep free.
+> 
+> The closer (reclaimable pages - dirty pages) is to the number of
+> reserved pages, the more likely it becomes for reclaim to run into
+> dirty pages:
+> 
+>        +----------+ ---
+>        |   anon   |  |
+>        +----------+  |
+>        |          |  |
+>        |          |  -- dirty limit new    -- flusher new
+>        |   file   |  |                     |
+>        |          |  |                     |
+>        |          |  -- dirty limit old    -- flusher old
+>        |          |                        |
+>        +----------+                       --- reclaim
+>        | reserved |
+>        +----------+
+>        |  kernel  |
+>        +----------+
+> 
+> This patch introduces a per-zone dirty reserve that takes both the
+> lowmem reserve as well as the high watermark of the zone into account,
+> and a global sum of those per-zone values that is subtracted from the
+> global amount of dirtyable pages.  The lowmem reserve is unavailable
+> to page cache allocations and kswapd tries to keep the high watermark
+> free.  We don't want to end up in a situation where reclaim has to
+> clean pages in order to balance zones.
+> 
+> Not treating reserved pages as dirtyable on a global level is only a
+> conceptual fix.  In reality, dirty pages are not distributed equally
+> across zones and reclaim runs into dirty pages on a regular basis.
+> 
+> But it is important to get this right before tackling the problem on a
+> per-zone level, where the distance between reclaim and the dirty pages
+> is mostly much smaller in absolute numbers.
+> 
+> ...
+>
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -327,7 +327,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+>  			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+>  
+>  		x += zone_page_state(z, NR_FREE_PAGES) +
+> -		     zone_reclaimable_pages(z);
+> +		     zone_reclaimable_pages(z) -
+> +		     zone->dirty_balance_reserve;
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   23 ++++++++++++++++++++++-
- 1 files changed, 22 insertions(+), 1 deletions(-)
+Doesn't compile.  s/zone/z/.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a31a278..dd9a6d9 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5453,10 +5453,19 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
- {
- 	int ret = 0;
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
-+	struct mem_cgroup *from = mem_cgroup_from_task(p);
-+
-+#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM) && defined(CONFIG_INET)
-+	if (from != memcg && !mem_cgroup_is_root(from) &&
-+	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
-+		printk(KERN_WARNING "Can't move tasks between cgroups: "
-+			"Kernel memory held.\n");
-+		return 1;
-+	}
-+#endif
- 
- 	if (memcg->move_charge_at_immigrate) {
- 		struct mm_struct *mm;
--		struct mem_cgroup *from = mem_cgroup_from_task(p);
- 
- 		VM_BUG_ON(from == memcg);
- 
-@@ -5624,6 +5633,18 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
- 				struct cgroup *cgroup,
- 				struct task_struct *p)
- {
-+	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
-+	struct mem_cgroup *from = mem_cgroup_from_task(p);
-+
-+#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM) && defined(CONFIG_INET)
-+	if (from != memcg && !mem_cgroup_is_root(from) &&
-+	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
-+		printk(KERN_WARNING "Can't move tasks between cgroups: "
-+			"Kernel memory held.\n");
-+		return 1;
-+	}
-+#endif
-+
- 	return 0;
- }
- static void mem_cgroup_cancel_attach(struct cgroup_subsys *ss,
--- 
-1.7.6.4
+Which makes me suspect it wasn't tested on a highmem box.  This is
+rather worrisome, as highmem machines tend to have acute and unique
+zone balancing issues.
 
