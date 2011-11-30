@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab1K3W3S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 17:29:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55273 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab1K3W3N (ORCPT
+	id S1752720Ab1K3Wcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 17:32:47 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:37671 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab1K3Wcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 17:29:13 -0500
-Date: Wed, 30 Nov 2011 14:29:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, Theodore Tso <tytso@mit.edu>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v5.1 00/14] crc32c: Add faster algorithm and self-test
- code
-Message-Id: <20111130142911.673c2d99.akpm@linux-foundation.org>
-In-Reply-To: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
-References: <20111128223659.28705.56719.stgit@elm3c44.beaverton.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Nov 2011 17:32:46 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18UrqXQEZjEYDK4g7j7yFu/
+Date: Wed, 30 Nov 2011 14:32:42 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2a/5] Remove unsafe clock values from omap1_defconfig
+Message-ID: <20111130223242.GS31337@atomide.com>
+References: <20111128174508.GO31337@atomide.com>
+ <1322517644-5066-1-git-send-email-jkrzyszt@tis.icnet.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322517644-5066-1-git-send-email-jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Nov 2011 14:36:59 -0800
-"Darrick J. Wong" <djwong@us.ibm.com> wrote:
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111128 13:26]:
+>
+> I'm not sure which of the patches you meant not ready for 3.2-rc. From
+> your comment I would conclude that only patch 3/5, which would really
+> break omap1_defconfig booting on some boards, is questionable, while you
+> posted this comment against patch 1/5, which I don't see how it could
+> break booting, including omap1_defconfig.
 
-> This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
-> software crc32c implementation.
+Sorry for the delay in replying, yes you're right looks like it's allowing
+the rate changes currently that would break things in 3/5.
+ 
+> Anyway, I hope that the additional patch below is addressing all your
+> concerns.
 
-I think the attributions here are all messed up.  As the patches stand,
-it appears that you wrote all of them.  But I don't think that is the
-case.
+I'd rather not modify omap1_defconfig as a fix assuming that we'll be
+removing all those options anyways the next merge window together with
+your new patch.
+ 
+Can you please split your series into two: Fix(es) for the -rc cycle,
+then patches that can be left for the next merge window.
 
-If Bob wrote a particular patch then that patch should be sent with a
-From: Bob Pearson <rpearson@systemfabricworks.com> right at the start
-of the changelog so that he is recorded as the primary author.  If the
-email sender (ie: you) was the primary author then this attribution can
-be omitted and we fall back to using the From: from the email headers.
+Cheers,
 
-Also, every one of these patches should have you own signed-off-by,
-regardless of its authorship.  For reasons explained in
-Documentation/SubmittingPatches, section 12.
-
-Please fix these things up and resend.
-
-Also, it would be conventional and useful if each patch title was
-prefixed by its subsystem identifier.  ie, "removed two instances of
-trailing whitespaces" should be titled "crc32: remove two instances of
-trailing whitespace" or "lib/crc32.c: remove two instances of trailing
-whitespaces".
-
+Tony
