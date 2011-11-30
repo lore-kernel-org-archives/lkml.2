@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab1K3Xjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:39:43 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47298 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752319Ab1K3Xjm (ORCPT
+	id S1753150Ab1K3Xkt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:40:49 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:16421 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751659Ab1K3Xks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:39:42 -0500
-Date: Thu, 1 Dec 2011 10:39:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
-Subject: Re: linux-next: Tree for Sept 21
-Message-Id: <20111201103933.2d4ba55b53b10080939c3723@canb.auug.org.au>
-In-Reply-To: <CAFkjPTmDk2BmF8U52Te=YojJsFCcz2bJPJG8X0mZFjqAho9TyQ@mail.gmail.com>
-References: <20110921155850.09c858bb38205bb2cc0c8f0a@canb.auug.org.au>
-	<CAFkjPTk0JWAYSJBC4fK6DT10MxER+vuFbYNvR6=cTN=sxmZNgg@mail.gmail.com>
-	<20110922002235.53ae8ed70b92d9d325a79a62@canb.auug.org.au>
-	<CAFkjPTmDk2BmF8U52Te=YojJsFCcz2bJPJG8X0mZFjqAho9TyQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__1_Dec_2011_10_39_33_+1100_T9cdOy+fsr6/SR5v"
+	Wed, 30 Nov 2011 18:40:48 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6546"; a="140134767"
+Date: Wed, 30 Nov 2011 15:40:46 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Micha <mirq-linux@rere.qmqm.pl>,
+        David Brown <davidb@codeaurora.org>, Ben Dooks <ben-linux@fluff.org>,
+        Viresh Kumar <viresh.kumar@st.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Ian Molton <ian@mnementh.co.uk>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: convert drivers/mmc/host/* to use
+ module_platform_driver()
+Message-ID: <20111130234046.GA27107@huya.qualcomm.com>
+References: <1322283343.14278.2.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322283343.14278.2.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Dec_2011_10_39_33_+1100_T9cdOy+fsr6/SR5v
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Nov 26, 2011 at 12:55:43PM +0800, Axel Lin wrote:
+> This patch converts the drivers in drivers/mmc/host/* to use the
+> module_platform_driver() macro which makes the code smaller and a bit
+> simpler.
 
-Hi Eric,
+>  drivers/mmc/host/msm_sdcc.c        |   13 +------------
 
-On Wed, 30 Nov 2011 15:02:58 -0600 Eric Van Hensbergen <ericvh@gmail.com> w=
-rote:
->
-> v9fs tree for-next branch is back on kernel.org:
-> git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-next
+Acked-by: David Brown <davidb@codeaurora.org>
 
-I have switched to that now.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__1_Dec_2011_10_39_33_+1100_T9cdOy+fsr6/SR5v
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO1r61AAoJEECxmPOUX5FEFuUQAIQ7RNDCcW7J1btw1RkIn4Sk
-lFQu5xXDHDr/dORubzR4Glt8nHmZTn5dxYn+LyW/WgaeERl+yq+e4xAVYnPAlXKU
-mZhqAU9TKP7w1C++unc8OJKm0MU4ADS8N4k7OjrqK5qHPI2aoRRW4coSaNwwUtLd
-Y+tireYsTUK+IOteOoCp7StP9N0/JwsB4qYo8/jaSJAFujFJWbongLnTClo5+tU8
-s5yLvrkfDRa95aiI2Hl/wiExeQUUKwhds7dYSj7nOeG2P57te2ro1hvctNZPmAt/
-xc7adqsQxwFZW6UFcGIT5kz5IDzqu9jQU/1rCsMQKnMgYUioeCDuPjj82SN/uWxu
-e7wgSclozBfQDpHKvGzt/71T4SkNWVUpd5dq8GhAyPmMaacidh9u2pIMYvG2q67e
-V8NZPTSFKq2nSveUR9jGZ5w46trUq3jijbLCBskCHovVMcGXlLkY0RFVeiTUTomy
-eHofmg3YrHS7UqV4qyiSgRXipChMHMnTz7rA72NsvCscQfwrg5Q2o6J++ROYvQbu
-Yv7PppAA9qM5cZFiqVwIkQT0wX9a/ym6/DzI1pB5bZuyToX677O8CaUpYaKqqV8p
-ThtbKirlzQ292vlOVoBWl+410WZC5cjs+Eu2sFblzgxPL5WwqqkIs3H9ho85ntdv
-mcsfBemFlrCbCLxytdpT
-=h14j
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Dec_2011_10_39_33_+1100_T9cdOy+fsr6/SR5v--
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
