@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903Ab1K3MdZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 07:33:25 -0500
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:55284 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757730Ab1K3MdY (ORCPT
+	id S1757917Ab1K3Mdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 07:33:32 -0500
+Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:39689 "EHLO
+	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757905Ab1K3Md3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 07:33:24 -0500
+	Wed, 30 Nov 2011 07:33:29 -0500
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: Stephen Warren <swarren@nvidia.com>,
@@ -18,9 +18,9 @@ Cc: Stephen Warren <swarren@nvidia.com>,
         Haojian Zhuang <haojian.zhuang@marvell.com>,
         Arnd Bergmann <arnd.bergmann@linaro.org>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/2 v3] pinctrl: make a copy of pinmux map
-Date: Wed, 30 Nov 2011 13:32:41 +0100
-Message-ID: <1322656361-6463-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 2/2] pinctrl: make it possible to add multiple maps
+Date: Wed, 30 Nov 2011 13:33:01 +0100
+Message-ID: <1322656381-6496-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -30,190 +30,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-This makes a deep copy of the pinmux function map instead of
-keeping the copy supplied from the platform around. This makes
-it possible to tag the platforms map with __initdata as is also
-done as part of this patch.
+Since we now anyway make a copy of the platform-supplied pinmux
+map, we can just as well make it possible to call the function
+adding maps several times, so as to simplify cases (as PXA) where
+several sets of disparate mappings need to be added depending on
+target platform.
 
-Rationale: a certain target platform (PXA) has numerous
-pinmux maps, many of which will be lying around unused after
-boot in a multi-platform binary. Instead, deep-copy the one
-we're going to use and tag them all __initdata so they go away
-after boot.
-
-ChangeLog v1->v2:
-- Fixup the deep copy, missed a few items on the struct,
-  plus mark bool member non-const since we're making runtime
-  copies if this stuff now.
-ChangeLog v2->v3:
-- Make a shallow copy (just copy the array of map structs)
-  as Arnd noticed, string constants never get discarded by the
-  kernel anyway, so these pointers may be safely copied over.
-
-Suggested-by: Arnd Bergmann <arnd.bergmann@linaro.org>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- Documentation/pinctrl.txt       |    4 +-
- arch/arm/mach-u300/core.c       |    2 +-
- drivers/pinctrl/pinmux.c        |   44 ++++++++++++++++++++++++++++++--------
- include/linux/pinctrl/machine.h |    2 +-
- 4 files changed, 38 insertions(+), 14 deletions(-)
+ drivers/pinctrl/pinmux.c |   58 ++++++++++++++++++++++-----------------------
+ 1 files changed, 28 insertions(+), 30 deletions(-)
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index 720dfea..d9d57c8 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -784,7 +784,7 @@ spi on the second function mapping:
- 
- #include <linux/pinctrl/machine.h>
- 
--static struct pinmux_map pmx_mapping[] = {
-+static struct pinmux_map __initdata pmx_mapping[] = {
- 	{
- 		.ctrl_dev_name = "pinctrl.0",
- 		.function = "spi0",
-@@ -821,7 +821,7 @@ Since the above construct is pretty common there is a helper macro to make
- it even more compact which assumes you want to use pinctrl.0 and position
- 0 for mapping, for example:
- 
--static struct pinmux_map pmx_mapping[] = {
-+static struct pinmux_map __initdata pmx_mapping[] = {
-        PINMUX_MAP_PRIMARY("I2CMAP", "i2c0", "foo-i2c.0"),
- };
- 
-diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index f399862..06bdae7 100644
---- a/arch/arm/mach-u300/core.c
-+++ b/arch/arm/mach-u300/core.c
-@@ -1613,7 +1613,7 @@ static struct platform_device pinmux_device = {
- };
- 
- /* Pinmux settings */
--static struct pinmux_map u300_pinmux_map[] = {
-+static struct pinmux_map __initdata u300_pinmux_map[] = {
- 	/* anonymous maps for chip power and EMIFs */
- 	PINMUX_MAP_PRIMARY_SYS_HOG("POWER", "power"),
- 	PINMUX_MAP_PRIMARY_SYS_HOG("EMIF0", "emif0"),
 diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-index 15ae972..680f690 100644
+index 680f690..54fc27b 100644
 --- a/drivers/pinctrl/pinmux.c
 +++ b/drivers/pinctrl/pinmux.c
-@@ -21,6 +21,7 @@
- #include <linux/list.h>
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
-+#include <linux/string.h>
- #include <linux/sysfs.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-@@ -37,7 +38,7 @@ static DEFINE_MUTEX(pinmux_hoglist_mutex);
- static LIST_HEAD(pinmux_hoglist);
- 
- /* Global pinmux maps, we allow one set only */
--static struct pinmux_map const *pinmux_maps;
-+static struct pinmux_map *pinmux_maps;
- static unsigned pinmux_maps_num;
- 
- /**
-@@ -337,7 +338,9 @@ EXPORT_SYMBOL_GPL(pinmux_gpio_direction_output);
- 
- /**
-  * pinmux_register_mappings() - register a set of pinmux mappings
-- * @maps: the pinmux mappings table to register
-+ * @maps: the pinmux mappings table to register, this should be marked with
-+ *	__initdata so it can be discarded after boot, this function will
-+ *	perform a shallow copy for the mapping entries.
-  * @num_maps: the number of maps in the mapping table
-  *
-  * Only call this once during initialization of your machine, the function is
-@@ -348,32 +351,48 @@ EXPORT_SYMBOL_GPL(pinmux_gpio_direction_output);
+@@ -351,48 +351,30 @@ EXPORT_SYMBOL_GPL(pinmux_gpio_direction_output);
  int __init pinmux_register_mappings(struct pinmux_map const *maps,
  				    unsigned num_maps)
  {
-+	int ret = 0;
+-	int ret = 0;
++	void *tmp_maps;
  	int i;
  
--	if (pinmux_maps != NULL) {
-+	if (pinmux_maps_num != 0) {
- 		pr_err("pinmux mappings already registered, you can only "
- 		       "register one set of maps\n");
- 		return -EINVAL;
- 	}
- 
+-	if (pinmux_maps_num != 0) {
+-		pr_err("pinmux mappings already registered, you can only "
+-		       "register one set of maps\n");
+-		return -EINVAL;
+-	}
+-
  	pr_debug("add %d pinmux maps\n", num_maps);
-+
-+	/*
-+	 * Make a copy of the map array - string pointers will end up in the
-+	 * kernel const section anyway so these do not need to be deep copied.
-+	 */
-+	pinmux_maps = kmemdup(maps, sizeof(struct pinmux_map) * num_maps,
-+			      GFP_KERNEL);
-+	if (!pinmux_maps)
-+		return -ENOMEM;
-+
+ 
+-	/*
+-	 * Make a copy of the map array - string pointers will end up in the
+-	 * kernel const section anyway so these do not need to be deep copied.
+-	 */
+-	pinmux_maps = kmemdup(maps, sizeof(struct pinmux_map) * num_maps,
+-			      GFP_KERNEL);
+-	if (!pinmux_maps)
+-		return -ENOMEM;
+-
++	/* First sanity check the new mapping */
  	for (i = 0; i < num_maps; i++) {
--		/* Sanity check the mapping */
-+		/* Sanity check the mapping while copying it */
+-		/* Sanity check the mapping while copying it */
  		if (!maps[i].name) {
  			pr_err("failed to register map %d: "
  			       "no map name given\n", i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
+-			ret = -EINVAL;
+-			goto err_out_free;
++			return -EINVAL;
  		}
-+
+ 
  		if (!maps[i].ctrl_dev && !maps[i].ctrl_dev_name) {
  			pr_err("failed to register map %s (%d): "
  			       "no pin control device given\n",
  			       maps[i].name, i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
+-			ret = -EINVAL;
+-			goto err_out_free;
++			return -EINVAL;
  		}
-+
+ 
  		if (!maps[i].function) {
  			pr_err("failed to register map %s (%d): "
  			       "no function ID given\n", maps[i].name, i);
--			return -EINVAL;
-+			ret = -EINVAL;
-+			goto err_out_free;
+-			ret = -EINVAL;
+-			goto err_out_free;
++			return -EINVAL;
  		}
  
  		if (!maps[i].dev && !maps[i].dev_name)
-@@ -384,12 +403,17 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
+@@ -403,17 +385,33 @@ int __init pinmux_register_mappings(struct pinmux_map const *maps,
  			pr_debug("register map %s, function %s\n",
  				 maps[i].name,
  				 maps[i].function);
--	}
- 
--	pinmux_maps = maps;
--	pinmux_maps_num = num_maps;
-+		pinmux_maps_num++;
 +	}
  
- 	return 0;
+-		pinmux_maps_num++;
++	/*
++	 * Make a copy of the map array - string pointers will end up in the
++	 * kernel const section anyway so these do not need to be deep copied.
++	 */
++	if (!pinmux_maps_num) {
++		/* On first call, just copy them */
++		tmp_maps = kmemdup(maps,
++				   sizeof(struct pinmux_map) * num_maps,
++				   GFP_KERNEL);
++		if (!tmp_maps)
++			return -ENOMEM;
++	} else {
++		/* Subsequent calls, reallocate array to new size */
++		size_t oldsize = sizeof(struct pinmux_map) * pinmux_maps_num;
++		size_t newsize = sizeof(struct pinmux_map) * num_maps;
 +
-+err_out_free:
-+	kfree(pinmux_maps);
-+	pinmux_maps = NULL;
-+	pinmux_maps_num = 0;
-+	return ret;
++		tmp_maps = krealloc(pinmux_maps, oldsize + newsize, GFP_KERNEL);
++		if (!tmp_maps)
++			return -ENOMEM;
++		memcpy((tmp_maps + oldsize), maps, newsize);
+ 	}
+ 
++	pinmux_maps = tmp_maps;
++	pinmux_maps_num += num_maps;
+ 	return 0;
+-
+-err_out_free:
+-	kfree(pinmux_maps);
+-	pinmux_maps = NULL;
+-	pinmux_maps_num = 0;
+-	return ret;
  }
  
  /**
-diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-index 8886353..f537231 100644
---- a/include/linux/pinctrl/machine.h
-+++ b/include/linux/pinctrl/machine.h
-@@ -48,7 +48,7 @@ struct pinmux_map {
- 	const char *group;
- 	struct device *dev;
- 	const char *dev_name;
--	const bool hog_on_boot;
-+	bool hog_on_boot;
- };
- 
- /*
 -- 
 1.7.3.2
 
