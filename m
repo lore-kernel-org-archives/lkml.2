@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab1K3IWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 03:22:25 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38455 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab1K3IWV (ORCPT
+	id S1756201Ab1K3I3f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 03:29:35 -0500
+Received: from smtprelay06.ispgateway.de ([80.67.31.95]:43248 "EHLO
+	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab1K3I3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 03:22:21 -0500
-Message-ID: <4ED5E77B.4090000@solonet.org.ua>
-Date: Wed, 30 Nov 2011 10:21:15 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Wed, 30 Nov 2011 03:29:32 -0500
+Message-ID: <4ED5E99D.2030609@ladisch.de>
+Date: Wed, 30 Nov 2011 09:30:21 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
-Subject: [PATCH resend2] arm: s3c24xx: Add new LCD (W35i) support for Mini2440
- board
-References: <4EC588A8.3030907@solonet.org.ua>
-In-Reply-To: <4EC588A8.3030907@solonet.org.ua>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Unhandled IRQs on AMD E-450
+References: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com>
+In-Reply-To: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new LCD (W35i) support for Mini2440 board
+Jeroen Van den Keybus wrote:
+> On an Asus E45M1-M PRO (AMD E-450) board with 64-bit Linux 3.0.0
+> (Ubuntu) and 3.2.0, I regularly get (more detailed logs at the end):
+>
+>
+> Nov 28 04:35:29 zacate kernel: [29581.259926] irq 16: nobody cared (try booting with the "irqpoll" option)
+> Nov 24 21:25:41 zacate kernel: [  190.503838] irq 19: nobody cared (try booting with the "irqpoll" option)
 
-Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
----
+> What could be going wrong here ?
 
-I need to refer this patch but can't find it on lkml.org
-Maybe I haven't send it...
-Sorry for bothering if I did so.
+* Some buggy driver might not realize that an interrupt came from its
+  device.
+* Some buggy device might raise an interrupt without telling the driver
+  that it needs attention.
+* Some buggy device might raise a wrong interrupt.  (This might include
+  devices that generate a PCI interrupt although they are configured for
+  MSI.)
+* Some buggy interrupt controller might be doing 'interesting' things.
 
-diff --git a/arch/arm/mach-s3c2440/mach-mini2440.c
-b/arch/arm/mach-s3c2440/mach-mini2440.c
-index fc2dc0b..951eadd 100644
---- a/arch/arm/mach-s3c2440/mach-mini2440.c
-+++ b/arch/arm/mach-s3c2440/mach-mini2440.c
-@@ -167,6 +167,24 @@ static struct s3c2410fb_display mini2440_lcd_cfg[]
-__initdata = {
- 		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
- 				   S3C2410_LCDCON5_HWSWP),
- 	},
-+	/* mini2440 + 3.5" TFT (LCD-W35i, LQ035Q1DG06 type) + touchscreen*/
-+	[3] = {
-+		_LCD_DECLARE(
-+			/* clock */
-+			7,
-+			/* xres, margin_right, margin_left, hsync */
-+			320, 68, 66, 4,
-+			/* yres, margin_top, margin_bottom, vsync */
-+			240, 4, 4, 9,
-+			/* refresh rate */
-+			60),
-+		.lcdcon5	= (S3C2410_LCDCON5_FRM565 |
-+				   S3C2410_LCDCON5_INVVDEN |
-+				   S3C2410_LCDCON5_INVVFRAME |
-+				   S3C2410_LCDCON5_INVVLINE |
-+				   S3C2410_LCDCON5_INVVCLK |
-+				   S3C2410_LCDCON5_HWSWP),
-+	},
- };
-  /* todo - put into gpio header */
+> - The problem with IRQ19 goes away (at least sufficiently long not to
+> be occurring within 24h) when module e1000 is unloaded.
+
+This looks like a bug in the e1000 hardware or software.
+
+> I note that at least 3 devices
+> (00:15.x, 05:02.0 and 00:14.2) have their IRQ lines routed to IRQ 16,
+> but I see only 2 handlers in the dmesg log and /proc/interrupts.
+
+lspci -s 0:15 -vv
+
+
+Regards,
+Clemens
