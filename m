@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab1K3HJa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 02:09:30 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:61324 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab1K3HJ1 (ORCPT
+	id S1755209Ab1K3HKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 02:10:07 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:34947 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab1K3HKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 02:09:27 -0500
-X-Nat-Received: from [202.181.97.72]:51281 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1322636965.25901
-Message-Id: <201111300709.pAU79PAs010669@www262.sakura.ne.jp>
-Subject: Re: [RFC][PATCH] trimming includes from linux/security.h
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+	Wed, 30 Nov 2011 02:10:02 -0500
+Message-ID: <4ED5D6C5.5050704@lwfinger.net>
+Date: Wed, 30 Nov 2011 01:09:57 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: 3.2-rc2 freezes on boot for AMD K6 - bisected to commit bcb80e53877c2045d9e52f4a71372c3fe6501f6f
+References: <4ED5B70F.606@lwfinger.net> <4ED5C640.8030102@linux.vnet.ibm.com>
+In-Reply-To: <4ED5C640.8030102@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Wed, 30 Nov 2011 16:09:25 +0900
-References: <20111130065000.GT2203@ZenIV.linux.org.uk>
-In-Reply-To: <20111130065000.GT2203@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 17102011 #5502725, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro wrote:
-> 	linux/security.h pulls a lot of garbage; most of it can be avoided
-> by several more struct ....; added in there,
+On 11/29/2011 11:59 PM, Srivatsa S. Bhat wrote:
+> On 11/30/2011 10:24 AM, Larry Finger wrote:
+>
+>> I have an ancient laptop with an AMD-K6 CPU that freezes on boot with
+>> 3.2-rc2. The problem was bisected to commit bcb80e53877c2.
+>>
+>> The cpuinfo for this box is:
+>>
+>>>> cpu.1: cpuinfo
+>> ----- /proc/cpuinfo -----
+>>    processor     : 0
+>>    vendor_id     : AuthenticAMD
+>>    cpu family    : 5
+>>    model         : 8
+>>    model name    : AMD-K6(tm) 3D processor
+>>    stepping      : 12
+>>    cpu MHz               : 428.804
+>>    cache size    : 64 KB
+>>    fdiv_bug      : no
+>>    hlt_bug               : no
+>>    f00f_bug      : no
+>>    coma_bug      : no
+>>    fpu           : yes
+>>    fpu_exception : yes
+>>    cpuid level   : 1
+>>    wp            : yes
+>>    flags         : fpu vme de pse tsc msr cx8 pge mmx syscall 3dnow
+>> k6_mtrr up
+>>    bogomips      : 857.60
+>>    clflush size  : 32
+>>    cache_alignment       : 32
+>>    address sizes : 32 bits physical, 32 bits virtual
+>>    power management:
+>>
+>> ----- /proc/cpuinfo end -----
+>>
+>> This patch is quite simple, thus it appears that rdmsr() is OK, but that
+>> rdmsr_safe() is not.
+>>
+>> I am happy to provide any other info regarding this box.
+>>
+>
+>
+> Hi Larry,
+>
+> Can you please try out the patch posted in
+> https://lkml.org/lkml/2011/11/28/178 ?
+>
+> This patch will be available in mainline kernel from -rc4.
+> https://lkml.org/lkml/2011/11/28/457
 
-Does it make sense to create a header file that contains only "struct ....;"
-lines? A lot of "struct ....;" lines are used for avoiding compiler warning.
-This results in LXR (linux cross reference) showing like
+Srivatsa,
 
-Defined as a struct type in:
+Thanks for the reference. That patch does fix my problem. Too bad that the bad 
+commit was not in the subject of that other thread so that I could have found it 
+with Google.
 
-    * security/selinux/include/avc.h, line 35
-    * fs/udf/udfdecl.h, line 78
-    * fs/isofs/isofs.h, line 108
-    * fs/gfs2/bmap.h, line 15
-    * fs/gfs2/dir.h, line 16
-    * fs/xfs/xfs_acl.h, line 21
-    * fs/xfs/xfs_vnodeops.h, line 7
-    * fs/freevxfs/vxfs_extern.h, line 44
-    * include/linux/net.h, line 67
-    * include/linux/exportfs.h, line 7
-    * include/linux/seq_file.h, line 13
-    * include/linux/mm.h, line 245
-    * include/linux/syscalls.h, line 16
-    * include/linux/reiserfs_xattr.h, line 32
-    * include/linux/xattr.h, line 64
-    * include/linux/cgroup.h, line 24
-    * include/linux/fs.h, line 749
-    * include/linux/audit.h, line 375
-    * include/linux/cdev.h, line 9
-    * include/linux/cred.h, line 23
-    * include/linux/mtd/blktrans.h, line 31
-    * include/linux/generic_acl.h, line 6
-    * include/linux/futex.h, line 127 
+Larry
 
-and makes it difficult to find the location of actual definition.
