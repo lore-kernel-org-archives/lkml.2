@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757541Ab1K3QMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 11:12:09 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46218 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab1K3QMG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 11:12:06 -0500
-Message-ID: <1322669511.3985.8.camel@lappy>
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
- descriptors
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Date: Wed, 30 Nov 2011 18:11:51 +0200
-In-Reply-To: <4ED4F30F.8000603@redhat.com>
-References: <1322559196-11139-1-git-send-email-levinsasha928@gmail.com>
-	 <20111129125622.GB19157@redhat.com> <1322573688.4395.11.camel@lappy>
-	 <20111129135406.GB30966@redhat.com> <1322576464.7003.6.camel@lappy>
-	 <20111129145451.GD30966@redhat.com> <4ED4F30F.8000603@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757564Ab1K3QOY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 11:14:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22495 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757124Ab1K3QOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 11:14:22 -0500
+Date: Wed, 30 Nov 2011 18:15:56 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
+Message-ID: <20111130161555.GB25812@redhat.com>
+References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
+ <20111129131110.GC19157@redhat.com>
+ <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
+ <20111129151607.GE30966@redhat.com>
+ <CAK=WgbZK+k4uuyMPHUfr_PMyrR5ceRTvuDRpmhXfgwpSUOPw0g@mail.gmail.com>
+ <20111130145958.GE21413@redhat.com>
+ <CAK=WgbYyFdLftE_kp2_JOThVhn-FzGsDqVqKn0Jwm2teQyZBNA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbYyFdLftE_kp2_JOThVhn-FzGsDqVqKn0Jwm2teQyZBNA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 16:58 +0200, Avi Kivity wrote:
-> On 11/29/2011 04:54 PM, Michael S. Tsirkin wrote:
-> > > 
-> > > Which is actually strange, weren't indirect buffers introduced to make
-> > > the performance *better*? From what I see it's pretty much the
-> > > same/worse for virtio-blk.
-> >
-> > I know they were introduced to allow adding very large bufs.
-> > See 9fa29b9df32ba4db055f3977933cd0c1b8fe67cd
-> > Mark, you wrote the patch, could you tell us which workloads
-> > benefit the most from indirect bufs?
-> >
+On Wed, Nov 30, 2011 at 06:04:56PM +0200, Ohad Ben-Cohen wrote:
+> On Wed, Nov 30, 2011 at 4:59 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > I see. And this happens because the ARM processor reorders
+> > memory writes
 > 
-> Indirects are really for block devices with many spindles, since there
-> the limiting factor is the number of requests in flight.  Network
-> interfaces are limited by bandwidth, it's better to increase the ring
-> size and use direct buffers there (so the ring size more or less
-> corresponds to the buffer size).
+> Yes.
 > 
+> > And in an SMP configuration, writes are somehow not reordered?
+> 
+> They are, but then the smp memory barriers are enough to control these
+> effects. It's not enough to control reordering as seen by a device
+> (which is what our AMP processors are) though.
+> 
+> (btw, the difference between an SMP processor and a device here lies
+> in how the memory is mapped: normal memory vs. device memory
+> attributes. it's an ARM thingy).
 
-I did some testing of indirect descriptors under different workloads.
+How are the rings mapped? normal memory, right?
+We allocate them with plan alloc_pages_exact in virtio_pci.c ...
 
-All tests were on a 2 vcpu guest with vhost on. Simple TCP_STREAM using
-netperf.
+> > Just checking that this is not a bug in the smp_wmb implementation
+> > for the specific platform.
+> 
+> No, it's not.
+> 
+> ARM's smp memory barriers use ARM's DMB instruction, which is enough
+> to control SMP effects, whereas ARM's mandatory memory barriers use
+> ARM's DSB instruction, which is required to ensure the ordering
+> between Device and Normal memory accesses.
+> 
+> Thanks,
+> Ohad.
 
-Indirect desc off:
-guest -> host, 1 stream: ~4600mb/s
-host -> guest, 1 stream: ~5900mb/s
-guest -> host, 8 streams: ~620mb/s (on average)
-host -> guest, 8 stream: ~600mb/s (on average)
+Yes wmb() is required to ensure ordering for MMIO.
+But here both accesses: index and ring - are for
+memory, not MMIO.
 
-Indirect desc on:
-guest -> host, 1 stream: ~4900mb/s
-host -> guest, 1 stream: ~5400mb/s
-guest -> host, 8 streams: ~620mb/s (on average)
-host -> guest, 8 stream: ~600mb/s (on average)
+I could understand ring kick bypassing index write, maybe ...
+But you described an index write bypassing descriptor write.
+Is this something you see in practice?
 
-Which means that for one stream, guest to host gets faster while host to
-guest gets slower when indirect descriptors are on.
 
 -- 
-
-Sasha.
-
+MST
