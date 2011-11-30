@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab1K3Qw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 11:52:56 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47584
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757124Ab1K3Qwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 11:52:53 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com, joe@perches.com,
-        dmitry.torokhov@gmail.com, jkosina@suse.cz
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: mousevsc: Properly add the hid device
-Date: Wed, 30 Nov 2011 08:52:23 -0800
-Message-Id: <1322671943-6788-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1757965Ab1K3QxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 11:53:15 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:46708 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757945Ab1K3QxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 11:53:12 -0500
+Message-ID: <4ED65F6D.4020402@atmel.com>
+Date: Wed, 30 Nov 2011 17:53:01 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] at91 fixes for 3.2-rc4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to properly add the hid device to correctly initialize the
-sysfs state. While this patch is against the staging tree; Jiri,
-please pick up this patch as you merge the Hyper-V mouse driver.
+Hi Arnd,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reported-by: Fuzhou Chen <fuzhouch@microsoft.com>
----
- drivers/staging/hv/hv_mouse.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+Here are a few fixes for AT91. I have noted 3.2-rc4 in the subject but it
+is true that it can go in another -rc revision as I have seen your recent
+pull request to Linus...
 
-diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-index a28c549..66da8e3 100644
---- a/drivers/staging/hv/hv_mouse.c
-+++ b/drivers/staging/hv/hv_mouse.c
-@@ -519,6 +519,10 @@ static int mousevsc_probe(struct hv_device *device,
- 
- 	sprintf(hid_dev->name, "%s", "Microsoft Vmbus HID-compliant Mouse");
- 
-+	ret = hid_add_device(hid_dev);
-+	if (ret)
-+		goto probe_err1;
-+
- 	ret = hid_parse_report(hid_dev, input_dev->report_desc,
- 				input_dev->report_desc_size);
- 
+The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+
+  Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
+
+are available in the git repository at:
+  git://github.com/at91linux/linux-at91.git at91-fixes
+
+Anders Darander (1):
+      ARM: at91: Fix USB AT91 gadget registration
+
+Christian Hitz (1):
+      ARM: at91: fix NAND bus width decoding from system_rev
+
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: fix clock conid for atmel_tcb.1 on 9260/9g20
+
+ arch/arm/mach-at91/at91rm9200_devices.c      |    2 +-
+ arch/arm/mach-at91/at91sam9260.c             |    6 +++---
+ arch/arm/mach-at91/at91sam9260_devices.c     |    2 +-
+ arch/arm/mach-at91/at91sam9261_devices.c     |    2 +-
+ arch/arm/mach-at91/at91sam9263_devices.c     |    2 +-
+ arch/arm/mach-at91/include/mach/system_rev.h |    2 +-
+ 6 files changed, 8 insertions(+), 8 deletions(-)
+
+Thanks, best regards,
 -- 
-1.7.4.1
+Nicolas Ferre
 
