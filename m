@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab1K3GGH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 01:06:07 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45009 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab1K3GGD (ORCPT
+	id S1754555Ab1K3GG0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 01:06:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44081 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262Ab1K3GGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 01:06:03 -0500
-Message-ID: <1322633155.23721.5.camel@edumazet-laptop>
-Subject: Re: 3.2.0-rc3+ (Linus git -
- 883381d9f1c5a6329bbb796e23ae52c939940310) - INFO: suspicious RCU usage
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Miles Lane <miles.lane@gmail.com>, David Miller <davem@davemloft.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Dipankar Sarma <dipankar@in.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        netdev <netdev@vger.kernel.org>
-Date: Wed, 30 Nov 2011 07:05:55 +0100
-In-Reply-To: <1322632602.23721.0.camel@edumazet-laptop>
-References: <CAHFgRy-hAMF344eChZ9tLnFB7qUS_v3m0LvtBKWjbFmBeeASsA@mail.gmail.com>
-	 <1322632602.23721.0.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
+	Wed, 30 Nov 2011 01:06:24 -0500
+Date: Tue, 29 Nov 2011 22:07:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: linux-next: build failure after merge of the final tree (akpm
+ tree related)
+Message-Id: <20111129220728.b3351335.akpm@linux-foundation.org>
+In-Reply-To: <20111130.004010.1075431174091251814.davem@davemloft.net>
+References: <20111130155226.b571cfd7887f03f9e8e1285b@canb.auug.org.au>
+	<20111130.004010.1075431174091251814.davem@davemloft.net>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 30 novembre 2011 à 06:56 +0100, Eric Dumazet a écrit :
-> Le mercredi 30 novembre 2011 à 00:09 -0500, Miles Lane a écrit :
-> > I got the following message while running "find /proc | xargs head" to
-> > see whether accessing any proc files would cause trouble.
+On Wed, 30 Nov 2011 00:40:10 -0500 (EST) David Miller <davem@davemloft.net> wrote:
+
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 30 Nov 2011 15:52:26 +1100
+> 
+> > And many more similar.
 > > 
-> > [  442.112632] [ INFO: suspicious RCU usage. ]
-> > [  442.112634] -------------------------------
-> > [  442.112637] include/net/dst.h:91 suspicious rcu_dereference_check() usage!
-> > [  442.112640]
-> > [  442.112641] other info that might help us debug this:
-> > [  442.112643]
-> > [  442.112645]
-> > [  442.112646] rcu_scheduler_active = 1, debug_locks = 1
-> > [  442.112650] 2 locks held by head/4903:
-> > [  442.112652]  #0:  (&p->lock){+.+.+.}, at: [<ffffffff810e160a>]
-> > seq_read+0x38/0x35d
-> > [  442.112665]  #1:  (rcu_read_lock_bh){.+....}, at:
-> > [<ffffffff812f831e>] rcu_read_lock_bh+0x0/0x35
-> > [  442.112676]
-> > [  442.112677] stack backtrace:
-> > [  442.112681] Pid: 4903, comm: head Not tainted 3.2.0-rc3+ #42
-> > [  442.112684] Call Trace:
-> > [  442.112691]  [<ffffffff8105cdd2>] lockdep_rcu_suspicious+0xaf/0xb8
-> > [  442.112697]  [<ffffffff812f8e02>] dst_get_neighbour.isra.31+0x44/0x4c
-> > [  442.112702]  [<ffffffff812f8e86>] rt_cache_seq_show+0x46/0x194
-> > [  442.112708]  [<ffffffff812f8351>] ? rcu_read_lock_bh+0x33/0x35
-> > [  442.112714]  [<ffffffff8104b57a>] ? rcu_read_lock_bh_held+0x9/0x37
-> > [  442.112719]  [<ffffffff812f85c2>] ? rt_cache_get_first+0x72/0x116
-> > [  442.112725]  [<ffffffff810e184d>] seq_read+0x27b/0x35d
-> > [  442.112730]  [<ffffffff810e15d2>] ? seq_lseek+0xda/0xda
-> > [  442.112736]  [<ffffffff8110e3e1>] proc_reg_read+0x8e/0xad
-> > [  442.112741]  [<ffffffff810c6e23>] vfs_read+0xa0/0xc7
-> > [  442.112746]  [<ffffffff810c80bf>] ? fget_light+0x35/0x98
-> > [  442.112750]  [<ffffffff810c6e8f>] sys_read+0x45/0x69
-> > [  442.112756]  [<ffffffff8136a27b>] system_call_fastpath+0x16/0x1b
+> > Caused (or exposed) by commit 9222aa56c0ce
+> > ("include/net/netprio_cgroup.h: various fixes") from the akpm tree.
+> > 
+> > I have reverted that commit for today.
 > 
+> Andrew, please submit networking bug fixes to the networking maintainers
+> in order to avoid problems like this in the future.
 > 
-> Thanks for the report Miles, I'll provide a patch in a couple of minutes
-> after testing it
-> 
+> Unlike other subsystems, I guarentee to handle it within 24 hours, often
+> much faster.
 > 
 
-[PATCH] ipv4: fix lockdep splat in rt_cache_seq_show
+This is my attempt to address the issues I mentioned last week.  It is
+still under development and doesn't work yet.  I thought it did.
 
-After commit f2c31e32b378 (fix NULL dereferences in check_peer_redir()),
-dst_get_neighbour() should be guarded by rcu_read_lock() /
-rcu_read_unlock() section.
+I'm now trying to get my brain around what that code is doing with
+Kconfig symbols and net_prio_subsys_id.  I'm suspecting it's all to
+make cgroup-subsys-within-a-module appear to work.
 
-Reported-by: Miles Lane <miles.lane@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- net/ipv4/route.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 5c28472..57e01bc 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -417,9 +417,13 @@ static int rt_cache_seq_show(struct seq_file *seq, void *v)
- 	else {
- 		struct rtable *r = v;
- 		struct neighbour *n;
--		int len;
-+		int len, HHUptod;
- 
-+		rcu_read_lock();
- 		n = dst_get_neighbour(&r->dst);
-+		HHUptod = (n && (n->nud_state & NUD_CONNECTED)) ? 1 : 0;
-+		rcu_read_unlock();
-+
- 		seq_printf(seq, "%s\t%08X\t%08X\t%8X\t%d\t%u\t%d\t"
- 			      "%08X\t%d\t%u\t%u\t%02X\t%d\t%1d\t%08X%n",
- 			r->dst.dev ? r->dst.dev->name : "*",
-@@ -433,7 +437,7 @@ static int rt_cache_seq_show(struct seq_file *seq, void *v)
- 			      dst_metric(&r->dst, RTAX_RTTVAR)),
- 			r->rt_key_tos,
- 			-1,
--			(n && (n->nud_state & NUD_CONNECTED)) ? 1 : 0,
-+			HHUptod,
- 			r->rt_spec_dst, &len);
- 
- 		seq_printf(seq, "%*s\n", 127 - len, "");
-
+afaict net_prio_subsys_id is an enum if CONFIG_NETPRIO_CGROUP=y and is
+an `extern int' when CONFIG_NETPRIO_CGROUP=m.  It's unclear to me why
+the extern int version or net_prio_subsys_id exists at all, really.
 
