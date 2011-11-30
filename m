@@ -1,111 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab1K3SXR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 13:23:17 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54246 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab1K3SXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 13:23:15 -0500
-Date: Wed, 30 Nov 2011 22:23:10 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [rfc 3/3] prctl: Add PR_SET_MM codes to tune up mm_struct entires
-Message-ID: <20111130182310.GL14515@moon>
-References: <20111129191252.769160532@openvz.org>
- <20111129191638.912537377@openvz.org>
- <20111129201938.GP5169@outflux.net>
- <20111129202951.GG1775@moon>
- <20111129203714.GH1775@moon>
- <CAGXu5jKDLExXWi+_Hjc+8s7FeuDgQdZcPipMH80LQs+tRyJm2A@mail.gmail.com>
- <20111130173739.GI14515@moon>
- <CAGXu5jL=46_MyxrrB8G4FntnLJBtt+DbvVX0kEXh9n8Ss+Yfsw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGXu5jL=46_MyxrrB8G4FntnLJBtt+DbvVX0kEXh9n8Ss+Yfsw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752657Ab1K3SYB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 13:24:01 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:51608 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751154Ab1K3SYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 13:24:00 -0500
+Message-ID: <1322677438.10023.7.camel@Joe-Laptop>
+Subject: Re: [PATCH] can: Update logging style
+From: Joe Perches <joe@perches.com>
+To: Oliver Hartkopp <socketcan@hartkopp.net>
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Urs Thuermann <urs.thuermann@volkswagen.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 30 Nov 2011 10:23:58 -0800
+In-Reply-To: <4ED6331E.6020005@hartkopp.net>
+References: <30551d0a6a0f7f7799a6981c81c770a528f430d2.1322592708.git.joe@perches.com>
+	 <4ED53B47.1030703@pengutronix.de> <4ED6331E.6020005@hartkopp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 10:10:35AM -0800, Kees Cook wrote:
-...
-> >
-> > Hi Kees,
-> >
-> > what about this one? Note that these mm_struct members don't affect
-> > kernel much (at least as far as I see, except maybe brk,start_brk and
-> > start_stack values), so I've added some sanity checks here, hope they
-> > would fit. Still main protection is root-only access only. The kernel
-> > itself uses vma_area::start/end members for overlows tests internally
-> > so I think even passing crazy data here won't crash the kernel itself.
-> 
-> Right, though besides just crashing the kernel, I'm trying to look at
-> this from the perspective of a paranoid admin that doesn't even trust
-> the root user. Is there some way this new interface could be used to
-> provide the building blocks for gaining kernel execute control?
-> (Imagine a system running with modules disabled, STRICT_DEVMEM
->  enabled, etc.)
-> 
+Use pr_fmt, pr_<level> and pr_<level>_ratelimited.
+Coalesce format strings.
 
-Well, I don't see a way to use it for gaining some control execution at the
-moment but (!) kernel evolves and I fear one might forget about this new
-interface when he will be doing some tossing over this mm_struct members.
+V2: Appease Oliver Hartkopp by adding "can" to the banner output.
 
-I though about adding some kind of mark to kernel log on first usage of
-this prctl codes (so if some crash happened for any reason, the log would
-point someone used this interface).
+Signed-off-by: Joe Perches <joe@perches.com>
 
-> > What do you think?
-> 
-> This looks way better, yes. I have this feeling like these validations
-> should be more centralized or tied to the mm code more directly to
-> avoid drift, but I don't have any constructive suggestions
-> unfortunately. Maybe other folks do?
-> 
+---
 
-Yeah, good point, but on the other hands have these tests in one place
-is easier to read I think.
+> IMO if you want to use pr_fmt() it should at least look like this:
+> can: controller area network core (rev 20090105 abi 8)
+> NET: Registered protocol family 29
+> can_raw: can raw protocol (rev 20090105)
+> can_gw: can netlink gateway (rev 20101209)
+> can_bcm: can broadcast manager protocol (rev 20090105 t)
+> 
+> I'm fine with using pr_fmt() for error/warning output but not for the banner
+> in the currently suggested way.
 
-> > +       switch (opt) {
-> > +       case PR_SET_MM_START_CODE:
-> > +       case PR_SET_MM_END_CODE:
-> > +
-> > +               vm_req_flags = VM_READ | VM_EXEC;
-> > +               vm_bad_flags = VM_WRITE | VM_MAYSHARE;
-> > +
-> > +               if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
-> > +                   (vma->vm_flags & vm_bad_flags))
-> > +                       goto out;
-> 
-> Another random thought: given this very regular set of checks you're
-> doing, perhaps the flags should be part of a data structure instead,
-> just to reduce the size of this routine?
-> 
-> struct mm_flags {
->   int req_flags;
->   int bad_flags;
-> };
-> 
-> struct mm_flags opt_flags[] = {
-> ...
->  { VM_READ | VM_EXEC, VM_WRITE | VM_MAYSHARE }, /* PR_SET_MM_START_CODE */
->  { VM_READ | VM_EXEC, VM_WRITE | VM_MAYSHARE }, /* PR_SET_MM_END_CODE */
-> ...
-> 
-> then do validation before the switch statement all in one place, and
-> leave the switch for more programmatic checks?
-> 
-> -Kees
-> 
+I think it's duplicative, but it's not my code.
 
-Nod! I'll update, thanks!
+ net/can/af_can.c |   31 ++++++++++++++-----------------
+ net/can/bcm.c    |   14 ++++++++------
+ net/can/gw.c     |    6 ++++--
+ net/can/proc.c   |    8 ++++----
+ net/can/raw.c    |    8 +++++---
+ 5 files changed, 35 insertions(+), 32 deletions(-)
 
-	Cyrill
+diff --git a/net/can/af_can.c b/net/can/af_can.c
+index 0ce2ad0..c4f0da5 100644
+--- a/net/can/af_can.c
++++ b/net/can/af_can.c
+@@ -40,6 +40,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/kmod.h>
+@@ -62,8 +64,8 @@
+ 
+ #include "af_can.h"
+ 
+-static __initdata const char banner[] = KERN_INFO
+-	"can: controller area network core (" CAN_VERSION_STRING ")\n";
++static __initdata const char banner[] =
++	"controller area network core (" CAN_VERSION_STRING ")";
+ 
+ MODULE_DESCRIPTION("Controller Area Network PF_CAN core");
+ MODULE_LICENSE("Dual BSD/GPL");
+@@ -161,8 +163,8 @@ static int can_create(struct net *net, struct socket *sock, int protocol,
+ 		 * return -EPROTONOSUPPORT
+ 		 */
+ 		if (err)
+-			printk_ratelimited(KERN_ERR "can: request_module "
+-			       "(can-proto-%d) failed.\n", protocol);
++			pr_err_ratelimited("request_module (can-proto-%d) failed\n",
++					   protocol);
+ 
+ 		cp = can_get_proto(protocol);
+ 	}
+@@ -505,8 +507,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
+ 
+ 	d = find_dev_rcv_lists(dev);
+ 	if (!d) {
+-		printk(KERN_ERR "BUG: receive list not found for "
+-		       "dev %s, id %03X, mask %03X\n",
++		pr_err("BUG: receive list not found for dev %s, id %03X, mask %03X\n",
+ 		       DNAME(dev), can_id, mask);
+ 		goto out;
+ 	}
+@@ -532,8 +533,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
+ 	 */
+ 
+ 	if (!next) {
+-		printk(KERN_ERR "BUG: receive list entry not found for "
+-		       "dev %s, id %03X, mask %03X\n",
++		pr_err("BUG: receive list entry not found for dev %s, id %03X, mask %03X\n",
+ 		       DNAME(dev), can_id, mask);
+ 		r = NULL;
+ 		goto out;
+@@ -701,8 +701,7 @@ int can_proto_register(const struct can_proto *cp)
+ 	int err = 0;
+ 
+ 	if (proto < 0 || proto >= CAN_NPROTO) {
+-		printk(KERN_ERR "can: protocol number %d out of range\n",
+-		       proto);
++		pr_err("protocol number %d out of range\n", proto);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -713,8 +712,7 @@ int can_proto_register(const struct can_proto *cp)
+ 	mutex_lock(&proto_tab_lock);
+ 
+ 	if (proto_tab[proto]) {
+-		printk(KERN_ERR "can: protocol %d already registered\n",
+-		       proto);
++		pr_err("protocol %d already registered\n", proto);
+ 		err = -EBUSY;
+ 	} else
+ 		RCU_INIT_POINTER(proto_tab[proto], cp);
+@@ -769,8 +767,7 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
+ 		/* create new dev_rcv_lists for this device */
+ 		d = kzalloc(sizeof(*d), GFP_KERNEL);
+ 		if (!d) {
+-			printk(KERN_ERR
+-			       "can: allocation of receive list failed\n");
++			pr_err("allocation of receive list failed\n");
+ 			return NOTIFY_DONE;
+ 		}
+ 		BUG_ON(dev->ml_priv);
+@@ -790,8 +787,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
+ 				dev->ml_priv = NULL;
+ 			}
+ 		} else
+-			printk(KERN_ERR "can: notifier: receive list not "
+-			       "found for dev %s\n", dev->name);
++			pr_err("notifier: receive list not found for dev %s\n",
++			       dev->name);
+ 
+ 		spin_unlock(&can_rcvlists_lock);
+ 
+@@ -824,7 +821,7 @@ static struct notifier_block can_netdev_notifier __read_mostly = {
+ 
+ static __init int can_init(void)
+ {
+-	printk(banner);
++	pr_info("%s\n", banner);
+ 
+ 	memset(&can_rx_alldev_list, 0, sizeof(can_rx_alldev_list));
+ 
+diff --git a/net/can/bcm.c b/net/can/bcm.c
+index 151b773..540c804 100644
+--- a/net/can/bcm.c
++++ b/net/can/bcm.c
+@@ -39,6 +39,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+@@ -77,8 +79,8 @@
+ 		     (CAN_SFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG))
+ 
+ #define CAN_BCM_VERSION CAN_VERSION
+-static __initdata const char banner[] = KERN_INFO
+-	"can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n";
++static __initdata const char banner[] =
++	"can broadcast manager protocol (rev " CAN_BCM_VERSION " t)";
+ 
+ MODULE_DESCRIPTION("PF_CAN broadcast manager protocol");
+ MODULE_LICENSE("Dual BSD/GPL");
+@@ -729,8 +731,8 @@ static void bcm_rx_unreg(struct net_device *dev, struct bcm_op *op)
+ 		/* mark as removed subscription */
+ 		op->rx_reg_dev = NULL;
+ 	} else
+-		printk(KERN_ERR "can-bcm: bcm_rx_unreg: registered device "
+-		       "mismatch %p %p\n", op->rx_reg_dev, dev);
++		pr_err("%s: registered device mismatch %p %p\n",
++		       __func__, op->rx_reg_dev, dev);
+ }
+ 
+ /*
+@@ -1606,11 +1608,11 @@ static int __init bcm_module_init(void)
+ {
+ 	int err;
+ 
+-	printk(banner);
++	pr_info("%s\n", banner);
+ 
+ 	err = can_proto_register(&bcm_can_proto);
+ 	if (err < 0) {
+-		printk(KERN_ERR "can: registration of bcm protocol failed\n");
++		pr_err("registration of bcm protocol failed\n");
+ 		return err;
+ 	}
+ 
+diff --git a/net/can/gw.c b/net/can/gw.c
+index 3d79b12..e17253f 100644
+--- a/net/can/gw.c
++++ b/net/can/gw.c
+@@ -39,6 +39,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
+@@ -59,7 +61,7 @@
+ 
+ #define CAN_GW_VERSION "20101209"
+ static __initdata const char banner[] =
+-	KERN_INFO "can: netlink gateway (rev " CAN_GW_VERSION ")\n";
++	"can netlink gateway (rev " CAN_GW_VERSION ")";
+ 
+ MODULE_DESCRIPTION("PF_CAN netlink gateway");
+ MODULE_LICENSE("Dual BSD/GPL");
+@@ -913,7 +915,7 @@ static int cgw_remove_job(struct sk_buff *skb,  struct nlmsghdr *nlh, void *arg)
+ 
+ static __init int cgw_module_init(void)
+ {
+-	printk(banner);
++	pr_info("%s\n", banner);
+ 
+ 	cgw_cache = kmem_cache_create("can_gw", sizeof(struct cgw_job),
+ 				      0, 0, NULL);
+diff --git a/net/can/proc.c b/net/can/proc.c
+index ba873c3..c3aedf5 100644
+--- a/net/can/proc.c
++++ b/net/can/proc.c
+@@ -39,6 +39,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/proc_fs.h>
+ #include <linux/list.h>
+@@ -118,8 +120,7 @@ static unsigned long calc_rate(unsigned long oldjif, unsigned long newjif,
+ 
+ 	/* see can_stat_update() - this should NEVER happen! */
+ 	if (count > (ULONG_MAX / HZ)) {
+-		printk(KERN_ERR "can: calc_rate: count exceeded! %ld\n",
+-		       count);
++		pr_err("%s: count exceeded! %ld\n", __func__, count);
+ 		return 99999999;
+ 	}
+ 
+@@ -475,8 +476,7 @@ void can_init_proc(void)
+ 	can_dir = proc_mkdir("can", init_net.proc_net);
+ 
+ 	if (!can_dir) {
+-		printk(KERN_INFO "can: failed to create /proc/net/can . "
+-		       "CONFIG_PROC_FS missing?\n");
++		pr_info("failed to create /proc/net/can . CONFIG_PROC_FS missing?\n");
+ 		return;
+ 	}
+ 
+diff --git a/net/can/raw.c b/net/can/raw.c
+index cde1b4a..2875c55 100644
+--- a/net/can/raw.c
++++ b/net/can/raw.c
+@@ -39,6 +39,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/uio.h>
+@@ -56,7 +58,7 @@
+ 
+ #define CAN_RAW_VERSION CAN_VERSION
+ static __initdata const char banner[] =
+-	KERN_INFO "can: raw protocol (rev " CAN_RAW_VERSION ")\n";
++	"can raw protocol (rev " CAN_RAW_VERSION ")";
+ 
+ MODULE_DESCRIPTION("PF_CAN raw protocol");
+ MODULE_LICENSE("Dual BSD/GPL");
+@@ -783,11 +785,11 @@ static __init int raw_module_init(void)
+ {
+ 	int err;
+ 
+-	printk(banner);
++	pr_info("%s\n", banner);
+ 
+ 	err = can_proto_register(&raw_can_proto);
+ 	if (err < 0)
+-		printk(KERN_ERR "can: registration of raw protocol failed\n");
++		pr_err("registration of raw protocol failed\n");
+ 
+ 	return err;
+ }
+
+
+
+
