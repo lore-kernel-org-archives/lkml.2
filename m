@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757998Ab1K3RUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 12:20:12 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:47350 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755565Ab1K3RUI (ORCPT
+	id S1758013Ab1K3RVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 12:21:52 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:43171 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565Ab1K3RVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 12:20:08 -0500
-Message-ID: <4ED67387.90902@xenotime.net>
-Date: Wed, 30 Nov 2011 10:18:47 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?S=E9rgio_Basto?= <sergio@serjux.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: linux-next: Tree for Nov 29 (drm)
-References: <20111129152040.3040fe9780886ee0e066a131@canb.auug.org.au>	 <4ED5417C.1030908@xenotime.net> <1322673417.31541.1.camel@segulix>
-In-Reply-To: <1322673417.31541.1.camel@segulix>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 30 Nov 2011 12:21:49 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: ke.yu@intel.com, kevin.tian@intel.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, lenb@kernel.org, rjw@sisk.pl
+Cc: xen-devel@lists.xensource.com, jeremy@goop.org, konrad@kernel.org,
+        stefan.bader@canonical.com, Ian.Campbell@citrix.com,
+        mike.mcclurg@citrix.com, liang.tang@oracle.com
+Subject: [RFC PATCH] Exporting ACPI Pxx/Cxx states to other kernel subsystems (v1).
+Date: Wed, 30 Nov 2011 12:20:56 -0500
+Message-Id: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.3
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4ED66623.005F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2011 09:16 AM, Sérgio Basto wrote:
-> Randy, not dri-devel@lists.sourceforge.net, anymore 
-> now is dri-devel@lists.freedesktop.org
+Hello,
 
-Argh, thanks.
-That was thunderbird trying to be too helpful. :(
+The following patches are a solution to a problem we have encountered
+when using the Xen hypervisor:
+ - Need Pxx/Cxx states to save on power consumption when using Xen (we
+   do want those datacenters to consume less power!),
+ - Also need to figure out the Turbo mode so that the scheduler can properly
+   boost a core for CPU bound guests.
+
+In essence the Xen hypervisor requires that information to work efficiently.
+
+There are some other ways of solving this problem as well that have
+been tossed around. I am enumerating them here, but I don't have the
+full records of the disadvantages/advantges so hopefully some other people
+can chime in.
+ - Parse the information in userspace. I am not really sure how that would
+   work, but one thought was export in SysFS the Pxx/Cxx states and other ones
+   (hand-waving here) and the libvirt/xend/xl toolstack would parse those as
+   needed and push them up (say when the guest is started). But it does have
+   a disadvantage that it would not work well with CPU hotplug, nor with the
+   physical CPU != virtual CPU discountinty (that is Linux sees only one CPU,
+   and the ACPI Pxx says there are eight of them - with different values than
+   the CPU0).
+ - Make the ACPI subsystem export some of this functionality so that there
+   can be multiple ACPI processor drivers and they can share common code.
+   This is what this patch series follows. This does mean exporting some
+   ACPI "stuff" outside drivers/acpi. 
+ - Implement the ACPI DSDT parsing in the hypervisor. The couple of reasons
+   that pop in my head for not going that route is foremost it seems an
+   overkill just so that this specific information (Pxx/Cxx) can pushed in
+   the hypervisor.  We already use the Linux ACPI to figure out the IRQ routing,
+   or for ACPI states changes like button pushing, docking events, etc.
+   Making it all be done in the hypervisor seems well, an overkill.
+
+The original authors of the code are Intel folks. Liang has been working
+on this to see if the abstraction can be improved, but I am by no means
+an ACPI expert - so feedback, guidance or input would be much appreciated.
 
 
-> On Tue, 2011-11-29 at 12:33 -0800, Randy Dunlap wrote: 
->> On 11/28/2011 08:20 PM, Stephen Rothwell wrote:
->>> Hi all,
->>>
->>> Changes since 20111128:
->>>
->>> The drm tree lost its build failure but gained another for which I
->>> applied a patch.
->>
->>
->> ERROR: "drm_helper_get_fb_bpp_depth" [drivers/gpu/drm/vmwgfx/vmwgfx.ko] undefined!
->>
->> Full x86_64 randconfig file is attached.
->>
->> ------------------------------------------------------------------------------
->> -- _______________________________________________ Dri-devel mailing list Dri-devel@lists.sourceforge.net https://lists.sourceforge.net/lists/listinfo/dri-devel
-> 
+Liang:
+ ACPI: processor: Don't setup cpu idle driver and handler
 
+I think it can be actually dropped - now that disable_cpuidle() functionality
+exists and we use it? 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Kevin Tian (6):
+      ACPI: processor: export necessary interfaces
+      ACPI: processor: cache acpi_power_register in cx structure
+      ACPI: processor: Don't setup cpu idle driver and handler when we do not want them.
+      ACPI: add processor driver for Xen virtual CPUs.
+      ACPI: xen processor: add PM notification interfaces.
+      ACPI: xen processor: set ignore_ppc to handle PPC event for Xen vcpu.
+
+Tang Liang (2):
+      ACPI: processor: add __acpi_processor_[un]register_driver helpers.
+      ACPI: processor: override the interface of register acpi processor handler for Xen vcpu
+
+ drivers/acpi/Makefile            |    1 +
+ drivers/acpi/processor_driver.c  |   48 +++++--
+ drivers/acpi/processor_idle.c    |   10 +-
+ drivers/acpi/processor_perflib.c |    6 +-
+ drivers/acpi/processor_xen.c     |  246 ++++++++++++++++++++++++++++++++++
+ drivers/xen/Kconfig              |    5 +
+ drivers/xen/Makefile             |    3 +
+ drivers/xen/acpi_processor.c     |  269 ++++++++++++++++++++++++++++++++++++++
+ include/acpi/processor.h         |   20 +++-
+ include/xen/acpi.h               |  104 +++++++++++++++
+ 10 files changed, 690 insertions(+), 22 deletions(-)
