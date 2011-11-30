@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab1K3Vje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 16:39:34 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63930 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493Ab1K3Vjd (ORCPT
+	id S1751769Ab1K3VwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 16:52:05 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:36366 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab1K3VwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 16:39:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAGPN=9Q8gB_xsbB1BrMJSo_Qs=7Tu49RX4x3VqNB9adzVdm6kg@mail.gmail.com>
-References: <CAGPN=9Q8gB_xsbB1BrMJSo_Qs=7Tu49RX4x3VqNB9adzVdm6kg@mail.gmail.com>
-Date: Wed, 30 Nov 2011 22:39:32 +0100
-Message-ID: <CAGPN=9RN8bKX_4gU5yFbksp2g6Qt34gkoKjx8XLCon-UCbOdaw@mail.gmail.com>
-Subject: Re: i915: RC6 causes sudden shutdowns
-From: Patrik Kullman <patrik.kullman@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 30 Nov 2011 16:52:04 -0500
+Date: Wed, 30 Nov 2011 22:52:00 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Cc: Andi Kleen <andi@firstfloor.org>, hpa@zytor.com, tglx@linutronix.de,
+        mingo@elte.hu, suresh.b.siddha@intel.com, eranian@google.com,
+        brgerst@gmail.com, robert.richter@amd.com, Andreas.Herrmann3@amd.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/9] rework of extended state handling, LWP support
+Message-ID: <20111130215200.GS24062@one.firstfloor.org>
+References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com> <m2ipm2lioy.fsf@firstfloor.org> <20111130173745.GT878@escobedo.osrc.amd.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111130173745.GT878@escobedo.osrc.amd.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So is this being worked on already?
+On Wed, Nov 30, 2011 at 06:37:46PM +0100, Hans Rosenfeld wrote:
+> On Tue, Nov 29, 2011 at 01:31:09PM -0800, Andi Kleen wrote:
+> > Hans Rosenfeld <hans.rosenfeld@amd.com> writes:
+> > >
+> > > The lazy allocation of the xstate area has been removed. The support for
+> > > extended states that cannot be saved/restored lazily, like AMD's LWP,
+> > > need this. Since optimized library functions using SSE etc. are widely
+> > > used today, most processes would have an xstate area anyway, making the
+> > > memory overhead negligible.
+> > 
+> > Do you have any data on that?  It sounds dubious for specialized
+> > workloads.
+> 
+> What kind of specialized workload do you mean?
 
-It would be wonderful to get this fixed since it gives additional
-hours of battery life, but it's currently unusable for my this
-machine.
+Anything that doesn't do large memcpys/memsets: glibc only uses SSE
+when you pass large buffers. And then doesn't use the FPU. And possibly
+has lots of processes.
 
-2011/11/24 Patrik Kullman <patrik.kullman@gmail.com>:
-> Hi,
->
-> I recently acquired the Asus Zenbook UX31E but have been looking for
-> ways to extend the battery life.
->
-> I read that the i915_enable_rc6 parameter could decrease power usage
-> significantly and tried it with the 3.1.1 and 3.1.2 kernels, and
-> indeed it does.
-> However, I (and the other Zenbook-owners from the Ubuntu forums)
-> experience sudden, unexpected shutdowns (for me, 1-4 times per day)
-> with this parameter.
-> It's as sudden as a power loss.
->
-> It happens both when pcie_aspm=force is supplied and when it's not.
-> What also is a bit concerning is that I read that RC6 is going to be
-> enabled by default from 3.2 onward?
->
-> How would we go about troubleshooting this?
->
-> Or is the only option to blacklist the machine from RC6 if it doesn't
-> work as is?
+Some older glibc did an unconditional FPU initialization at start,
+but I believe that's long gone.
+
+-Andi
