@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab1K3Jmz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 04:42:55 -0500
-Received: from www.linutronix.de ([62.245.132.108]:36980 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab1K3Jmx (ORCPT
+	id S1757235Ab1K3Joe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 04:44:34 -0500
+Received: from claranet-outbound-smtp05.uk.clara.net ([195.8.89.38]:58191 "EHLO
+	claranet-outbound-smtp05.uk.clara.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753480Ab1K3Job (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 04:42:53 -0500
-Date: Wed, 30 Nov 2011 10:42:46 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Ingo Molnar <mingo@elte.hu>, Dave Airlie <airlied@gmail.com>,
-        linux-kernel@vger.kernel.org, drivers_pci@kernel-bugs.osdl.org,
-        =?ISO-8859-15?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Subject: Re: [Bug 41132] [BISECTED][REGRESSION] Regression with the IRQ
- subsystem introduced in 2.6.39 (and present in the 3.x version)
-In-Reply-To: <CA+55aFzh-ST1-Hu+Ny25X5DkEqktv3ZDFP2NDOWx6N+vFbTM8A@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1111301038560.2735@ionos>
-References: <bug-41132-5003@https.bugzilla.kernel.org/> <201108160554.p7G5soeq002083@demeter2.kernel.org> <CAOtrxKP-0TfJa8dS8_uW195WO13YCy-UyaZfweYD4Tv_1gAmKQ@mail.gmail.com> <CA+55aFzh-ST1-Hu+Ny25X5DkEqktv3ZDFP2NDOWx6N+vFbTM8A@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 30 Nov 2011 04:44:31 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: what's the replace for the big kernel lock after kernel version 2.6.39 for system call.
+Date: Wed, 30 Nov 2011 09:44:27 +0000
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1.fc15.x86_64; KDE/4.6.5; x86_64; ; )
+Cc: Wen Yan Xin <WenYan_Xin@symantec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zongliang Li <Zongliang_Li@symantec.com>,
+        Gang He <Gang_He@symantec.com>,
+        Yong Jun Chai <YongJun_Chai@symantec.com>
+References: <S1752501Ab1KYJXy/20111125092354Z+1871@vger.kernel.org> <F0BE05962279964D949D53875492E2E24FC27D7C30@APJ1XCHEVSPIN32.SYMC.SYMANTEC.COM> <20111129214136.GR2203@ZenIV.linux.org.uk>
+In-Reply-To: <20111129214136.GR2203@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111300944.27607.tvrtko.ursulin@onelan.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 27 Nov 2011, Linus Torvalds wrote:
-
-> Thomas, Ingo?
+On Tuesday 29 Nov 2011 21:41:36 Al Viro wrote:
+> On Mon, Nov 28, 2011 at 01:03:07AM -0800, Wen Yan Xin wrote:
+> > Hi all,
+> > 
+> > I have a trouble of working on kernel 2.6.39 and later. Originally when
+> > our kernel module startups, it hooks some file system call, like
+> > sys_open... , and the big kernel lock - lock_kernel() - will be held
+> > before creating the hook to prevent user application use system calls,
+> > and be released after the hook created.
+> > 
+> > 
+> > But after the kernel 2.6.39, the big kernel lock has been removed. I'm
+> > thinking there should be one or more lock that should be used.
+> > 
+> > So, my question is which lock should be held now, when we hook the system
+> > call of file system?
+> > 
+> > I'd really appreciate your answer in advance.
 > 
-> I haven't seen any response to this one, and while clearly commit
-> fa27271bc8d2 ("genirq: Fixup poll handling") was *supposed* to be a
-> no-op, it isn't.
+> 1) your rootkit has always been racy; taking BKL does *NOT* prevent another
+> CPU from entering a system call.
 > 
-> The commit message says "Shorter version with the same
-> functionality.", but since it causes a regression, it clearly is not
-> with the same functionality at all. And I assume that Thomas doesn't
-> have a machine that actually ever triggers the spurious irq issue to
-> begin with, so it probably was never tested.
-> 
-> In short, it really sounds like this should just be reverted, since
-> the code clearly doesn't do what the commit message claims it does.
-> 
-> Comments?
+> 2) none; just don't do it.
 
-Yes, Edward tracked it down already. One part of the fix is already in
-your tree commit 52553ddffad. The second half is in my queue.
+Hi Al,
 
-See below. Thanks,
+Why not be a nice guy when you already took the effort of replying and mention 
+fanotify? Because I am sure you know the history and when you see a security 
+vendor asking these things, you never know, maybe it fits their requirements. 
+Maybe it is not your favourite thing as well, but not a reason not to mention 
+it.
 
-    tglx
+And strictly speaking, rootkits actively try to hide themselves hence whatever 
+unsafe, ugly and wrong stuff they might have it is not a rootkit. :)
 
------->
->From edward.donovan@numble.net Sun Nov 20 02:57:17 2011
-Date: Sat, 19 Nov 2011 20:54:23 -0500
-From: Edward Donovan <edward.donovan@numble.net>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, maciej.rutecki@gmail.com
-Subject: [PATCH] genirq: fix second 2.6.39 regression in irqfixup, irqpoll
+Regards,
 
-commit fa2727("genirq: Fixup poll handling") introduced a
-regression that broke irqfixup/irqpoll for some hardware
-configurations.  That patch removed a test that checked for
-'action->handler' returning IRQ_HANDLED, before acting on the
-IRQ.  Putting this test back restores the functionality lost
-since 2.6.39.  In the current set of tests after 'action' is set,
-it must precede '!action->next' to take effect.
-
-With this and the previous patch to spurious.c, c75d720fca8a, all
-IRQ regressions that I have encountered are fixed.
-
-Signed-off-by: Edward Donovan <edward.donovan@numble.net>
----
- kernel/irq/spurious.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
-index b5f4742..dc813a9 100644
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -84,7 +84,9 @@ static int try_one_irq(int irq, struct irq_desc *desc, bool force)
- 	 */
- 	action = desc->action;
- 	if (!action || !(action->flags & IRQF_SHARED) ||
--	    (action->flags & __IRQF_TIMER) || !action->next)
-+	    (action->flags & __IRQF_TIMER) ||
-+	    (action->handler(irq, action->dev_id) == IRQ_HANDLED) ||
-+	    !action->next)
- 		goto out;
- 
- 	/* Already running on another processor */
--- 
-1.7.5.4
-
-
+Tvrtko
