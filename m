@@ -1,565 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757347Ab1K3Aia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 19:38:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10660 "EHLO mx1.redhat.com"
+	id S1757249Ab1K3Amm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 19:42:42 -0500
+Received: from mga14.intel.com ([143.182.124.37]:23677 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757058Ab1K3AiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 19:38:24 -0500
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 15/16] MODSIGN: Module ELF verifier [ver #2]
-To: keyrings@linux-nfs.org
-Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
-        zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
-        alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Tue, 29 Nov 2011 23:46:10 +0000
-Message-ID: <20111129234610.13625.39710.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20111129234258.13625.21153.stgit@warthog.procyon.org.uk>
-References: <20111129234258.13625.21153.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1756807Ab1K3Amj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 19:42:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,594,1315206000"; 
+   d="scan'208";a="80436069"
+Date: Wed, 30 Nov 2011 08:42:35 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH 7/9] readahead: add vfs/readahead tracing event
+Message-ID: <20111130004235.GB11147@localhost>
+References: <20111129130900.628549879@intel.com>
+ <20111129131456.797240894@intel.com>
+ <20111129152228.GO5635@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129152228.GO5635@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do preliminary verification of the ELF structure of a module.  This is used to
-make sure that the ELF structure can then be used to check the module signature
-and access the module data without breaking the module loader.
+On Tue, Nov 29, 2011 at 11:22:28PM +0800, Jan Kara wrote:
+> On Tue 29-11-11 21:09:07, Wu Fengguang wrote:
+> > This is very useful for verifying whether the readahead algorithms are
+> > working to the expectation.
+> > 
+> > Example output:
+> > 
+> > # echo 1 > /debug/tracing/events/vfs/readahead/enable
+> > # cp test-file /dev/null
+> > # cat /debug/tracing/trace  # trimmed output
+> > readahead-initial(dev=0:15, ino=100177, req=0+2, ra=0+4-2, async=0) = 4
+> > readahead-subsequent(dev=0:15, ino=100177, req=2+2, ra=4+8-8, async=1) = 8
+> > readahead-subsequent(dev=0:15, ino=100177, req=4+2, ra=12+16-16, async=1) = 16
+> > readahead-subsequent(dev=0:15, ino=100177, req=12+2, ra=28+32-32, async=1) = 32
+> > readahead-subsequent(dev=0:15, ino=100177, req=28+2, ra=60+60-60, async=1) = 24
+> > readahead-subsequent(dev=0:15, ino=100177, req=60+2, ra=120+60-60, async=1) = 0
+> > 
+> > CC: Ingo Molnar <mingo@elte.hu>
+> > CC: Jens Axboe <axboe@kernel.dk>
+> > CC: Steven Rostedt <rostedt@goodmis.org>
+> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+>   Looks OK.
+> 
+>   Acked-by: Jan Kara <jack@suse.cz>
 
-If the module's ELF metadata is determined to be bad, then ELIBBAD will be
-returned and a message will be logged to the kernel log.
+Thank you.
 
-Signed-Off-By: David Howells <dhowells@redhat.com>
----
+> > +	TP_printk("readahead-%s(dev=%d:%d, ino=%lu, "
+> > +		  "req=%lu+%lu, ra=%lu+%d-%d, async=%d) = %d",
+> > +			ra_pattern_names[__entry->pattern],
+> > +			MAJOR(__entry->dev),
+> > +			MINOR(__entry->dev),
 
- init/Kconfig               |   11 +
- kernel/Makefile            |    2 
- kernel/module-verify-elf.c |  344 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/module-verify.c     |   41 +++++
- kernel/module-verify.h     |   53 +++++++
- kernel/module.c            |    6 +
- 6 files changed, 457 insertions(+), 0 deletions(-)
- create mode 100644 kernel/module-verify-elf.c
- create mode 100644 kernel/module-verify.c
- create mode 100644 kernel/module-verify.h
+One thing I'm not certain is the dev=MAJOR:MINOR. The other option
+used in many trace events are bdi=BDI_NAME_OR_NUMBER. Will bdi be more
+suitable here?
 
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 43298f9..42e685d 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1383,6 +1383,17 @@ config MODULE_SRCVERSION_ALL
- 	  the version).  With this option, such a "srcversion" field
- 	  will be created for all modules.  If unsure, say N.
- 
-+config MODULE_VERIFY_ELF
-+	bool "Module ELF structure verification"
-+	depends on MODULES
-+	help
-+	  Check ELF structure of modules upon load
-+
-+config MODULE_VERIFY
-+	bool
-+	depends on MODULES
-+	default y if MODULE_VERIFY_ELF
-+
- endif # MODULES
- 
- config INIT_ALL_POSSIBLE
-diff --git a/kernel/Makefile b/kernel/Makefile
-index e898c5b..3c34fab 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -51,6 +51,8 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
- obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
- obj-$(CONFIG_UID16) += uid16.o
- obj-$(CONFIG_MODULES) += module.o
-+obj-$(CONFIG_MODULE_VERIFY) += module-verify.o
-+obj-$(CONFIG_MODULE_VERIFY_ELF) += module-verify-elf.o
- obj-$(CONFIG_KALLSYMS) += kallsyms.o
- obj-$(CONFIG_PM) += power/
- obj-$(CONFIG_FREEZER) += power/
-diff --git a/kernel/module-verify-elf.c b/kernel/module-verify-elf.c
-new file mode 100644
-index 0000000..4dea8d0
---- /dev/null
-+++ b/kernel/module-verify-elf.c
-@@ -0,0 +1,344 @@
-+/* module-verify-elf.c: module ELF verifier
-+ *
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/elf.h>
-+#include <linux/ctype.h>
-+#include "module-verify.h"
-+
-+#if 0
-+#define _debug(FMT, ...) printk(FMT, ##__VA_ARGS__)
-+#else
-+#define _debug(FMT, ...) do {} while (0)
-+#endif
-+
-+/*
-+ * verify the ELF structure of a module
-+ */
-+int module_verify_elf(struct module_verify_data *mvdata)
-+{
-+	const struct elf_note *note;
-+	const Elf_Ehdr *hdr = mvdata->hdr;
-+	const Elf_Shdr *section, *section2, *secstop;
-+	const Elf_Rela *relas, *rela, *relastop;
-+	const Elf_Rel *rels, *rel, *relstop;
-+	const Elf_Sym *symbol, *symstop;
-+	const void *start, *p, *stop;
-+	const char *q, *qs;
-+	size_t size, sssize, *secsize, tmp, tmp2;
-+	long last;
-+	int line;
-+
-+	size = mvdata->size;
-+	mvdata->nsects = hdr->e_shnum;
-+
-+#define elfcheck(X)							\
-+do { if (unlikely(!(X))) { line = __LINE__; goto elfcheck_error; } } while(0)
-+
-+#define seccheck(X)							\
-+do { if (unlikely(!(X))) { line = __LINE__; goto seccheck_error; } } while(0)
-+
-+#define symcheck(X)							\
-+do { if (unlikely(!(X))) { line = __LINE__; goto symcheck_error; } } while(0)
-+
-+#define relcheck(X)							\
-+do { if (unlikely(!(X))) { line = __LINE__; goto relcheck_error; } } while(0)
-+
-+#define relacheck(X)							\
-+do { if (unlikely(!(X))) { line = __LINE__; goto relacheck_error; } } while(0)
-+
-+#define notecheck(X)							\
-+do { if (unlikely(!(X))) { line = __LINE__; goto notecheck_error; } } while(0)
-+
-+	/* validate the ELF header */
-+	elfcheck(hdr->e_ehsize < size);
-+	/*elfcheck(hdr->e_entry == 0);*/
-+	elfcheck(hdr->e_phoff == 0);
-+	elfcheck(hdr->e_phnum == 0);
-+
-+	elfcheck(hdr->e_shnum < SHN_LORESERVE);
-+	elfcheck(hdr->e_shoff < size);
-+	elfcheck(hdr->e_shoff >= hdr->e_ehsize);
-+	elfcheck((hdr->e_shoff & (sizeof(long) - 1)) == 0);
-+	elfcheck(hdr->e_shstrndx > 0);
-+	elfcheck(hdr->e_shstrndx < hdr->e_shnum);
-+	elfcheck(hdr->e_shentsize == sizeof(Elf_Shdr));
-+
-+	tmp = (size_t) hdr->e_shentsize * (size_t) hdr->e_shnum;
-+	elfcheck(tmp <= size - hdr->e_shoff);
-+
-+	/* allocate a table to hold in-file section sizes */
-+	mvdata->secsizes = kcalloc(hdr->e_shnum, sizeof(size_t), GFP_KERNEL);
-+	if (!mvdata->secsizes)
-+		return -ENOMEM;
-+
-+	/* validate the ELF section headers */
-+	mvdata->sections = mvdata->buffer + hdr->e_shoff;
-+	secstop = mvdata->sections + mvdata->nsects;
-+
-+	sssize = mvdata->sections[hdr->e_shstrndx].sh_size;
-+	elfcheck(sssize > 0);
-+
-+	section = mvdata->sections;
-+	seccheck(section->sh_type == SHT_NULL);
-+	seccheck(section->sh_size == 0);
-+	seccheck(section->sh_offset == 0);
-+
-+	secsize = mvdata->secsizes + 1;
-+	for (section++; section < secstop; secsize++, section++) {
-+		seccheck(section->sh_name < sssize);
-+		seccheck(section->sh_link < hdr->e_shnum);
-+
-+		if (section->sh_entsize > 0)
-+			seccheck(section->sh_size % section->sh_entsize == 0);
-+
-+		seccheck(section->sh_offset >= hdr->e_ehsize);
-+		seccheck(section->sh_offset < size);
-+
-+		/* determine the section's in-file size */
-+		tmp = size - section->sh_offset;
-+		if (section->sh_offset < hdr->e_shoff)
-+			tmp = hdr->e_shoff - section->sh_offset;
-+
-+		for (section2 = mvdata->sections + 1;
-+		     section2 < secstop;
-+		     section2++) {
-+			if (section->sh_offset < section2->sh_offset) {
-+				tmp2 = section2->sh_offset -
-+					section->sh_offset;
-+				if (tmp2 < tmp)
-+					tmp = tmp2;
-+			}
-+		}
-+		*secsize = tmp;
-+
-+		_debug("Section %ld: %zx bytes at %lx\n",
-+		       section - mvdata->sections,
-+		       *secsize,
-+		       (unsigned long) section->sh_offset);
-+
-+		/* perform section type specific checks */
-+		switch (section->sh_type) {
-+		case SHT_NOBITS:
-+			break;
-+
-+		case SHT_REL:
-+			seccheck(section->sh_entsize == sizeof(Elf_Rel));
-+			goto more_rel_checks;
-+
-+		case SHT_RELA:
-+			seccheck(section->sh_entsize == sizeof(Elf_Rela));
-+		more_rel_checks:
-+			seccheck(section->sh_info > 0);
-+			seccheck(section->sh_info < hdr->e_shnum);
-+			goto more_sec_checks;
-+
-+		case SHT_SYMTAB:
-+			seccheck(section->sh_entsize == sizeof(Elf_Sym));
-+			goto more_sec_checks;
-+
-+		default:
-+		more_sec_checks:
-+			/* most types of section must be contained entirely
-+			 * within the file */
-+			seccheck(section->sh_size <= *secsize);
-+			break;
-+		}
-+	}
-+
-+	/* validate the ELF section names */
-+	section = &mvdata->sections[hdr->e_shstrndx];
-+
-+	seccheck(section->sh_offset != hdr->e_shoff);
-+
-+	mvdata->secstrings = mvdata->buffer + section->sh_offset;
-+
-+	last = -1;
-+	for (section = mvdata->sections + 1; section < secstop; section++) {
-+		const char *secname;
-+		tmp = sssize - section->sh_name;
-+		secname = mvdata->secstrings + section->sh_name;
-+		seccheck(secname[0] != 0);
-+		if (section->sh_name > last)
-+			last = section->sh_name;
-+	}
-+
-+	if (last > -1) {
-+		tmp = sssize - last;
-+		elfcheck(memchr(mvdata->secstrings + last, 0, tmp) != NULL);
-+	}
-+
-+	/* look for various sections in the module */
-+	for (section = mvdata->sections + 1; section < secstop; section++) {
-+		switch (section->sh_type) {
-+		case SHT_SYMTAB:
-+			if (strcmp(mvdata->secstrings + section->sh_name,
-+				   ".symtab") == 0
-+			    ) {
-+				seccheck(mvdata->symbols == NULL);
-+				mvdata->symbols =
-+					mvdata->buffer + section->sh_offset;
-+				mvdata->nsyms =
-+					section->sh_size / sizeof(Elf_Sym);
-+				seccheck(section->sh_size > 0);
-+			}
-+			break;
-+
-+		case SHT_STRTAB:
-+			if (strcmp(mvdata->secstrings + section->sh_name,
-+				   ".strtab") == 0
-+			    ) {
-+				seccheck(mvdata->strings == NULL);
-+				mvdata->strings =
-+					mvdata->buffer + section->sh_offset;
-+				sssize = mvdata->nstrings = section->sh_size;
-+				seccheck(section->sh_size > 0);
-+			}
-+			break;
-+		}
-+	}
-+
-+	if (!mvdata->symbols) {
-+		printk("Couldn't locate module symbol table\n");
-+		goto format_error;
-+	}
-+
-+	if (!mvdata->strings) {
-+		printk("Couldn't locate module strings table\n");
-+		goto format_error;
-+	}
-+
-+	/* validate the symbol table */
-+	symstop = mvdata->symbols + mvdata->nsyms;
-+
-+	symbol = mvdata->symbols;
-+	symcheck(ELF_ST_TYPE(symbol[0].st_info) == STT_NOTYPE);
-+	symcheck(symbol[0].st_shndx == SHN_UNDEF);
-+	symcheck(symbol[0].st_value == 0);
-+	symcheck(symbol[0].st_size == 0);
-+
-+	last = -1;
-+	for (symbol++; symbol < symstop; symbol++) {
-+		symcheck(symbol->st_name < sssize);
-+		if (symbol->st_name > last)
-+			last = symbol->st_name;
-+		symcheck(symbol->st_shndx < mvdata->nsects ||
-+			 symbol->st_shndx >= SHN_LORESERVE);
-+	}
-+
-+	if (last > -1) {
-+		tmp = sssize - last;
-+		elfcheck(memchr(mvdata->strings + last, 0, tmp) != NULL);
-+	}
-+
-+	/* validate each relocation table and note list as best we can */
-+	for (section = mvdata->sections + 1; section < secstop; section++) {
-+		section2 = mvdata->sections + section->sh_info;
-+		start = mvdata->buffer + section->sh_offset;
-+		stop = start + section->sh_size;
-+
-+		switch (section->sh_type) {
-+		case SHT_REL:
-+			rels = start;
-+			relstop = stop;
-+
-+			for (rel = rels; rel < relstop; rel++) {
-+				relcheck(rel->r_offset < section2->sh_size);
-+				relcheck(ELF_R_SYM(rel->r_info) <
-+					 mvdata->nsyms);
-+			}
-+
-+			break;
-+
-+		case SHT_RELA:
-+			relas = start;
-+			relastop = stop;
-+
-+			for (rela = relas; rela < relastop; rela++) {
-+				relacheck(rela->r_offset < section2->sh_size);
-+				relacheck(ELF_R_SYM(rela->r_info) <
-+					  mvdata->nsyms);
-+			}
-+
-+			break;
-+
-+		case SHT_NOTE:
-+			p = start;
-+			while (p < stop) {
-+				note = p;
-+				notecheck(stop - p >= sizeof(*note));
-+				p += sizeof(*note);
-+				tmp = note->n_namesz;
-+				if (tmp > 0) {
-+					notecheck(stop - p >= tmp);
-+					qs = p + tmp - 1;
-+					notecheck(*qs == '\0');
-+					for (q = p; q < qs; q++)
-+						notecheck(*q != '\0');
-+					tmp = roundup(tmp, 4);
-+					notecheck(stop - p >= tmp);
-+					p += tmp;
-+				}
-+				tmp = note->n_descsz;
-+				if (tmp > 0) {
-+					notecheck(stop - p >= tmp);
-+					tmp = roundup(tmp, 4);
-+					notecheck(stop - p >= tmp);
-+					p += tmp;
-+				}
-+			}
-+			seccheck(p == stop);
-+			break;
-+
-+		default:
-+			break;
-+		}
-+	}
-+
-+	_debug("ELF okay\n");
-+	return 0;
-+
-+elfcheck_error:
-+	printk("Verify ELF error (assertion %d)\n", line);
-+	goto format_error;
-+
-+seccheck_error:
-+	printk("Verify ELF error [sec %ld] (assertion %d)\n",
-+	       (long)(section - mvdata->sections), line);
-+	goto format_error;
-+
-+symcheck_error:
-+	printk("Verify ELF error [sym %ld] (assertion %d)\n",
-+	       (long)(symbol - mvdata->symbols), line);
-+	goto format_error;
-+
-+relcheck_error:
-+	printk("Verify ELF error [sec %ld rel %ld] (assertion %d)\n",
-+	       (long)(section - mvdata->sections),
-+	       (long)(rel - rels), line);
-+	goto format_error;
-+
-+relacheck_error:
-+	printk("Verify ELF error [sec %ld rela %ld] (assertion %d)\n",
-+	       (long)(section - mvdata->sections),
-+	       (long)(rela - relas), line);
-+	goto format_error;
-+
-+notecheck_error:
-+	printk("Verify ELF error [sec %ld note %ld] (assertion %d)\n",
-+	       (long)(section - mvdata->sections),
-+	       (long)(p - start), line);
-+	goto format_error;
-+
-+format_error:
-+	return -ELIBBAD;
-+}
-diff --git a/kernel/module-verify.c b/kernel/module-verify.c
-new file mode 100644
-index 0000000..875279f
---- /dev/null
-+++ b/kernel/module-verify.c
-@@ -0,0 +1,41 @@
-+/* module-verify.c: module verifier
-+ *
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include "module-verify.h"
-+
-+/*
-+ * verify a module's integrity
-+ * - check the ELF is viable
-+ */
-+int module_verify(const Elf_Ehdr *hdr, size_t size)
-+{
-+	struct module_verify_data mvdata;
-+	int ret;
-+
-+	memset(&mvdata, 0, sizeof(mvdata));
-+	mvdata.buffer	= hdr;
-+	mvdata.hdr	= hdr;
-+	mvdata.size	= size;
-+
-+	ret = module_verify_elf(&mvdata);
-+	if (ret < 0) {
-+		if (ret == -ELIBBAD)
-+			printk("Module failed ELF checks\n");
-+		goto error;
-+	}
-+
-+error:
-+	kfree(mvdata.secsizes);
-+	kfree(mvdata.canonlist);
-+	return ret;
-+}
-diff --git a/kernel/module-verify.h b/kernel/module-verify.h
-new file mode 100644
-index 0000000..20884fc
---- /dev/null
-+++ b/kernel/module-verify.h
-@@ -0,0 +1,53 @@
-+/* module-verify.h: module verification definitions
-+ *
-+ * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/types.h>
-+#include <asm/module.h>
-+
-+#ifdef CONFIG_MODULE_VERIFY
-+struct module_verify_data {
-+	const void		*buffer;	/* module buffer */
-+	const Elf_Ehdr		*hdr;		/* ELF header */
-+	const Elf_Shdr		*sections;	/* ELF section table */
-+	const Elf_Sym		*symbols;	/* ELF symbol table */
-+	const char		*secstrings;	/* ELF section string table */
-+	const char		*strings;	/* ELF string table */
-+	size_t			*secsizes;	/* section size list */
-+	size_t			size;		/* module object size */
-+	size_t			nsects;		/* number of sections */
-+	size_t			nsyms;		/* number of symbols */
-+	size_t			nstrings;	/* size of strings section */
-+	size_t			signed_size;	/* count of bytes contributed to digest */
-+	int			*canonlist;	/* list of canonicalised sections */
-+	int			*canonmap;	/* section canonicalisation map */
-+	int			ncanon;		/* number of canonicalised sections */
-+	int			sig_index;	/* module signature section index */
-+	uint8_t			xcsum;		/* checksum of bytes contributed to digest */
-+	uint8_t			csum;		/* checksum of bytes representing a section */
-+};
-+
-+/*
-+ * module-verify.c
-+ */
-+extern int module_verify(const Elf_Ehdr *hdr, size_t size);
-+
-+/*
-+ * module-verify-elf.c
-+ */
-+#ifdef CONFIG_MODULE_VERIFY_ELF
-+extern int module_verify_elf(struct module_verify_data *mvdata);
-+#else
-+#define module_verify_elf(m) (0)
-+#endif
-+
-+#else
-+#define module_verify(h, s) (0)
-+#endif
-diff --git a/kernel/module.c b/kernel/module.c
-index 178333c..8309389 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -58,6 +58,7 @@
- #include <linux/jump_label.h>
- #include <linux/pfn.h>
- #include <linux/bsearch.h>
-+#include "module-verify.h"
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/module.h>
-@@ -2365,6 +2366,11 @@ static int copy_and_check(struct load_info *info,
- 		goto free_hdr;
- 	}
- 
-+	/* Verify the module's contents */
-+	err = module_verify(hdr, len);
-+	if (err < 0)
-+		goto free_hdr;
-+
- 	info->hdr = hdr;
- 	info->len = len;
- 	return 0;
-
+Thanks,
+Fengguang
