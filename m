@@ -1,487 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753752Ab1K3MrB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 07:47:01 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:46892 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab1K3Mq4 (ORCPT
+	id S1752896Ab1K3NDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 08:03:39 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:53952 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab1K3NDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 07:46:56 -0500
-Subject: [RFC PATCH v3 2/4] cpuidle: (POWER) cpuidle driver for pSeries
-To: benh@kernel.crashing.org, len.brown@intel.com
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: linuxppc-dev@ozlabs.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Date: Wed, 30 Nov 2011 18:16:42 +0530
-Message-ID: <20111130124637.972.31691.stgit@deepthi-ThinkPad-T420>
-In-Reply-To: <20111130124608.972.87712.stgit@deepthi-ThinkPad-T420>
-References: <20111130124608.972.87712.stgit@deepthi-ThinkPad-T420>
-User-Agent: StGit/0.15
+	Wed, 30 Nov 2011 08:03:36 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt extensions
+Date: Wed, 30 Nov 2011 13:03:23 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "android-virt@lists.cs.columbia.edu" 
+	<android-virt@lists.cs.columbia.edu>,
+        "embeddedxen-devel@lists.sourceforge.net" 
+	<embeddedxen-devel@lists.sourceforge.net>,
+        Pawel Moll <pawel.moll@arm.com>
+References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop> <201111292129.20444.arnd@arndb.de> <alpine.DEB.2.00.1111301053300.31179@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1111301053300.31179@kaball-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11113002-6102-0000-0000-0000004B1C0B
+Message-Id: <201111301303.23851.arnd@arndb.de>
+X-Provags-ID: V02:K0:yO3QYRv/tV0cvlbKetPYikmxAMy/xeoY1O3g7UVEQfs
+ HfDjbIGA+ldgcNVB32LorGgSwECxyFpsENBWyMy5SXv4lynbw2
+ Mn1GonGMemlPRAPhd/EVvsvRQH36i/t3WrUR1Di+2t2mF5nz4b
+ yidnsVj2+j4s0RRxl0NYDEArvUQIdAtxqT6E3dSwq9wqGKCWGq
+ OL/VVsID9t58AiXzk3O93bxzRHUF5+0nk5vn/TNgApzlQ7oh0X
+ AaCW8Dksze0VBdtwsGFPYYqsmdCamfyEF3H5PRrlniVhgBnED5
+ D0UwgXJF0iBpF2h4RVpLI/ik2UPrLQIFq8lrTuzaNGYbndM8Vf
+ EghSQz76kbIC04Wt70RU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements a back-end cpuidle driver for pSeries
-based on pseries_dedicated_idle_loop and pseries_shared_idle_loop
-routines.  The driver is built only if CONFIG_CPU_IDLE is set. This
-cpuidle driver uses global registration of idle states and
-not per-cpu.
+On Wednesday 30 November 2011, Stefano Stabellini wrote:
+> On Tue, 29 Nov 2011, Arnd Bergmann wrote:
+> > On Tuesday 29 November 2011, Stefano Stabellini wrote:
+> > 
+> > Do you have a pointer to the kernel sources for the Linux guest?
+> 
+> We have very few changes to the Linux kernel at the moment (only 3
+> commits!), just enough to be able to issue hypercalls and start a PV
+> console.
+> 
+> A git branch is available here (not ready for submission):
+> 
+> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git arm
 
-Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Signed-off-by: Trinabh Gupta <g.trinabh@gmail.com>
-Signed-off-by: Arun R Bharadwaj <arun.r.bharadwaj@gmail.com>
----
- arch/powerpc/include/asm/system.h               |    8 +
- arch/powerpc/kernel/sysfs.c                     |    2 
- arch/powerpc/platforms/pseries/Kconfig          |    9 +
- arch/powerpc/platforms/pseries/Makefile         |    1 
- arch/powerpc/platforms/pseries/processor_idle.c |  326 +++++++++++++++++++++++
- arch/powerpc/platforms/pseries/pseries.h        |    3 
- arch/powerpc/platforms/pseries/setup.c          |    3 
- arch/powerpc/platforms/pseries/smp.c            |    1 
- 8 files changed, 350 insertions(+), 3 deletions(-)
- create mode 100644 arch/powerpc/platforms/pseries/processor_idle.c
+Ok, interesting. There really isn't much of the platform support
+that I was expecting there. I finally found the information
+I was looking for in the xen construct_dom0() function:
 
-diff --git a/arch/powerpc/include/asm/system.h b/arch/powerpc/include/asm/system.h
-index ff66680..f56a0a7 100644
---- a/arch/powerpc/include/asm/system.h
-+++ b/arch/powerpc/include/asm/system.h
-@@ -223,6 +223,14 @@ extern void *zalloc_maybe_bootmem(size_t size, gfp_t mask);
- extern int powersave_nap;	/* set if nap mode can be used in idle loop */
- void cpu_idle_wait(void);
- 
-+#ifdef CONFIG_PSERIES_IDLE
-+extern void update_smt_snooze_delay(int snooze);
-+extern int pseries_notify_cpuidle_add_cpu(int cpu);
-+#else
-+static inline void update_smt_snooze_delay(int snooze) {}
-+static inline int pseries_notify_cpuidle_add_cpu(int cpu) { return 0; }
-+#endif
-+
- /*
-  * Atomic exchange
-  *
-diff --git a/arch/powerpc/kernel/sysfs.c b/arch/powerpc/kernel/sysfs.c
-index ce035c1..ebe5d78 100644
---- a/arch/powerpc/kernel/sysfs.c
-+++ b/arch/powerpc/kernel/sysfs.c
-@@ -18,6 +18,7 @@
- #include <asm/machdep.h>
- #include <asm/smp.h>
- #include <asm/pmc.h>
-+#include <asm/system.h>
- 
- #include "cacheinfo.h"
- 
-@@ -51,6 +52,7 @@ static ssize_t store_smt_snooze_delay(struct sys_device *dev,
- 		return -EINVAL;
- 
- 	per_cpu(smt_snooze_delay, cpu->sysdev.id) = snooze;
-+	update_smt_snooze_delay(snooze);
- 
- 	return count;
- }
-diff --git a/arch/powerpc/platforms/pseries/Kconfig b/arch/powerpc/platforms/pseries/Kconfig
-index c81f6bb..ae7b6d4 100644
---- a/arch/powerpc/platforms/pseries/Kconfig
-+++ b/arch/powerpc/platforms/pseries/Kconfig
-@@ -120,3 +120,12 @@ config DTL
- 	  which are accessible through a debugfs file.
- 
- 	  Say N if you are unsure.
-+
-+config PSERIES_IDLE
-+	tristate "Cpuidle driver for pSeries platforms"
-+	depends on CPU_IDLE
-+	depends on PPC_PSERIES
-+	default y
-+	help
-+	  Select this option to enable processor idle state management
-+	  through cpuidle subsystem.
-diff --git a/arch/powerpc/platforms/pseries/Makefile b/arch/powerpc/platforms/pseries/Makefile
-index 3556e40..236db46 100644
---- a/arch/powerpc/platforms/pseries/Makefile
-+++ b/arch/powerpc/platforms/pseries/Makefile
-@@ -22,6 +22,7 @@ obj-$(CONFIG_PHYP_DUMP)		+= phyp_dump.o
- obj-$(CONFIG_CMM)		+= cmm.o
- obj-$(CONFIG_DTL)		+= dtl.o
- obj-$(CONFIG_IO_EVENT_IRQ)	+= io_event_irq.o
-+obj-$(CONFIG_PSERIES_IDLE)	+= processor_idle.o
- 
- ifeq ($(CONFIG_PPC_PSERIES),y)
- obj-$(CONFIG_SUSPEND)		+= suspend.o
-diff --git a/arch/powerpc/platforms/pseries/processor_idle.c b/arch/powerpc/platforms/pseries/processor_idle.c
-new file mode 100644
-index 0000000..352b78a
---- /dev/null
-+++ b/arch/powerpc/platforms/pseries/processor_idle.c
-@@ -0,0 +1,326 @@
-+/*
-+ *  processor_idle - idle state cpuidle driver.
-+ *  Adapted from drivers/idle/intel_idle.c and
-+ *  drivers/acpi/processor_idle.c
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/moduleparam.h>
-+#include <linux/cpuidle.h>
-+#include <linux/cpu.h>
-+
-+#include <asm/paca.h>
-+#include <asm/reg.h>
-+#include <asm/system.h>
-+#include <asm/machdep.h>
-+#include <asm/firmware.h>
-+
-+#include "plpar_wrappers.h"
-+#include "pseries.h"
-+
-+struct cpuidle_driver pseries_idle_driver = {
-+	.name =		"pseries_idle",
-+	.owner =	THIS_MODULE,
-+};
-+
-+#define MAX_IDLE_STATE_COUNT	2
-+
-+static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
-+static struct cpuidle_device __percpu *pseries_cpuidle_devices;
-+static struct cpuidle_state *cpuidle_state_table;
-+
-+void update_smt_snooze_delay(int snooze)
-+{
-+	struct cpuidle_driver *drv = cpuidle_get_driver();
-+	if (drv)
-+		drv->states[0].target_residency = snooze;
-+}
-+
-+static inline void idle_loop_prolog(unsigned long *in_purr, ktime_t *kt_before)
-+{
-+
-+	*kt_before = ktime_get_real();
-+	*in_purr = mfspr(SPRN_PURR);
-+	/*
-+	 * Indicate to the HV that we are idle. Now would be
-+	 * a good time to find other work to dispatch.
-+	 */
-+	get_lppaca()->idle = 1;
-+}
-+
-+static inline  s64 idle_loop_epilog(unsigned long in_purr, ktime_t kt_before)
-+{
-+	get_lppaca()->wait_state_cycles += mfspr(SPRN_PURR) - in_purr;
-+	get_lppaca()->idle = 0;
-+
-+	return ktime_to_us(ktime_sub(ktime_get_real(), kt_before));
-+}
-+
-+static int snooze_loop(struct cpuidle_device *dev,
-+			struct cpuidle_driver *drv,
-+			int index)
-+{
-+	unsigned long in_purr;
-+	ktime_t kt_before;
-+	unsigned long start_snooze;
-+	long snooze = drv->states[0].target_residency;
-+
-+	idle_loop_prolog(&in_purr, &kt_before);
-+
-+	if (snooze) {
-+		start_snooze = get_tb() + snooze * tb_ticks_per_usec;
-+		local_irq_enable();
-+		set_thread_flag(TIF_POLLING_NRFLAG);
-+
-+		while ((snooze < 0) || (get_tb() < start_snooze)) {
-+			if (need_resched() || cpu_is_offline(dev->cpu))
-+				goto out;
-+			ppc64_runlatch_off();
-+			HMT_low();
-+			HMT_very_low();
-+		}	
-+
-+		HMT_medium();
-+		clear_thread_flag(TIF_POLLING_NRFLAG);
-+		smp_mb();
-+		local_irq_disable();
-+	}
-+
-+out:
-+	HMT_medium();
-+	dev->last_residency =
-+		(int)idle_loop_epilog(in_purr, kt_before);
-+	return index;
-+}
-+
-+static int dedicated_cede_loop(struct cpuidle_device *dev,
-+				struct cpuidle_driver *drv,
-+				int index)
-+{
-+	unsigned long in_purr;
-+	ktime_t kt_before;
-+
-+	idle_loop_prolog(&in_purr, &kt_before);
-+	get_lppaca()->donate_dedicated_cpu = 1;
-+
-+	ppc64_runlatch_off();
-+	HMT_medium();
-+	cede_processor();
-+
-+	get_lppaca()->donate_dedicated_cpu = 0;
-+	dev->last_residency =
-+		(int)idle_loop_epilog(in_purr, kt_before);
-+	return index;
-+}
-+
-+static int shared_cede_loop(struct cpuidle_device *dev,
-+			struct cpuidle_driver *drv,
-+			int index)
-+{
-+	unsigned long in_purr;
-+	ktime_t kt_before;
-+
-+	idle_loop_prolog(&in_purr, &kt_before);
-+
-+	/*
-+	 * Yield the processor to the hypervisor.  We return if
-+	 * an external interrupt occurs (which are driven prior
-+	 * to returning here) or if a prod occurs from another
-+	 * processor. When returning here, external interrupts
-+	 * are enabled.
-+	 */
-+	cede_processor();
-+
-+	dev->last_residency =
-+		(int)idle_loop_epilog(in_purr, kt_before);
-+	return index;
-+}
-+
-+/*
-+ * States for dedicated partition case.
-+ */
-+static struct cpuidle_state dedicated_states[MAX_IDLE_STATE_COUNT] = {
-+	{ /* Snooze */
-+		.name = "snooze",
-+		.desc = "snooze",
-+		.flags = CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 0,
-+		.target_residency = 0,
-+		.enter = &snooze_loop },
-+	{ /* CEDE */
-+		.name = "CEDE",
-+		.desc = "CEDE",
-+		.flags = CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 1,
-+		.target_residency = 10,
-+		.enter = &dedicated_cede_loop },
-+};
-+
-+/*
-+ * States for shared partition case.
-+ */
-+static struct cpuidle_state shared_states[MAX_IDLE_STATE_COUNT] = {
-+	{ /* Shared Cede */
-+		.name = "Shared Cede",
-+		.desc = "Shared Cede",
-+		.flags = CPUIDLE_FLAG_TIME_VALID,
-+		.exit_latency = 0,
-+		.target_residency = 0,
-+		.enter = &shared_cede_loop },
-+};
-+
-+int pseries_notify_cpuidle_add_cpu(int cpu)
-+{
-+	struct cpuidle_device *dev =
-+			per_cpu_ptr(pseries_cpuidle_devices, cpu);
-+	if (dev && cpuidle_get_driver()) {
-+		cpuidle_disable_device(dev);
-+		cpuidle_enable_device(dev);
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * pseries_cpuidle_driver_init()
-+ */
-+static int pseries_cpuidle_driver_init(void)
-+{
-+	int idle_state;
-+	struct cpuidle_driver *drv = &pseries_idle_driver;
-+
-+	drv->state_count = 0;
-+
-+	for (idle_state = 0; idle_state < MAX_IDLE_STATE_COUNT; ++idle_state) {
-+
-+		if (idle_state > max_idle_state)
-+			break;
-+
-+		/* is the state not enabled? */
-+		if (cpuidle_state_table[idle_state].enter == NULL)
-+			continue;
-+
-+		drv->states[drv->state_count] =	/* structure copy */
-+			cpuidle_state_table[idle_state];
-+
-+		if (cpuidle_state_table == dedicated_states)
-+			drv->states[drv->state_count].target_residency =
-+				__get_cpu_var(smt_snooze_delay);
-+
-+		drv->state_count += 1;
-+	}
-+
-+	return 0;
-+}
-+
-+/* pseries_idle_devices_uninit(void)
-+ * unregister cpuidle devices and de-allocate memory
-+ */
-+static void pseries_idle_devices_uninit(void)
-+{
-+	int i;
-+	struct cpuidle_device *dev;
-+
-+	for_each_possible_cpu(i) {
-+		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
-+		cpuidle_unregister_device(dev);
-+	}
-+
-+	free_percpu(pseries_cpuidle_devices);
-+	return;
-+}
-+
-+/* pseries_idle_devices_init()
-+ * allocate, initialize and register cpuidle device
-+ */
-+static int pseries_idle_devices_init(void)
-+{
-+	int i;
-+	struct cpuidle_driver *drv = &pseries_idle_driver;
-+	struct cpuidle_device *dev;
-+
-+	pseries_cpuidle_devices = alloc_percpu(struct cpuidle_device);
-+	if (pseries_cpuidle_devices == NULL)
-+		return -ENOMEM;
-+
-+	for_each_possible_cpu(i) {
-+		dev = per_cpu_ptr(pseries_cpuidle_devices, i);
-+		dev->state_count = drv->state_count;
-+		dev->cpu = i;
-+		if (cpuidle_register_device(dev)) {
-+			printk(KERN_DEBUG \
-+				"cpuidle_register_device %d failed!\n", i);
-+			return -EIO;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * pseries_idle_probe()
-+ * Choose state table for shared versus dedicated partition
-+ */
-+static int pseries_idle_probe(void)
-+{
-+
-+	if (!firmware_has_feature(FW_FEATURE_SPLPAR))
-+		return -ENODEV;
-+
-+	if (max_idle_state == 0) {
-+		printk(KERN_DEBUG "pseries processor idle disabled.\n");
-+		return -EPERM;
-+	}
-+
-+	if (get_lppaca()->shared_proc)
-+		cpuidle_state_table = shared_states;
-+	else
-+		cpuidle_state_table = dedicated_states;
-+
-+	return 0;
-+}
-+
-+static int __init pseries_processor_idle_init(void)
-+{
-+	int retval;
-+
-+	retval = pseries_idle_probe();
-+	if (retval)
-+		return retval;
-+
-+	pseries_cpuidle_driver_init();
-+	retval = cpuidle_register_driver(&pseries_idle_driver);
-+	if (retval) {
-+		printk(KERN_DEBUG "Registration of pseries driver failed.\n");
-+		return retval;
-+	}
-+
-+	retval = pseries_idle_devices_init();
-+	if (retval) {
-+		pseries_idle_devices_uninit();
-+		cpuidle_unregister_driver(&pseries_idle_driver);
-+		return retval;
-+	}
-+
-+	printk(KERN_DEBUG "pseries_idle_driver registered\n");
-+
-+	return 0;
-+}
-+
-+static void __exit pseries_processor_idle_exit(void)
-+{
-+
-+	pseries_idle_devices_uninit();
-+	cpuidle_unregister_driver(&pseries_idle_driver);
-+
-+	return;
-+}
-+
-+module_init(pseries_processor_idle_init);
-+module_exit(pseries_processor_idle_exit);
-+
-+MODULE_AUTHOR("Deepthi Dharwar <deepthi@linux.vnet.ibm.com>");
-+MODULE_DESCRIPTION("Cpuidle driver for POWER");
-+MODULE_LICENSE("GPL");
-diff --git a/arch/powerpc/platforms/pseries/pseries.h b/arch/powerpc/platforms/pseries/pseries.h
-index 24c7162..9a3dda0 100644
---- a/arch/powerpc/platforms/pseries/pseries.h
-+++ b/arch/powerpc/platforms/pseries/pseries.h
-@@ -57,4 +57,7 @@ extern struct device_node *dlpar_configure_connector(u32);
- extern int dlpar_attach_node(struct device_node *);
- extern int dlpar_detach_node(struct device_node *);
- 
-+/* Snooze Delay, pseries_idle */
-+DECLARE_PER_CPU(long, smt_snooze_delay);
-+
- #endif /* _PSERIES_PSERIES_H */
-diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
-index c3408ca..9c6716a 100644
---- a/arch/powerpc/platforms/pseries/setup.c
-+++ b/arch/powerpc/platforms/pseries/setup.c
-@@ -586,9 +586,6 @@ static int __init pSeries_probe(void)
- 	return 1;
- }
- 
--
--DECLARE_PER_CPU(long, smt_snooze_delay);
--
- static void pseries_dedicated_idle_sleep(void)
- { 
- 	unsigned int cpu = smp_processor_id();
-diff --git a/arch/powerpc/platforms/pseries/smp.c b/arch/powerpc/platforms/pseries/smp.c
-index 26e93fd..bbc3c42 100644
---- a/arch/powerpc/platforms/pseries/smp.c
-+++ b/arch/powerpc/platforms/pseries/smp.c
-@@ -148,6 +148,7 @@ static void __devinit smp_xics_setup_cpu(int cpu)
- 	set_cpu_current_state(cpu, CPU_STATE_ONLINE);
- 	set_default_offline_state(cpu);
- #endif
-+	pseries_notify_cpuidle_add_cpu(cpu);
- }
- 
- static int __devinit smp_pSeries_kick_cpu(int nr)
+ 167     regs->r0 = 0; /* SBZ */
+ 168     regs->r1 = 2272; /* Machine NR: Versatile Express */
+ 169     regs->r2 = 0xc0000100; /* ATAGS */
 
+What this means is that you are emulating the current ARM/Keil reference
+board, at least to the degree that is necessary to get the guest started.
+
+This is the same choice people have made for KVM, but it's not
+necessarily the best option in the long run. In particular, this
+board has a lot of hardware that you claim to have by putting the
+machine number there, when you don't really want to emulate it.
+
+Pawell Moll is working on a variant of the vexpress code that uses
+the flattened device tree to describe the present hardware [1], and
+I think that would be a much better target for an official release.
+Ideally, the hypervisor should provide the device tree binary (dtb)
+to the guest OS describing the hardware that is actually there.
+
+This would also be the place where you tell the guest that it should
+look for PV devices. I'm not familiar with how Xen announces PV
+devices to the guest on other architectures, but you have the
+choice between providing a full "binding", i.e. a formal specification
+in device tree format for the guest to detect PV devices in the
+same way as physical or emulated devices, or just providing a single
+place in the device tree in which the guest detects the presence
+of a xen device bus and then uses hcalls to find the devices on that
+bus.
+
+Another topic is the question whether there are any hcalls that
+we should try to standardize before we get another architecture
+with multiple conflicting hcall APIs as we have on x86 and powerpc.
+
+	Arnd
+
+[1] http://www.spinics.net/lists/arm-kernel/msg149604.html
