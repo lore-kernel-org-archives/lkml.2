@@ -1,276 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab1K3QYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 11:24:44 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:46450 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757638Ab1K3QYk convert rfc822-to-8bit (ORCPT
+	id S1757793Ab1K3Q15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 11:27:57 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:30332 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344Ab1K3Q1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 11:24:40 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Oleg Nesterov <oleg@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+	Wed, 30 Nov 2011 11:27:55 -0500
+X-IronPort-AV: E=Sophos;i="4.69,597,1315180800"; 
+   d="scan'208";a="9212840"
+Subject: Re: [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt
+ extensions
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Masami.hiramatsu.pt@hitachi.com'" <Masami.hiramatsu.pt@hitachi.com>
-Date: Wed, 30 Nov 2011 11:24:20 -0500
-Subject: RE: [PATCH 1/2] tracing: let trace_signal_generate() report more
-	info, kill overflow_fail/lose_info
-Thread-Topic: [PATCH 1/2] tracing: let trace_signal_generate() report more
-	info, kill overflow_fail/lose_info
-Thread-Index: AcyqB13Bi4ZSz4QYSV287O6FKlB4KQFdINvA
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C57D411B6@USINDEVS01.corp.hds.com>
-References: <20111121191920.GA24883@redhat.com>
- <1321905799.20742.20.camel@frodo> <20111121202110.GA27966@redhat.com>
- <1321912356.20742.24.camel@frodo> <20111122205239.GA20971@redhat.com>
- <20111122205258.GB20971@redhat.com> <4ECC4FDC.1010506@cn.fujitsu.com>
- <20111123173726.GA25450@redhat.com>
-In-Reply-To: <20111123173726.GA25450@redhat.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "android-virt@lists.cs.columbia.edu" 
+	<android-virt@lists.cs.columbia.edu>,
+        "embeddedxen-devel@lists.sourceforge.net" 
+	<embeddedxen-devel@lists.sourceforge.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 30 Nov 2011 16:27:53 +0000
+In-Reply-To: <201111301432.54463.arnd@arndb.de>
+References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop>
+	 <201111301303.23851.arnd@arndb.de>
+	 <1322659535.31810.97.camel@zakaz.uk.xensource.com>
+	 <201111301432.54463.arnd@arndb.de>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1322670473.31810.129.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=8 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1111300142
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->------------------------------------------------------------------------------
->[PATCH v2 1/2] tracing: let trace_signal_generate() report more info, kill overflow_fail/lose_info
->
->Incompatible change.
->
->__send_signal()->trace_signal_generate() doesn't report enough info.
->The users want to know was the signal actually delivered or not, and
->they also need the shared/private info.
->
->The patch moves trace_signal_generate() at the end of __send_signal()
->and adds the 2 additional arguments.
->
->This also allows us to kill trace_signal_overflow_fail/lose_info, we
->can simply add the appropriate TRACE_SIGNAL_ "result" codes.
->
+On Wed, 2011-11-30 at 14:32 +0000, Arnd Bergmann wrote:
+> On Wednesday 30 November 2011, Ian Campbell wrote:
+> > On Wed, 2011-11-30 at 13:03 +0000, Arnd Bergmann wrote:
+> > For domU the DT would presumably be constructed by the toolstack (in
+> > dom0 userspace) as appropriate for the guest configuration. I guess this
+> > needn't correspond to any particular "real" hardware platform.
+> 
+> Correct, but it needs to correspond to some platform that is supported
+> by the guest OS, which leaves the choice between emulating a real
+> hardware platform, adding a completely new platform specifically for
+> virtual machines, or something in between the two.
+> 
+> What I suggested to the KVM developers is to start out with the
+> vexpress platform, but then generalize it to the point where it fits
+> your needs. All hardware that one expects a guest to have (GIC, timer,
+> ...) will still show up in the same location as on a real vexpress,
+> while anything that makes no sense or is better paravirtualized (LCD,
+> storage, ...) just becomes optional and has to be described in the
+> device tree if it's actually there.
 
-Thanks. This looks good to me.
-Reviewed-by: Seiji Aguchi <seiji.aguchi@hds.com>
+That's along the lines of what I was thinking as well.
 
->Signed-off-by: Oleg Nesterov <oleg@redhat.com>
->---
-> include/trace/events/signal.h |   85 +++++++++++------------------------------
-> kernel/signal.c               |   22 +++++++----
-> 2 files changed, 36 insertions(+), 71 deletions(-)
->
->diff --git a/include/trace/events/signal.h b/include/trace/events/signal.h
->index 17df434..2de7208 100644
->--- a/include/trace/events/signal.h
->+++ b/include/trace/events/signal.h
->@@ -23,11 +23,23 @@
-> 		}						\
-> 	} while (0)
->
->+#ifndef TRACE_HEADER_MULTI_READ
->+enum {
->+	TRACE_SIGNAL_DELIVERED,
->+	TRACE_SIGNAL_IGNORED,
->+	TRACE_SIGNAL_ALREADY_PENDING,
->+	TRACE_SIGNAL_OVERFLOW_FAIL,
->+	TRACE_SIGNAL_LOSE_INFO,
->+};
->+#endif
->+
-> /**
->  * signal_generate - called when a signal is generated
->  * @sig: signal number
->  * @info: pointer to struct siginfo
->  * @task: pointer to struct task_struct
->+ * @group: shared or private
->+ * @result: TRACE_SIGNAL_*
->  *
->  * Current process sends a 'sig' signal to 'task' process with
->  * 'info' siginfo. If 'info' is SEND_SIG_NOINFO or SEND_SIG_PRIV,
->@@ -37,9 +49,10 @@
->  */
-> TRACE_EVENT(signal_generate,
->
->-	TP_PROTO(int sig, struct siginfo *info, struct task_struct *task),
->+	TP_PROTO(int sig, struct siginfo *info, struct task_struct *task,
->+			int group, int result),
->
->-	TP_ARGS(sig, info, task),
->+	TP_ARGS(sig, info, task, group, result),
->
-> 	TP_STRUCT__entry(
-> 		__field(	int,	sig			)
->@@ -47,6 +60,8 @@ TRACE_EVENT(signal_generate,
-> 		__field(	int,	code			)
-> 		__array(	char,	comm,	TASK_COMM_LEN	)
-> 		__field(	pid_t,	pid			)
->+		__field(	int,	group			)
->+		__field(	int,	result			)
-> 	),
->
-> 	TP_fast_assign(
->@@ -54,11 +69,14 @@ TRACE_EVENT(signal_generate,
-> 		TP_STORE_SIGINFO(__entry, info);
-> 		memcpy(__entry->comm, task->comm, TASK_COMM_LEN);
-> 		__entry->pid	= task->pid;
->+		__entry->group	= group;
->+		__entry->result	= result;
-> 	),
->
->-	TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
->+	TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
-> 		  __entry->sig, __entry->errno, __entry->code,
->-		  __entry->comm, __entry->pid)
->+		  __entry->comm, __entry->pid, __entry->group,
->+		  __entry->result)
-> );
->
-> /**
->@@ -101,65 +119,6 @@ TRACE_EVENT(signal_deliver,
-> 		  __entry->sa_handler, __entry->sa_flags)
-> );
->
->-DECLARE_EVENT_CLASS(signal_queue_overflow,
->-
->-	TP_PROTO(int sig, int group, struct siginfo *info),
->-
->-	TP_ARGS(sig, group, info),
->-
->-	TP_STRUCT__entry(
->-		__field(	int,	sig	)
->-		__field(	int,	group	)
->-		__field(	int,	errno	)
->-		__field(	int,	code	)
->-	),
->-
->-	TP_fast_assign(
->-		__entry->sig	= sig;
->-		__entry->group	= group;
->-		TP_STORE_SIGINFO(__entry, info);
->-	),
->-
->-	TP_printk("sig=%d group=%d errno=%d code=%d",
->-		  __entry->sig, __entry->group, __entry->errno, __entry->code)
->-);
->-
->-/**
->- * signal_overflow_fail - called when signal queue is overflow
->- * @sig: signal number
->- * @group: signal to process group or not (bool)
->- * @info: pointer to struct siginfo
->- *
->- * Kernel fails to generate 'sig' signal with 'info' siginfo, because
->- * siginfo queue is overflow, and the signal is dropped.
->- * 'group' is not 0 if the signal will be sent to a process group.
->- * 'sig' is always one of RT signals.
->- */
->-DEFINE_EVENT(signal_queue_overflow, signal_overflow_fail,
->-
->-	TP_PROTO(int sig, int group, struct siginfo *info),
->-
->-	TP_ARGS(sig, group, info)
->-);
->-
->-/**
->- * signal_lose_info - called when siginfo is lost
->- * @sig: signal number
->- * @group: signal to process group or not (bool)
->- * @info: pointer to struct siginfo
->- *
->- * Kernel generates 'sig' signal but loses 'info' siginfo, because siginfo
->- * queue is overflow.
->- * 'group' is not 0 if the signal will be sent to a process group.
->- * 'sig' is always one of non-RT signals.
->- */
->-DEFINE_EVENT(signal_queue_overflow, signal_lose_info,
->-
->-	TP_PROTO(int sig, int group, struct siginfo *info),
->-
->-	TP_ARGS(sig, group, info)
->-);
->-
-> #endif /* _TRACE_SIGNAL_H */
->
-> /* This part must be outside protection */
->diff --git a/kernel/signal.c b/kernel/signal.c
->index b3f78d0..5f130f6 100644
->--- a/kernel/signal.c
->+++ b/kernel/signal.c
->@@ -1025,13 +1025,13 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
-> 	struct sigpending *pending;
-> 	struct sigqueue *q;
-> 	int override_rlimit;
->-
->-	trace_signal_generate(sig, info, t);
->+	int ret = 0, result;
->
-> 	assert_spin_locked(&t->sighand->siglock);
->
->+	result = TRACE_SIGNAL_IGNORED;
-> 	if (!prepare_signal(sig, t, from_ancestor_ns))
->-		return 0;
->+		goto ret;
->
-> 	pending = group ? &t->signal->shared_pending : &t->pending;
-> 	/*
->@@ -1039,8 +1039,11 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
-> 	 * exactly one non-rt signal, so that we can get more
-> 	 * detailed information about the cause of the signal.
-> 	 */
->+	result = TRACE_SIGNAL_ALREADY_PENDING;
-> 	if (legacy_queue(pending, sig))
->-		return 0;
->+		goto ret;
->+
->+	result = TRACE_SIGNAL_DELIVERED;
-> 	/*
-> 	 * fast-pathed signals for kernel-internal things like SIGSTOP
-> 	 * or SIGKILL.
->@@ -1095,14 +1098,15 @@ static int __send_signal(int sig, struct siginfo *info, struct task_struct *t,
-> 			 * signal was rt and sent by user using something
-> 			 * other than kill().
-> 			 */
->-			trace_signal_overflow_fail(sig, group, info);
->-			return -EAGAIN;
->+			result = TRACE_SIGNAL_OVERFLOW_FAIL;
->+			ret = -EAGAIN;
->+			goto ret;
-> 		} else {
-> 			/*
-> 			 * This is a silent loss of information.  We still
-> 			 * send the signal, but the *info bits are lost.
-> 			 */
->-			trace_signal_lose_info(sig, group, info);
->+			result = TRACE_SIGNAL_LOSE_INFO;
-> 		}
-> 	}
->
->@@ -1110,7 +1114,9 @@ out_set:
-> 	signalfd_notify(t, sig);
-> 	sigaddset(&pending->signal, sig);
-> 	complete_signal(sig, t, group);
->-	return 0;
->+ret:
->+	trace_signal_generate(sig, info, t, group, result);
->+	return ret;
-> }
->
-> static int send_signal(int sig, struct siginfo *info, struct task_struct *t,
->--
->1.5.5.1
->
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+The DT contains the address of GIC, timer etc as well right? So at least
+in principal we needn't provide e.g. the GIC at the same address as any
+real platform but in practice I expect we will.
+
+In principal we could also offer the user options as to which particular
+platform a guest looks like.
+
+> > > This would also be the place where you tell the guest that it should
+> > > look for PV devices. I'm not familiar with how Xen announces PV
+> > > devices to the guest on other architectures, but you have the
+> > > choice between providing a full "binding", i.e. a formal specification
+> > > in device tree format for the guest to detect PV devices in the
+> > > same way as physical or emulated devices, or just providing a single
+> > > place in the device tree in which the guest detects the presence
+> > > of a xen device bus and then uses hcalls to find the devices on that
+> > > bus.
+> > 
+> > On x86 there is an emulated PCI device which serves as the hooking point
+> > for the PV drivers. For ARM I don't think it would be unreasonable to
+> > have a DT entry instead. I think it would be fine just represent the
+> > root of the "xenbus" and further discovery would occur using the normal
+> > xenbus mechanisms (so not a full binding). AIUI for buses which are
+> > enumerable this is the preferred DT scheme to use.
+> 
+> In general that is the case, yes. One could argue that any software
+> protocol between Xen and the guest is as good as any other, so it
+> makes sense to use the device tree to describe all devices here.
+> The counterargument to that is that Linux and other OSs already
+> support Xenbus, so there is no need to come up with a new binding.
+
+Right.
+
+> I don't care much either way, but I think it would be good to
+> use similar solutions across all hypervisors. The two options
+> that I've seen discussed for KVM were to use either a virtual PCI
+> bus with individual virtio-pci devices as on the PC, or to
+> use the new virtio-mmio driver and individually put virtio devices
+> into the device tree.
+> 
+> > > Another topic is the question whether there are any hcalls that
+> > > we should try to standardize before we get another architecture
+> > > with multiple conflicting hcall APIs as we have on x86 and powerpc.
+> > 
+> > The hcall API we are currently targeting is the existing Xen API (at
+> > least the generic parts of it). These generally deal with fairly Xen
+> > specific concepts like grant tables etc.
+> 
+> Ok. It would of course still be possible to agree on an argument passing
+> convention so that we can share the macros used to issue the hcalls,
+> even if the individual commands are all different.
+
+I think it likely that we can all agree on a common calling convention
+for N-argument hypercalls. It doubt there are that many useful choices
+with conflicting requirements yet strongly compelling advantages.
+
+>  I think I also
+> remember talk about the need for a set of hypervisor independent calls
+> that everyone should implement, but I can't remember what those were.
+
+I'd not heard of this, maybe I just wasn't looking the right way though.
+
+> Maybe we can split the number space into a range of some generic and
+> some vendor specific hcalls?
+
+Ian.
+
