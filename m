@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab1K3BSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 20:18:10 -0500
-Received: from mga14.intel.com ([143.182.124.37]:53036 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757081Ab1K3BSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 20:18:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,595,1315206000"; 
-   d="scan'208";a="80445305"
-Date: Wed, 30 Nov 2011 09:18:03 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] readahead: record readahead patterns
-Message-ID: <20111130011803.GE11147@localhost>
-References: <20111129130900.628549879@intel.com>
- <20111129131456.278516066@intel.com>
- <20111129175743.GP24062@one.firstfloor.org>
+	id S1757302Ab1K3BWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 20:22:40 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:48963 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754661Ab1K3BWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 20:22:38 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Haogang Chen <haogangchen@gmail.com>
+Subject: Re: [PATCH] Media: video: uvc: integer overflow in uvc_ioctl_ctrl_map()
+Date: Wed, 30 Nov 2011 02:22:32 +0100
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.3; x86_64; ; )
+Cc: mchehab@infradead.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1322602345-26279-1-git-send-email-haogangchen@gmail.com>
+In-Reply-To: <1322602345-26279-1-git-send-email-haogangchen@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129175743.GP24062@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111300222.42162.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 01:57:43AM +0800, Andi Kleen wrote:
-> On Tue, Nov 29, 2011 at 09:09:03PM +0800, Wu Fengguang wrote:
-> > Record the readahead pattern in ra->pattern and extend the ra_submit()
-> > parameters, to be used by the next readahead tracing/stats patches.
+Hi Haogang,
+
+On Tuesday 29 November 2011 22:32:25 Haogang Chen wrote:
+> There is a potential integer overflow in uvc_ioctl_ctrl_map(). When a
+> large xmap->menu_count is passed from the userspace, the subsequent call
+> to kmalloc() will allocate a buffer smaller than expected.
+> map->menu_count and map->menu_info would later be used in a loop (e.g.
+> in uvc_query_v4l2_ctrl), which leads to out-of-bound access.
 > 
-> I like this, could it be exported it a bit more formally in /proc for 
-> each file descriptor?
+> The patch checks the ioctl argument and returns -EINVAL for zero or too
+> large values in xmap->menu_count.
 
-Something like this?
+Thanks for the patch.
 
-        $ cat /proc/self/fdinfo/2
-        pos:    0
-        flags:  0100002
-+       ra_pattern:      initial
-+       ra_size:         4
+> Signed-off-by: Haogang Chen <haogangchen@gmail.com>
+> ---
+>  drivers/media/video/uvc/uvc_v4l2.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/media/video/uvc/uvc_v4l2.c
+> b/drivers/media/video/uvc/uvc_v4l2.c index dadf11f..9a180d6 100644
+> --- a/drivers/media/video/uvc/uvc_v4l2.c
+> +++ b/drivers/media/video/uvc/uvc_v4l2.c
+> @@ -58,6 +58,12 @@ static int uvc_ioctl_ctrl_map(struct uvc_video_chain
+> *chain, break;
+> 
+>  	case V4L2_CTRL_TYPE_MENU:
+> +		if (xmap->menu_count == 0 ||
+> +		    xmap->menu_count > INT_MAX / sizeof(*map->menu_info)) {
 
-It may be some rapidly changing information, however in practical
-should remain stable unless it's changing access pattern a lot.
+I'd like to prevent excessive memory consumption by limiting the number of 
+menu entries, similarly to how the driver limits the number of mappings. 
+Defining UVC_MAX_CONTROL_MENU_ENTRIES to 32 in uvcvideo.h should be a 
+reasonable value.
 
-> I could imagine a monitoring tool that you run on a process that
-> tells you what pattern state the various file descriptors are in and how
-> large the window is. That would be similar to the tools for
-> monitoring network connections, which are extremly useful 
-> in practice.
+> +			kfree(map);
+> +			return -EINVAL;
 
-Yeah, the simplest form may be
+I'd rather do
 
-        watch "head /proc/self/fdinfo/*"
+	ret = -EINVAL;
+	goto done;
 
-Thanks,
-Fengguang
+to centralize error handling.
+
+If you're fine with both changes I can modify the patch, there's no need to 
+resubmit.
+
+> +		}
+> +
+>  		size = xmap->menu_count * sizeof(*map->menu_info);
+>  		map->menu_info = kmalloc(size, GFP_KERNEL);
+>  		if (map->menu_info == NULL) {
+
+-- 
+Regards,
+
+Laurent Pinchart
