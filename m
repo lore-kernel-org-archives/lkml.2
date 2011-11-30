@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab1K3T5s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:57:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56503 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab1K3T5n (ORCPT
+	id S1753170Ab1K3T56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:57:58 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46897 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753062Ab1K3T5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:57:43 -0500
+	Wed, 30 Nov 2011 14:57:54 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 10/25] dynamic_debug: tighten up error checking on debug queries
-Date: Wed, 30 Nov 2011 12:56:39 -0700
-Message-Id: <1322683014-13285-11-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 14/25] dynamic_debug: enlarge command/query write buffer
+Date: Wed, 30 Nov 2011 12:56:43 -0700
+Message-Id: <1322683014-13285-15-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
 References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
@@ -23,104 +23,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Issue error when a match-spec is given multiple times in a rule.
-Previous code kept last one, but was silent about it.  Docs imply only
-one is allowed by saying match-specs are ANDed together, given that
-module M cannot match both A and B.  Also error when last_line < 1st_line.
+Current query write buffer is 256 bytes, on stack.  In comparison, the
+ddebug_query boot-arg is 1024.  Allocate the buffer off heap, and
+enlarge it to 4096 bytes, big enough for ~100 queries (at 40 bytes
+each), and error out if not.  This makes it play nicely with large
+query sets (to be added later).  The buffer should be enough for most
+uses, and others should probably be split into subsets.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   39 +++++++++++++++++++++++++++++++++------
- 1 files changed, 33 insertions(+), 6 deletions(-)
+ lib/dynamic_debug.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 6a170c3..f133e03 100644
+index d285bb5..6e5b9a3 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -276,6 +276,19 @@ static char *unescape(char *str)
- 	return str;
- }
- 
-+static int check_set(const char **dest, char *src, char *name)
-+{
-+	int rc = 0;
-+
-+	if (*dest) {
-+		rc = -EINVAL;
-+		pr_err("match-spec:%s val:%s overridden by %s",
-+			name, *dest, src);
-+	}
-+	*dest = src;
-+	return rc;
-+}
-+
- /*
-  * Parse words[] as a ddebug query specification, which is a series
-  * of (keyword, value) pairs chosen from these possibilities:
-@@ -287,11 +300,15 @@ static char *unescape(char *str)
-  * format <escaped-string-to-find-in-format>
-  * line <lineno>
-  * line <first-lineno>-<last-lineno> // where either may be empty
-+ *
-+ * Only 1 of each type is allowed.
-+ * Returns 0 on success, <0 on error.
+@@ -570,24 +570,32 @@ __setup("ddebug_query=", ddebug_setup_query);
+  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
+  * command text from userspace, parses and executes it.
   */
- static int ddebug_parse_query(char *words[], int nwords,
- 			       struct ddebug_query *query)
++#define USER_BUF_PAGE 4095
+ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 				  size_t len, loff_t *offp)
  {
- 	unsigned int i;
-+	int rc;
+-	char tmpbuf[256];
++	char *tmpbuf;
+ 	int ret;
  
- 	/* check we have an even number of words */
- 	if (nwords % 2 != 0)
-@@ -300,24 +317,32 @@ static int ddebug_parse_query(char *words[], int nwords,
- 
- 	for (i = 0 ; i < nwords ; i += 2) {
- 		if (!strcmp(words[i], "func"))
--			query->function = words[i+1];
-+			rc = check_set(&query->function, words[i+1], "func");
- 		else if (!strcmp(words[i], "file"))
--			query->filename = words[i+1];
-+			rc = check_set(&query->filename, words[i+1], "file");
- 		else if (!strcmp(words[i], "module"))
--			query->module = words[i+1];
-+			rc = check_set(&query->module, words[i+1], "module");
- 		else if (!strcmp(words[i], "format"))
--			query->format = unescape(words[i+1]);
-+			rc = check_set(&query->format, unescape(words[i+1]),
-+				"format");
- 		else if (!strcmp(words[i], "line")) {
- 			char *first = words[i+1];
- 			char *last = strchr(first, '-');
-+			if (query->first_lineno || query->last_lineno) {
-+				pr_err("match-spec:line given 2 times\n");
-+				return -EINVAL;
-+			}
- 			if (last)
- 				*last++ = '\0';
- 			if (parse_lineno(first, &query->first_lineno) < 0)
- 				return -EINVAL;
--			if (last != NULL) {
-+			if (last) {
- 				/* range <first>-<last> */
--				if (parse_lineno(last, &query->last_lineno) < 0)
-+				if (parse_lineno(last, &query->last_lineno)
-+				    < query->first_lineno) {
-+					pr_err("last-line < 1st-line\n");
- 					return -EINVAL;
-+				}
- 			} else {
- 				query->last_lineno = query->first_lineno;
- 			}
-@@ -325,6 +350,8 @@ static int ddebug_parse_query(char *words[], int nwords,
- 			pr_err("unknown keyword \"%s\"\n", words[i]);
- 			return -EINVAL;
- 		}
-+		if (rc)
-+			return rc;
- 	}
- 
+ 	if (len == 0)
+ 		return 0;
+-	/* we don't check *offp -- multiple writes() are allowed */
+-	if (len > sizeof(tmpbuf)-1)
++	if (len > USER_BUF_PAGE - 1) {
++		pr_warn("expected <%d bytes into control\n", USER_BUF_PAGE);
+ 		return -E2BIG;
+-	if (copy_from_user(tmpbuf, ubuf, len))
++	}
++	tmpbuf = kmalloc(len + 1, GFP_KERNEL);
++	if (!tmpbuf)
++		return -ENOMEM;
++	if (copy_from_user(tmpbuf, ubuf, len)) {
++		kfree(tmpbuf);
+ 		return -EFAULT;
++	}
+ 	tmpbuf[len] = '\0';
  	if (verbose)
+ 		pr_info("read %d bytes from userspace\n", (int)len);
+ 
+ 	ret = ddebug_exec_query(tmpbuf);
++	kfree(tmpbuf);
+ 	if (ret)
+ 		return ret;
+ 
 -- 
 1.7.7.3
 
