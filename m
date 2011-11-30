@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab1K3SYa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 13:24:30 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:55584 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab1K3SY2 (ORCPT
+	id S1752308Ab1K3Sbl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 13:31:41 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:57692 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab1K3Sbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 13:24:28 -0500
-Date: Wed, 30 Nov 2011 18:24:23 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Anand Kanaginhal <anand_dk@hotmail.com>
-Cc: greg@kroah.com, Linux PCI mailing <linux-pci@vger.kernel.org>,
-        linux kernel mailing <linux-kernel@vger.kernel.org>,
-        linux hotplug mailing <linux-hotplug@vger.kernel.org>
-Subject: Re: PCIe Hotplugging not working
-Message-ID: <20111130182423.GA4831@srcf.ucam.org>
-References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl>
- <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
- <20111130154022.GA1411@srcf.ucam.org>
- <BAY163-W80F10350D24162EFC3699FBB00@phx.gbl>
+	Wed, 30 Nov 2011 13:31:39 -0500
+X-IronPort-AV: E=Sophos;i="4.71,272,1320624000"; 
+   d="scan'208";a="9215614"
+Date: Wed, 30 Nov 2011 18:32:33 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "android-virt@lists.cs.columbia.edu" 
+	<android-virt@lists.cs.columbia.edu>,
+        "embeddedxen-devel@lists.sourceforge.net" 
+	<embeddedxen-devel@lists.sourceforge.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Embeddedxen-devel] [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15
+ / ARMv7 with virt extensions
+In-Reply-To: <201111301815.01297.arnd@arndb.de>
+Message-ID: <alpine.DEB.2.00.1111301820290.31179@kaball-desktop>
+References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop> <201111301432.54463.arnd@arndb.de> <1322670473.31810.129.camel@zakaz.uk.xensource.com> <201111301815.01297.arnd@arndb.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BAY163-W80F10350D24162EFC3699FBB00@phx.gbl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 09:18:39AM -0800, Anand Kanaginhal wrote:
+On Wed, 30 Nov 2011, Arnd Bergmann wrote:
+> > In principal we could also offer the user options as to which particular
+> > platform a guest looks like.
 > 
-> Hi Mathew,
-> I have following options set 
+> At least when using a qemu based simulation. Most platforms have some
+> characteristics that are not meaningful in a classic virtualization
+> scenario, but it would certainly be helpful to use the virtualization
+> extensions to run a kernel that was built for a particular platform
+> faster than with pure qemu, when you want to test that kernel image.
 > 
-> CONFIG_HOTPLUG_PCI_PCIE=y
-> CONFIG_HOTPLUG_PCI_ACPI=m
+> It has been suggested in the past that it would be nice to run the
+> guest kernel built for the same platform as the host kernel by
+> default, but I think it would be much better to have just one
+> platform that we end up using for guests on any host platform,
+> unless there is a strong reason to do otherwise.
+> 
+> There is also ongoing restructuring in the ARM Linux kernel to
+> allow running the same kernel binary on multiple platforms. While
+> there is still a lot of work to be done, you should assume that
+> we will finish it before you see lots of users in production, there
+> is no need to plan for the current one-kernel-per-board case.
 
-Please try with this built in, not as a module. What kind of board are 
-you using?
+It is very good to hear, I am counting on it.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
+> > > Ok. It would of course still be possible to agree on an argument passing
+> > > convention so that we can share the macros used to issue the hcalls,
+> > > even if the individual commands are all different.
+> > 
+> > I think it likely that we can all agree on a common calling convention
+> > for N-argument hypercalls. It doubt there are that many useful choices
+> > with conflicting requirements yet strongly compelling advantages.
+> 
+> Exactly. I think it's only lack of communication that has resulted in
+> different interfaces for each hypervisor on the other architectures.
+
+It is also due to history: on X86 it was possible to issue hypercalls to
+Xen before VMCALL (the X86 version of HVC) was available.
+
+
+> KVM and Xen at least both fall into the single-return-value category,
+> so we should be able to agree on a calling conventions. KVM does not
+> have an hcall API on ARM yet, and I see no reason not to use the
+> same implementation that you have in the Xen guest.
+> 
+> Stefano, can you split out the generic parts of your asm/xen/hypercall.h
+> file into a common asm/hypercall.h and submit it for review to the
+> arm kernel list?
+
+Sure, I can do that.
+Usually the hypercall calling convention is very hypervisor specific,
+but if it turns out that we have the same requirements I happy to design
+a common interface.
