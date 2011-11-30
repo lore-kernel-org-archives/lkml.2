@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab1K3TkX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:40:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54397 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab1K3TkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752229Ab1K3Tk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:40:29 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:36085 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751780Ab1K3TkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Nov 2011 14:40:21 -0500
-Date: Wed, 30 Nov 2011 11:41:28 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
-        jeremy.fitzhardinge@citrix.com, mingo@redhat.com, stable@kernel.org,
-        tglx@linutronix.de, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: Not really merged? Re: [merged]
- x86-paravirt-pte-updates-in-kunmap_atomic-need-to-be-synchronous-regardless-of-lazy_mmu-mode.patch
- removed from -mm tree
-Message-Id: <20111130114128.ad9c79be.akpm@linux-foundation.org>
-In-Reply-To: <4ED60D59.6080308@canonical.com>
-References: <201110141951.p9EJpn3A006989@hpaq5.eem.corp.google.com>
-	<20111025182450.GA9843@phenom.dumpdata.com>
-	<20111027155329.0adc1358.akpm@linux-foundation.org>
-	<20111028070838.GG12995@elte.hu>
-	<20111028003935.a75d16b6.akpm@linux-foundation.org>
-	<4ED60D59.6080308@canonical.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeff Layton <jlayton@redhat.com>
+Subject: Re: [PATCH v4 0/2] nfs/sunrpc: allow freezing of tasks with NFS calls in flight
+Date: Wed, 30 Nov 2011 20:43:13 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, tj@kernel.org, john@calva.com,
+        trond.myklebust@netapp.com, marek.belisko@gmail.com,
+        awilliam@redhat.com
+References: <1322570215-8570-1-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1322570215-8570-1-git-send-email-jlayton@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111302043.13844.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Nov 2011 12:02:49 +0100 Stefan Bader <stefan.bader@canonical.com> wrote:
+On Tuesday, November 29, 2011, Jeff Layton wrote:
+> This patchset is the fourth attempt at fixing the issues with suspending
+> a machine that has an active NFS mount.
+> 
+> The bug reported against Fedora is here:
+> 
+>     https://bugzilla.redhat.com/show_bug.cgi?id=717735
+> 
+> The main difference from v3 is that I've fixed a stupid set of errors in
+> freezable_schedule_timeout_killable. The if condition was reversed from
+> what it should have been, and the code did not call freezer_count()
+> again when it was going to return early.
+> 
+> Tejun has mentioned that the extra try_to_freeze() calls are unnecessary
+> on top of the pm-freezer changes, but this set should work on as
+> expected on top of 3.2-ish kernels. In the meantime, I'll look over the
+> pm-freezer changes and see whether I need to make changes in this set
+> for 3.3.
+> 
+> Jeff Layton (2):
+>   sunrpc: make rpc_wait_bit_killable handle freeze events
+>   nfs: make TASK_KILLABLE sleeps attempt to freeze
 
-> So, as of today, this seems to be back on the master branch of linux-next (I
-> guess from Andrew putting it back, but I am never sure with linux-next). But I
-> am not sure how/when this would go into Linus tree. I assume without any
-> specific action maybe merge window for 3.3...
-> We got some positive feedback on it from users running into the problem. So it
-> seems like a valuable change. From the discusions so far I take that technically
-> the change did not trigger resistance. For that reason I wanted to ask whether
-> there is a chance that this looks important enough to be pushed before the next
-> merge window...
+Both patches applied to linux-pm/linux-next.  I'll move them to
+linux-pm/pm-freezer in a couple of days if there are no problems with
+them.
 
-I sent this patch to the x86 maintainers two weeks ago.  It was
-ignored, as were the other 11 patches I sent.  Later I will resend them
-all.  If they are again ignored I will later send them yet again, and
-so on.
+Thanks,
+Rafael
 
+
+>  fs/nfs/inode.c          |    3 ++-
+>  fs/nfs/nfs3proc.c       |    3 ++-
+>  fs/nfs/nfs4proc.c       |    5 +++--
+>  fs/nfs/proc.c           |    3 ++-
+>  include/linux/freezer.h |   42 ++++++++++++++++++++++++++++++++++++++++++
+>  net/sunrpc/sched.c      |    3 ++-
+>  6 files changed, 53 insertions(+), 6 deletions(-)
+> 
+> 
 
