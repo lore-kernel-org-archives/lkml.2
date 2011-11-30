@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752595Ab1K3WRH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 17:17:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53723 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002Ab1K3WRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 17:17:06 -0500
-Date: Wed, 30 Nov 2011 13:57:50 -0800
-From: Greg KH <gregkh@suse.de>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: David Miller <davem@davemloft.net>, KY Srinivasan <kys@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: Re: [PATCH 1/2] net/hyperv: Fix long lines in netvsc.c
-Message-ID: <20111130215750.GB28990@suse.de>
-References: <1322666348-6554-1-git-send-email-haiyangz@microsoft.com>
- <20111130.123626.308237192773284976.davem@davemloft.net>
- <A1F3067C9B68744AA19F6802BAB8FFDC0CCD01B1@TK5EX14MBXC227.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC0CCD01B1@TK5EX14MBXC227.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752499Ab1K3WZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 17:25:42 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:56082 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751569Ab1K3WZl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 17:25:41 -0500
+Date: Wed, 30 Nov 2011 17:24:46 -0500 (EST)
+Message-Id: <20111130.172446.1238507297139601019.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: miles.lane@gmail.com, linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru,
+        dipankar@in.ibm.com, paulmck@linux.vnet.ibm.com,
+        netdev@vger.kernel.org
+Subject: Re: 3.2.0-rc3+ (Linus git -
+ 883381d9f1c5a6329bbb796e23ae52c939940310) - INFO: suspicious RCU usage
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1322633155.23721.5.camel@edumazet-laptop>
+References: <CAHFgRy-hAMF344eChZ9tLnFB7qUS_v3m0LvtBKWjbFmBeeASsA@mail.gmail.com>
+	<1322632602.23721.0.camel@edumazet-laptop>
+	<1322633155.23721.5.camel@edumazet-laptop>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 Nov 2011 14:24:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 07:13:49PM +0000, Haiyang Zhang wrote:
-> > -----Original Message-----
-> > From: David Miller [mailto:davem@davemloft.net]
-> > Sent: Wednesday, November 30, 2011 12:36 PM
-> > To: Haiyang Zhang
-> > Cc: KY Srinivasan; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > netdev@vger.kernel.org; devel@linuxdriverproject.org
-> > Subject: Re: [PATCH 1/2] net/hyperv: Fix long lines in netvsc.c
-> > 
-> > 
-> > Well, since Greg's tree is where the staging move happened, he'll have
-> > to take any patches to this driver that happen now, rather than me.
-> 
-> Sounds good. And, these patches were sent to devel@linuxdriverproject.org
-> too.
-> 
-> Greg, could you consider these patches for your tree?
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 30 Nov 2011 07:05:55 +0100
 
-Yes, I'll queue them up, thanks.
+> [PATCH] ipv4: fix lockdep splat in rt_cache_seq_show
+> 
+> After commit f2c31e32b378 (fix NULL dereferences in check_peer_redir()),
+> dst_get_neighbour() should be guarded by rcu_read_lock() /
+> rcu_read_unlock() section.
+> 
+> Reported-by: Miles Lane <miles.lane@gmail.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-greg k-h
+Applied, thanks Eric.
