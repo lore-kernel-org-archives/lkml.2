@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab1K3CfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 21:35:03 -0500
-Received: from mga14.intel.com ([143.182.124.37]:37395 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754633Ab1K3CfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 21:35:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,595,1315206000"; 
-   d="scan'208";a="80464553"
-Date: Wed, 30 Nov 2011 10:34:18 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <feng.tang@intel.com>, "Clark, Joel" <joel.clark@intel.com>
-Subject: Re: [PATCH 2/2] Input: tsc2007 - Add a z1_low_threshhold platform
- data parameter
-Message-ID: <20111130103418.4514b630@feng-i7>
-In-Reply-To: <20111129092310.GB21758@core.coreip.homeip.net>
-References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
-	<1322554378-348-2-git-send-email-feng.tang@intel.com>
-	<20111129092310.GB21758@core.coreip.homeip.net>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+	id S1755911Ab1K3CgG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 21:36:06 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47081 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754796Ab1K3CgD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 21:36:03 -0500
+Date: Wed, 30 Nov 2011 10:35:49 +0800
+From: Shan Hai <haishan.bai@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de
+Subject: Re: [PATCH 1/1] sched/rt: code cleanup, remove a redundant function
+ call
+Message-ID: <20111130023548.GA31187@ubuntu.corp.ad.wrs.com>
+References: <1322535836-13590-1-git-send-email-haishan.bai@gmail.com>
+ <1322535836-13590-2-git-send-email-haishan.bai@gmail.com>
+ <1322572622.2921.231.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322572622.2921.231.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Nov 2011 17:23:10 +0800
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-
-> On Tue, Nov 29, 2011 at 04:12:58PM +0800, Feng Tang wrote:
-> > This originates from a patch in Meego IVI kernel with the name
-> > 	linux-2.6.37-connext-0027-tsc2007.patch
-> > There is no author info excepte a line "From  MeeGo
-> > <kernel@meego.com>"
+On Tue, Nov 29, 2011 at 02:17:02PM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-11-29 at 11:03 +0800, Shan Hai wrote:
+> > The second time call to sched_rt_period is redundant, because the value of the
+> > rt_runtime was already read and it was protected by the rurt_runtime_lock.
 > > 
-> > When integrating tsc2007 on Intel IVI platform, there are a lot of
-> > noise data whose z1 value is around 10 which is not a sane "z1". So
-> > add a "z1_low_threshhold" to filter those nosie data, to make the
-> > device work properly.
+> > Signed-off-by: Shan Hai <haishan.bai@gmail.com>
+> > ---
+> >  kernel/sched_rt.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Sounds like a task for userspace to ignore pressure that is too low.
-> Bonus points for making it configurable so user can adjust
-> sensitivity.
+> Note that that file doesn't exist anymore, scheduler patches should be
+> posted against tip/master.
+>
 
-Actually, there is one more point :), without this patch, the driver won't
-work on our platforms.
+Got it, thanks.
 
-The tsc2007_soft_irq will keep reading the input data unless there is no
-valid pressure data. In our case, those noise data will be seen as valid
-data during tsc2007_calculate_pressure(), and the tsc2007_soft_irq will
-run endlessly.
-
-Thanks,
-Feng 
-
-> 
-> Thanks.
-> 
+Cheers
+Shan Hai
+ 
+> Anyway, fixed that up and applied it. Thanks!
