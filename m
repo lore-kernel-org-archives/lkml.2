@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab1K3Xlo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:41:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32598 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751659Ab1K3Xlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:41:42 -0500
-Date: Thu, 1 Dec 2011 01:43:18 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-Message-ID: <20111130234318.GC31069@redhat.com>
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
- <20111129131110.GC19157@redhat.com>
- <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
- <20111129151607.GE30966@redhat.com>
- <CAK=WgbZK+k4uuyMPHUfr_PMyrR5ceRTvuDRpmhXfgwpSUOPw0g@mail.gmail.com>
- <20111130145958.GE21413@redhat.com>
- <CAK=WgbYyFdLftE_kp2_JOThVhn-FzGsDqVqKn0Jwm2teQyZBNA@mail.gmail.com>
- <20111130161555.GB25812@redhat.com>
- <CAK=WgbazBq4GVo16sZsrZirgMYbwMcWtPaqn90c6d9Phr0gh3A@mail.gmail.com>
- <CAK=WgbbZH3ZFzbwwyVBGEvwHPbogDW6+Kb_1pRam2jj5oJHuDA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK=WgbbZH3ZFzbwwyVBGEvwHPbogDW6+Kb_1pRam2jj5oJHuDA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753190Ab1K3XnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:43:06 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:43084 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555Ab1K3XnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 18:43:04 -0500
+Date: Thu, 1 Dec 2011 10:42:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Borislav Petkov <bp@amd64.org>
+Cc: edac-devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: amd-edac tree back to KORG
+Message-Id: <20111201104257.edff4c30742dd6e54c48e348@canb.auug.org.au>
+In-Reply-To: <20111130112343.GB19656@aftab>
+References: <20111130112343.GB19656@aftab>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_Dec_2011_10_42_57_+1100_Y.EwJD6OUbe.HzZi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 01:27:10AM +0200, Ohad Ben-Cohen wrote:
-> On Wed, Nov 30, 2011 at 6:24 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> > On Wed, Nov 30, 2011 at 6:15 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> >> How are the rings mapped? normal memory, right?
-> >
-> > No, device memory.
-> 
-> Ok, I have more info.
-> 
-> Originally remoteproc was mapping the rings using ioremap, and that
-> meant ARM Device memory.
-> 
-> Recently, though, we moved to CMA (allocating memory for the rings via
-> dma_alloc_coherent), and that isn't Device memory anymore: it's
-> uncacheable Normal memory (on ARM v6+).
+--Signature=_Thu__1_Dec_2011_10_42_57_+1100_Y.EwJD6OUbe.HzZi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And these accesses need to be ordered with DSB? Or DMB?
+Hi Boris,
 
-> We still require mandatory barriers though: one very reproducible
-> problem I personally face is that the avail index doesn't get updated
-> before the kick.
+On Wed, 30 Nov 2011 12:23:43 +0100 Borislav Petkov <bp@amd64.org> wrote:
+>
+> just pushed the amd-edac linux-next tree back to kernel.org. The absolute
+> URL is
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-next
 
-Aha! The *kick* really is MMIO. So I think we do need a mandatory barrier
-before the kick.  Maybe we need it for virtio-pci as well
-(not on kvm, naturally :) Off-hand this seems to belong in the transport
-layer but need to think about it.
+I have switched to that now.
 
-> As a result, the remote processor misses a buffer
-> that was just added (the kick wakes it up only to find that the avail
-> index wasn't changed yet). In this case, it probably happens because
-> the mailbox, used to kick the remote processor, is mapped as Device
-> memory, and therefore the kick can be reordered before the updates to
-> the ring  can be observed.
-> 
-> I did get two additional reports about reordering issues, on different
-> setups than my own, and which I can't personally reproduce: the one
-> I've described earlier (avail index gets updated before the avail
-> array) and one in the receive path (reading a used buffer which we
-> already read). I couldn't personally verify those, but both issues
-> were reported to be gone when mandatory barriers were used.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Hmm. So it's a hint that something is wrong with memory
-but not what's wrong exactly.
+--Signature=_Thu__1_Dec_2011_10_42_57_+1100_Y.EwJD6OUbe.HzZi
+Content-Type: application/pgp-signature
 
-> I expect those reports only to increase: the diversity of platforms
-> that are now looking into adopting virtio for this kind of
-> inter-process communication is quite huge, with several different
-> architectures and even more hardware implementations on the way (not
-> only ARM).
-> 
-> Thanks,
-> Ohad.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Right. We need to be very careful with memory,
-it's a tricky field. One known problem with virtio
-is its insistance on using native endian-ness
-for some fields. If power is used, we'll have to fix this.
+iQIcBAEBCAAGBQJO1r+BAAoJEECxmPOUX5FEBCYQAIVKZ3IOuYqTP4EJ2CLxFrsq
+18TD+lHdYBf3vPPQ9VKP25wD3kqelyeRqm3vN+kpwwymC6+yadpN50LwxkKPyL6e
+E6CfgEGmf6pfn/LzqVh5OxaJ+sHJDjg+GLyLi98XFJKoUZeLTm1qiZoNiU23vy5z
+64gnW0KbjzC82dKSmRctRwwHTee8054qcJR3KMOJanwwfFgzOpBCnrikjjsAEPOW
+mtrvnZhtFDIA8+Et6356mXgRT2HM7HIp10iSOyWsxPYPLzT1fVQf8KXnbhlaAZ3n
+jl3nor856gluuWOerQaJEsYwWXdQ7wg6nf5ZYtOB1XVKTSKLKTpnx5vZlNsHQRDr
+193BtRjlqajHkEdnqlD6Lt6/OK3RYOlK6Jy0lO4Q5SwZsz2FDG4YOeZJM3jGyIqJ
+B8R1m1+JFkMKOixP+pXhjuvGi8csCLHumsHlUvRjLnaO+Ys+sUWVfyxkY1P1uCWa
+DL7V2b8xq/uWMp+3u/Z25VQOCDM3FlMxrWwZGg+x9Y8w7eDae14yKKvFSOg7nFpX
+dH6T96cs2yNHypbN6oiq6IRvDt1RwtQXD9CN1Lc8XYupDgO8Y97UK+6XJphI0u5X
+JC0Nqt22kdb1+xx5+gZumw269zYYzmlbFcPEBz60/4FdCz9WmbZGUkV/uGxUe/d6
+bk7DESRCfOsOg4Kn3Rz7
+=TNph
+-----END PGP SIGNATURE-----
 
--- 
-MST
+--Signature=_Thu__1_Dec_2011_10_42_57_+1100_Y.EwJD6OUbe.HzZi--
