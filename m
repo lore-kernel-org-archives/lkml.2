@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab1K3AIM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 19:08:12 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:45097 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756752Ab1K3AIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 19:08:09 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: linux-kernel@vger.kernel.org
-Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
-        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
-        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
-        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v7 07/10] Display current tcp memory allocation in kmem cgroup
-Date: Tue, 29 Nov 2011 21:56:58 -0200
-Message-Id: <1322611021-1730-8-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1322611021-1730-1-git-send-email-glommer@parallels.com>
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+	id S1757238Ab1K3AIv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 19:08:51 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:48070
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757072Ab1K3AIt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 19:08:49 -0500
+X-SpamScore: -6
+X-BigFish: VS-6(zz9371K98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+CC: Li Yang-R58472 <r58472@freescale.com>,
+        Shi Xuelin-B29237 <B29237@freescale.com>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing
+ spinlock use.
+Thread-Topic: [PATCH][RFC] fsldma: fix performance degradation by optimizing
+ spinlock use.
+Thread-Index: AQHMrvQ5ooeCzZcUA0elGysglgicRA==
+Date: Wed, 30 Nov 2011 00:08:44 +0000
+Message-ID: <CAOZdJXWX9EHfcXTuVag+-MvUvqnA7bA5RjmLx4jE5Cu5JmQdvg@mail.gmail.com>
+References: <1321937705-19587-1-git-send-email-b29237@freescale.com>
+	<20111122185924.GA23323@ovro.caltech.edu>
+	<DBB740589CE8814680DECFE34BE197AB148CDD@039-SN1MPN1-006.039d.mgd.msft.net>
+	<20111128163814.GA10919@ovro.caltech.edu>
+	<3F607A5180246847A760FD34122A1E052E07B7@039-SN1MPN1-003.039d.mgd.msft.net>
+	<20111129172539.GB15331@ovro.caltech.edu>
+In-Reply-To: <20111129172539.GB15331@ovro.caltech.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.17.22.104]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <F9EEEE6510D45C40BCC5CFBCE09B5760@freescale.net>
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces kmem.tcp.usage_in_bytes file, living in the
-kmem_cgroup filesystem. It is a simple read-only file that displays the
-amount of kernel memory currently consumed by the cgroup.
+On Tue, Nov 29, 2011 at 11:25 AM, Ira W. Snyder <iws@ovro.caltech.edu> wrote:
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Eric W. Biederman <ebiederm@xmission.com>
----
- Documentation/cgroups/memory.txt |    1 +
- net/ipv4/tcp_memcontrol.c        |   21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+> I believe that you are correct, for powerpc. However, anything outside
+> of arch/powerpc shouldn't assume it only runs on powerpc. I wouldn't be
+> surprised to see fsldma running on an iMX someday (ARM processor).
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 4d9ed1f..09fcc82 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -79,6 +79,7 @@ Brief summary of control files.
-  memory.independent_kmem_limit	 # select whether or not kernel memory limits are
- 				   independent of user limits
-  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
-+ memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
- 
- 1. History
- 
-diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
-index 3edcf5f..bc232fc 100644
---- a/net/ipv4/tcp_memcontrol.c
-+++ b/net/ipv4/tcp_memcontrol.c
-@@ -17,6 +17,11 @@ static struct cftype tcp_files[] = {
- 		.read_u64 = tcp_cgroup_read,
- 		.private = RES_LIMIT,
- 	},
-+	{
-+		.name = "kmem.tcp.usage_in_bytes",
-+		.read_u64 = tcp_cgroup_read,
-+		.private = RES_USAGE,
-+	},
- };
- 
- static inline struct tcp_memcontrol *tcp_from_cgproto(struct cg_proto *cg_proto)
-@@ -163,6 +168,19 @@ static u64 tcp_read_stat(struct mem_cgroup *memcg, int type, u64 default_val)
- 	return res_counter_read_u64(&tcp->tcp_memory_allocated, type);
- }
- 
-+static u64 tcp_read_usage(struct mem_cgroup *memcg)
-+{
-+	struct tcp_memcontrol *tcp;
-+	struct cg_proto *cg_proto;
-+
-+	cg_proto = tcp_prot.proto_cgroup(memcg);
-+	if (!cg_proto)
-+		return atomic_long_read(&tcp_memory_allocated) << PAGE_SHIFT;
-+
-+	tcp = tcp_from_cgproto(cg_proto);
-+	return res_counter_read_u64(&tcp->tcp_memory_allocated, RES_USAGE);
-+}
-+
- static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-@@ -172,6 +190,9 @@ static u64 tcp_cgroup_read(struct cgroup *cont, struct cftype *cft)
- 	case RES_LIMIT:
- 		val = tcp_read_stat(memcg, RES_LIMIT, RESOURCE_MAX);
- 		break;
-+	case RES_USAGE:
-+		val = tcp_read_usage(memcg);
-+		break;
- 	default:
- 		BUG();
- 	}
+I certainly would.  The i.MX chips have their own DMA controller.  The
+DMA controller that fsldma.c works with is unique to Freescale's 83xx,
+85xx, and QorIQ chips.
+
 -- 
-1.7.6.4
-
+Timur Tabi
+Linux kernel developer at Freescale
