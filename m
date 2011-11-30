@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab1K3Eyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 23:54:45 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64542 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752176Ab1K3Eym (ORCPT
+	id S1751064Ab1K3FBm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 00:01:42 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55341 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab1K3FBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 23:54:42 -0500
-Message-ID: <4ED5B70F.606@lwfinger.net>
-Date: Tue, 29 Nov 2011 22:54:39 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: 3.2-rc2 freezes on boot for AMD K6 - bisected to commit bcb80e53877c2045d9e52f4a71372c3fe6501f6f
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 30 Nov 2011 00:01:41 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 30 Nov 2011 14:00:09 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in
+ /proc/<pid>/status
+Message-Id: <20111130140009.1ccd5af0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111129191638.835932727@openvz.org>
+References: <20111129191252.769160532@openvz.org>
+	<20111129191638.835932727@openvz.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have an ancient laptop with an AMD-K6 CPU that freezes on boot with 3.2-rc2. 
-The problem was bisected to commit bcb80e53877c2.
+On Tue, 29 Nov 2011 23:12:54 +0400
+Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-The cpuinfo for this box is:
+> From: Pavel Emelyanov <xemul@parallels.com>
+> 
+> There is no easy way to make a reverse parent->children chain
+> from the task status, in turn children->parent provided with "PPid"
+> field.
+> 
+> So instead of walking over all pids in system to figure out what
+> children the task have -- we add explicit "Children" member to
+> /proc/<pid>/status since kernel already knows this kind of information
+> but it was not yet exported.
+> 
+> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
- >> cpu.1: cpuinfo
------ /proc/cpuinfo -----
-   processor     : 0
-   vendor_id     : AuthenticAMD
-   cpu family    : 5
-   model         : 8
-   model name    : AMD-K6(tm) 3D processor
-   stepping      : 12
-   cpu MHz               : 428.804
-   cache size    : 64 KB
-   fdiv_bug      : no
-   hlt_bug               : no
-   f00f_bug      : no
-   coma_bug      : no
-   fpu           : yes
-   fpu_exception : yes
-   cpuid level   : 1
-   wp            : yes
-   flags         : fpu vme de pse tsc msr cx8 pge mmx syscall 3dnow k6_mtrr up
-   bogomips      : 857.60
-   clflush size  : 32
-   cache_alignment       : 32
-   address sizes : 32 bits physical, 32 bits virtual
-   power management:
+I may be too pessimistic but what amount of overhead will this add to
+ps -elf/ top ? Assuming an environment 'ps -elf' is called once per a sec,
+if there are 2000 processes, task_list lock is taken 2000 times by this patch.
 
------ /proc/cpuinfo end -----
+Isn't it better to add /proc/<pid>/children file or dir (as task)?
 
-This patch is quite simple, thus it appears that rdmsr() is OK, but that 
-rdmsr_safe() is not.
-
-I am happy to provide any other info regarding this box.
-
-Larry
+Thanks,
+-Kame
 
