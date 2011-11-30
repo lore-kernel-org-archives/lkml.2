@@ -1,83 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757183Ab1K3Bs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 20:48:27 -0500
-Received: from gate.crashing.org ([63.228.1.57]:45976 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754661Ab1K3BsZ convert rfc822-to-8bit (ORCPT
+	id S1757378Ab1K3BvB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 20:51:01 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51403 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757057Ab1K3BvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 20:48:25 -0500
-Subject: Re: [PATCH v2] Integrated Flash Controller support
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <4ED5531C.6030104@freescale.com>
-Date: Tue, 29 Nov 2011 19:47:46 -0600
-Cc: <dedekind1@gmail.com>, Li Yang-R58472 <r58472@freescale.com>,
-        <Artem.Bityutskiy@nokia.com>,
-        "b35362@freescale.com>" <b35362@freescale.com>,
-        "linux-kernel@vger.kernel.org Kernel" <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EFF451D9-552A-4820-90D3-BF3156D5B25F@kernel.crashing.org>
-References: <1320053901-23801-1-git-send-email-b35362@freescale.com>  <CCF7C6DB-437C-4140-894F-2F497AD610DC@kernel.crashing.org>  <8EDB3DC6-63E5-4D5C-BB52-15F32B85C5DD@kernel.crashing.org> <1322602860.2150.10.camel@koala> <4ED5531C.6030104@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-X-Mailer: Apple Mail (2.1251.1)
+	Tue, 29 Nov 2011 20:51:00 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 30 Nov 2011 10:49:43 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
+        ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com,
+        netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name,
+        avagin@parallels.com, devel@openvz.org, eric.dumazet@gmail.com,
+        cgroups@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Subject: Re: [PATCH v7 04/10] tcp memory pressure controls
+Message-Id: <20111130104943.d9b210ee.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1322611021-1730-5-git-send-email-glommer@parallels.com>
+References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+	<1322611021-1730-5-git-send-email-glommer@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 29 Nov 2011 21:56:55 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-On Nov 29, 2011, at 3:48 PM, Scott Wood wrote:
-
-> On 11/29/2011 03:40 PM, Artem Bityutskiy wrote:
->> On Thu, 2011-11-24 at 08:24 -0600, Kumar Gala wrote:
->>> On Nov 22, 2011, at 9:41 PM, Kumar Gala wrote:
->>> 
->>>> 
->>>> On Oct 31, 2011, at 4:38 AM, <b35362@freescale.com> <b35362@freescale.com> wrote:
->>>> 
->>>>> From: Liu Shuo <b35362@freescale.com>
->>>>> 
->>>>> Integrated Flash Controller supports various flashes like NOR, NAND
->>>>> and other devices using NOR, NAND and GPCM Machine available on it.
->>>>> IFC supports four chip selects.
->>>>> 
->>>>> Signed-off-by: Dipen Dudhat <Dipen.Dudhat@freescale.com>
->>>>> Signed-off-by: Scott Wood <scottwood@freescale.com>
->>>>> Signed-off-by: Li Yang <leoli@freescale.com>
->>>>> Signed-off-by: Liu Shuo <b35362@freescale.com>
->>>>> ---
->>>>> arch/powerpc/Kconfig               |    4 +
->>>>> arch/powerpc/include/asm/fsl_ifc.h |  834 ++++++++++++++++++++++++++++++++++++
->>>>> arch/powerpc/sysdev/Makefile       |    1 +
->>>>> arch/powerpc/sysdev/fsl_ifc.c      |  322 ++++++++++++++
->>>>> 4 files changed, 1161 insertions(+), 0 deletions(-)
->>>>> create mode 100644 arch/powerpc/include/asm/fsl_ifc.h
->>>>> create mode 100644 arch/powerpc/sysdev/fsl_ifc.c
->>>> 
->>>> Guys,
->>>> 
->>>> How are we handling this patchset since it touches drivers/mtd/nand?
->> 
->> I do not see it touching MTD from the diffstat above. I am a little bit
->> confused why a flash controller is added to
->> arch/powerpc/sysdev/fsl_ifc.c ?
+> This patch introduces memory pressure controls for the tcp
+> protocol. It uses the generic socket memory pressure code
+> introduced in earlier patches, and fills in the
+> necessary data in cg_proto struct.
 > 
-> It's really a bus controller, with NOR, NAND, and general-purpose modes
-> settable per chipselect.  The actual NAND driver goes in
-> drivers/mtd/nand, and is apparently in a separate patch (probably due to
-> separate maintenance domains).
 > 
-> It's the same situation as arch/powerpc/sysdev/fsl_lbc.c versus
-> drivers/mtd/nand/fsl_elbc_nand.c and drivers/mtd/nand/fsl_upm.c.
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
+
+some comments.
+
+
+
+> ---
+>  Documentation/cgroups/memory.txt |    2 +
+>  include/linux/memcontrol.h       |    3 ++
+>  include/net/sock.h               |    2 +
+>  include/net/tcp_memcontrol.h     |   17 +++++++++
+>  mm/memcontrol.c                  |   36 +++++++++++++++++--
+>  net/core/sock.c                  |   42 ++++++++++++++++++++--
+>  net/ipv4/Makefile                |    1 +
+>  net/ipv4/tcp_ipv4.c              |    8 ++++-
+>  net/ipv4/tcp_memcontrol.c        |   73 ++++++++++++++++++++++++++++++++++++++
+>  net/ipv6/tcp_ipv6.c              |    4 ++
+>  10 files changed, 181 insertions(+), 7 deletions(-)
+>  create mode 100644 include/net/tcp_memcontrol.h
+>  create mode 100644 net/ipv4/tcp_memcontrol.c
 > 
-> -Scott
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 3cf9d96..1e43da4 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -299,6 +299,8 @@ and set kmem extension config option carefully.
+>  thresholds. The Memory Controller allows them to be controlled individually
+>  per cgroup, instead of globally.
+>  
+> +* tcp memory pressure: sockets memory pressure for the tcp protocol.
+> +
+>  3. User Interface
+>  
+>  0. Configuration
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 60964c3..fa2482a 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -85,6 +85,9 @@ extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+>  extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+>  extern struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm);
+>  
+> +extern struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont);
+> +extern struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *mem);
+> +
 
-As Scott said, I was more asking about the 2nd patch in the sequence which did touch MTD.  Since that one is dependent on this patch, wondering how we wanted to handle them.
+use 'memcg' please.
 
-- k
+> -static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+> +struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+>  {
+>  	return container_of(cgroup_subsys_state(cont,
+>  				mem_cgroup_subsys_id), struct mem_cgroup,
+> @@ -4717,14 +4732,27 @@ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+>  
+>  	ret = cgroup_add_files(cont, ss, kmem_cgroup_files,
+>  			       ARRAY_SIZE(kmem_cgroup_files));
+> +
+> +	if (!ret)
+> +		ret = mem_cgroup_sockets_init(cont, ss);
+>  	return ret;
+>  };
+
+You does initizalication here. The reason what I think is
+1. 'proto_list' is not available at createion of root cgroup and
+    you need to delay set up until mounting.
+
+If so, please add comment or find another way.
+This seems not very clean to me.
+
+
+
+
+> +static DEFINE_RWLOCK(proto_list_lock);
+> +static LIST_HEAD(proto_list);
+> +
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
+> +{
+> +	struct proto *proto;
+> +	int ret = 0;
+> +
+> +	read_lock(&proto_list_lock);
+> +	list_for_each_entry(proto, &proto_list, node) {
+> +		if (proto->init_cgroup)
+> +			ret = proto->init_cgroup(cgrp, ss);
+> +			if (ret)
+> +				goto out;
+> +	}
+
+seems indent is bad or {} is missing.
+
+
+> +EXPORT_SYMBOL(memcg_tcp_enter_memory_pressure);
+> +
+> +int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+> +{
+> +	/*
+> +	 * The root cgroup does not use res_counters, but rather,
+> +	 * rely on the data already collected by the network
+> +	 * subsystem
+> +	 */
+> +	struct res_counter *res_parent = NULL;
+> +	struct cg_proto *cg_proto;
+> +	struct tcp_memcontrol *tcp;
+> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+> +	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
+> +
+> +	cg_proto = tcp_prot.proto_cgroup(memcg);
+> +	if (!cg_proto)
+> +		return 0;
+> +
+> +	tcp = tcp_from_cgproto(cg_proto);
+> +	cg_proto->parent = tcp_prot.proto_cgroup(parent);
+> +
+> +	tcp->tcp_prot_mem[0] = sysctl_tcp_mem[0];
+> +	tcp->tcp_prot_mem[1] = sysctl_tcp_mem[1];
+> +	tcp->tcp_prot_mem[2] = sysctl_tcp_mem[2];
+> +	tcp->tcp_memory_pressure = 0;
+
+Question:
+
+Is this value will be updated when an admin chages sysctl ?
+
+I guess, this value is set at system init script or some which may
+happen later than mounting cgroup.
+I don't like to write a guideline 'please set sysctl val before
+mounting cgroup'
+
+
+Thanks,
+-Kame
 
