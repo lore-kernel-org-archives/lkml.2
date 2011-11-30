@@ -1,36 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab1K3Pk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 10:40:27 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:49205 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab1K3PkZ (ORCPT
+	id S1757334Ab1K3Pk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 10:40:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53844 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab1K3Pkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 10:40:25 -0500
-Date: Wed, 30 Nov 2011 15:40:22 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Anand Kanaginhal <anand_dk@hotmail.com>
-Cc: Linux PCI mailing <linux-pci@vger.kernel.org>,
-        linux kernel mailing <linux-kernel@vger.kernel.org>,
-        linux hotplug mailing <linux-hotplug@vger.kernel.org>
-Subject: Re: PCIe Hotplugging not working
-Message-ID: <20111130154022.GA1411@srcf.ucam.org>
-References: <BAY163-W52E309F419E3588206D889FBB30@phx.gbl>
- <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
+	Wed, 30 Nov 2011 10:40:55 -0500
+Date: Wed, 30 Nov 2011 15:40:46 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, Chris Mason <chris.mason@oracle.com>,
+        Josef Bacik <josef@redhat.com>, Miao Xie <miaox@cn.fujitsu.com>,
+        Ivan Vilata i Balaguer <ivan@selidor.net>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] btrfs: btrfs_calc_avail_data_space cope with no
+ read/write devices V2
+Message-ID: <20111130154046.GG6165@shadowen.org>
+References: <1312205910-13053-1-git-send-email-apw@canonical.com>
+ <20111128121041.GA19498@elie.hsd1.il.comcast.net>
+ <20111128122416.GA25996@localhost>
+ <4ED434A9.8020809@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BAY163-W47DD39095DA3EB108AA3F2FBB30@phx.gbl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <4ED434A9.8020809@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure that you have CONFIG_HOTPLUG_PCI_ACPI=y and 
-CONFIG_HOTPLUG_PCI_PCIE=y.
+On Tue, Nov 29, 2011 at 09:26:01AM +0800, Li Zefan wrote:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> This patch has the same problem with your previous one, that it will set
+> f_bavail to 0. I've sent out a new patch yesterday.
+
+Ahh, sounds great thanks.  Often a patch is a good way to start a
+discussion to a more correct patch.  Specially when one is not an expert
+in the area.
+
+-apw
