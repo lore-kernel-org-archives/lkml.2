@@ -1,55 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab1K3U1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 15:27:50 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35285 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab1K3U1t (ORCPT
+	id S1752456Ab1K3UhB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 15:37:01 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:56172 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab1K3UhA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 15:27:49 -0500
+	Wed, 30 Nov 2011 15:37:00 -0500
 MIME-Version: 1.0
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Wed, 30 Nov 2011 13:27:17 -0700
-Message-ID: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>
-Subject: [patch 00/25] dynamic-debug enhancements
-To: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAGPN=9TpFOJ8316faVi8jGzO0-apj-yXkxMQXyApE1=uUmD-AQ@mail.gmail.com>
+References: <CACVkyFdhpU1sQb-T-pXYkV8Ot27+LYxV_=FGd=aPLLyrD3-1dg@mail.gmail.com>
+	<86k46m8z1s.fsf@sumi.keithp.com>
+	<CAGPN=9TpFOJ8316faVi8jGzO0-apj-yXkxMQXyApE1=uUmD-AQ@mail.gmail.com>
+Date: Wed, 30 Nov 2011 21:36:59 +0100
+Message-ID: <CAGPN=9SBgWLHsUsfrCVCtVDpAcuW_4oe_4_X2tHCcZPatJdRgw@mail.gmail.com>
+Subject: Re: drivers/gpu/drm/i915/intel_dp.c problem with commit dc22ee6fc18ce0f15424e753e8473c306ece95c1
+From: Patrik Kullman <patrik.kullman@gmail.com>
+To: Keith Packard <keith.packard@intel.com>
+Cc: Jerker Buud <b.jerker@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patchset adds
-- dynamic-debug during module initialization
-- multiple queries in ddebug_query, module.dyndbg
+Not sure if this is somehow related, but I experienced a weird issue
+with the HDMI-output today.
 
-Unlike previous versions, it drops the pending-query approach in
-favor of  "fake module parameters"proposed by Thomas Renninger
-    https://lkml.org/lkml/2010/9/15/397
+I connected the computer to a (Acer) projector at work to hold a
+presentation, but it didn't work.
+In GNOME Displays, I could see a connected "Acer Technologies" screen,
+its supported resolutions listed, I could even move the cursor as if a
+screen was connected. Everything about Linux/GNOME seems to "think"
+everything was working.
 
-Its based upon 3.2-rc3, since that has several patches to
-include/linux/dynamic_debug.h
-that are not in driver-core-next, and theyd need to be handled eventually.
+On the projector side of things, the Acer-logo was showing and the
+source (HDMI1/2) was showing.
+It didn't say "No Signal" as it can, but it didn't either come as far
+as to "Process signal", which usually appears a moment before
+everything is up and running.
 
-1 - trivial bug in kernel/module.c under DEBUGP
-2 - whitespace
-3-12 dyndbg cleanups
-13-17 multiple queries
-18-25 dynamic-debug during module initialization
+Booting up Windows, everything worked perfectly.
 
+When I got home, I connected the computer to my LCD TV and watched a
+video without any issues.
+Even sound through HDMI works great.
 
+Please let me know if you think this might be related or if I should
+start a new thread about this.
 
-
-[jimc@groucho linux-2.6]$ git diff --stat v3.2-rc3..HEAD
- Documentation/dynamic-debug-howto.txt |   76 ++++++--
- drivers/pnp/base.h                    |    8 +-
- drivers/pnp/core.c                    |   13 ++
- include/linux/device.h                |    8 +-
- include/linux/dynamic_debug.h         |   31 +++-
- include/linux/kernel.h                |   10 +
- include/linux/moduleparam.h           |    4 +
- include/linux/netdevice.h             |    8 +-
- include/linux/printk.h                |    8 +-
- kernel/module.c                       |   47 ++---
- kernel/params.c                       |   27 ++-
- lib/dynamic_debug.c                   |  349 +++++++++++++++++++++++++--------
- 12 files changed, 430 insertions(+), 159 deletions(-)
+2011/11/29 Patrik Kullman <patrik.kullman@gmail.com>:
+> I checked out a clean v3.2-rc3, applied this patch and rebooted.
+>
+> It still doesn't work and Caps Lock still doesn't respond, but I get
+> very subtle flickering of the screen, 2-3 seconds apart, kind of like
+> different shades of black.
+>
+> It 'feels' as if some graphics card/link/monitor negotiation is taking place.
+>
+> 2011/11/26 Keith Packard <keith.packard@intel.com>:
+>> On Sat, 26 Nov 2011 09:50:41 -0800, Jerker Buud <b.jerker@gmail.com> wrote:
+>>
+>>> 245,247c245,246
+>>> <       if (!is_edp(intel_dp) &&
+>>> <           (intel_dp_link_required(intel_dp, mode->clock)
+>>> <            > intel_dp_max_data_rate(max_link_clock, max_lanes)))
+>>> ---
+>>> >       if (intel_dp_link_required(intel_dp, mode->clock)
+>>> >           > intel_dp_max_data_rate(max_link_clock, max_lanes))
+>>
+>> Ok, I think I understand why this change is required.
+>>
+>> These machines are 'optimized' to provide the bare minimum connection
+>> necessary between the CPU and the eDP panel -- a single lane is hooked
+>> up, which is just enough to run the link at 18bpp, but not enough to run
+>> it at 24bpp.
+>>
+>> The problem here (in intel_dp_link_required) is that this is being
+>> called to see which modes can be supported on the panel. Without the
+>> CRTC being configured with the appropriate bpp value, this code assumes
+>> 24bpp.
+>>
+>> I thought Adam Jackson had some code around that automatically switched
+>> From 24bpp to 18bpp when the link didn't have enough bandwidth for
+>> 24bpp, but I can't find that now.
+>>
+>> In any case, I think we need to centralize the bpp selection inside
+>> intel_dp.c instead of having it in both places. Then, we can make that
+>> depend on the requested mode as well as the machine configuration.
+>>
+>> Here's a patch which uses the VBT configured bpp value in this case. I'd
+>> love to hear whether this suffices to resolve your problem.
+>>
+>> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+>> index 294f557..3e15479 100644
+>> --- a/drivers/gpu/drm/i915/intel_dp.c
+>> +++ b/drivers/gpu/drm/i915/intel_dp.c
+>> @@ -212,10 +212,16 @@ intel_dp_link_required(struct intel_dp *intel_dp, int pixel_clock)
+>>  {
+>>        struct drm_crtc *crtc = intel_dp->base.base.crtc;
+>>        struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+>> -       int bpp = 24;
+>> +       struct drm_device *dev = intel_dp->base.base.dev;
+>> +       struct drm_i915_private *dev_priv = dev->dev_private;
+>> +       int bpp;
+>>
+>>        if (intel_crtc)
+>>                bpp = intel_crtc->bpp;
+>> +       else if (intel_dp->base.type == INTEL_OUTPUT_EDP)
+>> +               bpp = dev_priv->edp.bpp;
+>> +       else
+>> +               bpp = 24;
+>>
+>>        return (pixel_clock * bpp + 9) / 10;
+>>  }
+>>
+>> --
+>> keith.packard@intel.com
