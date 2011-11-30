@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab1K3NNA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 08:13:00 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63676 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab1K3NM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 08:12:57 -0500
-Message-ID: <1322658763.3985.4.camel@lappy>
-Subject: Re: [PATCHv3 RFC] virtio-pci: flexible configuration layout
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Date: Wed, 30 Nov 2011 15:12:43 +0200
-In-Reply-To: <87pqgats49.fsf@rustcorp.com.au>
-References: <20111122183621.GA5235@redhat.com>
-	 <87hb1v1scp.fsf@rustcorp.com.au> <20111123084640.GE22734@redhat.com>
-	 <87ty5uxso3.fsf@rustcorp.com.au> <20111124070728.GH29994@redhat.com>
-	 <87vcq5t69c.fsf@rustcorp.com.au> <1322471731.3577.10.camel@lappy>
-	 <87pqgats49.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
+	id S1754356Ab1K3NOu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 08:14:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48263 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752692Ab1K3NOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 08:14:49 -0500
+Message-ID: <4ED62C38.1020106@redhat.com>
+Date: Wed, 30 Nov 2011 14:14:32 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Nitin Gupta <ngupta@vflare.org>, Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] Staging: zram: Turn lockdep off during zram_init_device()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 10:10 +1030, Rusty Russell wrote:
-> On Mon, 28 Nov 2011 11:15:31 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > On Mon, 2011-11-28 at 11:25 +1030, Rusty Russell wrote:
-> > > I'd like to see kvmtools remove support for legacy mode altogether,
-> > > but they probably have existing users.
-> > 
-> > While we can't simply remove it right away, instead of mixing our
-> > implementation for both legacy and new spec in the same code we can
-> > split the virtio-pci implementation into two:
-> > 
-> > 	- virtio/virtio-pci-legacy.c
-> > 	- virtio/virtio-pci.c
-> > 
-> > At that point we can #ifdef the entire virtio-pci-legacy.c for now and
-> > remove it at the same time legacy virtio-pci is removed from the kernel.
-> 
-> Hmm, that might be neat, but we can't tell the driver core to try
-> virtio-pci before virtio-pci-legacy, so we need detection code in both
-> modules (and add a "force" flag to virtio-pci-legacy to tell it to
-> accept the device even if it's not a legacy-only one).
 
-I was thinking more in the direction of fallback code in virtio-pci.c to
-virtio-pci-legacy.c.
+zram->init_lock can be hold over an allocation that may try to reclaim
+memory in zram_init_device(). The same lock can later be taken from a
+reclaim context in zram_make_request(), thus triggering a lockdep
+warning. However, memory can not be reclaimed to an uninitialized zram
+device. Therefore, this warning is a false positive.
+To prevent the warning to occur, we turn lockdep off during while the
+device is initialized.
 
-Something like:
-#ifdef VIRTIO_PCI_LEGACY
-[Create BAR0 and map it to virtio-pci-legacy.c]
-#endif
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+Reported-by: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+---
+ zram_drv.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-So BAR0 isn't defined as long as legacy code is there, which makes
-falling back to legacy pretty simple.
-
--- 
-
-Sasha.
-
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 09de99f..34f4b96 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -637,10 +637,22 @@ int zram_init_device(struct zram *zram)
+ 	int ret;
+ 	size_t num_pages;
+ 
++	/*
++	 * Here we hold init_lock over allocations that may try to reclaim
++	 * memory. The same lock is also taken from a reclaim context in
++	 * zram_make_request(). That end up in a lockdep warning.
++	 * Moreover the table can be quite big an it wouldn't be reasonable to
++	 * use kmalloc(GFP_NOFS,...) to allocate it.
++	 * Fortunately, memory can not be reclaimed to an uninitialized zram
++	 * device, so this warning is a false positive. Therefore, to prevent
++	 * the warning, we turn lockdep off here.
++	 */
++	lockdep_off();
+ 	down_write(&zram->init_lock);
+ 
+ 	if (zram->init_done) {
+ 		up_write(&zram->init_lock);
++		lockdep_on();
+ 		return 0;
+ 	}
+ 
+@@ -682,6 +694,7 @@ int zram_init_device(struct zram *zram)
+ 
+ 	zram->init_done = 1;
+ 	up_write(&zram->init_lock);
++	lockdep_on();
+ 
+ 	pr_debug("Initialization done!\n");
+ 	return 0;
+@@ -692,6 +705,7 @@ fail_no_table:
+ fail:
+ 	__zram_reset_device(zram);
+ 	up_write(&zram->init_lock);
++	lockdep_on();
+ 	pr_err("Initialization failed: err=%d\n", ret);
+ 	return ret;
+ }
