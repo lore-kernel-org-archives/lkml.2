@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314Ab1K3WQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 17:16:09 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:44963 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751939Ab1K3WQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 17:16:08 -0500
-Message-ID: <1322691367.10023.10.camel@Joe-Laptop>
-Subject: Re: [PATCH 04/25] dynamic_debug: make dynamic-debug supersede DEBUG
- ccflag
-From: Joe Perches <joe@perches.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: jim.cromie@gmail.com, greg@kroah.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 Nov 2011 14:16:07 -0800
-In-Reply-To: <20111130220351.GC2500@redhat.com>
-References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
-	 <1322683014-13285-5-git-send-email-jim.cromie@gmail.com>
-	 <20111130220351.GC2500@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752595Ab1K3WRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 17:17:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53723 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752002Ab1K3WRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 17:17:06 -0500
+Date: Wed, 30 Nov 2011 13:57:50 -0800
+From: Greg KH <gregkh@suse.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: David Miller <davem@davemloft.net>, KY Srinivasan <kys@microsoft.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [PATCH 1/2] net/hyperv: Fix long lines in netvsc.c
+Message-ID: <20111130215750.GB28990@suse.de>
+References: <1322666348-6554-1-git-send-email-haiyangz@microsoft.com>
+ <20111130.123626.308237192773284976.davem@davemloft.net>
+ <A1F3067C9B68744AA19F6802BAB8FFDC0CCD01B1@TK5EX14MBXC227.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A1F3067C9B68744AA19F6802BAB8FFDC0CCD01B1@TK5EX14MBXC227.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 17:03 -0500, Jason Baron wrote:
-> I think it's this patach that is causing a lot of "=p" when I boot up
-> using a 'make defconfig'.
+On Wed, Nov 30, 2011 at 07:13:49PM +0000, Haiyang Zhang wrote:
+> > -----Original Message-----
+> > From: David Miller [mailto:davem@davemloft.net]
+> > Sent: Wednesday, November 30, 2011 12:36 PM
+> > To: Haiyang Zhang
+> > Cc: KY Srinivasan; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > netdev@vger.kernel.org; devel@linuxdriverproject.org
+> > Subject: Re: [PATCH 1/2] net/hyperv: Fix long lines in netvsc.c
+> > 
+> > 
+> > Well, since Greg's tree is where the staging move happened, he'll have
+> > to take any patches to this driver that happen now, rather than me.
+> 
+> Sounds good. And, these patches were sent to devel@linuxdriverproject.org
+> too.
+> 
+> Greg, could you consider these patches for your tree?
 
-=p?
+Yes, I'll queue them up, thanks.
 
->  I'm a bit surprised at how many files have
-> 'DEBUG' defined.
-
-Also look for DDEBUG in Makefiles.
-
-> Are we sure that we are setting the 'p' flag for the
-> same set of debug statements that would be set if CONFIG_DYNAMIC_DEBUG
-> were not set?
-
-?
-
-> Also, it seems a bit strange to me, if I now enable all debug statements
-> and then clear everything (common pattern, I think), that I'm now
-> disabling stuff that was enabled by default.
-
-I don't think that's a common pattern and I
-also don't think that's bad.
-
-
+greg k-h
