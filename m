@@ -1,99 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab1K3NDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 08:03:39 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:53952 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab1K3NDg (ORCPT
+	id S1753587Ab1K3NE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 08:04:28 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:60891 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab1K3NE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 08:03:36 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt extensions
-Date: Wed, 30 Nov 2011 13:03:23 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "android-virt@lists.cs.columbia.edu" 
-	<android-virt@lists.cs.columbia.edu>,
-        "embeddedxen-devel@lists.sourceforge.net" 
-	<embeddedxen-devel@lists.sourceforge.net>,
-        Pawel Moll <pawel.moll@arm.com>
-References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop> <201111292129.20444.arnd@arndb.de> <alpine.DEB.2.00.1111301053300.31179@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1111301053300.31179@kaball-desktop>
+	Wed, 30 Nov 2011 08:04:26 -0500
+Message-ID: <4ED629CB.401@linux.vnet.ibm.com>
+Date: Wed, 30 Nov 2011 14:04:11 +0100
+From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111301303.23851.arnd@arndb.de>
-X-Provags-ID: V02:K0:yO3QYRv/tV0cvlbKetPYikmxAMy/xeoY1O3g7UVEQfs
- HfDjbIGA+ldgcNVB32LorGgSwECxyFpsENBWyMy5SXv4lynbw2
- Mn1GonGMemlPRAPhd/EVvsvRQH36i/t3WrUR1Di+2t2mF5nz4b
- yidnsVj2+j4s0RRxl0NYDEArvUQIdAtxqT6E3dSwq9wqGKCWGq
- OL/VVsID9t58AiXzk3O93bxzRHUF5+0nk5vn/TNgApzlQ7oh0X
- AaCW8Dksze0VBdtwsGFPYYqsmdCamfyEF3H5PRrlniVhgBnED5
- D0UwgXJF0iBpF2h4RVpLI/ik2UPrLQIFq8lrTuzaNGYbndM8Vf
- EghSQz76kbIC04Wt70RU=
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Ankit Jain <radical@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 2/8] readahead: make default readahead size a kernel parameter
+References: <20111121091819.394895091@intel.com> <20111121093846.251104145@intel.com> <20111121100137.GC5084@infradead.org> <20111121113540.GB8895@localhost> <20111124222822.GG29519@quack.suse.cz> <20111125003633.GP2386@dastard> <20111128023922.GA2141@localhost>
+In-Reply-To: <20111128023922.GA2141@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+x-cbid: 11113013-0542-0000-0000-0000003B48EB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 November 2011, Stefano Stabellini wrote:
-> On Tue, 29 Nov 2011, Arnd Bergmann wrote:
-> > On Tuesday 29 November 2011, Stefano Stabellini wrote:
-> > 
-> > Do you have a pointer to the kernel sources for the Linux guest?
-> 
-> We have very few changes to the Linux kernel at the moment (only 3
-> commits!), just enough to be able to issue hypercalls and start a PV
-> console.
-> 
-> A git branch is available here (not ready for submission):
-> 
-> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git arm
 
-Ok, interesting. There really isn't much of the platform support
-that I was expecting there. I finally found the information
-I was looking for in the xen construct_dom0() function:
 
- 167     regs->r0 = 0; /* SBZ */
- 168     regs->r1 = 2272; /* Machine NR: Versatile Express */
- 169     regs->r2 = 0xc0000100; /* ATAGS */
+On 11/28/2011 03:39 AM, Wu Fengguang wrote:
+> On Fri, Nov 25, 2011 at 08:36:33AM +0800, Dave Chinner wrote:
+>> On Thu, Nov 24, 2011 at 11:28:22PM +0100, Jan Kara wrote:
+>>> On Mon 21-11-11 19:35:40, Wu Fengguang wrote:
+>>>> On Mon, Nov 21, 2011 at 06:01:37PM +0800, Christoph Hellwig wrote:
+>>>>> On Mon, Nov 21, 2011 at 05:18:21PM +0800, Wu Fengguang wrote:
+>>>>>> From: Nikanth Karthikesan<knikanth@suse.de>
+>>>>>>
+[...]
 
-What this means is that you are emulating the current ARM/Keil reference
-board, at least to the degree that is necessary to get the guest started.
+>>
+>> And one that has already been in use for exactly this purpose for
+>> years. Indeed, it's far more flexible because you can give different
+>> types of devices different default readahead settings quite easily,
+>> and it you can set different defaults for just about any tunable
+>> parameter (e.g. readahead, ctq depth, max IO sizes, etc) in the same
+>> way.
+>
+> I'm interested in this usage, too. Would you share some of your rules?
+>
 
-This is the same choice people have made for KVM, but it's not
-necessarily the best option in the long run. In particular, this
-board has a lot of hardware that you claim to have by putting the
-machine number there, when you don't really want to emulate it.
+FYI - This is an example of a rules Suse delivers in SLES @ s390 for a 
+while now. With little modifications it could be used for all Dave 
+mentioned above.
 
-Pawell Moll is working on a variant of the vexpress code that uses
-the flattened device tree to describe the present hardware [1], and
-I think that would be a much better target for an official release.
-Ideally, the hypervisor should provide the device tree binary (dtb)
-to the guest OS describing the hardware that is actually there.
+cat /etc/udev/rules.d/60-readahead.rules
+# 
+ 
+ 
 
-This would also be the place where you tell the guest that it should
-look for PV devices. I'm not familiar with how Xen announces PV
-devices to the guest on other architectures, but you have the
-choice between providing a full "binding", i.e. a formal specification
-in device tree format for the guest to detect PV devices in the
-same way as physical or emulated devices, or just providing a single
-place in the device tree in which the guest detects the presence
-of a xen device bus and then uses hcalls to find the devices on that
-bus.
+# Rules to set an increased default max readahead size for s390 disk 
+devices 
+ 
 
-Another topic is the question whether there are any hcalls that
-we should try to standardize before we get another architecture
-with multiple conflicting hcall APIs as we have on x86 and powerpc.
+# This file should be installed in /etc/udev/rules.d 
+ 
+ 
 
-	Arnd
+# 
+ 
+ 
 
-[1] http://www.spinics.net/lists/arm-kernel/msg149604.html
+ 
+ 
+ 
+
+SUBSYSTEM!="block", GOTO="ra_end" 
+ 
+ 
+
+ 
+ 
+ 
+
+ACTION!="add", GOTO="ra_end" 
+ 
+ 
+
+# on device add set initial readahead to 512 (instead of in kernel 128) 
+ 
+ 
+
+KERNEL=="sd*[!0-9]", ATTR{queue/read_ahead_kb}="512" 
+ 
+ 
+
+KERNEL=="dasd*[!0-9]", ATTR{queue/read_ahead_kb}="512" 
+ 
+ 
+
+
+LABEL="ra_end"
+
+-- 
+
+Grüsse / regards, Christian Ehrhardt
+IBM Linux Technology Center, System z Linux Performance
+
