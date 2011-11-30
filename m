@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab1K3I3f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 03:29:35 -0500
-Received: from smtprelay06.ispgateway.de ([80.67.31.95]:43248 "EHLO
-	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab1K3I3c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 03:29:32 -0500
-Message-ID: <4ED5E99D.2030609@ladisch.de>
-Date: Wed, 30 Nov 2011 09:30:21 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1756306Ab1K3Iav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 03:30:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58352 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752383Ab1K3Iau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 03:30:50 -0500
+Message-ID: <4ED5E9E1.9050709@suse.cz>
+Date: Wed, 30 Nov 2011 09:31:29 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Unhandled IRQs on AMD E-450
-References: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com>
-In-Reply-To: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com>
-Content-Type: text/plain; charset=us-ascii
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Benny Halevy <bhalevy@tonian.com>,
+        linux-next@vger.kernel.org, open-osd <osd-dev@open-osd.org>
+Subject: Re: [PATCH v3] ore: FIX breakage when MISC_FILESYSTEMS is not set
+References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au> <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com> <4ED4238F.4090407@panasas.com> <4ED56C59.208@panasas.com>
+In-Reply-To: <4ED56C59.208@panasas.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeroen Van den Keybus wrote:
-> On an Asus E45M1-M PRO (AMD E-450) board with 64-bit Linux 3.0.0
-> (Ubuntu) and 3.2.0, I regularly get (more detailed logs at the end):
->
->
-> Nov 28 04:35:29 zacate kernel: [29581.259926] irq 16: nobody cared (try booting with the "irqpoll" option)
-> Nov 24 21:25:41 zacate kernel: [  190.503838] irq 19: nobody cared (try booting with the "irqpoll" option)
+Dne 30.11.2011 00:35, Boaz Harrosh napsal(a):
+> 
+> As Reported by Randy Dunlap
+> 
+> When MISC_FILESYSTEMS is not enabled:
+> 
+> fs/built-in.o: In function `objio_alloc_io_state':
+> objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
+> fs/built-in.o: In function `_write_done':
+> objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
+> fs/built-in.o: In function `_read_done':
+> ...
+> 
+> When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
+> is not selected. exofs/Kconfig is never examined during Kconfig,
+> and it can not do it's magic stuff to automatically select everything
+> needed.
+> 
+> We must split exofs/Kconfig in two. The ore one is always included.
+> And the exofs one is left in it's old place in the menu.
+> 
+> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+> ---
+>  fs/Kconfig           |    2 ++
+>  fs/exofs/Kconfig     |   11 -----------
+>  fs/exofs/ore.Kconfig |   12 ++++++++++++
+>  3 files changed, 14 insertions(+), 11 deletions(-)
+>  create mode 100644 fs/exofs/ore.Kconfig
+> 
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index 5f4c45d..fd7bfef 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -218,6 +218,8 @@ source "fs/exofs/Kconfig"
+>  
+>  endif # MISC_FILESYSTEMS
+>  
+> +source "fs/exofs/ore.Kconfig"
+> +
 
-> What could be going wrong here ?
+I suggest you name it Kconfig.ore. We have a couple of Kconfig.* files
+in the tree, so let's be consistent.
 
-* Some buggy driver might not realize that an interrupt came from its
-  device.
-* Some buggy device might raise an interrupt without telling the driver
-  that it needs attention.
-* Some buggy device might raise a wrong interrupt.  (This might include
-  devices that generate a PCI interrupt although they are configured for
-  MSI.)
-* Some buggy interrupt controller might be doing 'interesting' things.
-
-> - The problem with IRQ19 goes away (at least sufficiently long not to
-> be occurring within 24h) when module e1000 is unloaded.
-
-This looks like a bug in the e1000 hardware or software.
-
-> I note that at least 3 devices
-> (00:15.x, 05:02.0 and 00:14.2) have their IRQ lines routed to IRQ 16,
-> but I see only 2 handlers in the dmesg log and /proc/interrupts.
-
-lspci -s 0:15 -vv
-
-
-Regards,
-Clemens
+Michal
