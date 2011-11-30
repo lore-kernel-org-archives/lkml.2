@@ -1,132 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696Ab1K3L3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 06:29:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55987 "EHLO mx1.redhat.com"
+	id S1757659Ab1K3LhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 06:37:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41147 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595Ab1K3L3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 06:29:17 -0500
-Date: Wed, 30 Nov 2011 12:28:55 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tytso@mit.edu" <tytso@mit.edu>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "jiayingz@google.com" <jiayingz@google.com>,
-        "lczerner@redhat.com" <lczerner@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [PATCH]tracepoint: add drop_transaction/update_superblock_end
- to jbd2
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C57C90585@USINDEVS01.corp.hds.com>
-Message-ID: <alpine.LFD.2.00.1111301227200.4662@dhcp-27-109.brq.redhat.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C57C90585@USINDEVS01.corp.hds.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753505Ab1K3LhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 06:37:21 -0500
+Date: Wed, 30 Nov 2011 12:37:19 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/9] readahead: snap readahead request to EOF
+Message-ID: <20111130113719.GC4541@quack.suse.cz>
+References: <20111129130900.628549879@intel.com>
+ <20111129131456.145362960@intel.com>
+ <20111129142958.GJ5635@quack.suse.cz>
+ <20111130010604.GD11147@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111130010604.GD11147@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Nov 2011, Seiji Aguchi wrote:
+On Wed 30-11-11 09:06:04, Wu Fengguang wrote:
+> >   Hmm, wouldn't it be cleaner to do this already in ondemand_readahead()?
+> > All other updates of readahead window seem to be there.
+> 
+> Yeah it's not that clean, however the intention is to cover the other
+> call site -- mmap read-around, too.
+  Ah, OK.
 
-> Hi
+> > Also shouldn't we
+> > take maximum readahead size into account? Reading 3/2 of max readahead
+> > window seems like a relatively big deal for large files...
 > 
-> This patch adds trace_jbd2_drop_transaction and trace_jbd2_update_superblock_end
-> because there are similar tracepoints in jbd and they are needed in jbd2 as well.
+> Good point, the max readahead size is actually a must, in order to
+> prevent it expanding the readahead size for ever in the backwards
+> reading case.
 > 
-> Seiji
+> This limits the size expansion to 1/4 max readahead. That means, if
+> the next expected readahead size will be less than 1/4 max size, it
+> will be merged into the current readahead window to avoid one small IO.
+> 
+> The backwards reading is not special cased here because it's not
+> frequent anyway.
+> 
+>  unsigned long ra_submit(struct file_ra_state *ra,
+>  		       struct address_space *mapping, struct file *filp)
+>  {
+> +	pgoff_t eof = ((i_size_read(mapping->host)-1) >> PAGE_CACHE_SHIFT) + 1;
+> +	pgoff_t start = ra->start;
+> +	unsigned long size = ra->size;
+>  	int actual;
+>  
+> +	/* snap to EOF */
+> +	size += min(size, ra->ra_pages / 4);
+  I'd probably choose:
+	size += min(size / 2, ra->ra_pages / 4);
+  to increase current window only to 3/2 and not twice but I don't have a
+strong opinion. Otherwise I think the code is fine now so you can add:
+  Acked-by: Jan Kara <jack@suse.cz>
 
-Looks good, thanks.
+> +	if (start + size > eof) {
+> +		ra->size = eof - start;
+> +		ra->async_size = 0;
+> +	}
+> +
+>  	actual = __do_page_cache_readahead(mapping, filp,
+>  					ra->start, ra->size, ra->async_size);
 
-Reviewed-by: Lukas Czerner <lczerner@redhat.com>
-
-> 
-> 
->  Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-> 
-> ---
->  fs/jbd2/checkpoint.c        |    2 ++
->  fs/jbd2/journal.c           |    2 ++
->  include/trace/events/jbd2.h |   28 ++++++++++++++++++++++++++++
->  3 files changed, 32 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/jbd2/checkpoint.c b/fs/jbd2/checkpoint.c
-> index 16a698b..2bfd8b0 100644
-> --- a/fs/jbd2/checkpoint.c
-> +++ b/fs/jbd2/checkpoint.c
-> @@ -797,5 +797,7 @@ void __jbd2_journal_drop_transaction(journal_t *journal, transaction_t *transact
->  	J_ASSERT(journal->j_committing_transaction != transaction);
->  	J_ASSERT(journal->j_running_transaction != transaction);
->  
-> +	trace_jbd2_drop_transaction(journal, transaction);
-> +
->  	jbd_debug(1, "Dropping transaction %d, all done\n", transaction->t_tid);
->  }
-> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> index f24df13..5953b3d 100644
-> --- a/fs/jbd2/journal.c
-> +++ b/fs/jbd2/journal.c
-> @@ -1185,6 +1185,8 @@ void jbd2_journal_update_superblock(journal_t *journal, int wait)
->  	} else
->  		write_dirty_buffer(bh, WRITE);
->  
-> +	trace_jbd2_update_superblock_end(journal, wait);
-> +
->  out:
->  	/* If we have just flushed the log (by marking s_start==0), then
->  	 * any future commit will have to be careful to update the
-> diff --git a/include/trace/events/jbd2.h b/include/trace/events/jbd2.h
-> index 7596441..ae59bc2 100644
-> --- a/include/trace/events/jbd2.h
-> +++ b/include/trace/events/jbd2.h
-> @@ -81,6 +81,13 @@ DEFINE_EVENT(jbd2_commit, jbd2_commit_logging,
->  	TP_ARGS(journal, commit_transaction)
->  );
->  
-> +DEFINE_EVENT(jbd2_commit, jbd2_drop_transaction,
-> +
-> +	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
-> +
-> +	TP_ARGS(journal, commit_transaction)
-> +);
-> +
->  TRACE_EVENT(jbd2_end_commit,
->  	TP_PROTO(journal_t *journal, transaction_t *commit_transaction),
->  
-> @@ -229,6 +236,27 @@ TRACE_EVENT(jbd2_cleanup_journal_tail,
->  		  __entry->block_nr, __entry->freed)
->  );
->  
-> +TRACE_EVENT(jbd2_update_superblock_end,
-> +
-> +	TP_PROTO(journal_t *journal, int wait),
-> +
-> +	TP_ARGS(journal, wait),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	dev_t,  dev			)
-> +		__field(	int,    wait			)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->dev		= journal->j_fs_dev->bd_dev;
-> +		__entry->wait		= wait;
-> +	),
-> +
-> +	TP_printk("dev %d,%d wait %d",
-> +		  MAJOR(__entry->dev), MINOR(__entry->dev),
-> +		  __entry->wait)
-> +);
-> +
->  #endif /* _TRACE_JBD2_H */
->  
->  /* This part must be outside protection */
-> 
-
--- 
+									Honza
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
