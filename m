@@ -1,74 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757170Ab1K3BGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 20:06:10 -0500
-Received: from mga14.intel.com ([143.182.124.37]:41867 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753269Ab1K3BGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 20:06:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,595,1315206000"; 
-   d="scan'208";a="80442247"
-Date: Wed, 30 Nov 2011 09:06:04 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/9] readahead: snap readahead request to EOF
-Message-ID: <20111130010604.GD11147@localhost>
-References: <20111129130900.628549879@intel.com>
- <20111129131456.145362960@intel.com>
- <20111129142958.GJ5635@quack.suse.cz>
+	id S1757242Ab1K3BHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 20:07:23 -0500
+Received: from natasha.panasas.com ([67.152.220.90]:51932 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757054Ab1K3BHV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 Nov 2011 20:07:21 -0500
+Message-ID: <4ED5803D.8030906@panasas.com>
+Date: Tue, 29 Nov 2011 17:00:45 -0800
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129142958.GJ5635@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Randy Dunlap <rdunlap@xenotime.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: Michal Marek <mmarek@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        NFS list <linux-nfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Benny Halevy <bhalevy@tonian.com>,
+        <linux-next@vger.kernel.org>, open-osd <osd-dev@open-osd.org>
+Subject: Re: [osd-dev] [PATCH v3] ore: FIX breakage when MISC_FILESYSTEMS
+ is not set
+References: <20111124174358.d88f11c0ff700e5e6b3bf73b@canb.auug.org.au> <4ECE91F3.9010007@xenotime.net> <4ED422CC.60706@panasas.com> <4ED4238F.4090407@panasas.com> <4ED56C59.208@panasas.com>
+In-Reply-To: <4ED56C59.208@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->   Hmm, wouldn't it be cleaner to do this already in ondemand_readahead()?
-> All other updates of readahead window seem to be there.
+On 11/29/2011 03:35 PM, Boaz Harrosh wrote:
+> 
+> As Reported by Randy Dunlap
+> 
 
-Yeah it's not that clean, however the intention is to cover the other
-call site -- mmap read-around, too.
+Randy Hi
 
-> Also shouldn't we
-> take maximum readahead size into account? Reading 3/2 of max readahead
-> window seems like a relatively big deal for large files...
+I think I prefer this simple solution for now, instead of
+the complete move of the ore to lib/
 
-Good point, the max readahead size is actually a must, in order to
-prevent it expanding the readahead size for ever in the backwards
-reading case.
+It solves the warning problem you reported and let us
+keep the convenience of selecting everything in one place. As
+was said there are more dependencies on the way.
 
-This limits the size expansion to 1/4 max readahead. That means, if
-the next expected readahead size will be less than 1/4 max size, it
-will be merged into the current readahead window to avoid one small IO.
+I will look into the additional ASYNC_CORE and XOR_BLOCKS selects
+you mentioned. For some reason it works but I'll try to find a
+way to break it or prove It is sound.
 
-The backwards reading is not special cased here because it's not
-frequent anyway.
+Please advise?
 
- unsigned long ra_submit(struct file_ra_state *ra,
- 		       struct address_space *mapping, struct file *filp)
- {
-+	pgoff_t eof = ((i_size_read(mapping->host)-1) >> PAGE_CACHE_SHIFT) + 1;
-+	pgoff_t start = ra->start;
-+	unsigned long size = ra->size;
- 	int actual;
- 
-+	/* snap to EOF */
-+	size += min(size, ra->ra_pages / 4);
-+	if (start + size > eof) {
-+		ra->size = eof - start;
-+		ra->async_size = 0;
-+	}
-+
- 	actual = __do_page_cache_readahead(mapping, filp,
- 					ra->start, ra->size, ra->async_size);
+Thanks
+Heart
 
-Thanks,
-Fengguang
+> When MISC_FILESYSTEMS is not enabled:
+> 
+> fs/built-in.o: In function `objio_alloc_io_state':
+> objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
+> fs/built-in.o: In function `_write_done':
+> objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
+> fs/built-in.o: In function `_read_done':
+> ...
+> 
+> When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
+> is not selected. exofs/Kconfig is never examined during Kconfig,
+> and it can not do it's magic stuff to automatically select everything
+> needed.
+> 
+> We must split exofs/Kconfig in two. The ore one is always included.
+> And the exofs one is left in it's old place in the menu.
+> 
+> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+> ---
+>  fs/Kconfig           |    2 ++
+>  fs/exofs/Kconfig     |   11 -----------
+>  fs/exofs/ore.Kconfig |   12 ++++++++++++
+>  3 files changed, 14 insertions(+), 11 deletions(-)
+>  create mode 100644 fs/exofs/ore.Kconfig
+> 
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index 5f4c45d..fd7bfef 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -218,6 +218,8 @@ source "fs/exofs/Kconfig"
+>  
+>  endif # MISC_FILESYSTEMS
+>  
+> +source "fs/exofs/ore.Kconfig"
+> +
+>  menuconfig NETWORK_FILESYSTEMS
+>  	bool "Network File Systems"
+>  	default y
+> diff --git a/fs/exofs/Kconfig b/fs/exofs/Kconfig
+> index da42f32..86194b2 100644
+> --- a/fs/exofs/Kconfig
+> +++ b/fs/exofs/Kconfig
+> @@ -1,14 +1,3 @@
+> -# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
+> -# for every ORE user we do it like this. Any user should add itself here
+> -# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
+> -# selected here, and we default to "ON". So in effect it is like been
+> -# selected by any of the users.
+> -config ORE
+> -	tristate
+> -	depends on EXOFS_FS || PNFS_OBJLAYOUT
+> -	select ASYNC_XOR
+> -	default SCSI_OSD_ULD
+> -
+>  config EXOFS_FS
+>  	tristate "exofs: OSD based file system support"
+>  	depends on SCSI_OSD_ULD
+> diff --git a/fs/exofs/ore.Kconfig b/fs/exofs/ore.Kconfig
+> new file mode 100644
+> index 0000000..1ca7fb7
+> --- /dev/null
+> +++ b/fs/exofs/ore.Kconfig
+> @@ -0,0 +1,12 @@
+> +# ORE - Objects Raid Engine (libore.ko)
+> +#
+> +# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
+> +# for every ORE user we do it like this. Any user should add itself here
+> +# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
+> +# selected here, and we default to "ON". So in effect it is like been
+> +# selected by any of the users.
+> +config ORE
+> +	tristate
+> +	depends on EXOFS_FS || PNFS_OBJLAYOUT
+> +	select ASYNC_XOR
+> +	default SCSI_OSD_ULD
+
