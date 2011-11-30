@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757503Ab1K3JqQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 04:46:16 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59046 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab1K3JqP (ORCPT
+	id S1757516Ab1K3Jur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 04:50:47 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:58425 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab1K3Jun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 04:46:15 -0500
-Date: Wed, 30 Nov 2011 09:46:09 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Cc: Greg KH <gregkh@suse.de>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        NeilBrown <neilb@suse.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Mike Lockwood <lockwood@android.com>,
-        Arve Hj?nnev?g <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>,
-        Johan PALSSON <johan.palsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-Message-ID: <20111130094609.GA19839@sirena.org.uk>
-References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
- <201111251402.28016.arnd@arndb.de>
- <CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
- <20111127230836.GA29728@suse.de>
- <20111128123114.2601bd7c@notabene.brown>
- <20111128072713.GA17724@suse.de>
- <20111128090446.GB18919@core.coreip.homeip.net>
- <20111130063500.GB12052@suse.de>
- <CAJ0PZbR_N+=51AkcP5ijP31ka7G7EXbL8hSzK+umd_W6HPP2gg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJ0PZbR_N+=51AkcP5ijP31ka7G7EXbL8hSzK+umd_W6HPP2gg@mail.gmail.com>
-X-Cookie: If rash develops, discontinue use.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Wed, 30 Nov 2011 04:50:43 -0500
+Date: Wed, 30 Nov 2011 20:50:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the vhost tree with the hexagon
+ tree
+Message-Id: <20111130205030.ed1e48bf5588a1aeeb2f4a3d@canb.auug.org.au>
+In-Reply-To: <20111130064553.GA2393@codeaurora.org>
+References: <20111129142259.78d3e10678c8e9d8376d52aa@canb.auug.org.au>
+	<20111130064553.GA2393@codeaurora.org>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__30_Nov_2011_20_50_30_+1100_jsCO=y6F_4xuNS1N"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 03:58:54PM +0900, MyungJoo Ham wrote:
-> On Wed, Nov 30, 2011 at 3:35 PM, Greg KH <gregkh@suse.de> wrote:
+--Signature=_Wed__30_Nov_2011_20_50_30_+1100_jsCO=y6F_4xuNS1N
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > Actually, why can't we just use gpio as-is here and just treat these
-> > devices as "generic" i/o "pins"?
+Hi Richard,
 
-> For userspace, GPIO should work.
+On Wed, 30 Nov 2011 00:45:53 -0600 Richard Kuo <rkuo@codeaurora.org> wrote:
+>
+> On Tue, Nov 29, 2011 at 02:22:59PM +1100, Stephen Rothwell wrote:
+> >=20
+> > Today's linux-next merge of the vhost tree got a conflict in
+> > arch/hexagon/Kconfig between commit 5237bae0d8c9 ("various Kconfig
+> > cleanup and old platform build code removal") from the hexagon tree and
+> > commit4673ca8eb369  ("lib: move GENERIC_IOMAP to lib/Kconfig") from the
+> > vhost tree.
+> >=20
+> > Just context changes.  I fixed it up (see below) and can carry the fix =
+as
+> > necessary.
+>=20
+> I was figuring this would happen.  What would be the best way for me to
+> fix this?  Maybe rebase my patches on top of the vhost tree?
 
-> For device drivers, I'm not sure.
+No, just ignore it.  Linus will fix it up when he merges the trees into
+his.  Its pretty trivial anyway.
 
-> In order to work for device drives, a GPIO event (GPIO Input goes L->H
-> or H->L) should trigger events in other device drivers. The GPIO value
-> can be set by the external-connector/multistate-switch driver
-> (notifier) based on its own interrupts.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-We also need some way to group things together so that we can understand
-that we've got a single connector that can detect multiple things (eg,
-understanding that a cable hsa audio and video capability).
+--Signature=_Wed__30_Nov_2011_20_50_30_+1100_jsCO=y6F_4xuNS1N
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO1fxmAAoJEECxmPOUX5FE3WIQAI1b2vM45UIY/Ef0xp52fm6o
+dQqIP+cOtMpkSJZhSMOYMPccehMAJdqTxsTB7ObjpsOCBRKWw0O6E2DksATlAgrY
+ZDMa4KGPrHhtnzyfdR4+SH6lx5C/Sp0JqGe/QuPhG4eT0xxCfolp0qYoqxNcpteH
+KlEN0PYuENoojMEMr+ctMvn0MJnsu1RwlbDnhJf10Asq4e0FbKUi7KFTd36ZNOKB
+Ys51HdU6nFR1MZzHMfSFLHKDwt7gw8gFy5aBL/1bUYGX2R/ovzxsxzUJGoZ8nPku
+I/GJPWKban49O6ZH214yRIXwht2Cex+GsoWMbmv+2mi5lmEqzd3EVgzLy1xPgrFn
+IuRwVpBM3mAbi3XnF6jamt1RhGhdMhTv+lON33qmStsksOjy9BfS7EHWi7cqd1mb
+8ksrvUiBo8SJA7CGPtjF0vWV4ChwD43Kwlvzp2AGumIWbYxurwileWelLeeRQFSF
+/PF8reo0L6+UfYH6QsdjfKWEUiqccFkLxnUyYYqrUC2srKnnq8oJPj7sZn7MQnjb
+XhY/ErZ/X/un1S0UeLa0CwyJiYWRaVaoTZDncnKQvSDTMln/bESjZyCkllR2w5LJ
+Cb91FMYCVw9U7P6ztOrUx5dTvwnpXSZlU7DzGtCHDG5n5zFYZKtx71O1EHyoqlSP
+6xQEakZONcOd2w8x3ckk
+=+due
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__30_Nov_2011_20_50_30_+1100_jsCO=y6F_4xuNS1N--
