@@ -1,109 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1K3NWl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 08:22:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47429 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752709Ab1K3NWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 08:22:39 -0500
-Date: Wed, 30 Nov 2011 15:23:16 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: [3.2-rc3] 100% CPU usage while in del_timer_sync from
- iwl3945_rs_free_sta
-Message-ID: <20111130142316.GA2466@redhat.com>
-References: <20111129100727.GD2675@tiehlicka.suse.cz>
- <20111129113906.GA7299@redhat.com>
- <20111130101028.GA2906@tiehlicka.suse.cz>
+	id S1755087Ab1K3NXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 08:23:41 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38490 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754668Ab1K3NXj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 08:23:39 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="OgqxwSJOaUobr8KG"
-Content-Disposition: inline
-In-Reply-To: <20111130101028.GA2906@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [41.212.118.124]
+In-Reply-To: <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
+References: <1319048598-15030-1-git-send-email-dsahern@gmail.com>
+ <20111019183848.GE2229@ghostprotocols.net> <4E9F1AA0.4010706@gmail.com>
+ <20111019192011.GG2229@ghostprotocols.net> <4E9F4B50.1060207@gmail.com>
+ <20111020130041.GB1772@ghostprotocols.net> <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
+From: Brian Marete <marete@toshnix.com>
+Date: Wed, 30 Nov 2011 16:23:17 +0300
+Message-ID: <CAHVUoiTeCuFLCkyEzCMJ6g1wAp+FWDR3qkSrqE3vJAYwLsRC9Q@mail.gmail.com>
+Subject: Re: [PATCH] perf top: fix crash on annotate request
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 11, 2011 at 1:01 AM, Brian Marete <marete@toshnix.com> wrote:
+>
+> Hello,
+>
+> On Thu, Oct 20, 2011 at 4:00 PM, Arnaldo Carvalho de Melo
+> <acme@ghostprotocols.net> wrote:
+> > I.e. the map_ip for this method is messing up things, what symbol is
+> > this? I.e. please provide:
+> >
+> > p *sym
+> > p *map
+>
+> I have am experiencing the same segfault using perf from the latest
+> linus' tree. The gdb backtrace is below. Which patch fixes it? Or is
+> it already fixed in some git tree on kernel.org?
+>
+> Thanks
+>
+> Program received signal SIGSEGV, Segmentation fault.
+> 0x000000000042e27e in symbol__inc_addr_samples (sym=0x1279e70, map=0x9677a0,
+>    evidx=0, addr=256544) at util/annotate.c:73
+> 73              h->addr[offset]++;
+> #0  0x000000000042e27e in symbol__inc_addr_samples (sym=0x1279e70, map=
+>    0x9677a0, evidx=0, addr=256544) at util/annotate.c:73
+> #1  0x00000000004215e4 in record_precise_ip (he=0x1e7b260, counter=0,
+>    ip=256544) at builtin-top.c:223
+> #2  0x0000000000422ba1 in perf_event__process_sample (event=0x7ffff7ec4c60,
+>    evsel=0x837a10, sample=0x7fffffffe340, session=0x837e80)
+>    at builtin-top.c:801
+> #3  0x0000000000422c8c in perf_session__mmap_read_idx (self=0x837e80, idx=1)
+>    at builtin-top.c:825
+> #4  0x0000000000422d43 in perf_session__mmap_read (self=0x837e80)
+>    at builtin-top.c:839
+> #5  0x0000000000423295 in __cmd_top () at builtin-top.c:1003
+> #6  0x0000000000423940 in cmd_top (argc=0, argv=0x7fffffffe720, prefix=0x0)
+>    at builtin-top.c:1274
+> #7  0x000000000040ffdc in run_builtin (p=0x6a4bc8, argc=1, argv=0x7fffffffe720)
+>    at perf.c:286
+> #8  0x00000000004101af in handle_internal_command (argc=1, argv=0x7fffffffe720)
+>    at perf.c:358
+> #9  0x00000000004102b5 in run_argv (argcp=0x7fffffffe60c, argv=0x7fffffffe600)
+>    at perf.c:402
+> #10 0x00000000004104f8 in main (argc=1, argv=0x7fffffffe720) at perf.c:512
+>
+> # Output of p *sym
+> $1 = {rb_node = {rb_parent_color = 19423281, rb_right = 0x0, rb_left = 0x0},
+>  start = 1124896, end = 1126163, namelen = 16, binding = 0 '\000',
+>  ignore = false, name = 0x1279e70 "1`(\001"}
+>
+> # Output of p *map
+> $2 = {{rb_node = {rb_parent_color = 9861408, rb_right = 0x967860, rb_left =
+>    0x9676e0}, node = {next = 0x967920, prev = 0x967860}}, start = 4142972928,
+>  end = 4144365568, type = 0 '\000', referenced = true, priv = 0, pgoff = 0,
+>  map_ip = 0x44fc69 <map__map_ip>, unmap_ip = 0x44fc92 <map__unmap_ip>, dso =
+>    0x8e5490, groups = 0x964cd8}
 
---OgqxwSJOaUobr8KG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hello. I can still reproduce this every time with the tip Linus' tree.
+Is there a tree that fixes this? I beginning to wonder if anyone uses
+`perf top' :)
 
-On Wed, Nov 30, 2011 at 11:10:28AM +0100, Michal Hocko wrote:
-> On Tue 29-11-11 12:39:07, Stanislaw Gruszka wrote:
-> > On Tue, Nov 29, 2011 at 11:07:27AM +0100, Michal Hocko wrote:
-> > > [I am not sure whether this is ieee80211 or iwl3945 issue so put both
-> > > maintainers into loop]
-> > The only changed we had in iwlegacy between 3.1 and 3.2-rc, was only 
-> > adjustment to mac80211 changes. However I think this is iwlegacy issue,
-> > just for some reason bug did not trigger before.
-> 
-> I have double checked 3.1 and cannot reproduce it.
-> Anyway, I have put:
-> 
-> diff --git a/drivers/net/wireless/iwlegacy/iwl-3945-rs.c b/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
-> index 8faeaf2..9221ed4 100644
-> --- a/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
-> +++ b/drivers/net/wireless/iwlegacy/iwl-3945-rs.c
-> @@ -432,6 +432,7 @@ static void iwl3945_rs_free_sta(void *iwl_priv, struct ieee80211_sta *sta,
->  	 * to use iwl_priv to print out debugging) since it may not be fully
->  	 * initialized at this point.
->  	 */
-> +	printk("XXX: deleting time: %x\n", rs_sta->rate_scale_flush.base);
->  	del_timer_sync(&rs_sta->rate_scale_flush);
->  }
->  
-> And the timer base is really NULL when the issue happens. So, somebody
-> probably removed the timer already?
+Thanks.
 
-I think we call rs_ops->free_sta without rs_ops->alloc_sta, otherwise
-I don't know how it could be NULL in iwl3945_rs_free_sta (excluding memory
-corruption or bug in timer internals).
-
-I suspect this could be a regression introduced by commit:
-
-commit 07ba55d7f1d0da174c9bc545c713b44cee760197
-Author: Arik Nemtsov <arik@wizery.com>
-Date:   Wed Sep 28 14:12:53 2011 +0300
-
-    nl80211/mac80211: allow adding TDLS peers as stations
-
-I'm attaching patch with revert of relevant hunk, because full revert
-would be hard currently. Does it workaround problem for you?
-
-> > Is this problem 100% reproducible for you ? 
-> 
-> Yes, it seems to be sufficient to suspend to RAM while associated and
-> turn off the AP before waking up the machine.
-> I wasn't able to reproduce just by turning of the AP while associated
-> without suspend.
-
-I'm not able to recreate, but I'm not using your config as my system
-user-space has problem to startup with it :-(
-
-Stanislaw
-
---OgqxwSJOaUobr8KG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="mac80211_use_sta_info_destroy_addr.patch"
-
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index b1b1bb3..f773dbb 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -1144,9 +1144,8 @@ static void ieee80211_set_disassoc(struct ieee80211_sub_if_data *sdata,
- 	changed |= BSS_CHANGED_BSSID | BSS_CHANGED_HT;
- 	ieee80211_bss_info_change_notify(sdata, changed);
- 
--	/* remove AP and TDLS peers */
- 	if (remove_sta)
--		sta_info_flush(local, sdata);
-+		sta_info_destroy_addr(sdata, bssid);
- 
- 	del_timer_sync(&sdata->u.mgd.conn_mon_timer);
- 	del_timer_sync(&sdata->u.mgd.bcn_mon_timer);
-
---OgqxwSJOaUobr8KG--
+--
+Brian Gitonga Marete
+Toshnix Systems
+Tel: +254722151590
