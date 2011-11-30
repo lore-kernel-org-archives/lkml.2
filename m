@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab1K3T5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 14:57:38 -0500
+	id S1752947Ab1K3T5s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 14:57:48 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:56503 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752559Ab1K3T5c (ORCPT
+	with ESMTP id S1752559Ab1K3T5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 14:57:32 -0500
+	Wed, 30 Nov 2011 14:57:43 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 06/25] dynamic_debug: replace strcpy with strlcpy, in ddebug_setup_query()
-Date: Wed, 30 Nov 2011 12:56:35 -0700
-Message-Id: <1322683014-13285-7-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 10/25] dynamic_debug: tighten up error checking on debug queries
+Date: Wed, 30 Nov 2011 12:56:39 -0700
+Message-Id: <1322683014-13285-11-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
 References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
@@ -23,36 +23,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-replace strcpy with strlcpy, and add define for the size constant.
+Issue error when a match-spec is given multiple times in a rule.
+Previous code kept last one, but was silent about it.  Docs imply only
+one is allowed by saying match-specs are ANDed together, given that
+module M cannot match both A and B.  Also error when last_line < 1st_line.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ lib/dynamic_debug.c |   39 +++++++++++++++++++++++++++++++++------
+ 1 files changed, 33 insertions(+), 6 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 8c88b89..101e2e5 100644
+index 6a170c3..f133e03 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -525,14 +525,16 @@ EXPORT_SYMBOL(__dynamic_netdev_dbg);
- 
- #endif
- 
--static __initdata char ddebug_setup_string[1024];
-+#define DDEBUG_STRING_SIZE 1024
-+static __initdata char ddebug_setup_string[DDEBUG_STRING_SIZE];
-+
- static __init int ddebug_setup_query(char *str)
- {
- 	if (strlen(str) >= 1024) {
- 		pr_warn("ddebug boot param string too large\n");
- 		return 0;
- 	}
--	strcpy(ddebug_setup_string, str);
-+	strlcpy(ddebug_setup_string, str, DDEBUG_STRING_SIZE);
- 	return 1;
+@@ -276,6 +276,19 @@ static char *unescape(char *str)
+ 	return str;
  }
  
++static int check_set(const char **dest, char *src, char *name)
++{
++	int rc = 0;
++
++	if (*dest) {
++		rc = -EINVAL;
++		pr_err("match-spec:%s val:%s overridden by %s",
++			name, *dest, src);
++	}
++	*dest = src;
++	return rc;
++}
++
+ /*
+  * Parse words[] as a ddebug query specification, which is a series
+  * of (keyword, value) pairs chosen from these possibilities:
+@@ -287,11 +300,15 @@ static char *unescape(char *str)
+  * format <escaped-string-to-find-in-format>
+  * line <lineno>
+  * line <first-lineno>-<last-lineno> // where either may be empty
++ *
++ * Only 1 of each type is allowed.
++ * Returns 0 on success, <0 on error.
+  */
+ static int ddebug_parse_query(char *words[], int nwords,
+ 			       struct ddebug_query *query)
+ {
+ 	unsigned int i;
++	int rc;
+ 
+ 	/* check we have an even number of words */
+ 	if (nwords % 2 != 0)
+@@ -300,24 +317,32 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 
+ 	for (i = 0 ; i < nwords ; i += 2) {
+ 		if (!strcmp(words[i], "func"))
+-			query->function = words[i+1];
++			rc = check_set(&query->function, words[i+1], "func");
+ 		else if (!strcmp(words[i], "file"))
+-			query->filename = words[i+1];
++			rc = check_set(&query->filename, words[i+1], "file");
+ 		else if (!strcmp(words[i], "module"))
+-			query->module = words[i+1];
++			rc = check_set(&query->module, words[i+1], "module");
+ 		else if (!strcmp(words[i], "format"))
+-			query->format = unescape(words[i+1]);
++			rc = check_set(&query->format, unescape(words[i+1]),
++				"format");
+ 		else if (!strcmp(words[i], "line")) {
+ 			char *first = words[i+1];
+ 			char *last = strchr(first, '-');
++			if (query->first_lineno || query->last_lineno) {
++				pr_err("match-spec:line given 2 times\n");
++				return -EINVAL;
++			}
+ 			if (last)
+ 				*last++ = '\0';
+ 			if (parse_lineno(first, &query->first_lineno) < 0)
+ 				return -EINVAL;
+-			if (last != NULL) {
++			if (last) {
+ 				/* range <first>-<last> */
+-				if (parse_lineno(last, &query->last_lineno) < 0)
++				if (parse_lineno(last, &query->last_lineno)
++				    < query->first_lineno) {
++					pr_err("last-line < 1st-line\n");
+ 					return -EINVAL;
++				}
+ 			} else {
+ 				query->last_lineno = query->first_lineno;
+ 			}
+@@ -325,6 +350,8 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 			pr_err("unknown keyword \"%s\"\n", words[i]);
+ 			return -EINVAL;
+ 		}
++		if (rc)
++			return rc;
+ 	}
+ 
+ 	if (verbose)
 -- 
 1.7.7.3
 
