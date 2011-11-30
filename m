@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369Ab1K3B0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 Nov 2011 20:26:08 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:58039 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754661Ab1K3B0F (ORCPT
+	id S1757183Ab1K3Bs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 Nov 2011 20:48:27 -0500
+Received: from gate.crashing.org ([63.228.1.57]:45976 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754661Ab1K3BsZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 Nov 2011 20:26:05 -0500
-Message-ID: <4ED58614.9090204@linux.vnet.ibm.com>
-Date: Wed, 30 Nov 2011 06:55:40 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [linux-pm] [RFC PATCH v2 4/4] cpuidle: (POWER) Handle power_save=off
-References: <20111117112815.9191.2322.stgit@localhost6.localdomain6> <20111117112906.9191.54050.stgit@localhost6.localdomain6> <1322435233.23348.19.camel@pasglop>	<4ED36A7D.9070308@linux.vnet.ibm.com> <1322512771.23348.45.camel@pasglop> <4ED47F48.2070107@linux.vnet.ibm.com>
-In-Reply-To: <4ED47F48.2070107@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11112915-5490-0000-0000-00000039906A
+	Tue, 29 Nov 2011 20:48:25 -0500
+Subject: Re: [PATCH v2] Integrated Flash Controller support
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <4ED5531C.6030104@freescale.com>
+Date: Tue, 29 Nov 2011 19:47:46 -0600
+Cc: <dedekind1@gmail.com>, Li Yang-R58472 <r58472@freescale.com>,
+        <Artem.Bityutskiy@nokia.com>,
+        "b35362@freescale.com>" <b35362@freescale.com>,
+        "linux-kernel@vger.kernel.org Kernel" <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <EFF451D9-552A-4820-90D3-BF3156D5B25F@kernel.crashing.org>
+References: <1320053901-23801-1-git-send-email-b35362@freescale.com>  <CCF7C6DB-437C-4140-894F-2F497AD610DC@kernel.crashing.org>  <8EDB3DC6-63E5-4D5C-BB52-15F32B85C5DD@kernel.crashing.org> <1322602860.2150.10.camel@koala> <4ED5531C.6030104@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2011 12:14 PM, Deepthi Dharwar wrote:
 
-> On 11/29/2011 02:09 AM, Benjamin Herrenschmidt wrote:
-> 
->> On Mon, 2011-11-28 at 16:33 +0530, Deepthi Dharwar wrote:
->>
->>> On an LPAR if cpuidle is disabled, ppc_md.power_save is still set to
->>> cpuidle_idle_call by default here. This would result in calling of
->>> cpuidle_idle_call repeatedly, only for the call to return -ENODEV. The
->>> default idle is never executed.
->>> This would be a major design flaw. No fallback idle routine.
->>>
->>> We propose to fix this by checking the return value of
->>> ppc_md.power_save() call from void to int.
->>> Right now return value is void, but if we change this to int, this
->>> would solve two problems. One being removing the cast to a function
->>> pointer in the prev patch and this design flaw stated above.
-kernel/idle.c:  ppc_md.power_save = NULL;
->>>
->>> So by checking the return value of ppc_md.power_save(), we can invoke
->>> the default idle on failure. But my only concern is about the effects of
->>> changing the ppc_md.power_save() to return int on other powerpc
->>> architectures. Would it be a good idea to change the return type to int
->>> which would help us flag an error and fallback to default idle?
->>
->> I would have preferred an approach where the cpuidle module sets
->> ppc_md.power_save when loaded and restores it when unloaded ... but that
->> would have to go into the cpuidle core as a powerpc specific tweak and
->> might not be generally well received.
->>
->> So go for it, add the return value, but you'll have to update all the
->> idle functions (grep for power_save in arch/powerpc to find them).
->>
-> 
-> 
-> Thanks Ben. Yes, I will update all the idle functions under powerpc.
-> I will re-work these patches with the discussed changes.
-> 
-> Regards,
-> Deepthi
-> 
-> _______________________________________________
-> linux-pm mailing list
-> linux-pm@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/linux-pm
-> 
-> 
+On Nov 29, 2011, at 3:48 PM, Scott Wood wrote:
 
-Hi Ben,
+> On 11/29/2011 03:40 PM, Artem Bityutskiy wrote:
+>> On Thu, 2011-11-24 at 08:24 -0600, Kumar Gala wrote:
+>>> On Nov 22, 2011, at 9:41 PM, Kumar Gala wrote:
+>>> 
+>>>> 
+>>>> On Oct 31, 2011, at 4:38 AM, <b35362@freescale.com> <b35362@freescale.com> wrote:
+>>>> 
+>>>>> From: Liu Shuo <b35362@freescale.com>
+>>>>> 
+>>>>> Integrated Flash Controller supports various flashes like NOR, NAND
+>>>>> and other devices using NOR, NAND and GPCM Machine available on it.
+>>>>> IFC supports four chip selects.
+>>>>> 
+>>>>> Signed-off-by: Dipen Dudhat <Dipen.Dudhat@freescale.com>
+>>>>> Signed-off-by: Scott Wood <scottwood@freescale.com>
+>>>>> Signed-off-by: Li Yang <leoli@freescale.com>
+>>>>> Signed-off-by: Liu Shuo <b35362@freescale.com>
+>>>>> ---
+>>>>> arch/powerpc/Kconfig               |    4 +
+>>>>> arch/powerpc/include/asm/fsl_ifc.h |  834 ++++++++++++++++++++++++++++++++++++
+>>>>> arch/powerpc/sysdev/Makefile       |    1 +
+>>>>> arch/powerpc/sysdev/fsl_ifc.c      |  322 ++++++++++++++
+>>>>> 4 files changed, 1161 insertions(+), 0 deletions(-)
+>>>>> create mode 100644 arch/powerpc/include/asm/fsl_ifc.h
+>>>>> create mode 100644 arch/powerpc/sysdev/fsl_ifc.c
+>>>> 
+>>>> Guys,
+>>>> 
+>>>> How are we handling this patchset since it touches drivers/mtd/nand?
+>> 
+>> I do not see it touching MTD from the diffstat above. I am a little bit
+>> confused why a flash controller is added to
+>> arch/powerpc/sysdev/fsl_ifc.c ?
+> 
+> It's really a bus controller, with NOR, NAND, and general-purpose modes
+> settable per chipselect.  The actual NAND driver goes in
+> drivers/mtd/nand, and is apparently in a separate patch (probably due to
+> separate maintenance domains).
+> 
+> It's the same situation as arch/powerpc/sysdev/fsl_lbc.c versus
+> drivers/mtd/nand/fsl_elbc_nand.c and drivers/mtd/nand/fsl_upm.c.
+> 
+> -Scott
 
-I was trying to add a return value for power_save for all arch/powepc
-idle functions but a few of them directly call *.S  routines, as they
-are asm.
+As Scott said, I was more asking about the 2nd patch in the sequence which did touch MTD.  Since that one is dependent on this patch, wondering how we wanted to handle them.
 
-What would be a good way to change the return value  for asm routines ?
-Do we make a change in asm only, put the return value in r3 or write a
-wrapper function which would call these asm routines and return an int ?
-
-Regards,
-Deepthi
+- k
 
