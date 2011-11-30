@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab1K3K1C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 05:27:02 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:35571
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754540Ab1K3K0z (ORCPT
+	id S1757570Ab1K3KdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 05:33:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47749 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660Ab1K3KdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 05:26:55 -0500
-Date: Wed, 30 Nov 2011 05:26:43 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Eric Seppanen <eric@purestorage.com>,
-        Christoph Hellwig <hch@infradead.org>, Vivek Goyal <vgoyal@redhat.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-Message-ID: <20111130102643.GA2033@infradead.org>
-References: <1317219074.19034.4.camel@dabdike.hansenpartnership.com>
- <4E832BD2.50409@kernel.dk>
- <CA+55aFyFht3njKVep+aT_m5URxRxayZyb6K2ukW6+kazHf8EKA@mail.gmail.com>
- <1317224616.19034.41.camel@dabdike.hansenpartnership.com>
- <20110928174859.GA21628@redhat.com>
- <20110928175304.GA3985@infradead.org>
- <20110928180905.GB21628@redhat.com>
- <20110928181649.GA27441@infradead.org>
- <CADOQvuM2VP1TsLMAOL+NC-zEypDS2NJGmiN6RFCxmjUT6LqaPA@mail.gmail.com>
- <4ED60302.7000304@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED60302.7000304@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 30 Nov 2011 05:33:10 -0500
+From: Keng-Yu Lin <kengyu@canonical.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Keng-Yu Lin <kengyu@canonical.com>
+Subject: [PATCH v2] Bluetooth: Add AR30XX device ID on Asus laptops
+Date: Wed, 30 Nov 2011 18:32:37 +0800
+Message-Id: <1322649157-20479-1-git-send-email-kengyu@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1321422409.15441.510.camel@aeonflux>
+References: <1321422409.15441.510.camel@aeonflux>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 11:18:42AM +0100, Jens Axboe wrote:
-> I agree on a+b, but c is definitely more than debatable. I have yet to
-> see a device saturate its bandwidth on 4KB IOS. So merging on the write
-> side is always going to be a win.
+The ID is found on Asus K54HR and K53U.
+Blacklist the AR3011-based device ID [0489:e03d]
+and add to ath3k.c for firmware loading.
 
-We shouldn't submit 4k I/O in the first place unless they truely are
-random.  If you look at XFS for example you'd basically never see them.
-The only small I/O in a typical workloads are individual btree blocks
-and AG header updates, which generally can't be merged anyway.  Data I/O
-happens in larger chunks generally, as do reads/writes of inodes
-(generally in 32k chunks, with plans to go larger).
+Below is the output of usb-devices script:
 
-Note that the merges in the way the are done currently are one of the
-most painful bits of the current request_fn based drivers.  They require
-the addition of the struct request data structure, which needs to be
-allocated and initialized for every bio, no matter if it's beeing merged
-or not, and are the prime reason why make_request_fn and request_fn
-style drivers can't operate on the same data structures.
+Before the fiwmware loading:
 
-I've been wondering if it would be possible to simply chain bios for
-merging, and while it's theoretically possible I'm wondering about
-the impact on drivers.  Fortunately scsi drivers generally don't touch
-struct request directly, so it might be doable.
+T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0489 ProdID=e03d Rev=00.01
+C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+
+After the fiwmware loading:
+
+T:  Bus=01 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  5 Spd=12  MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=3005 Rev=00.01
+C:  #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+
+Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
+---
+ drivers/bluetooth/ath3k.c |    1 +
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 106beb1..db811d2 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -64,6 +64,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x0CF3, 0x3002) },
+ 	{ USB_DEVICE(0x13d3, 0x3304) },
+ 	{ USB_DEVICE(0x0930, 0x0215) },
++	{ USB_DEVICE(0x0489, 0xE03D) },
+ 
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index fe4ebc3..d5b9aa4 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -119,6 +119,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
++	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
+ 
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+-- 
+1.7.5.4
+
