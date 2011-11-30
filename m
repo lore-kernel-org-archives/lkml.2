@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1K3XnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:43:06 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:43084 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555Ab1K3XnE (ORCPT
+	id S1753049Ab1K3XrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 18:47:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56397 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab1K3XrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:43:04 -0500
-Date: Thu, 1 Dec 2011 10:42:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Borislav Petkov <bp@amd64.org>
-Cc: edac-devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: amd-edac tree back to KORG
-Message-Id: <20111201104257.edff4c30742dd6e54c48e348@canb.auug.org.au>
-In-Reply-To: <20111130112343.GB19656@aftab>
-References: <20111130112343.GB19656@aftab>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	Wed, 30 Nov 2011 18:47:21 -0500
+Date: Wed, 30 Nov 2011 15:47:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH] [RFC] KSM: numa awareness sysfs knob
+Message-Id: <20111130154719.57154fdd.akpm@linux-foundation.org>
+In-Reply-To: <1322649446-11437-1-git-send-email-pholasek@redhat.com>
+References: <1322649446-11437-1-git-send-email-pholasek@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__1_Dec_2011_10_42_57_+1100_Y.EwJD6OUbe.HzZi"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Dec_2011_10_42_57_+1100_Y.EwJD6OUbe.HzZi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 30 Nov 2011 11:37:26 +0100
+Petr Holasek <pholasek@redhat.com> wrote:
 
-Hi Boris,
+> Introduce a new sysfs knob /sys/kernel/mm/ksm/max_node_dist, whose
+> value will be used as the limitation for node distance of merged pages.
+> 
 
-On Wed, 30 Nov 2011 12:23:43 +0100 Borislav Petkov <bp@amd64.org> wrote:
+The changelog doesn't really describe why you think Linux needs this
+feature?  What's the reasoning?  Use cases?  What value does it provide?
+
+> index b392e49..b882140 100644
+> --- a/Documentation/vm/ksm.txt
+> +++ b/Documentation/vm/ksm.txt
+> @@ -58,6 +58,10 @@ sleep_millisecs  - how many milliseconds ksmd should sleep before next scan
+>                     e.g. "echo 20 > /sys/kernel/mm/ksm/sleep_millisecs"
+>                     Default: 20 (chosen for demonstration purposes)
+>  
+> +max_node_dist    - maximum node distance between two pages which could be
+> +                   merged.
+> +                   Default: 255 (without any limitations)
+
+And this doesn't explain to our users why they might want to alter it,
+and what effects they would see from doing so.  Maybe that's obvious to
+them...
+
+>  run              - set 0 to stop ksmd from running but keep merged pages,
+>                     set 1 to run ksmd e.g. "echo 1 > /sys/kernel/mm/ksm/run",
+>                     set 2 to stop ksmd and unmerge all pages currently merged,
 >
-> just pushed the amd-edac linux-next tree back to kernel.org. The absolute
-> URL is
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git for-next
+> ...
+>
+> +#ifdef CONFIG_NUMA
+> +static inline int node_dist(int from, int to)
+> +{
+> +	int dist = node_distance(from, to);
+> +
+> +	return dist == -1 ? 0 : dist;
+> +}
 
-I have switched to that now.
+So I spent some time grubbing around trying to work out what a return
+value of -1 from node_distance() means, and wasn't successful.  Perhaps
+an explanatory comment here would have helped.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> +#else
+> +static inline int node_dist(int from, int to)
+> +{
+> +	return 0;
+> +}
+> +#endif
+>
+> ...
+>
+> +static ssize_t max_node_dist_store(struct kobject *kobj,
+> +				   struct kobj_attribute *attr,
+> +				   const char *buf, size_t count)
+> +{
+> +	int err;
+> +	unsigned long node_dist;
+> +
+> +	err = kstrtoul(buf, 10, &node_dist);
+> +	if (err || node_dist > 255)
+> +		return -EINVAL;
 
---Signature=_Thu__1_Dec_2011_10_42_57_+1100_Y.EwJD6OUbe.HzZi
-Content-Type: application/pgp-signature
+If kstrtoul() returned an errno we should propagate that back rather than
+overwriting it with -EINVAL.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> +	ksm_node_distance = node_dist;
+> +
+> +	return count;
+> +}
+>
+> ...
+>
 
-iQIcBAEBCAAGBQJO1r+BAAoJEECxmPOUX5FEBCYQAIVKZ3IOuYqTP4EJ2CLxFrsq
-18TD+lHdYBf3vPPQ9VKP25wD3kqelyeRqm3vN+kpwwymC6+yadpN50LwxkKPyL6e
-E6CfgEGmf6pfn/LzqVh5OxaJ+sHJDjg+GLyLi98XFJKoUZeLTm1qiZoNiU23vy5z
-64gnW0KbjzC82dKSmRctRwwHTee8054qcJR3KMOJanwwfFgzOpBCnrikjjsAEPOW
-mtrvnZhtFDIA8+Et6356mXgRT2HM7HIp10iSOyWsxPYPLzT1fVQf8KXnbhlaAZ3n
-jl3nor856gluuWOerQaJEsYwWXdQ7wg6nf5ZYtOB1XVKTSKLKTpnx5vZlNsHQRDr
-193BtRjlqajHkEdnqlD6Lt6/OK3RYOlK6Jy0lO4Q5SwZsz2FDG4YOeZJM3jGyIqJ
-B8R1m1+JFkMKOixP+pXhjuvGi8csCLHumsHlUvRjLnaO+Ys+sUWVfyxkY1P1uCWa
-DL7V2b8xq/uWMp+3u/Z25VQOCDM3FlMxrWwZGg+x9Y8w7eDae14yKKvFSOg7nFpX
-dH6T96cs2yNHypbN6oiq6IRvDt1RwtQXD9CN1Lc8XYupDgO8Y97UK+6XJphI0u5X
-JC0Nqt22kdb1+xx5+gZumw269zYYzmlbFcPEBz60/4FdCz9WmbZGUkV/uGxUe/d6
-bk7DESRCfOsOg4Kn3Rz7
-=TNph
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Dec_2011_10_42_57_+1100_Y.EwJD6OUbe.HzZi--
