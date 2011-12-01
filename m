@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab1LATGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 14:06:46 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48969 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab1LATGo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 14:06:44 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1956kz6aC6mVC97NMXjL5s1
-Date: Thu, 1 Dec 2011 11:06:42 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2a/5 v2] ARM: OMAP1: select clock rate by CPU type
-Message-ID: <20111201190642.GW31337@atomide.com>
-References: <20111128174508.GO31337@atomide.com>
- <201112011110.11476.jkrzyszt@tis.icnet.pl>
- <20111201182254.GU31337@atomide.com>
- <201112011954.18258.jkrzyszt@tis.icnet.pl>
+	id S1756213Ab1LATJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 14:09:39 -0500
+Received: from mga11.intel.com ([192.55.52.93]:9351 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753878Ab1LATJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 14:09:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,279,1320652800"; 
+   d="scan'208";a="97564846"
+Date: Thu, 1 Dec 2011 20:14:21 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: [PATCH] NFC: pn533: Staticise pn533_data_exchange()
+Message-ID: <20111201191421.GK22609@sortiz-mobl>
+References: <1322648286.6774.0.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201112011954.18258.jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1322648286.6774.0.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111201 10:19]:
-> On Thursday 01 of December 2011 at 19:22:54, Tony Lindgren wrote:
-> > * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111201 01:35]:
-> > > On Wednesday 30 of November 2011 at 23:28:38, Tony Lindgren wrote:
-> > > > 
-> > > > We should also now be able to remove all the CONFIG_OMAP_ARM_XXXMHZ options
-> > > > too, right?
-> > > 
-> > > Right, but then, perhaps the initial version of patch 2a/5, which 
-> > > already started removing them, from omap1_defconfig for now, then going 
-> > > into the right direction while unblocking another regression fix (3/5), 
-> > > _is_ a good candidate for an rc fix?
-> > 
-> > But we did not allow dpll1 reprogramming earlier either,
+Hi Axel,
+
+On Wed, Nov 30, 2011 at 06:18:06PM +0800, Axel Lin wrote:
+> It is not used outside this driver so no need to make the symbol global.
 > 
-> Wrong. Without OMAP_CLOCKS_SET_BY_BOOTLOADER selected, we always did, 
-> but only once, early at boot, before ck_dpll1_p->rate was set first from 
-> omap1_clk_init(), and never retried later, that's why that check which I 
-> removed with 3/5 was never in the game until e9b7086b80c4d9e354f4edc9e280ae85a60df408.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-Yeah you're right. You found what caused the regression :)
- 
-> > so we should
-> > not need to make all these changes during the -rc cycle. I'm suspecting
-> > that we've had this same behaviour for a really long time, and we just
-> > have not seen it as omap1_defconfig had OMAP_CLOCKS_SET_BY_BOOTLOADER
-> > option set.
-> > 
-> > So I'm baffled how your board would be booting at a different rate
-> > compared to v3.1, it seems that the logic has not changed there. Or
-> > else we have some simple bug somewhere.
-> > 
-> > Care to try to verify at what point your system started booting at
-> > 60MHz rate?
-> 
-> Since e9b7086b80c4d9e354f4edc9e280ae85a60df408, I guess, and it's hard 
-> to confirm wituout bisecting the issue with too early sram call, back 
-> until things still worked like before map_io related changes. I will do 
-> that if you decide we should try to revert.
+Cheers,
+Samuel.
 
-No need to bisect, I think we can just reset ck_dpll1_p->rate for
-systems booting at below 60MHz rate to force the reprogramming.
-
-Regards,
-
-Tony
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
