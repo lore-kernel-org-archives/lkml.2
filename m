@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab1LAN7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 08:59:51 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:13639
+	id S1754525Ab1LAOCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 09:02:10 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:41334
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754638Ab1LAN7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 08:59:49 -0500
-X-SpamScore: -16
-X-BigFish: VS-16(zz9371K1432N98dK4015Lzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:160.36.179.132;KIP:(null);UIP:(null);IPV:NLI;H:kedge1.utk.tennessee.edu;RD:kedge1.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 1 Dec 2011 08:59:37 -0500
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+	by vger.kernel.org with ESMTP id S1754289Ab1LAOCJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 09:02:09 -0500
+X-SpamScore: -6
+X-BigFish: VS-6(zz1432Nzz1202hzzz2dh2a8h668h839h8e2h8e3h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Yoder Stuart-B08248 <B08248@freescale.com>
+To: Chris Wright <chrisw@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: David Gibson <dwg@au1.ibm.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: perf_event self-monitoring overhead regression
-In-Reply-To: <CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1111300011260.7107@cl320.eecs.utk.edu> <1322654092.2921.256.camel@twins> <CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        "agraf@suse.de" <agraf@suse.de>,
+        Wood Scott-B07421 <B07421@freescale.com>
+Subject: RE: [PATCH 1/4] iommu: Add iommu_device_group callback and
+ iommu_group sysfs entry
+Thread-Topic: [PATCH 1/4] iommu: Add iommu_device_group callback and
+ iommu_group sysfs entry
+Thread-Index: AQHMrxREhtMwThCA10C5HWgeixjU75XFPcoAgAAJroCAAThNgIAADZ0AgAABa4CAAAHhAIAADNmAgAAENACAAGKMYA==
+Date: Thu, 1 Dec 2011 14:02:06 +0000
+Message-ID: <9F6FE96B71CF29479FF1CDC8046E15032808E0@039-SN1MPN1-003.039d.mgd.msft.net>
+References: <20111021195412.8438.9951.stgit@s20.home>
+ <20111021195605.8438.81609.stgit@s20.home>
+ <20111130024205.GF5435@truffala.fritz.box>
+ <1322628672.21641.39.camel@pasglop> <1322630751.19120.222.camel@bling.home>
+ <20111201000337.GA5427@truffala.fritz.box>
+ <20111201005220.GG29071@x200.localdomain>
+ <20111201005725.GE5427@truffala.fritz.box>
+ <20111201010408.GH29071@x200.localdomain> <1322704207.3729.10.camel@pasglop>
+ <20111201020510.GJ29071@x200.localdomain>
+In-Reply-To: <20111201020510.GJ29071@x200.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.83.144]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Nov 2011, Linus Torvalds wrote:
 
-> On Wed, Nov 30, 2011 at 3:54 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > That way the domain information is available generically (can be match
+> > with pci_domain_nr() for example), and sysfs can then be layed out as
+> >
+> > /sys/bus/pci/groups/<domain>/<id>
+> >
+> > Which is nicer than having enormous id's
 > 
-> So bisect works really well for clear bugs that are 100% repeatable
-> and have a very clear "did it happen or not" signature, but I'd be
-> very leery indeed of using it with some performance anomaly.
+> Seems fine to me (although I missed /sys/bus/pci/groups/ introduction), except that I think
+> the freescale folks aren't interested in PCI which is one reason why the thing is just an
+> opaque id.
 
-In this case, the bisection case is pretty clean.  I run 1000 of the tests 
-and check the median value, and the values are always 7280us for good and 
-7440us for bad.
+We are interested in PCI, but non-PCI as well.  All DMA devices,
+have a globally unique "logical I/O device number" (LIODN) which
+will map to a group # for us.
 
-The problem is when it starts bisecting into the merges it drops from a 
-post-3.0 kernel into a much earlier 3.0-rc kernel (due to the ARM merge 
-history) and suddenly then the test becomes meaningless as it starts 
-returning other values such as 6880us.  This is because the problem I am 
-tracking has ben gradually getting worse over time, and so I guess by 
-going back to a 3.0-rc it gets earlier than some other change that made 
-performance worse, and thus it becomes impossible to know if a commit is 
-good or not.
-
-> That said, maybe you can get the timings to be unambiguous enough by
-> using 'rdtsc' in user space, and try the bisect again.
-
-I'll try but I'm guessing your first thought that this might be 
-un-bisectabe is probably true.  
-
-Thanks,
-
-Vince
+Stuart
 
