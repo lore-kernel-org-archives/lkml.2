@@ -1,151 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab1LAGU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:20:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20744 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751804Ab1LAGUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:20:55 -0500
-Message-ID: <1322720437.26545.49.camel@bling.home>
-Subject: Re: [PATCH 1/4] iommu: Add iommu_device_group callback and
- iommu_group sysfs entry
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Gibson <dwg@au1.ibm.com>, joerg.roedel@amd.com, dwmw2@infradead.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        chrisw@redhat.com, agraf@suse.de, scottwood@freescale.com,
-        B08248@freescale.com
-Date: Wed, 30 Nov 2011 23:20:37 -0700
-In-Reply-To: <1322645028.21641.71.camel@pasglop>
-References: <20111021195412.8438.9951.stgit@s20.home>
-	 <20111021195605.8438.81609.stgit@s20.home>
-	 <20111130024205.GF5435@truffala.fritz.box>
-	 <1322628672.21641.39.camel@pasglop> <1322630751.19120.222.camel@bling.home>
-	 <1322645028.21641.71.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753274Ab1LAGVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:21:22 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47246 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab1LAGVU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 01:21:20 -0500
+MIME-Version: 1.0
+X-Originating-IP: [93.172.53.1]
+In-Reply-To: <20111130234318.GC31069@redhat.com>
+References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
+ <20111129131110.GC19157@redhat.com> <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
+ <20111129151607.GE30966@redhat.com> <CAK=WgbZK+k4uuyMPHUfr_PMyrR5ceRTvuDRpmhXfgwpSUOPw0g@mail.gmail.com>
+ <20111130145958.GE21413@redhat.com> <CAK=WgbYyFdLftE_kp2_JOThVhn-FzGsDqVqKn0Jwm2teQyZBNA@mail.gmail.com>
+ <20111130161555.GB25812@redhat.com> <CAK=WgbazBq4GVo16sZsrZirgMYbwMcWtPaqn90c6d9Phr0gh3A@mail.gmail.com>
+ <CAK=WgbbZH3ZFzbwwyVBGEvwHPbogDW6+Kb_1pRam2jj5oJHuDA@mail.gmail.com> <20111130234318.GC31069@redhat.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 1 Dec 2011 08:20:59 +0200
+Message-ID: <CAK=WgbYysMUQjWmgZhHBQJxcyG_J8H-f8FzZwSOVuTRjPRAiUQ@mail.gmail.com>
+Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 20:23 +1100, Benjamin Herrenschmidt wrote:
-> On Tue, 2011-11-29 at 22:25 -0700, Alex Williamson wrote:
-> 
-> > Note that iommu drivers are registered per bus_type, so the unique pair
-> > is {bus_type, groupid}, which seems sufficient for vfio.
-> > 
-> > > Don't forget that to keep sanity, we really want to expose the groups
-> > > via sysfs (per-group dir with symlinks to the devices).
-> > > 
-> > > I'm working with Alexey on providing an in-kernel powerpc specific API
-> > > to expose the PE stuff to whatever's going to interface to VFIO to
-> > > create the groups, though we can eventually collapse that. The idea is
-> > > that on non-PE capable brigdes (old style), I would make a single group
-> > > per host bridge.
-> > 
-> > If your non-PE capable bridges aren't actually providing isolation, they
-   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> > should return -ENODEV for the group_device() callback, then vfio will
-> > ignore them.
-> 
-> Why ignore them ? It's perfectly fine to consider everything below the
-> host bridge as one group. There is isolation ... at the host bridge
-> level.
+On Thu, Dec 1, 2011 at 1:43 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> And these accesses need to be ordered with DSB? Or DMB?
 
-If there is isolation, yes, report a group.  A host bridge by itself
-does not imply DMA isolation on most platforms.  We could say devices
-without isolation are all in the same group, but then imagine a system
-with two PCI host bridges.  Host bridge A has an iommu providing B:D.F
-isolation, host bridge B has no iommu and no isolation.  Clearly devices
-behind A have groupids.  However if we assign a single groupid for all
-the devices behind B, we subvert the isolation of devices behind A.  To
-avoid that, devices that cannot be isolated should not have a groupid.
-
-> Really groups should be a structure, not a magic number. We want to
-> iterate them and their content, represent them via an API, etc... and so
-> magic numbers means that anything under the hood will have to constantly
-> convert between that and some kind of internal data structure.
-
-What would a group structure in core driver code contain?  Who manages
-it?  Don't forget, most users don't have hardware capable of making use
-of this and most users with the right hardware still aren't going to use
-it.  Those group structures live in vfio and get allocated when vfio is
-loaded.  VT-d and AMD-Vi can support this new groupid interface with
-zero additional data structures floating around.
-
-As Chris noted, the choice of an unsigned int to efficiently represent
-groupids in PCI isn't just coincidence.  If you can't make use of the
-same trick, surely it's not too difficult to enumerate your PEs and use
-that as the groupid.
-
-> I also somewhat dislike the bus_type as the anchor to the grouping
-> system, but that's not necessarily as bad an issue for us to deal with.
-> 
-> Eventually what will happen on my side is that I will have a powerpc
-> "generic" (ie. accross platforms) that allow to enumerate groups and
-> retrieve the dma windows associated with them etc...
-> 
-> That API will use underlying function pointers provided by the PCI host
-> bridge (for which we do have a data structure, struct pci_controller,
-> like many other archs except I think x86 :-)
-> 
-> Any host platform that doesn't provide those pointers (ie. all of them
-> initially) will get a default behaviour which is to group everything
-> below a host bridge (since host bridges still have independent iommu
-> windows, at least for us they all do). 
-> 
-> On top of that we can implement a "backend" that provides those pointers
-> for the p7ioc bridge used on the powernv platform, which will expose
-> more fine grained groups based on our "partitionable endpoint"
-> mechanism.
-> 
-> The grouping will have been decided early at boot time based on a mix of
-> HW resources and bus topology, plus things like whether there is a PCI-X
-> bridge etc... and will be initially immutable.
-> 
-> Ideally, we need to expose a subset of this API as a "generic" interface
-> to allow generic code to iterate the groups and their content, and to
-> construct the appropriate sysfs representation.
-> 
-> > > In addition, Alex, I noticed that you still have the domain stuff there,
-> > > which is fine I suppose, we could make it a requirement on power that
-> > > you only put a single group in a domain... but the API is still to put
-> > > individual devices in a domain, not groups, and that somewhat sucks.
-> > > 
-> > > You could "fix" that by having some kind of ->domain_enable() or
-> > > whatever that's used to "activate" the domain and verifies that it
-> > > contains entire groups but that looks like a pointless way to complicate
-> > > both the API and the implementation.
-> > 
-> > Right, groups are currently just a way to identify dependent sets, not a
-> > unit of work.  We can also have group membership change dynamically
-> > (hotplug slot behind a PCIe-to-PCI bridge), so there are cases where we
-> > might need to formally attach/detach a group element to a domain at some
-> > later point.  This really hasn't felt like a stumbling point for vfio,
-> > at least on x86.  Thanks,
-> 
-> It doesn't matter much as long as we have a way to know that a group is
-> "complete", ie that all devices of a group have been taken over by vfio
-> and put into a domain, and block them from being lost. Only then can we
-> actually "use" the group and start reconfiguring the iommu etc... for
-> use by the guest.
-
-This is done.  I call a group "viable" when all of the devices are bound
-to their vfio bus driver and ready for use.  The API will not allow a
-user access to the iommu or device file descriptors unless the group is
-viable.  Unbinding a device from the vfio bus driver will block as long
-as the group is in use (need to decide if we enable a system policy to
-let vfio kill the process to release a device).  I'm also working on
-code that proactively attaches the vfio bus driver to a hot-added device
-if it's being added to an in-use group.
-
-> Note that groups -will- contain briges eventually. We need to take that
-> into account since bridges -usually- don't have an ordinary driver
-> attached to them so there may be issues there with tracking whether they
-> are taken over by vfio...
-
-I look forward to patches for this ;)  Thanks,
-
-Alex
-
+DMB (i.e. smp barriers) should be enough within Normal memory
+accesses, though the other issues that were reported to me are a bit
+concerning. I'm still trying to get more information about them, in
+the hopes that I can eventually reproduce them myself.
