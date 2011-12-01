@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab1LALpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 06:45:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18569 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752951Ab1LALpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 06:45:45 -0500
-From: Petr Holasek <pholasek@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Arapov <anton@redhat.com>, Petr Holasek <pholasek@redhat.com>
-Subject: [PATCH RESEND] NUMA x86: add constraints check for nid parameters
-Date: Thu,  1 Dec 2011 12:45:07 +0100
-Message-Id: <1322739907-4695-1-git-send-email-pholasek@redhat.com>
+	id S1753337Ab1LALq1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 06:46:27 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:56686 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951Ab1LALqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 06:46:25 -0500
+From: Weiping Pan <panweiping3@gmail.com>
+Cc: Weiping Pan <panweiping3@gmail.com>,
+        "David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING
+	[IPv4/...),
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru> (maintainer:NETWORKING
+	[IPv4/...),
+        James Morris <jmorris@namei.org> (maintainer:NETWORKING [IPv4/...),
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org> (maintainer:NETWORKING
+	[IPv4/...),
+        Patrick McHardy <kaber@trash.net> (maintainer:NETWORKING [IPv4/...),
+        netdev@vger.kernel.org (open list:NETWORKING [IPv4/...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH net] ipv4: flush route cache after change accept_local
+Date: Thu,  1 Dec 2011 19:47:56 +0800
+Message-Id: <1e224b52de77dcd5f994c8e4c77c780c6996e4a4.1322740026.git.panweiping3@gmail.com>
+X-Mailer: git-send-email 1.7.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds constraints checks into __node_distance() and
-numa_set_distance() functions. If from or to parameters are
-lower than zero, it results into oops now.
+After reset ipv4_devconf->data[IPV4_DEVCONF_ACCEPT_LOCAL] to 0,
+we should flash route cache, or it will continue receive packets with local
+source address, which should be dropped.
 
-Signed-off-by: Petr Holasek <pholasek@redhat.com>
+Signed-off-by: Weiping Pan <panweiping3@gmail.com>
 ---
- arch/x86/mm/numa.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+ net/ipv4/devinet.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index fbeaaf4..9e0ff2b 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -430,8 +430,9 @@ static int __init numa_alloc_distance(void)
-  * calls are ignored until the distance table is reset with
-  * numa_reset_distance().
-  *
-- * If @from or @to is higher than the highest known node at the time of
-- * table creation or @distance doesn't make sense, the call is ignored.
-+ * If @from or @to is higher than the highest known node or lower than zero
-+ * at the time of table creation or @distance doesn't make sense, the call
-+ * is ignored.
-  * This is to allow simplification of specific NUMA config implementations.
-  */
- void __init numa_set_distance(int from, int to, int distance)
-@@ -439,7 +440,8 @@ void __init numa_set_distance(int from, int to, int distance)
- 	if (!numa_distance && numa_alloc_distance() < 0)
- 		return;
- 
--	if (from >= numa_distance_cnt || to >= numa_distance_cnt) {
-+	if (from >= numa_distance_cnt || to >= numa_distance_cnt ||
-+			from < 0 || to < 0) {
- 		printk_once(KERN_DEBUG "NUMA: Debug: distance out of bound, from=%d to=%d distance=%d\n",
- 			    from, to, distance);
- 		return;
-@@ -457,7 +459,8 @@ void __init numa_set_distance(int from, int to, int distance)
- 
- int __node_distance(int from, int to)
+diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
+index c6b5092..de1a772 100644
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1490,7 +1490,9 @@ static int devinet_conf_proc(ctl_table *ctl, int write,
+ 			     void __user *buffer,
+ 			     size_t *lenp, loff_t *ppos)
  {
--	if (from >= numa_distance_cnt || to >= numa_distance_cnt)
-+	if (from < 0 || to < 0 ||
-+			from >= numa_distance_cnt || to >= numa_distance_cnt)
- 		return from == to ? LOCAL_DISTANCE : REMOTE_DISTANCE;
- 	return numa_distance[from * numa_distance_cnt + to];
- }
++	int old_value = *(int *)ctl->data;
+ 	int ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
++	int new_value = *(int *)ctl->data;
+ 
+ 	if (write) {
+ 		struct ipv4_devconf *cnf = ctl->extra1;
+@@ -1501,6 +1503,9 @@ static int devinet_conf_proc(ctl_table *ctl, int write,
+ 
+ 		if (cnf == net->ipv4.devconf_dflt)
+ 			devinet_copy_dflt_conf(net, i);
++		if ((i == IPV4_DEVCONF_ACCEPT_LOCAL - 1))
++			if ((new_value == 0) && (old_value != 0))
++				rt_cache_flush(net, 0);
+ 	}
+ 
+ 	return ret;
 -- 
-1.7.6.4
+1.7.4
 
