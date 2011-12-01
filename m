@@ -1,119 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab1LAUPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:15:33 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:40242 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754791Ab1LAUP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:15:29 -0500
-Subject: [PATCH 14/14] crc32: Select an algorithm via kconfig
-To: Andrew Morton <akpm@linux-foundation.org>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Theodore Tso <tytso@mit.edu>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Thu, 01 Dec 2011 12:15:17 -0800
-Message-ID: <20111201201517.5876.39207.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
-References: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
+	id S1754934Ab1LAUQD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:16:03 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55283 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754144Ab1LAUQA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 15:16:00 -0500
+Date: Thu, 1 Dec 2011 12:15:54 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
+Subject: The ocfs2 and configfs trees are back at git.kernel.org
+Message-ID: <20111201201554.GE1495@noexit.corp.google.com>
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	ocfs2-devel@oss.oracle.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120120-6078-0000-0000-00000522491F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow the kernel builder to choose a crc32* algorithm for the kernel.
+Stephen,
+	Can you please point linux-next back at:
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- lib/Kconfig     |   36 ++++++++++++++++++++++++++++++++++++
- lib/crc32defs.h |   18 ++++++++++++++++++
- 2 files changed, 54 insertions(+), 0 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/configfs.git linux-next
+git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git linux-next
 
+Thanks!
+Joel
 
-diff --git a/lib/Kconfig b/lib/Kconfig
-index cfddafc..e9b9134 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -70,6 +70,42 @@ config CRC32_SELFTEST
- 	  and crc32_be over byte strings with random alignment and length
- 	  and computes the total elapsed time and number of bytes processed.
- 
-+choice
-+	prompt "CRC32 implementation"
-+	depends on CRC32
-+	default CRC32_SLICEBY8
-+
-+config CRC32_SLICEBY8
-+	bool "Slice by 8 bytes"
-+	help
-+	  Calculate checksum 8 bytes at a time with a clever slicing algorithm.
-+	  This is the fastest algorithm, but comes with a 8KiB lookup table.
-+	  Most modern processors have enough cache that this shouldn't be
-+	  a problem.
-+
-+	  If you don't know which to choose, choose this one.
-+
-+config CRC32_SLICEBY4
-+	bool "Slice by 4 bytes"
-+	help
-+	  Calculate checksum 4 bytes at a time with a clever slicing algorithm.
-+	  This is a bit slower than slice by 8, but has a smaller 4KiB lookup
-+	  table.
-+
-+config CRC32_SARWATE
-+	bool "Sarwate's Algorithm (one byte at a time)"
-+	help
-+	  Calculate checksum a byte at a time using Sarwate's algorithm.  This
-+	  is not particularly fast, but has a small 256 byte lookup table.
-+
-+config CRC32_BIT
-+	bool "Classic Algorithm (one bit at a time)"
-+	help
-+	  Calculate checksum one bit at a time.  This is VERY slow, but has
-+	  no lookup table.  This is provided as a debugging option.
-+
-+endchoice
-+
- config CRC7
- 	tristate "CRC7 functions"
- 	help
-diff --git a/lib/crc32defs.h b/lib/crc32defs.h
-index 6fd1917..64cba2c 100644
---- a/lib/crc32defs.h
-+++ b/lib/crc32defs.h
-@@ -13,6 +13,24 @@
-  */
- #define CRC32C_POLY_LE 0x82F63B78
- 
-+/* Try to choose an implementation variant via Kconfig */
-+#ifdef CONFIG_CRC32_SLICEBY8
-+# define CRC_LE_BITS 64
-+# define CRC_BE_BITS 64
-+#endif
-+#ifdef CONFIG_CRC32_SLICEBY4
-+# define CRC_LE_BITS 32
-+# define CRC_BE_BITS 32
-+#endif
-+#ifdef CONFIG_CRC32_SARWATE
-+# define CRC_LE_BITS 8
-+# define CRC_BE_BITS 8
-+#endif
-+#ifdef CONFIG_CRC32_BIT
-+# define CRC_LE_BITS 1
-+# define CRC_BE_BITS 1
-+#endif
-+
- /*
-  * How many bits at a time to use.  Valid values are 1, 2, 4, 8, 32 and 64.
-  * For less performance-sensitive, use 4 or 8 to save table size.
+-- 
 
+Life's Little Instruction Book #450
+
+	"Don't be afraid to say, 'I need help.'"
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
