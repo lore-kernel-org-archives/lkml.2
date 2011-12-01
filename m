@@ -1,305 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab1LANVo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 08:21:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48348 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369Ab1LANVn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 08:21:43 -0500
-Message-ID: <1322745659.4699.17.camel@twins>
-Subject: Re: [PATCH v7 3.2-rc2 3/30] uprobes: register/unregister probes.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Date: Thu, 01 Dec 2011 14:20:59 +0100
-In-Reply-To: <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
-References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
-	 <20111118110713.10512.9461.sendpatchset@srdronam.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1754495Ab1LANYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 08:24:35 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:58401
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754452Ab1LANYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 08:24:34 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        James.Bottomley@HansenPartnership.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: [PATCH 1/5] Staging: hv: storvsc: Disable clustering
+Date: Thu,  1 Dec 2011 04:59:16 -0800
+Message-Id: <1322744360-13067-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1322744315-13017-1-git-send-email-kys@microsoft.com>
+References: <1322744315-13017-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-18 at 16:37 +0530, Srikar Dronamraju wrote:
-> +static int __register_uprobe(struct inode *inode, loff_t offset,
-> +                               struct uprobe *uprobe)
-> +{
-> +       struct list_head try_list;
-> +       struct vm_area_struct *vma;
-> +       struct address_space *mapping;
-> +       struct vma_info *vi, *tmpvi;
-> +       struct mm_struct *mm;
-> +       loff_t vaddr;
-> +       int ret = 0;
-> +
-> +       mapping = inode->i_mapping;
-> +       INIT_LIST_HEAD(&try_list);
-> +       while ((vi = find_next_vma_info(&try_list, offset,
-> +                                               mapping, true)) != NULL) {
-> +               if (IS_ERR(vi)) {
-> +                       ret = -ENOMEM;
-> +                       break;
-> +               }
-> +               mm = vi->mm;
-> +               down_read(&mm->mmap_sem);
-> +               vma = find_vma(mm, (unsigned long)vi->vaddr);
-> +               if (!vma || !valid_vma(vma, true)) {
-> +                       list_del(&vi->probe_list);
-> +                       kfree(vi);
-> +                       up_read(&mm->mmap_sem);
-> +                       mmput(mm);
-> +                       continue;
-> +               }
-> +               vaddr = vma->vm_start + offset;
-> +               vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> +               if (vma->vm_file->f_mapping->host != inode ||
-> +                                               vaddr != vi->vaddr) {
-> +                       list_del(&vi->probe_list);
-> +                       kfree(vi);
-> +                       up_read(&mm->mmap_sem);
-> +                       mmput(mm);
-> +                       continue;
-> +               }
-> +               ret = install_breakpoint(mm);
-> +               up_read(&mm->mmap_sem);
-> +               mmput(mm);
-> +               if (ret && ret == -EEXIST)
-> +                       ret = 0;
-> +               if (!ret)
-> +                       break;
-> +       }
-> +       list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
-> +               list_del(&vi->probe_list);
-> +               kfree(vi);
-> +       }
-> +       return ret;
-> +}
-> +
-> +static void __unregister_uprobe(struct inode *inode, loff_t offset,
-> +                                               struct uprobe *uprobe)
-> +{
-> +       struct list_head try_list;
-> +       struct address_space *mapping;
-> +       struct vma_info *vi, *tmpvi;
-> +       struct vm_area_struct *vma;
-> +       struct mm_struct *mm;
-> +       loff_t vaddr;
-> +
-> +       mapping = inode->i_mapping;
-> +       INIT_LIST_HEAD(&try_list);
-> +       while ((vi = find_next_vma_info(&try_list, offset,
-> +                                               mapping, false)) != NULL) {
-> +               if (IS_ERR(vi))
-> +                       break;
-> +               mm = vi->mm;
-> +               down_read(&mm->mmap_sem);
-> +               vma = find_vma(mm, (unsigned long)vi->vaddr);
-> +               if (!vma || !valid_vma(vma, false)) {
-> +                       list_del(&vi->probe_list);
-> +                       kfree(vi);
-> +                       up_read(&mm->mmap_sem);
-> +                       mmput(mm);
-> +                       continue;
-> +               }
-> +               vaddr = vma->vm_start + offset;
-> +               vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> +               if (vma->vm_file->f_mapping->host != inode ||
-> +                                               vaddr != vi->vaddr) {
-> +                       list_del(&vi->probe_list);
-> +                       kfree(vi);
-> +                       up_read(&mm->mmap_sem);
-> +                       mmput(mm);
-> +                       continue;
-> +               }
-> +               remove_breakpoint(mm);
-> +               up_read(&mm->mmap_sem);
-> +               mmput(mm);
-> +       }
-> +
-> +       list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
-> +               list_del(&vi->probe_list);
-> +               kfree(vi);
-> +       }
-> +       delete_uprobe(uprobe);
-> +} 
+Disable clustering, since the host side on Hyper-V requires that
+each I/O element not exceed the page size. As part of this
+cleanup, get rid of the function to merge bvecs, as the primary
+reason for this function was to avoid having an element exceed
+the page size. 
 
-I already mentioned on IRC that there's a lot of duplication here and
-how to 'solve that'...
-
-Something like the below, it lost the delete_uprobe() bit, and it adds a
-few XXX marks where we have to deal with -ENOMEM. Also its not been near
-a compiler.
-
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- kernel/uprobes.c |   78 ++++++++++++++---------------------------------------
- 1 files changed, 21 insertions(+), 57 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   18 +-----------------
+ 1 files changed, 1 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index 2493191..c57284a 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -622,7 +622,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 0245143..9153f98 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -798,13 +798,6 @@ static int storvsc_device_alloc(struct scsi_device *sdevice)
+ 	return 0;
  }
  
- static void remove_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
--							loff_t vaddr)
-+			      struct vm_area_struct *vma, loff_t vaddr)
- {
- 	if (!set_orig_insn(mm, uprobe, (unsigned long)vaddr, true))
- 		atomic_dec(&mm->mm_uprobes_count);
-@@ -713,8 +713,10 @@ static struct vma_info *find_next_vma_info(struct list_head *head,
- 	return retvi;
- }
- 
--static int __register_uprobe(struct inode *inode, loff_t offset,
--				struct uprobe *uprobe)
-+typedef int (*vma_func_t)(struct mm_struct *mm, struct uprobe *uprobe,
-+			  struct vm_area_struct *vma, unsigned long addr);
-+
-+static int __for_each_vma(struct uprobe *uprobe, vma_func_t func)
- {
- 	struct list_head try_list;
- 	struct vm_area_struct *vma;
-@@ -724,12 +726,12 @@ static int __register_uprobe(struct inode *inode, loff_t offset,
- 	loff_t vaddr;
- 	int ret = 0;
- 
--	mapping = inode->i_mapping;
-+	mapping = uprobe->inode->i_mapping;
- 	INIT_LIST_HEAD(&try_list);
--	while ((vi = find_next_vma_info(&try_list, offset,
-+	while ((vi = find_next_vma_info(&try_list, uprobe->offset,
- 						mapping, true)) != NULL) {
- 		if (IS_ERR(vi)) {
--			ret = -ENOMEM;
-+			ret = PTR_ERR(vi);
- 			break;
- 		}
- 		mm = vi->mm;
-@@ -742,9 +744,9 @@ static int __register_uprobe(struct inode *inode, loff_t offset,
- 			mmput(mm);
- 			continue;
- 		}
--		vaddr = vma->vm_start + offset;
-+		vaddr = vma->vm_start + uprobe->offset;
- 		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
--		if (vma->vm_file->f_mapping->host != inode ||
-+		if (vma->vm_file->f_mapping->host != uprobe->inode ||
- 						vaddr != vi->vaddr) {
- 			list_del(&vi->probe_list);
- 			kfree(vi);
-@@ -752,12 +754,12 @@ static int __register_uprobe(struct inode *inode, loff_t offset,
- 			mmput(mm);
- 			continue;
- 		}
--		ret = install_breakpoint(mm, uprobe, vma, vi->vaddr);
-+		ret = func(mm, uprobe, vma, vi->vaddr);
- 		up_read(&mm->mmap_sem);
- 		mmput(mm);
- 		if (ret && ret == -EEXIST)
- 			ret = 0;
--		if (!ret)
-+		if (ret)
- 			break;
- 	}
- 	list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
-@@ -767,52 +769,14 @@ static int __register_uprobe(struct inode *inode, loff_t offset,
- 	return ret;
- }
- 
--static void __unregister_uprobe(struct inode *inode, loff_t offset,
--						struct uprobe *uprobe)
-+static int __register_uprobe(struct uprobe *uprobe)
- {
--	struct list_head try_list;
--	struct address_space *mapping;
--	struct vma_info *vi, *tmpvi;
--	struct vm_area_struct *vma;
--	struct mm_struct *mm;
--	loff_t vaddr;
+-static int storvsc_merge_bvec(struct request_queue *q,
+-			      struct bvec_merge_data *bmd, struct bio_vec *bvec)
+-{
+-	/* checking done by caller. */
+-	return bvec->bv_len;
+-}
 -
--	mapping = inode->i_mapping;
--	INIT_LIST_HEAD(&try_list);
--	while ((vi = find_next_vma_info(&try_list, offset,
--						mapping, false)) != NULL) {
--		if (IS_ERR(vi))
--			break;
--		mm = vi->mm;
--		down_read(&mm->mmap_sem);
--		vma = find_vma(mm, (unsigned long)vi->vaddr);
--		if (!vma || !valid_vma(vma, false)) {
--			list_del(&vi->probe_list);
--			kfree(vi);
--			up_read(&mm->mmap_sem);
--			mmput(mm);
--			continue;
--		}
--		vaddr = vma->vm_start + offset;
--		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
--		if (vma->vm_file->f_mapping->host != inode ||
--						vaddr != vi->vaddr) {
--			list_del(&vi->probe_list);
--			kfree(vi);
--			up_read(&mm->mmap_sem);
--			mmput(mm);
--			continue;
--		}
--		remove_breakpoint(mm, uprobe, vi->vaddr);
--		up_read(&mm->mmap_sem);
--		mmput(mm);
--	}
-+	return __for_each_vma(uprobe, install_breakpoint);
-+}
+ static int storvsc_device_configure(struct scsi_device *sdevice)
+ {
+ 	scsi_adjust_queue_depth(sdevice, MSG_SIMPLE_TAG,
+@@ -812,8 +805,6 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
  
--	list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
--		list_del(&vi->probe_list);
--		kfree(vi);
--	}
--	delete_uprobe(uprobe);
-+static int __unregister_uprobe(struct uprobe *uprobe)
-+{
-+	return __for_each_vma(uprobe, remove_breakpoint);
- }
+ 	blk_queue_max_segment_size(sdevice->request_queue, PAGE_SIZE);
  
- /*
-@@ -852,10 +816,10 @@ int register_uprobe(struct inode *inode, loff_t offset,
- 	mutex_lock(uprobes_hash(inode));
- 	uprobe = alloc_uprobe(inode, offset);
- 	if (uprobe && !add_consumer(uprobe, consumer)) {
--		ret = __register_uprobe(inode, offset, uprobe);
-+		ret = __register_uprobe(uprobe);
- 		if (ret) {
- 			uprobe->consumers = NULL;
--			__unregister_uprobe(inode, offset, uprobe);
-+			__unregister_uprobe(uprobe); // -ENOMEM
- 		} else
- 			uprobe->flags |= UPROBES_RUN_HANDLER;
- 	}
-@@ -894,7 +858,7 @@ void unregister_uprobe(struct inode *inode, loff_t offset,
- 	}
+-	blk_queue_merge_bvec(sdevice->request_queue, storvsc_merge_bvec);
+-
+ 	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
  
- 	if (!uprobe->consumers) {
--		__unregister_uprobe(inode, offset, uprobe);
-+		__unregister_uprobe(uprobe); // XXX -ENOMEM
- 		uprobe->flags &= ~UPROBES_RUN_HANDLER;
- 	}
- 	mutex_unlock(uprobes_hash(inode));
+ 	return 0;
+@@ -1375,14 +1366,7 @@ static struct scsi_host_template scsi_driver = {
+ 	/* no use setting to 0 since ll_blk_rw reset it to 1 */
+ 	/* currently 32 */
+ 	.sg_tablesize =		MAX_MULTIPAGE_BUFFER_COUNT,
+-	/*
+-	 * ENABLE_CLUSTERING allows mutiple physically contig bio_vecs to merge
+-	 * into 1 sg element. If set, we must limit the max_segment_size to
+-	 * PAGE_SIZE, otherwise we may get 1 sg element that represents
+-	 * multiple
+-	 */
+-	/* physically contig pfns (ie sg[x].length > PAGE_SIZE). */
+-	.use_clustering =	ENABLE_CLUSTERING,
++	.use_clustering =	DISABLE_CLUSTERING,
+ 	/* Make sure we dont get a sg segment crosses a page boundary */
+ 	.dma_boundary =		PAGE_SIZE-1,
+ };
+-- 
+1.7.4.1
 
