@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab1LAA5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 19:57:36 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:32938 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab1LAA5f (ORCPT
+	id S1753751Ab1LAA6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 19:58:31 -0500
+Received: from mga02.intel.com ([134.134.136.20]:42702 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753436Ab1LAA6a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 19:57:35 -0500
-Date: Thu, 1 Dec 2011 11:57:25 +1100
-From: David Gibson <dwg@au1.ibm.com>
-To: Chris Wright <chrisw@redhat.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        joerg.roedel@amd.com, dwmw2@infradead.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        agraf@suse.de, scottwood@freescale.com, B08248@freescale.com
-Subject: Re: [PATCH 1/4] iommu: Add iommu_device_group callback and
- iommu_group sysfs entry
-Message-ID: <20111201005725.GE5427@truffala.fritz.box>
-Mail-Followup-To: David Gibson <dwg@au1.ibm.com>,
-	Chris Wright <chrisw@redhat.com>,
-	Alex Williamson <alex.williamson@redhat.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	joerg.roedel@amd.com, dwmw2@infradead.org,
-	iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-	agraf@suse.de, scottwood@freescale.com, B08248@freescale.com
-References: <20111021195412.8438.9951.stgit@s20.home>
- <20111021195605.8438.81609.stgit@s20.home>
- <20111130024205.GF5435@truffala.fritz.box>
- <1322628672.21641.39.camel@pasglop>
- <1322630751.19120.222.camel@bling.home>
- <20111201000337.GA5427@truffala.fritz.box>
- <20111201005220.GG29071@x200.localdomain>
+	Wed, 30 Nov 2011 19:58:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="81544428"
+From: "Yang, Fei" <fei.yang@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Alan Cox <alan@linux.intel.com>, "Gross, Mark" <mark.gross@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Date: Wed, 30 Nov 2011 16:58:28 -0800
+Subject: [PATCH] IRQ: Validate irq_ack function pointer before calling it
+Thread-Topic: [PATCH] IRQ: Validate irq_ack function pointer before calling
+ it
+Thread-Index: AcyvxFZyxvFLKBmhSVub+D9qNz0Vpg==
+Message-ID: <88D294E28D20D84C9350E231A79B0E63017F07D53E@orsmsx506.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201005220.GG29071@x200.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11113014-6102-0000-0000-0000004BFD5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 04:52:20PM -0800, Chris Wright wrote:
-> * David Gibson (dwg@au1.ibm.com) wrote:
-> > On Tue, Nov 29, 2011 at 10:25:51PM -0700, Alex Williamson wrote:
-> > > On Wed, 2011-11-30 at 15:51 +1100, Benjamin Herrenschmidt wrote:
-> > > > On Wed, 2011-11-30 at 13:42 +1100, David Gibson wrote:
-> > > > 
-> > > > > > +static ssize_t show_iommu_group(struct device *dev,
-> > > > > > +				struct device_attribute *attr, char *buf)
-> > > > > > +{
-> > > > > > +	unsigned int groupid;
-> > > > > > +
-> > > > > > +	if (iommu_device_group(dev, &groupid))
-> > > > > > +		return 0;
-> > > > > > +
-> > > > > > +	return sprintf(buf, "%u", groupid);
-> > > > > > +}
-> > > > > > +static DEVICE_ATTR(iommu_group, S_IRUGO, show_iommu_group, NULL);
-> > > > > 
-> > > > > Hrm.  Assuming the group is is an unsigned int seems dangerous to me.
-> > > > > More seriously, we really want these to be unique across the whole
-> > > > > system, but they're allocated by the iommu driver which can't
-> > > > > guarantee that if it's not the only one present.  Seems to me it would
-> > > > > be safer to have an actual iommu_group structure allocated for each
-> > > > > group, and use the pointer to it as the ID to hand around (with NULL
-> > > > > meaning "no iommu" / untranslated).  The structure could contain a
-> > > > > more human readable - or more relevant to platform documentation - ID
-> > > > > where appropriate.
-> > > 
-> > > Note that iommu drivers are registered per bus_type, so the unique pair
-> > > is {bus_type, groupid}, which seems sufficient for vfio.
-> > 
-> > Hrm.  That's.. far from obvious.  And still breaks down if we have two
-> > separate iommus on the same bus type (e.g. two independent PCI host
-> > bridges with inbuilt IOMMUs).
-> 
-> Happens to still work for Intel IOMMU on x86 the way Alex wrote the
-> Intel VT-d patch in this series, as well as AMD IOMMU.  The caveat for
-> AMD IOMMU is that the groupid generation would break (as-is) once
-> there's support for multiple PCI segments.  This is not an inherent
-> shortcoming of the groupid mechanism though, just a current limitation
-> of AMD IOMMU's implementation.  Alex overloaded B:D.F for those which is
-> a convenient id since that maps to the device (or in the case of devices
-> behind a PCIe-to-PCI bridge, the requestor ID of all devices behind the
-> bridge, or "the group").
+handle_edge_irq doesn't validate function pointer irq_ack
+before calling it. We need to check the pointer for NULL or the
+drivers have to implement irq_ack even an empty one. I think the
+former is better in case driver doesn't really need irq_ack.
 
-"Happens to still work" is not exactly a ringing endorsement.
+Signed-off-by: Fei Yang <fei.yang@intel.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
+---
+kernel/irq/chip.c |    3 ++-
+1 files changed, 2 insertions(+), 1 deletions(-)
 
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index dc5114b..12f9550 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -448,7 +448,8 @@ handle_edge_irq(unsigned int irq, struct irq_desc *desc)
+    kstat_incr_irqs_this_cpu(irq, desc);
+
+     /* Start handling the irq */
+-    desc->irq_data.chip->irq_ack(&desc->irq_data);
++    if (desc->irq_data.chip->irq_ack)
++          desc->irq_data.chip->irq_ack(&desc->irq_data);
+
+     do {
+          if (unlikely(!desc->action)) {
 -- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+1.7.0.4
 
