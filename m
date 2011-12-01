@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab1LACQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 21:16:21 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47467 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab1LACQT (ORCPT
+	id S1753750Ab1LACVv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 21:21:51 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33924 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1LACVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 21:16:19 -0500
-Date: Thu, 1 Dec 2011 13:16:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tanmay Inamdar <tinamdar@apm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: linux-next: manual merge of the trivial tree with the 4xx tree
-Message-Id: <20111201131604.fa4e2fe14d5f370924592939@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__1_Dec_2011_13_16_04_+1100_mY9YfupVwUnIju5Q"
+	Wed, 30 Nov 2011 21:21:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111129114603.GB7299@redhat.com>
+References: <4ED43A5C.9000102@gmail.com>
+	<20111129114603.GB7299@redhat.com>
+Date: Wed, 30 Nov 2011 20:21:49 -0600
+Message-ID: <CADLC3L2QpEtPiBg+yvaxir1LpU6j5YMpDG4g0+ezs06g745zcg@mail.gmail.com>
+Subject: Re: [rt2x00-users] Poor performance and lockup with rt2800usb and
+ Asus USB-N13 adapter
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        users@rt2x00.serialmonkey.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__1_Dec_2011_13_16_04_+1100_mY9YfupVwUnIju5Q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 29, 2011 at 5:46 AM, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+> On Mon, Nov 28, 2011 at 07:50:20PM -0600, Robert Hancock wrote:
+>> I recently got an Asus USB-N13 USB Wireless-N adapter which
+>> apparently uses a Ralink RT3072 chip. I'm using it with an Asus
+>> RT-N16 access point running TomatoUSB. When running Windows the
+>> performance is reasonable (about 80 Mbps in both directions).
+>> However under Fedora 16 (currently kernel 3.1.2) the performance is
+>> abysmal (10 Mbps or less with lots of packet loss). I'll post some
+>> debug information below.
+> rt2800usb needs fixing. I'm able to reproduce these performance
+> problems locally. They are quite hard to debug, and need some
+> experiments. But I hope I will provide patches soon or leter.
 
-Hi Jiri,
+Do you have any leads on what is going wrong? I'm not sure if the
+issue is with the higher MCS rates not working as well as they should,
+or with the rate control trying to use them even though they're not
+working well.
 
-Today's linux-next merge of the trivial tree got a conflict in
-arch/powerpc/platforms/40x/Kconfig between commit d5b9ee7b514e
-("powerpc/40x: Add APM8018X SOC support") from the 4xx tree and commit
-ff5f483f3091 ("powerpc: 4xx: remove commented out Kconfig entries") from
-the trivial tree.
+>
+>> While debugging this I also noticed that doing an rmmod on rt2800usb
+>> with the adapter plugged in locks up the machine and then spews out
+>> soft lockup stack traces on the console. I was only able to capture
+>> it off the screen with a camera, but it basically is:
+>>
+>> rt2x00usb_work_rxdone
+>> process_one_work
+>> worker_thread
+>> kthread
+>> kernel_thread_helper
+> Another thing to investigate. Can yo try to reproduce that with
+> CONFIG_DEBUG_OBJECTS=y
+> CONFIG_DEBUG_OBJECTS_FREE=y
+> CONFIG_DEBUG_OBJECTS_TIMERS=y
+> CONFIG_DEBUG_OBJECTS_WORK=y
+> CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+> CONFIG_DEBUG_SPINLOCK=y
+> CONFIG_DEBUG_MUTEXES=y
+> CONFIG_DEBUG_LOCK_ALLOC=y
+> CONFIG_PROVE_LOCKING=y
+> CONFIG_LOCKDEP=y
+> and see if these options print some aditional message when rmmod.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I tried with the Fedora kernel-debug kernel and didn't see much
+additional output. The stack trace might have a bit more detail:
 
-diff --cc arch/powerpc/platforms/40x/Kconfig
-index 8883f2c,bd69cf8..0000000
---- a/arch/powerpc/platforms/40x/Kconfig
-+++ b/arch/powerpc/platforms/40x/Kconfig
-@@@ -172,28 -148,3 +148,12 @@@ config IBM405_ERR7
-  # All 40x-based cores, up until the 405GPR and 405EP have this errata.
-  config IBM405_ERR51
-  	bool
- +
-- #config BIOS_FIXUP
-- #	bool
-- #	depends on BUBINGA || EP405 || SYCAMORE || WALNUT
-- #	default y
--=20
-- #config PPC4xx_DMA
-- #	bool "PPC4xx DMA controller support"
-- #	depends on 4xx
--=20
-- #config PPC4xx_EDMA
-- #	bool
-- #	depends on !STB03xxx && PPC4xx_DMA
-- #	default y
-- #
--=20
- +config APM8018X
- +	bool "APM8018X"
- +	depends on 40x
- +	default n
- +	select PPC40x_SIMPLE
- +	help
- +	  This option enables support for the AppliedMicro APM8018X evaluation
- +	  board.
--=20
+rt2x00queue_index_inc
+rt2x00lib_dmadone
+rt2x00usb_kick_rx_entry
+rt2x00usb_clear_entry
+rt2x00lib_rxdone
+rt2x00usb_work_rxdone
+process_one_work
+worker_thread
+kthread
+kernel_thread_helper
 
---Signature=_Thu__1_Dec_2011_13_16_04_+1100_mY9YfupVwUnIju5Q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO1uNkAAoJEECxmPOUX5FEY2oP/jGALnnEPdWU/HklxTY8K2vi
-R4k+gEesBRy0Vo8mBzPY9cxIU/NZQRtkhJETc2P6PSXnNGMuTj/Eqg2dFfTBknNS
-AuBW6tr73Ey087qV+Q+c7U6ckSix3VjSduDHgC46CjndbEkax0azeAsGTgNP1YHp
-MtqLA4oBLI/dRURP808t+XSrAY7KWqEwYe2VABLLafz2h06z9iMp7msnFky4IFJV
-t2OPTH+LBPirvByzuGtTBx4x16vWwMA5SiP0lliC8AYvly0tUsqKgx8H4nn5Lu6c
-4yLbDPq8fpTn4w9I7MD0z8G+Z6l7XnAwS5JYvG72vw2k1CII+jr1zQbTwD0fITVD
-cB5oQg4CjFcrwdPK0bWFHI31TlfROFOiaLWcoloFMltG68cAConqaojORi71PFIx
-QYFUYCjUTXmamQ5UfpKKkPmtJT36E7FqQ1ItqBNXOjZNR5iM52SQzfbtfe0QxE56
-XmeZZXb8E72cvNjVML3EVVnad+sSa3hiriOh8GVYkvitViVKyuzXoTrgrXAswqWP
-uESU5tstpVxo65J/3jr5WfTq0QNZlH5+6MksC7QKBFPsWCbMjs73Jxc334VBlRgp
-gh8IfdX5BKq1TDOKI18AFF2PjcWlSacbQeVFBvg64L4egoNXEi2+s1T+W2TrC1jT
-8qT8b0OYIKZ8jDP8YEUR
-=7ZE+
------END PGP SIGNATURE-----
-
---Signature=_Thu__1_Dec_2011_13_16_04_+1100_mY9YfupVwUnIju5Q--
+Seems like something that happens on rmmod with the device connected
+causes these rxdone/txdone functions to go into a tight loop somehow.
