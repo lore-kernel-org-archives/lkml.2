@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1LALq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 06:46:27 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:56686 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab1LALqZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 06:46:25 -0500
-From: Weiping Pan <panweiping3@gmail.com>
-Cc: Weiping Pan <panweiping3@gmail.com>,
-        "David S. Miller" <davem@davemloft.net> (maintainer:NETWORKING
-	[IPv4/...),
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru> (maintainer:NETWORKING
-	[IPv4/...),
-        James Morris <jmorris@namei.org> (maintainer:NETWORKING [IPv4/...),
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org> (maintainer:NETWORKING
-	[IPv4/...),
-        Patrick McHardy <kaber@trash.net> (maintainer:NETWORKING [IPv4/...),
-        netdev@vger.kernel.org (open list:NETWORKING [IPv4/...),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH net] ipv4: flush route cache after change accept_local
-Date: Thu,  1 Dec 2011 19:47:56 +0800
-Message-Id: <1e224b52de77dcd5f994c8e4c77c780c6996e4a4.1322740026.git.panweiping3@gmail.com>
-X-Mailer: git-send-email 1.7.4
-To: unlisted-recipients:; (no To-header on input)
+	id S1753499Ab1LALra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 06:47:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56883 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753198Ab1LALr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 06:47:29 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Suspend and resume on ASUS Laptops
+Date: Thu, 1 Dec 2011 12:48:44 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc3-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-pm@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+References: <1322712689.30977.11.camel@frodo> <201112011035.57666.rjw@sisk.pl>
+In-Reply-To: <201112011035.57666.rjw@sisk.pl>
+Organization: SUSE
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112011248.44449.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After reset ipv4_devconf->data[IPV4_DEVCONF_ACCEPT_LOCAL] to 0,
-we should flash route cache, or it will continue receive packets with local
-source address, which should be dropped.
+Am Donnerstag, 1. Dezember 2011, 10:35:57 schrieb Rafael J. Wysocki:
+> > Searching the web, I found this link:
+> > 
+> > http://thecodecentral.com/2011/01/18/fix-ubuntu-10-10-suspendhibernate-not-working-bug
+> > 
+> > That talks about adding a script found here:
+> > 
+> > http://ubuntuforums.org/showpost.php?p=10359462&postcount=47
+> > 
+> > I added the script and sure enough, my suspend and even resume now work.
+> 
+> Now, that's interesting, but I would lie if I said I knew what it was
+> actually doing, so let me add some USB people to the CC list.
 
-Signed-off-by: Weiping Pan <panweiping3@gmail.com>
----
- net/ipv4/devinet.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+What errors are seen in the kernel log?
 
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index c6b5092..de1a772 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1490,7 +1490,9 @@ static int devinet_conf_proc(ctl_table *ctl, int write,
- 			     void __user *buffer,
- 			     size_t *lenp, loff_t *ppos)
- {
-+	int old_value = *(int *)ctl->data;
- 	int ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
-+	int new_value = *(int *)ctl->data;
- 
- 	if (write) {
- 		struct ipv4_devconf *cnf = ctl->extra1;
-@@ -1501,6 +1503,9 @@ static int devinet_conf_proc(ctl_table *ctl, int write,
- 
- 		if (cnf == net->ipv4.devconf_dflt)
- 			devinet_copy_dflt_conf(net, i);
-+		if ((i == IPV4_DEVCONF_ACCEPT_LOCAL - 1))
-+			if ((new_value == 0) && (old_value != 0))
-+				rt_cache_flush(net, 0);
- 	}
- 
- 	return ret;
--- 
-1.7.4
-
+	Regards
+		Oliver
