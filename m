@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab1LAP6m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:58:42 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:24404
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755124Ab1LAP6l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:58:41 -0500
-X-SpamScore: -20
-X-BigFish: VS-20(zz9371K1102K542M1432N98dKzz1202hzz8275dhz2fh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: Sasha Levin <levinsasha928@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] hv: Don't OOPS when can't init vmbus
-Thread-Topic: [PATCH] hv: Don't OOPS when can't init vmbus
-Thread-Index: AQHMp+eh4zIBCWhb0U2Luaw05fid05W2hGmwgAD3xYCAEDiDAP//etUwgACH/ID//3w5kA==
-Date: Thu, 1 Dec 2011 15:58:10 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AA7B28F@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1321836494-4624-1-git-send-email-levinsasha928@gmail.com>
- <6E21E5352C11B742B20C142EB499E0481AA70B8E@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <1321862131.3231.16.camel@lappy> <1322753876.6040.1.camel@lappy>
- <6E21E5352C11B742B20C142EB499E0481AA7B272@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20111201154801.GA7130@suse.de>
-In-Reply-To: <20111201154801.GA7130@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+	id S1755317Ab1LAQAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 11:00:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45943 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752658Ab1LAQAn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 11:00:43 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] nohz: Remove update_ts_time_stat from tick_nohz_start_idle
+Date: Thu,  1 Dec 2011 17:00:22 +0100
+Message-Id: <1322755222-6951-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There is no reason to call update_ts_time_stat from tick_nohz_start_idle
+anymore (after e0e37c20 sched: Eliminate the ts->idle_lastupdate field)
+when we updated idle_lastupdate unconditionally.
 
+We haven't set idle_active yet and do not provide last_update_time so
+the whole call end up being just 2 wasted branches.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Thursday, December 01, 2011 10:48 AM
-> To: KY Srinivasan
-> Cc: Sasha Levin; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] hv: Don't OOPS when can't init vmbus
-> 
-> On Thu, Dec 01, 2011 at 03:42:43PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Sasha Levin [mailto:levinsasha928@gmail.com]
-> > > Sent: Thursday, December 01, 2011 10:38 AM
-> > > To: KY Srinivasan
-> > > Cc: linux-kernel@vger.kernel.org; Greg Kroah-Hartman
-> > > Subject: RE: [PATCH] hv: Don't OOPS when can't init vmbus
-> > >
-> > > Ping? Did it go anywhere?
-> >
-> > I think I acked it; if not I am acking it now. I don't know if
-> > Greg dropped this patch.
-> 
-> I did as I thought you said you would take care of it.
-> 
-> KY, can you please resend it with your ack?
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+CC: Arjan van de Ven <arjan@linux.intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-sched.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Sasha,
-
-Do you want to resend the patch to Greg with my ack.
-
-Regards,
-
-K. Y
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 4042064..be3cab0 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -186,8 +186,6 @@ static ktime_t tick_nohz_start_idle(int cpu, struct tick_sched *ts)
+ 
+ 	now = ktime_get();
+ 
+-	update_ts_time_stats(cpu, ts, now, NULL);
+-
+ 	ts->idle_entrytime = now;
+ 	ts->idle_active = 1;
+ 	sched_clock_idle_sleep_event();
+-- 
+1.7.7.3
 
