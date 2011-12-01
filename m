@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab1LASPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:15:11 -0500
-Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:14917 "EHLO
+	id S1756050Ab1LASPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:15:16 -0500
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:14924 "EHLO
 	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab1LASPJ (ORCPT
+	with ESMTP id S1756030Ab1LASPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:15:09 -0500
-Message-Id: <201112011815.pB1IF8P0004904@farm-0002.internal.tilera.com>
+	Thu, 1 Dec 2011 13:15:13 -0500
+Message-Id: <201112011815.pB1IFACw004908@farm-0002.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 1 Dec 2011 11:37:20 -0500
-Subject: [PATCH] arch/tile: add a few #includes and an EXPORT to catch up with kernel changes.
-To: linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 01 Dec 2011 18:15:08.0596 (UTC) FILETIME=[288D4F40:01CCB055]
+Date: Thu, 1 Dec 2011 12:54:31 -0500
+Subject: [PATCH] asm-generic/unistd.h: support new process_vm_{readv,write} syscalls
+To: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "J. Bruce Fields" <bfields@redhat.com>, NeilBrown <neilb@suse.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-arch@vger.kernel.org
+X-OriginalArrivalTime: 01 Dec 2011 18:15:12.0347 (UTC) FILETIME=[2AC9AAB0:01CCB055]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The empty_zero_page[] export is required for ZERO_PAGE() module references.
-The #includes are due to changes in implicit inclusion, and should of
-course have been in the sources from the beginning.
+Also prototype the "compat" functions so they can be referenced
+from C code.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/kernel/pci-dma.c |    1 +
- arch/tile/kernel/pci.c     |    1 +
- arch/tile/kernel/sysfs.c   |    1 +
- arch/tile/lib/exports.c    |    3 +++
- 4 files changed, 6 insertions(+), 0 deletions(-)
+ include/asm-generic/unistd.h |    8 +++++++-
+ include/linux/compat.h       |    9 +++++++++
+ 2 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/arch/tile/kernel/pci-dma.c b/arch/tile/kernel/pci-dma.c
-index 658f2ce..b3ed19f 100644
---- a/arch/tile/kernel/pci-dma.c
-+++ b/arch/tile/kernel/pci-dma.c
-@@ -15,6 +15,7 @@
- #include <linux/mm.h>
- #include <linux/dma-mapping.h>
- #include <linux/vmalloc.h>
-+#include <linux/export.h>
- #include <asm/tlbflush.h>
- #include <asm/homecache.h>
+diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
+index f4c38d8..2292d1a 100644
+--- a/include/asm-generic/unistd.h
++++ b/include/asm-generic/unistd.h
+@@ -685,9 +685,15 @@ __SYSCALL(__NR_syncfs, sys_syncfs)
+ __SYSCALL(__NR_setns, sys_setns)
+ #define __NR_sendmmsg 269
+ __SC_COMP(__NR_sendmmsg, sys_sendmmsg, compat_sys_sendmmsg)
++#define __NR_process_vm_readv 270
++__SC_COMP(__NR_process_vm_readv, sys_process_vm_readv, \
++          compat_sys_process_vm_readv)
++#define __NR_process_vm_writev 271
++__SC_COMP(__NR_process_vm_writev, sys_process_vm_writev, \
++          compat_sys_process_vm_writev)
  
-diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
-index 2a8014c..9d610d3 100644
---- a/arch/tile/kernel/pci.c
-+++ b/arch/tile/kernel/pci.c
-@@ -24,6 +24,7 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/uaccess.h>
-+#include <linux/export.h>
+ #undef __NR_syscalls
+-#define __NR_syscalls 270
++#define __NR_syscalls 272
  
- #include <asm/processor.h>
- #include <asm/sections.h>
-diff --git a/arch/tile/kernel/sysfs.c b/arch/tile/kernel/sysfs.c
-index b671a86..6029082 100644
---- a/arch/tile/kernel/sysfs.c
-+++ b/arch/tile/kernel/sysfs.c
-@@ -18,6 +18,7 @@
- #include <linux/cpu.h>
- #include <linux/slab.h>
- #include <linux/smp.h>
-+#include <linux/stat.h>
- #include <hv/hypervisor.h>
+ /*
+  * All syscalls below here should go away really,
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index 154bf56..66ed067 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -552,5 +552,14 @@ extern ssize_t compat_rw_copy_check_uvector(int type,
  
- /* Return a string queried from the hypervisor, truncated to page size. */
-diff --git a/arch/tile/lib/exports.c b/arch/tile/lib/exports.c
-index a87d2a8..2a81d32 100644
---- a/arch/tile/lib/exports.c
-+++ b/arch/tile/lib/exports.c
-@@ -39,6 +39,9 @@ EXPORT_SYMBOL(finv_user_asm);
- EXPORT_SYMBOL(current_text_addr);
- EXPORT_SYMBOL(dump_stack);
+ extern void __user *compat_alloc_user_space(unsigned long len);
  
-+/* arch/tile/kernel/head.S */
-+EXPORT_SYMBOL(empty_zero_page);
++asmlinkage ssize_t compat_sys_process_vm_readv(compat_pid_t pid,
++		const struct compat_iovec __user *lvec,
++		unsigned long liovcnt, const struct compat_iovec __user *rvec,
++		unsigned long riovcnt, unsigned long flags);
++asmlinkage ssize_t compat_sys_process_vm_writev(compat_pid_t pid,
++		const struct compat_iovec __user *lvec,
++		unsigned long liovcnt, const struct compat_iovec __user *rvec,
++		unsigned long riovcnt, unsigned long flags);
 +
- /* arch/tile/lib/, various memcpy files */
- EXPORT_SYMBOL(memcpy);
- EXPORT_SYMBOL(__copy_to_user_inatomic);
+ #endif /* CONFIG_COMPAT */
+ #endif /* _LINUX_COMPAT_H */
 -- 
 1.6.5.2
 
