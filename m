@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab1LASaT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:30:19 -0500
-Received: from utopia.booyaka.com ([72.9.107.138]:57175 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756091Ab1LASaR (ORCPT
+	id S1756173Ab1LASal (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:30:41 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38253 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756091Ab1LASaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:30:17 -0500
-Date: Thu, 1 Dec 2011 11:30:16 -0700 (MST)
-From: Paul Walmsley <paul@pwsan.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-cc: "Turquette, Mike" <mturquette@ti.com>, linux@arm.linux.org.uk,
-        linus.walleij@stericsson.com, patches@linaro.org,
-        shawn.guo@freescale.com, magnus.damm@gmail.com,
-        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
-        richard.zhao@linaro.org, grant.likely@secretlab.ca, dsaxena@linaro.org,
-        eric.miao@linaro.org, sboyd@quicinc.com, skannan@quicinc.com,
-        linaro-dev@lists.linaro.org, jeremy.kerr@canonical.com,
-        linux-omap@vger.kernel.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org
-Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
-In-Reply-To: <20111201144205.GA2103@sirena.org.uk>
-Message-ID: <alpine.DEB.2.00.1112011124221.6289@utopia.booyaka.com>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1111291619110.6289@utopia.booyaka.com> <CAJOA=zM4vcyTt_RBEVm6JxmzW-Dna0gpuWda7ytq_mqFSuXw9g@mail.gmail.com>
- <alpine.DEB.2.00.1111302308280.6289@utopia.booyaka.com> <20111201144205.GA2103@sirena.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 1 Dec 2011 13:30:39 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sasha Levin <levinsasha928@gmail.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org
+Subject: [PATCH 1/2] KVM: VMX: Notify if VMX is already in use
+Date: Thu,  1 Dec 2011 20:30:17 +0200
+Message-Id: <1322764218-4698-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.rc4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Currently we silently fail if VMX is already in use by a different
+virtualization technology.
 
-On Thu, 1 Dec 2011, Mark Brown wrote:
+This is bad since it's non-obvious for the user, and its not too uncommon
+for users to have several of these installed on same host.
 
-> On Wed, Nov 30, 2011 at 11:39:59PM -0700, Paul Walmsley wrote:
-> 
-> > Clock rate/parent-change notifiers are requirements for DVFS use-cases, 
-> > and they must be paired with something like the 
-> > clk_{allow,block}_rate_change() functions to work efficiently.  I intend 
-> > to comment on this later; it's not a simple problem.  It might be worth 
-> > noting that Tero and I implemented a simplified version of this for the 
-> > N900.
-> 
-> I'm thinking that if we're going to have clk_{allow,block}_rate_change()
-> we may as well make that the main interface to enable rate changes - if
-> a device wants to change the clock rate it allows rate changes using
-> that interface rather than by disabling the clocks.  I've got devices
-> which can do glitch free updates of active clocks so having to disable
-> would be a real restriction, and cpufreq would have issues with actually
-> disabling the clock too I expect.
+This patch adds a message to notify the user of the problem.
 
-The intention behind the clk_{allow,block}_rate_change() proposal was to 
-allow the current user of the clock to change its rate without having to 
-call clk_{allow,block}_rate_change(), if that driver was the sole user of 
-the clock.
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ arch/x86/kvm/vmx.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-So for example, if you had a driver that did:
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 4ceced2..0ef59ed 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2300,8 +2300,11 @@ static int hardware_enable(void *garbage)
+ 	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
+ 	u64 old, test_bits;
+ 
+-	if (read_cr4() & X86_CR4_VMXE)
++	if (read_cr4() & X86_CR4_VMXE) {
++		printk(KERN_ERR "hardware_enable: VMX already in use on CPU%d. "
++				"Are you already another hypervisor?\n", cpu);
+ 		return -EBUSY;
++	}
+ 
+ 	INIT_LIST_HEAD(&per_cpu(loaded_vmcss_on_cpu, cpu));
+ 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
+-- 
+1.7.8.rc4
 
-c = clk_get(dev, clk_name);
-clk_enable(c);
-clk_set_rate(c, clk_rate);
-
-and c was currently not enabled by any other driver on the system, and 
-nothing else had called clk_block_rate_change(c), then the rate change 
-would be allowed to proceed.  (modulo any notifier activity, etc.)  
-
-So clk_{allow,block}_rate_change() was simply intended to allow or 
-restrict other users of the same clock, not the current user.
-
-
-- Paul
