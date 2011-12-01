@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab1LAUVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:21:18 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38961 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1LAUVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:21:16 -0500
-Date: Thu, 1 Dec 2011 12:20:53 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Theodore Tso <tytso@mit.edu>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH v5.2 00/14] crc32c: Add faster algorithm and self-test
- code
-Message-ID: <20111201202053.GG1495@noexit.corp.google.com>
-Mail-Followup-To: "Darrick J. Wong" <djwong@us.ibm.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Theodore Tso <tytso@mit.edu>,
-	Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-	Bob Pearson <rpearson@systemfabricworks.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-crypto <linux-crypto@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
-	Herbert Xu <herbert@gondor.apana.org.au>
-References: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753043Ab1LAUZv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:25:51 -0500
+Received: from fifo99.com ([67.223.236.141]:51125 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751718Ab1LAUZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 15:25:49 -0500
+Message-ID: <1322771147.3704.21.camel@m0nster>
+Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
+From: Daniel Walker <dwalker@fifo99.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 01 Dec 2011 12:25:47 -0800
+In-Reply-To: <20111201201950.GE9581@n2100.arm.linux.org.uk>
+References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
+	 <1322752657.3704.2.camel@m0nster>
+	 <20111201181736.GA13182@huya.qualcomm.com>
+	 <1322764745.3704.9.camel@m0nster>
+	 <20111201192705.GA23641@huya.qualcomm.com>
+	 <1322767992.3704.13.camel@m0nster>
+	 <20111201194353.GA24293@huya.qualcomm.com>
+	 <20111201201950.GE9581@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 12:13:41PM -0800, Darrick J. Wong wrote:
-> Hi all,
+On Thu, 2011-12-01 at 20:19 +0000, Russell King - ARM Linux wrote:
+> Now, the obvious question to ask now is this: as you sent your question,
+> and Daniel obviously objects, was Daniel one of your respondants?  If
+> not, then he carries some of the blame for this patch being created
+> in the first place by having missed the email/not replied/etc.
 > 
-> This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
-> software crc32c implementation.  It removes the crc32c implementation in
-> crypto/ in favor of using the stamped-out one in lib/.  There is also a change
-> to Kconfig so that the kernel builder can pick an implementation best suited
-> for the hardware.
-> 
-> The motivation for this patchset is that I am working on adding full metadata
-> checksumming to ext4.  As far as performance impact of adding checksumming
-> goes, I see nearly no change with a standard mail server ffsb simulation.  On a
-> test that involves only file creation and deletion and extent tree writes, I
-> see a drop of about 50 pcercent with the current kernel crc32c implementation;
-> this improves to a drop of about 20 percent with the enclosed crc32c code.
-> 
-> When metadata is usually a small fraction of total IO, this new implementation
-> doesn't help much because metadata is usually a small fraction of total IO.
-> However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
-> tree), then this patch speeds up the operation substantially.
-> 
-> Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
-> should improve their speed as well.  I have not yet quantified that, however.
 
-	I thought they usually used the SSE instruction for crc32 or
-equivalent.
+What if the people using the hardware aren't even on the list ? It's not
+their fault is it?
 
-Joel
+Daniel
 
--- 
-
-"I almost ran over an angel
- He had a nice big fat cigar.
- 'In a sense,' he said, 'You're alone here
- So if you jump, you'd best jump far.'"
-
-			http://www.jlbec.org/
-			jlbec@evilplan.org
