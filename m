@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab1LAStm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:49:42 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64779 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab1LAStl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:49:41 -0500
-Date: Thu, 1 Dec 2011 10:49:32 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jeff Layton <jlayton@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-pm@vger.kernel.org, john@calva.com,
-        trond.myklebust@netapp.com, marek.belisko@gmail.com,
-        awilliam@redhat.com
-Subject: Re: [PATCH v4 0/2] nfs/sunrpc: allow freezing of tasks with NFS
- calls in flight
-Message-ID: <20111201184932.GB13173@google.com>
-References: <1322570215-8570-1-git-send-email-jlayton@redhat.com>
- <201111302043.13844.rjw@sisk.pl>
+	id S1755938Ab1LASxX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:53:23 -0500
+Received: from mx5.orcon.net.nz ([219.88.242.55]:56749 "EHLO mx5.orcon.net.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753780Ab1LASxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 13:53:22 -0500
+X-Greylist: delayed 8791 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Dec 2011 13:53:22 EST
+Message-ID: <64002.67.231.243.75.1322756800.squirrel@mail.orcon.net.nz>
+Date: Fri, 2 Dec 2011 05:26:40 +1300 (NZDT)
+Subject: Contact Me Urgently
+From: "Paul William" <laurents@orcon.net.nz>
+Reply-To: intermonerydepartment@gmail.com
+User-Agent: SquirrelMail/1.4.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111302043.13844.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-DSPAM-Check: by mx5.orcon.net.nz on Fri, 02 Dec 2011 05:26:40 +1300
+X-DSPAM-Result: Spam
+X-DSPAM-Processed: Fri Dec  2 05:26:50 2011
+X-DSPAM-Confidence: 0.6175
+X-DSPAM-Probability: 1.0000
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 08:43:13PM +0100, Rafael J. Wysocki wrote:
-> On Tuesday, November 29, 2011, Jeff Layton wrote:
-> > This patchset is the fourth attempt at fixing the issues with suspending
-> > a machine that has an active NFS mount.
-> > 
-> > The bug reported against Fedora is here:
-> > 
-> >     https://bugzilla.redhat.com/show_bug.cgi?id=717735
-> > 
-> > The main difference from v3 is that I've fixed a stupid set of errors in
-> > freezable_schedule_timeout_killable. The if condition was reversed from
-> > what it should have been, and the code did not call freezer_count()
-> > again when it was going to return early.
-> > 
-> > Tejun has mentioned that the extra try_to_freeze() calls are unnecessary
-> > on top of the pm-freezer changes, but this set should work on as
-> > expected on top of 3.2-ish kernels. In the meantime, I'll look over the
-> > pm-freezer changes and see whether I need to make changes in this set
-> > for 3.3.
-> > 
-> > Jeff Layton (2):
-> >   sunrpc: make rpc_wait_bit_killable handle freeze events
-> >   nfs: make TASK_KILLABLE sleeps attempt to freeze
-> 
-> Both patches applied to linux-pm/linux-next.  I'll move them to
-> linux-pm/pm-freezer in a couple of days if there are no problems with
-> them.
+ATTENTION: Final Notice of Your Package
 
-Rafael, I think the extra try_to_freeze() is actually incorrect on top
-of pm-freezer.  Jeff, can you please remove that?
+In view of your inability to receive your package reg #: GB8100AF
+originally scheduled to be delivered to you by
+the agency Foreign payment service New york.
 
-Thanks.
+This package in a golden metal box valued 5,316,000USD (Five Million,
+Three Hundred and Sixteen thousand United states dollars) arrived at John
+F. Kennedy International Airport New York, New York 11430, USA via British
+airways flight no. BA460.
 
--- 
-tejun
+The agency Foreign payment service New york staff came and applied for the
+release of this package for delivery to your address but has since not
+shown up.
+I am writing to you to inform you that the days of grace has expired and
+we shall begin to charge the storage fee of $25usd daily.
+
+Please call Mr Brown Walters to release this package and deliver it to
+you. His email is intermonerydepartment@gmail.com . Please call me on
+telephone number: 1 (716)810 6832
+terminal 8 ext. 21 cargo unit.
+
+
+Note that this notice serves as our last recovery notice to you as our
+department will be compelled to list your
+package as an unclaimed and maybe forfeited.
+Best regards,
+Paul William
+Terminal 8. ext.12
+
