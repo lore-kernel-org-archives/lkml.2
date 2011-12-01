@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab1LAKNu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 05:13:50 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:40010
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752625Ab1LAKNs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 05:13:48 -0500
-X-SpamScore: -17
-X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzzz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Meyer <thomas@m3y3r.de>, Jiri Kosina <jikos@jikos.cz>
-Subject: RE: linux-next: manual merge of the staging tree with the hid tree
-Thread-Topic: linux-next: manual merge of the staging tree with the hid tree
-Thread-Index: AQHMr9szE9kf2yWHkEqPb1pfVBs60JXG31aA///jEEA=
-Date: Thu, 1 Dec 2011 10:12:33 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AA7B139@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <20111201143952.9aea929b16c7212570fc1bd2@canb.auug.org.au>
- <20111201035113.GA7647@kroah.com>
-In-Reply-To: <20111201035113.GA7647@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753016Ab1LAKPZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 05:15:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49573 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752099Ab1LAKPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 05:15:24 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: jim.cromie@gmail.com
+Subject: Re: [PATCH 19/25] pnp: if CONFIG_DYNAMIC_DEBUG, use pnp.ddebug instead of pnp.debug
+Date: Thu, 1 Dec 2011 12:15:20 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
+Cc: jbaron@redhat.com, greg@kroah.com, joe@perches.com,
+        bart.vanassche@gmail.com, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com
+References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com> <1322683014-13285-20-git-send-email-jim.cromie@gmail.com>
+In-Reply-To: <1322683014-13285-20-git-send-email-jim.cromie@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112011215.21146.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Wednesday, November 30, 2011 10:51 PM
-> To: Stephen Rothwell
-> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; KY Srinivasan;
-> Thomas Meyer; Jiri Kosina
-> Subject: Re: linux-next: manual merge of the staging tree with the hid tree
+On Wednesday 30 November 2011 20:56:48 jim.cromie@gmail.com wrote:
+> From: Jim Cromie <jim.cromie@gmail.com>
 > 
-> On Thu, Dec 01, 2011 at 02:39:52PM +1100, Stephen Rothwell wrote:
-> > Hi Greg,
-> >
-> > Today's linux-next merge of the staging tree got a conflict in
-> > drivers/hid/hid-hyperv.c between commit b95f5bcb811e ("HID: Move the
-> > hid-hyperv driver out of staging") from the hid tree and various commits
-> > from the staging tree (this was drivers/staging/hv/hv_mouse.c).
-> >
-> > The commit message says that all the changes that happened when this file
-> > moved from staging have also been applied to the staging file, so I just
-> > used the version from the hid tree.
+> resubmit of https://lkml.org/lkml/2010/9/15/398
 > 
-> Ok, that's fine, Jiri, want me to just delete the driver from my tree
-> now to remove any of these conflicts?
+> This allows usage of generic pnp.ddebug debug parameter instead of
+> pnp.debug PNP specific parameter.
+It depends on what you compile in which pnp debug parameter one has to use
+and both are doing more or less the same?
 
-Jiri,
+We could add two pnp parameters in !defined(CONFIG_DYNAMIC_DEBUG) case:
+  - deprecate pnp.debug by a message:
+    "pnp.debug deprecated, use pnp.ddebug" instead
+  - pnp.ddebug doing what pnp.debug is doing currently
+The only misleading would be that pnp.ddebug has nothing to do with
+dynamic debug if not compiled in, but user would have one parameter
+to rely on.
 
-Yesterday (Nov 30th, 2011) I had sent a patch for the mouse driver to fix a bug
-that got introduced during the recent cleanup to exit staging. This patch was against
-the staging tree that Greg is planning to delete. It is a trivial patch; can you pick this up
-for the hid tree. If you prefer, I could rebase the patch against your tree. Let me know.
+In Documentation/kernel-parameters:
+        pnp.debug       [PNP]
+                        Enable PNP debug messages.  This depends on the
+                        CONFIG_PNP_DEBUG_MESSAGES option.
 
-Regards,
+Would be wrong in defined(CONFIG_DYNAMIC_DEBUG) case with your patch,
+but would always work with:
+        pnp.ddebug
+with my above suggestions.
 
-K. Y
+It's not a big deal and not a perfect solution, just looks a bit confusing
+to have 2 different parameters for the same thing.
 
+Bjorn should have a look and acknowledge or sign the pnp parts off.
+
+    Thomas
+
+> I wonder whether CONFIG_PNP_DEBUG_MESSAGES can vanish totally with
+> this or at some time. Only advantage having it is: If you are
+> restricted and your kernel must not exceed X bytes, you cannot compile
+> in PNP debug messages only, but you have to compile in all debug
+> messages.
+> 
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> CC: Thomas Renninger <trenn@suse.de>
+> ---
+>  drivers/pnp/base.h |    8 ++++++--
+>  drivers/pnp/core.c |   13 +++++++++++++
+>  2 files changed, 19 insertions(+), 2 deletions(-)
+> 
+
+...
+
+> +#if defined(CONFIG_DYNAMIC_DEBUG)
+> +static int __init pnp_debug_setup(char *__unused)
+> +{
+> +	printk(KERN_INFO "DYNAMIC_DEBUG enabled use pnp.ddebug instead of "
+> +		"pnp.debug boot param\n");
+> +	return 1;
+> +}
+> +__setup("pnp.debug", pnp_debug_setup);
+
+> +
+> +#else
+> +
+>  #if defined(CONFIG_PNP_DEBUG_MESSAGES)
+>  module_param_named(debug, pnp_debug, int, 0644);
+>  #endif
+> +
+> +#endif
+> -- 
+> 1.7.7.3
+> 
+> 
 
