@@ -1,39 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab1LAGOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:14:49 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64647 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab1LAGOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:14:47 -0500
+	id S1752452Ab1LAGTD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:19:03 -0500
+Received: from mga14.intel.com ([143.182.124.37]:21337 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751641Ab1LAGTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 01:19:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,276,1320652800"; 
+   d="scan'208";a="42789073"
+Date: Thu, 1 Dec 2011 14:19:48 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Clark, Joel" <joel.clark@intel.com>
+Subject: Re: [PATCH 2/2] Input: tsc2007 - Add a z1_low_threshhold platform
+ data parameter
+Message-ID: <20111201141948.13162071@feng-i7>
+In-Reply-To: <20111201054726.GC16816@core.coreip.homeip.net>
+References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
+	<1322554378-348-2-git-send-email-feng.tang@intel.com>
+	<20111129092310.GB21758@core.coreip.homeip.net>
+	<20111130103418.4514b630@feng-i7>
+	<20111201054726.GC16816@core.coreip.homeip.net>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
 MIME-Version: 1.0
-X-Originating-IP: [93.172.53.1]
-In-Reply-To: <20111130231306.GD30031@redhat.com>
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
- <20111129131110.GC19157@redhat.com> <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
- <20111129151958.GA31789@redhat.com> <CAK=WgbZ5aBFNro3XC0cN+Ao4ZWrBHwwd3d__CSHA=n56gKmKXw@mail.gmail.com>
- <20111130145004.GD21413@redhat.com> <CAK=WgbY59n9N_-2_TZ9wNBNcTMV1DCrz65e-Ae=xamcg6A0dOA@mail.gmail.com>
- <20111130231306.GD30031@redhat.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 1 Dec 2011 08:14:26 +0200
-Message-ID: <CAK=Wgbb5M62LgXY-sn7R6YautHxwqyDbPTeXYJxgmrS9fPXR9A@mail.gmail.com>
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 1:13 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> For x86, stores into memory are ordered. So I think that yes, smp_XXX
-> can be selected at compile time.
+On Thu, 1 Dec 2011 13:47:26 +0800
+Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
 
-But then you can't use the same kernel image for both scenarios.
+> On Wed, Nov 30, 2011 at 10:34:18AM +0800, Feng Tang wrote:
+> > On Tue, 29 Nov 2011 17:23:10 +0800
+> > Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> > 
+> > > On Tue, Nov 29, 2011 at 04:12:58PM +0800, Feng Tang wrote:
+> > > > This originates from a patch in Meego IVI kernel with the name
+> > > > 	linux-2.6.37-connext-0027-tsc2007.patch
+> > > > There is no author info excepte a line "From  MeeGo
+> > > > <kernel@meego.com>"
+> > > > 
+> > > > When integrating tsc2007 on Intel IVI platform, there are a lot
+> > > > of noise data whose z1 value is around 10 which is not a sane
+> > > > "z1". So add a "z1_low_threshhold" to filter those nosie data,
+> > > > to make the device work properly.
+> > > 
+> > > Sounds like a task for userspace to ignore pressure that is too
+> > > low. Bonus points for making it configurable so user can adjust
+> > > sensitivity.
+> > 
+> > Actually, there is one more point :), without this patch, the
+> > driver won't work on our platforms.
+> > 
+> > The tsc2007_soft_irq will keep reading the input data unless there
+> > is no valid pressure data. In our case, those noise data will be
+> > seen as valid data during tsc2007_calculate_pressure(), and the
+> > tsc2007_soft_irq will run endlessly.
+> 
+> Even if we add the pressure threshold would not that noise cause
+> endless stream of interrupts?
 
-It won't take long until people will use virtio on ARM for both
-virtualization and for talking to devices, and having to rebuild the
-kernel for different use cases is nasty.
+No, there is no endless interrupts for tsc2007. Without the z1
+threshold, the while circle in tsc2007_soft_irq will run endlessly
+as the noise data will be seen as a valid data:
+
+		rt = tsc2007_calculate_pressure(ts, &tc);
+		if (rt == 0 && !ts->get_pendown_state) {
+			/*
+			 * If pressure reported is 0 and we don't have
+			 * callback to check pendown state, we have to
+			 * assume that pen was lifted up.
+			 */
+			break;
+		}
+
+With the z1 threshold check, the rt will be 0 for noise data, and the
+code flow broke out.
+
+> 
+> Also, what kind of z2 is reported with low z1? And do you implement
+> get_pendown_state()?
+
+z2 seems normal as some data between 3000-4000. We don't have a
+get_pendown_state().
+
+Thanks,
+Feng
+> 
+> Thanks.
+> 
