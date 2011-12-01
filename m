@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab1LAKfB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 05:35:01 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:56045 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab1LAKe7 (ORCPT
+	id S1751931Ab1LAKhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 05:37:17 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60025 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751262Ab1LAKhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 05:34:59 -0500
-X-IronPort-AV: E=Sophos;i="4.71,277,1320624000"; 
-   d="scan'208";a="9225291"
-Subject: Re: [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt
- extensions
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Stefano Stabellini" <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "android-virt@lists.cs.columbia.edu" 
-	<android-virt@lists.cs.columbia.edu>,
-        "embeddedxen-devel@lists.sourceforge.net" 
-	<embeddedxen-devel@lists.sourceforge.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 1 Dec 2011 10:34:58 +0000
-In-Reply-To: <201111301815.01297.arnd@arndb.de>
-References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop>
-	 <201111301432.54463.arnd@arndb.de>
-	 <1322670473.31810.129.camel@zakaz.uk.xensource.com>
-	 <201111301815.01297.arnd@arndb.de>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1322735698.31810.194.camel@zakaz.uk.xensource.com>
+	Thu, 1 Dec 2011 05:37:15 -0500
+Message-ID: <4ED75765.5020002@gmail.com>
+Date: Thu, 01 Dec 2011 11:31:01 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Chen Gong <gong.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] ramoops: use pstore interface
+References: <20111128200951.GA3492@www.outflux.net>	<4ED4647D.4060305@linux.intel.com> <CAGXu5j+kzXpAhCYELDBBeMDPg2XMHt8jWRjZf2xiPVSMfUhjzA@mail.gmail.com>
+In-Reply-To: <CAGXu5j+kzXpAhCYELDBBeMDPg2XMHt8jWRjZf2xiPVSMfUhjzA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 18:15 +0000, Arnd Bergmann wrote:
-> On Wednesday 30 November 2011, Ian Campbell wrote:
-> > On Wed, 2011-11-30 at 14:32 +0000, Arnd Bergmann wrote:
-> > > On Wednesday 30 November 2011, Ian Campbell wrote:
-> > > What I suggested to the KVM developers is to start out with the
-> > > vexpress platform, but then generalize it to the point where it fits
-> > > your needs. All hardware that one expects a guest to have (GIC, timer,
-> > > ...) will still show up in the same location as on a real vexpress,
-> > > while anything that makes no sense or is better paravirtualized (LCD,
-> > > storage, ...) just becomes optional and has to be described in the
-> > > device tree if it's actually there.
-> > 
-> > That's along the lines of what I was thinking as well.
-> > 
-> > The DT contains the address of GIC, timer etc as well right? So at least
-> > in principal we needn't provide e.g. the GIC at the same address as any
-> > real platform but in practice I expect we will.
-> 
-> Yes.
-> 
-> > In principal we could also offer the user options as to which particular
-> > platform a guest looks like.
-> 
-> At least when using a qemu based simulation. Most platforms have some
-> characteristics that are not meaningful in a classic virtualization
-> scenario, but it would certainly be helpful to use the virtualization
-> extensions to run a kernel that was built for a particular platform
-> faster than with pure qemu, when you want to test that kernel image.
-> 
-> It has been suggested in the past that it would be nice to run the
-> guest kernel built for the same platform as the host kernel by
-> default, but I think it would be much better to have just one
-> platform that we end up using for guests on any host platform,
-> unless there is a strong reason to do otherwise.
+Il 29/11/2011 18:24, Kees Cook ha scritto:
+> On Mon, Nov 28, 2011 at 8:50 PM, Chen Gong<gong.chen@linux.intel.com>  wrote:
+>> 于 2011/11/29 4:09, Kees Cook 写道:
+>>>
+>>> Instead of using /dev/mem directly, use the common pstore infrastructure
+>>> to handle Oops gathering and extraction.
+>>>
+>>> Signed-off-by: Kees Cook<keescook@chromium.org>
+>>> ---
+>>> This depends on the pstore changes waiting for -next in:
+>>>
+>>> http://git.kernel.org/?p=linux/kernel/git/aegl/linux.git;a=shortlog;h=refs/heads/next
+>>> ---
+>>>   Documentation/ramoops.txt |    8 +-
+>>>   drivers/char/Kconfig      |    1 +
+>>>   drivers/char/ramoops.c    |  206
+>>> ++++++++++++++++++++++++++++++++++-----------
+>>>   3 files changed, 160 insertions(+), 55 deletions(-)
+>>>
+>>> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+>>> index 8fb1ba7..a0b9d8e 100644
+>>> --- a/Documentation/ramoops.txt
+>>> +++ b/Documentation/ramoops.txt
+>>> @@ -3,7 +3,7 @@ Ramoops oops/panic logger
+>>>
+>>>   Sergiu Iordache<sergiu@chromium.org>
+>>>
+>>> -Updated: 8 August 2011
+>>> +Updated: 17 November 2011
+>>>
+>>>   0. Introduction
+>>>
+>>> @@ -71,6 +71,6 @@ timestamp and a new line. The dump then continues with
+>>> the actual data.
+>>>
+>>>   4. Reading the data
+>>>
+>>> -The dump data can be read from memory (through /dev/mem or other means).
+>>> -Getting the module parameters, which are needed in order to parse the
+>>> data, can
+>>> -be done through /sys/module/ramoops/parameters/* .
+>>> +The dump data can be read from the pstore filesystem. The format for
+>>> these
+>>> +files is "dmesg-ramoops-N", where N is the record number in memory. To
+>>> delete
+>>> +a stored record from RAM, simply unlink the respective pstore file.
+>>
+>> I think the definition of "mem_address" in the doc is not very clear. It is
+>> not a normal memory instead of a persistent RAM. I suggest adding more
+>> descriptions.
+>> It's better if there is a real example.
+>
+> Okay. I'm not sure it's in the scope of this patch, but I can try.
+>
+> Marco, do you have suggestions for how this could be enhanced?
+>
 
-Yes, I agree, certainly that is what we were planning to target in the
-first instance. Doing this means that we can get away with minimal
-emulation of actual hardware, relying instead on PV drivers or hardware
-virtualisation features.
+I don't know actually. It's not mandatory use a persistent memory. A 
+simple piece of reserved RAM is ok. Obviously it will work only over 
+reboot and not over power down. I define mem_address as a generic piece 
+of reserved memory.
 
-Supporting specific board platforms as guests would be nice to have
-eventually. We would need to do more emulation (e.g. running qemu as a
-device model) for that case.
-
-> There is also ongoing restructuring in the ARM Linux kernel to
-> allow running the same kernel binary on multiple platforms. While
-> there is still a lot of work to be done, you should assume that
-> we will finish it before you see lots of users in production, there
-> is no need to plan for the current one-kernel-per-board case.
-
-We were absolutely banking on targeting the results of this work, so
-that's good ;-)
-
-Ian.
-
-
+Marco
