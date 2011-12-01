@@ -1,381 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1LAGdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:33:35 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63003 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab1LAGde (ORCPT
+	id S1751829Ab1LAGkC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:40:02 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:39727 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab1LAGkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:33:34 -0500
-Message-ID: <1322721200.3651.24.camel@lappy>
-Subject: Re: [PATCH 1/2] virtio-scsi: first version
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-scsi <linux-scsi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Date: Thu, 01 Dec 2011 08:33:20 +0200
-In-Reply-To: <1322661299-28855-2-git-send-email-pbonzini@redhat.com>
-References: <1322661299-28855-1-git-send-email-pbonzini@redhat.com>
-	 <1322661299-28855-2-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 1 Dec 2011 01:40:00 -0500
+Date: Wed, 30 Nov 2011 23:39:59 -0700 (MST)
+From: Paul Walmsley <paul@pwsan.com>
+To: "Turquette, Mike" <mturquette@ti.com>
+cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
+        tglx@linutronix.de, linus.walleij@stericsson.com,
+        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
+        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org
+Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
+In-Reply-To: <CAJOA=zM4vcyTt_RBEVm6JxmzW-Dna0gpuWda7ytq_mqFSuXw9g@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1111302308280.6289@utopia.booyaka.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1111291619110.6289@utopia.booyaka.com> <CAJOA=zM4vcyTt_RBEVm6JxmzW-Dna0gpuWda7ytq_mqFSuXw9g@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="155748971-487756526-1322721599=:6289"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 14:54 +0100, Paolo Bonzini wrote:
-> The virtio-scsi HBA is the basis of an alternative storage stack
-> for QEMU-based virtual machines (including KVM).  Compared to
-> virtio-blk it is more scalable, because it supports many LUNs
-> on a single PCI slot), more powerful (it more easily supports
-> passthrough of host devices to the guest) and more easily
-> extensible (new SCSI features implemented by QEMU should not
-> require updating the driver in the guest).
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  drivers/scsi/Kconfig       |    8 +
->  drivers/scsi/Makefile      |    1 +
->  drivers/scsi/virtio_scsi.c |  478 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/virtio_ids.h |    1 +
-  include/linux/virtio_scsi.h is missing here.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->  4 files changed, 488 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/scsi/virtio_scsi.c
-> 
-> diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
-> index 06ea3bc..3ab6ad7 100644
-> --- a/drivers/scsi/Kconfig
-> +++ b/drivers/scsi/Kconfig
-> @@ -1902,6 +1902,14 @@ config SCSI_BFA_FC
->  	  To compile this driver as a module, choose M here. The module will
->  	  be called bfa.
->  
-> +config SCSI_VIRTIO
-> +	tristate "virtio-scsi support (EXPERIMENTAL)"
-> +	depends on EXPERIMENTAL && VIRTIO
-> +	help
-> +          This is the virtual HBA driver for virtio.  It can be used with
-> +          QEMU based VMMs (like KVM or Xen).  Say Y or M.
+--155748971-487756526-1322721599=:6289
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-QEMU based? What about non-QEMU based? :)
+Hi Mike
 
-> +
-> +
->  endif # SCSI_LOWLEVEL
->  
->  source "drivers/scsi/pcmcia/Kconfig"
-> diff --git a/drivers/scsi/Makefile b/drivers/scsi/Makefile
-> index 2b88749..351b28b 100644
-> --- a/drivers/scsi/Makefile
-> +++ b/drivers/scsi/Makefile
-> @@ -141,6 +141,7 @@ obj-$(CONFIG_SCSI_CXGB4_ISCSI)	+= libiscsi.o libiscsi_tcp.o cxgbi/
->  obj-$(CONFIG_SCSI_BNX2_ISCSI)	+= libiscsi.o bnx2i/
->  obj-$(CONFIG_BE2ISCSI)		+= libiscsi.o be2iscsi/
->  obj-$(CONFIG_SCSI_PMCRAID)	+= pmcraid.o
-> +obj-$(CONFIG_SCSI_VIRTIO)	+= virtio_scsi.o
->  obj-$(CONFIG_VMWARE_PVSCSI)	+= vmw_pvscsi.o
->  
->  obj-$(CONFIG_ARM)		+= arm/
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> new file mode 100644
-> index 0000000..cf8732f
-> --- /dev/null
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -0,0 +1,478 @@
-> +/*
-> + * Virtio SCSI HBA driver
-> + *
-> + * Copyright IBM Corp. 2010
-> + * Copyright Red Hat, Inc. 2011
-> + *
-> + * Authors:
-> + *  Stefan Hajnoczi   <stefanha@linux.vnet.ibm.com>
-> + *  Paolo Bonzini   <pbonzini@redhat.com>
-> + *
-> + * This work is licensed under the terms of the GNU GPL, version 2 or later.
-> + * See the COPYING file in the top-level directory.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/virtio.h>
-> +#include <linux/virtio_ids.h>
-> +#include <linux/virtio_config.h>
-> +#include <linux/virtio_scsi.h>
-> +#include <scsi/scsi_host.h>
-> +#include <scsi/scsi_device.h>
-> +#include <scsi/scsi_cmnd.h>
-> +
-> +#define VIRTIO_SCSI_DEBUG 0
+a few brief comments.
 
-Maybe this should be a CONFIG_ instead which could be selected when
-building the kernel?
+On Wed, 30 Nov 2011, Turquette, Mike wrote:
 
-> +
-> +static void dbg(const char *fmt, ...)
-> +{
-> +	if (VIRTIO_SCSI_DEBUG) {
-> +		va_list args;
-> +
-> +		va_start(args, fmt);
-> +		vprintk(fmt, args);
-> +		va_end(args);
-> +	}
-> +}
+> Likewise when a clk is requested to transition to a new frequency it
+> will have to clear it with all of the clks below it, so there is still
+> a need to propagate a request throughout the clk tree whenever
+> clk_set_rate is called and take a decision.
+>=20
+> One way to solve this is for driver owners to sprinkle their code with
+> clk_block_rate_change and clk_allow_rate_change as you propose.
+> There is a problem with this method if it is not supplemented with=20
+> rate-change notifications that drivers are allowed to handle=20
+> asynchronously. =20
 
-Or possibly switch from dbg() here to dev_dbg() which would let you use
-standard kernel interfaces to enable/disable debugging.
+I don't think notifiers have a bearing on clk_get_rate().
 
-printk()s below should probably be dev_warn/dev_err() or sdev_*()
-variants.
+> In this case it would be nice to have asynchronous notifiers that can
+> interrupt the MMC driver with a pre-change notifier and say "please
+> finish your current transaction, stall your next transaction, and then
+> return so I can change your clk rate".  Then after the clk rate change
+> occurs a post-change notification would also go out to the MMC driver
+> saying "ok I'm done changing rates.  here is your new clk rate and
+> please continue working".  The notification is very polite.
 
-[snip]
+I haven't made any comments about clock notifiers yet, because my=20
+comments so far have only concerned clk_get_rate() and=20
+clk_get_parent().
 
-> +static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
-> +{
-> +	struct virtio_scsi *vscsi = shost_priv(sh);
-> +	struct virtio_scsi_cmd *cmd;
-> +	int ret;
-> +
-> +	dbg("%s %d:%d:%d:%d got cmd %p CDB: %#02x\n", __func__,
-> +		sc->device->host->host_no, sc->device->id,
-> +		sc->device->channel, sc->device->lun,
-> +		sc, sc->cmnd[0]);
-> +
-> +	ret = SCSI_MLQUEUE_HOST_BUSY;
-> +	cmd = kmem_cache_zalloc(virtscsi_cmd_cache, GFP_ATOMIC);
+Clock rate/parent-change notifiers are requirements for DVFS use-cases,=20
+and they must be paired with something like the=20
+clk_{allow,block}_rate_change() functions to work efficiently.  I intend=20
+to comment on this later; it's not a simple problem.  It might be worth=20
+noting that Tero and I implemented a simplified version of this for the=20
+N900.
 
-GFP_ATOMIC? Not GFP_KERNEL?
+> It is worth nothing that the MMC driver can return NOTIFY_STOP in it's
+> pre-change notification handler and this effectively does the same
+> thing as traversing the clk subtree and checking to make sure that
+> nobody is holding clk_block_rate_change against any of the children
+> clocks.
+>=20
+> The point of all of that text above is to say: if we have to walk the
+> whole clk subtree below the point where we want to change rates AND we
+> want to make a dynamic case-by-case call on whether to allow the rate
+> change to happen (as opposed to contending with the allow/block
+> semantics) then I think that only having notifications will suffice.
 
-> +	if (!cmd)
-> +		goto out;
-> +
-> +	cmd->sc = sc;
-> +	cmd->req.cmd = (struct virtio_scsi_cmd_req){
-> +		.lun[0] = 1,
-> +		.lun[1] = sc->device->id,
-> +		.lun[2] = (sc->device->lun >> 8) | 0x40,
-> +		.lun[3] = sc->device->lun & 0xff,
-> +		.tag = (__u64)sc,
-> +		.task_attr = VIRTIO_SCSI_S_SIMPLE,
-> +		.prio = 0,
-> +		.crn = 0,
-> +	};
-> +
-> +	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
-> +	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
-> +
-> +	if (virtscsi_kick_cmd(vscsi, vscsi->cmd_vq, cmd) >= 0)
-> +		ret = 0;
-> +
-> +out:
-> +	return ret;
-> +}
-> +
-> +static struct scsi_host_template virtscsi_host_template = {
-> +	.module = THIS_MODULE,
-> +	.name = "Virtio SCSI HBA",
-> +	.proc_name = "virtio_scsi",
-> +	.queuecommand = virtscsi_queuecommand,
-> +	.this_id = -1,
-> +
-> +	.can_queue = 1024,
-> +	.max_sectors = 0xFFFF,
-> +	.dma_boundary = UINT_MAX,
-> +	.use_clustering = ENABLE_CLUSTERING,
-> +	.cmd_per_lun = 1,
-> +};
-> +
-> +#define virtscsi_config_get(vdev, fld) \
-> +	({ \
-> +		typeof(((struct virtio_scsi_config *)0)->fld) __val; \
-> +		vdev->config->get(vdev, \
-> +				  offsetof(struct virtio_scsi_config, fld), \
-> +				  &__val, sizeof(__val)); \
-> +		__val; \
-> +	})
-> +
-> +#define virtscsi_config_set(vdev, fld, val) \
-> +	(void)({ \
-> +		typeof(((struct virtio_scsi_config *)0)->fld) __val = (val); \
-> +		vdev->config->set(vdev, \
-> +				  offsetof(struct virtio_scsi_config, fld), \
-> +				  &__val, sizeof(__val)); \
-> +	})
-> +
-> +static int __devinit virtscsi_init(struct virtio_device *vdev, struct virtio_scsi *vscsi)
-> +{
-> +	int err;
-> +	struct virtqueue *vqs[3];
-> +	vq_callback_t *callbacks[] = {
-> +		virtscsi_ctrl_done,
-> +		virtscsi_event_done,
-> +		virtscsi_cmd_done
-> +	};
+That would not be good.  A notifier implementation without something like=
+=20
+clk_{allow,block}_rate_change() is going to waste a lot of CPU time making=
+=20
+pointless calls into the notifier chains by whatever is attempting to do=20
+top-down DVFS.
 
-The spec is talking about multiple request vqs, while here they are
-limited to one. Is adding multiple request vqs really speeds things up?
-How was it tested without being supported by the driver?
+With clk_{allow,block}_rate_change(), only a single comparison is needed=20
+to determine whether or not the rate change can succeed.  A=20
+blocking clk_set_rate() variant could also be efficiently implemented with=
+=20
+that information, if so desired.
 
-> +	const char *names[] = {
-> +		"control",
-> +		"event",
-> +		"command"
+In general, a clock rate change notifier should almost never return=20
+NOTIFY_STOP.  That should only happen if some event occurred that took=20
+place after the notifier chain started.
 
-The spec calls them "control", "event" and "request". We should keep the
-same names as the spec here and in variable names used int the code
-('cmd_vq' should probably be 'req_vq' or something similar).
+> > 3. For the above changes to work, the clock framework will need to
+> > discriminate between different clock users' calls to clock functions li=
+ke
+> > clk_{get,set}_rate(), etc. =A0Luckily this should be possible within th=
+e
+> > current clock interface. =A0clk_get() can allocate and return a new str=
+uct
+> > clk that clk_put() can later free. =A0One useful side effect of doing t=
+his
+> > is that the clock framework could catch unbalanced clk_{enable,disable}=
+()
+> > calls.
+>=20
+> This is definitely worth thinking about.  Another way to accomplish
+> this is stop treating prepare_count and enable_count as scalars and
+> instead vectorize them by tracking a list of struct device *'s.
 
-> +	};
-> +
-> +	/* Discover virtqueues and write information to configuration.  */
-> +	err = vdev->config->find_vqs(vdev, 3, vqs, callbacks, names);
-> +	if (err)
-> +		return err;
-> +
-> +	vscsi->ctrl_vq = vqs[0];
-> +	vscsi->event_vq = vqs[1];
-> +	vscsi->cmd_vq = vqs[2];
-> +
-> +	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
-> +	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
-> +	return 0;
-> +}
-> +
-> +static int __devinit virtscsi_probe(struct virtio_device *vdev)
-> +{
-> +	struct Scsi_Host *shost;
-> +	struct virtio_scsi *vscsi;
-> +	int err;
-> +	u32 sg_elems;
-> +
-> +	/* We need to know how many segments before we allocate.
-> +         * We need an extra sg elements at head and tail.
-> +	 */
-> +	sg_elems = virtscsi_config_get(vdev, seg_max);
+To return to my original comments on clk_get_rate(): how would this allow=
+=20
+the clock framework to discriminate between callers of clk_get_rate()? =20
+(Or indeed any clock framework function?)  Or is your comment simply=20
+addressing the unbalanced clk_{enable,disable}() case?
 
-Maybe default to one if not specified (=0), like in virtio-blk.
+> > 4. clk_get_rate() must return an error when it's called in situations
+> > where the caller hasn't ensured that the clock's rate won't be changed =
+by
+> > other entities. =A0For non-fixed rate clocks, these forbidden sections =
+would
+> > include code between a clk_get() and a clk_enable(), or between a
+> > clk_disable() and a clk_put() or clk_enable(), or between a
+> > clk_allow_rate_changes() and clk_block_rate_changes(). =A0The first and
+> > second of those three cases will require some code auditing of
+> > clk_get_rate() users to ensure that they are only calling it after they=
+'ve
+> > enabled the clock. =A0And presumably most of them are not checking for
+> > error. =A0include/linux/clk.h doesn't define an error return value, so =
+this
+> > needs to be explicitly defined in clk.h.
+>=20
+> This adds a lot of burden to a driver that just wants to know a rate.
+> Especially if that purpose is for something as simple/transient as a
+> pr_debug message or something.
 
-> +
-> +	dbg(KERN_ALERT "virtio-scsi sg_elems %d", __func__, sg_elems);
-> +
-> +	/* Allocate memory and link the structs together.  */
-> +        shost = scsi_host_alloc(&virtscsi_host_template,
-> +		sizeof(*vscsi) + sizeof(vscsi->sg[0]) * (sg_elems + 2));
-> +
-> +	if (!shost)
-> +		return -ENOMEM;
-> +
-> +	shost->sg_tablesize = sg_elems;
-> +	vscsi = shost_priv(shost);
-> +	vscsi->vdev = vdev;
-> +	vdev->priv = shost;
-> +
-> +	/* Random initializations.  */
-> +	spin_lock_init(&vscsi->cmd_vq_lock);
-> +	sg_init_table(vscsi->sg, sg_elems + 2);
-> +
-> +	err = virtscsi_init(vdev, vscsi);
-> +	if (err)
-> +		goto virtio_init_failed;
-> +
-> +	shost->max_lun = virtscsi_config_get(vdev, max_lun) + 1;
-> +	shost->max_id = virtscsi_config_get(vdev, max_target) + 1;
-> +	shost->max_channel = 0;
-> +	shost->max_cmd_len = VIRTIO_SCSI_CDB_SIZE;
-> +	err = scsi_add_host(shost, &vdev->dev);
-> +	if (err)
-> +		goto scsi_add_host_failed;
-> +
-> +	scsi_scan_host(shost);
-> +
-> +	return 0;
-> +
-> +scsi_add_host_failed:
-> +	vdev->config->del_vqs(vdev);
-> +virtio_init_failed:
-> +	scsi_host_put(shost);
-> +	return err;
-> +}
-> +
-> +static void __devexit virtscsi_remove_vqs(struct virtio_device *vdev)
-> +{
-> +	/* Stop all the virtqueues. */
-> +	vdev->config->reset(vdev);
-> +
-> +	vdev->config->del_vqs(vdev);
-> +}
-> +
-> +static void __devexit virtscsi_remove(struct virtio_device *vdev)
-> +{
-> +	struct Scsi_Host *shost = virtio_scsi_host(vdev);
-> +
-> +	scsi_remove_host(shost);
-> +
-> +	virtscsi_remove_vqs(vdev);
-> +	scsi_host_put(shost);
-> +}
-> +
-> +static struct virtio_device_id id_table[] = {
-> +	{ VIRTIO_ID_SCSI, VIRTIO_DEV_ANY_ID },
-> +	{ 0 },
-> +};
-> +
-> +static struct virtio_driver virtio_scsi_driver = {
-> +	.driver.name = KBUILD_MODNAME,
-> +	.driver.owner = THIS_MODULE,
-> +	.id_table = id_table,
-> +	.probe = virtscsi_probe,
-> +	.remove = __devexit_p(virtscsi_remove),
-> +};
-> +
-> +static int __init init(void)
-> +{
-> +	virtscsi_cmd_cache = KMEM_CACHE(virtio_scsi_cmd, 0);
+Could you clarify what burden are you referring to?
 
-Shouldn't these kmemcaches be per-device and not globally shared between
-all devices?
+The above protocol requires few (if any) changes to existing clock=20
+framework users.  So for example, the following code:
 
-> +	if (!virtscsi_cmd_cache) {
-> +		printk(KERN_ERR "kmem_cache_create() for "
-> +				"virtscsi_cmd_cache failed\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	return register_virtio_driver(&virtio_scsi_driver);
-> +}
-> +
-> +static void __exit fini(void)
-> +{
-> +	unregister_virtio_driver(&virtio_scsi_driver);
-> +	kmem_cache_destroy(virtscsi_cmd_cache);
-> +}
-> +module_init(init);
-> +module_exit(fini);
-> +
-> +MODULE_DEVICE_TABLE(virtio, id_table);
-> +MODULE_DESCRIPTION("Virtio SCSI HBA driver");
-> +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/virtio_ids.h b/include/linux/virtio_ids.h
-> index 85bb0bb..fee54c4 100644
-> --- a/include/linux/virtio_ids.h
-> +++ b/include/linux/virtio_ids.h
-> @@ -34,6 +34,7 @@
->  #define VIRTIO_ID_CONSOLE	3 /* virtio console */
->  #define VIRTIO_ID_RNG		4 /* virtio ring */
->  #define VIRTIO_ID_BALLOON	5 /* virtio balloon */
-> +#define VIRTIO_ID_SCSI		7 /* virtio scsi */
->  #define VIRTIO_ID_9P		9 /* 9p virtio console */
->  
->  #endif /* _LINUX_VIRTIO_IDS_H */
+c =3D clk_get(dev, clk_name);
+clk_enable(c);
+rate =3D clk_get_rate(c);
 
--- 
+would still continue to work, since the rate would be guaranteed not to=20
+change after the clk_enable().  However, the (unsafe):
 
-Sasha.
+c =3D clk_get(dev, clk_name);
+rate =3D clk_get_rate(c);
 
+would need to be modified to become safe, by adding a=20
+clk_block_rate_change() before the clk_get_rate().
+
+
+- Paul
+--155748971-487756526-1322721599=:6289--
