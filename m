@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab1LAPoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:44:08 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37424 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752804Ab1LAPoG (ORCPT
+	id S1755256Ab1LAPpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:45:10 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43652 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab1LAPpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:44:06 -0500
-Date: Thu, 1 Dec 2011 07:43:57 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in
- /proc/<pid>/status
-Message-ID: <20111201154357.GA12668@google.com>
-References: <20111129191252.769160532@openvz.org>
- <20111129191638.835932727@openvz.org>
- <20111130140009.1ccd5af0.kamezawa.hiroyu@jp.fujitsu.com>
- <20111130060537.GK1775@moon>
- <20111201095434.GR14515@moon>
+	Thu, 1 Dec 2011 10:45:08 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM / Hibernate: Enable usermodehelpers in software_resume()
+ error path
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, len.brown@intel.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Thu, 01 Dec 2011 21:15:00 +0530
+Message-ID: <20111201154453.25828.85233.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201095434.GR14515@moon>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120115-8878-0000-0000-0000006EDFCD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Cyrill.
+In the software_resume() function defined in kernel/power/hibernate.c,
+if the call to create_basic_memory_bitmaps() fails, the usermodehelpers
+are not enabled (which had been disabled in the previous step). Fix it.
 
-On Thu, Dec 01, 2011 at 01:54:34PM +0400, Cyrill Gorcunov wrote:
-> Index: linux-2.6.git/fs/proc/array.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/proc/array.c
-> +++ linux-2.6.git/fs/proc/array.c
-> @@ -547,3 +547,17 @@ int proc_pid_statm(struct seq_file *m, s
->  
->  	return 0;
->  }
-> +
-> +int proc_pid_children(struct seq_file *m, struct pid_namespace *ns,
-> +		      struct pid *pid, struct task_struct *task)
-> +{
-> +	struct task_struct *c;
-> +
-> +	read_lock(&tasklist_lock);
-> +	list_for_each_entry(c, &task->children, sibling)
-> +		seq_printf(m, " %d", pid_nr_ns(task_pid(c), ns));
-> +	read_unlock(&tasklist_lock);
-> +	seq_putc(m, '\n');
-> +
-> +	return 0;
-> +}
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-I don't think using non-seekable single seqfile is a good idea here.
-It works if the whole list fits in PAGE_SIZE but assuming five digit
-pid, that's only ~680 pids.
+ kernel/power/hibernate.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Thanks.
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index a6b0503..df35313 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -811,8 +811,10 @@ static int software_resume(void)
+ 		goto close_finish;
+ 
+ 	error = create_basic_memory_bitmaps();
+-	if (error)
++	if (error) {
++		usermodehelper_enable();
+ 		goto close_finish;
++	}
+ 
+ 	pr_debug("PM: Preparing processes for restore.\n");
+ 	error = prepare_processes();
 
--- 
-tejun
