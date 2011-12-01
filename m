@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276Ab1LAJOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:14:48 -0500
-Received: from ackle.nomi.cz ([81.31.33.35]:43723 "EHLO ackle.nomi.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064Ab1LAJOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 04:14:45 -0500
-Date: Thu, 1 Dec 2011 10:14:41 +0100
-From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Wilcox <matthew@wil.cx>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: DMAR:[fault reason 02] Present bit in context entry is clear
-	(firewire-ohci)
-Message-ID: <20111201091441.GA32731@nomi.cz>
-References: <4BF7B147.9020502@s5r6.in-berlin.de> <20100522121212.GQ10452@parisc-linux.org> <1274553643.11551.17300.camel@macbook.infradead.org> <20100522120905.154ff932@jbarnes-x201> <20111119172127.GA31915@nomi.cz> <4ED656F6.4080709@ladisch.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4ED656F6.4080709@ladisch.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752436Ab1LAJUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:20:40 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46218 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab1LAJUi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 04:20:38 -0500
+From: Xi Wang <xi.wang@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH] mm: incorrect overflow check in shrink_slab()
+Date: Thu, 1 Dec 2011 04:20:34 -0500
+Message-Id: <0D9D9F79-204D-4460-8CE7-A583C5C38A1E@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <jweiner@redhat.com>
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+total_scan is unsigned long, so the overflow check (total_scan < 0)
+didn't work.
 
-On Wed, Nov 30, 2011 at 05:16:54PM +0100, Clemens Ladisch wrote:
-> Try the patch in <https://bugzilla.redhat.com/show_bug.cgi?id=605888>
-> that is intended to work around the bug in your Ricoh chip.  Alternatively,
-> disable VT-d or FireWire in the BIOS, or add the kernel parameter
-> "intel_iommu=off".
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+---
+ mm/vmscan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yeah, I guess that would work, I was just concerned with a fix not being in
-the mainline. Surely we don't expect every ThinkPad user who wants to use
-firewire and VT-d to apply the patch himself (the Fedora fix was to forcefully
-disable IOMMU in presence of that Ricoh device). :-)
-
-Regards,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a1893c0..46a04e7 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -270,7 +270,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+ 		delta *= max_pass;
+ 		do_div(delta, lru_pages + 1);
+ 		total_scan += delta;
+-		if (total_scan < 0) {
++		if ((long)total_scan < 0) {
+ 			printk(KERN_ERR "shrink_slab: %pF negative objects to "
+ 			       "delete nr=%ld\n",
+ 			       shrinker->shrink, total_scan);
 -- 
-Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
+1.7.5.4
+
+
