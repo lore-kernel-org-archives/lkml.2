@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab1LAPan (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:30:43 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43334 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755124Ab1LAPam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:30:42 -0500
-Subject: Re: [PATCH v4 0/6] ata port runtime power management support
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
-In-Reply-To: <CAF1ivSa8d-VNbOmO9UyG-J3TKDmfuuX9pWEtT_7a7OcCC-0Uow@mail.gmail.com>
-References: <1322442950-16268-1-git-send-email-ming.m.lin@intel.com>
-	 <CAF1ivSa8d-VNbOmO9UyG-J3TKDmfuuX9pWEtT_7a7OcCC-0Uow@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Dec 2011 09:30:39 -0600
-Message-ID: <1322753439.6920.21.camel@dabdike>
+	id S1755148Ab1LAPdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:33:17 -0500
+Received: from sh.osrg.net ([192.16.179.4]:59469 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755036Ab1LAPdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 10:33:16 -0500
+Date: Fri, 02 Dec 2011 00:33:12 +0900 (JST)
+Message-Id: <20111202.003312.179955221.ryusuke@osrg.net>
+To: haogangchen@gmail.com
+Cc: linux-nilfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] FS: nilfs2: potential integer overflow in
+ nilfs_ioctl_clean_segments()
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <1322708399-26919-1-git-send-email-haogangchen@gmail.com>
+References: <1322708399-26919-1-git-send-email-haogangchen@gmail.com>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 02 Dec 2011 00:33:12 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 22:09 +0800, Lin Ming wrote:
-> On Mon, Nov 28, 2011 at 9:15 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> > Hi all,
-> >
-> > This is the v4 patches to add ata port runtime pm support.
-> > Applied on top of v3.2-rc2.
-> >
-> > Jeff, any comment on the ata patches?
-> > James, any comment on the scsi patches?
+On Wed, 30 Nov 2011 21:59:59 -0500, Haogang Chen wrote:
+> There is a potential integer overflow in nilfs_ioctl_clean_segments().
+> When a large argv[n].v_nmembs is passed from the userspace, the
+> subsequent call to vmalloc() will allocate a buffer smaller than
+> expected, which leads to out-of-bound access in
+> nilfs_ioctl_move_blocks() and lfs_clean_segments().
 > 
-> Ping ...
+> The following check does not prevent the overflow because nsegs is also
+> controlled by the userspace and could be very large.
 > 
-> Which git tree should these patches go into? ATA or SCSI?
+> 		if (argv[n].v_nmembs > nsegs * nilfs->ns_blocks_per_segment)
+> 			goto out_free;
+> 
+> This patch clamps argv[n].v_nmembs to UINT_MAX / argv[n].v_size, and
+> returns -EINVAL when overflow.
+> 
+> Signed-off-by: Haogang Chen <haogangchen@gmail.com>
 
->  drivers/ata/libata-core.c      |  154 ++++++++++++++++++++++------------------
->  drivers/ata/libata-scsi.c      |    3 +-
->  drivers/ata/libata-transport.c |    5 ++
->  drivers/ata/libata.h           |    1 +
->  drivers/scsi/scsi_error.c      |    5 +-
->  drivers/scsi/scsi_pm.c         |   16 ++++-
->  drivers/scsi/sd.c              |    5 ++
->  include/scsi/scsi_host.h       |    3 +
->  8 files changed, 118 insertions(+), 74 deletions(-)
+Ahh, that makes sense.
 
-I think the line count implies ATA since it's the most changed.
+I will apply your patch.
 
-For the SCSI piece, the acks should come from Alan Stern, since real
-SCSI doesn't use suspend/resume and the hooks were put in for the
-benefit of USB storage.
+Thanks,
+Ryusuke Konishi
 
-James
-
-
+> ---
+>  fs/nilfs2/ioctl.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
+> index 41d6743..b805df9 100644
+> --- a/fs/nilfs2/ioctl.c
+> +++ b/fs/nilfs2/ioctl.c
+> @@ -625,6 +625,9 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
+>  		if (argv[n].v_nmembs > nsegs * nilfs->ns_blocks_per_segment)
+>  			goto out_free;
+>  
+> +		if (argv[n].v_nmembs >= UINT_MAX / argv[n].v_size)
+> +			goto out_free;
+> +
+>  		len = argv[n].v_size * argv[n].v_nmembs;
+>  		base = (void __user *)(unsigned long)argv[n].v_base;
+>  		if (len == 0) {
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nilfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
