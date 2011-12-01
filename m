@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab1LAR73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 12:59:29 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:33031
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755787Ab1LAR73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 12:59:29 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH 1/1] drivers: hv: Don't OOPS when you cannot init vmbus
-Date: Thu,  1 Dec 2011 09:59:34 -0800
-Message-Id: <1322762374-14161-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756023Ab1LASLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:11:07 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40839 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab1LASLG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 13:11:06 -0500
+MIME-Version: 1.0
+Reply-To: eranian@gmail.com
+In-Reply-To: <alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1111300011260.7107@cl320.eecs.utk.edu>
+	<1322654092.2921.256.camel@twins>
+	<CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com>
+	<alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
+Date: Thu, 1 Dec 2011 10:11:05 -0800
+Message-ID: <CAMsRxfJmXXxDrofY3PDOLWRC7E-o6mANiTSJwYbyMTgOT_J0UA@mail.gmail.com>
+Subject: Re: perf_event self-monitoring overhead regression
+From: stephane eranian <eranian@googlemail.com>
+To: Vince Weaver <vweaver1@eecs.utk.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hv vmbus driver was causing an OOPS since it was trying to register drivers
-on top of the bus even if initialization of the bus has failed for some
-reason (such as the odd chance someone would run a hv enabled kernel in a
-non-hv environment).
+Vince,
+
+I take it your test is all about self-monitoring, single event, single thread.
+Did you try breaking down the cost using  TSC and rdtsc() to pinpoint where the
+regression is coming from in the 3 perf_event syscalls you're using?
 
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/hv/vmbus_drv.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 0c048dd..d3b0b4f 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -62,6 +62,14 @@ struct hv_device_info {
- 	struct hv_dev_port_info outbound;
- };
- 
-+static int vmbus_exists(void)
-+{
-+	if (hv_acpi_dev == NULL)
-+		return -ENODEV;
-+
-+	return 0;
-+}
-+
- 
- static void get_channel_info(struct hv_device *device,
- 			     struct hv_device_info *info)
-@@ -590,6 +598,10 @@ int __vmbus_driver_register(struct hv_driver *hv_driver, struct module *owner, c
- 
- 	pr_info("registering driver %s\n", hv_driver->name);
- 
-+	ret = vmbus_exists();
-+	if (ret < 0)
-+		return ret;
-+
- 	hv_driver->driver.name = hv_driver->name;
- 	hv_driver->driver.owner = owner;
- 	hv_driver->driver.mod_name = mod_name;
-@@ -614,6 +626,9 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver)
- {
- 	pr_info("unregistering driver %s\n", hv_driver->name);
- 
-+	if (!vmbus_exists())
-+		return;
-+
- 	driver_unregister(&hv_driver->driver);
- 
- }
-@@ -776,6 +791,7 @@ static int __init hv_acpi_init(void)
- 
- cleanup:
- 	acpi_bus_unregister_driver(&vmbus_acpi_driver);
-+	hv_acpi_dev = NULL;
- 	return ret;
- }
- 
--- 
-1.7.4.1
-
+On Thu, Dec 1, 2011 at 5:59 AM, Vince Weaver <vweaver1@eecs.utk.edu> wrote:
+> On Wed, 30 Nov 2011, Linus Torvalds wrote:
+>
+>> On Wed, Nov 30, 2011 at 3:54 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>>
+>> So bisect works really well for clear bugs that are 100% repeatable
+>> and have a very clear "did it happen or not" signature, but I'd be
+>> very leery indeed of using it with some performance anomaly.
+>
+> In this case, the bisection case is pretty clean.  I run 1000 of the tests
+> and check the median value, and the values are always 7280us for good and
+> 7440us for bad.
+>
+> The problem is when it starts bisecting into the merges it drops from a
+> post-3.0 kernel into a much earlier 3.0-rc kernel (due to the ARM merge
+> history) and suddenly then the test becomes meaningless as it starts
+> returning other values such as 6880us.  This is because the problem I am
+> tracking has ben gradually getting worse over time, and so I guess by
+> going back to a 3.0-rc it gets earlier than some other change that made
+> performance worse, and thus it becomes impossible to know if a commit is
+> good or not.
+>
+>> That said, maybe you can get the timings to be unambiguous enough by
+>> using 'rdtsc' in user space, and try the bisect again.
+>
+> I'll try but I'm guessing your first thought that this might be
+> un-bisectabe is probably true.
+>
+> Thanks,
+>
+> Vince
+>
