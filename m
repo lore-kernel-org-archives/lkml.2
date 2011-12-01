@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab1LAH3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 02:29:52 -0500
-Received: from smtp1.onthe.net.au ([203.22.196.249]:34412 "EHLO
-	smtp1.onthe.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab1LAH3u (ORCPT
+	id S1754298Ab1LAHaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 02:30:10 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:16996 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253Ab1LAHaH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 02:29:50 -0500
-Date: Thu, 1 Dec 2011 18:29:47 +1100
-From: Chris Dunlop <chris@onthe.net.au>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        Jan Harkes <jaharkes@cs.cmu.edu>,
-        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        Petr Vandrovec <petr@vandrovec.name>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
-        codalist@TELEMANN.coda.cs.cmu.edu,
-        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
-Message-ID: <20111201072947.GA10329@onthe.net.au>
-References: <20111130071319.GA16711@onthe.net.au>
- <1321861008-20611-1-git-send-email-chris@onthe.net.au>
- <20111129082501.GA569@onthe.net.au>
- <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC20@SACMVEXC2-PRD.hq.netapp.com>
- <24960.1322643283@redhat.com>
- <20111201004709.GA26085@onthe.net.au>
- <20111201063157.GA495@boyd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201063157.GA495@boyd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 1 Dec 2011 02:30:07 -0500
+X-AuditID: cbfee61b-b7bdbae000001970-03-4ed72ceafaf1
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Dmitry Artamonow'" <mad_soft@inbox.ru>
+Cc: "'Wim Van Sebroeck'" <wim@iguana.be>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "'Ben Dooks'" <ben-linux@fluff.org>, linux-watchdog@vger.kernel.org
+References: <1321433173-17757-1-git-send-email-mad_soft@inbox.ru>
+ <CAJuYYwTv3d9Wg8TDBEkc0r3BweUiLdqVwGdMU4iKpK0B+EM=GA@mail.gmail.com>
+In-reply-to: <CAJuYYwTv3d9Wg8TDBEkc0r3BweUiLdqVwGdMU4iKpK0B+EM=GA@mail.gmail.com>
+Subject: RE: [PATCH] watchdog: fix initialisation printout in s3c2410_wdt
+Date: Thu, 01 Dec 2011 16:29:46 +0900
+Message-id: <045d01ccaffb$00710240$015306c0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcykSz7MMhgHZ1/9QJewnUU10yi8pQLqi/HA
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 12:31:58AM -0600, Tyler Hicks wrote:
-> On 2011-12-01 11:47:09, Chris Dunlop wrote:
->> On Wed, Nov 30, 2011 at 08:54:43AM +0000, David Howells wrote:
->>> Chris Dunlop <chris@onthe.net.au> wrote:
->>> 
->>>> To avoid other people further wasting their and your time on
->>>> exactly the same thing future, how something like the following
->>>> patch, based on your comment in:
->>>> 
->>>> http://article.gmane.org/gmane.linux.nfs/40370
->>>> 
->>>> ...and, if that's acceptable, is it worthwhile doing for the
->>>> other file systems which are likewise currently vulnerable when
->>>> abused by broken layered file systems?
->>> 
->>> Also, this may get fixed by Al's atomic open patches - but obviously it hasn't
->>> been yet...
->>> 
->>>> Don't oops when abused by broken layered file systems
->>>> 
->>>> Signed-off-by: Chris Dunlop <chris@onthe.net.au>
->>> 
->>> Acked-by: David Howells <dhowells@redhat.com>
->>> 
->>> It's also worth printing a message - this *is* a kernel bug of some description
->>> if it happens.
->> 
->> Like the below?  This covers the d_revalidate for 9p, afs, coda,
->> hfs, ncpfs, proc, sysfs.
+Thomas Abraham wrote:
 > 
-> I don't like the looks of this patch. It makes sense for NFS to error
-> out of d_revalidate() when passed a NULL nameidata pointer because NFS
-> actually uses the nameidata to do something useful. That can't be said
-> about the other filesystems in this patch.
-
-I can see nd is used in nfs_open_revalidate(), but is it
-necessarily used in nfs_lookup_revalidate()?  I'm way out of my
-depth here, but everywhere it's used in nfs_lookup_revalidate()
-(nfs_neg_need_reval(), nfs_is_exclusive_create(),
-nfs_lookup_verify_inode()) there are also checks for nd != NULL.
-
-> Why not handle the other filesystems like the previous fixes you
-> referenced in your original email by checking for a non-NULL nd like
-> this:
+> On 16 November 2011 14:16, Dmitry Artamonow <mad_soft@inbox.ru> wrote:
+> > Looks like a typo creeped in, and driver prints
+> > s3c2410-wdt s3c2410-wdt: watchdog active, reset abled, irq abled
+> >
+> > instead of
+> > s3c2410-wdt s3c2410-wdt: watchdog active, reset enabled, irq enabled
+> >
+> > Also it may completely disinform about irq status, as it prints
+> > "irq enabled" when S3C2410_WTCON_INTEN is in fact 0.
+> >
+> > Fix it.
+> >
+> > Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+> > ---
+> >
+> > It seems to be here for a long time, but I don't think it's
+> > important enough for cc-ing stable.
+> >
+> > Also I haven't tested it, as I don't have a hardware, but it's
+> > rather trivial (and yes, I checked with datasheet that 1 in
+> > S3C2410_WTCON_*EN bits really means 'enabled')
+> >
 > 
-> 	if (nd && nd->flags & LOOKUP_RCU)
-> 		return -ECHILD;
+> Tested on Exynos4210 based Origen board. This patch fixed in incorrect
+> "irq enabled" message at bootup. Thanks for this fix.
+> 
+> Tested-by: Thomas Abraham <thomas.abraham@linaro.org>
+> 
 
-'Cos Trond scared me into it!  ;-)
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-But mostly because I don't really know what I'm doing. The
-original patch came about because I was tracking down the Oops
-in the NFS code and it seemed such an obvious fix that
-lookup_one_len() passes down a hard-coded NULL and that NULL
-isn't checked in all the d_revalidate routines. I thought I'd do
-the right thing and make sure it was checked everywhere. Little
-did I know there's "history" behind it! I'm afraid I don't know
-anywhere near enough to argue about the right way to deal with it.
+Hi Wim,
+Please pick this up in your tree and if any problem, let me know.
 
-> I'm also not sure about the printk in the NFS case. Instead of littering
-> the logs, we should probably just disallow the stacked filesystem (are
-> we talking about eCryptfs here?) from mounting on top of NFS in the
-> first place.
+Thanks.
 
-See other reply: it wasn't a stacked file system.
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-But it seems useful to have the d_revalidate routines indicate
-via the log that they're being abused.
 
-Chris
+> >  drivers/watchdog/s3c2410_wdt.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/watchdog/s3c2410_wdt.c
+> b/drivers/watchdog/s3c2410_wdt.c
+> > index 5de7e4f..a79e384 100644
+> > --- a/drivers/watchdog/s3c2410_wdt.c
+> > +++ b/drivers/watchdog/s3c2410_wdt.c
+> > @@ -401,8 +401,8 @@ static int __devinit s3c2410wdt_probe(struct
+> platform_device *pdev)
+> >
+> >        dev_info(dev, "watchdog %sactive, reset %sabled, irq %sabled\n",
+> >                 (wtcon & S3C2410_WTCON_ENABLE) ?  "" : "in",
+> > -                (wtcon & S3C2410_WTCON_RSTEN) ? "" : "dis",
+> > -                (wtcon & S3C2410_WTCON_INTEN) ? "" : "en");
+> > +                (wtcon & S3C2410_WTCON_RSTEN) ? "en" : "dis",
+> > +                (wtcon & S3C2410_WTCON_INTEN) ? "en" : "dis");
+> >
+> >        return 0;
+> >
+> > --
+> > 1.7.5.1.300.gc565c
+
