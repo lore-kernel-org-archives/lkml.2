@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab1LAJzF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:55:05 -0500
-Received: from host86-160-104-251.range86-160.btcentralplus.com ([86.160.104.251]:38318
-	"EHLO oak.selfip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab1LAJzE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 04:55:04 -0500
-X-Greylist: delayed 852 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Dec 2011 04:55:04 EST
-Message-ID: <4ED74B9D.7070502@oak.selfip.net>
-Date: Thu, 01 Dec 2011 09:40:45 +0000
-From: Dave Haywood <tla@oak.selfip.net>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111123 Thunderbird/9.0
+	id S1752801Ab1LAJzY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:55:24 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:39907 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751718Ab1LAJzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 04:55:21 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 2a/5] Remove unsafe clock values from omap1_defconfig
+Date: Thu, 1 Dec 2011 10:54:09 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
+Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <20111128174508.GO31337@atomide.com> <201112010310.43890.jkrzyszt@tis.icnet.pl> <20111201022750.GY13928@atomide.com>
+In-Reply-To: <20111201022750.GY13928@atomide.com>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Build warnings - v3.2-rc3-187-g11d814a
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201112011054.09878.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I've unintentionally answered off-line, sorry, re-adding all Cc:'s.
 
-  Noticed the build warnings below from v3.2-rc3-187-g11d814a.
+On Thursday 01 of December 2011 at 03:27:51, Tony Lindgren wrote:
+> * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111130 17:40]:
+> > On Wednesday 30 of November 2011 at 23:32:42, Tony Lindgren wrote:
+> > >  
+> > > Can you please split your series into two: Fix(es) for the -rc cycle,
+> > > then patches that can be left for the next merge window.
+> > 
+> > From my point of view, all 5 are important fixes. Please decide 
+> > yourself, having the following information provided:
+> > 
+> > 1/5: inspired by in-line comments about running from sram requirement
+> > 	(works without this one for me),
+> > 
+> > 2/5: without this one, system clock runs way too fast if dpll1 is 
+> > 	reprogrammed to default rate,
+> > 
+> > 3/5: without this one, all boards with bootloaders not setting rate 
+> > 	correctly, like Amstrad Delta, will run at default rate, despite 
+> > 	any .config selections, no matter if omap1_defconfig or custom,
+> > 
+> > 2a/5: required by 3/5,
+> > 
+> > 5/5: without this one, BogoMIPS is not updated after dpll1 reprogramme, 
+> > 	breaking omap_keypad at least.
+> > 
+> > and please let me know which I should resend as fixes and which not.
+> 
+> How about 2 and 5 as fixes during the -rc, then the rest for the
+> merge window? That is assuming that those are enough for you to have
+> things mostly working.
 
-$ gcc --version
-gcc (Gentoo Hardened 4.6.2 p1.0, pie-0.4.5) 4.6.2
+If you still ask me for my opinion: with patch 3/5 omitted, then not 
+being able to run at any other frequency than 60 MHz instead of usual 
+150 since the board support was introduced first, isn't this a 
+regression? Having a choice of upgrading to 3.2 and running my 
+application on not very powerfull board at 60 MHz, or keep running 3.1 
+at 150, guess what I chose? If I were a distro kernel package 
+maintainer, guess what I would chose?
 
-$ uname -a
-Linux s1 3.2.0-rc3 #97 SMP Fri Nov 25 10:17:10 GMT 2011 i686 Pentium III (Coppermine) GenuineIntel GNU/Linux
+> It seems that we've had the issue of not actually changing the rate
+> for a while, right?
 
-...
-  CC      fs/binfmt_misc.o
-In file included from ~/git/linux/arch/x86/include/asm/uaccess.h:573:0,
-                 from include/linux/uaccess.h:5,
-                 from include/linux/highmem.h:7,
-                 from include/linux/pagemap.h:10,
-                 from fs/binfmt_misc.c:26:
-~/git/linux/arch/x86/include/asm/uaccess_32.h: In function 'parse_command.part.2':
-~/git/linux/arch/x86/include/asm/uaccess_32.h:211:26: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
-...
-  CC      drivers/md/dm-table.o
-drivers/md/dm-table.c: In function 'dm_table_set_integrity':
-drivers/md/dm-table.c:1285:3: warning: statement with no effect [-Wunused-value]
-...
-  CC      drivers/usb/host/ohci-hcd.o
-In file included from drivers/usb/host/ohci-hcd.c:101:0:
-drivers/usb/host/ohci-dbg.c: In function 'fill_registers_buffer':
-drivers/usb/host/ohci-dbg.c:642:2: warning: the comparison will always evaluate as 'true' for the address of 'next' will never be NULL [-Waddress]
-drivers/usb/host/ohci-dbg.c:661:3: warning: the comparison will always evaluate as 'true' for the address of 'next' will never be NULL [-Waddress]
-...
-  HOSTCC  arch/x86/boot/compressed/relocs
-arch/x86/boot/compressed/relocs.c: In function 'print_absolute_symbols':
-arch/x86/boot/compressed/relocs.c:405:14: warning: variable 'sh_symtab' set but not used [-Wunused-but-set-variable]
-arch/x86/boot/compressed/relocs.c: In function 'emit_relocs':
-arch/x86/boot/compressed/relocs.c:605:9: warning: ignoring return value of 'fwrite', declared with attribute warn_unused_result [-Wunused-result]
-arch/x86/boot/compressed/relocs.c:612:10: warning: ignoring return value of 'fwrite', declared with attribute warn_unused_result [-Wunused-result]
+This was not an issue before dpll1 reprogramming has been moved out from 
+omap1_clk_init(), as an rc fix to another bug introduced in 3.2. Perhaps 
+we should rather think of reverting a few commits which caused all these 
+problems if fixing them all during rc cycle seems not possible? I 
+haven't bisected them yet, rather concentrated on providing fixes, but I 
+can still try to do it, starting back from the original issue 
+(http://www.spinics.net/lists/linux-omap/msg60052.html), if so decided.
 
-  Regards,
+> If that's the case, I'd rather not start messing
+> with that during the -rc cycle.
+> 
+> Regards,
+> 
+> Tony
 
-Dave.
+I don't feel like a person who makes the final decision.
 
+Anyway, did you mean resending those 2/5 and 5/5 without any changes, 
+only renumbered as 1/2 and 2/2?
 
+Thanks,
+Janusz
