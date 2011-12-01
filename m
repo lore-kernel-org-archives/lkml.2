@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab1LABzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 20:55:09 -0500
-Received: from cluster-d.mailcontrol.com ([85.115.60.190]:43179 "EHLO
-	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab1LABzH (ORCPT
+	id S1753915Ab1LABzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 20:55:19 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62342 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab1LABzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 20:55:07 -0500
-From: Barry Song <Barry.Song@csr.com>
-To: Richard Purdie <rpurdie@rpsys.net>, Eric Miao <eric.y.miao@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <workgroup.linux@csr.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Xiangzhen Ye <Xiangzhen.Ye@csr.com>, Barry Song <Baohua.Song@csr.com>
-Subject: [PATCH] backlight: pwm_bl: move suspend/resume entries from platform_driver to driver.pm
-Date: Thu, 1 Dec 2011 09:53:47 +0800
-Message-ID: <1322704427-11876-1-git-send-email-Barry.Song@csr.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.125.36.58]
+	Wed, 30 Nov 2011 20:55:14 -0500
+Message-ID: <1322704507.11560.8.camel@phoenix>
+Subject: [PATCH 4/4] mfd: twl6040-core: Use gpio_request_one
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Misael Lopez Cruz <misael.lopez@ti.com>,
+        Jorge Eduardo Candelaria <jorge.candelaria@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Thu, 01 Dec 2011 09:55:07 +0800
+In-Reply-To: <1322704074.11560.3.camel@phoenix>
+References: <1322704074.11560.3.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiangzhen Ye <Xiangzhen.Ye@csr.com>
+Use gpio_request_one() instead of multiple gpiolib calls.
 
-At first, people are moving suspend/resume entries from platform_driver
-to driver.pm for many drivers.
-On the other hand, if we use swsusp to do hibernation for an embedded
-system using pwm_bl, in the process of preparing snapshot, backlight
-will be off and make lcd black screen. This gives bad user experiences.
-This patch will fix this issue as swsusp will go to call pm.freeze()
-but not platform_driver.suspend. we have no pm.freeze() for pwm_bl, so
-the lcd black screen will disappear.
-
-Signed-off-by: Xiangzhen Ye <Xiangzhen.Ye@csr.com>
-Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/video/backlight/pwm_bl.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+ drivers/mfd/twl6040-core.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
-index 8b5b2a4..50f3134 100644
---- a/drivers/video/backlight/pwm_bl.c
-+++ b/drivers/video/backlight/pwm_bl.c
-@@ -169,9 +169,9 @@ static int pwm_backlight_remove(struct platform_device *pdev)
- }
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+index 268f80f..e57b1d1 100644
+--- a/drivers/mfd/twl6040-core.c
++++ b/drivers/mfd/twl6040-core.c
+@@ -509,13 +509,10 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+ 		twl6040->audpwron = -EINVAL;
  
- #ifdef CONFIG_PM
--static int pwm_backlight_suspend(struct platform_device *pdev,
--				 pm_message_t state)
-+static int pwm_backlight_suspend(struct device *dev)
- {
-+	struct platform_device *pdev = to_platform_device(dev);
- 	struct backlight_device *bl = platform_get_drvdata(pdev);
- 	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
+ 	if (gpio_is_valid(twl6040->audpwron)) {
+-		ret = gpio_request(twl6040->audpwron, "audpwron");
++		ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
++				       "audpwron");
+ 		if (ret)
+ 			goto gpio1_err;
+-
+-		ret = gpio_direction_output(twl6040->audpwron, 0);
+-		if (ret)
+-			goto gpio2_err;
+ 	}
  
-@@ -184,8 +184,9 @@ static int pwm_backlight_suspend(struct platform_device *pdev,
- 	return 0;
- }
- 
--static int pwm_backlight_resume(struct platform_device *pdev)
-+static int pwm_backlight_resume(struct device *dev)
- {
-+	struct platform_device *pdev = to_platform_device(dev);
- 	struct backlight_device *bl = platform_get_drvdata(pdev);
- 
- 	backlight_update_status(bl);
-@@ -196,15 +197,19 @@ static int pwm_backlight_resume(struct platform_device *pdev)
- #define pwm_backlight_resume	NULL
- #endif
- 
-+static const struct dev_pm_ops pwm_backlight_pm_ops = {
-+	.suspend = pwm_backlight_suspend,
-+	.resume = pwm_backlight_resume,
-+};
-+
- static struct platform_driver pwm_backlight_driver = {
- 	.driver		= {
- 		.name	= "pwm-backlight",
- 		.owner	= THIS_MODULE,
-+		.pm	= &pwm_backlight_pm_ops,
- 	},
- 	.probe		= pwm_backlight_probe,
- 	.remove		= pwm_backlight_remove,
--	.suspend	= pwm_backlight_suspend,
--	.resume		= pwm_backlight_resume,
- };
- 
- static int __init pwm_backlight_init(void)
+ 	/* codec interrupt */
 -- 
-1.7.1
+1.7.5.4
 
 
 
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
