@@ -1,92 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1LARSE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 12:18:04 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58712 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479Ab1LARSB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 12:18:01 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18b3/GeQkee0DPHb93Qg9ac
-Date: Thu, 1 Dec 2011 09:17:58 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2a/5] Remove unsafe clock values from omap1_defconfig
-Message-ID: <20111201171758.GT31337@atomide.com>
-References: <20111128174508.GO31337@atomide.com>
- <201112010310.43890.jkrzyszt@tis.icnet.pl>
- <20111201022750.GY13928@atomide.com>
- <201112011054.09878.jkrzyszt@tis.icnet.pl>
+	id S1755539Ab1LARTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 12:19:43 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:49147 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752479Ab1LARTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 12:19:41 -0500
+Date: Thu, 1 Dec 2011 12:19:38 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: qemu-devel@nongnu.org, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
+        kvm@vger.kernel.org, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
+        avi@redhat.com
+Subject: Re: [PATCH] Guest stop notification
+Message-ID: <20111201171938.GA8803@mgebm.net>
+References: <1322602574-27072-1-git-send-email-emunson@mgebm.net>
+ <4ED79138.60603@siemens.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
 Content-Disposition: inline
-In-Reply-To: <201112011054.09878.jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4ED79138.60603@siemens.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111201 01:20]:
-> 
-> If you still ask me for my opinion: with patch 3/5 omitted, then not 
-> being able to run at any other frequency than 60 MHz instead of usual 
-> 150 since the board support was introduced first, isn't this a 
-> regression?
 
-Yes, assuming that the behaviour for your board has changed by something
-after v3.1, such as commit e9b7086b80c4d9e354f4edc9e280ae85a60df408.
+--5mCyUwZo2JvN/JJP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Having a choice of upgrading to 3.2 and running my 
-> application on not very powerfull board at 60 MHz, or keep running 3.1 
-> at 150, guess what I chose? If I were a distro kernel package 
-> maintainer, guess what I would chose?
+On Thu, 01 Dec 2011, Jan Kiszka wrote:
 
-Right, that's certainly not intentional :)
+> On 2011-11-29 22:36, Eric B Munson wrote:
+> > Often when a guest is stopped from the qemu console, it will report spu=
+rious
+> > soft lockup warnings on resume.  There are kernel patches being discuss=
+ed that
+> > will give the host the ability to tell the guest that it is being stopp=
+ed and
+> > should ignore the soft lockup warning that generates.
+> >=20
+> > Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> > Cc: ryanh@linux.vnet.ibm.com
+> > Cc: aliguori@us.ibm.com
+> > Cc: mtosatti@redhat.com
+> > Cc: avi@redhat.com
+> > Cc: kvm@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  target-i386/kvm.c |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
+> >=20
+> > diff --git a/target-i386/kvm.c b/target-i386/kvm.c
+> > index 5bfc21f..defd364 100644
+> > --- a/target-i386/kvm.c
+> > +++ b/target-i386/kvm.c
+> > @@ -336,12 +336,18 @@ static int kvm_inject_mce_oldstyle(CPUState *env)
+> >      return 0;
+> >  }
+> > =20
+> > +static void kvm_put_guest_paused(CPUState *penv)
+> > +{
+> > +    kvm_vcpu_ioctl(penv, KVM_GUEST_PAUSED, 0);
+> > +}
+>=20
+> I see no need in encapsulating this in a separate function.
+>=20
 
-> > It seems that we've had the issue of not actually changing the rate
-> > for a while, right?
-> 
-> This was not an issue before dpll1 reprogramming has been moved out from 
-> omap1_clk_init(), as an rc fix to another bug introduced in 3.2. Perhaps 
-> we should rather think of reverting a few commits which caused all these 
-> problems if fixing them all during rc cycle seems not possible? I 
-> haven't bisected them yet, rather concentrated on providing fixes, but I 
-> can still try to do it, starting back from the original issue 
-> (http://www.spinics.net/lists/linux-omap/msg60052.html), if so decided.
+The encapsulated function was from a previous idea, I will remove it for V2.
 
-We can't revert that because the SRAM init has been moved to later for
-map_io. But if that patch changed the behaviour on your board, then that's
-the problem we should fix.
+> > +
+> >  static void cpu_update_state(void *opaque, int running, RunState state)
+> >  {
+> >      CPUState *env =3D opaque;
+> > =20
+> >      if (running) {
+> >          env->tsc_valid =3D false;
+> > +	kvm_put_guest_paused(env);
+>=20
+> checkpatch.pl would have asked you to remove this tab.
 
-If you're now stuck at 60MHz rate, care to see if the following patch
-makes the kernel behave the same way as before for you? Sorry for dragging
-this on, but I'd like to find out what exactly changed the behaviour for
-your board.
- 
-> Anyway, did you mean resending those 2/5 and 5/5 without any changes, 
-> only renumbered as 1/2 and 2/2?
+Will change to spaces for V2.
 
-Well the numbers will not show up in git, so no changes needed there :)
+>=20
+> More general:
+>=20
+> Why is this x86-only? If the kernel interface is x86-only, what prevents
+> making it generic right from the beginning?
+>=20
+> Why do we need a new IOCTL for this? Was there no space left in the
+> kvm_run structure e.g. to pass this flag down on next vcpu execution? No
+> big deal, just wondering.
 
-But let's figure out first what changed the behaviour for your board.
+Thanks for your review/feedback.
 
-Regards,
+When I started looking into this problem, the ioctl was the first suggestio=
+n I
+got for how to communicate from qemu to guest kernel.  I don't see a techni=
+cal
+reason that this could not be added to the kvm_run structure in one of the
+bytes currently used as padding.  I would prefer to keep the ioctl because I
+have the corresponding kernel patches out to work with this, however, if th=
+ere
+is a strong preference for using kvm_run, I can rework both sets.
 
-Tony
+Eric
 
---- a/arch/arm/mach-omap1/clock_data.c
-+++ b/arch/arm/mach-omap1/clock_data.c
-@@ -927,7 +927,7 @@ int __init omap1_clk_init(void)
- 
- void __init omap1_clk_late_init(void)
- {
--	if (ck_dpll1.rate >= OMAP1_DPLL1_SANE_VALUE)
-+	if (ck_dpll1.rate > OMAP1_DPLL1_SANE_VALUE)
- 		return;
- 
- 	/* Find the highest supported frequency and enable it */
+
+--5mCyUwZo2JvN/JJP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO17cqAAoJEKhG9nGc1bpJ6/EP/1IZKXqpXvLpTSWc4blTkiYs
+DEBfoe8k0JrlXT+k4bKdU/IkJdWjNf33X5ntTZnmV8/4MZ3u4XXLFeOqG/WFofjp
++7dmvam7zzskZTgOM5BCDO1s+SvTJrmXuu4x4wJpfXsJ6GxrAXk/2LK7IfGqF9S0
+ebVA2VnzOIVbIUH4s6xM8y4TjIOrsdWRRh9Aeznayz/TyemDhf3IYnl5uqyqeDMY
+/R1OraKAiS9WKOMquoyMXTBAPbNBAzFJka/VqozoKK/mh1mEipbFeD/EOvPq3TAH
+MXkDbCg/O9REhxwqActHOoWmSW1wi9+Gpt028uB/kf+KNSFi2mrh7v8M1icdpcrI
+ToVsIM2yILpviY/00XlT8/XXWPPcG4dzqbUcR/cf3N0f56pzDhDdzmnJZsTV9IDe
+RYNEIxhoiYCS18PtRLXHS40cJoEh2a807P8Bl5e4Hw3Mf3uytL6E/63VrY58zV4V
+DwQSv+snmye4wYI5g5FFqHzRsWSOq4CTY9u5cJDXAOXYHJ5v4wusbCIW+pvFHuXU
+B6nyJNdPu7bBvAnhL1NKRMRWTX55LeVdcaflrdDjFmR4y9YjGRCDemWbEeVlcGtE
+6y7N+ChPERHaemnvVDL5U+RCkzM4aBeX1OFv/16fP8y6TIdPTgYxH1ebHQ65clzM
+KED2j8LY6IKV0D/luiv6
+=E6Dy
+-----END PGP SIGNATURE-----
+
+--5mCyUwZo2JvN/JJP--
