@@ -1,103 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1LAURK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:17:10 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35755 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab1LAUPP (ORCPT
+	id S1754834Ab1LAURV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:17:21 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:17975 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752047Ab1LAURS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:15:15 -0500
-Subject: [PATCH 09/14] crc32: Optimize loop counter for x86
-To: Andrew Morton <akpm@linux-foundation.org>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Theodore Tso <tytso@mit.edu>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Thu, 01 Dec 2011 12:14:44 -0800
-Message-ID: <20111201201444.5876.78886.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
-References: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
+	Thu, 1 Dec 2011 15:17:18 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6547"; a="142814584"
+Date: Thu, 1 Dec 2011 12:17:09 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
+Message-ID: <20111201201709.GA24943@huya.qualcomm.com>
+References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
+ <1322752657.3704.2.camel@m0nster>
+ <20111201181736.GA13182@huya.qualcomm.com>
+ <1322764745.3704.9.camel@m0nster>
+ <20111201192705.GA23641@huya.qualcomm.com>
+ <1322767992.3704.13.camel@m0nster>
+ <20111201194353.GA24293@huya.qualcomm.com>
+ <1322769207.3704.19.camel@m0nster>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120120-7282-0000-0000-0000049957CC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322769207.3704.19.camel@m0nster>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add two changes that improve the performance of x86 systems
-	1. replace main loop with incrementing counter
-	   this change improves the performance of the selftest
-	   by about 5-6% on Nehalem CPUs. The apparent
-	   reason is that the compiler can use the loop index
-	   to perform an indexed memory access. This is
-	   reported to make the performance of PowerPC CPUs
-	   to get worse.
-	2. replace the rem_len loop with incrementing counter
-	   this change improves the performance of the selftest,
-	   which has more than the usual number of occurances,
-	   by about 1-2% on x86 CPUs. In actual work loads
-	   the length is most often a multiple of 4 bytes and
-	   this code does not get executed as often if at all.
-	   Again this change is reported to make the performance
-	   of PowerPC get worse.
+On Thu, Dec 01, 2011 at 11:53:27AM -0800, Daniel Walker wrote:
+> On Thu, 2011-12-01 at 11:43 -0800, David Brown wrote:
+> > On Thu, Dec 01, 2011 at 11:33:12AM -0800, Daniel Walker wrote:
+> > > On Thu, 2011-12-01 at 11:27 -0800, David Brown wrote:
+> > > > On Thu, Dec 01, 2011 at 10:39:05AM -0800, Daniel Walker wrote:
+> > > > 
+> > > > > > If someone is willing to step up and make it work, then we can keep it
+> > > > > > around.  My only G1 is fried, so I have no way to do anything other
+> > > > > > than keep it compiling.
+> > > > > 
+> > > > > Unfortunately, You can't remove it regardless of whether or not you have
+> > > > > one to test on.. Your job is to do the best you can to keep it working
+> > > > > and maintained. If you don't have one then you can't boot test but you
+> > > > > still have to your best to keep it as close to working as possible.
+> > > > 
+> > > > I was trying to get an idea if anyone uses the target.  If people
+> > > > want the target around, we can just ignore my patches to remove it.
+> > > 
+> > > Please don't ever do this again.
+> > 
+> > That's awfully harsh.  I sent an email a few weeks back asking about
+> > removing the target, and I only got one positive response.  Sometimes
+> > sending a patch is the best way to get a reaction.
+> 
+> You didn't CC me on that (or I didn't see it) .. You know who supports
+> the G1 target and who has the target (i.e. me) .. It also goes against
+> the philosophy of this community to arbitrarily remove hardware support.
 
-From: Bob Pearson <rpearson@systemfabricworks.com>
-Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
-[djwong@us.ibm.com: Minor changelog tweaks]
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- lib/crc32.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+Any idea if the tip code works on the G1?  There are also some
+DEBUG_LL changes in the ARM soc tree, and it'd be nice to know if
+those still work on 7201.
 
+Thanks,
+David
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 6311712..2c8e8c0 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -66,6 +66,9 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- # endif
- 	const u32 *b;
- 	size_t rem_len;
-+# ifdef CONFIG_X86
-+	size_t i;
-+# endif
- 	const u32 *t0 = tab[0], *t1 = tab[1], *t2 = tab[2], *t3 = tab[3];
- 	const u32 *t4 = tab[4], *t5 = tab[5], *t6 = tab[6], *t7 = tab[7];
- 	u32 q;
-@@ -86,7 +89,12 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- # endif
- 
- 	b = (const u32 *)buf;
-+# ifdef CONFIG_X86
-+	--b;
-+	for (i = 0; i < len; i++) {
-+# else
- 	for (--b; len; --len) {
-+# endif
- 		q = crc ^ *++b; /* use pre increment for speed */
- # if CRC_LE_BITS == 32
- 		crc = DO_CRC4;
-@@ -100,9 +108,14 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
- 	/* And the last few bytes */
- 	if (len) {
- 		u8 *p = (u8 *)(b + 1) - 1;
-+# ifdef CONFIG_X86
-+		for (i = 0; i < len; i++)
-+			DO_CRC(*++p); /* use pre increment for speed */
-+# else
- 		do {
- 			DO_CRC(*++p); /* use pre increment for speed */
- 		} while (--len);
-+# endif
- 	}
- 	return crc;
- #undef DO_CRC
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
