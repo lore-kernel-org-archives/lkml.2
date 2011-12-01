@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab1LAQHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 11:07:49 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40126 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752658Ab1LAQHs (ORCPT
+	id S1755339Ab1LAQLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 11:11:12 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55697 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab1LAQLL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 11:07:48 -0500
+	Thu, 1 Dec 2011 11:11:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111201155330.GV14515@moon>
-References: <20111129191252.769160532@openvz.org>
-	<20111129191638.835932727@openvz.org>
-	<20111130140009.1ccd5af0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111130060537.GK1775@moon>
-	<20111201095434.GR14515@moon>
-	<20111201154357.GA12668@google.com>
-	<20111201155330.GV14515@moon>
-Date: Thu, 1 Dec 2011 08:07:46 -0800
-X-Google-Sender-Auth: S_V5BmM1nwh6eRbYtrgqmJ9W5wo
-Message-ID: <CAOS58YMScsO5jXcqj9QmxeTCnhmbpjHs7a_QHxTgWPrKy_qz=A@mail.gmail.com>
-Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
-From: Tejun Heo <tj@kernel.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
+In-Reply-To: <20111201142704.GT4387@parisc-linux.org>
+References: <1322735278-17420-1-git-send-email-jack@suse.cz>
+ <20111201122425.GA16274@localhost> <20111201142704.GT4387@parisc-linux.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 1 Dec 2011 08:10:47 -0800
+X-Google-Sender-Auth: Bw9Tv9LYX-jvA_oaj61ePH_8yqI
+Message-ID: <CA+55aFypH2+MQOZfn8qoO7zo_17Oo8jLaayye45pgo_Hpz2jBQ@mail.gmail.com>
+Subject: Re: [PATCH] fs: Make write(2) interruptible by a fatal signal
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
+        "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Dec 1, 2011 at 6:27 AM, Matthew Wilcox <matthew@wil.cx> wrote:
+>
+> Another problem scenario is an NFS mounted file going away while the
+> user is writing to it.  The user should be able to kill the stuck process
+> without rebooting their machine.
 
-On Thu, Dec 1, 2011 at 7:53 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> Hi Tejun, indeed this is not pleasant limit, thanks for the point,
-> I'll update! But other than this technical detail, I assume there is
-> no objection from introducing such feature?
+Well, NFS has always had the 'intr' mount option.
 
-Nope, I don't have any objection. Thanks.
+The problem with NFS and 'intr' is that it's very user-visible, and
+makes even nonfatal signals cause EINTR. So the "abort writes on fatal
+signals" is a lot less noticeable to any programs: sure, it does
+introduce potentially visible semantic changes, but now they are
+visible only across different processes, not within one process.
 
--- 
-tejun
+And anybody who relies on "all or nothing" even in the face of SIGKILL
+is just broken. That said, like so many changes, I think this falls
+solidly on the "we should do this, but if somebody reports a
+regression..."
+
+I suspect the likelihood of regressions is basically zero. No
+application that actually cares about its data would ever rely on the
+"writes will complete entirely or not at all" semantics. Not only has
+it never been true on NFS, but it's not true in the face of crashes
+either, so any careful app will already depend on other things like
+fsync+rename etc.
+
+                           Linus
+
+                          Linus
