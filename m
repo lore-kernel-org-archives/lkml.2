@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab1LARlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 12:41:25 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:36253 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755746Ab1LARlY (ORCPT
+	id S1755936Ab1LARpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 12:45:40 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47838 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341Ab1LARpj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 12:41:24 -0500
-Date: Thu, 01 Dec 2011 12:41:19 -0500 (EST)
-Message-Id: <20111201.124119.485939880534098580.davem@davemloft.net>
-To: axel.lin@gmail.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] dsa: Include linux/if_ether.h to fix build error
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1322726838.14554.3.camel@phoenix>
-References: <1322726838.14554.3.camel@phoenix>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 1 Dec 2011 12:45:39 -0500
+Message-ID: <1322761515.4699.49.camel@twins>
+Subject: Re: [PATCH] jump_label: jump_label for boot options.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        rostedt@goodmis.org
+Date: Thu, 01 Dec 2011 18:45:15 +0100
+In-Reply-To: <1322761185.4699.47.camel@twins>
+References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20111201154036.GA2443@redhat.com> <1322756898.4699.30.camel@twins>
+	 <20111201165009.GB2443@redhat.com> <1322761185.4699.47.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 01 Dec 2011 09:41:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 01 Dec 2011 16:07:18 +0800
+On Thu, 2011-12-01 at 18:39 +0100, Peter Zijlstra wrote:
+> +#define SCHED_FEAT(name, enabled)                                      \
+> +static __always_inline bool static_branch_##name(struct jump_label_key *key) \
+> +{                                                                      \
+> +       return static_branch_##enabled(key);                            \
+> +}
+> +
+> +#include "features.h"
+> +
+> +#undef SCHED_FEAT
+> +
+> +#if defined(CONFIG_SCHED_DEBUG) && defined(HAVE_JUMP_LABEL)
+> +static struct jump_label_key sched_feat_keys[__SCHED_FEAT_NR];
+> +#define sched_feat(x) (static_branch(&sched_feat_keys[__SCHED_FEAT_##x])) 
 
-> Include linux/if_ether.h to fix below build errors:
-> 
->   CC      arch/arm/mach-kirkwood/common.o
-> In file included from arch/arm/mach-kirkwood/common.c:19:
-> include/net/dsa.h: In function 'dsa_uses_dsa_tags':
-> include/net/dsa.h:192: error: 'ETH_P_DSA' undeclared (first use in this function)
-> include/net/dsa.h:192: error: (Each undeclared identifier is reported only once
-> include/net/dsa.h:192: error: for each function it appears in.)
-> include/net/dsa.h: In function 'dsa_uses_trailer_tags':
-> include/net/dsa.h:197: error: 'ETH_P_TRAILER' undeclared (first use in this function)
-> make[1]: *** [arch/arm/mach-kirkwood/common.o] Error 1
-> make: *** [arch/arm/mach-kirkwood] Error 2
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+#define sched_feat(x) static_branch_##x(&sched_feat_keys[__SCHED_FEAT_##x])
 
-Applied.
+of course ;-)
