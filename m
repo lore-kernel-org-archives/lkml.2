@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab1LASLH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:11:07 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40839 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab1LASLG convert rfc822-to-8bit (ORCPT
+	id S1756020Ab1LASPL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:15:11 -0500
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:14917 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab1LASPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:11:06 -0500
-MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1111300011260.7107@cl320.eecs.utk.edu>
-	<1322654092.2921.256.camel@twins>
-	<CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com>
-	<alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
-Date: Thu, 1 Dec 2011 10:11:05 -0800
-Message-ID: <CAMsRxfJmXXxDrofY3PDOLWRC7E-o6mANiTSJwYbyMTgOT_J0UA@mail.gmail.com>
-Subject: Re: perf_event self-monitoring overhead regression
-From: stephane eranian <eranian@googlemail.com>
-To: Vince Weaver <vweaver1@eecs.utk.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Dec 2011 13:15:09 -0500
+Message-Id: <201112011815.pB1IF8P0004904@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 1 Dec 2011 11:37:20 -0500
+Subject: [PATCH] arch/tile: add a few #includes and an EXPORT to catch up with kernel changes.
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 01 Dec 2011 18:15:08.0596 (UTC) FILETIME=[288D4F40:01CCB055]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vince,
+The empty_zero_page[] export is required for ZERO_PAGE() module references.
+The #includes are due to changes in implicit inclusion, and should of
+course have been in the sources from the beginning.
 
-I take it your test is all about self-monitoring, single event, single thread.
-Did you try breaking down the cost using  TSC and rdtsc() to pinpoint where the
-regression is coming from in the 3 perf_event syscalls you're using?
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/pci-dma.c |    1 +
+ arch/tile/kernel/pci.c     |    1 +
+ arch/tile/kernel/sysfs.c   |    1 +
+ arch/tile/lib/exports.c    |    3 +++
+ 4 files changed, 6 insertions(+), 0 deletions(-)
 
+diff --git a/arch/tile/kernel/pci-dma.c b/arch/tile/kernel/pci-dma.c
+index 658f2ce..b3ed19f 100644
+--- a/arch/tile/kernel/pci-dma.c
++++ b/arch/tile/kernel/pci-dma.c
+@@ -15,6 +15,7 @@
+ #include <linux/mm.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/vmalloc.h>
++#include <linux/export.h>
+ #include <asm/tlbflush.h>
+ #include <asm/homecache.h>
+ 
+diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
+index 2a8014c..9d610d3 100644
+--- a/arch/tile/kernel/pci.c
++++ b/arch/tile/kernel/pci.c
+@@ -24,6 +24,7 @@
+ #include <linux/irq.h>
+ #include <linux/io.h>
+ #include <linux/uaccess.h>
++#include <linux/export.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/sections.h>
+diff --git a/arch/tile/kernel/sysfs.c b/arch/tile/kernel/sysfs.c
+index b671a86..6029082 100644
+--- a/arch/tile/kernel/sysfs.c
++++ b/arch/tile/kernel/sysfs.c
+@@ -18,6 +18,7 @@
+ #include <linux/cpu.h>
+ #include <linux/slab.h>
+ #include <linux/smp.h>
++#include <linux/stat.h>
+ #include <hv/hypervisor.h>
+ 
+ /* Return a string queried from the hypervisor, truncated to page size. */
+diff --git a/arch/tile/lib/exports.c b/arch/tile/lib/exports.c
+index a87d2a8..2a81d32 100644
+--- a/arch/tile/lib/exports.c
++++ b/arch/tile/lib/exports.c
+@@ -39,6 +39,9 @@ EXPORT_SYMBOL(finv_user_asm);
+ EXPORT_SYMBOL(current_text_addr);
+ EXPORT_SYMBOL(dump_stack);
+ 
++/* arch/tile/kernel/head.S */
++EXPORT_SYMBOL(empty_zero_page);
++
+ /* arch/tile/lib/, various memcpy files */
+ EXPORT_SYMBOL(memcpy);
+ EXPORT_SYMBOL(__copy_to_user_inatomic);
+-- 
+1.6.5.2
 
-On Thu, Dec 1, 2011 at 5:59 AM, Vince Weaver <vweaver1@eecs.utk.edu> wrote:
-> On Wed, 30 Nov 2011, Linus Torvalds wrote:
->
->> On Wed, Nov 30, 2011 at 3:54 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->>
->> So bisect works really well for clear bugs that are 100% repeatable
->> and have a very clear "did it happen or not" signature, but I'd be
->> very leery indeed of using it with some performance anomaly.
->
-> In this case, the bisection case is pretty clean.  I run 1000 of the tests
-> and check the median value, and the values are always 7280us for good and
-> 7440us for bad.
->
-> The problem is when it starts bisecting into the merges it drops from a
-> post-3.0 kernel into a much earlier 3.0-rc kernel (due to the ARM merge
-> history) and suddenly then the test becomes meaningless as it starts
-> returning other values such as 6880us.  This is because the problem I am
-> tracking has ben gradually getting worse over time, and so I guess by
-> going back to a 3.0-rc it gets earlier than some other change that made
-> performance worse, and thus it becomes impossible to know if a commit is
-> good or not.
->
->> That said, maybe you can get the timings to be unambiguous enough by
->> using 'rdtsc' in user space, and try the bisect again.
->
-> I'll try but I'm guessing your first thought that this might be
-> un-bisectabe is probably true.
->
-> Thanks,
->
-> Vince
->
