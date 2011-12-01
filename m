@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab1LAMaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 07:30:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33330 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300Ab1LAMaX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 07:30:23 -0500
-Message-ID: <4ED7735A.1020903@suse.cz>
-Date: Thu, 01 Dec 2011 13:30:18 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111123 Thunderbird/9.0
+	id S1753848Ab1LAMee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 07:34:34 -0500
+Received: from mga03.intel.com ([143.182.124.21]:34673 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753749Ab1LAMed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 07:34:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,277,1320652800"; 
+   d="scan'208";a="81060637"
+Date: Thu, 1 Dec 2011 20:24:25 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] fs: Make write(2) interruptible by a fatal signal
+Message-ID: <20111201122425.GA16274@localhost>
+References: <1322735278-17420-1-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
-To: Keith Packard <keithp@keithp.com>
-CC: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: g33: GPU hangs
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322735278-17420-1-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-both yesterday and today, my GPU hung. Both happened when I opened
-google front page in firefox.
+How are we going to do with this patch?
 
-I'm running 3.2.0-rc3-next-20111130. Given it happened twice in the past
-24 hours, it looks like a regression from next-20111124. Or is this a
-userspace issue (I might updated some packages)?
+> This patch makes write interruptible by SIGKILL.
 
-i915_error_state dumps from the two hangs are here:
-http://www.fi.muni.cz/~xslaby/sklad/panics/915_error_state_0
-http://www.fi.muni.cz/~xslaby/sklad/panics/915_error_state_second
+Let me try to summarize the objective impacts of (not) merging this
+patch, and would like to hear more opinions from experienced users.
 
-# rpm -q Mesa libdrm xorg-x11-server
-Mesa-7.11.1-5.1.x86_64
-libdrm-2.4.27-2.1.x86_64
-xorg-x11-server-7.6_1.10.4-39.1.x86_64
+- w/o patch
 
-00:02.0 VGA compatible controller [0300]: Intel Corporation 82G33/G31
-Express Integrated Graphics Controller [8086:29c2] (rev 02) (prog-if 00
-[VGA controller])
-        Subsystem: Intel Corporation 82G33/G31 Express Integrated
-Graphics Controller [8086:29c2]
-        Flags: bus master, fast devsel, latency 0, IRQ 42
-        Memory at feb80000 (32-bit, non-prefetchable) [size=512K]
-        I/O ports at ec00 [size=8]
-        Memory at d0000000 (32-bit, prefetchable) [size=256M]
-        Memory at fea00000 (32-bit, non-prefetchable) [size=1M]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-        Capabilities: [d0] Power Management version 2
-        Kernel driver in use: i915
+BEHAVIOR:
+write(2) insists to complete even when the user really wants to stop it.
 
-regards,
--- 
-js
-suse labs
+IMPACT:
+It could be annoying to experience slow responses to "kill -9" when
+it's a large write to a slow device, for example,
+
+        dd if=/dev/zero of=/mnt/nokia/zero bs=100M
+
+- w/ patch
+
+BEHAVIOR:
+write(2) aborts quickly with possible partial write on SIGKILL
+
+IMPACT:
+The partial write might lead to data corruption somewhere, sometime
+(the possibility is low but real) and bring trouble to some users.
+
+Thanks,
+Fengguang
