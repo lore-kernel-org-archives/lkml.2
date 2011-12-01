@@ -1,130 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab1LAWxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:53:16 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43930 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172Ab1LAWxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:53:15 -0500
-Date: Thu, 1 Dec 2011 14:53:07 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ocfs2 fixes for 3.2-rc3
-Message-ID: <20111201225306.GP1495@noexit.corp.google.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+	id S1755432Ab1LAWzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 17:55:15 -0500
+Received: from ffm.saftware.de ([83.141.3.46]:36866 "EHLO ffm.saftware.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755172Ab1LAWzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 17:55:13 -0500
+Message-ID: <4ED805CB.5020302@linuxtv.org>
+Date: Thu, 01 Dec 2011 23:55:07 +0100
+From: Andreas Oberritter <obi@linuxtv.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: HoP <jpetrous@gmail.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <4ED7BBA3.5020002@redhat.com> <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com> <4ED7E5D7.8070909@redhat.com>
+In-Reply-To: <4ED7E5D7.8070909@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al,
-	Here are the all of the ocfs2 fixes that have been stewing in my
-tree.  Almost all of them have been in linux-next since before 3.1; I've
-just been behind.
-	Please pull.
+On 01.12.2011 21:38, Mauro Carvalho Chehab wrote:
+> I fail to see where do you need to duplicate dvb-core. An userspace
+> LD_PRELOAD handler that would do:
+> 
+> int socket;
+> 
+> int dvb_ioctl(int fd, unsigned long int request, ...)
+> {
+>         void *arg;
+>         va_list ap;
+>  
+>         va_start(ap, request);
+>         arg = va_arg(ap, void *);
+>         va_end(ap);
+> 
+>     send_net_ioctl_packet(socket, request, arg);
+> }
+> 
+> Is probably all you need to send _any_ ioctl's to a remote machine
+> (plus client's machine that would decode the ioctl packet and send
+> the ioctl to the actual driver).
+> 
+> Of course, you'll need hooks for all syscalls used (likely open, close,
+> ioctl, read, poll).
+> 
+> So, there's not much duplication, even if, for whatever reason, you
+> might need to hook some specific ioctls in order to optimize the
+> network performance.
 
-Joel
+Mauro, we've already had that discussion last time. In order to
+intercept ioctls of a device, the device needs to exist to begin with,
+right? That's where vtuner comes in: It creates the virtual device.
 
-The following changes since commit b6844e8f64920cdee620157252169ba63afb0c89:
+For that reason your suggested approach using LD_PRELOAD won't work.
 
-  Merge branch 'for-linus' of master.kernel.org:/home/rmk/linux-2.6-arm (2011-07-24 10:20:54 -0700)
+Besides that, suggesting LD_PRELOAD for something other than a hack
+can't be taken seriously.
 
-are available in the git repository at:
+I think you didn't even understand what vtuner does, after all the
+discussion that took place.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
+>>>> Of course
+>>>> I can be wrong, I'm no big kernel hacker. So please show me the
+>>>> way for it. BTW, even if you can find the way, then data copying
+>>>> from userspace to the kernel and back is also necessery.
+>>>
+>>> See libv4l, at v4l2-utils.git (at linuxtv.org).
+>>>
+>>>> I really
+>>>> don't see any advantage of you solution.
+>>>
+>>> And I can't see any advantage on yours ;) Putting something that belongs
+>>> to userspace into kernelspace just because it is easier to re-use the
+>>> existing code inside the kernel is not a good argument.
+>>
+>> It is only your POV that it should be in userspace.
+>>
+>> Creating additional code which not only enlarge code size by 2
+>> but I think by 10 is really not good idea.  And it get no advantage
+>> only disadvantages.
+>>
+>>>
+>>> Don't get me wrong but if you want to submit a code to be merged
+>>> on any existing software (being open source or not), you should be
+>>> prepared to defend your code and justify the need for it to the
+>>> other developers.
+>>
+>> Sure. I was prepared for technical disscussion, but was fully suprised
+>> that it was not happend (ok, to be correct, few guys are exception, like
+>> Andreas and few others. I really appreciate it).
+>>
+>> So, my question was still not answered: "Can be driver NACKed only
+>> because of worrying about possible misuse?"
+> 
+> To answer your question: your driver were nacked because of several
+> reasons:
+> it is not a driver for an unsupported hardware,
 
-Akinobu Mita (2):
-      ocfs2: use proper little-endian bitops
-      ocfs2: avoid unaligned access to dqc_bitmap
+It's not a driver for supported hardware either. You named it before:
+It's not a driver in your definition at all. It's a way to remotely
+access digital TV tuners over a network.
 
-Dan Carpenter (2):
-      ocfs2: checking the wrong variable in ocfs2_move_extent()
-      ocfs2: null deref on allocation error
+> you failed to convince
+> people
+> why this can't be implemented on userspace,
 
-Dan Magenheimer (1):
-      ocfs2: send correct UUID to cleancache initialization
+Wrong. You failed to convince people why this must be implemented in
+userspace. Even Michael Krufky, who's "only" against merging it, likes
+the idea, because it's useful.
 
-Jan Kara (2):
-      ocfs2: Avoid livelock in ocfs2_readpage()
-      ocfs2: Use filemap_write_and_wait() instead of write_inode_now()
+Just because something can be implemented in userspace doesn't mean that
+it's technically superior.
 
-Joel Becker (1):
-      Merge branch 'mw-3.1-jul25' of git://oss.oracle.com/git/smushran/linux-2.6 into ocfs2-fixes
+> the driver adds hooks at
+> kernelspace
+> that would open internal API's that several developers don't agree on
+> exposing
+> at userspace, as would allow non GPL license compatible drivers to re-use
+> their work in a way they are against.
 
-Julia Lawall (1):
-      fs/ocfs2/dlm/dlmlock.c: free kmem_cache_zalloc'd data using kmem_cache_free
+What's left is your unreasonable GPL blah blah. So the answer to Honza's
+question is: Yes, Mauro is nacking the driver because he's worrying
+about possible misuse.
 
-Mark Fasheh (2):
-      ocfs2: serialize unaligned aio
-      ocfs2: honor O_(D)SYNC flag in fallocate
-
-Sunil Mushran (16):
-      ocfs2/cluster: Abort heartbeat start on hard-ro devices
-      ocfs2/cluster: Clean up messages in o2net
-      ocfs2/dlm: Clean up messages in o2dlm
-      ocfs2: Clean up messages in stack_o2cb.c
-      ocfs2/dlm: Cleanup up dlm_finish_local_lockres_recovery()
-      ocfs2/dlm: Clean up refmap helpers
-      ocfs2/dlm: Trace insert/remove of resource to/from hash
-      ocfs2/dlm: Cleanup dlm_wait_for_node_death() and dlm_wait_for_node_recovery()
-      ocfs2/dlm: Take inflight reference count for remotely mastered resources too
-      ocfs2/dlm: dlmlock_remote() needs to account for remastery
-      ocfs2/cluster: Fix output in file elapsed_time_in_ms
-      ocfs2/cluster: Add new function o2net_fill_node_map()
-      ocfs2/cluster: Cluster up now includes network connections too
-      ocfs2: Clean up messages in the fs
-      ocfs2: Add comment about orphan scanning
-      ocfs2: Implement llseek()
-
-Tiger Yang (1):
-      ocfs2: Bugfix for hard readonly mount
-
-Wengang Wang (3):
-      ocfs2: Fix ocfs2_page_mkwrite()
-      ocfs2: make direntry invalid when deleting it
-      ocfs2: Commit transactions in error cases -v2
-
-Xiaowei.Hu (1):
-      ocfs2: Add a missing journal credit in ocfs2_link_credits() -v2
-
- fs/ocfs2/alloc.c             |    2 +-
- fs/ocfs2/aops.c              |   69 +++++++++++++--
- fs/ocfs2/aops.h              |   14 +++
- fs/ocfs2/cluster/heartbeat.c |  194 ++++++++++++++++++++++++++----------------
- fs/ocfs2/cluster/netdebug.c  |  102 +++++++++++++++-------
- fs/ocfs2/cluster/tcp.c       |  138 ++++++++++++++++--------------
- fs/ocfs2/cluster/tcp.h       |    2 +
- fs/ocfs2/dir.c               |    3 +-
- fs/ocfs2/dlm/dlmcommon.h     |   56 +++----------
- fs/ocfs2/dlm/dlmdomain.c     |   44 +++++-----
- fs/ocfs2/dlm/dlmlock.c       |   54 ++++++------
- fs/ocfs2/dlm/dlmmaster.c     |  175 +++++++++++++++++++-------------------
- fs/ocfs2/dlm/dlmrecovery.c   |  164 ++++++++++++++++++------------------
- fs/ocfs2/dlm/dlmthread.c     |   16 ++--
- fs/ocfs2/dlmglue.c           |   21 +++--
- fs/ocfs2/extent_map.c        |   96 +++++++++++++++++++++
- fs/ocfs2/extent_map.h        |    2 +
- fs/ocfs2/file.c              |   96 ++++++++++++++++++++-
- fs/ocfs2/inode.c             |    2 +-
- fs/ocfs2/inode.h             |    3 +
- fs/ocfs2/ioctl.c             |   11 ++-
- fs/ocfs2/journal.c           |   23 +++++-
- fs/ocfs2/journal.h           |    5 +-
- fs/ocfs2/mmap.c              |   53 +++++------
- fs/ocfs2/move_extents.c      |    2 +-
- fs/ocfs2/ocfs2.h             |   51 +++++++++++-
- fs/ocfs2/quota_local.c       |   23 +++--
- fs/ocfs2/slot_map.c          |    4 +-
- fs/ocfs2/stack_o2cb.c        |   71 ++++++++++++++--
- fs/ocfs2/super.c             |   25 ++++--
- fs/ocfs2/xattr.c             |   10 ++-
- 31 files changed, 995 insertions(+), 536 deletions(-)
+Regards,
+Andreas
