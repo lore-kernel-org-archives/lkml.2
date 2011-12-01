@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab1LAHvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 02:51:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41390 "EHLO mx2.suse.de"
+	id S1754332Ab1LAH5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 02:57:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32216 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753107Ab1LAHvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 02:51:20 -0500
-Message-ID: <4ED74E54.3070303@suse.de>
-Date: Thu, 01 Dec 2011 10:52:20 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S1753308Ab1LAH5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 02:57:14 -0500
+Date: Thu, 1 Dec 2011 09:58:48 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        markmc@redhat.com
+Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
+ descriptors
+Message-ID: <20111201075847.GA5479@redhat.com>
+References: <1322559196-11139-1-git-send-email-levinsasha928@gmail.com>
+ <20111129125622.GB19157@redhat.com>
+ <1322573688.4395.11.camel@lappy>
+ <20111129135406.GB30966@redhat.com>
+ <1322576464.7003.6.camel@lappy>
+ <20111129145451.GD30966@redhat.com>
+ <4ED4F30F.8000603@redhat.com>
+ <1322669511.3985.8.camel@lappy>
+ <87wrahrp0u.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@redhat.com>,
-        virtualization <virtualization@lists.linux-foundation.org>
-Subject: Re: virtio-scsi spec (was Re: [PATCH] Add virtio-scsi to the virtio
- spec)
-References: <1322661042-28191-1-git-send-email-pbonzini@redhat.com> <1322661042-28191-2-git-send-email-pbonzini@redhat.com> <4ED63AE1.8090105@suse.de> <4ED65BA4.3000003@redhat.com>
-In-Reply-To: <4ED65BA4.3000003@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87wrahrp0u.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2011 05:36 PM, Paolo Bonzini wrote:
-> On 11/30/2011 03:17 PM, Hannes Reinecke wrote:
->>> seg_max is the maximum number of segments that can be in a
->>> command. A bidirectional command can include seg_max input
->>> segments and seg_max output segments.
->>>
->> I would like to have the other request_queue limitations exposed
->> here, too.
->> Most notably we're missing the maximum size of an individual segment
->> and the maximum size of the overall I/O request.
->
-> The virtio transport does not put any limit, as far as I know.
->
-Virtio doesn't, but the underlying device/driver might.
-And if we don't expose these values we cannot format the request correctly.
+On Thu, Dec 01, 2011 at 01:12:25PM +1030, Rusty Russell wrote:
+> On Wed, 30 Nov 2011 18:11:51 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > On Tue, 2011-11-29 at 16:58 +0200, Avi Kivity wrote:
+> > > On 11/29/2011 04:54 PM, Michael S. Tsirkin wrote:
+> > > > > 
+> > > > > Which is actually strange, weren't indirect buffers introduced to make
+> > > > > the performance *better*? From what I see it's pretty much the
+> > > > > same/worse for virtio-blk.
+> > > >
+> > > > I know they were introduced to allow adding very large bufs.
+> > > > See 9fa29b9df32ba4db055f3977933cd0c1b8fe67cd
+> > > > Mark, you wrote the patch, could you tell us which workloads
+> > > > benefit the most from indirect bufs?
+> > > >
+> > > 
+> > > Indirects are really for block devices with many spindles, since there
+> > > the limiting factor is the number of requests in flight.  Network
+> > > interfaces are limited by bandwidth, it's better to increase the ring
+> > > size and use direct buffers there (so the ring size more or less
+> > > corresponds to the buffer size).
+> > > 
+> > 
+> > I did some testing of indirect descriptors under different workloads.
+> 
+> MST and I discussed getting clever with dynamic limits ages ago, but it
+> was down low on the TODO list.  Thanks for diving into this...
+> 
+> AFAICT, if the ring never fills, direct is optimal.  When the ring
+> fills, indirect is optimal (we're better to queue now than later).
+> 
+> Why not something simple, like a threshold which drops every time we
+> fill the ring?
+> 
+> struct vring_virtqueue
+> {
+> ...
+>         int indirect_thresh;
+> ...
+> }
+> 
+> virtqueue_add_buf_gfp()
+> {
+> ...
+> 
+>         if (vq->indirect &&
+>             (vq->vring.num - vq->num_free) + out + in > vq->indirect_thresh)
+>                 return indirect()
+> ...
+> 
+> 	if (vq->num_free < out + in) {
+>                 if (vq->indirect && vq->indirect_thresh > 0)
+>                         vq->indirect_thresh--;
+>         
+> ...
+> }
+> 
+> Too dumb?
+> 
+> Cheers,
+> Rusty.
 
->> As this is the host specification I really would like to see an host
->> identifier somewhere in there.
->> Otherwise we won't be able to reliably identify a virtio SCSI host.
->
-> I thought about it, but I couldn't figure out exactly how to use it. If
-> it's just allocating 64 bits in the configuration space (with the
-> stipulation that they could be zero), let's do it now. Otherwise a
-> controlq command is indeed better, and it can come later.
->
-> But even if it's just a 64-bit value, then: 1) where would you place it
-> in sysfs for userspace? I can make up a random name, but existing user
-> tools won't find it and that's against the design of virtio-scsi. 2) How
-> would it be encoded as a transport ID? Is it FC, or firewire, or SAS, or
-> what?
->
-I was thinking of something along the lines of the TransportID as 
-defined in SPC.
-Main idea is to have a unique ID by which we can identify a given 
-virtio-scsi host. Admittedly it might not be useful in general, so it 
-might be an idea to delegate this to another controlq command.
+We'll presumably need some logic to increment is back,
+to account for random workload changes.
+Something like slow start?
 
->> Plus you can't calculate the ITL nexus information, making
->> Persistent Reservations impossible.
->
-> They are not impossible, only some features such as SPEC_I_PT. If you
-> use NPIV or iSCSI in the host, then the persistent reservations will
-> already get the correct initiator port. If not, much more work is needed.
->
-Yes, for a a shared (physical) SCSI host persistent reservations will be 
-tricky.
-
-Cheers,
-
-Hannes
 -- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: Markus Rex, HRB 16746 (AG Nürnberg)
-
+MST
