@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab1LAUuC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:50:02 -0500
-Received: from fifo99.com ([67.223.236.141]:37169 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753735Ab1LAUuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:50:00 -0500
-Message-ID: <1322772598.3704.33.camel@m0nster>
-Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
-From: Daniel Walker <dwalker@fifo99.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 01 Dec 2011 12:49:58 -0800
-In-Reply-To: <20111201203506.GG9581@n2100.arm.linux.org.uk>
-References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
-	 <1322752657.3704.2.camel@m0nster>
-	 <20111201181736.GA13182@huya.qualcomm.com>
-	 <1322764745.3704.9.camel@m0nster>
-	 <20111201192705.GA23641@huya.qualcomm.com>
-	 <1322767992.3704.13.camel@m0nster>
-	 <20111201194353.GA24293@huya.qualcomm.com>
-	 <20111201201950.GE9581@n2100.arm.linux.org.uk>
-	 <1322771147.3704.21.camel@m0nster>
-	 <20111201203506.GG9581@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	id S1753868Ab1LAUy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:54:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41881 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab1LAUy6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 15:54:58 -0500
+Date: Thu, 1 Dec 2011 12:54:57 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Xi Wang <xi.wang@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: incorrect overflow check in shrink_slab()
+Message-Id: <20111201125457.fdf79489.akpm@linux-foundation.org>
+In-Reply-To: <20111201183202.2e5bd872.kamezawa.hiroyu@jp.fujitsu.com>
+References: <0D9D9F79-204D-4460-8CE7-A583C5C38A1E@gmail.com>
+	<20111201183202.2e5bd872.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 20:35 +0000, Russell King - ARM Linux wrote:
-> On Thu, Dec 01, 2011 at 12:25:47PM -0800, Daniel Walker wrote:
-> > On Thu, 2011-12-01 at 20:19 +0000, Russell King - ARM Linux wrote:
-> > > Now, the obvious question to ask now is this: as you sent your question,
-> > > and Daniel obviously objects, was Daniel one of your respondants?  If
-> > > not, then he carries some of the blame for this patch being created
-> > > in the first place by having missed the email/not replied/etc.
-> > > 
+On Thu, 1 Dec 2011 18:32:02 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> > total_scan is unsigned long, so the overflow check (total_scan < 0)
+> > didn't work.
 > > 
-> > What if the people using the hardware aren't even on the list ? It's not
-> > their fault is it?
+> > Signed-off-by: Xi Wang <xi.wang@gmail.com>
 > 
-> Did you notice I mentioned six months?
+> Nice catch but.... the 'total_scan" shouldn't be long ?
+> Rather than type casting ?
 
-Yeah I did notice..
+Konstantin Khlebnikov's "vmscan: fix initial shrinker size handling"
+does change it to `long'.  That patch is in -mm and linux-next and is
+queued for 3.3.  It was queued for 3.2 but didn't make it due to some
+me/Dave Chinner confusion.
 
-> The way to remove non-broken code is:
-> 1. to ask.  If no one responds, then
-> 2. submit a patch to put an entry in feature-removal-schedule.txt giving a
->    description of what will be removed and when - and then flag it
->    with a patch to remove it.  If no one responds to that, then
-> 3. the patch to remove it re-posted, and if no one objects it gets
->    merged.
-> 
-> So, if people care about bits of code _and_ they're not on the relevant
-> subsystem mailing lists, they need to keep an eye on the feature removal
-> file - otherwise they're in for nasty surprises.
-
-I agree with the steps, but I'm not sure David knows about (or would be
-following) those steps. Not to mention these devices are still readily
-available used .. I wouldn't expect anyone to even remotely ponder
-removing this code for at least another 10 years.. In order to even
-start the process above there has to be some good probability that no
-has the device or cares at all about the device..
-
-Daniel
 
