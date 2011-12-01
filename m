@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab1LAIGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:06:35 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50048 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab1LAIGe (ORCPT
+	id S1754463Ab1LAIHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:07:30 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42094 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754243Ab1LAIH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:06:34 -0500
-Date: Thu, 1 Dec 2011 09:06:14 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: JBottomley@parallels.com, linux-arm-kernel@lists.infradead.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: prevent inlining in arxescsi.c causing build
- failures
-Message-ID: <20111201080613.GF26618@pengutronix.de>
-References: <1322713611-30003-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1322713611-30003-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 1 Dec 2011 03:07:29 -0500
+Message-ID: <1322726838.14554.3.camel@phoenix>
+Subject: [PATCH] dsa: Include linux/if_ether.h to fix build error
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Date: Thu, 01 Dec 2011 16:07:18 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 11:26:51PM -0500, Paul Gortmaker wrote:
-> The following failure is seen in routine coverage builds:
-> 
->   CC [M]  drivers/scsi/arm/arxescsi.o
-> /tmp/cccEyiO7.s: Assembler messages:
-> /tmp/cccEyiO7.s:334: Error: symbol `.loop_1' is already defined
-> /tmp/cccEyiO7.s:337: Error: symbol `.loop_2' is already defined
-> /tmp/cccEyiO7.s:343: Error: symbol `.loop_3' is already defined
-> /tmp/cccEyiO7.s:365: Error: symbol `.loop_1' is already defined
-> /tmp/cccEyiO7.s:368: Error: symbol `.loop_2' is already defined
-> /tmp/cccEyiO7.s:374: Error: symbol `.loop_3' is already defined
-> make[4]: *** [drivers/scsi/arm/arxescsi.o] Error 1
-> 
-> It is caused by multiple inline of arxescsi_pseudo_dma_write()
-> which is responsible for the above labels.  Marking the fcn
-> as non-inline fixes the issue.
-> 
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Is that a compiler or a code issue? If it's the compiler please fix
-that. If it's the code, then please document why you added the noinline.
+Include linux/if_ether.h to fix below build errors:
 
-Having said that, "my" compiler compiles drivers/scsi/arm/arxescsi.o
-just fine (using rpc_defconfig on v3.2-rc2).
+  CC      arch/arm/mach-kirkwood/common.o
+In file included from arch/arm/mach-kirkwood/common.c:19:
+include/net/dsa.h: In function 'dsa_uses_dsa_tags':
+include/net/dsa.h:192: error: 'ETH_P_DSA' undeclared (first use in this function)
+include/net/dsa.h:192: error: (Each undeclared identifier is reported only once
+include/net/dsa.h:192: error: for each function it appears in.)
+include/net/dsa.h: In function 'dsa_uses_trailer_tags':
+include/net/dsa.h:197: error: 'ETH_P_TRAILER' undeclared (first use in this function)
+make[1]: *** [arch/arm/mach-kirkwood/common.o] Error 1
+make: *** [arch/arm/mach-kirkwood] Error 2
 
-> diff --git a/drivers/scsi/arm/arxescsi.c b/drivers/scsi/arm/arxescsi.c
-> index a750aa7..2608a9e 100644
-> --- a/drivers/scsi/arm/arxescsi.c
-> +++ b/drivers/scsi/arm/arxescsi.c
-> @@ -72,7 +72,8 @@ arxescsi_dma_setup(struct Scsi_Host *host, struct scsi_pointer *SCp,
->  	return fasdma_pseudo;
->  }
->  
-> -static void arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
-> +static noinline void
-> +arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
-Shouldn't this line get some indention?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ include/net/dsa.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
->  {
->         __asm__ __volatile__(
->         "               stmdb   sp!, {r0-r12}\n"
-
-Best regards
-Uwe
-
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index b78db3c..7828ebf 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -11,6 +11,7 @@
+ #ifndef __LINUX_NET_DSA_H
+ #define __LINUX_NET_DSA_H
+ 
++#include <linux/if_ether.h>
+ #include <linux/list.h>
+ #include <linux/timer.h>
+ #include <linux/workqueue.h>
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.5.4
+
+
+
