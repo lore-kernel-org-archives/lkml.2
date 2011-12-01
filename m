@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab1LAJHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:07:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110Ab1LAJHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 04:07:46 -0500
-Date: Thu, 1 Dec 2011 11:09:21 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>, dhowells@redhat.com,
-        paulmck@linux.vnet.ibm.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-Message-ID: <20111201090920.GA8231@redhat.com>
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
- <20111129131110.GC19157@redhat.com>
- <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
- <20111129151958.GA31789@redhat.com>
- <CAK=WgbZ5aBFNro3XC0cN+Ao4ZWrBHwwd3d__CSHA=n56gKmKXw@mail.gmail.com>
- <20111130145004.GD21413@redhat.com>
- <CAK=WgbY59n9N_-2_TZ9wNBNcTMV1DCrz65e-Ae=xamcg6A0dOA@mail.gmail.com>
- <20111130231306.GD30031@redhat.com>
- <CAK=Wgbb5M62LgXY-sn7R6YautHxwqyDbPTeXYJxgmrS9fPXR9A@mail.gmail.com>
+	id S1752195Ab1LAJKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:10:15 -0500
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:53868
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751601Ab1LAJKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 04:10:12 -0500
+Message-ID: <4ED7446B.5000806@compulab.co.il>
+Date: Thu, 01 Dec 2011 11:10:03 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK=Wgbb5M62LgXY-sn7R6YautHxwqyDbPTeXYJxgmrS9fPXR9A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: axel.lin@gmail.com
+CC: linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Jorge Eduardo Candelaria <jorge.candelaria@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 4/4] mfd: twl6040-core: Use gpio_request_one
+References: <1322704074.11560.3.camel@phoenix> <1322704507.11560.8.camel@phoenix> <4ED734AD.1070303@compulab.co.il> <CAF+7xWnf398rY_Lb8CexjZDtcp8poseQc11S-14xyNSVGDdJWw@mail.gmail.com>
+In-Reply-To: <CAF+7xWnf398rY_Lb8CexjZDtcp8poseQc11S-14xyNSVGDdJWw@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 08:14:26AM +0200, Ohad Ben-Cohen wrote:
-> On Thu, Dec 1, 2011 at 1:13 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > For x86, stores into memory are ordered. So I think that yes, smp_XXX
-> > can be selected at compile time.
+On 12/01/11 10:18, Axel Lin wrote:
+> 2011/12/1 Igor Grinberg <grinberg@compulab.co.il>:
+>> On 12/01/11 03:55, Axel Lin wrote:
+>>> Use gpio_request_one() instead of multiple gpiolib calls.
+>>>
+>>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>>> ---
+>>>  drivers/mfd/twl6040-core.c |    7 ++-----
+>>>  1 files changed, 2 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+>>> index 268f80f..e57b1d1 100644
+>>> --- a/drivers/mfd/twl6040-core.c
+>>> +++ b/drivers/mfd/twl6040-core.c
+>>> @@ -509,13 +509,10 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+>>>               twl6040->audpwron = -EINVAL;
+>>>
+>>>       if (gpio_is_valid(twl6040->audpwron)) {
+>>> -             ret = gpio_request(twl6040->audpwron, "audpwron");
+>>> +             ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
+>>> +                                    "audpwron");
+>>>               if (ret)
+>>>                       goto gpio1_err;
+>>> -
+>>> -             ret = gpio_direction_output(twl6040->audpwron, 0);
+>>> -             if (ret)
+>>> -                     goto gpio2_err;
+>>>       }
+>>
+>> same here, double check gpio_is_valid()?
 > 
-> But then you can't use the same kernel image for both scenarios.
+> In the case of
+> twl6040->audpwron = -EINVAL;  ( see line 509 )
+> gpio_is_valid returns false, we just don't request gpio.
+> 
+> If we remove the gpio_is_valid checking here,
+> then gpio_request_one will return -EINVAL.
+> Then the code always goes to the error path if twl6040->audpwron is -EINVAL.
 
-I was talking about virtio-pci. That always allocates the ring
-in the normal memory.
+Thanks for the explanation.
+So the GPIO is optional - now it makes sense to me.
 
-> It won't take long until people will use virtio on ARM for both
-> virtualization and for talking to devices, and having to rebuild the
-> kernel for different use cases is nasty.
 
-Yes, I understand that it's nasty.
-
-> _______________________________________________
-> Virtualization mailing list
-> Virtualization@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
+-- 
+Regards,
+Igor.
