@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab1LAIBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:01:30 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:17792 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753329Ab1LAIB3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:01:29 -0500
-X-SpamScore: -4
-X-BigFish: VPS-4(zz4015Lzz1202hzzz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVIMA9-01-CKR-02
-X-M-MSG: 
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1753592Ab1LAICT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:02:19 -0500
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:53304
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751928Ab1LAICR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 03:02:17 -0500
+Message-ID: <4ED73481.2010904@compulab.co.il>
+Date: Thu, 01 Dec 2011 10:02:09 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Unhandled IRQs on AMD E-450
-Date: Thu, 1 Dec 2011 16:01:12 +0800
-Message-ID: <1E8B869C0C6913418421A406C094DF7C0205358F@sshaexmb1.amd.com>
-In-Reply-To: <20111130154445.GA27198@gere.osrc.amd.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Unhandled IRQs on AMD E-450
-Thread-Index: AcyvtXtfz0qVZOx/Sgib+qeEAJ+ztwASaWDw
-References: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com> <20111130154445.GA27198@gere.osrc.amd.com>
-From: "Huang, Shane" <Shane.Huang@amd.com>
-To: Borislav Petkov <bp@amd64.org>,
-        Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>,
-        "Nguyen, Dong" <Dong.Nguyen@amd.com>
-CC: <linux-kernel@vger.kernel.org>, "Huang, Shane" <Shane.Huang@amd.com>
-X-OriginalArrivalTime: 01 Dec 2011 08:01:20.0094 (UTC) FILETIME=[690DDFE0:01CCAFFF]
-X-OriginatorOrg: amd.com
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Keshava Munegowda <keshava_mgowda@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 3/4] mfd: omap-usb-host: Use gpio_request_one
+References: <1322704074.11560.3.camel@phoenix> <1322704405.11560.7.camel@phoenix>
+In-Reply-To: <1322704405.11560.7.camel@phoenix>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boris,
+Hi Axel,
 
-> Shane, can you guys take a look at this, sounds like some unfortunate
-> sharing of AHCI and network IRQ numbers.
+On 12/01/11 03:53, Axel Lin wrote:
+> Use gpio_request_one() instead of multiple gpiolib calls.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/omap-usb-host.c |   20 +++++++-------------
+>  1 files changed, 7 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+> index 86e1458..6533ecc 100644
+> --- a/drivers/mfd/omap-usb-host.c
+> +++ b/drivers/mfd/omap-usb-host.c
+> @@ -715,19 +715,13 @@ static int usbhs_enable(struct device *dev)
+>  	clk_enable(omap->usbtll_ick);
+>  
+>  	if (pdata->ehci_data->phy_reset) {
+> -		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0])) {
+> -			gpio_request(pdata->ehci_data->reset_gpio_port[0],
+> -						"USB1 PHY reset");
+> -			gpio_direction_output
+> -				(pdata->ehci_data->reset_gpio_port[0], 0);
+> -		}
+> +		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
+> +			gpio_request_one(pdata->ehci_data->reset_gpio_port[0],
+> +					 GPIOF_OUT_INIT_LOW, "USB1 PHY reset");
+>  
+> -		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1])) {
+> -			gpio_request(pdata->ehci_data->reset_gpio_port[1],
+> -						"USB2 PHY reset");
+> -			gpio_direction_output
+> -				(pdata->ehci_data->reset_gpio_port[1], 0);
+> -		}
+> +		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
+> +			gpio_request_one(pdata->ehci_data->reset_gpio_port[1],
+> +					 GPIOF_OUT_INIT_LOW, "USB2 PHY reset");
 
-I'm adding Dong who might help on this.
+I was wondering, if we need the gpio_is_valid() check here and above?
+gpio_request() already does the gpio_is_valid() check,
+so why should we double check?
 
 
-Thanks,
-Shane
-
-
+-- 
+Regards,
+Igor.
