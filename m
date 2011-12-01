@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab1LAT3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 14:29:44 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49613 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756199Ab1LAT3n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 14:29:43 -0500
-Date: Thu, 1 Dec 2011 11:29:35 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH UPDATED 03/10] threadgroup: extend threadgroup_lock()
- to cover exit and exec
-Message-ID: <20111201192935.GE13173@google.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-4-git-send-email-tj@kernel.org>
- <20111124225054.GA14828@google.com>
- <CA+55aFxq1wztMzYhKaY5RHazLBDz4pSXUgiGzTj2wA6EJcDbAw@mail.gmail.com>
- <20111127192155.GB4266@google.com>
- <20111127212558.GE4266@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111127212558.GE4266@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752212Ab1LATcp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 14:32:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028Ab1LATcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 14:32:43 -0500
+Message-ID: <1322767925.1735.40.camel@adam>
+Subject: Re: [PATCH v4 0/2] nfs/sunrpc: allow freezing of tasks with NFS
+ calls in flight
+From: Adam Williamson <awilliam@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jeff Layton <jlayton@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, john@calva.com, trond.myklebust@netapp.com,
+        marek.belisko@gmail.com
+Date: Thu, 01 Dec 2011 11:32:05 -0800
+In-Reply-To: <20111201184932.GB13173@google.com>
+References: <1322570215-8570-1-git-send-email-jlayton@redhat.com>
+	 <201111302043.13844.rjw@sisk.pl> <20111201184932.GB13173@google.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello again, Linus.
-
-On Sun, Nov 27, 2011 at 01:25:58PM -0800, Tejun Heo wrote:
-> The problem is that cred_guard_mutex uses _interruptible/_killable
-> operations and rwsem doesn't have them, so cred_guard_mutex can't be
-> easily replaced with write-locking group_rwsem.
+On Thu, 2011-12-01 at 10:49 -0800, Tejun Heo wrote:
+> On Wed, Nov 30, 2011 at 08:43:13PM +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, November 29, 2011, Jeff Layton wrote:
+> > > This patchset is the fourth attempt at fixing the issues with suspending
+> > > a machine that has an active NFS mount.
+> > > 
+> > > The bug reported against Fedora is here:
+> > > 
+> > >     https://bugzilla.redhat.com/show_bug.cgi?id=717735
+> > > 
+> > > The main difference from v3 is that I've fixed a stupid set of errors in
+> > > freezable_schedule_timeout_killable. The if condition was reversed from
+> > > what it should have been, and the code did not call freezer_count()
+> > > again when it was going to return early.
+> > > 
+> > > Tejun has mentioned that the extra try_to_freeze() calls are unnecessary
+> > > on top of the pm-freezer changes, but this set should work on as
+> > > expected on top of 3.2-ish kernels. In the meantime, I'll look over the
+> > > pm-freezer changes and see whether I need to make changes in this set
+> > > for 3.3.
+> > > 
+> > > Jeff Layton (2):
+> > >   sunrpc: make rpc_wait_bit_killable handle freeze events
+> > >   nfs: make TASK_KILLABLE sleeps attempt to freeze
+> > 
+> > Both patches applied to linux-pm/linux-next.  I'll move them to
+> > linux-pm/pm-freezer in a couple of days if there are no problems with
+> > them.
 > 
-> If the two locks can't be merged, under the proposed scheme, while not
-> exactly pretty, both fork/exit and exec paths go through single
-> locking and only the ones which want stable threadgroup need to grab
-> both locks, so IMHO it is at least reasonable.
-> 
-> Any better ideas?
+> Rafael, I think the extra try_to_freeze() is actually incorrect on top
+> of pm-freezer.  Jeff, can you please remove that?
 
-I agree that the proposed solution is rather ugly but stable
-thread-group is a valid mechanism to have and cgroup can benefit a lot
-from it.  I'd be happy to revamp the implementation if anyone can come
-up with a better way and can add big fat comment stating that.  Until
-something better comes up, would it be okay to stick with this
-implementation?
-
-Thanks.
-
+You might want to read two levels up: Jeff explicitly mentioned that
+already. :)
 -- 
-tejun
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | identi.ca: adamwfedora
+http://www.happyassassin.net
+
