@@ -1,312 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab1LACzP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 21:55:15 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55517 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab1LACzO (ORCPT
+	id S1753967Ab1LAC5b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 21:57:31 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:6691
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753289Ab1LAC5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 21:55:14 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 1 Dec 2011 11:53:53 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        rostedt@goodmis.org
-Subject: [PATCH] jump_label: jump_label for boot options.
-Message-Id: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 30 Nov 2011 21:57:30 -0500
+X-SpamScore: -12
+X-BigFish: VPS-12(zzbb2dK1432N98dKzz1202hzz8275bhz2fh668h839h946h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4ED6ED03.9080408@am.sony.com>
+Date: Wed, 30 Nov 2011 18:57:07 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC PATCH 4/6] ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on
+ ASID-capable CPUs
+References: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com> <1322569352-23584-5-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1322569352-23584-5-git-send-email-catalin.marinas@arm.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I tried to use jump_label for handling memcg's boot options which sets
-global variable true/false and never changes after boot. And found jump_table
-is larger than expected. This patch is a trial to allow to place jump_table
-in .init section. How do you think ?
+On 11/29/11 04:22, Catalin Marinas wrote:
+> Since the ASIDs must be unique to an mm across all the CPUs in a system,
+> the __new_context() function needs to broadcast a context reset event to
+> all the CPUs during ASID allocation if a roll-over occurred. Such IPIs
+> cannot be issued with interrupts disabled and ARM had to define
+> __ARCH_WANT_INTERRUPTS_ON_CTXSW.
+> 
+> This patch changes the check_context() function to
+> check_and_switch_context() called from switch_mm(). In case of
+> ASID-capable CPUs (ARMv6 onwards), if a new ASID is needed, it defers
+> the __new_context() and cpu_switch_mm() calls to the post-lock switch
+> hook where the interrupts are enabled. Setting the reserved TTBR0 was
+> also moved to check_and_switch_context() from cpu_v7_switch_mm().
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> ---
+>  arch/arm/include/asm/mmu_context.h |   81 ++++++++++++++++++++++++++++--------
+>  arch/arm/include/asm/system.h      |    2 +
+>  arch/arm/include/asm/thread_info.h |    1 +
+>  arch/arm/mm/context.c              |    4 +-
+>  arch/arm/mm/proc-v7.S              |    3 -
+>  5 files changed, 69 insertions(+), 22 deletions(-)
+> 
 
-This patch is based on linux-next.
+< snip >
 
-==
->From ed8996892c21d4fec642e4fc80bd3ebdd8a48836 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 1 Dec 2011 11:08:23 +0900
-Subject: [PATCH] jump_label for boot options.
+> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+> index 2faff3b..d5334d9 100644
+> --- a/arch/arm/mm/proc-v7.S
+> +++ b/arch/arm/mm/proc-v7.S
+> @@ -116,9 +116,6 @@ ENTRY(cpu_v7_switch_mm)
+>  #ifdef CONFIG_ARM_ERRATA_430973
+>  	mcr	p15, 0, r2, c7, c5, 6		@ flush BTAC/BTB
+>  #endif
+> -	mrc	p15, 0, r2, c2, c0, 1		@ load TTB 1
+> -	mcr	p15, 0, r2, c2, c0, 0		@ into TTB 0
+> -	isb
+>  #ifdef CONFIG_ARM_ERRATA_754322
+>  	dsb
+>  #endif
 
-Some boot options exists for enable/disable a functionality which cannot be modified
-after boot. Using jump_label for such behavior seems atractive but if caller
-of statch_branch() is too much, jump_table can be unexpectedly big.
+I do not have a tree that matches this version of cpu_v7_switch_mm().
+Can you point me at a tree that I can see this in?
 
-This patch adds static_branch_init_once(), which places its jump_table
-in init section and never be updated after boot.
-
-For MODULES, using usual static_branch().
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- arch/mips/include/asm/jump_label.h    |   14 ++++++++++
- arch/powerpc/include/asm/jump_label.h |   15 +++++++++++
- arch/x86/include/asm/jump_label.h     |   15 +++++++++++
- include/asm-generic/vmlinux.lds.h     |    6 ++++
- include/linux/jump_label.h            |   39 +++++++++++++++++++++++++++++
- kernel/jump_label.c                   |   43 ++++++++++++++++++++++++++------
- 6 files changed, 124 insertions(+), 8 deletions(-)
-
-diff --git a/arch/mips/include/asm/jump_label.h b/arch/mips/include/asm/jump_label.h
-index 1881b31..dd0b8f0 100644
---- a/arch/mips/include/asm/jump_label.h
-+++ b/arch/mips/include/asm/jump_label.h
-@@ -33,6 +33,20 @@ l_yes:
- 	return true;
- }
- 
-+static __always_inline bool
-+arch_static_branch_init_once(struct jump_lable_key *key)
-+{
-+	asm goto("1:\tnop\n\t"
-+		"nop\n\t"
-+		".pushsection __jump_table.init, \"aw\"\n\t"
-+		WORD_INSN " 1b, %l[l_yes], %0\n\t"
-+		".popsection\n\t"
-+		: : "i" (key) : : l_yes);
-+	return false;
-+l_yes:
-+	return true;
-+}
-+
- #endif /* __KERNEL__ */
- 
- #ifdef CONFIG_64BIT
-diff --git a/arch/powerpc/include/asm/jump_label.h b/arch/powerpc/include/asm/jump_label.h
-index 938986e..8557f8a 100644
---- a/arch/powerpc/include/asm/jump_label.h
-+++ b/arch/powerpc/include/asm/jump_label.h
-@@ -30,6 +30,21 @@ l_yes:
- 	return true;
- }
- 
-+static __always_inline bool
-+arch_static_branch_init_once(struct jump_label_key *key)
-+{
-+	asm goto("1:\n\t"
-+		 "nop\n\t"
-+		 ".pushsection __jump_table.init,  \"aw\"\n\t"
-+		 JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
-+		 ".popsection \n\t"
-+		 : :  "i" (key) : : l_yes);
-+	return false;
-+l_yes:
-+	return true;
-+}
-+
-+
- #ifdef CONFIG_PPC64
- typedef u64 jump_label_t;
- #else
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-index a32b18c..a85ad63 100644
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -25,6 +25,21 @@ l_yes:
- 	return true;
- }
- 
-+static __always_inline
-+bool arch_static_branch_init_once(struct jump_label_key *key)
-+{
-+	asm goto("1:"
-+		JUMP_LABEL_INITIAL_NOP
-+		".pushsection __jump_table.init, \"aw\" \n\t"
-+		_ASM_ALIGN "\n\t"
-+		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
-+		".popsection \n\t"
-+		: : "i" (key) : : l_yes);
-+	return false;
-+l_yes:
-+	return true;
-+}
-+
- #endif /* __KERNEL__ */
- 
- #ifdef CONFIG_X86_64
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index b5e2e4c..1635f38 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -651,6 +651,11 @@
- 		*(.security_initcall.init)				\
- 		VMLINUX_SYMBOL(__security_initcall_end) = .;
- 
-+#define JUMP_LABEL_FOR_INIT						\
-+		VMLINUX_SYMBOL(__start___jump_table_at_init) = .;	\
-+		*(__jump_table.init)					\
-+		VMLINUX_SYMBOL(__stop___jump_table_at_init) = .;
-+
- #ifdef CONFIG_BLK_DEV_INITRD
- #define INIT_RAM_FS							\
- 	. = ALIGN(4);							\
-@@ -799,6 +804,7 @@
- 		INIT_CALLS						\
- 		CON_INITCALL						\
- 		SECURITY_INITCALL					\
-+		JUMP_LABEL_FOR_INIT					\
- 		INIT_RAM_FS						\
- 	}
- 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 388b0d4..b0f37f3 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -38,8 +38,31 @@ static __always_inline bool static_branch(struct jump_label_key *key)
- 	return arch_static_branch(key);
- }
- 
-+/*
-+ * Use this when you call static_branch() in __init function or
-+ * jump_label is only modified by initcalls. jump_label information
-+ * will be discarded after boot. But please be careful. jump_label_key
-+ * definition itself should *not* be in __init section because a MODULE
-+ * may call static_branch_init_once().
-+ *
-+ * Useful for changing behavior by boot option.
-+ */
-+#ifndef MODULE
-+static __always_inline bool static_branch_init_once(struct jump_label_key *key)
-+{
-+	return arch_static_branch_init_once(key);
-+}
-+#else
-+static __always_inline bool static_branch_init_once(struct jump_label_key *key)
-+{
-+	return static_branch(key);
-+}
-+#endif
-+
- extern struct jump_entry __start___jump_table[];
- extern struct jump_entry __stop___jump_table[];
-+extern struct jump_entry __start___jump_table_at_init[];
-+extern struct jump_entry __stop___jump_table_at_init[];
- 
- extern void jump_label_init(void);
- extern void jump_label_lock(void);
-@@ -54,6 +77,12 @@ extern void jump_label_dec(struct jump_label_key *key);
- extern bool jump_label_enabled(struct jump_label_key *key);
- extern void jump_label_apply_nops(struct module *mod);
- 
-+/*
-+ * For jump_label in init section.
-+ * This will call jump_label_inc() for usual section, too.
-+ */
-+extern void jump_label_inc_once(struct jump_label_key *key);
-+
- #else  /* !HAVE_JUMP_LABEL */
- 
- #include <linux/atomic.h>
-@@ -75,6 +104,11 @@ static __always_inline bool static_branch(struct jump_label_key *key)
- 	return false;
- }
- 
-+static __always_inline bool static_branch_init_once(struct jump_label_key *key)
-+{
-+	return static_branch(key);
-+}
-+
- static inline void jump_label_inc(struct jump_label_key *key)
- {
- 	atomic_inc(&key->enabled);
-@@ -102,6 +136,11 @@ static inline int jump_label_apply_nops(struct module *mod)
- {
- 	return 0;
- }
-+
-+static inline void jump_label_inc_once(struct jump_label_key *key)
-+{
-+	jump_label_inc(key);
-+}
- #endif	/* HAVE_JUMP_LABEL */
- 
- #endif	/* _LINUX_JUMP_LABEL_H */
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 66ff710..f0e8231 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -134,15 +134,11 @@ static void __jump_label_update(struct jump_label_key *key,
- 	}
- }
- 
--void __init jump_label_init(void)
-+void __init jump_label_transform_all(struct jump_entry *iter_start,
-+				     struct jump_entry *iter_stop)
- {
--	struct jump_entry *iter_start = __start___jump_table;
--	struct jump_entry *iter_stop = __stop___jump_table;
--	struct jump_label_key *key = NULL;
- 	struct jump_entry *iter;
--
--	jump_label_lock();
--	jump_label_sort_entries(iter_start, iter_stop);
-+	struct jump_label_key *key = NULL;
- 
- 	for (iter = iter_start; iter < iter_stop; iter++) {
- 		struct jump_label_key *iterk;
-@@ -159,6 +155,24 @@ void __init jump_label_init(void)
- 		key->next = NULL;
- #endif
- 	}
-+
-+}
-+
-+
-+void __init jump_label_init(void)
-+{
-+	struct jump_entry *iter_start = __start___jump_table;
-+	struct jump_entry *iter_stop = __stop___jump_table;
-+
-+
-+	jump_label_lock();
-+	jump_label_sort_entries(iter_start, iter_stop);
-+	jump_label_transform_all(iter_start, iter_stop);
-+	/* update jump_table in .init section */
-+	iter_start = __start___jump_table_at_init;
-+	iter_stop = __stop___jump_table_at_init;
-+	jump_label_sort_entries(iter_start, iter_stop);
-+	jump_label_transform_all(iter_start, iter_stop);
- 	jump_label_unlock();
- }
- 
-@@ -381,7 +395,8 @@ int jump_label_text_reserved(void *start, void *end)
- 
- static void jump_label_update(struct jump_label_key *key, int enable)
- {
--	struct jump_entry *entry = key->entries, *stop = __stop___jump_table;
-+	struct jump_entry *entry = key->entries;
-+	struct jump_entry *stop = __stop___jump_table;
- 
- #ifdef CONFIG_MODULES
- 	struct module *mod = __module_address((jump_label_t)key);
-@@ -396,4 +411,16 @@ static void jump_label_update(struct jump_label_key *key, int enable)
- 		__jump_label_update(key, entry, stop, enable);
- }
- 
-+/* for boot options */
-+void __init jump_label_init_once(struct jump_label_key *key)
-+{
-+	struct jump_entry *entry = key->entries;
-+	struct jump_entry *stop = __stop___jump_table_at_init;
-+
-+	if (entry)
-+		__jump_label_update(key, entry, stop, JUMP_LABEL_ENABLE);
-+
-+	jump_label_inc(key);
-+}
-+
- #endif
--- 
-1.7.4.1
-
+-Frank
 
