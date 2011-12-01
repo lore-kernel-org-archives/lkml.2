@@ -1,143 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab1LAIzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:55:36 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58346 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab1LAIze (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:55:34 -0500
-Message-ID: <4ED74102.6040207@redhat.com>
-Date: Thu, 01 Dec 2011 09:55:30 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751776Ab1LAI6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:58:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44978 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751360Ab1LAI6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 03:58:50 -0500
+Date: Thu, 1 Dec 2011 09:58:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
+Subject: Re: [3.2-rc3] 100% CPU usage while in del_timer_sync from
+ iwl3945_rs_free_sta
+Message-ID: <20111201085845.GA4602@tiehlicka.suse.cz>
+References: <20111129100727.GD2675@tiehlicka.suse.cz>
+ <20111129113906.GA7299@redhat.com>
+ <20111130101028.GA2906@tiehlicka.suse.cz>
+ <20111130142316.GA2466@redhat.com>
+ <20111130140316.GA4153@tiehlicka.suse.cz>
+ <20111130153929.GA2144@redhat.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.virtualization,gmane.linux.kernel
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: virtualization <virtualization@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH] Add virtio-scsi to the virtio spec
-References: <1322661042-28191-1-git-send-email-pbonzini@redhat.com> <87sjl5rnj6.fsf@rustcorp.com.au>
-In-Reply-To: <87sjl5rnj6.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111130153929.GA2144@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2011 04:14 AM, Rusty Russell wrote:
-> I'd prefer to see the spec only cover things
-> which are implemented and tested, otherwise the risk of a flaw in the
-> spec is really high in my experience.
+On Wed 30-11-11 16:39:30, Stanislaw Gruszka wrote:
+> On Wed, Nov 30, 2011 at 03:03:16PM +0100, Michal Hocko wrote:
+> > No, didn't help unfortunately...
+> 
+> Lets gather some more messages. Please apply attached simple patch,
+> recompile with:
+> CONFIG_MAC80211_DEBUG_MENU=y
+> CONFIG_MAC80211_VERBOSE_DEBUG=y
 
-In general I agree, and I did that for virtio-specific things such as 
-the eventq and the configuration space.  This is also why I don't want 
-to add untested controlq requests that people suggested.
+$ zgrep "MAC80211.*DEBUG" /proc/config.gz | grep -v ^\#
+CONFIG_MAC80211_DEBUG_MENU=y
+CONFIG_MAC80211_VERBOSE_DEBUG=y
 
-However, there's tension between this and providing a complete SCSI 
-transport.  SCSI is roughly defined as a set of RPC interfaces ("Send 
-command", "Abort task", etc.) and transports provide the RPC protocol. 
-The SCSI command set changes relatively often, but the RPC interfaces 
-are pretty stable.  This stability limits the risk, and having a mapping 
-for all interfaces also makes future changes less likely.
+> and provide dmesg.
 
-> Comments below:
->
->>    num_queues is the total number of virtqueues exposed by the
->>      device. The driver is free to use only one request queue, or
->>      it can use more to achieve better performance.
->
-> s/total number of virtqueues/total number of request virtqueues/ ?
+[  262.007061] ieee80211 phy0: device no longer idle - scanning
+[  266.699301] ieee80211 phy0: device now idle
+[  342.002248] ieee80211 phy0: device no longer idle - scanning
+[  346.695045] ieee80211 phy0: device now idle
+[  351.813276] ieee80211 phy0: device no longer idle - scanning
+[  355.487602] ieee80211 phy0: device now idle
+[  360.491257] ieee80211 phy0: device no longer idle - scanning
+[  364.170612] ieee80211 phy0: device now idle
+[  369.175101] ieee80211 phy0: device no longer idle - scanning
+[  372.847072] ieee80211 phy0: device now idle
+[  372.848534] ieee80211 phy0: device no longer idle - working
+[  372.848545] wlan0: authenticate with 00:0b:6b:3c:8c:e4 (try 1)
+[  372.850295] wlan0: authenticated
+[  372.850317] ieee80211 phy0: device now idle
+[  372.852870] iwl3945_rs_alloc_sta rs_sta f411dac0
+[  372.852877] ieee80211 phy0: Allocated STA 00:0b:6b:3c:8c:e4
+[  372.852882] ieee80211 phy0: Inserted dummy STA 00:0b:6b:3c:8c:e4
+[  372.852897] ieee80211 phy0: device no longer idle - working
+[  372.852903] wlan0: associate with 00:0b:6b:3c:8c:e4 (try 1)
+[  372.910215] wlan0: RX ReassocResp from 00:0b:6b:3c:8c:e4 (capab=0x431 status=0 aid=1)
+[  372.910223] wlan0: associated
+[  372.910341] ieee80211 phy0: Inserted STA 00:0b:6b:3c:8c:e4
+[  372.910352] ieee80211 phy0: WMM queue=2 aci=0 acm=0 aifs=2 cWmin=7 cWmax=1023 txop=64 uapsd=0
+[  372.910362] ieee80211 phy0: WMM queue=3 aci=1 acm=0 aifs=7 cWmin=15 cWmax=1023 txop=0 uapsd=0
+[  372.910372] ieee80211 phy0: WMM queue=1 aci=2 acm=0 aifs=2 cWmin=7 cWmax=15 txop=94 uapsd=0
+[  372.910381] ieee80211 phy0: WMM queue=0 aci=3 acm=0 aifs=2 cWmin=3 cWmax=7 txop=47 uapsd=0
+[  383.384042] wlan0: no IPv6 routers present
+[  426.375395] PM: Syncing filesystems ... done.
+[  426.430760] PM: Preparing system for mem sleep
+[...]
+suspen
+resume with AP deactivated
+[...]
+[  431.324532] iwl3945 0000:05:00.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
+[  431.324601] iwl3945 0000:05:00.0: restoring config space at offset 0x4 (was 0x0, writing 0x80100000)
+[  431.324616] iwl3945 0000:05:00.0: restoring config space at offset 0x3 (was 0x0, writing 0x10)
+[  431.324636] iwl3945 0000:05:00.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100406)
+[...]
+[  434.064050] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, try 1/5
+[  434.250089] usb 5-2: New USB device found, idVendor=0c24, idProduct=000f
+[  434.250098] usb 5-2: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+[  434.564034] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, try 2/5
+[  435.004096] wlan0: detected beacon loss from AP - sending probe request
+[  435.064044] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, try 3/5
+[  435.564047] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, try 4/5
+[  436.064065] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, disconnecting.
+[  436.148044] ieee80211 phy0: Removed STA 00:0b:6b:3c:8c:e4
+[  436.148069] iwl3945_rs_free_sta rs_sta f411dac0
+[  436.148076] ------------[ cut here ]------------
+[  436.148097] WARNING: at drivers/net/wireless/iwlegacy/iwl-3945-rs.c:438 iwl3945_rs_free_sta+0x33/0x42 [iwl3945]()
+[  436.148103] Hardware name: LIFEBOOK S7110
+[  436.148107] Modules linked in: aes_i586 aes_generic i915 fbcon font bitblit softcursor drm_kms_helper drm fb fbdev i2c_algo_bit cfbcopyarea i2c_core cfbimgblt cfbfillrect fuse tun coretemp hwmon arc4 snd_hda_codec_realtek iwl3945 snd_hda_intel iwl_legacy snd_hda_codec snd_pcm_oss snd_mixer_oss snd_pcm snd_seq_oss snd_seq_midi_event mac80211 snd_seq snd_timer snd_seq_device snd fujitsu_laptop video backlight cfg80211 snd_page_alloc [last unloaded: scsi_wait_scan]
+[  436.148195] Pid: 1330, comm: kworker/u:4 Tainted: G        W    3.2.0-rc3-mac80211test-00005-g1b97fa2 #19
+[  436.148200] Call Trace:
+[  436.148214]  [<c01331ac>] warn_slowpath_common+0x68/0x7d
+[  436.148229]  [<f8223454>] ? iwl3945_rs_free_sta+0x33/0x42 [iwl3945]
+[  436.148238]  [<c01331d5>] warn_slowpath_null+0x14/0x18
+[  436.148251]  [<f8223454>] iwl3945_rs_free_sta+0x33/0x42 [iwl3945]
+[  436.148274]  [<f81c2f94>] __sta_info_free.isra.24+0x28/0x60 [mac80211]
+[  436.148296]  [<f81c3df9>] __sta_info_destroy+0x259/0x283 [mac80211]
+[  436.148320]  [<f81c4194>] sta_info_flush+0x43/0x6e [mac80211]
+[  436.148346]  [<f81c9453>] ieee80211_set_disassoc+0x1a3/0x1d7 [mac80211]
+[  436.148372]  [<f81c95e8>] ieee80211_sta_connection_lost+0x31/0x8a [mac80211]
+[  436.148382]  [<c0311367>] ? dev_printk+0x2b/0x2d
+[  436.148409]  [<f81cbde2>] ieee80211_sta_work+0x1b0/0x1c3 [mac80211]
+[  436.148439]  [<f81ce38a>] ieee80211_iface_work+0x23e/0x250 [mac80211]
+[  436.148450]  [<c0146673>] process_one_work+0x19b/0x2e6
+[  436.148476]  [<f81ce14c>] ? ieee80211_netdev_select_queue+0x14/0x14 [mac80211]
+[  436.148485]  [<c0146ba1>] worker_thread+0x136/0x1ee
+[  436.148494]  [<c0146a6b>] ? manage_workers.isra.23+0x14f/0x14f
+[  436.148502]  [<c0149eb9>] kthread+0x67/0x6c
+[  436.148510]  [<c0149e52>] ? kthread_worker_fn+0x119/0x119
+[  436.148520]  [<c0475576>] kernel_thread_helper+0x6/0x10
+[  436.148525] ---[ end trace f37fc1957f2d5230 ]---
+[  436.148532] ieee80211 phy0: Destroyed STA 00:0b:6b:3c:8c:e4
+[  436.148546] ieee80211 phy0: device now idle
+[  436.164140] cfg80211: Calling CRDA to update world regulatory domain
+[  436.248933] ieee80211 phy0: device no longer idle - scanning
+[  439.932216] ieee80211 phy0: device now idle
+[  444.930668] ieee80211 phy0: device no longer idle - scanning
+[  448.604546] ieee80211 phy0: device now idle
+[  453.608897] ieee80211 phy0: device no longer idle - scanning
+[  457.283583] ieee80211 phy0: device now idle
+[  462.287692] ieee80211 phy0: device no longer idle - scanning
+[  465.964143] ieee80211 phy0: device now idle
+[  470.967145] ieee80211 phy0: device no longer idle - scanning
+[  474.642423] ieee80211 phy0: device now idle 
 
-Ok.
+So we are hitting NULL timer in the iwl3945_rs_free_sta again. Is it
+possible that the timer was just deactivated during suspend? I do not
+see any code doing that in the iwl driver but maybe there is some
+generic functionality at 80211 layer.
 
->>    max_channel, max_target and max_lun can be used by the driver
->>      as hints for scanning the logical units on the host. In the
->>      current version of the spec, they will always be respectively
->>      0, 255 and 16383.
->
-> s/hints for scanning/hints to constrain scanning/ ? (I assume).
+I will try to turn on timer debugging suggested by Yong Zhang in other
+email.
 
-Yes.
-
->> The driver queues requests to an arbitrary request queue, and they are
->> used by the device on that same queue. In this version of the spec,
->> if a driver uses more than one queue it is the responsibility of the
->> driver to ensure strict request ordering; commands placed on different
->> queue will be consumed with no order constraints.
->
-> Suggest simplification of second sentence:
->
-> It is the responsibility of the driver to ensure strict request
-> ordering; commands placed on different queues will be consumed with no
-> order constraints.
-
-Agreed.
-
->> Task_attr, prio and crn should be left to zero: command priority
->> is explicitly not supported by this version of the device;
->> task_attr defines the task attribute as in the table above, but
->> all task attributes may be mapped to SIMPLE by the device; crn
->> may also be provided by clients, but is generally expected to be
->> 0. The maximum CRN value defined by the protocol is 255, since
->> CRN is stored in an 8-bit integer.
->
-> Be braver in your language please.  It helps poor implementers who are
-> already confused by learning SCSI and virtio:
->
->   Task_attr, and prio must be zero.[1] task_attr defines the task
->   attribute as in the table above, but all task attributes may be mapped
->   to SIMPLE by the device; crn may also be provided by clients, but is
->   generally expected to be 0.
->
->   [1] Future extensions may use these fields.
->
-> Is it useful for a driver to specify ordered (or other) modes, knowing
-> it could be reduced to SIMPLE without it being aware?  Or should we use
-> feature bits to indicate what the device supports?
-
-This is actually mandated by SCSI. (!)  It defines all the modes, but 
-explicitly says that they can be reduced to SIMPLE.
-
->>    Note that since ACA is not supported by this version of the
->>    spec, VIRTIO_SCSI_T_TMF_CLEAR_ACA is always a no-operation.
->
-> I think if you don't support ACA in the spec, don't define this.  How
-> will a driver author use this information?
-
-I will remove the text, no one will notice. :)
-
-However, leaving the #define is preferrable because it keeps the SCSI 
-transport complete.  SCSI unfortunately is full of obsolete concepts 
-that no one implements but are still in the standard (and have funny 
-names: ACA stands for Auto Contingent Allegiance).  Fallbacks are 
-allowed and indeed defined by the standard, but an implementation is 
-still supposed to provide the "concepts".  You can see this everywhere 
-in drivers/target.
-
->>      struct virtio_scsi_ctrl_an {
->> 	 u32 type;
->> 	 u8  lun[8];
->> 	 u32 event_requested;
->> 	 u32 event_actual;
->> 	 u8  response;
->>      }
->
-> With all these structures, you might want a comment indicating the
-> read-only and write-only (from the device POV) parts of the struct, eg:
->
->       struct virtio_scsi_ctrl_an {
->           // Read-only part
-> 	 u32 type;
-> 	 u8  lun[8];
-> 	 u32 event_requested;
->           // Write-only part
-> 	 u32 event_actual;
-> 	 u8  response;
->       }
-
-(Very) good idea.
-
-Paolo
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
