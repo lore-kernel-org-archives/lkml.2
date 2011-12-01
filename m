@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab1LAJNJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:13:09 -0500
-Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:38503 "EHLO
-	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751712Ab1LAJNH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 04:13:07 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAEtE105R8sT5/2dsb2JhbABEqxCBBoFyAQEEATocIwULCAMOCi4UJQMhE4gHArg0EosOBJRWiQuJCQ
-Date: Thu, 1 Dec 2011 10:09:34 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Dmitry Artamonow'" <mad_soft@inbox.ru>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "'Ben Dooks'" <ben-linux@fluff.org>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] watchdog: fix initialisation printout in s3c2410_wdt
-Message-ID: <20111201090934.GO23376@infomag.iguana.be>
-References: <1321433173-17757-1-git-send-email-mad_soft@inbox.ru> <CAJuYYwTv3d9Wg8TDBEkc0r3BweUiLdqVwGdMU4iKpK0B+EM=GA@mail.gmail.com> <045d01ccaffb$00710240$015306c0$%kim@samsung.com>
+	id S1752276Ab1LAJOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:14:48 -0500
+Received: from ackle.nomi.cz ([81.31.33.35]:43723 "EHLO ackle.nomi.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751064Ab1LAJOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 04:14:45 -0500
+Date: Thu, 1 Dec 2011 10:14:41 +0100
+From: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Matthew Wilcox <matthew@wil.cx>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: DMAR:[fault reason 02] Present bit in context entry is clear
+	(firewire-ohci)
+Message-ID: <20111201091441.GA32731@nomi.cz>
+References: <4BF7B147.9020502@s5r6.in-berlin.de> <20100522121212.GQ10452@parisc-linux.org> <1274553643.11551.17300.camel@macbook.infradead.org> <20100522120905.154ff932@jbarnes-x201> <20111119172127.GA31915@nomi.cz> <4ED656F6.4080709@ladisch.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <045d01ccaffb$00710240$015306c0$%kim@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4ED656F6.4080709@ladisch.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
+Hi,
 
-> Thomas Abraham wrote:
-> > 
-> > On 16 November 2011 14:16, Dmitry Artamonow <mad_soft@inbox.ru> wrote:
-> > > Looks like a typo creeped in, and driver prints
-> > > s3c2410-wdt s3c2410-wdt: watchdog active, reset abled, irq abled
-> > >
-> > > instead of
-> > > s3c2410-wdt s3c2410-wdt: watchdog active, reset enabled, irq enabled
-> > >
-> > > Also it may completely disinform about irq status, as it prints
-> > > "irq enabled" when S3C2410_WTCON_INTEN is in fact 0.
-> > >
-> > > Fix it.
-> > >
-> > > Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-> > > ---
-> > >
-> > > It seems to be here for a long time, but I don't think it's
-> > > important enough for cc-ing stable.
-> > >
-> > > Also I haven't tested it, as I don't have a hardware, but it's
-> > > rather trivial (and yes, I checked with datasheet that 1 in
-> > > S3C2410_WTCON_*EN bits really means 'enabled')
-> > >
-> > 
-> > Tested on Exynos4210 based Origen board. This patch fixed in incorrect
-> > "irq enabled" message at bootup. Thanks for this fix.
-> > 
-> > Tested-by: Thomas Abraham <thomas.abraham@linaro.org>
-> > 
-> 
-> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> 
-> Hi Wim,
-> Please pick this up in your tree and if any problem, let me know.
+On Wed, Nov 30, 2011 at 05:16:54PM +0100, Clemens Ladisch wrote:
+> Try the patch in <https://bugzilla.redhat.com/show_bug.cgi?id=605888>
+> that is intended to work around the bug in your Ricoh chip.  Alternatively,
+> disable VT-d or FireWire in the BIOS, or add the kernel parameter
+> "intel_iommu=off".
 
-See commit 20403e845f9988446c5b48024ff4d0c3a5929f7d in the linux git tree.
+Yeah, I guess that would work, I was just concerned with a fix not being in
+the mainline. Surely we don't expect every ThinkPad user who wants to use
+firewire and VT-d to apply the patch himself (the Fedora fix was to forcefully
+disable IOMMU in presence of that Ricoh device). :-)
 
-Kind regards,
-Wim.
-
+Regards,
+-- 
+Tomáš Janoušek, a.k.a. Liskni_si, http://work.lisk.in/
