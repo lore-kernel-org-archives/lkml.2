@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab1LAUOr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:14:47 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:33434 "EHLO e3.ny.us.ibm.com"
+	id S1754493Ab1LAUO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:14:59 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:53819 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754036Ab1LAUOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:14:40 -0500
-Subject: [PATCH 07/14] crc32: Make CRC_*_BITS definition correspond to actual
-	bit counts
+	id S1754305Ab1LAUOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 15:14:51 -0500
+Subject: [PATCH 06/14] crc32: Fix mixing of endian-specific types
 To: Andrew Morton <akpm@linux-foundation.org>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
 Cc: Theodore Tso <tytso@mit.edu>,
@@ -19,168 +18,74 @@ Cc: Theodore Tso <tytso@mit.edu>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
         Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Thu, 01 Dec 2011 12:14:30 -0800
-Message-ID: <20111201201430.5876.93627.stgit@elm3c44.beaverton.ibm.com>
+Date: Thu, 01 Dec 2011 12:14:24 -0800
+Message-ID: <20111201201424.5876.72548.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
 References: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11120120-8974-0000-0000-000003D42E74
+x-cbid: 11120120-9360-0000-0000-00000128906F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-crc32.c provides a choice of one of several algorithms for
-computing the LSB and LSB versions of the CRC32 checksum
-based on the parameters CRC_LE_BITS and CRC_BE_BITS. In the
-original version the values 1, 2, 4 and 8 respectively selected
-versions of the alrogithm that computed the crc 1, 2, 4 and 32
-bits as a time. This patch series adds a new version that computes
-the CRC 64 bits at a time. To make things easier to understand
-the parameter has been reinterpreted to actually stand for the
-number of bits processed in each step of the algorithm so that
-the old value 8 has been replaced with the value 32. This also
-allows us to add in a widely used crc algorithm that
-computes the crc 8 bits at a time called the Sarwate algorithm.
+crc32.c in its original version freely mixed u32, __le32 and __be32 types
+which caused warnings from sparse with __CHECK_ENDIAN__.
+This patch fixes these by forcing the types to u32.
 
 From: Bob Pearson <rpearson@systemfabricworks.com>
 Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
 [djwong@us.ibm.com: Minor changelog tweaks]
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- lib/crc32.c          |   17 ++++++++++++++---
- lib/crc32defs.h      |   18 ++++++++++--------
- lib/gen_crc32table.c |   11 ++++++++++-
- 3 files changed, 34 insertions(+), 12 deletions(-)
+ lib/crc32.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
 
 diff --git a/lib/crc32.c b/lib/crc32.c
-index ff6bb9a..157b35f 100644
+index 2a87ea2..ff6bb9a 100644
 --- a/lib/crc32.c
 +++ b/lib/crc32.c
-@@ -27,13 +27,13 @@
- #include <linux/types.h>
+@@ -28,13 +28,13 @@
  #include "crc32defs.h"
  
--#if CRC_LE_BITS == 8
-+#if CRC_LE_BITS > 8
- # define tole(x) (__force u32) __constant_cpu_to_le32(x)
+ #if CRC_LE_BITS == 8
+-# define tole(x) __constant_cpu_to_le32(x)
++# define tole(x) (__force u32) __constant_cpu_to_le32(x)
  #else
  # define tole(x) (x)
  #endif
  
--#if CRC_BE_BITS == 8
-+#if CRC_BE_BITS > 8
- # define tobe(x) (__force u32) __constant_cpu_to_be32(x)
+ #if CRC_BE_BITS == 8
+-# define tobe(x) __constant_cpu_to_be32(x)
++# define tobe(x) (__force u32) __constant_cpu_to_be32(x)
  #else
  # define tobe(x) (x)
-@@ -45,7 +45,7 @@ MODULE_AUTHOR("Matt Domsch <Matt_Domsch@dell.com>");
- MODULE_DESCRIPTION("Ethernet CRC32 calculations");
- MODULE_LICENSE("GPL");
- 
--#if CRC_LE_BITS == 8 || CRC_BE_BITS == 8
-+#if CRC_LE_BITS > 8 || CRC_BE_BITS > 8
- 
- static inline u32
- crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
-@@ -126,6 +126,12 @@ u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
- 		crc = (crc >> 4) ^ crc32table_le[0][crc & 15];
- 	}
+ #endif
+@@ -128,9 +128,9 @@ u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
  # elif CRC_LE_BITS == 8
-+	/* aka Sarwate algorithm */
-+	while (len--) {
-+		crc ^= *p++;
-+		crc = (crc >> 8) ^ crc32table_le[0][crc & 255];
-+	}
-+# else
  	const u32      (*tab)[] = crc32table_le;
  
- 	crc = (__force u32) __cpu_to_le32(crc);
-@@ -169,6 +175,11 @@ u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
- 		crc = (crc << 4) ^ crc32table_be[0][crc >> 28];
- 	}
+-	crc = __cpu_to_le32(crc);
++	crc = (__force u32) __cpu_to_le32(crc);
+ 	crc = crc32_body(crc, p, len, tab);
+-	crc = __le32_to_cpu(crc);
++	crc = __le32_to_cpu((__force __le32)crc);
+ #endif
+ 	return crc;
+ }
+@@ -171,9 +171,9 @@ u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
  # elif CRC_BE_BITS == 8
-+	while (len--) {
-+		crc ^= *p++ << 24;
-+		crc = (crc << 8) ^ crc32table_be[0][crc >> 24];
-+	}
-+# else
  	const u32      (*tab)[] = crc32table_be;
  
- 	crc = (__force u32) __cpu_to_be32(crc);
-diff --git a/lib/crc32defs.h b/lib/crc32defs.h
-index f5a5401..daa3a5e 100644
---- a/lib/crc32defs.h
-+++ b/lib/crc32defs.h
-@@ -6,27 +6,29 @@
- #define CRCPOLY_LE 0xedb88320
- #define CRCPOLY_BE 0x04c11db7
- 
--/* How many bits at a time to use.  Requires a table of 4<<CRC_xx_BITS bytes. */
--/* For less performance-sensitive, use 4 */
-+/* How many bits at a time to use.  Valid values are 1, 2, 4, 8, and 32. */
-+/* For less performance-sensitive, use 4 or 8 */
- #ifndef CRC_LE_BITS
--# define CRC_LE_BITS 8
-+# define CRC_LE_BITS 32
- #endif
- #ifndef CRC_BE_BITS
--# define CRC_BE_BITS 8
-+# define CRC_BE_BITS 32
- #endif
- 
- /*
-  * Little-endian CRC computation.  Used with serial bit streams sent
-  * lsbit-first.  Be sure to use cpu_to_le32() to append the computed CRC.
-  */
--#if CRC_LE_BITS > 8 || CRC_LE_BITS < 1 || CRC_LE_BITS & CRC_LE_BITS-1
--# error CRC_LE_BITS must be a power of 2 between 1 and 8
-+#if CRC_LE_BITS > 32 || CRC_LE_BITS < 1 || CRC_LE_BITS == 16 || \
-+	CRC_LE_BITS & CRC_LE_BITS-1
-+# error "CRC_LE_BITS must be one of {1, 2, 4, 8, 32}"
- #endif
- 
- /*
-  * Big-endian CRC computation.  Used with serial bit streams sent
-  * msbit-first.  Be sure to use cpu_to_be32() to append the computed CRC.
-  */
--#if CRC_BE_BITS > 8 || CRC_BE_BITS < 1 || CRC_BE_BITS & CRC_BE_BITS-1
--# error CRC_BE_BITS must be a power of 2 between 1 and 8
-+#if CRC_BE_BITS > 32 || CRC_BE_BITS < 1 || CRC_BE_BITS == 16 || \
-+	CRC_BE_BITS & CRC_BE_BITS-1
-+# error "CRC_BE_BITS must be one of {1, 2, 4, 8, 32}"
- #endif
-diff --git a/lib/gen_crc32table.c b/lib/gen_crc32table.c
-index eced769..99ac744 100644
---- a/lib/gen_crc32table.c
-+++ b/lib/gen_crc32table.c
-@@ -4,8 +4,17 @@
- 
- #define ENTRIES_PER_LINE 4
- 
-+#if CRC_LE_BITS <= 8
- #define LE_TABLE_SIZE (1 << CRC_LE_BITS)
-+#else
-+#define LE_TABLE_SIZE 256
-+#endif
-+
-+#if CRC_BE_BITS <= 8
- #define BE_TABLE_SIZE (1 << CRC_BE_BITS)
-+#else
-+#define BE_TABLE_SIZE 256
-+#endif
- 
- static uint32_t crc32table_le[4][256];
- static uint32_t crc32table_be[4][256];
-@@ -24,7 +33,7 @@ static void crc32init_le(void)
- 
- 	crc32table_le[0][0] = 0;
- 
--	for (i = 1 << (CRC_LE_BITS - 1); i; i >>= 1) {
-+	for (i = LE_TABLE_SIZE >> 1; i; i >>= 1) {
- 		crc = (crc >> 1) ^ ((crc & 1) ? CRCPOLY_LE : 0);
- 		for (j = 0; j < LE_TABLE_SIZE; j += 2 * i)
- 			crc32table_le[0][i + j] = crc ^ crc32table_le[0][j];
+-	crc = __cpu_to_be32(crc);
++	crc = (__force u32) __cpu_to_be32(crc);
+ 	crc = crc32_body(crc, p, len, tab);
+-	crc = __be32_to_cpu(crc);
++	crc = __be32_to_cpu((__force __be32)crc);
+ # endif
+ 	return crc;
+ }
 
