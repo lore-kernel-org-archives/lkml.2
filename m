@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1LAKMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 05:12:40 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:41231 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab1LAKMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 05:12:38 -0500
-X-AuditID: cbfee61b-b7bdbae000001970-10-4ed75315957a
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Wim Van Sebroeck'" <wim@iguana.be>
-Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Dmitry Artamonow'" <mad_soft@inbox.ru>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "'Ben Dooks'" <ben-linux@fluff.org>, linux-watchdog@vger.kernel.org
-References: <1321433173-17757-1-git-send-email-mad_soft@inbox.ru>
- <CAJuYYwTv3d9Wg8TDBEkc0r3BweUiLdqVwGdMU4iKpK0B+EM=GA@mail.gmail.com>
- <045d01ccaffb$00710240$015306c0$%kim@samsung.com>
- <20111201090934.GO23376@infomag.iguana.be>
-In-reply-to: <20111201090934.GO23376@infomag.iguana.be>
-Subject: RE: [PATCH] watchdog: fix initialisation printout in s3c2410_wdt
-Date: Thu, 01 Dec 2011 19:12:36 +0900
-Message-id: <047001ccb011$bff04930$3fd0db90$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcywCXAro9mrOqR4T+SryES5NzldmwACDToQ
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1753075Ab1LAKNu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 05:13:50 -0500
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:40010
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752625Ab1LAKNs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 05:13:48 -0500
+X-SpamScore: -17
+X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzzz2fh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Meyer <thomas@m3y3r.de>, Jiri Kosina <jikos@jikos.cz>
+Subject: RE: linux-next: manual merge of the staging tree with the hid tree
+Thread-Topic: linux-next: manual merge of the staging tree with the hid tree
+Thread-Index: AQHMr9szE9kf2yWHkEqPb1pfVBs60JXG31aA///jEEA=
+Date: Thu, 1 Dec 2011 10:12:33 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA7B139@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <20111201143952.9aea929b16c7212570fc1bd2@canb.auug.org.au>
+ <20111201035113.GA7647@kroah.com>
+In-Reply-To: <20111201035113.GA7647@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wim Van Sebroeck wrote:
-> 
-> Hi Kim,
-> 
-> > Thomas Abraham wrote:
-> > >
-> > > On 16 November 2011 14:16, Dmitry Artamonow <mad_soft@inbox.ru> wrote:
-> > > > Looks like a typo creeped in, and driver prints
-> > > > s3c2410-wdt s3c2410-wdt: watchdog active, reset abled, irq abled
-> > > >
-> > > > instead of
-> > > > s3c2410-wdt s3c2410-wdt: watchdog active, reset enabled, irq enabled
-> > > >
-> > > > Also it may completely disinform about irq status, as it prints
-> > > > "irq enabled" when S3C2410_WTCON_INTEN is in fact 0.
-> > > >
-> > > > Fix it.
-> > > >
-> > > > Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-> > > > ---
-> > > >
-> > > > It seems to be here for a long time, but I don't think it's
-> > > > important enough for cc-ing stable.
-> > > >
-> > > > Also I haven't tested it, as I don't have a hardware, but it's
-> > > > rather trivial (and yes, I checked with datasheet that 1 in
-> > > > S3C2410_WTCON_*EN bits really means 'enabled')
-> > > >
-> > >
-> > > Tested on Exynos4210 based Origen board. This patch fixed in incorrect
-> > > "irq enabled" message at bootup. Thanks for this fix.
-> > >
-> > > Tested-by: Thomas Abraham <thomas.abraham@linaro.org>
-> > >
-> >
-> > Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> >
-> > Hi Wim,
-> > Please pick this up in your tree and if any problem, let me know.
-> 
-> See commit 20403e845f9988446c5b48024ff4d0c3a5929f7d in the linux git tree.
-> 
-OK :)
 
-Thanks.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Wednesday, November 30, 2011 10:51 PM
+> To: Stephen Rothwell
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; KY Srinivasan;
+> Thomas Meyer; Jiri Kosina
+> Subject: Re: linux-next: manual merge of the staging tree with the hid tree
+> 
+> On Thu, Dec 01, 2011 at 02:39:52PM +1100, Stephen Rothwell wrote:
+> > Hi Greg,
+> >
+> > Today's linux-next merge of the staging tree got a conflict in
+> > drivers/hid/hid-hyperv.c between commit b95f5bcb811e ("HID: Move the
+> > hid-hyperv driver out of staging") from the hid tree and various commits
+> > from the staging tree (this was drivers/staging/hv/hv_mouse.c).
+> >
+> > The commit message says that all the changes that happened when this file
+> > moved from staging have also been applied to the staging file, so I just
+> > used the version from the hid tree.
+> 
+> Ok, that's fine, Jiri, want me to just delete the driver from my tree
+> now to remove any of these conflicts?
+
+Jiri,
+
+Yesterday (Nov 30th, 2011) I had sent a patch for the mouse driver to fix a bug
+that got introduced during the recent cleanup to exit staging. This patch was against
+the staging tree that Greg is planning to delete. It is a trivial patch; can you pick this up
+for the hid tree. If you prefer, I could rebase the patch against your tree. Let me know.
+
+Regards,
+
+K. Y
+
 
