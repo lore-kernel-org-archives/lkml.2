@@ -1,116 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911Ab1LAGsr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:48:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51920 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082Ab1LAGsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:48:45 -0500
-Message-ID: <1322722110.26545.68.camel@bling.home>
-Subject: Re: [PATCH 1/4] iommu: Add iommu_device_group callback and
- iommu_group sysfs entry
-From: Alex Williamson <alex.williamson@redhat.com>
-To: David Gibson <dwg@au1.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, joerg.roedel@amd.com,
-        dwmw2@infradead.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
-        scottwood@freescale.com, B08248@freescale.com
-Date: Wed, 30 Nov 2011 23:48:30 -0700
-In-Reply-To: <20111201000337.GA5427@truffala.fritz.box>
-References: <20111021195412.8438.9951.stgit@s20.home>
-	 <20111021195605.8438.81609.stgit@s20.home>
-	 <20111130024205.GF5435@truffala.fritz.box>
-	 <1322628672.21641.39.camel@pasglop> <1322630751.19120.222.camel@bling.home>
-	 <20111201000337.GA5427@truffala.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752254Ab1LAGud (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:50:33 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39645 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab1LAGuc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 01:50:32 -0500
+Date: Thu, 1 Dec 2011 00:50:25 -0600
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Chris Dunlop <chris@onthe.net.au>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        David Howells <dhowells@redhat.com>, Jan Harkes <jaharkes@cs.cmu.edu>,
+        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
+        Dave Kleikamp <shaggy@kernel.org>,
+        Petr Vandrovec <petr@vandrovec.name>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
+        codalist@TELEMANN.coda.cs.cmu.edu,
+        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
+Message-ID: <20111201065024.GB495@boyd>
+References: <1321861008-20611-1-git-send-email-chris@onthe.net.au>
+ <20111129082501.GA569@onthe.net.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
+Content-Disposition: inline
+In-Reply-To: <20111129082501.GA569@onthe.net.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 11:03 +1100, David Gibson wrote:
-> On Tue, Nov 29, 2011 at 10:25:51PM -0700, Alex Williamson wrote:
-> > On Wed, 2011-11-30 at 15:51 +1100, Benjamin Herrenschmidt wrote:
-> > > On Wed, 2011-11-30 at 13:42 +1100, David Gibson wrote:
-> > > 
-> > > > > +static ssize_t show_iommu_group(struct device *dev,
-> > > > > +				struct device_attribute *attr, char *buf)
-> > > > > +{
-> > > > > +	unsigned int groupid;
-> > > > > +
-> > > > > +	if (iommu_device_group(dev, &groupid))
-> > > > > +		return 0;
-> > > > > +
-> > > > > +	return sprintf(buf, "%u", groupid);
-> > > > > +}
-> > > > > +static DEVICE_ATTR(iommu_group, S_IRUGO, show_iommu_group, NULL);
-> > > > 
-> > > > Hrm.  Assuming the group is is an unsigned int seems dangerous to me.
-> > > > More seriously, we really want these to be unique across the whole
-> > > > system, but they're allocated by the iommu driver which can't
-> > > > guarantee that if it's not the only one present.  Seems to me it would
-> > > > be safer to have an actual iommu_group structure allocated for each
-> > > > group, and use the pointer to it as the ID to hand around (with NULL
-> > > > meaning "no iommu" / untranslated).  The structure could contain a
-> > > > more human readable - or more relevant to platform documentation - ID
-> > > > where appropriate.
-> > 
-> > Note that iommu drivers are registered per bus_type, so the unique pair
-> > is {bus_type, groupid}, which seems sufficient for vfio.
-> 
-> Hrm.  That's.. far from obvious.  And still breaks down if we have two
-> separate iommus on the same bus type (e.g. two independent PCI host
-> bridges with inbuilt IOMMUs).
 
-See bus_set_iommu(struct bus_type *bus, struct iommu_ops *ops).  It
-wasn't long ago that we had a global iommu_ops.  Are heterogeneous
-iommus using different drivers on the same bus_type really a possibility
-on your system, or are we dealing with hypothetical situations?  You'd
-currently need to multiplex iommu_ops callbacks between the drivers
-yourself.
+--wzJLGUyc3ArbnUjN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > > Don't forget that to keep sanity, we really want to expose the groups
-> > > via sysfs (per-group dir with symlinks to the devices).
-> > > 
-> > > I'm working with Alexey on providing an in-kernel powerpc specific API
-> > > to expose the PE stuff to whatever's going to interface to VFIO to
-> > > create the groups, though we can eventually collapse that. The idea is
-> > > that on non-PE capable brigdes (old style), I would make a single group
-> > > per host bridge.
-> > 
-> > If your non-PE capable bridges aren't actually providing isolation, they
-> > should return -ENODEV for the group_device() callback, then vfio will
-> > ignore them.
-> > 
-> > > In addition, Alex, I noticed that you still have the domain stuff there,
-> > > which is fine I suppose, we could make it a requirement on power that
-> > > you only put a single group in a domain... but the API is still to put
-> > > individual devices in a domain, not groups, and that somewhat sucks.
-> > > 
-> > > You could "fix" that by having some kind of ->domain_enable() or
-> > > whatever that's used to "activate" the domain and verifies that it
-> > > contains entire groups but that looks like a pointless way to complicate
-> > > both the API and the implementation.
-> > 
-> > Right, groups are currently just a way to identify dependent sets, not a
-> > unit of work.
-> 
-> I'm not quite sure what you mean by "unit of work".  But assigning the
-> groups as a unit generally makes more sense to me than assigning
-> devices individually, but only being able to use them when the group
-> is together.  Particularly when things are hotplugged into groups.
+On 2011-11-29 19:25:01, Chris Dunlop wrote:
+> Hi,
+>=20
+> I haven't seen any response to this patch which fixes an Oops in
+> d_revalidate. I hit this using NFS, but various other file
+> systems look to be likewise vulnerable, hence the broadness of
+> the patch. The sequence leading to the Oops is:
+>=20
+> lookup_one_len() [fs/namei.c]
+>    calls __lookup_hash() [fs/namei.c] with nd =3D=3D NULL,
+>       which can then call the file system specific d_revalidate(), passin=
+g in nd =3D=3D NULL
+>          which will then Oops if nd is used without checking
 
-iommu_attach_device() takes a device as a "unit of work", not a group.
-If we have a group in use by a userspace driver and a new physical
-device is hotplugged into the host and belongs to the group, we need the
-granularity of the device to be able to add it to the domain.
+Hey Chris - Can you share what you were trying to do when you hit this?
+Were you stacking eCryptfs on top of NFS? Another stacked filesystem on
+top of NFS?
 
-I'm not sure if we're getting into VM usage with "assigning" terminology
-above.  You're free to architect qemu however you want on POWER to make
-groups be the assignable unit to a guest.  On x86, an individual device
-is the assignable unit for a guest.  Unassigned group devices will still
-be required to be held by vfio, they'll just be unused.  Thanks,
+Do you *need* a stacked filesystem to work on top of NFS? If so, we'll
+need to discuss a way forward. Al has previously shown a dislike of
+eCryptfs passing around nameidata (for good reason), but that is what
+NFS currently requires. I looked at doing this a few months back, but
+never got to the implementation stage.
 
-Alex
+As David mentioned, Al's atomic open patches might solve all of this in
+the future, but I don't know much about that patchset. Is there any
+relevant info you could provide about those patches, Al?
 
+Tyler
+
+--wzJLGUyc3ArbnUjN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJO1yOwAAoJENaSAD2qAscKpgsP/jbJrsnjhcXnxKLTMRRMZ+Pn
+N2AQYEa74BEKGzSIA71kqhg4GlHH49M35BFl9APWaYPaAefUIEmkF9hVPUAekY72
+d3GaZAIsNAnydTD2eR4kPrzU+QiKizMGkFLe60E5TIkxESQ1cNu/YkvrA0TrJyEZ
+RFOY1/IIp605C/OXSeOjXAOPIylpVwEiJNy28xoH6Wa8eNLGuaoOJ2d6sZ30B01G
+3mhjQO+Iib+SA2NZTSNqtqBMmGu72+fbmHQVlF7qUrVMv3b9g34NKEbzNiz3meXH
+0cRdkb7C+tJUC5apdR0xr5Tp84UnOXERUlNW1CX/m6vVZ+cOgy86rGZ4EswA4Rfn
+mKaNhd/tMRajTud86TGzrywayKfXmdy7QxApdYQOIdVuczqQHfwaaPOrVqQyruU0
+zWt7T/LZVdKImvJH9B8KSeaS+lUE7VyBy/LslT4BAkplfavlivD4hyT9KQo7++uZ
+AdZ7gqWvrog8dCrysot//dVhK8v8Kg8PaX2RZwIi6bMtxUGlIbBwOljGglD4XNEZ
+Kw7AIZgZYztp4TmzEQl1sphidHC8DhTtOaLF4ia6qhQlHCNJH8mwJI/n3jY4ESw2
+meDExAgRfcbRS/ontjAicKv/Q0WIamtfd7tMUQikPWATfjFtfb8zKHR8FcE5lfA5
+e/AvHS+GLFmy73bkFvKv
+=G/79
+-----END PGP SIGNATURE-----
+
+--wzJLGUyc3ArbnUjN--
