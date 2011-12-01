@@ -1,129 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1LAOG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 09:06:56 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54613 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582Ab1LAOGy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 09:06:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: prevent inlining in arxescsi.c causing build failures
-Date: Thu, 1 Dec 2011 14:06:49 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org
-References: <1322713611-30003-1-git-send-email-paul.gortmaker@windriver.com> <20111201080613.GF26618@pengutronix.de>
-In-Reply-To: <20111201080613.GF26618@pengutronix.de>
+	id S1754689Ab1LAOHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 09:07:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36938 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754582Ab1LAOHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 09:07:51 -0500
+Date: Thu, 1 Dec 2011 15:07:49 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, pomac@vapor.com,
+        linux-kernel@vger.kernel.org, tino.keitel@tikei.de,
+        Len Brown <lenb@kernel.org>
+Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
+Message-ID: <20111201140749.GB4269@tiehlicka.suse.cz>
+References: <20111128222803.GA4925@pomac.netswarm.net>
+ <201111292351.16233.rjw@sisk.pl>
+ <20111130101227.GA3187@tiehlicka.suse.cz>
+ <201111302056.54697.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201112011406.49554.arnd@arndb.de>
-X-Provags-ID: V02:K0:+HbameW0386p9FYN46GjR6kqFjc/Waxb667bLSWgspS
- 9GuVVhurxKTVVs+gjITET0bFMdHK8jRoDMMQUTqItwhLIbvRFp
- bx+LxiNtvmUG9yH2rDLLT87L6dAV/t9qzkCs6yGENPcQvp7O6f
- NUaf/DLCvBWPrDprL2tpR3KJIzlHkCBYG6jX1QCWDgGMJlHf+S
- vWq8Y7f0nXj3Qmm3BO/bjrsrPY+RwCA+DCMezJREGjCzPtzWod
- I5osa698T89emmrc8VMDt6DI0UOzf5VJNQ0ZA611heRvr/nBc/
- PaSZf64QcX+JJ65KUf2fvph2DQzlWR0OSXF3M5tWl/XxyA0OS6
- D7YNqllMuty6smyWPQQE=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201111302056.54697.rjw@sisk.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 December 2011, Uwe Kleine-König wrote:
-> On Wed, Nov 30, 2011 at 11:26:51PM -0500, Paul Gortmaker wrote:
-> > The following failure is seen in routine coverage builds:
+[Let's add Len to the CC for idle driver]
+
+On Wed 30-11-11 20:56:54, Rafael J. Wysocki wrote:
+> On Wednesday, November 30, 2011, Michal Hocko wrote:
+> > On Tue 29-11-11 23:51:16, Rafael J. Wysocki wrote:
+> > > On Tuesday, November 29, 2011, Michal Hocko wrote:
+[...]
+> > > > I haven't found any intel_idle machine in my lab so far and all other
+> > > > acpi_idle machines seem to work (or at least randomly selected ones) so
+> > > > this smells like a major difference in the setup.
+> > > 
+> > > I'm able to reproduce that with acpi_driver on one box, but not on demand.
 > > 
-> >   CC [M]  drivers/scsi/arm/arxescsi.o
-> > /tmp/cccEyiO7.s: Assembler messages:
-> > /tmp/cccEyiO7.s:334: Error: symbol `.loop_1' is already defined
-> > /tmp/cccEyiO7.s:337: Error: symbol `.loop_2' is already defined
-> > /tmp/cccEyiO7.s:343: Error: symbol `.loop_3' is already defined
-> > /tmp/cccEyiO7.s:365: Error: symbol `.loop_1' is already defined
-> > /tmp/cccEyiO7.s:368: Error: symbol `.loop_2' is already defined
-> > /tmp/cccEyiO7.s:374: Error: symbol `.loop_3' is already defined
-> > make[4]: *** [drivers/scsi/arm/arxescsi.o] Error 1
-> > 
-> > It is caused by multiple inline of arxescsi_pseudo_dma_write()
-> > which is responsible for the above labels.  Marking the fcn
-> > as non-inline fixes the issue.
-> > 
-> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Is that a compiler or a code issue? If it's the compiler please fix
-> that. If it's the code, then please document why you added the noinline.
+> > And do you see the same thing (no idle/io_wait) updates?
+> 
+> Actaully, I was wrong.  The box I'm seeing the issue on also has "none"
+> in /sys/devices/system/cpu/cpuidle/current_driver.  Sorry for the confusion.
 
-The problem is mostly in the code: The symbols are defined in an
-inline assembly that is not meant to be instantiated multiple times.
-gcc may decide to unroll the loop in which this is done, which causes
-the error above. Unrolling the loop is a rather silly thing to do
-here, because the code is rather large and does not at all benefit
-from unrolling. You can use the patch below to fix the code to still
-work if the loop is unrolled, but I also think that marking the
-function as uninline is a good idea, in particular because I don't
-trust the old assembly to still do the right thing otherwise:
-It manually saves and restores the registers on the stack, where
-you nowadays would specify specific clobbers for the registers
-it uses, and let the compiler take care of it. It also doesn't
-contain a memory clobber for the buffer, so keeping the function
-out-of-line is probably the safe choice.
+OK. So we have seen the issue only with intel_idle and none drivers so
+far. acpi_idle which is at my machines works just fine. 
+I think we should focus on those drivers.
 
-> Having said that, "my" compiler compiles drivers/scsi/arm/arxescsi.o
-> just fine (using rpc_defconfig on v3.2-rc2).
+To summarize this issue. 
+Users are seeing weird values reported by [h]top. CPUs seem to be at
+100% even though there is nothing hogging them. /proc/stat collected
+data on the affected system shown that idle/io_wait are not accounted
+properly.
+It has been identified that problem disappears if a25cac51 [proc:
+Consider NO_HZ when printing idle and iowait times] is reverted. 
+This patch fixes a bug when idle/io_wait times are not repororted
+properly when a CPU is tickless. It relies on get_cpu_idle_time_us
+which either reports sched_time idle_sleeptime or 
+(idle_sleeptime + now-idle_entrytime) if we are idle at the moment.
 
-You should be able to reproduce it by adding -funroll-all-loops to
-the CFLAGS. That made the difference for me on gcc-4.6 from Ubuntu.
+While implementation is not race free (we better not use locks in that
+path...) so we might race:
 
-	Arnd
+E.g.
 
-8<-----
-PATCH: scsi/arxcescsi: use local assembler symbols
+CPU1			CPU2
+now = ktime_get
+			tick_nohz_start_idle
+				ts->idle_entrytime = now;
+if (ts->idle_active)
+				ts->idle_active = 1
+[...]
+return idle_sleeptime
 
-> > /tmp/cccEyiO7.s: Assembler messages:
-> > /tmp/cccEyiO7.s:334: Error: symbol `.loop_1' is already defined
-> > /tmp/cccEyiO7.s:337: Error: symbol `.loop_2' is already defined
-> > /tmp/cccEyiO7.s:343: Error: symbol `.loop_3' is already defined
-> > /tmp/cccEyiO7.s:365: Error: symbol `.loop_1' is already defined
-> > /tmp/cccEyiO7.s:368: Error: symbol `.loop_2' is already defined
-> > /tmp/cccEyiO7.s:374: Error: symbol `.loop_3' is already defined
-> > make[4]: *** [drivers/scsi/arm/arxescsi.o] Error 1
+But this is OK because sleeptime will be more or less accurate. We just
+skip few ticks.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+It would be worse if we had a race like:
+CPU1			CPU2
+now = ktime_get
+			tick_nohz_start_idle
+				now = ktime_get
+				update_ts_time_stats()
+				ts->idle_entrytime = now;
+				ts->idle_active = 1
+if (ts->idle_active)
+	delta = ktime_sub(now, idle_entrytime)
+	ktime_add(idle_sleeptime, delta)
 
-diff --git a/drivers/scsi/arm/arxescsi.c b/drivers/scsi/arm/arxescsi.c
-index a750aa7..689838a 100644
---- a/drivers/scsi/arm/arxescsi.c
-+++ b/drivers/scsi/arm/arxescsi.c
-@@ -80,21 +80,21 @@ static void arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
-        "               mov     r1, %1\n"
-        "               add     r2, r1, #512\n"
-        "               mov     r4, #256\n"
--       ".loop_1:       ldmia   r3!, {r6, r8, r10, r12}\n"
-+       "1:             ldmia   r3!, {r6, r8, r10, r12}\n"
-        "               mov     r5, r6, lsl #16\n"
-        "               mov     r7, r8, lsl #16\n"
--       ".loop_2:       ldrb    r0, [r1, #1536]\n"
-+       "2:             ldrb    r0, [r1, #1536]\n"
-        "               tst     r0, #1\n"
--       "               beq     .loop_2\n"
-+       "               beq     2b\n"
-        "               stmia   r2, {r5-r8}\n\t"
-        "               mov     r9, r10, lsl #16\n"
-        "               mov     r11, r12, lsl #16\n"
--       ".loop_3:       ldrb    r0, [r1, #1536]\n"
-+       "3:             ldrb    r0, [r1, #1536]\n"
-        "               tst     r0, #1\n"
--       "               beq     .loop_3\n"
-+       "               beq     3b\n"
-        "               stmia   r2, {r9-r12}\n"
-        "               subs    r4, r4, #16\n"
--       "               bne     .loop_1\n"
-+       "               bne     1b\n"
-        "               ldmia   sp!, {r0-r12}\n"
-        :
-        : "r" (addr), "r" (base));
+In this case we might get an overflow from ktime_sub but AFAIU the
+ktime_* magic the overflow should cause to get smaller idle_sleeptime
+in the end after ktime_add (we do not add a small number but rather
+subtract it), right?
+So it shouldn't be a big deal as well.
+
+So the question is. What is the role of the idle driver here?
+
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
