@@ -1,151 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab1LACXN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 21:23:13 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42230 "EHLO
+	id S1753927Ab1LACZH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 21:25:07 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38637 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab1LACXM (ORCPT
+	with ESMTP id S1753377Ab1LACZE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 21:23:12 -0500
-From: Marcos Paulo de Souza <marcos.mage@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org
-Subject: [PATCH 1/4] staging: vt6656: channel.c: Remove dead code
-Date: Thu,  1 Dec 2011 00:22:49 +0000
-Message-Id: <1322698969-19285-1-git-send-email-marcos.mage@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Wed, 30 Nov 2011 21:25:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+icZUVhxHxoED2P7=kYqxYyg-8s3am4PSAvZLE8YSYAAHpaqA@mail.gmail.com>
+References: <CA+icZUVoiWrtwB9Yw2a-2DqKO=24dfm0JoaTCBwftkRPK2E0QQ@mail.gmail.com>
+	<4ED11933.2000108@gmail.com>
+	<CA+icZUVhxHxoED2P7=kYqxYyg-8s3am4PSAvZLE8YSYAAHpaqA@mail.gmail.com>
+Date: Wed, 30 Nov 2011 20:25:03 -0600
+Message-ID: <CADLC3L1y_Z1Ui-WdNfWXF232TG+EiDGSxOzi1NrMHOxd5V9CiA@mail.gmail.com>
+Subject: Re: ERROR: end_request: I/O error, dev fd0, sector 0
+From: Robert Hancock <hancockrwd@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove some unneeded code. Some comments, for loop doing
-nothing, debug messages and unneeded variables was removed.
+On Sun, Nov 27, 2011 at 7:52 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> On Sat, Nov 26, 2011 at 5:52 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
+>> On 11/25/2011 06:53 AM, Sedat Dilek wrote:
+>>>
+>>> Hi,
+>>>
+>>> I am watching this issue for a long while, due to my
+>>> floppy-blacklist.conf file since next-20110603.
+>>>
+>>> The bad: The boot-process stalls for approx 10-13 secs when booting
+>>> into my Debian/sid i386 system.
+>>>
+>>> # dmesg | grep -A1 -B1 "end_request: I/O error, dev fd0, sector 0"
+>>> [    2.422854] sd 2:0:0:0: [sdb] Attached SCSI disk
+>>> [   15.289939] end_request: I/O error, dev fd0, sector 0
+>>> [   15.342914] EXT4-fs (sda5): mounted filesystem with ordered data
+>>> mode. Opts: (null)
+>>>
+>>> The funny part is my IBM laptop has no physical floppy drive!
+>>>
+>>> # dmesg | egrep -i 'floppy|fd0'
+>>> [    0.726358] Floppy drive(s): fd0 is 1.44M
+>>> [   15.289939] end_request: I/O error, dev fd0, sector 0
+>>>
+>>> If I blacklist "floppy" kernel-module, the boot-process is as expected
+>>> without the above mentionned delay.
+>>>
+>>> [ /etc/modprobe.d/floppy-blacklist.conf ]
+>>> # This file blacklists the floppy driver.
+>>> #
+>>> # XXX: Workaround: My IBM ThinkPad T40p (model 2374SG6) notebook has
+>>> no physical FDD
+>>> # dmesg from linux-next (next-20110603) says:
+>>> # [    0.755294] Floppy drive(s): fd0 is 1.44M
+>>> # [   15.238507] end_request: I/O error, dev fd0, sector 0
+>>> blacklist floppy
+>>> - EOF -
+>>>
+>>> I searched for the line and found bool blk_update_request() in
+>>> block/blk-core.c file (see [1]).
+>>>
+>>> I have attached kern.log and dmesg.
+>>>
+>>> Hope this helps to narrow down the issue.
+>>
+>> It looks like your laptop's BIOS indicates it has a floppy controller that's
+>> active:
+>>
+>> Nov 25 11:00:32 tbox kernel: [    0.060821] pnp 00:09: [io  0x03f0-0x03f5]
+>> Nov 25 11:00:32 tbox kernel: [    0.060825] pnp 00:09: [io  0x03f7]
+>> Nov 25 11:00:32 tbox kernel: [    0.060828] pnp 00:09: [irq 6]
+>> Nov 25 11:00:32 tbox kernel: [    0.060831] pnp 00:09: [dma 2]
+>> Nov 25 11:00:32 tbox kernel: [    0.060892] pnp 00:09: Plug and Play ACPI
+>> device, IDs PNP0700 (active)
+>>
+>> That's presumably why the floppy driver ends up being loaded. And apparently
+>> it does have a floppy controller, since the floppy driver seems able to talk
+>> to it. Maybe that model of laptop had an optional bay-mounted floppy drive
+>> or something?
+>>
+>
+> Could be... next to CD_ROM bay maybe.
+>
+>> I'm not sure there's a workaround for this at the kernel level, since the
+>> kernel probably can't determine if there's actually a floppy drive installed
+>> without trying to read from it (which is likely being triggered by partition
+>> probing or something). The read error will be what is triggering the message
+>> you saw.
+>>
+>> Is there a BIOS option to disable the floppy controller?
+>>
+>
+> I have disabled "Floppy-Drive" in BIOS setup now (was set to
+> "enabled"), but I have still the modprobe backlist for floppy
+> activated.
+>
+> Can you explain the stalling of ***10-12 seconds*** with a wrong FDD
+> BIOS setting?
+> That's really a long duration, with systemd my boot-process takes
+> approx 15-18 seconds.
 
-Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de> 
-Cc: Forest Bond <forest@alittletooquiet.net>
-Cc: devel@driverdev.osuosl.org
----
- drivers/staging/vt6656/channel.c |   81 ++++++++------------------------------
- 1 files changed, 17 insertions(+), 64 deletions(-)
+Well, I can imagine that the floppy request takes that long to time
+out or fail. I'm not sure why this would be delaying the boot process,
+however.
 
-diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
-index 99e054d..172e017 100644
---- a/drivers/staging/vt6656/channel.c
-+++ b/drivers/staging/vt6656/channel.c
-@@ -39,15 +39,6 @@
- #include "channel.h"
- #include "rf.h"
- 
--/*---------------------  Static Definitions -------------------------*/
--static int          msglevel                = MSG_LEVEL_INFO;
--//static int          msglevel                =MSG_LEVEL_DEBUG;
--
--/*---------------------  Static Classes  ----------------------------*/
--
--/*---------------------  Export Definitions -------------------------*/
--
--
- static SChannelTblElement sChannelTbl[CB_MAX_CHANNEL+1] =
- {
-   {0,   0,    FALSE},
-@@ -392,25 +383,15 @@ static  struct
- BOOL
- ChannelValid(unsigned int CountryCode, unsigned int ChannelIndex)
- {
--    BOOL    bValid;
--
--    bValid = FALSE;
--    /*
--     * If Channel Index is invalid, return invalid
--     */
--    if ((ChannelIndex > CB_MAX_CHANNEL) ||
--        (ChannelIndex == 0))
--    {
--        bValid = FALSE;
--        goto exit;
--    }
--
--    bValid = sChannelTbl[ChannelIndex].bValid;
--
--exit:
--    return (bValid);
-+	/*
-+	 * If Channel Index is invalid, return invalid
-+	 */
-+	if ((ChannelIndex > CB_MAX_CHANNEL) ||
-+	    (ChannelIndex == 0))
-+		return FALSE;
- 
--} /* end ChannelValid */
-+	return sChannelTbl[ChannelIndex].bValid;
-+}
- 
- /************************************************************************
-  * CHvChannelGetList
-@@ -463,51 +444,23 @@ void CHvInitChannelTable(void *pDeviceHandler)
- 
-     if ((pDevice->dwDiagRefCount != 0) ||
-         (pDevice->b11hEable == TRUE)) {
--        if (bMultiBand == TRUE) {
--		for (ii = 0; ii < CB_MAX_CHANNEL; ii++) {
-+	if (bMultiBand == TRUE)
-+		for (ii = 0; ii < CB_MAX_CHANNEL; ii++)
- 			sChannelTbl[ii+1].bValid = TRUE;
--                //pDevice->abyRegPwr[ii+1] = pDevice->abyOFDMDefaultPwr[ii+1];
--                //pDevice->abyLocalPwr[ii+1] = pDevice->abyOFDMDefaultPwr[ii+1];
--		}
--		for (ii = 0; ii < CB_MAX_CHANNEL_24G; ii++) {
--                //pDevice->abyRegPwr[ii+1] = pDevice->abyCCKDefaultPwr[ii+1];
--                //pDevice->abyLocalPwr[ii+1] = pDevice->abyCCKDefaultPwr[ii+1];
--		}
--        } else {
--		for (ii = 0; ii < CB_MAX_CHANNEL_24G; ii++) {
-+	else
-+		for (ii = 0; ii < CB_MAX_CHANNEL_24G; ii++)
- 			sChannelTbl[ii+1].bValid = TRUE;
--                //pDevice->abyRegPwr[ii+1] = pDevice->abyCCKDefaultPwr[ii+1];
--                //pDevice->abyLocalPwr[ii+1] = pDevice->abyCCKDefaultPwr[ii+1];
--		}
--        }
-+
-     } else if (pDevice->byZoneType <= CCODE_MAX) {
-         if (bMultiBand == TRUE) {
--		for (ii = 0; ii < CB_MAX_CHANNEL; ii++) {
--			if (ChannelRuleTab[pDevice->byZoneType].bChannelIdxList[ii] != 0) {
-+		for (ii = 0; ii < CB_MAX_CHANNEL; ii++)
-+			if (ChannelRuleTab[pDevice->byZoneType].bChannelIdxList[ii] != 0)
- 				sChannelTbl[ii+1].bValid = TRUE;
--                    //pDevice->abyRegPwr[ii+1] = ChannelRuleTab[pDevice->byZoneType].byPower[ii];
--                    //pDevice->abyLocalPwr[ii+1] = ChannelRuleTab[pDevice->byZoneType].byPower[ii];
--			}
--		}
-         } else {
--		for (ii = 0; ii < CB_MAX_CHANNEL_24G; ii++) {
--			if (ChannelRuleTab[pDevice->byZoneType].bChannelIdxList[ii] != 0) {
-+		for (ii = 0; ii < CB_MAX_CHANNEL_24G; ii++)
-+			if (ChannelRuleTab[pDevice->byZoneType].bChannelIdxList[ii] != 0)
- 				sChannelTbl[ii+1].bValid = TRUE;
--                    //pDevice->abyRegPwr[ii+1] = ChannelRuleTab[pDevice->byZoneType].byPower[ii];
--                    //pDevice->abyLocalPwr[ii+1] = ChannelRuleTab[pDevice->byZoneType].byPower[ii];
--			}
--		}
--        }
--    }
--    DBG_PRT(MSG_LEVEL_NOTICE, KERN_INFO"Zone=[%d][%c][%c]!!\n",pDevice->byZoneType,ChannelRuleTab[pDevice->byZoneType].chCountryCode[0],ChannelRuleTab[pDevice->byZoneType].chCountryCode[1]);
--    for (ii = 0; ii < CB_MAX_CHANNEL; ii++) {
--        DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"Channel[%d] is [%d]\n",sChannelTbl[ii].byChannelNumber,sChannelTbl[ii+1].bValid);
--        /*if (pDevice->abyRegPwr[ii+1] == 0) {
--            pDevice->abyRegPwr[ii+1] = pDevice->abyOFDMDefaultPwr[ii+1];
-         }
--        if (pDevice->abyLocalPwr[ii+1] == 0) {
--            pDevice->abyLocalPwr[ii+1] = pDevice->abyOFDMDefaultPwr[ii+1];
--        }*/
-     }
- }
- 
--- 
-1.7.4.4
+>
+> Attached is the new dmesg output (kernel-config was not changed).
 
+It looks like the BIOS is no longer reporting the floppy controller as
+present, so hopefully you shouldn't need the workaround.
