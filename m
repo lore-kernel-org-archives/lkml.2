@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab1LAXry (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 18:47:54 -0500
-Received: from mail.windriver.com ([147.11.1.11]:33230 "EHLO
+	id S1755893Ab1LAXsf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 18:48:35 -0500
+Received: from mail.windriver.com ([147.11.1.11]:33229 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755516Ab1LAXrw (ORCPT
+	with ESMTP id S1755531Ab1LAXrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 1 Dec 2011 18:47:52 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -12,9 +12,9 @@ To: gregkh@suse.de, alan@linux.intel.com, galak@kernel.crashing.org,
         scottwood@freescale.com
 Cc: linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] serial: allow passing in hardware bug info via platform device
-Date: Thu,  1 Dec 2011 18:47:37 -0500
-Message-Id: <1322783258-20443-3-git-send-email-paul.gortmaker@windriver.com>
+Subject: [PATCH 1/3] serial: make bugs field not specific to 8250 type uarts.
+Date: Thu,  1 Dec 2011 18:47:36 -0500
+Message-Id: <1322783258-20443-2-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1322783258-20443-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1322783258-20443-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,92 +22,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The normal arch hook into the 8250 serial world is via passing
-in a plat_serial8250_port struct.  However, this struct does
-not have a bugs field, so there is no way to have the arch
-code pass in info about known uart issues.
+There is a struct uart_8250_port that is private to 8250.c
+itself, and it had a bugs field.  But there is no reason to
+assume that hardware bugs are unique to 8250 type UARTS.
 
-Add a bug field to the plat_serial8250_port struct, so that the
-arch can pass in this information.  Also don't do a blanket
-overwrite of the bugs setting in the 8250.c driver.  Finally,
-relocate the known bug #define list to a globally visible header
-so that the arch can assign any appropriate values from the list.
+Make the bugs field part of the globally visible struct
+uart_port and remove the 8250 specific one.
+
+The value in doing so is that it helps pave the way for
+allowing arch or platform specific code to pass in information
+to the specific uart drivers about uart bugs known to impact
+certain platforms that would otherwise be hard to detect from
+within the context of the driver itself.
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/tty/serial/8250.c   |    3 ++-
- drivers/tty/serial/8250.h   |    5 -----
- include/linux/serial_8250.h |    6 ++++++
- 3 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/tty/serial/8250.c   |   25 ++++++++++++-------------
+ include/linux/serial_core.h |    1 +
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index 7c94dbc..f99f27c 100644
+index eeadf1b..7c94dbc 100644
 --- a/drivers/tty/serial/8250.c
 +++ b/drivers/tty/serial/8250.c
-@@ -1101,7 +1101,6 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+@@ -134,7 +134,6 @@ struct uart_8250_port {
+ 	struct timer_list	timer;		/* "no irq" timer */
+ 	struct list_head	list;		/* ports on this IRQ */
+ 	unsigned short		capabilities;	/* port capabilities */
+-	unsigned short		bugs;		/* port bugs */
+ 	unsigned int		tx_loadsz;	/* transmit fifo load size */
+ 	unsigned char		acr;
+ 	unsigned char		ier;
+@@ -828,7 +827,7 @@ static void autoconfig_has_efr(struct uart_8250_port *up)
+ 		 * when DLL is 0.
+ 		 */
+ 		if (id3 == 0x52 && rev == 0x01)
+-			up->bugs |= UART_BUG_QUOT;
++			up->port.bugs |= UART_BUG_QUOT;
+ 		return;
+ 	}
+ 
+@@ -1102,7 +1101,7 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
  	spin_lock_irqsave(&up->port.lock, flags);
  
  	up->capabilities = 0;
--	up->port.bugs = 0;
+-	up->bugs = 0;
++	up->port.bugs = 0;
  
  	if (!(up->port.flags & UPF_BUGGY_UART)) {
  		/*
-@@ -3075,6 +3074,7 @@ static int __devinit serial8250_probe(struct platform_device *dev)
- 		port.serial_out		= p->serial_out;
- 		port.handle_irq		= p->handle_irq;
- 		port.set_termios	= p->set_termios;
-+		port.bugs		= p->bugs;
- 		port.pm			= p->pm;
- 		port.dev		= &dev->dev;
- 		port.irqflags		|= irqflag;
-@@ -3225,6 +3225,7 @@ int serial8250_register_port(struct uart_port *port)
- 		uart->port.regshift     = port->regshift;
- 		uart->port.iotype       = port->iotype;
- 		uart->port.flags        = port->flags | UPF_BOOT_AUTOCONF;
-+		uart->port.bugs         = port->bugs;
- 		uart->port.mapbase      = port->mapbase;
- 		uart->port.private_data = port->private_data;
- 		if (port->dev)
-diff --git a/drivers/tty/serial/8250.h b/drivers/tty/serial/8250.h
-index 6edf4a6..caefe00 100644
---- a/drivers/tty/serial/8250.h
-+++ b/drivers/tty/serial/8250.h
-@@ -44,11 +44,6 @@ struct serial8250_config {
- #define UART_CAP_UUE	(1 << 12)	/* UART needs IER bit 6 set (Xscale) */
- #define UART_CAP_RTOIE	(1 << 13)	/* UART needs IER bit 4 set (Xscale, Tegra) */
+@@ -1337,7 +1336,7 @@ static void serial8250_start_tx(struct uart_port *port)
+ 		up->ier |= UART_IER_THRI;
+ 		serial_out(up, UART_IER, up->ier);
  
--#define UART_BUG_QUOT	(1 << 0)	/* UART has buggy quot LSB */
--#define UART_BUG_TXEN	(1 << 1)	/* UART has buggy TX IIR status */
--#define UART_BUG_NOMSR	(1 << 2)	/* UART has buggy MSR status bits (Au1x00) */
--#define UART_BUG_THRE	(1 << 3)	/* UART has buggy THRE reassertion */
--
- #define PROBE_RSA	(1 << 0)
- #define PROBE_ANY	(~0)
+-		if (up->bugs & UART_BUG_TXEN) {
++		if (port->bugs & UART_BUG_TXEN) {
+ 			unsigned char lsr;
+ 			lsr = serial_in(up, UART_LSR);
+ 			up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
+@@ -1373,7 +1372,7 @@ static void serial8250_enable_ms(struct uart_port *port)
+ 		container_of(port, struct uart_8250_port, port);
  
-diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-index 1f05bbe..8c660af 100644
---- a/include/linux/serial_8250.h
-+++ b/include/linux/serial_8250.h
-@@ -14,6 +14,11 @@
- #include <linux/serial_core.h>
- #include <linux/platform_device.h>
+ 	/* no MSR capabilities */
+-	if (up->bugs & UART_BUG_NOMSR)
++	if (port->bugs & UART_BUG_NOMSR)
+ 		return;
  
-+#define UART_BUG_QUOT	(1 << 0)	/* buggy quot LSB */
-+#define UART_BUG_TXEN	(1 << 1)	/* buggy TX IIR status */
-+#define UART_BUG_NOMSR	(1 << 2)	/* buggy MSR status bits (Au1x00) */
-+#define UART_BUG_THRE	(1 << 3)	/* buggy THRE reassertion */
-+
- /*
-  * This is the platform device platform_data structure
-  */
-@@ -30,6 +35,7 @@ struct plat_serial8250_port {
- 	unsigned char	hub6;
- 	upf_t		flags;		/* UPF_* flags */
- 	unsigned int	type;		/* If UPF_FIXED_TYPE */
-+	unsigned short	bugs;		/* hardware specific bugs */
- 	unsigned int	(*serial_in)(struct uart_port *, int);
- 	void		(*serial_out)(struct uart_port *, int, int);
- 	void		(*set_termios)(struct uart_port *,
+ 	up->ier |= UART_IER_MSI;
+@@ -2089,7 +2088,7 @@ static int serial8250_startup(struct uart_port *port)
+ 		 * kick the UART on a regular basis.
+ 		 */
+ 		if (!(iir1 & UART_IIR_NO_INT) && (iir & UART_IIR_NO_INT)) {
+-			up->bugs |= UART_BUG_THRE;
++			port->bugs |= UART_BUG_THRE;
+ 			pr_debug("ttyS%d - using backup timer\n",
+ 				 serial_index(port));
+ 		}
+@@ -2099,7 +2098,7 @@ static int serial8250_startup(struct uart_port *port)
+ 	 * The above check will only give an accurate result the first time
+ 	 * the port is opened so this value needs to be preserved.
+ 	 */
+-	if (up->bugs & UART_BUG_THRE) {
++	if (port->bugs & UART_BUG_THRE) {
+ 		up->timer.function = serial8250_backup_timeout;
+ 		up->timer.data = (unsigned long)up;
+ 		mod_timer(&up->timer, jiffies +
+@@ -2162,13 +2161,13 @@ static int serial8250_startup(struct uart_port *port)
+ 	serial_outp(up, UART_IER, 0);
+ 
+ 	if (lsr & UART_LSR_TEMT && iir & UART_IIR_NO_INT) {
+-		if (!(up->bugs & UART_BUG_TXEN)) {
+-			up->bugs |= UART_BUG_TXEN;
++		if (!(port->bugs & UART_BUG_TXEN)) {
++			port->bugs |= UART_BUG_TXEN;
+ 			pr_debug("ttyS%d - enabling bad tx status workarounds\n",
+ 				 serial_index(port));
+ 		}
+ 	} else {
+-		up->bugs &= ~UART_BUG_TXEN;
++		port->bugs &= ~UART_BUG_TXEN;
+ 	}
+ 
+ dont_test_tx_en:
+@@ -2323,7 +2322,7 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	/*
+ 	 * Oxford Semi 952 rev B workaround
+ 	 */
+-	if (up->bugs & UART_BUG_QUOT && (quot & 0xff) == 0)
++	if (port->bugs & UART_BUG_QUOT && (quot & 0xff) == 0)
+ 		quot++;
+ 
+ 	if (up->capabilities & UART_CAP_FIFO && up->port.fifosize > 1) {
+@@ -2390,7 +2389,7 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
+ 	 * CTS flow control flag and modem status interrupts
+ 	 */
+ 	up->ier &= ~UART_IER_MSI;
+-	if (!(up->bugs & UART_BUG_NOMSR) &&
++	if (!(port->bugs & UART_BUG_NOMSR) &&
+ 			UART_ENABLE_MS(&up->port, termios->c_cflag))
+ 		up->ier |= UART_IER_MSI;
+ 	if (up->capabilities & UART_CAP_UUE)
+@@ -2666,7 +2665,7 @@ static void serial8250_config_port(struct uart_port *port, int flags)
+ 
+ 	/* if access method is AU, it is a 16550 with a quirk */
+ 	if (up->port.type == PORT_16550A && up->port.iotype == UPIO_AU)
+-		up->bugs |= UART_BUG_NOMSR;
++		port->bugs |= UART_BUG_NOMSR;
+ 
+ 	if (up->port.type != PORT_UNKNOWN && flags & UART_CONFIG_IRQ)
+ 		autoconfig_irq(up);
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index eadf33d..791536c 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -323,6 +323,7 @@ struct uart_port {
+ 
+ 	unsigned int		read_status_mask;	/* driver specific */
+ 	unsigned int		ignore_status_mask;	/* driver specific */
++	unsigned short		bugs;			/* driver specific */
+ 	struct uart_state	*state;			/* pointer to parent state */
+ 	struct uart_icount	icount;			/* statistics */
+ 
 -- 
 1.7.7
 
