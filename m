@@ -1,140 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab1LAIoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:44:55 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35047 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab1LAIow (ORCPT
+	id S1753149Ab1LAIos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:44:48 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:39060 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab1LAIoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:44:52 -0500
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Dec 2011 03:44:52 EST
+	Thu, 1 Dec 2011 03:44:46 -0500
+Date: Thu, 1 Dec 2011 09:44:37 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>, tj@kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111201084437.GA1529@x4.trippels.de>
+References: <1321836285.30341.554.camel@debian>
+ <20111121080554.GB1625@x4.trippels.de>
+ <20111121082445.GD1625@x4.trippels.de>
+ <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121131531.GA1679@x4.trippels.de>
+ <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121153621.GA1678@x4.trippels.de>
+ <20111123160353.GA1673@x4.trippels.de>
+ <alpine.DEB.2.00.1111231004490.17317@router.home>
+ <20111124085040.GA1677@x4.trippels.de>
 MIME-Version: 1.0
-In-Reply-To: <4ED73B13.7030600@tao.ma>
-References: <20111201070052.GA29708@july>
-	<4ED72F1D.7070207@tao.ma>
-	<CAH9JG2UADvsPX0s8TYTZ29j92AwDkVAGOhCwM-VFXQOP5yF7rA@mail.gmail.com>
-	<4ED73B13.7030600@tao.ma>
-Date: Thu, 1 Dec 2011 17:39:07 +0900
-X-Google-Sender-Auth: 63xYj5KxTqNwBW3SxMh4pGClrjQ
-Message-ID: <CAH9JG2XectT=vFBF04EaLtb-8xsuze1gAVs5jH6jb9qbHG7B4g@mail.gmail.com>
-Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
-From: Kyungmin Park <kmpark@infradead.org>
-To: Tao Ma <tm@tao.ma>
-Cc: tytso@mit.edu, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111124085040.GA1677@x4.trippels.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/1/11, Tao Ma <tm@tao.ma> wrote:
-> On 12/01/2011 04:19 PM, Kyungmin Park wrote:
->> On 12/1/11, Tao Ma <tm@tao.ma> wrote:
->>> Hi Kyungmin,
->>> On 12/01/2011 03:00 PM, Kyungmin Park wrote:
->>>> From: Kyungmin Park <kyungmin.park@samsung.com>
->>>>
->>>> Now trim information doesn't stored at disk so every boot time. it's
->>>> cleared.
->>>> and do the trim all disk groups.
->>>> But assume that it's already trimmed at previous time so don't need to
->>>> trim it again. So set the intial state as trimmed.
->>> sorry, I don't get your meaning here.
->>> Why can we assume that the group is already trimmed since it isn't
->>> stored in the disk?
->> To avoid the first time trim operation.
->> Every boot time. run the fitrim then it trims all block groups again.
->> but it's already done at previous time. so don't need to trim it
->> again.
->> Doesn't make sense? I think it's not designed behavior.
-> You make the assumption that we run the fitrim every time at boot time.
-> But what if the user don't run it at all? I guess "run fitrim during
-> boot" is your firmware's behaviour and it isn't an assumption for all
-> the other users.
->
-> Having said that, this flag will be cleared whenever some
-> blocks/clusters are freed. So maybe it doesn't matter for setting this
-> flag during the group initialization.
-Right,
+On 2011.11.24 at 09:50 +0100, Markus Trippelsdorf wrote:
+> On 2011.11.23 at 10:06 -0600, Christoph Lameter wrote:
+> > On Wed, 23 Nov 2011, Markus Trippelsdorf wrote:
+> > 
+> > > > FIX idr_layer_cache: Marking all objects used
+> > >
+> > > Yesterday I couldn't reproduce the issue at all. But today I've hit
+> > > exactly the same spot again. (CCing the drm list)
+> > 
+> > Well this is looks like write after free.
+> > 
+> > > =============================================================================
+> > > BUG idr_layer_cache: Poison overwritten
+> > > -----------------------------------------------------------------------------
+> > > Object ffff8802156487c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > Object ffff8802156487d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > Object ffff8802156487e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > Object ffff8802156487f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > Object ffff880215648800: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
+> > > Object ffff880215648810: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > 
+> > And its an integer sized write of 0. If you look at the struct definition
+> > and lookup the offset you should be able to locate the field that
+> > was modified.
 
-I hope trim the real updated blocks only.
+It also happens with CONFIG_SLAB. 
+(If someone wants to reproduce the issue, just run a kexec boot loop and
+the bug will occur after a few (~10) iterations.)
 
-Thank you,
-Kyungmin Park
->
-> Thanks
-> Tao
->>
->> In your patch at http://patchwork.ozlabs.org/patch/102918/
->>
->> with the patch:
->> [root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
->> real	0m5.625s
->> user	0m0.000s
->> sys	0m1.269s
->> [root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
->> real	0m0.002s
->> user	0m0.000s
->> sys	0m0.001s
->> [root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
->> real	0m0.002s
->> user	0m0.000s
->> sys	0m0.001s
->>
->> After reboot. it maybe become below
->>
->> [root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
->> real	0m0.002s
->> user	0m0.000s
->> sys	0m0.001s
->> [root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
->> real	0m0.002s
->> user	0m0.000s
->> sys	0m0.001s
->> [root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
->> real	0m0.002s
->> user	0m0.000s
->> sys	0m0.001s
->>
->> Thank you,
->> Kyungmin Park
->>>
->>> Thanks
->>> Tao
->>>>
->>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>> ---
->>>> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
->>>> index e2d8be8..97ef342 100644
->>>> --- a/fs/ext4/mballoc.c
->>>> +++ b/fs/ext4/mballoc.c
->>>> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
->>>> ext4_group_t group)
->>>>  		goto err;
->>>>  	}
->>>>  	mark_page_accessed(page);
->>>> +
->>>> +	/*
->>>> +	 * TRIM information is not stored at disk so set the initial
->>>> +	 * state as trimmed. Since previous time it's already trimmed all
->>>> +	 */
->>>> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
->>>>  err:
->>>>  	ext4_mb_put_buddy_page_lock(&e4b);
->>>>  	return ret;
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Dec  1 05:04:52 x4 kernel: [drm] Initialized drm 1.1.0 20060810
+Dec  1 05:04:52 x4 kernel: [drm] radeon defaulting to kernel modesetting.
+Dec  1 05:04:52 x4 kernel: [drm] radeon kernel modesetting enabled.
+Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
+Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: setting latency timer to 64
+Dec  1 05:04:52 x4 kernel: [drm] initializing kernel modesetting (RS780 0x1002:0x9614 0x1043:0x834D).
+Dec  1 05:04:52 x4 kernel: [drm] register mmio base: 0xFBEE0000
+Dec  1 05:04:52 x4 kernel: [drm] register mmio size: 65536
+Dec  1 05:04:52 x4 kernel: ATOM BIOS: 113
+Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: VRAM: 128M 0x00000000C0000000 - 0x00000000C7FFFFFF (128M used)
+Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: GTT: 512M 0x00000000A0000000 - 0x00000000BFFFFFFF
+Dec  1 05:04:52 x4 kernel: [drm] Detected VRAM RAM=128M, BAR=128M
+Dec  1 05:04:52 x4 kernel: [drm] RAM width 32bits DDR
+Dec  1 05:04:52 x4 kernel: [TTM] Zone  kernel: Available graphics memory: 4090750 kiB.
+Dec  1 05:04:52 x4 kernel: [TTM] Zone   dma32: Available graphics memory: 2097152 kiB.
+Dec  1 05:04:52 x4 kernel: [TTM] Initializing pool allocator.
+Dec  1 05:04:52 x4 kernel: [drm] radeon: 128M of VRAM memory ready
+Dec  1 05:04:52 x4 kernel: [drm] radeon: 512M of GTT memory ready.
+Dec  1 05:04:52 x4 kernel: [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+Dec  1 05:04:52 x4 kernel: [drm] Driver supports precise vblank timestamp query.
+Dec  1 05:04:52 x4 kernel: [drm] radeon: irq initialized.
+Dec  1 05:04:52 x4 kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
+Dec  1 05:04:52 x4 kernel: [drm] Loading RS780 Microcode
+Dec  1 05:04:52 x4 kernel: [drm] PCIE GART of 512M enabled (table at 0x00000000C0040000).
+Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: WB enabled
+Dec  1 05:04:52 x4 kernel: Slab corruption: size-1024 start=ffff880216cbc730, len=1024
+Dec  1 05:04:52 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+Dec  1 05:04:52 x4 kernel: Last user: [<          (null)>](0x0)
+Dec  1 05:04:52 x4 kernel: 0d0: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
+Dec  1 05:04:52 x4 kernel: Prev obj: start=ffff880216cbc318, len=1024
+Dec  1 05:04:52 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+Dec  1 05:04:52 x4 kernel: Last user: [<          (null)>](0x0)
+Dec  1 05:04:52 x4 kernel: 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Dec  1 05:04:52 x4 kernel: 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Dec  1 05:04:52 x4 kernel: Next obj: start=ffff880216cbcb48, len=1024
+Dec  1 05:04:52 x4 kernel: Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+Dec  1 05:04:52 x4 kernel: Last user: [<ffffffff81299874>](radeon_bo_create+0xb4/0x240)
+Dec  1 05:04:52 x4 kernel: 000: 48 cb cb 16 02 88 ff ff 48 cb cb 16 02 88 ff ff  H.......H.......
+Dec  1 05:04:52 x4 kernel: 010: 02 00 27 00 00 00 00 00 00 00 00 00 00 00 00 00  ..'.............
+Dec  1 05:04:52 x4 kernel: [drm] ring test succeeded in 0 usecs
+Dec  1 05:04:52 x4 kernel: [drm] radeon: ib pool ready.
+Dec  1 05:04:52 x4 kernel: [drm] ib test succeeded in 0 usecs
+Dec  1 05:04:52 x4 kernel: [drm] Radeon Display Connectors
+Dec  1 05:04:52 x4 kernel: [drm] Connector 0:
+Dec  1 05:04:52 x4 kernel: [drm]   VGA
+Dec  1 05:04:52 x4 kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
+Dec  1 05:04:52 x4 kernel: [drm]   Encoders:
+Dec  1 05:04:52 x4 kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+Dec  1 05:04:52 x4 kernel: [drm] Connector 1:
+Dec  1 05:04:52 x4 kernel: [drm]   DVI-D
+Dec  1 05:04:52 x4 kernel: [drm]   HPD3
+Dec  1 05:04:52 x4 kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
+Dec  1 05:04:52 x4 kernel: [drm]   Encoders:
+Dec  1 05:04:52 x4 kernel: [drm]     DFP3: INTERNAL_KLDSCP_LVTMA
+Dec  1 05:04:52 x4 kernel: [drm] radeon: power management initialized
+Dec  1 05:04:52 x4 kernel: [drm] fb mappable at 0xF0142000
+Dec  1 05:04:52 x4 kernel: [drm] vram apper at 0xF0000000
+Dec  1 05:04:52 x4 kernel: [drm] size 7299072
+Dec  1 05:04:52 x4 kernel: [drm] fb depth is 24
+Dec  1 05:04:52 x4 kernel: [drm]    pitch is 6912
+Dec  1 05:04:52 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
+Dec  1 05:04:52 x4 kernel: Console: switching to colour frame buffer device 131x105
+Dec  1 05:04:52 x4 kernel: fb0: radeondrmfb frame buffer device
+Dec  1 05:04:52 x4 kernel: drm: registered panic notifier
+Dec  1 05:04:52 x4 kernel: [drm] Initialized radeon 2.12.0 20080528 for 0000:01:05.0 on minor 0
+
+
+Dec  1 05:09:35 x4 kernel: radeon 0000:01:05.0: WB enabled
+Dec  1 05:09:35 x4 kernel: [drm] ring test succeeded in 1 usecs
+Dec  1 05:09:35 x4 kernel: [drm] radeon: ib pool ready.
+Dec  1 05:09:35 x4 kernel: [drm] ib test succeeded in 0 usecs
+Dec  1 05:09:35 x4 kernel: Slab corruption: size-512 start=ffff880216f7e760, len=512
+Dec  1 05:09:35 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+Dec  1 05:09:35 x4 kernel: Last user: [<          (null)>](0x0)
+Dec  1 05:09:35 x4 kernel: 0a0: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
+Dec  1 05:09:35 x4 kernel: Prev obj: start=ffff880216f7e548, len=512
+Dec  1 05:09:35 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+Dec  1 05:09:35 x4 kernel: Last user: [<          (null)>](0x0)
+Dec  1 05:09:35 x4 kernel: 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Dec  1 05:09:35 x4 kernel: 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+Dec  1 05:09:35 x4 kernel: Next obj: start=ffff880216f7e978, len=512
+Dec  1 05:09:35 x4 kernel: Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+Dec  1 05:09:35 x4 kernel: Last user: [<ffffffff812e519d>](radeon_add_atom_encoder+0x7d/0x280)
+Dec  1 05:09:35 x4 kernel: 000: f8 d3 f6 16 02 88 ff ff 18 d8 f6 16 02 88 ff ff  ................
+Dec  1 05:09:35 x4 kernel: 010: 18 d8 f6 16 02 88 ff ff 0c 00 00 00 e0 e0 e0 e0  ................
+Dec  1 05:09:35 x4 kernel: [drm] Radeon Display Connectors
+Dec  1 05:09:35 x4 kernel: [drm] Connector 0:
+Dec  1 05:09:35 x4 kernel: [drm]   VGA
+Dec  1 05:09:35 x4 kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
+Dec  1 05:09:35 x4 kernel: [drm]   Encoders:
+Dec  1 05:09:35 x4 kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+Dec  1 05:09:35 x4 kernel: [drm] Connector 1:
+Dec  1 05:09:35 x4 kernel: [drm]   DVI-D
+Dec  1 05:09:35 x4 kernel: [drm]   HPD3
+Dec  1 05:09:35 x4 kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
+Dec  1 05:09:35 x4 kernel: [drm]   Encoders:
+Dec  1 05:09:35 x4 kernel: [drm]     DFP3: INTERNAL_KLDSCP_LVTMA
+Dec  1 05:09:35 x4 kernel: [drm] radeon: power management initialized
+Dec  1 05:09:35 x4 kernel: [drm] fb mappable at 0xF0142000
+Dec  1 05:09:35 x4 kernel: [drm] vram apper at 0xF0000000
+Dec  1 05:09:35 x4 kernel: [drm] size 7299072
+Dec  1 05:09:35 x4 kernel: [drm] fb depth is 24
+Dec  1 05:09:35 x4 kernel: [drm]    pitch is 6912
+Dec  1 05:09:35 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
+Dec  1 05:09:35 x4 kernel: Console: switching to colour frame buffer device 131x105
+Dec  1 05:09:35 x4 kernel: fb0: radeondrmfb frame buffer device
+Dec  1 05:09:35 x4 kernel: drm: registered panic notifier
+Dec  1 05:09:35 x4 kernel: [drm] Initialized radeon 2.12.0 20080528 for 0000:01:05.0 on minor 0
+
+-- 
+Markus
