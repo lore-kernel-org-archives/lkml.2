@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab1LAH5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 02:57:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753308Ab1LAH5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 02:57:14 -0500
-Date: Thu, 1 Dec 2011 09:58:48 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
- descriptors
-Message-ID: <20111201075847.GA5479@redhat.com>
-References: <1322559196-11139-1-git-send-email-levinsasha928@gmail.com>
- <20111129125622.GB19157@redhat.com>
- <1322573688.4395.11.camel@lappy>
- <20111129135406.GB30966@redhat.com>
- <1322576464.7003.6.camel@lappy>
- <20111129145451.GD30966@redhat.com>
- <4ED4F30F.8000603@redhat.com>
- <1322669511.3985.8.camel@lappy>
- <87wrahrp0u.fsf@rustcorp.com.au>
+	id S1754410Ab1LAH5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 02:57:54 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41383 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754368Ab1LAH5x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 02:57:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wrahrp0u.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hhb1kvix5.wl%tiwai@suse.de>
+References: <1322474755-18785-1-git-send-email-tomoya.rohm@gmail.com>
+	<20111128132317.GD8275@opensource.wolfsonmicro.com>
+	<CANKRQng3YtYZggVWp3BWyaWyaHAbN1hccJksWELnv2co37rEcQ@mail.gmail.com>
+	<20111129122916.GM2851@opensource.wolfsonmicro.com>
+	<CANKRQnjpYDJWfJO-G5HsE6es7metHeqgP32R3eo99MaE2zdNpQ@mail.gmail.com>
+	<s5hhb1kvix5.wl%tiwai@suse.de>
+Date: Thu, 1 Dec 2011 16:57:52 +0900
+Message-ID: <CANKRQniRonz5UcQ-KgnFJptPkqgWWrJsFuW31f8bWCf_xx-tTA@mail.gmail.com>
+Subject: Re: [PATCH v3] sound/soc/codecs: add LAPIS Semiconductor ML26124
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pB17w39D018722
 
-On Thu, Dec 01, 2011 at 01:12:25PM +1030, Rusty Russell wrote:
-> On Wed, 30 Nov 2011 18:11:51 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > On Tue, 2011-11-29 at 16:58 +0200, Avi Kivity wrote:
-> > > On 11/29/2011 04:54 PM, Michael S. Tsirkin wrote:
-> > > > > 
-> > > > > Which is actually strange, weren't indirect buffers introduced to make
-> > > > > the performance *better*? From what I see it's pretty much the
-> > > > > same/worse for virtio-blk.
-> > > >
-> > > > I know they were introduced to allow adding very large bufs.
-> > > > See 9fa29b9df32ba4db055f3977933cd0c1b8fe67cd
-> > > > Mark, you wrote the patch, could you tell us which workloads
-> > > > benefit the most from indirect bufs?
-> > > >
-> > > 
-> > > Indirects are really for block devices with many spindles, since there
-> > > the limiting factor is the number of requests in flight.  Network
-> > > interfaces are limited by bandwidth, it's better to increase the ring
-> > > size and use direct buffers there (so the ring size more or less
-> > > corresponds to the buffer size).
-> > > 
-> > 
-> > I did some testing of indirect descriptors under different workloads.
-> 
-> MST and I discussed getting clever with dynamic limits ages ago, but it
-> was down low on the TODO list.  Thanks for diving into this...
-> 
-> AFAICT, if the ring never fills, direct is optimal.  When the ring
-> fills, indirect is optimal (we're better to queue now than later).
-> 
-> Why not something simple, like a threshold which drops every time we
-> fill the ring?
-> 
-> struct vring_virtqueue
-> {
-> ...
->         int indirect_thresh;
-> ...
-> }
-> 
-> virtqueue_add_buf_gfp()
-> {
-> ...
-> 
->         if (vq->indirect &&
->             (vq->vring.num - vq->num_free) + out + in > vq->indirect_thresh)
->                 return indirect()
-> ...
-> 
-> 	if (vq->num_free < out + in) {
->                 if (vq->indirect && vq->indirect_thresh > 0)
->                         vq->indirect_thresh--;
->         
-> ...
-> }
-> 
-> Too dumb?
-> 
-> Cheers,
-> Rusty.
+2011/12/1 Takashi Iwai <tiwai@suse.de>:
+> You need to have read Mark's comment carefully.  He quoted another
+> line before that.
+>
+> ================================================================
+>> +     SOC_SINGLE_TLV("EQ Band1 Input Volume", ML26124_EQ_GAIN_BRAND1, 0,
+>> +                     0xff, 1, eq_band_gain),
+>
+>> +     SOC_SINGLE("EQ BAND1 Switch", ML26124_FILTER_EN, 3, 1, 0),
+>
+> These should mathc.
+> ================================================================
+>
+> So, you have two inconsistent names for EQ band1.
+>
 
-We'll presumably need some logic to increment is back,
-to account for random workload changes.
-Something like slow start?
+You mean "EQ Band1" and "EQ BAND1" are inconsistent names ?
+If yes, can you accept the followings ?
 
--- 
-MST
+EQ Band1 Input Volume
+EQ Band1 Switch
+
+Thanks,
+
+------
+tomoya
+ROHM Co., Ltd.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
