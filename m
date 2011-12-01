@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab1LAICT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:02:19 -0500
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:53304
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751928Ab1LAICR (ORCPT
+	id S1754315Ab1LAICj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:02:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53737 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab1LAICh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:02:17 -0500
-Message-ID: <4ED73481.2010904@compulab.co.il>
-Date: Thu, 01 Dec 2011 10:02:09 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
+	Thu, 1 Dec 2011 03:02:37 -0500
+Date: Thu, 1 Dec 2011 02:02:27 -0600
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        David Howells <dhowells@redhat.com>, Jan Harkes <jaharkes@cs.cmu.edu>,
+        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
+        Dave Kleikamp <shaggy@kernel.org>,
+        Petr Vandrovec <petr@vandrovec.name>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Chris Dunlop <chris@onthe.net.au>,
+        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
+        codalist@TELEMANN.coda.cs.cmu.edu,
+        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org,
+        ecryptfs@vger.kernel.org
+Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
+Message-ID: <20111201080227.GC495@boyd>
+References: <1321861008-20611-1-git-send-email-chris@onthe.net.au>
+ <20111129082501.GA569@onthe.net.au>
+ <20111201065024.GB495@boyd>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel@vger.kernel.org, Keshava Munegowda <keshava_mgowda@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 3/4] mfd: omap-usb-host: Use gpio_request_one
-References: <1322704074.11560.3.camel@phoenix> <1322704405.11560.7.camel@phoenix>
-In-Reply-To: <1322704405.11560.7.camel@phoenix>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="Izn7cH1Com+I3R9J"
+Content-Disposition: inline
+In-Reply-To: <20111201065024.GB495@boyd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
 
-On 12/01/11 03:53, Axel Lin wrote:
-> Use gpio_request_one() instead of multiple gpiolib calls.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/omap-usb-host.c |   20 +++++++-------------
->  1 files changed, 7 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-> index 86e1458..6533ecc 100644
-> --- a/drivers/mfd/omap-usb-host.c
-> +++ b/drivers/mfd/omap-usb-host.c
-> @@ -715,19 +715,13 @@ static int usbhs_enable(struct device *dev)
->  	clk_enable(omap->usbtll_ick);
->  
->  	if (pdata->ehci_data->phy_reset) {
-> -		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0])) {
-> -			gpio_request(pdata->ehci_data->reset_gpio_port[0],
-> -						"USB1 PHY reset");
-> -			gpio_direction_output
-> -				(pdata->ehci_data->reset_gpio_port[0], 0);
-> -		}
-> +		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[0]))
-> +			gpio_request_one(pdata->ehci_data->reset_gpio_port[0],
-> +					 GPIOF_OUT_INIT_LOW, "USB1 PHY reset");
->  
-> -		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1])) {
-> -			gpio_request(pdata->ehci_data->reset_gpio_port[1],
-> -						"USB2 PHY reset");
-> -			gpio_direction_output
-> -				(pdata->ehci_data->reset_gpio_port[1], 0);
-> -		}
-> +		if (gpio_is_valid(pdata->ehci_data->reset_gpio_port[1]))
-> +			gpio_request_one(pdata->ehci_data->reset_gpio_port[1],
-> +					 GPIOF_OUT_INIT_LOW, "USB2 PHY reset");
+--Izn7cH1Com+I3R9J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I was wondering, if we need the gpio_is_valid() check here and above?
-gpio_request() already does the gpio_is_valid() check,
-so why should we double check?
+On 2011-12-01 00:50:25, Tyler Hicks wrote:
+> As David mentioned, Al's atomic open patches might solve all of this in
+> the future, but I don't know much about that patchset. Is there any
+> relevant info you could provide about those patches, Al?
+
+Sorry, Al. I see that you've already provided those details here:
+
+https://lkml.org/lkml/2011/5/12/337
+
+I was unaware of that thread until now.
+
+Tyler
 
 
--- 
-Regards,
-Igor.
+
+--Izn7cH1Com+I3R9J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJO1zSTAAoJENaSAD2qAscKAe8P/086rTItWBFlIGAa/AjG+urt
+8bUVX+Sy/nVtqUzzoO+yNShUwunB1FoS3LqpkrRziXcmlAzghmBDR6r67kg/GIbX
+WmWPjCF+0aLvTCxLTpjtjxzd8Fqcp8CoaFVR4Pt42qmRhvrG2aqXW3y4REH/ERME
+3VJT5LCqgdzxHq8G1nc9ushgcnJBUp8FVAIfUx1CFY/BzBV/wIKyoXP9kpOQJCPQ
+pm9tj7nUGIj5BiNThHyDVM5QomCDNKiQQNLxnQHFU0qIfPbOpQQY1O+ZGXLqan5l
+wQjtFmuqSlyew2XVahJg5q6c6gXcP+MkBlgSJ7UQ7yYhlR9e5eGxTrWAWRg429Px
+RKzV646mO4yHLy5EO/zC7yHP/7QLKgUg27cgI1RgnZHhClbJAbPfPVbK1tbs+WVE
+zUEgsSAgcn/YOOslnH13bd8TT/MEYIxNoFxIIYCJ48QxU+bcPoYUSmz+eVOZ6Bn7
+ZfX/Lw0NtDud4D4G7FxcTMcOApk4cOhtS7xqKRI7fFNmoxUQcXY12Gy/evCAX0uN
+MNUQONf4n5chc+kIWT8++maOU2DwlBpSgHDgigrvvGhXF4vo7MIHv7PJPkHsMA/K
+atbRpNm79AVRKCAah0nSmFTz19WtAi1rk46+8VOqeN4Rk/GixQpi3OUI5xYVTr5r
+eH4FmWAbr4wo1ciSE2E2
+=7Kyp
+-----END PGP SIGNATURE-----
+
+--Izn7cH1Com+I3R9J--
