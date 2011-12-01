@@ -1,121 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab1LAO3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 09:29:39 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:51595 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab1LAO3i (ORCPT
+	id S1754782Ab1LAOaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 09:30:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40651 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340Ab1LAOao convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 09:29:38 -0500
-From: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-To: linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org,
-        linux-acpi@vger.kernel.org, lenb@kernel.org,
-        linaro-dev@lists.linaro.org, amit.kachhap@linaro.org,
-        patches@linaro.org
-Subject: [PATCH] thermal: Add a new trip type to use cooling device instance number
-Date: Thu,  1 Dec 2011 19:59:23 +0530
-Message-Id: <1322749763-11140-1-git-send-email-amit.kachhap@linaro.org>
-X-Mailer: git-send-email 1.7.1
+	Thu, 1 Dec 2011 09:30:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111201140500.GA4269@tiehlicka.suse.cz>
+References: <20111129100727.GD2675@tiehlicka.suse.cz>
+	<20111129113906.GA7299@redhat.com>
+	<20111130101028.GA2906@tiehlicka.suse.cz>
+	<20111130142316.GA2466@redhat.com>
+	<20111130140316.GA4153@tiehlicka.suse.cz>
+	<20111130153929.GA2144@redhat.com>
+	<20111201085845.GA4602@tiehlicka.suse.cz>
+	<20111201105538.GA4504@tiehlicka.suse.cz>
+	<20111201115911.GA5706@redhat.com>
+	<20111201124440.GB25614@tiehlicka.suse.cz>
+	<20111201140500.GA4269@tiehlicka.suse.cz>
+Date: Thu, 1 Dec 2011 16:23:19 +0200
+X-Google-Sender-Auth: lYWIBsjZgXxwqCN_IudHM4OSeCk
+Message-ID: <CAB3XZEd1D7mR3Q_vweNHYUbZxmywbMi3FomQbdSy=1DB8Y0KzA@mail.gmail.com>
+Subject: Re: [3.2-rc3] 100% CPU usage while in del_timer_sync from iwl3945_rs_free_sta
+From: Eliad Peller <eliad@wizery.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new trip type THERMAL_TRIP_STATE_ACTIVE. This
-trip behaves same as THERMAL_TRIP_ACTIVE but also passes the cooling
-device instance number. This helps the cooling device registered as
-different instances to perform appropriate cooling action decision in
-the set_cur_state call back function.
+On Thu, Dec 1, 2011 at 4:05 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Thu 01-12-11 13:44:40, Michal Hocko wrote:
+>> On Thu 01-12-11 12:59:12, Stanislaw Gruszka wrote:
+>> > On Thu, Dec 01, 2011 at 11:55:38AM +0100, Michal Hocko wrote:
+>> > > [  349.316070] iwl3945_rs_free_sta rs_sta f4be1ac0
+>> > > [  349.316076] ------------[ cut here ]------------
+>> > > [  349.316097] WARNING: at drivers/net/wireless/iwlegacy/iwl-3945-rs.c:438 iwl3945_rs_free_sta+0x33/0x42 [iwl3945]()
+>> >
+>> > Johannes pointed on irc that this problem is most likely caused by:
+>> >
+>> > commit f785d83a19bca326f79d127a413e35769afc0105
+>> > Author: Eliad Peller <eliad@wizery.com>
+>> > Date:   Mon Aug 8 16:50:22 2011 +0300
+>> >
+>> >     mac80211: clear sta.drv_priv on reconfiguration
+>> >
+>> > Michal, could you confirm that? If that is the root of the problem, we
+>> > need patch for iwlegacy (and iwlwifi) that allocate separate memory for
+>> > rc structures.
+>>
+>> Should I just revert it?
+>
+> Reverted and guess what ;)
+> Yeah, it works. So feel free to add
+> Reported-adn-Tested-by: Michal Hocko <mhocko@suse.cz>
+> to the revert.
+>
+cool. after giving it a second look, i agree with Stanislaw - let's
+continue with the revert.
 
-Also since the trip temperature's are in ascending order so some logic
-is put in place to skip the un-necessary checks.
+> Anyway, I have really no idea about the 80211 stack but the patch
+> doesn't seem to be correct from the layering POV. Why should generic
+> layer clear something that is driver private data (or at least the
+> naming suggests that it is driver specific data)?
 
-Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
----
- Documentation/thermal/sysfs-api.txt |    4 ++--
- drivers/thermal/thermal_sys.c       |   27 ++++++++++++++++++++++++++-
- include/linux/thermal.h             |    1 +
- 3 files changed, 29 insertions(+), 3 deletions(-)
+the driver should "know" the station (and its private data) only
+between the .sta_add() and .sta_remove() callbacks.
+on suspend, we do call sta_remove(), so it's valid to clear the private data.
 
-diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-index b61e46f..5c1d44e 100644
---- a/Documentation/thermal/sysfs-api.txt
-+++ b/Documentation/thermal/sysfs-api.txt
-@@ -184,8 +184,8 @@ trip_point_[0-*]_temp
- 
- trip_point_[0-*]_type
- 	Strings which indicate the type of the trip point.
--	E.g. it can be one of critical, hot, passive, active[0-*] for ACPI
--	thermal zone.
-+	E.g. it can be one of critical, hot, passive, active[0-1],
-+	state-active[0-*] for ACPI thermal zone.
- 	RO, Optional
- 
- cdev[0-*]
-diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-index dd9a574..72b1ab3 100644
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -192,6 +192,8 @@ trip_point_type_show(struct device *dev, struct device_attribute *attr,
- 		return sprintf(buf, "passive\n");
- 	case THERMAL_TRIP_ACTIVE:
- 		return sprintf(buf, "active\n");
-+	case THERMAL_TRIP_STATE_ACTIVE:
-+		return sprintf(buf, "state-active\n");
- 	default:
- 		return sprintf(buf, "unknown\n");
- 	}
-@@ -1035,7 +1037,7 @@ EXPORT_SYMBOL(thermal_cooling_device_unregister);
- void thermal_zone_device_update(struct thermal_zone_device *tz)
- {
- 	int count, ret = 0;
--	long temp, trip_temp;
-+	long temp, trip_temp, max_state, last_trip_change = 0;
- 	enum thermal_trip_type trip_type;
- 	struct thermal_cooling_device_instance *instance;
- 	struct thermal_cooling_device *cdev;
-@@ -1086,6 +1088,29 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
- 					cdev->ops->set_cur_state(cdev, 0);
- 			}
- 			break;
-+		case THERMAL_TRIP_STATE_ACTIVE:
-+			list_for_each_entry(instance, &tz->cooling_devices,
-+					    node) {
-+				if (instance->trip != count)
-+					continue;
-+
-+				if (temp <= last_trip_change)
-+					continue;
-+
-+				cdev = instance->cdev;
-+				cdev->ops->get_max_state(cdev, &max_state);
-+
-+				if ((temp >= trip_temp) &&
-+						((count + 1) <= max_state))
-+					cdev->ops->set_cur_state(cdev,
-+								count + 1);
-+				else if ((temp < trip_temp) &&
-+							(count <= max_state))
-+					cdev->ops->set_cur_state(cdev, count);
-+
-+				last_trip_change = trip_temp;
-+			}
-+			break;
- 		case THERMAL_TRIP_PASSIVE:
- 			if (temp >= trip_temp || tz->passive)
- 				thermal_zone_device_passive(tz, temp,
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index 47b4a27..d7d0a27 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -42,6 +42,7 @@ enum thermal_trip_type {
- 	THERMAL_TRIP_PASSIVE,
- 	THERMAL_TRIP_HOT,
- 	THERMAL_TRIP_CRITICAL,
-+	THERMAL_TRIP_STATE_ACTIVE,
- };
- 
- struct thermal_zone_device_ops {
--- 
-1.7.1
+the problem is that the rate control also uses the same private data,
+and is valid also after sta_remove() was called. i think the right
+solution is to split the generic private data and the rate control
+private data.
 
+Eliad.
