@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab1LADRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 22:17:48 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:55804 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248Ab1LADRq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 22:17:46 -0500
-Date: Thu, 1 Dec 2011 12:17:08 +0900
-From: Norbert Preining <preining@logic.at>
-To: Emmanuel Grumbach <egrumbach@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, David Rientjes <rientjes@google.com>
-Subject: Re: iwlagn is getting very shaky
-Message-ID: <20111201031708.GE4644@gamma.logic.tuwien.ac.at>
-References: <1322387175.4044.16.camel@jlt3.sipsolutions.net> <CANUX_P3uoNOj3j-REvYCZP382cHfq+DpBRi7fnzFfMG_dyHtTQ@mail.gmail.com> <20111128035627.GH1422@gamma.logic.tuwien.ac.at> <CANUX_P2kYiFCP8uAhLZC_kVEjoyxabRBx3Pn+ndtFus=6hJN7Q@mail.gmail.com> <20111128042343.GA4619@gamma.logic.tuwien.ac.at> <20111128232525.GA12719@gamma.logic.tuwien.ac.at> <CANUX_P2b_ZYr4hHigA+tGa9uakcq3hQXnOiP5isQtfcYxCaxcw@mail.gmail.com> <1322555472.4110.8.camel@jlt3.sipsolutions.net> <CANUX_P0z9HmZSj_13Fv0LHUgy2UDXWMaj8L2Tgqz2jQC2mbpZw@mail.gmail.com> <F72258A2-71A1-4F82-B5ED-31FD2E837F3A@logic.at>
+	id S1754120Ab1LADRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 22:17:19 -0500
+Received: from ozlabs.org ([203.10.76.45]:35271 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753451Ab1LADRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 22:17:16 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: jim.cromie@gmail.com, jbaron@redhat.com
+Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
+        Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH 18/25] dynamic_debug: Introduce global fake module param module.ddebug
+In-Reply-To: <1322683014-13285-19-git-send-email-jim.cromie@gmail.com>
+References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com> <1322683014-13285-19-git-send-email-jim.cromie@gmail.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 01 Dec 2011 12:49:33 +1030
+Message-ID: <8739d5t4ne.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F72258A2-71A1-4F82-B5ED-31FD2E837F3A@logic.at>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Di, 29 Nov 2011, Norbert Preining wrote:
-> > It might that we are holding the mac80211 workqueue in the driver too...
-> > I guess we could try to enable MAC80211 debug flag with timestamps to check.
+On Wed, 30 Nov 2011 12:56:47 -0700, jim.cromie@gmail.com wrote:
+> From: Jim Cromie <jim.cromie@gmail.com>
 > 
-> Actually I got some strange behaviour today at work, but that might be a university temporary problem.
+> Rework Thomas Renninger's $module.ddebug boot-time debugging feature,
+> from https://lkml.org/lkml/2010/9/15/397
+> 
+> Dynamic Debug allows enabling of pr_debug and dev_dbg messages at
+> runtime.  This is controlled via $DBGFS/dynamic_debug/control.  One
+> major drawback is that the whole initialization of a module cannot be
+> tracked, because ddebug is only aware of debug strings of loaded
+> modules.  But this is the most interesting part...
+> 
+> This patch introduces a fake module parameter module.ddebug (not shown
+> in /sys/module/*/parameters, thus it does not use any resources).  If
+> a module passes ddebug as a module parameter (e.g. via module.ddebug
+> kernel boot param or via "modprobe module ddebug"), all debug strings
+> of this module get activated by issuing "module module_name +p"
+> internally (not via sysfs) when the module gets loaded.
+> A later patch extends this with an arg: module.ddebug="+mfp"
 
-Yeah, I have to say that the situation is much better, but not solved.
-Today I got a completely stuch driver again. I will reactivate debugging
-and see what I get.
+I think you're missing a neat trick here: we should be able to handle
+ddebug in the handle_unknown parameter to parse_args().
 
-Best wishes
+Or am I missing something?
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-...[Arthur] leapt to his feet like an author hearing the
-phone ring...
-                 --- Who says that the character of Arthur isn't
-                 --- autobiographical?
-                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
+Thanks,
+Rusty.
