@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab1LAA6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 19:58:31 -0500
-Received: from mga02.intel.com ([134.134.136.20]:42702 "EHLO mga02.intel.com"
+	id S1753800Ab1LAA7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 19:59:33 -0500
+Received: from mga14.intel.com ([143.182.124.37]:9609 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753436Ab1LAA6a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 19:58:30 -0500
+	id S1753476Ab1LAA7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 19:59:32 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="81544428"
-From: "Yang, Fei" <fei.yang@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Alan Cox <alan@linux.intel.com>, "Gross, Mark" <mark.gross@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Wed, 30 Nov 2011 16:58:28 -0800
-Subject: [PATCH] IRQ: Validate irq_ack function pointer before calling it
-Thread-Topic: [PATCH] IRQ: Validate irq_ack function pointer before calling
- it
-Thread-Index: AcyvxFZyxvFLKBmhSVub+D9qNz0Vpg==
-Message-ID: <88D294E28D20D84C9350E231A79B0E63017F07D53E@orsmsx506.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-IronPort-AV: E=Sophos;i="4.71,274,1320652800"; 
+   d="scan'208";a="42719638"
+Subject: Re: [patch 3/6] sched, nohz: sched group, domain aware nohz idle
+ load balancing
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Mike Galbraith <efault@gmx.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.jf.intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>
+Date: Wed, 30 Nov 2011 17:03:34 -0800
+In-Reply-To: <1322559859.2921.190.camel@twins>
+References: <20111118230323.592022417@sbsiddha-desk.sc.intel.com>
+	 <20111118230553.995756330@sbsiddha-desk.sc.intel.com>
+	 <1322135263.2921.12.camel@twins>
+	 <1322524316.21329.64.camel@sbsiddha-desk.sc.intel.com>
+	 <1322559859.2921.190.camel@twins>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1322701415.21329.77.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-handle_edge_irq doesn't validate function pointer irq_ack
-before calling it. We need to check the pointer for NULL or the
-drivers have to implement irq_ack even an empty one. I think the
-former is better in case driver doesn't really need irq_ack.
+On Tue, 2011-11-29 at 01:44 -0800, Peter Zijlstra wrote:
+> On Mon, 2011-11-28 at 15:51 -0800, Suresh Siddha wrote:
+> > On Thu, 2011-11-24 at 03:47 -0800, Peter Zijlstra wrote:
+> > > On Fri, 2011-11-18 at 15:03 -0800, Suresh Siddha wrote:
+> > > > +       for_each_domain(cpu, sd) {
+> > > > +               struct sched_group *sg = sd->groups;
+> > > > +               struct sched_group_power *sgp = sg->sgp;
+> > > > +               int nr_busy = atomic_read(&sgp->nr_busy_cpus);
+> > > > +
+> > > > +               if (nr_busy > 1 && (nr_busy * SCHED_LOAD_SCALE > sgp->power))
+> > > > +                       goto need_kick;
+> > > 
+> > > This looks wrong, its basically always true for a box with HT.
+> > 
+> > In the presence of two busy HT siblings, we need to do the idle load
+> > balance to figure out if the load from the busy core can be migrated to
+> > any other idle core/sibling in the platform. And at this point, we
+> > already know there are idle cpu's in the platform.
+> 
+> might have to, this nr_busy doesn't mean its actually busy, just that
+> its not nohz, it might very well be idle.
 
-Signed-off-by: Fei Yang <fei.yang@intel.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
----
-kernel/irq/chip.c |    3 ++-
-1 files changed, 2 insertions(+), 1 deletions(-)
+correct. But we can change that.
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index dc5114b..12f9550 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -448,7 +448,8 @@ handle_edge_irq(unsigned int irq, struct irq_desc *desc)
-    kstat_incr_irqs_this_cpu(irq, desc);
+We can track nr_busy_cpus separately and can be updated when ever the rq
+goes into idle and during the first busy tick after idle. Whereas the
+nohz.idle_cpus_mask can be updated only during tickless entry.
 
-     /* Start handling the irq */
--    desc->irq_data.chip->irq_ack(&desc->irq_data);
-+    if (desc->irq_data.chip->irq_ack)
-+          desc->irq_data.chip->irq_ack(&desc->irq_data);
+> > I will modify the above check to:
+> > 
+> > if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
+> > 	goto need_kick;
+> > 
+> > This way, if there is a SMT/MC domain with more than one busy cpu in the
+> > group, then we will request for the idle load balancing.
+> 
+> Potentially 1 more than 1 busy, right? And we do the balancing just in
+> case there are indeed busy cpus.
+> 
+> I think its useful to mention that somewhere near, that this nr_busy
+> measure we use is an upper bound on actual busy.
 
-     do {
-          if (unlikely(!desc->action)) {
--- 
-1.7.0.4
+The above should cover this.
+
+I will send the updated version shortly.
+
+thanks,
+suresh
 
