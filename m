@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab1LAVDs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:03:48 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37354 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab1LAVDr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:03:47 -0500
-Date: Thu, 1 Dec 2011 21:03:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
-Message-ID: <20111201210332.GI9581@n2100.arm.linux.org.uk>
-References: <1322752657.3704.2.camel@m0nster> <20111201181736.GA13182@huya.qualcomm.com> <1322764745.3704.9.camel@m0nster> <20111201192705.GA23641@huya.qualcomm.com> <1322767992.3704.13.camel@m0nster> <20111201194353.GA24293@huya.qualcomm.com> <20111201201950.GE9581@n2100.arm.linux.org.uk> <1322771147.3704.21.camel@m0nster> <20111201203506.GG9581@n2100.arm.linux.org.uk> <1322772598.3704.33.camel@m0nster>
+	id S1754088Ab1LAVIA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:08:00 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:17841
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751278Ab1LAVH6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 16:07:58 -0500
+X-SpamScore: -22
+X-BigFish: VS-22(zz9371K542M154dM1432N98dKzz1202hzz8275bhz2fh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: KY Srinivasan <kys@microsoft.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH 4/5] Staging: hv: storvsc: Fix a bug in
+ copy_from_bounce_buffer()
+Thread-Topic: [PATCH 4/5] Staging: hv: storvsc: Fix a bug in
+ copy_from_bounce_buffer()
+Thread-Index: AQHMsCkKHUy0MoNgQ0qgyL64yE+Z5JXH/wYA//96smA=
+Date: Thu, 1 Dec 2011 21:07:46 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA7B4EF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1322744315-13017-1-git-send-email-kys@microsoft.com>
+ <1322744360-13067-1-git-send-email-kys@microsoft.com>
+ <1322744360-13067-4-git-send-email-kys@microsoft.com>
+ <20111201210304.GY3195@mwanda>
+In-Reply-To: <20111201210304.GY3195@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322772598.3704.33.camel@m0nster>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 12:49:58PM -0800, Daniel Walker wrote:
-> On Thu, 2011-12-01 at 20:35 +0000, Russell King - ARM Linux wrote:
-> > On Thu, Dec 01, 2011 at 12:25:47PM -0800, Daniel Walker wrote:
-> > > On Thu, 2011-12-01 at 20:19 +0000, Russell King - ARM Linux wrote:
-> > > > Now, the obvious question to ask now is this: as you sent your question,
-> > > > and Daniel obviously objects, was Daniel one of your respondants?  If
-> > > > not, then he carries some of the blame for this patch being created
-> > > > in the first place by having missed the email/not replied/etc.
-> > > > 
-> > > 
-> > > What if the people using the hardware aren't even on the list ? It's not
-> > > their fault is it?
-> > 
-> > Did you notice I mentioned six months?
-> 
-> Yeah I did notice..
-> 
-> > The way to remove non-broken code is:
-> > 1. to ask.  If no one responds, then
-> > 2. submit a patch to put an entry in feature-removal-schedule.txt giving a
-> >    description of what will be removed and when - and then flag it
-> >    with a patch to remove it.  If no one responds to that, then
-> > 3. the patch to remove it re-posted, and if no one objects it gets
-> >    merged.
-> > 
-> > So, if people care about bits of code _and_ they're not on the relevant
-> > subsystem mailing lists, they need to keep an eye on the feature removal
-> > file - otherwise they're in for nasty surprises.
-> 
-> I agree with the steps, but I'm not sure David knows about (or would be
-> following) those steps. Not to mention these devices are still readily
-> available used .. I wouldn't expect anyone to even remotely ponder
-> removing this code for at least another 10 years.. In order to even
-> start the process above there has to be some good probability that no
-> has the device or cares at all about the device..
 
-Actually... no.  We've removed entire SoCs which have lost their
-maintainers well under this '10 years'.
 
-One of the key decisions for removing code is the cost of keeping it
-in a buildable state when there's no one actively looking after it.
-If it has a high cost it'll get deleted much earlier...
+> -----Original Message-----
+> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> Sent: Thursday, December 01, 2011 4:03 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> James.Bottomley@HansenPartnership.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org; Haiyang Zhang
+> Subject: Re: [PATCH 4/5] Staging: hv: storvsc: Fix a bug in
+> copy_from_bounce_buffer()
+> 
+> On Thu, Dec 01, 2011 at 04:59:19AM -0800, K. Y. Srinivasan wrote:
+> > Fix a bug in copy_from_bounce_buffer().
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> 
+> Seriously? ...
+> 
+> This is a crap changelog.  What did the bug do?
+
+Sorry Dan. I put in some comments in the code describing the bug. Perhaps I 
+should have copied that in the changelog as well.
+
+Regards,
+
+K. Y
+
