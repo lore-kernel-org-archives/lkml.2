@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab1LAH3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 02:29:23 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:54003 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab1LAH3W (ORCPT
+	id S1754218Ab1LAH3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 02:29:52 -0500
+Received: from smtp1.onthe.net.au ([203.22.196.249]:34412 "EHLO
+	smtp1.onthe.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab1LAH3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 02:29:22 -0500
-X-AuditID: cbfee61a-b7b62ae0000030b0-d0-4ed72cd0398f
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Joerg Roedel'" <joro@8bytes.org>,
-        "'KyongHo Cho'" <pullip.cho@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
-References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com>
- <20111123114626.GH20535@8bytes.org>
-In-reply-to: <20111123114626.GH20535@8bytes.org>
-Subject: RE: [PATCH v7 0/2] iommu/exynos: Add IOMMU/System MMU driver for
-	Samsung Exynos
-Date: Thu, 01 Dec 2011 16:29:17 +0900
-Message-id: <045b01ccaffa$ef48c430$cdda4c90$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acyp1YpHAmV6SjFdTN6nFjHQdqZD3wGDq7ZA
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 1 Dec 2011 02:29:50 -0500
+Date: Thu, 1 Dec 2011 18:29:47 +1100
+From: Chris Dunlop <chris@onthe.net.au>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        Jan Harkes <jaharkes@cs.cmu.edu>,
+        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
+        Dave Kleikamp <shaggy@kernel.org>,
+        Petr Vandrovec <petr@vandrovec.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
+        codalist@TELEMANN.coda.cs.cmu.edu,
+        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
+Message-ID: <20111201072947.GA10329@onthe.net.au>
+References: <20111130071319.GA16711@onthe.net.au>
+ <1321861008-20611-1-git-send-email-chris@onthe.net.au>
+ <20111129082501.GA569@onthe.net.au>
+ <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC20@SACMVEXC2-PRD.hq.netapp.com>
+ <24960.1322643283@redhat.com>
+ <20111201004709.GA26085@onthe.net.au>
+ <20111201063157.GA495@boyd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201063157.GA495@boyd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg Roedel wrote:
+On Thu, Dec 01, 2011 at 12:31:58AM -0600, Tyler Hicks wrote:
+> On 2011-12-01 11:47:09, Chris Dunlop wrote:
+>> On Wed, Nov 30, 2011 at 08:54:43AM +0000, David Howells wrote:
+>>> Chris Dunlop <chris@onthe.net.au> wrote:
+>>> 
+>>>> To avoid other people further wasting their and your time on
+>>>> exactly the same thing future, how something like the following
+>>>> patch, based on your comment in:
+>>>> 
+>>>> http://article.gmane.org/gmane.linux.nfs/40370
+>>>> 
+>>>> ...and, if that's acceptable, is it worthwhile doing for the
+>>>> other file systems which are likewise currently vulnerable when
+>>>> abused by broken layered file systems?
+>>> 
+>>> Also, this may get fixed by Al's atomic open patches - but obviously it hasn't
+>>> been yet...
+>>> 
+>>>> Don't oops when abused by broken layered file systems
+>>>> 
+>>>> Signed-off-by: Chris Dunlop <chris@onthe.net.au>
+>>> 
+>>> Acked-by: David Howells <dhowells@redhat.com>
+>>> 
+>>> It's also worth printing a message - this *is* a kernel bug of some description
+>>> if it happens.
+>> 
+>> Like the below?  This covers the d_revalidate for 9p, afs, coda,
+>> hfs, ncpfs, proc, sysfs.
 > 
-> On Fri, Nov 18, 2011 at 06:47:28PM +0900, KyongHo Cho wrote:
-> > Changes since v6:
-> > - Totally rewrite exynos_iommu_map() and exynos_iommu_unmap() according
-> >   to the change in iommu_map() and iommu_unmap().
-> > - Change special slab for Lv2 page table to kmalloc().
+> I don't like the looks of this patch. It makes sense for NFS to error
+> out of d_revalidate() when passed a NULL nameidata pointer because NFS
+> actually uses the nameidata to do something useful. That can't be said
+> about the other filesystems in this patch.
+
+I can see nd is used in nfs_open_revalidate(), but is it
+necessarily used in nfs_lookup_revalidate()?  I'm way out of my
+depth here, but everywhere it's used in nfs_lookup_revalidate()
+(nfs_neg_need_reval(), nfs_is_exclusive_create(),
+nfs_lookup_verify_inode()) there are also checks for nd != NULL.
+
+> Why not handle the other filesystems like the previous fixes you
+> referenced in your original email by checking for a non-NULL nd like
+> this:
 > 
-> Okay, the driver looks good to me now. If there are no further
-> objections I am going to merge it for 3.3.
-> 
+> 	if (nd && nd->flags & LOOKUP_RCU)
+> 		return -ECHILD;
 
-Hi Joerg,
+'Cos Trond scared me into it!  ;-)
 
-Sorry for late response, I came back just now from family travelling...
+But mostly because I don't really know what I'm doing. The
+original patch came about because I was tracking down the Oops
+in the NFS code and it seemed such an obvious fix that
+lookup_one_len() passes down a hard-coded NULL and that NULL
+isn't checked in all the d_revalidate routines. I thought I'd do
+the right thing and make sure it was checked everywhere. Little
+did I know there's "history" behind it! I'm afraid I don't know
+anywhere near enough to argue about the right way to deal with it.
 
-Anyway, that touches many Samsung stuff so it would be better if you could
-create separate topic branch which can be merged into Samsung tree. And if
-required, please add my ack on them.
+> I'm also not sure about the printk in the NFS case. Instead of littering
+> the logs, we should probably just disallow the stacked filesystem (are
+> we talking about eCryptfs here?) from mounting on top of NFS in the
+> first place.
 
-Thanks.
+See other reply: it wasn't a stacked file system.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+But it seems useful to have the d_revalidate routines indicate
+via the log that they're being abused.
 
+Chris
