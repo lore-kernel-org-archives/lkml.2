@@ -1,165 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab1LAUma (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:42:30 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:55155 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753633Ab1LAUm2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:42:28 -0500
-X-Authenticated: #4736741
-X-Provags-ID: V01U2FsdGVkX1+By9QBBD+BF2pr3V/IEqB110O/rgsdlxHfD1IcGu
-	mjSIU5OlRXFKgK
-Message-ID: <4ED7E6AB.6050308@wolke7.net>
-Date: Thu, 01 Dec 2011 21:42:19 +0100
-From: booster@wolke7.net
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.8.1.23) Gecko/20090812 Lightning/0.9 Thunderbird/2.0.0.23 Mnenhy/0.7.6.666
-MIME-Version: 1.0
-To: Francois Romieu <romieu@fr.zoreil.com>
-CC: hayeswang <hayeswang@realtek.com>,
-        "'Jonathan Nieder'" <jrnieder@gmail.com>,
-        "'Eric Dumazet'" <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        "'nic_swsd'" <nic_swsd@realtek.com>, linux-kernel@vger.kernel.org,
-        "'Armin Kazmi'" <armin.kazmi@tu-dortmund.de>
-Subject: Re: [bug?] r8169: hangs under heavy load
-References: <20111125222211.GA13719@electric-eye.fr.zoreil.com> <1322262357.2550.12.camel@edumazet-laptop> <20111126004447.GA14744@electric-eye.fr.zoreil.com> <1322280423.10212.3.camel@edumazet-laptop> <20111127092808.GE21635@elie.hsd1.il.comcast.net> <4ED2A573.1020807@wolke7.net> <20111127231147.GA1784@electric-eye.fr.zoreil.com> <D95C09DB1A7E493E89FE5A0B3879CEB0@realtek.com.tw> <20111129105440.GA2410@electric-eye.fr.zoreil.com> <4ED538EC.4010509@wolke7.net> <20111201102000.GA14013@electric-eye.fr.zoreil.com>
-In-Reply-To: <20111201102000.GA14013@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754042Ab1LAUuC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:50:02 -0500
+Received: from fifo99.com ([67.223.236.141]:37169 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753735Ab1LAUuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 15:50:00 -0500
+Message-ID: <1322772598.3704.33.camel@m0nster>
+Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
+From: Daniel Walker <dwalker@fifo99.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 01 Dec 2011 12:49:58 -0800
+In-Reply-To: <20111201203506.GG9581@n2100.arm.linux.org.uk>
+References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
+	 <1322752657.3704.2.camel@m0nster>
+	 <20111201181736.GA13182@huya.qualcomm.com>
+	 <1322764745.3704.9.camel@m0nster>
+	 <20111201192705.GA23641@huya.qualcomm.com>
+	 <1322767992.3704.13.camel@m0nster>
+	 <20111201194353.GA24293@huya.qualcomm.com>
+	 <20111201201950.GE9581@n2100.arm.linux.org.uk>
+	 <1322771147.3704.21.camel@m0nster>
+	 <20111201203506.GG9581@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Francois Romieu wrote:
-> booster@wolke7.net <booster@wolke7.net> :
-> [...]
->   
->> Any more ideas ?
->>     
->
-> Give me a brain.
->
-> Fixed patch below.
->
-> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-> index 6f06aa1..e776bf2 100644
-> --- a/drivers/net/ethernet/realtek/r8169.c
-> +++ b/drivers/net/ethernet/realtek/r8169.c
-> @@ -4885,8 +4894,7 @@ static void rtl_hw_start_8168(struct net_device *dev)
->  	RTL_W16(IntrMitigate, 0x5151);
->  
->  	/* Work around for RxFIFO overflow. */
-> -	if (tp->mac_version == RTL_GIGA_MAC_VER_11 ||
-> -	    tp->mac_version == RTL_GIGA_MAC_VER_22) {
-> +	if (tp->mac_version == RTL_GIGA_MAC_VER_11) {
->  		tp->intr_event |= RxFIFOOver | PCSTimeout;
->  		tp->intr_event &= ~RxOverflow;
->  	}
-> @@ -5804,6 +5812,10 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
->  	 */
->  	status = RTL_R16(IntrStatus);
->  	while (status && status != 0xffff) {
-> +		status &= tp->intr_event;
-> +		if (!status)
-> +			break;
-> +
->  		handled = 1;
->  
->  		/* Handle all of the error cases first. These will reset
-> @@ -5818,7 +5830,6 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
->  			switch (tp->mac_version) {
->  			/* Work around for rx fifo overflow */
->  			case RTL_GIGA_MAC_VER_11:
-> -			case RTL_GIGA_MAC_VER_22:
->  			case RTL_GIGA_MAC_VER_26:
->  				netif_stop_queue(dev);
->  				rtl8169_tx_timeout(dev);
-> @@ -5828,6 +5839,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
->  			case RTL_GIGA_MAC_VER_19:
->  			case RTL_GIGA_MAC_VER_20:
->  			case RTL_GIGA_MAC_VER_21:
-> +			case RTL_GIGA_MAC_VER_22:
->  			case RTL_GIGA_MAC_VER_23:
->  			case RTL_GIGA_MAC_VER_24:
->  			case RTL_GIGA_MAC_VER_27:
->
->   
-Hello Francois,
+On Thu, 2011-12-01 at 20:35 +0000, Russell King - ARM Linux wrote:
+> On Thu, Dec 01, 2011 at 12:25:47PM -0800, Daniel Walker wrote:
+> > On Thu, 2011-12-01 at 20:19 +0000, Russell King - ARM Linux wrote:
+> > > Now, the obvious question to ask now is this: as you sent your question,
+> > > and Daniel obviously objects, was Daniel one of your respondants?  If
+> > > not, then he carries some of the blame for this patch being created
+> > > in the first place by having missed the email/not replied/etc.
+> > > 
+> > 
+> > What if the people using the hardware aren't even on the list ? It's not
+> > their fault is it?
+> 
+> Did you notice I mentioned six months?
 
-it looks OK now - no more "eth0: link up" messages and network hangs any
-more.
-I've send and received 60 GB to and from the system and the performance
-is ~30 MB/s.
-I'll keep the system up and running and do some more stability tests.
+Yeah I did notice..
 
-The only thing that's missing now is the transfer LED: the yellow link
-LED is on,
-but the green transfer LED is off and doesn't blink.
+> The way to remove non-broken code is:
+> 1. to ask.  If no one responds, then
+> 2. submit a patch to put an entry in feature-removal-schedule.txt giving a
+>    description of what will be removed and when - and then flag it
+>    with a patch to remove it.  If no one responds to that, then
+> 3. the patch to remove it re-posted, and if no one objects it gets
+>    merged.
+> 
+> So, if people care about bits of code _and_ they're not on the relevant
+> subsystem mailing lists, they need to keep an eye on the feature removal
+> file - otherwise they're in for nasty surprises.
 
-Thanks a lot for your great support.
+I agree with the steps, but I'm not sure David knows about (or would be
+following) those steps. Not to mention these devices are still readily
+available used .. I wouldn't expect anyone to even remotely ponder
+removing this code for at least another 10 years.. In order to even
+start the process above there has to be some good probability that no
+has the device or cares at all about the device..
 
-Regards,
-Gerd
-
-
-Output:
-
-[    2.334588] r8169 Gigabit Ethernet driver 2.3LK-NAPI-patch3 loaded
-[    2.334639] r8169 0000:02:00.0: PCI INT A -> GSI 16 (level, low) ->
-IRQ 16
-[    2.334689] r8169 0000:02:00.0: setting latency timer to 64
-[    2.334767] r8169 0000:02:00.0: irq 40 for MSI/MSI-X
-[    2.387618] r8169 0000:02:00.0: eth0: RTL8168c/8111c[21] at
-0xf8224000, 00:01:c0:08:aa:31, XID 1c4000c0 IRQ 40
-[    2.387630] r8169 0000:02:00.0: eth0: jumbo features [frames: 6128
-bytes, tx checksumming: ko]
-[    2.392954] r8169 Gigabit Ethernet driver 2.3LK-NAPI-patch3 loaded
-[    2.393015] r8169 0000:03:00.0: PCI INT A -> GSI 17 (level, low) ->
-IRQ 17
-[    2.393082] r8169 0000:03:00.0: setting latency timer to 64
-[    2.393166] r8169 0000:03:00.0: irq 41 for MSI/MSI-X
-[    2.394707] r8169 0000:03:00.0: eth1: RTL8168c/8111c[21] at
-0xf8238000, 00:01:c0:08:aa:32, XID 1c4000c0 IRQ 41
-[    2.394718] r8169 0000:03:00.0: eth1: jumbo features [frames: 6128
-bytes, tx checksumming: ko]
-[   14.324097] r8169 0000:03:00.0: eth1: link down
-[   14.324555] ADDRCONF(NETDEV_UP): eth1: link is not ready
-[   14.419038] r8169 0000:02:00.0: eth0: link down
-[   14.419049] r8169 0000:02:00.0: eth0: link down
-[   14.419419] ADDRCONF(NETDEV_UP): eth0: link is not ready
-[   16.789915] r8169 0000:02:00.0: eth0: link up
-[   16.791046] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-
-driver: r8169
-version: 2.3LK-NAPI-patch3
-firmware-version: N/A
-bus-info: 0000:02:00.0
-
-Settings for eth0:
-        Supported ports: [ TP MII ]
-        Supported link modes:   10baseT/Half 10baseT/Full
-                                100baseT/Half 100baseT/Full
-                                1000baseT/Half 1000baseT/Full
-        Supports auto-negotiation: Yes
-        Advertised link modes:  10baseT/Half 10baseT/Full
-                                100baseT/Half 100baseT/Full
-                                1000baseT/Half 1000baseT/Full
-        Advertised pause frame use: Symmetric Receive-only
-        Advertised auto-negotiation: Yes
-        Link partner advertised link modes:  10baseT/Half 10baseT/Full
-                                             100baseT/Half 100baseT/Full
-                                             1000baseT/Full
-        Link partner advertised pause frame use: Symmetric
-        Link partner advertised auto-negotiation: Yes
-        Speed: 1000Mb/s
-        Duplex: Full
-        Port: MII
-        PHYAD: 0
-        Transceiver: internal
-        Auto-negotiation: on
-        Supports Wake-on: pumbg
-        Wake-on: g
-        Current message level: 0x00000033 (51)
-        Link detected: yes
+Daniel
 
