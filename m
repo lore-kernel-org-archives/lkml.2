@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab1LAPpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:45:10 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:43652 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab1LAPpI (ORCPT
+	id S1755225Ab1LAPrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:47:31 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53199 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069Ab1LAPra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:45:08 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM / Hibernate: Enable usermodehelpers in software_resume()
- error path
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Thu, 01 Dec 2011 21:15:00 +0530
-Message-ID: <20111201154453.25828.85233.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Thu, 1 Dec 2011 10:47:30 -0500
+Date: Thu, 1 Dec 2011 07:47:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM / Hibernate: Thaw processes in
+ SNAPSHOT_CREATE_IMAGE ioctl error/test paths
+Message-ID: <20111201154722.GB12668@google.com>
+References: <20111201131532.21615.86479.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120115-8878-0000-0000-0000006EDFCD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201131532.21615.86479.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the software_resume() function defined in kernel/power/hibernate.c,
-if the call to create_basic_memory_bitmaps() fails, the usermodehelpers
-are not enabled (which had been disabled in the previous step). Fix it.
+On Thu, Dec 01, 2011 at 06:45:37PM +0530, Srivatsa S. Bhat wrote:
+> Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
+> kernel threads after preallocating memory) moved the freezing of kernel
+> threads to hibernation_snapshot() function.
+> 
+> So now, if the call to hibernation_snapshot() fails or returns early due
+> to a successful hibernation test, the caller has to thaw processes to
+> ensure that the system gets back to its original state.
+> 
+> But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
+> processes. Fix this issue. But note that if hibernation_snapshot() returned
+> due to a successful freezer test, we still send the value of 'in_suspend'
+> (which is now 0) to userspace, because we are not in an error path per-se,
+> and moreover, the value of in_suspend correctly depicts the situation here.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Is this still applicable on top of pm-freezer branch?
 
- kernel/power/hibernate.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Thanks.
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index a6b0503..df35313 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -811,8 +811,10 @@ static int software_resume(void)
- 		goto close_finish;
- 
- 	error = create_basic_memory_bitmaps();
--	if (error)
-+	if (error) {
-+		usermodehelper_enable();
- 		goto close_finish;
-+	}
- 
- 	pr_debug("PM: Preparing processes for restore.\n");
- 	error = prepare_processes();
-
+-- 
+tejun
