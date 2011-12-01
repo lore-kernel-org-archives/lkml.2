@@ -1,287 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab1LAIuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:50:20 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57075 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752125Ab1LAIuS (ORCPT
+	id S1752459Ab1LAIx0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:53:26 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65517 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751064Ab1LAIxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:50:18 -0500
-From: zhzhl555@gmail.com
-To: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Cc: ralf@linux-mips.org, keguang.zhang@gmail.com, wuzhangjin@gmail.com,
-        r0bertz@gentoo.org, zhao zhang <zhzhl555@gmail.com>
-Subject: [PATCH] MIPS: Add RTC support for loongson1B
-Date: Thu,  1 Dec 2011 16:44:38 +0800
-Message-Id: <1322729078-6141-1-git-send-email-zhzhl555@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 1 Dec 2011 03:53:25 -0500
+Date: Thu, 1 Dec 2011 10:53:11 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        "Alex,Shi" <alex.shi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Matt Mackall <mpm@selenic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>, tj@kernel.org,
+        dri-devel@lists.freedesktop.org,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+In-Reply-To: <20111201084437.GA1529@x4.trippels.de>
+Message-ID: <alpine.LFD.2.02.1112011053070.4549@tux.localdomain>
+References: <1321836285.30341.554.camel@debian> <20111121080554.GB1625@x4.trippels.de> <20111121082445.GD1625@x4.trippels.de> <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111121131531.GA1679@x4.trippels.de>
+ <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111121153621.GA1678@x4.trippels.de> <20111123160353.GA1673@x4.trippels.de> <alpine.DEB.2.00.1111231004490.17317@router.home> <20111124085040.GA1677@x4.trippels.de>
+ <20111201084437.GA1529@x4.trippels.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: zhao zhang <zhzhl555@gmail.com>
+On Thu, 1 Dec 2011, Markus Trippelsdorf wrote:
+> On 2011.11.24 at 09:50 +0100, Markus Trippelsdorf wrote:
+>> On 2011.11.23 at 10:06 -0600, Christoph Lameter wrote:
+>>> On Wed, 23 Nov 2011, Markus Trippelsdorf wrote:
+>>>
+>>>>> FIX idr_layer_cache: Marking all objects used
+>>>>
+>>>> Yesterday I couldn't reproduce the issue at all. But today I've hit
+>>>> exactly the same spot again. (CCing the drm list)
+>>>
+>>> Well this is looks like write after free.
+>>>
+>>>> =============================================================================
+>>>> BUG idr_layer_cache: Poison overwritten
+>>>> -----------------------------------------------------------------------------
+>>>> Object ffff8802156487c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+>>>> Object ffff8802156487d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+>>>> Object ffff8802156487e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+>>>> Object ffff8802156487f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+>>>> Object ffff880215648800: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
+>>>> Object ffff880215648810: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+>>>
+>>> And its an integer sized write of 0. If you look at the struct definition
+>>> and lookup the offset you should be able to locate the field that
+>>> was modified.
+>
+> It also happens with CONFIG_SLAB.
+> (If someone wants to reproduce the issue, just run a kexec boot loop and
+> the bug will occur after a few (~10) iterations.)
+>
+> Dec  1 05:04:52 x4 kernel: [drm] Initialized drm 1.1.0 20060810
+> Dec  1 05:04:52 x4 kernel: [drm] radeon defaulting to kernel modesetting.
+> Dec  1 05:04:52 x4 kernel: [drm] radeon kernel modesetting enabled.
+> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
+> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: setting latency timer to 64
+> Dec  1 05:04:52 x4 kernel: [drm] initializing kernel modesetting (RS780 0x1002:0x9614 0x1043:0x834D).
+> Dec  1 05:04:52 x4 kernel: [drm] register mmio base: 0xFBEE0000
+> Dec  1 05:04:52 x4 kernel: [drm] register mmio size: 65536
+> Dec  1 05:04:52 x4 kernel: ATOM BIOS: 113
+> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: VRAM: 128M 0x00000000C0000000 - 0x00000000C7FFFFFF (128M used)
+> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: GTT: 512M 0x00000000A0000000 - 0x00000000BFFFFFFF
+> Dec  1 05:04:52 x4 kernel: [drm] Detected VRAM RAM=128M, BAR=128M
+> Dec  1 05:04:52 x4 kernel: [drm] RAM width 32bits DDR
+> Dec  1 05:04:52 x4 kernel: [TTM] Zone  kernel: Available graphics memory: 4090750 kiB.
+> Dec  1 05:04:52 x4 kernel: [TTM] Zone   dma32: Available graphics memory: 2097152 kiB.
+> Dec  1 05:04:52 x4 kernel: [TTM] Initializing pool allocator.
+> Dec  1 05:04:52 x4 kernel: [drm] radeon: 128M of VRAM memory ready
+> Dec  1 05:04:52 x4 kernel: [drm] radeon: 512M of GTT memory ready.
+> Dec  1 05:04:52 x4 kernel: [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+> Dec  1 05:04:52 x4 kernel: [drm] Driver supports precise vblank timestamp query.
+> Dec  1 05:04:52 x4 kernel: [drm] radeon: irq initialized.
+> Dec  1 05:04:52 x4 kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
+> Dec  1 05:04:52 x4 kernel: [drm] Loading RS780 Microcode
+> Dec  1 05:04:52 x4 kernel: [drm] PCIE GART of 512M enabled (table at 0x00000000C0040000).
+> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: WB enabled
+> Dec  1 05:04:52 x4 kernel: Slab corruption: size-1024 start=ffff880216cbc730, len=1024
+> Dec  1 05:04:52 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> Dec  1 05:04:52 x4 kernel: Last user: [<          (null)>](0x0)
+> Dec  1 05:04:52 x4 kernel: 0d0: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
+> Dec  1 05:04:52 x4 kernel: Prev obj: start=ffff880216cbc318, len=1024
+> Dec  1 05:04:52 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> Dec  1 05:04:52 x4 kernel: Last user: [<          (null)>](0x0)
+> Dec  1 05:04:52 x4 kernel: 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Dec  1 05:04:52 x4 kernel: 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Dec  1 05:04:52 x4 kernel: Next obj: start=ffff880216cbcb48, len=1024
+> Dec  1 05:04:52 x4 kernel: Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+> Dec  1 05:04:52 x4 kernel: Last user: [<ffffffff81299874>](radeon_bo_create+0xb4/0x240)
+> Dec  1 05:04:52 x4 kernel: 000: 48 cb cb 16 02 88 ff ff 48 cb cb 16 02 88 ff ff  H.......H.......
+> Dec  1 05:04:52 x4 kernel: 010: 02 00 27 00 00 00 00 00 00 00 00 00 00 00 00 00  ..'.............
+> Dec  1 05:04:52 x4 kernel: [drm] ring test succeeded in 0 usecs
+> Dec  1 05:04:52 x4 kernel: [drm] radeon: ib pool ready.
+> Dec  1 05:04:52 x4 kernel: [drm] ib test succeeded in 0 usecs
+> Dec  1 05:04:52 x4 kernel: [drm] Radeon Display Connectors
+> Dec  1 05:04:52 x4 kernel: [drm] Connector 0:
+> Dec  1 05:04:52 x4 kernel: [drm]   VGA
+> Dec  1 05:04:52 x4 kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
+> Dec  1 05:04:52 x4 kernel: [drm]   Encoders:
+> Dec  1 05:04:52 x4 kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+> Dec  1 05:04:52 x4 kernel: [drm] Connector 1:
+> Dec  1 05:04:52 x4 kernel: [drm]   DVI-D
+> Dec  1 05:04:52 x4 kernel: [drm]   HPD3
+> Dec  1 05:04:52 x4 kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
+> Dec  1 05:04:52 x4 kernel: [drm]   Encoders:
+> Dec  1 05:04:52 x4 kernel: [drm]     DFP3: INTERNAL_KLDSCP_LVTMA
+> Dec  1 05:04:52 x4 kernel: [drm] radeon: power management initialized
+> Dec  1 05:04:52 x4 kernel: [drm] fb mappable at 0xF0142000
+> Dec  1 05:04:52 x4 kernel: [drm] vram apper at 0xF0000000
+> Dec  1 05:04:52 x4 kernel: [drm] size 7299072
+> Dec  1 05:04:52 x4 kernel: [drm] fb depth is 24
+> Dec  1 05:04:52 x4 kernel: [drm]    pitch is 6912
+> Dec  1 05:04:52 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
+> Dec  1 05:04:52 x4 kernel: Console: switching to colour frame buffer device 131x105
+> Dec  1 05:04:52 x4 kernel: fb0: radeondrmfb frame buffer device
+> Dec  1 05:04:52 x4 kernel: drm: registered panic notifier
+> Dec  1 05:04:52 x4 kernel: [drm] Initialized radeon 2.12.0 20080528 for 0000:01:05.0 on minor 0
+>
+>
+> Dec  1 05:09:35 x4 kernel: radeon 0000:01:05.0: WB enabled
+> Dec  1 05:09:35 x4 kernel: [drm] ring test succeeded in 1 usecs
+> Dec  1 05:09:35 x4 kernel: [drm] radeon: ib pool ready.
+> Dec  1 05:09:35 x4 kernel: [drm] ib test succeeded in 0 usecs
+> Dec  1 05:09:35 x4 kernel: Slab corruption: size-512 start=ffff880216f7e760, len=512
+> Dec  1 05:09:35 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> Dec  1 05:09:35 x4 kernel: Last user: [<          (null)>](0x0)
+> Dec  1 05:09:35 x4 kernel: 0a0: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
+> Dec  1 05:09:35 x4 kernel: Prev obj: start=ffff880216f7e548, len=512
+> Dec  1 05:09:35 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> Dec  1 05:09:35 x4 kernel: Last user: [<          (null)>](0x0)
+> Dec  1 05:09:35 x4 kernel: 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Dec  1 05:09:35 x4 kernel: 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Dec  1 05:09:35 x4 kernel: Next obj: start=ffff880216f7e978, len=512
+> Dec  1 05:09:35 x4 kernel: Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+> Dec  1 05:09:35 x4 kernel: Last user: [<ffffffff812e519d>](radeon_add_atom_encoder+0x7d/0x280)
+> Dec  1 05:09:35 x4 kernel: 000: f8 d3 f6 16 02 88 ff ff 18 d8 f6 16 02 88 ff ff  ................
+> Dec  1 05:09:35 x4 kernel: 010: 18 d8 f6 16 02 88 ff ff 0c 00 00 00 e0 e0 e0 e0  ................
+> Dec  1 05:09:35 x4 kernel: [drm] Radeon Display Connectors
+> Dec  1 05:09:35 x4 kernel: [drm] Connector 0:
+> Dec  1 05:09:35 x4 kernel: [drm]   VGA
+> Dec  1 05:09:35 x4 kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
+> Dec  1 05:09:35 x4 kernel: [drm]   Encoders:
+> Dec  1 05:09:35 x4 kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+> Dec  1 05:09:35 x4 kernel: [drm] Connector 1:
+> Dec  1 05:09:35 x4 kernel: [drm]   DVI-D
+> Dec  1 05:09:35 x4 kernel: [drm]   HPD3
+> Dec  1 05:09:35 x4 kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
+> Dec  1 05:09:35 x4 kernel: [drm]   Encoders:
+> Dec  1 05:09:35 x4 kernel: [drm]     DFP3: INTERNAL_KLDSCP_LVTMA
+> Dec  1 05:09:35 x4 kernel: [drm] radeon: power management initialized
+> Dec  1 05:09:35 x4 kernel: [drm] fb mappable at 0xF0142000
+> Dec  1 05:09:35 x4 kernel: [drm] vram apper at 0xF0000000
+> Dec  1 05:09:35 x4 kernel: [drm] size 7299072
+> Dec  1 05:09:35 x4 kernel: [drm] fb depth is 24
+> Dec  1 05:09:35 x4 kernel: [drm]    pitch is 6912
+> Dec  1 05:09:35 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
+> Dec  1 05:09:35 x4 kernel: Console: switching to colour frame buffer device 131x105
+> Dec  1 05:09:35 x4 kernel: fb0: radeondrmfb frame buffer device
+> Dec  1 05:09:35 x4 kernel: drm: registered panic notifier
+> Dec  1 05:09:35 x4 kernel: [drm] Initialized radeon 2.12.0 20080528 for 0000:01:05.0 on minor 0
 
-V2: use new module_platform_driver macro.
-thanks for Wolfram's advice.
+The SLAB debugging output points to DRM and more specifically to the 
+radeon driver.
 
-This patch adds RTC support(TOY counter0) for loongson1B.
-Signed-off-by: zhao zhang <zhzhl555@gmail.com>
----
- drivers/rtc/Kconfig    |   10 ++
- drivers/rtc/Makefile   |    1 +
- drivers/rtc/rtc-ls1x.c |  214 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 225 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-ls1x.c
+Dave, Alex, could you please take a look at this or fix up the CC to 
+include the right people?
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 5a538fc..6f8c2d7 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1070,4 +1070,14 @@ config RTC_DRV_PUV3
- 	  This drive can also be built as a module. If so, the module
- 	  will be called rtc-puv3.
- 
-+config RTC_DRV_LOONGSON1
-+	tristate "loongson1 RTC support"
-+	depends on MACH_LOONGSON1
-+	help
-+	  This is a driver for the loongson1 on-chip Counter0 (Time-Of-Year
-+	  counter) to be used as a RTC.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-ls1x.
-+
- endif # RTC_CLASS
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 6e69823..48153fe 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -109,3 +109,4 @@ obj-$(CONFIG_RTC_DRV_VT8500)	+= rtc-vt8500.o
- obj-$(CONFIG_RTC_DRV_WM831X)	+= rtc-wm831x.o
- obj-$(CONFIG_RTC_DRV_WM8350)	+= rtc-wm8350.o
- obj-$(CONFIG_RTC_DRV_X1205)	+= rtc-x1205.o
-+obj-$(CONFIG_RTC_DRV_LOONGSON1)	+= rtc-ls1x.o
-diff --git a/drivers/rtc/rtc-ls1x.c b/drivers/rtc/rtc-ls1x.c
-new file mode 100644
-index 0000000..79db272
---- /dev/null
-+++ b/drivers/rtc/rtc-ls1x.c
-@@ -0,0 +1,214 @@
-+/*
-+ * Copyright (c) 2011 Zhao Zhang <zhzhl555@gmail.com>
-+ *
-+ * Derived from driver/rtc/rtc-au1xxx.c
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/rtc.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/delay.h>
-+#include <linux/types.h>
-+#include <linux/io.h>
-+#include <asm/mach-loongson1/loongson1.h>
-+
-+#define LS1X_RTC_REG_OFFSET	(LS1X_RTC_BASE + 0x20)
-+#define LS1X_RTC_REGS(x) \
-+		((void __iomem *)KSEG1ADDR(LS1X_RTC_REG_OFFSET + (x)))
-+
-+/*RTC programmable counters 0 and 1*/
-+#define SYS_COUNTER_CNTRL		(LS1X_RTC_REGS(0x20))
-+#define SYS_CNTRL_ERS			(1 << 23)
-+#define SYS_CNTRL_RTS			(1 << 20)
-+#define SYS_CNTRL_RM2			(1 << 19)
-+#define SYS_CNTRL_RM1			(1 << 18)
-+#define SYS_CNTRL_RM0			(1 << 17)
-+#define SYS_CNTRL_RS			(1 << 16)
-+#define SYS_CNTRL_BP			(1 << 14)
-+#define SYS_CNTRL_REN			(1 << 13)
-+#define SYS_CNTRL_BRT			(1 << 12)
-+#define SYS_CNTRL_TEN			(1 << 11)
-+#define SYS_CNTRL_BTT			(1 << 10)
-+#define SYS_CNTRL_E0			(1 << 8)
-+#define SYS_CNTRL_ETS			(1 << 7)
-+#define SYS_CNTRL_32S			(1 << 5)
-+#define SYS_CNTRL_TTS			(1 << 4)
-+#define SYS_CNTRL_TM2			(1 << 3)
-+#define SYS_CNTRL_TM1			(1 << 2)
-+#define SYS_CNTRL_TM0			(1 << 1)
-+#define SYS_CNTRL_TS			(1 << 0)
-+
-+/* Programmable Counter 0 Registers */
-+#define SYS_TOYTRIM		(LS1X_RTC_REGS(0))
-+#define SYS_TOYWRITE0		(LS1X_RTC_REGS(4))
-+#define SYS_TOYWRITE1		(LS1X_RTC_REGS(8))
-+#define SYS_TOYREAD0		(LS1X_RTC_REGS(0xC))
-+#define SYS_TOYREAD1		(LS1X_RTC_REGS(0x10))
-+#define SYS_TOYMATCH0		(LS1X_RTC_REGS(0x14))
-+#define SYS_TOYMATCH1		(LS1X_RTC_REGS(0x18))
-+#define SYS_TOYMATCH2		(LS1X_RTC_REGS(0x1C))
-+
-+/* Programmable Counter 1 Registers */
-+#define SYS_RTCTRIM		(LS1X_RTC_REGS(0x40))
-+#define SYS_RTCWRITE0		(LS1X_RTC_REGS(0x44))
-+#define SYS_RTCREAD0		(LS1X_RTC_REGS(0x48))
-+#define SYS_RTCMATCH0		(LS1X_RTC_REGS(0x4C))
-+#define SYS_RTCMATCH1		(LS1X_RTC_REGS(0x50))
-+#define SYS_RTCMATCH2		(LS1X_RTC_REGS(0x54))
-+
-+#define LS1X_SEC_OFFSET		(4)
-+#define LS1X_MIN_OFFSET		(10)
-+#define LS1X_HOUR_OFFSET	(16)
-+#define LS1X_DAY_OFFSET		(21)
-+#define LS1X_MONTH_OFFSET	(26)
-+
-+
-+#define LS1X_SEC_MASK		(0x3f)
-+#define LS1X_MIN_MASK		(0x3f)
-+#define LS1X_HOUR_MASK		(0x1f)
-+#define LS1X_DAY_MASK		(0x1f)
-+#define LS1X_MONTH_MASK		(0x3f)
-+#define LS1X_YEAR_MASK		(0xffffffff)
-+
-+#define ls1x_get_sec(t)		(((t) >> LS1X_SEC_OFFSET) & LS1X_SEC_MASK)
-+#define ls1x_get_min(t)		(((t) >> LS1X_MIN_OFFSET) & LS1X_MIN_MASK)
-+#define ls1x_get_hour(t)	(((t) >> LS1X_HOUR_OFFSET) & LS1X_HOUR_MASK)
-+#define ls1x_get_day(t)		(((t) >> LS1X_DAY_OFFSET) & LS1X_DAY_MASK)
-+#define ls1x_get_month(t)	(((t) >> LS1X_MONTH_OFFSET) & LS1X_MONTH_MASK)
-+
-+#define RTC_CNTR_OK (SYS_CNTRL_E0 | SYS_CNTRL_32S)
-+
-+static int ls1x_rtc_read_time(struct device *dev, struct rtc_time *rtm)
-+{
-+	unsigned long v, t;
-+
-+	v = readl(SYS_TOYREAD0);
-+	t = readl(SYS_TOYREAD1);
-+
-+	memset(rtm, 0, sizeof(struct rtc_time));
-+	t  = mktime((t & LS1X_YEAR_MASK), ls1x_get_month(v),
-+			ls1x_get_day(v), ls1x_get_hour(v),
-+			ls1x_get_min(v), ls1x_get_sec(v));
-+	rtc_time_to_tm(t, rtm);
-+
-+	return rtc_valid_tm(rtm);
-+}
-+
-+static int ls1x_rtc_set_time(struct device *dev, struct  rtc_time *rtm)
-+{
-+	unsigned long v, t, c;
-+	int ret = -ETIMEDOUT;
-+
-+	v = ((rtm->tm_mon + 1)  << LS1X_MONTH_OFFSET)
-+		| (rtm->tm_mday << LS1X_DAY_OFFSET)
-+		| (rtm->tm_hour << LS1X_HOUR_OFFSET)
-+		| (rtm->tm_min  << LS1X_MIN_OFFSET)
-+		| (rtm->tm_sec  << LS1X_SEC_OFFSET);
-+
-+	writel(v, SYS_TOYWRITE0);
-+	__asm__ volatile ("sync");
-+	c = 0x10000;
-+	/* add timeout check counter, for more safe */
-+	while ((readl(SYS_COUNTER_CNTRL) & SYS_CNTRL_TS) && --c)
-+		usleep_range(1000, 3000);
-+
-+	if (!c) {
-+		dev_err(dev, "set time timeout!\n");
-+		goto err;
-+	}
-+
-+	t = rtm->tm_year + 1900;
-+	writel(t, SYS_TOYWRITE1);
-+	__asm__ volatile ("sync");
-+	c = 0x10000;
-+	while ((readl(SYS_COUNTER_CNTRL) & SYS_CNTRL_TS) && --c)
-+		usleep_range(1000, 3000);
-+
-+	if (!c) {
-+		dev_err(dev, "set time timeout!\n");
-+		goto err;
-+	}
-+	return 0;
-+err:
-+	return ret;
-+}
-+
-+static struct rtc_class_ops  ls1x_rtc_ops = {
-+	.read_time	= ls1x_rtc_read_time,
-+	.set_time	= ls1x_rtc_set_time,
-+};
-+
-+static int __devinit ls1x_rtc_probe(struct platform_device *pdev)
-+{
-+	struct rtc_device *rtcdev;
-+	unsigned long v;
-+	int ret;
-+
-+	v = readl(SYS_COUNTER_CNTRL);
-+	if (!(v & RTC_CNTR_OK)) {
-+		dev_err(&pdev->dev, "rtc counters not working\n");
-+		ret = -ENODEV;
-+		goto err;
-+	}
-+	ret = -ETIMEDOUT;
-+	/* set to 1 HZ if needed */
-+	if (readl(SYS_TOYTRIM) != 32767) {
-+		v = 0x100000;
-+		while ((readl(SYS_COUNTER_CNTRL) & SYS_CNTRL_TTS) && --v)
-+			usleep_range(1000, 3000);
-+
-+		if (!v) {
-+			dev_err(&pdev->dev, "time out\n");
-+			goto err;
-+		}
-+		writel(32767, SYS_TOYTRIM);
-+		__asm__ volatile("sync");
-+	}
-+	/* this loop coundn't be endless */
-+	while (readl(SYS_COUNTER_CNTRL) & SYS_CNTRL_TTS)
-+		usleep_range(1000, 3000);
-+
-+	rtcdev = rtc_device_register("ls1x-rtc", &pdev->dev,
-+					&ls1x_rtc_ops , THIS_MODULE);
-+	if (IS_ERR(rtcdev)) {
-+		ret = PTR_ERR(rtcdev);
-+		goto err;
-+	}
-+
-+	platform_set_drvdata(pdev, rtcdev);
-+	return 0;
-+err:
-+	return ret;
-+}
-+
-+static int __devexit ls1x_rtc_remove(struct platform_device *pdev)
-+{
-+	struct rtc_device *rtcdev = platform_get_drvdata(pdev);
-+
-+	rtc_device_unregister(rtcdev);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver  ls1x_rtc_driver = {
-+	.driver		= {
-+		.name	= "ls1x-rtc",
-+		.owner	= THIS_MODULE,
-+	},
-+	.remove		= __devexit_p(ls1x_rtc_remove),
-+	.probe		= ls1x_rtc_probe,
-+};
-+
-+module_platform_driver(ls1x_rtc_driver);
-+
-+MODULE_AUTHOR("zhao zhang <zhzhl555@gmail.com>");
-+MODULE_LICENSE("GPL");
-+
--- 
-1.7.0.4
-
+ 			Pekka
