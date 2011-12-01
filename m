@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab1LAU2M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:28:12 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35079 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752657Ab1LAU2L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:28:11 -0500
-Date: Thu, 1 Dec 2011 21:29:10 +0100
-From: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: patrik.r.jakobsson@gmail.com, linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: GMA500 support
-Message-ID: <20111201202909.GB7825@Boggieman>
-Reply-To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-References: <20111121182910.GA2856@Boggieman>
- <20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
+	id S1753432Ab1LAUbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:31:31 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:60958 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752788Ab1LAUb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 15:31:29 -0500
+Date: Thu, 1 Dec 2011 12:31:22 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Theodore Tso <tytso@mit.edu>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH v5.2 00/14] crc32c: Add faster algorithm and self-test
+	code
+Message-ID: <20111201203122.GC23175@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com> <20111201202053.GG1495@noexit.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111201202053.GG1495@noexit.corp.google.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11120120-3534-0000-0000-0000032DF750
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 23, 2011 at 11:28:47AM +0000, Alan Cox wrote:
-> On Mon, 21 Nov 2011 19:29:10 +0100
-> Kristoffer Ericson <kristoffer.ericson@gmail.com> wrote:
-> 
-> > Greetings,
+On Thu, Dec 01, 2011 at 12:20:53PM -0800, Joel Becker wrote:
+> On Thu, Dec 01, 2011 at 12:13:41PM -0800, Darrick J. Wong wrote:
+> > Hi all,
 > > 
-> > Im syncing my gma500 tree to all the patches I see pass through the kernel mailinglist and
-> > its progressing well. 
-> > However, It would be nice with an todo list or a more practical this-works list. I know
-> > its not a priority but would simplify alot for end users.
+> > This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
+> > software crc32c implementation.  It removes the crc32c implementation in
+> > crypto/ in favor of using the stamped-out one in lib/.  There is also a change
+> > to Kconfig so that the kernel builder can pick an implementation best suited
+> > for the hardware.
+> > 
+> > The motivation for this patchset is that I am working on adding full metadata
+> > checksumming to ext4.  As far as performance impact of adding checksumming
+> > goes, I see nearly no change with a standard mail server ffsb simulation.  On a
+> > test that involves only file creation and deletion and extent tree writes, I
+> > see a drop of about 50 pcercent with the current kernel crc32c implementation;
+> > this improves to a drop of about 20 percent with the enclosed crc32c code.
+> > 
+> > When metadata is usually a small fraction of total IO, this new implementation
+> > doesn't help much because metadata is usually a small fraction of total IO.
+> > However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
+> > tree), then this patch speeds up the operation substantially.
+> > 
+> > Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
+> > should improve their speed as well.  I have not yet quantified that, however.
 > 
-> If you configure it in the following should work on GMA500/600
-> - internal laptop displays including backlight
-> - external svga
-> - mode setting via KMS
-> - framebuffer console
-> - the framebuffer X server (and once out generally Dave Airlie's generic
->   KMS X server)
-> - suspend/resume
-> 
-> The following I know don't work
-> - Huge external displays so large they won't fit in 8MB at init time
->   (causes a crash)
-> - Using the vesa X server with it - this confuses stuff and isn't
->   fixable, it's a "wrong user configuration"
-> 
-> Unsupported
-> - 2D hardware acceleration except console scrolling (as it seems to be
->   too slow to be useful). I may add some 2D bits later where they do help
->   (eg back to front blitting may be worth it just about)
-> - 3D engine (no public documentation)
+> 	I thought they usually used the SSE instruction for crc32 or
+> equivalent.
 
-I understand that the chip is powerv SGX 535, any likelyhood of
-getting those datasheets opened by the company?
+They seem to call crc32c(), which is in crypto/crc32c.  If you're interested in
+hardware accelerated crc32c on Intel, it is still the case that the wrapper for
+that can be loaded via crc32c-intel.
 
-> - Video playback acceleration. In theory there is enough info in the
->   VAAPI code for GMA500/600 that has been published and in the old
->   'binary X/source kernel' driver to do this but someone will have to
->   work on it if they want it
-> - Dell Mini HDMI port. This seems to be some kind of external bridge
->   chip. Being a TV luddite I don't yet own an HDMI capable display to
->   test.
+--D
 > 
-> And I'm sure we have a few bugs left !
+> Joel
 > 
-> Alan
+> -- 
+> 
+> "I almost ran over an angel
+>  He had a nice big fat cigar.
+>  'In a sense,' he said, 'You're alone here
+>  So if you jump, you'd best jump far.'"
+> 
+> 			http://www.jlbec.org/
+> 			jlbec@evilplan.org
+> 
+
