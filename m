@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab1LAHXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 02:23:13 -0500
-Received: from smtp1.onthe.net.au ([203.22.196.249]:57048 "EHLO
-	smtp1.onthe.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab1LAHXL (ORCPT
+	id S1753390Ab1LAH05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 02:26:57 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35401 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab1LAH0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 02:23:11 -0500
-Date: Thu, 1 Dec 2011 18:23:08 +1100
-From: Chris Dunlop <chris@onthe.net.au>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        David Howells <dhowells@redhat.com>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        Petr Vandrovec <petr@vandrovec.name>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
-        codalist@TELEMANN.coda.cs.cmu.edu,
-        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org,
-        ecryptfs@vger.kernel.org
-Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
-Message-ID: <20111201072308.GA10932@onthe.net.au>
-References: <1321861008-20611-1-git-send-email-chris@onthe.net.au>
- <20111129082501.GA569@onthe.net.au>
- <20111201065024.GB495@boyd>
+	Thu, 1 Dec 2011 02:26:55 -0500
+Date: Wed, 30 Nov 2011 23:26:49 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Rakesh Iyer <riyer@nvidia.com>
+Cc: "rydberg@euromail.se" <rydberg@euromail.se>,
+        Stephen Warren <swarren@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v1] Input: tegra-kbc - report wakeup key for some
+ platforms.
+Message-ID: <20111201072649.GE16816@core.coreip.homeip.net>
+References: <1322685811-14060-1-git-send-email-riyer@nvidia.com>
+ <20111130212022.GB3108@core.coreip.homeip.net>
+ <1FC56210173BB445BD77F608D6FB8D034F3D1BB4BD@HQMAIL03.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111201065024.GB495@boyd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1FC56210173BB445BD77F608D6FB8D034F3D1BB4BD@HQMAIL03.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 12:50:25AM -0600, Tyler Hicks wrote:
-> On 2011-11-29 19:25:01, Chris Dunlop wrote:
->> I haven't seen any response to this patch which fixes an Oops in
->> d_revalidate. I hit this using NFS, but various other file
->> systems look to be likewise vulnerable, hence the broadness of
->> the patch. The sequence leading to the Oops is:
->> 
->> lookup_one_len() [fs/namei.c]
->>    calls __lookup_hash() [fs/namei.c] with nd == NULL,
->>       which can then call the file system specific d_revalidate(), passing in nd == NULL
->>          which will then Oops if nd is used without checking
+On Wed, Nov 30, 2011 at 02:14:03PM -0800, Rakesh Iyer wrote:
+> Thanks Dmitry.
 > 
-> Hey Chris - Can you share what you were trying to do when you hit this?
-> Were you stacking eCryptfs on top of NFS? Another stacked filesystem on
-> top of NFS?
->
-> Do you *need* a stacked filesystem to work on top of NFS? If so, we'll
-> need to discuss a way forward. Al has previously shown a dislike of
-> eCryptfs passing around nameidata (for good reason), but that is what
-> NFS currently requires. I looked at doing this a few months back, but
-> never got to the implementation stage.
+> Since there can be multiple wake causes I wanted to isolate wake key
+> generation to the case where keyboard actually generated the wake
+> interrupt.
 
-Actually, no, it wasn't eCryptfs or another stacked filesystem.
-It seems my dirty little secret must come out: I hit the problem
-when trying to use the (necessarily) out-of-tree zfsonlinux
-(ZoL) [1], on an NFS root machine.
+I do not think you can guarantee this though because if user touches
+keyboard "too early", before your resume method had a chance to disable
+kbc interrupt as a wakeup source, you are still going to get that
+interrupt and deliver KEY_POWER even though KBC is not the actual wakeup
+source.
 
-I don't know exactly what ZoL is using lookup_one_len() for, nor
-how to fix it so it isn't, but I've given them the heads up that
-it's not supposed to be used outside of original file system [2].
+So don't over-complicate it. If hardware can't detect actual key pressed
+just emit KEY_POWER if a key was at any time between calls to
+tegra_kbc_suspend() and tegra_kbc_resume().
 
-Chris.
+BTW, could you please have your MUA wrap long lines around 75 column or so?
 
-[1] http://zfsonlinux.org/
-[2] https://github.com/zfsonlinux/zfs/issues/456
+Thanks.
+
+-- 
+Dmitry
