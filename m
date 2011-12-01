@@ -1,106 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab1LAVqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:46:55 -0500
-Received: from gate.crashing.org ([63.228.1.57]:36028 "EHLO gate.crashing.org"
+	id S1754853Ab1LAVtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:49:22 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38114 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754348Ab1LAVqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:46:54 -0500
-Message-ID: <1322775989.3729.35.camel@pasglop>
-Subject: Re: [PATCH 1/4] iommu: Add iommu_device_group callback and
- iommu_group sysfs entry
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, David Gibson <dwg@au1.ibm.com>,
-        joerg.roedel@amd.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
-        scottwood@freescale.com, B08248@freescale.com
-Date: Fri, 02 Dec 2011 08:46:29 +1100
-In-Reply-To: <1322750048.26545.101.camel@bling.home>
-References: <20111021195412.8438.9951.stgit@s20.home>
-	 <20111021195605.8438.81609.stgit@s20.home>
-	 <20111130024205.GF5435@truffala.fritz.box>
-	 <1322628672.21641.39.camel@pasglop> <1322630751.19120.222.camel@bling.home>
-	 <20111201000337.GA5427@truffala.fritz.box>
-	 <1322722110.26545.68.camel@bling.home>
-	 <1322735610.24294.9.camel@i7.infradead.org>
-	 <1322750048.26545.101.camel@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1754406Ab1LAVtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 16:49:20 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeff Layton <jlayton@redhat.com>
+Subject: Re: [PATCH] sunrpc/nfs: don't allow TASK_KILLABLE sleeps to block the freezer
+Date: Thu, 1 Dec 2011 22:52:13 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-pm@vger.kernel.org, tj@kernel.org, john@calva.com,
+        trond.myklebust@netapp.com, marek.belisko@gmail.com,
+        awilliam@redhat.com
+References: <1322775223-19115-1-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1322775223-19115-1-git-send-email-jlayton@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201112012252.13568.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 07:34 -0700, Alex Williamson wrote:
-
-> We've got multiple levels when we add qemu and guests into the mix.  A
-> group is the smallest assignable unit for kernel->userspace.  In fact,
-> vfio is constructed so that the user cannot do anything with a group
-> until all the devices of the group are bound to the vfio bus drivers.
-> Qemu, as a userspace driver, must therefore take ownership of the entire
-> group.  However, there's no requirement that a userspace driver must
-> make use of all the devices in the group, so qemu is free to expose
-> individual devices from the group to the guest.
-
-Sure but that has nothing to do with your kernel->user API. As you said,
-you still need to take "ownership" of the entire group. If qemu chose to
-only present to the guest part of that group, it's qemu's problem.
-
-Put it differently. One day, maybe, we'll finally get some clues and
-implement a proper way for admin tools to know what can or cannot be put
-into a guest. In any case, how would you present to the user
-(administrator) the groups ? By individual devices with odd behaviours /
-errors etc... when the said user/admin tries to put individual devices
-into different partitions while  they belong in the same group ? Or by
-just exposing ... groups ?
-
-So while those various tools will want to see what's in the group (to
-represent it to the user, to expose it to the guest, for other finer
-grained operations such as MSI setup, etc...) the basic unit of
-ownership is and remains the group, and I don't see how it makes sense
-to have your underlying iommu interface operate on anything else.
-
->   IMHO, it doesn't make
-> sense to have a default model saying "I know you just wanted the nic,
-> but it's in the same group as this graphics card, so surprise, you get
-> both!".  Obviously if a user does want to expose multiple devices from a
-> group to a guest, we support that too.
-
-No you don't get it. That's the wrong way around. The user will be
-presented to start with with a group of nic+graphics card so that user
-knows from the beginning what's going on.
-
-Because your other option is to put the nic in ... and suddenly have the
-graphic card go away from the host without showing up in a guest. That
-won't be any better than having it "just show up" in the guest without
-asking for it.
-
-IE. In both cases, it's wrong. The only thing that makes sense is from
-the beginning, expose those two as a group so that the user has no other
-choice but put them both into the guest at once and have it represented
-to the user as such to begin with.
-
-> Spitting groups among multiple VMs or between VM and native host drivers
-> defeats the purpose of the group.  Neither of these are allowed.
+On Thursday, December 01, 2011, Jeff Layton wrote:
+> Allow the freezer to skip wait_on_bit_killable sleeps in the sunrpc
+> layer. This should allow suspend and hibernate events to proceed, even
+> when there are RPC's pending on the wire.
 > 
-> > Btw, did we get a quirk for the Ricoh multi-function devices which all
-> > need to be in the same group because they do all their DMA from function
-> > zero? I think we need another similar quirk for a Marvell SATA
-> > controller which seems to do its AHCI DMA from its IDE function; see
-> > https://bugzilla.redhat.com/757166
+> Also, wrap the TASK_KILLABLE sleeps in NFS layer in freezer_do_not_count
+> and freezer_count calls. This allows the freezer to skip tasks that are
+> sleeping while looping on EJUKEBOX or NFS4ERR_DELAY sorts of errors.
 > 
-> No, as I mentioned, groups are currently for iommu_ops, not dma_ops,
-> though it makes sense that iommu drivers could use the group info or
-> create common quirk infrastructure for handling broken devices like
-> these.  Thanks,
+> Rafael, I've gone ahead and combined the two patches into one here
+> and rebased this on top of the pm-freezer branch. Let me know if you'd
+> prefer to keep it as two patches.
 
-Which is why the group info in iommu_ops should just be a representation
-of something else under the hood that needs to be sorted out more
-clearly than what we are doing at the moment.
+One patch is just fine for me, applied to linux-pm/linux-next.
 
-Cheers,
-Ben.
+Thanks,
+Rafael
 
+
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/nfs/inode.c          |    3 ++-
+>  fs/nfs/nfs3proc.c       |    3 ++-
+>  fs/nfs/nfs4proc.c       |    5 +++--
+>  fs/nfs/proc.c           |    3 ++-
+>  include/linux/freezer.h |   28 ++++++++++++++++++++++++++++
+>  net/sunrpc/sched.c      |    3 ++-
+>  6 files changed, 39 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+> index 50a15fa..bf3a57b 100644
+> --- a/fs/nfs/inode.c
+> +++ b/fs/nfs/inode.c
+> @@ -38,6 +38,7 @@
+>  #include <linux/nfs_xdr.h>
+>  #include <linux/slab.h>
+>  #include <linux/compat.h>
+> +#include <linux/freezer.h>
+>  
+>  #include <asm/system.h>
+>  #include <asm/uaccess.h>
+> @@ -77,7 +78,7 @@ int nfs_wait_bit_killable(void *word)
+>  {
+>  	if (fatal_signal_pending(current))
+>  		return -ERESTARTSYS;
+> -	schedule();
+> +	freezable_schedule();
+>  	return 0;
+>  }
+>  
+> diff --git a/fs/nfs/nfs3proc.c b/fs/nfs/nfs3proc.c
+> index d4bc9ed9..9194395 100644
+> --- a/fs/nfs/nfs3proc.c
+> +++ b/fs/nfs/nfs3proc.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/nfs_page.h>
+>  #include <linux/lockd/bind.h>
+>  #include <linux/nfs_mount.h>
+> +#include <linux/freezer.h>
+>  
+>  #include "iostat.h"
+>  #include "internal.h"
+> @@ -32,7 +33,7 @@ nfs3_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
+>  		res = rpc_call_sync(clnt, msg, flags);
+>  		if (res != -EJUKEBOX && res != -EKEYEXPIRED)
+>  			break;
+> -		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+> +		freezable_schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+>  		res = -ERESTARTSYS;
+>  	} while (!fatal_signal_pending(current));
+>  	return res;
+> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+> index be2bbac..b28bb19 100644
+> --- a/fs/nfs/nfs4proc.c
+> +++ b/fs/nfs/nfs4proc.c
+> @@ -53,6 +53,7 @@
+>  #include <linux/sunrpc/bc_xprt.h>
+>  #include <linux/xattr.h>
+>  #include <linux/utsname.h>
+> +#include <linux/freezer.h>
+>  
+>  #include "nfs4_fs.h"
+>  #include "delegation.h"
+> @@ -241,7 +242,7 @@ static int nfs4_delay(struct rpc_clnt *clnt, long *timeout)
+>  		*timeout = NFS4_POLL_RETRY_MIN;
+>  	if (*timeout > NFS4_POLL_RETRY_MAX)
+>  		*timeout = NFS4_POLL_RETRY_MAX;
+> -	schedule_timeout_killable(*timeout);
+> +	freezable_schedule_timeout_killable(*timeout);
+>  	if (fatal_signal_pending(current))
+>  		res = -ERESTARTSYS;
+>  	*timeout <<= 1;
+> @@ -3950,7 +3951,7 @@ int nfs4_proc_delegreturn(struct inode *inode, struct rpc_cred *cred, const nfs4
+>  static unsigned long
+>  nfs4_set_lock_task_retry(unsigned long timeout)
+>  {
+> -	schedule_timeout_killable(timeout);
+> +	freezable_schedule_timeout_killable(timeout);
+>  	timeout <<= 1;
+>  	if (timeout > NFS4_LOCK_MAXTIMEOUT)
+>  		return NFS4_LOCK_MAXTIMEOUT;
+> diff --git a/fs/nfs/proc.c b/fs/nfs/proc.c
+> index f48125d..0c672588 100644
+> --- a/fs/nfs/proc.c
+> +++ b/fs/nfs/proc.c
+> @@ -41,6 +41,7 @@
+>  #include <linux/nfs_fs.h>
+>  #include <linux/nfs_page.h>
+>  #include <linux/lockd/bind.h>
+> +#include <linux/freezer.h>
+>  #include "internal.h"
+>  
+>  #define NFSDBG_FACILITY		NFSDBG_PROC
+> @@ -59,7 +60,7 @@ nfs_rpc_wrapper(struct rpc_clnt *clnt, struct rpc_message *msg, int flags)
+>  		res = rpc_call_sync(clnt, msg, flags);
+>  		if (res != -EKEYEXPIRED)
+>  			break;
+> -		schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+> +		freezable_schedule_timeout_killable(NFS_JUKEBOX_RETRY_TIME);
+>  		res = -ERESTARTSYS;
+>  	} while (!fatal_signal_pending(current));
+>  	return res;
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index c1ee283..30f06c2 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -105,6 +105,29 @@ static inline int freezer_should_skip(struct task_struct *p)
+>  }
+>  
+>  /*
+> + * These macros are intended to be used whenever you want allow a task that's
+> + * sleeping in TASK_UNINTERRUPTIBLE or TASK_KILLABLE state to be frozen. Note
+> + * that neither return any clear indication of whether a freeze event happened
+> + * while in this function.
+> + */
+> +
+> +/* Like schedule(), but should not block the freezer. */
+> +#define freezable_schedule()						\
+> +({									\
+> +	freezer_do_not_count();						\
+> +	schedule();							\
+> +	freezer_count();						\
+> +})
+> +
+> +/* Like schedule_timeout_killable(), but should not block the freezer. */
+> +#define freezable_schedule_timeout_killable(timeout)			\
+> +({									\
+> +	freezer_do_not_count();						\
+> +	schedule_timeout_killable(timeout);				\
+> +	freezer_count();						\
+> +})
+> +
+> +/*
+>   * Freezer-friendly wrappers around wait_event_interruptible(),
+>   * wait_event_killable() and wait_event_interruptible_timeout(), originally
+>   * defined in <linux/wait.h>
+> @@ -163,6 +186,11 @@ static inline void freezer_count(void) {}
+>  static inline int freezer_should_skip(struct task_struct *p) { return 0; }
+>  static inline void set_freezable(void) {}
+>  
+> +#define freezable_schedule()  schedule()
+> +
+> +#define freezable_schedule_timeout_killable(timeout)			\
+> +	schedule_timeout_killable(timeout)
+> +
+>  #define wait_event_freezable(wq, condition)				\
+>  		wait_event_interruptible(wq, condition)
+>  
+> diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
+> index d12ffa5..5317b93 100644
+> --- a/net/sunrpc/sched.c
+> +++ b/net/sunrpc/sched.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/smp.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/mutex.h>
+> +#include <linux/freezer.h>
+>  
+>  #include <linux/sunrpc/clnt.h>
+>  
+> @@ -231,7 +232,7 @@ static int rpc_wait_bit_killable(void *word)
+>  {
+>  	if (fatal_signal_pending(current))
+>  		return -ERESTARTSYS;
+> -	schedule();
+> +	freezable_schedule();
+>  	return 0;
+>  }
+>  
+> 
 
