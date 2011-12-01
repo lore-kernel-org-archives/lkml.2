@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab1LASji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:39:38 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:37084 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755783Ab1LASjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:39:36 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 2a/5] Remove unsafe clock values from omap1_defconfig
-Date: Thu, 1 Dec 2011 19:38:32 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <20111128174508.GO31337@atomide.com> <201112011054.09878.jkrzyszt@tis.icnet.pl> <20111201171758.GT31337@atomide.com>
-In-Reply-To: <20111201171758.GT31337@atomide.com>
+	id S1756068Ab1LASko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:40:44 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:50311 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755709Ab1LASkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 13:40:41 -0500
+X-Sasl-enc: yh6mvkozxgShM+M27o/5fEnJBkKIgr+OSTXlk9LkU19u 1322764840
+Date: Thu, 1 Dec 2011 10:39:56 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "K. Y. Srinivasan" <kys@microsoft.com>, Thomas Meyer <thomas@m3y3r.de>,
+        Jiri Kosina <jikos@jikos.cz>
+Subject: Re: linux-next: manual merge of the staging tree with the hid tree
+Message-ID: <20111201183956.GA32559@kroah.com>
+References: <20111201143952.9aea929b16c7212570fc1bd2@canb.auug.org.au>
+ <20111201035113.GA7647@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112011938.36706.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201035113.GA7647@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 of December 2011 at 18:17:58, Tony Lindgren wrote:
-> * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111201 01:20]:
-[snip]
-> > Perhaps 
-> > we should rather think of reverting a few commits which caused all these 
-> > problems if fixing them all during rc cycle seems not possible? I 
-> > haven't bisected them yet, rather concentrated on providing fixes, but I 
-> > can still try to do it, starting back from the original issue 
-> > (http://www.spinics.net/lists/linux-omap/msg60052.html), if so decided.
+On Wed, Nov 30, 2011 at 07:51:13PM -0800, Greg KH wrote:
+> On Thu, Dec 01, 2011 at 02:39:52PM +1100, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > Today's linux-next merge of the staging tree got a conflict in
+> > drivers/hid/hid-hyperv.c between commit b95f5bcb811e ("HID: Move the
+> > hid-hyperv driver out of staging") from the hid tree and various commits
+> > from the staging tree (this was drivers/staging/hv/hv_mouse.c).
+> > 
+> > The commit message says that all the changes that happened when this file
+> > moved from staging have also been applied to the staging file, so I just
+> > used the version from the hid tree.
 > 
-> We can't revert that because the SRAM init has been moved to later for
-> map_io. 
+> Ok, that's fine, Jiri, want me to just delete the driver from my tree
+> now to remove any of these conflicts?
 
-Yes, I know that. What I don't know yet is what else should be reverted 
-to fix the original issue other than applying  
-e9b7086b80c4d9e354f4edc9e280ae85a60df408, which seems to introduce (or 
-maybe 'exhibit' is a better word here) more bugs than it fixes.
+I've removed it from my tree now.
 
-> But if that patch changed the behaviour on your board, then that's
-> the problem we should fix.
-> 
-> If you're now stuck at 60MHz rate, care to see if the following patch
-> makes the kernel behave the same way as before for you?
-[snip]
-> 
-> --- a/arch/arm/mach-omap1/clock_data.c
-> +++ b/arch/arm/mach-omap1/clock_data.c
-> @@ -927,7 +927,7 @@ int __init omap1_clk_init(void)
->  
->  void __init omap1_clk_late_init(void)
->  {
-> -	if (ck_dpll1.rate >= OMAP1_DPLL1_SANE_VALUE)
-> +	if (ck_dpll1.rate > OMAP1_DPLL1_SANE_VALUE)
->  		return;
->  
->  	/* Find the highest supported frequency and enable it */
+thanks,
 
-This change really makes sense to me, however, knowing the initial 
-(bootloader selected) clock rate my board boots at, which is 
-unfortunately raw 12 MHz, I would be surprised if that helped.
-
-Before e9b7086b80c4d9e354f4edc9e280ae85a60df408, 
-omap1_select_table_rate() was returning the rate selected with .config 
-because it was called early, with ck_dpll1_p->rate uninitialized. Now it 
-is not, and returns nothing, resulting in 60 MHz default. Then, the only 
-way I can see to correct the problem is something like patch 3/5, which 
-you are justifiably affraid of of always switching to 216 MHz with 
-omap1_defconfig.
-
-Thanks,
-Janusz
+greg k-h
