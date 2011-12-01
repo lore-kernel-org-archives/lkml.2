@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab1LAW4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:56:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43062 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172Ab1LAW4Y (ORCPT
+	id S1755443Ab1LAXAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 18:00:19 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58917 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755172Ab1LAXAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:56:24 -0500
-Date: Thu, 1 Dec 2011 14:56:23 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dimitri Sivanich <sivanich@sgi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
-Message-Id: <20111201145623.d2bf252e.akpm@linux-foundation.org>
-In-Reply-To: <20111201163740.GA11693@sgi.com>
-References: <20111108191149.GA7236@sgi.com>
-	<20111122160802.e99d6218.akpm@linux-foundation.org>
-	<20111130152959.GA19205@sgi.com>
-	<20111130161131.31cdccff.akpm@linux-foundation.org>
-	<20111130161610.69c516f7.akpm@linux-foundation.org>
-	<20111201020727.GB30097@sgi.com>
-	<20111130181318.38f4659d.akpm@linux-foundation.org>
-	<20111201163740.GA11693@sgi.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Dec 2011 18:00:17 -0500
+X-Sasl-enc: NEkFB9TgnCaHCcmsB/xvaKfRhmuONNX4mVyae6FnrO5y 1322780416
+Date: Thu, 1 Dec 2011 14:41:28 -0800
+From: Greg KH <greg@kroah.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Christoph Hellwig <hch@infradead.org>, devel@driverdev.osuosl.org,
+        lttng-dev@lists.lttng.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        David McCullough <davidm@snapgear.com>,
+        D Jeff Dionne <jeff@uClinux.org>, Greg Ungerer <gerg@snapgear.com>,
+        Paul Mundt <lethal@linux-sh.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/11] mm: export vmalloc_sync_all symbol to GPL modules
+Message-ID: <20111201224128.GB3716@kroah.com>
+References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
+ <1322775683-8741-2-git-send-email-mathieu.desnoyers@efficios.com>
+ <20111201215700.GA16782@infradead.org>
+ <20111201221337.GB3365@kroah.com>
+ <20111201221940.GD10552@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201221940.GD10552@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011 10:37:40 -0600
-Dimitri Sivanich <sivanich@sgi.com> wrote:
+On Thu, Dec 01, 2011 at 05:19:40PM -0500, Mathieu Desnoyers wrote:
+> * Greg KH (greg@kroah.com) wrote:
+> > On Thu, Dec 01, 2011 at 04:57:00PM -0500, Christoph Hellwig wrote:
+> > > On Thu, Dec 01, 2011 at 04:41:13PM -0500, Mathieu Desnoyers wrote:
+> > > > LTTng needs this symbol exported. It calls it to ensure its tracing
+> > > > buffers and allocated data structures never trigger a page fault. This
+> > > > is required to handle page fault handler tracing and NMI tracing
+> > > > gracefully.
+> > > 
+> > > We:
+> > > 
+> > >  a) don't export symbols unless they have an intree-user
+> > 
+> > lttng is now in-tree in the drivers/staging/ area.  See linux-next for
+> > details if you are curious.
+> > 
+> > >  b) especially don't export something as lowlevel as this one.
+> > 
+> > Mathieu, there's nothing else you can do to get this information?  Or
+> > does lttng really want such lowlevel data?
+> 
+> LTTng calls vmalloc_sync_all() to make sure it won't crash the system
+> (due to recursive page fault) when hooking on the page fault handler and
+> on any hook that would happen to sit in a function hit by NMI context.
+> So it really goes beyond just extracting information for this one I'm
+> afraid: it's a matter of execution correctness.
 
-> +static ssize_t sysfs_store_do_timer_cpu(struct sys_device *dev,
-> +						struct sysdev_attribute *attr,
-> +						const char *buf, size_t size)
-> +{
-> +	struct sysdev_ext_attribute *ea = SYSDEV_TO_EXT_ATTR(attr);
-> +	unsigned int new;
-> +	int rv;
-> +
-> +#ifdef CONFIG_NO_HZ
-> +	/* nohz mode not supported */
-> +	if (tick_nohz_enabled)
-> +		return -EINVAL;
-> +#endif
-> +
-> +	rv = kstrtouint(buf, 0, &new);
-> +	if (rv)
-> +		return rv;
-> +
-> +	/* Protect against cpu-hotplug */
-> +	get_online_cpus();
-> +
-> +	if (new >= nr_cpu_ids || !cpu_online(new)) {
-> +		put_online_cpus();
-> +		return -ERANGE;
-> +	}
-> +
-> +	*(unsigned int *)(ea->var) = new;
-> +
-> +	put_online_cpus();
-> +
-> +	return size;
-> +}
+Ok, fair enough.
 
-OK, I think this fixes one race.  We modify tick_do_timer_cpu inside
-get_online_cpus().  If that cpu goes offline then
-tick_handover_do_timer() will correctly hand the timer functions over
-to a new CPU, and tick_handover_do_timer() runs in the CPU hotplug
-handler which I assume is locked by get_online_cpus().  Please check
-all this.
+Christoph, is there any other way to achive something like this without
+this symbol being exported that you know of?
 
-Now, the above code can alter tick_do_timer_cpu while a timer interrupt
-is actually executing on another CPU.  Will this disrupt aything?  I
-think it might cause problems.  If we take an interrupt on CPU 5 and
-that CPU enters tick_periodic() and another CPU alters
-tick_do_timer_cpu from 5 to 4 at exactly the correct time, tick_periodic()
-might fail to run do_timer().  Or it might run do_timer() on both CPUs 4 and
-5 concurrently?
+thanks,
 
-
+greg k-h
