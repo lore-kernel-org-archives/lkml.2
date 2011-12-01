@@ -1,181 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab1LAIx0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:53:26 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65517 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751064Ab1LAIxZ (ORCPT
+	id S1752392Ab1LAIz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:55:26 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52779 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab1LAIzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:53:25 -0500
-Date: Thu, 1 Dec 2011 10:53:11 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "Alex,Shi" <alex.shi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Matt Mackall <mpm@selenic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>, tj@kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-In-Reply-To: <20111201084437.GA1529@x4.trippels.de>
-Message-ID: <alpine.LFD.2.02.1112011053070.4549@tux.localdomain>
-References: <1321836285.30341.554.camel@debian> <20111121080554.GB1625@x4.trippels.de> <20111121082445.GD1625@x4.trippels.de> <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111121131531.GA1679@x4.trippels.de>
- <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111121153621.GA1678@x4.trippels.de> <20111123160353.GA1673@x4.trippels.de> <alpine.DEB.2.00.1111231004490.17317@router.home> <20111124085040.GA1677@x4.trippels.de>
- <20111201084437.GA1529@x4.trippels.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	Thu, 1 Dec 2011 03:55:25 -0500
+Message-ID: <1322729712.3702.8.camel@lappy>
+Subject: Re: [PATCH 1/2] virtio-scsi: first version
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-scsi <linux-scsi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Date: Thu, 01 Dec 2011 10:55:12 +0200
+In-Reply-To: <4ED73CA3.5080409@redhat.com>
+References: <1322661299-28855-1-git-send-email-pbonzini@redhat.com>
+	  <1322661299-28855-2-git-send-email-pbonzini@redhat.com>
+	 <1322721200.3651.24.camel@lappy> <4ED73CA3.5080409@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011, Markus Trippelsdorf wrote:
-> On 2011.11.24 at 09:50 +0100, Markus Trippelsdorf wrote:
->> On 2011.11.23 at 10:06 -0600, Christoph Lameter wrote:
->>> On Wed, 23 Nov 2011, Markus Trippelsdorf wrote:
->>>
->>>>> FIX idr_layer_cache: Marking all objects used
->>>>
->>>> Yesterday I couldn't reproduce the issue at all. But today I've hit
->>>> exactly the same spot again. (CCing the drm list)
->>>
->>> Well this is looks like write after free.
->>>
->>>> =============================================================================
->>>> BUG idr_layer_cache: Poison overwritten
->>>> -----------------------------------------------------------------------------
->>>> Object ffff8802156487c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
->>>> Object ffff8802156487d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
->>>> Object ffff8802156487e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
->>>> Object ffff8802156487f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
->>>> Object ffff880215648800: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
->>>> Object ffff880215648810: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
->>>
->>> And its an integer sized write of 0. If you look at the struct definition
->>> and lookup the offset you should be able to locate the field that
->>> was modified.
->
-> It also happens with CONFIG_SLAB.
-> (If someone wants to reproduce the issue, just run a kexec boot loop and
-> the bug will occur after a few (~10) iterations.)
->
-> Dec  1 05:04:52 x4 kernel: [drm] Initialized drm 1.1.0 20060810
-> Dec  1 05:04:52 x4 kernel: [drm] radeon defaulting to kernel modesetting.
-> Dec  1 05:04:52 x4 kernel: [drm] radeon kernel modesetting enabled.
-> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
-> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: setting latency timer to 64
-> Dec  1 05:04:52 x4 kernel: [drm] initializing kernel modesetting (RS780 0x1002:0x9614 0x1043:0x834D).
-> Dec  1 05:04:52 x4 kernel: [drm] register mmio base: 0xFBEE0000
-> Dec  1 05:04:52 x4 kernel: [drm] register mmio size: 65536
-> Dec  1 05:04:52 x4 kernel: ATOM BIOS: 113
-> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: VRAM: 128M 0x00000000C0000000 - 0x00000000C7FFFFFF (128M used)
-> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: GTT: 512M 0x00000000A0000000 - 0x00000000BFFFFFFF
-> Dec  1 05:04:52 x4 kernel: [drm] Detected VRAM RAM=128M, BAR=128M
-> Dec  1 05:04:52 x4 kernel: [drm] RAM width 32bits DDR
-> Dec  1 05:04:52 x4 kernel: [TTM] Zone  kernel: Available graphics memory: 4090750 kiB.
-> Dec  1 05:04:52 x4 kernel: [TTM] Zone   dma32: Available graphics memory: 2097152 kiB.
-> Dec  1 05:04:52 x4 kernel: [TTM] Initializing pool allocator.
-> Dec  1 05:04:52 x4 kernel: [drm] radeon: 128M of VRAM memory ready
-> Dec  1 05:04:52 x4 kernel: [drm] radeon: 512M of GTT memory ready.
-> Dec  1 05:04:52 x4 kernel: [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
-> Dec  1 05:04:52 x4 kernel: [drm] Driver supports precise vblank timestamp query.
-> Dec  1 05:04:52 x4 kernel: [drm] radeon: irq initialized.
-> Dec  1 05:04:52 x4 kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
-> Dec  1 05:04:52 x4 kernel: [drm] Loading RS780 Microcode
-> Dec  1 05:04:52 x4 kernel: [drm] PCIE GART of 512M enabled (table at 0x00000000C0040000).
-> Dec  1 05:04:52 x4 kernel: radeon 0000:01:05.0: WB enabled
-> Dec  1 05:04:52 x4 kernel: Slab corruption: size-1024 start=ffff880216cbc730, len=1024
-> Dec  1 05:04:52 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-> Dec  1 05:04:52 x4 kernel: Last user: [<          (null)>](0x0)
-> Dec  1 05:04:52 x4 kernel: 0d0: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
-> Dec  1 05:04:52 x4 kernel: Prev obj: start=ffff880216cbc318, len=1024
-> Dec  1 05:04:52 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-> Dec  1 05:04:52 x4 kernel: Last user: [<          (null)>](0x0)
-> Dec  1 05:04:52 x4 kernel: 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Dec  1 05:04:52 x4 kernel: 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Dec  1 05:04:52 x4 kernel: Next obj: start=ffff880216cbcb48, len=1024
-> Dec  1 05:04:52 x4 kernel: Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
-> Dec  1 05:04:52 x4 kernel: Last user: [<ffffffff81299874>](radeon_bo_create+0xb4/0x240)
-> Dec  1 05:04:52 x4 kernel: 000: 48 cb cb 16 02 88 ff ff 48 cb cb 16 02 88 ff ff  H.......H.......
-> Dec  1 05:04:52 x4 kernel: 010: 02 00 27 00 00 00 00 00 00 00 00 00 00 00 00 00  ..'.............
-> Dec  1 05:04:52 x4 kernel: [drm] ring test succeeded in 0 usecs
-> Dec  1 05:04:52 x4 kernel: [drm] radeon: ib pool ready.
-> Dec  1 05:04:52 x4 kernel: [drm] ib test succeeded in 0 usecs
-> Dec  1 05:04:52 x4 kernel: [drm] Radeon Display Connectors
-> Dec  1 05:04:52 x4 kernel: [drm] Connector 0:
-> Dec  1 05:04:52 x4 kernel: [drm]   VGA
-> Dec  1 05:04:52 x4 kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
-> Dec  1 05:04:52 x4 kernel: [drm]   Encoders:
-> Dec  1 05:04:52 x4 kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
-> Dec  1 05:04:52 x4 kernel: [drm] Connector 1:
-> Dec  1 05:04:52 x4 kernel: [drm]   DVI-D
-> Dec  1 05:04:52 x4 kernel: [drm]   HPD3
-> Dec  1 05:04:52 x4 kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
-> Dec  1 05:04:52 x4 kernel: [drm]   Encoders:
-> Dec  1 05:04:52 x4 kernel: [drm]     DFP3: INTERNAL_KLDSCP_LVTMA
-> Dec  1 05:04:52 x4 kernel: [drm] radeon: power management initialized
-> Dec  1 05:04:52 x4 kernel: [drm] fb mappable at 0xF0142000
-> Dec  1 05:04:52 x4 kernel: [drm] vram apper at 0xF0000000
-> Dec  1 05:04:52 x4 kernel: [drm] size 7299072
-> Dec  1 05:04:52 x4 kernel: [drm] fb depth is 24
-> Dec  1 05:04:52 x4 kernel: [drm]    pitch is 6912
-> Dec  1 05:04:52 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
-> Dec  1 05:04:52 x4 kernel: Console: switching to colour frame buffer device 131x105
-> Dec  1 05:04:52 x4 kernel: fb0: radeondrmfb frame buffer device
-> Dec  1 05:04:52 x4 kernel: drm: registered panic notifier
-> Dec  1 05:04:52 x4 kernel: [drm] Initialized radeon 2.12.0 20080528 for 0000:01:05.0 on minor 0
->
->
-> Dec  1 05:09:35 x4 kernel: radeon 0000:01:05.0: WB enabled
-> Dec  1 05:09:35 x4 kernel: [drm] ring test succeeded in 1 usecs
-> Dec  1 05:09:35 x4 kernel: [drm] radeon: ib pool ready.
-> Dec  1 05:09:35 x4 kernel: [drm] ib test succeeded in 0 usecs
-> Dec  1 05:09:35 x4 kernel: Slab corruption: size-512 start=ffff880216f7e760, len=512
-> Dec  1 05:09:35 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-> Dec  1 05:09:35 x4 kernel: Last user: [<          (null)>](0x0)
-> Dec  1 05:09:35 x4 kernel: 0a0: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
-> Dec  1 05:09:35 x4 kernel: Prev obj: start=ffff880216f7e548, len=512
-> Dec  1 05:09:35 x4 kernel: Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
-> Dec  1 05:09:35 x4 kernel: Last user: [<          (null)>](0x0)
-> Dec  1 05:09:35 x4 kernel: 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Dec  1 05:09:35 x4 kernel: 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Dec  1 05:09:35 x4 kernel: Next obj: start=ffff880216f7e978, len=512
-> Dec  1 05:09:35 x4 kernel: Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
-> Dec  1 05:09:35 x4 kernel: Last user: [<ffffffff812e519d>](radeon_add_atom_encoder+0x7d/0x280)
-> Dec  1 05:09:35 x4 kernel: 000: f8 d3 f6 16 02 88 ff ff 18 d8 f6 16 02 88 ff ff  ................
-> Dec  1 05:09:35 x4 kernel: 010: 18 d8 f6 16 02 88 ff ff 0c 00 00 00 e0 e0 e0 e0  ................
-> Dec  1 05:09:35 x4 kernel: [drm] Radeon Display Connectors
-> Dec  1 05:09:35 x4 kernel: [drm] Connector 0:
-> Dec  1 05:09:35 x4 kernel: [drm]   VGA
-> Dec  1 05:09:35 x4 kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
-> Dec  1 05:09:35 x4 kernel: [drm]   Encoders:
-> Dec  1 05:09:35 x4 kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
-> Dec  1 05:09:35 x4 kernel: [drm] Connector 1:
-> Dec  1 05:09:35 x4 kernel: [drm]   DVI-D
-> Dec  1 05:09:35 x4 kernel: [drm]   HPD3
-> Dec  1 05:09:35 x4 kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
-> Dec  1 05:09:35 x4 kernel: [drm]   Encoders:
-> Dec  1 05:09:35 x4 kernel: [drm]     DFP3: INTERNAL_KLDSCP_LVTMA
-> Dec  1 05:09:35 x4 kernel: [drm] radeon: power management initialized
-> Dec  1 05:09:35 x4 kernel: [drm] fb mappable at 0xF0142000
-> Dec  1 05:09:35 x4 kernel: [drm] vram apper at 0xF0000000
-> Dec  1 05:09:35 x4 kernel: [drm] size 7299072
-> Dec  1 05:09:35 x4 kernel: [drm] fb depth is 24
-> Dec  1 05:09:35 x4 kernel: [drm]    pitch is 6912
-> Dec  1 05:09:35 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
-> Dec  1 05:09:35 x4 kernel: Console: switching to colour frame buffer device 131x105
-> Dec  1 05:09:35 x4 kernel: fb0: radeondrmfb frame buffer device
-> Dec  1 05:09:35 x4 kernel: drm: registered panic notifier
-> Dec  1 05:09:35 x4 kernel: [drm] Initialized radeon 2.12.0 20080528 for 0000:01:05.0 on minor 0
+On Thu, 2011-12-01 at 09:36 +0100, Paolo Bonzini wrote:
+> On 12/01/2011 07:33 AM, Sasha Levin wrote:
+> > On Wed, 2011-11-30 at 14:54 +0100, Paolo Bonzini wrote:
+> >> The virtio-scsi HBA is the basis of an alternative storage stack
+> >> for QEMU-based virtual machines (including KVM).  Compared to
+> >> virtio-blk it is more scalable, because it supports many LUNs
+> >> on a single PCI slot), more powerful (it more easily supports
+> >> passthrough of host devices to the guest) and more easily
+> >> extensible (new SCSI features implemented by QEMU should not
+> >> require updating the driver in the guest).
+> >>
+> >> Signed-off-by: Paolo Bonzini<pbonzini@redhat.com>
+> >> ---
+> >>   drivers/scsi/Kconfig       |    8 +
+> >>   drivers/scsi/Makefile      |    1 +
+> >>   drivers/scsi/virtio_scsi.c |  478 ++++++++++++++++++++++++++++++++++++++++++++
+> >>   include/linux/virtio_ids.h |    1 +
+> >    include/linux/virtio_scsi.h is missing here.
 
-The SLAB debugging output points to DRM and more specifically to the 
-radeon driver.
+I was actually hoping you could send the .h so I could do some hacking
+on it :)
 
-Dave, Alex, could you please take a look at this or fix up the CC to 
-include the right people?
+> > Maybe default to one if not specified (=0), like in virtio-blk.
+> 
+> Good idea.  Though with sg_elems=1 it is insanely slow.
 
- 			Pekka
+It's either that or fail on sg_elems=0, since currently if it's 0 it
+looks like the failure will be non-obvious.
+
+> > Shouldn't these kmemcaches be per-device and not globally shared between
+> > all devices?
+> 
+> In practice it will be rare (and it's part of the design) to have more 
+> than one virtio-scsi device (perhaps two: one for passthrough and one 
+> for other block devices).  If the kmemcaches are a bottleneck, what you 
+> want is making them per-virtqueue.  Fixing it is simple if it turns out 
+> to be a problem, and it is simpler if I do it together with multi-vq 
+> support.
+
+I guess we should just remember test that when multi-vq support is
+added.
+
+-- 
+
+Sasha.
+
