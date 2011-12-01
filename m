@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab1LASrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:47:33 -0500
-Received: from void.printf.net ([89.145.121.20]:49347 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753437Ab1LASrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:47:31 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, Alex Dubov <oakad@yahoo.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Ian Molton <ian@mnementh.co.uk>, linux-arm-kernel@lists.infradead.org,
-        linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 20/62] mmc: remove the second argument of k[un]map_atomic()
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com>
-	<1322371662-26166-21-git-send-email-amwang@redhat.com>
-Date: Thu, 01 Dec 2011 13:47:12 -0500
-In-Reply-To: <1322371662-26166-21-git-send-email-amwang@redhat.com> (Cong
-	Wang's message of "Sun, 27 Nov 2011 13:27:00 +0800")
-Message-ID: <87vcq0jfin.fsf@laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.91 (gnu/linux)
+	id S1755981Ab1LASsP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:48:15 -0500
+Received: from usmamail.tilera.com ([206.83.70.75]:13864 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab1LASsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 13:48:12 -0500
+Message-ID: <4ED7CBEA.6060005@tilera.com>
+Date: Thu, 1 Dec 2011 13:48:10 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Maxin B. John" <maxin.john@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] lib/devres.c: allow specifying NO_IOPORT while using
+ PCI
+References: <cover.1322592494.git.mst@redhat.com> <201111301404.41544.arnd@arndb.de> <20111130143122.GC21413@redhat.com> <201111301549.57430.arnd@arndb.de> <201112011815.pB1IFGZe004948@farm-0002.internal.tilera.com> <20111201184442.GA13173@google.com>
+In-Reply-To: <20111201184442.GA13173@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 12/1/2011 1:44 PM, Tejun Heo wrote:
+> Hello,
+>
+> On Thu, Dec 01, 2011 at 12:59:19PM -0500, Chris Metcalf wrote:
+>> The tile architecture does not support IOPORT, but it does support
+>> PCI and IOMEM.  We were not specifying NO_IOPORT, though, because it
+>> was causing a couple of functions (pcim_iomap_regions and pcim_iomap_table)
+>> that are needed to not get provided.  Moving the #ifdef fixes this
+>> so that those functions and some related ones are now always provided
+>> if CONFIG_PCI is true.
+>>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>   Acked-by: Tejun Heo <tj@kernel.org>
+>
+> Please feel free to route the change through tile.  If not, Andrew,
+> can you please pick this up?
 
-On Sun, Nov 27 2011, Cong Wang wrote:
-> Signed-off-by: Cong Wang <amwang@redhat.com>
-> ---
->  drivers/mmc/host/at91_mci.c |    8 ++++----
->  drivers/mmc/host/msm_sdcc.c |    6 +++---
->  drivers/mmc/host/sdhci.c    |    4 ++--
->  drivers/mmc/host/tifm_sd.c  |   16 ++++++++--------
->  drivers/mmc/host/tmio_mmc.c |    1 -
->  drivers/mmc/host/tmio_mmc.h |    4 ++--
->  6 files changed, 19 insertions(+), 20 deletions(-)
+Thanks.  I'll plan to push this to Linus through the tile tree with your
+Acked-by.
 
-Looks good, thanks, pushed to mmc-next for 3.3.
-
-- Chris.
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
