@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab1LAVlx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:41:53 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43215 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052Ab1LAVlu (ORCPT
+	id S1754675Ab1LAVom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:44:42 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17061 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754243Ab1LAVol convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:41:50 -0500
+	Thu, 1 Dec 2011 16:44:41 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 01 Dec 2011 13:44:37 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Grant Likely <grant.likely@secretlab.ca>, Barry Song <21cnbao@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Date: Thu, 1 Dec 2011 13:44:36 -0800
+Subject: RE: [PATCH 1/2 v5] pinctrl: add a pin config interface
+Thread-Topic: [PATCH 1/2 v5] pinctrl: add a pin config interface
+Thread-Index: AcywF7fv9LE6eFxIRxS7CdNDwT61VgAWWjZw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174FDB0304@HQMAIL01.nvidia.com>
+References: <1322736891-11262-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1322736891-11262-1-git-send-email-linus.walleij@stericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20111126191137.GA1046@mail.gnudd.com>
-References: <cover.1322328073.git.rubini@gnudd.com>
-	<4ED12B50.9090206@metafoo.de>
-	<20111126191137.GA1046@mail.gnudd.com>
-Date: Thu, 1 Dec 2011 22:41:49 +0100
-X-Google-Sender-Auth: L534eT7wstakfxuWh_QUyvxLg0U
-Message-ID: <CAKnu2MoHks06GzBG25tBG7JgEwMoeH6cOY95FbcHUq_sCm5LLg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/7] Introducing ZIO, a new I/O framework
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: lars@metafoo.de, linux-iio@vger.kernel.org, greg@kroah.com,
-        linux-kernel@vger.kernel.org, federico.vaga@gmail.com, dcobas@cern.ch,
-        siglesia@cern.ch, manohar.vanga@cern.ch
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/26 Alessandro Rubini <rubini@gnudd.com>:
+Linus Walleij wrote at Thursday, December 01, 2011 3:55 AM:
+> This add per-pin and per-group pin config interfaces for biasing,
+> driving and other such electronic properties. The details of passed
+> configurations are passed in an opaque unsigned long which may be
+> dereferences to integer types, structs or lists on either side
+> of the configuration interface.
+...
 
-> I'm open to suggestions (_we_ are) about how to easily use IIO for
-> output, for hardware timestamps (we have 3 32-bit fields) and for very
-> large data blocks, with DMA to/from user space -- sure we don't have this
-> last point in ZIO at this point in time.
+I'd still love to see separate param/value parameters to all the public
+APIs as I mentioned elsewhere, but in the interests of moving things
+forward:
 
-The latter seem like a case for the dma-buf mechanism.
-http://lwn.net/Articles/462524/
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
-(Interesting hardware you found Alessandro! :)
+> +extern int pin_config_get(struct pinctrl_dev *pctldev, int pin,
+> +			  unsigned long *config);
+> +extern int pin_config_set(struct pinctrl_dev *pctldev, int pin,
+> +			  unsigned long config);
 
-Yours,
-Linus Walleij
+Should the per-pin APIs take a pin name (char*) instead of a pin number
+just like the per-group APIs? That seems more consistent. Currently, only
+the pinctrl core -> driver API ever deals with pin numbers, and e.g. the
+mapping table only deals with names.
+
+> +extern int pin_config_group_get(struct pinctrl_dev *pctldev,
+> +				const char *pin_group,
+> +				unsigned long *config);
+> +extern int pin_config_group_set(struct pinctrl_dev *pctldev,
+> +				const char *pin_group,
+> +				unsigned long config);
+
+-- 
+nvpublic
+
