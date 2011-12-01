@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab1LAQo6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 11:44:58 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:53796 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab1LAQo4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 11:44:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [Android-virt] [Embeddedxen-devel] [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15 / ARMv7 with virt extensions
-Date: Thu, 1 Dec 2011 16:44:40 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "android-virt@lists.cs.columbia.edu" 
-	<android-virt@lists.cs.columbia.edu>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "embeddedxen-devel@lists.sourceforge.net" 
-	<embeddedxen-devel@lists.sourceforge.net>
-References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop> <201112011542.19377.arnd@arndb.de> <20111201160241.GH27394@arm.com>
-In-Reply-To: <20111201160241.GH27394@arm.com>
+	id S1755486Ab1LAQs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 11:48:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50602 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755422Ab1LAQs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 11:48:26 -0500
+Date: Thu, 1 Dec 2011 08:20:38 -0800
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hv: Don't OOPS when can't init vmbus
+Message-ID: <20111201162038.GA6040@suse.de>
+References: <1321836494-4624-1-git-send-email-levinsasha928@gmail.com>
+ <6E21E5352C11B742B20C142EB499E0481AA70B8E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <1321862131.3231.16.camel@lappy>
+ <1322753876.6040.1.camel@lappy>
+ <6E21E5352C11B742B20C142EB499E0481AA7B272@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20111201154801.GA7130@suse.de>
+ <6E21E5352C11B742B20C142EB499E0481AA7B28F@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112011644.41101.arnd@arndb.de>
-X-Provags-ID: V02:K0:p490NXiUoEFWV5EAU4sSp3+/rvpahtzfRdSmhYrWno5
- q5LsxWBu6wn990QuYgcEQDvPApnRTtcU3kNrsyYTCYQtLTUhIr
- 23rhsoQbtwt3kcaUPuCVnFFoCmEfeDEVd8JCESh3gyx0CQcsU2
- mUnZSamNxIsRaB9j+2rq/kKdoM3UC6f9h8SksK2EZPUtZgnNNL
- HEGn+plDVWSLWDpjNXD5LBt2LmLm6kxBNb1eAgPP1R98ll1F5W
- MI7FwFW/0V6lJnSULvISihVYWoFHJ/g4u5v/RsuVXSwlx2WGOP
- cTQRDc2DeENy7buG8dTwO557HYz4xyxr4nRLkcLSWU+K094G9S
- ydysH5u8YaveLHbvhCm8=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA7B28F@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 December 2011, Catalin Marinas wrote:
-> On Thu, Dec 01, 2011 at 03:42:19PM +0000, Arnd Bergmann wrote:
-> > On Thursday 01 December 2011, Catalin Marinas wrote:
-> > How do you deal with signed integer arguments passed into SVC or HVC from
-> > a caller? If I understand the architecture correctly, the upper
-> > halves of the argument register end up zero-padded, while the callee
-> > expects sign-extension.
+On Thu, Dec 01, 2011 at 03:58:10PM +0000, KY Srinivasan wrote:
 > 
-> If you treat it as an "int" (32-bit) and function prototype defined
-> accordingly, then the generated code only accesses it as a W (rather
-> than X) register and the top 32-bit part is ignored (no need for
-> sign-extension). If it is defined as a "long" in the 32-bit world, then
-> it indeed needs explicit conversion given the different sizes for long
-> (for example sys_lseek, the second argument is a 'long' and we do
-> explicit sign extension in the wrapper).
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@suse.de]
+> > Sent: Thursday, December 01, 2011 10:48 AM
+> > To: KY Srinivasan
+> > Cc: Sasha Levin; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] hv: Don't OOPS when can't init vmbus
+> > 
+> > On Thu, Dec 01, 2011 at 03:42:43PM +0000, KY Srinivasan wrote:
+> > >
+> > >
+> > > > -----Original Message-----
+> > > > From: Sasha Levin [mailto:levinsasha928@gmail.com]
+> > > > Sent: Thursday, December 01, 2011 10:38 AM
+> > > > To: KY Srinivasan
+> > > > Cc: linux-kernel@vger.kernel.org; Greg Kroah-Hartman
+> > > > Subject: RE: [PATCH] hv: Don't OOPS when can't init vmbus
+> > > >
+> > > > Ping? Did it go anywhere?
+> > >
+> > > I think I acked it; if not I am acking it now. I don't know if
+> > > Greg dropped this patch.
+> > 
+> > I did as I thought you said you would take care of it.
+> > 
+> > KY, can you please resend it with your ack?
+> 
+> Sasha,
+> 
+> Do you want to resend the patch to Greg with my ack.
 
-Ok, so it's actually different from most other 64 bit architectures, which
-normally operate on 64-bit registers and expect the caller to do the
-correct sign-extension.
+Um, the maintainers job (i.e. you) is to collect stuff like this and
+push it upstream (i.e. to me), is this not going to be possible for some
+reason with this, and future patches?
 
-Doing the sign-extension for long arguments then falls into the same
-category as long long and unsigned long long arguments, which also need
-a wrapper, as you mentioned. Strictly speaking, we only need to do it
-for those where the long argument has a meaning outside of the 0..2^31
-range, e.g. io_submit can only take small positive numbers although
-the type is 'long'.
+thanks,
 
-What about unsigned long and pointer? Can we always rely on the upper
-half of the register to be zero-filled when we get an exception from 32
-bit into 64 bit state, or do we also have to zero-extend those?
-
-	Arnd
+greg k-h
