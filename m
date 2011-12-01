@@ -1,98 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752254Ab1LAGud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:50:33 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39645 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204Ab1LAGuc (ORCPT
+	id S1751886Ab1LAG4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:56:44 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:57938 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1LAG4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:50:32 -0500
-Date: Thu, 1 Dec 2011 00:50:25 -0600
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Chris Dunlop <chris@onthe.net.au>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        David Howells <dhowells@redhat.com>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        Petr Vandrovec <petr@vandrovec.name>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
-        codalist@TELEMANN.coda.cs.cmu.edu,
-        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org,
-        ecryptfs@vger.kernel.org
-Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
-Message-ID: <20111201065024.GB495@boyd>
-References: <1321861008-20611-1-git-send-email-chris@onthe.net.au>
- <20111129082501.GA569@onthe.net.au>
+	Thu, 1 Dec 2011 01:56:42 -0500
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kXfp62UAQ==
+X-RZG-CLASS-ID: mo00
+Message-ID: <4ED72523.8050509@hartkopp.net>
+Date: Thu, 01 Dec 2011 07:56:35 +0100
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="wzJLGUyc3ArbnUjN"
-Content-Disposition: inline
-In-Reply-To: <20111129082501.GA569@onthe.net.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joe Perches <joe@perches.com>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>,
+        Urs Thuermann <urs.thuermann@volkswagen.de>,
+        "David S. Miller" <davem@davemloft.net>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] can: Update logging style
+References: <30551d0a6a0f7f7799a6981c81c770a528f430d2.1322592708.git.joe@perches.com>	 <4ED53B47.1030703@pengutronix.de> <4ED6331E.6020005@hartkopp.net> <1322677438.10023.7.camel@Joe-Laptop>
+In-Reply-To: <1322677438.10023.7.camel@Joe-Laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 30.11.2011 19:23, Joe Perches wrote:
 
---wzJLGUyc3ArbnUjN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Use pr_fmt, pr_<level> and pr_<level>_ratelimited.
+> Coalesce format strings.
+> 
+> V2: Appease Oliver Hartkopp by adding "can" to the banner output.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> 
 
-On 2011-11-29 19:25:01, Chris Dunlop wrote:
-> Hi,
->=20
-> I haven't seen any response to this patch which fixes an Oops in
-> d_revalidate. I hit this using NFS, but various other file
-> systems look to be likewise vulnerable, hence the broadness of
-> the patch. The sequence leading to the Oops is:
->=20
-> lookup_one_len() [fs/namei.c]
->    calls __lookup_hash() [fs/namei.c] with nd =3D=3D NULL,
->       which can then call the file system specific d_revalidate(), passin=
-g in nd =3D=3D NULL
->          which will then Oops if nd is used without checking
 
-Hey Chris - Can you share what you were trying to do when you hit this?
-Were you stacking eCryptfs on top of NFS? Another stacked filesystem on
-top of NFS?
+Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
 
-Do you *need* a stacked filesystem to work on top of NFS? If so, we'll
-need to discuss a way forward. Al has previously shown a dislike of
-eCryptfs passing around nameidata (for good reason), but that is what
-NFS currently requires. I looked at doing this a few months back, but
-never got to the implementation stage.
+Thanks Joe
 
-As David mentioned, Al's atomic open patches might solve all of this in
-the future, but I don't know much about that patchset. Is there any
-relevant info you could provide about those patches, Al?
+> ---
+> 
+>> IMO if you want to use pr_fmt() it should at least look like this:
+>> can: controller area network core (rev 20090105 abi 8)
+>> NET: Registered protocol family 29
+>> can_raw: can raw protocol (rev 20090105)
+>> can_gw: can netlink gateway (rev 20101209)
+>> can_bcm: can broadcast manager protocol (rev 20090105 t)
+>>
+>> I'm fine with using pr_fmt() for error/warning output but not for the banner
+>> in the currently suggested way.
+> 
+> I think it's duplicative, but it's not my code.
+> 
+>  net/can/af_can.c |   31 ++++++++++++++-----------------
+>  net/can/bcm.c    |   14 ++++++++------
+>  net/can/gw.c     |    6 ++++--
+>  net/can/proc.c   |    8 ++++----
+>  net/can/raw.c    |    8 +++++---
+>  5 files changed, 35 insertions(+), 32 deletions(-)
+> 
+> diff --git a/net/can/af_can.c b/net/can/af_can.c
+> index 0ce2ad0..c4f0da5 100644
+> --- a/net/can/af_can.c
+> +++ b/net/can/af_can.c
+> @@ -40,6 +40,8 @@
+>   *
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/kmod.h>
+> @@ -62,8 +64,8 @@
+>  
+>  #include "af_can.h"
+>  
+> -static __initdata const char banner[] = KERN_INFO
+> -	"can: controller area network core (" CAN_VERSION_STRING ")\n";
+> +static __initdata const char banner[] =
+> +	"controller area network core (" CAN_VERSION_STRING ")";
+>  
+>  MODULE_DESCRIPTION("Controller Area Network PF_CAN core");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> @@ -161,8 +163,8 @@ static int can_create(struct net *net, struct socket *sock, int protocol,
+>  		 * return -EPROTONOSUPPORT
+>  		 */
+>  		if (err)
+> -			printk_ratelimited(KERN_ERR "can: request_module "
+> -			       "(can-proto-%d) failed.\n", protocol);
+> +			pr_err_ratelimited("request_module (can-proto-%d) failed\n",
+> +					   protocol);
+>  
+>  		cp = can_get_proto(protocol);
+>  	}
+> @@ -505,8 +507,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
+>  
+>  	d = find_dev_rcv_lists(dev);
+>  	if (!d) {
+> -		printk(KERN_ERR "BUG: receive list not found for "
+> -		       "dev %s, id %03X, mask %03X\n",
+> +		pr_err("BUG: receive list not found for dev %s, id %03X, mask %03X\n",
+>  		       DNAME(dev), can_id, mask);
+>  		goto out;
+>  	}
+> @@ -532,8 +533,7 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
+>  	 */
+>  
+>  	if (!next) {
+> -		printk(KERN_ERR "BUG: receive list entry not found for "
+> -		       "dev %s, id %03X, mask %03X\n",
+> +		pr_err("BUG: receive list entry not found for dev %s, id %03X, mask %03X\n",
+>  		       DNAME(dev), can_id, mask);
+>  		r = NULL;
+>  		goto out;
+> @@ -701,8 +701,7 @@ int can_proto_register(const struct can_proto *cp)
+>  	int err = 0;
+>  
+>  	if (proto < 0 || proto >= CAN_NPROTO) {
+> -		printk(KERN_ERR "can: protocol number %d out of range\n",
+> -		       proto);
+> +		pr_err("protocol number %d out of range\n", proto);
+>  		return -EINVAL;
+>  	}
+>  
+> @@ -713,8 +712,7 @@ int can_proto_register(const struct can_proto *cp)
+>  	mutex_lock(&proto_tab_lock);
+>  
+>  	if (proto_tab[proto]) {
+> -		printk(KERN_ERR "can: protocol %d already registered\n",
+> -		       proto);
+> +		pr_err("protocol %d already registered\n", proto);
+>  		err = -EBUSY;
+>  	} else
+>  		RCU_INIT_POINTER(proto_tab[proto], cp);
+> @@ -769,8 +767,7 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
+>  		/* create new dev_rcv_lists for this device */
+>  		d = kzalloc(sizeof(*d), GFP_KERNEL);
+>  		if (!d) {
+> -			printk(KERN_ERR
+> -			       "can: allocation of receive list failed\n");
+> +			pr_err("allocation of receive list failed\n");
+>  			return NOTIFY_DONE;
+>  		}
+>  		BUG_ON(dev->ml_priv);
+> @@ -790,8 +787,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
+>  				dev->ml_priv = NULL;
+>  			}
+>  		} else
+> -			printk(KERN_ERR "can: notifier: receive list not "
+> -			       "found for dev %s\n", dev->name);
+> +			pr_err("notifier: receive list not found for dev %s\n",
+> +			       dev->name);
+>  
+>  		spin_unlock(&can_rcvlists_lock);
+>  
+> @@ -824,7 +821,7 @@ static struct notifier_block can_netdev_notifier __read_mostly = {
+>  
+>  static __init int can_init(void)
+>  {
+> -	printk(banner);
+> +	pr_info("%s\n", banner);
+>  
+>  	memset(&can_rx_alldev_list, 0, sizeof(can_rx_alldev_list));
+>  
+> diff --git a/net/can/bcm.c b/net/can/bcm.c
+> index 151b773..540c804 100644
+> --- a/net/can/bcm.c
+> +++ b/net/can/bcm.c
+> @@ -39,6 +39,8 @@
+>   *
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/interrupt.h>
+> @@ -77,8 +79,8 @@
+>  		     (CAN_SFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG))
+>  
+>  #define CAN_BCM_VERSION CAN_VERSION
+> -static __initdata const char banner[] = KERN_INFO
+> -	"can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n";
+> +static __initdata const char banner[] =
+> +	"can broadcast manager protocol (rev " CAN_BCM_VERSION " t)";
+>  
+>  MODULE_DESCRIPTION("PF_CAN broadcast manager protocol");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> @@ -729,8 +731,8 @@ static void bcm_rx_unreg(struct net_device *dev, struct bcm_op *op)
+>  		/* mark as removed subscription */
+>  		op->rx_reg_dev = NULL;
+>  	} else
+> -		printk(KERN_ERR "can-bcm: bcm_rx_unreg: registered device "
+> -		       "mismatch %p %p\n", op->rx_reg_dev, dev);
+> +		pr_err("%s: registered device mismatch %p %p\n",
+> +		       __func__, op->rx_reg_dev, dev);
+>  }
+>  
+>  /*
+> @@ -1606,11 +1608,11 @@ static int __init bcm_module_init(void)
+>  {
+>  	int err;
+>  
+> -	printk(banner);
+> +	pr_info("%s\n", banner);
+>  
+>  	err = can_proto_register(&bcm_can_proto);
+>  	if (err < 0) {
+> -		printk(KERN_ERR "can: registration of bcm protocol failed\n");
+> +		pr_err("registration of bcm protocol failed\n");
+>  		return err;
+>  	}
+>  
+> diff --git a/net/can/gw.c b/net/can/gw.c
+> index 3d79b12..e17253f 100644
+> --- a/net/can/gw.c
+> +++ b/net/can/gw.c
+> @@ -39,6 +39,8 @@
+>   *
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/types.h>
+> @@ -59,7 +61,7 @@
+>  
+>  #define CAN_GW_VERSION "20101209"
+>  static __initdata const char banner[] =
+> -	KERN_INFO "can: netlink gateway (rev " CAN_GW_VERSION ")\n";
+> +	"can netlink gateway (rev " CAN_GW_VERSION ")";
+>  
+>  MODULE_DESCRIPTION("PF_CAN netlink gateway");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> @@ -913,7 +915,7 @@ static int cgw_remove_job(struct sk_buff *skb,  struct nlmsghdr *nlh, void *arg)
+>  
+>  static __init int cgw_module_init(void)
+>  {
+> -	printk(banner);
+> +	pr_info("%s\n", banner);
+>  
+>  	cgw_cache = kmem_cache_create("can_gw", sizeof(struct cgw_job),
+>  				      0, 0, NULL);
+> diff --git a/net/can/proc.c b/net/can/proc.c
+> index ba873c3..c3aedf5 100644
+> --- a/net/can/proc.c
+> +++ b/net/can/proc.c
+> @@ -39,6 +39,8 @@
+>   *
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/proc_fs.h>
+>  #include <linux/list.h>
+> @@ -118,8 +120,7 @@ static unsigned long calc_rate(unsigned long oldjif, unsigned long newjif,
+>  
+>  	/* see can_stat_update() - this should NEVER happen! */
+>  	if (count > (ULONG_MAX / HZ)) {
+> -		printk(KERN_ERR "can: calc_rate: count exceeded! %ld\n",
+> -		       count);
+> +		pr_err("%s: count exceeded! %ld\n", __func__, count);
+>  		return 99999999;
+>  	}
+>  
+> @@ -475,8 +476,7 @@ void can_init_proc(void)
+>  	can_dir = proc_mkdir("can", init_net.proc_net);
+>  
+>  	if (!can_dir) {
+> -		printk(KERN_INFO "can: failed to create /proc/net/can . "
+> -		       "CONFIG_PROC_FS missing?\n");
+> +		pr_info("failed to create /proc/net/can . CONFIG_PROC_FS missing?\n");
+>  		return;
+>  	}
+>  
+> diff --git a/net/can/raw.c b/net/can/raw.c
+> index cde1b4a..2875c55 100644
+> --- a/net/can/raw.c
+> +++ b/net/can/raw.c
+> @@ -39,6 +39,8 @@
+>   *
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/uio.h>
+> @@ -56,7 +58,7 @@
+>  
+>  #define CAN_RAW_VERSION CAN_VERSION
+>  static __initdata const char banner[] =
+> -	KERN_INFO "can: raw protocol (rev " CAN_RAW_VERSION ")\n";
+> +	"can raw protocol (rev " CAN_RAW_VERSION ")";
+>  
+>  MODULE_DESCRIPTION("PF_CAN raw protocol");
+>  MODULE_LICENSE("Dual BSD/GPL");
+> @@ -783,11 +785,11 @@ static __init int raw_module_init(void)
+>  {
+>  	int err;
+>  
+> -	printk(banner);
+> +	pr_info("%s\n", banner);
+>  
+>  	err = can_proto_register(&raw_can_proto);
+>  	if (err < 0)
+> -		printk(KERN_ERR "can: registration of raw protocol failed\n");
+> +		pr_err("registration of raw protocol failed\n");
+>  
+>  	return err;
+>  }
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-can" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Tyler
 
---wzJLGUyc3ArbnUjN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCgAGBQJO1yOwAAoJENaSAD2qAscKpgsP/jbJrsnjhcXnxKLTMRRMZ+Pn
-N2AQYEa74BEKGzSIA71kqhg4GlHH49M35BFl9APWaYPaAefUIEmkF9hVPUAekY72
-d3GaZAIsNAnydTD2eR4kPrzU+QiKizMGkFLe60E5TIkxESQ1cNu/YkvrA0TrJyEZ
-RFOY1/IIp605C/OXSeOjXAOPIylpVwEiJNy28xoH6Wa8eNLGuaoOJ2d6sZ30B01G
-3mhjQO+Iib+SA2NZTSNqtqBMmGu72+fbmHQVlF7qUrVMv3b9g34NKEbzNiz3meXH
-0cRdkb7C+tJUC5apdR0xr5Tp84UnOXERUlNW1CX/m6vVZ+cOgy86rGZ4EswA4Rfn
-mKaNhd/tMRajTud86TGzrywayKfXmdy7QxApdYQOIdVuczqQHfwaaPOrVqQyruU0
-zWt7T/LZVdKImvJH9B8KSeaS+lUE7VyBy/LslT4BAkplfavlivD4hyT9KQo7++uZ
-AdZ7gqWvrog8dCrysot//dVhK8v8Kg8PaX2RZwIi6bMtxUGlIbBwOljGglD4XNEZ
-Kw7AIZgZYztp4TmzEQl1sphidHC8DhTtOaLF4ia6qhQlHCNJH8mwJI/n3jY4ESw2
-meDExAgRfcbRS/ontjAicKv/Q0WIamtfd7tMUQikPWATfjFtfb8zKHR8FcE5lfA5
-e/AvHS+GLFmy73bkFvKv
-=G/79
------END PGP SIGNATURE-----
-
---wzJLGUyc3ArbnUjN--
