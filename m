@@ -1,37 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab1LAVuL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:50:11 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38132 "EHLO ogre.sisk.pl"
+	id S1755278Ab1LAVu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:50:27 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38140 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755072Ab1LAVuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:50:09 -0500
+	id S1754555Ab1LAVu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 16:50:26 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM / Hibernation: Remove deprecated hibernation test modes
-Date: Thu, 1 Dec 2011 22:53:02 +0100
+Subject: Re: [PATCH] PM / Hibernate: Thaw processes in SNAPSHOT_CREATE_IMAGE ioctl error/test paths
+Date: Thu, 1 Dec 2011 22:53:20 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: pavel@ucw.cz, len.brown@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-References: <20111201142007.23509.24776.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20111201142007.23509.24776.stgit@srivatsabhat.in.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, pavel@ucw.cz, len.brown@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+References: <20111201131532.21615.86479.stgit@srivatsabhat.in.ibm.com> <20111201154722.GB12668@google.com> <4ED7AB26.4080804@linux.vnet.ibm.com>
+In-Reply-To: <4ED7AB26.4080804@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112012253.02197.rjw@sisk.pl>
+Message-Id: <201112012253.20250.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thursday, December 01, 2011, Srivatsa S. Bhat wrote:
-> The hibernation test modes 'test' and 'testproc' are deprecated, because
-> the 'pm_test' framework offers much more fine-grained control for debugging
-> suspend and hibernation related problems.
+> On 12/01/2011 09:17 PM, Tejun Heo wrote:
 > 
-> So, remove the deprecated 'test' and 'testproc' hibernation test modes.
+> > On Thu, Dec 01, 2011 at 06:45:37PM +0530, Srivatsa S. Bhat wrote:
+> >> Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
+> >> kernel threads after preallocating memory) moved the freezing of kernel
+> >> threads to hibernation_snapshot() function.
+> >>
+> >> So now, if the call to hibernation_snapshot() fails or returns early due
+> >> to a successful hibernation test, the caller has to thaw processes to
+> >> ensure that the system gets back to its original state.
+> >>
+> >> But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
+> >> processes. Fix this issue. But note that if hibernation_snapshot() returned
+> >> due to a successful freezer test, we still send the value of 'in_suspend'
+> >> (which is now 0) to userspace, because we are not in an error path per-se,
+> >> and moreover, the value of in_suspend correctly depicts the situation here.
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > 
+> > Is this still applicable on top of pm-freezer branch?
+> > 
 > 
-> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> Well, yes, but not in this form. Thanks for bringing that up!
+> 
+> If the call to hibernation_snapshot() returns an error, we need not do
+> anything since your freezer changes handle that case and call thaw_processes()
+> automatically.
+> But in case of return due to a successful freezer test, we would need to
+> explicitly thaw processes since the freezer successfully froze them in the
+> previous step.
+> 
+> So the following patch would do that, for the pm-freezer branch:
+> 
+> ---
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: [PATCH] PM / Hibernate: Thaw processes in SNAPSHOT_CREATE_IMAGE ioctl test path
+> 
+> Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
+> kernel threads after preallocating memory) moved the freezing of kernel
+> threads to hibernation_snapshot() function.
+> 
+> So now, if the call to hibernation_snapshot() returns early due to a
+> successful hibernation test, the caller has to thaw processes to ensure
+> that the system gets back to its original state.
+> 
+> But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
+> processes in case hibernation_snapshot() returned due to a successful
+> freezer test. Fix this issue. But note we still send the value of 'in_suspend'
+> (which is now 0) to userspace, because we are not in an error path per-se,
+> and moreover, the value of in_suspend correctly depicts the situation here.
+> 
 > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
 Applied to linux-pm/linux-next.
@@ -42,124 +87,66 @@ Rafael
 
 > ---
 > 
->  kernel/power/hibernate.c |   33 ++++-----------------------------
->  1 files changed, 4 insertions(+), 29 deletions(-)
+>  kernel/power/hibernate.c |    2 +-
+>  kernel/power/power.h     |    2 ++
+>  kernel/power/user.c      |   11 ++++++++---
+>  3 files changed, 11 insertions(+), 4 deletions(-)
 > 
 > diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> index 80c2d90..68c278b 100644
+> index 80c2d90..57bab63 100644
 > --- a/kernel/power/hibernate.c
 > +++ b/kernel/power/hibernate.c
-> @@ -43,8 +43,6 @@ int in_suspend __nosavedata;
->  enum {
->  	HIBERNATION_INVALID,
->  	HIBERNATION_PLATFORM,
-> -	HIBERNATION_TEST,
-> -	HIBERNATION_TESTPROC,
->  	HIBERNATION_SHUTDOWN,
->  	HIBERNATION_REBOOT,
->  	/* keep last */
-> @@ -96,15 +94,6 @@ static void hibernation_debug_sleep(void)
->  	mdelay(5000);
->  }
+> @@ -55,7 +55,7 @@ enum {
 >  
-> -static int hibernation_testmode(int mode)
-> -{
-> -	if (hibernation_mode == mode) {
-> -		hibernation_debug_sleep();
-> -		return 1;
-> -	}
-> -	return 0;
-> -}
-> -
->  static int hibernation_test(int level)
->  {
->  	if (pm_test_level == level) {
-> @@ -114,7 +103,6 @@ static int hibernation_test(int level)
->  	return 0;
->  }
->  #else /* !CONFIG_PM_DEBUG */
-> -static int hibernation_testmode(int mode) { return 0; }
->  static int hibernation_test(int level) { return 0; }
->  #endif /* !CONFIG_PM_DEBUG */
+>  static int hibernation_mode = HIBERNATION_SHUTDOWN;
 >  
-> @@ -278,8 +266,7 @@ static int create_image(int platform_mode)
->  		goto Platform_finish;
+> -static bool freezer_test_done;
+> +bool freezer_test_done;
 >  
->  	error = disable_nonboot_cpus();
-> -	if (error || hibernation_test(TEST_CPUS)
-> -	    || hibernation_testmode(HIBERNATION_TEST))
-> +	if (error || hibernation_test(TEST_CPUS))
->  		goto Enable_cpus;
+>  static const struct platform_hibernation_ops *hibernation_ops;
 >  
->  	local_irq_disable();
-> @@ -349,8 +336,7 @@ int hibernation_snapshot(int platform_mode)
->  	if (error)
->  		goto Cleanup;
+> diff --git a/kernel/power/power.h b/kernel/power/power.h
+> index 23a2db1..0c4defe 100644
+> --- a/kernel/power/power.h
+> +++ b/kernel/power/power.h
+> @@ -50,6 +50,8 @@ static inline char *check_image_kernel(struct swsusp_info *info)
+>  #define SPARE_PAGES	((1024 * 1024) >> PAGE_SHIFT)
 >  
-> -	if (hibernation_test(TEST_FREEZER) ||
-> -		hibernation_testmode(HIBERNATION_TESTPROC)) {
-> +	if (hibernation_test(TEST_FREEZER)) {
->  
->  		/*
->  		 * Indicate to the caller that we are returning due to a
-> @@ -586,9 +572,6 @@ int hibernation_platform_enter(void)
->  static void power_down(void)
->  {
->  	switch (hibernation_mode) {
-> -	case HIBERNATION_TEST:
-> -	case HIBERNATION_TESTPROC:
-> -		break;
->  	case HIBERNATION_REBOOT:
->  		kernel_restart(NULL);
+>  /* kernel/power/hibernate.c */
+> +extern bool freezer_test_done;
+> +
+>  extern int hibernation_snapshot(int platform_mode);
+>  extern int hibernation_restore(int platform_mode);
+>  extern int hibernation_platform_enter(void);
+> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> index 7cc3f5b..c202e2e 100644
+> --- a/kernel/power/user.c
+> +++ b/kernel/power/user.c
+> @@ -281,10 +281,15 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+>  		}
+>  		pm_restore_gfp_mask();
+>  		error = hibernation_snapshot(data->platform_support);
+> -		if (!error)
+> +		if (!error) {
+>  			error = put_user(in_suspend, (int __user *)arg);
+> -		if (!error)
+> -			data->ready = 1;
+> +			if (!error && !freezer_test_done)
+> +				data->ready = 1;
+> +			if (freezer_test_done) {
+> +				freezer_test_done = false;
+> +				thaw_processes();
+> +			}
+> +		}
 >  		break;
-> @@ -840,8 +823,6 @@ static const char * const hibernation_modes[] = {
->  	[HIBERNATION_PLATFORM]	= "platform",
->  	[HIBERNATION_SHUTDOWN]	= "shutdown",
->  	[HIBERNATION_REBOOT]	= "reboot",
-> -	[HIBERNATION_TEST]	= "test",
-> -	[HIBERNATION_TESTPROC]	= "testproc",
->  };
 >  
->  /*
-> @@ -850,17 +831,15 @@ static const char * const hibernation_modes[] = {
->   * Hibernation can be handled in several ways.  There are a few different ways
->   * to put the system into the sleep state: using the platform driver (e.g. ACPI
->   * or other hibernation_ops), powering it off or rebooting it (for testing
-> - * mostly), or using one of the two available test modes.
-> + * mostly).
->   *
->   * The sysfs file /sys/power/disk provides an interface for selecting the
->   * hibernation mode to use.  Reading from this file causes the available modes
-> - * to be printed.  There are 5 modes that can be supported:
-> + * to be printed.  There are 3 modes that can be supported:
->   *
->   *	'platform'
->   *	'shutdown'
->   *	'reboot'
-> - *	'test'
-> - *	'testproc'
->   *
->   * If a platform hibernation driver is in use, 'platform' will be supported
->   * and will be used by default.  Otherwise, 'shutdown' will be used by default.
-> @@ -884,8 +863,6 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
->  		switch (i) {
->  		case HIBERNATION_SHUTDOWN:
->  		case HIBERNATION_REBOOT:
-> -		case HIBERNATION_TEST:
-> -		case HIBERNATION_TESTPROC:
->  			break;
->  		case HIBERNATION_PLATFORM:
->  			if (hibernation_ops)
-> @@ -926,8 +903,6 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
->  		switch (mode) {
->  		case HIBERNATION_SHUTDOWN:
->  		case HIBERNATION_REBOOT:
-> -		case HIBERNATION_TEST:
-> -		case HIBERNATION_TESTPROC:
->  			hibernation_mode = mode;
->  			break;
->  		case HIBERNATION_PLATFORM:
+>  	case SNAPSHOT_ATOMIC_RESTORE:
 > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 > 
 
