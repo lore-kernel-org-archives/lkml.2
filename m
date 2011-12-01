@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab1LAToh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 14:44:37 -0500
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:35347
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751142Ab1LATog (ORCPT
+	id S1752099Ab1LATqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 14:46:14 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48931 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab1LATqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 14:44:36 -0500
-X-SpamScore: -12
-X-BigFish: VPS-12(zzbb2dK1432N98dKzz1202hzz8275bhz2fh668h839h)
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4ED7D8A8.3090106@am.sony.com>
-Date: Thu, 1 Dec 2011 11:42:32 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	Thu, 1 Dec 2011 14:46:12 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+Fz3lJDLQD6RcryO05x4AS
+Date: Thu, 1 Dec 2011 11:46:09 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2a/5] Remove unsafe clock values from omap1_defconfig
+Message-ID: <20111201194609.GX31337@atomide.com>
+References: <20111128174508.GO31337@atomide.com>
+ <201112011938.36706.jkrzyszt@tis.icnet.pl>
+ <20111201190455.GV31337@atomide.com>
+ <201112012023.04635.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [RFC PATCH 4/6] ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on
- ASID-capable CPUs
-References: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com> <1322569352-23584-5-git-send-email-catalin.marinas@arm.com> <4ED6ED03.9080408@am.sony.com> <20111201092638.GA27394@arm.com>
-In-Reply-To: <20111201092638.GA27394@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112012023.04635.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/11 01:26, Catalin Marinas wrote:
-> On Thu, Dec 01, 2011 at 02:57:07AM +0000, Frank Rowand wrote:
->> On 11/29/11 04:22, Catalin Marinas wrote:
->>> Since the ASIDs must be unique to an mm across all the CPUs in a system,
->>> the __new_context() function needs to broadcast a context reset event to
->>> all the CPUs during ASID allocation if a roll-over occurred. Such IPIs
->>> cannot be issued with interrupts disabled and ARM had to define
->>> __ARCH_WANT_INTERRUPTS_ON_CTXSW.
->>>
->>> This patch changes the check_context() function to
->>> check_and_switch_context() called from switch_mm(). In case of
->>> ASID-capable CPUs (ARMv6 onwards), if a new ASID is needed, it defers
->>> the __new_context() and cpu_switch_mm() calls to the post-lock switch
->>> hook where the interrupts are enabled. Setting the reserved TTBR0 was
->>> also moved to check_and_switch_context() from cpu_v7_switch_mm().
->>>
->>> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
->>> Cc: Russell King <linux@arm.linux.org.uk>
->>> ---
->>>  arch/arm/include/asm/mmu_context.h |   81 ++++++++++++++++++++++++++++--------
->>>  arch/arm/include/asm/system.h      |    2 +
->>>  arch/arm/include/asm/thread_info.h |    1 +
->>>  arch/arm/mm/context.c              |    4 +-
->>>  arch/arm/mm/proc-v7.S              |    3 -
->>>  5 files changed, 69 insertions(+), 22 deletions(-)
->>>
->>
->> < snip >
->>
->>> diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
->>> index 2faff3b..d5334d9 100644
->>> --- a/arch/arm/mm/proc-v7.S
->>> +++ b/arch/arm/mm/proc-v7.S
->>> @@ -116,9 +116,6 @@ ENTRY(cpu_v7_switch_mm)
->>>  #ifdef CONFIG_ARM_ERRATA_430973
->>>  	mcr	p15, 0, r2, c7, c5, 6		@ flush BTAC/BTB
->>>  #endif
->>> -	mrc	p15, 0, r2, c2, c0, 1		@ load TTB 1
->>> -	mcr	p15, 0, r2, c2, c0, 0		@ into TTB 0
->>> -	isb
->>>  #ifdef CONFIG_ARM_ERRATA_754322
->>>  	dsb
->>>  #endif
->>
->> I do not have a tree that matches this version of cpu_v7_switch_mm().
->> Can you point me at a tree that I can see this in?
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111201 10:48]:
+> On Thursday 01 of December 2011 at 20:04:55, Tony Lindgren wrote:
+> > 
+> > From: Tony Lindgren <tony@atomide.com>
+> > Date: Thu, 1 Dec 2011 11:00:11 -0800
+> > Subject: [PATCH] ARM: OMAP1: Fix reprogramming of DPLL1 for systems that boot at rates below 60MHz
+> > 
+> > Commit e9b7086b80c4d9e354f4edc9e280ae85a60df408 (ARM: OMAP: Fix
+> > reprogramming of dpll1 rate) fixed a regression for systems that
+> > did not rely on bootloader set rates.
+> > 
+> > However, it also introduced a new problem where the rates selected
+> > in .config would not take affect as omap1_select_table_rate
+> > currently refuses to reprogram DPLL1 if it's already initialized.
+> > 
+> > This was not a problem earlier, as the reprogramming was done
+> > earlier with ck_dpll1_p->rate uninitialized.
+> > 
+> > Fix this by forcing the reprogramming on systems booting at rates
+> > below 60MHz. Note that the long term fix is to make the rates
+> > SoC specific later on.
+> > 
+> > Thanks for Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> for figuring
+> > this one out.
+> > 
+> > Reported-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+> > Signed-off-by: Tony Lindgren <tony@atomide.com>
 > 
-> That's added by the second patch in the series (and removed in a later
-> patch but it is a logical change in both situations and keeps the code
-> bisectable).
+> Acked-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
 > 
+> However, this way or another, we are back to your mentioned problem of 
+> omap1_defconfig always switching to 216 MHz, I'm afraid. Then, 2a/5 v1 
+> "Remove unsafe clock values from omap1_defconfig" can still be helpful.
 
-Ah, yes!  Thanks.
+OK that makes sense now also in case there are other systems that
+boot at rates below 60MHz.
+ 
+> Anyway, I'm resending (refreshed) 2/5 and 5/5 as rc fixes as you 
+> suggested before, 1/5 "ARM: OMAP1: Fix dpll1 default rate reprogramming 
+> method" intended for next, and 2a/5 v2 "ARM: OMAP1: select clock rate by 
+> CPU type" also for next but as an RFC. 
 
--Frank
+Great, sounds like we got the fixes needed for the -rc cycle then.
 
+Regards,
+
+Tony
