@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab1LAMon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 07:44:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60023 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753385Ab1LAMom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 07:44:42 -0500
-Date: Thu, 1 Dec 2011 13:44:40 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: [3.2-rc3] 100% CPU usage while in del_timer_sync from
- iwl3945_rs_free_sta
-Message-ID: <20111201124440.GB25614@tiehlicka.suse.cz>
-References: <20111129100727.GD2675@tiehlicka.suse.cz>
- <20111129113906.GA7299@redhat.com>
- <20111130101028.GA2906@tiehlicka.suse.cz>
- <20111130142316.GA2466@redhat.com>
- <20111130140316.GA4153@tiehlicka.suse.cz>
- <20111130153929.GA2144@redhat.com>
- <20111201085845.GA4602@tiehlicka.suse.cz>
- <20111201105538.GA4504@tiehlicka.suse.cz>
- <20111201115911.GA5706@redhat.com>
+	id S1753792Ab1LAMpW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 07:45:22 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:64230 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab1LAMpU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 07:45:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tvrtko Ursulin <tvrtko.ursulin@onelan.co.uk>
+Subject: Re: Which one corresponds to ioctl in the file_operations struct in linux/fs.h?
+Date: Thu, 1 Dec 2011 12:45:16 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Peng Yu <pengyu.ut@gmail.com>, linux-kernel@vger.kernel.org
+References: <CABrM6wnDgRd0N5eSGffj51KR6-axAoFMNRWMZs2pFQ8dN94t0A@mail.gmail.com> <201112011022.12686.tvrtko.ursulin@onelan.co.uk>
+In-Reply-To: <201112011022.12686.tvrtko.ursulin@onelan.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201115911.GA5706@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112011245.16461.arnd@arndb.de>
+X-Provags-ID: V02:K0:x1TQgwDjEsG6oYH2/CXjb3IKrEoUT6UGACBOXmbwB4z
+ W8dvHoiTqPorbFUqTGMTv1mJcQ0vEVGWga6T2wF+Foo85ZHP0V
+ zrXbEJoQ6Llyf/bNMQpiyRtRnypqC2+JyQamBTcGkimQA0ZfWB
+ wHWLsHUEdFM1l9CEUThvlcyuTBBRcrz3DB1e32HqXUGZyZTC/k
+ Vxcd+iqdwi+++d3QVJ5td+XI5i8cPBmI4bo6hT8KJKtH9OP5/L
+ 6jEJBkNILfVz6RYE383FD3zQJFB9e+Mdq4PR4R/7/YmO0tGaOY
+ QDYimulPv5AgEpUN4HblRXtrYcePOuw50V3QDUhlnSFjvDAhUl
+ PdVO5rUFDeD8HFxKjp1s=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 01-12-11 12:59:12, Stanislaw Gruszka wrote:
-> On Thu, Dec 01, 2011 at 11:55:38AM +0100, Michal Hocko wrote:
-> > [  349.316070] iwl3945_rs_free_sta rs_sta f4be1ac0
-> > [  349.316076] ------------[ cut here ]------------
-> > [  349.316097] WARNING: at drivers/net/wireless/iwlegacy/iwl-3945-rs.c:438 iwl3945_rs_free_sta+0x33/0x42 [iwl3945]()
+On Thursday 01 December 2011, Tvrtko Ursulin wrote:
+> On Thursday 01 Dec 2011 07:40:49 Peng Yu wrote:
+> > Hi,
+> > 
+> > I have some driver code for older version of kernel. It refers to
+> > ioctl in the file_operations struct. But this field is change in
+> > kernel 3.0.0-13
+> > 
+> > I find the following in linux/fs.h
+> > 
+> > 1566   long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+> > 1567   long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+> > 
+> > Does anybody know which one I should use in order to migrate the
+> > driver code to the newer version of kernel? Thanks!
 > 
-> Johannes pointed on irc that this problem is most likely caused by:
+> From Documentation/filesystems/vfs.txt:
 > 
-> commit f785d83a19bca326f79d127a413e35769afc0105
-> Author: Eliad Peller <eliad@wizery.com>
-> Date:   Mon Aug 8 16:50:22 2011 +0300
+>   unlocked_ioctl: called by the ioctl(2) system call.
 > 
->     mac80211: clear sta.drv_priv on reconfiguration
+>   compat_ioctl: called by the ioctl(2) system call when 32 bit system calls
+>          are used on 64 bit kernels.
 > 
-> Michal, could you confirm that? If that is the root of the problem, we
-> need patch for iwlegacy (and iwlwifi) that allocate separate memory for
-> rc structures.
+> You don't need compat_ioctl if your ioctl arguments are 32/64-bit safe.
 
-Should I just revert it?
+Actually, you should always provide a .compat_ioctl pointer, but if
+all commands are 32/64 bit safe, it can point to the same function,
+or (slightly safer) be a wrapper like
 
-> 
-> Thanks
-> Stanislaw
+static long my_compat_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
+{
+	return my_ioctl(f, cmd, (unsigned long)compat_ptr(arg));
+}
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Strictly speaking, the first option assumes that all commands
+take no argument or integers directly encoded in the 'arg', while
+the second option assumes that all commands take either no argument
+or a pointer to an argument in memory.
+
+	Arnd
