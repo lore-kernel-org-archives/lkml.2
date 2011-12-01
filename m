@@ -1,81 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab1LAQVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 11:21:09 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41752 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab1LAQVH (ORCPT
+	id S1755400Ab1LAQ2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 11:28:37 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:54462 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab1LAQ2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 11:21:07 -0500
-Date: Thu, 1 Dec 2011 17:22:31 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: daniel@ffwll.ch, Keith Packard <keithp@keithp.com>,
-        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: g33: tiled output
-Message-ID: <20111201162231.GB4291@phenom.ffwll.local>
-Mail-Followup-To: Jiri Slaby <jslaby@suse.cz>,
-	Keith Packard <keithp@keithp.com>,
-	LKML <linux-kernel@vger.kernel.org>,
-	dri-devel@lists.freedesktop.org, Jiri Slaby <jirislaby@gmail.com>,
-	Chris Wilson <chris@chris-wilson.co.uk>
-References: <4ED79138.5060703@suse.cz>
- <20111201154249.GA4291@phenom.ffwll.local>
- <4ED7A213.3010900@suse.cz>
- <4ED7A4C9.601@suse.cz>
+	Thu, 1 Dec 2011 11:28:35 -0500
+Message-ID: <4ED7AB26.4080804@linux.vnet.ibm.com>
+Date: Thu, 01 Dec 2011 21:58:22 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED7A4C9.601@suse.cz>
-X-Operating-System: Linux phenom 3.1.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM / Hibernate: Thaw processes in SNAPSHOT_CREATE_IMAGE
+ ioctl error/test paths
+References: <20111201131532.21615.86479.stgit@srivatsabhat.in.ibm.com> <20111201154722.GB12668@google.com>
+In-Reply-To: <20111201154722.GB12668@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120116-5564-0000-0000-000000570E29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 05:01:13PM +0100, Jiri Slaby wrote:
-> On 12/01/2011 04:49 PM, Jiri Slaby wrote:
-> > On 12/01/2011 04:42 PM, Daniel Vetter wrote:
-> >> On Thu, Dec 01, 2011 at 03:37:44PM +0100, Jiri Slaby wrote:
-> >>> For some time, I'm seeing a tiled output like:
-> >>> http://www.fi.muni.cz/~xslaby/sklad/panics/bad_tile.png
-> >>>
-> >>> This happens sometimes when I open selected pages in firefox. Like
-> >>> maps above.
-> >>>
-> >>> Currently I'm running 3.2.0-rc3-next-20111130. This started appearing
-> >>> after I switched to desktop fx. Will anything from the debugfs help to
-> >>> track this down? Or better to report this to freedesktop.org?
-> >>
-> >> Please test the patch Chris already replied with to your first mail. It
-> >> might fix your issue here (if it's just a fence being stolen a bit too
-> >> early). If that does not help, I'll have to stare at the picture some more
-> >> to decode the type of tiling/swizzling going on. Maybe different pictures
-> >> of corruptions might help for that.
+On 12/01/2011 09:17 PM, Tejun Heo wrote:
+
+> On Thu, Dec 01, 2011 at 06:45:37PM +0530, Srivatsa S. Bhat wrote:
+>> Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
+>> kernel threads after preallocating memory) moved the freezing of kernel
+>> threads to hibernation_snapshot() function.
+>>
+>> So now, if the call to hibernation_snapshot() fails or returns early due
+>> to a successful hibernation test, the caller has to thaw processes to
+>> ensure that the system gets back to its original state.
+>>
+>> But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
+>> processes. Fix this issue. But note that if hibernation_snapshot() returned
+>> due to a successful freezer test, we still send the value of 'in_suspend'
+>> (which is now 0) to userspace, because we are not in an error path per-se,
+>> and moreover, the value of in_suspend correctly depicts the situation here.
+>>
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 > 
-> More of them:
-> http://www.fi.muni.cz/~xslaby/sklad/panics/bad_tile1.png
-> http://www.fi.muni.cz/~xslaby/sklad/panics/bad_tile2.png
-> http://www.fi.muni.cz/~xslaby/sklad/panics/bad_tile3.png
+> Is this still applicable on top of pm-freezer branch?
+> 
 
-Something is pretty decently broken here. Can you please file a bug at
-freedesktop.org against the i915 drm? A few other things
-- Can you check whether upgrading the ddx to 2.17 fixes this? Also please
-  attach your Xorg.log and full dmesg.
-- Please grab intel-gpu-tools.git from
 
-http://cgit.freedesktop.org/xorg/app/intel-gpu-tools/
+Well, yes, but not in this form. Thanks for bringing that up!
 
-  and attach the output of tools/intel_reg_dumper to the bug report.
-- If you're using swap, can you check whether disabling it works around
-  the issue?
+If the call to hibernation_snapshot() returns an error, we need not do
+anything since your freezer changes handle that case and call thaw_processes()
+automatically.
+But in case of return due to a successful freezer test, we would need to
+explicitly thaw processes since the freezer successfully froze them in the
+previous step.
 
-And please put me as the assignee of the bug.
+So the following patch would do that, for the pm-freezer branch:
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
+---
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM / Hibernate: Thaw processes in SNAPSHOT_CREATE_IMAGE ioctl test path
+
+Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
+kernel threads after preallocating memory) moved the freezing of kernel
+threads to hibernation_snapshot() function.
+
+So now, if the call to hibernation_snapshot() returns early due to a
+successful hibernation test, the caller has to thaw processes to ensure
+that the system gets back to its original state.
+
+But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
+processes in case hibernation_snapshot() returned due to a successful
+freezer test. Fix this issue. But note we still send the value of 'in_suspend'
+(which is now 0) to userspace, because we are not in an error path per-se,
+and moreover, the value of in_suspend correctly depicts the situation here.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ kernel/power/hibernate.c |    2 +-
+ kernel/power/power.h     |    2 ++
+ kernel/power/user.c      |   11 ++++++++---
+ 3 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index 80c2d90..57bab63 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -55,7 +55,7 @@ enum {
+ 
+ static int hibernation_mode = HIBERNATION_SHUTDOWN;
+ 
+-static bool freezer_test_done;
++bool freezer_test_done;
+ 
+ static const struct platform_hibernation_ops *hibernation_ops;
+ 
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 23a2db1..0c4defe 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -50,6 +50,8 @@ static inline char *check_image_kernel(struct swsusp_info *info)
+ #define SPARE_PAGES	((1024 * 1024) >> PAGE_SHIFT)
+ 
+ /* kernel/power/hibernate.c */
++extern bool freezer_test_done;
++
+ extern int hibernation_snapshot(int platform_mode);
+ extern int hibernation_restore(int platform_mode);
+ extern int hibernation_platform_enter(void);
+diff --git a/kernel/power/user.c b/kernel/power/user.c
+index 7cc3f5b..c202e2e 100644
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -281,10 +281,15 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		}
+ 		pm_restore_gfp_mask();
+ 		error = hibernation_snapshot(data->platform_support);
+-		if (!error)
++		if (!error) {
+ 			error = put_user(in_suspend, (int __user *)arg);
+-		if (!error)
+-			data->ready = 1;
++			if (!error && !freezer_test_done)
++				data->ready = 1;
++			if (freezer_test_done) {
++				freezer_test_done = false;
++				thaw_processes();
++			}
++		}
+ 		break;
+ 
+ 	case SNAPSHOT_ATOMIC_RESTORE:
+
+
