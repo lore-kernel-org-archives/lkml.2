@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab1LAKhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 05:37:17 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60025 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751262Ab1LAKhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 05:37:15 -0500
-Message-ID: <4ED75765.5020002@gmail.com>
-Date: Thu, 01 Dec 2011 11:31:01 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S1752110Ab1LAKlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 05:41:15 -0500
+Received: from bby1mta02.pmc-sierra.com ([216.241.235.117]:41791 "EHLO
+	bby1mta02.pmc-sierra.bc.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751262Ab1LAKlO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 05:41:14 -0500
+X-Greylist: delayed 2015 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Dec 2011 05:41:14 EST
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Chen Gong <gong.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] ramoops: use pstore interface
-References: <20111128200951.GA3492@www.outflux.net>	<4ED4647D.4060305@linux.intel.com> <CAGXu5j+kzXpAhCYELDBBeMDPg2XMHt8jWRjZf2xiPVSMfUhjzA@mail.gmail.com>
-In-Reply-To: <CAGXu5j+kzXpAhCYELDBBeMDPg2XMHt8jWRjZf2xiPVSMfUhjzA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] SCSI: aacraid: potential integer overflow in aac_get_containers()
+Date: Thu, 1 Dec 2011 02:07:33 -0800
+Message-ID: <FD2BDBE06AC58549AE9E16C08B45675D061FCB70@BBY1EXM10.pmc_nt.nt.pmc-sierra.bc.ca>
+In-Reply-To: <1322706601-26181-1-git-send-email-haogangchen@gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] SCSI: aacraid: potential integer overflow in aac_get_containers()
+Thread-Index: Acyv0UxWws6v+ENIRGeaeUf5zEzdEQAP5/ag
+References: <1322706601-26181-1-git-send-email-haogangchen@gmail.com>
+From: "Achim Leubner" <Achim_Leubner@pmc-sierra.com>
+To: "Haogang Chen" <haogangchen@gmail.com>, <aacraid@adaptec.com>
+Cc: <JBottomley@parallels.com>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 01 Dec 2011 10:07:37.0618 (UTC) FILETIME=[0D9C4720:01CCB011]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 29/11/2011 18:24, Kees Cook ha scritto:
-> On Mon, Nov 28, 2011 at 8:50 PM, Chen Gong<gong.chen@linux.intel.com>  wrote:
->> 于 2011/11/29 4:09, Kees Cook 写道:
->>>
->>> Instead of using /dev/mem directly, use the common pstore infrastructure
->>> to handle Oops gathering and extraction.
->>>
->>> Signed-off-by: Kees Cook<keescook@chromium.org>
->>> ---
->>> This depends on the pstore changes waiting for -next in:
->>>
->>> http://git.kernel.org/?p=linux/kernel/git/aegl/linux.git;a=shortlog;h=refs/heads/next
->>> ---
->>>   Documentation/ramoops.txt |    8 +-
->>>   drivers/char/Kconfig      |    1 +
->>>   drivers/char/ramoops.c    |  206
->>> ++++++++++++++++++++++++++++++++++-----------
->>>   3 files changed, 160 insertions(+), 55 deletions(-)
->>>
->>> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
->>> index 8fb1ba7..a0b9d8e 100644
->>> --- a/Documentation/ramoops.txt
->>> +++ b/Documentation/ramoops.txt
->>> @@ -3,7 +3,7 @@ Ramoops oops/panic logger
->>>
->>>   Sergiu Iordache<sergiu@chromium.org>
->>>
->>> -Updated: 8 August 2011
->>> +Updated: 17 November 2011
->>>
->>>   0. Introduction
->>>
->>> @@ -71,6 +71,6 @@ timestamp and a new line. The dump then continues with
->>> the actual data.
->>>
->>>   4. Reading the data
->>>
->>> -The dump data can be read from memory (through /dev/mem or other means).
->>> -Getting the module parameters, which are needed in order to parse the
->>> data, can
->>> -be done through /sys/module/ramoops/parameters/* .
->>> +The dump data can be read from the pstore filesystem. The format for
->>> these
->>> +files is "dmesg-ramoops-N", where N is the record number in memory. To
->>> delete
->>> +a stored record from RAM, simply unlink the respective pstore file.
->>
->> I think the definition of "mem_address" in the doc is not very clear. It is
->> not a normal memory instead of a persistent RAM. I suggest adding more
->> descriptions.
->> It's better if there is a real example.
->
-> Okay. I'm not sure it's in the scope of this patch, but I can try.
->
-> Marco, do you have suggestions for how this could be enhanced?
->
+Acked-by: Achim Leubner <Achim_Leubner@pmc-sierra.com>
 
-I don't know actually. It's not mandatory use a persistent memory. A 
-simple piece of reserved RAM is ok. Obviously it will work only over 
-reboot and not over power down. I define mem_address as a generic piece 
-of reserved memory.
 
-Marco
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org
+[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Haogang Chen
+Sent: Donnerstag, 1. Dezember 2011 03:30
+To: aacraid@adaptec.com
+Cc: JBottomley@parallels.com; linux-scsi@vger.kernel.org;
+linux-kernel@vger.kernel.org; haogangchen@gmail.com
+Subject: [PATCH] SCSI: aacraid: potential integer overflow in
+aac_get_containers()
+
+There is a potential integer overflow in aac_get_containers(). When
+maximum_num_containers is large, the subsequent call to kzalloc() will
+allocate a buffer smaller than expected, which leads to memory
+corruption in the for loop.
+
+The patch replaces kzalloc with kcalloc.
+
+Signed-off-by: Haogang Chen <haogangchen@gmail.com>
+---
+ drivers/scsi/aacraid/aachba.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/aacraid/aachba.c
+b/drivers/scsi/aacraid/aachba.c
+index 409f580..440b84d 100644
+--- a/drivers/scsi/aacraid/aachba.c
++++ b/drivers/scsi/aacraid/aachba.c
+@@ -381,7 +381,7 @@ int aac_get_containers(struct aac_dev *dev)
+ 
+ 	if (maximum_num_containers < MAXIMUM_NUM_CONTAINERS)
+ 		maximum_num_containers = MAXIMUM_NUM_CONTAINERS;
+-	fsa_dev_ptr = kzalloc(sizeof(*fsa_dev_ptr) *
+maximum_num_containers,
++	fsa_dev_ptr = kcalloc(maximum_num_containers,
+sizeof(*fsa_dev_ptr), 
+ 			GFP_KERNEL);
+ 	if (!fsa_dev_ptr)
+ 		return -ENOMEM;
+-- 
+1.7.5.4
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
