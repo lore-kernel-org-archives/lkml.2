@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1LAViT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:38:19 -0500
-Received: from gate.crashing.org ([63.228.1.57]:46394 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753822Ab1LAViS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:38:18 -0500
-Message-ID: <1322775468.3729.26.camel@pasglop>
-Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
- lead to system crash/freeze
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "tiejun.chen" <tiejun.chen@windriver.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Yong Zhang <yong.zhang0@gmail.com>, paulus@samba.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linuxppc-dev@lists.ozlabs.org
-Date: Fri, 02 Dec 2011 08:37:48 +1100
-In-Reply-To: <4ED75A9A.1030100@windriver.com>
-References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com>
-	 <1308911347.531.56.camel@gandalf.stny.rr.com>
-	 <4E074671.7060100@hitachi.com> <20110627100104.GA24705@in.ibm.com>
-	 <BANLkTimYej4_dmBqvPBCLej=JA5atLrZVA@mail.gmail.com>
-	 <4E0D9B5E.3010901@windriver.com> <1322626752.21641.22.camel@pasglop>
-	 <4ED60E2B.8030603@windriver.com> <1322686809.29041.10.camel@pasglop>
-	 <4ED75A9A.1030100@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754774Ab1LAVin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:38:43 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53174 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555Ab1LAVim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 16:38:42 -0500
+Date: Fri, 2 Dec 2011 01:38:36 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in
+ /proc/<pid>/status
+Message-ID: <20111201213836.GB14515@moon>
+References: <20111129191252.769160532@openvz.org>
+ <20111129191638.835932727@openvz.org>
+ <20111130140009.1ccd5af0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111130060537.GK1775@moon>
+ <20111201095434.GR14515@moon>
+ <20111201132911.e20f1fa3.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201132911.e20f1fa3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 18:44 +0800, tiejun.chen wrote:
-
-> Do you mean we should push the original pt_regs (or that whole exception stack)
-> downwards the location the new r1 point? Then its safe to perform this real
-> emulated stw instruction. At last we will reroute r1 to that copied exception
-> frame to restore as normal. Right?
-
-Right. That way we don't have to modify the (sensitive) restore path, we
-only hook around the do_work branch which is a lot easier and less
-risky.
-
-> Here I suppose so, I implement this for PPC32 based on the above understanding.
-> I take a validation for kprobing do_fork()/show_interrupts(), now looks fine.
-> Tomorrow I will go PPC64, and hope its fine as well.
+On Thu, Dec 01, 2011 at 01:29:11PM -0800, Andrew Morton wrote:
 > 
-> If everything is good I'll send these patches to linuxppc-dev next week.
+> That's a potentially very long hold time for tasklist_lock, and
+> userspace can invoke this at a high frequency.  Not good.
+> 
+> I think this can all be done under rcu_read_lock() with
+> list_for_each_entry_rcu().
+> 
 
-Excellent, thanks !
+Yeah, good point, thanks Andrew!
 
-Cheers,
-Ben.
-
-
+	Cyrill
