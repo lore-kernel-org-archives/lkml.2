@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab1LAUf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:35:27 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52279 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab1LAUf0 (ORCPT
+	id S1753690Ab1LAUgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:36:37 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:6816 "EHLO
+	VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751718Ab1LAUgg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:35:26 -0500
-Date: Thu, 1 Dec 2011 20:35:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
-Message-ID: <20111201203506.GG9581@n2100.arm.linux.org.uk>
-References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org> <1322752657.3704.2.camel@m0nster> <20111201181736.GA13182@huya.qualcomm.com> <1322764745.3704.9.camel@m0nster> <20111201192705.GA23641@huya.qualcomm.com> <1322767992.3704.13.camel@m0nster> <20111201194353.GA24293@huya.qualcomm.com> <20111201201950.GE9581@n2100.arm.linux.org.uk> <1322771147.3704.21.camel@m0nster>
+	Thu, 1 Dec 2011 15:36:36 -0500
+X-SpamScore: -12
+X-BigFish: VPS-12(zz146fK1432N98dKzz1202hzz8275bhz2dh668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVJL8U-01-IQX-02
+X-M-MSG: 
+Date: Thu, 1 Dec 2011 21:36:05 +0100
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@elte.hu>,
+        <suresh.b.siddha@intel.com>, <eranian@google.com>, <brgerst@gmail.com>,
+        <robert.richter@amd.com>, <Andreas.Herrmann3@amd.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] rework of extended state handling, LWP support
+Message-ID: <20111201203605.GB411@escobedo.osrc.amd.com>
+References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
+ <m2ipm2lioy.fsf@firstfloor.org>
+ <20111130173745.GT878@escobedo.osrc.amd.com>
+ <20111130215200.GS24062@one.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1322771147.3704.21.camel@m0nster>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20111130215200.GS24062@one.firstfloor.org>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 12:25:47PM -0800, Daniel Walker wrote:
-> On Thu, 2011-12-01 at 20:19 +0000, Russell King - ARM Linux wrote:
-> > Now, the obvious question to ask now is this: as you sent your question,
-> > and Daniel obviously objects, was Daniel one of your respondants?  If
-> > not, then he carries some of the blame for this patch being created
-> > in the first place by having missed the email/not replied/etc.
+On Wed, Nov 30, 2011 at 10:52:00PM +0100, Andi Kleen wrote:
+> On Wed, Nov 30, 2011 at 06:37:46PM +0100, Hans Rosenfeld wrote:
+> > On Tue, Nov 29, 2011 at 01:31:09PM -0800, Andi Kleen wrote:
+> > > Hans Rosenfeld <hans.rosenfeld@amd.com> writes:
+> > > >
+> > > > The lazy allocation of the xstate area has been removed. The support for
+> > > > extended states that cannot be saved/restored lazily, like AMD's LWP,
+> > > > need this. Since optimized library functions using SSE etc. are widely
+> > > > used today, most processes would have an xstate area anyway, making the
+> > > > memory overhead negligible.
+> > > 
+> > > Do you have any data on that?  It sounds dubious for specialized
+> > > workloads.
 > > 
+> > What kind of specialized workload do you mean?
 > 
-> What if the people using the hardware aren't even on the list ? It's not
-> their fault is it?
+> Anything that doesn't do large memcpys/memsets: glibc only uses SSE
+> when you pass large buffers. And then doesn't use the FPU. And possibly
+> has lots of processes.
+> 
+> Some older glibc did an unconditional FPU initialization at start,
+> but I believe that's long gone.
 
-Did you notice I mentioned six months?
+Well, I can't comment on which glibc version does what exactly. But on
+the 64bit systems that I observed, _all_ processes had an xstate area
+allocated. That was not the case on 32bit, but I'd suspect that the
+32bit distributions just aren't optimized for modern hardware.
 
-The way to remove non-broken code is:
-1. to ask.  If no one responds, then
-2. submit a patch to put an entry in feature-removal-schedule.txt giving a
-   description of what will be removed and when - and then flag it
-   with a patch to remove it.  If no one responds to that, then
-3. the patch to remove it re-posted, and if no one objects it gets
-   merged.
+So I assume, if you have 10000s of processes on a legacy 32bit system
+that never do any FPU stuff or SSE optimizations, you might indeed waste
+a couple of megabytes. I don't think thats very realistic, but that's
+just my opinion.
 
-So, if people care about bits of code _and_ they're not on the relevant
-subsystem mailing lists, they need to keep an eye on the feature removal
-file - otherwise they're in for nasty surprises.
+
+Hans
+
+
+-- 
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
+
