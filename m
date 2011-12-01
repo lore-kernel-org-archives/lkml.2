@@ -1,128 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab1LAKoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 05:44:15 -0500
-Received: from mail.windriver.com ([147.11.1.11]:44069 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab1LAKoN (ORCPT
+	id S1752363Ab1LAKrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 05:47:13 -0500
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:59994 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751320Ab1LAKrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 05:44:13 -0500
-Message-ID: <4ED75A9A.1030100@windriver.com>
-Date: Thu, 1 Dec 2011 18:44:42 +0800
-From: "tiejun.chen" <tiejun.chen@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	Thu, 1 Dec 2011 05:47:12 -0500
+Message-ID: <4ED75AF3.2090901@ru.mvista.com>
+Date: Thu, 01 Dec 2011 14:46:11 +0400
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@au1.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Yong Zhang <yong.zhang0@gmail.com>, <paulus@samba.org>,
-        <yrl.pp-manager.tt@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
- lead to system crash/freeze
-References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com> <1308911347.531.56.camel@gandalf.stny.rr.com> <4E074671.7060100@hitachi.com> <20110627100104.GA24705@in.ibm.com> <BANLkTimYej4_dmBqvPBCLej=JA5atLrZVA@mail.gmail.com> <4E0D9B5E.3010901@windriver.com> <1322626752.21641.22.camel@pasglop> <4ED60E2B.8030603@windriver.com> <1322686809.29041.10.camel@pasglop>
-In-Reply-To: <1322686809.29041.10.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        JBottomley@parallels.com, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] arm: prevent inlining in arxescsi.c causing build failures
+References: <1322713611-30003-1-git-send-email-paul.gortmaker@windriver.com> <20111201080613.GF26618@pengutronix.de>
+In-Reply-To: <20111201080613.GF26618@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt wrote:
-> On Wed, 2011-11-30 at 19:06 +0800, tiejun.chen wrote:
-> 
->>>  - Copy the exception frame we're about to unwind to just -below- the
->>> new r1 value we want to write to. Then perform the write, and change
->>> r1 to point to that copy of the frame.
->>>
->>>  - Branch to restore: which will unwind everything from that copy of
->>> the frame, and eventually set r1 to GPR(1) in the copy which contains
->>> the new value of r1.
->> We still can't restore this there.
-> 
-> Yes, we can since we have copied the pt_regs down to -below- where we
-> are going to write to. That's the whole trick. We copy the pt_regs
-> somewhere "safe" and restore from there.
-> 
->> I mean we have to do that real restore here. So I'm really not sure if its a
->> good way to add such a codes including check TIF/copy-get new r1/restore
->> operation here since this is so deep for the exception return code.
-> 
-> No. Re-read my explanation.
-> 
-> In the do_work case (so when things are still easy), we copy the pt_regs
-> of the return frame to a safe place (right below where we want to write
-> to typically), and change r1 to point to this "new" frame which we use
-> to restore from. Then we do the store which is now safe and go to an
-> unmodified "restore" exit path.
+Hello.
 
-Do you mean we should push the original pt_regs (or that whole exception stack)
-downwards the location the new r1 point? Then its safe to perform this real
-emulated stw instruction. At last we will reroute r1 to that copied exception
-frame to restore as normal. Right?
+On 01.12.2011 12:06, Uwe Kleine-König wrote:
 
-Here I suppose so, I implement this for PPC32 based on the above understanding.
-I take a validation for kprobing do_fork()/show_interrupts(), now looks fine.
-Tomorrow I will go PPC64, and hope its fine as well.
+>> The following failure is seen in routine coverage builds:
 
-If everything is good I'll send these patches to linuxppc-dev next week.
+>>    CC [M]  drivers/scsi/arm/arxescsi.o
+>> /tmp/cccEyiO7.s: Assembler messages:
+>> /tmp/cccEyiO7.s:334: Error: symbol `.loop_1' is already defined
+>> /tmp/cccEyiO7.s:337: Error: symbol `.loop_2' is already defined
+>> /tmp/cccEyiO7.s:343: Error: symbol `.loop_3' is already defined
+>> /tmp/cccEyiO7.s:365: Error: symbol `.loop_1' is already defined
+>> /tmp/cccEyiO7.s:368: Error: symbol `.loop_2' is already defined
+>> /tmp/cccEyiO7.s:374: Error: symbol `.loop_3' is already defined
+>> make[4]: *** [drivers/scsi/arm/arxescsi.o] Error 1
 
-Cheers
-Tiejun
+>> It is caused by multiple inline of arxescsi_pseudo_dma_write()
+>> which is responsible for the above labels.  Marking the fcn
+>> as non-inline fixes the issue.
 
-> 
->>> This is the less intrusive approach and should work just fine, it's also
->>> more robust than anything I've been able to think of and the approach
->>> would work for 32 and 64-bit similarily.
->>>
->>> (***) Above comment about a bug: If you look at entry_64.S version of
->>> ret_from_except_lite you'll notice that in the !preempt case, after
->>> we've checked MSR_PR we test for any TIF flag in _TIF_USER_WORK_MASK to
->>> decide whether to go to do_work or not. However, in the preempt case, we
->>> do a convoluted trick to test SIGPENDING only if PR was set and always
->>> test NEED_RESCHED ... but we forget to test any other bit of
->>> _TIF_USER_WORK_MASK !!! So that means that with preempt, we completely
->>> fail to test for things like single step, syscall tracing, etc...
->>>
->> This is another problem we should address.
+>> Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
+
+> Is that a compiler or a code issue? If it's the compiler please fix
+> that. If it's the code, then please document why you added the noinline.
+
+> Having said that, "my" compiler compiles drivers/scsi/arm/arxescsi.o
+> just fine (using rpc_defconfig on v3.2-rc2).
+
+>> diff --git a/drivers/scsi/arm/arxescsi.c b/drivers/scsi/arm/arxescsi.c
+>> index a750aa7..2608a9e 100644
+>> --- a/drivers/scsi/arm/arxescsi.c
+>> +++ b/drivers/scsi/arm/arxescsi.c
+>> @@ -72,7 +72,8 @@ arxescsi_dma_setup(struct Scsi_Host *host, struct scsi_pointer *SCp,
+>>   	return fasdma_pseudo;
+>>   }
 >>
->>> I think this should be fixed at the same time, by simplifying the code
->>> by doing:
->>>
->>>  - Test PR. If set, go to test_work_user, else continue (or the other
->>> way around and call it test_work_kernel)
->>>
->>>  - In test_work_user, always test for _TIF_USER_WORK_MASK to decide to
->>> go to do_work, maybe call it do_user_work
->>>
->>>  - In test_work_kernel, test for _TIF_KERNEL_WORK_MASK which is set to
->>> our new flag along with NEED_RESCHED if preempt is enabled and branch to
->>> do_kernel_work.
->>>
->>> do_user_work is basically the same as today's user_work
->>>
->>> do_kernel_work is basically the same as today preempt block with added
->>> code to handle the new flag as described above.
->>>
->>> Is anybody volunteering for fixing that ? I don't have the bandwidth
->> I always use one specific kprobe stack to fix this for BOOKE and work well in my
->> local tree :) Do you remember my v3 patch? I think its possible to extend this
->> for all PPC variants.
->>
->> Anyway, I'd like to be this volunteer with our last solution.
-> 
-> So the second problem I exposed, for which you just volunteered
-> (hint :-) is an orthogonal issue not related to kprobe or stacks which
-> happen to be something I discovered yesterday while looking at the code.
-> 
-> As for the solution to the emulation problem, re-read my explanation.
-> The whole trick is that we can avoid a separate stack (which I really
-> want to avoid) and we can avoid touching the low level restore code
-> path.
-> 
-> Cheers,
-> Ben.
+>> -static void arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
+>> +static noinline void
+>> +arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
+
+> Shouldn't this line get some indention?
+
+    No, usually such lines don't get indented.
+
+WBR, Sergei
 
