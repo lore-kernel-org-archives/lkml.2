@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab1LAPk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:40:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35718 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754766Ab1LAPk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:40:57 -0500
-Date: Thu, 1 Dec 2011 10:40:36 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        rostedt@goodmis.org
-Subject: Re: [PATCH] jump_label: jump_label for boot options.
-Message-ID: <20111201154036.GA2443@redhat.com>
-References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755262Ab1LAPlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:41:32 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:62899 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754766Ab1LAPlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 10:41:31 -0500
+Date: Thu, 1 Dec 2011 16:42:49 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Keith Packard <keithp@keithp.com>, LKML <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: g33: tiled output
+Message-ID: <20111201154249.GA4291@phenom.ffwll.local>
+Mail-Followup-To: Jiri Slaby <jslaby@suse.cz>,
+	Keith Packard <keithp@keithp.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org, Jiri Slaby <jirislaby@gmail.com>
+References: <4ED79138.5060703@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4ED79138.5060703@suse.cz>
+X-Operating-System: Linux phenom 3.1.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 11:53:53AM +0900, KAMEZAWA Hiroyuki wrote:
-> I tried to use jump_label for handling memcg's boot options which sets
-> global variable true/false and never changes after boot. And found jump_table
-> is larger than expected. This patch is a trial to allow to place jump_table
-> in .init section. How do you think ?
+On Thu, Dec 01, 2011 at 03:37:44PM +0100, Jiri Slaby wrote:
+> For some time, I'm seeing a tiled output like:
+> http://www.fi.muni.cz/~xslaby/sklad/panics/bad_tile.png
 > 
+> This happens sometimes when I open selected pages in firefox. Like
+> maps above.
+> 
+> Currently I'm running 3.2.0-rc3-next-20111130. This started appearing
+> after I switched to desktop fx. Will anything from the debugfs help to
+> track this down? Or better to report this to freedesktop.org?
 
-Remeber too, that 'static_branch()' is inherently biased. That is, the
-'false' path is assumed to be the the most likely path. Thus, the 'true'
-path is move out-of-line. Thus, if the 'true' branch is potentially
-used all the time, we would want to make sure that the savings of not
-having to check a variable is still worth it. I should probably rename
-static_branch() -> 'static_branch_default_false()' to make that clear.
-
-Maybe we need an unbiased static_branch() too, but I'm not sure excatly
-how to implement it...
-
-Thanks,
-
--Jason
+Please test the patch Chris already replied with to your first mail. It
+might fix your issue here (if it's just a fence being stolen a bit too
+early). If that does not help, I'll have to stare at the picture some more
+to decode the type of tiling/swizzling going on. Maybe different pictures
+of corruptions might help for that.
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
