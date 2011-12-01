@@ -1,70 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab1LAUOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:14:33 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:48051 "EHLO d1.icnet.pl"
+	id S1754227Ab1LAUOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:14:47 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33434 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753313Ab1LAUO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:14:29 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Subject: [PATCH 2/2 v2] ARM: OMAP1: recalculate loops per jiffy after dpll1 reprogram
-Date: Thu,  1 Dec 2011 21:13:02 +0100
-Message-Id: <1322770382-30718-3-git-send-email-jkrzyszt@tis.icnet.pl>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <201112012023.04635.jkrzyszt@tis.icnet.pl>
-References: <201112012023.04635.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+	id S1754036Ab1LAUOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 15:14:40 -0500
+Subject: [PATCH 07/14] crc32: Make CRC_*_BITS definition correspond to actual
+	bit counts
+To: Andrew Morton <akpm@linux-foundation.org>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Theodore Tso <tytso@mit.edu>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Date: Thu, 01 Dec 2011 12:14:30 -0800
+Message-ID: <20111201201430.5876.93627.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
+References: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120120-8974-0000-0000-000003D42E74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise timing is inaccurate, resulting in devices which depend on it,
-like omap-keypad, broken.
+crc32.c provides a choice of one of several algorithms for
+computing the LSB and LSB versions of the CRC32 checksum
+based on the parameters CRC_LE_BITS and CRC_BE_BITS. In the
+original version the values 1, 2, 4 and 8 respectively selected
+versions of the alrogithm that computed the crc 1, 2, 4 and 32
+bits as a time. This patch series adds a new version that computes
+the CRC 64 bits at a time. To make things easier to understand
+the parameter has been reinterpreted to actually stand for the
+number of bits processed in each step of the algorithm so that
+the old value 8 has been replaced with the value 32. This also
+allows us to add in a widely used crc algorithm that
+computes the crc 8 bits at a time called the Sarwate algorithm.
 
-Created and tested on top of linux-omap/fixes on Amstrad Delta.
-
-Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+From: Bob Pearson <rpearson@systemfabricworks.com>
+Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
+[djwong@us.ibm.com: Minor changelog tweaks]
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
-v2 changes:
-* was 5/5 v2, rebased on 1/2.
+ lib/crc32.c          |   17 ++++++++++++++---
+ lib/crc32defs.h      |   18 ++++++++++--------
+ lib/gen_crc32table.c |   11 ++++++++++-
+ 3 files changed, 34 insertions(+), 12 deletions(-)
 
- arch/arm/mach-omap1/clock_data.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-omap1/clock_data.c b/arch/arm/mach-omap1/clock_data.c
-index b001299..0ef1e7d 100644
---- a/arch/arm/mach-omap1/clock_data.c
-+++ b/arch/arm/mach-omap1/clock_data.c
-@@ -16,6 +16,8 @@
+diff --git a/lib/crc32.c b/lib/crc32.c
+index ff6bb9a..157b35f 100644
+--- a/lib/crc32.c
++++ b/lib/crc32.c
+@@ -27,13 +27,13 @@
+ #include <linux/types.h>
+ #include "crc32defs.h"
  
- #include <linux/kernel.h>
- #include <linux/clk.h>
-+#include <linux/cpufreq.h>
-+#include <linux/delay.h>
- #include <linux/io.h>
+-#if CRC_LE_BITS == 8
++#if CRC_LE_BITS > 8
+ # define tole(x) (__force u32) __constant_cpu_to_le32(x)
+ #else
+ # define tole(x) (x)
+ #endif
  
- #include <asm/mach-types.h>  /* for machine_is_* */
-@@ -927,7 +929,9 @@ int __init omap1_clk_init(void)
+-#if CRC_BE_BITS == 8
++#if CRC_BE_BITS > 8
+ # define tobe(x) (__force u32) __constant_cpu_to_be32(x)
+ #else
+ # define tobe(x) (x)
+@@ -45,7 +45,7 @@ MODULE_AUTHOR("Matt Domsch <Matt_Domsch@dell.com>");
+ MODULE_DESCRIPTION("Ethernet CRC32 calculations");
+ MODULE_LICENSE("GPL");
  
- void __init omap1_clk_late_init(void)
- {
--	if (ck_dpll1.rate >= OMAP1_DPLL1_SANE_VALUE)
-+	unsigned long rate = ck_dpll1.rate;
-+
-+	if (rate >= OMAP1_DPLL1_SANE_VALUE)
- 		return;
+-#if CRC_LE_BITS == 8 || CRC_BE_BITS == 8
++#if CRC_LE_BITS > 8 || CRC_BE_BITS > 8
  
- 	/* Find the highest supported frequency and enable it */
-@@ -939,4 +943,5 @@ void __init omap1_clk_late_init(void)
+ static inline u32
+ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
+@@ -126,6 +126,12 @@ u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
+ 		crc = (crc >> 4) ^ crc32table_le[0][crc & 15];
  	}
- 	propagate_rate(&ck_dpll1);
- 	omap1_show_rates();
-+	loops_per_jiffy = cpufreq_scale(loops_per_jiffy, rate, ck_dpll1.rate);
- }
--- 
-1.7.3.4
+ # elif CRC_LE_BITS == 8
++	/* aka Sarwate algorithm */
++	while (len--) {
++		crc ^= *p++;
++		crc = (crc >> 8) ^ crc32table_le[0][crc & 255];
++	}
++# else
+ 	const u32      (*tab)[] = crc32table_le;
+ 
+ 	crc = (__force u32) __cpu_to_le32(crc);
+@@ -169,6 +175,11 @@ u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
+ 		crc = (crc << 4) ^ crc32table_be[0][crc >> 28];
+ 	}
+ # elif CRC_BE_BITS == 8
++	while (len--) {
++		crc ^= *p++ << 24;
++		crc = (crc << 8) ^ crc32table_be[0][crc >> 24];
++	}
++# else
+ 	const u32      (*tab)[] = crc32table_be;
+ 
+ 	crc = (__force u32) __cpu_to_be32(crc);
+diff --git a/lib/crc32defs.h b/lib/crc32defs.h
+index f5a5401..daa3a5e 100644
+--- a/lib/crc32defs.h
++++ b/lib/crc32defs.h
+@@ -6,27 +6,29 @@
+ #define CRCPOLY_LE 0xedb88320
+ #define CRCPOLY_BE 0x04c11db7
+ 
+-/* How many bits at a time to use.  Requires a table of 4<<CRC_xx_BITS bytes. */
+-/* For less performance-sensitive, use 4 */
++/* How many bits at a time to use.  Valid values are 1, 2, 4, 8, and 32. */
++/* For less performance-sensitive, use 4 or 8 */
+ #ifndef CRC_LE_BITS
+-# define CRC_LE_BITS 8
++# define CRC_LE_BITS 32
+ #endif
+ #ifndef CRC_BE_BITS
+-# define CRC_BE_BITS 8
++# define CRC_BE_BITS 32
+ #endif
+ 
+ /*
+  * Little-endian CRC computation.  Used with serial bit streams sent
+  * lsbit-first.  Be sure to use cpu_to_le32() to append the computed CRC.
+  */
+-#if CRC_LE_BITS > 8 || CRC_LE_BITS < 1 || CRC_LE_BITS & CRC_LE_BITS-1
+-# error CRC_LE_BITS must be a power of 2 between 1 and 8
++#if CRC_LE_BITS > 32 || CRC_LE_BITS < 1 || CRC_LE_BITS == 16 || \
++	CRC_LE_BITS & CRC_LE_BITS-1
++# error "CRC_LE_BITS must be one of {1, 2, 4, 8, 32}"
+ #endif
+ 
+ /*
+  * Big-endian CRC computation.  Used with serial bit streams sent
+  * msbit-first.  Be sure to use cpu_to_be32() to append the computed CRC.
+  */
+-#if CRC_BE_BITS > 8 || CRC_BE_BITS < 1 || CRC_BE_BITS & CRC_BE_BITS-1
+-# error CRC_BE_BITS must be a power of 2 between 1 and 8
++#if CRC_BE_BITS > 32 || CRC_BE_BITS < 1 || CRC_BE_BITS == 16 || \
++	CRC_BE_BITS & CRC_BE_BITS-1
++# error "CRC_BE_BITS must be one of {1, 2, 4, 8, 32}"
+ #endif
+diff --git a/lib/gen_crc32table.c b/lib/gen_crc32table.c
+index eced769..99ac744 100644
+--- a/lib/gen_crc32table.c
++++ b/lib/gen_crc32table.c
+@@ -4,8 +4,17 @@
+ 
+ #define ENTRIES_PER_LINE 4
+ 
++#if CRC_LE_BITS <= 8
+ #define LE_TABLE_SIZE (1 << CRC_LE_BITS)
++#else
++#define LE_TABLE_SIZE 256
++#endif
++
++#if CRC_BE_BITS <= 8
+ #define BE_TABLE_SIZE (1 << CRC_BE_BITS)
++#else
++#define BE_TABLE_SIZE 256
++#endif
+ 
+ static uint32_t crc32table_le[4][256];
+ static uint32_t crc32table_be[4][256];
+@@ -24,7 +33,7 @@ static void crc32init_le(void)
+ 
+ 	crc32table_le[0][0] = 0;
+ 
+-	for (i = 1 << (CRC_LE_BITS - 1); i; i >>= 1) {
++	for (i = LE_TABLE_SIZE >> 1; i; i >>= 1) {
+ 		crc = (crc >> 1) ^ ((crc & 1) ? CRCPOLY_LE : 0);
+ 		for (j = 0; j < LE_TABLE_SIZE; j += 2 * i)
+ 			crc32table_le[0][i + j] = crc ^ crc32table_le[0][j];
 
