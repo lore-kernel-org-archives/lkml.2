@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab1LAPtp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:49:45 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53017 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab1LAPto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:49:44 -0500
-Message-ID: <4ED7A213.3010900@suse.cz>
-Date: Thu, 01 Dec 2011 16:49:39 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111123 Thunderbird/9.0
+	id S1755264Ab1LAPvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:51:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45404 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755069Ab1LAPvg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 10:51:36 -0500
+Date: Thu, 1 Dec 2011 07:48:01 -0800
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hv: Don't OOPS when can't init vmbus
+Message-ID: <20111201154801.GA7130@suse.de>
+References: <1321836494-4624-1-git-send-email-levinsasha928@gmail.com>
+ <6E21E5352C11B742B20C142EB499E0481AA70B8E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <1321862131.3231.16.camel@lappy>
+ <1322753876.6040.1.camel@lappy>
+ <6E21E5352C11B742B20C142EB499E0481AA7B272@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-To: daniel@ffwll.ch
-CC: Keith Packard <keithp@keithp.com>, LKML <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Jiri Slaby <jirislaby@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: g33: tiled output
-References: <4ED79138.5060703@suse.cz> <20111201154249.GA4291@phenom.ffwll.local>
-In-Reply-To: <20111201154249.GA4291@phenom.ffwll.local>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA7B272@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2011 04:42 PM, Daniel Vetter wrote:
-> On Thu, Dec 01, 2011 at 03:37:44PM +0100, Jiri Slaby wrote:
->> For some time, I'm seeing a tiled output like:
->> http://www.fi.muni.cz/~xslaby/sklad/panics/bad_tile.png
->>
->> This happens sometimes when I open selected pages in firefox. Like
->> maps above.
->>
->> Currently I'm running 3.2.0-rc3-next-20111130. This started appearing
->> after I switched to desktop fx. Will anything from the debugfs help to
->> track this down? Or better to report this to freedesktop.org?
+On Thu, Dec 01, 2011 at 03:42:43PM +0000, KY Srinivasan wrote:
 > 
-> Please test the patch Chris already replied with to your first mail. It
-> might fix your issue here (if it's just a fence being stolen a bit too
-> early). If that does not help, I'll have to stare at the picture some more
-> to decode the type of tiling/swizzling going on. Maybe different pictures
-> of corruptions might help for that.
+> 
+> > -----Original Message-----
+> > From: Sasha Levin [mailto:levinsasha928@gmail.com]
+> > Sent: Thursday, December 01, 2011 10:38 AM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; Greg Kroah-Hartman
+> > Subject: RE: [PATCH] hv: Don't OOPS when can't init vmbus
+> > 
+> > Ping? Did it go anywhere?
+> 
+> I think I acked it; if not I am acking it now. I don't know if 
+> Greg dropped this patch.
 
-Hi, I'm already running a kernel with that patch. The artefacts are
-still there though.
+I did as I thought you said you would take care of it.
+
+KY, can you please resend it with your ack?
 
 thanks,
--- 
-js
-suse labs
+
+greg k-h
