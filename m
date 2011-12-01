@@ -1,50 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab1LADw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 22:52:57 -0500
-Received: from mail.windriver.com ([147.11.1.11]:55059 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab1LADw4 (ORCPT
+	id S1754182Ab1LADyF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 22:54:05 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:52060 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab1LADyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 22:52:56 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: nicolas.pitre@linaro.org, linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] arm: add default value for PHYS_OFFSET Kconfig setting
-Date: Wed, 30 Nov 2011 22:52:37 -0500
-Message-Id: <1322711557-8279-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.7.2
+	Wed, 30 Nov 2011 22:54:04 -0500
+Message-ID: <4ED6FA2C.7010005@oracle.com>
+Date: Wed, 30 Nov 2011 21:53:16 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111108 Thunderbird/8.0
+MIME-Version: 1.0
+To: Chris Dunlop <chris@onthe.net.au>
+CC: David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        Jan Harkes <jaharkes@cs.cmu.edu>,
+        "\"maintainer@onthe.net.au\":CODA FILE SYSTEM" <coda@cs.cmu.edu>,
+        Petr Vandrovec <petr@vandrovec.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
+        codalist@TELEMANN.coda.cs.cmu.edu,
+        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
+References: <20111130071319.GA16711@onthe.net.au> <1321861008-20611-1-git-send-email-chris@onthe.net.au> <20111129082501.GA569@onthe.net.au> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC20@SACMVEXC2-PRD.hq.netapp.com> <24960.1322643283@redhat.com> <20111201004709.GA26085@onthe.net.au> <4ED6E4EF.7050101@oracle.com> <20111201033346.GA1049@onthe.net.au>
+In-Reply-To: <20111201033346.GA1049@onthe.net.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4ED6FA3B.002F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 1b9f95f8ade9efc2bd49f0e7b9dc61a038ac3eef introduced the new
-Kconfig for PHYS_OFFSET but it did not specify a default value.
 
-This has the undesired side effect of breaking an implictly used
-trick for updating defconfigs on the fly for routine buildtesting
-across all arch and all platforms, i.e.
 
-  cp /path/to/somedefconfig .config ; yes "" | make oldconfig
+On 11/30/2011 09:33 PM, Chris Dunlop wrote:
+> On Wed, Nov 30, 2011 at 08:22:39PM -0600, Dave Kleikamp wrote:
+>> On 11/30/2011 06:47 PM, Chris Dunlop wrote:
+>>>> It's also worth printing a message - this *is* a kernel bug of some description
+>>>> if it happens.
+>>>
+>>> Like the below?  This covers the d_revalidate for 9p, afs, coda,
+>>> hfs, ncpfs, proc, sysfs.
+>>>
+>>> Note:  jfs isn't susceptible to this problem, but the resolution
+>>> doesn't look like the other file systems, and from the comment
+>>> I'm not sure if the problem was really understood and if it's
+>>> doing the right thing:
+>>
+>> This code, as well as the comments, were copied from vfat. It seems
+>> reasonable for case-insensitive but case-preserving behavior (not jfs's
+>> default). The safe thing is to drop the negative dentry if we don't know
+>> the operation.
+> 
+> In that case, it looks like the thing to do might be to add the
+> "protection" to the start of jfs_ci_revaliate(), per how the
+> original has been changed in vfat:
 
-In particular, the at91x40_defconfig will enter an infinite loop
-with the above, since there is no default value, and conf will just
-keep asking for one, and "yes" will keep feeding in a line return.
+The LOOKUP_RCU check had previously been there, but Al Viro removed it:
 
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+commit 5c0f360b083fb33d05d1bff4b138b82d715eb419
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sat Jun 25 21:41:09 2011 -0400
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 44789ef..90a475e 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -221,6 +221,7 @@ config NEED_MACH_MEMORY_H
- 
- config PHYS_OFFSET
- 	hex "Physical address of main memory"
-+	default 0x00000000
- 	depends on !ARM_PATCH_PHYS_VIRT && !NEED_MACH_MEMORY_H
- 	help
- 	  Please provide the physical address corresponding to the
--- 
-1.7.7.2
+    jfs_ci_revalidate() is safe from RCU mode
 
+I'm not sure what it takes to be "safe", but this is a simple function
+that doesn't block, take locks, or do much of anything. You shouldn't
+need to do anything with jfs.
+
+Shaggy
+
+> 
+> fs/fat/namei_vfat.c:
+> static int vfat_revalidate_ci(struct dentry *dentry, struct nameidata *nd)
+> {
+>         if (nd && nd->flags & LOOKUP_RCU)
+>                 return -ECHILD;
+>         ...
+> }
+> 
+> E.g.:
+> 
+> ----------------------------------------------------------------------
+> Don't oops when abused by broken layered file systems
+> 
+> Signed-off-by: Chris Dunlop <chris@onthe.net.au>
+> ---
+>  fs/jfs/namei.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/jfs/namei.c b/fs/jfs/namei.c
+> index e17545e..5504f6e 100644
+> --- a/fs/jfs/namei.c
+> +++ b/fs/jfs/namei.c
+> @@ -1585,6 +1585,9 @@ out:
+>  
+>  static int jfs_ci_revalidate(struct dentry *dentry, struct nameidata *nd)
+>  {
+> +	if (nd && nd->flags & LOOKUP_RCU)
+> +		return -ECHILD;
+> +
+>  	/*
+>  	 * This is not negative dentry. Always valid.
+>  	 *
