@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab1LASW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:22:59 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42506 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755672Ab1LASW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:22:58 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+wZkF2v2cVvv9GEgvONVTw
-Date: Thu, 1 Dec 2011 10:22:54 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2a/5 v2] ARM: OMAP1: select clock rate by CPU type
-Message-ID: <20111201182254.GU31337@atomide.com>
-References: <20111128174508.GO31337@atomide.com>
- <1322686675-26855-1-git-send-email-jkrzyszt@tis.icnet.pl>
- <20111130222837.GR31337@atomide.com>
- <201112011110.11476.jkrzyszt@tis.icnet.pl>
+	id S1756138Ab1LAS0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:26:21 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:53903 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756016Ab1LAS0T convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 13:26:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112011110.11476.jkrzyszt@tis.icnet.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111201144205.GA2103@sirena.org.uk>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
+ <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1111291619110.6289@utopia.booyaka.com>
+ <CAJOA=zM4vcyTt_RBEVm6JxmzW-Dna0gpuWda7ytq_mqFSuXw9g@mail.gmail.com>
+ <alpine.DEB.2.00.1111302308280.6289@utopia.booyaka.com> <20111201144205.GA2103@sirena.org.uk>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Thu, 1 Dec 2011 10:25:57 -0800
+Message-ID: <CAJOA=zNeieTufhYjWCC-ortNQ1B0e3f515uvU5v5uKBuCUTXnQ@mail.gmail.com>
+Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Paul Walmsley <paul@pwsan.com>, linux@arm.linux.org.uk,
+        linus.walleij@stericsson.com, patches@linaro.org,
+        shawn.guo@freescale.com, magnus.damm@gmail.com,
+        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
+        richard.zhao@linaro.org, grant.likely@secretlab.ca, dsaxena@linaro.org,
+        eric.miao@linaro.org, sboyd@quicinc.com, skannan@quicinc.com,
+        linaro-dev@lists.linaro.org, jeremy.kerr@canonical.com,
+        linux-omap@vger.kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111201 01:35]:
-> On Wednesday 30 of November 2011 at 23:28:38, Tony Lindgren wrote:
-> > 
-> > We should also now be able to remove all the CONFIG_OMAP_ARM_XXXMHZ options
-> > too, right?
-> 
-> Right, but then, perhaps the initial version of patch 2a/5, which 
-> already started removing them, from omap1_defconfig for now, then going 
-> into the right direction while unblocking another regression fix (3/5), 
-> _is_ a good candidate for an rc fix?
+On Thu, Dec 1, 2011 at 6:42 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Wed, Nov 30, 2011 at 11:39:59PM -0700, Paul Walmsley wrote:
+>
+>> Clock rate/parent-change notifiers are requirements for DVFS use-cases,
+>> and they must be paired with something like the
+>> clk_{allow,block}_rate_change() functions to work efficiently.  I intend
+>> to comment on this later; it's not a simple problem.  It might be worth
+>> noting that Tero and I implemented a simplified version of this for the
+>> N900.
+>
+> I'm thinking that if we're going to have clk_{allow,block}_rate_change()
+> we may as well make that the main interface to enable rate changes - if
+> a device wants to change the clock rate it allows rate changes using
+> that interface rather than by disabling the clocks.  I've got devices
+> which can do glitch free updates of active clocks so having to disable
+> would be a real restriction, and cpufreq would have issues with actually
+> disabling the clock too I expect.
+>
 
-But we did not allow dpll1 reprogramming earlier either, so we should
-not need to make all these changes during the -rc cycle. I'm suspecting
-that we've had this same behaviour for a really long time, and we just
-have not seen it as omap1_defconfig had OMAP_CLOCKS_SET_BY_BOOTLOADER
-option set.
-
-So I'm baffled how your board would be booting at a different rate
-compared to v3.1, it seems that the logic has not changed there. Or
-else we have some simple bug somewhere.
-
-Care to try to verify at what point your system started booting at
-60MHz rate?
+I agree that imposing a "disable clk before changing rate" policy in
+the framework core is a bad idea.  During discussion on the
+CLK_GATE_SET_RATE flag in the patch #2 Shawn commented that he has
+some clks that must be enabled to change their rates (I assume he
+means PLLs but that detail doesn't really matter).
 
 Regards,
-
-Tony
+Mike
