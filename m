@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1LAMrD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 07:47:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52771 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab1LAMrA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 07:47:00 -0500
-Date: Thu, 1 Dec 2011 21:47:41 +0900
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org
-Subject: Re: [Patch] btusb: fix a memory leak in btusb_send_frame()
-Message-ID: <20111201124741.GC2894@joana>
-Mail-Followup-To: Cong Wang <amwang@redhat.com>,
-	linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-	Marcel Holtmann <marcel@holtmann.org>,
-	linux-bluetooth@vger.kernel.org
-References: <1321925578-5407-1-git-send-email-amwang@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1321925578-5407-1-git-send-email-amwang@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754033Ab1LAMrk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 07:47:40 -0500
+Received: from mga14.intel.com ([143.182.124.37]:9016 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753493Ab1LAMrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 07:47:39 -0500
+Message-Id: <d08817$2d9rsk@azsmga001.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,277,1320652800"; 
+   d="scan'208";a="81063828"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: g33: GPU hangs
+To: Jiri Slaby <jslaby@suse.cz>, Keith Packard <keithp@keithp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Jiri Slaby <jirislaby@gmail.com>
+In-Reply-To: <4ED7735A.1020903@suse.cz>
+References: <4ED7735A.1020903@suse.cz>
+Date: Thu, 01 Dec 2011 12:47:17 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cong,
-
-* Cong Wang <amwang@redhat.com> [2011-11-22 09:32:57 +0800]:
-
-> This patch fixes the following memory leak reported by kmemleak:
+On Thu, 01 Dec 2011 13:30:18 +0100, Jiri Slaby <jslaby@suse.cz> wrote:
+> Hi,
 > 
-> unreferenced object 0xffff880060a53840 (size 192):
->   comm "softirq", pid 0, jiffies 4320571771 (age 1406.569s)
->   hex dump (first 32 bytes):
->     01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->   backtrace:
->     [<ffffffff81138a1c>] create_object+0x187/0x28b
->     [<ffffffff814be12e>] kmemleak_alloc+0x73/0x98
->     [<ffffffff811289d3>] __kmalloc+0xfc/0x123
->     [<ffffffff81386546>] usb_alloc_urb+0x1e/0x48
->     [<ffffffffa0130274>] btusb_send_frame+0x86/0x385 [btusb]
->     [<ffffffffa02d8230>] hci_send_frame+0xa0/0xa5 [bluetooth]
->     [<ffffffffa02d8a4e>] hci_cmd_task+0xa0/0xfb [bluetooth]
->     [<ffffffff81058548>] tasklet_action+0x8f/0xef
->     [<ffffffff81058a4c>] __do_softirq+0xf4/0x1db
->     [<ffffffff81058bb7>] run_ksoftirqd+0x84/0x129
->     [<ffffffff8106f1c4>] kthread+0xa0/0xa8
->     [<ffffffff814dd144>] kernel_thread_helper+0x4/0x10
->     [<ffffffffffffffff>] 0xffffffffffffffff
+> both yesterday and today, my GPU hung. Both happened when I opened
+> google front page in firefox.
 > 
-> The problem is that when inc_tx() returns non-zero, we forgot
-> to call usb_free_urb().
+> I'm running 3.2.0-rc3-next-20111130. Given it happened twice in the past
+> 24 hours, it looks like a regression from next-20111124. Or is this a
+> userspace issue (I might updated some packages)?
 > 
-> Cc: Marcel Holtmann <marcel@holtmann.org>
-> Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> 
-> ---
-> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-> index fe4ebc3..eabc437 100644
-> --- a/drivers/bluetooth/btusb.c
-> +++ b/drivers/bluetooth/btusb.c
-> @@ -777,9 +777,8 @@ skip_waking:
->  		usb_mark_last_busy(data->udev);
->  	}
->  
-> -	usb_free_urb(urb);
-> -
->  done:
-> +	usb_free_urb(urb);
->  	return err;
->  }
+> i915_error_state dumps from the two hangs are here:
+> http://www.fi.muni.cz/~xslaby/sklad/panics/915_error_state_0
+> http://www.fi.muni.cz/~xslaby/sklad/panics/915_error_state_second
 
-Patch has been applied, thanks.
+Both error states contain the same bug: a fence register in conflict
+with the command stream. The batch is using the buffer at 0x03d0000 
+as an untiled 40x40 rgba buffer with pitch 192. However, a fence
+register is programmed to
+  fence[3] = 03d00001
+    valid, x-tiled, pitch: 512, start: 0x03d00000, size: 1048576
 
-	Gustavo
+Also note that buffer is also not listed as currently active, so
+presumably we reused the buffer as tiled (and so reprogrammed the
+fence registered) before the GPU retired the batch. That sounds eerily
+similar to this bug:
+
+>From 2b76187d2f5fc2352e391914b1828f91f93bb356 Mon Sep 17 00:00:00 2001
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Date: Tue, 29 Nov 2011 15:12:16 +0000
+Subject: [PATCH] drm/i915: Only clear the GPU domains upon a successful
+ finish
+
+By clearing the GPU read domains before waiting upon the buffer, we run
+the risk of the wait being interrupted and the domains prematurely
+cleared. The next time we attempt to wait upon the buffer (after
+userspace handles the signal), we believe that the buffer is idle and so
+skip the wait.
+
+There are a number of bugs across all generations which show signs of an
+overly haste reuse of active buffers.
+
+Such as:
+
+  https://bugs.freedesktop.org/show_bug.cgi?id=29046
+  https://bugs.freedesktop.org/show_bug.cgi?id=35863
+  https://bugs.freedesktop.org/show_bug.cgi?id=38952
+  https://bugs.freedesktop.org/show_bug.cgi?id=40282
+  https://bugs.freedesktop.org/show_bug.cgi?id=41098
+  https://bugs.freedesktop.org/show_bug.cgi?id=41102
+  https://bugs.freedesktop.org/show_bug.cgi?id=41284
+  https://bugs.freedesktop.org/show_bug.cgi?id=42141
+
+A couple of those pre-date i915_gem_object_finish_gpu(), so may be
+unrelated (such as a wild write from a userspace command buffer), but
+this does look like a convincing cause for most of those bugs.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: stable@kernel.org
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+---
+ drivers/gpu/drm/i915/i915_gem.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index d560175..036bc58 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -3087,10 +3087,13 @@ i915_gem_object_finish_gpu(struct drm_i915_gem_object *obj)
+ 			return ret;
+ 	}
+ 
++	ret = i915_gem_object_wait_rendering(obj);
++	if (ret)
++		return ret;
++
+ 	/* Ensure that we invalidate the GPU's caches and TLBs. */
+ 	obj->base.read_domains &= ~I915_GEM_GPU_DOMAINS;
+-
+-	return i915_gem_object_wait_rendering(obj);
++	return 0;
+ }
+ 
+ /**
+-- 
+1.7.7.3
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
