@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab1LAWE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:04:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38008 "EHLO mx2.suse.de"
+	id S1754879Ab1LAWHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 17:07:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20246 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755023Ab1LAWEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:04:55 -0500
-Date: Thu, 1 Dec 2011 14:04:31 -0800
-From: Greg KH <gregkh@suse.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com, joe@perches.com,
-        dmitry.torokhov@gmail.com, jkosina@suse.cz,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 1/1] hv: Update MAINTAINERS
-Message-ID: <20111201220431.GA3261@suse.de>
-References: <1322776486-17077-1-git-send-email-kys@microsoft.com>
+	id S1754543Ab1LAWHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 17:07:09 -0500
+Message-ID: <4ED7FA81.9090802@redhat.com>
+Date: Thu, 01 Dec 2011 16:06:57 -0600
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322776486-17077-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kyungmin Park <kmpark@infradead.org>
+CC: tytso@mit.edu, tm@tao.ma, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
+References: <20111201070052.GA29708@july>
+In-Reply-To: <20111201070052.GA29708@july>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 01:54:46PM -0800, K. Y. Srinivasan wrote:
-> Update the MAINTAINERS file to reflect the current state
-> of the Hyper-V drivers.
+On 12/1/11 1:00 AM, Kyungmin Park wrote:
+> From: Kyungmin Park <kyungmin.park@samsung.com>
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Now trim information doesn't stored at disk so every boot time. it's cleared.
+> and do the trim all disk groups.
+> But assume that it's already trimmed at previous time so don't need to trim it again. So set the intial state as trimmed.
+> 
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > ---
->  MAINTAINERS |   25 +++++++++++++++++++++++--
->  1 files changed, 23 insertions(+), 2 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 3523ab0..db6cee2 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3197,6 +3197,27 @@ M:	William Irwin <wli@holomorphy.com>
->  S:	Maintained
->  F:	fs/hugetlbfs/
->  
-> +Hyper-V CORE DRIVERS
-> +M:	K. Y. Srinivasan <kys@microsoft.com>
-> +M:	Haiyang Zhang <haiyangz@microsoft.com>
-> +L:	devel@linuxdriverproject.org
-> +S:	Maintained
-> +F:	drivers/hv/
+> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+> index e2d8be8..97ef342 100644
+> --- a/fs/ext4/mballoc.c
+> +++ b/fs/ext4/mballoc.c
+> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb, ext4_group_t group)
+>  		goto err;
+>  	}
+>  	mark_page_accessed(page);
 > +
-> +Hyper-V MOUSE DRIVER
-> +M:	K. Y. Srinivasan <kys@microsoft.com>
-> +M:	Haiyang Zhang <haiyangz@microsoft.com>
-> +L:	devel@linuxdriverproject.org
-> +S:	Maintained
-> +F:	drivers/hid/hid-hyperv.c
-> +
-> +Hyper-V NETWORK DRIVER
-> +M:	K. Y. Srinivasan <kys@microsoft.com>
-> +M:	Haiyang Zhang <haiyangz@microsoft.com>
-> +L:	devel@linuxdriverproject.org
-> +S:	Maintained
-> +F:	drivers/net/hyperv/
+> +	/*
+> +	 * TRIM information is not stored at disk so set the initial
+> +	 * state as trimmed. Since previous time it's already trimmed all
+> +	 */
+> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
 
-This whole patch could all be consolidated into one entry, that also
-fixes the name of the subsystem to follow the rest of the file format:
+Hm, so if there were freed but un-trimmed blocks at this point, we will
+never trim them until we free _another_ block in the group, right?  That
+might be a reasonable tradeoff, but it is somewhat surprising behavior.
 
-HYPER-V CORE AND DRIVERS
-M:	K. Y. Srinivasan <kys@microsoft.com>
-M:	Haiyang Zhang <haiyangz@microsoft.com>
-L:	devel@linuxdriverproject.org
-S:	Maintained
-F:	drivers/hv/
-F:	drivers/hid/hid-hyperv.c
-F:	drivers/net/hyperv/
-F:	drivers/staging/hv/
+i.e. say we do:
 
-Care to redo this?
+mount /mnt
+rm -rf /mnt/very_big_file
+umount /mnt
 
-thanks,
+mount /mnt
+fitrim /mnt
 
-greg k-h
+then we won't trim anything at all, right, despite there being many
+new free blocks?  Which would be rather unexpected.
+
+If we don't store the trimmed state on disk, I think we should
+probably stick with the slower first-time trim, and the more obvious
+behavior (all free blocks are always trimmed whenever a trim
+command is issued).
+
+-Eric
+
+>  err:
+>  	ext4_mb_put_buddy_page_lock(&e4b);
+>  	return ret;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
