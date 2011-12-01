@@ -1,155 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753774Ab1LAUi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:38:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753243Ab1LAUi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:38:56 -0500
-Message-ID: <4ED7E5D7.8070909@redhat.com>
-Date: Thu, 01 Dec 2011 18:38:47 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753965Ab1LAUma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:42:30 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:55155 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753633Ab1LAUm2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 15:42:28 -0500
+X-Authenticated: #4736741
+X-Provags-ID: V01U2FsdGVkX1+By9QBBD+BF2pr3V/IEqB110O/rgsdlxHfD1IcGu
+	mjSIU5OlRXFKgK
+Message-ID: <4ED7E6AB.6050308@wolke7.net>
+Date: Thu, 01 Dec 2011 21:42:19 +0100
+From: booster@wolke7.net
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.8.1.23) Gecko/20090812 Lightning/0.9 Thunderbird/2.0.0.23 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-To: HoP <jpetrous@gmail.com>
-CC: Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <4ED7BBA3.5020002@redhat.com> <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com>
-In-Reply-To: <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Francois Romieu <romieu@fr.zoreil.com>
+CC: hayeswang <hayeswang@realtek.com>,
+        "'Jonathan Nieder'" <jrnieder@gmail.com>,
+        "'Eric Dumazet'" <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        "'nic_swsd'" <nic_swsd@realtek.com>, linux-kernel@vger.kernel.org,
+        "'Armin Kazmi'" <armin.kazmi@tu-dortmund.de>
+Subject: Re: [bug?] r8169: hangs under heavy load
+References: <20111125222211.GA13719@electric-eye.fr.zoreil.com> <1322262357.2550.12.camel@edumazet-laptop> <20111126004447.GA14744@electric-eye.fr.zoreil.com> <1322280423.10212.3.camel@edumazet-laptop> <20111127092808.GE21635@elie.hsd1.il.comcast.net> <4ED2A573.1020807@wolke7.net> <20111127231147.GA1784@electric-eye.fr.zoreil.com> <D95C09DB1A7E493E89FE5A0B3879CEB0@realtek.com.tw> <20111129105440.GA2410@electric-eye.fr.zoreil.com> <4ED538EC.4010509@wolke7.net> <20111201102000.GA14013@electric-eye.fr.zoreil.com>
+In-Reply-To: <20111201102000.GA14013@electric-eye.fr.zoreil.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01-12-2011 17:59, HoP wrote:
-> 2011/12/1 Mauro Carvalho Chehab<mchehab@redhat.com>:
->> On 01-12-2011 12:58, HoP wrote:
->>>
->>> Hi,
->>>
->>> let me ask you some details of your interesting idea (how to
->>> achieve the same functionality as with vtunerc driver):
->>>
->>> [...]
->>>
->>>> The driver, as proposed, is not really a driver, as it doesn't support
->>>> any
->>>> hardware. The kernel driver would be used to just copy data from one
->>>> userspace
->>>
->>> Please stop learning me what can be called driver and what nope.
->>> Your definition is nonsense and I don't want to follow you on it.
->>>
->>>> application to the other. The same result could be obtained in userspace,
->>>> by implementing a library. Such library could even use LD_PRELOAD to
->>>> support
->>>> binary only applications, like what libv4l does. In terms of performance,
->>>> such library would probably perform better than a kernel driver, as
->>>> there's
->>>> no need to do context switching for each call, and no need to talk with a
->>>> device (where kernel outperforms userspace). Also, depending on how such
->>>> library
->>>> is implemented, double buffering might be avoided.
->>>>
->>>> So, from architectural POV, this code should be written as an userspace
->>>> library.
->>>> BTW, alsa also came with the same results, years ago, as audio remote
->>>> streaming is supported via userspace tools, like pulseaudio.
->>>
->>> Can you show me, how then can be reused most important part
->>> of dvb-core subsystem like tuning and demuxing?
->>
->> Why do you need to implement it? Just forward the requests to the machine
->> with the real driver.
->>
->>> Or do you want me
->>> to invent wheels and to recode everything in the library?
->>
->> Kernel code is GPLv2. You can use its code on a GPLv2 licensed library.
+Francois Romieu wrote:
+> booster@wolke7.net <booster@wolke7.net> :
+> [...]
+>   
+>> Any more ideas ?
+>>     
 >
-> I see. So if you think it is nice to get dvb-core, make a wrapper around
-> to get it usable in userspace and maintain totally same functionality
-> by myself then I say it is no go. If it looks for you like good idea
-> I must disagree. Code duplication? Two maintaners? That is crazy idea man.
-
-I fail to see where do you need to duplicate dvb-core. An userspace
-LD_PRELOAD handler that would do:
-
-int socket;
-
-int dvb_ioctl(int fd, unsigned long int request, ...)
-{
-         void *arg;
-         va_list ap;
-  
-         va_start(ap, request);
-         arg = va_arg(ap, void *);
-         va_end(ap);
-
-	send_net_ioctl_packet(socket, request, arg);
-}
-
-Is probably all you need to send _any_ ioctl's to a remote machine
-(plus client's machine that would decode the ioctl packet and send
-the ioctl to the actual driver).
-
-Of course, you'll need hooks for all syscalls used (likely open, close,
-ioctl, read, poll).
-
-So, there's not much duplication, even if, for whatever reason, you
-might need to hook some specific ioctls in order to optimize the
-network performance.
-
->>> Of course
->>> I can be wrong, I'm no big kernel hacker. So please show me the
->>> way for it. BTW, even if you can find the way, then data copying
->>> from userspace to the kernel and back is also necessery.
->>
->> See libv4l, at v4l2-utils.git (at linuxtv.org).
->>
->>> I really
->>> don't see any advantage of you solution.
->>
->> And I can't see any advantage on yours ;) Putting something that belongs
->> to userspace into kernelspace just because it is easier to re-use the
->> existing code inside the kernel is not a good argument.
+> Give me a brain.
 >
-> It is only your POV that it should be in userspace.
+> Fixed patch below.
 >
-> Creating additional code which not only enlarge code size by 2
-> but I think by 10 is really not good idea.  And it get no advantage
-> only disadvantages.
+> diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+> index 6f06aa1..e776bf2 100644
+> --- a/drivers/net/ethernet/realtek/r8169.c
+> +++ b/drivers/net/ethernet/realtek/r8169.c
+> @@ -4885,8 +4894,7 @@ static void rtl_hw_start_8168(struct net_device *dev)
+>  	RTL_W16(IntrMitigate, 0x5151);
+>  
+>  	/* Work around for RxFIFO overflow. */
+> -	if (tp->mac_version == RTL_GIGA_MAC_VER_11 ||
+> -	    tp->mac_version == RTL_GIGA_MAC_VER_22) {
+> +	if (tp->mac_version == RTL_GIGA_MAC_VER_11) {
+>  		tp->intr_event |= RxFIFOOver | PCSTimeout;
+>  		tp->intr_event &= ~RxOverflow;
+>  	}
+> @@ -5804,6 +5812,10 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+>  	 */
+>  	status = RTL_R16(IntrStatus);
+>  	while (status && status != 0xffff) {
+> +		status &= tp->intr_event;
+> +		if (!status)
+> +			break;
+> +
+>  		handled = 1;
+>  
+>  		/* Handle all of the error cases first. These will reset
+> @@ -5818,7 +5830,6 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+>  			switch (tp->mac_version) {
+>  			/* Work around for rx fifo overflow */
+>  			case RTL_GIGA_MAC_VER_11:
+> -			case RTL_GIGA_MAC_VER_22:
+>  			case RTL_GIGA_MAC_VER_26:
+>  				netif_stop_queue(dev);
+>  				rtl8169_tx_timeout(dev);
+> @@ -5828,6 +5839,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+>  			case RTL_GIGA_MAC_VER_19:
+>  			case RTL_GIGA_MAC_VER_20:
+>  			case RTL_GIGA_MAC_VER_21:
+> +			case RTL_GIGA_MAC_VER_22:
+>  			case RTL_GIGA_MAC_VER_23:
+>  			case RTL_GIGA_MAC_VER_24:
+>  			case RTL_GIGA_MAC_VER_27:
 >
->>
->> Don't get me wrong but if you want to submit a code to be merged
->> on any existing software (being open source or not), you should be
->> prepared to defend your code and justify the need for it to the
->> other developers.
->
-> Sure. I was prepared for technical disscussion, but was fully suprised
-> that it was not happend (ok, to be correct, few guys are exception, like
-> Andreas and few others. I really appreciate it).
->
-> So, my question was still not answered: "Can be driver NACKed only
-> because of worrying about possible misuse?"
+>   
+Hello Francois,
 
-To answer your question: your driver were nacked because of several reasons:
-it is not a driver for an unsupported hardware, you failed to convince people
-why this can't be implemented on userspace, the driver adds hooks at kernelspace
-that would open internal API's that several developers don't agree on exposing
-at userspace, as would allow non GPL license compatible drivers to re-use
-their work in a way they are against.
+it looks OK now - no more "eth0: link up" messages and network hangs any
+more.
+I've send and received 60 GB to and from the system and the performance
+is ~30 MB/s.
+I'll keep the system up and running and do some more stability tests.
 
-You're free to politely argue with regards to your solution at the ML.
+The only thing that's missing now is the transfer LED: the yellow link
+LED is on,
+but the green transfer LED is off and doesn't blink.
 
- From my side, due to already explained technical reasons, I nack the
-current approach. I'm free to not comment it further, while there's
-no new fact that would convince me otherwise.
+Thanks a lot for your great support.
 
 Regards,
-Mauro
+Gerd
 
+
+Output:
+
+[    2.334588] r8169 Gigabit Ethernet driver 2.3LK-NAPI-patch3 loaded
+[    2.334639] r8169 0000:02:00.0: PCI INT A -> GSI 16 (level, low) ->
+IRQ 16
+[    2.334689] r8169 0000:02:00.0: setting latency timer to 64
+[    2.334767] r8169 0000:02:00.0: irq 40 for MSI/MSI-X
+[    2.387618] r8169 0000:02:00.0: eth0: RTL8168c/8111c[21] at
+0xf8224000, 00:01:c0:08:aa:31, XID 1c4000c0 IRQ 40
+[    2.387630] r8169 0000:02:00.0: eth0: jumbo features [frames: 6128
+bytes, tx checksumming: ko]
+[    2.392954] r8169 Gigabit Ethernet driver 2.3LK-NAPI-patch3 loaded
+[    2.393015] r8169 0000:03:00.0: PCI INT A -> GSI 17 (level, low) ->
+IRQ 17
+[    2.393082] r8169 0000:03:00.0: setting latency timer to 64
+[    2.393166] r8169 0000:03:00.0: irq 41 for MSI/MSI-X
+[    2.394707] r8169 0000:03:00.0: eth1: RTL8168c/8111c[21] at
+0xf8238000, 00:01:c0:08:aa:32, XID 1c4000c0 IRQ 41
+[    2.394718] r8169 0000:03:00.0: eth1: jumbo features [frames: 6128
+bytes, tx checksumming: ko]
+[   14.324097] r8169 0000:03:00.0: eth1: link down
+[   14.324555] ADDRCONF(NETDEV_UP): eth1: link is not ready
+[   14.419038] r8169 0000:02:00.0: eth0: link down
+[   14.419049] r8169 0000:02:00.0: eth0: link down
+[   14.419419] ADDRCONF(NETDEV_UP): eth0: link is not ready
+[   16.789915] r8169 0000:02:00.0: eth0: link up
+[   16.791046] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+
+driver: r8169
+version: 2.3LK-NAPI-patch3
+firmware-version: N/A
+bus-info: 0000:02:00.0
+
+Settings for eth0:
+        Supported ports: [ TP MII ]
+        Supported link modes:   10baseT/Half 10baseT/Full
+                                100baseT/Half 100baseT/Full
+                                1000baseT/Half 1000baseT/Full
+        Supports auto-negotiation: Yes
+        Advertised link modes:  10baseT/Half 10baseT/Full
+                                100baseT/Half 100baseT/Full
+                                1000baseT/Half 1000baseT/Full
+        Advertised pause frame use: Symmetric Receive-only
+        Advertised auto-negotiation: Yes
+        Link partner advertised link modes:  10baseT/Half 10baseT/Full
+                                             100baseT/Half 100baseT/Full
+                                             1000baseT/Full
+        Link partner advertised pause frame use: Symmetric
+        Link partner advertised auto-negotiation: Yes
+        Speed: 1000Mb/s
+        Duplex: Full
+        Port: MII
+        PHYAD: 0
+        Transceiver: internal
+        Auto-negotiation: on
+        Supports Wake-on: pumbg
+        Wake-on: g
+        Current message level: 0x00000033 (51)
+        Link detected: yes
 
