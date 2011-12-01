@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab1LABpi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 20:45:38 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:54796 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317Ab1LABph (ORCPT
+	id S1753759Ab1LABsC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 20:48:02 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47354 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab1LABsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 20:45:37 -0500
-X-Authority-Analysis: v=2.0 cv=QqvcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=GDqlaHrt3F0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=ag1SF4gXAAAA:8 a=QyXUC8HyAAAA:8 a=NuR9I07YEHnq6tbO0oMA:9 a=8iCNTsjIzWhRSyIdHpUA:7 a=QEXdDO2ut3YA:10 a=1TSTQ8KKaH4A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [PATCH] trace-cmd: Cross-compile fixes for LDFLAGS and include
- path
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: "lkml," <linux-kernel@vger.kernel.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>
-In-Reply-To: <4ED6C808.9030003@linux.intel.com>
-References: <4ED6C808.9030003@linux.intel.com>
+	Wed, 30 Nov 2011 20:48:01 -0500
+Message-ID: <1322704074.11560.3.camel@phoenix>
+Subject: [PATCH 1/4] mfd: aat2870-core: Use gpio_request_one
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jin Park <jinyoungp@nvidia.com>, Samuel Ortiz <sameo@linux.intel.com>
+Date: Thu, 01 Dec 2011 09:47:54 +0800
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Nov 2011 20:45:35 -0500
-Message-ID: <1322703935.30977.2.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 16:19 -0800, Darren Hart wrote:
-> Add ability for the Makefile to respect LDFLAGS.
-> Also remove hardcoded /usr/local/include include path.
-> 
-> Signed-off-by: Richard Purdie <richard.purdie@linuxfoundation.org>
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> 
+Use gpio_request_one() instead of multiple gpiolib calls.
 
-Applied, thanks!
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/aat2870-core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
--- Steve
+diff --git a/drivers/mfd/aat2870-core.c b/drivers/mfd/aat2870-core.c
+index 02c4201..7620617 100644
+--- a/drivers/mfd/aat2870-core.c
++++ b/drivers/mfd/aat2870-core.c
+@@ -407,13 +407,13 @@ static int aat2870_i2c_probe(struct i2c_client *client,
+ 		aat2870->init(aat2870);
+ 
+ 	if (aat2870->en_pin >= 0) {
+-		ret = gpio_request(aat2870->en_pin, "aat2870-en");
++		ret = gpio_request_one(aat2870->en_pin, GPIOF_OUT_INIT_HIGH,
++				       "aat2870-en");
+ 		if (ret < 0) {
+ 			dev_err(&client->dev,
+ 				"Failed to request GPIO %d\n", aat2870->en_pin);
+ 			goto out_kfree;
+ 		}
+-		gpio_direction_output(aat2870->en_pin, 1);
+ 	}
+ 
+ 	aat2870_enable(aat2870);
+-- 
+1.7.5.4
+
 
 
