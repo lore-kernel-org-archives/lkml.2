@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab1LAJdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:33:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:36946 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752300Ab1LAJdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 04:33:05 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: Suspend and resume on ASUS Laptops
-Date: Thu, 1 Dec 2011 10:35:57 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, Oliver Neukum <oneukum@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <1322712689.30977.11.camel@frodo>
-In-Reply-To: <1322712689.30977.11.camel@frodo>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112011035.57666.rjw@sisk.pl>
+	id S1752852Ab1LAJd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:33:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:36557 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab1LAJd1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 04:33:27 -0500
+From: Andy Whitcroft <apw@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH 1/2] checkpatch: fix up complex macros context format
+Date: Thu,  1 Dec 2011 09:33:00 +0000
+Message-Id: <1322731981-22130-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Fix a missing newline and correctly use the raw context for the
+complex macro report.
 
-On Thursday, December 01, 2011, Steven Rostedt wrote:
-> For Black Friday I bought myself a ASUS-U56E-RBL8 at Staples for a
-> decent price. I installed Linux on it but it would not suspend. It would
-> always hang with the hard drive light on, as well as other leds and the
-> power light.
-> 
-> Searching the web, I found this link:
-> 
-> http://thecodecentral.com/2011/01/18/fix-ubuntu-10-10-suspendhibernate-not-working-bug
-> 
-> That talks about adding a script found here:
-> 
-> http://ubuntuforums.org/showpost.php?p=10359462&postcount=47
-> 
-> I added the script and sure enough, my suspend and even resume now work.
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ scripts/checkpatch.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Now, that's interesting, but I would lie if I said I knew what it was
-actually doing, so let me add some USB people to the CC list.
+This could be considered to be a fix for:
+  checkpatch-correctly-track-the-end-of-preprocessor-commands-in-context.patch
 
-> Before using this script, I've tried this on latest Debian testing and
-> with the latest Linus kernel (as of last night), and it didn't work. But
-> with this script, it works there and also with Debian stable and 3.0.10
-> kernel. (I hate gnome3 and lack of gnome2 so I created a separate
-> partition to run Debian testing, but I'm back to Debian stable).
-> 
-> The reason I'm writing you is, can we fix this without needing this
-> script?  Is there a modification to pm-suspend, or something that can
-> handle these laptops?
-> 
-> It just seems crazy to have everyday users add this script.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index e29eeea..331e832 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2854,7 +2854,7 @@ sub process {
+ 					      "Macros with multiple statements should be enclosed in a do - while loop\n" . "$herectx");
+ 				} else {
+ 					ERROR("COMPLEX_MACRO",
+-					      "Macros with complex values should be enclosed in parenthesis\n" . "$here$ctx");
++					      "Macros with complex values should be enclosed in parenthesis\n" . "$herectx");
+ 				}
+ 			}
+ 		}
+-- 
+1.7.5.4
 
-I totally agree, I had no idea it was necessary.
-
-Thanks,
-Rafael
