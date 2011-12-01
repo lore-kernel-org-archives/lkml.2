@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab1LAWs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:48:58 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:61797 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396Ab1LAWsy (ORCPT
+	id S1755491Ab1LAWs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 17:48:57 -0500
+Received: from mx3.schottelius.org ([77.109.138.221]:59876 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755075Ab1LAWsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:48:54 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "J. Bruce Fields" <bfields@redhat.com>, NeilBrown <neilb@suse.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] asm-generic/unistd.h: support new process_vm_{readv,write} syscalls
-Date: Thu, 01 Dec 2011 23:48:42 +0100
-Message-ID: <12496289.FSF46xab1G@wuerfel>
-User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <201112011815.pB1IFACw004908@farm-0002.internal.tilera.com>
-References: <201112011815.pB1IFACw004908@farm-0002.internal.tilera.com>
+	Thu, 1 Dec 2011 17:48:53 -0500
+Date: Thu, 1 Dec 2011 23:48:51 +0100
+From: Nico Schottelius <nico-linux-20111201@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Cc: b43-dev@lists.infradead.org, nico-linux-20111201@schottelius.org
+Subject: BCM43224: 00:00:00:00:00:00 address (3.2.0-rc3-00099-g883381d)
+Message-ID: <20111201224851.GB20536@ethz.ch>
+Mail-Followup-To: Nico Schottelius <nico-linux-20111201@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+	b43-dev@lists.infradead.org
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:smDPVehSJ+yMiLYJmFvqhrJSigCM+LUp2ylN3ZA0FGU
- V5ZHrZEoHjVyo7rGdpcrjLDmWqPPWzKfefp2m3/Yo1uq9Z7ETL
- Zx4niJjEcRM4bFm0i9YtuKGVScUxYBjbGLioLfvE6buNJvbFUG
- BN0Ip9AF3Z8JI8aE8E00rGL8cbqC7omazy/sEtsqG4yNGBfZ0u
- sXcFuJOl3pdSGSurd7EQ9nK/7R/Gblb9HVkHbJXIFBYPcBD08M
- GzGMxkmd7jtXplGhHfRlLfhS777hiLExNNnK2ZELPGWj5AhtZW
- ha9Nahsqs19I8VLy1HhQZ2VLcrlbalpUC498M6nQVXz4RT9wma
- o2Rx3JrLH13msFtbEJPs=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.2.0-rc3-00099-g883381d x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 01 December 2011 12:54:31 Chris Metcalf wrote:
-> Also prototype the "compat" functions so they can be referenced
-> from C code.
-> 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  include/asm-generic/unistd.h |    8 +++++++-
->  include/linux/compat.h       |    9 +++++++++
->  2 files changed, 16 insertions(+), 1 deletions(-)
+Hello,
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+just received another version of the macbook air, which is
+labeled MacBookAir4,2 again.
 
-Chris, I don't have any other patches for asm-generic right now. Can you handle
-this through the tile tree?
+This time I'm on Linus' 3.2.0-rc3-00099-g883381d and cannot
+use the integrated wifi:
 
-	Arnd
+[23:43] brief:drivers# ip l show wlan0 
+2: wlan0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN qlen 1000
+    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
+[23:43] brief:drivers# ip l s wlan0 up
+RTNETLINK answers: Cannot assign requested address
+
+It seems this time b43 is responsible for the card, not brcmsmac
+anymore (superseeded it seems).
+
+Is there a working tree out there somewhere? :-)
+
+Cheers,
+
+Nico
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
