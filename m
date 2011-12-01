@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab1LARQf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 12:16:35 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14199 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab1LARQd convert rfc822-to-8bit (ORCPT
+	id S1754722Ab1LARSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 12:18:04 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58712 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1LARSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 12:16:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 01 Dec 2011 09:16:28 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>
-Date: Thu, 1 Dec 2011 09:16:21 -0800
-Subject: RE: [PATCH 2/2 v4] pinctrl: introduce generic pin config
-Thread-Topic: [PATCH 2/2 v4] pinctrl: introduce generic pin config
-Thread-Index: AcywEZ0lTXXIGypAQ9qZQGr915rWiQAOsYRw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF174FDB01F2@HQMAIL01.nvidia.com>
-References: <1322160380-27711-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF174FDAFF30@HQMAIL01.nvidia.com>
- <CACRpkdZueyZkOq20qq_jDn27cfkChM58cR+TvPKfifSwFwiQ5w@mail.gmail.com>
-In-Reply-To: <CACRpkdZueyZkOq20qq_jDn27cfkChM58cR+TvPKfifSwFwiQ5w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Dec 2011 12:18:01 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18b3/GeQkee0DPHb93Qg9ac
+Date: Thu, 1 Dec 2011 09:17:58 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2a/5] Remove unsafe clock values from omap1_defconfig
+Message-ID: <20111201171758.GT31337@atomide.com>
+References: <20111128174508.GO31337@atomide.com>
+ <201112010310.43890.jkrzyszt@tis.icnet.pl>
+ <20111201022750.GY13928@atomide.com>
+ <201112011054.09878.jkrzyszt@tis.icnet.pl>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112011054.09878.jkrzyszt@tis.icnet.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote at Thursday, December 01, 2011 3:12 AM:
-> On Wed, Nov 30, 2011 at 8:45 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> > Linus Walleij wrote at Thursday, November 24, 2011 11:46 AM:
+* Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111201 01:20]:
 > 
-> >> diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
-> >
-> >> +/*
-> >> + * You shouldn't even be able to compile with these enums etc unless you're
-> >> + * using generic pin config. That is why this is defined out.
-> >> + */
-> >> +#ifdef CONFIG_GENERIC_PINCONF
-> >
-> > Hmm. I'd prefer to have drivers able to use both generic values and
-> > extend them with custom values. Can't we just use the top bit of the
-> > param value to indicate 0:standard (from the enum below) 1:custom
-> > (something meaningful to only the individual pinctrl driver). This
-> > could then trigger calling pinconf_generic_dump_pin() or not for
-> > example.
-> 
-> Hm...
-> 
-> That will get messy when if I refactor this stuff, add new enums
-> and whatever.
+> If you still ask me for my opinion: with patch 3/5 omitted, then not 
+> being able to run at any other frequency than 60 MHz instead of usual 
+> 150 since the board support was introduced first, isn't this a 
+> regression?
 
-I don't understand what'd be difficult about that.
+Yes, assuming that the behaviour for your board has changed by something
+after v3.1, such as commit e9b7086b80c4d9e354f4edc9e280ae85a60df408.
 
-New standardized enums could be added with values without the top bit
-set. No existing driver would need modification, since their switch(param)
-would not have a case for that new value, and would just return an error.
+> Having a choice of upgrading to 3.2 and running my 
+> application on not very powerfull board at 60 MHz, or keep running 3.1 
+> at 150, guess what I chose? If I were a distro kernel package 
+> maintainer, guess what I would chose?
 
-> >> +#ifdef CONFIG_GENERIC_PINCONF
-> >> +     bool is_generic;
-> >> +#endif
-> >
-> > ... and get rid of that flag.
+Right, that's certainly not intentional :)
+
+> > It seems that we've had the issue of not actually changing the rate
+> > for a while, right?
 > 
-> This is for the case wher you have both generic and non-generic
-> config controllers onboard a system.
-> 
-> Like in the generic debugfs dump function:
-> 
-> 	if (!ops->is_generic)
-> 		return;
-> 
-> If I take this out, the generic debugfs code will be used for
-> everything.
+> This was not an issue before dpll1 reprogramming has been moved out from 
+> omap1_clk_init(), as an rc fix to another bug introduced in 3.2. Perhaps 
+> we should rather think of reverting a few commits which caused all these 
+> problems if fixing them all during rc cycle seems not possible? I 
+> haven't bisected them yet, rather concentrated on providing fixes, but I 
+> can still try to do it, starting back from the original issue 
+> (http://www.spinics.net/lists/linux-omap/msg60052.html), if so decided.
 
-I think that'd be fine; the generic code would do all the debug prints
-for the standardized enums, then the core would call into the pinctrl
-driver to perform any additional debug prints for any driver-defined
-custom parameters.
+We can't revert that because the SRAM init has been moved to later for
+map_io. But if that patch changed the behaviour on your board, then that's
+the problem we should fix.
 
-> And then the generic sematics which you didn't like in the
-> previous patch:
-> 
-> if (ret == -EINVAL || ret == -ENOTSUPP)
-> 
-> Need to go back in, else the generic debugfs stuff won't
-> work.
+If you're now stuck at 60MHz rate, care to see if the following patch
+makes the kernel behave the same way as before for you? Sorry for dragging
+this on, but I'd like to find out what exactly changed the behaviour for
+your board.
+ 
+> Anyway, did you mean resending those 2/5 and 5/5 without any changes, 
+> only renumbered as 1/2 and 2/2?
 
-That'd be fine, provided the loop only checked the standardized parameters,
-or only enabled that special error-checking case for standardized parameters.
+Well the numbers will not show up in git, so no changes needed there :)
 
--- 
-nvpublic
+But let's figure out first what changed the behaviour for your board.
 
+Regards,
+
+Tony
+
+--- a/arch/arm/mach-omap1/clock_data.c
++++ b/arch/arm/mach-omap1/clock_data.c
+@@ -927,7 +927,7 @@ int __init omap1_clk_init(void)
+ 
+ void __init omap1_clk_late_init(void)
+ {
+-	if (ck_dpll1.rate >= OMAP1_DPLL1_SANE_VALUE)
++	if (ck_dpll1.rate > OMAP1_DPLL1_SANE_VALUE)
+ 		return;
+ 
+ 	/* Find the highest supported frequency and enable it */
