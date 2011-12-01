@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab1LAP2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:28:00 -0500
-Received: from fifo99.com ([67.223.236.141]:43314 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754871Ab1LAP16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:27:58 -0500
-X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Dec 2011 10:27:58 EST
-Message-ID: <1322752657.3704.2.camel@m0nster>
-Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
-From: Daniel Walker <dwalker@fifo99.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 01 Dec 2011 07:17:37 -0800
-In-Reply-To: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
-References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
+	id S1755184Ab1LAPan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:30:43 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43334 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755124Ab1LAPam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 10:30:42 -0500
+Subject: Re: [PATCH v4 0/6] ata port runtime power management support
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+In-Reply-To: <CAF1ivSa8d-VNbOmO9UyG-J3TKDmfuuX9pWEtT_7a7OcCC-0Uow@mail.gmail.com>
+References: <1322442950-16268-1-git-send-email-ming.m.lin@intel.com>
+	 <CAF1ivSa8d-VNbOmO9UyG-J3TKDmfuuX9pWEtT_7a7OcCC-0Uow@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+Date: Thu, 01 Dec 2011 09:30:39 -0600
+Message-ID: <1322753439.6920.21.camel@dabdike>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-30 at 16:29 -0800, David Brown wrote:
-> -       default ARCH_MSM7X00A
-> -
-> -config ARCH_MSM7X00A
-> -       bool "MSM7x00A / MSM7x01A"
-> -       select MACH_TROUT if !MACH_HALIBUT
-> -       select ARCH_MSM_ARM11
-> -       select MSM_SMD
-> -       select MSM_SMD_PKG3
-> -       select CPU_V6
-> -       select GPIO_MSM_V1
-> -       select MSM_PROC_COMM
-> -       select HAS_MSM_DEBUG_UART_PHYS 
+On Thu, 2011-12-01 at 22:09 +0800, Lin Ming wrote:
+> On Mon, Nov 28, 2011 at 9:15 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > Hi all,
+> >
+> > This is the v4 patches to add ata port runtime pm support.
+> > Applied on top of v3.2-rc2.
+> >
+> > Jeff, any comment on the ata patches?
+> > James, any comment on the scsi patches?
+> 
+> Ping ...
+> 
+> Which git tree should these patches go into? ATA or SCSI?
 
+>  drivers/ata/libata-core.c      |  154 ++++++++++++++++++++++------------------
+>  drivers/ata/libata-scsi.c      |    3 +-
+>  drivers/ata/libata-transport.c |    5 ++
+>  drivers/ata/libata.h           |    1 +
+>  drivers/scsi/scsi_error.c      |    5 +-
+>  drivers/scsi/scsi_pm.c         |   16 ++++-
+>  drivers/scsi/sd.c              |    5 ++
+>  include/scsi/scsi_host.h       |    3 +
+>  8 files changed, 118 insertions(+), 74 deletions(-)
 
-Your trying to drop G1 support ? I have a G1 sitting on my desk, and I
-know many other people working on the kernel have G1's .. 
+I think the line count implies ATA since it's the most changed.
 
-Daniel
+For the SCSI piece, the acks should come from Alan Stern, since real
+SCSI doesn't use suspend/resume and the hooks were put in for the
+benefit of USB storage.
+
+James
+
 
