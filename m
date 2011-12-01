@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab1LANNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 08:13:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42001 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753646Ab1LANNm convert rfc822-to-8bit (ORCPT
+	id S1754331Ab1LANPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 08:15:50 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:37623 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab1LANPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 08:13:42 -0500
+	Thu, 1 Dec 2011 08:15:49 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM / Hibernate: Thaw processes in SNAPSHOT_CREATE_IMAGE ioctl
+ error/test paths
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Date: Thu, 01 Dec 2011 18:45:37 +0530
+Message-ID: <20111201131532.21615.86479.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20111201125554.GC5706@redhat.com>
-References: <20111129100727.GD2675@tiehlicka.suse.cz>
-	<20111129113906.GA7299@redhat.com>
-	<20111130101028.GA2906@tiehlicka.suse.cz>
-	<20111130142316.GA2466@redhat.com>
-	<20111130140316.GA4153@tiehlicka.suse.cz>
-	<20111130153929.GA2144@redhat.com>
-	<20111201085845.GA4602@tiehlicka.suse.cz>
-	<20111201105538.GA4504@tiehlicka.suse.cz>
-	<20111201115911.GA5706@redhat.com>
-	<20111201124440.GB25614@tiehlicka.suse.cz>
-	<20111201125554.GC5706@redhat.com>
-Date: Thu, 1 Dec 2011 15:13:42 +0200
-X-Google-Sender-Auth: mPqE9UtiQfX7O8ZqbeeIWT6J3IY
-Message-ID: <CAB3XZEeNF8_U__rOPMfiOFNjPTS6gb33CSjdwkhMdRmS+i3CTw@mail.gmail.com>
-Subject: Re: [3.2-rc3] 100% CPU usage while in del_timer_sync from iwl3945_rs_free_sta
-From: Eliad Peller <eliad@wizery.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120113-8256-0000-0000-0000005A7F27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 2:55 PM, Stanislaw Gruszka <sgruszka@redhat.com> wrote:
-> On Thu, Dec 01, 2011 at 01:44:40PM +0100, Michal Hocko wrote:
->> On Thu 01-12-11 12:59:12, Stanislaw Gruszka wrote:
->> > On Thu, Dec 01, 2011 at 11:55:38AM +0100, Michal Hocko wrote:
->> > > [  349.316070] iwl3945_rs_free_sta rs_sta f4be1ac0
->> > > [  349.316076] ------------[ cut here ]------------
->> > > [  349.316097] WARNING: at drivers/net/wireless/iwlegacy/iwl-3945-rs.c:438 iwl3945_rs_free_sta+0x33/0x42 [iwl3945]()
->> >
->> > Johannes pointed on irc that this problem is most likely caused by:
->> >
->> > commit f785d83a19bca326f79d127a413e35769afc0105
->> > Author: Eliad Peller <eliad@wizery.com>
->> > Date:   Mon Aug 8 16:50:22 2011 +0300
->> >
->> >     mac80211: clear sta.drv_priv on reconfiguration
->> >
->> > Michal, could you confirm that? If that is the root of the problem, we
->> > need patch for iwlegacy (and iwlwifi) that allocate separate memory for
->> > rc structures.
-> Actually this require quite big changes in iwlegacy at least, perhaps
-> also in iwlwifi. I prefer to revert commit as temporary fix,  and add
-> memset(0) to drivers .add_sta callback, in drivers which need it. After
-> changing iwlegcy/iwlwifi we could move memset(0) back to ieee80211_reconfig().
->
-> Eliad, thoughts?
->
-i don't really care about temporarily reverting it.
-but maybe you can just add an "initialized" flag to iwl3945_rs_sta,
-and check it on free_sta?
+Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
+kernel threads after preallocating memory) moved the freezing of kernel
+threads to hibernation_snapshot() function.
 
-Eliad.
+So now, if the call to hibernation_snapshot() fails or returns early due
+to a successful hibernation test, the caller has to thaw processes to
+ensure that the system gets back to its original state.
+
+But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
+processes. Fix this issue. But note that if hibernation_snapshot() returned
+due to a successful freezer test, we still send the value of 'in_suspend'
+(which is now 0) to userspace, because we are not in an error path per-se,
+and moreover, the value of in_suspend correctly depicts the situation here.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ kernel/power/hibernate.c |    2 +-
+ kernel/power/power.h     |    2 ++
+ kernel/power/user.c      |   13 ++++++++++---
+ 3 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index a6b0503..624538a 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -55,7 +55,7 @@ enum {
+ 
+ static int hibernation_mode = HIBERNATION_SHUTDOWN;
+ 
+-static bool freezer_test_done;
++bool freezer_test_done;
+ 
+ static const struct platform_hibernation_ops *hibernation_ops;
+ 
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 23a2db1..0c4defe 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -50,6 +50,8 @@ static inline char *check_image_kernel(struct swsusp_info *info)
+ #define SPARE_PAGES	((1024 * 1024) >> PAGE_SHIFT)
+ 
+ /* kernel/power/hibernate.c */
++extern bool freezer_test_done;
++
+ extern int hibernation_snapshot(int platform_mode);
+ extern int hibernation_restore(int platform_mode);
+ extern int hibernation_platform_enter(void);
+diff --git a/kernel/power/user.c b/kernel/power/user.c
+index 6d8f535..b98b7e1 100644
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -283,10 +283,17 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		}
+ 		pm_restore_gfp_mask();
+ 		error = hibernation_snapshot(data->platform_support);
+-		if (!error)
++		if (error) {
++			thaw_processes();
++		} else {
+ 			error = put_user(in_suspend, (int __user *)arg);
+-		if (!error)
+-			data->ready = 1;
++			if (!error && !freezer_test_done)
++				data->ready = 1;
++			if (freezer_test_done) {
++				freezer_test_done = false;
++				thaw_processes();
++			}
++		}
+ 		break;
+ 
+ 	case SNAPSHOT_ATOMIC_RESTORE:
+
