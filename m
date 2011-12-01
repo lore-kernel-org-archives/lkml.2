@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab1LADO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 22:14:26 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:36291
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753289Ab1LADOZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 22:14:25 -0500
-X-SpamScore: -12
-X-BigFish: VPS-12(zzbb2dK1432N98dKzz1202hzz8275bhz2fh668h839h946h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
-Message-ID: <4ED6F0FD.1080702@am.sony.com>
-Date: Wed, 30 Nov 2011 19:14:05 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1754261Ab1LADRW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 22:17:22 -0500
+Received: from ozlabs.org ([203.10.76.45]:53639 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753518Ab1LADRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 22:17:16 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        markmc@redhat.com
+Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect descriptors
+In-Reply-To: <1322669511.3985.8.camel@lappy>
+References: <1322559196-11139-1-git-send-email-levinsasha928@gmail.com> <20111129125622.GB19157@redhat.com> <1322573688.4395.11.camel@lappy> <20111129135406.GB30966@redhat.com> <1322576464.7003.6.camel@lappy> <20111129145451.GD30966@redhat.com> <4ED4F30F.8000603@redhat.com> <1322669511.3985.8.camel@lappy>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 01 Dec 2011 13:12:25 +1030
+Message-ID: <87wrahrp0u.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC PATCH 0/6] ARM: Remove the __ARCH_WANT_INTERRUPTS_ON_CTXSW
- definition
-References: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
-In-Reply-To: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/11 04:22, Catalin Marinas wrote:
-> Hi,
+On Wed, 30 Nov 2011 18:11:51 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> On Tue, 2011-11-29 at 16:58 +0200, Avi Kivity wrote:
+> > On 11/29/2011 04:54 PM, Michael S. Tsirkin wrote:
+> > > > 
+> > > > Which is actually strange, weren't indirect buffers introduced to make
+> > > > the performance *better*? From what I see it's pretty much the
+> > > > same/worse for virtio-blk.
+> > >
+> > > I know they were introduced to allow adding very large bufs.
+> > > See 9fa29b9df32ba4db055f3977933cd0c1b8fe67cd
+> > > Mark, you wrote the patch, could you tell us which workloads
+> > > benefit the most from indirect bufs?
+> > >
+> > 
+> > Indirects are really for block devices with many spindles, since there
+> > the limiting factor is the number of requests in flight.  Network
+> > interfaces are limited by bandwidth, it's better to increase the ring
+> > size and use direct buffers there (so the ring size more or less
+> > corresponds to the buffer size).
+> > 
 > 
-> This set of patches removes the use of __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> on ARM.
+> I did some testing of indirect descriptors under different workloads.
 
-All 6 patches:
+MST and I discussed getting clever with dynamic limits ages ago, but it
+was down low on the TODO list.  Thanks for diving into this...
 
-Reviewed-by: Frank Rowand <frank.rowand@am.sony.com>
+AFAICT, if the ring never fills, direct is optimal.  When the ring
+fills, indirect is optimal (we're better to queue now than later).
 
+Why not something simple, like a threshold which drops every time we
+fill the ring?
+
+struct vring_virtqueue
+{
+...
+        int indirect_thresh;
+...
+}
+
+virtqueue_add_buf_gfp()
+{
+...
+
+        if (vq->indirect &&
+            (vq->vring.num - vq->num_free) + out + in > vq->indirect_thresh)
+                return indirect()
+...
+
+	if (vq->num_free < out + in) {
+                if (vq->indirect && vq->indirect_thresh > 0)
+                        vq->indirect_thresh--;
+        
+...
+}
+
+Too dumb?
+
+Cheers,
+Rusty.
