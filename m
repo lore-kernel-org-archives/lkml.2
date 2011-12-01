@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab1LAOht (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 09:37:49 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56157 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706Ab1LAOhs (ORCPT
+	id S1754854Ab1LAOiH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 09:38:07 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:16185 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab1LAOiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 09:37:48 -0500
-Message-ID: <4ED79138.5060703@suse.cz>
+	Thu, 1 Dec 2011 09:38:05 -0500
+Message-ID: <4ED79138.60603@siemens.com>
 Date: Thu, 01 Dec 2011 15:37:44 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111123 Thunderbird/9.0
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Keith Packard <keithp@keithp.com>
-CC: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: g33: tiled output
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-2
+To: Eric B Munson <emunson@mgebm.net>
+CC: qemu-devel@nongnu.org, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
+        kvm@vger.kernel.org, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
+        avi@redhat.com
+Subject: Re: [PATCH] Guest stop notification
+References: <1322602574-27072-1-git-send-email-emunson@mgebm.net>
+In-Reply-To: <1322602574-27072-1-git-send-email-emunson@mgebm.net>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2011-11-29 22:36, Eric B Munson wrote:
+> Often when a guest is stopped from the qemu console, it will report spurious
+> soft lockup warnings on resume.  There are kernel patches being discussed that
+> will give the host the ability to tell the guest that it is being stopped and
+> should ignore the soft lockup warning that generates.
+> 
+> Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> Cc: ryanh@linux.vnet.ibm.com
+> Cc: aliguori@us.ibm.com
+> Cc: mtosatti@redhat.com
+> Cc: avi@redhat.com
+> Cc: kvm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  target-i386/kvm.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/target-i386/kvm.c b/target-i386/kvm.c
+> index 5bfc21f..defd364 100644
+> --- a/target-i386/kvm.c
+> +++ b/target-i386/kvm.c
+> @@ -336,12 +336,18 @@ static int kvm_inject_mce_oldstyle(CPUState *env)
+>      return 0;
+>  }
+>  
+> +static void kvm_put_guest_paused(CPUState *penv)
+> +{
+> +    kvm_vcpu_ioctl(penv, KVM_GUEST_PAUSED, 0);
+> +}
 
-For some time, I'm seeing a tiled output like:
-http://www.fi.muni.cz/~xslaby/sklad/panics/bad_tile.png
+I see no need in encapsulating this in a separate function.
 
-This happens sometimes when I open selected pages in firefox. Like
-maps above.
+> +
+>  static void cpu_update_state(void *opaque, int running, RunState state)
+>  {
+>      CPUState *env = opaque;
+>  
+>      if (running) {
+>          env->tsc_valid = false;
+> +	kvm_put_guest_paused(env);
 
-Currently I'm running 3.2.0-rc3-next-20111130. This started appearing
-after I switched to desktop fx. Will anything from the debugfs help to
-track this down? Or better to report this to freedesktop.org?
+checkpatch.pl would have asked you to remove this tab.
 
-# rpm -q Mesa libdrm xorg-x11-server
-Mesa-7.11.1-5.1.x86_64
-libdrm-2.4.27-2.1.x86_64
-xorg-x11-server-7.6_1.10.4-39.1.x86_64
+More general:
 
-intel_drv version 2.16.0
+Why is this x86-only? If the kernel interface is x86-only, what prevents
+making it generic right from the beginning?
 
-00:02.0 VGA compatible controller [0300]: Intel Corporation 82G33/G31
-Express Integrated Graphics Controller [8086:29c2] (rev 02) (prog-if 00
-[VGA controller])
-        Subsystem: Intel Corporation 82G33/G31 Express Integrated
-Graphics Controller [8086:29c2]
-        Flags: bus master, fast devsel, latency 0, IRQ 42
-        Memory at feb80000 (32-bit, non-prefetchable) [size=512K]
-        I/O ports at ec00 [size=8]
-        Memory at d0000000 (32-bit, prefetchable) [size=256M]
-        Memory at fea00000 (32-bit, non-prefetchable) [size=1M]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-        Capabilities: [d0] Power Management version 2
-        Kernel driver in use: i915
-thanks,
+Why do we need a new IOCTL for this? Was there no space left in the
+kvm_run structure e.g. to pass this flag down on next vcpu execution? No
+big deal, just wondering.
+
+Jan
+
 -- 
-js
-suse labs
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
