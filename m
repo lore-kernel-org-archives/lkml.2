@@ -1,36 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab1LARyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 12:54:44 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:36397 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755787Ab1LARyn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 12:54:43 -0500
-Date: Thu, 01 Dec 2011 12:52:00 -0500 (EST)
-Message-Id: <20111201.125200.1219939487021672308.davem@davemloft.net>
-To: panweiping3@gmail.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] ipv4: flush route cache after change accept_local
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1e224b52de77dcd5f994c8e4c77c780c6996e4a4.1322740026.git.panweiping3@gmail.com>
-References: <1e224b52de77dcd5f994c8e4c77c780c6996e4a4.1322740026.git.panweiping3@gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 01 Dec 2011 09:52:04 -0800 (PST)
+	id S1756003Ab1LAR73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 12:59:29 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:33031
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755787Ab1LAR73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 12:59:29 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH 1/1] drivers: hv: Don't OOPS when you cannot init vmbus
+Date: Thu,  1 Dec 2011 09:59:34 -0800
+Message-Id: <1322762374-14161-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Weiping Pan <panweiping3@gmail.com>
-Date: Thu,  1 Dec 2011 19:47:56 +0800
+The hv vmbus driver was causing an OOPS since it was trying to register drivers
+on top of the bus even if initialization of the bus has failed for some
+reason (such as the odd chance someone would run a hv enabled kernel in a
+non-hv environment).
 
-> +		if ((i == IPV4_DEVCONF_ACCEPT_LOCAL - 1))
 
-I don't think the extra parenthesis is appropriate here, please only use
-one set of them.
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/hv/vmbus_drv.c |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-Thanks.
+diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
+index 0c048dd..d3b0b4f 100644
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -62,6 +62,14 @@ struct hv_device_info {
+ 	struct hv_dev_port_info outbound;
+ };
+ 
++static int vmbus_exists(void)
++{
++	if (hv_acpi_dev == NULL)
++		return -ENODEV;
++
++	return 0;
++}
++
+ 
+ static void get_channel_info(struct hv_device *device,
+ 			     struct hv_device_info *info)
+@@ -590,6 +598,10 @@ int __vmbus_driver_register(struct hv_driver *hv_driver, struct module *owner, c
+ 
+ 	pr_info("registering driver %s\n", hv_driver->name);
+ 
++	ret = vmbus_exists();
++	if (ret < 0)
++		return ret;
++
+ 	hv_driver->driver.name = hv_driver->name;
+ 	hv_driver->driver.owner = owner;
+ 	hv_driver->driver.mod_name = mod_name;
+@@ -614,6 +626,9 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver)
+ {
+ 	pr_info("unregistering driver %s\n", hv_driver->name);
+ 
++	if (!vmbus_exists())
++		return;
++
+ 	driver_unregister(&hv_driver->driver);
+ 
+ }
+@@ -776,6 +791,7 @@ static int __init hv_acpi_init(void)
+ 
+ cleanup:
+ 	acpi_bus_unregister_driver(&vmbus_acpi_driver);
++	hv_acpi_dev = NULL;
+ 	return ret;
+ }
+ 
+-- 
+1.7.4.1
+
