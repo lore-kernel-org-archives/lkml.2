@@ -1,60 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab1LAGWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:22:23 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:9322 "EHLO
-	VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab1LAGWW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:22:22 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371K179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 1 Dec 2011 14:34:48 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 6/8] of: add clock providers
-Message-ID: <20111201063447.GH711@S2100-06.ap.freescale.net>
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
- <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
- <20111121153716.GA16417@S2100-06.ap.freescale.net>
- <CACxGe6teGPmgOiwSVQ_PebXo=9x8EVwjH2qQYi5LU813BvY3Ow@mail.gmail.com>
+	id S1752114Ab1LAGak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:30:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:39432 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751169Ab1LAGaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 01:30:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="81920947"
+Date: Thu, 1 Dec 2011 14:30:12 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kwlee@mtekvision.com" <kwlee@mtekvision.com>,
+        "Clark, Joel" <joel.clark@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] Input: tsc2007 - Disable irq when the irq thread is
+ handling data
+Message-ID: <20111201143012.498c506c@feng-i7>
+In-Reply-To: <20111201061015.GD16816@core.coreip.homeip.net>
+References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
+	<20111129092208.GA21758@core.coreip.homeip.net>
+	<20111130100824.535c7e16@feng-i7>
+	<20111201061015.GD16816@core.coreip.homeip.net>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <CACxGe6teGPmgOiwSVQ_PebXo=9x8EVwjH2qQYi5LU813BvY3Ow@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 12:38:19PM -0700, Grant Likely wrote:
-> On Mon, Nov 21, 2011 at 8:37 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
-> > On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
-> >> +struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
-> >> +{
-> >> +     int index = 0;
-> >> +
-> >> +     if (name)
-> >> +             index = of_property_match_string(np, "clock-input-names", name);
-> >
-> > If it fails to match name, we may want to force 'index' back to 0.
+Hi Dmitry,
+
+On Thu, 1 Dec 2011 14:10:15 +0800
+Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+
+> On Wed, Nov 30, 2011 at 10:08:24AM +0800, Feng Tang wrote:
+> > Hi Dmitry,
+> > 
+> > Thanks for the review.
+> > 
+> > On Tue, 29 Nov 2011 17:22:08 +0800
+> > Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> > 
+> > > Hi Feng,
+> > > 
+> > > On Tue, Nov 29, 2011 at 04:12:57PM +0800, Feng Tang wrote:
+> > > > The TSC2007 data sheet say in some case the HW may fire some
+> > > > false interrrupt, which I also met during integrating one
+> > > > TSC2007 device. So add the disable_irq/enable_irq protection
+> > > > around data handling.
+> > > 
+> > > IRQF_ONESHOT should prevent IRQ from firing again while thread is
+> > > servicing it. Did you actually observe it not working?
+> > 
+> > You are right, the tsc's threaded IRQ function is not re-entered,
+> > and the driver is working actually. My bad not stating the problem
+> > clearly. The real problem I want solve is, many platforms including
+> > ours use a GPIO line as the tsc2007's IRQ line, and when these
+> > extra tsc2007 IRQ is triggered on the gpio line, that GPIO
+> > controller will fire up extra noise IRQ accordingly, causing its
+> > ISR to be called. And my patch is trying to let the GPIO controller
+> > driver disable that specific IRQ pin from tsc2007. As disable_irq
+> > will call GPIO irq_chip's irq_disable() or mask() hook.
 > 
-> Actually, if it fails to match, the function should fail.
+> But ONESHOT interrupt handler will not unmask interrupt until thead
+> finishes servicing it so we should not be seeing these extra IRQs.
+> I'm adding Thomas in case I misunderstand how it threaded IRQ
+> supposed to work.
 
-Hmm, that will require the clock-input-name be same as the second
-parameter of clk_get() - con_id, which may have been named to some
-string not suitable for clock-input-name.  For those case, we will
-probably need to change the drivers to rename the con_id?  Or just
-force the clock-input-name to be that improper con_id string?
+I did see these extra IRQs. As the tsc2007 datasheet says, the PENIRQ may
+be falsely triggered, and that signal is passed to the GPIO controller, if
+the tsc2007 specific pin is not disabled in GPIOC level, then the GPIOC HW
+will send out a IRQ anyway. 
 
--- 
-Regards,
-Shawn
+While calling the disable_irq(), it will call the irq_chip's (implemented by
+GPIO controller) irq_disable() or irq_mask() hook to disable that specific
+line for tsc2007.
 
+I did check the original tsc2007 driver, which used the disable_irq/enable_irq
+too, which means this problem is a general one and has been seen before.
+
+Or should we have a another flag in tsc2007 platform data, to let each platform
+chose whether or not to use the disable/enable_irq according to their platform
+need.
+
+> 
+> Also, there is clear_penirq() platform method that is called to clean
+> penirq state, if needed.
+
+Sadly we don't have a way to clear the irq from TSC2007 on our platform :(
+
+Thanks,
+Feng
+
+> 
+> 
+> > 
+> > By grep the tsc2007_platform_data in kernel, I see most of the most
+> > of the tsc2007 platforms are using GPIO line as tsc2007 IRQ ine. So
+> > this should be a general problem.
+> > 
+> > Following is patch with updated log and comments.
+> > 
+> > Thanks,
+> > Feng
+> > 
+> > -----------------
+> > 
+> > From 16585020d27a066d2908959e370ea4f8905a0d34 Mon Sep 17 00:00:00
+> > 2001 From: Feng Tang <feng.tang@intel.com>
+> > Date: Tue, 29 Nov 2011 15:48:42 +0800
+> > Subject: [PATCH 1/2] Input: tsc2007 - Disable irq when the irq
+> > thread is handling data
+> > 
+> > The TSC2007 data sheet say in some case the HW may fire some false
+> > interrrupt, which I also met during integrating one TSC2007 device.
+> > Most of the tsc2007 platforms including ours are using a gpio line
+> > as tsc2007's irq line, so calling disable_irq_nosync() to actually
+> > prevent the gpio controller from firing IRQ for tsc2007 in such
+> > case.
+> > 
+> > Signed-off-by: Feng Tang <feng.tang@intel.com>
+> > ---
+> >  drivers/input/touchscreen/tsc2007.c |   13 +++++++++++++
+> >  1 files changed, 13 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/input/touchscreen/tsc2007.c
+> > b/drivers/input/touchscreen/tsc2007.c index 1f674cb..03c1961 100644
+> > --- a/drivers/input/touchscreen/tsc2007.c
+> > +++ b/drivers/input/touchscreen/tsc2007.c
+> > @@ -171,6 +171,18 @@ static irqreturn_t tsc2007_soft_irq(int irq,
+> > void *handle) struct ts_event tc;
+> >  	u32 rt;
+> >  
+> > +	/*
+> > +	 * Disable the irq, as it may fire several other IRQs
+> > during
+> > +	 * this thread is handling data, as suggested by the
+> > TSC2007
+> > +	 * datasheet, p19, "Touch Detect" chapter.
+> > +	 *
+> > +	 * Most of the tsc2007 platforms are using a gpio line as
+> > +	 * tsc2007's irq line, so calling disable_irq_nosync() will
+> > +	 * actually prevent the gpio controller from firing IRQ for
+> > +	 * this tsc2007 line in such case.
+> > +	 */
+> > +	disable_irq_nosync(irq);
+> > +
+> >  	while (!ts->stopped && tsc2007_is_pen_down(ts)) {
+> >  
+> >  		/* pen is down, continue with the measurement */
+> > @@ -221,6 +233,7 @@ static irqreturn_t tsc2007_soft_irq(int irq,
+> > void *handle) if (ts->clear_penirq)
+> >  		ts->clear_penirq();
+> >  
+> > +	enable_irq(irq);
+> >  	return IRQ_HANDLED;
+> >  }
+> >  
+> > -- 
+> > 1.7.1
