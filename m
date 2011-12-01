@@ -1,81 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab1LAWHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:07:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20246 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754543Ab1LAWHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:07:09 -0500
-Message-ID: <4ED7FA81.9090802@redhat.com>
-Date: Thu, 01 Dec 2011 16:06:57 -0600
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Kyungmin Park <kmpark@infradead.org>
-CC: tytso@mit.edu, tm@tao.ma, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
-References: <20111201070052.GA29708@july>
-In-Reply-To: <20111201070052.GA29708@july>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754830Ab1LAWIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 17:08:48 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51256 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754393Ab1LAWIr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 17:08:47 -0500
+Message-ID: <1322777299.4699.57.camel@twins>
+Subject: Re: [PATCH] jump_label: jump_label for boot options.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jason Baron <jbaron@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        rostedt@goodmis.org
+Date: Thu, 01 Dec 2011 23:08:19 +0100
+In-Reply-To: <20111201211350.GD2443@redhat.com>
+References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20111201154036.GA2443@redhat.com> <1322756898.4699.30.camel@twins>
+	 <20111201165009.GB2443@redhat.com> <1322761185.4699.47.camel@twins>
+	 <20111201211350.GD2443@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/1/11 1:00 AM, Kyungmin Park wrote:
-> From: Kyungmin Park <kyungmin.park@samsung.com>
+On Thu, 2011-12-01 at 16:13 -0500, Jason Baron wrote:
+
+> I think what you have below should work modulo the no out-of-line
+> branches and the following change:
 > 
-> Now trim information doesn't stored at disk so every boot time. it's cleared.
-> and do the trim all disk groups.
-> But assume that it's already trimmed at previous time so don't need to trim it again. So set the intial state as trimmed.
+> > -			if (neg)
+> > +			if (neg) {
+> >  				sysctl_sched_features &= ~(1UL << i);
+> > -			else
+> > +#ifdef HAVE_JUMP_LABEL
+> > +				if (!jump_label_enabled(&sched_feat_keys[i]))
+> > +					jump_label_inc(&sched_feat_keys[i]);
+> > +#endif
 > 
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-> index e2d8be8..97ef342 100644
-> --- a/fs/ext4/mballoc.c
-> +++ b/fs/ext4/mballoc.c
-> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb, ext4_group_t group)
->  		goto err;
->  	}
->  	mark_page_accessed(page);
-> +
-> +	/*
-> +	 * TRIM information is not stored at disk so set the initial
-> +	 * state as trimmed. Since previous time it's already trimmed all
-> +	 */
-> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
+> I think here its:
+> 			if (jump_label_enabled())
+> 				jump_label_dec();
+> 
+> 
+> > +			} else {
+> >  				sysctl_sched_features |= (1UL << i);
+> > +#ifdef HAVE_JUMP_LABEL
+> > +				if (jump_label_enabled(&sched_feat_keys[i]))
+> > +					jump_label_dec(&sched_feat_keys[i]);
+> > +#endif
+> > +			}
+> 
+> Same here:
+> 			if (!jump_label_enabled())
+> 				jump_label_inc()
 
-Hm, so if there were freed but un-trimmed blocks at this point, we will
-never trim them until we free _another_ block in the group, right?  That
-might be a reasonable tradeoff, but it is somewhat surprising behavior.
+Gah, right. An earlier version used !static_branch().
 
-i.e. say we do:
+> 
+> The inc/dec behavior we have now, in fact will only mess up in the case
+> where we define 'static_branch_true()'. Because then, in that case the
+> jump_label_inc() will cause a jump to the false branch. So as long as we
+> don't introduce 'static_branch_true()' and do an early setting of those
+> branches which are true via __init code as you have here, I think things are
+> correct.
 
-mount /mnt
-rm -rf /mnt/very_big_file
-umount /mnt
+That's with your definition of static_branch_true(). Not mine :-)
 
-mount /mnt
-fitrim /mnt
+Mine simply doesn't out-of-line the branch, and ideally has a
+jump_label_key initializer that initializes to true (1) and has gcc
+generate right code.
 
-then we won't trim anything at all, right, despite there being many
-new free blocks?  Which would be rather unexpected.
+I can do the initializer, something like the below. What I cannot do is
+make gcc generate the enabled case so we don't have the small nop window
+(although with the below I'm not sure it really matters).
 
-If we don't store the trimmed state on disk, I think we should
-probably stick with the slower first-time trim, and the more obvious
-behavior (all free blocks are always trimmed whenever a trim
-command is issued).
+But the more important point is not getting the branch out-of-line.
 
--Eric
-
->  err:
->  	ext4_mb_put_buddy_page_lock(&e4b);
->  	return ret;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---
+Index: linux-2.6/include/linux/jump_label.h
+===================================================================
+--- linux-2.6.orig/include/linux/jump_label.h
++++ linux-2.6/include/linux/jump_label.h
+@@ -128,4 +128,6 @@ static inline void jump_label_rate_limit
+ }
+ #endif	/* HAVE_JUMP_LABEL */
+ 
++#define jump_label_key_true	((struct jump_label_key){ .enabled = ATOMIC_INIT(1), })
++
+ #endif	/* _LINUX_JUMP_LABEL_H */
+Index: linux-2.6/kernel/jump_label.c
+===================================================================
+--- linux-2.6.orig/kernel/jump_label.c
++++ linux-2.6/kernel/jump_label.c
+@@ -248,8 +248,13 @@ void jump_label_apply_nops(struct module
+ 	if (iter_start == iter_stop)
+ 		return;
+ 
+-	for (iter = iter_start; iter < iter_stop; iter++)
+-		arch_jump_label_transform_static(iter, JUMP_LABEL_DISABLE);
++	for (iter = iter_start; iter < iter_stop; iter++) {
++		struct jump_label_key *iterk;
++
++		iterk = (struct jump_label_key *)(unsigned long)iter->key;
++		arch_jump_label_transform_static(iter, jump_label_enabled(iterk) ?
++				JUMP_LABEL_ENABLE : JUMP_LABEL_DISABLE);
++	}
+ }
+ 
+ static int jump_label_add_module(struct module *mod)
+@@ -289,8 +294,7 @@ static int jump_label_add_module(struct
+ 		key->next = jlm;
+ 
+ 		if (jump_label_enabled(key))
+-			__jump_label_update(key, iter, iter_stop,
+-					    JUMP_LABEL_ENABLE);
++			__jump_label_update(key, iter, iter_stop, JUMP_LABEL_ENABLE);
+ 	}
+ 
+ 	return 0;
 
