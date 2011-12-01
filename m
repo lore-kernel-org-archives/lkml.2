@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab1LAVXZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:23:25 -0500
-Received: from www.linutronix.de ([62.245.132.108]:45112 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab1LAVXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:23:24 -0500
-Date: Thu, 1 Dec 2011 22:23:22 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ido Yariv <ido@wizery.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] irq: Fix race condition when stopping the irq thread
-In-Reply-To: <1322740508-22640-1-git-send-email-ido@wizery.com>
-Message-ID: <alpine.LFD.2.02.1112012221380.2735@ionos>
-References: <1322740508-22640-1-git-send-email-ido@wizery.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754744Ab1LAV1S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:27:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16774 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754243Ab1LAV1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 16:27:14 -0500
+Date: Thu, 1 Dec 2011 19:25:58 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Eric B Munson <emunson@mgebm.net>
+Cc: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, arnd@arndb.de,
+        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
+        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5 V4]  Avoid soft lockup message when KVM is stopped by
+ host
+Message-ID: <20111201212558.GC25290@amt.cnet>
+References: <1322602539-27004-1-git-send-email-emunson@mgebm.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322602539-27004-1-git-send-email-emunson@mgebm.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011, Ido Yariv wrote:
-
-> In irq_wait_for_interrupt(), the should_stop member is verified before
-> setting the task's state to TASK_INTERRUPTIBLE and calling schedule().
-> In case kthread_stop sets should_stop and wakes up the process after
-> should_stop is checked by the irq thread but before the task's state is
-> changed, the irq thread might never exit:
+On Tue, Nov 29, 2011 at 04:35:34PM -0500, Eric B Munson wrote:
+> Changes from V3:
+> Include CC's on patch 3
+> Drop clear flag ioctl and have the watchdog clear the flag when it is reset
 > 
-> kthread_stop                            irq_wait_for_interrupt
-> ------------                            ----------------------
+> Changes from V2:
+> A new kvm functions defined in kvm_para.h, the only change to pvclock is the
+> initial flag definition
 > 
->                                         ...
-> ...                                     while (!kthread_should_stop()) {
-> kthread->should_stop = 1;
-> wake_up_process(k);
-> wait_for_completion(&kthread->exited);
-> ...
->                                             set_current_state(TASK_INTERRUPTIBLE);
+> Changes from V1:
+> (Thanks Marcelo)
+> Host code has all been moved to arch/x86/kvm/x86.c
+> KVM_PAUSE_GUEST was renamed to KVM_GUEST_PAUSED
 > 
->                                             ...
+> When a guest kernel is stopped by the host hypervisor it can look like a soft
+> lockup to the guest kernel.  This false warning can mask later soft lockup
+> warnings which may be real.  This patch series adds a method for a host
+> hypervisor to communicate to a guest kernel that it is being stopped.  The
+> final patch in the series has the watchdog check this flag when it goes to
+> issue a soft lockup warning and skip the warning if the guest knows it was
+> stopped.
 > 
->                                             schedule();
->                                         }
->                                         ...
-> 
-> Fix this by checking if the thread should stop after modifying the
-> task's state.
+> It was attempted to solve this in Qemu, but the side effects of saving and
+> restoring the clock and tsc for each vcpu put the wall clock of the guest behind
+> by the amount of time of the pause.  This forces a guest to have ntp running
+> in order to keep the wall clock accurate.
 
-Good catch! I restructure it to:
+Looks good to me.
 
---- tip.orig/kernel/irq/manage.c
-+++ tip/kernel/irq/manage.c
-@@ -623,8 +623,9 @@ static irqreturn_t irq_nested_primary_ha
- 
- static int irq_wait_for_interrupt(struct irqaction *action)
- {
-+	set_current_state(TASK_INTERRUPTIBLE);
-+
- 	while (!kthread_should_stop()) {
--		set_current_state(TASK_INTERRUPTIBLE);
- 
- 		if (test_and_clear_bit(IRQTF_RUNTHREAD,
- 				       &action->thread_flags)) {
-@@ -632,7 +633,9 @@ static int irq_wait_for_interrupt(struct
- 			return 0;
- 		}
- 		schedule();
-+		set_current_state(TASK_INTERRUPTIBLE);
- 	}
-+	__set_current_state(TASK_RUNNING);
- 	return -1;
- }
- 
-That saves us the extra conditional in the loop.
-
-Thanks,
-
-	tglx
