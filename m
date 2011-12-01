@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab1LAJ5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:57:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59993 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab1LAJ5O (ORCPT
+	id S1752919Ab1LAJ5d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:57:33 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37037 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416Ab1LAJ5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 04:57:14 -0500
-Subject: Re: [PATCH] mm: incorrect overflow check in shrink_slab()
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Xi Wang <xi.wang@gmail.com>
-In-Reply-To: <20111201183202.2e5bd872.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 1 Dec 2011 04:57:10 -0500
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7bit
-Message-Id: <C71EB769-AD4F-4860-BC1D-0BEC268894AC@gmail.com>
-References: <0D9D9F79-204D-4460-8CE7-A583C5C38A1E@gmail.com> <20111201183202.2e5bd872.kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Apple Mail (2.1084)
+	Thu, 1 Dec 2011 04:57:31 -0500
+MIME-Version: 1.0
+From: Jean-Michel Hautbois <jhautbois@gmail.com>
+Date: Thu, 1 Dec 2011 10:57:09 +0100
+Message-ID: <CAL8zT=juU_PC92R4za31R8Lmur0PrFwog1m1fk+PEarW_0C6ng@mail.gmail.com>
+Subject: Different behaviour when using "nosmp" parameter on SMP and UP
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: linuxppc-dev <linuxppc-dev@ozlabs.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 1, 2011, at 4:32 AM, KAMEZAWA Hiroyuki wrote:
-> Nice catch but.... the 'total_scan" shouldn't be long ?
-> Rather than type casting ?
+Hi,
 
-Could be..  I am just trying to avoid signed integer overflow like
-"total_scan += delta" in that case, which is undefined, even though
-the kernel is compiled with -fno-strict-overflow.
+I have a P2020 CPU (powerpc) and I compiled it with two different defconfigs.
+The first one is a SMP, 2 cores, launched with the "nosmp" kernel
+parameter, the other one is an UP kernel.
 
-- xi
+My driver behaviour is not the same whether launching one or the
+other. It is hard to explain more precisely, as it deals only with
+ioctl which only does ioread32/iowrite32 on a PCIe device.
+But I can tell that it never works the same way when UP (not working
+correctly), or SMP "nosmp" (working) or even SMP (not working).
 
+AFAIK, the "nosmp" parameter should tell the kernel to act the same is
+if it is an UP kernel, and it disables IO APIC, which is not an issue
+in my case.
+
+Can you think about anything that would explain it, or would help me
+debugging it ?
+
+Thanks in advance for your help.
+Regards,
+JM
