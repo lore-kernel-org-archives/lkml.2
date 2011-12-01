@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab1LAOCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 09:02:10 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:41334
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754289Ab1LAOCJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 09:02:09 -0500
-X-SpamScore: -6
-X-BigFish: VS-6(zz1432Nzz1202hzzz2dh2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-From: Yoder Stuart-B08248 <B08248@freescale.com>
-To: Chris Wright <chrisw@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: David Gibson <dwg@au1.ibm.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "agraf@suse.de" <agraf@suse.de>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: RE: [PATCH 1/4] iommu: Add iommu_device_group callback and
- iommu_group sysfs entry
-Thread-Topic: [PATCH 1/4] iommu: Add iommu_device_group callback and
- iommu_group sysfs entry
-Thread-Index: AQHMrxREhtMwThCA10C5HWgeixjU75XFPcoAgAAJroCAAThNgIAADZ0AgAABa4CAAAHhAIAADNmAgAAENACAAGKMYA==
-Date: Thu, 1 Dec 2011 14:02:06 +0000
-Message-ID: <9F6FE96B71CF29479FF1CDC8046E15032808E0@039-SN1MPN1-003.039d.mgd.msft.net>
-References: <20111021195412.8438.9951.stgit@s20.home>
- <20111021195605.8438.81609.stgit@s20.home>
- <20111130024205.GF5435@truffala.fritz.box>
- <1322628672.21641.39.camel@pasglop> <1322630751.19120.222.camel@bling.home>
- <20111201000337.GA5427@truffala.fritz.box>
- <20111201005220.GG29071@x200.localdomain>
- <20111201005725.GE5427@truffala.fritz.box>
- <20111201010408.GH29071@x200.localdomain> <1322704207.3729.10.camel@pasglop>
- <20111201020510.GJ29071@x200.localdomain>
-In-Reply-To: <20111201020510.GJ29071@x200.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.83.144]
-Content-Type: text/plain; charset="us-ascii"
+	id S1754607Ab1LAODv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 09:03:51 -0500
+Received: from gate.crashing.org ([63.228.1.57]:52800 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754289Ab1LAODu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 09:03:50 -0500
+Subject: Re: Different behaviour when using "nosmp" parameter on SMP and UP
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <CAL8zT=juU_PC92R4za31R8Lmur0PrFwog1m1fk+PEarW_0C6ng@mail.gmail.com>
+Date: Thu, 1 Dec 2011 08:03:42 -0600
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Message-Id: <D70E8CC4-9FA3-4DC9-B623-02F32EFBFE0F@kernel.crashing.org>
+References: <CAL8zT=juU_PC92R4za31R8Lmur0PrFwog1m1fk+PEarW_0C6ng@mail.gmail.com>
+To: Jean-Michel Hautbois <jhautbois@gmail.com>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> > That way the domain information is available generically (can be match
-> > with pci_domain_nr() for example), and sysfs can then be layed out as
-> >
-> > /sys/bus/pci/groups/<domain>/<id>
-> >
-> > Which is nicer than having enormous id's
+On Dec 1, 2011, at 3:57 AM, Jean-Michel Hautbois wrote:
+
+> Hi,
 > 
-> Seems fine to me (although I missed /sys/bus/pci/groups/ introduction), except that I think
-> the freescale folks aren't interested in PCI which is one reason why the thing is just an
-> opaque id.
+> I have a P2020 CPU (powerpc) and I compiled it with two different defconfigs.
+> The first one is a SMP, 2 cores, launched with the "nosmp" kernel
+> parameter, the other one is an UP kernel.
+> 
+> My driver behaviour is not the same whether launching one or the
+> other. It is hard to explain more precisely, as it deals only with
+> ioctl which only does ioread32/iowrite32 on a PCIe device.
+> But I can tell that it never works the same way when UP (not working
+> correctly), or SMP "nosmp" (working) or even SMP (not working).
+> 
+> AFAIK, the "nosmp" parameter should tell the kernel to act the same is
+> if it is an UP kernel, and it disables IO APIC, which is not an issue
+> in my case.
+> 
+> Can you think about anything that would explain it, or would help me
+> debugging it ?
 
-We are interested in PCI, but non-PCI as well.  All DMA devices,
-have a globally unique "logical I/O device number" (LIODN) which
-will map to a group # for us.
+This is a bit odd, hard to say w/o more details on what exactly your code is trying to do and wait the failure is.
 
-Stuart
+The larger differences between SMP & UP build would be setting of memory attribute for cache coherency.  In UP case we don't set it.
 
+Between SMP 'nosmp' and SMP 'on' cases you seem like you're hitting some locking condition.
+
+Guessing your running into a timing & locking issue that you're getting lucky on the SMP 'nosmp' case such that it just happens to work.
+
+- k
