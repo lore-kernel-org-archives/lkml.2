@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab1LAPUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:20:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47485 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab1LAPUE (ORCPT
+	id S1755033Ab1LAPYm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:24:42 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:45352 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab1LAPYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:20:04 -0500
-X-Authority-Analysis: v=2.0 cv=dOUkaZlb c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=s3E4aK5dlEwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=Jys0o8JDEI-FhwHUjcEA:9 a=fKLjgkNCVYHUkDEt49QA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: Suspend and resume on ASUS Laptops
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-In-Reply-To: <201112011538.06912.oneukum@suse.de>
-References: <1322712689.30977.11.camel@frodo>
-	 <201112011248.44449.oneukum@suse.de> <1322749734.30977.16.camel@frodo>
-	 <201112011538.06912.oneukum@suse.de>
+	Thu, 1 Dec 2011 10:24:41 -0500
+Message-ID: <1322753070.11611.0.camel@phoenix>
+Subject: [PATCH 1/2] ARM: exynos4: Fix build error due to 'gic_bank_offset'
+ undeclared
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Marc Zyngier <marc.zyngier@arm.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Date: Thu, 01 Dec 2011 23:24:30 +0800
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 01 Dec 2011 10:20:02 -0500
-Message-ID: <1322752802.30977.28.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 15:38 +0100, Oliver Neukum wrote:
-> Am Donnerstag, 1. Dezember 2011, 15:28:54 schrieb Steven Rostedt:
-> > On Thu, 2011-12-01 at 12:48 +0100, Oliver Neukum wrote:
-> > 
-> > > What errors are seen in the kernel log?
-> > 
-> > Without the script, I don't see any errors. Is there some debug thing
-> > you want me to do? There's no error messages but the system just hangs
-> > on suspend. It never makes it to the suspend state. The only way out of
-> > it is to press and hold the power button for 10 seconds to force a hard
-> > reboot.
-> 
-> I see. I thought the system just refuses to enter S3/4. That it hangs was
-> new to me. Has there been a mail thread about this problem already?
+Fix below build error:
+  CC      arch/arm/mach-exynos/cpu.o
+arch/arm/mach-exynos/cpu.c: In function 'exynos4_init_irq':
+arch/arm/mach-exynos/cpu.c:245: error: 'gic_bank_offset' undeclared (first use in this function)
+arch/arm/mach-exynos/cpu.c:245: error: (Each undeclared identifier is reported only once
+arch/arm/mach-exynos/cpu.c:245: error: for each function it appears in.)
+arch/arm/mach-exynos/cpu.c:243: warning: unused variable 'bank_offset'
+make[1]: *** [arch/arm/mach-exynos/cpu.o] Error 1
+make: *** [arch/arm/mach-exynos] Error 2
 
-No idea, but I did reference a website that posted this fix. I'm not
-sure how the fix came about, or what discussions were done. The fix
-seems to have been made by Ubuntu, which means its just another thing
-they looked at without sending upstream :-p
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ arch/arm/mach-exynos/cpu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> If not, what is the last thing you see if you go to S3 after you booted
-> with no_console_suspend on the kernel command line?
+diff --git a/arch/arm/mach-exynos/cpu.c b/arch/arm/mach-exynos/cpu.c
+index fed62f4..c7cb462 100644
+--- a/arch/arm/mach-exynos/cpu.c
++++ b/arch/arm/mach-exynos/cpu.c
+@@ -240,7 +240,7 @@ static const struct of_device_id exynos4_dt_irq_match[] = {
+ void __init exynos4_init_irq(void)
+ {
+ 	int irq;
+-	unsigned int bank_offset;
++	unsigned int gic_bank_offset;
+ 
+ 	gic_bank_offset = soc_is_exynos4412() ? 0x4000 : 0x8000;
+ 
+-- 
+1.7.5.4
 
-Hmm, no_console_suspend on the kernel command line seems to do nothing.
-It still hangs hard without the script, and suspend works fine with the
-script.
-
-I noticed that /sys/module/printk/parameters/console_suspend doesn't
-exist. Am I missing a kernel config option?
-
--- Steve
 
 
