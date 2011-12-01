@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab1LADRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 22:17:22 -0500
-Received: from ozlabs.org ([203.10.76.45]:53639 "EHLO ozlabs.org"
+	id S1754181Ab1LADRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 22:17:20 -0500
+Received: from ozlabs.org ([203.10.76.45]:35838 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753518Ab1LADRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753506Ab1LADRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 Nov 2011 22:17:16 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sasha Levin <levinsasha928@gmail.com>, Avi Kivity <avi@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect descriptors
-In-Reply-To: <1322669511.3985.8.camel@lappy>
-References: <1322559196-11139-1-git-send-email-levinsasha928@gmail.com> <20111129125622.GB19157@redhat.com> <1322573688.4395.11.camel@lappy> <20111129135406.GB30966@redhat.com> <1322576464.7003.6.camel@lappy> <20111129145451.GD30966@redhat.com> <4ED4F30F.8000603@redhat.com> <1322669511.3985.8.camel@lappy>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Subject: Re: [PATCHv3 RFC] virtio-pci: flexible configuration layout
+In-Reply-To: <1322658763.3985.4.camel@lappy>
+References: <20111122183621.GA5235@redhat.com> <87hb1v1scp.fsf@rustcorp.com.au> <20111123084640.GE22734@redhat.com> <87ty5uxso3.fsf@rustcorp.com.au> <20111124070728.GH29994@redhat.com> <87vcq5t69c.fsf@rustcorp.com.au> <1322471731.3577.10.camel@lappy> <87pqgats49.fsf@rustcorp.com.au> <1322658763.3985.4.camel@lappy>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 01 Dec 2011 13:12:25 +1030
-Message-ID: <87wrahrp0u.fsf@rustcorp.com.au>
+Date: Thu, 01 Dec 2011 13:12:42 +1030
+Message-ID: <87vcq1rp0d.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Nov 2011 18:11:51 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Tue, 2011-11-29 at 16:58 +0200, Avi Kivity wrote:
-> > On 11/29/2011 04:54 PM, Michael S. Tsirkin wrote:
-> > > > 
-> > > > Which is actually strange, weren't indirect buffers introduced to make
-> > > > the performance *better*? From what I see it's pretty much the
-> > > > same/worse for virtio-blk.
-> > >
-> > > I know they were introduced to allow adding very large bufs.
-> > > See 9fa29b9df32ba4db055f3977933cd0c1b8fe67cd
-> > > Mark, you wrote the patch, could you tell us which workloads
-> > > benefit the most from indirect bufs?
-> > >
+On Wed, 30 Nov 2011 15:12:43 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> On Wed, 2011-11-30 at 10:10 +1030, Rusty Russell wrote:
+> > On Mon, 28 Nov 2011 11:15:31 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > > On Mon, 2011-11-28 at 11:25 +1030, Rusty Russell wrote:
+> > > > I'd like to see kvmtools remove support for legacy mode altogether,
+> > > > but they probably have existing users.
+> > > 
+> > > While we can't simply remove it right away, instead of mixing our
+> > > implementation for both legacy and new spec in the same code we can
+> > > split the virtio-pci implementation into two:
+> > > 
+> > > 	- virtio/virtio-pci-legacy.c
+> > > 	- virtio/virtio-pci.c
+> > > 
+> > > At that point we can #ifdef the entire virtio-pci-legacy.c for now and
+> > > remove it at the same time legacy virtio-pci is removed from the kernel.
 > > 
-> > Indirects are really for block devices with many spindles, since there
-> > the limiting factor is the number of requests in flight.  Network
-> > interfaces are limited by bandwidth, it's better to increase the ring
-> > size and use direct buffers there (so the ring size more or less
-> > corresponds to the buffer size).
-> > 
+> > Hmm, that might be neat, but we can't tell the driver core to try
+> > virtio-pci before virtio-pci-legacy, so we need detection code in both
+> > modules (and add a "force" flag to virtio-pci-legacy to tell it to
+> > accept the device even if it's not a legacy-only one).
 > 
-> I did some testing of indirect descriptors under different workloads.
+> I was thinking more in the direction of fallback code in virtio-pci.c to
+> virtio-pci-legacy.c.
+> 
+> Something like:
+> #ifdef VIRTIO_PCI_LEGACY
+> [Create BAR0 and map it to virtio-pci-legacy.c]
+> #endif
+> 
+> So BAR0 isn't defined as long as legacy code is there, which makes
+> falling back to legacy pretty simple.
 
-MST and I discussed getting clever with dynamic limits ages ago, but it
-was down low on the TODO list.  Thanks for diving into this...
+But it's nicer to see the driver actually labelled "virtio-pci-legacy",
+and such a module.
 
-AFAICT, if the ring never fills, direct is optimal.  When the ring
-fills, indirect is optimal (we're better to queue now than later).
-
-Why not something simple, like a threshold which drops every time we
-fill the ring?
-
-struct vring_virtqueue
-{
-...
-        int indirect_thresh;
-...
-}
-
-virtqueue_add_buf_gfp()
-{
-...
-
-        if (vq->indirect &&
-            (vq->vring.num - vq->num_free) + out + in > vq->indirect_thresh)
-                return indirect()
-...
-
-	if (vq->num_free < out + in) {
-                if (vq->indirect && vq->indirect_thresh > 0)
-                        vq->indirect_thresh--;
-        
-...
-}
-
-Too dumb?
+I'll code something up, see what it looks like.
 
 Cheers,
 Rusty.
