@@ -1,53 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab1LAWs5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:48:57 -0500
-Received: from mx3.schottelius.org ([77.109.138.221]:59876 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab1LAWsx (ORCPT
+	id S1755373Ab1LAWxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 17:53:16 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43930 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755172Ab1LAWxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:48:53 -0500
-Date: Thu, 1 Dec 2011 23:48:51 +0100
-From: Nico Schottelius <nico-linux-20111201@schottelius.org>
-To: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Cc: b43-dev@lists.infradead.org, nico-linux-20111201@schottelius.org
-Subject: BCM43224: 00:00:00:00:00:00 address (3.2.0-rc3-00099-g883381d)
-Message-ID: <20111201224851.GB20536@ethz.ch>
-Mail-Followup-To: Nico Schottelius <nico-linux-20111201@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-	b43-dev@lists.infradead.org
+	Thu, 1 Dec 2011 17:53:15 -0500
+Date: Thu, 1 Dec 2011 14:53:07 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
+        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ocfs2 fixes for 3.2-rc3
+Message-ID: <20111201225306.GP1495@noexit.corp.google.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Mark Fasheh <mfasheh@suse.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.2.0-rc3-00099-g883381d x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Linus et al,
+	Here are the all of the ocfs2 fixes that have been stewing in my
+tree.  Almost all of them have been in linux-next since before 3.1; I've
+just been behind.
+	Please pull.
 
-just received another version of the macbook air, which is
-labeled MacBookAir4,2 again.
+Joel
 
-This time I'm on Linus' 3.2.0-rc3-00099-g883381d and cannot
-use the integrated wifi:
+The following changes since commit b6844e8f64920cdee620157252169ba63afb0c89:
 
-[23:43] brief:drivers# ip l show wlan0 
-2: wlan0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN qlen 1000
-    link/ether 00:00:00:00:00:00 brd ff:ff:ff:ff:ff:ff
-[23:43] brief:drivers# ip l s wlan0 up
-RTNETLINK answers: Cannot assign requested address
+  Merge branch 'for-linus' of master.kernel.org:/home/rmk/linux-2.6-arm (2011-07-24 10:20:54 -0700)
 
-It seems this time b43 is responsible for the card, not brcmsmac
-anymore (superseeded it seems).
+are available in the git repository at:
 
-Is there a working tree out there somewhere? :-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
 
-Cheers,
+Akinobu Mita (2):
+      ocfs2: use proper little-endian bitops
+      ocfs2: avoid unaligned access to dqc_bitmap
 
-Nico
+Dan Carpenter (2):
+      ocfs2: checking the wrong variable in ocfs2_move_extent()
+      ocfs2: null deref on allocation error
 
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Dan Magenheimer (1):
+      ocfs2: send correct UUID to cleancache initialization
+
+Jan Kara (2):
+      ocfs2: Avoid livelock in ocfs2_readpage()
+      ocfs2: Use filemap_write_and_wait() instead of write_inode_now()
+
+Joel Becker (1):
+      Merge branch 'mw-3.1-jul25' of git://oss.oracle.com/git/smushran/linux-2.6 into ocfs2-fixes
+
+Julia Lawall (1):
+      fs/ocfs2/dlm/dlmlock.c: free kmem_cache_zalloc'd data using kmem_cache_free
+
+Mark Fasheh (2):
+      ocfs2: serialize unaligned aio
+      ocfs2: honor O_(D)SYNC flag in fallocate
+
+Sunil Mushran (16):
+      ocfs2/cluster: Abort heartbeat start on hard-ro devices
+      ocfs2/cluster: Clean up messages in o2net
+      ocfs2/dlm: Clean up messages in o2dlm
+      ocfs2: Clean up messages in stack_o2cb.c
+      ocfs2/dlm: Cleanup up dlm_finish_local_lockres_recovery()
+      ocfs2/dlm: Clean up refmap helpers
+      ocfs2/dlm: Trace insert/remove of resource to/from hash
+      ocfs2/dlm: Cleanup dlm_wait_for_node_death() and dlm_wait_for_node_recovery()
+      ocfs2/dlm: Take inflight reference count for remotely mastered resources too
+      ocfs2/dlm: dlmlock_remote() needs to account for remastery
+      ocfs2/cluster: Fix output in file elapsed_time_in_ms
+      ocfs2/cluster: Add new function o2net_fill_node_map()
+      ocfs2/cluster: Cluster up now includes network connections too
+      ocfs2: Clean up messages in the fs
+      ocfs2: Add comment about orphan scanning
+      ocfs2: Implement llseek()
+
+Tiger Yang (1):
+      ocfs2: Bugfix for hard readonly mount
+
+Wengang Wang (3):
+      ocfs2: Fix ocfs2_page_mkwrite()
+      ocfs2: make direntry invalid when deleting it
+      ocfs2: Commit transactions in error cases -v2
+
+Xiaowei.Hu (1):
+      ocfs2: Add a missing journal credit in ocfs2_link_credits() -v2
+
+ fs/ocfs2/alloc.c             |    2 +-
+ fs/ocfs2/aops.c              |   69 +++++++++++++--
+ fs/ocfs2/aops.h              |   14 +++
+ fs/ocfs2/cluster/heartbeat.c |  194 ++++++++++++++++++++++++++----------------
+ fs/ocfs2/cluster/netdebug.c  |  102 +++++++++++++++-------
+ fs/ocfs2/cluster/tcp.c       |  138 ++++++++++++++++--------------
+ fs/ocfs2/cluster/tcp.h       |    2 +
+ fs/ocfs2/dir.c               |    3 +-
+ fs/ocfs2/dlm/dlmcommon.h     |   56 +++----------
+ fs/ocfs2/dlm/dlmdomain.c     |   44 +++++-----
+ fs/ocfs2/dlm/dlmlock.c       |   54 ++++++------
+ fs/ocfs2/dlm/dlmmaster.c     |  175 +++++++++++++++++++-------------------
+ fs/ocfs2/dlm/dlmrecovery.c   |  164 ++++++++++++++++++------------------
+ fs/ocfs2/dlm/dlmthread.c     |   16 ++--
+ fs/ocfs2/dlmglue.c           |   21 +++--
+ fs/ocfs2/extent_map.c        |   96 +++++++++++++++++++++
+ fs/ocfs2/extent_map.h        |    2 +
+ fs/ocfs2/file.c              |   96 ++++++++++++++++++++-
+ fs/ocfs2/inode.c             |    2 +-
+ fs/ocfs2/inode.h             |    3 +
+ fs/ocfs2/ioctl.c             |   11 ++-
+ fs/ocfs2/journal.c           |   23 +++++-
+ fs/ocfs2/journal.h           |    5 +-
+ fs/ocfs2/mmap.c              |   53 +++++------
+ fs/ocfs2/move_extents.c      |    2 +-
+ fs/ocfs2/ocfs2.h             |   51 +++++++++++-
+ fs/ocfs2/quota_local.c       |   23 +++--
+ fs/ocfs2/slot_map.c          |    4 +-
+ fs/ocfs2/stack_o2cb.c        |   71 ++++++++++++++--
+ fs/ocfs2/super.c             |   25 ++++--
+ fs/ocfs2/xattr.c             |   10 ++-
+ 31 files changed, 995 insertions(+), 536 deletions(-)
