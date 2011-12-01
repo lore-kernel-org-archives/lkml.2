@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab1LANYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 08:24:35 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:58401
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754452Ab1LANYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 08:24:34 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        James.Bottomley@HansenPartnership.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/5] Staging: hv: storvsc: Disable clustering
-Date: Thu,  1 Dec 2011 04:59:16 -0800
-Message-Id: <1322744360-13067-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1322744315-13017-1-git-send-email-kys@microsoft.com>
-References: <1322744315-13017-1-git-send-email-kys@microsoft.com>
+	id S1754287Ab1LAN02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 08:26:28 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:56125 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab1LAN00 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 08:26:26 -0500
+Date: Thu, 1 Dec 2011 18:54:06 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>, tulasidhard@gmail.com
+Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
+Message-ID: <20111201132406.GI18380@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
+ <1322071812.14799.87.camel@twins>
+ <20111124134742.GH28065@linux.vnet.ibm.com>
+ <1322492384.2921.143.camel@twins>
+ <20111129083322.GD13445@linux.vnet.ibm.com>
+ <1322567326.2921.226.camel@twins>
+ <20111129162237.GA18380@linux.vnet.ibm.com>
+ <1322655933.2921.271.camel@twins>
+ <20111201054018.GC18380@linux.vnet.ibm.com>
+ <1322739387.4699.10.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1322739387.4699.10.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11120113-1780-0000-0000-0000015801C4
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000235; HX=3.00000178; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00092345; UDB=6.00024445; UTC=2011-12-01
+ 13:26:24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disable clustering, since the host side on Hyper-V requires that
-each I/O element not exceed the page size. As part of this
-cleanup, get rid of the function to merge bvecs, as the primary
-reason for this function was to avoid having an element exceed
-the page size. 
+> > I was following the general convention being used within the kernel to not
+> > bother about the area that we are going to unmap. For example: If a ptraced
+> > area were to be unmapped or remapped, I dont see the breakpoint being
+> > removed and added back. Also if a ptrace process is exitting, we dont go
+> > about removing the installed breakpoints.
+> > 
+> > Also we would still need the check for EEXIST and read_opcode for handling
+> > the fork() case. So even if we add extra line to remove the actual
+> > breakpoint in munmap, It doesnt make the code any more simpler.
+> 
+> Not adding the counter now does though. The whole mm->mm_uprobes_count
+> thing itself is basically an optimization.
+> 
+> Without it we'll get to uprobe_notify_resume() too often, but who cares.
+> And not having to worry about it removes a lot of this complexity.
+> 
+> Then in the patch where you introduce this optimization you can list all
+> the nitty gritty details of mremap/fork and counter balancing.
+> 
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/staging/hv/storvsc_drv.c |   18 +-----------------
- 1 files changed, 1 insertions(+), 17 deletions(-)
+Okay, I will move the optimization parts into a separate patch and keep
+it at the end of the patchset.
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 0245143..9153f98 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -798,13 +798,6 @@ static int storvsc_device_alloc(struct scsi_device *sdevice)
- 	return 0;
- }
- 
--static int storvsc_merge_bvec(struct request_queue *q,
--			      struct bvec_merge_data *bmd, struct bio_vec *bvec)
--{
--	/* checking done by caller. */
--	return bvec->bv_len;
--}
--
- static int storvsc_device_configure(struct scsi_device *sdevice)
- {
- 	scsi_adjust_queue_depth(sdevice, MSG_SIMPLE_TAG,
-@@ -812,8 +805,6 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
- 
- 	blk_queue_max_segment_size(sdevice->request_queue, PAGE_SIZE);
- 
--	blk_queue_merge_bvec(sdevice->request_queue, storvsc_merge_bvec);
--
- 	blk_queue_bounce_limit(sdevice->request_queue, BLK_BOUNCE_ANY);
- 
- 	return 0;
-@@ -1375,14 +1366,7 @@ static struct scsi_host_template scsi_driver = {
- 	/* no use setting to 0 since ll_blk_rw reset it to 1 */
- 	/* currently 32 */
- 	.sg_tablesize =		MAX_MULTIPAGE_BUFFER_COUNT,
--	/*
--	 * ENABLE_CLUSTERING allows mutiple physically contig bio_vecs to merge
--	 * into 1 sg element. If set, we must limit the max_segment_size to
--	 * PAGE_SIZE, otherwise we may get 1 sg element that represents
--	 * multiple
--	 */
--	/* physically contig pfns (ie sg[x].length > PAGE_SIZE). */
--	.use_clustering =	ENABLE_CLUSTERING,
-+	.use_clustering =	DISABLE_CLUSTERING,
- 	/* Make sure we dont get a sg segment crosses a page boundary */
- 	.dma_boundary =		PAGE_SIZE-1,
- };
+> Another point, maybe add some comments on how the generic bits of
+> uprobe_notify_resume()/uprobe_bkpt_notifier()/uprobe_post_notifier() etc
+> hang together and what the arch stuff should do. 
+> 
+> Currently I have to flip back and forth between those to figure out what
+> happens.
+> 
+> Having that information also helps validate that x86 does indeed do what
+> is expected and helps other arch maintainers write their code without
+> having to grok wtf x86 does.
+> 
+
+Okay, will work towards this.
+
 -- 
-1.7.4.1
+Thanks and Regards
+Srikar
 
