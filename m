@@ -1,142 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab1LALe6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 06:34:58 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53382 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753218Ab1LALe4 (ORCPT
+	id S1753322Ab1LALhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 06:37:13 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43242 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752490Ab1LALhL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 06:34:56 -0500
-Date: Thu, 1 Dec 2011 11:34:50 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        MyungJoo Ham <myungjoo.ham@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>,
-        Johan PALSSON <johan.palsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-Message-ID: <20111201113449.GD2915@opensource.wolfsonmicro.com>
-References: <201111251402.28016.arnd@arndb.de>
- <CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
- <201111281753.45287.arnd@arndb.de>
- <CAJ0PZbT8FcCq=6GzLxOhhpRvCbCaJJEhE9_2GXXT4P0XZp6H-w@mail.gmail.com>
- <20111130135847.68a6e4c6@notabene.brown>
- <CAJ0PZbRpoz+uK4QUAO4RG5bhsSpNvm5U-ROtbduXhnFTLMZ1VQ@mail.gmail.com>
- <20111201095633.700e2923@notabene.brown>
- <20111130231740.GA25340@opensource.wolfsonmicro.com>
- <20111130232529.GB3220@core.coreip.homeip.net>
- <20111201162144.187ecca3@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201162144.187ecca3@notabene.brown>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 Dec 2011 06:37:11 -0500
+Message-ID: <1322739387.4699.10.camel@twins>
+Subject: Re: [PATCH v7 3.2-rc2 4/30] uprobes: Define hooks for mmap/munmap.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>, tulasidhard@gmail.com
+Date: Thu, 01 Dec 2011 12:36:27 +0100
+In-Reply-To: <20111201054018.GC18380@linux.vnet.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+	 <20111118110723.10512.66282.sendpatchset@srdronam.in.ibm.com>
+	 <1322071812.14799.87.camel@twins>
+	 <20111124134742.GH28065@linux.vnet.ibm.com>
+	 <1322492384.2921.143.camel@twins>
+	 <20111129083322.GD13445@linux.vnet.ibm.com>
+	 <1322567326.2921.226.camel@twins>
+	 <20111129162237.GA18380@linux.vnet.ibm.com>
+	 <1322655933.2921.271.camel@twins>
+	 <20111201054018.GC18380@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 04:21:44PM +1100, NeilBrown wrote:
-> On Wed, 30 Nov 2011 15:25:29 -0800 Dmitry Torokhov
+On Thu, 2011-12-01 at 11:10 +0530, Srikar Dronamraju wrote:
 
-> > Physical jack does not have to map 1:1 on logical jack. So 1 physical
-> > docking connector can be represented by 1 logical video connector, line
-> > in, line out, microphone and maybe else.
+> > What I really would like is for this patch set not to have such subtle
+> > stuff at all, esp. at first. Once its in and its been used a bit we can
+> > start optimizing and add subtle crap like this.
+> 
+> We actually started the discussion of why we increment the count in
+> mmap_uprobe() in EEXIST case (and read_opcode()). It exists for two
+> reasons.
+> 	- To handle fork case (that I wrote in another mail).
+> 	- To handle mremap.(the case where we are discussing now)
+> 
+> I would contend that removing the breakpoint in munmap doesnt amount to
+> optimization. Since the start of unmap(), there cannot be another
+> remove_breakpoint called for the vma,vaddr tuple, until the vma is
+> cleaned up, or the subsequent mmap() is done. So the case of accounting
+> for an already decremented count should never occur.
+> 
+> I was following the general convention being used within the kernel to not
+> bother about the area that we are going to unmap. For example: If a ptraced
+> area were to be unmapped or remapped, I dont see the breakpoint being
+> removed and added back. Also if a ptrace process is exitting, we dont go
+> about removing the installed breakpoints.
+> 
+> Also we would still need the check for EEXIST and read_opcode for handling
+> the fork() case. So even if we add extra line to remove the actual
+> breakpoint in munmap, It doesnt make the code any more simpler.
 
-> That is just what I was thinking :-)
+Not adding the counter now does though. The whole mm->mm_uprobes_count
+thing itself is basically an optimization.
 
-> It seems that a "connector" could be modelled as a set of binary switches,
-> one for each service that is exported (or imported? ... "communicated" maybe)
-> through the connector.  When a cable (or dock) is plugged in, some number of
-> these switches are all switched on concurrently.  When it is unplugged they
-> are all switched off.
+Without it we'll get to uprobe_notify_resume() too often, but who cares.
+And not having to worry about it removes a lot of this complexity.
 
-> How strongly do we need this understanding of a "group" to be?
+Then in the patch where you introduce this optimization you can list all
+the nitty gritty details of mremap/fork and counter balancing.
 
-It's useful to userspace to know that the grouping is there, and it's
-also useful to be able to say that the overall object that was inserted
-into the connector is whatever.  That could be done by grouping a bunch
-of other objects together.
+Another point, maybe add some comments on how the generic bits of
+uprobe_notify_resume()/uprobe_bkpt_notifier()/uprobe_post_notifier() etc
+hang together and what the arch stuff should do. 
 
-> Mark says:
+Currently I have to flip back and forth between those to figure out what
+happens.
 
-> > We also need some way to group things together so that we can understand
-> > that we've got a single connector that can detect multiple things (eg,
-> > understanding that a cable hsa audio and video capability).
-
-> It isn't immediately obvious why this is the case.  There is no guarantee
-> that I want to route audio and video in the same direction.  The best you can
-> probably get is a heuristic that both should be routed to the most recently
-> available destination.
-> But again, maybe I'm missing something important.   I guess the helpful piece
-> of information is: How exactly would this knowledge of grouping be used?
-
-Being able to provide useful default behaviour is an important win in
-itself, and in many embedded cases the end user has no access to this
-sort of policy anyway (consider smartphones and tablets).  You can
-probably do much better than you suggest above - for example, if the
-device connected is an AV cable then it's more likely that you want to
-treat it as a block to be routed together than if the device connected
-is a docking station.  You might also choose to do things like
-remembering the configurations used with particular cables and restoring
-them when reconnected - for example, distinguishing between a car dock
-and a desktop docking station.
-
-> One case I am thinking of is the twl4030 driver (a multi-function device for
-> power, usb, audio, battery charge etc).
-> The battery charger needs to know when the usb device gets a cable plugged in
-> so that it can start charging.
-> It currently creates a link essentially by using a global variable.
-
-This is the sort of device that MyungJoo is taking about in a lot of his
-examples.
-
-> Using a 'switch', the twl-core module could allocate a switch and pass it to
-> the usb module for sending notification and to the bci module for receiving
-> them.  Whether it passes down a number which is later turned into a pointer,
-> or whether it sends down the raw pointer, is just an implementation detail.
-
-We really want something a bit more involved in the USB frameworks for
-the specific example of USB stuff (which is being worked on) - ideally
-we should be communicating information about how much current the host
-allows to be drawn throughout the system.
-
-> Can the same be done for these cable ports that you have in mind?  Presumably
-> the common-parent could allocate several switches - maybe even an array of
-> switches - and pass the collection of switches to the port, and then pass
-> individual switches to individual component drivers.
-
-I *think* so.
-
-> If the switch needs to be exported to user-space then someone needs to
-> provide a name for it.  I suspect the common-parent would be the obvious
-> choice, or the board file.
-
-Common parents often don't exist - it's not unusual for multiple devices
-to be involved in the detection of accessories.  Assuming a straight
-tree structure is very dangerous in the embedded context.  Board
-assigned naming does seem reasonable to me, though.
-
-> Just to be clear, the functionality that I see a 'switch' supporting is:
-
-> For the owner:
->   - int switch_allocate(void)
->   - void switch_export(int switchnum, char *name)
->      This creates a device which appears in sysfs and has a 'state'
->      attribute which responds to 'poll' requests so a process can find
->      out about changes.
-
-> For the notifier:
->   - void switch_set_state(int switchnum, bool value)
->           This sets the state and notifies all notifiees (listeners).
-
-I think we do want something which lets us say "this is a cable of
-type X" so that we can report the difference between otherwise identical
-cables as in the car/desktop dock example I mentioned above.
+Having that information also helps validate that x86 does indeed do what
+is expected and helps other arch maintainers write their code without
+having to grok wtf x86 does.
