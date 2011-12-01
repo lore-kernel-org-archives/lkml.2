@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1LATcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 14:32:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43336 "EHLO mx1.redhat.com"
+	id S1751825Ab1LATdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 14:33:16 -0500
+Received: from fifo99.com ([67.223.236.141]:49636 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab1LATcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 14:32:43 -0500
-Message-ID: <1322767925.1735.40.camel@adam>
-Subject: Re: [PATCH v4 0/2] nfs/sunrpc: allow freezing of tasks with NFS
- calls in flight
-From: Adam Williamson <awilliam@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jeff Layton <jlayton@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, john@calva.com, trond.myklebust@netapp.com,
-        marek.belisko@gmail.com
-Date: Thu, 01 Dec 2011 11:32:05 -0800
-In-Reply-To: <20111201184932.GB13173@google.com>
-References: <1322570215-8570-1-git-send-email-jlayton@redhat.com>
-	 <201111302043.13844.rjw@sisk.pl> <20111201184932.GB13173@google.com>
-Organization: Red Hat
+	id S1751149Ab1LATdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 14:33:15 -0500
+Message-ID: <1322767992.3704.13.camel@m0nster>
+Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
+From: Daniel Walker <dwalker@fifo99.com>
+To: David Brown <davidb@codeaurora.org>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 01 Dec 2011 11:33:12 -0800
+In-Reply-To: <20111201192705.GA23641@huya.qualcomm.com>
+References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
+	 <1322752657.3704.2.camel@m0nster>
+	 <20111201181736.GA13182@huya.qualcomm.com>
+	 <1322764745.3704.9.camel@m0nster>
+	 <20111201192705.GA23641@huya.qualcomm.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 10:49 -0800, Tejun Heo wrote:
-> On Wed, Nov 30, 2011 at 08:43:13PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, November 29, 2011, Jeff Layton wrote:
-> > > This patchset is the fourth attempt at fixing the issues with suspending
-> > > a machine that has an active NFS mount.
-> > > 
-> > > The bug reported against Fedora is here:
-> > > 
-> > >     https://bugzilla.redhat.com/show_bug.cgi?id=717735
-> > > 
-> > > The main difference from v3 is that I've fixed a stupid set of errors in
-> > > freezable_schedule_timeout_killable. The if condition was reversed from
-> > > what it should have been, and the code did not call freezer_count()
-> > > again when it was going to return early.
-> > > 
-> > > Tejun has mentioned that the extra try_to_freeze() calls are unnecessary
-> > > on top of the pm-freezer changes, but this set should work on as
-> > > expected on top of 3.2-ish kernels. In the meantime, I'll look over the
-> > > pm-freezer changes and see whether I need to make changes in this set
-> > > for 3.3.
-> > > 
-> > > Jeff Layton (2):
-> > >   sunrpc: make rpc_wait_bit_killable handle freeze events
-> > >   nfs: make TASK_KILLABLE sleeps attempt to freeze
-> > 
-> > Both patches applied to linux-pm/linux-next.  I'll move them to
-> > linux-pm/pm-freezer in a couple of days if there are no problems with
-> > them.
+On Thu, 2011-12-01 at 11:27 -0800, David Brown wrote:
+> On Thu, Dec 01, 2011 at 10:39:05AM -0800, Daniel Walker wrote:
 > 
-> Rafael, I think the extra try_to_freeze() is actually incorrect on top
-> of pm-freezer.  Jeff, can you please remove that?
+> > > If someone is willing to step up and make it work, then we can keep it
+> > > around.  My only G1 is fried, so I have no way to do anything other
+> > > than keep it compiling.
+> > 
+> > Unfortunately, You can't remove it regardless of whether or not you have
+> > one to test on.. Your job is to do the best you can to keep it working
+> > and maintained. If you don't have one then you can't boot test but you
+> > still have to your best to keep it as close to working as possible.
+> 
+> I was trying to get an idea if anyone uses the target.  If people
+> want the target around, we can just ignore my patches to remove it.
 
-You might want to read two levels up: Jeff explicitly mentioned that
-already. :)
--- 
-Adam Williamson
-Fedora QA Community Monkey
-IRC: adamw | Twitter: AdamW_Fedora | identi.ca: adamwfedora
-http://www.happyassassin.net
+Please don't ever do this again.
+
+> Remember, though, it is a tradeoff.  The msm7201 is fairly different
+> than the other MSM targets, and adds some effort to the consolidation
+> work across all of ARM.  I think it would be better, overall, to drop
+> support for it, if there are no users.
+
+To me that would be a failure in design of the consolidation.. If we
+removed all the targets that are "different" we might not have many
+targets.
+
+> I'm pretty sure that the chips themselves are past end-of-life, so
+> there isn't going to be any new hardware based on the msm7201.
+
+There's still plenty of them floating around.
+
+> I'm curious what kinds of uses people have for their G1s.
+> 
+> Speaking of old targets, it doesn't look like the mahimahi (Nexus One)
+> ever made it to the point of building.  I have a dev board board on
+> the msm8650, and the chip support does work.  It'd be nice to get
+> patches to get the Nexus One target to work as well.  (the
+> board-mahimahi.c includes a board-mahimahi.h that isn't present).
+
+I'd love to have it working too.
+
+Daniel
 
