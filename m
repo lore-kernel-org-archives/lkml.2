@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1LAVLB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:11:01 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38017 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab1LAVLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:11:00 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Adam Williamson <awilliam@redhat.com>
-Subject: Re: [PATCH v4 0/2] nfs/sunrpc: allow freezing of tasks with NFS calls in flight
-Date: Thu, 1 Dec 2011 22:13:53 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, john@calva.com, trond.myklebust@netapp.com,
-        marek.belisko@gmail.com
-References: <1322570215-8570-1-git-send-email-jlayton@redhat.com> <20111201184932.GB13173@google.com> <1322767925.1735.40.camel@adam>
-In-Reply-To: <1322767925.1735.40.camel@adam>
+	id S1754244Ab1LAVLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:11:38 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:53927 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab1LAVLg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 16:11:36 -0500
+Date: Fri, 2 Dec 2011 00:11:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 4/5] Staging: hv: storvsc: Fix a bug in
+ copy_from_bounce_buffer()
+Message-ID: <20111201211147.GL20466@mwanda>
+References: <1322744315-13017-1-git-send-email-kys@microsoft.com>
+ <1322744360-13067-1-git-send-email-kys@microsoft.com>
+ <1322744360-13067-4-git-send-email-kys@microsoft.com>
+ <20111201210304.GY3195@mwanda>
+ <6E21E5352C11B742B20C142EB499E0481AA7B4EF@TK5EX14MBXC126.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112012213.53381.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lR6P3/j+HGelbRkf"
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA7B4EF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A020203.4ED7ED7E.0008,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 01, 2011, Adam Williamson wrote:
-> On Thu, 2011-12-01 at 10:49 -0800, Tejun Heo wrote:
-> > On Wed, Nov 30, 2011 at 08:43:13PM +0100, Rafael J. Wysocki wrote:
-> > > On Tuesday, November 29, 2011, Jeff Layton wrote:
-> > > > This patchset is the fourth attempt at fixing the issues with suspending
-> > > > a machine that has an active NFS mount.
-> > > > 
-> > > > The bug reported against Fedora is here:
-> > > > 
-> > > >     https://bugzilla.redhat.com/show_bug.cgi?id=717735
-> > > > 
-> > > > The main difference from v3 is that I've fixed a stupid set of errors in
-> > > > freezable_schedule_timeout_killable. The if condition was reversed from
-> > > > what it should have been, and the code did not call freezer_count()
-> > > > again when it was going to return early.
-> > > > 
-> > > > Tejun has mentioned that the extra try_to_freeze() calls are unnecessary
-> > > > on top of the pm-freezer changes, but this set should work on as
-> > > > expected on top of 3.2-ish kernels. In the meantime, I'll look over the
-> > > > pm-freezer changes and see whether I need to make changes in this set
-> > > > for 3.3.
-> > > > 
-> > > > Jeff Layton (2):
-> > > >   sunrpc: make rpc_wait_bit_killable handle freeze events
-> > > >   nfs: make TASK_KILLABLE sleeps attempt to freeze
-> > > 
-> > > Both patches applied to linux-pm/linux-next.  I'll move them to
-> > > linux-pm/pm-freezer in a couple of days if there are no problems with
-> > > them.
-> > 
-> > Rafael, I think the extra try_to_freeze() is actually incorrect on top
-> > of pm-freezer.  Jeff, can you please remove that?
-> 
-> You might want to read two levels up: Jeff explicitly mentioned that
-> already. :)
 
-Well, that means I put those patches into linux-pm/linux-next too early,
-since that branch already includes pm-freezer.  I'll drop them from there
-temporarily until Jeff rebases them on top of pm-freezer (or
-linux-pm/linux-next).
+--lR6P3/j+HGelbRkf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Rafael
+On Thu, Dec 01, 2011 at 09:07:46PM +0000, KY Srinivasan wrote:
+> Sorry Dan. I put in some comments in the code describing the bug. Perhaps=
+ I=20
+> should have copied that in the changelog as well.
+
+Yes.  That's the entire point of the changelog, in fact.  Could you
+fix it and resend?
+
+regards,
+dan carpenter
+
+--lR6P3/j+HGelbRkf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO1+2TAAoJEOnZkXI/YHqRd2AP/2+d0D0oDry5EazWZWRCDxRw
+H/DtUbbV6Ci8A+tSwFTcJnLsU6o8/VOYbOfhnEG1h8trGyV3DlPa3UB/BaR1BRxA
+ZP48/d2V3lUwPsc1e+JT0GafMsJm6ZAasGeJDoBKLphccy3sTT1JCR+W5DI9YyOq
+NwNMFYPyU2mC6a4jDxX6ggNp57vveoCkTCdY4OE8R/ahS1QP42sIoaYFKWl63PFx
+mxW394tgpF+8kZ1mxq/Ud4+UHvN0rdAYJfBPopRNU0QYdhKG35OFrYRwz+8RofiC
+KVkax3yllVtphGJYUh/9gQMWHFWfEmePVmd/v7mkX5PtuRNkX+NSRLi+SVYuhjYA
+lQkWcnOF1j0hLFtFU4v8IYyMhzxq1ay5NTAMM/biqWAvQxdee5EuAUsWtEU6b73t
+6Kv4hui8HuCUYWkwgSxezFys+9EjmeHji88Y0GT2DF7VE/bCbBK0+jQbdM8Qgt75
+yJuIFAY1kU+xlFPw2MX7qIEJxe6OT0WutXsF6h5GpRRSEd6V4Q5GKbvFosbSTG+m
+BFUkhBxqpsoGZ3afH/6gOi788bIUNwtZealj2xQq5/x4JfenWIB+lOhKDVQ6LOU/
+RfHnN9kDJSjtDTrjPLmCp2yapE62OK2G4gFjurF81u9FtM2Yewa2alBhIWH12Ou5
+aeUOEKkO+gKAM3hjcCIK
+=eHHN
+-----END PGP SIGNATURE-----
+
+--lR6P3/j+HGelbRkf--
