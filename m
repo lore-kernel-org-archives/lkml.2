@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab1LACN4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 21:13:56 -0500
-Received: from utopia.booyaka.com ([72.9.107.138]:46450 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab1LACNz (ORCPT
+	id S1753960Ab1LACQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 21:16:21 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:47467 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1LACQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 21:13:55 -0500
-Date: Wed, 30 Nov 2011 19:13:53 -0700 (MST)
-From: Paul Walmsley <paul@pwsan.com>
-To: Mike Turquette <mturquette@ti.com>
-cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
-        tglx@linutronix.de, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, aul@pwsan.com, grant.likely@secretlab.ca,
-        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
-        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
-In-Reply-To: <1321926047-14211-4-git-send-email-mturquette@linaro.org>
-Message-ID: <alpine.DEB.2.00.1111301831430.6289@utopia.booyaka.com>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 30 Nov 2011 21:16:19 -0500
+Date: Thu, 1 Dec 2011 13:16:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tanmay Inamdar <tinamdar@apm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: linux-next: manual merge of the trivial tree with the 4xx tree
+Message-Id: <20111201131604.fa4e2fe14d5f370924592939@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__1_Dec_2011_13_16_04_+1100_mY9YfupVwUnIju5Q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+--Signature=_Thu__1_Dec_2011_13_16_04_+1100_mY9YfupVwUnIju5Q
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-a few initial comments on clk_get_parent().
+Hi Jiri,
 
-On Mon, 21 Nov 2011, Mike Turquette wrote:
+Today's linux-next merge of the trivial tree got a conflict in
+arch/powerpc/platforms/40x/Kconfig between commit d5b9ee7b514e
+("powerpc/40x: Add APM8018X SOC support") from the 4xx tree and commit
+ff5f483f3091 ("powerpc: 4xx: remove commented out Kconfig entries") from
+the trivial tree.
 
-> +/**
-> + * clk_get_parent - return the parent of a clk
-> + * @clk: the clk whose parent gets returned
-> + *
-> + * Simply returns clk->parent.  It is up to the caller to hold the
-> + * prepare_lock, if desired.  Returns NULL if clk is NULL.
-> + */
-> +struct clk *clk_get_parent(struct clk *clk)
-> +{
-> +	if (!clk)
-> +		return NULL;
-> +
-> +	return clk->parent;
-> +}
-> +EXPORT_SYMBOL_GPL(clk_get_parent);
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-This implementation of clk_get_parent() has similar problems to the 
-clk_get_rate() implementation:
+diff --cc arch/powerpc/platforms/40x/Kconfig
+index 8883f2c,bd69cf8..0000000
+--- a/arch/powerpc/platforms/40x/Kconfig
++++ b/arch/powerpc/platforms/40x/Kconfig
+@@@ -172,28 -148,3 +148,12 @@@ config IBM405_ERR7
+  # All 40x-based cores, up until the 405GPR and 405EP have this errata.
+  config IBM405_ERR51
+  	bool
+ +
+- #config BIOS_FIXUP
+- #	bool
+- #	depends on BUBINGA || EP405 || SYCAMORE || WALNUT
+- #	default y
+-=20
+- #config PPC4xx_DMA
+- #	bool "PPC4xx DMA controller support"
+- #	depends on 4xx
+-=20
+- #config PPC4xx_EDMA
+- #	bool
+- #	depends on !STB03xxx && PPC4xx_DMA
+- #	default y
+- #
+-=20
+ +config APM8018X
+ +	bool "APM8018X"
+ +	depends on 40x
+ +	default n
+ +	select PPC40x_SIMPLE
+ +	help
+ +	  This option enables support for the AppliedMicro APM8018X evaluation
+ +	  board.
+-=20
 
-    http://lkml.org/lkml/2011/11/30/403
+--Signature=_Thu__1_Dec_2011_13_16_04_+1100_mY9YfupVwUnIju5Q
+Content-Type: application/pgp-signature
 
-clk_get_parent() should return an error if some other entity can change 
-the clock's parent between the time that clk_get_parent() returns, and the 
-time that the returned struct clk * is used.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-For this to work, we need to define when clk_get_parent() should succeed. 
-If we follow the protocol outlined in the above URL about clk_get_rate(), 
-and we stipulate that when we block rate changes, we also block parent 
-changes, then this should be fairly straightforward.  clk_get_parent() can 
-succeed:
+iQIcBAEBCAAGBQJO1uNkAAoJEECxmPOUX5FEY2oP/jGALnnEPdWU/HklxTY8K2vi
+R4k+gEesBRy0Vo8mBzPY9cxIU/NZQRtkhJETc2P6PSXnNGMuTj/Eqg2dFfTBknNS
+AuBW6tr73Ey087qV+Q+c7U6ckSix3VjSduDHgC46CjndbEkax0azeAsGTgNP1YHp
+MtqLA4oBLI/dRURP808t+XSrAY7KWqEwYe2VABLLafz2h06z9iMp7msnFky4IFJV
+t2OPTH+LBPirvByzuGtTBx4x16vWwMA5SiP0lliC8AYvly0tUsqKgx8H4nn5Lu6c
+4yLbDPq8fpTn4w9I7MD0z8G+Z6l7XnAwS5JYvG72vw2k1CII+jr1zQbTwD0fITVD
+cB5oQg4CjFcrwdPK0bWFHI31TlfROFOiaLWcoloFMltG68cAConqaojORi71PFIx
+QYFUYCjUTXmamQ5UfpKKkPmtJT36E7FqQ1ItqBNXOjZNR5iM52SQzfbtfe0QxE56
+XmeZZXb8E72cvNjVML3EVVnad+sSa3hiriOh8GVYkvitViVKyuzXoTrgrXAswqWP
+uESU5tstpVxo65J/3jr5WfTq0QNZlH5+6MksC7QKBFPsWCbMjs73Jxc334VBlRgp
+gh8IfdX5BKq1TDOKI18AFF2PjcWlSacbQeVFBvg64L4egoNXEi2+s1T+W2TrC1jT
+8qT8b0OYIKZ8jDP8YEUR
+=7ZE+
+-----END PGP SIGNATURE-----
 
-1. between a clk_enable() and a clk_disable() or clk_allow_rate_changes(),
-
-2. between a clk_block_rate_changes() and a clk_enable(), clk_disable(), 
-   or clk_allow_rate_changes()
-
-As with clk_get_rate(), include/linux/clk.h is missing documentation of 
-what the error return value should be.  This should be a little easier to 
-define than with clk_get_rate(), but I don't think the error value should 
-be NULL.  This is because NULL is a valid return value when 
-clk_get_parent() is called on root clocks.  Better to use 
-ERR_PTR(-EINVAL/-EBUSY/etc.).
-
-
-- Paul
+--Signature=_Thu__1_Dec_2011_13_16_04_+1100_mY9YfupVwUnIju5Q--
