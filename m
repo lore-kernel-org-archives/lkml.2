@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab1LAU0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 15:26:35 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:27232 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab1LAU0e (ORCPT
+	id S1753181Ab1LAU2M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 15:28:12 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35079 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752657Ab1LAU2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 15:26:34 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6547"; a="140509664"
-Date: Thu, 1 Dec 2011 12:26:32 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
-Message-ID: <20111201202632.GA25247@huya.qualcomm.com>
-References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
- <1322752657.3704.2.camel@m0nster>
- <20111201181736.GA13182@huya.qualcomm.com>
- <1322764745.3704.9.camel@m0nster>
- <20111201192705.GA23641@huya.qualcomm.com>
- <1322767992.3704.13.camel@m0nster>
- <20111201194353.GA24293@huya.qualcomm.com>
- <20111201201950.GE9581@n2100.arm.linux.org.uk>
+	Thu, 1 Dec 2011 15:28:11 -0500
+Date: Thu, 1 Dec 2011 21:29:10 +0100
+From: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: patrik.r.jakobsson@gmail.com, linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: Re: GMA500 support
+Message-ID: <20111201202909.GB7825@Boggieman>
+Reply-To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+References: <20111121182910.GA2856@Boggieman>
+ <20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111201201950.GE9581@n2100.arm.linux.org.uk>
+In-Reply-To: <20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 08:19:50PM +0000, Russell King - ARM Linux wrote:
-> On Thu, Dec 01, 2011 at 11:43:53AM -0800, David Brown wrote:
-> > On Thu, Dec 01, 2011 at 11:33:12AM -0800, Daniel Walker wrote:
-> > > On Thu, 2011-12-01 at 11:27 -0800, David Brown wrote:
-> > > > On Thu, Dec 01, 2011 at 10:39:05AM -0800, Daniel Walker wrote:
-> > > > 
-> > > > > > If someone is willing to step up and make it work, then we can keep it
-> > > > > > around.  My only G1 is fried, so I have no way to do anything other
-> > > > > > than keep it compiling.
-> > > > > 
-> > > > > Unfortunately, You can't remove it regardless of whether or not you have
-> > > > > one to test on.. Your job is to do the best you can to keep it working
-> > > > > and maintained. If you don't have one then you can't boot test but you
-> > > > > still have to your best to keep it as close to working as possible.
-> > > > 
-> > > > I was trying to get an idea if anyone uses the target.  If people
-> > > > want the target around, we can just ignore my patches to remove it.
-> > > 
-> > > Please don't ever do this again.
+On Wed, Nov 23, 2011 at 11:28:47AM +0000, Alan Cox wrote:
+> On Mon, 21 Nov 2011 19:29:10 +0100
+> Kristoffer Ericson <kristoffer.ericson@gmail.com> wrote:
+> 
+> > Greetings,
 > > 
-> > That's awfully harsh.  I sent an email a few weeks back asking about
-> > removing the target, and I only got one positive response.  Sometimes
-> > sending a patch is the best way to get a reaction.
+> > Im syncing my gma500 tree to all the patches I see pass through the kernel mailinglist and
+> > its progressing well. 
+> > However, It would be nice with an todo list or a more practical this-works list. I know
+> > its not a priority but would simplify alot for end users.
 > 
-> That's pretty normal for just 'asking' about doing something.
+> If you configure it in the following should work on GMA500/600
+> - internal laptop displays including backlight
+> - external svga
+> - mode setting via KMS
+> - framebuffer console
+> - the framebuffer X server (and once out generally Dave Airlie's generic
+>   KMS X server)
+> - suspend/resume
 > 
-> You've done the right thing - if you ask, people treat your message as
-> low priority and don't bother replying in the hope that nothing will
-> happen.
+> The following I know don't work
+> - Huge external displays so large they won't fit in 8MB at init time
+>   (causes a crash)
+> - Using the vesa X server with it - this confuses stuff and isn't
+>   fixable, it's a "wrong user configuration"
 > 
-> However, if you send a patch to delete a platform, people treat it as
-> most urgent because if they care they need to speak up to actually stop
-> it happening.  (Even if you intend to only actually submit it in 6
-> months time or so - but don't mention that in the initial posting!)
+> Unsupported
+> - 2D hardware acceleration except console scrolling (as it seems to be
+>   too slow to be useful). I may add some 2D bits later where they do help
+>   (eg back to front blitting may be worth it just about)
+> - 3D engine (no public documentation)
+
+I understand that the chip is powerv SGX 535, any likelyhood of
+getting those datasheets opened by the company?
+
+> - Video playback acceleration. In theory there is enough info in the
+>   VAAPI code for GMA500/600 that has been published and in the old
+>   'binary X/source kernel' driver to do this but someone will have to
+>   work on it if they want it
+> - Dell Mini HDMI port. This seems to be some kind of external bridge
+>   chip. Being a TV luddite I don't yet own an HDMI capable display to
+>   test.
 > 
-> Now, the obvious question to ask now is this: as you sent your question,
-> and Daniel obviously objects, was Daniel one of your respondants?  If
-> not, then he carries some of the blame for this patch being created
-> in the first place by having missed the email/not replied/etc.
-
-Yeah, my mistake was forgetting to CC Daniel on the original question
-about removing the target.
-
-And I've learned what I needed to now: someone does still care about
-the target.
-
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> And I'm sure we have a few bugs left !
+> 
+> Alan
