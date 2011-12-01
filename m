@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab1LASxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:53:23 -0500
-Received: from mx5.orcon.net.nz ([219.88.242.55]:56749 "EHLO mx5.orcon.net.nz"
+	id S1756049Ab1LASx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:53:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37242 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753780Ab1LASxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:53:22 -0500
-X-Greylist: delayed 8791 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Dec 2011 13:53:22 EST
-Message-ID: <64002.67.231.243.75.1322756800.squirrel@mail.orcon.net.nz>
-Date: Fri, 2 Dec 2011 05:26:40 +1300 (NZDT)
-Subject: Contact Me Urgently
-From: "Paul William" <laurents@orcon.net.nz>
-Reply-To: intermonerydepartment@gmail.com
-User-Agent: SquirrelMail/1.4.5
+	id S1753849Ab1LASx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 13:53:57 -0500
+Message-ID: <4ED7BBA3.5020002@redhat.com>
+Date: Thu, 01 Dec 2011 15:38:43 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-DSPAM-Check: by mx5.orcon.net.nz on Fri, 02 Dec 2011 05:26:40 +1300
-X-DSPAM-Result: Spam
-X-DSPAM-Processed: Fri Dec  2 05:26:50 2011
-X-DSPAM-Confidence: 0.6175
-X-DSPAM-Probability: 1.0000
-To: unlisted-recipients:; (no To-header on input)
+To: HoP <jpetrous@gmail.com>
+CC: Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+In-Reply-To: <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATTENTION: Final Notice of Your Package
+On 01-12-2011 12:58, HoP wrote:
+> Hi,
+>
+> let me ask you some details of your interesting idea (how to
+> achieve the same functionality as with vtunerc driver):
+>
+> [...]
+>
+>> The driver, as proposed, is not really a driver, as it doesn't support any
+>> hardware. The kernel driver would be used to just copy data from one
+>> userspace
+>
+> Please stop learning me what can be called driver and what nope.
+> Your definition is nonsense and I don't want to follow you on it.
+>
+>> application to the other. The same result could be obtained in userspace,
+>> by implementing a library. Such library could even use LD_PRELOAD to support
+>> binary only applications, like what libv4l does. In terms of performance,
+>> such library would probably perform better than a kernel driver, as there's
+>> no need to do context switching for each call, and no need to talk with a
+>> device (where kernel outperforms userspace). Also, depending on how such
+>> library
+>> is implemented, double buffering might be avoided.
+>>
+>> So, from architectural POV, this code should be written as an userspace
+>> library.
+>> BTW, alsa also came with the same results, years ago, as audio remote
+>> streaming is supported via userspace tools, like pulseaudio.
+>
+> Can you show me, how then can be reused most important part
+> of dvb-core subsystem like tuning and demuxing?
 
-In view of your inability to receive your package reg #: GB8100AF
-originally scheduled to be delivered to you by
-the agency Foreign payment service New york.
+Why do you need to implement it? Just forward the requests to the machine
+with the real driver.
 
-This package in a golden metal box valued 5,316,000USD (Five Million,
-Three Hundred and Sixteen thousand United states dollars) arrived at John
-F. Kennedy International Airport New York, New York 11430, USA via British
-airways flight no. BA460.
+> Or do you want me
+> to invent wheels and to recode everything in the library?
 
-The agency Foreign payment service New york staff came and applied for the
-release of this package for delivery to your address but has since not
-shown up.
-I am writing to you to inform you that the days of grace has expired and
-we shall begin to charge the storage fee of $25usd daily.
+Kernel code is GPLv2. You can use its code on a GPLv2 licensed library.
 
-Please call Mr Brown Walters to release this package and deliver it to
-you. His email is intermonerydepartment@gmail.com . Please call me on
-telephone number: 1 (716)810 6832
-terminal 8 ext. 21 cargo unit.
+> Of course
+> I can be wrong, I'm no big kernel hacker. So please show me the
+> way for it. BTW, even if you can find the way, then data copying
+> from userspace to the kernel and back is also necessery.
 
+See libv4l, at v4l2-utils.git (at linuxtv.org).
 
-Note that this notice serves as our last recovery notice to you as our
-department will be compelled to list your
-package as an unclaimed and maybe forfeited.
-Best regards,
-Paul William
-Terminal 8. ext.12
+> I really
+> don't see any advantage of you solution.
+
+And I can't see any advantage on yours ;) Putting something that belongs
+to userspace into kernelspace just because it is easier to re-use the
+existing code inside the kernel is not a good argument.
+
+Don't get me wrong but if you want to submit a code to be merged
+on any existing software (being open source or not), you should be
+prepared to defend your code and justify the need for it to the
+other developers.
+
+Regards,
+Mauro
 
