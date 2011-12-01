@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab1LAVlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:41:37 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:43647 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754723Ab1LAVlg (ORCPT
+	id S1754765Ab1LAVlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:41:53 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43215 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755052Ab1LAVlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:41:36 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Greg KH <greg@kroah.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: devel@driverdev.osuosl.org, lttng-dev@lists.lttng.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Subject: [PATCH 09/11] sched: export task_prio to GPL modules
-Date: Thu,  1 Dec 2011 16:41:21 -0500
-Message-Id: <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
+	Thu, 1 Dec 2011 16:41:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111126191137.GA1046@mail.gnudd.com>
+References: <cover.1322328073.git.rubini@gnudd.com>
+	<4ED12B50.9090206@metafoo.de>
+	<20111126191137.GA1046@mail.gnudd.com>
+Date: Thu, 1 Dec 2011 22:41:49 +0100
+X-Google-Sender-Auth: L534eT7wstakfxuWh_QUyvxLg0U
+Message-ID: <CAKnu2MoHks06GzBG25tBG7JgEwMoeH6cOY95FbcHUq_sCm5LLg@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/7] Introducing ZIO, a new I/O framework
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: lars@metafoo.de, linux-iio@vger.kernel.org, greg@kroah.com,
+        linux-kernel@vger.kernel.org, federico.vaga@gmail.com, dcobas@cern.ch,
+        siglesia@cern.ch, manohar.vanga@cern.ch
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LTTng needs this symbol to prepend the current task dynamic priority
-value to events (optional context information).
+2011/11/26 Alessandro Rubini <rubini@gnudd.com>:
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org
-CC: Greg KH <greg@kroah.com>
----
- kernel/sched.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> I'm open to suggestions (_we_ are) about how to easily use IIO for
+> output, for hardware timestamps (we have 3 32-bit fields) and for very
+> large data blocks, with DMA to/from user space -- sure we don't have this
+> last point in ZIO at this point in time.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 0e9344a..80dbb09 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5142,6 +5142,7 @@ int task_prio(const struct task_struct *p)
- {
- 	return p->prio - MAX_RT_PRIO;
- }
-+EXPORT_SYMBOL_GPL(task_prio);
- 
- /**
-  * task_nice - return the nice value of a given task.
--- 
-1.7.5.4
+The latter seem like a case for the dma-buf mechanism.
+http://lwn.net/Articles/462524/
 
+(Interesting hardware you found Alessandro! :)
+
+Yours,
+Linus Walleij
