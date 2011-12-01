@@ -1,107 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab1LAIsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:48:25 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51462 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab1LAIsX (ORCPT
+	id S1753350Ab1LAIt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:49:27 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33708 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab1LAIt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:48:23 -0500
-Date: Thu, 1 Dec 2011 00:48:18 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kwlee@mtekvision.com" <kwlee@mtekvision.com>,
-        "Clark, Joel" <joel.clark@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] Input: tsc2007 - Disable irq when the irq thread is
- handling data
-Message-ID: <20111201084818.GC31610@core.coreip.homeip.net>
-References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
- <20111129092208.GA21758@core.coreip.homeip.net>
- <20111130100824.535c7e16@feng-i7>
- <20111201061015.GD16816@core.coreip.homeip.net>
- <20111201143012.498c506c@feng-i7>
+	Thu, 1 Dec 2011 03:49:26 -0500
+Message-ID: <4ED73F90.5050603@redhat.com>
+Date: Thu, 01 Dec 2011 09:49:20 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201143012.498c506c@feng-i7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hannes Reinecke <hare@suse.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: virtio-scsi spec (was Re: [PATCH] Add virtio-scsi to the virtio
+ spec)
+References: <1322661042-28191-1-git-send-email-pbonzini@redhat.com> <1322661042-28191-2-git-send-email-pbonzini@redhat.com> <4ED63AE1.8090105@suse.de> <4ED65BA4.3000003@redhat.com> <4ED74E54.3070303@suse.de>
+In-Reply-To: <4ED74E54.3070303@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 02:30:12PM +0800, Feng Tang wrote:
-> Hi Dmitry,
-> 
-> On Thu, 1 Dec 2011 14:10:15 +0800
-> Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> 
-> > On Wed, Nov 30, 2011 at 10:08:24AM +0800, Feng Tang wrote:
-> > > Hi Dmitry,
-> > > 
-> > > Thanks for the review.
-> > > 
-> > > On Tue, 29 Nov 2011 17:22:08 +0800
-> > > Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> > > 
-> > > > Hi Feng,
-> > > > 
-> > > > On Tue, Nov 29, 2011 at 04:12:57PM +0800, Feng Tang wrote:
-> > > > > The TSC2007 data sheet say in some case the HW may fire some
-> > > > > false interrrupt, which I also met during integrating one
-> > > > > TSC2007 device. So add the disable_irq/enable_irq protection
-> > > > > around data handling.
-> > > > 
-> > > > IRQF_ONESHOT should prevent IRQ from firing again while thread is
-> > > > servicing it. Did you actually observe it not working?
-> > > 
-> > > You are right, the tsc's threaded IRQ function is not re-entered,
-> > > and the driver is working actually. My bad not stating the problem
-> > > clearly. The real problem I want solve is, many platforms including
-> > > ours use a GPIO line as the tsc2007's IRQ line, and when these
-> > > extra tsc2007 IRQ is triggered on the gpio line, that GPIO
-> > > controller will fire up extra noise IRQ accordingly, causing its
-> > > ISR to be called. And my patch is trying to let the GPIO controller
-> > > driver disable that specific IRQ pin from tsc2007. As disable_irq
-> > > will call GPIO irq_chip's irq_disable() or mask() hook.
-> > 
-> > But ONESHOT interrupt handler will not unmask interrupt until thead
-> > finishes servicing it so we should not be seeing these extra IRQs.
-> > I'm adding Thomas in case I misunderstand how it threaded IRQ
-> > supposed to work.
-> 
-> I did see these extra IRQs. As the tsc2007 datasheet says, the PENIRQ may
-> be falsely triggered, and that signal is passed to the GPIO controller, if
-> the tsc2007 specific pin is not disabled in GPIOC level, then the GPIOC HW
-> will send out a IRQ anyway. 
-> 
-> While calling the disable_irq(), it will call the irq_chip's (implemented by
-> GPIO controller) irq_disable() or irq_mask() hook to disable that specific
-> line for tsc2007.
-> 
-> I did check the original tsc2007 driver, which used the disable_irq/enable_irq
-> too, which means this problem is a general one and has been seen before.
-> 
+On 12/01/2011 10:52 AM, Hannes Reinecke wrote:
+>>>>
+>>> I would like to have the other request_queue limitations exposed
+>>> here, too.
+>>> Most notably we're missing the maximum size of an individual segment
+>>> and the maximum size of the overall I/O request.
+>>
+>> The virtio transport does not put any limit, as far as I know.
+>>
+> Virtio doesn't, but the underlying device/driver might.
+> And if we don't expose these values we cannot format the request correctly.
 
-No, the original had disable/enable IRQ because it was the only way to
-stop interrupt storm with combination of hard IRQ + workqueue or thread.
+These limits should be per target/LUN, so it seems like material for 
+another controlq command when the need arises.  For now, I'd really 
+prefer to have the spec match the implementation (plus a few SAM 
+bogosities).
 
-BTW, do you have it configured as level or edge interrupt?
-
-> Or should we have a another flag in tsc2007 platform data, to let each platform
-> chose whether or not to use the disable/enable_irq according to their platform
-> need.
-> 
-> > 
-> > Also, there is clear_penirq() platform method that is called to clean
-> > penirq state, if needed.
-> 
-> Sadly we don't have a way to clear the irq from TSC2007 on our platform :(
->
-
-Thanks.
-
--- 
-Dmitry
+Paolo
