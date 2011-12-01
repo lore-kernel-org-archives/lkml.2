@@ -1,16 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab1LAVLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 16:11:38 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:53927 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625Ab1LAVLg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 16:11:36 -0500
-Date: Fri, 2 Dec 2011 00:11:48 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
+	id S1754263Ab1LAVNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 16:13:40 -0500
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:58102
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753874Ab1LAVNi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 16:13:38 -0500
+X-SpamScore: -22
+X-BigFish: VS-22(zz9371K542M154dM1432N98dKzz1202hzzz2fh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
         "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
@@ -20,63 +23,56 @@ Cc: "gregkh@suse.de" <gregkh@suse.de>,
         "hch@infradead.org" <hch@infradead.org>,
         "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 4/5] Staging: hv: storvsc: Fix a bug in
+Subject: RE: [PATCH 4/5] Staging: hv: storvsc: Fix a bug in
  copy_from_bounce_buffer()
-Message-ID: <20111201211147.GL20466@mwanda>
+Thread-Topic: [PATCH 4/5] Staging: hv: storvsc: Fix a bug in
+ copy_from_bounce_buffer()
+Thread-Index: AQHMsCkKHUy0MoNgQ0qgyL64yE+Z5JXH/wYA//96smCAAIe+AP//efng
+Date: Thu, 1 Dec 2011 21:13:34 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA7B529@TK5EX14MBXC126.redmond.corp.microsoft.com>
 References: <1322744315-13017-1-git-send-email-kys@microsoft.com>
  <1322744360-13067-1-git-send-email-kys@microsoft.com>
  <1322744360-13067-4-git-send-email-kys@microsoft.com>
  <20111201210304.GY3195@mwanda>
  <6E21E5352C11B742B20C142EB499E0481AA7B4EF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20111201211147.GL20466@mwanda>
+In-Reply-To: <20111201211147.GL20466@mwanda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lR6P3/j+HGelbRkf"
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA7B4EF@TK5EX14MBXC126.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A020203.4ED7ED7E.0008,ss=1,re=0.000,fgs=0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---lR6P3/j+HGelbRkf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Thu, Dec 01, 2011 at 09:07:46PM +0000, KY Srinivasan wrote:
-> Sorry Dan. I put in some comments in the code describing the bug. Perhaps=
- I=20
-> should have copied that in the changelog as well.
+> -----Original Message-----
+> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
+> Sent: Thursday, December 01, 2011 4:12 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> James.Bottomley@HansenPartnership.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org; Haiyang Zhang
+> Subject: Re: [PATCH 4/5] Staging: hv: storvsc: Fix a bug in
+> copy_from_bounce_buffer()
+> 
+> On Thu, Dec 01, 2011 at 09:07:46PM +0000, KY Srinivasan wrote:
+> > Sorry Dan. I put in some comments in the code describing the bug. Perhaps I
+> > should have copied that in the changelog as well.
+> 
+> Yes.  That's the entire point of the changelog, in fact.  Could you
+> fix it and resend?
 
-Yes.  That's the entire point of the changelog, in fact.  Could you
-fix it and resend?
+I could do that, but Greg has already checked in this patch. 
 
-regards,
-dan carpenter
+Regards,
 
---lR6P3/j+HGelbRkf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+K. Y
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO1+2TAAoJEOnZkXI/YHqRd2AP/2+d0D0oDry5EazWZWRCDxRw
-H/DtUbbV6Ci8A+tSwFTcJnLsU6o8/VOYbOfhnEG1h8trGyV3DlPa3UB/BaR1BRxA
-ZP48/d2V3lUwPsc1e+JT0GafMsJm6ZAasGeJDoBKLphccy3sTT1JCR+W5DI9YyOq
-NwNMFYPyU2mC6a4jDxX6ggNp57vveoCkTCdY4OE8R/ahS1QP42sIoaYFKWl63PFx
-mxW394tgpF+8kZ1mxq/Ud4+UHvN0rdAYJfBPopRNU0QYdhKG35OFrYRwz+8RofiC
-KVkax3yllVtphGJYUh/9gQMWHFWfEmePVmd/v7mkX5PtuRNkX+NSRLi+SVYuhjYA
-lQkWcnOF1j0hLFtFU4v8IYyMhzxq1ay5NTAMM/biqWAvQxdee5EuAUsWtEU6b73t
-6Kv4hui8HuCUYWkwgSxezFys+9EjmeHji88Y0GT2DF7VE/bCbBK0+jQbdM8Qgt75
-yJuIFAY1kU+xlFPw2MX7qIEJxe6OT0WutXsF6h5GpRRSEd6V4Q5GKbvFosbSTG+m
-BFUkhBxqpsoGZ3afH/6gOi788bIUNwtZealj2xQq5/x4JfenWIB+lOhKDVQ6LOU/
-RfHnN9kDJSjtDTrjPLmCp2yapE62OK2G4gFjurF81u9FtM2Yewa2alBhIWH12Ou5
-aeUOEKkO+gKAM3hjcCIK
-=eHHN
------END PGP SIGNATURE-----
-
---lR6P3/j+HGelbRkf--
