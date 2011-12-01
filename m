@@ -1,100 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab1LAWgL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:36:11 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:48757 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755119Ab1LAWgK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:36:10 -0500
-Date: Thu, 1 Dec 2011 17:36:07 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        lttng-dev@lists.lttng.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Darren Hart <darren@dvhart.com>
-Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
-Message-ID: <20111201223607.GF10552@Krystal>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com> <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com> <1322776568.4699.52.camel@twins> <20111201220445.GA10552@Krystal> <1322777407.4699.59.camel@twins> <20111201221500.GC10552@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201221500.GC10552@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 17:31:59 up 373 days,  3:35,  6 users,  load average: 0.00, 0.00,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755368Ab1LAWiI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 17:38:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26596 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754960Ab1LAWiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 17:38:07 -0500
+Message-ID: <1322779070.26545.152.camel@bling.home>
+Subject: Re: [PATCH 1/4] iommu: Add iommu_device_group callback and
+ iommu_group sysfs entry
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, David Gibson <dwg@au1.ibm.com>,
+        joerg.roedel@amd.com, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
+        scottwood@freescale.com, B08248@freescale.com
+Date: Thu, 01 Dec 2011 15:37:50 -0700
+In-Reply-To: <1322775989.3729.35.camel@pasglop>
+References: <20111021195412.8438.9951.stgit@s20.home>
+	 <20111021195605.8438.81609.stgit@s20.home>
+	 <20111130024205.GF5435@truffala.fritz.box>
+	 <1322628672.21641.39.camel@pasglop> <1322630751.19120.222.camel@bling.home>
+	 <20111201000337.GA5427@truffala.fritz.box>
+	 <1322722110.26545.68.camel@bling.home>
+	 <1322735610.24294.9.camel@i7.infradead.org>
+	 <1322750048.26545.101.camel@bling.home> <1322775989.3729.35.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> * Peter Zijlstra (peterz@infradead.org) wrote:
-> > On Thu, 2011-12-01 at 17:04 -0500, Mathieu Desnoyers wrote:
-> > > * Peter Zijlstra (peterz@infradead.org) wrote:
-> > > > On Thu, 2011-12-01 at 16:41 -0500, Mathieu Desnoyers wrote:
-> > > > > LTTng needs this symbol to prepend the current task dynamic priority
-> > > > > value to events (optional context information).
-> > > > 
-> > > > I absolutely detest exporting such stuff. It propagates the idea that
-> > > > task prio actually means something. Also, modules really shouldn't care.
-> > > 
-> > > People debugging their SCHED_FIFO/SCHED_RR applications, as well as
-> > > users of priority-inheritance futexes, may happen to find this
-> > > information extremely useful.
-> > > 
-> > > Just saying...
+On Fri, 2011-12-02 at 08:46 +1100, Benjamin Herrenschmidt wrote:
+> On Thu, 2011-12-01 at 07:34 -0700, Alex Williamson wrote:
+> 
+> > We've got multiple levels when we add qemu and guests into the mix.  A
+> > group is the smallest assignable unit for kernel->userspace.  In fact,
+> > vfio is constructed so that the user cannot do anything with a group
+> > until all the devices of the group are bound to the vfio bus drivers.
+> > Qemu, as a userspace driver, must therefore take ownership of the entire
+> > group.  However, there's no requirement that a userspace driver must
+> > make use of all the devices in the group, so qemu is free to expose
+> > individual devices from the group to the guest.
+> 
+> Sure but that has nothing to do with your kernel->user API. As you said,
+> you still need to take "ownership" of the entire group. If qemu chose to
+> only present to the guest part of that group, it's qemu's problem.
+> 
+> Put it differently. One day, maybe, we'll finally get some clues and
+> implement a proper way for admin tools to know what can or cannot be put
+> into a guest. In any case, how would you present to the user
+> (administrator) the groups ? By individual devices with odd behaviours /
+> errors etc... when the said user/admin tries to put individual devices
+> into different partitions while  they belong in the same group ? Or by
+> just exposing ... groups ?
+
+Why are we even talking about this here?  We both agree on the
+kernel->user ownership model and it's qemu's decision what to do from
+there.  x86 will typically have groups with a single device.  When
+that's not the case, it really doesn't seem that hard for an admin tool
+to notify the user and ask them if they want to also assign the
+dependent device or leave it unused.  The complexity vs "hey, why did
+this other device just appear on my guest and disappear from my host" or
+even "why won't this stupid tool let me separate these two devices"
+feels like a wash.
+
+> So while those various tools will want to see what's in the group (to
+> represent it to the user, to expose it to the guest, for other finer
+> grained operations such as MSI setup, etc...) the basic unit of
+> ownership is and remains the group, and I don't see how it makes sense
+> to have your underlying iommu interface operate on anything else.
+
+Are we going to tear apart every aspect of the IOMMU API, or can we use
+some pieces of it as it exists and incrementally improve it?  Yes, if
+the IOMMU really can't distinguish between devices in a group, it
+probably doesn't matter which of them you attach to a domain.  However,
+groups of devices aren't a basic unit of work for the rest of the kernel
+and even if the iommu device decoders can't tell the difference between
+transactions from hardware, the iommu driver might care for accounting
+purposes.
+
+> >   IMHO, it doesn't make
+> > sense to have a default model saying "I know you just wanted the nic,
+> > but it's in the same group as this graphics card, so surprise, you get
+> > both!".  Obviously if a user does want to expose multiple devices from a
+> > group to a guest, we support that too.
+> 
+> No you don't get it. That's the wrong way around. The user will be
+> presented to start with with a group of nic+graphics card so that user
+> knows from the beginning what's going on.
+> 
+> Because your other option is to put the nic in ... and suddenly have the
+> graphic card go away from the host without showing up in a guest. That
+> won't be any better than having it "just show up" in the guest without
+> asking for it.
+> 
+> IE. In both cases, it's wrong. The only thing that makes sense is from
+> the beginning, expose those two as a group so that the user has no other
+> choice but put them both into the guest at once and have it represented
+> to the user as such to begin with.
+
+People have very different ideas about what's intuitive and how
+interfaces should work, just look at gnome3/unity versus the useful
+desktops we used to have.  Neither of us are likely to write the piece
+of management code that does this and the design decisions we're making
+here enable either usage model.
+
+> > Spitting groups among multiple VMs or between VM and native host drivers
+> > defeats the purpose of the group.  Neither of these are allowed.
 > > 
-> > Right until the moment we go do deadlines.. Anyway, it still doesn't
-> > make sense, your sched_switch() tracepoint handler gets this
-> > information, why do you need this export at all?
+> > > Btw, did we get a quirk for the Ricoh multi-function devices which all
+> > > need to be in the same group because they do all their DMA from function
+> > > zero? I think we need another similar quirk for a Marvell SATA
+> > > controller which seems to do its AHCI DMA from its IDE function; see
+> > > https://bugzilla.redhat.com/757166
+> > 
+> > No, as I mentioned, groups are currently for iommu_ops, not dma_ops,
+> > though it makes sense that iommu drivers could use the group info or
+> > create common quirk infrastructure for handling broken devices like
+> > these.  Thanks,
 > 
-> If you don't want to trace sched_switch, but just conveniently prepend
-> this information to all your events, then lttng lets you dynamically
-> target this extra bit of information. Note that it's not a mandatory
-> event field: I call those "context" fields that the tracer prepends to
-> events, as requested by the user.
+> Which is why the group info in iommu_ops should just be a representation
+> of something else under the hood that needs to be sorted out more
+> clearly than what we are doing at the moment.
 
-One more point:
+I will be happy to review your patches to transform groups from an
+identifier into an object and make them the pervasive unit of work in
+the iommu layer.  The above problem can be solved by:
 
-compudj@thinkos:/proc/204$ cat sched
-khubd (204, #threads: 1)
----------------------------------------------------------
-se.exec_start                      :       3355267.749529
-se.vruntime                        :        113843.899081
-se.sum_exec_runtime                :            12.820702
-nr_switches                        :                  386
-nr_voluntary_switches              :                  385
-nr_involuntary_switches            :                    1
-se.load.weight                     :                 1024
-policy                             :                    0
-prio                               :                  120
-clock-delta                        :                  130
+struct pci_dev *pci_quirk_dma_dev(struct pci_dev *pdev)
+{
+    if (some match code)
+        return lookup different device
 
-So what you are saying is that it is fine to export task_prio to
-_userspace_, thus making it part of the ABI, but it's not OK to export
-it to GPL modules ?
+    return pdev
+}
 
-Weird huh ?
+Which would get called by both the dma_ops code and iommu_device_group.
+Thanks,
 
-Mathieu
+Alex
 
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
