@@ -1,141 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab1LAJym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:54:42 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35047 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab1LAJyk (ORCPT
+	id S1752469Ab1LAJzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:55:05 -0500
+Received: from host86-160-104-251.range86-160.btcentralplus.com ([86.160.104.251]:38318
+	"EHLO oak.selfip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab1LAJzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 04:54:40 -0500
-Date: Thu, 1 Dec 2011 13:54:34 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in
- /proc/<pid>/status
-Message-ID: <20111201095434.GR14515@moon>
-References: <20111129191252.769160532@openvz.org>
- <20111129191638.835932727@openvz.org>
- <20111130140009.1ccd5af0.kamezawa.hiroyu@jp.fujitsu.com>
- <20111130060537.GK1775@moon>
+	Thu, 1 Dec 2011 04:55:04 -0500
+X-Greylist: delayed 852 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Dec 2011 04:55:04 EST
+Message-ID: <4ED74B9D.7070502@oak.selfip.net>
+Date: Thu, 01 Dec 2011 09:40:45 +0000
+From: Dave Haywood <tla@oak.selfip.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111123 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111130060537.GK1775@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Build warnings - v3.2-rc3-187-g11d814a
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 10:05:37AM +0400, Cyrill Gorcunov wrote:
-> On Wed, Nov 30, 2011 at 02:00:09PM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Tue, 29 Nov 2011 23:12:54 +0400
-> > Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > 
-> > > From: Pavel Emelyanov <xemul@parallels.com>
-> > > 
-> > > There is no easy way to make a reverse parent->children chain
-> > > from the task status, in turn children->parent provided with "PPid"
-> > > field.
-> > > 
-> > > So instead of walking over all pids in system to figure out what
-> > > children the task have -- we add explicit "Children" member to
-> > > /proc/<pid>/status since kernel already knows this kind of information
-> > > but it was not yet exported.
-> > > 
-> > > Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-> > > Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> > > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> > 
-> > I may be too pessimistic but what amount of overhead will this add to
-> > ps -elf/ top ? Assuming an environment 'ps -elf' is called once per a sec,
-> > if there are 2000 processes, task_list lock is taken 2000 times by this patch.
-> > 
-> 
-> Hi Kame, good point! Yes, it introduces latency on high loaded systems.
-> I must admit I tested this patch on a regular system, where not that much
-> processes were launched but technically I think more correct would be to
-> switch to children file. I'll tune up the patch. Thanks!
-> 
-> > Isn't it better to add /proc/<pid>/children file or dir (as task)?
-> > 
-> > Thanks,
-> > -Kame
-> > 
+Hi,
 
-What about this one?
----
-fs, proc: Introduce the /proc/<pid>/children entry
+  Noticed the build warnings below from v3.2-rc3-187-g11d814a.
 
-There is no easy way to make a reverse parent->children chain
-from the task status, in turn children->parent provided with "PPid"
-field.
+$ gcc --version
+gcc (Gentoo Hardened 4.6.2 p1.0, pie-0.4.5) 4.6.2
 
-So instead of walking over all pids in system to figure out what
-children the task have -- we add explicit /proc/<pid>/children entry,
-since kernel already knows this kind of information but it was not
-yet exported.
+$ uname -a
+Linux s1 3.2.0-rc3 #97 SMP Fri Nov 25 10:17:10 GMT 2011 i686 Pentium III (Coppermine) GenuineIntel GNU/Linux
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/proc/array.c    |   14 ++++++++++++++
- fs/proc/base.c     |    1 +
- fs/proc/internal.h |    3 +++
- 3 files changed, 18 insertions(+)
+...
+  CC      fs/binfmt_misc.o
+In file included from ~/git/linux/arch/x86/include/asm/uaccess.h:573:0,
+                 from include/linux/uaccess.h:5,
+                 from include/linux/highmem.h:7,
+                 from include/linux/pagemap.h:10,
+                 from fs/binfmt_misc.c:26:
+~/git/linux/arch/x86/include/asm/uaccess_32.h: In function 'parse_command.part.2':
+~/git/linux/arch/x86/include/asm/uaccess_32.h:211:26: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+...
+  CC      drivers/md/dm-table.o
+drivers/md/dm-table.c: In function 'dm_table_set_integrity':
+drivers/md/dm-table.c:1285:3: warning: statement with no effect [-Wunused-value]
+...
+  CC      drivers/usb/host/ohci-hcd.o
+In file included from drivers/usb/host/ohci-hcd.c:101:0:
+drivers/usb/host/ohci-dbg.c: In function 'fill_registers_buffer':
+drivers/usb/host/ohci-dbg.c:642:2: warning: the comparison will always evaluate as 'true' for the address of 'next' will never be NULL [-Waddress]
+drivers/usb/host/ohci-dbg.c:661:3: warning: the comparison will always evaluate as 'true' for the address of 'next' will never be NULL [-Waddress]
+...
+  HOSTCC  arch/x86/boot/compressed/relocs
+arch/x86/boot/compressed/relocs.c: In function 'print_absolute_symbols':
+arch/x86/boot/compressed/relocs.c:405:14: warning: variable 'sh_symtab' set but not used [-Wunused-but-set-variable]
+arch/x86/boot/compressed/relocs.c: In function 'emit_relocs':
+arch/x86/boot/compressed/relocs.c:605:9: warning: ignoring return value of 'fwrite', declared with attribute warn_unused_result [-Wunused-result]
+arch/x86/boot/compressed/relocs.c:612:10: warning: ignoring return value of 'fwrite', declared with attribute warn_unused_result [-Wunused-result]
 
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -547,3 +547,17 @@ int proc_pid_statm(struct seq_file *m, s
- 
- 	return 0;
- }
-+
-+int proc_pid_children(struct seq_file *m, struct pid_namespace *ns,
-+		      struct pid *pid, struct task_struct *task)
-+{
-+	struct task_struct *c;
-+
-+	read_lock(&tasklist_lock);
-+	list_for_each_entry(c, &task->children, sibling)
-+		seq_printf(m, " %d", pid_nr_ns(task_pid(c), ns));
-+	read_unlock(&tasklist_lock);
-+	seq_putc(m, '\n');
-+
-+	return 0;
-+}
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -3204,6 +3204,7 @@ static const struct pid_entry tgid_base_
- 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
-+	ONE("children",   S_IRUGO, proc_pid_children),
- 	REG("maps",       S_IRUGO, proc_maps_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps",  S_IRUGO, proc_numa_maps_operations),
-Index: linux-2.6.git/fs/proc/internal.h
-===================================================================
---- linux-2.6.git.orig/fs/proc/internal.h
-+++ linux-2.6.git/fs/proc/internal.h
-@@ -51,6 +51,9 @@ extern int proc_pid_status(struct seq_fi
- 				struct pid *pid, struct task_struct *task);
- extern int proc_pid_statm(struct seq_file *m, struct pid_namespace *ns,
- 				struct pid *pid, struct task_struct *task);
-+extern int proc_pid_children(struct seq_file *m, struct pid_namespace *ns,
-+			     struct pid *pid, struct task_struct *task);
-+
- extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
- 
- extern const struct file_operations proc_maps_operations;
+  Regards,
+
+Dave.
+
+
