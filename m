@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab1LAIWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:22:06 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36960 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab1LAIWE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:22:04 -0500
+	id S1752422Ab1LAI0G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:26:06 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35218 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751676Ab1LAI0E convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 03:26:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <1322727444.2332.12.camel@koala>
-References: <1322397903.2799.5.camel@phoenix> <1322727444.2332.12.camel@koala>
-From: Manuel Lauss <manuel.lauss@googlemail.com>
-Date: Thu, 1 Dec 2011 09:21:22 +0100
-Message-ID: <CAOLZvyHmW7joMRbj7OPzmgWVdLr2U0p1P17FdroVmS6skecpAg@mail.gmail.com>
-Subject: Re: [PATCH] mtd: convert drivers/mtd/* to use module_platform_driver()
-To: dedekind1@gmail.com
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jiandong Zheng <jdzheng@broadcom.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Olof Johansson <olof@lixom.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Vimal Singh <vimal.newwork@gmail.com>,
-        Andres Salomon <dilinger@queued.net>, Sukumar Ghorai <s-ghorai@ti.com>,
-        linux-mtd@lists.infradead.org
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <4ED734AD.1070303@compulab.co.il>
+References: <1322704074.11560.3.camel@phoenix> <1322704507.11560.8.camel@phoenix>
+ <4ED734AD.1070303@compulab.co.il>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 1 Dec 2011 16:18:35 +0800
+Message-ID: <CAF+7xWnf398rY_Lb8CexjZDtcp8poseQc11S-14xyNSVGDdJWw@mail.gmail.com>
+Subject: Re: [PATCH 4/4] mfd: twl6040-core: Use gpio_request_one
+To: Igor Grinberg <grinberg@compulab.co.il>
+Cc: linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Jorge Eduardo Candelaria <jorge.candelaria@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 9:17 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Sun, 2011-11-27 at 20:45 +0800, Axel Lin wrote:
->> This patch converts the drivers in drivers/mtd/* to use the
->> module_platform_driver() macro which makes the code smaller and a bit
->> simpler.
+2011/12/1 Igor Grinberg <grinberg@compulab.co.il>:
+> On 12/01/11 03:55, Axel Lin wrote:
+>> Use gpio_request_one() instead of multiple gpiolib calls.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>> ---
+>>  drivers/mfd/twl6040-core.c |    7 ++-----
+>>  1 files changed, 2 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+>> index 268f80f..e57b1d1 100644
+>> --- a/drivers/mfd/twl6040-core.c
+>> +++ b/drivers/mfd/twl6040-core.c
+>> @@ -509,13 +509,10 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+>>               twl6040->audpwron = -EINVAL;
+>>
+>>       if (gpio_is_valid(twl6040->audpwron)) {
+>> -             ret = gpio_request(twl6040->audpwron, "audpwron");
+>> +             ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
+>> +                                    "audpwron");
+>>               if (ret)
+>>                       goto gpio1_err;
+>> -
+>> -             ret = gpio_direction_output(twl6040->audpwron, 0);
+>> -             if (ret)
+>> -                     goto gpio2_err;
+>>       }
 >
-> Pushed to l2-mtd-2.6.git, thanks. However, I got rejects in the
-> drivers/mtd/nand/au1550nd.c file, so this part was ignored. Please, take
-> a look at this and send an incremental change. Thanks!
+> same here, double check gpio_is_valid()?
 
-Axel's patch is against a bigger change to au1550nd.c (which introduced the
-platform driver in the first place) available in linux-next.
+In the case of
+twl6040->audpwron = -EINVAL;  ( see line 509 )
+gpio_is_valid returns false, we just don't request gpio.
 
-Thanks,
-        Manuel
+If we remove the gpio_is_valid checking here,
+then gpio_request_one will return -EINVAL.
+Then the code always goes to the error path if twl6040->audpwron is -EINVAL.
+
+Axel
+>
+>
+> --
+> Regards,
+> Igor.
