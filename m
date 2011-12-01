@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab1LAP4s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:56:48 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:42804
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755124Ab1LAP4p convert rfc822-to-8bit
+	id S1755342Ab1LAP6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:58:42 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:24404
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755124Ab1LAP6l convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:56:45 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371K1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Jean-Michel Hautbois <jhautbois@gmail.com>
-CC: Kumar Gala <galak@kernel.crashing.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>
-Subject: Re: Different behaviour when using "nosmp" parameter on SMP and UP
-Thread-Topic: Different behaviour when using "nosmp" parameter on SMP and UP
-Thread-Index: AQHMsEHQy5WVVcghNU2bcrqbor6iIg==
-Date: Thu, 1 Dec 2011 15:56:41 +0000
-Message-ID: <CAOZdJXVq_g=GAJLRsHZ+290cAJfpOx0LX3sBL3T5i0CaG+xh9Q@mail.gmail.com>
-References: <CAL8zT=juU_PC92R4za31R8Lmur0PrFwog1m1fk+PEarW_0C6ng@mail.gmail.com>
-	<D70E8CC4-9FA3-4DC9-B623-02F32EFBFE0F@kernel.crashing.org>
-	<CAL8zT=gGfBYsLcsKobJPhfhEhNeLcrYMoWh2kv0odT0n0wnZgQ@mail.gmail.com>
-In-Reply-To: <CAL8zT=gGfBYsLcsKobJPhfhEhNeLcrYMoWh2kv0odT0n0wnZgQ@mail.gmail.com>
+	Thu, 1 Dec 2011 10:58:41 -0500
+X-SpamScore: -20
+X-BigFish: VS-20(zz9371K1102K542M1432N98dKzz1202hzz8275dhz2fh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: Sasha Levin <levinsasha928@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] hv: Don't OOPS when can't init vmbus
+Thread-Topic: [PATCH] hv: Don't OOPS when can't init vmbus
+Thread-Index: AQHMp+eh4zIBCWhb0U2Luaw05fid05W2hGmwgAD3xYCAEDiDAP//etUwgACH/ID//3w5kA==
+Date: Thu, 1 Dec 2011 15:58:10 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA7B28F@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1321836494-4624-1-git-send-email-levinsasha928@gmail.com>
+ <6E21E5352C11B742B20C142EB499E0481AA70B8E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <1321862131.3231.16.camel@lappy> <1322753876.6040.1.camel@lappy>
+ <6E21E5352C11B742B20C142EB499E0481AA7B272@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20111201154801.GA7130@suse.de>
+In-Reply-To: <20111201154801.GA7130@suse.de>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [50.17.22.104]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <DB22F879FA5D8D4C90A06FFDC1E316B4@freescale.net>
-Content-Transfer-Encoding: 7BIT
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 9:04 AM, Jean-Michel Hautbois
-<jhautbois@gmail.com> wrote:
->
-> Any idea on how to debug this ? I am using a 2.6.35 kernel.
 
-There are a ton of Kconfig options for debugging various locking bugs.
- Try turning them on.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Thursday, December 01, 2011 10:48 AM
+> To: KY Srinivasan
+> Cc: Sasha Levin; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] hv: Don't OOPS when can't init vmbus
+> 
+> On Thu, Dec 01, 2011 at 03:42:43PM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Sasha Levin [mailto:levinsasha928@gmail.com]
+> > > Sent: Thursday, December 01, 2011 10:38 AM
+> > > To: KY Srinivasan
+> > > Cc: linux-kernel@vger.kernel.org; Greg Kroah-Hartman
+> > > Subject: RE: [PATCH] hv: Don't OOPS when can't init vmbus
+> > >
+> > > Ping? Did it go anywhere?
+> >
+> > I think I acked it; if not I am acking it now. I don't know if
+> > Greg dropped this patch.
+> 
+> I did as I thought you said you would take care of it.
+> 
+> KY, can you please resend it with your ack?
+
+Sasha,
+
+Do you want to resend the patch to Greg with my ack.
+
+Regards,
+
+K. Y
+
