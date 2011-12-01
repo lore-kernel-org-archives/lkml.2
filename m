@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab1LAICj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:02:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53737 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab1LAICh (ORCPT
+	id S1754421Ab1LAIDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:03:03 -0500
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:53326
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753204Ab1LAIDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:02:37 -0500
-Date: Thu, 1 Dec 2011 02:02:27 -0600
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        David Howells <dhowells@redhat.com>, Jan Harkes <jaharkes@cs.cmu.edu>,
-        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        Petr Vandrovec <petr@vandrovec.name>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Chris Dunlop <chris@onthe.net.au>,
-        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
-        codalist@TELEMANN.coda.cs.cmu.edu,
-        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org,
-        ecryptfs@vger.kernel.org
-Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
-Message-ID: <20111201080227.GC495@boyd>
-References: <1321861008-20611-1-git-send-email-chris@onthe.net.au>
- <20111129082501.GA569@onthe.net.au>
- <20111201065024.GB495@boyd>
+	Thu, 1 Dec 2011 03:03:01 -0500
+Message-ID: <4ED734AD.1070303@compulab.co.il>
+Date: Thu, 01 Dec 2011 10:02:53 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="Izn7cH1Com+I3R9J"
-Content-Disposition: inline
-In-Reply-To: <20111201065024.GB495@boyd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Misael Lopez Cruz <misael.lopez@ti.com>,
+        Jorge Eduardo Candelaria <jorge.candelaria@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 4/4] mfd: twl6040-core: Use gpio_request_one
+References: <1322704074.11560.3.camel@phoenix> <1322704507.11560.8.camel@phoenix>
+In-Reply-To: <1322704507.11560.8.camel@phoenix>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/01/11 03:55, Axel Lin wrote:
+> Use gpio_request_one() instead of multiple gpiolib calls.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/twl6040-core.c |    7 ++-----
+>  1 files changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+> index 268f80f..e57b1d1 100644
+> --- a/drivers/mfd/twl6040-core.c
+> +++ b/drivers/mfd/twl6040-core.c
+> @@ -509,13 +509,10 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+>  		twl6040->audpwron = -EINVAL;
+>  
+>  	if (gpio_is_valid(twl6040->audpwron)) {
+> -		ret = gpio_request(twl6040->audpwron, "audpwron");
+> +		ret = gpio_request_one(twl6040->audpwron, GPIOF_OUT_INIT_LOW,
+> +				       "audpwron");
+>  		if (ret)
+>  			goto gpio1_err;
+> -
+> -		ret = gpio_direction_output(twl6040->audpwron, 0);
+> -		if (ret)
+> -			goto gpio2_err;
+>  	}
 
---Izn7cH1Com+I3R9J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On 2011-12-01 00:50:25, Tyler Hicks wrote:
-> As David mentioned, Al's atomic open patches might solve all of this in
-> the future, but I don't know much about that patchset. Is there any
-> relevant info you could provide about those patches, Al?
-
-Sorry, Al. I see that you've already provided those details here:
-
-https://lkml.org/lkml/2011/5/12/337
-
-I was unaware of that thread until now.
-
-Tyler
+same here, double check gpio_is_valid()?
 
 
-
---Izn7cH1Com+I3R9J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCgAGBQJO1zSTAAoJENaSAD2qAscKAe8P/086rTItWBFlIGAa/AjG+urt
-8bUVX+Sy/nVtqUzzoO+yNShUwunB1FoS3LqpkrRziXcmlAzghmBDR6r67kg/GIbX
-WmWPjCF+0aLvTCxLTpjtjxzd8Fqcp8CoaFVR4Pt42qmRhvrG2aqXW3y4REH/ERME
-3VJT5LCqgdzxHq8G1nc9ushgcnJBUp8FVAIfUx1CFY/BzBV/wIKyoXP9kpOQJCPQ
-pm9tj7nUGIj5BiNThHyDVM5QomCDNKiQQNLxnQHFU0qIfPbOpQQY1O+ZGXLqan5l
-wQjtFmuqSlyew2XVahJg5q6c6gXcP+MkBlgSJ7UQ7yYhlR9e5eGxTrWAWRg429Px
-RKzV646mO4yHLy5EO/zC7yHP/7QLKgUg27cgI1RgnZHhClbJAbPfPVbK1tbs+WVE
-zUEgsSAgcn/YOOslnH13bd8TT/MEYIxNoFxIIYCJ48QxU+bcPoYUSmz+eVOZ6Bn7
-ZfX/Lw0NtDud4D4G7FxcTMcOApk4cOhtS7xqKRI7fFNmoxUQcXY12Gy/evCAX0uN
-MNUQONf4n5chc+kIWT8++maOU2DwlBpSgHDgigrvvGhXF4vo7MIHv7PJPkHsMA/K
-atbRpNm79AVRKCAah0nSmFTz19WtAi1rk46+8VOqeN4Rk/GixQpi3OUI5xYVTr5r
-eH4FmWAbr4wo1ciSE2E2
-=7Kyp
------END PGP SIGNATURE-----
-
---Izn7cH1Com+I3R9J--
+-- 
+Regards,
+Igor.
