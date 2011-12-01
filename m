@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1LASsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:48:15 -0500
-Received: from usmamail.tilera.com ([206.83.70.75]:13864 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab1LASsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:48:12 -0500
-Message-ID: <4ED7CBEA.6060005@tilera.com>
-Date: Thu, 1 Dec 2011 13:48:10 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-arch@vger.kernel.org>, Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Maxin B. John" <maxin.john@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] lib/devres.c: allow specifying NO_IOPORT while using
- PCI
-References: <cover.1322592494.git.mst@redhat.com> <201111301404.41544.arnd@arndb.de> <20111130143122.GC21413@redhat.com> <201111301549.57430.arnd@arndb.de> <201112011815.pB1IFGZe004948@farm-0002.internal.tilera.com> <20111201184442.GA13173@google.com>
-In-Reply-To: <20111201184442.GA13173@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1756201Ab1LASsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:48:40 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:36394 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756090Ab1LASsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 13:48:39 -0500
+Message-ID: <1322765318.30801.9.camel@joe2Laptop>
+Subject: Re: [PATCH 1/4] nfc: Use standard logging styles
+From: Joe Perches <joe@perches.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lauro Ramos Venancio <lauro.venancio@openbossa.org>,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 01 Dec 2011 10:48:38 -0800
+In-Reply-To: <20111201155951.GF22609@sortiz-mobl>
+References: <cover.1322595343.git.joe@perches.com>
+	 <6c89a76ddb76926febe36fe5be514cb186e39a76.1322595343.git.joe@perches.com>
+	 <20111201155951.GF22609@sortiz-mobl>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/1/2011 1:44 PM, Tejun Heo wrote:
-> Hello,
->
-> On Thu, Dec 01, 2011 at 12:59:19PM -0500, Chris Metcalf wrote:
->> The tile architecture does not support IOPORT, but it does support
->> PCI and IOMEM.  We were not specifying NO_IOPORT, though, because it
->> was causing a couple of functions (pcim_iomap_regions and pcim_iomap_table)
->> that are needed to not get provided.  Moving the #ifdef fixes this
->> so that those functions and some related ones are now always provided
->> if CONFIG_PCI is true.
->>
->> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
->   Acked-by: Tejun Heo <tj@kernel.org>
->
-> Please feel free to route the change through tile.  If not, Andrew,
-> can you please pick this up?
+On Thu, 2011-12-01 at 16:59 +0100, Samuel Ortiz wrote:
+> Hi Joe,
 
-Thanks.  I'll plan to push this to Linus through the tile tree with your
-Acked-by.
+Hello Samuel.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+> On Tue, Nov 29, 2011 at 11:37:32AM -0800, Joe Perches wrote:
+> > Using the normal logging styles is preferred over
+> > subsystem specific styles when the subsystem does
+> > not take a specific struct.
+> > Convert nfc_<level> specific messages to pr_<level>
+> > Add newlines to uses.
+> I would be fine with moving to pr_debug, but I'd like the pr_fmt() routine to
+> include the function name as well.
+
+If you really want it I can add it back but
+if you are not aware, dynamic debug can add
+this by using:
+
+echo "module nfc +fp" > <debugfs>/dynamic_debug/control
+echo "module nci +fp" > <debugfs>/dynamic_debug/control
+
+If you're getting dmesg logs from customers
+that's a bit harder to track though.
+
 
