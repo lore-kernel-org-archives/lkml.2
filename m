@@ -1,107 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab1LAITT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 03:19:19 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62393 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226Ab1LAITS (ORCPT
+	id S1752494Ab1LAIWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 03:22:06 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36960 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab1LAIWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 03:19:18 -0500
+	Thu, 1 Dec 2011 03:22:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <4ED72F1D.7070207@tao.ma>
-References: <20111201070052.GA29708@july>
-	<4ED72F1D.7070207@tao.ma>
-Date: Thu, 1 Dec 2011 17:19:16 +0900
-X-Google-Sender-Auth: 7PHYxh9KK7e-PHWSBDFIbG3S-dA
-Message-ID: <CAH9JG2UADvsPX0s8TYTZ29j92AwDkVAGOhCwM-VFXQOP5yF7rA@mail.gmail.com>
-Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
-From: Kyungmin Park <kmpark@infradead.org>
-To: Tao Ma <tm@tao.ma>
-Cc: tytso@mit.edu, linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1322727444.2332.12.camel@koala>
+References: <1322397903.2799.5.camel@phoenix> <1322727444.2332.12.camel@koala>
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+Date: Thu, 1 Dec 2011 09:21:22 +0100
+Message-ID: <CAOLZvyHmW7joMRbj7OPzmgWVdLr2U0p1P17FdroVmS6skecpAg@mail.gmail.com>
+Subject: Re: [PATCH] mtd: convert drivers/mtd/* to use module_platform_driver()
+To: dedekind1@gmail.com
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jiandong Zheng <jdzheng@broadcom.com>,
+        Scott Branden <sbranden@broadcom.com>,
+        Wan ZongShun <mcuos.com@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Jamie Iles <jamie@jamieiles.com>, Olof Johansson <olof@lixom.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Vimal Singh <vimal.newwork@gmail.com>,
+        Andres Salomon <dilinger@queued.net>, Sukumar Ghorai <s-ghorai@ti.com>,
+        linux-mtd@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/1/11, Tao Ma <tm@tao.ma> wrote:
-> Hi Kyungmin,
-> On 12/01/2011 03:00 PM, Kyungmin Park wrote:
->> From: Kyungmin Park <kyungmin.park@samsung.com>
->>
->> Now trim information doesn't stored at disk so every boot time. it's
->> cleared.
->> and do the trim all disk groups.
->> But assume that it's already trimmed at previous time so don't need to
->> trim it again. So set the intial state as trimmed.
-> sorry, I don't get your meaning here.
-> Why can we assume that the group is already trimmed since it isn't
-> stored in the disk?
-To avoid the first time trim operation.
-Every boot time. run the fitrim then it trims all block groups again.
-but it's already done at previous time. so don't need to trim it
-again.
-Doesn't make sense? I think it's not designed behavior.
-
-In your patch at http://patchwork.ozlabs.org/patch/102918/
-
-with the patch:
-[root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
-real	0m5.625s
-user	0m0.000s
-sys	0m1.269s
-[root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
-real	0m0.002s
-user	0m0.000s
-sys	0m0.001s
-[root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
-real	0m0.002s
-user	0m0.000s
-sys	0m0.001s
-
-After reboot. it maybe become below
-
-[root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
-real	0m0.002s
-user	0m0.000s
-sys	0m0.001s
-[root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
-real	0m0.002s
-user	0m0.000s
-sys	0m0.001s
-[root@boyu-tm linux-2.6]# time ./ftrim /mnt/ext4/a
-real	0m0.002s
-user	0m0.000s
-sys	0m0.001s
-
-Thank you,
-Kyungmin Park
+On Thu, Dec 1, 2011 at 9:17 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> On Sun, 2011-11-27 at 20:45 +0800, Axel Lin wrote:
+>> This patch converts the drivers in drivers/mtd/* to use the
+>> module_platform_driver() macro which makes the code smaller and a bit
+>> simpler.
 >
-> Thanks
-> Tao
->>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
->> index e2d8be8..97ef342 100644
->> --- a/fs/ext4/mballoc.c
->> +++ b/fs/ext4/mballoc.c
->> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
->> ext4_group_t group)
->>  		goto err;
->>  	}
->>  	mark_page_accessed(page);
->> +
->> +	/*
->> +	 * TRIM information is not stored at disk so set the initial
->> +	 * state as trimmed. Since previous time it's already trimmed all
->> +	 */
->> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
->>  err:
->>  	ext4_mb_put_buddy_page_lock(&e4b);
->>  	return ret;
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> Pushed to l2-mtd-2.6.git, thanks. However, I got rejects in the
+> drivers/mtd/nand/au1550nd.c file, so this part was ignored. Please, take
+> a look at this and send an incremental change. Thanks!
+
+Axel's patch is against a bigger change to au1550nd.c (which introduced the
+platform driver in the first place) available in linux-next.
+
+Thanks,
+        Manuel
