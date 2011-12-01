@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab1LAEIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 23:08:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44755 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab1LAEIk convert rfc822-to-8bit (ORCPT
+	id S1754240Ab1LAELe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 23:11:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60301 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753945Ab1LAELd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 23:08:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1320241585-28056-1-git-send-email-prarit@redhat.com>
-References: <1320241585-28056-1-git-send-email-prarit@redhat.com>
-Date: Thu, 1 Dec 2011 12:08:40 +0800
-Message-ID: <CAPsfambtA1tOOYKLBmf=DbU2FAfj=EBQD2rirdwiOy2vMnzM7w@mail.gmail.com>
-Subject: Re: [PATCH] [PATCH]: Reset clocksource watchdog after sysrq-t
-From: Xiaochen Wang <xiaochn.wang@gmail.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, johnstul@us.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 Nov 2011 23:11:33 -0500
+X-Authority-Analysis: v=2.0 cv=bdLpoZzB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=pHgAmLnZu2cA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=LSr1gJj7AAAA:8 a=Qtdqo1-JAAAA:8 a=maL2J-n9Vxks1hFtfXIA:9 a=QEXdDO2ut3YA:10 a=IrBqwOtLvWUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Suspend and resume on ASUS Laptops
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 30 Nov 2011 23:11:29 -0500
+Message-ID: <1322712689.30977.11.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prarit,
-    I'm reading the clocksource watchdog code, in which case I see your patch.
-But i cannot understand the patch very well.
+For Black Friday I bought myself a ASUS-U56E-RBL8 at Staples for a
+decent price. I installed Linux on it but it would not suspend. It would
+always hang with the hard drive light on, as well as other leds and the
+power light.
 
-On Wed, Nov 2, 2011 at 9:46 PM, Prarit Bhargava <prarit@redhat.com> wrote:
-> When doing a sysrq-t other processes are starved out because the task_list
-> lock is held.  On a large enough system this means that the clocksource
-> watchdog does not fire for a long time and when system operation resumes the
-> watchdog erroneously marks the current clocksource as unstable.
-Do you mean that a sysrq-t will enlarge the deviation between watchdog and the
- watched clocksource(in watchdog_list) ?
->
-> Reset the clocksource watchdog after show_state_filter() has dumped the
-> task states.
->
-> Cc: tglx@linutronix.de
-> Cc: johnstul@us.ibm.com
-> ---
->  kernel/sched.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index d87c6e5..b09c053 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -71,6 +71,7 @@
->  #include <linux/ctype.h>
->  #include <linux/ftrace.h>
->  #include <linux/slab.h>
-> +#include <linux/clocksource.h>
->
->  #include <asm/tlb.h>
->  #include <asm/irq_regs.h>
-> @@ -6034,6 +6035,7 @@ void show_state_filter(unsigned long state_filter)
->        } while_each_thread(g, p);
->
->        touch_all_softlockup_watchdogs();
-> +       clocksource_touch_watchdog();
->
->  #ifdef CONFIG_SCHED_DEBUG
->        sysrq_sched_debug_show();
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Searching the web, I found this link:
+
+http://thecodecentral.com/2011/01/18/fix-ubuntu-10-10-suspendhibernate-not-working-bug
+
+That talks about adding a script found here:
+
+http://ubuntuforums.org/showpost.php?p=10359462&postcount=47
+
+I added the script and sure enough, my suspend and even resume now work.
+
+Before using this script, I've tried this on latest Debian testing and
+with the latest Linus kernel (as of last night), and it didn't work. But
+with this script, it works there and also with Debian stable and 3.0.10
+kernel. (I hate gnome3 and lack of gnome2 so I created a separate
+partition to run Debian testing, but I'm back to Debian stable).
+
+The reason I'm writing you is, can we fix this without needing this
+script?  Is there a modification to pm-suspend, or something that can
+handle these laptops?
+
+It just seems crazy to have everyday users add this script.
 
 Thanks,
-Xiaochen
+
+-- Steve
+
+
