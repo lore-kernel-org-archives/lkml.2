@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab1LACFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 21:05:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49831 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab1LACFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 21:05:24 -0500
-Date: Wed, 30 Nov 2011 18:05:10 -0800
-From: Chris Wright <chrisw@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Chris Wright <chrisw@redhat.com>, David Gibson <dwg@au1.ibm.com>,
-        Alex Williamson <alex.williamson@redhat.com>, joerg.roedel@amd.com,
-        dwmw2@infradead.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, agraf@suse.de, scottwood@freescale.com,
-        B08248@freescale.com
-Subject: Re: [PATCH 1/4] iommu: Add iommu_device_group callback and
- iommu_group sysfs entry
-Message-ID: <20111201020510.GJ29071@x200.localdomain>
-References: <20111021195412.8438.9951.stgit@s20.home>
- <20111021195605.8438.81609.stgit@s20.home>
- <20111130024205.GF5435@truffala.fritz.box>
- <1322628672.21641.39.camel@pasglop>
- <1322630751.19120.222.camel@bling.home>
- <20111201000337.GA5427@truffala.fritz.box>
- <20111201005220.GG29071@x200.localdomain>
- <20111201005725.GE5427@truffala.fritz.box>
- <20111201010408.GH29071@x200.localdomain>
- <1322704207.3729.10.camel@pasglop>
+	id S1753933Ab1LACGe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 21:06:34 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:56916 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753286Ab1LACGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 21:06:33 -0500
+Date: Wed, 30 Nov 2011 20:06:31 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
+Message-ID: <20111201020631.GA30097@sgi.com>
+References: <20111108191149.GA7236@sgi.com>
+ <20111122160802.e99d6218.akpm@linux-foundation.org>
+ <20111130152959.GA19205@sgi.com>
+ <20111130161131.31cdccff.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322704207.3729.10.camel@pasglop>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+In-Reply-To: <20111130161131.31cdccff.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benjamin Herrenschmidt (benh@kernel.crashing.org) wrote:
-> On Wed, 2011-11-30 at 17:04 -0800, Chris Wright wrote:
-> > Heh.  Put it another way.  Generating the group ID is left up to the
-> > IOMMU.  This will break down when there's a system with multiple IOMMU's
-> > on the same bus_type that don't have any awareness of one another.  This
-> > is not the case for the existing series and x86 hw.
-> > 
-> > I'm not opposed to doing the allocation and ptr as id (taking care for
-> > possibility that PCI hotplug/unplug/replug could reuse the same memory
-> > for group id, however).  Just pointing out that the current system works
-> > as is, and there's some value in it's simplicity (overloading ID ==
-> > group structure + pretty printing ID in sysfs, for example). 
+On Wed, Nov 30, 2011 at 04:11:31PM -0800, Andrew Morton wrote:
+> On Wed, 30 Nov 2011 09:29:59 -0600
+> Dimitri Sivanich <sivanich@sgi.com> wrote:
 > 
-> Well, ID can work even with multiple domains since we have domains
-> numbers. bdfn is 16-bit, which leaves 16-bit for the domain number,
-> which is sufficient.
+> > +static ssize_t sysfs_store_do_timer_cpu(struct sys_device *dev,
+> > +						struct sysdev_attribute *attr,
+> > +						const char *buf, size_t size)
+> > +{
+> > +	struct sysdev_ext_attribute *ea = SYSDEV_TO_EXT_ATTR(attr);
+> > +	unsigned int new;
+> > +	int rv;
+> > +
+> > +#ifdef CONFIG_NO_HZ
+> > +	/* nohz mode not supported */
+> > +	if (tick_nohz_enabled)
+> > +		return -EINVAL;
+> > +#endif
+> > +
+> > +	rv = kstrtouint(buf, 0, &new);
+> > +	if (rv)
+> > +		return rv;
+> > +
+> > +	if (new >= NR_CPUS || !cpu_online(new))
+> > +		return -ERANGE;
+> > +
+> > +	*(unsigned int *)(ea->var) = new;
+> > +	return size;
+> > +}
 > 
-> So by encoding (domain << 16) | bdfn, we can get away with a 32-bit
-> number... it just sucks.
+> checkpatch tells us:
+> 
+> WARNING: usage of NR_CPUS is often wrong - consider using cpu_possible(), num_possible_cpus(), for_each_possible_cpu(), etc
 
-Yup, that's just what Alex did for VT-d ;)
+I think a check against num_possible_cpus() should be OK.
 
-+	union {
-+               struct {
-+                       u8 devfn;
-+                       u8 bus;
-+                       u16 segment;
-+               } pci;
-+               u32 group;
-+	} id;
+> 
+> I think the check can just be removed?  Surely cpu_online(1000000000)
+> will return false?
 
-Just that the alias table used for AMD IOMMU to map bdf -> requestor ID
-is not multi-segment aware, so the id is only bdf of bridge.
-
-> Note that on pseries, I wouldn't use bdfn anyway, I would use my
-> internal "PE#" which is also a number that I can constraint to 16-bits.
-> 
-> So I can work with a number as long as it's at least an unsigned int
-> (32-bit), but I think it somewhat sucks, and will impose gratuituous
-> number <-> structure conversions all over, but if we keep the whole
-> group thing an iommu specific data structure, then let's stick to the
-> number and move on with life.
-> 
-> We might get better results if we kept the number as
-> 
-> struct iommu_group_id {
-> 	u16	domain;
-> 	u16	group;
-> };
-> 
-> (Or a union of that with an unsigned int)
-> 
-> That way the domain information is available generically (can be match
-> with pci_domain_nr() for example), and sysfs can then be layed out as
-> 
-> /sys/bus/pci/groups/<domain>/<id>
-> 
-> Which is nicer than having enormous id's
-
-Seems fine to me (although I missed /sys/bus/pci/groups/ introduction),
-except that I think the freescale folks aren't interested in PCI which
-is one reason why the thing is just an opaque id.
-
-thanks,
--chris
+A value > NR_CPUS and < MAX_INT caused a panic in sysfs_store_do_timer_cpu,
+presumably from the cpu_online() check.  The check against NR_CPUS avoided
+the panic.
