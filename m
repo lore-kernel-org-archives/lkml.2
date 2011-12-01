@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1LAMee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 07:34:34 -0500
-Received: from mga03.intel.com ([143.182.124.21]:34673 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab1LAMed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 07:34:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,277,1320652800"; 
-   d="scan'208";a="81060637"
-Date: Thu, 1 Dec 2011 20:24:25 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] fs: Make write(2) interruptible by a fatal signal
-Message-ID: <20111201122425.GA16274@localhost>
-References: <1322735278-17420-1-git-send-email-jack@suse.cz>
+	id S1753820Ab1LAMhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 07:37:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57258 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab1LAMhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 07:37:43 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Brown <davidb@codeaurora.org>
+Subject: Re: [GIT PULL] msm misc changes for 3.3
+Date: Thu, 1 Dec 2011 12:37:21 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <20111130233626.GA26687@huya.qualcomm.com>
+In-Reply-To: <20111130233626.GA26687@huya.qualcomm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322735278-17420-1-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112011237.21297.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ojbr7qQKu0LmzvisNwvJzHEoC8KFAS11aTS4mhbpQXr
+ r0K0+jDMF2m0SQDWVu9u2eHSes0DW+upOF8Q2P1p3nOen8mA00
+ Wcjg9CDQeZMhcqaoxdBfDxrfn++Y7VQvHHl2c0KO3iXKtjN9qL
+ N5S8yleeowqzJpRu/agR4WWl+NeArKUQGFwFrzcsvQZTG+jzhU
+ WdGtlja6aAeL+EZXYOWCurKA0CEw/xm2oPfnDht9SlaBJnF3A5
+ Xc0izz+KqIAIr8TR2roHwErwnFADfddHjdOk5QxMoccbrWzfqz
+ 7A2mwMkceJXWkHXQHCuhZ0TXcPhs+Wh11iQvRFAjAbNrGNcRG3
+ DMQH4w7HG38tMVN0rzXs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wednesday 30 November 2011, David Brown wrote:
+> The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
+> 
+>   Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
+> 
+> are available in the git repository at:
+>   git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-misc
+> 
+> Stephen Boyd (3):
+>       ARM: msm: Consolidate and move DEBUG_LL to DEBUG_LL choice
+>       msm: Support DEBUG_LL on MSM8660 and MSM8960
+>       msm: platsmp: Mark ioremapped memory as __iomem
 
-How are we going to do with this patch?
+Applied to next/cleanup, thanks!
 
-> This patch makes write interruptible by SIGKILL.
-
-Let me try to summarize the objective impacts of (not) merging this
-patch, and would like to hear more opinions from experienced users.
-
-- w/o patch
-
-BEHAVIOR:
-write(2) insists to complete even when the user really wants to stop it.
-
-IMPACT:
-It could be annoying to experience slow responses to "kill -9" when
-it's a large write to a slow device, for example,
-
-        dd if=/dev/zero of=/mnt/nokia/zero bs=100M
-
-- w/ patch
-
-BEHAVIOR:
-write(2) aborts quickly with possible partial write on SIGKILL
-
-IMPACT:
-The partial write might lead to data corruption somewhere, sometime
-(the possibility is low but real) and bring trouble to some users.
-
-Thanks,
-Fengguang
+	Arnd
