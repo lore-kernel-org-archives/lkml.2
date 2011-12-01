@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab1LAXAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 18:00:24 -0500
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:36509 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755172Ab1LAXAV (ORCPT
+	id S1755469Ab1LAXB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 18:01:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45628 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755172Ab1LAXB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 18:00:21 -0500
-X-Sasl-enc: CsRhvextpmgfomZz2Tctllsjiqh6EI3oDCShg6m8faXt 1322780420
-Date: Thu, 1 Dec 2011 15:00:07 -0800
-From: Greg KH <greg@kroah.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        devel@driverdev.osuosl.org, lttng-dev@lists.lttng.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        David McCullough <davidm@snapgear.com>,
-        D Jeff Dionne <jeff@uClinux.org>, Greg Ungerer <gerg@snapgear.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/11] mm: export vmalloc_sync_all symbol to GPL modules
-Message-ID: <20111201230007.GE3716@kroah.com>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
- <1322775683-8741-2-git-send-email-mathieu.desnoyers@efficios.com>
- <20111201215700.GA16782@infradead.org>
- <20111201221337.GB3365@kroah.com>
- <20111201222803.GA10853@infradead.org>
+	Thu, 1 Dec 2011 18:01:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201222803.GA10853@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1321457231-9154-2-git-send-email-jslaby@suse.cz>
+References: <1321457231-9154-1-git-send-email-jslaby@suse.cz>
+	<1321457231-9154-2-git-send-email-jslaby@suse.cz>
+Date: Thu, 1 Dec 2011 15:01:26 -0800
+X-Google-Sender-Auth: 8jNVnNgVGw6QtnTGA-6Z0GvPIr0
+Message-ID: <CA+8MBbJ4Tu86jSbaBRjDKfowwVE12jY3efK7QMm74e7i8aq4Hg@mail.gmail.com>
+Subject: Re: [PATCH 2/5] TTY: ldisc, move wait idle to caller
+From: Tony Luck <tony.luck@intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Dave Young <hidave.darkstar@gmail.com>, Dave Jones <davej@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Dmitriy Matrosov <sgf.dma@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, stable <stable@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 05:28:03PM -0500, Christoph Hellwig wrote:
-> On Thu, Dec 01, 2011 at 02:13:37PM -0800, Greg KH wrote:
-> > On Thu, Dec 01, 2011 at 04:57:00PM -0500, Christoph Hellwig wrote:
-> > > On Thu, Dec 01, 2011 at 04:41:13PM -0500, Mathieu Desnoyers wrote:
-> > > > LTTng needs this symbol exported. It calls it to ensure its tracing
-> > > > buffers and allocated data structures never trigger a page fault. This
-> > > > is required to handle page fault handler tracing and NMI tracing
-> > > > gracefully.
-> > > 
-> > > We:
-> > > 
-> > >  a) don't export symbols unless they have an intree-user
-> > 
-> > lttng is now in-tree in the drivers/staging/ area.  See linux-next for
-> > details if you are curious.
-> 
-> Eww - merging stuff without discussion on lkml is more than evil.
+One of my systems (HP rx2620 - ia64) has started hanging during shutdown.
+Last messages on the serial console are:
 
-Do you really want discussing all staging driver crap on lkml?
+Shutting down service (localfs) network  .  .  .  .  .  .  .  .  .   done
+Shutting down D-Bus daemon                                           done
+Running /etc/ini
 
-Core changes, like this one, for stuff in staging should be done on
-lkml, which is what this conversation is :)
+and there it hangs forever in mid word (totally repeatable stops at "ini" every
+time).
 
-> Either way, it was guaranteed that drivers/staging is considered out of
-> tree for core code.
+git bisect blames:
 
-The zram and zcache code would tend to disagree with you there :)
+commit 300420722e0734a4254f3b634e0f82664495d210
+Author: Jiri Slaby <jslaby@suse.cz>
+Date:   Wed Nov 16 16:27:08 2011 +0100
 
-> I'm defintively dead set against exporting anything for staging and
-> opening that slippery slope.
+    TTY: ldisc, move wait idle to caller
 
-How else should we handle something like this then?  Some code, this one
-specifically, is trying to get merged, so taking it slowly, through
-staging, and getting it reviewed and cleaned up better before it can go
-into the "real" part of the kernel, is the whole goal here.
+[Though the following commit "TTY: ldisc, wait for ldisc infinitely in hangup"
+ sounds like it fits the symptoms]
 
-Here's a real need for a symbol that an existing, shipping, useful
-kernel module is wanting to use.
+Ideas?
 
-If you can provide a way that this can be handled without such an
-export, that does not require digging through the symbol table (which is
-what it was doing and I rightfully objected to that), then please let us
-know.
-
-Otherwise, what are our alternatives here, to just forbid this code from
-ever being merged?
-
-thanks,
-
-greg k-h
+-Tony
