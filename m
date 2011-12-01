@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1K3X7n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 18:59:43 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:54608 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab1K3X7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 18:59:41 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Len Brown <lenb@kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: 3.2.0-rc3-next-20111128 lockdep splat during boot..
-In-Reply-To: Your message of "Thu, 01 Dec 2011 00:17:18 +0100."
-             <201112010017.19156.rjw@sisk.pl>
-From: Valdis.Kletnieks@vt.edu
-References: <23526.1322620187@turing-police.cc.vt.edu>
-            <201112010017.19156.rjw@sisk.pl>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1322697572_2875P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 30 Nov 2011 18:59:32 -0500
-Message-ID: <28342.1322697572@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A02020A.4ED6C366.0053,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1753173Ab1LAADR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 19:03:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58273 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752222Ab1LAADQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 Nov 2011 19:03:16 -0500
+Date: Thu, 1 Dec 2011 01:03:13 +0100
+From: Jan Kara <jack@suse.cz>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Alasdair G Kergon <agk@redhat.com>, Jan Kara <jack@suse.cz>,
+        esandeen@redhat.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        Valerie Aurora <val@vaaconsulting.com>
+Subject: Re: [dm-devel] [PATCH] deadlock with suspend and quotas
+Message-ID: <20111201000313.GG4541@quack.suse.cz>
+References: <Pine.LNX.4.64.1111251522230.4118@hs20-bc2-1.build.redhat.com>
+ <20111128150400.GE6366@quack.suse.cz>
+ <CAD-XujnH1UJXrEbYAKOSjvdwVnehj4_owuduhjR0RCUBqfrg0w@mail.gmail.com>
+ <Pine.LNX.4.64.1111281612030.11895@hs20-bc2-1.build.redhat.com>
+ <Pine.LNX.4.64.1111281754120.11895@hs20-bc2-1.build.redhat.com>
+ <20111129101901.GA5635@quack.suse.cz>
+ <20111130140913.GX7595@agk-dp.fab.redhat.com>
+ <Pine.LNX.4.64.1111301136360.5759@hs20-bc2-1.build.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1111301136360.5759@hs20-bc2-1.build.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1322697572_2875P
-Content-Type: text/plain; charset=us-ascii
-
-On Thu, 01 Dec 2011 00:17:18 +0100, "Rafael J. Wysocki" said:
-> On Wednesday, November 30, 2011, Valdis.Kletnieks@vt.edu wrote:
-> > Seen this twice out of two boots while initrd was waiting for me to
-> > enter the passphrase for encrypted LVM.  No idea *who* to toss this
-> > one at - got ACPI, PM, SCSI and vtconsole all listed in tracebacks, so
-> > I'm tossing this at everybody and hope it sticks. ;)
+On Wed 30-11-11 11:53:40, Mikulas Patocka wrote:
 > 
-> This was caused by one of my patches in linux-next and was linux-next-only.
 > 
-> I've already replaced the offending patch with a new version.
+> On Wed, 30 Nov 2011, Alasdair G Kergon wrote:
+> 
+> > On Tue, Nov 29, 2011 at 11:19:01AM +0100, Jan Kara wrote:
+> > > So I believe the consensus was that we should not block sync or flusher
+> 
+> Well, I think that not blocking sync actually doesn't help at all.
+> 
+> Suppose at first that you have a perfectly-barriered filesystem --- that 
+> is filesystem, that contains barriers around all code paths that could 
+> possibly create dirty data. In this case it is impossible to have dirty 
+> data while the filesystem is suspended. --- In this case you can call 
+> sync on suspened filesystem as much as you like, sync never finds ady 
+> dirty data, consequently it never tries to write anything and it can't 
+> deadlock. So skipping sync has no effect.
+> 
+> Suppose as a second case that you have imperfectly-barriered filesystem 
+> --- that means there exists a code path that creates dirty data while the 
+> filesystem is suspended. In this case if you skip sync, you are violating 
+> sync semantics, because the application can create dirty data while 
+> suspended, call sync while still suspended and assume that the dirty data 
+> was written.
+  Except that currently we are in situation c) with e.g. ext4 and xfs. We
+have perfectly-barriered filesystem *but* there are dirty bits set in this
+filesystem although we are certain there are no dirty data. This
+inconsistency between dirty bits and fact whether a page contains dirty
+data is due to way how page faults are handled. I've already tried to
+explain this in this thread in https://lkml.org/lkml/2011/11/29/109 but
+apparently I failed. I can try to explain it once more but in fact I don't
+think this technical detail makes a difference in this discussion. So in our
+situation c) skipping sync makes difference and does not break guarantees
+sync should have.
 
-OK, thanks.
-
---==_Exmh_1322697572_2875P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFO1sNkcC3lWbTT17ARApziAJ4xipIL+k6xkkdghUHcg5YTqMcCtQCeOWJ3
-nb56IOqtP6pioI7BGhCg+c8=
-=hnPv
------END PGP SIGNATURE-----
-
---==_Exmh_1322697572_2875P--
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
