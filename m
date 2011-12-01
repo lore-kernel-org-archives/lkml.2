@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240Ab1LAELe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 Nov 2011 23:11:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60301 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab1LAELd (ORCPT
+	id S1754180Ab1LAE1r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 Nov 2011 23:27:47 -0500
+Received: from mail.windriver.com ([147.11.1.11]:64266 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925Ab1LAE1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 Nov 2011 23:11:33 -0500
-X-Authority-Analysis: v=2.0 cv=bdLpoZzB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=pHgAmLnZu2cA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=LSr1gJj7AAAA:8 a=Qtdqo1-JAAAA:8 a=maL2J-n9Vxks1hFtfXIA:9 a=QEXdDO2ut3YA:10 a=IrBqwOtLvWUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Suspend and resume on ASUS Laptops
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 30 Nov 2011 23:11:29 -0500
-Message-ID: <1322712689.30977.11.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Wed, 30 Nov 2011 23:27:46 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: JBottomley@parallels.com, linux-arm-kernel@lists.infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] arm: prevent inlining in arxescsi.c causing build failures
+Date: Wed, 30 Nov 2011 23:26:51 -0500
+Message-Id: <1322713611-30003-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For Black Friday I bought myself a ASUS-U56E-RBL8 at Staples for a
-decent price. I installed Linux on it but it would not suspend. It would
-always hang with the hard drive light on, as well as other leds and the
-power light.
+The following failure is seen in routine coverage builds:
 
-Searching the web, I found this link:
+  CC [M]  drivers/scsi/arm/arxescsi.o
+/tmp/cccEyiO7.s: Assembler messages:
+/tmp/cccEyiO7.s:334: Error: symbol `.loop_1' is already defined
+/tmp/cccEyiO7.s:337: Error: symbol `.loop_2' is already defined
+/tmp/cccEyiO7.s:343: Error: symbol `.loop_3' is already defined
+/tmp/cccEyiO7.s:365: Error: symbol `.loop_1' is already defined
+/tmp/cccEyiO7.s:368: Error: symbol `.loop_2' is already defined
+/tmp/cccEyiO7.s:374: Error: symbol `.loop_3' is already defined
+make[4]: *** [drivers/scsi/arm/arxescsi.o] Error 1
 
-http://thecodecentral.com/2011/01/18/fix-ubuntu-10-10-suspendhibernate-not-working-bug
+It is caused by multiple inline of arxescsi_pseudo_dma_write()
+which is responsible for the above labels.  Marking the fcn
+as non-inline fixes the issue.
 
-That talks about adding a script found here:
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-http://ubuntuforums.org/showpost.php?p=10359462&postcount=47
-
-I added the script and sure enough, my suspend and even resume now work.
-
-Before using this script, I've tried this on latest Debian testing and
-with the latest Linus kernel (as of last night), and it didn't work. But
-with this script, it works there and also with Debian stable and 3.0.10
-kernel. (I hate gnome3 and lack of gnome2 so I created a separate
-partition to run Debian testing, but I'm back to Debian stable).
-
-The reason I'm writing you is, can we fix this without needing this
-script?  Is there a modification to pm-suspend, or something that can
-handle these laptops?
-
-It just seems crazy to have everyday users add this script.
-
-Thanks,
-
--- Steve
-
+diff --git a/drivers/scsi/arm/arxescsi.c b/drivers/scsi/arm/arxescsi.c
+index a750aa7..2608a9e 100644
+--- a/drivers/scsi/arm/arxescsi.c
++++ b/drivers/scsi/arm/arxescsi.c
+@@ -72,7 +72,8 @@ arxescsi_dma_setup(struct Scsi_Host *host, struct scsi_pointer *SCp,
+ 	return fasdma_pseudo;
+ }
+ 
+-static void arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
++static noinline void
++arxescsi_pseudo_dma_write(unsigned char *addr, void __iomem *base)
+ {
+        __asm__ __volatile__(
+        "               stmdb   sp!, {r0-r12}\n"
+-- 
+1.7.7.2
 
