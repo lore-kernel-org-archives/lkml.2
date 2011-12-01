@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1LALra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 06:47:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56883 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753198Ab1LALr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 06:47:29 -0500
-From: Oliver Neukum <oneukum@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Suspend and resume on ASUS Laptops
-Date: Thu, 1 Dec 2011 12:48:44 +0100
-User-Agent: KMail/1.13.5 (Linux/3.2.0-rc3-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-References: <1322712689.30977.11.camel@frodo> <201112011035.57666.rjw@sisk.pl>
-In-Reply-To: <201112011035.57666.rjw@sisk.pl>
-Organization: SUSE
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112011248.44449.oneukum@suse.de>
+	id S1753547Ab1LALz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 06:55:29 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47833 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab1LALz2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 06:55:28 -0500
+From: Ido Yariv <ido@wizery.com>
+To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Cc: Ido Yariv <ido@wizery.com>
+Subject: [PATCH] irq: Fix race condition when stopping the irq thread
+Date: Thu,  1 Dec 2011 13:55:08 +0200
+Message-Id: <1322740508-22640-1-git-send-email-ido@wizery.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 1. Dezember 2011, 10:35:57 schrieb Rafael J. Wysocki:
-> > Searching the web, I found this link:
-> > 
-> > http://thecodecentral.com/2011/01/18/fix-ubuntu-10-10-suspendhibernate-not-working-bug
-> > 
-> > That talks about adding a script found here:
-> > 
-> > http://ubuntuforums.org/showpost.php?p=10359462&postcount=47
-> > 
-> > I added the script and sure enough, my suspend and even resume now work.
-> 
-> Now, that's interesting, but I would lie if I said I knew what it was
-> actually doing, so let me add some USB people to the CC list.
+In irq_wait_for_interrupt(), the should_stop member is verified before
+setting the task's state to TASK_INTERRUPTIBLE and calling schedule().
+In case kthread_stop sets should_stop and wakes up the process after
+should_stop is checked by the irq thread but before the task's state is
+changed, the irq thread might never exit:
 
-What errors are seen in the kernel log?
+kthread_stop                            irq_wait_for_interrupt
+------------                            ----------------------
 
-	Regards
-		Oliver
+                                        ...
+...                                     while (!kthread_should_stop()) {
+kthread->should_stop = 1;
+wake_up_process(k);
+wait_for_completion(&kthread->exited);
+...
+                                            set_current_state(TASK_INTERRUPTIBLE);
+
+                                            ...
+
+                                            schedule();
+                                        }
+                                        ...
+
+Fix this by checking if the thread should stop after modifying the
+task's state.
+
+Signed-off-by: Ido Yariv <ido@wizery.com>
+Cc: stable@kernel.org
+---
+ kernel/irq/manage.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0e2b179..3194d5e 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -631,7 +631,11 @@ static int irq_wait_for_interrupt(struct irqaction *action)
+ 			__set_current_state(TASK_RUNNING);
+ 			return 0;
+ 		}
+-		schedule();
++
++		if (!kthread_should_stop())
++			schedule();
++		else
++			__set_current_state(TASK_RUNNING);
+ 	}
+ 	return -1;
+ }
+-- 
+1.7.7.3
+
