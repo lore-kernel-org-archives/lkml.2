@@ -1,175 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab1LAGKX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:10:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41479 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab1LAGKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:10:21 -0500
-Date: Wed, 30 Nov 2011 22:10:15 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kwlee@mtekvision.com" <kwlee@mtekvision.com>,
-        "Clark, Joel" <joel.clark@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/2] Input: tsc2007 - Disable irq when the irq thread is
- handling data
-Message-ID: <20111201061015.GD16816@core.coreip.homeip.net>
-References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
- <20111129092208.GA21758@core.coreip.homeip.net>
- <20111130100824.535c7e16@feng-i7>
+	id S1752570Ab1LAGKb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:10:31 -0500
+Received: from mout4.freenet.de ([195.4.92.94]:44177 "EHLO mout4.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692Ab1LAGK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 01:10:26 -0500
+Message-ID: <4ED71A28.9090204@01019freenet.de>
+Date: Thu, 01 Dec 2011 07:09:44 +0100
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0.1) Gecko/20111121 Firefox/8.0.1 SeaMonkey/2.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111130100824.535c7e16@feng-i7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Broken hd or filesystem access after resume from suspend2disk
+References: <jatcd7$4sc$1@ID-44327.news.uni-berlin.de> <CAFLxGvzwbLZrECWRzDxbHMt+SwKyCUukh9=PEpEQZsw=EtgoJw@mail.gmail.com>
+In-Reply-To: <CAFLxGvzwbLZrECWRzDxbHMt+SwKyCUukh9=PEpEQZsw=EtgoJw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 10:08:24AM +0800, Feng Tang wrote:
-> Hi Dmitry,
+richard -rw- weinberger schrieb:
+> On Sun, Nov 27, 2011 at 2:02 PM, Andreas Hartmann
+> <andihartmann@01019freenet.de> wrote:
+>> Hello,
+>>
+>> I'm often having trouble accessing the hd / filesystem after a resume
+>> from  suspend2disk. Sometimes, the machine completely hangs after resume
+>> or it cannot be suspended at all.
+>>
+>> Today, I faced the following problem after resuming:
+>>
+>> Using wpa_supplicant failed with the message:
+>>
+>> wpa_supplicant -t -c /etc/wpa_supplicant/wpa_supplicant.conf -f
+>> /var/log/wpa_supplicant.log -Dnl80211 -iwlan0
+>> wpa_supplicant: symbol lookup error: /lib64/libssl.so.1.0.0: undefined
+>> symbol: RAND_add
+>>
+>>
+>> ldd `which wpa_supplicant`
+>>        linux-vdso.so.1 =>  (0x00007fffd84b9000)
+>>        libnl.so.1 => /lib64/libnl.so.1 (0x00007fe5ac0bd000)
+>>        libdl.so.2 => /lib64/libdl.so.2 (0x00007fe5abeb9000)
+>>        libssl.so.1.0.0 => /lib64/libssl.so.1.0.0 (0x00007fe5abc5d000)
+>>        libcrypto.so.1.0.0 => /lib64/libcrypto.so.1.0.0 (0x00007fe5ab8ad000)
+>>        libdbus-1.so.3 => /lib64/libdbus-1.so.3 (0x00007fe5ab668000)
+>>        libc.so.6 => /lib64/libc.so.6 (0x00007fe5ab2d9000)
+>>        libm.so.6 => /lib64/libm.so.6 (0x00007fe5ab082000)
+>>        /lib64/ld-linux-x86-64.so.2 (0x00007fe5ac30f000)
+>>        libz.so.1 => /lib64/libz.so.1 (0x00007fe5aae6a000)
+>>        libpthread.so.0 => /lib64/libpthread.so.0 (0x00007fe5aac4d000)
+>>        librt.so.1 => /lib64/librt.so.1 (0x00007fe5aaa45000)
+>>
+>>
+>> rpm -qVf /lib64/libssl.so.1.0.0
+>> 5........    /lib64/libcrypto.so.1.0.0
+>>
+>> -> The libcrypto-library seems to be broken.
+>>
+>> In order to check, if there are more broken libraries (after the
+>> resume), I did a md5sum on the complete /lib64 directory to have it at
+>> base for a recheck after a reboot.
+>>
+>> The recheck after the reboot showed two more broken files:
+>>
+>> cd /lib64
+>> md5sum -c md5sum.out | grep FAILED
+>> libcrypto.so.1.0.0: FAILED
+>> libkeyutils.so.1: FAILED
+>> libkeyutils.so.1.4: FAILED
+>> md5sum: WARNING: 3 computed checksums did NOT match
+>>
+>> Apparently, there is something completely broken after resume.
+>>
+>>
+>> The machine is a MSI CR620 notebook and kernel is 3.1.
+>>
+>> 00:00.0 Host bridge: Intel Corporation Core Processor DRAM Controller
+>> (rev 02)
+>> 00:02.0 VGA compatible controller: Intel Corporation Core Processor
+>> Integrated Graphics Controller (rev 02)
+>> 00:16.0 Communication controller: Intel Corporation 5 Series/3400 Series
+>> Chipset HECI Controller (rev 06)
+>> 00:1a.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
+>> USB2 Enhanced Host Controller (rev 05)
+>> 00:1b.0 Audio device: Intel Corporation 5 Series/3400 Series Chipset
+>> High Definition Audio (rev 05)
+>> 00:1c.0 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+>> Express Root Port 1 (rev 05)
+>> 00:1c.1 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+>> Express Root Port 2 (rev 05)
+>> 00:1c.3 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+>> Express Root Port 4 (rev 05)
+>> 00:1c.5 PCI bridge: Intel Corporation 5 Series/3400 Series Chipset PCI
+>> Express Root Port 6 (rev 05)
+>> 00:1d.0 USB Controller: Intel Corporation 5 Series/3400 Series Chipset
+>> USB2 Enhanced Host Controller (rev 05)
+>> 00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev a5)
+>> 00:1f.0 ISA bridge: Intel Corporation Mobile 5 Series Chipset LPC
+>> Interface Controller (rev 05)
+>> 00:1f.2 SATA controller: Intel Corporation 5 Series/3400 Series Chipset
+>> 4 port SATA AHCI Controller (rev 05)
+>> 00:1f.3 SMBus: Intel Corporation 5 Series/3400 Series Chipset SMBus
+>> Controller (rev 05)
+>> 00:1f.6 Signal processing controller: Intel Corporation 5 Series/3400
+>> Series Chipset Thermal Subsystem (rev 05)
+>> 05:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless
+>> Network Adapter (PCI-Express) (rev 01)
+>> 06:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
+>> RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
+>> 3f:00.0 Host bridge: Intel Corporation Core Processor QuickPath
+>> Architecture Generic Non-core Registers (rev 02)
+>> 3f:00.1 Host bridge: Intel Corporation Core Processor QuickPath
+>> Architecture System Address Decoder (rev 02)
+>> 3f:02.0 Host bridge: Intel Corporation Core Processor QPI Link 0 (rev 02)
+>> 3f:02.1 Host bridge: Intel Corporation Core Processor QPI Physical 0
+>> (rev 02)
+>> 3f:02.2 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
+>> 3f:02.3 Host bridge: Intel Corporation Core Processor Reserved (rev 02)
+>>
+>>
+>> Does anybody has an idea how to fix / or further analyze this problem?
+>>
 > 
-> Thanks for the review.
+> Hmmm, maybe this related to my problem:
+> http://thread.gmane.org/gmane.linux.kernel/1116939/focus=1117113
 > 
-> On Tue, 29 Nov 2011 17:22:08 +0800
-> Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> 
-> > Hi Feng,
-> > 
-> > On Tue, Nov 29, 2011 at 04:12:57PM +0800, Feng Tang wrote:
-> > > The TSC2007 data sheet say in some case the HW may fire some false
-> > > interrrupt, which I also met during integrating one TSC2007 device.
-> > > So add the disable_irq/enable_irq protection around data handling.
-> > 
-> > IRQF_ONESHOT should prevent IRQ from firing again while thread is
-> > servicing it. Did you actually observe it not working?
-> 
-> You are right, the tsc's threaded IRQ function is not re-entered, and
-> the driver is working actually. My bad not stating the problem clearly.
-> The real problem I want solve is, many platforms including ours use a
-> GPIO line as the tsc2007's IRQ line, and when these extra tsc2007 IRQ 
-> is triggered on the gpio line, that GPIO controller will fire up extra
-> noise IRQ accordingly, causing its ISR to be called. And my patch is
->  trying to let the GPIO controller driver disable that specific IRQ pin
-> from tsc2007. As disable_irq will call GPIO irq_chip's irq_disable() or
-> mask() hook.
+> First I thought the issue is no longer present in newer kernels.
+> But my netbook still suffers on it.
 
-But ONESHOT interrupt handler will not unmask interrupt until thead
-finishes servicing it so we should not be seeing these extra IRQs.
-I'm adding Thomas in case I misunderstand how it threaded IRQ supposed to
-work.
+Well, I've got two notebooks: one suffers on it, the other not. The core
+differences between these two notebooks:
 
-Also, there is clear_penirq() platform method that is called to clean
-penirq state, if needed.
+32 bit vs 64 bit
+single threaded vs multi threaded (intel Core i5)
+
+The single threaded notebook does not suffer on this problem, the multi
+threaded does. The problem doesn't happen every time. I think it's
+dependent from the files affected. I even saw a broken
+~/.xsession-errors file. It contained a lot of 0x00 "characters" in one row.
+
+If this happens to a library or binary, which is used for resuming,
+resuming won't work, too. That is to say the next problem I suffer on:
+resuming - even s2disk just doesn't work at all some times.
 
 
-> 
-> By grep the tsc2007_platform_data in kernel, I see most of the most of
-> the tsc2007 platforms are using GPIO line as tsc2007 IRQ ine. So this
-> should be a general problem.
-> 
-> Following is patch with updated log and comments.
-> 
-> Thanks,
-> Feng
-> 
-> -----------------
-> 
-> From 16585020d27a066d2908959e370ea4f8905a0d34 Mon Sep 17 00:00:00 2001
-> From: Feng Tang <feng.tang@intel.com>
-> Date: Tue, 29 Nov 2011 15:48:42 +0800
-> Subject: [PATCH 1/2] Input: tsc2007 - Disable irq when the irq thread is handling data
-> 
-> The TSC2007 data sheet say in some case the HW may fire some false
-> interrrupt, which I also met during integrating one TSC2007 device.
-> Most of the tsc2007 platforms including ours are using a gpio line as
-> tsc2007's irq line, so calling disable_irq_nosync() to actually
-> prevent the gpio controller from firing IRQ for tsc2007 in such case.
-> 
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> ---
->  drivers/input/touchscreen/tsc2007.c |   13 +++++++++++++
->  1 files changed, 13 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/touchscreen/tsc2007.c b/drivers/input/touchscreen/tsc2007.c
-> index 1f674cb..03c1961 100644
-> --- a/drivers/input/touchscreen/tsc2007.c
-> +++ b/drivers/input/touchscreen/tsc2007.c
-> @@ -171,6 +171,18 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
->  	struct ts_event tc;
->  	u32 rt;
->  
-> +	/*
-> +	 * Disable the irq, as it may fire several other IRQs during
-> +	 * this thread is handling data, as suggested by the TSC2007
-> +	 * datasheet, p19, "Touch Detect" chapter.
-> +	 *
-> +	 * Most of the tsc2007 platforms are using a gpio line as
-> +	 * tsc2007's irq line, so calling disable_irq_nosync() will
-> +	 * actually prevent the gpio controller from firing IRQ for
-> +	 * this tsc2007 line in such case.
-> +	 */
-> +	disable_irq_nosync(irq);
-> +
->  	while (!ts->stopped && tsc2007_is_pen_down(ts)) {
->  
->  		/* pen is down, continue with the measurement */
-> @@ -221,6 +233,7 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
->  	if (ts->clear_penirq)
->  		ts->clear_penirq();
->  
-> +	enable_irq(irq);
->  	return IRQ_HANDLED;
->  }
->  
-> -- 
-> 1.7.1
-> > 
-> > Thanks.
-> > 
-> > > 
-> > > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > > ---
-> > >  drivers/input/touchscreen/tsc2007.c |    8 ++++++++
-> > >  1 files changed, 8 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/input/touchscreen/tsc2007.c
-> > > b/drivers/input/touchscreen/tsc2007.c index 1f674cb..789f216 100644
-> > > --- a/drivers/input/touchscreen/tsc2007.c
-> > > +++ b/drivers/input/touchscreen/tsc2007.c
-> > > @@ -171,6 +171,13 @@ static irqreturn_t tsc2007_soft_irq(int irq,
-> > > void *handle) struct ts_event tc;
-> > >  	u32 rt;
-> > >  
-> > > +	/*
-> > > +	 * Disable the irq, as it may fire several other IRQs
-> > > during
-> > > +	 * this thread is handling data, as suggested by the
-> > > TSC2007
-> > > +	 * datasheet, p19, "Touch Detect" chapter
-> > > +	 */
-> > > +	disable_irq_nosync(irq);
-> > > +
-> > >  	while (!ts->stopped && tsc2007_is_pen_down(ts)) {
-> > >  
-> > >  		/* pen is down, continue with the measurement */
-> > > @@ -221,6 +228,7 @@ static irqreturn_t tsc2007_soft_irq(int irq,
-> > > void *handle) if (ts->clear_penirq)
-> > >  		ts->clear_penirq();
-> > >  
-> > > +	enable_irq(irq);
-> > >  	return IRQ_HANDLED;
-> > >  }
-> > >  
-> > > -- 
-> > > 1.7.1
-> > > 
-> > > 
-> > 
-
--- 
-Dmitry
+Kind regards,
+Andreas
