@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601Ab1LAXTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 18:19:35 -0500
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:43794 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755346Ab1LAXTe (ORCPT
+	id S1755577Ab1LAX2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 18:28:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43281 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab1LAX2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 18:19:34 -0500
-X-Sasl-enc: ImGToftpMzvDIwGn5VVtMKAz9PI2WFwPBGrP3j4qzlLo 1322781573
-Date: Thu, 1 Dec 2011 15:18:31 -0800
-From: Greg KH <greg@kroah.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        devel@driverdev.osuosl.org, lttng-dev@lists.lttng.org,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Darren Hart <darren@dvhart.com>
-Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
-Message-ID: <20111201231831.GB4961@kroah.com>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
- <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com>
- <1322776568.4699.52.camel@twins>
- <20111201220445.GA10552@Krystal>
- <1322777407.4699.59.camel@twins>
- <20111201221500.GC10552@Krystal>
- <1322780797.4699.61.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322780797.4699.61.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 Dec 2011 18:28:52 -0500
+Date: Thu, 1 Dec 2011 15:28:51 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Anton Arapov <anton@redhat.com>
+Subject: Re: NUMA x86: add constraints check for nid parameters
+Message-Id: <20111201152851.7e39f034.akpm@linux-foundation.org>
+In-Reply-To: <20111201231441.GA3293@stainedmachine.redhat.com>
+References: <1322739907-4695-1-git-send-email-pholasek@redhat.com>
+	<20111201133451.5fc1ee7b.akpm@linux-foundation.org>
+	<20111201231441.GA3293@stainedmachine.redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 12:06:37AM +0100, Peter Zijlstra wrote:
-> On Thu, 2011-12-01 at 17:15 -0500, Mathieu Desnoyers wrote:
-> > 
-> > If you don't want to trace sched_switch, but just conveniently prepend
-> > this information to all your events 
+On Fri, 2 Dec 2011 00:14:42 +0100
+Petr Holasek <pholasek@redhat.com> wrote:
+
+> On Thu, 01 Dec 2011, Andrew Morton wrote:
 > 
-> Oh so you want to debug a scheduler issue but don't want to use the
-> scheduler tracepoint, I guess that makes perfect sense for clueless
-> people.
+> > Date: Thu, 1 Dec 2011 13:34:51 -0800
+> > From: Andrew Morton <akpm@linux-foundation.org>
+> > To: Petr Holasek <pholasek@redhat.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+> >  "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org, Anton
+> >  Arapov <anton@redhat.com>
+> > Subject: Re: [PATCH RESEND] NUMA x86: add constraints check for nid
+> >  parameters
+> > 
+> > On Thu,  1 Dec 2011 12:45:07 +0100
+> > Petr Holasek <pholasek@redhat.com> wrote:
+> > 
+> > > This patch adds constraints checks into __node_distance() and
+> > > numa_set_distance() functions. If from or to parameters are
+> > > lower than zero, it results into oops now.
+> > 
+> > Passing negative numbers into __node_distance() sounds like a bug in
+> > the caller, and this patch will remove our means of detecting that bug.
+> 
+> That's true, but upper boundary is checked now, so why not to check lower?
 
-Matheiu, can't lttng use the scheduler tracepoint for this information?
+Because it adds more code to the kernel and can hide bugs?
 
+> Seems inconsistent to me - from this point of view even don't check anything
+> would be better for detecting bug in the caller.
+> 
+> > 
+> > Perhaps we need to be told more about this patch.  Is the bug
+> > user-triggerable?  If so, how?  How was this fault triggered? 
+> > Etcetera.
+> > 
+> 
+> AFAIK, neither __node_distance() nor numa_set_distance() aren't in any
+> path from user-space inputs. Their paramaters are based on ACPI tables
+> provided by HW vendors.
 
+That didn't answer my questions.  Have you observed any problems in
+this code?  If so, please fully describe them.  Or was it purely from
+code inspection?
+
+If what we're doing here is to be defensive against buggy BIOS tables
+(a good idea) then we should validate the BIOS table values as close as
+possible to the point where they were read frmo the BIOS.  And we should
+(probably) emit a warning if a bad table entry is detected, rather than
+silently fixing it up.
