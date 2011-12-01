@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1LAJYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:24:31 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:13146 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab1LAJY3 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:2>);
-	Thu, 1 Dec 2011 04:24:29 -0500
-Message-Id: <4ED755D70200007800064987@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 01 Dec 2011 09:24:23 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <ke.yu@intel.com>, <kevin.tian@intel.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <stefan.bader@canonical.com>, <Ian.Campbell@citrix.com>,
-        <mike.mcclurg@citrix.com>, <jeremy@goop.org>, <konrad@kernel.org>,
-        <lenb@kernel.org>, <xen-devel@lists.xensource.com>,
-        <liang.tang@oracle.com>, <rjw@sisk.pl>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 5/8] ACPI: add processor driver for Xen
- virtual CPUs.
-References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
- <1322673664-14642-6-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1322673664-14642-6-git-send-email-konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752475Ab1LAJ10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:27:26 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:35469 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751622Ab1LAJ1Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 04:27:24 -0500
+Date: Thu, 1 Dec 2011 09:26:39 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Frank Rowand <frank.rowand@am.sony.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC PATCH 4/6] ARM: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW on
+ ASID-capable CPUs
+Message-ID: <20111201092638.GA27394@arm.com>
+References: <1322569352-23584-1-git-send-email-catalin.marinas@arm.com>
+ <1322569352-23584-5-git-send-email-catalin.marinas@arm.com>
+ <4ED6ED03.9080408@am.sony.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4ED6ED03.9080408@am.sony.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.11.11 at 18:21, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -66,6 +66,7 @@ obj-$(CONFIG_ACPI_CUSTOM_METHOD)+= custom_method.o
->  # processor has its own "processor." module_param namespace
->  processor-y			:= processor_driver.o processor_throttling.o
->  processor-y			+= processor_idle.o processor_thermal.o
-> +processor-y			+= processor_xen.o
+On Thu, Dec 01, 2011 at 02:57:07AM +0000, Frank Rowand wrote:
+> On 11/29/11 04:22, Catalin Marinas wrote:
+> > Since the ASIDs must be unique to an mm across all the CPUs in a system,
+> > the __new_context() function needs to broadcast a context reset event to
+> > all the CPUs during ASID allocation if a roll-over occurred. Such IPIs
+> > cannot be issued with interrupts disabled and ARM had to define
+> > __ARCH_WANT_INTERRUPTS_ON_CTXSW.
+> > 
+> > This patch changes the check_context() function to
+> > check_and_switch_context() called from switch_mm(). In case of
+> > ASID-capable CPUs (ARMv6 onwards), if a new ASID is needed, it defers
+> > the __new_context() and cpu_switch_mm() calls to the post-lock switch
+> > hook where the interrupts are enabled. Setting the reserved TTBR0 was
+> > also moved to check_and_switch_context() from cpu_v7_switch_mm().
+> > 
+> > Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> > Cc: Russell King <linux@arm.linux.org.uk>
+> > ---
+> >  arch/arm/include/asm/mmu_context.h |   81 ++++++++++++++++++++++++++++--------
+> >  arch/arm/include/asm/system.h      |    2 +
+> >  arch/arm/include/asm/thread_info.h |    1 +
+> >  arch/arm/mm/context.c              |    4 +-
+> >  arch/arm/mm/proc-v7.S              |    3 -
+> >  5 files changed, 69 insertions(+), 22 deletions(-)
+> > 
+> 
+> < snip >
+> 
+> > diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+> > index 2faff3b..d5334d9 100644
+> > --- a/arch/arm/mm/proc-v7.S
+> > +++ b/arch/arm/mm/proc-v7.S
+> > @@ -116,9 +116,6 @@ ENTRY(cpu_v7_switch_mm)
+> >  #ifdef CONFIG_ARM_ERRATA_430973
+> >  	mcr	p15, 0, r2, c7, c5, 6		@ flush BTAC/BTB
+> >  #endif
+> > -	mrc	p15, 0, r2, c2, c0, 1		@ load TTB 1
+> > -	mcr	p15, 0, r2, c2, c0, 0		@ into TTB 0
+> > -	isb
+> >  #ifdef CONFIG_ARM_ERRATA_754322
+> >  	dsb
+> >  #endif
+> 
+> I do not have a tree that matches this version of cpu_v7_switch_mm().
+> Can you point me at a tree that I can see this in?
 
-This should minimally be processor-$(CONFIG_XEN), with other things
-adjusted as necessary.
+That's added by the second patch in the series (and removed in a later
+patch but it is a logical change in both situations and keeps the code
+bisectable).
 
->  processor-$(CONFIG_CPU_FREQ)	+= processor_perflib.o
->  
->  obj-$(CONFIG_ACPI_PROCESSOR_AGGREGATOR) += acpi_pad.o
->...
-> --- a/drivers/xen/Kconfig
-> +++ b/drivers/xen/Kconfig
-> @@ -117,6 +117,11 @@ config XEN_SYS_HYPERVISOR
->  	 virtual environment, /sys/hypervisor will still be present,
->  	 but will have no xen contents.
->  
-> +config ACPI_PROCESSOR_XEN
-> +	tristate
-> +	depends on XEN_DOM0 && ACPI_PROCESSOR && CPU_FREQ
-> +	default m
-
-default ACPI_PROCESSOR
-
-> +
->  config XEN_XENBUS_FRONTEND
->  	tristate
->  
-> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> index 974fffd..f67450c 100644
-> --- a/drivers/xen/Makefile
-> +++ b/drivers/xen/Makefile
-> @@ -19,6 +19,9 @@ obj-$(CONFIG_XEN_TMEM)			+= tmem.o
->  obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
->  obj-$(CONFIG_XEN_DOM0)			+= pci.o
->  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
-> +ifdef CONFIG_ACPI_PROCESSOR_XEN
-> +obj-$(CONFIG_ACPI_PROCESSOR)		+= acpi_processor.o
-> +endif
-
-obj-$(CONFIG_ACPI_PPROCESSOR_XEN)
-
-Jan
-
+-- 
+Catalin
