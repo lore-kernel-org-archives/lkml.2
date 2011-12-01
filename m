@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab1LARgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 12:36:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54085 "EHLO mx2.suse.de"
+	id S1755944Ab1LARgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 12:36:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54061 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755782Ab1LARgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 12:36:33 -0500
+	id S1755894Ab1LARgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 12:36:31 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -14,9 +14,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <jweiner@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Rik van Riel <riel@redhat.com>, Nai Xia <nai.xia@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/11] mm: vmscan: When reclaiming for compaction, ensure there are sufficient free pages available
-Date: Thu,  1 Dec 2011 17:36:19 +0000
-Message-Id: <1322760981-28719-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 07/11] mm: page allocator: Do not call direct reclaim for THP allocations while compaction is deferred
+Date: Thu,  1 Dec 2011 17:36:17 +0000
+Message-Id: <1322760981-28719-8-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1322760981-28719-1-git-send-email-mgorman@suse.de>
 References: <1322760981-28719-1-git-send-email-mgorman@suse.de>
@@ -24,99 +24,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit [e0887c19: vmscan: limit direct reclaim for higher order
-allocations], Rik noted that reclaim was too aggressive when THP was
-enabled. In his initial patch he used the number of free pages to
-decide if reclaim should abort for compaction. My feedback was that
-reclaim and compaction should be using the same logic when deciding if
-reclaim should be aborted.
+If compaction is deferred, direct reclaim is used to try free enough
+pages for the allocation to succeed. For small high-orders, this has
+a reasonable chance of success. However, if the caller has specified
+__GFP_NO_KSWAPD to limit the disruption to the system, it makes more
+sense to fail the allocation rather than stall the caller in direct
+reclaim. This patch skips direct reclaim if compaction is deferred
+and the caller specifies __GFP_NO_KSWAPD.
 
-Unfortunately, this had the effect of reducing THP success rates when
-the workload included something like streaming reads that continually
-allocated pages. The window during which compaction could run and return
-a THP was too small.
-
-This patch combines Rik's two patches together. compaction_suitable()
-is still used to decide if reclaim should be aborted to allow
-compaction is used. However, it will also ensure that there is a
-reasonable buffer of free pages available. This improves upon the
-THP allocation success rates but bounds the number of pages that are
-freed for compaction.
+Async compaction only considers a subset of pages so it is possible for
+compaction to be deferred prematurely and not enter direct reclaim even
+in cases where it should. To compensate for this, this patch also defers
+compaction only if sync compaction failed.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Minchan Kim <minchan.kim@gmail.com>
 ---
- mm/vmscan.c |   44 +++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 39 insertions(+), 5 deletions(-)
+ mm/page_alloc.c |   45 +++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 35 insertions(+), 10 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index d2b701a..6c7085d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2122,6 +2122,42 @@ restart:
- 	throttle_vm_writeout(sc->gfp_mask);
- }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9dd443d..d979376 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1886,14 +1886,20 @@ static struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, unsigned long *did_some_progress,
+-	bool sync_migration)
++	int migratetype, bool sync_migration,
++	bool *deferred_compaction,
++	unsigned long *did_some_progress)
+ {
+ 	struct page *page;
  
-+/* Returns true if compaction should go ahead for a high-order request */
-+static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
-+{
-+	unsigned long balance_gap, watermark;
-+	bool watermark_ok;
+-	if (!order || compaction_deferred(preferred_zone))
++	if (!order)
+ 		return NULL;
+ 
++	if (compaction_deferred(preferred_zone)) {
++		*deferred_compaction = true;
++		return NULL;
++	}
 +
-+	/* Do not consider compaction for orders reclaim is meant to satisfy */
-+	if (sc->order <= PAGE_ALLOC_COSTLY_ORDER)
-+		return false;
+ 	current->flags |= PF_MEMALLOC;
+ 	*did_some_progress = try_to_compact_pages(zonelist, order, gfp_mask,
+ 						nodemask, sync_migration);
+@@ -1921,7 +1927,13 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 		 * but not enough to satisfy watermarks.
+ 		 */
+ 		count_vm_event(COMPACTFAIL);
+-		defer_compaction(preferred_zone);
 +
++		/*
++		 * As async compaction considers a subset of pageblocks, only
++		 * defer if the failure was a sync compaction failure.
++		 */
++		if (sync_migration)
++			defer_compaction(preferred_zone);
+ 
+ 		cond_resched();
+ 	}
+@@ -1933,8 +1945,9 @@ static inline struct page *
+ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 	struct zonelist *zonelist, enum zone_type high_zoneidx,
+ 	nodemask_t *nodemask, int alloc_flags, struct zone *preferred_zone,
+-	int migratetype, unsigned long *did_some_progress,
+-	bool sync_migration)
++	int migratetype, bool sync_migration,
++	bool *deferred_compaction,
++	unsigned long *did_some_progress)
+ {
+ 	return NULL;
+ }
+@@ -2084,6 +2097,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 	unsigned long pages_reclaimed = 0;
+ 	unsigned long did_some_progress;
+ 	bool sync_migration = false;
++	bool deferred_compaction = false;
+ 
+ 	/*
+ 	 * In the slowpath, we sanity check order to avoid ever trying to
+@@ -2164,12 +2178,22 @@ rebalance:
+ 					zonelist, high_zoneidx,
+ 					nodemask,
+ 					alloc_flags, preferred_zone,
+-					migratetype, &did_some_progress,
+-					sync_migration);
++					migratetype, sync_migration,
++					&deferred_compaction,
++					&did_some_progress);
+ 	if (page)
+ 		goto got_pg;
+ 	sync_migration = true;
+ 
 +	/*
-+	 * Compaction takes time to run and there are potentially other
-+	 * callers using the pages just freed. Continue reclaiming until
-+	 * there is a buffer of free pages available to give compaction
-+	 * a reasonable chance of completing and allocating the page
++	 * If compaction is deferred for high-order allocations, it is because
++	 * sync compaction recently failed. In this is the case and the caller
++	 * has requested the system not be heavily disrupted, fail the
++	 * allocation now instead of entering direct reclaim
 +	 */
-+	balance_gap = min(low_wmark_pages(zone),
-+		(zone->present_pages + KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
-+			KSWAPD_ZONE_BALANCE_GAP_RATIO);
-+	watermark = high_wmark_pages(zone) + balance_gap + (2UL << sc->order);
-+	watermark_ok = zone_watermark_ok_safe(zone, 0, watermark, 0, 0);
++	if (deferred_compaction && (gfp_mask & __GFP_NO_KSWAPD))
++		goto nopage;
 +
-+	/*
-+	 * If compaction is deferred, reclaim up to a point where
-+	 * compaction will have a chance of success when re-enabled
-+	 */
-+	if (compaction_deferred(zone))
-+		return watermark_ok;
-+
-+	/* If compaction is not ready to start, keep reclaiming */
-+	if (!compaction_suitable(zone, sc->order))
-+		return false;
-+
-+	return watermark_ok;
-+}
-+
- /*
-  * This is the direct reclaim path, for page-allocating processes.  We only
-  * try to reclaim pages from zones which will satisfy the caller's allocation
-@@ -2139,8 +2175,8 @@ restart:
-  * scan then give up on it.
-  *
-  * This function returns true if a zone is being reclaimed for a costly
-- * high-order allocation and compaction is either ready to begin or deferred.
-- * This indicates to the caller that it should retry the allocation or fail.
-+ * high-order allocation and compaction is ready to begin. This indicates to
-+ * the caller that it should retry the allocation or fail.
-  */
- static bool shrink_zones(int priority, struct zonelist *zonelist,
- 					struct scan_control *sc)
-@@ -2174,9 +2210,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 				 * noticable problem, like transparent huge page
- 				 * allocations.
- 				 */
--				if (sc->order > PAGE_ALLOC_COSTLY_ORDER &&
--					(compaction_suitable(zone, sc->order) ||
--					 compaction_deferred(zone))) {
-+				if (compaction_ready(zone, sc)) {
- 					should_abort_reclaim = true;
- 					continue;
- 				}
+ 	/* Try direct reclaim and then allocating */
+ 	page = __alloc_pages_direct_reclaim(gfp_mask, order,
+ 					zonelist, high_zoneidx,
+@@ -2232,8 +2256,9 @@ rebalance:
+ 					zonelist, high_zoneidx,
+ 					nodemask,
+ 					alloc_flags, preferred_zone,
+-					migratetype, &did_some_progress,
+-					sync_migration);
++					migratetype, sync_migration,
++					&deferred_compaction,
++					&did_some_progress);
+ 		if (page)
+ 			goto got_pg;
+ 	}
 -- 
 1.7.3.4
 
