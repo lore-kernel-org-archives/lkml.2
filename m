@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab1LAQLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 11:11:12 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55697 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab1LAQLL convert rfc822-to-8bit (ORCPT
+	id S1755366Ab1LAQOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 11:14:12 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56540 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab1LAQOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 11:11:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111201142704.GT4387@parisc-linux.org>
-References: <1322735278-17420-1-git-send-email-jack@suse.cz>
- <20111201122425.GA16274@localhost> <20111201142704.GT4387@parisc-linux.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 1 Dec 2011 08:10:47 -0800
-X-Google-Sender-Auth: Bw9Tv9LYX-jvA_oaj61ePH_8yqI
-Message-ID: <CA+55aFypH2+MQOZfn8qoO7zo_17Oo8jLaayye45pgo_Hpz2jBQ@mail.gmail.com>
-Subject: Re: [PATCH] fs: Make write(2) interruptible by a fatal signal
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 1 Dec 2011 11:14:11 -0500
+X-Authority-Analysis: v=2.0 cv=QqvcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5UQAro16S0QA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=I9flj0B8ZdswJex-vcIA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH] jump_label: jump_label for boot options.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>
+In-Reply-To: <1322751977.4699.20.camel@twins>
+References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
+	 <1322750927.30977.25.camel@frodo>  <1322751977.4699.20.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 01 Dec 2011 11:14:07 -0500
+Message-ID: <1322756047.30977.29.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 6:27 AM, Matthew Wilcox <matthew@wil.cx> wrote:
->
-> Another problem scenario is an NFS mounted file going away while the
-> user is writing to it.  The user should be able to kill the stuck process
-> without rebooting their machine.
+On Thu, 2011-12-01 at 16:06 +0100, Peter Zijlstra wrote:
+> On Thu, 2011-12-01 at 09:48 -0500, Steven Rostedt wrote:
+> > 
+> > I also wonder if this could be used for other things not just init.
+> > Maybe at boot up you can determine what hardware is being used, and then
+> > decided which path to take. Things that depend on cpuid and such might
+> > be able to do such a thing. 
+> 
+> That sounds suspiciously like alternatives..
 
-Well, NFS has always had the 'intr' mount option.
+Hehe, you caught me ;)
 
-The problem with NFS and 'intr' is that it's very user-visible, and
-makes even nonfatal signals cause EINTR. So the "abort writes on fatal
-signals" is a lot less noticeable to any programs: sure, it does
-introduce potentially visible semantic changes, but now they are
-visible only across different processes, not within one process.
+-- Steve
 
-And anybody who relies on "all or nothing" even in the face of SIGKILL
-is just broken. That said, like so many changes, I think this falls
-solidly on the "we should do this, but if somebody reports a
-regression..."
 
-I suspect the likelihood of regressions is basically zero. No
-application that actually cares about its data would ever rely on the
-"writes will complete entirely or not at all" semantics. Not only has
-it never been true on NFS, but it's not true in the face of crashes
-either, so any careful app will already depend on other things like
-fsync+rename etc.
 
-                           Linus
-
-                          Linus
