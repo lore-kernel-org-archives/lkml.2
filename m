@@ -1,38 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab1LAGVW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:21:22 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47246 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab1LAGVU (ORCPT
+	id S1753131Ab1LAGWX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:22:23 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:9322 "EHLO
+	VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab1LAGWW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:21:20 -0500
+	Thu, 1 Dec 2011 01:22:22 -0500
+X-SpamScore: -18
+X-BigFish: VS-18(zz9371K179dN1432N98dKzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 1 Dec 2011 14:34:48 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 6/8] of: add clock providers
+Message-ID: <20111201063447.GH711@S2100-06.ap.freescale.net>
+References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
+ <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
+ <20111121153716.GA16417@S2100-06.ap.freescale.net>
+ <CACxGe6teGPmgOiwSVQ_PebXo=9x8EVwjH2qQYi5LU813BvY3Ow@mail.gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.53.1]
-In-Reply-To: <20111130234318.GC31069@redhat.com>
-References: <1322569886-13055-1-git-send-email-ohad@wizery.com>
- <20111129131110.GC19157@redhat.com> <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com>
- <20111129151607.GE30966@redhat.com> <CAK=WgbZK+k4uuyMPHUfr_PMyrR5ceRTvuDRpmhXfgwpSUOPw0g@mail.gmail.com>
- <20111130145958.GE21413@redhat.com> <CAK=WgbYyFdLftE_kp2_JOThVhn-FzGsDqVqKn0Jwm2teQyZBNA@mail.gmail.com>
- <20111130161555.GB25812@redhat.com> <CAK=WgbazBq4GVo16sZsrZirgMYbwMcWtPaqn90c6d9Phr0gh3A@mail.gmail.com>
- <CAK=WgbbZH3ZFzbwwyVBGEvwHPbogDW6+Kb_1pRam2jj5oJHuDA@mail.gmail.com> <20111130234318.GC31069@redhat.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 1 Dec 2011 08:20:59 +0200
-Message-ID: <CAK=WgbYysMUQjWmgZhHBQJxcyG_J8H-f8FzZwSOVuTRjPRAiUQ@mail.gmail.com>
-Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <CACxGe6teGPmgOiwSVQ_PebXo=9x8EVwjH2qQYi5LU813BvY3Ow@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 1:43 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> And these accesses need to be ordered with DSB? Or DMB?
+On Wed, Nov 30, 2011 at 12:38:19PM -0700, Grant Likely wrote:
+> On Mon, Nov 21, 2011 at 8:37 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> > On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
+> >> +struct clk *of_clk_get_by_name(struct device_node *np, const char *name)
+> >> +{
+> >> +     int index = 0;
+> >> +
+> >> +     if (name)
+> >> +             index = of_property_match_string(np, "clock-input-names", name);
+> >
+> > If it fails to match name, we may want to force 'index' back to 0.
+> 
+> Actually, if it fails to match, the function should fail.
 
-DMB (i.e. smp barriers) should be enough within Normal memory
-accesses, though the other issues that were reported to me are a bit
-concerning. I'm still trying to get more information about them, in
-the hopes that I can eventually reproduce them myself.
+Hmm, that will require the clock-input-name be same as the second
+parameter of clk_get() - con_id, which may have been named to some
+string not suitable for clock-input-name.  For those case, we will
+probably need to change the drivers to rename the con_id?  Or just
+force the clock-input-name to be that improper con_id string?
+
+-- 
+Regards,
+Shawn
+
