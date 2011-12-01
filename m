@@ -1,97 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab1LAGTD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 01:19:03 -0500
-Received: from mga14.intel.com ([143.182.124.37]:21337 "EHLO mga14.intel.com"
+	id S1752680Ab1LAGU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 01:20:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20744 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751641Ab1LAGTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 01:19:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,276,1320652800"; 
-   d="scan'208";a="42789073"
-Date: Thu, 1 Dec 2011 14:19:48 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Clark, Joel" <joel.clark@intel.com>
-Subject: Re: [PATCH 2/2] Input: tsc2007 - Add a z1_low_threshhold platform
- data parameter
-Message-ID: <20111201141948.13162071@feng-i7>
-In-Reply-To: <20111201054726.GC16816@core.coreip.homeip.net>
-References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
-	<1322554378-348-2-git-send-email-feng.tang@intel.com>
-	<20111129092310.GB21758@core.coreip.homeip.net>
-	<20111130103418.4514b630@feng-i7>
-	<20111201054726.GC16816@core.coreip.homeip.net>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1751804Ab1LAGUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 01:20:55 -0500
+Message-ID: <1322720437.26545.49.camel@bling.home>
+Subject: Re: [PATCH 1/4] iommu: Add iommu_device_group callback and
+ iommu_group sysfs entry
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Gibson <dwg@au1.ibm.com>, joerg.roedel@amd.com, dwmw2@infradead.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        chrisw@redhat.com, agraf@suse.de, scottwood@freescale.com,
+        B08248@freescale.com
+Date: Wed, 30 Nov 2011 23:20:37 -0700
+In-Reply-To: <1322645028.21641.71.camel@pasglop>
+References: <20111021195412.8438.9951.stgit@s20.home>
+	 <20111021195605.8438.81609.stgit@s20.home>
+	 <20111130024205.GF5435@truffala.fritz.box>
+	 <1322628672.21641.39.camel@pasglop> <1322630751.19120.222.camel@bling.home>
+	 <1322645028.21641.71.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011 13:47:26 +0800
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-
-> On Wed, Nov 30, 2011 at 10:34:18AM +0800, Feng Tang wrote:
-> > On Tue, 29 Nov 2011 17:23:10 +0800
-> > Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+On Wed, 2011-11-30 at 20:23 +1100, Benjamin Herrenschmidt wrote:
+> On Tue, 2011-11-29 at 22:25 -0700, Alex Williamson wrote:
+> 
+> > Note that iommu drivers are registered per bus_type, so the unique pair
+> > is {bus_type, groupid}, which seems sufficient for vfio.
 > > 
-> > > On Tue, Nov 29, 2011 at 04:12:58PM +0800, Feng Tang wrote:
-> > > > This originates from a patch in Meego IVI kernel with the name
-> > > > 	linux-2.6.37-connext-0027-tsc2007.patch
-> > > > There is no author info excepte a line "From  MeeGo
-> > > > <kernel@meego.com>"
-> > > > 
-> > > > When integrating tsc2007 on Intel IVI platform, there are a lot
-> > > > of noise data whose z1 value is around 10 which is not a sane
-> > > > "z1". So add a "z1_low_threshhold" to filter those nosie data,
-> > > > to make the device work properly.
+> > > Don't forget that to keep sanity, we really want to expose the groups
+> > > via sysfs (per-group dir with symlinks to the devices).
 > > > 
-> > > Sounds like a task for userspace to ignore pressure that is too
-> > > low. Bonus points for making it configurable so user can adjust
-> > > sensitivity.
+> > > I'm working with Alexey on providing an in-kernel powerpc specific API
+> > > to expose the PE stuff to whatever's going to interface to VFIO to
+> > > create the groups, though we can eventually collapse that. The idea is
+> > > that on non-PE capable brigdes (old style), I would make a single group
+> > > per host bridge.
 > > 
-> > Actually, there is one more point :), without this patch, the
-> > driver won't work on our platforms.
+> > If your non-PE capable bridges aren't actually providing isolation, they
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> > should return -ENODEV for the group_device() callback, then vfio will
+> > ignore them.
+> 
+> Why ignore them ? It's perfectly fine to consider everything below the
+> host bridge as one group. There is isolation ... at the host bridge
+> level.
+
+If there is isolation, yes, report a group.  A host bridge by itself
+does not imply DMA isolation on most platforms.  We could say devices
+without isolation are all in the same group, but then imagine a system
+with two PCI host bridges.  Host bridge A has an iommu providing B:D.F
+isolation, host bridge B has no iommu and no isolation.  Clearly devices
+behind A have groupids.  However if we assign a single groupid for all
+the devices behind B, we subvert the isolation of devices behind A.  To
+avoid that, devices that cannot be isolated should not have a groupid.
+
+> Really groups should be a structure, not a magic number. We want to
+> iterate them and their content, represent them via an API, etc... and so
+> magic numbers means that anything under the hood will have to constantly
+> convert between that and some kind of internal data structure.
+
+What would a group structure in core driver code contain?  Who manages
+it?  Don't forget, most users don't have hardware capable of making use
+of this and most users with the right hardware still aren't going to use
+it.  Those group structures live in vfio and get allocated when vfio is
+loaded.  VT-d and AMD-Vi can support this new groupid interface with
+zero additional data structures floating around.
+
+As Chris noted, the choice of an unsigned int to efficiently represent
+groupids in PCI isn't just coincidence.  If you can't make use of the
+same trick, surely it's not too difficult to enumerate your PEs and use
+that as the groupid.
+
+> I also somewhat dislike the bus_type as the anchor to the grouping
+> system, but that's not necessarily as bad an issue for us to deal with.
+> 
+> Eventually what will happen on my side is that I will have a powerpc
+> "generic" (ie. accross platforms) that allow to enumerate groups and
+> retrieve the dma windows associated with them etc...
+> 
+> That API will use underlying function pointers provided by the PCI host
+> bridge (for which we do have a data structure, struct pci_controller,
+> like many other archs except I think x86 :-)
+> 
+> Any host platform that doesn't provide those pointers (ie. all of them
+> initially) will get a default behaviour which is to group everything
+> below a host bridge (since host bridges still have independent iommu
+> windows, at least for us they all do). 
+> 
+> On top of that we can implement a "backend" that provides those pointers
+> for the p7ioc bridge used on the powernv platform, which will expose
+> more fine grained groups based on our "partitionable endpoint"
+> mechanism.
+> 
+> The grouping will have been decided early at boot time based on a mix of
+> HW resources and bus topology, plus things like whether there is a PCI-X
+> bridge etc... and will be initially immutable.
+> 
+> Ideally, we need to expose a subset of this API as a "generic" interface
+> to allow generic code to iterate the groups and their content, and to
+> construct the appropriate sysfs representation.
+> 
+> > > In addition, Alex, I noticed that you still have the domain stuff there,
+> > > which is fine I suppose, we could make it a requirement on power that
+> > > you only put a single group in a domain... but the API is still to put
+> > > individual devices in a domain, not groups, and that somewhat sucks.
+> > > 
+> > > You could "fix" that by having some kind of ->domain_enable() or
+> > > whatever that's used to "activate" the domain and verifies that it
+> > > contains entire groups but that looks like a pointless way to complicate
+> > > both the API and the implementation.
 > > 
-> > The tsc2007_soft_irq will keep reading the input data unless there
-> > is no valid pressure data. In our case, those noise data will be
-> > seen as valid data during tsc2007_calculate_pressure(), and the
-> > tsc2007_soft_irq will run endlessly.
+> > Right, groups are currently just a way to identify dependent sets, not a
+> > unit of work.  We can also have group membership change dynamically
+> > (hotplug slot behind a PCIe-to-PCI bridge), so there are cases where we
+> > might need to formally attach/detach a group element to a domain at some
+> > later point.  This really hasn't felt like a stumbling point for vfio,
+> > at least on x86.  Thanks,
 > 
-> Even if we add the pressure threshold would not that noise cause
-> endless stream of interrupts?
+> It doesn't matter much as long as we have a way to know that a group is
+> "complete", ie that all devices of a group have been taken over by vfio
+> and put into a domain, and block them from being lost. Only then can we
+> actually "use" the group and start reconfiguring the iommu etc... for
+> use by the guest.
 
-No, there is no endless interrupts for tsc2007. Without the z1
-threshold, the while circle in tsc2007_soft_irq will run endlessly
-as the noise data will be seen as a valid data:
+This is done.  I call a group "viable" when all of the devices are bound
+to their vfio bus driver and ready for use.  The API will not allow a
+user access to the iommu or device file descriptors unless the group is
+viable.  Unbinding a device from the vfio bus driver will block as long
+as the group is in use (need to decide if we enable a system policy to
+let vfio kill the process to release a device).  I'm also working on
+code that proactively attaches the vfio bus driver to a hot-added device
+if it's being added to an in-use group.
 
-		rt = tsc2007_calculate_pressure(ts, &tc);
-		if (rt == 0 && !ts->get_pendown_state) {
-			/*
-			 * If pressure reported is 0 and we don't have
-			 * callback to check pendown state, we have to
-			 * assume that pen was lifted up.
-			 */
-			break;
-		}
+> Note that groups -will- contain briges eventually. We need to take that
+> into account since bridges -usually- don't have an ordinary driver
+> attached to them so there may be issues there with tracking whether they
+> are taken over by vfio...
 
-With the z1 threshold check, the rt will be 0 for noise data, and the
-code flow broke out.
+I look forward to patches for this ;)  Thanks,
 
-> 
-> Also, what kind of z2 is reported with low z1? And do you implement
-> get_pendown_state()?
+Alex
 
-z2 seems normal as some data between 3000-4000. We don't have a
-get_pendown_state().
-
-Thanks,
-Feng
-> 
-> Thanks.
-> 
