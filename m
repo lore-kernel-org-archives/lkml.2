@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab1LAScP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 13:32:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42410 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756086Ab1LAScO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 13:32:14 -0500
-Date: Thu, 1 Dec 2011 18:32:11 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: "Turquette, Mike" <mturquette@ti.com>, linux@arm.linux.org.uk,
-        linus.walleij@stericsson.com, patches@linaro.org,
-        shawn.guo@freescale.com, magnus.damm@gmail.com,
-        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
-        richard.zhao@linaro.org, grant.likely@secretlab.ca, dsaxena@linaro.org,
-        eric.miao@linaro.org, sboyd@quicinc.com, skannan@quicinc.com,
-        linaro-dev@lists.linaro.org, jeremy.kerr@canonical.com,
-        linux-omap@vger.kernel.org, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org
-Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
-Message-ID: <20111201183211.GC18120@opensource.wolfsonmicro.com>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
- <1321926047-14211-4-git-send-email-mturquette@linaro.org>
- <alpine.DEB.2.00.1111291619110.6289@utopia.booyaka.com>
- <CAJOA=zM4vcyTt_RBEVm6JxmzW-Dna0gpuWda7ytq_mqFSuXw9g@mail.gmail.com>
- <alpine.DEB.2.00.1111302308280.6289@utopia.booyaka.com>
- <20111201144205.GA2103@sirena.org.uk>
- <alpine.DEB.2.00.1112011124221.6289@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1112011124221.6289@utopia.booyaka.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755971Ab1LASjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 13:39:10 -0500
+Received: from fifo99.com ([67.223.236.141]:58507 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755763Ab1LASjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 13:39:08 -0500
+Message-ID: <1322764745.3704.9.camel@m0nster>
+Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
+From: Daniel Walker <dwalker@fifo99.com>
+To: David Brown <davidb@codeaurora.org>
+Cc: Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Date: Thu, 01 Dec 2011 10:39:05 -0800
+In-Reply-To: <20111201181736.GA13182@huya.qualcomm.com>
+References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
+	 <1322752657.3704.2.camel@m0nster>
+	 <20111201181736.GA13182@huya.qualcomm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 11:30:16AM -0700, Paul Walmsley wrote:
+On Thu, 2011-12-01 at 10:17 -0800, David Brown wrote:
+> On Thu, Dec 01, 2011 at 07:17:37AM -0800, Daniel Walker wrote:
+> > On Wed, 2011-11-30 at 16:29 -0800, David Brown wrote:
+> > > -       default ARCH_MSM7X00A
+> > > -
+> > > -config ARCH_MSM7X00A
+> > > -       bool "MSM7x00A / MSM7x01A"
+> > > -       select MACH_TROUT if !MACH_HALIBUT
+> > > -       select ARCH_MSM_ARM11
+> > > -       select MSM_SMD
+> > > -       select MSM_SMD_PKG3
+> > > -       select CPU_V6
+> > > -       select GPIO_MSM_V1
+> > > -       select MSM_PROC_COMM
+> > > -       select HAS_MSM_DEBUG_UART_PHYS 
+> > 
+> > 
+> > Your trying to drop G1 support ? I have a G1 sitting on my desk, and I
+> > know many other people working on the kernel have G1's .. 
+> 
+> If someone is willing to step up and make it work, then we can keep it
+> around.  My only G1 is fried, so I have no way to do anything other
+> than keep it compiling.
 
-> So for example, if you had a driver that did:
+Unfortunately, You can't remove it regardless of whether or not you have
+one to test on.. Your job is to do the best you can to keep it working
+and maintained. If you don't have one then you can't boot test but you
+still have to your best to keep it as close to working as possible.
 
-> c = clk_get(dev, clk_name);
-> clk_enable(c);
-> clk_set_rate(c, clk_rate);
+Daniel
 
-> and c was currently not enabled by any other driver on the system, and 
-> nothing else had called clk_block_rate_change(c), then the rate change 
-> would be allowed to proceed.  (modulo any notifier activity, etc.)  
-
-> So clk_{allow,block}_rate_change() was simply intended to allow or 
-> restrict other users of the same clock, not the current user.
-
-Ah, sorry!  I'd totally misunderstood what you were proposing.
