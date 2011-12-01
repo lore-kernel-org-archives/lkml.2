@@ -1,129 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1LAHG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 02:06:29 -0500
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:38443
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751201Ab1LAHG1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 02:06:27 -0500
-X-SpamScore: -17
-X-BigFish: VS-17(zz936eK542M1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h945h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tang Yuantian-B29983 <B29983@freescale.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Huang Changming-R66093 <r66093@freescale.com>
-Subject: RE: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Thread-Topic: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Thread-Index: AQHMpIUnsb9+I0lR9k+0uRq1j4EoUpWwJ/0AgAAFb4CAAAQAAIAAAwAAgAAOBACAAAE+gIAAAP2AgBZhFkA=
-Date: Thu, 1 Dec 2011 07:06:20 +0000
-Message-ID: <3C06C26914DACA4BB3A368F78CA0B3A712FE70@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <1321338462-6138-1-git-send-email-guenter.roeck@ericsson.com>
-	<CAOZdJXUPO5PyMkAw-2EPvy_qSUuqsgUA7Gr8mKUX7HyShoXk3g@mail.gmail.com>
-	<E6AF40B3BFC8A9428EACB47497F0F4B62DC687@039-SN1MPN1-002.039d.mgd.msft.net>
-	<ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
-	<1321464509.7847.41.camel@oslab-l1>
-	<1321464968.2309.384.camel@groeck-laptop>
-	<1321466135.7847.55.camel@oslab-l1>
-	<20111116190954.67c846fc@endymion.delvare>
-	<1321467638.7847.73.camel@oslab-l1>
-	<20111116201048.4b7877dd@endymion.delvare>
-	<1321470915.7847.122.camel@oslab-l1>
- <20111116201847.6b11dc7f@endymion.delvare>
-In-Reply-To: <20111116201847.6b11dc7f@endymion.delvare>
-Accept-Language: zh-CN, en-US
+	id S1752054Ab1LAHIu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 02:08:50 -0500
+Received: from mail2.nsc.com ([12.238.8.132]:46639 "EHLO sc-mailgw05.nsc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751201Ab1LAHIs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 02:08:48 -0500
+X-WSS-ID: 0LVIJUI-0A-0JM-02
+X-M-MSG: 
+X-Server-Uuid: 75984BC7-5B1D-45FA-89A9-3E7188D47FBE
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "Anton Vorontsov" <cbouatmailru@gmail.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Date: Wed, 30 Nov 2011 23:08:33 -0800
+Subject: [PATCH] power_supply: add "unknown" in power supply type
+Thread-Topic: [PATCH] power_supply: add "unknown" in power supply type
+Thread-Index: Acyv8Yx0TslvyXSaQH6dbCoxANvAkgAAIsaA
+Message-ID: <B567DBAB974C0544994013492B949F8E38125B223C@EXMAIL03.scwf.nsc.com>
+Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.75]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+acceptlanguage: ko-KR, en-US
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+X-WSS-ID: 62C9F87E1LS8665352-03-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, Anton
 
-Has the patch been accepted?
+For the default value of power supply type, "unknown" is added.
+With default prop value, supply type property can be displayed as default - "Unknown".
 
-Regards,
-Yuantian
+And union propval is set to zero.
+Then no data abort exception even if the propval is not updated by xxx_get_property().
 
-> -----Original Message-----
-> From: Jean Delvare [mailto:khali@linux-fr.org]
-> Sent: 2011年11月17日 3:19
-> To: sun york-R58495
-> Cc: guenter.roeck@ericsson.com; Tabi Timur-B04825; linux-
-> i2c@vger.kernel.org; linux-kernel@vger.kernel.org; Tang Yuantian-B29983
-> Subject: Re: [PATCH] i2c/busses: (mpc) Add support for
-> SMBUS_READ_BLOCK_DATA
-> 
-> On Wed, 16 Nov 2011 11:15:15 -0800, York Sun wrote:
-> > On Wed, 2011-11-16 at 20:10 +0100, Jean Delvare wrote:
-> > > On Wed, 16 Nov 2011 10:20:38 -0800, York Sun wrote:
-> > > > On Wed, 2011-11-16 at 19:09 +0100, Jean Delvare wrote:
-> > > > > Your thinking is too focused on I2C block reads (or even block
-> > > > > read of data over the network or on disk). SMBus block read is
-> > > > > something completely different. It's not about reading 200 bytes
-> > > > > of data and receiving it in 16-byte chunks (I2C block read works
-> > > > > that way, on EEPROMs in particular.) There is no "data length"
-> > > > > and "block size" to compare to each other. It's about reading
-> > > > > the value of _one_ register and this value happens to be
-> > > > > multi-byte. There is typically _no_ register pointer increment
-> > > > > (automatic or not) involved as can happen with EEPROMs. If an
-> > > > > SMBus block read from register N returns 10 bytes, you're not
-> > > > > going to read the next 10 bytes from register N+10. There are no
-> > > > > "next 10 bytes" to read, and register N+10 is something
-> completely unrelated.
-> > > > >
-> > > > > And for this reason, it is not possible to mix SMBus block reads
-> > > > > with byte reads, as can be done with I2C block reads.
-> > > > >
-> > > > > Also note that there is a limit of 32 bytes for SMBus block
-> > > > > transfers, per SMBus specification. All slaves and masters must
-> comply with it.
-> > > > >
-> > > > > I hope I managed to clarify the case this time...
-> > > >
-> > > > You have made it much clear. If block size is fixed and block read
-> > > > cannot mix with byte read, shall we do this
-> > > >
-> > > > if length < block_size
-> > > >    read block_size
-> > > > else {
-> > > >    while (length) {
-> > > >        read block_size
-> > > >        length -= block_size
-> > > >    }
-> > >
-> > > Which part of
-> > >
-> > >   There is no "data length" and "block size" to compare to each other.
-> > >
-> > > did you not understand?
-> >
-> > For example, if the length is 40 and the block size is 32, are you
-> > going to read 32, 72 byte or 64 byte?
-> 
-> The length is not 40. Which part of
-> 
->   Also note that there is a limit of 32 bytes for SMBus block transfers,
->   per SMBus specification. All slaves and masters must comply with it.
-> 
-> did you now understand?
-> 
-> Really, please. I understand you're only trying to help and understand
-> the patch, but at some point, if you have zero knowledge about the topic,
-> you're not the right person to review the patch, period. You are still
-> welcome to test the patch if you can and want, that's a completely
-> different task.
-> 
-> --
-> Jean Delvare
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+---
+ drivers/power/power_supply_sysfs.c |    4 +++-
+ include/linux/power_supply.h       |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 58cc490..6250686 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -42,7 +42,7 @@ static ssize_t power_supply_show_property(struct device *dev,
+ 					  struct device_attribute *attr,
+ 					  char *buf) {
+ 	static char *type_text[] = {
+-		"Battery", "UPS", "Mains", "USB",
++		"Unknown", "Battery", "UPS", "Mains", "USB",
+ 		"USB_DCP", "USB_CDP", "USB_ACA"
+ 	};
+ 	static char *status_text[] = {
+@@ -67,6 +67,8 @@ static ssize_t power_supply_show_property(struct device *dev,
+ 	const ptrdiff_t off = attr - power_supply_attrs;
+ 	union power_supply_propval value;
+ 
++	memset(&value, 0, sizeof(value));
++
+ 	if (off == POWER_SUPPLY_PROP_TYPE)
+ 		value.intval = psy->type;
+ 	else
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 204c18d..9c83e04 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -123,7 +123,8 @@ enum power_supply_property {
+ };
+ 
+ enum power_supply_type {
+-	POWER_SUPPLY_TYPE_BATTERY = 0,
++	POWER_SUPPLY_TYPE_UNKNOWN = 0,
++	POWER_SUPPLY_TYPE_BATTERY,
+ 	POWER_SUPPLY_TYPE_UPS,
+ 	POWER_SUPPLY_TYPE_MAINS,
+ 	POWER_SUPPLY_TYPE_USB,		/* Standard Downstream Port */
+-- 
+1.7.4.1
+
+
+Best Regards
+
+Milo (Woogyom) Kim
+Texas Instruments Incorporated
+
+
 
 
