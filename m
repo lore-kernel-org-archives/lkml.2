@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1LAMzo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 07:55:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27422 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753686Ab1LAMzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 07:55:43 -0500
-Date: Thu, 1 Dec 2011 13:55:55 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>, Eliad Peller <eliad@wizery.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
-Subject: Re: [3.2-rc3] 100% CPU usage while in del_timer_sync from
- iwl3945_rs_free_sta
-Message-ID: <20111201125554.GC5706@redhat.com>
-References: <20111129100727.GD2675@tiehlicka.suse.cz>
- <20111129113906.GA7299@redhat.com>
- <20111130101028.GA2906@tiehlicka.suse.cz>
- <20111130142316.GA2466@redhat.com>
- <20111130140316.GA4153@tiehlicka.suse.cz>
- <20111130153929.GA2144@redhat.com>
- <20111201085845.GA4602@tiehlicka.suse.cz>
- <20111201105538.GA4504@tiehlicka.suse.cz>
- <20111201115911.GA5706@redhat.com>
- <20111201124440.GB25614@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201124440.GB25614@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754058Ab1LAM6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 07:58:34 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:57096
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753527Ab1LAM6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 07:58:32 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        James.Bottomley@HansenPartnership.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 0000/0005] Staging: hv: storvsc cleanup
+Date: Thu,  1 Dec 2011 04:58:35 -0800
+Message-Id: <1322744315-13017-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 01:44:40PM +0100, Michal Hocko wrote:
-> On Thu 01-12-11 12:59:12, Stanislaw Gruszka wrote:
-> > On Thu, Dec 01, 2011 at 11:55:38AM +0100, Michal Hocko wrote:
-> > > [  349.316070] iwl3945_rs_free_sta rs_sta f4be1ac0
-> > > [  349.316076] ------------[ cut here ]------------
-> > > [  349.316097] WARNING: at drivers/net/wireless/iwlegacy/iwl-3945-rs.c:438 iwl3945_rs_free_sta+0x33/0x42 [iwl3945]()
-> > 
-> > Johannes pointed on irc that this problem is most likely caused by:
-> > 
-> > commit f785d83a19bca326f79d127a413e35769afc0105
-> > Author: Eliad Peller <eliad@wizery.com>
-> > Date:   Mon Aug 8 16:50:22 2011 +0300
-> > 
-> >     mac80211: clear sta.drv_priv on reconfiguration
-> > 
-> > Michal, could you confirm that? If that is the root of the problem, we
-> > need patch for iwlegacy (and iwlwifi) that allocate separate memory for
-> > rc structures.
-Actually this require quite big changes in iwlegacy at least, perhaps
-also in iwlwifi. I prefer to revert commit as temporary fix,  and add
-memset(0) to drivers .add_sta callback, in drivers which need it. After
-changing iwlegcy/iwlwifi we could move memset(0) back to ieee80211_reconfig().
+Cleanup storvsc driver  based on review comments from James.
 
-Eliad, thoughts? 
+	1) While the existing per (virtual) HBA memory pools mechanism
+	   does address the deadlock issues raised earlier since for IDE
+	   devices there is a HBA per device and presently only IDE devices
+	   can be drain devices, here we implement a generic per-LUN memory
+	   pools mechanism.
 
-> Should I just revert it?
-Yes, or remove proper line :-)
+	2) Fix a couple of bugs in the bounce buffer handling code (now that I
+	   have been able to trigger these code paths!)
 
-Stanislaw
+	3) Cleanup some unnecessary code.
+
+With this, I believe I have addressed all of the review comments I have received
+on this driver. I will submit a separate patch for moving the driver out of staging
+(that includes these patches).
+
+
+Regards,
+
+K. Y
+
