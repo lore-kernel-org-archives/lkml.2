@@ -1,97 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab1LANvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 08:51:47 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:63719 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754141Ab1LANvq (ORCPT
+	id S1754616Ab1LAN5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 08:57:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52299 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754354Ab1LAN46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 08:51:46 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6546"; a="140298200"
-Message-ID: <5573ef5046779298ee1555838015e0e3.squirrel@www.codeaurora.org>
-In-Reply-To: <000201ccadab$1e57b8a0$5b0729e0$%jun@samsung.com>
-References: <aad7cb35699550e89526a5fb083c520d.squirrel@www.codeaurora.org>
-    <000201ccadab$1e57b8a0$5b0729e0$%jun@samsung.com>
-Date: Thu, 1 Dec 2011 05:51:43 -0800 (PST)
-Subject: RE: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 
-     device
-From: merez@codeaurora.org
-To: "Seungwon Jeon" <tgih.jun@samsung.com>
-Cc: merez@codeaurora.org, "'S, Venkatraman'" <svenkatr@ti.com>,
-        linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kgene.kim@samsung.com, dh.han@samsung.com
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+	Thu, 1 Dec 2011 08:56:58 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] mfd: Mark WM1811 GPIO6 register volatile for later revisions
+Date: Thu,  1 Dec 2011 13:56:54 +0000
+Message-Id: <1322747814-31877-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1322747814-31877-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1322747814-31877-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maya Erez wrote:
->> >> >> On Wed, Nov 2, 2011 at 1:33 PM, Seungwon Jeon
->> <tgih.jun@samsung.com>
->> >> wrote:
->> >> >> > @@ -980,12 +988,67 @@ static int mmc_blk_err_check(struct
->> mmc_card
->> >> *card,
->> >> >> >        if (!brq->data.bytes_xfered)
->> >> >> >                return MMC_BLK_RETRY;
->> >> >> >
->> >> >> > +       if (mq_mrq->packed_cmd != MMC_PACKED_NONE) {
->> >> >> > +               if (unlikely(brq->data.blocks << 9 !=
->> >> brq->data.bytes_xfered))
->> >> >> > +                       return MMC_BLK_PARTIAL;
->> >> >> > +               else
->> >> >> > +                       return MMC_BLK_SUCCESS;
->> >> >> > +       }
->> >> >> > +
->> >> >> >        if (blk_rq_bytes(req) != brq->data.bytes_xfered)
->> >> >> >                return MMC_BLK_PARTIAL;
->> >> >> >
->> >> >> >        return MMC_BLK_SUCCESS;
->> >> >> >  }
->> >> >> >
->> >> >> > +static int mmc_blk_packed_err_check(struct mmc_card *card, +
->>                        struct mmc_async_req *areq)
->> >> >> > +{
->> >> >> > +       struct mmc_queue_req *mq_mrq = container_of(areq, struct
->> >> mmc_queue_req,
->> >> >> > +                                                   mmc_active);
->> +
->>       int err, check, status;
->> >> >> > +       u8 ext_csd[512];
->> >> >> > +
->> >> >> > +       check = mmc_blk_err_check(card, areq);
->> >> >> > +
->> >> >> > +       if (check == MMC_BLK_SUCCESS)
->> >> >> > +               return check;
->> I think we need to check the status for all cases and not only in case
->> of
->> MMC_BLK_PARTIAL. For example, in cases where the header was traferred
->> successfully but had logic errors (wrong number of sectors etc.)
->> mmc_blk_err_check will return MMC_BLK_SUCCESS although the packed
->> commands
->> failed.
-> Similarly, Sahitya Tummala is already mentioned this.
-> Other error case will be checked in next version.
-> The case you suggested is about read or write?
-> Device may detect error and stop transferring the data.
-Sahitya suggested to also check other error cases that mmc_blk_err_check
-returns (such as MMC_BLK_CMD_ERR, MMC_BLK_ECC_ERR and MMC_BLK_DATA_ERR).
-I suggest to also check the exception bit in the status even if
-mmc_blk_err_check returned success, since mmc_blk_err_check might not
-catch all the packed commands failures. One example for such a failure is
-when the header of read packed commands will have logical error.
+For later chip revisions the WM1811 GPIO6 register is always volatile so
+store the device revision when initialising the driver and then check at
+runtime if we're running on a newer device.
 
-Thanks,
-Maya
---
-Seny by a Consultant for Qualcomm innovation center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-core.c       |   12 +++++++-----
+ drivers/mfd/wm8994-regmap.c     |   19 +++++++++++++++++--
+ include/linux/mfd/wm8994/core.h |    1 +
+ 3 files changed, 25 insertions(+), 7 deletions(-)
 
-
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 92aa22f..3160cdd 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -446,15 +446,16 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 			ret);
+ 		goto err_enable;
+ 	}
++	wm8994->revision = ret;
+ 
+ 	switch (wm8994->type) {
+ 	case WM8994:
+-		switch (ret) {
++		switch (wm8994->revision) {
+ 		case 0:
+ 		case 1:
+ 			dev_warn(wm8994->dev,
+ 				 "revision %c not fully supported\n",
+-				 'A' + ret);
++				 'A' + wm8994->revision);
+ 			break;
+ 		default:
+ 			break;
+@@ -462,14 +463,15 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 		break;
+ 	case WM1811:
+ 		/* Revision C did not change the relevant layer */
+-		if (ret > 1)
+-			ret++;
++		if (wm8994->revision > 1)
++			wm8994->revision++;
+ 		break;
+ 	default:
+ 		break;
+ 	}
+ 
+-	dev_info(wm8994->dev, "%s revision %c\n", devname, 'A' + ret);
++	dev_info(wm8994->dev, "%s revision %c\n", devname,
++		 'A' + wm8994->revision);
+ 
+ 	if (pdata) {
+ 		wm8994->irq_base = pdata->irq_base;
+diff --git a/drivers/mfd/wm8994-regmap.c b/drivers/mfd/wm8994-regmap.c
+index d98a70e..2fdefa124 100644
+--- a/drivers/mfd/wm8994-regmap.c
++++ b/drivers/mfd/wm8994-regmap.c
+@@ -12,6 +12,7 @@
+  *
+  */
+ 
++#include <linux/mfd/wm8994/core.h>
+ #include <linux/mfd/wm8994/registers.h>
+ #include <linux/regmap.h>
+ 
+@@ -210,7 +211,6 @@ static struct reg_default wm1811_defaults[] = {
+ 	{ 0x0702, 0xA101 },    /* R1794 - Pull Control (BCLK2) */
+ 	{ 0x0703, 0xA101 },    /* R1795 - Pull Control (DACLRCLK2) */
+ 	{ 0x0704, 0xA101 },    /* R1796 - Pull Control (DACDAT2) */
+-	{ 0x0705, 0xA101 },    /* R1797 - GPIO 6 */
+ 	{ 0x0707, 0xA101 },    /* R1799 - GPIO 8 */
+ 	{ 0x0708, 0xA101 },    /* R1800 - GPIO 9 */
+ 	{ 0x0709, 0xA101 },    /* R1801 - GPIO 10 */
+@@ -1145,6 +1145,21 @@ static bool wm8994_volatile_register(struct device *dev, unsigned int reg)
+ 	}
+ }
+ 
++static bool wm1811_volatile_register(struct device *dev, unsigned int reg)
++{
++	struct wm8994 *wm8994 = dev_get_drvdata(dev);
++
++	switch (reg) {
++	case WM8994_GPIO_6:
++		if (wm8994->revision > 1)
++			return true;
++		else
++			return false;
++	default:
++		return wm8994_volatile_register(dev, reg);
++	}
++}
++
+ static bool wm8958_volatile_register(struct device *dev, unsigned int reg)
+ {
+ 	switch (reg) {
+@@ -1185,7 +1200,7 @@ struct regmap_config wm1811_regmap_config = {
+ 	.num_reg_defaults = ARRAY_SIZE(wm1811_defaults),
+ 
+ 	.max_register = WM8994_MAX_REGISTER,
+-	.volatile_reg = wm8994_volatile_register,
++	.volatile_reg = wm1811_volatile_register,
+ 	.readable_reg = wm1811_readable_register,
+ };
+ 
+diff --git a/include/linux/mfd/wm8994/core.h b/include/linux/mfd/wm8994/core.h
+index c22b352..9eff2a3 100644
+--- a/include/linux/mfd/wm8994/core.h
++++ b/include/linux/mfd/wm8994/core.h
+@@ -56,6 +56,7 @@ struct wm8994 {
+ 	struct mutex irq_lock;
+ 
+ 	enum wm8994_type type;
++	int revision;
+ 
+ 	struct device *dev;
+ 	struct regmap *regmap;
+-- 
+1.7.7.3
 
