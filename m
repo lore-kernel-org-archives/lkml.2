@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab1LAJdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 04:33:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:36561 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab1LAJd3 (ORCPT
+	id S1753166Ab1LAJdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 04:33:44 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43304 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab1LAJda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 04:33:29 -0500
-From: Andy Whitcroft <apw@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 2/2] checkpatch: catch all occurances of type and cast spacing errors per line
-Date: Thu,  1 Dec 2011 09:33:01 +0000
-Message-Id: <1322731981-22130-2-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1322731981-22130-1-git-send-email-apw@canonical.com>
-References: <1322731981-22130-1-git-send-email-apw@canonical.com>
+	Thu, 1 Dec 2011 04:33:30 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 1 Dec 2011 18:32:02 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Xi Wang <xi.wang@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: incorrect overflow check in shrink_slab()
+Message-Id: <20111201183202.2e5bd872.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <0D9D9F79-204D-4460-8CE7-A583C5C38A1E@gmail.com>
+References: <0D9D9F79-204D-4460-8CE7-A583C5C38A1E@gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix up type and cast spacing checks such that all occurances on a line are
-examined and reported.  For example the line below has a valid cast and
-a bad type, but currently we check the cast first which is good and stop:
+On Thu, 1 Dec 2011 04:20:34 -0500
+Xi Wang <xi.wang@gmail.com> wrote:
 
-    u16* bar = (u16 *)baz;
+> total_scan is unsigned long, so the overflow check (total_scan < 0)
+> didn't work.
+> 
+> Signed-off-by: Xi Wang <xi.wang@gmail.com>
 
-We will also only report one of the errors in this example:
+Nice catch but.... the 'total_scan" shouldn't be long ?
+Rather than type casting ?
 
-    u16* bar = (u16*)bad;
-
-Move to iterating across all casts and all types, reporting any failure.
-
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- scripts/checkpatch.pl |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 331e832..4ac397b 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2206,8 +2206,9 @@ sub process {
- 
- # * goes on variable not on type
- 		# (char*[ const])
--		if ($line =~ m{\($NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)\)}) {
--			my ($from, $to) = ($1, $1);
-+		while ($line =~ m{(\($NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)\))}g) {
-+			#print "AA<$1>\n";
-+			my ($from, $to) = ($2, $2);
- 
- 			# Should start with a space.
- 			$to =~ s/^(\S)/ $1/;
-@@ -2222,8 +2223,10 @@ sub process {
- 				ERROR("POINTER_LOCATION",
- 				      "\"(foo$from)\" should be \"(foo$to)\"\n" .  $herecurr);
- 			}
--		} elsif ($line =~ m{\b$NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)($Ident)}) {
--			my ($from, $to, $ident) = ($1, $1, $2);
-+		} 
-+		while ($line =~ m{(\b$NonptrType(\s*(?:$Modifier\b\s*|\*\s*)+)($Ident))}g) {
-+			#print "BB<$1>\n";
-+			my ($from, $to, $ident) = ($2, $2, $3);
- 
- 			# Should start with a space.
- 			$to =~ s/^(\S)/ $1/;
--- 
-1.7.5.4
+Thanks,
+-Kame
+> ---
+>  mm/vmscan.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a1893c0..46a04e7 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -270,7 +270,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
+>  		delta *= max_pass;
+>  		do_div(delta, lru_pages + 1);
+>  		total_scan += delta;
+> -		if (total_scan < 0) {
+> +		if ((long)total_scan < 0) {
+>  			printk(KERN_ERR "shrink_slab: %pF negative objects to "
+>  			       "delete nr=%ld\n",
+>  			       shrinker->shrink, total_scan);
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
 
