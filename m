@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab1LAOJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 09:09:53 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:55112 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466Ab1LAOJv convert rfc822-to-8bit (ORCPT
+	id S1754674Ab1LAOLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 09:11:41 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60721 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab1LAOLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 09:09:51 -0500
+	Thu, 1 Dec 2011 09:11:39 -0500
+Date: Thu, 1 Dec 2011 12:11:30 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Brian Marete <marete@toshnix.com>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
+Subject: Re: [PATCH] perf top: fix crash on annotate request
+Message-ID: <20111201141130.GA2323@infradead.org>
+References: <1319048598-15030-1-git-send-email-dsahern@gmail.com>
+ <20111019183848.GE2229@ghostprotocols.net>
+ <4E9F1AA0.4010706@gmail.com>
+ <20111019192011.GG2229@ghostprotocols.net>
+ <4E9F4B50.1060207@gmail.com>
+ <20111020130041.GB1772@ghostprotocols.net>
+ <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
+ <CAHVUoiTeCuFLCkyEzCMJ6g1wAp+FWDR3qkSrqE3vJAYwLsRC9Q@mail.gmail.com>
+ <20111130181011.GA4111@infradead.org>
+ <CAHVUoiQC5RjuHUsfPVTQ_C+W0Khp=hQC+_csP0+fJgUnoaALAA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1322442950-16268-1-git-send-email-ming.m.lin@intel.com>
-References: <1322442950-16268-1-git-send-email-ming.m.lin@intel.com>
-Date: Thu, 1 Dec 2011 22:09:49 +0800
-X-Google-Sender-Auth: b390lgfUJ3SKCwzsvnrXoYSQKZE
-Message-ID: <CAF1ivSa8d-VNbOmO9UyG-J3TKDmfuuX9pWEtT_7a7OcCC-0Uow@mail.gmail.com>
-Subject: Re: [PATCH v4 0/6] ata port runtime power management support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHVUoiQC5RjuHUsfPVTQ_C+W0Khp=hQC+_csP0+fJgUnoaALAA@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 9:15 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> Hi all,
->
-> This is the v4 patches to add ata port runtime pm support.
-> Applied on top of v3.2-rc2.
->
-> Jeff, any comment on the ata patches?
-> James, any comment on the scsi patches?
+Em Thu, Dec 01, 2011 at 04:17:49PM +0300, Brian Marete escreveu:
+> On Wed, Nov 30, 2011 at 9:10 PM, Arnaldo Carvalho de Melo
+> <acme@infradead.org> wrote:
+> > https://github.com/acmel/linux/tree/perf/core
 
-Ping ...
+> > It just fell thru the cracks, sorry, I should have tried to reproduce
+> > and fix this on the tree you reported.
 
-Which git tree should these patches go into? ATA or SCSI?
+> > But if you can try with the above tree...
 
-Lin Ming (6):
-    ata: make ata port as parent device of scsi host
-    [SCSI] add flag to skip the runtime PM calls on the host
-    [SCSI] check runtime PM status in system PM
-    [SCSI] sd: check runtime PM status in sd_shutdown
-    ata: add ata port system PM callbacks
-    ata: add ata port runtime PM callbacks
+> > Persistence is key, thanks for using it :)
 
- drivers/ata/libata-core.c      |  154 ++++++++++++++++++++++------------------
- drivers/ata/libata-scsi.c      |    3 +-
- drivers/ata/libata-transport.c |    5 ++
- drivers/ata/libata.h           |    1 +
- drivers/scsi/scsi_error.c      |    5 +-
- drivers/scsi/scsi_pm.c         |   16 ++++-
- drivers/scsi/sd.c              |    5 ++
- include/scsi/scsi_host.h       |    3 +
- 8 files changed, 118 insertions(+), 74 deletions(-)
+> Hello Arnaldo, Thanks for your reply. The perf/core branch of the tree
+> you suggest above gives me the same crash (with what looks to me as
+> the same b/trace). Would you like the details of the b/trace? The
+> master branch of the said tree appears too old to me (so of course it
+> does not suffer the crash). Which other branch of the tree should I
+> try?
 
-Thanks,
-Lin Ming
+Its just this one, can you try doing something like:
 
->
-> v1:
-> https://lkml.org/lkml/2011/11/2/23
->
-> v2:
-> https://lkml.org/lkml/2011/11/10/71
-> Acked-by: Tejun Heo <tj@kernel.org>
-> Kay Sievers reviewed sysfs change
->
-> v3:
-> https://lkml.org/lkml/2011/11/23/37
->
-> Changes in v4:
-> - check SCSI device runtime PM status in system PM (Alan Stern, Tejun Heo)
->
-> Changes in v3:
-> - runtime resume scsi device before system suspend (Alan Stern)
-> - check runtime status in sd_shutdown
->
-> Thanks for any comment,
-> Lin Ming
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+perf top -vvv > /tmp/debug.top 2>&1
+bzip2 /tmp/debug.top
+
+That will print lots of information about symbols being loaded,
+overlapping maps, etc that can help me understand why that symbol name
+looks garbage.
+
+And send me in pvt the result together with a fresh backtrace with those
+symbols printed? Also which distro are you using?
+
+- Arnaldo
