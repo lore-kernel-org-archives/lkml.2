@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab1LAFre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 00:47:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41445 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab1LAFrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 00:47:33 -0500
-Date: Wed, 30 Nov 2011 21:47:26 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Clark, Joel" <joel.clark@intel.com>
-Subject: Re: [PATCH 2/2] Input: tsc2007 - Add a z1_low_threshhold platform
- data parameter
-Message-ID: <20111201054726.GC16816@core.coreip.homeip.net>
-References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
- <1322554378-348-2-git-send-email-feng.tang@intel.com>
- <20111129092310.GB21758@core.coreip.homeip.net>
- <20111130103418.4514b630@feng-i7>
+	id S1752043Ab1LAFyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 00:54:21 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:48366 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751866Ab1LAFyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 00:54:17 -0500
+Date: Thu, 1 Dec 2011 11:22:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Wilson <wilsons@start.ca>
+Subject: Re: [PATCH v7 3.2-rc2 8/30] x86: analyze instruction and determine
+ fixups.
+Message-ID: <20111201055211.GD18380@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20111118110631.10512.73274.sendpatchset@srdronam.in.ibm.com>
+ <20111118110808.10512.72719.sendpatchset@srdronam.in.ibm.com>
+ <20111130185751.GA8160@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111130103418.4514b630@feng-i7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111130185751.GA8160@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11120105-3534-0000-0000-00000327F0A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 10:34:18AM +0800, Feng Tang wrote:
-> On Tue, 29 Nov 2011 17:23:10 +0800
-> Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> 
-> > On Tue, Nov 29, 2011 at 04:12:58PM +0800, Feng Tang wrote:
-> > > This originates from a patch in Meego IVI kernel with the name
-> > > 	linux-2.6.37-connext-0027-tsc2007.patch
-> > > There is no author info excepte a line "From  MeeGo
-> > > <kernel@meego.com>"
-> > > 
-> > > When integrating tsc2007 on Intel IVI platform, there are a lot of
-> > > noise data whose z1 value is around 10 which is not a sane "z1". So
-> > > add a "z1_low_threshhold" to filter those nosie data, to make the
-> > > device work properly.
-> > 
-> > Sounds like a task for userspace to ignore pressure that is too low.
-> > Bonus points for making it configurable so user can adjust
-> > sensitivity.
-> 
-> Actually, there is one more point :), without this patch, the driver won't
-> work on our platforms.
-> 
-> The tsc2007_soft_irq will keep reading the input data unless there is no
-> valid pressure data. In our case, those noise data will be seen as valid
-> data during tsc2007_calculate_pressure(), and the tsc2007_soft_irq will
-> run endlessly.
+* Oleg Nesterov <oleg@redhat.com> [2011-11-30 19:57:51]:
 
-Even if we add the pressure threshold would not that noise cause endless
-stream of interrupts?
+> On 11/18, Srikar Dronamraju wrote:
+> >
+> > +static void handle_riprel_insn(struct mm_struct *mm, struct uprobe *uprobe,
+> > +							struct insn *insn)
+> > +{
+> > [...snip...]
+> > +	if (insn->immediate.nbytes) {
+> > +		cursor++;
+> > +		memmove(cursor, cursor + insn->displacement.nbytes,
+> > +						insn->immediate.nbytes);
+> > +	}
+> > +	return;
+> > +}
+> 
+> Of course I don not understand this code. But it seems that it can
+> rewrite uprobe->insn ?
+> 
 
-Also, what kind of z2 is reported with low z1? And do you implement
-get_pendown_state()?
+Yes, we do rewrite the instruction for the RIP relative instructions. 
+But the first byte is still intact.
 
-Thanks.
+> If yes, don't we need to save the original insn for unregister_uprobe?
+
+When we unregister, we just put back the least opcode size which
+happens to be the first byte for x86.
 
 -- 
-Dmitry
+Thanks and Regards
+Srikar
+
