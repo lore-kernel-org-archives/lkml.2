@@ -1,108 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab1LAOHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 09:07:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36938 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab1LAOHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 09:07:51 -0500
-Date: Thu, 1 Dec 2011 15:07:49 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, pomac@vapor.com,
-        linux-kernel@vger.kernel.org, tino.keitel@tikei.de,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
-Message-ID: <20111201140749.GB4269@tiehlicka.suse.cz>
-References: <20111128222803.GA4925@pomac.netswarm.net>
- <201111292351.16233.rjw@sisk.pl>
- <20111130101227.GA3187@tiehlicka.suse.cz>
- <201111302056.54697.rjw@sisk.pl>
+	id S1754684Ab1LAOJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 09:09:53 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:55112 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754466Ab1LAOJv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 09:09:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111302056.54697.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1322442950-16268-1-git-send-email-ming.m.lin@intel.com>
+References: <1322442950-16268-1-git-send-email-ming.m.lin@intel.com>
+Date: Thu, 1 Dec 2011 22:09:49 +0800
+X-Google-Sender-Auth: b390lgfUJ3SKCwzsvnrXoYSQKZE
+Message-ID: <CAF1ivSa8d-VNbOmO9UyG-J3TKDmfuuX9pWEtT_7a7OcCC-0Uow@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] ata port runtime power management support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Let's add Len to the CC for idle driver]
+On Mon, Nov 28, 2011 at 9:15 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> Hi all,
+>
+> This is the v4 patches to add ata port runtime pm support.
+> Applied on top of v3.2-rc2.
+>
+> Jeff, any comment on the ata patches?
+> James, any comment on the scsi patches?
 
-On Wed 30-11-11 20:56:54, Rafael J. Wysocki wrote:
-> On Wednesday, November 30, 2011, Michal Hocko wrote:
-> > On Tue 29-11-11 23:51:16, Rafael J. Wysocki wrote:
-> > > On Tuesday, November 29, 2011, Michal Hocko wrote:
-[...]
-> > > > I haven't found any intel_idle machine in my lab so far and all other
-> > > > acpi_idle machines seem to work (or at least randomly selected ones) so
-> > > > this smells like a major difference in the setup.
-> > > 
-> > > I'm able to reproduce that with acpi_driver on one box, but not on demand.
-> > 
-> > And do you see the same thing (no idle/io_wait) updates?
-> 
-> Actaully, I was wrong.  The box I'm seeing the issue on also has "none"
-> in /sys/devices/system/cpu/cpuidle/current_driver.  Sorry for the confusion.
+Ping ...
 
-OK. So we have seen the issue only with intel_idle and none drivers so
-far. acpi_idle which is at my machines works just fine. 
-I think we should focus on those drivers.
+Which git tree should these patches go into? ATA or SCSI?
 
-To summarize this issue. 
-Users are seeing weird values reported by [h]top. CPUs seem to be at
-100% even though there is nothing hogging them. /proc/stat collected
-data on the affected system shown that idle/io_wait are not accounted
-properly.
-It has been identified that problem disappears if a25cac51 [proc:
-Consider NO_HZ when printing idle and iowait times] is reverted. 
-This patch fixes a bug when idle/io_wait times are not repororted
-properly when a CPU is tickless. It relies on get_cpu_idle_time_us
-which either reports sched_time idle_sleeptime or 
-(idle_sleeptime + now-idle_entrytime) if we are idle at the moment.
+Lin Ming (6):
+    ata: make ata port as parent device of scsi host
+    [SCSI] add flag to skip the runtime PM calls on the host
+    [SCSI] check runtime PM status in system PM
+    [SCSI] sd: check runtime PM status in sd_shutdown
+    ata: add ata port system PM callbacks
+    ata: add ata port runtime PM callbacks
 
-While implementation is not race free (we better not use locks in that
-path...) so we might race:
+ drivers/ata/libata-core.c      |  154 ++++++++++++++++++++++------------------
+ drivers/ata/libata-scsi.c      |    3 +-
+ drivers/ata/libata-transport.c |    5 ++
+ drivers/ata/libata.h           |    1 +
+ drivers/scsi/scsi_error.c      |    5 +-
+ drivers/scsi/scsi_pm.c         |   16 ++++-
+ drivers/scsi/sd.c              |    5 ++
+ include/scsi/scsi_host.h       |    3 +
+ 8 files changed, 118 insertions(+), 74 deletions(-)
 
-E.g.
+Thanks,
+Lin Ming
 
-CPU1			CPU2
-now = ktime_get
-			tick_nohz_start_idle
-				ts->idle_entrytime = now;
-if (ts->idle_active)
-				ts->idle_active = 1
-[...]
-return idle_sleeptime
-
-But this is OK because sleeptime will be more or less accurate. We just
-skip few ticks.
-
-It would be worse if we had a race like:
-CPU1			CPU2
-now = ktime_get
-			tick_nohz_start_idle
-				now = ktime_get
-				update_ts_time_stats()
-				ts->idle_entrytime = now;
-				ts->idle_active = 1
-if (ts->idle_active)
-	delta = ktime_sub(now, idle_entrytime)
-	ktime_add(idle_sleeptime, delta)
-
-In this case we might get an overflow from ktime_sub but AFAIU the
-ktime_* magic the overflow should cause to get smaller idle_sleeptime
-in the end after ktime_add (we do not add a small number but rather
-subtract it), right?
-So it shouldn't be a big deal as well.
-
-So the question is. What is the role of the idle driver here?
-
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+>
+> v1:
+> https://lkml.org/lkml/2011/11/2/23
+>
+> v2:
+> https://lkml.org/lkml/2011/11/10/71
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Kay Sievers reviewed sysfs change
+>
+> v3:
+> https://lkml.org/lkml/2011/11/23/37
+>
+> Changes in v4:
+> - check SCSI device runtime PM status in system PM (Alan Stern, Tejun Heo)
+>
+> Changes in v3:
+> - runtime resume scsi device before system suspend (Alan Stern)
+> - check runtime status in sd_shutdown
+>
+> Thanks for any comment,
+> Lin Ming
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
