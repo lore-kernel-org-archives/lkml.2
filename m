@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754915Ab1LAWKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:10:35 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:39495 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab1LAWKe convert rfc822-to-8bit (ORCPT
+	id S1755041Ab1LAWLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 17:11:05 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33564 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754671Ab1LAWLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:10:34 -0500
-Message-ID: <1322777407.4699.59.camel@twins>
-Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        lttng-dev@lists.lttng.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Darren Hart <darren@dvhart.com>
-Date: Thu, 01 Dec 2011 23:10:07 +0100
-In-Reply-To: <20111201220445.GA10552@Krystal>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
-	 <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com>
-	 <1322776568.4699.52.camel@twins> <20111201220445.GA10552@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Thu, 1 Dec 2011 17:11:04 -0500
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Johannes Weiner <hannes@saeurebad.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH RFC] bootmem: micro optimize freeing pages in bulks
+Date: Thu,  1 Dec 2011 23:10:55 +0100
+Message-Id: <1322777455-32315-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.7.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 17:04 -0500, Mathieu Desnoyers wrote:
-> * Peter Zijlstra (peterz@infradead.org) wrote:
-> > On Thu, 2011-12-01 at 16:41 -0500, Mathieu Desnoyers wrote:
-> > > LTTng needs this symbol to prepend the current task dynamic priority
-> > > value to events (optional context information).
-> > 
-> > I absolutely detest exporting such stuff. It propagates the idea that
-> > task prio actually means something. Also, modules really shouldn't care.
-> 
-> People debugging their SCHED_FIFO/SCHED_RR applications, as well as
-> users of priority-inheritance futexes, may happen to find this
-> information extremely useful.
-> 
-> Just saying...
+The first entry of bdata->node_bootmem_map holds the data for
+bdata->node_min_pfn up to bdata->node_min_pfn + BITS_PER_LONG - 1. So
+the test for freeing all pages of a single map entry can be slightly
+relaxed.
 
-Right until the moment we go do deadlines.. Anyway, it still doesn't
-make sense, your sched_switch() tracepoint handler gets this
-information, why do you need this export at all?
+Moreover use DIV_ROUND_UP in another place instead of open coding it.
+
+Cc: Johannes Weiner <hannes@saeurebad.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+Hello,
+
+I'm not sure the current code is correct (and my patch doesn't fix it):
+
+If
+
+	aligned && vec == ~0UL
+
+evalutates to true, but
+
+	start + BITS_PER_LONG <= end
+
+does not (or "< end" resp.) the else branch still frees all BITS_PER_LONG
+pages. Is this intended? If yes, the last check can better be omitted
+resulting in the pages being freed in a bulk.
+If not, the loop in the else branch should only do something like:
+
+	while (vec && off < min(BITS_PER_LONG, end - start)) {
+		...
+
+Having said that please note that I just started today to look into mm/
+so please take my analysis with a grain of salt.
+
+Best regards
+Uwe
+
+ mm/bootmem.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index fc22150..1e7d791 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -56,7 +56,7 @@ early_param("bootmem_debug", bootmem_debug_setup);
+ 
+ static unsigned long __init bootmap_bytes(unsigned long pages)
+ {
+-	unsigned long bytes = (pages + 7) / 8;
++	unsigned long bytes = DIV_ROUND_UP(pages, 8);
+ 
+ 	return ALIGN(bytes, sizeof(long));
+ }
+@@ -197,7 +197,7 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
+ 		idx = start - bdata->node_min_pfn;
+ 		vec = ~map[idx / BITS_PER_LONG];
+ 
+-		if (aligned && vec == ~0UL && start + BITS_PER_LONG < end) {
++		if (aligned && vec == ~0UL && start + BITS_PER_LONG <= end) {
+ 			int order = ilog2(BITS_PER_LONG);
+ 
+ 			__free_pages_bootmem(pfn_to_page(start), order);
+-- 
+1.7.7.1
+
