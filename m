@@ -1,481 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab1LAKz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 05:55:29 -0500
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:44614 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752735Ab1LAKz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 05:55:27 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/2 v5] pinctrl: introduce generic pin config
-Date: Thu, 1 Dec 2011 11:55:02 +0100
-Message-ID: <1322736902-11297-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1753117Ab1LAKzq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 05:55:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52615 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751878Ab1LAKzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 05:55:43 -0500
+Date: Thu, 1 Dec 2011 11:55:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, Yong Zhang <yong.zhang0@gmail.com>
+Subject: Re: [3.2-rc3] 100% CPU usage while in del_timer_sync from
+ iwl3945_rs_free_sta
+Message-ID: <20111201105538.GA4504@tiehlicka.suse.cz>
+References: <20111129100727.GD2675@tiehlicka.suse.cz>
+ <20111129113906.GA7299@redhat.com>
+ <20111130101028.GA2906@tiehlicka.suse.cz>
+ <20111130142316.GA2466@redhat.com>
+ <20111130140316.GA4153@tiehlicka.suse.cz>
+ <20111130153929.GA2144@redhat.com>
+ <20111201085845.GA4602@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201085845.GA4602@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Thu 01-12-11 09:58:45, Michal Hocko wrote:
+[...]
+> I will try to turn on timer debugging suggested by Yong Zhang in other
+> email.
 
-This is a split-off from the earlier patch set which adds generic
-pin configuration for the pin controllers that want it. Since
-we may have a system with mixed generic and custom pin controllers,
-we pass a boolean in the pin controller ops vtable to indicate
-if it is generic.
+OK, so applied the following commits:
+$ git shortlog master..
+Christine Chan (2):
+      timer: Use debugobjects to catch deletion of uninitialized timers
+      debugobjects: Extend to assert that an object is initialized
 
-ChangeLog v1->v5:
-- Follow parent patch versioning number system.
-- Document the semantic meaning of return values from pin config
-  get functions, so we can iterate over pins and check their
-  properties from debugfs as part of the generic config code.
-- Use proper cast functions in the generic debugfs pin config
-  file.
-- Expand generic config to optionally cover groups too.
+Michal Hocko (1):
+      Debugging patch
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- Documentation/pinctrl.txt               |   20 +++++
- drivers/pinctrl/Kconfig                 |    4 +
- drivers/pinctrl/Makefile                |    1 +
- drivers/pinctrl/pinconf-generic.c       |  122 ++++++++++++++++++++++++++
- drivers/pinctrl/pinconf.c               |    4 +
- drivers/pinctrl/pinconf.h               |   31 +++++++
- include/linux/pinctrl/pinconf-generic.h |  142 +++++++++++++++++++++++++++++++
- include/linux/pinctrl/pinconf.h         |    5 +
- 8 files changed, 329 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pinctrl/pinconf-generic.c
- create mode 100644 include/linux/pinctrl/pinconf-generic.h
+Stephen Boyd (2):
+      timer: Setup uninitialized timer with a stub callback
+      debugobjects: Be smarter about static objects
 
-diff --git a/Documentation/pinctrl.txt b/Documentation/pinctrl.txt
-index ae5ace2..f1d2c45 100644
---- a/Documentation/pinctrl.txt
-+++ b/Documentation/pinctrl.txt
-@@ -277,6 +277,26 @@ case each individual pin will be treated by separate pin_config_set() calls as
- well.
- 
- 
-+Generic pin configuration
-+=========================
-+
-+The pin control system supports an interface optionally abstracting the
-+pin properties. It considers the things a controller may want configure as
-+enumerable, and thus the parameters such as PIN_CONFIG_BIAS_PULL_UP are defined
-+by the core, whereas the arguments to the parameter may need to be on a custom
-+format only understandable by the driver. This may apply to some pin
-+controllers, especially simple ones.
-+
-+For generic pin config, the return value from the driver callback
-+.pin_config_get() has defined semantics:
-+
-+ -EINVAL is OK, it means the setting is available but not active right now
-+ -ENOTSUPP just means that setting is not available at all and is also OK
-+
-+These are used to be able to loop over generic pin configurations and examine
-+drivers from the driver core.
-+
-+
- Interaction with the GPIO subsystem
- ===================================
- 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index c63c721..2ba2746 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -17,6 +17,10 @@ config PINMUX
- config PINCONF
- 	bool "Support pin configuration controllers"
- 
-+config GENERIC_PINCONF
-+	bool
-+	select PINCONF
-+
- config DEBUG_PINCTRL
- 	bool "Debug PINCTRL calls"
- 	depends on DEBUG_KERNEL
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 97b2b9f..c7c5ff2 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -5,6 +5,7 @@ ccflags-$(CONFIG_DEBUG_PINMUX)	+= -DDEBUG
- obj-$(CONFIG_PINCTRL)		+= core.o
- obj-$(CONFIG_PINMUX)		+= pinmux.o
- obj-$(CONFIG_PINCONF)		+= pinconf.o
-+obj-$(CONFIG_GENERIC_PINCONF)	+= pinconf-generic.o
- obj-$(CONFIG_PINMUX_SIRF)	+= pinmux-sirf.o
- obj-$(CONFIG_PINMUX_U300)	+= pinmux-u300.o
- obj-$(CONFIG_PINCTRL_COH901)	+= pinctrl-coh901.o
-diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-new file mode 100644
-index 0000000..156a984
---- /dev/null
-+++ b/drivers/pinctrl/pinconf-generic.c
-@@ -0,0 +1,122 @@
-+/*
-+ * Core driver for the generic pin config portions of the pin control subsystem
-+ *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#define pr_fmt(fmt) "generic pinconfig core: " fmt
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/slab.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinconf.h>
-+#include <linux/pinctrl/pinconf-generic.h>
-+#include "core.h"
-+#include "pinconf.h"
-+
-+#ifdef CONFIG_DEBUG_FS
-+
-+struct pin_config_item {
-+	const enum pin_config_param param;
-+	const char * const display;
-+	const char * const format;
-+};
-+
-+#define PCONFDUMP(a, b, c) { .param = a, .display = b, .format = c }
-+
-+struct pin_config_item conf_items[] = {
-+	PCONFDUMP(PIN_CONFIG_BIAS_DISABLE, "input bias disabled", NULL),
-+	PCONFDUMP(PIN_CONFIG_BIAS_HIGH_IMPEDANCE, "input bias high impedance", NULL),
-+	PCONFDUMP(PIN_CONFIG_BIAS_PULL_UP, "input bias pull up", "Ohm"),
-+	PCONFDUMP(PIN_CONFIG_BIAS_PULL_DOWN, "input bias pull down", "Ohm"),
-+	PCONFDUMP(PIN_CONFIG_BIAS_HIGH, "input bias high", NULL),
-+	PCONFDUMP(PIN_CONFIG_BIAS_GROUND, "input bias ground", NULL),
-+	PCONFDUMP(PIN_CONFIG_DRIVE_PUSH_PULL, "output drive push pull", "X stages"),
-+	PCONFDUMP(PIN_CONFIG_DRIVE_OPEN_DRAIN, "output drive open drain", "X stages"),
-+	PCONFDUMP(PIN_CONFIG_DRIVE_OPEN_SOURCE, "output drive open source", "X stages"),
-+	PCONFDUMP(PIN_CONFIG_DRIVE_OFF, "output drive off", NULL),
-+	PCONFDUMP(PIN_CONFIG_INPUT_SCHMITT, "input schmitt trigger", NULL),
-+	PCONFDUMP(PIN_CONFIG_INPUT_DEBOUNCE, "input debounce", "time units"),
-+	PCONFDUMP(PIN_CONFIG_SLEW_RATE_RISING, "output slew rate rising", "of max"),
-+	PCONFDUMP(PIN_CONFIG_SLEW_RATE_FALLING, "output slew rate falling", "of max"),
-+	PCONFDUMP(PIN_CONFIG_POWER_SOURCE, "pin power source", "selector"),
-+	PCONFDUMP(PIN_CONFIG_LOW_POWER_MODE, "pin low power", "mode"),
-+	PCONFDUMP(PIN_CONFIG_WAKEUP, "input wakeup", NULL),
-+};
-+
-+void pinconf_generic_dump_pin(struct pinctrl_dev *pctldev,
-+			      struct seq_file *s, unsigned pin)
-+{
-+	const struct pinconf_ops *ops = pctldev->desc->confops;
-+	int i;
-+
-+	if (!ops->is_generic)
-+		return;
-+
-+	for(i = 0; i < ARRAY_SIZE(conf_items); i++) {
-+		unsigned long config;
-+		int ret;
-+
-+		/* We want to check out this parameter */
-+		config = to_config_packed(conf_items[i].param, 0);
-+		ret = pin_config_get(pctldev, pin, &config);
-+		/* These are legal errors */
-+		if (ret == -EINVAL || ret == -ENOTSUPP)
-+			continue;
-+		if (ret) {
-+			seq_printf(s, "ERROR READING CONFIG SETTING %d ", i);
-+			continue;
-+		}
-+		/* Space between multiple configs */
-+		seq_puts(s, " ");
-+		seq_puts(s, conf_items[i].display);
-+		/* Print unit if available */
-+		if (conf_items[i].format && config != 0)
-+			seq_printf(s, " (%u %s)", to_config_argument(config),
-+				   conf_items[i].format);
-+	}
-+}
-+
-+void pinconf_generic_dump_group(struct pinctrl_dev *pctldev,
-+			      struct seq_file *s, const char *gname)
-+{
-+	const struct pinconf_ops *ops = pctldev->desc->confops;
-+	int i;
-+
-+	if (!ops->is_generic)
-+		return;
-+
-+	for(i = 0; i < ARRAY_SIZE(conf_items); i++) {
-+		unsigned long config;
-+		int ret;
-+
-+		/* We want to check out this parameter */
-+		config = to_config_packed(conf_items[i].param, 0);
-+		ret = pin_config_group_get(pctldev, gname, &config);
-+		/* These are legal errors */
-+		if (ret == -EINVAL || ret == -ENOTSUPP)
-+			continue;
-+		if (ret) {
-+			seq_printf(s, "ERROR READING CONFIG SETTING %d ", i);
-+			continue;
-+		}
-+		/* Space between multiple configs */
-+		seq_puts(s, " ");
-+		seq_puts(s, conf_items[i].display);
-+		/* Print unit if available */
-+		if (conf_items[i].format && config != 0)
-+			seq_printf(s, " (%u %s)", to_config_argument(config),
-+				   conf_items[i].format);
-+	}
-+}
-+
-+#endif
-diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
-index aefd684..8570a42 100644
---- a/drivers/pinctrl/pinconf.c
-+++ b/drivers/pinctrl/pinconf.c
-@@ -185,6 +185,8 @@ static void pinconf_dump_pin(struct pinctrl_dev *pctldev,
- {
- 	const struct pinconf_ops *ops = pctldev->desc->confops;
- 
-+	/* no-op when not using generic pin config */
-+	pinconf_generic_dump_pin(pctldev, s, pin);
- 	if (ops && ops->pin_config_dbg_show)
- 		ops->pin_config_dbg_show(pctldev, s, pin);
- }
-@@ -223,6 +225,8 @@ static void pinconf_dump_group(struct pinctrl_dev *pctldev,
- {
- 	const struct pinconf_ops *ops = pctldev->desc->confops;
- 
-+	/* no-op when not using generic pin config */
-+	pinconf_generic_dump_group(pctldev, s, gname);
- 	if (ops && ops->pin_config_group_dbg_show)
- 		ops->pin_config_group_dbg_show(pctldev, s, selector);
- }
-diff --git a/drivers/pinctrl/pinconf.h b/drivers/pinctrl/pinconf.h
-index eb1657a..7f19fcc 100644
---- a/drivers/pinctrl/pinconf.h
-+++ b/drivers/pinctrl/pinconf.h
-@@ -30,3 +30,34 @@ static inline void pinconf_init_device_debugfs(struct dentry *devroot,
- }
- 
- #endif
-+
-+/*
-+ * The following functions are available if the driver uses the generic
-+ * pin config.
-+ */
-+
-+#ifdef CONFIG_GENERIC_PINCONF
-+
-+void pinconf_generic_dump_pin(struct pinctrl_dev *pctldev,
-+			      struct seq_file *s, unsigned pin);
-+
-+void pinconf_generic_dump_group(struct pinctrl_dev *pctldev,
-+			      struct seq_file *s, const char *gname);
-+
-+#else
-+
-+static inline void pinconf_generic_dump_pin(struct pinctrl_dev *pctldev,
-+					    struct seq_file *s,
-+					    unsigned pin)
-+{
-+	return;
-+}
-+
-+static inline void pinconf_generic_dump_group(struct pinctrl_dev *pctldev,
-+					      struct seq_file *s,
-+					      const char *gname)
-+{
-+	return;
-+}
-+
-+#endif
-diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
-new file mode 100644
-index 0000000..d444055
---- /dev/null
-+++ b/include/linux/pinctrl/pinconf-generic.h
-@@ -0,0 +1,142 @@
-+/*
-+ * Interface the generic pinconfig portions of the pinctrl subsystem
-+ *
-+ * Copyright (C) 2011 ST-Ericsson SA
-+ * Written on behalf of Linaro for ST-Ericsson
-+ * This interface is used in the core to keep track of pins.
-+ *
-+ * Author: Linus Walleij <linus.walleij@linaro.org>
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+#ifndef __LINUX_PINCTRL_PINCONF_GENERIC_H
-+#define __LINUX_PINCTRL_PINCONF_GENERIC_H
-+
-+/*
-+ * You shouldn't even be able to compile with these enums etc unless you're
-+ * using generic pin config. That is why this is defined out.
-+ */
-+#ifdef CONFIG_GENERIC_PINCONF
-+
-+/**
-+ * enum pin_config_param - possible pin configuration parameters
-+ * @PIN_CONFIG_BIAS_DISABLE: disable any pin bias on the pin, a
-+ *	transition from say pull-up to pull-down implies that you disable
-+ *	pull-up in the process, this setting disables all biasing.
-+ * @PIN_CONFIG_BIAS_HIGH_IMPEDANCE: the pin will be set to a high impedance
-+ *	mode, also know as "third-state" (tristate) or "high-Z" or "floating".
-+ *	On output pins this effectively disconnects the pin, which is useful
-+ *	if for example some other pin is going to drive the signal connected
-+ *	to it for a while. Pins used for input are usually always high
-+ *	impedance.
-+ * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
-+ *	impedance to VDD), if the controller supports specifying a certain
-+ *	pull-up resistance, this is given as an argument (in Ohms) when
-+ *	setting this parameter.
-+ * @PIN_CONFIG_BIAS_PULL_DOWN: the pin will be pulled down (usually with high
-+ *	impedance to GROUND), if the controller supports specifying a certain
-+ *	pull-down resistance, this is given as an argument (in Ohms) when
-+ *	setting this parameter.
-+ * @PIN_CONFIG_BIAS_HIGH: the pin will be wired high, connected to VDD
-+ * @PIN_CONFIG_BIAS_GROUND: the pin will be grounded, connected to GROUND
-+ * @PIN_CONFIG_DRIVE_PUSH_PULL: the pin will be driven actively high and
-+ *	low, this is the most typical case and is typically achieved with two
-+ *	active transistors on the output. If the pin can support different
-+ *	drive strengths for push/pull, the strength is given in the argument
-+ *	as the number of driving stages vs nominal load impedance, so say
-+ *	quadruple driving stages (usually 8 transistors rather than two) will
-+ *	be configured with the 8 passed as argument.
-+ * @PIN_CONFIG_DRIVE_OPEN_DRAIN: the pin will be driven with open drain (open
-+ *	collector) which means it is usually wired with other output ports
-+ *	which are then pulled up with an external resistor. If the pin can
-+ *	support different drive strengths for the open drain pin, the format
-+ *	is the same as for PIN_CONFIG_DRIVE_PUSH_PULL.
-+ * @PIN_CONFIG_DRIVE_OPEN_SOURCE: the pin will be driven with open drain
-+ *	(open emitter) which is the same as open drain but pulled to ground.
-+ *	If the pin can support different drive strengths for the open drain
-+ *	pin, the format is the same as for PIN_CONFIG_DRIVE_PUSH_PULL.
-+ * @PIN_CONFIG_DRIVE_OFF: the pin is set to inactive drive mode, off.
-+ * @PIN_CONFIG_INPUT_SCHMITT: this will configure an input pin to run in
-+ *	schmitt-trigger mode. If the schmitt-trigger has adjustable hysteresis,
-+ *	the threshold value is given on a custom format as argument when
-+ *	setting pins to this mode. The argument zero turns the schmitt trigger
-+ *	off.
-+ * @PIN_CONFIG_INPUT_DEBOUNCE: this will configure the pin to debounce mode,
-+ *	which means it will wait for signals to settle when reading inputs. The
-+ *	argument gives the debounce time on a custom format. Setting the
-+ *	argument to zero turns debouncing off.
-+ * @PIN_CONFIG_SLEW_RATE_RISING: this will configure the slew rate for rising
-+ *	signals on the pin. The argument gives the rise time in fractions
-+ *	compared to maximum rise time, 0 means nominal rise time. If you can
-+ *	control slew rate in 4 steps these will likely be equidistant like
-+ *	1/4, 1/2, 3/4 or full nominal slew rate, which means argument 4 gives
-+ *	you 1/4 of nominal slew rate and the argument 4 has the same meaning
-+ *	as 0 - nominal slew rate (fastest possible, steep edges). You may want
-+ *	to adjust slew rates so that signal edges don't get too steep, causing
-+ *	disturbances in surrounding electronics known as electromagnetic
-+ *	interference (EMI) for example.
-+ * @PIN_CONFIG_SLEW_RATE_FALLING: this will configure the slew rate for falling
-+ *	signals on the pin. The argument gives the fall time in fractions
-+ *	compared to nominal fall time.
-+ * @PIN_CONFIG_POWER_SOURCE: if the pin can select between different power
-+ *	supplies, the argument to this parameter (on a custom format) tells
-+ *	the driver which alternative power source to use.
-+ * @PIN_CONFIG_LOW_POWER_MODE: this will configure the pin for low power
-+ *	operation, if several modes of operation are supported these can be
-+ *	passed in the argument on a custom form, else just use argument 1
-+ *	to indicate low power mode, argument 0 turns low power mode off.
-+ * @PIN_CONFIG_WAKEUP: this will configure an input pin such that if a
-+ *	signal transition arrives at the pin when the pin controller/system
-+ *	is sleeping, it will wake up the system if argument 1 is passed along.
-+ *	Pass argument 0 to turn wakeup enablement off.
-+ * @PIN_CONFIG_END: this is the last enumerator for pin configurations, if
-+ *	you need to pass in custom configurations to the pin controller, use
-+ *	PIN_CONFIG_END+1 as the base offset.
-+ */
-+enum pin_config_param {
-+	PIN_CONFIG_BIAS_DISABLE,
-+	PIN_CONFIG_BIAS_HIGH_IMPEDANCE,
-+	PIN_CONFIG_BIAS_PULL_UP,
-+	PIN_CONFIG_BIAS_PULL_DOWN,
-+	PIN_CONFIG_BIAS_HIGH,
-+	PIN_CONFIG_BIAS_GROUND,
-+	PIN_CONFIG_DRIVE_PUSH_PULL,
-+	PIN_CONFIG_DRIVE_OPEN_DRAIN,
-+	PIN_CONFIG_DRIVE_OPEN_SOURCE,
-+	PIN_CONFIG_DRIVE_OFF,
-+	PIN_CONFIG_INPUT_SCHMITT,
-+	PIN_CONFIG_INPUT_DEBOUNCE,
-+	PIN_CONFIG_SLEW_RATE_RISING,
-+	PIN_CONFIG_SLEW_RATE_FALLING,
-+	PIN_CONFIG_POWER_SOURCE,
-+	PIN_CONFIG_LOW_POWER_MODE,
-+	PIN_CONFIG_WAKEUP,
-+	PIN_CONFIG_END,
-+};
-+
-+/*
-+ * The following inlines stuffs a configuration parameter and data value
-+ * into and out of an unsigned long argument, as used by the generic pin config
-+ * system. We put the parameter in the lower 16 bits and the argument in the
-+ * upper 16 bits.
-+ */
-+
-+static inline enum pin_config_param to_config_param(unsigned long config)
-+{
-+	return (enum pin_config_param) (config & 0xffffUL);
-+}
-+
-+static inline u16 to_config_argument(unsigned long config)
-+{
-+	return (enum pin_config_param) ((config >> 16) & 0xffffUL);
-+}
-+
-+static inline unsigned long to_config_packed(enum pin_config_param param,
-+					     u16 argument)
-+{
-+	return (argument << 16) | ((unsigned long) param & 0xffffUL);
-+}
-+
-+#endif /* CONFIG_GENERIC_PINCONF */
-+
-+#endif /* __LINUX_PINCTRL_PINCONF_GENERIC_H */
-diff --git a/include/linux/pinctrl/pinconf.h b/include/linux/pinctrl/pinconf.h
-index a436325..f855645 100644
---- a/include/linux/pinctrl/pinconf.h
-+++ b/include/linux/pinctrl/pinconf.h
-@@ -19,6 +19,8 @@ struct pinctrl_dev;
- /**
-  * struct pinconf_ops - pin config operations, to be implemented by
-  * pin configuration capable drivers.
-+ * @is_generic: for pin controllers that want to use the generic interface,
-+ *	this flag tells the framework that it's generic.
-  * @pin_config_get: get the config of a certain pin, if the requested config
-  *	is not available on this controller this should return -ENOTSUPP
-  *	and if it is available but disabled it should return -EINVAL
-@@ -31,6 +33,9 @@ struct pinctrl_dev;
-  *	per-device info for a certain group in debugfs
-  */
- struct pinconf_ops {
-+#ifdef CONFIG_GENERIC_PINCONF
-+	bool is_generic;
-+#endif
- 	int (*pin_config_get) (struct pinctrl_dev *pctldev,
- 			       unsigned pin,
- 			       unsigned long *config);
+Debugging patch is the one from Stanislaw posted earlier in the thread.
+It prevents del_timer_sync and warns on NULL timer in iwl3945_rs_free_sta.
+Also turned on the suggested DEBUG_OBJECTS_TIMERS.
+
+I do not see any timer related warnings. I will try it with the slightly
+modified Debugging patch and just warn without returning before calling
+del_timer_sync.
+
+[...]
+[  305.800081] iwl3945_rs_alloc_sta rs_sta f4be1ac0
+[  305.800091] ieee80211 phy0: Allocated STA 00:0b:6b:3c:8c:e4
+[  305.800098] ieee80211 phy0: Inserted dummy STA 00:0b:6b:3c:8c:e4
+[  305.800112] ieee80211 phy0: device no longer idle - working
+[  305.800120] wlan0: associate with 00:0b:6b:3c:8c:e4 (try 1)
+[  305.807868] wlan0: RX ReassocResp from 00:0b:6b:3c:8c:e4 (capab=0x431 status=0 aid=1)
+[  305.807878] wlan0: associated
+[  305.808067] ieee80211 phy0: Inserted STA 00:0b:6b:3c:8c:e4
+[  305.808081] ieee80211 phy0: WMM queue=2 aci=0 acm=0 aifs=2 cWmin=7 cWmax=1023 txop=64 uapsd=0
+[  305.808095] ieee80211 phy0: WMM queue=3 aci=1 acm=0 aifs=7 cWmin=15 cWmax=1023 txop=0 uapsd=0
+[  305.808108] ieee80211 phy0: WMM queue=1 aci=2 acm=0 aifs=2 cWmin=7 cWmax=15 txop=94 uapsd=0
+[  305.808121] ieee80211 phy0: WMM queue=0 aci=3 acm=0 aifs=2 cWmin=3 cWmax=7 txop=47 uapsd=0
+[  316.368064] wlan0: no IPv6 routers present
+[  339.387891] PM: Syncing filesystems ... done.
+[  339.480244] PM: Preparing system for mem sleep
+[  340.735244] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[  340.752248] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+[  340.772279] PM: Entering mem sleep
+[  340.909961] sd 0:0:0:0: [sda] Synchronizing SCSI cache
+[  340.915156] sd 0:0:0:0: [sda] Stopping disk
+[  340.959367] serial 00:0a: disabled
+[  340.963655] serial 00:0a: wake-up capability disabled by ACPI
+[  340.968461] PIIX_IDE 0000:00:1f.1: PCI INT A disabled
+[  340.970913] ehci_hcd 0000:00:1d.7: PCI INT A disabled
+[  340.972114] uhci_hcd 0000:00:1d.3: PCI INT D disabled
+[  340.972127] uhci_hcd 0000:00:1d.2: PCI INT C disabled
+[  340.972140] uhci_hcd 0000:00:1d.1: PCI INT B disabled
+[  340.972152] uhci_hcd 0000:00:1d.0: PCI INT A disabled
+[  340.982942] i915 0000:00:02.0: PCI INT A disabled
+[  341.276198] snd_hda_intel 0000:00:1b.0: PCI INT A disabled
+[  341.376137] snd_hda_intel 0000:00:1b.0: power state changed by ACPI to D3
+[  342.922781] ata_piix 0000:00:1f.2: PCI INT B disabled
+[  343.024183] PM: suspend of devices complete after 2247.084 msecs
+[  343.128551] sky2 0000:02:00.0: PME# enabled
+[  343.218047] sky2 0000:02:00.0: wake-up capability enabled by ACPI
+[  343.464325] ehci_hcd 0000:00:1d.7: PME# enabled
+[  343.554551] ehci_hcd 0000:00:1d.7: wake-up capability enabled by ACPI
+[  343.660211] uhci_hcd 0000:00:1d.3: wake-up capability enabled by ACPI
+[  343.748740] uhci_hcd 0000:00:1d.2: wake-up capability enabled by ACPI
+[  343.837261] uhci_hcd 0000:00:1d.1: wake-up capability enabled by ACPI
+[  343.925774] uhci_hcd 0000:00:1d.0: wake-up capability enabled by ACPI
+[  344.012708] PM: late suspend of devices complete after 900.012 msecs
+[  344.099624] ACPI: Preparing to enter system sleep state S3
+[  344.186393] PM: Saving platform NVS memory
+[  344.272082] Disabling non-boot CPUs ...
+[  344.460060] CPU 1 is now offline
+[  344.543874] ACPI: Low-level resume complete
+[  344.543874] PM: Restoring platform NVS memory
+[  344.543874] Enabling non-boot CPUs ...
+[  344.554434] Booting Node 0 Processor 1 APIC 0x1
+[  344.558267] smpboot cpu 1: start_ip = 9b000
+[  344.358012] Initializing CPU#1
+[  344.358012] Calibrating delay loop (skipped) already calibrated this CPU
+[  344.580289] CPU1 is up
+[  344.593922] ACPI: Waking up from system sleep state S3
+[  344.598517] i915 0000:00:02.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
+[  344.600866] pci 0000:00:02.1: restoring config space at offset 0x1 (was 0x900000, writing 0x900007)
+[  344.603204] snd_hda_intel 0000:00:1b.0: restoring config space at offset 0x3 (was 0x0, writing 0x10)
+[  344.606598] snd_hda_intel 0000:00:1b.0: restoring config space at offset 0x1 (was 0x100006, writing 0x100002)
+[  344.609076] pci 0000:00:1c.0: restoring config space at offset 0xf (was 0x40100, writing 0x4010b)
+[  344.611429] pci 0000:00:1c.0: restoring config space at offset 0x9 (was 0x10001, writing 0x80c180a1)
+[  344.613759] pci 0000:00:1c.0: restoring config space at offset 0x8 (was 0x0, writing 0xf000f000)
+[  344.616070] pci 0000:00:1c.0: restoring config space at offset 0x7 (was 0x20000000, writing 0x20002020)
+[  344.618358] pci 0000:00:1c.0: restoring config space at offset 0x6 (was 0x0, writing 0x20200)
+[  344.620666] pci 0000:00:1c.0: restoring config space at offset 0x3 (was 0x810000, writing 0x810010)
+[  344.622936] pci 0000:00:1c.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100007)
+[  344.625217] pci 0000:00:1c.1: restoring config space at offset 0xf (was 0x40200, writing 0x4020b)
+[  344.627483] pci 0000:00:1c.1: restoring config space at offset 0x9 (was 0x10001, writing 0x80918081)
+[  344.629779] pci 0000:00:1c.1: restoring config space at offset 0x8 (was 0x0, writing 0x80708060)
+[  344.632079] pci 0000:00:1c.1: restoring config space at offset 0x7 (was 0x20000000, writing 0x20005050)
+[  344.634367] pci 0000:00:1c.1: restoring config space at offset 0x3 (was 0x810000, writing 0x810010)
+[  344.636633] pci 0000:00:1c.1: restoring config space at offset 0x1 (was 0x100000, writing 0x100007)
+[  344.638923] pci 0000:00:1c.2: restoring config space at offset 0xf (was 0x40300, writing 0x4030b)
+[  344.641200] pci 0000:00:1c.2: restoring config space at offset 0x9 (was 0x10001, writing 0x80518041)
+[  344.643412] pci 0000:00:1c.2: restoring config space at offset 0x8 (was 0x0, writing 0x80308010)
+[  344.645622] pci 0000:00:1c.2: restoring config space at offset 0x7 (was 0x20000000, writing 0x20004040)
+[  344.647810] pci 0000:00:1c.2: restoring config space at offset 0x3 (was 0x810000, writing 0x810010)
+[  344.650002] pci 0000:00:1c.2: restoring config space at offset 0x1 (was 0x100000, writing 0x100007)
+[  344.652223] uhci_hcd 0000:00:1d.0: restoring config space at offset 0x1 (was 0x2800005, writing 0x2800001)
+[  344.654461] uhci_hcd 0000:00:1d.0: wake-up capability disabled by ACPI
+[  344.656676] uhci_hcd 0000:00:1d.1: restoring config space at offset 0x1 (was 0x2800005, writing 0x2800001)
+[  344.658924] uhci_hcd 0000:00:1d.1: wake-up capability disabled by ACPI
+[  344.661154] uhci_hcd 0000:00:1d.2: restoring config space at offset 0x1 (was 0x2800005, writing 0x2800001)
+[  344.663418] uhci_hcd 0000:00:1d.2: wake-up capability disabled by ACPI
+[  344.665710] uhci_hcd 0000:00:1d.3: restoring config space at offset 0x1 (was 0x2800005, writing 0x2800001)
+[  344.668058] uhci_hcd 0000:00:1d.3: wake-up capability disabled by ACPI
+[  344.670384] ehci_hcd 0000:00:1d.7: restoring config space at offset 0x1 (was 0x2900006, writing 0x2900002)
+[  344.672780] ehci_hcd 0000:00:1d.7: wake-up capability disabled by ACPI
+[  344.675140] ehci_hcd 0000:00:1d.7: PME# disabled
+[  344.677545] pci 0000:00:1e.0: restoring config space at offset 0x9 (was 0x10001, writing 0x87f18401)
+[  344.680014] pci 0000:00:1e.0: restoring config space at offset 0x8 (was 0x0, writing 0xf020f020)
+[  344.682483] pci 0000:00:1e.0: restoring config space at offset 0x7 (was 0xa2800000, writing 0xa2803030)
+[  344.685001] pci 0000:00:1e.0: restoring config space at offset 0x1 (was 0x100004, writing 0x100007)
+[  344.687548] PIIX_IDE 0000:00:1f.1: restoring config space at offset 0xf (was 0x100, writing 0x1ff)
+[  344.690119] ata_piix 0000:00:1f.2: restoring config space at offset 0xf (was 0x200, writing 0x20b)
+[  344.692848] sky2 0000:02:00.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
+[  344.695461] sky2 0000:02:00.0: restoring config space at offset 0x6 (was 0x1, writing 0x2001)
+[  344.697999] sky2 0000:02:00.0: restoring config space at offset 0x4 (was 0x4, writing 0xf0000004)
+[  344.700491] sky2 0000:02:00.0: restoring config space at offset 0x3 (was 0x0, writing 0x10)
+[  344.702963] sky2 0000:02:00.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100407)
+[  344.705707] iwl3945 0000:05:00.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
+[  344.708232] iwl3945 0000:05:00.0: restoring config space at offset 0x4 (was 0x0, writing 0x80100000)
+[  344.710706] iwl3945 0000:05:00.0: restoring config space at offset 0x3 (was 0x0, writing 0x10)
+[  344.713210] iwl3945 0000:05:00.0: restoring config space at offset 0x1 (was 0x100000, writing 0x100406)
+[  344.715819] pci 0000:08:03.0: restoring config space at offset 0xf (was 0xc00100, writing 0x1c0010b)
+[  344.718384] pci 0000:08:03.0: restoring config space at offset 0xe (was 0x1, writing 0x30fd)
+[  344.720917] pci 0000:08:03.0: restoring config space at offset 0xd (was 0x1, writing 0x3001)
+[  344.723403] pci 0000:08:03.0: restoring config space at offset 0xc (was 0x1, writing 0x34fd)
+[  344.725882] pci 0000:08:03.0: restoring config space at offset 0xb (was 0x1, writing 0x3401)
+[  344.728332] pci 0000:08:03.0: restoring config space at offset 0xa (was 0x0, writing 0x8bfff000)
+[  344.730758] pci 0000:08:03.0: restoring config space at offset 0x9 (was 0x0, writing 0x88000000)
+[  344.733180] pci 0000:08:03.0: restoring config space at offset 0x8 (was 0x0, writing 0x87fff000)
+[  344.735574] pci 0000:08:03.0: restoring config space at offset 0x7 (was 0x0, writing 0x84000000)
+[  344.737980] pci 0000:08:03.0: restoring config space at offset 0x6 (was 0x0, writing 0xb00c0908)
+[  344.740358] pci 0000:08:03.0: restoring config space at offset 0x4 (was 0x0, writing 0x80000000)
+[  344.742715] pci 0000:08:03.0: restoring config space at offset 0x1 (was 0x4100080, writing 0x4100007)
+[  344.745107] pci 0000:08:03.4: restoring config space at offset 0xf (was 0x100, writing 0x10b)
+[  344.747449] pci 0000:08:03.4: restoring config space at offset 0x5 (was 0x0, writing 0xf0201000)
+[  344.749778] pci 0000:08:03.4: restoring config space at offset 0x4 (was 0x0, writing 0xf0200000)
+[  344.752072] pci 0000:08:03.4: restoring config space at offset 0x3 (was 0x0, writing 0x2010)
+[  344.754298] pci 0000:08:03.4: restoring config space at offset 0x1 (was 0x2100080, writing 0x2100017)
+[  344.756787] PM: early resume of devices complete after 158.326 msecs
+[  344.759029] i915 0000:00:02.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+[  344.761243] i915 0000:00:02.0: setting latency timer to 64
+[  344.761338] pci 0000:00:1c.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
+[  344.761345] pci 0000:00:1c.0: setting latency timer to 64
+[  344.761361] pci 0000:00:1c.1: PCI INT B -> GSI 21 (level, low) -> IRQ 21
+[  344.761367] pci 0000:00:1c.1: setting latency timer to 64
+[  344.761380] pci 0000:00:1c.2: PCI INT C -> GSI 20 (level, low) -> IRQ 20
+[  344.761386] pci 0000:00:1c.2: setting latency timer to 64
+[  344.761401] uhci_hcd 0000:00:1d.0: PCI INT A -> GSI 23 (level, low) -> IRQ 23
+[  344.761409] uhci_hcd 0000:00:1d.0: setting latency timer to 64
+[  344.761439] usb usb2: root hub lost power or was reset
+[  344.761460] uhci_hcd 0000:00:1d.1: PCI INT B -> GSI 20 (level, low) -> IRQ 20
+[  344.761468] uhci_hcd 0000:00:1d.1: setting latency timer to 64
+[  344.761496] usb usb3: root hub lost power or was reset
+[  344.761514] uhci_hcd 0000:00:1d.2: PCI INT C -> GSI 18 (level, low) -> IRQ 18
+[  344.761522] uhci_hcd 0000:00:1d.2: setting latency timer to 64
+[  344.761549] usb usb4: root hub lost power or was reset
+[  344.761567] uhci_hcd 0000:00:1d.3: PCI INT D -> GSI 16 (level, low) -> IRQ 16
+[  344.761576] uhci_hcd 0000:00:1d.3: setting latency timer to 64
+[  344.761604] usb usb5: root hub lost power or was reset
+[  344.761624] ehci_hcd 0000:00:1d.7: PCI INT A -> GSI 23 (level, low) -> IRQ 23
+[  344.761632] ehci_hcd 0000:00:1d.7: setting latency timer to 64
+[  344.761675] pci 0000:00:1e.0: setting latency timer to 64
+[  344.761694] PIIX_IDE 0000:00:1f.1: PCI INT A -> GSI 18 (level, low) -> IRQ 18
+[  344.761700] PIIX_IDE 0000:00:1f.1: setting latency timer to 64
+[  344.761723] ata_piix 0000:00:1f.2: PCI INT B -> GSI 19 (level, low) -> IRQ 19
+[  344.761730] ata_piix 0000:00:1f.2: setting latency timer to 64
+[  344.762438] sky2 0000:02:00.0: wake-up capability disabled by ACPI
+[  344.762462] sky2 0000:02:00.0: PME# disabled
+[  344.768820] pci 0000:08:03.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+[  344.769454] serial 00:0a: activated
+[  344.772573] hda: host max PIO4 wanted PIO255(auto-tune) selected PIO4
+[  344.772828] hda: UDMA/33 mode selected
+[  344.835139] sd 0:0:0:0: [sda] Starting disk
+[  344.897591] render error detected, EIR: 0x00000010
+[  344.899856] page table error
+[  344.900004]   PGTBL_ER: 0x00000003
+[  344.900004] [drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
+[  344.900004] render error detected, EIR: 0x00000010
+[  344.900004] page table error
+[  344.900004]   PGTBL_ER: 0x00000003
+[  345.168077] usb 5-2: reset full-speed USB device number 3 using uhci_hcd
+[  345.260090] snd_hda_intel 0000:00:1b.0: power state changed by ACPI to D0
+[  345.263106] snd_hda_intel 0000:00:1b.0: power state changed by ACPI to D0
+[  345.266113] snd_hda_intel 0000:00:1b.0: power state changed by ACPI to D0
+[  345.269115] snd_hda_intel 0000:00:1b.0: power state changed by ACPI to D0
+[  345.271430] snd_hda_intel 0000:00:1b.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+[  345.273684] snd_hda_intel 0000:00:1b.0: setting latency timer to 64
+[  345.275966] snd_hda_intel 0000:00:1b.0: irq 41 for MSI/MSI-X
+[  345.572088] usb 2-2: reset low-speed USB device number 2 using uhci_hcd
+[  346.608301] ata1.00: ACPI cmd ef/03:0c:00:00:00:a0 (SET FEATURES) filtered out
+[  346.611333] ata1.00: ACPI cmd ef/03:45:00:00:00:a0 (SET FEATURES) filtered out
+[  346.614399] ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+[  346.632440] ata1.00: configured for UDMA/133
+[  346.744496] PM: resume of devices complete after 1985.491 msecs
+[  346.747333] PM: Finishing wakeup.
+[  346.749785] Restarting tasks ... done.
+[  346.789225] video LNXVIDEO:00: Restoring backlight state
+[  347.244077] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, try 1/5
+[  347.744100] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, try 2/5
+[  348.004058] wlan0: detected beacon loss from AP - sending probe request
+[  348.244038] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, try 3/5
+[  348.744062] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, try 4/5
+[  349.244066] ieee80211 phy0: wlan0: No probe response from AP 00:0b:6b:3c:8c:e4 after 500ms, disconnecting.
+[  349.316045] ieee80211 phy0: Removed STA 00:0b:6b:3c:8c:e4
+[  349.316070] iwl3945_rs_free_sta rs_sta f4be1ac0
+[  349.316076] ------------[ cut here ]------------
+[  349.316097] WARNING: at drivers/net/wireless/iwlegacy/iwl-3945-rs.c:438 iwl3945_rs_free_sta+0x33/0x42 [iwl3945]()
+[  349.316105] Hardware name: LIFEBOOK S7110
+[  349.316110] Modules linked in: aes_i586 aes_generic i915 fbcon font bitblit softcursor drm_kms_helper drm fb fbdev i2c_algo_bit cfbcopyarea i2c_core cfbimgblt cfbfillrect fuse tun coretemp hwmon snd_hda_codec_realtek arc4 snd_hda_intel snd_hda_codec snd_pcm_oss snd_mixer_oss iwl3945 snd_pcm iwl_legacy snd_seq_oss snd_seq_midi_event mac80211 snd_seq snd_timer snd_seq_device cfg80211 snd video snd_page_alloc fujitsu_laptop backlight [last unloaded: scsi_wait_scan]
+[  349.316203] Pid: 12, comm: kworker/u:1 Tainted: G        W    3.2.0-rc3-timerstest-00009-g762dd0e #20
+[  349.316209] Call Trace:
+[  349.316223]  [<c01331b4>] warn_slowpath_common+0x68/0x7d
+[  349.316237]  [<f8169454>] ? iwl3945_rs_free_sta+0x33/0x42 [iwl3945]
+[  349.316247]  [<c01331dd>] warn_slowpath_null+0x14/0x18
+[  349.316260]  [<f8169454>] iwl3945_rs_free_sta+0x33/0x42 [iwl3945]
+[  349.316283]  [<f8102f94>] __sta_info_free.isra.24+0x28/0x60 [mac80211]
+[  349.316304]  [<f8103df9>] __sta_info_destroy+0x259/0x283 [mac80211]
+[  349.316328]  [<f8104194>] sta_info_flush+0x43/0x6e [mac80211]
+[  349.316353]  [<f8109453>] ieee80211_set_disassoc+0x1a3/0x1d7 [mac80211]
+[  349.316379]  [<f81095e8>] ieee80211_sta_connection_lost+0x31/0x8a [mac80211]
+[  349.316390]  [<c031208f>] ? dev_printk+0x2b/0x2d
+[  349.316416]  [<f810bde2>] ieee80211_sta_work+0x1b0/0x1c3 [mac80211]
+[  349.316446]  [<f810e38a>] ieee80211_iface_work+0x23e/0x250 [mac80211]
+[  349.316457]  [<c01468af>] process_one_work+0x19b/0x2e6
+[  349.316483]  [<f810e14c>] ? ieee80211_netdev_select_queue+0x14/0x14 [mac80211]
+[  349.316492]  [<c0146ddd>] worker_thread+0x136/0x1ee
+[  349.316501]  [<c0146ca7>] ? manage_workers.isra.23+0x14f/0x14f
+[  349.316509]  [<c014a0f5>] kthread+0x67/0x6c
+[  349.316517]  [<c014a08e>] ? kthread_worker_fn+0x119/0x119
+[  349.316527]  [<c04762f6>] kernel_thread_helper+0x6/0x10
+[  349.316532] ---[ end trace 5cf96275a244e7ca ]---
+[  349.316538] ieee80211 phy0: Destroyed STA 00:0b:6b:3c:8c:e4
+[  349.316556] ieee80211 phy0: device now idle
+[  349.328105] cfg80211: Calling CRDA to update world regulatory domain
+[  349.416952] ieee80211 phy0: device no longer idle - scanning
+[  353.091211] ieee80211 phy0: device now idle
+[  358.092230] ieee80211 phy0: device no longer idle - scanning
+[  361.772470] ieee80211 phy0: device now idle
+[  366.774826] ieee80211 phy0: device no longer idle - scanning
+[  370.448401] ieee80211 phy0: device now idle
+[  375.455127] ieee80211 phy0: device no longer idle - scanning
+[  379.127638] ieee80211 phy0: device now idle
+[  384.131847] ieee80211 phy0: device no longer idle - scanning
+[  387.806711] ieee80211 phy0: device now idle
+[  396.708125] sky2 0000:02:00.0: lan0: Link is up at 1000 Mbps, full duplex, flow control both
+[  407.120063] lan0: no IPv6 routers present
+[  434.003896] ieee80211 phy0: device no longer idle - scanning
+[  438.694843] ieee80211 phy0: device now idle
+[  441.485602] process `skype' is using obsolete setsockopt SO_BSDCOMPAT
+[  494.004619] ieee80211 phy0: device no longer idle - scanning
+[  498.698796] ieee80211 phy0: device now idle
+[  554.004822] ieee80211 phy0: device no longer idle - scanning
+[  558.697908] ieee80211 phy0: device now idle
+[  614.003956] ieee80211 phy0: device no longer idle - scanning
+[  618.700408] ieee80211 phy0: device now idle
+[  674.004164] ieee80211 phy0: device no longer idle - scanning
+[  678.702423] ieee80211 phy0: device now idle
+
 -- 
-1.7.3.2
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
