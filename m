@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1LAWfg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 17:35:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61945 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755035Ab1LAWff (ORCPT
+	id S1755384Ab1LAWgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 17:36:11 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:48757 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755119Ab1LAWgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 17:35:35 -0500
-Date: Thu, 1 Dec 2011 14:35:31 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Chinner <david@fromorbit.com>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [3.2-rc3] OOM killer doesn't kill the obvious memory hog
-In-Reply-To: <20111201124634.GY7046@dastard>
-Message-ID: <alpine.DEB.2.00.1112011432110.27778@chino.kir.corp.google.com>
-References: <20111201093644.GW7046@dastard> <20111201185001.5bf85500.kamezawa.hiroyu@jp.fujitsu.com> <20111201124634.GY7046@dastard>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 1 Dec 2011 17:36:10 -0500
+Date: Thu, 1 Dec 2011 17:36:07 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
+        lttng-dev@lists.lttng.org, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Darren Hart <darren@dvhart.com>
+Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
+Message-ID: <20111201223607.GF10552@Krystal>
+References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com> <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com> <1322776568.4699.52.camel@twins> <20111201220445.GA10552@Krystal> <1322777407.4699.59.camel@twins> <20111201221500.GC10552@Krystal>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201221500.GC10552@Krystal>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:31:59 up 373 days,  3:35,  6 users,  load average: 0.00, 0.00,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011, Dave Chinner wrote:
-
-> > /*
-> >  * /proc/<pid>/oom_score_adj set to OOM_SCORE_ADJ_MIN disables oom killing for
-> >  * pid.
-> >  */
-> > #define OOM_SCORE_ADJ_MIN       (-1000)
+* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> * Peter Zijlstra (peterz@infradead.org) wrote:
+> > On Thu, 2011-12-01 at 17:04 -0500, Mathieu Desnoyers wrote:
+> > > * Peter Zijlstra (peterz@infradead.org) wrote:
+> > > > On Thu, 2011-12-01 at 16:41 -0500, Mathieu Desnoyers wrote:
+> > > > > LTTng needs this symbol to prepend the current task dynamic priority
+> > > > > value to events (optional context information).
+> > > > 
+> > > > I absolutely detest exporting such stuff. It propagates the idea that
+> > > > task prio actually means something. Also, modules really shouldn't care.
+> > > 
+> > > People debugging their SCHED_FIFO/SCHED_RR applications, as well as
+> > > users of priority-inheritance futexes, may happen to find this
+> > > information extremely useful.
+> > > 
+> > > Just saying...
 > > 
-> >  
-> > IIUC, this task cannot be killed by oom-killer because of oom_score_adj settings.
+> > Right until the moment we go do deadlines.. Anyway, it still doesn't
+> > make sense, your sched_switch() tracepoint handler gets this
+> > information, why do you need this export at all?
 > 
-> It's not me or the test suite that setting this, so it's something
-> the kernel must be doing automagically.
+> If you don't want to trace sched_switch, but just conveniently prepend
+> this information to all your events, then lttng lets you dynamically
+> target this extra bit of information. Note that it's not a mandatory
+> event field: I call those "context" fields that the tracer prepends to
+> events, as requested by the user.
+
+One more point:
+
+compudj@thinkos:/proc/204$ cat sched
+khubd (204, #threads: 1)
+---------------------------------------------------------
+se.exec_start                      :       3355267.749529
+se.vruntime                        :        113843.899081
+se.sum_exec_runtime                :            12.820702
+nr_switches                        :                  386
+nr_voluntary_switches              :                  385
+nr_involuntary_switches            :                    1
+se.load.weight                     :                 1024
+policy                             :                    0
+prio                               :                  120
+clock-delta                        :                  130
+
+So what you are saying is that it is fine to export task_prio to
+_userspace_, thus making it part of the ABI, but it's not OK to export
+it to GPL modules ?
+
+Weird huh ?
+
+Mathieu
+
 > 
+> Thanks,
+> 
+> Mathieu
+> 
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
 
-The kernel does not set oom_score_adj to ever disable oom killing for a 
-thread.  The only time the kernel touches oom_score_adj is when setting it 
-to "1000" in ksm and swap to actually prefer a memory allocator for oom 
-killing.
-
-It's also possible to change this value via the deprecated 
-/proc/pid/oom_adj interface until it is removed next year.  Check your 
-dmesg for warnings about using the deprecated oom_adj interface or change 
-the printk_once() in oom_adjust_write() to a normal printk() to catch it.
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
