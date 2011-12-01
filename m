@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab1LAKZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 05:25:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14534 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751297Ab1LAKZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 05:25:10 -0500
-Date: Thu, 1 Dec 2011 12:26:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
- descriptors
-Message-ID: <20111201102640.GB8822@redhat.com>
-References: <20111129125622.GB19157@redhat.com>
- <1322573688.4395.11.camel@lappy>
- <20111129135406.GB30966@redhat.com>
- <1322576464.7003.6.camel@lappy>
- <20111129145451.GD30966@redhat.com>
- <4ED4F30F.8000603@redhat.com>
- <1322669511.3985.8.camel@lappy>
- <87wrahrp0u.fsf@rustcorp.com.au>
- <20111201075847.GA5479@redhat.com>
- <1322726977.3259.3.camel@lappy>
-MIME-Version: 1.0
+	id S1751713Ab1LAK0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 05:26:37 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:59254 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750726Ab1LAK0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 05:26:35 -0500
+Date: Thu, 1 Dec 2011 11:20:00 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: booster@wolke7.net
+Cc: hayeswang <hayeswang@realtek.com>,
+        "'Jonathan Nieder'" <jrnieder@gmail.com>,
+        "'Eric Dumazet'" <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        "'nic_swsd'" <nic_swsd@realtek.com>, linux-kernel@vger.kernel.org,
+        "'Armin Kazmi'" <armin.kazmi@tu-dortmund.de>
+Subject: Re: [bug?] r8169: hangs under heavy load
+Message-ID: <20111201102000.GA14013@electric-eye.fr.zoreil.com>
+References: <20111125222211.GA13719@electric-eye.fr.zoreil.com> <1322262357.2550.12.camel@edumazet-laptop> <20111126004447.GA14744@electric-eye.fr.zoreil.com> <1322280423.10212.3.camel@edumazet-laptop> <20111127092808.GE21635@elie.hsd1.il.comcast.net> <4ED2A573.1020807@wolke7.net> <20111127231147.GA1784@electric-eye.fr.zoreil.com> <D95C09DB1A7E493E89FE5A0B3879CEB0@realtek.com.tw> <20111129105440.GA2410@electric-eye.fr.zoreil.com> <4ED538EC.4010509@wolke7.net>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322726977.3259.3.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4ED538EC.4010509@wolke7.net>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 10:09:37AM +0200, Sasha Levin wrote:
-> On Thu, 2011-12-01 at 09:58 +0200, Michael S. Tsirkin wrote:
-> > On Thu, Dec 01, 2011 at 01:12:25PM +1030, Rusty Russell wrote:
-> > > On Wed, 30 Nov 2011 18:11:51 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > > > On Tue, 2011-11-29 at 16:58 +0200, Avi Kivity wrote:
-> > > > > On 11/29/2011 04:54 PM, Michael S. Tsirkin wrote:
-> > > > > > > 
-> > > > > > > Which is actually strange, weren't indirect buffers introduced to make
-> > > > > > > the performance *better*? From what I see it's pretty much the
-> > > > > > > same/worse for virtio-blk.
-> > > > > >
-> > > > > > I know they were introduced to allow adding very large bufs.
-> > > > > > See 9fa29b9df32ba4db055f3977933cd0c1b8fe67cd
-> > > > > > Mark, you wrote the patch, could you tell us which workloads
-> > > > > > benefit the most from indirect bufs?
-> > > > > >
-> > > > > 
-> > > > > Indirects are really for block devices with many spindles, since there
-> > > > > the limiting factor is the number of requests in flight.  Network
-> > > > > interfaces are limited by bandwidth, it's better to increase the ring
-> > > > > size and use direct buffers there (so the ring size more or less
-> > > > > corresponds to the buffer size).
-> > > > > 
-> > > > 
-> > > > I did some testing of indirect descriptors under different workloads.
-> > > 
-> > > MST and I discussed getting clever with dynamic limits ages ago, but it
-> > > was down low on the TODO list.  Thanks for diving into this...
-> > > 
-> > > AFAICT, if the ring never fills, direct is optimal.  When the ring
-> > > fills, indirect is optimal (we're better to queue now than later).
-> > > 
-> > > Why not something simple, like a threshold which drops every time we
-> > > fill the ring?
-> > > 
-> > > struct vring_virtqueue
-> > > {
-> > > ...
-> > >         int indirect_thresh;
-> > > ...
-> > > }
-> > > 
-> > > virtqueue_add_buf_gfp()
-> > > {
-> > > ...
-> > > 
-> > >         if (vq->indirect &&
-> > >             (vq->vring.num - vq->num_free) + out + in > vq->indirect_thresh)
-> > >                 return indirect()
-> > > ...
-> > > 
-> > > 	if (vq->num_free < out + in) {
-> > >                 if (vq->indirect && vq->indirect_thresh > 0)
-> > >                         vq->indirect_thresh--;
-> > >         
-> > > ...
-> > > }
-> > > 
-> > > Too dumb?
-> > > 
-> > > Cheers,
-> > > Rusty.
-> > 
-> > We'll presumably need some logic to increment is back,
-> > to account for random workload changes.
-> > Something like slow start?
-> 
-> We can increment it each time the queue was less than 10% full, it
-> should act like slow start, no?
+booster@wolke7.net <booster@wolke7.net> :
+[...]
+> Any more ideas ?
 
-No, we really shouldn't get an empty ring as long as things behave
-well. What I meant is something like:
+Give me a brain.
 
-#define VIRTIO_DECREMENT 2
-#define VIRTIO_INCREMENT 1
-                if (vq->num_free < out + in) {
-		     if (vq->indirect && vq->indirect_thresh > VIRTIO_DECREMENT)
-                         vq->indirect_thresh /= VIRTIO_DECREMENT;
-		} else {
-			if (vq->indirect_thresh < vq->num)
-				vq->indirect_thresh += VIRTIO_INCREMENT;
-		}
+Fixed patch below.
 
-So we try to avoid indirect but the moment there's no space, we decrease
-the threshold drastically.  If you make the increment/decrement module
-parameters it's easy to try different values.
-
-
-> -- 
-> 
-> Sasha.
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 6f06aa1..e776bf2 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -4885,8 +4894,7 @@ static void rtl_hw_start_8168(struct net_device *dev)
+ 	RTL_W16(IntrMitigate, 0x5151);
+ 
+ 	/* Work around for RxFIFO overflow. */
+-	if (tp->mac_version == RTL_GIGA_MAC_VER_11 ||
+-	    tp->mac_version == RTL_GIGA_MAC_VER_22) {
++	if (tp->mac_version == RTL_GIGA_MAC_VER_11) {
+ 		tp->intr_event |= RxFIFOOver | PCSTimeout;
+ 		tp->intr_event &= ~RxOverflow;
+ 	}
+@@ -5804,6 +5812,10 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 	 */
+ 	status = RTL_R16(IntrStatus);
+ 	while (status && status != 0xffff) {
++		status &= tp->intr_event;
++		if (!status)
++			break;
++
+ 		handled = 1;
+ 
+ 		/* Handle all of the error cases first. These will reset
+@@ -5818,7 +5830,6 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 			switch (tp->mac_version) {
+ 			/* Work around for rx fifo overflow */
+ 			case RTL_GIGA_MAC_VER_11:
+-			case RTL_GIGA_MAC_VER_22:
+ 			case RTL_GIGA_MAC_VER_26:
+ 				netif_stop_queue(dev);
+ 				rtl8169_tx_timeout(dev);
+@@ -5828,6 +5839,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
+ 			case RTL_GIGA_MAC_VER_19:
+ 			case RTL_GIGA_MAC_VER_20:
+ 			case RTL_GIGA_MAC_VER_21:
++			case RTL_GIGA_MAC_VER_22:
+ 			case RTL_GIGA_MAC_VER_23:
+ 			case RTL_GIGA_MAC_VER_24:
+ 			case RTL_GIGA_MAC_VER_27:
