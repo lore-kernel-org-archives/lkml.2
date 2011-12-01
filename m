@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab1LARiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 12:38:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54055 "EHLO mx2.suse.de"
+	id S1755978Ab1LARin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 12:38:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54045 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755880Ab1LARga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 12:36:30 -0500
+	id S1755719Ab1LARg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 12:36:28 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Linux-MM <linux-mm@kvack.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>,
@@ -14,9 +14,9 @@ Cc: Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <jweiner@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Rik van Riel <riel@redhat.com>, Nai Xia <nai.xia@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/11] mm: compaction: make isolate_lru_page() filter-aware again
-Date: Thu,  1 Dec 2011 17:36:16 +0000
-Message-Id: <1322760981-28719-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 04/11] mm: vmscan: Do not OOM if aborting reclaim to start compaction
+Date: Thu,  1 Dec 2011 17:36:14 +0000
+Message-Id: <1322760981-28719-5-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1322760981-28719-1-git-send-email-mgorman@suse.de>
 References: <1322760981-28719-1-git-send-email-mgorman@suse.de>
@@ -24,96 +24,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit [39deaf85: mm: compaction: make isolate_lru_page() filter-aware]
-noted that compaction does not migrate dirty or writeback pages and
-that is was meaningless to pick the page and re-add it to the LRU list.
-This had to be partially reverted because some dirty pages can be
-migrated by compaction without blocking.
-
-This patch updates "mm: compaction: make isolate_lru_page" by skipping
-over pages that migration has no possibility of migrating to minimise
-LRU disruption.
+When direct reclaim is entered is is possible that reclaim will be
+aborted so that compaction can be attempted to satisfy a high-order
+allocation.  If this decision is made before any pages are reclaimed,
+it is possible for 0 to be returned to the page allocator potentially
+triggering an OOM. This has not been observed but it is a possibility
+so this patch addresses it.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mmzone.h |    2 ++
- mm/compaction.c        |    3 +++
- mm/vmscan.c            |   35 +++++++++++++++++++++++++++++++++--
- 3 files changed, 38 insertions(+), 2 deletions(-)
+ mm/vmscan.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 188cb2f..ac5b522 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -173,6 +173,8 @@ static inline int is_unevictable_lru(enum lru_list l)
- #define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
- /* Isolate unmapped file */
- #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
-+/* Isolate for asynchronous migration */
-+#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
- 
- /* LRU Isolation modes. */
- typedef unsigned __bitwise__ isolate_mode_t;
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 615502b..0379263 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -349,6 +349,9 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 			continue;
- 		}
- 
-+		if (!cc->sync)
-+			mode |= ISOLATE_ASYNC_MIGRATE;
-+
- 		/* Try isolate the page */
- 		if (__isolate_lru_page(page, mode, 0) != 0)
- 			continue;
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 5f4c789..d2b701a 100644
+index 3421746..5f4c789 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1061,8 +1061,39 @@ int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
+@@ -2222,6 +2222,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long writeback_threshold;
++	bool should_abort_reclaim;
  
- 	ret = -EBUSY;
+ 	get_mems_allowed();
+ 	delayacct_freepages_start();
+@@ -2233,7 +2234,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		if (shrink_zones(priority, zonelist, sc))
++		should_abort_reclaim = shrink_zones(priority, zonelist, sc);
++		if (should_abort_reclaim)
+ 			break;
  
--	if ((mode & ISOLATE_CLEAN) && (PageDirty(page) || PageWriteback(page)))
--		return ret;
-+	/*
-+	 * To minimise LRU disruption, the caller can indicate that it only
-+	 * wants to isolate pages it will be able to operate on without
-+	 * blocking - clean pages for the most part.
-+	 *
-+	 * ISOLATE_CLEAN means that only clean pages should be isolated. This
-+	 * is used by reclaim when it is cannot write to backing storage
-+	 *
-+	 * ISOLATE_ASYNC_MIGRATE is used to indicate that it only wants to pages
-+	 * that it is possible to migrate without blocking
-+	 */
-+	if (mode & (ISOLATE_CLEAN|ISOLATE_ASYNC_MIGRATE)) {
-+		/* All the caller can do on PageWriteback is block */
-+		if (PageWriteback(page))
-+			return ret;
-+
-+		if (PageDirty(page)) {
-+			struct address_space *mapping;
-+
-+			/* ISOLATE_CLEAN means only clean pages */
-+			if (mode & ISOLATE_CLEAN)
-+				return ret;
-+
-+			/*
-+			 * Only pages without mappings or that have a
-+			 * ->migratepage callback are possible to migrate
-+			 * without blocking
-+			 */
-+			mapping = page_mapping(page);
-+			if (mapping && !mapping->a_ops->migratepage)
-+				return ret;
-+		}
-+	}
+ 		/*
+@@ -2301,6 +2303,10 @@ out:
+ 	if (oom_killer_disabled)
+ 		return 0;
  
- 	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
- 		return ret;
++	/* Aborting reclaim to try compaction? don't OOM, then */
++	if (should_abort_reclaim)
++		return 1;
++
+ 	/* top priority shrink_zones still had more to do? don't OOM, then */
+ 	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
+ 		return 1;
 -- 
 1.7.3.4
 
