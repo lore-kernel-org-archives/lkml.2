@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1LAPKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 10:10:14 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:57497 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817Ab1LAPKM (ORCPT
+	id S1754984Ab1LAPLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 10:11:12 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:39110 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab1LAPLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 10:10:12 -0500
-Date: Thu, 1 Dec 2011 18:10:26 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Marcos Paulo de Souza <marcos.mage@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Forest Bond <forest@alittletooquiet.net>
-Subject: Re: [PATCH 3/4] staging: vt6656: datarate.c: Remove unneeded comments
-Message-ID: <20111201151026.GX3195@mwanda>
-References: <1322699517-19721-1-git-send-email-marcos.mage@gmail.com>
+	Thu, 1 Dec 2011 10:11:10 -0500
+X-IronPort-AV: E=Sophos;i="4.71,278,1320624000"; 
+   d="scan'208";a="9233748"
+Date: Thu, 1 Dec 2011 15:12:06 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "android-virt@lists.cs.columbia.edu" 
+	<android-virt@lists.cs.columbia.edu>,
+        "embeddedxen-devel@lists.sourceforge.net" 
+	<embeddedxen-devel@lists.sourceforge.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Embeddedxen-devel] [Xen-devel] [ANNOUNCE] Xen port to Cortex-A15
+ / ARMv7 with virt extensions
+In-Reply-To: <1322735197.31810.191.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.00.1112011441340.31179@kaball-desktop>
+References: <alpine.DEB.2.00.1111281009090.31179@kaball-desktop>  <201111301432.54463.arnd@arndb.de>  <1322670473.31810.129.camel@zakaz.uk.xensource.com>  <201111301815.01297.arnd@arndb.de>  <alpine.DEB.2.00.1111301820290.31179@kaball-desktop>
+ <1322735197.31810.191.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nSY6dmU9u4MMxp1o"
-Content-Disposition: inline
-In-Reply-To: <1322699517-19721-1-git-send-email-marcos.mage@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4ED798C5.0028,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 1 Dec 2011, Ian Campbell wrote:
+> On Wed, 2011-11-30 at 18:32 +0000, Stefano Stabellini wrote:
+> > On Wed, 30 Nov 2011, Arnd Bergmann wrote:
+> > > KVM and Xen at least both fall into the single-return-value category,
+> > > so we should be able to agree on a calling conventions. KVM does not
+> > > have an hcall API on ARM yet, and I see no reason not to use the
+> > > same implementation that you have in the Xen guest.
+> > > 
+> > > Stefano, can you split out the generic parts of your asm/xen/hypercall.h
+> > > file into a common asm/hypercall.h and submit it for review to the
+> > > arm kernel list?
+> > 
+> > Sure, I can do that.
+> > Usually the hypercall calling convention is very hypervisor specific,
+> > but if it turns out that we have the same requirements I happy to design
+> > a common interface.
+> 
+> I expect the only real decision to be made is hypercall page vs. raw hvc
+> instruction.
+> 
+> The page was useful on x86 where there is a variety of instructions
+> which could be used (at least for PV there was systenter/syscall/int, I
+> think vmcall instruction differs between AMD and Intel also) and gives
+> some additional flexibility. It's hard to predict but I don't think I'd
+> expect that to be necessary on ARM.
+>
+> Another reason for having a hypercall page instead of a raw instruction
+> might be wanting to support 32 bit guests (from ~today) on a 64 bit
+> hypervisor in the future and perhaps needing to do some shimming/arg
+> translation. It would be better to aim for having the interface just be
+> 32/64 agnostic but mistakes do happen.
 
---nSY6dmU9u4MMxp1o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Thu, Dec 01, 2011 at 12:31:57AM +0000, Marcos Paulo de Souza wrote:
-> -    // clear statistic counter for auto_rate
-> -    for (ii =3D 0; ii <=3D MAX_RATE; ii++) {
-> -        psNodeDBTable->uTxOk[ii] =3D 0;
-> -        psNodeDBTable->uTxFail[ii] =3D 0;
-> -    }
-> +	/* clear statistic counter for auto_rate */
-> +	for (ii =3D 0; ii <=3D MAX_RATE; ii++)
-> +		psNodeDBTable->uTxOk[ii] =3D psNodeDBTable->uTxFail[ii] =3D 0;
->  }
-> =20
-
-Don't do that...  Better to have the assignments on separate lines.
-
-If you wanted, you could use memset and get rid of the loop.
-
-void s_vResetCounter(PKnownNodeDB psNodeDBTable)
-{
-	memset(psNodeDBTable->uTxOk, 0, sizeof(psNodeDBTable->uTxOk));
-	memset(psNodeDBTable->uTxFail, 0, sizeof(psNodeDBTable->uTxFail));
-}
-
-regards,
-dan carpenter
-
---nSY6dmU9u4MMxp1o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO15jiAAoJEOnZkXI/YHqRTBoQAILIyVu+yNjb7+/NLnUqkLmv
-OfQqp0XlyDFzyGybcgvVpGPSweM43Jza9WSA+20sdpbD/xEVbkxNkqAGHhb1qkGC
-HSjxeNZK8bLoTLMBDmgflb7Qkf0XzFjxK5B2GxhBvuPrK542BRmWJfd6z9Xz21Sa
-qg89eqlhEGeQWPfZpPXsgaNyPSP03SHiWy3M3xTdEg1ldxWbAgs1Gp9MhCGbAbKS
-euBg+E3oSmvBECG9BlewjRRCJikgNTwdVvK+/NgSeXD2IhK/F6U1WnQcDOXa902o
-BHhTnNd7W9XPQx1v4FEwlQQZU7c2v+1UXu9Lk2HUpQ/0hy71iPeEjJgvMJn4B8jh
-cxPNa/2HF0mDHn33yevrBKl8wpWvdS0wrcnsXANGtfaOljawPTK7HgpD48YStwva
-hePBwWji7VJYbAJhE64vdLjAMRFjwH3IBmhi8uDBuZshNC1oJ762eemR7yQ9NkDY
-JRND/F7mvZ6axO/mRKU6A6n+cH+jssM9iK2JywHl1gKX6IJkBnnQIl5fKHxsgucd
-h/W6wpmk4hx4NK0PHRQbBgaGEsFA0CCc79xYbyQfNQm894H337ZkCB9btAOFmibe
-Ql6wJj5s318e+m0o8DlE315LBEtIC7ERu+kjiGTL5iY5HoJrQlfyXgOLtNt+c5Z3
-oDdIhP7QyDmqWEmihYiN
-=Avjl
------END PGP SIGNATURE-----
-
---nSY6dmU9u4MMxp1o--
+I always like to keep things as simple as possible, so I am in favor of
+using the raw hvc instruction.
+Besides with the bulk of mmu hypercalls gone, it should not be difficult
+to design a 32/64 bit agnostic interface.
