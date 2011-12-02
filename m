@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab1LBRra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:47:30 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:58681 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757244Ab1LBRr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:47:27 -0500
-Message-ID: <4ED90F06.102@parallels.com>
-Date: Fri, 2 Dec 2011 15:46:46 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v7 02/10] foundations of per-cgroup memory pressure controlling.
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com> <1322611021-1730-3-git-send-email-glommer@parallels.com> <20111130094305.9c69ecd8.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111130094305.9c69ecd8.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+	id S932112Ab1LBRuy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:50:54 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:60583 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab1LBRux (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 12:50:53 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        netdev@vger.kernel.org, plagnioj@jcrosoft.com
+Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, jamie@jamieiles.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91/net: add macb ethernet controller in 9g45 DT
+Date: Fri,  2 Dec 2011 18:50:37 +0100
+Message-Id: <1322848237-23154-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1322847782-22650-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1322847782-22650-1-git-send-email-nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add the Cadence macb ethernet controller in at91sam9g45 .dtsi and
+enable it in at91sam9m10g45ek board device tree file.
 
->>   static void proto_seq_printf(struct seq_file *seq, struct proto *proto)
->>   {
->> +	struct mem_cgroup *memcg = mem_cgroup_from_task(current);
->> +
->>   	seq_printf(seq, "%-9s %4u %6d  %6ld   %-3s %6u   %-3s  %-10s "
->>   			"%2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c %2c\n",
->>   		   proto->name,
->>   		   proto->obj_size,
->>   		   sock_prot_inuse_get(seq_file_net(seq), proto),
->> -		   proto->memory_allocated != NULL ? atomic_long_read(proto->memory_allocated) : -1L,
->> -		   proto->memory_pressure != NULL ? *proto->memory_pressure ? "yes" : "no" : "NI",
->> +		   sock_prot_memory_allocated(proto, memcg),
->> +		   sock_prot_memory_pressure(proto, memcg),
->
-> I wonder I should say NO, here. (Networking guys are ok ??)
->
-> IIUC, this means there is no way to see aggregated sockstat of all system.
-> And the result depends on the cgroup which the caller is under control.
->
-> I think you should show aggregated sockstat(global + per-memcg) here and
-> show per-memcg ones via /cgroup interface or add private_sockstat to show
-> per cgroup summary.
->
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ arch/arm/boot/dts/at91sam9g45.dtsi     |    7 +++++++
+ arch/arm/boot/dts/at91sam9m10g45ek.dts |    6 ++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-Hi Kame,
+diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+index e89b1d7..67f94d3 100644
+--- a/arch/arm/boot/dts/at91sam9g45.dtsi
++++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+@@ -101,6 +101,13 @@
+ 				atmel,use-dma-tx;
+ 				status = "disabled";
+ 			};
++
++			macb0: ethernet@fffbc000 {
++				compatible = "cdns,at32ap7000-macb", "cdns,macb";
++				reg = <0xfffbc000 0x100>;
++				interrupts = <25 4>;
++				status = "disabled";
++			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+index 85b34f5..17377a2 100644
+--- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
++++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+@@ -30,6 +30,12 @@
+ 			usart1: serial@fff90000 {
+ 				status = "okay";
+ 			};
++
++			macb0: ethernet@fffbc000 {
++				local-mac-address = [3a 0e 03 04 05 06];
++				phy-mode = "rmii";
++				status = "okay";
++			};
+ 		};
+ 	};
+ };
+-- 
+1.7.5.4
 
-Yes, the statistics displayed depends on which cgroup you live.
-Also, note that the parent cgroup here is always updated (even when 
-use_hierarchy is set to 0). So it is always possible to grab global 
-statistics, by being in the root cgroup.
-
-For the others, I believe it to be a question of naturalization. Any 
-tool that is fetching these values is likely interested in the amount of 
-resources available/used. When you are on a cgroup, the amount of 
-resources available/used changes, so that's what you should see.
-
-Also brings the point of resource isolation: if you shouldn't interfere 
-with other set of process' resources, there is no reason for you to see 
-them in the first place.
-
-So given all that, I believe that whenever we talk about resources in a 
-cgroup, we should talk about cgroup-local ones.
