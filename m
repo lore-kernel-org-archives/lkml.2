@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab1LBCiz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 21:38:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59083 "EHLO mx1.redhat.com"
+	id S1756493Ab1LBClA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 21:41:00 -0500
+Received: from mga11.intel.com ([192.55.52.93]:51885 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756086Ab1LBCiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 21:38:54 -0500
-Message-ID: <4ED83A31.5000401@redhat.com>
-Date: Fri, 02 Dec 2011 10:38:41 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1756086Ab1LBCk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 21:40:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,281,1320652800"; 
+   d="scan'208";a="97720151"
+Message-ID: <4ED83AB8.3000000@linux.intel.com>
+Date: Fri, 02 Dec 2011 10:40:56 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 44/62] ocfs2: remove the second argument of k[un]map_atomic()
-References: <1322371662-26166-1-git-send-email-amwang@redhat.com>	<1322371662-26166-45-git-send-email-amwang@redhat.com>	<20111201201846.GF1495@noexit.corp.google.com>	<4ED8322B.8010500@redhat.com> <20111201182934.b8dd4c27.akpm@linux-foundation.org>
-In-Reply-To: <20111201182934.b8dd4c27.akpm@linux-foundation.org>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] ramoops: use pstore interface
+References: <20111128200951.GA3492@www.outflux.net>	<4ED4647D.4060305@linux.intel.com> <CAGXu5j+kzXpAhCYELDBBeMDPg2XMHt8jWRjZf2xiPVSMfUhjzA@mail.gmail.com> <4ED75765.5020002@gmail.com>
+In-Reply-To: <4ED75765.5020002@gmail.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年12月02日 10:29, Andrew Morton 写道:
-> On Fri, 02 Dec 2011 10:04:27 +0800 Cong Wang<amwang@redhat.com>  wrote:
->
->> ___ 2011___12___02___ 04:18, Joel Becker ______:
->>> On Sun, Nov 27, 2011 at 01:27:24PM +0800, Cong Wang wrote:
+于 2011/12/1 18:31, Marco Stornelli 写道:
+> Il 29/11/2011 18:24, Kees Cook ha scritto:
+>> On Mon, Nov 28, 2011 at 8:50 PM, Chen Gong<gong.chen@linux.intel.com> wrote:
+>>> 于 2011/11/29 4:09, Kees Cook 写道:
 >>>>
->>>> Signed-off-by: Cong Wang<amwang@redhat.com>
+>>>> Instead of using /dev/mem directly, use the common pstore infrastructure
+>>>> to handle Oops gathering and extraction.
+>>>>
+>>>> Signed-off-by: Kees Cook<keescook@chromium.org>
+>>>> ---
+>>>> This depends on the pstore changes waiting for -next in:
+>>>>
+>>>> http://git.kernel.org/?p=linux/kernel/git/aegl/linux.git;a=shortlog;h=refs/heads/next
+>>>>
+>>>> ---
+>>>> Documentation/ramoops.txt | 8 +-
+>>>> drivers/char/Kconfig | 1 +
+>>>> drivers/char/ramoops.c | 206
+>>>> ++++++++++++++++++++++++++++++++++-----------
+>>>> 3 files changed, 160 insertions(+), 55 deletions(-)
+>>>>
+>>>> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+>>>> index 8fb1ba7..a0b9d8e 100644
+>>>> --- a/Documentation/ramoops.txt
+>>>> +++ b/Documentation/ramoops.txt
+>>>> @@ -3,7 +3,7 @@ Ramoops oops/panic logger
+>>>>
+>>>> Sergiu Iordache<sergiu@chromium.org>
+>>>>
+>>>> -Updated: 8 August 2011
+>>>> +Updated: 17 November 2011
+>>>>
+>>>> 0. Introduction
+>>>>
+>>>> @@ -71,6 +71,6 @@ timestamp and a new line. The dump then continues with
+>>>> the actual data.
+>>>>
+>>>> 4. Reading the data
+>>>>
+>>>> -The dump data can be read from memory (through /dev/mem or other means).
+>>>> -Getting the module parameters, which are needed in order to parse the
+>>>> data, can
+>>>> -be done through /sys/module/ramoops/parameters/* .
+>>>> +The dump data can be read from the pstore filesystem. The format for
+>>>> these
+>>>> +files is "dmesg-ramoops-N", where N is the record number in memory. To
+>>>> delete
+>>>> +a stored record from RAM, simply unlink the respective pstore file.
 >>>
->>> Acked-by: Joel Becker<jlbec@evilplan.org>
->>>
->>> I'm presuming you'll handle pushing this with the entire series.
->>>
+>>> I think the definition of "mem_address" in the doc is not very clear. It is
+>>> not a normal memory instead of a persistent RAM. I suggest adding more
+>>> descriptions.
+>>> It's better if there is a real example.
 >>
->> Yeah, I hope either Andrew can take all of them
+>> Okay. I'm not sure it's in the scope of this patch, but I can try.
+>>
+>> Marco, do you have suggestions for how this could be enhanced?
+>>
 >
-> waaay too many patches ;)
+> I don't know actually. It's not mandatory use a persistent memory. A simple
+> piece of reserved RAM is ok. Obviously it will work only over reboot and not
+> over power down. I define mem_address as a generic piece of reserved memory.
 >
->> or this can be merged into trivial tree.
->
-> I'd suggest you ask Stephen to add the git tree to -next.  Once it's
-> all suitably reviewed/acked/etc, and we're in the merge window, ask
-> Linus to pull it.
->
+> Marco
 
-Great! I will do that.
+Anyway, we need a pratical exmaple to instruct us how to use this diver.
 
-Thanks for the hints.
