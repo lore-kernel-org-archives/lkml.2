@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab1LBLVD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 06:21:03 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:40169
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753724Ab1LBLVB (ORCPT
+	id S1754156Ab1LBLZT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 06:25:19 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60335 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab1LBLZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 06:21:01 -0500
-X-SpamScore: -15
-X-BigFish: VPS-15(zzbb2dK9371K1432N98dKzz1202hzzz2dh668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVKQ6V-02-3RW-02
-X-M-MSG: 
-Date: Fri, 2 Dec 2011 12:20:50 +0100
-From: Hans Rosenfeld <hans.rosenfeld@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Andi Kleen <andi@firstfloor.org>, <tglx@linutronix.de>, <mingo@elte.hu>,
-        <suresh.b.siddha@intel.com>, <eranian@google.com>, <brgerst@gmail.com>,
-        <robert.richter@amd.com>, <Andreas.Herrmann3@amd.com>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] rework of extended state handling, LWP support
-Message-ID: <20111202112050.GC411@escobedo.osrc.amd.com>
-References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
- <m2ipm2lioy.fsf@firstfloor.org>
- <20111130173745.GT878@escobedo.osrc.amd.com>
- <20111130215200.GS24062@one.firstfloor.org>
- <20111201203605.GB411@escobedo.osrc.amd.com>
- <4ED83177.7070706@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4ED83177.7070706@zytor.com>
-Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
- Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
- Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
- 43632
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Fri, 2 Dec 2011 06:25:18 -0500
+Message-ID: <1322825107.16787.1.camel@phoenix>
+Subject: [PATCH] ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org
+Date: Fri, 02 Dec 2011 19:25:07 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 06:01:27PM -0800, H. Peter Anvin wrote:
-> On 12/01/2011 12:36 PM, Hans Rosenfeld wrote:
-> > 
-> > So I assume, if you have 10000s of processes on a legacy 32bit system
-> > that never do any FPU stuff or SSE optimizations, you might indeed waste
-> > a couple of megabytes. I don't think thats very realistic, but that's
-> > just my opinion.
-> > 
-> 
-> A couple of megabytes of *lowmem*...
+If pxa2xx_drv_pcmcia_add_one fails, it will go to err1 error path.
+Add a missing clk_put in the error path.
 
-Ok, I'll rework that part, so that preallocation only happens on systems
-that support non-lazy states. That means patch #7 is going away and
-patch #8 is getting slightly bigger. This may take a few days as I have
-to test that again.
+Checking the ret value after the for loop is redundant, it is always false.
+Thus remove the redundant checking.
 
-Meanwhile, could you please take a look at patches #1 to #6?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/pcmcia/pxa2xx_base.c |   12 +++---------
+ 1 files changed, 3 insertions(+), 9 deletions(-)
 
-
-Hans
-
-
+diff --git a/drivers/pcmcia/pxa2xx_base.c b/drivers/pcmcia/pxa2xx_base.c
+index a87e272..64d433e 100644
+--- a/drivers/pcmcia/pxa2xx_base.c
++++ b/drivers/pcmcia/pxa2xx_base.c
+@@ -328,21 +328,15 @@ static int pxa2xx_drv_pcmcia_probe(struct platform_device *dev)
+ 			goto err1;
+ 	}
+ 
+-	if (ret) {
+-		while (--i >= 0)
+-			soc_pcmcia_remove_one(&sinfo->skt[i]);
+-		kfree(sinfo);
+-		clk_put(clk);
+-	} else {
+-		pxa2xx_configure_sockets(&dev->dev);
+-		dev_set_drvdata(&dev->dev, sinfo);
+-	}
++	pxa2xx_configure_sockets(&dev->dev);
++	dev_set_drvdata(&dev->dev, sinfo);
+ 
+ 	return 0;
+ 
+ err1:
+ 	while (--i >= 0)
+ 		soc_pcmcia_remove_one(&sinfo->skt[i]);
++	clk_put(clk);
+ 	kfree(sinfo);
+ err0:
+ 	return ret;
 -- 
-%SYSTEM-F-ANARCHISM, The operating system has been overthrown
+1.7.5.4
+
+
 
