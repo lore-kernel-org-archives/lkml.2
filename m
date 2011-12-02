@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab1LBAdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 19:33:25 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36214 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755923Ab1LBAdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 19:33:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111201111137.GC2915@opensource.wolfsonmicro.com>
-References: <1322474755-18785-1-git-send-email-tomoya.rohm@gmail.com>
-	<20111128132317.GD8275@opensource.wolfsonmicro.com>
-	<CANKRQng3YtYZggVWp3BWyaWyaHAbN1hccJksWELnv2co37rEcQ@mail.gmail.com>
-	<20111129122916.GM2851@opensource.wolfsonmicro.com>
-	<CANKRQnjpYDJWfJO-G5HsE6es7metHeqgP32R3eo99MaE2zdNpQ@mail.gmail.com>
-	<s5hhb1kvix5.wl%tiwai@suse.de>
-	<CANKRQniRonz5UcQ-KgnFJptPkqgWWrJsFuW31f8bWCf_xx-tTA@mail.gmail.com>
-	<20111201111137.GC2915@opensource.wolfsonmicro.com>
-Date: Fri, 2 Dec 2011 09:33:23 +0900
-Message-ID: <CANKRQng4+fKY-3FLMKB_Z-JLB-Xhqpvx90uecFNQCS=NDG55pw@mail.gmail.com>
-Subject: Re: [PATCH v3] sound/soc/codecs: add LAPIS Semiconductor ML26124
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lrg@ti.com>,
-        Jaroslav Kysela <perex@perex.cz>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756059Ab1LBAkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 19:40:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:5199 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755770Ab1LBAkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 19:40:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="81974769"
+Date: Fri, 2 Dec 2011 00:51:50 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: gregkh@suse.de, galak@kernel.crashing.org, scottwood@freescale.com,
+        linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] serial: make bugs field not specific to 8250 type
+ uarts.
+Message-ID: <20111202005150.2e9fde43@bob.linux.org.uk>
+In-Reply-To: <1322783258-20443-2-git-send-email-paul.gortmaker@windriver.com>
+References: <1322783258-20443-1-git-send-email-paul.gortmaker@windriver.com>
+	<1322783258-20443-2-git-send-email-paul.gortmaker@windriver.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/1 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Thu, Dec 01, 2011 at 04:57:52PM +0900, Tomoya MORINAGA wrote:
->
->> You mean "EQ Band1" and "EQ BAND1" are inconsistent names ?
->> If yes, can you accept the followings ?
->
->> EQ Band1 Input Volume
->> EQ Band1 Switch
->
-> "EQ Band1 Input" and "EQ Band1" are still different, they should be the
-> same.
->
+> Make the bugs field part of the globally visible struct
+> uart_port and remove the 8250 specific one.
 
-Which description do you want ?
-
-EQ Band1 Volume
-EQ Band1 Switch
-
-or
-
-EQ Band1 Input Volume
-EQ Band1 Input Switch
-
-or
-
-another
-
-Thanks,
-------
-tomoya
-ROHM Co., Ltd.
+Except all the bits in it are 8250 specific things or names that are
+meaningless in generic form - no. I also don't want to encourage flags
+and bug bits. We already have too many and its making the code a mess.
+So right now we want less not more.
