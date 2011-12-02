@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab1LBXVs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 18:21:48 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49614 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab1LBXVr (ORCPT
+	id S1753481Ab1LBXWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 18:22:41 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:49295 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752118Ab1LBXWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 18:21:47 -0500
-Date: Sat, 3 Dec 2011 00:21:46 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ido Yariv <ido@wizery.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] genirq: Flush the irq thread on synchronization
-In-Reply-To: <1322843052-7166-1-git-send-email-ido@wizery.com>
-Message-ID: <alpine.LFD.2.02.1112022345300.2735@ionos>
-References: <1322843052-7166-1-git-send-email-ido@wizery.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 2 Dec 2011 18:22:38 -0500
+X-Sasl-enc: WNOW8gW2TblucD7JwZJHhDsZyvxpb/6A9+ZW0zTHYaF7 1322868157
+Date: Fri, 2 Dec 2011 15:16:45 -0800
+From: Greg KH <greg@kroah.com>
+To: Koen Kooi <koen@dominion.thruhere.net>
+Cc: stable@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0.11 backport 11b8fc6ae54bf18a48c94e181c37ca135b858b42 is
+ broken, please revert
+Message-ID: <20111202231645.GB6016@kroah.com>
+References: <9233627B-1EC9-410E-A618-568A41CF4A59@dominion.thruhere.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9233627B-1EC9-410E-A618-568A41CF4A59@dominion.thruhere.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Dec 2011, Ido Yariv wrote:
-
-> The current implementation does not always flush the threaded handler
-> when disabling the irq. In case the irq handler was called, but the
-> threaded handler hasn't started running yet, the interrupt will be
-> flagged as pending, and the handler will not run. This implementation
-> has some issues:
+On Wed, Nov 30, 2011 at 11:26:41PM +0100, Koen Kooi wrote:
+> Hi,
 > 
-> First, if the interrupt is a wake source and flagged as pending, the
-> system will not be able to suspend.
+> I noticed that audio stopped working after 3.0.10 which I narrowed down to:
 > 
-> Second, when quickly disabling and re-enabling the irq, the threaded
-> handler might continue to run after the irq is re-enabled without the
-> irq handler being called first. This might be an unexpected behavior.
-
-I'd wish people would stop calling disable/enable_irq() in loops and
-circles for no reason.
-
-> In addition, it might be counter-intuitive that the threaded handler
-> will not be called even though the irq handler was called and returned
-> IRQ_WAKE_THREAD.
+> 11b8fc6ae54bf18a48c94e181c37ca135b858b42 mfd: Fix twl4030 dependencies for audio codec
 > 
-> Fix this by always waiting for the threaded handler to complete in
-> synchronize_irq().
+> The commit message has this bit:
+> 
+> "In commit 57fe7251f5bfc4332f24479376de48a1e8ca6211
+> the CONFIG_TWL4030_CODEC was renamed
+> into CONFIG_MFD_TWL4030_AUDIO, thatswhy the codec
+> was not detected."
+> 
+> Which is this one: http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=commit;h=57fe7251f5bfc4332f24479376de48a1e8ca6211
+> 
+> Note the 4th of July date
+> 
+> koen@dominion:/OE/tentacle/build/tmp-angstrom_2010_x-eglibc/work/beagleboard-angstrom-linux-gnueabi/linux-3.0.12-r113a/git/drivers/mfd$ git log --oneline Kconfig
+> 8509e14 mfd: Add Makefile and Kconfig Entries for tps65911 comparator
+> 66c500f mfd: Fix build breakage caused by tps65910 gpio directory move
+> 83545d8 GPIO: TPS65910: Move driver to drivers/gpio/
+> c01e36d linux-next: build failure after merge of the voltage tree
+> aec519b linux-next: build failure after merge of the voltage tree
+> 27c6750 MFD: TPS65910: Add new mfd device for TPS65910
+> c013f0a mfd: Add pm8xxx irq support
+> cbdb53e mfd: Add Qualcomm PMIC 8921 core driver
+> 1305134 mfd: Group NXP PCF50633* drivers together
+> 37df003 mfd: Group TPSxxxxx power management chips together
+> 8317797 mfd: add DB5500 PRCMU driver
+> 650c2a2 mach-ux500: move the DB8500 PRCMU driver to MFD
+> 
+> Let's look at the top commit:
+> 
+> koen@dominion:/OE/tentacle/build/tmp-angstrom_2010_x-eglibc/work/beagleboard-angstrom-linux-gnueabi/linux-3.0.12-r113a/git/drivers/mfd$ git show 8509e14
+> commit 8509e142567d69e170a184ecf27d7a6a3239fd72
+> Author: Axel Lin <axel.lin@gmail.com>
+> Date:   Thu Jun 23 10:15:51 2011 +0800
+> 
+> So the commit that is referenced is not actually in 3.0.x! Long story short:
+> 
+> git revert 11b8fc6ae54bf18a48c94e181c37ca135b858b42 is broken ; make ; scp uImage beagleboard
+> 
+> root@beagleboard:~# cat /proc/asound/cards 
+> 0 [omap3beagle    ]:  - omap3beagle
+>                      omap3beagle
+> 
+> So please revert  11b8fc6ae54bf18a48c94e181c37ca135b858b42 for 3.0.13,
+> cherrypicking the TWL codec rename is a world of hurt since it needs
+> other fixes to get pulled in as well.
 
-I can see your problem, but this might lead to threads_active leaks
-under certain conditions. desc->threads_active was only meant to deal
-with shared interrupts.
+Now reverted, thanks.
 
-We explicitely allow a design where the primary handler can leave the
-device interrupt enabled and allow further interrupts to occur while
-the handler is running. We only have a single bit to note that the
-thread should run, but your wakeup would up the threads_active count
-in that scenario several times w/o a counterpart which decrements it.
-
-The solution for this is to keep the current threads_active semantics
-and make the wait function different. Instead of waiting for
-threads_active to become 0 it should wait for threads_active == 0 and
-the IRQTF_RUNTHREAD for all actions to be cleared. To avoid looping
-over the actions, we can take a similar approach as we take with the
-desc->threads_oneshot bitfield.
-
-Thanks,
-
-	tglx
-
-
+greg k-h
