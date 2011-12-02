@@ -1,145 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab1LBTTz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:19:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36086 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab1LBTTv convert rfc822-to-8bit (ORCPT
+	id S1752479Ab1LBTXe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:23:34 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45851 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab1LBTXd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:19:51 -0500
+	Fri, 2 Dec 2011 14:23:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <4ED88A40.6000808@gmail.com>
-References: <20111128200951.GA3492@www.outflux.net>
-	<4ED4647D.4060305@linux.intel.com>
-	<CAGXu5j+kzXpAhCYELDBBeMDPg2XMHt8jWRjZf2xiPVSMfUhjzA@mail.gmail.com>
-	<4ED75765.5020002@gmail.com>
-	<4ED83AB8.3000000@linux.intel.com>
-	<4ED88A40.6000808@gmail.com>
-Date: Fri, 2 Dec 2011 11:19:50 -0800
-X-Google-Sender-Auth: IuBiJjR3p5KYkc4ewtyJEVJIh5c
-Message-ID: <CAGXu5jL_jVFOfAFt+cJcrJWbB-E=j+Q=vfsDPxpC0Rn6=X2OSg@mail.gmail.com>
-Subject: Re: [PATCH v2] ramoops: use pstore interface
+In-Reply-To: <20111202072800.GC14515@moon>
+References: <20111129191252.769160532@openvz.org>
+	<20111129191638.756761754@openvz.org>
+	<20111129200627.GO5169@outflux.net>
+	<20111202002405.GA7701@p183.telecom.by>
+	<20111202072800.GC14515@moon>
+Date: Fri, 2 Dec 2011 11:23:32 -0800
+X-Google-Sender-Auth: BsA2-PAxj0_48ZQ27yPGVjcQlc4
+Message-ID: <CAGXu5jLSuvFnV5er6A5abg6EMWM6XVZmVaOCRjwTMS+p4oEXAQ@mail.gmail.com>
+Subject: Re: [rfc 1/3] fs, proc: Add start_data, end_data, start_brk members
+ to /proc/$pid/stat
 From: Kees Cook <keescook@chromium.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Chen Gong <gong.chen@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=GB2312
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 2, 2011 at 12:20 AM, Marco Stornelli
-<marco.stornelli@gmail.com> wrote:
-> Il 02/12/2011 03:40, Chen Gong ha scritto:
->
->> ÓÚ 2011/12/1 18:31, Marco Stornelli Ð´µÀ:
->>>
->>> Il 29/11/2011 18:24, Kees Cook ha scritto:
->>>>
->>>> On Mon, Nov 28, 2011 at 8:50 PM, Chen Gong<gong.chen@linux.intel.com>
->>>> wrote:
->>>>>
->>>>> ÓÚ 2011/11/29 4:09, Kees Cook Ð´µÀ:
->>>>>>
->>>>>>
->>>>>> Instead of using /dev/mem directly, use the common pstore
->>>>>> infrastructure
->>>>>> to handle Oops gathering and extraction.
->>>>>>
->>>>>> Signed-off-by: Kees Cook<keescook@chromium.org>
->>>>>> ---
->>>>>> This depends on the pstore changes waiting for -next in:
->>>>>>
->>>>>>
->>>>>> http://git.kernel.org/?p=linux/kernel/git/aegl/linux.git;a=shortlog;h=refs/heads/next
->>>>>>
->>>>>>
->>>>>> ---
->>>>>> Documentation/ramoops.txt | 8 +-
->>>>>> drivers/char/Kconfig | 1 +
->>>>>> drivers/char/ramoops.c | 206
->>>>>> ++++++++++++++++++++++++++++++++++-----------
->>>>>> 3 files changed, 160 insertions(+), 55 deletions(-)
->>>>>>
->>>>>> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
->>>>>> index 8fb1ba7..a0b9d8e 100644
->>>>>> --- a/Documentation/ramoops.txt
->>>>>> +++ b/Documentation/ramoops.txt
->>>>>> @@ -3,7 +3,7 @@ Ramoops oops/panic logger
->>>>>>
->>>>>> Sergiu Iordache<sergiu@chromium.org>
->>>>>>
->>>>>> -Updated: 8 August 2011
->>>>>> +Updated: 17 November 2011
->>>>>>
->>>>>> 0. Introduction
->>>>>>
->>>>>> @@ -71,6 +71,6 @@ timestamp and a new line. The dump then continues
->>>>>> with
->>>>>> the actual data.
->>>>>>
->>>>>> 4. Reading the data
->>>>>>
->>>>>> -The dump data can be read from memory (through /dev/mem or other
->>>>>> means).
->>>>>> -Getting the module parameters, which are needed in order to parse the
->>>>>> data, can
->>>>>> -be done through /sys/module/ramoops/parameters/* .
->>>>>> +The dump data can be read from the pstore filesystem. The format for
->>>>>> these
->>>>>> +files is "dmesg-ramoops-N", where N is the record number in
->>>>>> memory. To
->>>>>> delete
->>>>>> +a stored record from RAM, simply unlink the respective pstore file.
->>>>>
->>>>>
->>>>> I think the definition of "mem_address" in the doc is not very
->>>>> clear. It is
->>>>> not a normal memory instead of a persistent RAM. I suggest adding more
->>>>> descriptions.
->>>>> It's better if there is a real example.
->>>>
->>>> Okay. I'm not sure it's in the scope of this patch, but I can try.
->>>>
->>>> Marco, do you have suggestions for how this could be enhanced?
->>>
->>> I don't know actually. It's not mandatory use a persistent memory. A
->>> simple
->>> piece of reserved RAM is ok. Obviously it will work only over reboot
->>> and not
->>> over power down. I define mem_address as a generic piece of reserved
->>> memory.
+On Thu, Dec 1, 2011 at 11:28 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Fri, Dec 02, 2011 at 03:24:06AM +0300, Alexey Dobriyan wrote:
+>> > > +         cputime_to_clock_t(cgtime),
+>> > > +         mm ? (permitted ? mm->start_data : 1) : 0,
+>> > > +         mm ? (permitted ? mm->end_data : 1) : 0,
+>> > > +         mm ? (permitted ? mm->start_brk : 1) : 0);
+>> > >   if (mm)
+>> > >           mmput(mm);
+>> > >   return 0;
+>> >
+>> > Thanks for using "permitted" here. :)
 >>
->> Anyway, we need a pratical exmaple to instruct us how to use this diver.
+>> And these are new fields, so "1" hack is unnecessary.
 >
-> For example we can use the mem parameter to reserve memory and use it as
-> ramoops buffer, very simple.
+> I perhaps miss some history here, you mean just print 0
+> instead of 1, right?
 
-I tried both "mem" and "memmap":
+The history is that when "0" is seen for start_code, tools like "ps"
+assumed the process was a kernel thread, so "1" was used as a hack to
+not break userspace reporting. So yeah, since this is a new field,
+it's fine to just do:
 
-mem=0x3f000000 ramoops.mem_address=0x3f000000 ramoops.mem_size=0x40000
-ramoops.record_size=0x10000
-
-memmap=256K$0x3f000000 ramoops.mem_address=0x3f000000
-ramoops.mem_size=0x40000 ramoops.record_size=0x10000
-
-Neither works for me (I end up triggering a panic via BUG in kfree). I
-wonder if it's some bad interaction between the cmdline and the memory
-tables? When I boot with mem=0x3f000000 and without ramoops, I see in
-/proc/iomem:
-
-00100000-3effffff : System RAM
-  01000000-0137c35f : Kernel code
-  0137c360-0151e85f : Kernel data
-  01591000-01627fff : Kernel bss
-3f000000-3fffcfff : RAM buffer
-
-It seems like the system isn't ignoring the region? What's the right
-way to do this?
++         (mm && permitted) ? mm->start_data : 0,
++         (mm && permitted) ? mm->end_data : 0,
++         (mm && permitted) ? mm->start_brk : 0,
 
 -Kees
 
