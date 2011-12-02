@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab1LBA3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 19:29:49 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54670 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755935Ab1LBA3s (ORCPT
+	id S1756051Ab1LBAdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 19:33:25 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36214 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755923Ab1LBAdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 19:29:48 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 2 Dec 2011 09:28:37 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        rostedt@goodmis.org
-Subject: Re: [PATCH] jump_label: jump_label for boot options.
-Message-Id: <20111202092837.58e11827.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111201154036.GA2443@redhat.com>
-References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111201154036.GA2443@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Dec 2011 19:33:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111201111137.GC2915@opensource.wolfsonmicro.com>
+References: <1322474755-18785-1-git-send-email-tomoya.rohm@gmail.com>
+	<20111128132317.GD8275@opensource.wolfsonmicro.com>
+	<CANKRQng3YtYZggVWp3BWyaWyaHAbN1hccJksWELnv2co37rEcQ@mail.gmail.com>
+	<20111129122916.GM2851@opensource.wolfsonmicro.com>
+	<CANKRQnjpYDJWfJO-G5HsE6es7metHeqgP32R3eo99MaE2zdNpQ@mail.gmail.com>
+	<s5hhb1kvix5.wl%tiwai@suse.de>
+	<CANKRQniRonz5UcQ-KgnFJptPkqgWWrJsFuW31f8bWCf_xx-tTA@mail.gmail.com>
+	<20111201111137.GC2915@opensource.wolfsonmicro.com>
+Date: Fri, 2 Dec 2011 09:33:23 +0900
+Message-ID: <CANKRQng4+fKY-3FLMKB_Z-JLB-Xhqpvx90uecFNQCS=NDG55pw@mail.gmail.com>
+Subject: Re: [PATCH v3] sound/soc/codecs: add LAPIS Semiconductor ML26124
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lrg@ti.com>,
+        Jaroslav Kysela <perex@perex.cz>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011 10:40:36 -0500
-Jason Baron <jbaron@redhat.com> wrote:
+2011/12/1 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Thu, Dec 01, 2011 at 04:57:52PM +0900, Tomoya MORINAGA wrote:
+>
+>> You mean "EQ Band1" and "EQ BAND1" are inconsistent names ?
+>> If yes, can you accept the followings ?
+>
+>> EQ Band1 Input Volume
+>> EQ Band1 Switch
+>
+> "EQ Band1 Input" and "EQ Band1" are still different, they should be the
+> same.
+>
 
-> On Thu, Dec 01, 2011 at 11:53:53AM +0900, KAMEZAWA Hiroyuki wrote:
-> > I tried to use jump_label for handling memcg's boot options which sets
-> > global variable true/false and never changes after boot. And found jump_table
-> > is larger than expected. This patch is a trial to allow to place jump_table
-> > in .init section. How do you think ?
-> > 
-> 
-> Remeber too, that 'static_branch()' is inherently biased. That is, the
-> 'false' path is assumed to be the the most likely path. Thus, the 'true'
-> path is move out-of-line. Thus, if the 'true' branch is potentially
-> used all the time, we would want to make sure that the savings of not
-> having to check a variable is still worth it. I should probably rename
-> static_branch() -> 'static_branch_default_false()' to make that clear.
-> 
-Thank you for pointing out.
+Which description do you want ?
 
-My assumption is that it's disabled at boot by few people because sane
-people will not config memcg if they don't want. Most of distro users
-will not turn off it...
+EQ Band1 Volume
+EQ Band1 Switch
 
+or
 
+EQ Band1 Input Volume
+EQ Band1 Input Switch
+
+or
+
+another
 
 Thanks,
--Kame
-
+------
+tomoya
+ROHM Co., Ltd.
