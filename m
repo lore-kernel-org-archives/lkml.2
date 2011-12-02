@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab1LBP0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 10:26:15 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:16839 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab1LBP0O (ORCPT
+	id S1756848Ab1LBP0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 10:26:38 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45679 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab1LBP0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 10:26:14 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6547"; a="143085192"
-Date: Fri, 2 Dec 2011 07:26:09 -0800
-From: David Brown <davidb@codeaurora.org>
-To: "Denis 'GNUtoo' Carikli" <GNUtoo@no-log.org>
-Cc: David Brown <davidb@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
-Message-ID: <20111202152609.GA6986@huya.qualcomm.com>
-References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org>
- <20111201201950.GE9581@n2100.arm.linux.org.uk>
- <20111201202632.GA25247@huya.qualcomm.com>
- <201112021417.17082.GNUtoo@no-log.org>
+	Fri, 2 Dec 2011 10:26:36 -0500
+Message-ID: <4ED8EE1C.4090404@gentoo.org>
+Date: Fri, 02 Dec 2011 17:26:20 +0200
+From: Stratos Psomadakis <psomas@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112021417.17082.GNUtoo@no-log.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+CC: stable@vger.kernel.org, gregkh@suse.de, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com, matthew@wil.cx, Martin.vGagern@gmx.net,
+        kernel@gentoo.org
+Subject: [SCSI] NULL pointer dereference in sym53c8xx (bisected)
+X-Enigmail-Version: 1.3.3
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigCB5596E22225BED68BC8E22B"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 02:17:17PM +0100, Denis 'GNUtoo' Carikli wrote:
-> >And I've learned what I needed to now: someone does still care about
-> >the target.
-> However in a response to the following mail:
-> [Question] RPC and SMD implementation
-> David Brown already told that:
-> >Is there much reason to get the msm72xx support into the kernel in the
-> >first place?  These targets are old, and I don't believe any new
-> >devices are being made using them
-> And:
-> >Things are a lot easier in the newer RPC/SMD versions,
-> >and I don't see a strong reason to keep the kruft in the kernel
-> >necessary to support the 72xx chips.
-> I guess that means that RPC for msm7x00 won't hit mainline.
-> So without RPC the port to mainline cannot be complete(no modem, no audio, no 
-> GPS,and maybe more depending on the device).
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigCB5596E22225BED68BC8E22B
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-There isn't anything stopping someone from working on the port.  The
-Android kernels for the target are still available.  But, I think most
-people working on the MSM code will be focusing on newer devices,
-especially now that there is an 8660 dev board available.
+Hi,
 
-David
+After upstream commit 4e6c82b3614a18740ef63109d58743a359266daf ([SCSI]
+fix WARNING: at drivers/scsi/scsi_lib.c:1704), which is also included in
+3.0-stable and 3.1-stable kernels, the kernel fails to boot (NULL
+pointer dereference in sym53c8xx_slave_destroy).
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Bug report at the Gentoo Bugzilla (reported and bisected by Martin von
+Gagern). [1]  (stack trace [2])
+
+I think that the problem is that (after commit 4e6c82b)
+__scsi_remove_device() is called if slave_alloc() in scsi_alloc_sdev()
+fails. But __scsi_remove_device() calls slave_destroy(), which (I think)
+doesn't make much sense (ie to call slave_destroy() when slave_alloc()
+fails).
+
+For sym53c8xx, this results in a NULL pointer dereference (struct
+sym_lcb pointer) in slave_destroy().
+
+[1] https://bugs.gentoo.org/show_bug.cgi?id=3D392567
+[2] https://392567.bugs.gentoo.org/attachment.cgi?id=3D294381
+
+--=20
+Stratos Psomadakis
+<psomas@gentoo.org>
+
+
+
+--------------enigCB5596E22225BED68BC8E22B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk7Y7iQACgkQid1lVeNDMmAxfACfYlTiR0gHMzFSYXZb/Hic1H3p
+st8An0jGY3UOYc2mD3vLLU95fJI+HMxB
+=2FGp
+-----END PGP SIGNATURE-----
+
+--------------enigCB5596E22225BED68BC8E22B--
