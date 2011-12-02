@@ -1,144 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab1LBTrE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:47:04 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40575 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889Ab1LBTrC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:47:02 -0500
-Date: Fri, 2 Dec 2011 20:46:58 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>
-Subject: Re: [GIT PULL] x86, microcode fixes for 3.2
-Message-ID: <20111202194658.GF15204@aftab>
-References: <20111128204311.GA2814@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111128204311.GA2814@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754690Ab1LBT42 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:56:28 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42719
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751028Ab1LBT40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 14:56:26 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, kys@microsoft.com, davem@davemloft.net,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
+Date: Fri,  2 Dec 2011 11:56:25 -0800
+Message-Id: <1322855785-22776-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 09:43:11PM +0100, Borislav Petkov wrote:
-> Hi Ingo,
-> 
-> please pull the following two fixes for the microcode machinery.
-> 
-> Thanks.
-> 
-> The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
-> 
->   Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode
-> 
-> Borislav Petkov (1):
->       x86, microcode, AMD: Restrict microcode reporting
-> 
-> Srivatsa S. Bhat (1):
->       x86, microcode: Fix the failure path of microcode update driver init code
+The ring buffer is only used to pass meta data for outbound packets. The
+actual payload is accessed by DMA from the host. So the stop/wake queue
+mechanism based on counting and comparing number of pages sent v.s. number
+of pages in the ring buffer is wrong. Also, there is a race condition in
+the stop/wake queue calls, which can stop xmit queue forever.
 
-Since you haven't pulled yet, I've updated this one with the better
-version below, branch above has been updated too:
+The new stop/wake queue mechanism is based on the actual bytes used by
+outbound packets in the ring buffer. The check for number of outstanding
+sends after stop queue prevents the race condition that can cause wake
+queue happening earlier than stop queue.
 
---
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Mon, 7 Nov 2011 18:05:32 +0530
-Subject: [PATCH] x86, microcode: Fix the failure path of microcode update
- driver init code
-
-The microcode update driver's initialization code does not handle
-failures correctly. This patch fixes this issue.
-
-Signed-off-by: Jan Beulich <JBeulich@suse.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20111107123530.12164.31227.stgit@srivatsabhat.in.ibm.com
-Link: http://lkml.kernel.org/r/4ED8E2270200007800065120@nat28.tlf.novell.com
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Long Li <longli@microsoft.com>
 ---
- arch/x86/kernel/microcode_core.c |   28 +++++++++++++++++++---------
- 1 files changed, 19 insertions(+), 9 deletions(-)
+ drivers/net/hyperv/netvsc.c     |   14 +++++++++++---
+ drivers/net/hyperv/netvsc_drv.c |   24 +-----------------------
+ 2 files changed, 12 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index f2d2a66..9d46f5e 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -256,7 +256,7 @@ static int __init microcode_dev_init(void)
- 	return 0;
- }
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index 4a807e4..b6ac152 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -435,6 +435,9 @@ static void netvsc_send_completion(struct hv_device *device,
+ 			nvsc_packet->completion.send.send_completion_ctx);
  
--static void microcode_dev_exit(void)
-+static void __exit microcode_dev_exit(void)
- {
- 	misc_deregister(&microcode_dev);
- }
-@@ -519,10 +519,8 @@ static int __init microcode_init(void)
+ 		atomic_dec(&net_device->num_outstanding_sends);
++
++		if (netif_queue_stopped(ndev))
++			netif_wake_queue(ndev);
+ 	} else {
+ 		netdev_err(ndev, "Unknown send completion packet type- "
+ 			   "%d received!!\n", nvsp_packet->hdr.msg_type);
+@@ -485,11 +488,16 @@ int netvsc_send(struct hv_device *device,
  
- 	microcode_pdev = platform_device_register_simple("microcode", -1,
- 							 NULL, 0);
--	if (IS_ERR(microcode_pdev)) {
--		microcode_dev_exit();
-+	if (IS_ERR(microcode_pdev))
- 		return PTR_ERR(microcode_pdev);
+ 	}
+ 
+-	if (ret != 0)
++	if (ret == 0) {
++		atomic_inc(&net_device->num_outstanding_sends);
++	} else if (ret == -EAGAIN) {
++		netif_stop_queue(ndev);
++		if (atomic_read(&net_device->num_outstanding_sends) < 1)
++			netif_wake_queue(ndev);
++	} else {
+ 		netdev_err(ndev, "Unable to send packet %p ret %d\n",
+ 			   packet, ret);
+-	else
+-		atomic_inc(&net_device->num_outstanding_sends);
++	}
+ 
+ 	return ret;
+ }
+diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+index b69c3a4..7da85eb 100644
+--- a/drivers/net/hyperv/netvsc_drv.c
++++ b/drivers/net/hyperv/netvsc_drv.c
+@@ -43,15 +43,10 @@
+ struct net_device_context {
+ 	/* point back to our device context */
+ 	struct hv_device *device_ctx;
+-	atomic_t avail;
+ 	struct delayed_work dwork;
+ };
+ 
+ 
+-#define PACKET_PAGES_LOWATER  8
+-/* Need this many pages to handle worst case fragmented packet */
+-#define PACKET_PAGES_HIWATER  (MAX_SKB_FRAGS + 2)
+-
+ static int ring_size = 128;
+ module_param(ring_size, int, S_IRUGO);
+ MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
+@@ -144,18 +139,8 @@ static void netvsc_xmit_completion(void *context)
+ 
+ 	kfree(packet);
+ 
+-	if (skb) {
+-		struct net_device *net = skb->dev;
+-		struct net_device_context *net_device_ctx = netdev_priv(net);
+-		unsigned int num_pages = skb_shinfo(skb)->nr_frags + 2;
+-
++	if (skb)
+ 		dev_kfree_skb_any(skb);
+-
+-		atomic_add(num_pages, &net_device_ctx->avail);
+-		if (atomic_read(&net_device_ctx->avail) >=
+-				PACKET_PAGES_HIWATER)
+-			netif_wake_queue(net);
 -	}
- 
- 	get_online_cpus();
- 	mutex_lock(&microcode_mutex);
-@@ -532,14 +530,12 @@ static int __init microcode_init(void)
- 	mutex_unlock(&microcode_mutex);
- 	put_online_cpus();
- 
--	if (error) {
--		platform_device_unregister(microcode_pdev);
--		return error;
--	}
-+	if (error)
-+		goto out_pdev;
- 
- 	error = microcode_dev_init();
- 	if (error)
--		return error;
-+		goto out_sysdev_driver;
- 
- 	register_syscore_ops(&mc_syscore_ops);
- 	register_hotcpu_notifier(&mc_cpu_notifier);
-@@ -548,6 +544,20 @@ static int __init microcode_init(void)
- 		" <tigran@aivazian.fsnet.co.uk>, Peter Oruba\n");
- 
- 	return 0;
-+
-+out_sysdev_driver:
-+	get_online_cpus();
-+	mutex_lock(&microcode_mutex);
-+
-+	sysdev_driver_unregister(&cpu_sysdev_class, &mc_sysdev_driver);
-+
-+	mutex_unlock(&microcode_mutex);
-+	put_online_cpus();
-+
-+out_pdev:
-+	platform_device_unregister(microcode_pdev);
-+	return error;
-+
  }
- module_init(microcode_init);
+ 
+ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+@@ -167,8 +152,6 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 
+ 	/* Add 1 for skb->data and additional one for RNDIS */
+ 	num_pages = skb_shinfo(skb)->nr_frags + 1 + 1;
+-	if (num_pages > atomic_read(&net_device_ctx->avail))
+-		return NETDEV_TX_BUSY;
+ 
+ 	/* Allocate a netvsc packet based on # of frags. */
+ 	packet = kzalloc(sizeof(struct hv_netvsc_packet) +
+@@ -218,10 +201,6 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
+ 	if (ret == 0) {
+ 		net->stats.tx_bytes += skb->len;
+ 		net->stats.tx_packets++;
+-
+-		atomic_sub(num_pages, &net_device_ctx->avail);
+-		if (atomic_read(&net_device_ctx->avail) < PACKET_PAGES_LOWATER)
+-			netif_stop_queue(net);
+ 	} else {
+ 		/* we are shutting down or bus overloaded, just drop packet */
+ 		net->stats.tx_dropped++;
+@@ -391,7 +370,6 @@ static int netvsc_probe(struct hv_device *dev,
+ 
+ 	net_device_ctx = netdev_priv(net);
+ 	net_device_ctx->device_ctx = dev;
+-	atomic_set(&net_device_ctx->avail, ring_size);
+ 	hv_set_drvdata(dev, net);
+ 	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
  
 -- 
-1.7.8.rc0
+1.7.4.1
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
