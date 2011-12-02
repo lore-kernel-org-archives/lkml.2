@@ -1,311 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab1LBUpb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 15:45:31 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:42670 "EHLO smtp.outflux.net"
+	id S1755225Ab1LBUqY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 15:46:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54480 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584Ab1LBUp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 15:45:29 -0500
-Date: Fri, 2 Dec 2011 12:45:14 -0800
-From: Kees Cook <kees@ubuntu.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [RFC] fs: symlink restrictions on sticky directories
-Message-ID: <20111202204514.GA5169@outflux.net>
-References: <20111118232208.GA19000@www.outflux.net>
+	id S1754835Ab1LBUqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 15:46:23 -0500
+Date: Fri, 2 Dec 2011 21:46:13 +0100
+From: Frantisek Hrbata <fhrbata@redhat.com>
+To: Greg KH <gregkh@suse.de>
+Cc: rientjes@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        oleg@redhat.com, minchan.kim@gmail.com, stable@kernel.org,
+        eteo@redhat.com, pmatouse@redhat.com
+Subject: Re: [PATCH v2 RESEND] oom: fix integer overflow of points in
+ oom_badness
+Message-ID: <20111202204613.GA2297@dhcp-26-164.brq.redhat.com>
+Reply-To: Frantisek Hrbata <fhrbata@redhat.com>
+References: <1320048865-13175-1-git-send-email-fhrbata@redhat.com>
+ <20111202174526.GA11483@dhcp-26-164.brq.redhat.com>
+ <20111202190019.GA13283@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111118232208.GA19000@www.outflux.net>
-Organization: Ubuntu
-X-HELO: www.outflux.net
+In-Reply-To: <20111202190019.GA13283@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Dec 02, 2011 at 11:00:19AM -0800, Greg KH wrote:
+> On Fri, Dec 02, 2011 at 06:45:27PM +0100, Frantisek Hrbata wrote:
+> > An integer overflow will happen on 64bit archs if task's sum of rss, swapents
+> > and nr_ptes exceeds (2^31)/1000 value. This was introduced by commit
+> > 
+> > f755a04 oom: use pte pages in OOM score
+> > 
+> > where the oom score computation was divided into several steps and it's no
+> > longer computed as one expression in unsigned long(rss, swapents, nr_pte are
+> > unsigned long), where the result value assigned to points(int) is in
+> > range(1..1000). So there could be an int overflow while computing
+> > 
+> > 176          points *= 1000;
+> > 
+> > and points may have negative value. Meaning the oom score for a mem hog task
+> > will be one.
+> > 
+> > 196          if (points <= 0)
+> > 197                  return 1;
+> > 
+> > For example:
+> > [ 3366]     0  3366 35390480 24303939   5       0             0 oom01
+> > Out of memory: Kill process 3366 (oom01) score 1 or sacrifice child
+> > 
+> > Here the oom1 process consumes more than 24303939(rss)*4096~=92GB physical
+> > memory, but it's oom score is one.
+> > 
+> > In this situation the mem hog task is skipped and oom killer kills another and
+> > most probably innocent task with oom score greater than one.
+> > 
+> > The points variable should be of type long instead of int to prevent the int
+> > overflow.
+> > 
+> > Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+> > Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Acked-by: Oleg Nesterov <oleg@redhat.com>
+> > Acked-by: David Rientjes <rientjes@google.com>
+> > Cc: stable@kernel.org [2.6.36+]
+> 
+> For what it's worth, the stable address has changed to
+> stable@vger.kernel.org so you might want to fix that up in future
+> submissions.
 
-I haven't seen any response to this -- should I move this from "RFC" to
-a "PATCH" request, then?
+I was not aware of this change.
 
--Kees
+> 
+> I still catch patches that are tagged with this marking, but you will
+> not end up posting stuff to the list this way :)
 
-On Fri, Nov 18, 2011 at 03:22:08PM -0800, Kees Cook wrote:
-> (In case symlink restrictions aren't going to live in Yama, here's a
-> version in core VFS based on some feed-back from Al Viro.)
+Duly noted :)
+
 > 
-> A long-standing class of security issues is the symlink-based
-> time-of-check-time-of-use race, most commonly seen in world-writable
-> directories like /tmp. The common method of exploitation of this flaw
-> is to cross privilege boundaries when following a given symlink (i.e. a
-> root process follows a symlink belonging to another user).  For a likely
-> incomplete list of hundreds of examples across the years, please see:
-> http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
+> thanks,
+
+Thanks Greg!
+
 > 
-> The solution is to permit symlinks to only be followed when outside a sticky
-> world-writable directory, or when the uid of the symlink and follower match,
-> or when the directory owner matches the symlink's owner.
-> 
-> Some pointers to the history of earlier discussion that I could find:
-> 
->  1996 Aug, Zygo Blaxell
->   http://marc.info/?l=bugtraq&m=87602167419830&w=2
->  1996 Oct, Andrew Tridgell
->   http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
->  1997 Dec, Albert D Cahalan
->   http://lkml.org/lkml/1997/12/16/4
->  2005 Feb, Lorenzo Hernández García-Hierro
->   http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
-> 
-> Past objections and rebuttals could be summarized as:
-> 
->  - Violates POSIX.
->    - POSIX didn't consider this situation and it's not useful to follow
->      a broken specification at the cost of security.
->  - Might break unknown applications that use this feature.
->    - Applications that break because of the change are easy to spot and
->      fix. Applications that are vulnerable to symlink ToCToU by not having
->      the change aren't.
->  - Applications should just use mkstemp() or O_CREATE|O_EXCL.
->    - True, but applications are not perfect, and new software is written
->      all the time that makes these mistakes; blocking this flaw at the
->      kernel is a single solution to the entire class of vulnerability.
-> 
-> This patch is based on the patch in Openwall and grsecurity.  I have
-> added a sysctl to enable the protected behavior, documentation, and a
-> ratelimited warning.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  Documentation/sysctl/fs.txt |   21 ++++++++++++
->  fs/Kconfig                  |   15 ++++++++
->  fs/namei.c                  |   76 +++++++++++++++++++++++++++++++++++++++---
->  kernel/sysctl.c             |   10 ++++++
->  4 files changed, 116 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
-> index 88fd7f5..939621b 100644
-> --- a/Documentation/sysctl/fs.txt
-> +++ b/Documentation/sysctl/fs.txt
-> @@ -32,6 +32,7 @@ Currently, these files are in /proc/sys/fs:
->  - nr_open
->  - overflowuid
->  - overflowgid
-> +- protected_sticky_symlinks
->  - suid_dumpable
->  - super-max
->  - super-nr
-> @@ -157,6 +158,26 @@ The default is 65534.
->  
->  ==============================================================
->  
-> +protected_sticky_symlinks:
-> +
-> +A long-standing class of security issues is the symlink-based
-> +time-of-check-time-of-use race, most commonly seen in world-writable
-> +directories like /tmp. The common method of exploitation of this flaw
-> +is to cross privilege boundaries when following a given symlink (i.e. a
-> +root process follows a symlink belonging to another user).  For a likely
-> +incomplete list of hundreds of examples across the years, please see:
-> +http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
-> +
-> +When set to "0", symlink following behavior is unrestricted.
-> +
-> +When set to "1" symlinks are permitted to be followed only when outside
-> +a sticky world-writable directory, or when the uid of the symlink and
-> +follower match, or when the directory owner matches the symlink's owner.
-> +
-> +This protection is based on the restrictions in Openwall and grsecurity.
-> +
-> +==============================================================
-> +
->  suid_dumpable:
->  
->  This value can be used to query and set the core dump mode for setuid
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index 5f4c45d..74b9e49 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -278,3 +278,18 @@ source "fs/nls/Kconfig"
->  source "fs/dlm/Kconfig"
->  
->  endmenu
-> +
-> +config PROTECTED_STICKY_SYMLINKS
-> +	bool "Protect symlink following in sticky world-writable directories"
-> +	help
-> +	  A long-standing class of security issues is the symlink-based
-> +	  time-of-check-time-of-use race, most commonly seen in
-> +	  world-writable directories like /tmp. The common method of
-> +	  exploitation of this flaw is to cross privilege boundaries
-> +	  when following a given symlink (i.e. a root process follows
-> +	  a malicious symlink belonging to another user).
-> +
-> +	  Enabling this solves the problem by permitting symlinks to only
-> +	  be followed when outside a sticky world-writable directory,
-> +	  or when the uid of the symlink and follower match, or when
-> +	  the directory and symlink owners match.
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 5008f01..fc206f4 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -33,6 +33,7 @@
->  #include <linux/device_cgroup.h>
->  #include <linux/fs_struct.h>
->  #include <linux/posix_acl.h>
-> +#include <linux/ratelimit.h>
->  #include <asm/uaccess.h>
->  
->  #include "internal.h"
-> @@ -624,10 +625,68 @@ static inline void put_link(struct nameidata *nd, struct path *link, void *cooki
->  	path_put(link);
->  }
->  
-> +#ifdef CONFIG_PROTECTED_STICKY_SYMLINKS
-> +int protected_sticky_symlinks = 1;
-> +#else
-> +int protected_sticky_symlinks;
-> +#endif
-> +
-> +/**
-> + * may_follow_link - Check symlink following for unsafe situations
-> + * @dentry: The inode/dentry of the symlink
-> + * @nameidata: The path data of the symlink
-> + *
-> + * In the case of the protected_sticky_symlinks sysctl being enabled,
-> + * CAP_DAC_OVERRIDE needs to be specifically ignored if the symlink is
-> + * in a sticky world-writable directory. This is to protect privileged
-> + * processes from failing races against path names that may change out
-> + * from under them by way of other users creating malicious symlinks.
-> + * It will permit symlinks to only be followed when outside a sticky
-> + * world-writable directory, or when the uid of the symlink and follower
-> + * match, or when the directory owner matches the symlink's owner.
-> + *
-> + * Returns 0 if following the symlink is allowed, -ve on error.
-> + */
-> +static inline int
-> +may_follow_link(struct dentry *dentry, struct nameidata *nameidata)
-> +{
-> +	int error = 0;
-> +	const struct inode *parent;
-> +	const struct inode *inode;
-> +	const struct cred *cred;
-> +
-> +	if (!protected_sticky_symlinks)
-> +		return 0;
-> +
-> +	/* Allowed if owner and follower match. */
-> +	cred = current_cred();
-> +	inode = dentry->d_inode;
-> +	if (cred->fsuid == inode->i_uid)
-> +		return 0;
-> +
-> +	/* Check parent directory mode and owner. */
-> +	spin_lock(&dentry->d_lock);
-> +	parent = dentry->d_parent->d_inode;
-> +	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
-> +	    parent->i_uid != inode->i_uid) {
-> +		error = -EACCES;
-> +	}
-> +	spin_unlock(&dentry->d_lock);
-> +
-> +	if (error) {
-> +		char name[sizeof(current->comm)];
-> +		printk_ratelimited(KERN_NOTICE "non-matching-uid symlink "
-> +			"following attempted in sticky world-writable "
-> +			"directory by %s (fsuid %d)\n",
-> +			get_task_comm(name, current), cred->fsuid);
-> +	}
-> +	return error;
-> +}
-> +
->  static __always_inline int
-> -follow_link(struct path *link, struct nameidata *nd, void **p)
-> +follow_link(struct path *link, struct nameidata *nd, void **p, bool sensitive)
->  {
-> -	int error;
-> +	int error = 0;
->  	struct dentry *dentry = link->dentry;
->  
->  	BUG_ON(nd->flags & LOOKUP_RCU);
-> @@ -646,7 +705,10 @@ follow_link(struct path *link, struct nameidata *nd, void **p)
->  	touch_atime(link->mnt, dentry);
->  	nd_set_link(nd, NULL);
->  
-> -	error = security_inode_follow_link(link->dentry, nd);
-> +	if (sensitive)
-> +		error = may_follow_link(link->dentry, nd);
-> +	if (!error)
-> +		error = security_inode_follow_link(link->dentry, nd);
->  	if (error) {
->  		*p = ERR_PTR(error); /* no ->put_link(), please */
->  		path_put(&nd->path);
-> @@ -1339,7 +1401,7 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
->  		struct path link = *path;
->  		void *cookie;
->  
-> -		res = follow_link(&link, nd, &cookie);
-> +		res = follow_link(&link, nd, &cookie, 0);
->  		if (!res)
->  			res = walk_component(nd, path, &nd->last,
->  					     nd->last_type, LOOKUP_FOLLOW);
-> @@ -1612,7 +1674,8 @@ static int path_lookupat(int dfd, const char *name,
->  			void *cookie;
->  			struct path link = path;
->  			nd->flags |= LOOKUP_PARENT;
-> -			err = follow_link(&link, nd, &cookie);
-> +
-> +			err = follow_link(&link, nd, &cookie, 1);
->  			if (!err)
->  				err = lookup_last(nd, &path);
->  			put_link(nd, &link, cookie);
-> @@ -2324,7 +2387,8 @@ static struct file *path_openat(int dfd, const char *pathname,
->  		}
->  		nd->flags |= LOOKUP_PARENT;
->  		nd->flags &= ~(LOOKUP_OPEN|LOOKUP_CREATE|LOOKUP_EXCL);
-> -		error = follow_link(&link, nd, &cookie);
-> +
-> +		error = follow_link(&link, nd, &cookie, 1);
->  		if (unlikely(error))
->  			filp = ERR_PTR(error);
->  		else
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index ae27196..cc2c5f9 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -92,6 +92,7 @@ extern int sysctl_overcommit_memory;
->  extern int sysctl_overcommit_ratio;
->  extern int max_threads;
->  extern int core_uses_pid;
-> +extern int protected_sticky_symlinks;
->  extern int suid_dumpable;
->  extern char core_pattern[];
->  extern unsigned int core_pipe_limit;
-> @@ -1495,6 +1496,15 @@ static struct ctl_table fs_table[] = {
->  #endif
->  #endif
->  	{
-> +		.procname	= "protected_sticky_symlinks",
-> +		.data		= &protected_sticky_symlinks,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec_minmax,
-> +		.extra1		= &zero,
-> +		.extra2		= &one,
-> +	},
-> +	{
->  		.procname	= "suid_dumpable",
->  		.data		= &suid_dumpable,
->  		.maxlen		= sizeof(int),
-> -- 
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> greg k-h
+
 -- 
-Kees Cook
+Frantisek Hrbata
