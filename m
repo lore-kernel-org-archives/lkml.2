@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab1LBPnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 10:43:33 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:60457 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756785Ab1LBPnb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 10:43:31 -0500
-Date: Fri, 2 Dec 2011 10:43:30 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: Suspend and resume on ASUS Laptops
-In-Reply-To: <1322763379.30977.33.camel@frodo>
-Message-ID: <Pine.LNX.4.44L0.1112021039460.1420-100000@iolanthe.rowland.org>
+	id S1756915Ab1LBPpe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 10:45:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36239 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754424Ab1LBPpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 10:45:33 -0500
+Message-ID: <4ED8F294.1010500@redhat.com>
+Date: Fri, 02 Dec 2011 09:45:24 -0600
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kyungmin Park <kmpark@infradead.org>
+CC: Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu, tm@tao.ma,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
+References: <20111201070052.GA29708@july> <4ED7FA81.9090802@redhat.com> <CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
+In-Reply-To: <CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011, Steven Rostedt wrote:
-
-> On Thu, 2011-12-01 at 20:31 +0530, Srivatsa S. Bhat wrote:
+On 12/1/11 6:01 PM, Kyungmin Park wrote:
+> On 12/2/11, Eric Sandeen <sandeen@redhat.com> wrote:
+>> On 12/1/11 1:00 AM, Kyungmin Park wrote:
+>>> From: Kyungmin Park <kyungmin.park@samsung.com>
+>>>
+>>> Now trim information doesn't stored at disk so every boot time. it's
+>>> cleared.
+>>> and do the trim all disk groups.
+>>> But assume that it's already trimmed at previous time so don't need to
+>>> trim it again. So set the intial state as trimmed.
+>>>
+>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+>>> index e2d8be8..97ef342 100644
+>>> --- a/fs/ext4/mballoc.c
+>>> +++ b/fs/ext4/mballoc.c
+>>> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
+>>> ext4_group_t group)
+>>>  		goto err;
+>>>  	}
+>>>  	mark_page_accessed(page);
+>>> +
+>>> +	/*
+>>> +	 * TRIM information is not stored at disk so set the initial
+>>> +	 * state as trimmed. Since previous time it's already trimmed all
+>>> +	 */
+>>> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
+>>
+> Hi,
 > 
-> > 
-> > Hi Steven,
-> > Since without the script your system refuses to suspend, you could also use the
-> > 'pm_test' framework (documented in Documentation/power/basic-pm-debugging.txt)
-> > to find out more about the failing step when suspend is attempted without using
-> > the script. Trying 'echo devices > /sys/power/pm_test' might be helpful in your
-> > case.
+>> Hm, so if there were freed but un-trimmed blocks at this point, we will
+>> never trim them until we free _another_ block in the group, right?  That
+>> might be a reasonable tradeoff, but it is somewhat surprising behavior.
+>>
+>> i.e. say we do:
+>>
+>> mount /mnt
+>> rm -rf /mnt/very_big_file
+>> umount /mnt
+>>
+>> mount /mnt
+>> fitrim /mnt
+> another word, you can run fitrim after rm -rf
+> yes, it's trade-off.
 > 
-> Interesting, all the pm_tests work. Even core. But when I switch it to
-> 'none' it locks up.
-> 
-> If I just remove the ehci_hcd module, it suspends fine, so the issue is
-> with this module (or some usb device). There seems to be two devices
-> under ehci_hcd, and I played with the script to only unbind one at a
-> time. If I only unbind one (either one) it still hangs. I need to unbind
-> both for the suspend to work.
+> In my case, phone scenario, no umount system and data partition. it's
+> burden to trim at boot time. it has still slower boot time.
+> some daemon or program run fitrm at filesystem. it consumes time and
+> hurt other boot processes.
 
-It's possible that this problem is related to wakeup settings.  Have 
-you tried disabling wakeup for the EHCI controllers?
+Why not just do smaller FITRIM commands in the background while the phone
+is running?  Why do you want to trim the whole fs at boot time
+in the first place?
 
-This certainly appears to be some sort of bug in the firmware.  Finding 
-it and working around it isn't likely to be easy.  Unbinding (or 
-unloading) ehci-hcd may indeed be the path of least resistance.
-
-Alan Stern
+-Eric
 
