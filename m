@@ -1,500 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab1LBPlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 10:41:31 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56169 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab1LBPl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 10:41:28 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [PATCH 2/2] selftests: New x86 breakpoints selftest
-Date: Fri,  2 Dec 2011 16:41:15 +0100
-Message-Id: <1322840475-19553-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1322840475-19553-1-git-send-email-fweisbec@gmail.com>
-References: <1322840475-19553-1-git-send-email-fweisbec@gmail.com>
+	id S1756909Ab1LBPmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 10:42:11 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:39363 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753928Ab1LBPmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 10:42:10 -0500
+Date: Fri, 2 Dec 2011 09:42:08 -0600 (CST)
+From: Brent Casavant <bcasavan@sgi.com>
+Reply-To: Brent Casavant <bcasavan@sgi.com>
+To: Axel Lin <axel.lin@gmail.com>
+cc: linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        Alex Dubov <oakad@yahoo.com>, David Altobelli <david.altobelli@hp.com>,
+        J Freyensee <james_p_freyensee@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH] MISC: Convert to DEFINE_PCI_DEVICE_TABLE
+In-Reply-To: <1322794977.25851.1.camel@phoenix>
+Message-ID: <alpine.DEB.2.00.1112020939270.12748@pkunk.americas.sgi.com>
+References: <1322794977.25851.1.camel@phoenix>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Organization: "Silicon Graphics, Inc."
+Importance: normal
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bring a first selftest in the relevant directory. This tests
-several combinations of breakpoints and watchpoints in x86, as
-well as icebp traps and int3 traps. Given the amount of breakpoint
-regressions we raised after we merged the generic breakpoint
-infrastructure, such selftest became necessary and can still serve
-today as a basis for new patches that touch the do_debug() path.
+Acked-by: Brent Casavant <bcasavan@sgi.com>
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>
-Cc: Will Deacon <will.deacon@arm.com>
----
- tools/testing/selftests/Makefile                   |    2 +-
- tools/testing/selftests/breakpoints/Makefile       |   20 +
- .../selftests/breakpoints/breakpoint_test.c        |  394 ++++++++++++++++++++
- tools/testing/selftests/run_tests                  |    2 +-
- 4 files changed, 416 insertions(+), 2 deletions(-)
- create mode 100644 tools/testing/selftests/breakpoints/Makefile
- create mode 100644 tools/testing/selftests/breakpoints/breakpoint_test.c
+On Fri, 2 Dec 2011, Axel Lin wrote:
 
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 298a5c0..4ec8401 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -1,4 +1,4 @@
--TARGETS =
-+TARGETS = breakpoints
- 
- all:
- 	for TARGET in $(TARGETS); do \
-diff --git a/tools/testing/selftests/breakpoints/Makefile b/tools/testing/selftests/breakpoints/Makefile
-new file mode 100644
-index 0000000..f362722
---- /dev/null
-+++ b/tools/testing/selftests/breakpoints/Makefile
-@@ -0,0 +1,20 @@
-+# Taken from perf makefile
-+uname_M := $(shell uname -m 2>/dev/null || echo not)
-+ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
-+ifeq ($(ARCH),i386)
-+        ARCH := x86
-+endif
-+ifeq ($(ARCH),x86_64)
-+	ARCH := x86
-+endif
-+
-+
-+all:
-+ifeq ($(ARCH),x86)
-+	gcc breakpoint_test.c -o run_test
-+else
-+	echo "Not an x86 target, can't build breakpoints selftests"
-+endif
-+
-+clean:
-+	rm -fr run_test
-diff --git a/tools/testing/selftests/breakpoints/breakpoint_test.c b/tools/testing/selftests/breakpoints/breakpoint_test.c
-new file mode 100644
-index 0000000..a0743f3
---- /dev/null
-+++ b/tools/testing/selftests/breakpoints/breakpoint_test.c
-@@ -0,0 +1,394 @@
-+/*
-+ * Copyright (C) 2011 Red Hat, Inc., Frederic Weisbecker <fweisbec@redhat.com>
-+ *
-+ * Licensed under the terms of the GNU GPL License version 2
-+ *
-+ * Selftests for breakpoints (and more generally the do_debug() path) in x86.
-+ */
-+
-+
-+#include <sys/ptrace.h>
-+#include <unistd.h>
-+#include <stddef.h>
-+#include <sys/user.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <signal.h>
-+#include <sys/types.h>
-+#include <sys/wait.h>
-+
-+
-+/* Breakpoint access modes */
-+enum {
-+	BP_X = 1,
-+	BP_RW = 2,
-+	BP_W = 4,
-+};
-+
-+static pid_t child_pid;
-+
-+/*
-+ * Ensures the child and parent are always "talking" about
-+ * the same test sequence. (ie: that we haven't forgotten
-+ * to call check_trapped() somewhere).
-+ */
-+static int nr_tests;
-+
-+static void set_breakpoint_addr(void *addr, int n)
-+{
-+	int ret;
-+
-+	ret = ptrace(PTRACE_POKEUSER, child_pid,
-+		     offsetof(struct user, u_debugreg[n]), addr);
-+	if (ret) {
-+		perror("Can't set breakpoint addr\n");
-+		exit(-1);
-+	}
-+}
-+
-+static void toggle_breakpoint(int n, int type, int len,
-+			      int local, int global, int set)
-+{
-+	int ret;
-+
-+	int xtype, xlen;
-+	unsigned long vdr7, dr7;
-+
-+	switch (type) {
-+	case BP_X:
-+		xtype = 0;
-+		break;
-+	case BP_W:
-+		xtype = 1;
-+		break;
-+	case BP_RW:
-+		xtype = 3;
-+		break;
-+	}
-+
-+	switch (len) {
-+	case 1:
-+		xlen = 0;
-+		break;
-+	case 2:
-+		xlen = 4;
-+		break;
-+	case 4:
-+		xlen = 0xc;
-+		break;
-+	case 8:
-+		xlen = 8;
-+		break;
-+	}
-+
-+	dr7 = ptrace(PTRACE_PEEKUSER, child_pid,
-+		     offsetof(struct user, u_debugreg[7]), 0);
-+
-+	vdr7 = (xlen | xtype) << 16;
-+	vdr7 <<= 4 * n;
-+
-+	if (local) {
-+		vdr7 |= 1 << (2 * n);
-+		vdr7 |= 1 << 8;
-+	}
-+	if (global) {
-+		vdr7 |= 2 << (2 * n);
-+		vdr7 |= 1 << 9;
-+	}
-+
-+	if (set)
-+		dr7 |= vdr7;
-+	else
-+		dr7 &= ~vdr7;
-+
-+	ret = ptrace(PTRACE_POKEUSER, child_pid,
-+		     offsetof(struct user, u_debugreg[7]), dr7);
-+	if (ret) {
-+		perror("Can't set dr7");
-+		exit(-1);
-+	}
-+}
-+
-+/* Dummy variables to test read/write accesses */
-+static unsigned long long dummy_var[4];
-+
-+/* Dummy functions to test execution accesses */
-+static void dummy_func(void) { }
-+static void dummy_func1(void) { }
-+static void dummy_func2(void) { }
-+static void dummy_func3(void) { }
-+
-+static void (*dummy_funcs[])(void) = {
-+	dummy_func,
-+	dummy_func1,
-+	dummy_func2,
-+	dummy_func3,
-+};
-+
-+static int trapped;
-+
-+static void check_trapped(void)
-+{
-+	/*
-+	 * If we haven't trapped, wake up the parent
-+	 * so that it notices the failure.
-+	 */
-+	if (!trapped)
-+		kill(getpid(), SIGUSR1);
-+	trapped = 0;
-+
-+	nr_tests++;
-+}
-+
-+static void write_var(int len)
-+{
-+	char *pcval; short *psval; int *pival; long long *plval;
-+	int i;
-+
-+	for (i = 0; i < 4; i++) {
-+		switch (len) {
-+		case 1:
-+			pcval = (char *)&dummy_var[i];
-+			*pcval = 0xff;
-+			break;
-+		case 2:
-+			psval = (short *)&dummy_var[i];
-+			*psval = 0xffff;
-+			break;
-+		case 4:
-+			pival = (int *)&dummy_var[i];
-+			*pival = 0xffffffff;
-+			break;
-+		case 8:
-+			plval = (long long *)&dummy_var[i];
-+			*plval = 0xffffffffffffffffLL;
-+			break;
-+		}
-+		check_trapped();
-+	}
-+}
-+
-+static void read_var(int len)
-+{
-+	char cval; short sval; int ival; long long lval;
-+	int i;
-+
-+	for (i = 0; i < 4; i++) {
-+		switch (len) {
-+		case 1:
-+			cval = *(char *)&dummy_var[i];
-+			break;
-+		case 2:
-+			sval = *(short *)&dummy_var[i];
-+			break;
-+		case 4:
-+			ival = *(int *)&dummy_var[i];
-+			break;
-+		case 8:
-+			lval = *(long long *)&dummy_var[i];
-+			break;
-+		}
-+		check_trapped();
-+	}
-+}
-+
-+/*
-+ * Do the r/w/x accesses to trigger the breakpoints. And run
-+ * the usual traps.
-+ */
-+static void trigger_tests(void)
-+{
-+	int len, local, global, i;
-+	char val;
-+	int ret;
-+
-+	ret = ptrace(PTRACE_TRACEME, 0, NULL, 0);
-+	if (ret) {
-+		perror("Can't be traced?\n");
-+		return;
-+	}
-+
-+	/* Wake up father so that it sets up the first test */
-+	kill(getpid(), SIGUSR1);
-+
-+	/* Test instruction breakpoints */
-+	for (local = 0; local < 2; local++) {
-+		for (global = 0; global < 2; global++) {
-+			if (!local && !global)
-+				continue;
-+
-+			for (i = 0; i < 4; i++) {
-+				dummy_funcs[i]();
-+				check_trapped();
-+			}
-+		}
-+	}
-+
-+	/* Test write watchpoints */
-+	for (len = 1; len <= sizeof(long); len <<= 1) {
-+		for (local = 0; local < 2; local++) {
-+			for (global = 0; global < 2; global++) {
-+				if (!local && !global)
-+					continue;
-+				write_var(len);
-+			}
-+		}
-+	}
-+
-+	/* Test read/write watchpoints (on read accesses) */
-+	for (len = 1; len <= sizeof(long); len <<= 1) {
-+		for (local = 0; local < 2; local++) {
-+			for (global = 0; global < 2; global++) {
-+				if (!local && !global)
-+					continue;
-+				read_var(len);
-+			}
-+		}
-+	}
-+
-+	/* Icebp trap */
-+	asm(".byte 0xf1\n");
-+	check_trapped();
-+
-+	/* Int 3 trap */
-+	asm("int $3\n");
-+	check_trapped();
-+
-+	kill(getpid(), SIGUSR1);
-+}
-+
-+static void check_success(const char *msg)
-+{
-+	const char *msg2;
-+	int child_nr_tests;
-+	int status;
-+
-+	/* Wait for the child to SIGTRAP */
-+	wait(&status);
-+
-+	msg2 = "Failed";
-+
-+	if (WSTOPSIG(status) == SIGTRAP) {
-+		child_nr_tests = ptrace(PTRACE_PEEKDATA, child_pid,
-+					&nr_tests, 0);
-+		if (child_nr_tests == nr_tests)
-+			msg2 = "Ok";
-+		if (ptrace(PTRACE_POKEDATA, child_pid, &trapped, 1)) {
-+			perror("Can't poke\n");
-+			exit(-1);
-+		}
-+	}
-+
-+	nr_tests++;
-+
-+	printf("%s [%s]\n", msg, msg2);
-+}
-+
-+static void launch_instruction_breakpoints(char *buf, int local, int global)
-+{
-+	int i;
-+
-+	for (i = 0; i < 4; i++) {
-+		set_breakpoint_addr(dummy_funcs[i], i);
-+		toggle_breakpoint(i, BP_X, 1, local, global, 1);
-+		ptrace(PTRACE_CONT, child_pid, NULL, 0);
-+		sprintf(buf, "Test breakpoint %d with local: %d global: %d",
-+			i, local, global);
-+		check_success(buf);
-+		toggle_breakpoint(i, BP_X, 1, local, global, 0);
-+	}
-+}
-+
-+static void launch_watchpoints(char *buf, int mode, int len,
-+			       int local, int global)
-+{
-+	const char *mode_str;
-+	int i;
-+
-+	if (mode == BP_W)
-+		mode_str = "write";
-+	else
-+		mode_str = "read";
-+
-+	for (i = 0; i < 4; i++) {
-+		set_breakpoint_addr(&dummy_var[i], i);
-+		toggle_breakpoint(i, mode, len, local, global, 1);
-+		ptrace(PTRACE_CONT, child_pid, NULL, 0);
-+		sprintf(buf, "Test %s watchpoint %d with len: %d local: "
-+			"%d global: %d", mode_str, i, len, local, global);
-+		check_success(buf);
-+		toggle_breakpoint(i, mode, len, local, global, 0);
-+	}
-+}
-+
-+/* Set the breakpoints and check the child successfully trigger them */
-+static void launch_tests(void)
-+{
-+	char buf[1024];
-+	int len, local, global, i;
-+
-+	/* Instruction breakpoints */
-+	for (local = 0; local < 2; local++) {
-+		for (global = 0; global < 2; global++) {
-+			if (!local && !global)
-+				continue;
-+			launch_instruction_breakpoints(buf, local, global);
-+		}
-+	}
-+
-+	/* Write watchpoint */
-+	for (len = 1; len <= sizeof(long); len <<= 1) {
-+		for (local = 0; local < 2; local++) {
-+			for (global = 0; global < 2; global++) {
-+				if (!local && !global)
-+					continue;
-+				launch_watchpoints(buf, BP_W, len,
-+						   local, global);
-+			}
-+		}
-+	}
-+
-+	/* Read-Write watchpoint */
-+	for (len = 1; len <= sizeof(long); len <<= 1) {
-+		for (local = 0; local < 2; local++) {
-+			for (global = 0; global < 2; global++) {
-+				if (!local && !global)
-+					continue;
-+				launch_watchpoints(buf, BP_RW, len,
-+						   local, global);
-+			}
-+		}
-+	}
-+
-+	/* Icebp traps */
-+	ptrace(PTRACE_CONT, child_pid, NULL, 0);
-+	check_success("Test icebp");
-+
-+	/* Int 3 traps */
-+	ptrace(PTRACE_CONT, child_pid, NULL, 0);
-+	check_success("Test int 3 trap");
-+
-+	ptrace(PTRACE_CONT, child_pid, NULL, 0);
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	pid_t pid;
-+	int ret;
-+
-+	pid = fork();
-+	if (!pid) {
-+		trigger_tests();
-+		return 0;
-+	}
-+
-+	child_pid = pid;
-+
-+	wait(NULL);
-+
-+	launch_tests();
-+
-+	wait(NULL);
-+
-+	return 0;
-+}
-diff --git a/tools/testing/selftests/run_tests b/tools/testing/selftests/run_tests
-index 701960d..320718a 100755
---- a/tools/testing/selftests/run_tests
-+++ b/tools/testing/selftests/run_tests
-@@ -1,6 +1,6 @@
- #!/bin/bash
- 
--TARGETS=
-+TARGETS=breakpoints
- 
- for TARGET in $TARGETS
- do
+> Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
+> tables. Also convert to the PCI_DEVICE/PCI_VDEVICE macros for better
+> readablity.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg Kroah-Hartman <greg@kroah.com>
+> Cc: David Altobelli <david.altobelli@hp.com>
+> Cc: Brent Casavant <bcasavan@sgi.com>
+> Cc: Jiri Slaby <jirislaby@gmail.com>
+> Cc: J Freyensee <james_p_freyensee@linux.intel.com>
+> Cc: Alex Dubov <oakad@yahoo.com>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/misc/hpilo.c     |    2 +-
+>  drivers/misc/ioc4.c      |    6 +++---
+>  drivers/misc/pch_phub.c  |    2 +-
+>  drivers/misc/phantom.c   |    2 +-
+>  drivers/misc/pti.c       |    2 +-
+>  drivers/misc/tifm_7xx1.c |   11 ++++-------
+>  6 files changed, 11 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
+> index fffc227..f705cbb 100644
+> --- a/drivers/misc/hpilo.c
+> +++ b/drivers/misc/hpilo.c
+> @@ -828,7 +828,7 @@ out:
+>  	return error;
+>  }
+>  
+> -static struct pci_device_id ilo_devices[] = {
+> +static DEFINE_PCI_DEVICE_TABLE(ilo_devices) = {
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_COMPAQ, 0xB204) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_HP, 0x3307) },
+>  	{ }
+> diff --git a/drivers/misc/ioc4.c b/drivers/misc/ioc4.c
+> index df03dd3..46adc36 100644
+> --- a/drivers/misc/ioc4.c
+> +++ b/drivers/misc/ioc4.c
+> @@ -456,9 +456,9 @@ ioc4_remove(struct pci_dev *pdev)
+>  	kfree(idd);
+>  }
+>  
+> -static struct pci_device_id ioc4_id_table[] = {
+> -	{PCI_VENDOR_ID_SGI, PCI_DEVICE_ID_SGI_IOC4, PCI_ANY_ID,
+> -	 PCI_ANY_ID, 0x0b4000, 0xFFFFFF},
+> +static DEFINE_PCI_DEVICE_TABLE(ioc4_id_table) = {
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_SGI, PCI_DEVICE_ID_SGI_IOC4),
+> +	  .class = 0x0b4000, .class_mask = 0xFFFFFF },
+>  	{0}
+>  };
+>  
+> diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+> index 10fc478..daa19c2 100644
+> --- a/drivers/misc/pch_phub.c
+> +++ b/drivers/misc/pch_phub.c
+> @@ -878,7 +878,7 @@ static int pch_phub_resume(struct pci_dev *pdev)
+>  #define pch_phub_resume NULL
+>  #endif /* CONFIG_PM */
+>  
+> -static struct pci_device_id pch_phub_pcidev_id[] = {
+> +static DEFINE_PCI_DEVICE_TABLE(pch_phub_pcidev_id) = {
+>  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_PCH1_PHUB),       1,  },
+>  	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7213_PHUB), 2,  },
+>  	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7223_mPHUB), 3,  },
+> diff --git a/drivers/misc/phantom.c b/drivers/misc/phantom.c
+> index 21b28fc..7f12ee6 100644
+> --- a/drivers/misc/phantom.c
+> +++ b/drivers/misc/phantom.c
+> @@ -487,7 +487,7 @@ static int phantom_resume(struct pci_dev *pdev)
+>  #define phantom_resume	NULL
+>  #endif
+>  
+> -static struct pci_device_id phantom_pci_tbl[] __devinitdata = {
+> +static DEFINE_PCI_DEVICE_TABLE(phantom_pci_tbl) = {
+>  	{ .vendor = PCI_VENDOR_ID_PLX, .device = PCI_DEVICE_ID_PLX_9050,
+>  	  .subvendor = PCI_VENDOR_ID_PLX, .subdevice = PCI_DEVICE_ID_PLX_9050,
+>  	  .class = PCI_CLASS_BRIDGE_OTHER << 8, .class_mask = 0xffff00 },
+> diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
+> index 0b56e3f..03843e3 100644
+> --- a/drivers/misc/pti.c
+> +++ b/drivers/misc/pti.c
+> @@ -76,7 +76,7 @@ struct pti_dev {
+>   */
+>  static DEFINE_MUTEX(alloclock);
+>  
+> -static struct pci_device_id pci_ids[] __devinitconst = {
+> +static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
+>  		{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x82B)},
+>  		{0}
+>  };
+> diff --git a/drivers/misc/tifm_7xx1.c b/drivers/misc/tifm_7xx1.c
+> index ba24790..a93adcca 100644
+> --- a/drivers/misc/tifm_7xx1.c
+> +++ b/drivers/misc/tifm_7xx1.c
+> @@ -415,13 +415,10 @@ static void tifm_7xx1_remove(struct pci_dev *dev)
+>  	tifm_free_adapter(fm);
+>  }
+>  
+> -static struct pci_device_id tifm_7xx1_pci_tbl [] = {
+> -	{ PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_XX21_XX11_FM, PCI_ANY_ID,
+> -	  PCI_ANY_ID, 0, 0, 0 }, /* xx21 - the one I have */
+> -        { PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_XX12_FM, PCI_ANY_ID,
+> -	  PCI_ANY_ID, 0, 0, 0 },
+> -	{ PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_XX20_FM, PCI_ANY_ID,
+> -	  PCI_ANY_ID, 0, 0, 0 },
+> +static DEFINE_PCI_DEVICE_TABLE(tifm_7xx1_pci_tbl) = {
+> +	{ PCI_VDEVICE(TI, PCI_DEVICE_ID_TI_XX21_XX11_FM) },
+> +	{ PCI_VDEVICE(TI, PCI_DEVICE_ID_TI_XX12_FM) },
+> +	{ PCI_VDEVICE(TI, PCI_DEVICE_ID_TI_XX20_FM) },
+>  	{ }
+>  };
+>  
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
+
 -- 
-1.7.5.4
-
+Brent Casavant                      Silicon Graphics International, Inc.
+System software BIOS engineering    http://www.sgi.com/products/server/uv
