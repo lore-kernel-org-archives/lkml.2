@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab1LBCDD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 21:03:03 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47224 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755210Ab1LBCDB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 21:03:01 -0500
-From: Marcos Paulo de Souza <marcos.mage@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Marcos Paulo de Souza <marcos.mage@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org
-Subject: [PATCH 3/5] staging: vt6656: channel.c: Rewrite ChannelValid function
-Date: Fri,  2 Dec 2011 00:01:49 +0000
-Message-Id: <1322784109-19807-1-git-send-email-marcos.mage@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1756061Ab1LBCEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 21:04:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755210Ab1LBCEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 21:04:40 -0500
+Message-ID: <4ED8322B.8010500@redhat.com>
+Date: Fri, 02 Dec 2011 10:04:27 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 44/62] ocfs2: remove the second argument of k[un]map_atomic()
+References: <1322371662-26166-1-git-send-email-amwang@redhat.com> <1322371662-26166-45-git-send-email-amwang@redhat.com> <20111201201846.GF1495@noexit.corp.google.com>
+In-Reply-To: <20111201201846.GF1495@noexit.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch simplifies the code of ChannelValid fucntion.
+于 2011年12月02日 04:18, Joel Becker 写道:
+> On Sun, Nov 27, 2011 at 01:27:24PM +0800, Cong Wang wrote:
+>>
+>> Signed-off-by: Cong Wang<amwang@redhat.com>
+>
+> Acked-by: Joel Becker<jlbec@evilplan.org>
+>
+> I'm presuming you'll handle pushing this with the entire series.
+>
 
-Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Forest Bond <forest@alittletooquiet.net>
-Cc: devel@driverdev.osuosl.org
----
- drivers/staging/vt6656/channel.c |   25 ++++++++-----------------
- 1 files changed, 8 insertions(+), 17 deletions(-)
+Yeah, I hope either Andrew can take all of them or this can be merged
+into trivial tree.
 
-diff --git a/drivers/staging/vt6656/channel.c b/drivers/staging/vt6656/channel.c
-index 99e054d..954aee7 100644
---- a/drivers/staging/vt6656/channel.c
-+++ b/drivers/staging/vt6656/channel.c
-@@ -392,25 +392,16 @@ static  struct
- BOOL
- ChannelValid(unsigned int CountryCode, unsigned int ChannelIndex)
- {
--    BOOL    bValid;
-+	/*
-+	 * If Channel Index is invalid, return invalid
-+	 */
-+	if ((ChannelIndex > CB_MAX_CHANNEL) ||
-+	    (ChannelIndex == 0))
-+		return FALSE;
- 
--    bValid = FALSE;
--    /*
--     * If Channel Index is invalid, return invalid
--     */
--    if ((ChannelIndex > CB_MAX_CHANNEL) ||
--        (ChannelIndex == 0))
--    {
--        bValid = FALSE;
--        goto exit;
--    }
--
--    bValid = sChannelTbl[ChannelIndex].bValid;
-+	return sChannelTbl[ChannelIndex].bValid;
- 
--exit:
--    return (bValid);
--
--} /* end ChannelValid */
-+}
- 
- /************************************************************************
-  * CHvChannelGetList
--- 
-1.7.4.4
-
+Thanks.
