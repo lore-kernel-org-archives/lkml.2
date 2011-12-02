@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab1LBMIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 07:08:30 -0500
-Received: from stinky.trash.net ([213.144.137.162]:34884 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341Ab1LBMI2 (ORCPT
+	id S1754987Ab1LBMJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 07:09:36 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49290 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445Ab1LBMJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 07:08:28 -0500
-X-Greylist: delayed 689 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 07:08:28 EST
-Message-ID: <4ED8BD00.4000500@trash.net>
-Date: Fri, 02 Dec 2011 12:56:48 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
+	Fri, 2 Dec 2011 07:09:35 -0500
 MIME-Version: 1.0
-To: "Alex,Shi" <alex.shi@intel.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Christoph Lameter <cl@gentwo.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "jeremy@xensource.com" <jeremy@xensource.com>
-Subject: Re: [PATCH 1/3] net: use this_cpu_xxx replace percpu_xxx funcs
-References: <1318237851.27949.190.camel@debian>	 <alpine.DEB.2.00.1110101026080.16264@router.home>	 <1318324774.27949.693.camel@debian>	 <alpine.DEB.2.00.1110110910480.3388@router.home>	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>	 <alpine.DEB.2.00.1110120910540.26610@router.home>	 <1318908091.23426.52.camel@debian>	 <alpine.DEB.2.00.1110180932330.687@router.home>	 <1319016218.23426.104.camel@debian>	 <alpine.DEB.2.00.1110191033480.24001@router.home>	 <1319078687.23426.146.camel@debian>	 <1319087281.8416.45.camel@edumazet-laptop>	 <1319095929.23426.180.camel@debian>	 <1319099893.3781.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>	 <1321866051.30341.565.camel@debian> <1322793200.11530.33.camel@debian>
-In-Reply-To: <1322793200.11530.33.camel@debian>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111202114638.GI8245@opensource.wolfsonmicro.com>
+References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
+	<1321848532-8784-2-git-send-email-tomoya.rohm@gmail.com>
+	<20111121113433.GD3784@opensource.wolfsonmicro.com>
+	<CANKRQnjdS1NvcGLa=S1M0D4U_NV3+JR1E4YfAV7Ziq-fE2LQgg@mail.gmail.com>
+	<20111202114638.GI8245@opensource.wolfsonmicro.com>
+Date: Fri, 2 Dec 2011 21:09:34 +0900
+Message-ID: <CANKRQng5OzqjiQ81OUH+2Aet8DAM198s6B=_1FuASnd19BU26w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] sound/soc/lapis: add machine driver
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.12.2011 03:33, Alex,Shi wrote:
-> On Mon, 2011-11-21 at 17:00 +0800, Alex,Shi wrote:
->> On Thu, 2011-10-20 at 16:38 +0800, Eric Dumazet wrote:
->>> Le jeudi 20 octobre 2011 à 15:32 +0800, Alex,Shi a écrit :
->>>> percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
->>>> for further code clean up.
->>>>
->>>> And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
->>>> performance since __this_cpu_xxx has no redundant preempt_disable()
->>>>
->>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
->>>> ---
->>>>  net/netfilter/xt_TEE.c |   12 ++++++------
->>>>  net/socket.c           |    4 ++--
->>>>  2 files changed, 8 insertions(+), 8 deletions(-)
->>>
->>> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
->>>
->>> Thanks !
->>
->> Anyone like to pick up this patch? or more comments for this? 
-> 
-> Kaber, David: 
-> I appreciate for your any comments on this. Could you like do me a
-> favor? 
+2011/12/2 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Fri, Dec 02, 2011 at 02:33:59PM +0900, Tomoya MORINAGA wrote:
+>> 2011/11/21 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>
+>> > This needs to come after you add the base platform support in the series
+>> > - clearly this won't work without the CPU side drivers it depends on.
+>
+>> Most of the chipset drivers for Intel Atom E6xx series have already
+>> accepted by upstream.
+>> e.g. i2c-eg20t, pch_dma, pch_uart, spi-topcliff-pch, ml-ioh-gpio, etc...
+>
+> The CPU side audio drivers are not there - there seemed to be some quite
+> serious review issues with those.
+>
+Let me clarify your saying.
+Does the above "audio drivers" mean i2s (of south bridge) driver or HD
+audio (of north bridge) or another?
 
-No objections from me.
+Thanks,
+tomoya
