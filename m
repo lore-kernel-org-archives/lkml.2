@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab1LBFeC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 00:34:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40253 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab1LBFeA (ORCPT
+	id S1752437Ab1LBFeR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 00:34:17 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:57227 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751602Ab1LBFeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 00:34:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111121113433.GD3784@opensource.wolfsonmicro.com>
-References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
-	<1321848532-8784-2-git-send-email-tomoya.rohm@gmail.com>
-	<20111121113433.GD3784@opensource.wolfsonmicro.com>
-Date: Fri, 2 Dec 2011 14:33:59 +0900
-Message-ID: <CANKRQnjdS1NvcGLa=S1M0D4U_NV3+JR1E4YfAV7Ziq-fE2LQgg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] sound/soc/lapis: add machine driver
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 2 Dec 2011 00:34:13 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX196intZjlV6Tk4ZDM0js0AoYLT71TjGSIbX3eai4r
+	ATrsoO4I8NJi2p
+Subject: Re: [PATCH] jump_label: jump_label for boot options.
+From: Mike Galbraith <efault@gmx.de>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Jason Baron <jbaron@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        rostedt@goodmis.org
+In-Reply-To: <20111202092837.58e11827.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20111201154036.GA2443@redhat.com>
+	 <20111202092837.58e11827.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Dec 2011 06:34:05 +0100
+Message-ID: <1322804045.4755.13.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/21 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Mon, Nov 21, 2011 at 01:08:51PM +0900, Tomoya MORINAGA wrote:
->> Add machine driver for LAPIS Semiconductor ML7213 IOH.
->
-> This needs to come after you add the base platform support in the series
-> - clearly this won't work without the CPU side drivers it depends on.
+On Fri, 2011-12-02 at 09:28 +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 1 Dec 2011 10:40:36 -0500
+> Jason Baron <jbaron@redhat.com> wrote:
+> 
+> > On Thu, Dec 01, 2011 at 11:53:53AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > I tried to use jump_label for handling memcg's boot options which sets
+> > > global variable true/false and never changes after boot. And found jump_table
+> > > is larger than expected. This patch is a trial to allow to place jump_table
+> > > in .init section. How do you think ?
+> > > 
+> > 
+> > Remeber too, that 'static_branch()' is inherently biased. That is, the
+> > 'false' path is assumed to be the the most likely path. Thus, the 'true'
+> > path is move out-of-line. Thus, if the 'true' branch is potentially
+> > used all the time, we would want to make sure that the savings of not
+> > having to check a variable is still worth it. I should probably rename
+> > static_branch() -> 'static_branch_default_false()' to make that clear.
+> > 
+> Thank you for pointing out.
+> 
+> My assumption is that it's disabled at boot by few people because sane
+> people will not config memcg if they don't want. Most of distro users
+> will not turn off it...
 
-Most of the chipset drivers for Intel Atom E6xx series have already
-accepted by upstream.
-e.g. i2c-eg20t, pch_dma, pch_uart, spi-topcliff-pch, ml-ioh-gpio, etc...
+I think that's a bad assumption.  I see a lot of cgroup_disable=memory
+command lines, and _always_ add it to grub when installing "everything
+plus the kitchen sink" distro kernels on my boxen. 
 
-BTW, every time I send mail to "alsa-devel@alsa-project.org",
-I receive returned mail "Your message to Alsa-devel awaits moderator approval".
-Is this normal things ?
-Of course, I've already subscribed to "alsa-devel@alsa-project.org".
+	-Mike
 
-thanks,
-tomoya
