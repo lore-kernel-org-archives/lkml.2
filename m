@@ -1,90 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab1LBQDg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 11:03:36 -0500
-Received: from xyratex197.xyratex.com ([194.131.166.197]:53440 "EHLO
-	XY01EX21.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756788Ab1LBQDf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 11:03:35 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1756953Ab1LBQFQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 11:05:16 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:35023 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756905Ab1LBQFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 11:05:14 -0500
+X-Sasl-enc: 1OkWzjgJJbhCdZFfhrX4bhwk/T58avablEEzei88ZYkh 1322841912
+Date: Fri, 2 Dec 2011 08:03:26 -0800
+From: Greg KH <greg@kroah.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        Alex Dubov <oakad@yahoo.com>, David Altobelli <david.altobelli@hp.com>,
+        Brent Casavant <bcasavan@sgi.com>,
+        J Freyensee <james_p_freyensee@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] MISC: Convert to DEFINE_PCI_DEVICE_TABLE
+Message-ID: <20111202160326.GA13819@kroah.com>
+References: <1322794977.25851.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] SCSI: aacraid: potential integer overflow in aac_get_containers()
-Date: Fri, 2 Dec 2011 08:03:29 -0800
-Message-ID: <FC1F9E38C0703341A1A750524E2525A9019791E6@XYUS-EX22.xyus.xyratex.com>
-In-Reply-To: <1322706601-26181-1-git-send-email-haogangchen@gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] SCSI: aacraid: potential integer overflow in aac_get_containers()
-Thread-Index: Acyv0U3D1yRGBPsYTxGL3pZ1l+cbRQBOBu/Q
-References: <1322706601-26181-1-git-send-email-haogangchen@gmail.com>
-From: "Mark Salyzyn" <mark_salyzyn@us.xyratex.com>
-To: "Haogang Chen" <haogangchen@gmail.com>, <aacraid@adaptec.com>
-Cc: <JBottomley@parallels.com>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 02 Dec 2011 16:03:32.0981 (UTC) FILETIME=[F0CFD250:01CCB10B]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322794977.25851.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAK
+On Fri, Dec 02, 2011 at 11:02:57AM +0800, Axel Lin wrote:
+> Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
+> tables. Also convert to the PCI_DEVICE/PCI_VDEVICE macros for better
+> readablity.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg Kroah-Hartman <greg@kroah.com>
+> Cc: David Altobelli <david.altobelli@hp.com>
+> Cc: Brent Casavant <bcasavan@sgi.com>
+> Cc: Jiri Slaby <jirislaby@gmail.com>
+> Cc: J Freyensee <james_p_freyensee@linux.intel.com>
+> Cc: Alex Dubov <oakad@yahoo.com>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/misc/hpilo.c     |    2 +-
+>  drivers/misc/ioc4.c      |    6 +++---
+>  drivers/misc/pch_phub.c  |    2 +-
+>  drivers/misc/phantom.c   |    2 +-
+>  drivers/misc/pti.c       |    2 +-
+>  drivers/misc/tifm_7xx1.c |   11 ++++-------
+>  6 files changed, 11 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
+> index fffc227..f705cbb 100644
+> --- a/drivers/misc/hpilo.c
+> +++ b/drivers/misc/hpilo.c
+> @@ -828,7 +828,7 @@ out:
+>  	return error;
+>  }
+>  
+> -static struct pci_device_id ilo_devices[] = {
+> +static DEFINE_PCI_DEVICE_TABLE(ilo_devices) = {
 
-I dispute that it is necessary or worth the additional abstraction,
-since MAXIMUM_NUM_CONTAINERS is in the order of 32, and
-sizeof(*fsa_dev_ptr) is in the range of 80 bytes ... There is a LONG
-road to hoe to get to the point of overload!
+No, I hate this macro, see, it's actually taking you more characters to
+use it than to just properly define the structure yourself.  It's
+pointless and stupid.
 
-kcalloc -> __kmalloc(size_t, flags | __GFP_ZERO);
-kzalloc -> kmalloc(size_t, flags | __GFP_ZERO);
-kmalloc -> __kmalloc(size_t, flags);
+So no, I'm not going to accept this patch, sorry.
 
-kcalloc can not allocate a larger entity than kzalloc. But alas it can
-report that the size has exceeded ULONG_MAX so that part of the patch is
-VERY sound.
+I would love to see a patch removing this macro from the kernel, but I'm
+not the PCI maintainer anymore, so I can't directly accept it :(
 
-Sincerely -- Mark Salyzyn
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_COMPAQ, 0xB204) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_HP, 0x3307) },
+>  	{ }
+> diff --git a/drivers/misc/ioc4.c b/drivers/misc/ioc4.c
+> index df03dd3..46adc36 100644
+> --- a/drivers/misc/ioc4.c
+> +++ b/drivers/misc/ioc4.c
+> @@ -456,9 +456,9 @@ ioc4_remove(struct pci_dev *pdev)
+>  	kfree(idd);
+>  }
+>  
+> -static struct pci_device_id ioc4_id_table[] = {
+> -	{PCI_VENDOR_ID_SGI, PCI_DEVICE_ID_SGI_IOC4, PCI_ANY_ID,
+> -	 PCI_ANY_ID, 0x0b4000, 0xFFFFFF},
+> +static DEFINE_PCI_DEVICE_TABLE(ioc4_id_table) = {
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_SGI, PCI_DEVICE_ID_SGI_IOC4),
+> +	  .class = 0x0b4000, .class_mask = 0xFFFFFF },
 
------Original Message-----
-From: linux-scsi-owner@vger.kernel.org
-[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Haogang Chen
-Sent: Wednesday, November 30, 2011 9:30 PM
-To: aacraid@adaptec.com
-Cc: JBottomley@parallels.com; linux-scsi@vger.kernel.org;
-linux-kernel@vger.kernel.org; haogangchen@gmail.com
-Subject: [PATCH] SCSI: aacraid: potential integer overflow in
-aac_get_containers()
+But the PCI_DEVICE() changes, yes, those are good as they make things
+much more obvious as to what is going on.  Care to send me a patch for
+just that instead?
 
-There is a potential integer overflow in aac_get_containers(). When
-maximum_num_containers is large, the subsequent call to kzalloc() will
-allocate a buffer smaller than expected, which leads to memory
-corruption in the for loop.
+thanks,
 
-The patch replaces kzalloc with kcalloc.
-
-Signed-off-by: Haogang Chen <haogangchen@gmail.com>
----
- drivers/scsi/aacraid/aachba.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/aacraid/aachba.c
-b/drivers/scsi/aacraid/aachba.c
-index 409f580..440b84d 100644
---- a/drivers/scsi/aacraid/aachba.c
-+++ b/drivers/scsi/aacraid/aachba.c
-@@ -381,7 +381,7 @@ int aac_get_containers(struct aac_dev *dev)
- 
- 	if (maximum_num_containers < MAXIMUM_NUM_CONTAINERS)
- 		maximum_num_containers = MAXIMUM_NUM_CONTAINERS;
--	fsa_dev_ptr = kzalloc(sizeof(*fsa_dev_ptr) *
-maximum_num_containers,
-+	fsa_dev_ptr = kcalloc(maximum_num_containers,
-sizeof(*fsa_dev_ptr), 
- 			GFP_KERNEL);
- 	if (!fsa_dev_ptr)
- 		return -ENOMEM;
--- 
-1.7.5.4
+greg k-h
