@@ -1,109 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab1LBOfW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 09:35:22 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:47146 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754144Ab1LBOfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 09:35:21 -0500
-Date: Fri, 2 Dec 2011 15:35:17 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] x86: fix error paths in microcode_init()
-Message-ID: <20111202143517.GA16690@gere.osrc.amd.com>
-References: <4ED8E2270200007800065120@nat28.tlf.novell.com>
+	id S1756769Ab1LBOhR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 09:37:17 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:15744 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754144Ab1LBOhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 09:37:15 -0500
+Message-ID: <4ED8E296.3070005@parallels.com>
+Date: Fri, 02 Dec 2011 18:37:10 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED8E2270200007800065120@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Pedro Alves <pedro@codesourcery.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
+References: <20111129191252.769160532@openvz.org> <201112021400.42762.pedro@codesourcery.com> <4ED8DDE4.8040609@parallels.com> <201112021425.44897.pedro@codesourcery.com>
+In-Reply-To: <201112021425.44897.pedro@codesourcery.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Dec 02, 2011 at 01:35:19PM +0000, Jan Beulich wrote:
-> After failure of platform_device_register_simple(), microcode_dev_exit()
-> got called without the call to microcode_dev_init() already having taken
-> place.
+On 12/02/2011 06:25 PM, Pedro Alves wrote:
+> On Friday 02 December 2011 14:17:08, Pavel Emelyanov wrote:
 > 
-> After failure of microcode_dev_init(), no cleanup of previously carried
-> out setup was done at all.
+>> O_O   OK, I was wrong, they do live there. But I consider this as bug.
 > 
-> As a result, microcode_dev_exit() can now get __exit tagged on it.
+> You can't change that.  It'd break current gdb at least.
+
+OMG!
+
+>> I.e. each task will be shown multiple times, which is not very fun, but memory exhaustive from my POV.
 > 
-> (Noticed while looking at the code, not because of having experienced
-> an actual problem.)
+> Now that is a good argument against hard linking.  But not if you make
+> the entries under children/ symlinks.  Then find doesn't recurse.  And
+> then 
 > 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> $ find -L /proc/PID/
 > 
-> ---
->  arch/x86/kernel/microcode_core.c |   18 +++++++++++++-----
->  1 file changed, 13 insertions(+), 5 deletions(-)
-> 
-> --- 3.2-rc4/arch/x86/kernel/microcode_core.c
-> +++ 3.2-rc4-x86-ucode-init-eh/arch/x86/kernel/microcode_core.c
-> @@ -256,7 +256,7 @@ static int __init microcode_dev_init(voi
->  	return 0;
->  }
->  
-> -static void microcode_dev_exit(void)
-> +static void __exit microcode_dev_exit(void)
->  {
->  	misc_deregister(&microcode_dev);
->  }
-> @@ -519,10 +519,8 @@ static int __init microcode_init(void)
->  
->  	microcode_pdev = platform_device_register_simple("microcode", -1,
->  							 NULL, 0);
-> -	if (IS_ERR(microcode_pdev)) {
-> -		microcode_dev_exit();
-> +	if (IS_ERR(microcode_pdev))
->  		return PTR_ERR(microcode_pdev);
-> -	}
->  
->  	get_online_cpus();
->  	mutex_lock(&microcode_mutex);
-> @@ -538,8 +536,18 @@ static int __init microcode_init(void)
->  	}
->  
->  	error = microcode_dev_init();
-> -	if (error)
-> +	if (error) {
-> +		get_online_cpus();
-> +		mutex_lock(&microcode_mutex);
-> +
-> +		sysdev_driver_unregister(&cpu_sysdev_class, &mc_sysdev_driver);
-> +
-> +		mutex_unlock(&microcode_mutex);
-> +		put_online_cpus();
-> +
-> +		platform_device_unregister(microcode_pdev);
->  		return error;
-> +	}
+> does recurse and give you the whole tree.  Which I'd say is
+> actually useful...
 
-Actually, Srivatsa made a similar patch already which I sent to x86
-guys (I don't think they've pulled yet) but yours is additionally more
-careful to do proper locking before doing sysdev_driver_unregister().
+It is useful, but the /proc/pid/children file solves the same problem in a much
+more simple way. The memory usage by proc (one file vs one dir and a set of files)
+is less and time to lookup a child is also less (read + lookup vs readdir + lookup 
+(symlink itself) + lookup (symlink resolve)).
 
-Would you like to add that part ontop of Srivatsa's patch at the
-out_sysdev_driver label and resend?
+Yes, it doesn't allow you to have fun with find, but frankly, do you really need
+this? Even if we're talking about gdb -- reading /proc/pid/children is not harder
+and not easier than readdir-ing it.
 
-Patch is at git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode
+IOW - what's the real benefit of a directory with symlinks against a file except
+for a fun?
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+Pavel
