@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1LBXWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 18:22:55 -0500
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:33192 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753130Ab1LBXWk (ORCPT
+	id S1753588Ab1LBXY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 18:24:29 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52220 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752118Ab1LBXY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 18:22:40 -0500
-X-Sasl-enc: hvz4F07oRoUk543ybksg0cSz3UNRQT2T6nI0xj/vVoGd 1322868159
-Date: Fri, 2 Dec 2011 15:18:58 -0800
-From: Greg KH <greg@kroah.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: stable-3.1: iwlwifi broken with nomsi
-Message-ID: <20111202231858.GC6016@kroah.com>
-References: <20111128195939.GA15362@localhost>
+	Fri, 2 Dec 2011 18:24:28 -0500
+Date: Sat, 3 Dec 2011 08:25:11 +0900
+From: Gustavo Padovan <padovan@profusion.mobi>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2011-12-03
+Message-ID: <20111202232511.GA13109@joana>
+Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20111108183937.GF25584@joana>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111128195939.GA15362@localhost>
+In-Reply-To: <20111108183937.GF25584@joana>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 08:59:39PM +0100, Johan Hovold wrote:
-> Hi Greg, 
-> 
-> I believe commit 63665158282dd3b5d70 (iwlwifi: allow pci_enable_msi fail)
-> needs to be added to the 3.1 stable tree as the driver fails to probe
-> with MSI disabled since commit 084dd79172cb3 (iwlagn: move PCI related
-> operations from probe and remove to PCI layer) without it:
 
-I do not see commit 63665158282dd3b5d70 in Linus's tree, did you get it
-incorrect?
+Hi John,
 
-confused,
+Some fixes for 3.2: support for a new Marvell device, two module reference fixes,
+a memory leak fix and finally a check in a HCI version check. Please pull.
+	
+Gustavo
 
-greg k-h
+
+The following changes since commit 03360c5a405999d605ffc7373a7b90f3388db92e:
+
+  Revert "mac80211: clear sta.drv_priv on reconfiguration" (2011-12-01 10:44:17 -0500)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth master
+
+Andrei Emeltchenko (1):
+      Bluetooth: Correct version check in hci_setup
+
+Bing Zhao (1):
+      Bluetooth: btmrvl: support Marvell Bluetooth device SD8797
+
+Cong Wang (1):
+      btusb: fix a memory leak in btusb_send_frame()
+
+David Herrmann (2):
+      Bluetooth: cmtp: Fix module reference
+      Bluetooth: bnep: Fix module reference
+
+ drivers/bluetooth/Kconfig       |    6 +++---
+ drivers/bluetooth/btmrvl_sdio.c |   15 +++++++++++++--
+ drivers/bluetooth/btusb.c       |    3 +--
+ net/bluetooth/bnep/core.c       |    8 +++-----
+ net/bluetooth/cmtp/core.c       |    5 +++--
+ net/bluetooth/hci_event.c       |    2 +-
+ 6 files changed, 24 insertions(+), 15 deletions(-)
