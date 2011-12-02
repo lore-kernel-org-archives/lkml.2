@@ -1,49 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab1LBWTz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 17:19:55 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:51799 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756066Ab1LBWTy (ORCPT
+	id S1756368Ab1LBWWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 17:22:06 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:34520 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756153Ab1LBWWE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 17:19:54 -0500
-Date: Fri, 2 Dec 2011 17:19:50 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: linux-arm-kernel@lists.infradead.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH] ARM: determine PHYS_OFFSET automatically for no-mmu
- configs
-In-Reply-To: <1322857415-26753-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Message-ID: <alpine.LFD.2.02.1112021718540.2357@xanadu.home>
-References: <alpine.LFD.2.02.1112021426420.2357@xanadu.home> <1322857415-26753-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 2 Dec 2011 17:22:04 -0500
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1232700011-1322864391=:2357"
+In-Reply-To: <4ED9267F.10106@fb.com>
+References: <20111121145114.049265181@chello.nl>
+	<4ED9267F.10106@fb.com>
+Date: Fri, 2 Dec 2011 14:22:02 -0800
+Message-ID: <CABPqkBRpYA-StOTDFwyFhFtBPynbn-FLUzqZvaQn3oM3SJpCWg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/6] perf: x86 RDPMC and RDTSC support
+From: Stephane Eranian <eranian@google.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
+        William Cohen <wcohen@redhat.com>, Vince Weaver <vince@deater.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Have you tried with inheritance disabled?
+I don't remember if perf stat has it enabled buy default.
 
---8323328-1232700011-1322864391=:2357
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 2 Dec 2011, Uwe Kleine-König wrote:
-
-> From: Nicolas Pitre <nicolas.pitre@linaro.org>
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-
-I submitted this to the patch system:
-
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=7186/1
-
-
-Nicolas
---8323328-1232700011-1322864391=:2357--
+On Fri, Dec 2, 2011 at 11:26 AM, Arun Sharma <asharma@fb.com> wrote:
+> On 11/21/11 6:51 AM, Peter Zijlstra wrote:
+>>
+>> These few patches implement x86 RDPMC support and add an extention to the
+>> self
+>> monitoring data to also allow additional time updates using userspace TSC
+>> reads.
+>>
+>> There's a few loose ends, but it mostly seems to work.
+>
+>
+> I haven't had a chance to test this out yet. But low overhead, always on
+> perf counters is something we're very interested in. Thanks for implementing
+> it.
+>
+> However, I suspect the major cost of leaving the perf counters always on
+> seems to be in the hit on context switches, rather than the cost of reading
+> the perf counters themselves. For eg:
+>
+>  Baseline:
+>
+>   (for i in `seq 1 10`; do numactl --cpunodebind 1 ./lat_ctx -P1 -s32k 4;
+> done) 2>&1 | tee lmbench1.log
+>
+>  1 event:
+>
+>  (for i in `seq 1 10`; do numactl --cpunodebind 1 perf stat -e instructions
+> ./lat_ctx -P1 -s32k 4; done) 2>&1 | tee lmbench2.log
+>
+>  2 events:
+>
+>  (for i in `seq 1 10`; do numactl --cpunodebind 1 perf stat -e
+> cycles,instructions ./lat_ctx -P1 -s32k 4; done) 2>&1 | tee lmbench3.log
+>
+>  Baseline: 2.2us
+>  One event: 6.8us
+>  Two events: 7.2us
+>
+> The cost seems to be at roughly 5us (I measured 2.6.38 and 3.2-rc2). I'll
+> dig a bit more on what may be going on here.
+>
+>  -Arun
