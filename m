@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab1LBNXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 08:23:31 -0500
-Received: from smtp203.alice.it ([82.57.200.99]:42015 "EHLO smtp203.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756012Ab1LBNX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 08:23:29 -0500
-X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 08:23:29 EST
-From: "Denis 'GNUtoo' Carikli" <GNUtoo@no-log.org>
-To: David Brown <davidb@codeaurora.org>
-Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
-Date: Fri, 2 Dec 2011 14:17:17 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38-12-generic; KDE/4.6.5; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org> <20111201201950.GE9581@n2100.arm.linux.org.uk> <20111201202632.GA25247@huya.qualcomm.com>
-In-Reply-To: <20111201202632.GA25247@huya.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112021417.17082.GNUtoo@no-log.org>
+	id S1756638Ab1LBNa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 08:30:26 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:44637 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756064Ab1LBNaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 08:30:25 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, dave.martin@linaro.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v2] irqdomain: protect macro variable in domain iterators
+Date: Fri,  2 Dec 2011 14:30:09 +0100
+Message-Id: <1322832609-24956-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1322833997-32083-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1322833997-32083-1-git-send-email-nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->And I've learned what I needed to now: someone does still care about
->the target.
-However in a response to the following mail:
-[Question] RPC and SMD implementation
-David Brown already told that:
->Is there much reason to get the msm72xx support into the kernel in the
->first place?  These targets are old, and I don't believe any new
->devices are being made using them
-And:
->Things are a lot easier in the newer RPC/SMD versions,
->and I don't see a strong reason to keep the kruft in the kernel
->necessary to support the 72xx chips.
-I guess that means that RPC for msm7x00 won't hit mainline.
-So without RPC the port to mainline cannot be complete(no modem, no audio, no 
-GPS,and maybe more depending on the device).
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+v2: add brackets to each macro variable.
 
-Denis.
+ include/linux/irqdomain.h |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index bd4272b..e535063 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -82,12 +82,14 @@ static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
+ }
+ 
+ #define irq_domain_for_each_hwirq(d, hw) \
+-	for (hw = d->hwirq_base; hw < d->hwirq_base + d->nr_irq; hw++)
++	for ((hw) = (d)->hwirq_base; \
++	     (hw) < (d)->hwirq_base + (d)->nr_irq; \
++	     (hw)++)
+ 
+ #define irq_domain_for_each_irq(d, hw, irq) \
+-	for (hw = d->hwirq_base, irq = irq_domain_to_irq(d, hw); \
+-	     hw < d->hwirq_base + d->nr_irq; \
+-	     hw++, irq = irq_domain_to_irq(d, hw))
++	for ((hw) = (d)->hwirq_base, (irq) = irq_domain_to_irq((d), (hw)); \
++	     (hw) < (d)->hwirq_base + (d)->nr_irq; \
++	     (hw)++, (irq) = irq_domain_to_irq((d), (hw)))
+ 
+ extern void irq_domain_add(struct irq_domain *domain);
+ extern void irq_domain_del(struct irq_domain *domain);
+-- 
+1.7.5.4
+
