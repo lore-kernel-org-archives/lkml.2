@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab1LBR2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:28:25 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:60188 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751330Ab1LBR2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:28:24 -0500
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20111202172843.CE9DE426DA7@whiskey.americas.sgi.com>
-Date: Fri,  2 Dec 2011 11:28:43 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1757217Ab1LBR3B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:29:01 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33353 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab1LBR27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 12:28:59 -0500
+Date: Fri, 2 Dec 2011 17:28:54 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        netdev@vger.kernel.org, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, jamie@jamieiles.com
+Subject: Re: [PATCH] net/macb: add DT support
+Message-ID: <20111202172854.GB4998@totoro>
+References: <20111202153832.GA4998@totoro>
+ <1322846050-4543-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322846050-4543-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [GIT PULL] XFS update for 3.2-rc5
+Hi Nicolas,
 
-Linus, please pull the following bug fixes for XFS for 3.2-rc5.
+On Fri, Dec 02, 2011 at 06:14:10PM +0100, Nicolas Ferre wrote:
+> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> 
+> Allow the device tree to provide the mac address and the phy mode.
+> 
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> [nicolas.ferre@atmel.com: change "compatible" node property, doc and DT hwaddr]
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Jamie Iles <jamie@jamieiles.com>
 
-fa8b18e fixes memory corruption if the on-disk ACL is corrupted,
-4dd2cb4 fixes a delay in inode reclaim, and
-4c393a6 fixes a reproducible crash when operating on the attribute fork.
+Looks nice to me.  There's a patch below to add the GEM stuff to the 
+binding too if you want to role that in.
 
-Thanks,
-	Ben
+Acked-by: Jamie Iles <jamie@jamieiles.com>
 
+8<----
 
-
-The following changes since commit 5983fe2b29df5885880d7fa3b91aca306c7564ef:
-  Linus Torvalds (1):
-        Merge git://git.kernel.org/.../davem/net
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Christoph Hellwig (3):
-      xfs: validate acl count
-      xfs: force buffer writeback before blocking on the ilock in inode reclaim
-      xfs: fix attr2 vs large data fork assert
-
- fs/xfs/xfs_acl.c       |    2 +
- fs/xfs/xfs_attr_leaf.c |   64 +++++++++++++++++++++++++++++------------------
- fs/xfs/xfs_inode.c     |   21 +++++++++++++++
- fs/xfs/xfs_inode.h     |    1 +
- fs/xfs/xfs_sync.c      |   11 ++++++++
- 5 files changed, 74 insertions(+), 25 deletions(-)
+diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
+index 7f0b90a..e09e3fb 100644
+--- a/Documentation/devicetree/bindings/net/macb.txt
++++ b/Documentation/devicetree/bindings/net/macb.txt
+@@ -1,9 +1,11 @@
+-* Cadence MACB Ethernet controller
++* Cadence MACB/GEM Ethernet controller
+ 
+ Required properties:
+-- compatible: Should be "cdns,[<chip>-]macb"
++- compatible: Should be "cdns,[<chip>-]{macb,gem}"
+   Use "cdns,at91sam9260-macb" Atmel at91sam9260 and at91sam9263 SoCs.
+   Use "cdns,at32ap7000-macb" for other 10/100 usage or use the generic form: "cdns,macb"
++  Use "cnds,pc302-gem" for Picochip picoXcell pc302 and later devices based on
++  the Cadence GEM, or the generic form "cdns,gem".
+ - reg: Address and length of the register set for the device
+ - interrupts: Should contain macb interrupt
+ - phy-mode: String, operation mode of the PHY interface.
+diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+index 103c6e6..89060e6 100644
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -1247,6 +1247,8 @@ static const struct of_device_id macb_dt_ids[] = {
+ 	{ .compatible = "cdns,at32ap7000-macb" },
+ 	{ .compatible = "cdns,at91sam9260-macb" },
+ 	{ .compatible = "cdns,macb" },
++	{ .compatible = "cdns,pc302-gem" },
++	{ .compatible = "cdns,gem" },
+ 	{ /* sentinel */ }
+ };
+ 
