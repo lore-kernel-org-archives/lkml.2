@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab1LBMcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 07:32:14 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:34072 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754407Ab1LBMcN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 07:32:13 -0500
-Date: Fri, 2 Dec 2011 07:32:11 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Jens Axboe <jens@axboe.dk>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        lttng-dev@lists.lttng.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] fs/splice: export splice_to_pipe to GPL modules
-Message-ID: <20111202123211.GA13082@Krystal>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com> <1322775683-8741-4-git-send-email-mathieu.desnoyers@efficios.com> <4ED87C02.6030007@axboe.dk>
+	id S1755645Ab1LBMco (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 07:32:44 -0500
+Received: from monge.univ-mlv.fr ([193.55.63.80]:58360 "EHLO monge.univ-mlv.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755174Ab1LBMcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 07:32:43 -0500
+X-Greylist: delayed 755 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 07:32:43 EST
+Message-ID: <4ED8C275.7020907@univ-mlv.fr>
+Date: Fri, 02 Dec 2011 13:20:05 +0100
+From: =?UTF-8?B?U8OpYmFzdGllbiBQYXVtaWVy?= 
+	<sebastien.paumier@univ-mlv.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED87C02.6030007@axboe.dk>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 07:31:02 up 373 days, 17:34,  2 users,  load average: 0.06, 0.13,
-	0.43
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-kernel@vger.kernel.org
+Subject: mmap
+Content-Type: multipart/mixed;
+ boundary="------------070303090801080808020400"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jens Axboe (jens@axboe.dk) wrote:
-> On 2011-12-01 22:41, Mathieu Desnoyers wrote:
-> > The LTTng driver needs this symbol exported because it implements its
-> > own splice actor.
-> > 
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > CC: Linus Torvalds <torvalds@linux-foundation.org>
-> > CC: Ingo Molnar <mingo@elte.hu>
-> > CC: Jens Axboe <axboe@kernel.dk>
-> > CC: linux-kernel@vger.kernel.org
-> > CC: Greg KH <greg@kroah.com>
-> > ---
-> >  fs/splice.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/splice.c b/fs/splice.c
-> > index fa2defa..9eb15b5 100644
-> > --- a/fs/splice.c
-> > +++ b/fs/splice.c
-> > @@ -263,6 +263,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
-> >  
-> >  	return ret;
-> >  }
-> > +EXPORT_SYMBOL_GPL(splice_to_pipe);
-> 
-> The rest of the splice symbols are regular exports, please do the same
-> for this one. Thanks.
+This is a multi-part message in MIME format.
+--------------070303090801080808020400
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 
-I've been wondering about this one, but thought it would be better to
-let you decide on opening up the symbol more than with _GPL. Will do!
+Hi,
+I have a question about mmap's behavior when one tries to map a file asking for 
+a length greater than the actual file size. When I run the attached code on a 
+100 bytes file, I have the following output:
 
-Thanks,
+(... file content followed by zeros...)
+n=4096
+write: Bad address
 
-Mathieu
+So, it seems that the actual memory area provided by mmap is one page large and 
+not the requested length of filesize+10000. I guess that 'write' writes less 
+than requested because it was interrupted by the SIGBUS signal. And my question is:
 
+shouldn't mmap either complain about the requested length or provide an 
+accessible area of the requested length, instead of silently failing ?
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Best regards,
+Sébastien Paumier
+
+--------------070303090801080808020400
+Content-Type: text/x-csrc;
+ name="mmap.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="mmap.c"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <time.h>
+#include <errno.h>
+
+int main(int argc, char* argv[]){
+if(argc != 2) {
+	fprintf(stderr,"Usage: %s <file>\n",argv[0]);
+	exit(1);
+}
+int fd = open(argv[argc-1],O_RDONLY);
+if (fd==-1) {
+	perror("open");
+	return 1;
+}
+struct stat status;
+if(-1 == fstat(fd,&status)){
+	perror("fstat");
+	return 1;
+}
+char* mem=(char*) mmap(NULL, status.st_size+10000, PROT_READ, MAP_PRIVATE,fd,0);
+if(mem == MAP_FAILED){
+	perror("mmap");
+	return 1;
+}
+int n;
+if ( -1 == (n=write(1,mem, status.st_size+10000))) {
+	perror("write");
+	return 1;
+}
+printf("\nn=%d\n",n);
+if( -1 == (n=write(1,mem+n, status.st_size+10000-n))) {
+	perror("write");
+	return 1;
+}
+printf("\nn=%d\n",n);
+return 0;
+}
+
+--------------070303090801080808020400--
