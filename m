@@ -1,141 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286Ab1LBR6V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:58:21 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:39288 "EHLO mx2.parallels.com"
+	id S1757295Ab1LBR7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:59:16 -0500
+Received: from yop.chewa.net ([91.121.105.214]:57041 "EHLO yop.chewa.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757227Ab1LBR6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:58:19 -0500
-Message-ID: <4ED91188.6030503@parallels.com>
-Date: Fri, 2 Dec 2011 15:57:28 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1757195Ab1LBR7P convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 12:59:15 -0500
+X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 12:59:15 EST
+From: "=?iso-8859-1?q?R=E9mi?= Denis-Courmont" <remi@remlab.net>
+Organization: Remlab.net
+To: linux-media@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because of worrying about possible misusage?
+Date: Fri, 2 Dec 2011 19:49:18 +0200
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-686-pae; KDE/4.6.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED7BBA3.5020002@redhat.com> <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com>
+In-Reply-To: <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
-Subject: Re: [PATCH v7 04/10] tcp memory pressure controls
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com> <1322611021-1730-5-git-send-email-glommer@parallels.com> <20111130104943.d9b210ee.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111130104943.d9b210ee.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201112021949.19395.remi@remlab.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2011 11:49 PM, KAMEZAWA Hiroyuki wrote:
->
->> -static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
->> +struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
->>   {
->>   	return container_of(cgroup_subsys_state(cont,
->>   				mem_cgroup_subsys_id), struct mem_cgroup,
->> @@ -4717,14 +4732,27 @@ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
->>
->>   	ret = cgroup_add_files(cont, ss, kmem_cgroup_files,
->>   			       ARRAY_SIZE(kmem_cgroup_files));
->> +
->> +	if (!ret)
->> +		ret = mem_cgroup_sockets_init(cont, ss);
->>   	return ret;
->>   };
->
-> You does initizalication here. The reason what I think is
-> 1. 'proto_list' is not available at createion of root cgroup and
->      you need to delay set up until mounting.
->
-> If so, please add comment or find another way.
-> This seems not very clean to me.
+Le jeudi 1 décembre 2011 21:59:56 HoP, vous avez écrit :
+> > Kernel code is GPLv2. You can use its code on a GPLv2 licensed library.
+> 
+> I see. So if you think it is nice to get dvb-core, make a wrapper around
+> to get it usable in userspace and maintain totally same functionality
+> by myself then I say it is no go. If it looks for you like good idea
+> I must disagree. Code duplication?
 
-Yes, we do can run into some ordering issues. A part of the 
-initialization can be done earlier. But I preferred to move it all later
-instead of creating two functions for it. But I can change that if you 
-want, no big deal.
+Sure, some core code would be duplicated. That is not a big deal.
 
->
->
->
->
->> +static DEFINE_RWLOCK(proto_list_lock);
->> +static LIST_HEAD(proto_list);
->> +
->> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> +int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
->> +{
->> +	struct proto *proto;
->> +	int ret = 0;
->> +
->> +	read_lock(&proto_list_lock);
->> +	list_for_each_entry(proto,&proto_list, node) {
->> +		if (proto->init_cgroup)
->> +			ret = proto->init_cgroup(cgrp, ss);
->> +			if (ret)
->> +				goto out;
->> +	}
->
-> seems indent is bad or {} is missing.
->
-Thanks. I'll rewrite it, since I did miss {} around the first if. But no 
-test could possibly catch it, since what I wanted to write, and what I 
-wrote by mistake end up being equivalent.
+This proposal however has three big advantages:
+- Proprietary drivers are not enabled as the library would be GPL.
+- The virtual DVB device runs in the same process as the DVB application, 
+which saves context switching and memory copying.
+- It would be your project. You do not need to agree with Mauro ;-)
 
->> +EXPORT_SYMBOL(memcg_tcp_enter_memory_pressure);
->> +
->> +int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
->> +{
->> +	/*
->> +	 * The root cgroup does not use res_counters, but rather,
->> +	 * rely on the data already collected by the network
->> +	 * subsystem
->> +	 */
->> +	struct res_counter *res_parent = NULL;
->> +	struct cg_proto *cg_proto;
->> +	struct tcp_memcontrol *tcp;
->> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
->> +	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
->> +
->> +	cg_proto = tcp_prot.proto_cgroup(memcg);
->> +	if (!cg_proto)
->> +		return 0;
->> +
->> +	tcp = tcp_from_cgproto(cg_proto);
->> +	cg_proto->parent = tcp_prot.proto_cgroup(parent);
->> +
->> +	tcp->tcp_prot_mem[0] = sysctl_tcp_mem[0];
->> +	tcp->tcp_prot_mem[1] = sysctl_tcp_mem[1];
->> +	tcp->tcp_prot_mem[2] = sysctl_tcp_mem[2];
->> +	tcp->tcp_memory_pressure = 0;
->
-> Question:
->
-> Is this value will be updated when an admin chages sysctl ?
+> Two maintaners? That is crazy idea man.
 
-yes.
+Someone would have to maintain the device driver anyway. I don't see much of a 
+difference on maintainance side.
 
-> I guess, this value is set at system init script or some which may
-> happen later than mounting cgroup.
-> I don't like to write a guideline 'please set sysctl val before
-> mounting cgroup'
+> > And I can't see any advantage on yours ;) Putting something that belongs
+> > to userspace into kernelspace just because it is easier to re-use the
+> > existing code inside the kernel is not a good argument.
+> 
+> It is only your POV that it should be in userspace.
 
-Agreed.
+Except for backward compatiblity, this would actually belong in userspace. It 
+would be more efficient and easier to maintain as a userspace library than as 
+a kernel driver.
 
-This code is in patch 6 (together with the limiting):
+If you need backward compatibility, I am still inclined to believe that you 
+could write a CUSE frontend, so it does involve some extra work and looses the 
+performance benefit.
 
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+       rcu_read_lock();
-+       memcg = mem_cgroup_from_task(current);
-+
-+       tcp_prot_mem(memcg, vec[0], 0);
-+       tcp_prot_mem(memcg, vec[1], 1);
-+       tcp_prot_mem(memcg, vec[2], 2);
-+       rcu_read_unlock();
-+#endif
-
-tcp_prot_mem is just a wrapper around the assignment so we can access 
-memcg's inner fields.
-
+-- 
+Rémi Denis-Courmont
+http://www.remlab.net/
+http://fi.linkedin.com/in/remidenis
