@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab1LBMnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 07:43:16 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:35916 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755509Ab1LBMnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 07:43:15 -0500
-Message-ID: <4ED8C7DE.4050107@parallels.com>
-Date: Fri, 02 Dec 2011 16:43:10 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1756174Ab1LBMnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 07:43:55 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:49391 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755699Ab1LBMny (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 07:43:54 -0500
+Date: Fri, 2 Dec 2011 07:43:52 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Greg KH <greg@kroah.com>
+Cc: Jens Axboe <jens@axboe.dk>, lttng-dev@lists.lttng.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: [PATCH] fs/splice: export splice_to_pipe to modules
+Message-ID: <20111202124352.GB13082@Krystal>
 MIME-Version: 1.0
-To: Pedro Alves <pedro@codesourcery.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
-References: <20111129191252.769160532@openvz.org> <20111201095434.GR14515@moon> <20111202094010.ca2dee4c.kamezawa.hiroyu@jp.fujitsu.com> <201112021241.04471.pedro@codesourcery.com>
-In-Reply-To: <201112021241.04471.pedro@codesourcery.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 07:40:48 up 373 days, 17:43,  2 users,  load average: 0.07, 0.18,
+	0.32
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2011 04:41 PM, Pedro Alves wrote:
-> On Friday 02 December 2011 00:40:10, KAMEZAWA Hiroyuki wrote:
->>> What about this one?
->>> ---
->>> fs, proc: Introduce the /proc/<pid>/children entry
->>>
->>> There is no easy way to make a reverse parent->children chain
->>> from the task status, in turn children->parent provided with "PPid"
->>> field.
->>>
->>> So instead of walking over all pids in system to figure out what
->>> children the task have -- we add explicit /proc/<pid>/children entry,
->>> since kernel already knows this kind of information but it was not
->>> yet exported.
->>>
->>> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
->>> Cc: Pavel Emelyanov <xemul@parallels.com>
->>> Cc: Serge Hallyn <serge.hallyn@canonical.com>
->>> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>
->> Yes, I like /children file. other points seems to be pointed out by other
->> reviewers. 
-> 
-> Any reason this is a file instead of a directory like /proc/PID/task/ ?
-> 
-> $ sudo ls /proc/8167/task/
-> 8167  854  855  856  857  858  859
-> $ sudo ls /proc/8167/task/855/
-> attr    clear_refs  cpuset   exe     io       loginuid  mountinfo  oom_adj        pagemap      sched      smaps  statm    wchan
-> auxv    cmdline     cwd      fd      latency  maps      mounts     oom_score      personality  schedstat  stack  status
-> cgroup  comm        environ  fdinfo  limits   mem       numa_maps  oom_score_adj  root         sessionid  stat   syscall
-> 
-> Much easier to follow the chain from the command line this way.
+The LTTng driver needs this symbol exported because it implements its
+own splice actor.
 
-What do you propose to put into these directories? Another directories named with
-children pid-s?
+All other exports in splice are EXPORT_SYMBOL(), so follow the local
+trend by not using a _GPL() export.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: linux-kernel@vger.kernel.org
+CC: Greg KH <greg@kroah.com>
+---
+ fs/splice.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/fs/splice.c b/fs/splice.c
+index fa2defa..492585d 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -263,6 +263,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL(splice_to_pipe);
+ 
+ void spd_release_page(struct splice_pipe_desc *spd, unsigned int i)
+ {
+-- 
+1.7.5.4
