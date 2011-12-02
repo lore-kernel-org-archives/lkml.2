@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab1LBSon (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 13:44:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10506 "EHLO mx1.redhat.com"
+	id S932236Ab1LBSo5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 13:44:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4986 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932168Ab1LBSol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 13:44:41 -0500
+	id S932168Ab1LBSox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 13:44:53 -0500
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 10/21] KEYS: DSA signature verification algorithm [ver #3]
+Subject: [PATCH 11/21] KEYS: RSA signature verification algorithm [ver #3]
 To: keyrings@linux-nfs.org
 Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
         zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
         alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Fri, 02 Dec 2011 18:44:31 +0000
-Message-ID: <20111202184431.21874.52240.stgit@warthog.procyon.org.uk>
+Date: Fri, 02 Dec 2011 18:44:44 +0000
+Message-ID: <20111202184444.21874.42178.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
 References: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,53 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the DSA algorithm (FIPS-186).  At this time, only signature
+Implement the RSA algorithm (PKCS#1 / RFC3447).  At this time, only signature
 verification is supported.  This uses the asymmetric public key subtype to hold
 its key data.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- security/keys/Kconfig      |    7 ++
+ security/keys/Kconfig      |    6 +
  security/keys/Makefile     |    1 
- security/keys/crypto_dsa.c |  126 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 134 insertions(+), 0 deletions(-)
- create mode 100644 security/keys/crypto_dsa.c
+ security/keys/crypto_rsa.c |  282 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 289 insertions(+), 0 deletions(-)
+ create mode 100644 security/keys/crypto_rsa.c
 
 
 diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 07c7f3b..76de2ba 100644
+index 76de2ba..0090cd5 100644
 --- a/security/keys/Kconfig
 +++ b/security/keys/Kconfig
-@@ -86,3 +86,10 @@ config CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
- 	  If signature generation and/or verification are to be used,
- 	  appropriate hash algorithms (such as SHA-1) must be available.
- 	  ENOPKG will be reported if the requisite algorithm is unavailable.
+@@ -93,3 +93,9 @@ config CRYPTO_KEY_PKEY_ALGO_DSA
+ 	help
+ 	  This option enables support for the DSA public key algorithm
+ 	  (FIPS-186).
 +
-+config CRYPTO_KEY_PKEY_ALGO_DSA
-+	tristate "DSA public-key algorithm"
++config CRYPTO_KEY_PKEY_ALGO_RSA
++	tristate "RSA public-key algorithm"
 +	depends on CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
 +	help
-+	  This option enables support for the DSA public key algorithm
-+	  (FIPS-186).
++	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
 diff --git a/security/keys/Makefile b/security/keys/Makefile
-index dc3281f..5f1c627 100644
+index 5f1c627..7245a20 100644
 --- a/security/keys/Makefile
 +++ b/security/keys/Makefile
-@@ -26,5 +26,6 @@ obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
- obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
+@@ -27,5 +27,6 @@ obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
  obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto_keys.o
  obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
-+obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_DSA) += crypto_dsa.o
+ obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_DSA) += crypto_dsa.o
++obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_RSA) += crypto_rsa.o
  
  crypto_keys-y := crypto_type.o crypto_verify.o
-diff --git a/security/keys/crypto_dsa.c b/security/keys/crypto_dsa.c
+diff --git a/security/keys/crypto_rsa.c b/security/keys/crypto_rsa.c
 new file mode 100644
-index 0000000..26b86f2
+index 0000000..beb5181
 --- /dev/null
-+++ b/security/keys/crypto_dsa.c
-@@ -0,0 +1,126 @@
-+/* DSA asymmetric public-key algorithm
++++ b/security/keys/crypto_rsa.c
+@@ -0,0 +1,282 @@
++/* RSA asymmetric public-key algorithm [RFC3447]
 + *
 + * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -82,7 +81,7 @@ index 0000000..26b86f2
 + * 2 of the Licence, or (at your option) any later version.
 + */
 +
-+#define pr_fmt(fmt) "DSA: "fmt
++#define pr_fmt(fmt) "RSA: "fmt
 +#include <linux/module.h>
 +#include <linux/kernel.h>
 +#include "public_key.h"
@@ -95,106 +94,262 @@ index 0000000..26b86f2
 +	pr_devel("<== %s()"FMT"\n", __func__, ##__VA_ARGS__)
 +
 +/*
-+ * Perform the actual mathematical DSA signature verification.
++ * Hash algorithm OIDs plus ASN.1 DER wrappings [RFC4880 sec 5.2.2].
 + */
-+static int DSA_verify(const MPI datahash,
-+		      const struct public_key_signature *sig,
-+		      const struct public_key *key)
++static const u8 RSA_digest_info_MD5[] = {
++	0x30, 0x20, 0x30, 0x0C, 0x06, 0x08,
++	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, /* OID */
++	0x05, 0x00, 0x04, 0x10
++};
++
++static const u8 RSA_digest_info_SHA1[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2B, 0x0E, 0x03, 0x02, 0x1A,
++	0x05, 0x00, 0x04, 0x14
++};
++
++static const u8 RSA_digest_info_RIPE_MD_160[] = {
++	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
++	0x2B, 0x24, 0x03, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x14
++};
++
++static const u8 RSA_digest_info_SHA224[] = {
++	0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04,
++	0x05, 0x00, 0x04, 0x1C
++};
++
++static const u8 RSA_digest_info_SHA256[] = {
++	0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
++	0x05, 0x00, 0x04, 0x20
++};
++
++static const u8 RSA_digest_info_SHA384[] = {
++	0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
++	0x05, 0x00, 0x04, 0x30
++};
++
++static const u8 RSA_digest_info_SHA512[] = {
++	0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
++	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
++	0x05, 0x00, 0x04, 0x40
++};
++
++static const struct {
++	const u8 const *data;
++	size_t size;
++} RSA_ASN1_templates[PKEY_HASH__LAST] = {
++#define _(X) { RSA_digest_info_##X, sizeof(RSA_digest_info_##X) }
++	[PKEY_HASH_MD5]		= _(MD5),
++	[PKEY_HASH_SHA1]	= _(SHA1),
++	[PKEY_HASH_RIPE_MD_160]	= _(RIPE_MD_160),
++	[PKEY_HASH_SHA256]	= _(SHA256),
++	[PKEY_HASH_SHA384]	= _(SHA384),
++	[PKEY_HASH_SHA512]	= _(SHA512),
++	[PKEY_HASH_SHA224]	= _(SHA224),
++#undef _
++};
++
++/*
++ * RSAVP1() function [RFC3447 sec 5.2.2]
++ */
++static int RSAVP1(const struct public_key *key, MPI s, MPI *_m)
 +{
-+	MPI w = NULL, u1 = NULL, u2 = NULL, v = NULL;
-+	MPI base[3];
-+	MPI exp[3];
-+	int rc;
++	MPI m;
++	int ret;
 +
-+	kenter("");
-+
-+	if (!(mpi_cmp_ui(sig->dsa.r, 0) > 0 &&
-+	      mpi_cmp(sig->dsa.r, key->dsa.q) < 0)) {
-+		pr_warning("Assertion failed [0 < r < q]\n");
-+		return -EKEYREJECTED;
++	/* (1) Validate 0 <= s < n */
++	if (mpi_cmp_ui(s, 0) < 0) {
++		kleave(" = -EBADMSG [s < 0]");
++		return -EBADMSG;
++	}
++	if (mpi_cmp(s, key->rsa.n) >= 0) {
++		kleave(" = -EBADMSG [s >= n]");
++		return -EBADMSG;
 +	}
 +
-+	if (!(mpi_cmp_ui(sig->dsa.s, 0) > 0 &&
-+	      mpi_cmp(sig->dsa.s, key->dsa.q) < 0)) {
-+		pr_warning("Assertion failed [0 < s < q]\n");
-+		return -EKEYREJECTED;
++	m = mpi_alloc(0);
++	if (!m)
++		return -ENOMEM;
++
++	/* (2) m = s^e mod n */
++	ret = mpi_powm(m, s, key->rsa.e, key->rsa.n);
++	if (ret < 0) {
++		mpi_free(m);
++		return ret;
 +	}
 +
-+	rc = -ENOMEM;
-+	w  = mpi_alloc(mpi_get_nlimbs(key->dsa.q)); if (!w ) goto cleanup;
-+	u1 = mpi_alloc(mpi_get_nlimbs(key->dsa.q)); if (!u1) goto cleanup;
-+	u2 = mpi_alloc(mpi_get_nlimbs(key->dsa.q)); if (!u2) goto cleanup;
-+	v  = mpi_alloc(mpi_get_nlimbs(key->dsa.p)); if (!v ) goto cleanup;
-+
-+	/* w = s^(-1) mod q */
-+	if (mpi_invm(w, sig->dsa.s, key->dsa.q) < 0)
-+		goto cleanup;
-+
-+	/* u1 = (datahash * w) mod q */
-+	if (mpi_mulm(u1, datahash, w, key->dsa.q) < 0)
-+		goto cleanup;
-+
-+	/* u2 = r * w mod q  */
-+	if (mpi_mulm(u2, sig->dsa.r, w, key->dsa.q) < 0)
-+		goto cleanup;
-+
-+	/* v =  g^u1 * y^u2 mod p mod q */
-+	base[0] = key->dsa.g;	exp[0] = u1;
-+	base[1] = key->dsa.y;	exp[1] = u2;
-+	base[2] = NULL;		exp[2] = NULL;
-+
-+	if (mpi_mulpowm(v, base, exp, key->dsa.p) < 0)
-+		goto cleanup;
-+
-+	if (mpi_fdiv_r(v, v, key->dsa.q) < 0)
-+		goto cleanup;
-+
-+	rc = (mpi_cmp(v, sig->dsa.r) == 0) ? 0 : -EKEYREJECTED;
-+
-+cleanup:
-+	mpi_free(w);
-+	mpi_free(u1);
-+	mpi_free(u2);
-+	mpi_free(v);
-+	kleave(" = %d", rc);
-+	return rc;
++	*_m = m;
++	return 0;
 +}
 +
 +/*
-+ * Perform the verification step.
++ * Integer to Octet String conversion [RFC3447 sec 4.1]
 + */
-+static int DSA_verify_signature(const struct public_key *key,
++static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
++{
++	unsigned X_size, x_size;
++	int X_sign;
++	u8 *X;
++
++	/* Make sure the string is the right length.  The number should begin
++	 * with { 0x00, 0x01, ... } so we have to account for 15 leading zero
++	 * bits not being reported by MPI.
++	 */
++	x_size = mpi_get_nbits(x);
++	pr_devel("size(x)=%u xLen*8=%zu\n", x_size, xLen * 8);
++	if (x_size != xLen * 8 - 15)
++		return -ERANGE;
++
++	X = mpi_get_buffer(x, &X_size, &X_sign);
++	if (!X)
++		return -ENOMEM;
++	if (X_sign < 0) {
++		kfree(X);
++		return -EBADMSG;
++	}
++	if (X_size != xLen - 1) {
++		kfree(X);
++		return -EBADMSG;
++	}
++
++	*_X = X;
++	return 0;
++}
++
++/*
++ * Perform the RSA signature verification.
++ * @H: Value of hash of data and metadata
++ * @EM: The computed signature value
++ * @k: The size of EM (EM[0] is an invalid location but should hold 0x00)
++ * @hash_size: The size of H
++ * @asn1_template: The DigestInfo ASN.1 template
++ * @asn1_size: Size of asm1_template[]
++ */
++static int RSA_verify(const u8 *H, const u8 *EM, size_t k, size_t hash_size,
++		      const u8 *asn1_template, size_t asn1_size)
++{
++	unsigned PS_end, T_offset, i;
++
++	kenter(",,%zu,%zu,%zu", k, hash_size, asn1_size);
++
++	if (k < 2 + 1 + asn1_size + hash_size)
++		return -EBADMSG;
++
++	/* Decode the EMSA-PKCS1-v1_5 */
++	if (EM[1] != 0x01) {
++		kleave(" = -EBADMSG [EM[1] == %02u]", EM[1]);
++		return -EBADMSG;
++	}
++
++	T_offset = k - (asn1_size + hash_size);
++	PS_end = T_offset - 1;
++	if (EM[PS_end] != 0x00) {
++		kleave(" = -EBADMSG [EM[T-1] == %02u]", EM[PS_end]);
++		return -EBADMSG;
++	}
++
++	for (i = 2; i < PS_end; i++) {
++		if (EM[i] != 0xff) {
++			kleave(" = -EBADMSG [EM[PS%x] == %02u]", i - 2, EM[i]);
++			return -EBADMSG;
++		}
++	}
++
++	if (memcmp(asn1_template, EM + T_offset, asn1_size) != 0) {
++		kleave(" = -EBADMSG [EM[T] ASN.1 mismatch]");
++		return -EBADMSG;
++	}
++
++	if (memcmp(H, EM + T_offset + asn1_size, hash_size) != 0) {
++		kleave(" = -EKEYREJECTED [EM[T] hash mismatch]");
++		return -EKEYREJECTED;
++	}
++
++	kleave(" = 0");
++	return 0;
++}
++
++/*
++ * Perform the verification step [RFC3447 sec 8.2.2].
++ */
++static int RSA_verify_signature(const struct public_key *key,
 +				const struct public_key_signature *sig)
 +{
-+	MPI datahash = NULL;
++	size_t tsize;
 +	int ret;
++
++	/* Variables as per RFC3447 sec 8.2.2 */
++	const u8 *H = sig->digest;
++	u8 *EM = NULL;
++	MPI m = NULL;
++	size_t k;
 +
 +	kenter("");
 +
-+	ret = -ENOMEM;
-+	datahash = mpi_alloc((sig->digest_size + BYTES_PER_MPI_LIMB - 1) /
-+			     BYTES_PER_MPI_LIMB);
-+	if (!datahash)
-+		goto error;
++	/* (1) Check the signature size against the public key modulus size */
++	k = (mpi_get_nbits(key->rsa.n) + 7) / 8;
 +
-+	ret = mpi_set_buffer(datahash, sig->digest, sig->digest_size, 0);
++	tsize = (mpi_get_nbits(sig->rsa.s) + 7) / 8;
++	pr_devel("step 1: k=%zu size(S)=%zu\n", k, tsize);
++	if (tsize != k) {
++		ret = -EBADMSG;
++		goto error;
++	}
++
++	/* (2b) Apply the RSAVP1 verification primitive to the public key */
++	ret = RSAVP1(key, sig->rsa.s, &m);
 +	if (ret < 0)
 +		goto error;
 +
-+	ret = DSA_verify(datahash, sig, key);
++	/* (2c) Convert the message representative (m) to an encoded message
++	 *      (EM) of length k octets.
++	 *
++	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
++	 *      pointer to the _preceding_ byte to RSA_verify()!
++	 */
++	ret = RSA_I2OSP(m, k, &EM);
++	if (ret < 0)
++		goto error;
++
++#if 0
++	{
++		int i;
++		printk("H:  ");
++		for (i = 0; i < sig->digest_size; i++)
++			printk("%02x", H[i]);
++		printk("\n");
++	}
++
++	{
++		int i;
++		printk("EM: 00");
++		for (i = 0; i < k - 1; i++)
++			printk("%02x", EM[i]);
++		printk("\n");
++	}
++#endif
++
++	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
++			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
++			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
 +
 +error:
-+	mpi_free(datahash);
++	kfree(EM);
++	mpi_free(m);
 +	kleave(" = %d", ret);
 +	return ret;
 +}
 +
-+const struct public_key_algorithm DSA_public_key_algorithm = {
-+	.name		= "DSA",
-+	.n_pub_mpi	= 4,
-+	.n_sec_mpi	= 1,
-+	.n_sig_mpi	= 2,
-+	.verify		= DSA_verify_signature,
++const struct public_key_algorithm RSA_public_key_algorithm = {
++	.name		= "RSA",
++	.n_pub_mpi	= 2,
++	.n_sec_mpi	= 3,
++	.n_sig_mpi	= 1,
++	.verify		= RSA_verify_signature,
 +};
-+EXPORT_SYMBOL_GPL(DSA_public_key_algorithm);
++EXPORT_SYMBOL_GPL(RSA_public_key_algorithm);
 
