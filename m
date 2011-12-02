@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab1LBTaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:30:22 -0500
-Received: from roundabout.aalto.fi ([130.233.222.87]:52944 "EHLO
-	roundabout.aalto.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab1LBTaU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel%vger.kernel.org@roundabout.aalto.fi.25.sophos-route>);
-	Fri, 2 Dec 2011 14:30:20 -0500
-X-Greylist: delayed 1728 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 14:30:19 EST
-Message-ID: <20111202210127.y5q2dwgjk4ssco8o@webmail1.tkk.fi>
-Date: Fri,  2 Dec 2011 21:01:27 +0200
-From: Webmail =?iso-8859-1?b?WWxs5HBpdORq5A==?= <info@w.cn>
-Reply-to: accountmanagement101@hotmail.com
-To: undisclosed-recipients:;
-Subject: =?iso-8859-1?b?SHl25A==?= Webmail =?iso-8859-1?b?S+R5dHTkauQ=?=
+	id S1754504Ab1LBTal (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:30:41 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54645 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab1LBTaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 14:30:39 -0500
+Date: Fri, 2 Dec 2011 20:30:37 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, len.brown@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH] PM / Hibernate: Thaw processes in
+	SNAPSHOT_CREATE_IMAGE ioctl error/test paths
+Message-ID: <20111202193037.GA31987@atrey.karlin.mff.cuni.cz>
+References: <20111201131532.21615.86479.stgit@srivatsabhat.in.ibm.com> <20111201154722.GB12668@google.com> <4ED7AB26.4080804@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
-X-Originating-IP: 82.128.16.127
-X-Authenticated-User: ghe
-X-SEA-Spam: Gauge=XXXXXXXXXX, Probability=100%, Report='
- SXL_IP_PROXY 8, SXL_IP_DYNAMIC 3, FRAUD_IP_ANY 2.5, FRAUD_FROM_KNOWN_IP 1.5, FRAUD_IP_WITH_HTTP 0.5, FRAUD_IP_XOIP 0.5, WEBMAIL_REPLYTO_NOT_FROM 0.5, MULTIPLE_RCPTS 0.1, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_1099 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, NO_URI_FOUND 0, RDNS_GENERIC_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_GENERIC 0, TO_UNDISCLOSED_RECIPIENTS 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, WEBMAIL_XOIP 0, WEBMAIL_X_IP_HDR 0, __CANPHARM_COPYRIGHT 0, __CD 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_WEBMAIL 0, __FRAUD_WEBMAIL_REPLYTO 0, __HAS_MSGID 0, __HIGHBITS 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_PASSWORD_1 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __SPEAR_FROM_NAME_A 0, __SUBJ_HIGHBIT 0, __TO_MALFORMED_3 0, __USER_AGENT 0'
+In-Reply-To: <4ED7AB26.4080804@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hyvä Webmail Käyttäjä
+> On 12/01/2011 09:17 PM, Tejun Heo wrote:
+> 
+> > On Thu, Dec 01, 2011 at 06:45:37PM +0530, Srivatsa S. Bhat wrote:
+> >> Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
+> >> kernel threads after preallocating memory) moved the freezing of kernel
+> >> threads to hibernation_snapshot() function.
+> >>
+> >> So now, if the call to hibernation_snapshot() fails or returns early due
+> >> to a successful hibernation test, the caller has to thaw processes to
+> >> ensure that the system gets back to its original state.
+> >>
+> >> But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
+> >> processes. Fix this issue. But note that if hibernation_snapshot() returned
+> >> due to a successful freezer test, we still send the value of 'in_suspend'
+> >> (which is now 0) to userspace, because we are not in an error path per-se,
+> >> and moreover, the value of in_suspend correctly depicts the situation here.
+> >>
+> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> > 
+> > Is this still applicable on top of pm-freezer branch?
+> > 
+> 
+> 
+> Well, yes, but not in this form. Thanks for bringing that up!
+> 
+> If the call to hibernation_snapshot() returns an error, we need not do
+> anything since your freezer changes handle that case and call thaw_processes()
+> automatically.
+> But in case of return due to a successful freezer test, we would need to
+> explicitly thaw processes since the freezer successfully froze them in the
+> previous step.
+> 
+> So the following patch would do that, for the pm-freezer branch:
+> 
+> ---
+> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Subject: [PATCH] PM / Hibernate: Thaw processes in SNAPSHOT_CREATE_IMAGE ioctl test path
+> 
+> Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
+> kernel threads after preallocating memory) moved the freezing of kernel
+> threads to hibernation_snapshot() function.
+> 
+> So now, if the call to hibernation_snapshot() returns early due to a
+> successful hibernation test, the caller has to thaw processes to ensure
+> that the system gets back to its original state.
+> 
+> But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
+> processes in case hibernation_snapshot() returned due to a successful
+> freezer test. Fix this issue. But note we still send the value of 'in_suspend'
+> (which is now 0) to userspace, because we are not in an error path per-se,
+> and moreover, the value of in_suspend correctly depicts the situation here.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Meillä on rajalliset mahdollisuudet tilapäisesti kaikki ominaisuudet
-Herkkä kaikille webmailtilit. Voit palauttaa pääsy
-Täytyy heti huomioon vastata tähän e-mail With Your
-Käyttäjätunnus ja salasana. Käyttäjätunnus: () Password:
-().
+Ack.
 
-Koska suuri määrä roskapostia tai roskapostia saat joka päivä,
-Päivitä kaikki sähköpostitilit roskapostisuodatin rajoittamaan ei-viestit
-Kysyi turvallisuussyistä ja parantaa meidän uusi
-Parannettuja ominaisuuksia sähköpostitilin / email jotta
-He eivät koe palvelun keskeytystä.
-
-Sinun tulee välittömästi vastata tähän sähköpostiin ja kirjoita nimi
-Käyttäjätunnus ja salasana tila, joka antaa meille mahdollisuuden päivittää
-Sähköpostitilin kunnolla.Vahvistus linkki lähetetään
-Uudelleenkäytöstä aktivointi sähköpostitilisi, saat
-vastaus
-
-Kiitos ymmärrystä.
-3xepyl Virhe 506: Varoitus Code
-
-kiitos
-Webmail ylläpitäjä
-Tuki Copyright 2011.
-foneettisesti ListenRead
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
