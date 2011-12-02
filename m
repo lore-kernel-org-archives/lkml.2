@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab1LBOZy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 09:25:54 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:41400 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab1LBOZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 09:25:53 -0500
-From: Pedro Alves <pedro@codesourcery.com>
-Organization: CodeSourcery
-To: Pavel Emelyanov <xemul@parallels.com>
-Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
-Date: Fri, 2 Dec 2011 14:25:44 +0000
-User-Agent: KMail/1.13.6 (Linux/2.6.38-13-generic; KDE/4.7.2; x86_64; ; )
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-References: <20111129191252.769160532@openvz.org> <201112021400.42762.pedro@codesourcery.com> <4ED8DDE4.8040609@parallels.com>
-In-Reply-To: <4ED8DDE4.8040609@parallels.com>
+	id S1756774Ab1LBObq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 09:31:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57664 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754865Ab1LBObp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 09:31:45 -0500
+Date: Fri, 2 Dec 2011 15:31:42 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com, joe@perches.com,
+        dmitry.torokhov@gmail.com, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH 1/1] hv: Update MAINTAINERS
+In-Reply-To: <1322778690-17381-1-git-send-email-kys@microsoft.com>
+Message-ID: <alpine.LNX.2.00.1112021531230.18207@pobox.suse.cz>
+References: <1322778690-17381-1-git-send-email-kys@microsoft.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112021425.44897.pedro@codesourcery.com>
-X-OriginalArrivalTime: 02 Dec 2011 14:25:47.0247 (UTC) FILETIME=[488FD7F0:01CCB0FE]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 December 2011 14:17:08, Pavel Emelyanov wrote:
+On Thu, 1 Dec 2011, K. Y. Srinivasan wrote:
 
-> O_O   OK, I was wrong, they do live there. But I consider this as bug.
-
-You can't change that.  It'd break current gdb at least.
-
-> Anyway -- my concern about unneeded memory overhead still stands.
-> Even a simple find /proc will result in smth like
+> Update the MAINTAINERS file to reflect the current state
+> of the Hyper-V drivers.
 > 
-> /proc/1
-> /proc/1/children/2
-> /proc/1/children/2/children/4
-> /proc/1/children/2/children/4
-> /proc/1/children/3
-> /proc/1/children/3/children/5
-> /proc/2
-> /proc/2/children/4
-> /proc/3
-> /proc/3/children/5
-> /proc/4
-> /proc/5
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> ---
+>  MAINTAINERS |   16 ++++++++++------
+>  1 files changed, 10 insertions(+), 6 deletions(-)
 > 
-> Instead of
-> 
-> /proc/1
-> /proc/2
-> /proc/3
-> /proc/4
-> /proc/5
-> 
-> I.e. each task will be shown multiple times, which is not very fun, but memory exhaustive from my POV.
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 3523ab0..809cad8 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3197,6 +3197,16 @@ M:	William Irwin <wli@holomorphy.com>
+>  S:	Maintained
+>  F:	fs/hugetlbfs/
+>  
+> +Hyper-V CORE AND DRIVERS
+> +M:	K. Y. Srinivasan <kys@microsoft.com>
+> +M:	Haiyang Zhang <haiyangz@microsoft.com>
+> +L:	devel@linuxdriverproject.org
+> +S:	Maintained
+> +F:	drivers/hv/
+> +F:	drivers/hid/hid-hyperv.c
+> +F:	drivers/net/hyperv/
+> +F:	drivers/staging/hv/
+> +
 
-Now that is a good argument against hard linking.  But not if you make
-the entries under children/ symlinks.  Then find doesn't recurse.  And
-then 
-
-$ find -L /proc/PID/
-
-does recurse and give you the whole tree.  Which I'd say is
-actually useful...
+I will be taking this through trivial tree. Thanks,
 
 -- 
-Pedro Alves
+Jiri Kosina
+SUSE Labs
