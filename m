@@ -1,77 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab1LBIYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 03:24:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42377 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1LBIYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 03:24:33 -0500
-Subject: Re: [PATCH 1/2] MTD: NAND: ndfc: fix compilation error
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tanmay Inamdar <tinamdar@apm.com>, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 02 Dec 2011 10:24:59 +0200
-In-Reply-To: <1322783661.3729.39.camel@pasglop>
-References: <1321942850-20012-1-git-send-email-tinamdar@apm.com>
-	 <1321998220.2222.22.camel@koala> <1322783661.3729.39.camel@pasglop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-ehafntal64DZ/ixkQCBi"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1322814336.9400.18.camel@sauron.fi.intel.com>
-Mime-Version: 1.0
+	id S1752775Ab1LBIYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 03:24:47 -0500
+Received: from mga14.intel.com ([143.182.124.37]:60268 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752682Ab1LBIYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 03:24:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,282,1320652800"; 
+   d="scan'208";a="81430341"
+From: Alex Shi <alex.shi@intel.com>
+To: cl@linux.com, penberg@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 1/3] slub: set a criteria for slub node partial adding
+Date: Fri,  2 Dec 2011 16:23:07 +0800
+Message-Id: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Alex Shi <alexs@intel.com>
 
---=-ehafntal64DZ/ixkQCBi
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Times performance regression were due to slub add to node partial head
+or tail. That inspired me to do tunning on the node partial adding, to
+set a criteria for head or tail position selection when do partial
+adding.
+My experiment show, when used objects is less than 1/4 total objects
+of slub performance will get about 1.5% improvement on netperf loopback
+testing with 2048 clients, wherever on our 4 or 2 sockets platforms,
+includes sandbridge or core2.
 
-On Fri, 2011-12-02 at 10:54 +1100, Benjamin Herrenschmidt wrote:
-> On Tue, 2011-11-22 at 23:43 +0200, Artem Bityutskiy wrote:
-> > On Tue, 2011-11-22 at 11:50 +0530, Tanmay Inamdar wrote:
-> > > This patch fixes compilation error in ndfc flash driver
-> > > ---
-> > >  drivers/mtd/nand/ndfc.c |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >=20
-> > Tony Breeds <tony@bakeyournoodle.com> sent a fix for this a bit earlier=
-.
->=20
-> Any reason this isn't in Linus tree yet ?
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ mm/slub.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
-Dunno, I've just re-pinged dwmw2.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-ehafntal64DZ/ixkQCBi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJO2ItbAAoJECmIfjd9wqK07SAP/R1fteseq3AJp1nH1xNyfcgn
-qhEWvsQuCeC2NIXIKBcMjBKQOI+uPkqizqaBmJcfZZLe5T7KRbB8HjUWd855Thys
-reRSJjsLF+DK4gvlxIulc6msyil05eMAW/AUWiv42zY1mHEa95UMD0DzepJ7WCSi
-NfEiLGMcjw6wigQMYo60LKKcdDiow/mOKbfFjgHqQjA61AKKKGmWVe3MrspjILI/
-mqTHVV7mP5ARDEWn0nz3lzXskhe/xkY7y0j4s+ZhSyANbhLVsPHLjyUrJluegBwg
-0EJI52Muz/rnLN0agLVPkImDsSupILNhQDw3jc/+MK2sx6wUZeNNDKG34Fkz1Qmk
-rZMjhK3g11lRC8yzYaXg1h7rqtOLcZy0QQmOwngnyrGIPPPSBDNV5y5eSPrdS7mH
-EEVzCN0wVh85URFM9s/bW/i06mOYihUBFbwLLz41iH3Gg+74KeRFvVnMfx0njo6j
-zVoYDkJ7TeGHMH/4d4GAdoU5JfypYmwbHM/9Cq//wAsBj7wXZZFD794Vc6ai+XdL
-nGmQqEvEZznTH7s4Fhr0BdI4GXUyeh24qdY4dPNyPFOQYZmNaXq/fIeB+E4TPXqi
-2shfGnoeDqHAtVVI2ArPi5+23DWpws2Ar/yfB1zn5ec76IpSxU+XeaU6rKuCzHQL
-ve1pUQAIniN/D6Dl6M7d
-=ojc6
------END PGP SIGNATURE-----
-
---=-ehafntal64DZ/ixkQCBi--
+diff --git a/mm/slub.c b/mm/slub.c
+index ed3334d..c419e80 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1461,14 +1461,13 @@ static void discard_slab(struct kmem_cache *s, struct page *page)
+  *
+  * list_lock must be held.
+  */
+-static inline void add_partial(struct kmem_cache_node *n,
+-				struct page *page, int tail)
++static inline void add_partial(struct kmem_cache_node *n, struct page *page)
+ {
+ 	n->nr_partial++;
+-	if (tail == DEACTIVATE_TO_TAIL)
+-		list_add_tail(&page->lru, &n->partial);
+-	else
++	if (page->inuse <= page->objects / 4)
+ 		list_add(&page->lru, &n->partial);
++	else
++		list_add_tail(&page->lru, &n->partial);
+ }
+ 
+ /*
+@@ -1829,7 +1828,7 @@ redo:
+ 
+ 		if (m == M_PARTIAL) {
+ 
+-			add_partial(n, page, tail);
++			add_partial(n, page);
+ 			stat(s, tail);
+ 
+ 		} else if (m == M_FULL) {
+@@ -1904,8 +1903,7 @@ static void unfreeze_partials(struct kmem_cache *s)
+ 				if (l == M_PARTIAL)
+ 					remove_partial(n, page);
+ 				else
+-					add_partial(n, page,
+-						DEACTIVATE_TO_TAIL);
++					add_partial(n, page);
+ 
+ 				l = m;
+ 			}
+@@ -2476,7 +2474,7 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
+ 		 */
+ 		if (unlikely(!prior)) {
+ 			remove_full(s, page);
+-			add_partial(n, page, DEACTIVATE_TO_TAIL);
++			add_partial(n, page);
+ 			stat(s, FREE_ADD_PARTIAL);
+ 		}
+ 	}
+@@ -2793,7 +2791,7 @@ static void early_kmem_cache_node_alloc(int node)
+ 	init_kmem_cache_node(n, kmem_cache_node);
+ 	inc_slabs_node(kmem_cache_node, node, page->objects);
+ 
+-	add_partial(n, page, DEACTIVATE_TO_HEAD);
++	add_partial(n, page);
+ }
+ 
+ static void free_kmem_cache_nodes(struct kmem_cache *s)
+-- 
+1.7.0.1
 
