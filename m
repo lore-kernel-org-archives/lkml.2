@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab1LBQo1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 11:44:27 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48896 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755724Ab1LBQo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 11:44:26 -0500
-MIME-Version: 1.0
-From: Jose Luis Salas <josacar@gmail.com>
-Date: Fri, 2 Dec 2011 17:44:05 +0100
-Message-ID: <CAJPugqsJgN9ZL3jQAZ+eGKfzxH0PAZonj-36H6PB1cHSpQHqSw@mail.gmail.com>
-Subject: System freezes with high network activity
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756955Ab1LBQpj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 11:45:39 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:33040 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab1LBQpi convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 2 Dec 2011 11:45:38 -0500
+Message-Id: <4ED90EBF02000078000652BE@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 02 Dec 2011 16:45:35 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Borislav Petkov" <bp@amd64.org>, <mingo@elte.hu>, <tglx@linutronix.de>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] x86: fix error paths in microcode_init()
+References: <4ED8E2270200007800065120@nat28.tlf.novell.com>
+ <20111202143517.GA16690@gere.osrc.amd.com>
+ <4ED8F46E0200007800065178@nat28.tlf.novell.com>
+ <4ED8EB7D.5070802@linux.vnet.ibm.com>
+ <20111202152403.GB16690@gere.osrc.amd.com>
+ <4ED8FDE102000078000651E5@nat28.tlf.novell.com>
+ <4ED8FF7C.2090509@linux.vnet.ibm.com>
+In-Reply-To: <4ED8FF7C.2090509@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello there,
+>>> On 02.12.11 at 17:40, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> And if Boris is indeed going to take this patch, Jan, feel free to add
+> your "Signed-off-by" (if you agree to the code below) since I would like
+> to give due credit to you for pointing out the missing parts.
 
-I' ve filled a bug against linux kernel in Debian [1] for the
-linux-kernel-image 2.6.32.
+Feel free to add that or an acked-by.
 
-The problem is that the system freezes ( no complete ) when high
-network activity occurrs, for example copying files over NFS or
-downloading files with Bittorrent.
+Jan
 
-When the system is frozen, there is no network connecivity, the
-console freezes ( with top program, for ex. ) until a key from the
-laptop is pressed or when network activity drops. The  network
-throughtput also drops before the freeze.
-
-I've also realized that clock drifts ( it's frozen too ) when the
-system is frozen.
-
-This problem didn't occur in Linux kernel 2.6.26 ( from the Lenny
-release ), I think >2.6.26 are affected, but I need to confirm it ( >=
-2.6.30 are included for sure ).
-
-After investigating for a while (  tested noapic, noacpi and several
-switches with no luck.) , I've search for a solution and I finally
-found it.  I think that the bug is caused by changes in the
-clocksource between kernels and the powernow-k8 module.
-
-One time I tested booting the xen-patched the linux kernel and the
-problem dissapeared, the net worked at full speed but there was no cpu
-scaling.
-
-Now, with recent kernels, I boot the kernel with the
-clocksource=jiffies option and the powersaved daemon to do the
-frequency scaling, the net works al full speed. With acpi_pm and tsc
-options doesn't work neither.
-
-More information as acpidump output and dmesg are included in the [1]
-Debian bug too.
-
-Thanks.
-
-[1] http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=583363
