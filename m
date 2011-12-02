@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1LBTpY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:45:24 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40552 "EHLO
+	id S1754774Ab1LBTrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:47:04 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40575 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab1LBTpX (ORCPT
+	with ESMTP id S1753889Ab1LBTrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:45:23 -0500
-Date: Fri, 2 Dec 2011 20:45:18 +0100
+	Fri, 2 Dec 2011 14:47:02 -0500
+Date: Fri, 2 Dec 2011 20:46:58 +0100
 From: Borislav Petkov <bp@amd64.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Jan Beulich <JBeulich@suse.com>, Borislav Petkov <bp@amd64.org>,
-        mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Subject: Re: [PATCH] x86: fix error paths in microcode_init()
-Message-ID: <20111202194518.GE15204@aftab>
-References: <4ED8E2270200007800065120@nat28.tlf.novell.com>
- <20111202143517.GA16690@gere.osrc.amd.com>
- <4ED8F46E0200007800065178@nat28.tlf.novell.com>
- <4ED8EB7D.5070802@linux.vnet.ibm.com>
- <20111202152403.GB16690@gere.osrc.amd.com>
- <4ED8FDE102000078000651E5@nat28.tlf.novell.com>
- <4ED8FF7C.2090509@linux.vnet.ibm.com>
- <4ED90EBF02000078000652BE@nat28.tlf.novell.com>
- <4ED901F5.3080302@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>
+Subject: Re: [GIT PULL] x86, microcode fixes for 3.2
+Message-ID: <20111202194658.GF15204@aftab>
+References: <20111128204311.GA2814@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4ED901F5.3080302@linux.vnet.ibm.com>
+In-Reply-To: <20111128204311.GA2814@aftab>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 10:21:01PM +0530, Srivatsa S. Bhat wrote:
-> Wow! Good to know that we have an agreement :-)
-> Boris, it is again up to you to choose among the two(Signed-off-by or Acked-by)
-> for Jan. Hehe ;-)
+On Mon, Nov 28, 2011 at 09:43:11PM +0100, Borislav Petkov wrote:
+> Hi Ingo,
+> 
+> please pull the following two fixes for the microcode machinery.
+> 
+> Thanks.
+> 
+> The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+> 
+>   Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
+> 
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode
+> 
+> Borislav Petkov (1):
+>       x86, microcode, AMD: Restrict microcode reporting
+> 
+> Srivatsa S. Bhat (1):
+>       x86, microcode: Fix the failure path of microcode update driver init code
 
-Well,
-
-since Ingo hasn't pulled yet, I merged the two patches after adding the
-required S-O-Bs into the following:
+Since you haven't pulled yet, I've updated this one with the better
+version below, branch above has been updated too:
 
 --
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
@@ -127,8 +132,6 @@ index f2d2a66..9d46f5e 100644
  
 -- 
 1.7.8.rc0
-
-
 
 -- 
 Regards/Gruss,
