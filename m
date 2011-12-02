@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab1LBABN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 19:01:13 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56026 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755597Ab1LBABL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 19:01:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <4ED7FA81.9090802@redhat.com>
-References: <20111201070052.GA29708@july>
-	<4ED7FA81.9090802@redhat.com>
-Date: Fri, 2 Dec 2011 09:01:10 +0900
-X-Google-Sender-Auth: AxLuUpMwBoRJFTAuWNuMBuvJ0GM
-Message-ID: <CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
-Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
-From: Kyungmin Park <kmpark@infradead.org>
-To: Eric Sandeen <sandeen@redhat.com>, Lukas Czerner <lczerner@redhat.com>
-Cc: tytso@mit.edu, tm@tao.ma, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755865Ab1LBACS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 19:02:18 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:49374 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755766Ab1LBACR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 19:02:17 -0500
+Message-ID: <1322784117.21423.155.camel@work-vm>
+Subject: Re: [GIT PULL] RTC fixes for 3.2
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        "Yang Honggang (Joseph)" <eagle.rtlinux@gmail.com>
+Date: Thu, 01 Dec 2011 16:01:57 -0800
+In-Reply-To: <1322019132.6445.106.camel@work-vm>
+References: <1322019132.6445.106.camel@work-vm>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
+x-cbid: 11120200-5806-0000-0000-000010308E3B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/2/11, Eric Sandeen <sandeen@redhat.com> wrote:
-> On 12/1/11 1:00 AM, Kyungmin Park wrote:
->> From: Kyungmin Park <kyungmin.park@samsung.com>
->>
->> Now trim information doesn't stored at disk so every boot time. it's
->> cleared.
->> and do the trim all disk groups.
->> But assume that it's already trimmed at previous time so don't need to
->> trim it again. So set the intial state as trimmed.
->>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
->> index e2d8be8..97ef342 100644
->> --- a/fs/ext4/mballoc.c
->> +++ b/fs/ext4/mballoc.c
->> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
->> ext4_group_t group)
->>  		goto err;
->>  	}
->>  	mark_page_accessed(page);
->> +
->> +	/*
->> +	 * TRIM information is not stored at disk so set the initial
->> +	 * state as trimmed. Since previous time it's already trimmed all
->> +	 */
->> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
->
-Hi,
+Hey Thomas,
+	I just wanted to ping you again on the following fixes for 3.2. I've
+added a clocksource fix as well to the queue.
 
-> Hm, so if there were freed but un-trimmed blocks at this point, we will
-> never trim them until we free _another_ block in the group, right?  That
-> might be a reasonable tradeoff, but it is somewhat surprising behavior.
->
-> i.e. say we do:
->
-> mount /mnt
-> rm -rf /mnt/very_big_file
-> umount /mnt
->
-> mount /mnt
-> fitrim /mnt
-another word, you can run fitrim after rm -rf
-yes, it's trade-off.
+The patches available in the git repository at:
+  git://git.linaro.org/people/jstultz/linux.git fortglx/3.2/tip/timers/urgent
 
-In my case, phone scenario, no umount system and data partition. it's
-burden to trim at boot time. it has still slower boot time.
-some daemon or program run fitrm at filesystem. it consumes time and
-hurt other boot processes.
->
-> then we won't trim anything at all, right, despite there being many
-> new free blocks?  Which would be rather unexpected.
->
-> If we don't store the trimmed state on disk, I think we should
-> probably stick with the slower first-time trim, and the more obvious
-> behavior (all free blocks are always trimmed whenever a trim
-> command is issued).
+Arve Hjønnevåg (1):
+      rtc: Fix some bugs that allowed accumulating time drift in suspend/resume
 
-Umm how do you think, introduce the trim force command for this?
+Rabin Vincent (1):
+      rtc: Disable the alarm in the hardware
 
-Thank you,
-Kyungmin Park
->
-> -Eric
->
->>  err:
->>  	ext4_mb_put_buddy_page_lock(&e4b);
->>  	return ret;
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+Yang Honggang (Joseph) (1):
+      clocksource: Fix bug with max_deferment margin calculation
+
+ drivers/rtc/class.c       |   10 +++++-----
+ drivers/rtc/interface.c   |   44 ++++++++++++++++++++++++++++++++++----------
+ kernel/time/clocksource.c |    4 ++--
+ 3 files changed, 41 insertions(+), 17 deletions(-)
+
+
