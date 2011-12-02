@@ -1,48 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972Ab1LBFyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 00:54:50 -0500
-Received: from bender.cm4all.net ([87.106.27.49]:42651 "EHLO bender.cm4all.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750926Ab1LBFys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 00:54:48 -0500
-Subject: [PATCH] fs/namespace: waiting for mutex in lock_mount() is "killable"
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-From: Max Kellermann <mk@cm4all.com>
-Cc: max@duempel.org
-Date: Fri, 02 Dec 2011 06:56:58 +0100
-Message-ID: <20111202055658.22371.21820.stgit@rabbit.intern.cm-ag>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1751911Ab1LBGER (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 01:04:17 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:33102 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750926Ab1LBGEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 01:04:16 -0500
+X-AuditID: cbfee61a-b7b62ae0000030b0-52-4ed86a5e9425
+Date: Fri, 02 Dec 2011 15:04:24 +0900
+From: Kyungmin Park <kmpark@infradead.org>
+To: tytso@mit.edu, tm@tao.ma, lczerner@redhat.com
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] ext4: auto batched discard support at kernel thread
+Message-id: <20111202060424.GA26155@july>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow killing the process while it's indirectly waiting for the NFS
-server's response.
+Hi,
+
+It's proof of concept to run kernel thread for batched discard.
+
+Now it can run fitrim at user level. but it's not clear which deamon run this activity.
+In case of android platform, the launcher is candidate 
+but user can change the default launcher then it can't use the fitrim any more.
+
+To address this issue. no dependency with platform. run the fitrim at kernel.
+Basically don't bother the user it runs at 2 clock. Please note that if it's clean state, it doesn't take much time.
+
+Please give opinions and comments.
+
+Thank you,
+Kyungmin Park
 ---
- fs/namespace.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index e5e1c7d..9560bec 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1651,8 +1651,13 @@ static int attach_recursive_mnt(struct vfsmount *source_mnt,
- static int lock_mount(struct path *path)
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 5b0e26a..2cad9b3 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -942,6 +942,7 @@ struct ext4_inode_info {
+ 
+ #define EXT4_MOUNT2_EXPLICIT_DELALLOC	0x00000001 /* User explicitly
+ 						      specified delalloc */
++#define EXT4_MOUNT2_AUTO_DISCARD	0x00000002 /* Auto batched discard */
+ 
+ #define clear_opt(sb, opt)		EXT4_SB(sb)->s_mount_opt &= \
+ 						~EXT4_MOUNT_##opt
+@@ -1249,6 +1250,10 @@ struct ext4_sb_info {
+ 
+ 	/* record the last minlen when FITRIM is called. */
+ 	atomic_t s_last_trim_minblks;
++
++	/* timer for periodic auto batched discard */
++	struct timer_list s_auto_discard;
++	struct task_struct *s_auto_discard_thread;
+ };
+ 
+ static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 3858767..a2e9920 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -818,6 +818,10 @@ static void ext4_put_super(struct super_block *sb)
+ 			ext4_abort(sb, "Couldn't clean up the journal");
+ 	}
+ 
++	if (test_opt2(sb, AUTO_DISCARD)) {
++		kthread_stop(sbi->s_auto_discard_thread);
++		del_timer(&sbi->s_auto_discard);
++	}
+ 	del_timer(&sbi->s_err_report);
+ 	ext4_release_system_zone(sb);
+ 	ext4_mb_release(sb);
+@@ -1144,6 +1148,9 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
+ 	if (test_opt(sb, DISCARD) && !(def_mount_opts & EXT4_DEFM_DISCARD))
+ 		seq_puts(seq, ",discard");
+ 
++	if (test_opt2(sb, AUTO_DISCARD))
++		seq_puts(seq, ",auto_batched_discard");
++
+ 	if (test_opt(sb, NOLOAD))
+ 		seq_puts(seq, ",norecovery");
+ 
+@@ -1333,7 +1340,7 @@ enum {
+ 	Opt_nomblk_io_submit, Opt_block_validity, Opt_noblock_validity,
+ 	Opt_inode_readahead_blks, Opt_journal_ioprio,
+ 	Opt_dioread_nolock, Opt_dioread_lock,
+-	Opt_discard, Opt_nodiscard,
++	Opt_discard, Opt_nodiscard, Opt_auto_discard,
+ 	Opt_init_inode_table, Opt_noinit_inode_table,
+ };
+ 
+@@ -1407,6 +1414,7 @@ static const match_table_t tokens = {
+ 	{Opt_dioread_lock, "dioread_lock"},
+ 	{Opt_discard, "discard"},
+ 	{Opt_nodiscard, "nodiscard"},
++	{Opt_auto_discard, "auto_batched_discard"},
+ 	{Opt_init_inode_table, "init_itable=%u"},
+ 	{Opt_init_inode_table, "init_itable"},
+ 	{Opt_noinit_inode_table, "noinit_itable"},
+@@ -1886,6 +1894,9 @@ set_qf_format:
+ 		case Opt_nodiscard:
+ 			clear_opt(sb, DISCARD);
+ 			break;
++		case Opt_auto_discard:
++			set_opt2(sb, AUTO_DISCARD);
++			break;
+ 		case Opt_dioread_nolock:
+ 			set_opt(sb, DIOREAD_NOLOCK);
+ 			break;
+@@ -2763,6 +2774,71 @@ static void print_daily_error_info(unsigned long arg)
+ 	mod_timer(&sbi->s_err_report, jiffies + 24*60*60*HZ);  /* Once a day */
+ }
+ 
++/*
++ * This function is called once a day to make a trim the device
++ */
++static int ext4_auto_batched_discard_thread(void *data)
++{
++	struct super_block *sb = data;
++	struct ext4_sb_info *sbi = EXT4_SB(sb);
++	struct fstrim_range range;
++	struct timeval now;
++	struct tm tm;
++	long next;
++	int ret;
++
++	set_freezable();
++
++	for (;;) {
++		if (kthread_should_stop())
++			break;
++
++		if (try_to_freeze())
++			continue;
++
++		range.start = 0;
++		range.len = ~(__u64)0;
++		range.minlen = SZ_1M;
++
++		ret = ext4_trim_fs(sb, &range);
++		if (ret < 0)
++			ext4_msg(sb, KERN_NOTICE, "error count: %u", ret);
++		else
++			ext4_msg(sb, KERN_NOTICE, "trimmed size %llu",
++					range.len);
++
++		do_gettimeofday(&now);
++		time_to_tm((time_t) now.tv_sec, 0, &tm);
++
++		/* Run the every day at 2 clock */
++		/* XXX need to consider the timezone? */
++		next = 2 - tm.tm_hour;
++		if (next <= 0)
++			next += 24;
++		next *= 60*60*HZ;
++
++		/* Re-arm the timer for next trim */
++		mod_timer(&sbi->s_auto_discard, jiffies + next);
++
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++	}
++
++	return 0;
++}
++
++static void ext4_auto_batched_discard(unsigned long arg)
++{
++	struct super_block *sb = (struct super_block *) arg;
++	struct ext4_sb_info *sbi = EXT4_SB(sb);
++
++	/*
++	 * The ext4_trim_fs can't run at timer context
++	 * So use the created kthread.
++	 */
++	wake_up_process(sbi->s_auto_discard_thread);
++}
++
+ /* Find next suitable group and run ext4_init_inode_table */
+ static int ext4_run_li_request(struct ext4_li_request *elr)
  {
- 	struct vfsmount *mnt;
-+	int err;
+@@ -3576,6 +3652,21 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	sbi->s_err_report.function = print_daily_error_info;
+ 	sbi->s_err_report.data = (unsigned long) sb;
+ 
++	if (test_opt2(sb, AUTO_DISCARD)) {
++		init_timer(&sbi->s_auto_discard);
++		sbi->s_auto_discard.function = ext4_auto_batched_discard;
++		sbi->s_auto_discard.data = (unsigned long) sb;
++		sbi->s_auto_discard_thread =
++			kthread_create(ext4_auto_batched_discard_thread, sb,
++				"ext4-batched-discard");
++		if (IS_ERR(sbi->s_auto_discard_thread)) {
++			err = PTR_ERR(sbi->s_auto_discard_thread);
++			goto failed_mount2;
++		}
++		/* One hour is enough to know the time */
++		mod_timer(&sbi->s_auto_discard, jiffies + 1*60*60*HZ);
++	}
 +
- retry:
--	mutex_lock(&path->dentry->d_inode->i_mutex);
-+	err = mutex_lock_killable(&path->dentry->d_inode->i_mutex);
-+	if (unlikely(err))
-+		return err;
+ 	err = percpu_counter_init(&sbi->s_freeclusters_counter,
+ 			ext4_count_free_clusters(sb));
+ 	if (!err) {
+@@ -3848,6 +3939,10 @@ failed_mount_wq:
+ 		sbi->s_journal = NULL;
+ 	}
+ failed_mount3:
++	if (test_opt2(sb, AUTO_DISCARD)) {
++		kthread_stop(sbi->s_auto_discard_thread);
++		del_timer(&sbi->s_auto_discard);
++	}
+ 	del_timer(&sbi->s_err_report);
+ 	if (sbi->s_flex_groups)
+ 		ext4_kvfree(sbi->s_flex_groups);
+@@ -4546,6 +4641,22 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 	if (sbi->s_journal == NULL)
+ 		ext4_commit_super(sb, 1);
+ 
++	if (test_opt2(sb, AUTO_DISCARD) && !sbi->s_auto_discard_thread) {
++		init_timer(&sbi->s_auto_discard);
++		sbi->s_auto_discard.function = ext4_auto_batched_discard;
++		sbi->s_auto_discard.data = (unsigned long) sb;
++		sbi->s_auto_discard_thread =
++			kthread_create(ext4_auto_batched_discard_thread, sb,
++				"ext4-batched-discard");
++		if (IS_ERR(sbi->s_auto_discard_thread)) {
++			err = PTR_ERR(sbi->s_auto_discard_thread);
++			goto restore_opts;
++		}
 +
- 	if (unlikely(cant_mount(path->dentry))) {
- 		mutex_unlock(&path->dentry->d_inode->i_mutex);
- 		return -ENOENT;
-
++		/* One hour is enough to know the time */
++		mod_timer(&sbi->s_auto_discard, jiffies + 1*60*60*HZ);
++	}
++
+ #ifdef CONFIG_QUOTA
+ 	/* Release old quota file names */
+ 	for (i = 0; i < MAXQUOTAS; i++)
