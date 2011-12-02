@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab1LBTmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:42:24 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:58289 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399Ab1LBTmX (ORCPT
+	id S1754628Ab1LBToP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:44:15 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:59533 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab1LBToO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:42:23 -0500
-Date: Fri, 2 Dec 2011 20:42:19 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Greg KH <greg@kroah.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, fengguang.wu@intel.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] DEBUGFS: Automatically create parents for debugfs files
-Message-ID: <20111202194219.GU24062@one.firstfloor.org>
-References: <1322851407-17182-1-git-send-email-andi@firstfloor.org> <1322851407-17182-2-git-send-email-andi@firstfloor.org> <20111202191724.GA13613@kroah.com>
+	Fri, 2 Dec 2011 14:44:14 -0500
+Message-ID: <1322855029.21423.170.camel@work-vm>
+Subject: Re: System freezes with high network activity
+From: john stultz <johnstul@us.ibm.com>
+To: Jose Luis Salas <josacar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Date: Fri, 02 Dec 2011 11:43:49 -0800
+In-Reply-To: <CAJPugqsJgN9ZL3jQAZ+eGKfzxH0PAZonj-36H6PB1cHSpQHqSw@mail.gmail.com>
+References: <CAJPugqsJgN9ZL3jQAZ+eGKfzxH0PAZonj-36H6PB1cHSpQHqSw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111202191724.GA13613@kroah.com>
-User-Agent: Mutt/1.4.2.2i
+x-cbid: 11120219-5518-0000-0000-000000C4A660
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 11:17:24AM -0800, Greg KH wrote:
-> I like this, but some documentation will probably need to be added
-> somwhere saying that it's now legal to create a debugfs file with
-> "this/is/a/tree" and have it all be expanded out.
-
-Ok. Updating the kerneldoc entries.
-
+On Fri, 2011-12-02 at 17:44 +0100, Jose Luis Salas wrote:
+> Hello there,
 > 
-> And yes, cleaning up the directories shouldn't be a big issue, but what
-> if the directory is already there and it tries to be created again?
-> Shouldn't you do a lookup first and use that dentry if it's there?
+> I' ve filled a bug against linux kernel in Debian [1] for the
+> linux-kernel-image 2.6.32.
+> 
+> The problem is that the system freezes ( no complete ) when high
+> network activity occurrs, for example copying files over NFS or
+> downloading files with Bittorrent.
+> 
+> When the system is frozen, there is no network connecivity, the
+> console freezes ( with top program, for ex. ) until a key from the
+> laptop is pressed or when network activity drops. The  network
+> throughtput also drops before the freeze.
+> 
+> I've also realized that clock drifts ( it's frozen too ) when the
+> system is frozen.
+> 
+> This problem didn't occur in Linux kernel 2.6.26 ( from the Lenny
+> release ), I think >2.6.26 are affected, but I need to confirm it ( >=
+> 2.6.30 are included for sure ).
+> 
+> After investigating for a while (  tested noapic, noacpi and several
+> switches with no luck.) , I've search for a solution and I finally
+> found it.  I think that the bug is caused by changes in the
+> clocksource between kernels and the powernow-k8 module.
+> 
+> One time I tested booting the xen-patched the linux kernel and the
+> problem dissapeared, the net worked at full speed but there was no cpu
+> scaling.
+> 
+> Now, with recent kernels, I boot the kernel with the
+> clocksource=jiffies option and the powersaved daemon to do the
+> frequency scaling, the net works al full speed. With acpi_pm and tsc
+> options doesn't work neither.
 
-In this case debugfs_create_dir() errors out, the caller ignores
-the error and just looks it up. So yes should work.
+So, could you attach a full dmesg when you're not using
+clocksource=jiffies?
 
--Andi
+Also, when not using clocksource=jiffies, does booting with nohz=off
+change the behavior?
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+thanks
+-john
+
+
