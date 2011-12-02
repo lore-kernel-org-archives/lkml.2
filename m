@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752622Ab1LBH16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 02:27:58 -0500
+	id S1752735Ab1LBH2J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 02:28:09 -0500
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:36364 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab1LBH15 (ORCPT
+	with ESMTP id S1752670Ab1LBH2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 02:27:57 -0500
-Date: Fri, 2 Dec 2011 08:27:53 +0100
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
-        Jan Beulich <jbeulich@novell.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Frank Arnold <frank.arnold@amd.com>
-Subject: [PATCH] x86, amd: Kill misleading message about enablement of IO
- access to PCI ECS
-Message-ID: <20111202072753.GB31916@alberich.amd.com>
+	Fri, 2 Dec 2011 02:28:05 -0500
+Date: Fri, 2 Dec 2011 11:28:00 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [rfc 1/3] fs, proc: Add start_data, end_data, start_brk members
+ to /proc/$pid/stat
+Message-ID: <20111202072800.GC14515@moon>
+References: <20111129191252.769160532@openvz.org>
+ <20111129191638.756761754@openvz.org>
+ <20111129200627.GO5169@outflux.net>
+ <20111202002405.GA7701@p183.telecom.by>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20111202002405.GA7701@p183.telecom.by>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+On Fri, Dec 02, 2011 at 03:24:06AM +0300, Alexey Dobriyan wrote:
+> > > +		cputime_to_clock_t(cgtime),
+> > > +		mm ? (permitted ? mm->start_data : 1) : 0,
+> > > +		mm ? (permitted ? mm->end_data : 1) : 0,
+> > > +		mm ? (permitted ? mm->start_brk : 1) : 0);
+> > >  	if (mm)
+> > >  		mmput(mm);
+> > >  	return 0;
+> > 
+> > Thanks for using "permitted" here. :)
+> 
+> And these are new fields, so "1" hack is unnecessary.
+> 
 
-Commit 24d9b70b8c679264756a6980e668b96b3f964826 (x86: Use PCI method
-for enabling AMD extended config space before MSR method) added a
-message when IO access to PCI ECS was enabled via access to the NB_CFG
-PCI register.  This can lead to a bogus message like
+I perhaps miss some history here, you mean just print 0
+instead of 1, right?
 
-[    0.365177] Extended Config Space enabled on 0 nodes
-
-which is misleading because IO ECS access is subsequently enabled for
-AMD CPUs (that support this) by modifying the corresponding NB_CFG
-MSR.
-
-Furthermore it's not "Extended Config Space" that is enabled by this
-register setting. It's the IO access that is enabled for extended
-configruation space.
-
-IMHO the ambiguous message needs to be cancelled.
-
-Cc: Jan Beulich <jbeulich@novell.com>
-Cc: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/pci/amd_bus.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-index 026e493..7b7a897 100644
---- a/arch/x86/pci/amd_bus.c
-+++ b/arch/x86/pci/amd_bus.c
-@@ -403,7 +403,6 @@ static void __init pci_enable_pci_io_ecs(void)
- 			++n;
- 		}
- 	}
--	pr_info("Extended Config Space enabled on %u nodes\n", n);
- #endif
- }
- 
--- 
-1.7.8.rc4
-
+	Cyrill
