@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab1LBEnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 23:43:09 -0500
-Received: from ellpspace.math.ualberta.ca ([129.128.207.67]:52386 "EHLO
-	ellpspace.math.ualberta.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753333Ab1LBEnI (ORCPT
+	id S1756578Ab1LBEqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 23:46:23 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44381 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333Ab1LBEqW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 23:43:08 -0500
-X-Greylist: delayed 2278 seconds by postgrey-1.27 at vger.kernel.org; Thu, 01 Dec 2011 23:43:07 EST
-Date: Thu, 1 Dec 2011 21:04:47 -0700
-From: Michal Jaegermann <michal@ellpspace.math.ualberta.ca>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Oliver Neukum <oneukum@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: Suspend and resume on ASUS Laptops
-Message-ID: <20111202040447.GA16824@ellpspace.math.ualberta.ca>
-References: <1322712689.30977.11.camel@frodo>
- <201112011035.57666.rjw@sisk.pl>
+	Thu, 1 Dec 2011 23:46:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112011035.57666.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201112011419.46751.arnd@arndb.de>
+References: <1322711557-8279-1-git-send-email-paul.gortmaker@windriver.com>
+	<201112011419.46751.arnd@arndb.de>
+Date: Thu, 1 Dec 2011 23:38:57 -0500
+X-Google-Sender-Auth: kHFeS2YS1RJx-jKflet1wtyJxNo
+Message-ID: <CAP=VYLrp1zqyOzU-xzatF3jE3wL6wBjEDMR=sEXimP2ZvkQ0Lg@mail.gmail.com>
+Subject: Re: [PATCH] arm: add default value for PHYS_OFFSET Kconfig setting
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, nicolas.pitre@linaro.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 10:35:57AM +0100, Rafael J. Wysocki wrote:
-> On Thursday, December 01, 2011, Steven Rostedt wrote:
-> > For Black Friday I bought myself a ASUS-U56E-RBL8 at Staples for a
-> > decent price. I installed Linux on it but it would not suspend.
-.....
-> > 
-> > It just seems crazy to have everyday users add this script.
-> 
-> I totally agree, I had no idea it was necessary.
+On Thu, Dec 1, 2011 at 9:19 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 01 December 2011, Paul Gortmaker wrote:
+>> Commit 1b9f95f8ade9efc2bd49f0e7b9dc61a038ac3eef introduced the new
+>> Kconfig for PHYS_OFFSET but it did not specify a default value.
+>>
+>> This has the undesired side effect of breaking an implictly used
+>> trick for updating defconfigs on the fly for routine buildtesting
+>> across all arch and all platforms, i.e.
+>>
+>>   cp /path/to/somedefconfig .config ; yes "" | make oldconfig
+>>
+>
+> FWIW, a better way to achieve the above is using
+>
+> make KCONFIG_ALLCONFIG=/path/to/somedefconfig listnewconfig alldefconfig
+>
+> which does not have this problem.
+>
+> Your patch looks still ok, but you might want to update your scripts
+> to be more robust.
 
-On  2011-04-16 I filed a pretty similar bug report in Red Hat bugzilla.
-It sits here: https://bugzilla.redhat.com/show_bug.cgi?id=697150
-still as ASSIGNED.  A kernel was based on 2.6.35 running on Asus K52Jc
-but the problem really looks the same.  Assorted additional information
-is attached to that bugzilla entry.  There is also
-https://bugzilla.redhat.com/show_bug.cgi?id=675564
+Thanks -- but on the other hand, the above use case does actually
+emulate exactly what happens when someone runs the
+"make oldconfig" and simply holds down the Enter key. (yes it
+happens probably way more than we want to know...)
 
-After all modifications described in my report, which included adding a line
-SUSPEND_MODULES="xhci_hcd sdhci_pci sdhci"
-in /etc/pm/config.d/hci.cfg I never had suspend/hibernate issues
-again.  As a matter of fact I forgot about the problem. :-)
+So, I guess what I'm trying to say is that the above "script" is
+intentionally fragile.  :)  As a use case, we shouldn't break it.
 
-  Michal
+Thanks,
+Paul.
+
+>
+>        Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
