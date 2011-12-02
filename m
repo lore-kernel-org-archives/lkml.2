@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab1LBOpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 09:45:32 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46255 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656Ab1LBOpb (ORCPT
+	id S1756740Ab1LBOpp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 09:45:45 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:43747 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656Ab1LBOpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 09:45:31 -0500
-Message-ID: <1322837127.2762.11.camel@edumazet-laptop>
-Subject: Re: mmap
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?S=E9bastien?= Paumier 
-	<sebastien.paumier@univ-mlv.fr>
-Cc: linux-kernel@vger.kernel.org
-Date: Fri, 02 Dec 2011 15:45:27 +0100
-In-Reply-To: <4ED8C275.7020907@univ-mlv.fr>
-References: <4ED8C275.7020907@univ-mlv.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Fri, 2 Dec 2011 09:45:43 -0500
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: Pavel Emelyanov <xemul@parallels.com>
+Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
+Date: Fri, 2 Dec 2011 14:45:36 +0000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-13-generic; KDE/4.7.2; x86_64; ; )
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+References: <20111129191252.769160532@openvz.org> <201112021425.44897.pedro@codesourcery.com> <4ED8E296.3070005@parallels.com>
+In-Reply-To: <4ED8E296.3070005@parallels.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112021445.37024.pedro@codesourcery.com>
+X-OriginalArrivalTime: 02 Dec 2011 14:45:39.0480 (UTC) FILETIME=[0F302980:01CCB101]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 02 décembre 2011 à 13:20 +0100, Sébastien Paumier a écrit :
-> Hi,
-> I have a question about mmap's behavior when one tries to map a file asking for 
-> a length greater than the actual file size. When I run the attached code on a 
-> 100 bytes file, I have the following output:
+On Friday 02 December 2011 14:37:10, Pavel Emelyanov wrote:
+> On 12/02/2011 06:25 PM, Pedro Alves wrote:
+> > On Friday 02 December 2011 14:17:08, Pavel Emelyanov wrote:
+> > 
+> >> O_O   OK, I was wrong, they do live there. But I consider this as bug.
+> > 
+> > You can't change that.  It'd break current gdb at least.
 > 
-> (... file content followed by zeros...)
-> n=4096
-> write: Bad address
+> OMG!
+
+You know, NPTL didn't exist on earlier kernels.  This preserved
+backwards compatibility.
+
+> >> I.e. each task will be shown multiple times, which is not very fun, but memory exhaustive from my POV.
+> > 
+> > Now that is a good argument against hard linking.  But not if you make
+> > the entries under children/ symlinks.  Then find doesn't recurse.  And
+> > then 
+> > 
+> > $ find -L /proc/PID/
+> > 
+> > does recurse and give you the whole tree.  Which I'd say is
+> > actually useful...
 > 
-> So, it seems that the actual memory area provided by mmap is one page large and 
-> not the requested length of filesize+10000. I guess that 'write' writes less 
-> than requested because it was interrupted by the SIGBUS signal. And my question is:
+> It is useful, but the /proc/pid/children file solves the same problem in a much
+> more simple way. The memory usage by proc (one file vs one dir and a set of files)
+> is less and time to lookup a child is also less (read + lookup vs readdir + lookup 
+> (symlink itself) + lookup (symlink resolve)).
 > 
-> shouldn't mmap either complain about the requested length or provide an 
-> accessible area of the requested length, instead of silently failing ?
+> Yes, it doesn't allow you to have fun with find, but frankly, do you really need
+> this? Even if we're talking about gdb -- reading /proc/pid/children is not harder
+> and not easier than readdir-ing it.
+> 
+> IOW - what's the real benefit of a directory with symlinks against a file except
+> for a fun?
 
+As I said on the first message, it's easier on the command line, likely for
+quick scripting too.  And for consistency.  gdb or whatever other software
+can of course do whatever programatically.  But if I can't persuade you guys
+that's a good thing, fine.
 
-Accessing non existing memory leads to SIGBUS signal, not a silent
-failure. Its documented behavior.
-
-man mmap
-
-       SIGBUS Attempted access to a portion of the buffer that does not corre‐
-              spond to the file (for example, beyond  the  end  of  the  file,
-              including  the  case  where  another  process  has truncated the
-              file).
-
-
+-- 
+Pedro Alves
