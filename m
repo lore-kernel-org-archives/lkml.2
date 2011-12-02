@@ -1,67 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab1LBRO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:14:57 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65254 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757177Ab1LBRO4 (ORCPT
+	id S1757176Ab1LBRVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:21:44 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40958 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757109Ab1LBRVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:14:56 -0500
-MIME-Version: 1.0
-Date: Sat, 3 Dec 2011 01:14:55 +0800
-Message-ID: <CABexPfGv2TsALh44kif26SDu7JH=S9k+=MGWmW4QvkwMjuhh-Q@mail.gmail.com>
-Subject: [Provisional Page Table] Why the linear address ranges starting both
- from 0 and PAGE_OFFSET are mapped to a same physical address range in
- provisional page table?
-From: zhihua che <zhihua.che@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 2 Dec 2011 12:21:43 -0500
+Date: Fri, 2 Dec 2011 17:23:23 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: Re: GMA500 support
+Message-ID: <20111202172323.34f75234@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111124162014.GA2750@Boggieman>
+References: <20111121182910.GA2856@Boggieman>
+	<20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
+	<CAMeQTsb64v_9NQKU1xtBQdEPcnjxDAQZ8HBuMJBsD6_m117SRQ@mail.gmail.com>
+	<20111124162014.GA2750@Boggieman>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone
-        I know that the linux kernel constructs a provisional page
-table to map the linear address ranges starting both from 0 and
-PAGE_OFFSET to a same physical address range. I thought it's not
-necessary because the kernel, precisely the protected mode part, is
-linked to the VMA PAGE_OFFSET.
-        But i found I was wrong. I'm writing a toy os which is similar
-with the linux kernel. it also constructs a provisional page table as
-the linux kernel does. In the first place it works well with it. I
-mean it can enable the paging successfully and execute as I expect
-after that far-jump instruction. However, if the provisional page
-table maps only the linear address range starting from PAGE_OFFSET, my
-kernel would load the cs and eip with random values right after that
-far-jump instruction and went crazy. By the way, my kernel is also
-linked to VMA PAGE_OFFSET.
-        Here are the relating codes. Obviously the are the same with
-the linux kernel (32-bit and disable PAE)
+> > I suspect this is just DVI with a HDMI connector. That is the case for Fit-PC2.
+> > It is hooked up to the SDVO and provides video but no audio.
 
-page_pde_offset = (__PAGE_OFFSET >> 20);
+I've now got an HDMI capable display *and* the right cables. Testing the
+Dell mini 10 shows that it works although it's defaulting to the wrong
+mode and there is stuff on the display below the picture that shouldn't
+be.
 
-        movl $pa(__brk_base), %edi
-        movl $pa(initial_page_table), %edx
-        movl $PTE_IDENT_ATTR, %eax
-1:
-        leal PDE_IDENT_ATTR(%edi),%ecx
-        movl %ecx,(%edx)                                   /* this
-special line */
-        movl %ecx,page_pde_offset(%edx)
-        addl $4,%edx
-        movl $1024, %ecx
-2:
-        stosl
-        addl $0x1000,%eax
-        loop 2b
+So I now also have a debug case for the scaling or whatever is actually
+going on problem.
 
-        . . .
-
-        ljmp __BOOT_CS, 1f
-1:
-
-        Precisely,  my kernel goes well if the special line above is
-kept while it could go crazy if the line is commented.
-        I can't figure out why because my kernel and the linux are
-both linked to a VMA equal with or greater than PAGE_OFFSET. The lower
-linear addresses are not accessed at all.
+Alan
