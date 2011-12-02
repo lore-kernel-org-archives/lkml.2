@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab1LBWZM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 17:25:12 -0500
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:51787 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755550Ab1LBWZL (ORCPT
+	id S1755854Ab1LBWaV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 17:30:21 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45807 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755560Ab1LBWaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 17:25:11 -0500
-X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 17:25:11 EST
-From: Bryan Freed <bfreed@chromium.org>
-To: jbrenner@taosinc.com
-Cc: linux-iio@vger.kernel.org, jic23@cam.ac.uk, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, Bryan Freed <bfreed@chromium.org>
-Subject: [PATCH v2] iio: light sensor: Improve granularity of tsl2583 lux values.
-Date: Fri,  2 Dec 2011 14:19:30 -0800
-Message-Id: <1322864370-15126-1-git-send-email-bfreed@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	Fri, 2 Dec 2011 17:30:19 -0500
+Message-ID: <1322864926.21423.184.camel@work-vm>
+Subject: Re: System freezes with high network activity
+From: john stultz <johnstul@us.ibm.com>
+To: Jose Luis Salas <josacar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Date: Fri, 02 Dec 2011 14:28:46 -0800
+In-Reply-To: <CAJPugqs6wDcEM-5p5vRxHNVZd92ozgk0sw7g3=F6pvYyCA-CEw@mail.gmail.com>
+References: <CAJPugqsJgN9ZL3jQAZ+eGKfzxH0PAZonj-36H6PB1cHSpQHqSw@mail.gmail.com>
+	 <1322855029.21423.170.camel@work-vm>
+	 <CAJPugqs6wDcEM-5p5vRxHNVZd92ozgk0sw7g3=F6pvYyCA-CEw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11120222-7282-0000-0000-000004A0F005
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When illuminance0_calibbias gets 4000 (for a 4x multiplier), we see lux
-granularity of 4.  Reversing the order of the right shift and multiplication
-retains the precision of the unadjusted lux value.
+On Fri, 2011-12-02 at 21:54 +0100, Jose Luis Salas wrote:
+> Hi,
+> 
+> attached is the dmesg without the clocksource option.
 
-Signed-off-by: Bryan Freed <bfreed@chromium.org>
----
- drivers/staging/iio/light/tsl2583.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+Thanks. After your done testing nohz=off, could you also
+send /proc/timer_list output from the system with no clocksource option,
+and no nohz options?
 
-diff --git a/drivers/staging/iio/light/tsl2583.c b/drivers/staging/iio/light/tsl2583.c
-index 80f77cf..25f4c1d 100644
---- a/drivers/staging/iio/light/tsl2583.c
-+++ b/drivers/staging/iio/light/tsl2583.c
-@@ -194,6 +194,7 @@ static int taos_get_lux(struct iio_dev *indio_dev)
- {
- 	u16 ch0, ch1; /* separated ch0/ch1 data from device */
- 	u32 lux; /* raw lux calculated from device data */
-+	u64 lux64;
- 	u32 ratio;
- 	u8 buf[5];
- 	struct taos_lux *p;
-@@ -297,9 +298,19 @@ static int taos_get_lux(struct iio_dev *indio_dev)
- 		lux = (lux + (chip->als_time_scale >> 1)) /
- 			chip->als_time_scale;
- 
--	/* adjust for active gain scale */
--	lux >>= 13; /* tables have factor of 8192 builtin for accuracy */
--	lux = (lux * chip->taos_settings.als_gain_trim + 500) / 1000;
-+	/* Adjust for active gain scale.
-+	 * The taos_device_lux tables above have a factor of 8192 built in,
-+	 * so we need to shift right.
-+	 * User-specified gain provides a multiplier.
-+	 * Apply user-specified gain before shifting right to retain precision.
-+	 * Use 64 bits to avoid overflow on multiplication.
-+	 * Then go back to 32 bits before division to avoid using div_u64().
-+	 */
-+	lux64 = lux;
-+	lux64 = lux64 * chip->taos_settings.als_gain_trim;
-+	lux64 >>= 13;
-+	lux = lux64;
-+	lux = (lux + 500) / 1000;
- 	if (lux > TSL258X_LUX_CALC_OVER_FLOW) { /* check for overflow */
- return_max:
- 		lux = TSL258X_LUX_CALC_OVER_FLOW;
--- 
-1.7.3.1
+
+> the nohz=off *seems* to avoid the problem, I'm testing with NFS and Iperf now.
+
+Sounds good. Let us know how the testing goes.
+
+thanks
+-john
+
 
