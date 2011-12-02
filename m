@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab1LBHTn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 02:19:43 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55345 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948Ab1LBHTm (ORCPT
+	id S1752598Ab1LBHVt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 02:21:49 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52859 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005Ab1LBHVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 02:19:42 -0500
-Message-ID: <4ED87C02.6030007@axboe.dk>
-Date: Fri, 02 Dec 2011 08:19:30 +0100
-From: Jens Axboe <jens@axboe.dk>
+	Fri, 2 Dec 2011 02:21:47 -0500
+Date: Fri, 2 Dec 2011 08:21:43 +0100
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH] x86, amd: Fixup numa_node information for AMD CPU family 15h
+ model 0-0fh northbridge functions
+Message-ID: <20111202072143.GA31916@alberich.amd.com>
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        lttng-dev@lists.lttng.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Jens Axboe <axboe@kernel.dk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] fs/splice: export splice_to_pipe to GPL modules
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com> <1322775683-8741-4-git-send-email-mathieu.desnoyers@efficios.com>
-In-Reply-To: <1322775683-8741-4-git-send-email-mathieu.desnoyers@efficios.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-01 22:41, Mathieu Desnoyers wrote:
-> The LTTng driver needs this symbol exported because it implements its
-> own splice actor.
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Jens Axboe <axboe@kernel.dk>
-> CC: linux-kernel@vger.kernel.org
-> CC: Greg KH <greg@kroah.com>
-> ---
->  fs/splice.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/splice.c b/fs/splice.c
-> index fa2defa..9eb15b5 100644
-> --- a/fs/splice.c
-> +++ b/fs/splice.c
-> @@ -263,6 +263,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
->  
->  	return ret;
->  }
-> +EXPORT_SYMBOL_GPL(splice_to_pipe);
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-The rest of the splice symbols are regular exports, please do the same
-for this one. Thanks.
+I've received complaints that the numa_node attribute for family 15h
+model 00-0fh (e.g. Interlagos) northbridge functions shows -1 instead
+of the proper node ID.
 
+Correct this with attached quirks (similar to quirks for other AMD CPU
+families used in multi-socket systems).
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/quirks.c |   13 +++++++++++++
+ include/linux/pci_ids.h  |    4 ++++
+ 2 files changed, 17 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+index b78643d..03920a1 100644
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -553,4 +553,17 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC,
+ 			quirk_amd_nb_node);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_LINK,
+ 			quirk_amd_nb_node);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F0,
++			quirk_amd_nb_node);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F1,
++			quirk_amd_nb_node);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F2,
++			quirk_amd_nb_node);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3,
++			quirk_amd_nb_node);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4,
++			quirk_amd_nb_node);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F5,
++			quirk_amd_nb_node);
++
+ #endif
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 172ba70..2aaee0c 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -517,8 +517,12 @@
+ #define PCI_DEVICE_ID_AMD_11H_NB_DRAM	0x1302
+ #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
+ #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
++#define PCI_DEVICE_ID_AMD_15H_NB_F0	0x1600
++#define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
++#define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
+ #define PCI_DEVICE_ID_AMD_15H_NB_F3	0x1603
+ #define PCI_DEVICE_ID_AMD_15H_NB_F4	0x1604
++#define PCI_DEVICE_ID_AMD_15H_NB_F5	0x1605
+ #define PCI_DEVICE_ID_AMD_CNB17H_F3	0x1703
+ #define PCI_DEVICE_ID_AMD_LANCE		0x2000
+ #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
 -- 
-Jens Axboe
+1.7.8.rc4
 
