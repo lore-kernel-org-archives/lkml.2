@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab1LBPEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 10:04:15 -0500
+	id S1756929Ab1LBPEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 10:04:22 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:55237 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065Ab1LBPEJ (ORCPT
+	with ESMTP id S1754065Ab1LBPET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 10:04:09 -0500
+	Fri, 2 Dec 2011 10:04:19 -0500
 From: Ming Lei <ming.lei@canonical.com>
 To: Mauro Carvalho Chehab <mchehab@infradead.org>,
         Tony Lindgren <tony@atomide.com>
@@ -14,9 +14,9 @@ Cc: Sylwester Nawrocki <snjw23@gmail.com>, Greg KH <greg@kroah.com>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH v1 6/7] media: video: introduce face detection driver module
-Date: Fri,  2 Dec 2011 23:02:51 +0800
-Message-Id: <1322838172-11149-7-git-send-email-ming.lei@canonical.com>
+Subject: [RFC PATCH v1 7/7] media: video: introduce omap4 face detection module driver
+Date: Fri,  2 Dec 2011 23:02:52 +0800
+Message-Id: <1322838172-11149-8-git-send-email-ming.lei@canonical.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1322838172-11149-1-git-send-email-ming.lei@canonical.com>
 References: <1322838172-11149-1-git-send-email-ming.lei@canonical.com>
@@ -24,85 +24,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces one driver for face detection purpose.
+The patch introduces one face detection device driver for
+driving face detection hardware on omap4[1].
 
-The driver is responsible for all v4l2 stuff, buffer management
-and other general things, and doesn't touch face detection hardware
-directly. Several interfaces are exported to low level drivers
-(such as the coming omap4 FD driver)which will communicate with
-face detection hw module.
+Most things of the driver are dealing with omap4 face detection
+hardware.
 
-So the driver will make driving face detection hw modules more
-easy.
+This driver is platform independent, so in theory it can
+be used to drive same IP module on other platforms.
 
-TODO:
-	- implement FD setting interfaces with v4l2 controls or
-	ext controls
+[1], Ch9 of OMAP4 Technical Reference Manual
 
 Signed-off-by: Ming Lei <ming.lei@canonical.com>
 ---
- drivers/media/video/Kconfig       |    2 +
- drivers/media/video/Makefile      |    1 +
- drivers/media/video/fdif/Kconfig  |    7 +
- drivers/media/video/fdif/Makefile |    1 +
- drivers/media/video/fdif/fdif.c   |  645 +++++++++++++++++++++++++++++++++++++
- drivers/media/video/fdif/fdif.h   |  114 +++++++
- 6 files changed, 770 insertions(+), 0 deletions(-)
- create mode 100644 drivers/media/video/fdif/Kconfig
- create mode 100644 drivers/media/video/fdif/Makefile
- create mode 100644 drivers/media/video/fdif/fdif.c
- create mode 100644 drivers/media/video/fdif/fdif.h
+ drivers/media/video/fdif/Kconfig      |    6 +
+ drivers/media/video/fdif/Makefile     |    1 +
+ drivers/media/video/fdif/fdif_omap4.c |  663 +++++++++++++++++++++++++++++++++
+ 3 files changed, 670 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/media/video/fdif/fdif_omap4.c
 
-diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
-index 5684a00..2b01402 100644
---- a/drivers/media/video/Kconfig
-+++ b/drivers/media/video/Kconfig
-@@ -1166,3 +1166,5 @@ config VIDEO_SAMSUNG_S5P_MFC
- 	    MFC 5.1 driver for V4L2.
- 
- endif # V4L_MEM2MEM_DRIVERS
-+
-+source "drivers/media/video/fdif/Kconfig"
-diff --git a/drivers/media/video/Makefile b/drivers/media/video/Makefile
-index bc797f2..fdf6b1a 100644
---- a/drivers/media/video/Makefile
-+++ b/drivers/media/video/Makefile
-@@ -197,6 +197,7 @@ obj-$(CONFIG_VIDEO_IR_I2C)  += ir-kbd-i2c.o
- obj-y	+= davinci/
- 
- obj-$(CONFIG_ARCH_OMAP)	+= omap/
-+obj-$(CONFIG_FDIF)	+= fdif/
- 
- ccflags-y += -Idrivers/media/dvb/dvb-core
- ccflags-y += -Idrivers/media/dvb/frontends
 diff --git a/drivers/media/video/fdif/Kconfig b/drivers/media/video/fdif/Kconfig
-new file mode 100644
-index 0000000..e214cb4
---- /dev/null
+index e214cb4..0482a83 100644
+--- a/drivers/media/video/fdif/Kconfig
 +++ b/drivers/media/video/fdif/Kconfig
-@@ -0,0 +1,7 @@
-+config FDIF
-+	depends on VIDEO_DEV && VIDEO_V4L2
-+	select VIDEOBUF2_PAGE
-+	tristate "Face Detection module"
+@@ -5,3 +5,9 @@ config FDIF
+ 	help
+ 	  The FDIF is a face detection module, which can be integrated into
+ 	  some SoCs to detect the location of faces in one image or video.
++
++config FDIF_OMAP4
++	depends on FDIF
++	tristate "OMAP4 Face Detection module"
 +	help
-+	  The FDIF is a face detection module, which can be integrated into
-+	  some SoCs to detect the location of faces in one image or video.
++	  OMAP4 face detection support
 diff --git a/drivers/media/video/fdif/Makefile b/drivers/media/video/fdif/Makefile
-new file mode 100644
-index 0000000..ba1e4c8
---- /dev/null
+index ba1e4c8..3744ced 100644
+--- a/drivers/media/video/fdif/Makefile
 +++ b/drivers/media/video/fdif/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_FDIF)		+= fdif.o
-diff --git a/drivers/media/video/fdif/fdif.c b/drivers/media/video/fdif/fdif.c
+@@ -1 +1,2 @@
+ obj-$(CONFIG_FDIF)		+= fdif.o
++obj-$(CONFIG_FDIF_OMAP4)	+= fdif_omap4.o
+diff --git a/drivers/media/video/fdif/fdif_omap4.c b/drivers/media/video/fdif/fdif_omap4.c
 new file mode 100644
-index 0000000..84522d6
+index 0000000..956ec51
 --- /dev/null
-+++ b/drivers/media/video/fdif/fdif.c
-@@ -0,0 +1,645 @@
++++ b/drivers/media/video/fdif/fdif_omap4.c
+@@ -0,0 +1,663 @@
 +/*
-+ *      fdif.c  --  face detection module driver
++ *      fdif_omap4.c  --  face detection module driver
 + *
 + *      Copyright (C) 2011  Ming Lei (ming.lei@canonical.com)
 + *
@@ -123,749 +92,647 @@ index 0000000..84522d6
 + */
 +
 +/*****************************************************************************/
-+
-+#include <linux/module.h>
++#include <linux/init.h>
 +#include <linux/fs.h>
 +#include <linux/mm.h>
++#include <linux/slab.h>
 +#include <linux/signal.h>
 +#include <linux/wait.h>
 +#include <linux/poll.h>
-+#include <linux/mman.h>
++#include <linux/module.h>
 +#include <linux/pm_runtime.h>
 +#include <linux/delay.h>
++#include <linux/user_namespace.h>
 +#include <linux/platform_device.h>
 +#include <linux/interrupt.h>
++#include <linux/dma-mapping.h>
++#include "fdif.h"
 +#include <asm/uaccess.h>
 +#include <asm/byteorder.h>
 +#include <asm/io.h>
-+#include "fdif.h"
 +
-+static unsigned debug = 0;
-+module_param(debug, uint, 0644);
-+MODULE_PARM_DESC(debug, "activates debug info");
++#undef DEBUG
 +
-+static LIST_HEAD(fdif_devlist);
-+static unsigned video_nr = -1;
++#define PICT_SIZE_X     320
++#define PICT_SIZE_Y     240
 +
-+int fdif_open(struct file *file)
++#define	WORK_MEM_SIZE	(52*1024)
++
++/* 9.5 FDIF Register Manua of TI OMAP4 TRM */
++#define FDIF_REVISION		0x0
++#define FDIF_HWINFO		0x4
++#define FDIF_SYSCONFIG		0x10
++#define SOFTRESET		(1 << 0)
++
++#define FDIF_IRQSTATUS_RAW_j	(0x24 + 2*0x10)
++#define FDIF_IRQSTATUS_j	(0x28 + 2*0x10)
++#define FDIF_IRQENABLE_SET_j	(0x2c + 2*0x10)
++#define FDIF_IRQENABLE_CLR_j	(0x30 + 2*0x10)
++#define FINISH_IRQ		(1 << 8)
++#define ERR_IRQ			(1 << 0)
++
++#define FDIF_PICADDR		0x60
++#define FDIF_CTRL		0x64
++#define CTRL_MAX_TAGS		0x0A
++
++#define FDIF_WKADDR		0x68
++#define FD_CTRL			0x80
++#define CTRL_FINISH		(1 << 2)
++#define CTRL_RUN		(1 << 1)
++#define CTRL_SRST		(1 << 0)
++
++
++#define FD_DNUM			0x84
++#define FD_DCOND		0x88
++#define FD_STARTX		0x8c
++#define FD_STARTY		0x90
++#define FD_SIZEX		0x94
++#define FD_SIZEY		0x98
++#define FD_LHIT			0x9c
++#define FD_CENTERX_i		0x160
++#define FD_CENTERY_i		0x164
++#define FD_CONFSIZE_i		0x168
++#define FD_ANGLE_i		0x16c
++
++static inline void fd_writel(void __iomem *base, u32 reg, u32 val)
 +{
-+	struct fdif_dev *dev = video_drvdata(file);
-+
-+	kref_get(&dev->ref);
-+	return v4l2_fh_open(file);
++	__raw_writel(val, base + reg);
 +}
 +
-+static unsigned int
-+fdif_poll(struct file *file, struct poll_table_struct *wait)
++static inline u32 fd_readl(void __iomem *base, u32 reg)
 +{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	unsigned int mask = 0;
-+	unsigned long flags;
-+
-+	poll_wait(file, &dev->fdif_dq.wq, wait);
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	if ((file->f_mode & FMODE_READ) &&
-+		!list_empty(&dev->fdif_dq.complete))
-+		mask |= POLLIN | POLLWRNORM;
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+	return mask;
++	return __raw_readl(base + reg);
 +}
 +
-+static int fdif_close(struct file *file)
-+{
-+	struct video_device  *vdev = video_devdata(file);
-+	struct fdif_dev *dev = video_drvdata(file);
-+	int ret;
-+
-+	dprintk(dev, 1, "close called (dev=%s), file %p\n",
-+		video_device_node_name(vdev), file);
-+
-+	if (v4l2_fh_is_singular_file(file))
-+		vb2_queue_release(&dev->vbq);
-+
-+	ret = v4l2_fh_release(file);
-+	kref_put(&dev->ref, fdif_release);
-+
-+	return ret;
-+}
-+
-+static int fdif_mmap(struct file *file, struct vm_area_struct *vma)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	int ret;
-+
-+	dprintk(dev, 1, "mmap called, vma=0x%08lx\n", (unsigned long)vma);
-+
-+	ret = vb2_mmap(&dev->vbq, vma);
-+	dprintk(dev, 1, "vma start=0x%08lx, size=%ld, ret=%d\n",
-+		(unsigned long)vma->vm_start,
-+		(unsigned long)vma->vm_end - (unsigned long)vma->vm_start,
-+		ret);
-+	return ret;
-+}
-+
-+static const struct v4l2_file_operations fdif_fops = {
-+	.owner		= THIS_MODULE,
-+	.open           = fdif_open,
-+	.release        = fdif_close,
-+	.poll		= fdif_poll,
-+	.unlocked_ioctl = video_ioctl2, /* V4L2 ioctl handler */
-+	.mmap           = fdif_mmap,
-+};
-+
-+/* ------------------------------------------------------------------
-+	IOCTL vidioc handling
-+   ------------------------------------------------------------------*/
-+static int vidioc_querycap(struct file *file, void  *priv,
-+					struct v4l2_capability *cap)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+
-+	strcpy(cap->driver, "fdif");
-+	strcpy(cap->card, "fdif");
-+	strlcpy(cap->bus_info, dev->v4l2_dev.name, sizeof(cap->bus_info));
-+	cap->capabilities = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
-+
-+	return 0;
-+}
-+
-+static int vidioc_enum_fmt_vid_out(struct file *file, void  *priv,
-+					struct v4l2_fmtdesc *f)
-+{
-+	struct fdif_fmt *fmt;
-+	struct fdif_dev *dev = video_drvdata(file);
-+
-+	if (f->index >= dev->ops->fmt_cnt) {
-+		return -EINVAL;
-+	}
-+
-+	fmt = &dev->ops->table[f->index];
-+
-+	strlcpy(f->description, fmt->name, sizeof(f->description));
-+	f->pixelformat = fmt->fourcc;
-+	return 0;
-+}
-+
-+static int vidioc_g_fmt_vid_out(struct file *file, void *priv,
-+					struct v4l2_format *f)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+
-+	f->fmt.pix.width        = dev->s.width;
-+	f->fmt.pix.height       = dev->s.height;
-+	f->fmt.pix.field        = dev->s.field;
-+	f->fmt.pix.pixelformat  = dev->s.fmt->fourcc;
-+	f->fmt.pix.bytesperline =
-+		(f->fmt.pix.width * dev->s.fmt->depth) >> 3;
-+	f->fmt.pix.sizeimage =
-+		f->fmt.pix.height * f->fmt.pix.bytesperline;
-+	return 0;
-+}
-+
-+static int vidioc_reqbufs(struct file *file, void *priv,
-+			  struct v4l2_requestbuffers *p)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return vb2_reqbufs(&dev->vbq, p);
-+}
-+
-+static int vidioc_querybuf(struct file *file, void *priv, struct v4l2_buffer *p)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return vb2_querybuf(&dev->vbq, p);
-+}
-+
-+static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *p)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return vb2_qbuf(&dev->vbq, p);
-+}
-+
-+static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return vb2_dqbuf(&dev->vbq, p, file->f_flags & O_NONBLOCK);
-+}
-+
-+static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return vb2_streamon(&dev->vbq, i);
-+}
-+
-+static int vidioc_streamoff(struct file *file, void *priv, enum v4l2_buf_type i)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return vb2_streamoff(&dev->vbq, i);
-+}
-+
-+static int vidioc_g_fd_count(struct file *file, void *priv,
-+					struct v4l2_fd_count *f)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	unsigned long flags;
-+	struct v4l2_fdif_result *tmp;
-+	int ret = -EINVAL;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	list_for_each_entry(tmp, &dev->fdif_dq.complete, list)
-+		if (tmp->index == f->buf_index) {
-+			f->face_cnt = tmp->face_cnt;
-+			ret = 0;
-+			break;
-+		}
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	return ret;
-+}
-+
-+static int vidioc_g_fd_result(struct file *file, void *priv,
-+					struct v4l2_fd_result *f)
-+{
-+	struct fdif_dev *dev = video_drvdata(file);
-+	unsigned long flags;
-+	struct v4l2_fdif_result *tmp;
-+	struct v4l2_fdif_result *fr = NULL;
-+	unsigned int cnt = 0;
-+	int ret = -EINVAL;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	list_for_each_entry(tmp, &dev->fdif_dq.complete, list)
-+		if (tmp->index == f->buf_index) {
-+			fr = tmp;
-+			list_del(&tmp->list);
-+			break;
-+		}
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	if (fr) {
-+		ret = 0;
-+		cnt = min(f->face_cnt, fr->face_cnt);
-+		if (cnt)
-+			memcpy(f->fd, fr->faces,
-+				sizeof(struct v4l2_fd_detection) * cnt);
-+		f->face_cnt = cnt;
-+		kfree(fr->faces);
-+		kfree(fr);
-+	}
-+	return ret;
-+}
-+
-+static const struct v4l2_ioctl_ops fdif_ioctl_ops = {
-+	.vidioc_querycap      = vidioc_querycap,
-+	.vidioc_enum_fmt_vid_out  = vidioc_enum_fmt_vid_out,
-+	.vidioc_g_fmt_vid_out     = vidioc_g_fmt_vid_out,
-+	.vidioc_reqbufs       = vidioc_reqbufs,
-+	.vidioc_querybuf      = vidioc_querybuf,
-+	.vidioc_qbuf          = vidioc_qbuf,
-+	.vidioc_dqbuf         = vidioc_dqbuf,
-+	.vidioc_streamon      = vidioc_streamon,
-+	.vidioc_streamoff     = vidioc_streamoff,
-+	.vidioc_g_fd_count    = vidioc_g_fd_count,
-+	.vidioc_g_fd_result   = vidioc_g_fd_result,
-+};
-+
-+static void fdif_vdev_release(struct video_device *vdev)
-+{
-+	kfree(vdev->lock);
-+	video_device_release(vdev);
-+}
-+
-+static struct video_device fdif_template = {
-+	.name		= "fdif",
-+	.fops           = &fdif_fops,
-+	.ioctl_ops 	= &fdif_ioctl_ops,
-+	.release	= fdif_vdev_release,
-+};
-+
-+static int fdif_start_detect(struct fdif_dev *dev)
-+{
-+	int ret;
-+
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	ret = dev->ops->start_detect(dev);
-+
-+	dprintk(dev, 1, "returning from %s, ret is %d\n",
-+			__func__, ret);
-+	return ret;
-+}
-+
-+static void fdif_stop_detect(struct fdif_dev *dev)
-+{
-+	struct fdif_dmaqueue *dma_q = &dev->fdif_dq;
-+	unsigned long flags;
-+
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	/*stop hardware first*/
-+	dev->ops->stop_detect(dev);
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	/* Release all active buffers */
-+	while (!list_empty(&dma_q->active)) {
-+		struct fdif_buffer *buf;
-+		buf = list_entry(dma_q->active.next, struct fdif_buffer, list);
-+		list_del(&buf->list);
-+		spin_unlock_irqrestore(&dev->lock, flags);
-+		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
-+		dprintk(dev, 2, "[%p/%d] done\n", buf, buf->vb.v4l2_buf.index);
-+		spin_lock_irqsave(&dev->lock, flags);
-+	}
-+
-+	/* Release all complete detect result, so user space __must__ read
-+	 * the results before stream off*/
-+	while (!list_empty(&dma_q->complete)) {
-+		struct v4l2_fdif_result *result;
-+		result = list_entry(dma_q->complete.next, struct v4l2_fdif_result, list);
-+		list_del(&result->list);
-+		spin_unlock_irqrestore(&dev->lock, flags);
-+		kfree(result->faces);
-+		kfree(result);
-+		dprintk(dev, 2, "[buf->index:%d] result removed\n", result->index);
-+		spin_lock_irqsave(&dev->lock, flags);
-+	}
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+}
-+
-+/* ------------------------------------------------------------------
-+	Videobuf operations
-+   ------------------------------------------------------------------*/
-+static int queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
-+				unsigned int *nbuffers, unsigned int *nplanes,
-+				unsigned int sizes[], void *alloc_ctxs[])
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vq);
-+	unsigned long size;
-+
-+	dprintk(dev, 1, "%s\n", __func__);
-+
-+	BUG_ON(!dev->s.fmt);
-+	size = (dev->s.width * dev->s.height * dev->s.fmt->depth) >> 3;
-+
-+	if (0 == *nbuffers)
-+		*nbuffers = 2;
-+	*nplanes = 1;
-+	sizes[0] = size;
-+
-+	dprintk(dev, 1, "%s, count=%d, size=%ld\n", __func__,
-+		*nbuffers, size);
-+
-+	return 0;
-+}
-+
-+static int buffer_init(struct vb2_buffer *vb)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+
-+	/*
-+	 * This callback is called once per buffer, after its allocation.
-+	 *
-+	 * Vivi does not allow changing format during streaming, but it is
-+	 * possible to do so when streaming is paused (i.e. in streamoff state).
-+	 * Buffers however are not freed when going into streamoff and so
-+	 * buffer size verification has to be done in buffer_prepare, on each
-+	 * qbuf.
-+	 * It would be best to move verification code here to buf_init and
-+	 * s_fmt though.
-+	 */
-+	dprintk(dev, 1, "%s vaddr=%p\n", __func__,
-+			vb2_plane_vaddr(vb, 0));
-+
-+	return 0;
-+}
-+
-+static int buffer_prepare(struct vb2_buffer *vb)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+	struct fdif_buffer *buf = container_of(vb, struct fdif_buffer, vb);
-+	unsigned long size;
-+
-+	dprintk(dev, 1, "%s, field=%d\n", __func__, vb->v4l2_buf.field);
-+
-+	BUG_ON(!dev->s.fmt);
-+	size = (dev->s.width * dev->s.height * dev->s.fmt->depth) >> 3;
-+	if (vb2_plane_size(vb, 0) < size) {
-+		dprintk(dev, 1, "%s data will not fit into plane (%lu < %lu)\n",
-+				__func__, vb2_plane_size(vb, 0), size);
-+		return -EINVAL;
-+	}
-+
-+	vb2_set_plane_payload(&buf->vb, 0, size);
-+
-+	return 0;
-+}
-+
-+static int buffer_finish(struct vb2_buffer *vb)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return 0;
-+}
-+
-+static void buffer_cleanup(struct vb2_buffer *vb)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+	dprintk(dev, 1, "%s\n", __func__);
-+}
-+
-+static void buffer_queue(struct vb2_buffer *vb)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-+	struct fdif_buffer *buf = container_of(vb, struct fdif_buffer, vb);
-+	struct fdif_dmaqueue *dq = &dev->fdif_dq;
-+	unsigned long flags = 0;
-+
-+	dprintk(dev, 1, "%s vaddr:%p\n", __func__,
-+			vb2_plane_vaddr(vb, 0));
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	list_add_tail(&buf->list, &dq->active);
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	if (vb->vb2_queue->streaming)
-+		dev->ops->submit_detect(dev);
-+}
-+
-+static int start_streaming(struct vb2_queue *vq, unsigned int count)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vq);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	return fdif_start_detect(dev);
-+}
-+
-+/* abort streaming and wait for last buffer */
-+static int stop_streaming(struct vb2_queue *vq)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vq);
-+	dprintk(dev, 1, "%s\n", __func__);
-+	fdif_stop_detect(dev);
-+	return 0;
-+}
-+
-+static void fdif_lock(struct vb2_queue *vq)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vq);
-+
-+	mutex_lock(&dev->mutex);
-+}
-+
-+static void fdif_unlock(struct vb2_queue *vq)
-+{
-+	struct fdif_dev *dev = vb2_get_drv_priv(vq);
-+	mutex_unlock(&dev->mutex);
-+}
-+static struct vb2_ops fdif_video_qops = {
-+	.queue_setup		= queue_setup,
-+	.buf_init		= buffer_init,
-+	.buf_prepare		= buffer_prepare,
-+	.buf_finish		= buffer_finish,
-+	.buf_cleanup		= buffer_cleanup,
-+	.buf_queue		= buffer_queue,
-+	.start_streaming	= start_streaming,
-+	.stop_streaming		= stop_streaming,
-+	.wait_prepare		= fdif_unlock,
-+	.wait_finish		= fdif_lock,
-+};
-+
-+/*only store one detection result for one buf*/
-+void fdif_add_detection(struct fdif_dev *dev,
-+		struct v4l2_fdif_result *v4l2_fr)
-+{
-+	unsigned long flags;
-+	struct v4l2_fdif_result *old = NULL;
-+	struct v4l2_fdif_result *tmp;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	list_for_each_entry(tmp, &dev->fdif_dq.complete, list)
-+		if (tmp->index == v4l2_fr->index) {
-+			old = tmp;
-+			list_del(&tmp->list);
-+			break;
-+		}
-+	list_add_tail(&v4l2_fr->list, &dev->fdif_dq.complete);
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	if (old) {
-+		kfree(old->faces);
-+		kfree(old);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(fdif_add_detection);
-+
-+struct fdif_buffer *fdif_get_buffer(struct fdif_dev *dev)
-+{
-+	struct fdif_buffer *buf = NULL;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	if (list_empty(&dev->fdif_dq.active))
-+		goto out;
-+	buf = list_entry(dev->fdif_dq.active.next,
-+				struct fdif_buffer, list);
-+	list_del(&buf->list);
-+out:
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
-+	return buf;
-+}
-+EXPORT_SYMBOL_GPL(fdif_get_buffer);
-+
-+void fdif_release(struct kref *ref)
-+{
-+	struct fdif_dev *dev = container_of(ref, struct fdif_dev, ref);
-+
-+	v4l2_info(&dev->v4l2_dev, "unregistering %s\n",
-+		video_device_node_name(dev->vfd));
-+
-+	list_del(&dev->fdif_devlist);
-+	video_unregister_device(dev->vfd);
-+	v4l2_device_unregister(&dev->v4l2_dev);
-+	kfree(dev);
-+}
-+EXPORT_SYMBOL_GPL(fdif_release);
-+
-+int fdif_create_instance(struct device *parent, int priv_size,
-+		struct fdif_ops *ops, struct fdif_dev **fdif_dev)
-+{
++struct fdif_qvga {
 +	struct fdif_dev *dev;
-+	struct video_device *vfd;
-+	struct vb2_queue *q;
-+	int ret, len;
-+	struct mutex	*vmutex;
 +
-+	dev = kzalloc(sizeof(*dev) + priv_size, GFP_KERNEL);
-+	if (!dev)
-+		return -ENOMEM;
++	/*should be removed*/
++	struct platform_device	*pdev;
++	int			irq;
++	void __iomem		*base;
 +
-+	kref_init(&dev->ref);
-+	dev->ops = ops;
-+	dev->dev = parent;
++	void			*work_mem_addr;
++	dma_addr_t 		work_dma;
++	dma_addr_t 		pict_dma;
++	unsigned long 		pict_mem_len;
 +
-+	len = snprintf(dev->v4l2_dev.name, sizeof(dev->v4l2_dev.name),
-+			"%s", "fdif");
-+	dev->v4l2_dev.name[len] = '\0';
++	struct fdif_buffer	*pending;
++	spinlock_t		lock;
++};
 +
-+	ret = v4l2_device_register(dev->dev, &dev->v4l2_dev);
-+	if (ret)
-+		goto free_dev;
++struct fdif_fmt qvga_fmt[] = {
++	{
++		.name		= "8  Greyscale",
++		.fourcc		= V4L2_PIX_FMT_GREY,
++		.depth		= 8,
++		.width		= PICT_SIZE_X,
++		.height		= PICT_SIZE_Y,
++	},
++};
 +
-+	/* initialize locks */
-+	spin_lock_init(&dev->lock);
 +
-+	/* initialize queue */
-+	q = &dev->vbq;
-+	memset(q, 0, sizeof(dev->vbq));
-+	q->type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-+	q->io_modes = VB2_MMAP;
-+	q->drv_priv = dev;
-+	q->buf_struct_size = sizeof(struct fdif_buffer);
-+	q->ops = &fdif_video_qops;
-+	q->mem_ops = &vb2_page_memops;
++#ifdef DEBUG
++static void dump_fdif_setting(struct fdif_qvga *fdif, const char *func)
++{
++	printk("%s: %s\n", func, __func__);
++	printk("work mem addr:%8p\n", fdif->work_mem_addr);
++	printk("face size=%2d, face dir=%2d, lhit=%d\n",
++			fdif->dev->s.min_face_size, fdif->dev->s.face_dir,
++			fdif->dev->s.lhit);
++	printk("startx =%4d starty=%4d sizex=%4d sizey=%4d\n",
++			fdif->dev->s.startx, fdif->dev->s.starty,
++			fdif->dev->s.sizex, fdif->dev->s.sizey);
++}
 +
-+	vb2_queue_init(q);
++static void dump_fdif_results(struct v4l2_fdif_result *fdif, const char *func)
++{
++	int idx;
 +
-+	mutex_init(&dev->mutex);
++	printk("%s: %s\n", func, __func__);
 +
-+	/* init video dma queues */
-+	INIT_LIST_HEAD(&dev->fdif_dq.active);
-+	INIT_LIST_HEAD(&dev->fdif_dq.complete);
-+	init_waitqueue_head(&dev->fdif_dq.wq);
++	printk("found %d faces, but index:%d\n", fdif->face_cnt,
++			fdif->index);
++	for(idx=0; idx < fdif->face_cnt; idx++) {
++		struct v4l2_fd_detection *fr = &fdif->faces[idx];
++		printk("	No.%d x=%3d y=%2d sz=%2d ang=%3d conf=%2d\n",
++				idx, fr->face.centerx, fr->face.centery,
++				fr->face.sizex, fr->face.angle,
++				fr->face.confidence);
++	}
++}
 +
-+	ret = -ENOMEM;
-+	vfd = video_device_alloc();
-+	if (!vfd)
-+		goto unreg_dev;
++static void dump_fdif_regs(struct fdif_qvga *fdif, const char *func)
++{
++	printk("%s:%s\n", __func__, func);
++	printk("FDIF_CTRL=%08x FDIF_SYSCONFIG=%08x\n",
++			fd_readl(fdif->base, FDIF_CTRL),
++			fd_readl(fdif->base, FDIF_SYSCONFIG));
++	printk("FDIF_IRQSTATUS_RAW_j=%08x FDIF_IRQSTATUS_j=%08x\n",
++			fd_readl(fdif->base, FDIF_IRQSTATUS_RAW_j),
++			fd_readl(fdif->base, FDIF_IRQSTATUS_j));
++	printk("FDIF_PICADDR=%08x FDIF_WKADDR=%08x\n",
++			fd_readl(fdif->base, FDIF_PICADDR),
++			fd_readl(fdif->base, FDIF_WKADDR));
++	printk("FD_CTRL=%04x, FDIF_IRQENABLE_SET_j=%04x\n",
++			fd_readl(fdif->base, FD_CTRL),
++			fd_readl(fdif->base, FDIF_IRQENABLE_SET_j));
++}
 +
-+	*vfd = fdif_template;
-+	vfd->debug = debug;
-+	vfd->v4l2_dev = &dev->v4l2_dev;
-+	set_bit(V4L2_FL_USE_FH_PRIO, &vfd->flags);
++#else
++static inline void dump_fdif_setting(struct fdif_qvga *fdif, const char *func)
++{
++}
++static inline void dump_fdif_results(struct v4l2_fdif_result *fdif, const char *func)
++{
++}
++static inline void dump_fdif_regs(struct fdif_qvga *fdif, const char *func)
++{
++}
++#endif
 +
-+	vmutex = kzalloc(sizeof(struct mutex), GFP_KERNEL);
-+	if (!vmutex)
-+		goto err_alloc_mutex;
++static void install_default_setting(struct fdif_qvga *fdif)
++{
++	fdif->dev->s.fmt		= &qvga_fmt[0];
++	fdif->dev->s.field		= V4L2_FIELD_NONE;
 +
-+	mutex_init(vmutex);
-+	/*
-+	 * Provide a mutex to v4l2 core. It will be used to protect
-+	 * all fops and v4l2 ioctls.
-+	 */
-+	vfd->lock = vmutex;
++	fdif->dev->s.min_face_size	= FACE_SIZE_25_PIXELS;
++	fdif->dev->s.face_dir		= FACE_DIR_UP;
++	fdif->dev->s.startx		= 0;
++	fdif->dev->s.starty		= 0;
++	fdif->dev->s.sizex		= 0x140;
++	fdif->dev->s.sizey		= 0xf0;
++	fdif->dev->s.lhit		= 0x5;
 +
-+	ret = video_register_device(vfd, VFL_TYPE_GRABBER, video_nr);
-+	if (ret < 0)
-+		goto rel_vdev;
++	fdif->dev->s.width		= PICT_SIZE_X;
++	fdif->dev->s.height		= PICT_SIZE_Y;
++}
 +
-+	if (video_nr != -1)
-+		video_nr++;
++static void commit_image_setting(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++	struct vb2_buffer *vb = &fdif->pending->vb;
++	void *pict_vaddr = vb2_plane_vaddr(vb, 0);
 +
-+	dev->vfd = vfd;
-+	video_set_drvdata(vfd, dev);
++	fdif->pict_mem_len = vb2_plane_size(vb, 0);
++	fdif->pict_dma = dma_map_single(&fdif->pdev->dev,
++				pict_vaddr,
++				fdif->pict_mem_len,
++				DMA_TO_DEVICE);
 +
-+	/* Now that everything is fine, let's add it to device list */
-+	list_add_tail(&dev->fdif_devlist, &fdif_devlist);
++	fd_writel(fdif->base, FDIF_PICADDR, fdif->pict_dma);
 +
-+	v4l2_info(&dev->v4l2_dev, "V4L2 device registered as %s\n",
-+		  video_device_node_name(vfd));
++	conf = (fdif->dev->s.min_face_size & 0x3) ||
++		((fdif->dev->s.face_dir & 0x3) << 2);
++	fd_writel(fdif->base, FD_DCOND, conf);
 +
-+	*fdif_dev = dev;
++	fd_writel(fdif->base, FD_STARTX, fdif->dev->s.startx);
++	fd_writel(fdif->base, FD_STARTY, fdif->dev->s.starty);
++	fd_writel(fdif->base, FD_SIZEX, fdif->dev->s.sizex);
++	fd_writel(fdif->base, FD_SIZEY, fdif->dev->s.sizey);
++	fd_writel(fdif->base, FD_LHIT, fdif->dev->s.lhit);
++}
++
++
++/*softreset fdif*/
++static int softreset_fdif(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++	int to = 0;
++
++	conf = fd_readl(fdif->base, FDIF_SYSCONFIG);
++	conf |= SOFTRESET;
++	fd_writel(fdif->base, FDIF_SYSCONFIG, conf);
++
++	while ((conf & SOFTRESET) && to++ < 2000) {
++		conf = fd_readl(fdif->base, FDIF_SYSCONFIG);
++		udelay(2);
++	}
++
++	if (to == 2000)
++		dev_err(&fdif->pdev->dev, "%s: reset failed\n", __func__);
++
++	return to == 2000;
++}
++
++static void __start_detect(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++
++	dump_fdif_setting(fdif, __func__);
++
++	commit_image_setting(fdif);
++
++	/*enable finish irq*/
++	conf = FINISH_IRQ;
++	fd_writel(fdif->base, FDIF_IRQENABLE_SET_j, conf);
++
++	/*set RUN flag*/
++	conf = CTRL_RUN;
++	fd_writel(fdif->base, FD_CTRL, conf);
++
++	dump_fdif_regs(fdif, __func__);
++}
++
++static void __stop_detect(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++
++	dump_fdif_regs(fdif, __func__);
++
++	dma_unmap_single(&fdif->pdev->dev, fdif->pict_dma,
++				fdif->pict_mem_len,
++				DMA_TO_DEVICE);
++	/*disable finish irq*/
++	conf = FINISH_IRQ;
++	fd_writel(fdif->base, FDIF_IRQENABLE_CLR_j, conf);
++
++	/*mark FINISH flag*/
++	conf = CTRL_FINISH;
++	fd_writel(fdif->base, FD_CTRL, conf);
++}
++
++static int read_faces(struct fdif_qvga *fdif, int is_err)
++{
++	int cnt, idx = 0;
++	struct v4l2_fdif_result *v4l2_fr;
++	struct fdif_dev *dev = fdif->dev;
++	struct fdif_buffer *buf;
++	unsigned long flags;
++
++	spin_lock_irqsave(&fdif->lock, flags);
++
++	buf = fdif->pending;
++	if (!buf) {
++		WARN_ON(1);
++		cnt = -EIO;
++		goto out;
++	}
++
++	buf->vb.v4l2_buf.sequence++;
++
++	if (!is_err)
++		cnt = fd_readl(fdif->base, FD_DNUM) & 0x3f;
++	else
++		cnt = 0;
++
++	v4l2_fr = kzalloc(sizeof(*v4l2_fr), GFP_ATOMIC);
++	if (!v4l2_fr) {
++		cnt = -ENOMEM;
++		goto out;
++	}
++	if (cnt)
++		v4l2_fr->faces =
++			kmalloc(sizeof(struct v4l2_fd_detection) * cnt,
++				GFP_ATOMIC);
++
++	if (cnt && !v4l2_fr->faces) {
++		cnt = -ENOMEM;
++		goto out_err;
++	}
++
++	v4l2_fr->face_cnt = cnt;
++	v4l2_fr->index = buf->vb.v4l2_buf.index;
++
++	while(idx < cnt) {
++		struct v4l2_fd_detection *fr = &v4l2_fr->faces[idx];
++
++		fr->flag = V4L2_FD_HAS_FACE;
++
++		fr->face.centerx = fd_readl(fdif->base,
++				FD_CENTERX_i + idx * 0x10) & 0x1ff;
++		fr->face.centery = fd_readl(fdif->base,
++				FD_CENTERY_i + idx * 0x10) & 0xff;
++		fr->face.angle = fd_readl(fdif->base,
++				FD_ANGLE_i + idx * 0x10) & 0x1ff;
++		fr->face.sizex = fd_readl(fdif->base,
++				FD_CONFSIZE_i + idx * 0x10);
++		fr->face.confidence = (fr->face.sizex >> 8) & 0xf;
++		fr->face.sizey = fr->face.sizex = fr->face.sizex & 0xff;
++
++		idx++;
++	}
++
++	__stop_detect(fdif);
++	fdif->pending = NULL;
++	spin_unlock_irqrestore(&fdif->lock, flags);
++
++	dump_fdif_results(v4l2_fr, __func__);
++
++	/*queue the detection result to complete queue*/
++	fdif_add_detection(dev, v4l2_fr);
++
++	if (is_err)
++		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
++	else
++		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_DONE);
++
++	wake_up(&dev->fdif_dq.wq);
++
++	return cnt;
++
++out_err:
++	kfree(v4l2_fr);
++out:
++	spin_unlock_irqrestore(&fdif->lock, flags);
++	return cnt;
++}
++
++static int __submit_detection(struct fdif_qvga *fdif)
++{
++	struct fdif_dev *dev = fdif->dev;
++	struct fdif_buffer *buf;
++	unsigned long flags;
++	unsigned int ret = 0;
++
++	buf = fdif_get_buffer(dev);
++	if (!buf)
++		goto out;
++
++	spin_lock_irqsave(&fdif->lock, flags);
++	if (fdif->pending) {
++		spin_unlock_irqrestore(&fdif->lock, flags);
++		ret = -EBUSY;
++		goto out;
++	}
++	fdif->pending = buf;
++	__start_detect(fdif);
++	spin_unlock_irqrestore(&fdif->lock, flags);
++
 +	return 0;
 +
-+rel_vdev:
-+	kfree(vmutex);
-+err_alloc_mutex:
-+	video_device_release(vfd);
-+unreg_dev:
-+	v4l2_device_unregister(&dev->v4l2_dev);
-+free_dev:
-+	kfree(dev);
++out:
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(fdif_create_instance);
 +
-+static int __init fdif_init(void)
++static irqreturn_t handle_detection(int irq, void *__fdif)
++{
++	unsigned long irqsts;
++	struct fdif_qvga *fdif = __fdif;
++	irqreturn_t ret = IRQ_HANDLED;
++
++	/*clear irq status*/
++	irqsts = fd_readl(fdif->base, FDIF_IRQSTATUS_j);
++
++	if (irqsts & (FINISH_IRQ | ERR_IRQ)) {
++		int is_err = irqsts & ERR_IRQ;
++
++		fd_writel(fdif->base, FDIF_IRQSTATUS_j, irqsts);
++
++		read_faces(fdif, is_err);
++		if (is_err)
++			softreset_fdif(fdif);
++
++		__submit_detection(fdif);
++	} else {
++		ret = IRQ_NONE;
++	}
++
++	return ret;
++}
++
++static void fdif_global_init(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++	struct device *dev = &fdif->pdev->dev;
++
++	/*softreset fdif*/
++	softreset_fdif(fdif);
++
++	/*set max tags*/
++	conf = fd_readl(fdif->base, FDIF_CTRL);
++	conf &= ~0x1e;
++	conf |= (CTRL_MAX_TAGS << 1);
++	fd_writel(fdif->base, FDIF_CTRL, conf);
++
++	/*enable error irq*/
++	conf = ERR_IRQ;
++	fd_writel(fdif->base, FDIF_IRQENABLE_SET_j, conf);
++
++	fdif->work_dma = dma_map_single(dev,
++				fdif->work_mem_addr,
++		                WORK_MEM_SIZE,
++				DMA_TO_DEVICE);
++	fd_writel(fdif->base, FDIF_WKADDR, fdif->work_dma);
++}
++
++static void fdif_global_deinit(struct fdif_qvga *fdif)
++{
++	unsigned long conf;
++	struct device *dev = &fdif->pdev->dev;
++
++	/*enable error irq*/
++	conf = ERR_IRQ;
++	fd_writel(fdif->base, FDIF_IRQENABLE_CLR_j, conf);
++
++	dma_unmap_single(dev, fdif->work_dma,
++			WORK_MEM_SIZE, DMA_TO_DEVICE);
++}
++
++
++static int start_detect(struct fdif_dev *dev)
++{
++	struct fdif_qvga *fdif = dev_get_drvdata(dev->dev);
++
++	pm_runtime_get_sync(dev->dev);
++	fdif_global_init(fdif);
++
++	return  __submit_detection(fdif);
++}
++
++static int stop_detect(struct fdif_dev *dev)
++{
++	struct fdif_qvga *fdif = dev_get_drvdata(dev->dev);
++	unsigned long flags, irqsts;
++	struct fdif_buffer	*buf;
++
++	spin_lock_irqsave(&fdif->lock, flags);
++
++	/*stop current transfer first*/
++	__stop_detect(fdif);
++
++	buf = fdif->pending;
++	fdif->pending = NULL;
++
++	/*clear irq status in case that it is set*/
++	irqsts = fd_readl(fdif->base, FDIF_IRQSTATUS_j);
++	fd_writel(fdif->base, FDIF_IRQSTATUS_j, irqsts);
++
++	spin_unlock_irqrestore(&fdif->lock, flags);
++
++	if (buf)
++		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
++
++	fdif_global_deinit(fdif);
++	pm_runtime_put(dev->dev);
++	return 0;
++}
++
++static int submit_detect(struct fdif_dev *dev)
++{
++	struct fdif_qvga *fdif = dev_get_drvdata(dev->dev);
++
++	__submit_detection(fdif);
++
++	return 0;
++}
++
++static struct fdif_ops qvga_ops = {
++	.table	= qvga_fmt,
++	.fmt_cnt = 1,
++	.start_detect = start_detect,
++	.stop_detect = stop_detect,
++	.submit_detect = submit_detect,
++};
++
++static int fdif_probe(struct platform_device *pdev)
++{
++	struct device	*dev = &pdev->dev;
++	struct fdif_qvga *fdif;
++	struct fdif_dev *fdev;
++	struct resource *res;
++	int ret, order;
++
++	ret = fdif_create_instance(dev, sizeof(struct fdif_qvga),
++			&qvga_ops, &fdev);
++	if (ret) {
++		dev_err(dev, "fdif_create_instance failed:%d\n", ret);
++		goto end_probe;
++	}
++
++	fdif = (struct fdif_qvga *)fdev->priv;
++	fdif->dev = fdev;
++
++	spin_lock_init(&fdif->lock);
++	fdif->pdev = pdev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(dev, "fdif get resource failed\n");
++		ret = -ENODEV;
++		goto err_iomap;
++	}
++
++	fdif->base = ioremap(res->start, resource_size(res));
++	if (!fdif->base) {
++		dev_err(dev, "fdif ioremap failed\n");
++		ret = -ENOMEM;
++		goto err_iomap;
++	}
++
++	fdif->irq = platform_get_irq(pdev, 0);
++	if (fdif->irq < 0) {
++		dev_err(dev, "fdif get irq failed\n");
++		ret = -ENODEV;
++		goto err_get_irq;
++	}
++
++	ret = request_irq(fdif->irq, handle_detection, 0, "fdif-qvga",
++			fdif);
++	if (ret) {
++		dev_err(dev, "request_irq failed:%d\n", ret);
++		goto err_get_irq;
++	}
++
++	order = get_order(WORK_MEM_SIZE);
++	fdif->work_mem_addr = (void *)__get_free_pages(GFP_KERNEL, order);
++	if (!fdif->work_mem_addr) {
++		dev_err(dev, "fdif buffer allocation(%d) failed\n", order);
++		ret = -ENOMEM;
++		goto err_work_mem;
++	}
++
++	install_default_setting(fdif);
++
++	platform_set_drvdata(pdev, fdif);
++
++	pm_suspend_ignore_children(dev, true);
++	pm_runtime_get_sync(dev);
++	dev_info(dev, "fdif version=%8x hwinfo=%08x\n",
++			fd_readl(fdif->base, FDIF_REVISION),
++			fd_readl(fdif->base, FDIF_HWINFO));
++	pm_runtime_put(dev);
++
++	return 0;
++
++err_work_mem:
++	free_irq(fdif->irq, fdif);
++err_get_irq:
++	iounmap(fdif->base);
++err_iomap:
++	kref_put(&fdif->dev->ref, fdif_release);
++end_probe:
++	return ret;
++}
++
++static int fdif_remove(struct platform_device *pdev)
++{
++	struct fdif_qvga *fdif = platform_get_drvdata(pdev);
++	int order;
++
++	platform_set_drvdata(pdev, NULL);
++
++	free_irq(fdif->irq, fdif);
++
++	order = get_order(WORK_MEM_SIZE);
++	free_pages((unsigned long)fdif->work_mem_addr, order);
++
++	iounmap(fdif->base);
++
++	kref_put(&fdif->dev->ref, fdif_release);
++
++	return 0;
++}
++
++static int fdif_suspend(struct platform_device *pdev, pm_message_t msg)
 +{
 +	return 0;
 +}
 +
-+static void __exit fdif_exit(void)
++static int fdif_resume(struct platform_device *pdev)
 +{
++	return 0;
 +}
 +
-+module_init(fdif_init);
-+module_exit(fdif_exit);
++static struct platform_device_id fdif_device_ids[] = {
++	{.name = "fdif"},
++	{},
++};
 +
-+MODULE_DESCRIPTION("face detection module");
-+MODULE_AUTHOR("Ming Lei");
++struct platform_driver fdif_driver = {
++	.probe =	fdif_probe,
++	.remove =	fdif_remove,
++	.suspend =	fdif_suspend,
++	.resume =	fdif_resume,
++	.driver = {
++		.name  =	"fdif",
++		.owner =	THIS_MODULE,
++	},
++	.id_table = 	fdif_device_ids,
++};
++
++static int __init omap4_fdif_init(void)
++{
++	int retval;
++	retval = platform_driver_register(&fdif_driver);
++	if (retval) {
++		printk(KERN_ERR "Unable to register fdif driver\n");
++		return retval;
++	}
++	return 0;
++}
++
++static void omap4_fdif_cleanup(void)
++{
++	platform_driver_unregister(&fdif_driver);
++}
++
++module_init(omap4_fdif_init);
++module_exit(omap4_fdif_cleanup);
++
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/media/video/fdif/fdif.h b/drivers/media/video/fdif/fdif.h
-new file mode 100644
-index 0000000..ae37ab8
---- /dev/null
-+++ b/drivers/media/video/fdif/fdif.h
-@@ -0,0 +1,114 @@
-+#ifndef _LINUX_FDIF_H
-+#define _LINUX_FDIF_H
-+
-+#include <linux/types.h>
-+#include <linux/magic.h>
-+#include <linux/errno.h>
-+#include <linux/kref.h>
-+#include <linux/kernel.h>
-+#include <linux/videodev2.h>
-+#include <media/videobuf2-page.h>
-+#include <media/v4l2-device.h>
-+#include <media/v4l2-ioctl.h>
-+#include <media/v4l2-ctrls.h>
-+#include <media/v4l2-fh.h>
-+#include <media/v4l2-event.h>
-+#include <media/v4l2-common.h>
-+
-+#define MAX_FACE_COUNT		40
-+
-+#define	FACE_SIZE_20_PIXELS	0
-+#define	FACE_SIZE_25_PIXELS	1
-+#define	FACE_SIZE_32_PIXELS	2
-+#define	FACE_SIZE_40_PIXELS	3
-+
-+#define FACE_DIR_UP		0
-+#define FACE_DIR_RIGHT		1
-+#define FACE_DIR_LIFT		2
-+
-+struct fdif_fmt {
-+	char  *name;
-+	u32   fourcc;          /* v4l2 format id */
-+	int   depth;
-+	int   width, height;
-+};
-+
-+struct fdif_setting {
-+	struct fdif_fmt            *fmt;
-+	enum v4l2_field            field;
-+
-+	int 			min_face_size;
-+	int			face_dir;
-+
-+	int			startx, starty;
-+	int			sizex, sizey;
-+	int			lhit;
-+
-+	int			width, height;
-+};
-+
-+/* buffer for one video frame */
-+struct fdif_buffer {
-+	/* common v4l buffer stuff -- must be first */
-+	struct vb2_buffer	vb;
-+	struct list_head	list;
-+};
-+
-+
-+struct v4l2_fdif_result {
-+	struct list_head		list;
-+	unsigned int			face_cnt;
-+	struct v4l2_fd_detection	*faces;
-+
-+	/*v4l2 buffer index*/
-+	__u32				index;
-+};
-+
-+struct fdif_dmaqueue {
-+	struct list_head	complete;
-+	struct list_head	active;
-+	wait_queue_head_t	wq;
-+};
-+
-+
-+struct fdif_dev {
-+	struct kref		ref;
-+	struct device		*dev;
-+
-+	struct list_head        fdif_devlist;
-+	struct v4l2_device	v4l2_dev;
-+	struct vb2_queue        vbq;
-+	struct mutex            mutex;
-+	spinlock_t		lock;
-+
-+	struct video_device        *vfd;
-+	struct fdif_dmaqueue	fdif_dq;
-+
-+	/*setting*/
-+	struct fdif_setting	s;
-+
-+	struct fdif_ops	*ops;
-+
-+	unsigned long	priv[0];
-+};
-+
-+struct fdif_ops {
-+	struct fdif_fmt *table;
-+	int fmt_cnt;
-+	int (*start_detect)(struct fdif_dev *fdif);
-+	int (*stop_detect)(struct fdif_dev *fdif);
-+	int (*submit_detect)(struct fdif_dev *fdif);
-+};
-+
-+#define dprintk(dev, level, fmt, arg...) \
-+	v4l2_dbg(level, debug, &dev->v4l2_dev, fmt, ## arg)
-+
-+
-+extern int fdif_create_instance(struct device *parent, int priv_size,
-+		struct fdif_ops *ops, struct fdif_dev **dev);
-+extern void fdif_release(struct kref *ref);
-+extern void fdif_add_detection(struct fdif_dev *dev,
-+		struct v4l2_fdif_result *v4l2_fr);
-+extern struct fdif_buffer *fdif_get_buffer(struct fdif_dev *dev);
-+
-+#endif /* _LINUX_FDIF_H */
++MODULE_ALIAS("platform:fdif");
++MODULE_AUTHOR("Ming Lei");
 -- 
 1.7.5.4
 
