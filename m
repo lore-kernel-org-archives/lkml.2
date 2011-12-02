@@ -1,154 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab1LBPmL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 10:42:11 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:39363 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753928Ab1LBPmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 10:42:10 -0500
-Date: Fri, 2 Dec 2011 09:42:08 -0600 (CST)
-From: Brent Casavant <bcasavan@sgi.com>
-Reply-To: Brent Casavant <bcasavan@sgi.com>
-To: Axel Lin <axel.lin@gmail.com>
-cc: linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
-        Alex Dubov <oakad@yahoo.com>, David Altobelli <david.altobelli@hp.com>,
-        J Freyensee <james_p_freyensee@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] MISC: Convert to DEFINE_PCI_DEVICE_TABLE
-In-Reply-To: <1322794977.25851.1.camel@phoenix>
-Message-ID: <alpine.DEB.2.00.1112020939270.12748@pkunk.americas.sgi.com>
-References: <1322794977.25851.1.camel@phoenix>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-Organization: "Silicon Graphics, Inc."
-Importance: normal
+	id S1756892Ab1LBPnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 10:43:33 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:60457 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756785Ab1LBPnb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 10:43:31 -0500
+Date: Fri, 2 Dec 2011 10:43:30 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: Suspend and resume on ASUS Laptops
+In-Reply-To: <1322763379.30977.33.camel@frodo>
+Message-ID: <Pine.LNX.4.44L0.1112021039460.1420-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Brent Casavant <bcasavan@sgi.com>
+On Thu, 1 Dec 2011, Steven Rostedt wrote:
 
-On Fri, 2 Dec 2011, Axel Lin wrote:
+> On Thu, 2011-12-01 at 20:31 +0530, Srivatsa S. Bhat wrote:
+> 
+> > 
+> > Hi Steven,
+> > Since without the script your system refuses to suspend, you could also use the
+> > 'pm_test' framework (documented in Documentation/power/basic-pm-debugging.txt)
+> > to find out more about the failing step when suspend is attempted without using
+> > the script. Trying 'echo devices > /sys/power/pm_test' might be helpful in your
+> > case.
+> 
+> Interesting, all the pm_tests work. Even core. But when I switch it to
+> 'none' it locks up.
+> 
+> If I just remove the ehci_hcd module, it suspends fine, so the issue is
+> with this module (or some usb device). There seems to be two devices
+> under ehci_hcd, and I played with the script to only unbind one at a
+> time. If I only unbind one (either one) it still hangs. I need to unbind
+> both for the suspend to work.
 
-> Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
-> tables. Also convert to the PCI_DEVICE/PCI_VDEVICE macros for better
-> readablity.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <greg@kroah.com>
-> Cc: David Altobelli <david.altobelli@hp.com>
-> Cc: Brent Casavant <bcasavan@sgi.com>
-> Cc: Jiri Slaby <jirislaby@gmail.com>
-> Cc: J Freyensee <james_p_freyensee@linux.intel.com>
-> Cc: Alex Dubov <oakad@yahoo.com>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/misc/hpilo.c     |    2 +-
->  drivers/misc/ioc4.c      |    6 +++---
->  drivers/misc/pch_phub.c  |    2 +-
->  drivers/misc/phantom.c   |    2 +-
->  drivers/misc/pti.c       |    2 +-
->  drivers/misc/tifm_7xx1.c |   11 ++++-------
->  6 files changed, 11 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
-> index fffc227..f705cbb 100644
-> --- a/drivers/misc/hpilo.c
-> +++ b/drivers/misc/hpilo.c
-> @@ -828,7 +828,7 @@ out:
->  	return error;
->  }
->  
-> -static struct pci_device_id ilo_devices[] = {
-> +static DEFINE_PCI_DEVICE_TABLE(ilo_devices) = {
->  	{ PCI_DEVICE(PCI_VENDOR_ID_COMPAQ, 0xB204) },
->  	{ PCI_DEVICE(PCI_VENDOR_ID_HP, 0x3307) },
->  	{ }
-> diff --git a/drivers/misc/ioc4.c b/drivers/misc/ioc4.c
-> index df03dd3..46adc36 100644
-> --- a/drivers/misc/ioc4.c
-> +++ b/drivers/misc/ioc4.c
-> @@ -456,9 +456,9 @@ ioc4_remove(struct pci_dev *pdev)
->  	kfree(idd);
->  }
->  
-> -static struct pci_device_id ioc4_id_table[] = {
-> -	{PCI_VENDOR_ID_SGI, PCI_DEVICE_ID_SGI_IOC4, PCI_ANY_ID,
-> -	 PCI_ANY_ID, 0x0b4000, 0xFFFFFF},
-> +static DEFINE_PCI_DEVICE_TABLE(ioc4_id_table) = {
-> +	{ PCI_DEVICE(PCI_VENDOR_ID_SGI, PCI_DEVICE_ID_SGI_IOC4),
-> +	  .class = 0x0b4000, .class_mask = 0xFFFFFF },
->  	{0}
->  };
->  
-> diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-> index 10fc478..daa19c2 100644
-> --- a/drivers/misc/pch_phub.c
-> +++ b/drivers/misc/pch_phub.c
-> @@ -878,7 +878,7 @@ static int pch_phub_resume(struct pci_dev *pdev)
->  #define pch_phub_resume NULL
->  #endif /* CONFIG_PM */
->  
-> -static struct pci_device_id pch_phub_pcidev_id[] = {
-> +static DEFINE_PCI_DEVICE_TABLE(pch_phub_pcidev_id) = {
->  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_PCH1_PHUB),       1,  },
->  	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7213_PHUB), 2,  },
->  	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7223_mPHUB), 3,  },
-> diff --git a/drivers/misc/phantom.c b/drivers/misc/phantom.c
-> index 21b28fc..7f12ee6 100644
-> --- a/drivers/misc/phantom.c
-> +++ b/drivers/misc/phantom.c
-> @@ -487,7 +487,7 @@ static int phantom_resume(struct pci_dev *pdev)
->  #define phantom_resume	NULL
->  #endif
->  
-> -static struct pci_device_id phantom_pci_tbl[] __devinitdata = {
-> +static DEFINE_PCI_DEVICE_TABLE(phantom_pci_tbl) = {
->  	{ .vendor = PCI_VENDOR_ID_PLX, .device = PCI_DEVICE_ID_PLX_9050,
->  	  .subvendor = PCI_VENDOR_ID_PLX, .subdevice = PCI_DEVICE_ID_PLX_9050,
->  	  .class = PCI_CLASS_BRIDGE_OTHER << 8, .class_mask = 0xffff00 },
-> diff --git a/drivers/misc/pti.c b/drivers/misc/pti.c
-> index 0b56e3f..03843e3 100644
-> --- a/drivers/misc/pti.c
-> +++ b/drivers/misc/pti.c
-> @@ -76,7 +76,7 @@ struct pti_dev {
->   */
->  static DEFINE_MUTEX(alloclock);
->  
-> -static struct pci_device_id pci_ids[] __devinitconst = {
-> +static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
->  		{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x82B)},
->  		{0}
->  };
-> diff --git a/drivers/misc/tifm_7xx1.c b/drivers/misc/tifm_7xx1.c
-> index ba24790..a93adcca 100644
-> --- a/drivers/misc/tifm_7xx1.c
-> +++ b/drivers/misc/tifm_7xx1.c
-> @@ -415,13 +415,10 @@ static void tifm_7xx1_remove(struct pci_dev *dev)
->  	tifm_free_adapter(fm);
->  }
->  
-> -static struct pci_device_id tifm_7xx1_pci_tbl [] = {
-> -	{ PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_XX21_XX11_FM, PCI_ANY_ID,
-> -	  PCI_ANY_ID, 0, 0, 0 }, /* xx21 - the one I have */
-> -        { PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_XX12_FM, PCI_ANY_ID,
-> -	  PCI_ANY_ID, 0, 0, 0 },
-> -	{ PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_XX20_FM, PCI_ANY_ID,
-> -	  PCI_ANY_ID, 0, 0, 0 },
-> +static DEFINE_PCI_DEVICE_TABLE(tifm_7xx1_pci_tbl) = {
-> +	{ PCI_VDEVICE(TI, PCI_DEVICE_ID_TI_XX21_XX11_FM) },
-> +	{ PCI_VDEVICE(TI, PCI_DEVICE_ID_TI_XX12_FM) },
-> +	{ PCI_VDEVICE(TI, PCI_DEVICE_ID_TI_XX20_FM) },
->  	{ }
->  };
->  
-> -- 
-> 1.7.5.4
-> 
-> 
-> 
+It's possible that this problem is related to wakeup settings.  Have 
+you tried disabling wakeup for the EHCI controllers?
 
--- 
-Brent Casavant                      Silicon Graphics International, Inc.
-System software BIOS engineering    http://www.sgi.com/products/server/uv
+This certainly appears to be some sort of bug in the firmware.  Finding 
+it and working around it isn't likely to be easy.  Unbinding (or 
+unloading) ehci-hcd may indeed be the path of least resistance.
+
+Alan Stern
+
