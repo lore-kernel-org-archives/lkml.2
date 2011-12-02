@@ -1,360 +1,605 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab1LBXAM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 18:00:12 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:52552 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751017Ab1LBXAJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 18:00:09 -0500
-Date: Fri, 2 Dec 2011 18:04:12 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Christoph Lameter <cl@linux.com>, "Alex, Shi" <alex.shi@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Matt Mackall <mpm@selenic.com>, tj@kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111202230412.GB12057@homer.localdomain>
-References: <1321836285.30341.554.camel@debian>
- <20111121080554.GB1625@x4.trippels.de>
- <20111121082445.GD1625@x4.trippels.de>
- <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121131531.GA1679@x4.trippels.de>
- <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121153621.GA1678@x4.trippels.de>
- <20111123160353.GA1673@x4.trippels.de>
- <alpine.DEB.2.00.1111231004490.17317@router.home>
- <20111124085040.GA1677@x4.trippels.de>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="6c2NcOVqGQ03X4Wi"
-Content-Disposition: inline
-In-Reply-To: <20111124085040.GA1677@x4.trippels.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752343Ab1LBXHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 18:07:25 -0500
+Received: from gate.crashing.org ([63.228.1.57]:52603 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751233Ab1LBXHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 18:07:24 -0500
+Message-ID: <1322867228.11728.19.camel@pasglop>
+Subject: Re: [PATCH 1/2] virtio-scsi: first version
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-scsi <linux-scsi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Date: Sat, 03 Dec 2011 10:07:08 +1100
+In-Reply-To: <1322661299-28855-2-git-send-email-pbonzini@redhat.com>
+References: <1322661299-28855-1-git-send-email-pbonzini@redhat.com>
+	 <1322661299-28855-2-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-11-30 at 14:54 +0100, Paolo Bonzini wrote:
+> The virtio-scsi HBA is the basis of an alternative storage stack
+> for QEMU-based virtual machines (including KVM).  Compared to
+> virtio-blk it is more scalable, because it supports many LUNs
+> on a single PCI slot), more powerful (it more easily supports
+> passthrough of host devices to the guest) and more easily
+> extensible (new SCSI features implemented by QEMU should not
+> require updating the driver in the guest).
 
---6c2NcOVqGQ03X4Wi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So apologies in advance if I missed something here but it looks to me
+like you are hard wiring the various parameters such as max transfer
+size, command size, number of segments, etc...  (basically the queue
+limits).
 
-On Thu, Nov 24, 2011 at 09:50:40AM +0100, Markus Trippelsdorf wrote:
-> On 2011.11.23 at 10:06 -0600, Christoph Lameter wrote:
-> > On Wed, 23 Nov 2011, Markus Trippelsdorf wrote:
-> > 
-> > > > FIX idr_layer_cache: Marking all objects used
-> > >
-> > > Yesterday I couldn't reproduce the issue at all. But today I've hit
-> > > exactly the same spot again. (CCing the drm list)
-> > 
-> > Well this is looks like write after free.
-> > 
-> > > =============================================================================
-> > > BUG idr_layer_cache: Poison overwritten
-> > > -----------------------------------------------------------------------------
-> > > Object ffff8802156487c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > Object ffff8802156487d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > Object ffff8802156487e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > Object ffff8802156487f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > Object ffff880215648800: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
-> > > Object ffff880215648810: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > 
-> > And its an integer sized write of 0. If you look at the struct definition
-> > and lookup the offset you should be able to locate the field that
-> > was modified.
+The max transfer size especially is the real nasty one.
+
+This is typically the one thing you should -really- obtain from the
+other side. This is the number one reason why we cannot today reliably
+emulate a SCSI controller in qemu -and- pass-through the SCSI commands
+to the host /dev/sg or equivalent (only full device emulation is
+reliable).
+
+This is also typically what something like virtio-scsi allows us to fix,
+so let's fix it. IE. we have the ability to query the "limits" of the
+real HBA /  transport on the host side and to pass them along to the
+guest, which enables us to do real pass-through.
+
+In fact, spapr-vscsi (IBM pSeries vscsi) does provide the max req side
+(though currently we lack the ability to query it from the kernel on the
+qemu side but that's an orthogonal problem. There are ways to do it,
+more or less buggy, but we can fix that).
+
+So I very strongly suggest that you get the protocol right -now- and
+make sure it carries those informations (even if the qemu side initially
+only supports emulation and hard codes the queue limits, we can fix that
+later and be backward compatible with older guests).
+
+Ben.
+
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  drivers/scsi/Kconfig       |    8 +
+>  drivers/scsi/Makefile      |    1 +
+>  drivers/scsi/virtio_scsi.c |  478 ++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/virtio_ids.h |    1 +
+>  4 files changed, 488 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/scsi/virtio_scsi.c
 > 
-> Here are two more BUGs that seem to point to the same bug:
-> 
-> 1)
-> ...
-> Nov 21 18:30:30 x4 kernel: [drm] radeon: irq initialized.
-> Nov 21 18:30:30 x4 kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
-> Nov 21 18:30:30 x4 kernel: [drm] Loading RS780 Microcode
-> Nov 21 18:30:30 x4 kernel: [drm] PCIE GART of 512M enabled (table at 0x00000000C0040000).
-> Nov 21 18:30:30 x4 kernel: radeon 0000:01:05.0: WB enabled
-> Nov 21 18:30:30 x4 kernel: =============================================================================
-> Nov 21 18:30:30 x4 kernel: BUG task_xstate: Not a valid slab page
-> Nov 21 18:30:30 x4 kernel: -----------------------------------------------------------------------------
-> Nov 21 18:30:30 x4 kernel:
-> Nov 21 18:30:30 x4 kernel: INFO: Slab 0xffffea0000044300 objects=32767 used=65535 fp=0x          (null) flags=0x0401
-> Nov 21 18:30:30 x4 kernel: Pid: 9, comm: ksoftirqd/1 Not tainted 3.2.0-rc2-00274-g6fe4c6d-dirty #75
-> Nov 21 18:30:30 x4 kernel: Call Trace:
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81101c1d>] slab_err+0x7d/0x90
-> Nov 21 18:30:30 x4 kernel: [<ffffffff8103e29f>] ? dump_trace+0x16f/0x2e0
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81044764>] ? free_thread_xstate+0x24/0x40
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81044764>] ? free_thread_xstate+0x24/0x40
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81102566>] check_slab+0x96/0xc0
-> Nov 21 18:30:30 x4 kernel: [<ffffffff814c5c29>] free_debug_processing+0x34/0x19c
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81101d9a>] ? set_track+0x5a/0x190
-> Nov 21 18:30:30 x4 kernel: [<ffffffff8110cf2b>] ? sys_open+0x1b/0x20
-> Nov 21 18:30:30 x4 kernel: [<ffffffff814c5e55>] __slab_free+0x33/0x2d0
-> Nov 21 18:30:30 x4 kernel: [<ffffffff8110cf2b>] ? sys_open+0x1b/0x20
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81105134>] kmem_cache_free+0x104/0x120
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81044764>] free_thread_xstate+0x24/0x40
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81044794>] free_thread_info+0x14/0x30
-> Nov 21 18:30:30 x4 kernel: [<ffffffff8106a4ff>] free_task+0x2f/0x50
-> Nov 21 18:30:30 x4 kernel: [<ffffffff8106a5d0>] __put_task_struct+0xb0/0x110
-> Nov 21 18:30:30 x4 kernel: [<ffffffff8106eb4b>] delayed_put_task_struct+0x3b/0xa0
-> Nov 21 18:30:30 x4 kernel: [<ffffffff810aa01a>] __rcu_process_callbacks+0x12a/0x350
-> Nov 21 18:30:30 x4 kernel: [<ffffffff810aa2a2>] rcu_process_callbacks+0x62/0x140
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81072e18>] __do_softirq+0xa8/0x200
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81073077>] run_ksoftirqd+0x107/0x210
-> Nov 21 18:30:30 x4 kernel: [<ffffffff81072f70>] ? __do_softirq+0x200/0x200
-> Nov 21 18:30:30 x4 kernel: [<ffffffff8108bb87>] kthread+0x87/0x90
-> Nov 21 18:30:30 x4 kernel: [<ffffffff814cdcf4>] kernel_thread_helper+0x4/0x10
-> Nov 21 18:30:30 x4 kernel: [<ffffffff8108bb00>] ? kthread_flush_work_fn+0x10/0x10
-> Nov 21 18:30:30 x4 kernel: [<ffffffff814cdcf0>] ? gs_change+0xb/0xb
-> Nov 21 18:30:30 x4 kernel: FIX task_xstate: Object at 0xffffffff8110cf2b not freed
-> Nov 21 18:30:30 x4 kernel: [drm] ring test succeeded in 1 usecs
-> Nov 21 18:30:30 x4 kernel: [drm] radeon: ib pool ready.
-> Nov 21 18:30:30 x4 kernel: [drm] ib test succeeded in 0 usecs
-> Nov 21 18:30:30 x4 kernel: [drm] Radeon Display Connectors
-> Nov 21 18:30:30 x4 kernel: [drm] Connector 0
-> 
-> 2)
-> ...
-> Nov 21 17:04:38 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
-> Nov 21 17:04:38 x4 kernel: Console: switching to colour frame buffer device 131x105
-> Nov 21 17:04:38 x4 kernel: fb0: radeondrmfb frame buffer device
-> Nov 21 17:04:38 x4 kernel: drm: registered panic notifier
-> Nov 21 17:04:38 x4 kernel: [drm] Initialized radeon 2.11.0 20080528 for 0000:01:05.0 on minor 0
-> Nov 21 17:04:38 x4 kernel: loop: module loaded
-> Nov 21 17:04:38 x4 kernel: ahci 0000:00:11.0: version 3.0
-> Nov 21 17:04:38 x4 kernel: ahci 0000:00:11.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-> Nov 21 17:04:38 x4 kernel: ahci 0000:00:11.0: AHCI 0001.0100 32 slots 6 ports 3 Gbps 0x3f impl SATA mode
-> Nov 21 17:04:38 x4 kernel: ahci 0000:00:11.0: flags: 64bit ncq sntf ilck pm led clo pmp pio slum part ccc
-> Nov 21 17:04:38 x4 kernel: scsi0 : ahci
-> Nov 21 17:04:38 x4 kernel: scsi1 : ahci
-> Nov 21 17:04:38 x4 kernel: =============================================================================
-> Nov 21 17:04:38 x4 kernel: BUG task_struct: Poison overwritten
-> Nov 21 17:04:38 x4 kernel: -----------------------------------------------------------------------------
-> Nov 21 17:04:38 x4 kernel:
-> Nov 21 17:04:38 x4 kernel: INFO: 0xffff880215c43800-0xffff880215c43803. First byte 0x0 instead of 0x6b
-> Nov 21 17:04:38 x4 kernel: INFO: Allocated in copy_process+0xc4/0xf60 age=168 cpu=1 pid=5
-> Nov 21 17:04:38 x4 kernel:      __slab_alloc.constprop.70+0x1a4/0x1e0
-> Nov 21 17:04:38 x4 kernel:      kmem_cache_alloc+0x126/0x160
-> Nov 21 17:04:38 x4 kernel:      copy_process+0xc4/0xf60
-> Nov 21 17:04:38 x4 kernel:      do_fork+0x100/0x2b0
-> Nov 21 17:04:38 x4 kernel:      kernel_thread+0x6c/0x70
-> Nov 21 17:04:38 x4 kernel:      __call_usermodehelper+0x31/0xa0
-> Nov 21 17:04:38 x4 kernel:      process_one_work+0x11a/0x430
-> Nov 21 17:04:38 x4 kernel:      worker_thread+0x126/0x2d0
-> Nov 21 17:04:38 x4 kernel:      kthread+0x87/0x90
-> Nov 21 17:04:38 x4 kernel:      kernel_thread_helper+0x4/0x10
-> Nov 21 17:04:38 x4 kernel: INFO: Freed in free_task+0x3e/0x50 age=156 cpu=2 pid=13
-> Nov 21 17:04:38 x4 kernel:      __slab_free+0x33/0x2d0
-> Nov 21 17:04:38 x4 kernel:      kmem_cache_free+0x104/0x120
-> Nov 21 17:04:38 x4 kernel:      free_task+0x3e/0x50
-> Nov 21 17:04:38 x4 kernel:      __put_task_struct+0xb0/0x110
-> Nov 21 17:04:38 x4 kernel:      delayed_put_task_struct+0x3b/0xa0
-> Nov 21 17:04:38 x4 kernel:      __rcu_process_callbacks+0x12a/0x350
-> Nov 21 17:04:38 x4 kernel:      rcu_process_callbacks+0x62/0x140
-> Nov 21 17:04:38 x4 kernel:      __do_softirq+0xa8/0x200
-> Nov 21 17:04:38 x4 kernel:      run_ksoftirqd+0x107/0x210
-> Nov 21 17:04:38 x4 kernel:      kthread+0x87/0x90
-> Nov 21 17:04:38 x4 kernel:      kernel_thread_helper+0x4/0x10
-> Nov 21 17:04:38 x4 kernel: INFO: Slab 0xffffea0008571000 objects=17 used=17 fp=0x          (null) flags=0x4000000000004080
-> Nov 21 17:04:38 x4 kernel: INFO: Object 0xffff880215c432c0 @offset=12992 fp=0xffff880215c41d00
-> Nov 21 17:04:38 x4 kernel:
-> Nov 21 17:04:38 x4 kernel: Bytes b4 ffff880215c432b0: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c432c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> ...
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c437f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43800: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43810: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43820: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43830: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43840: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43850: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43860: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43870: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43880: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c43890: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> Nov 21 17:04:38 x4 kernel: Object ffff880215c438a0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
-> Nov 21 17:04:38 x4 kernel: Redzone ffff880215c438b0: bb bb bb bb bb bb bb bb                          ........
-> Nov 21 17:04:38 x4 kernel: Padding ffff880215c439f0: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a  ZZZZZZZZZZZZZZZZ
-> Nov 21 17:04:38 x4 kernel: Pid: 5, comm: kworker/u:0 Not tainted 3.2.0-rc2-00274-g6fe4c6d #72
-> Nov 21 17:04:38 x4 kernel: Call Trace:
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81101ca8>] ? print_section+0x38/0x40
-> Nov 21 17:04:38 x4 kernel: [<ffffffff811021a3>] print_trailer+0xe3/0x150
-> Nov 21 17:04:38 x4 kernel: [<ffffffff811023a0>] check_bytes_and_report+0xe0/0x100
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81103196>] check_object+0x1c6/0x240
-> Nov 21 17:04:38 x4 kernel: [<ffffffff8106b034>] ? copy_process+0xc4/0xf60
-> Nov 21 17:04:38 x4 kernel: [<ffffffff814c5bb3>] alloc_debug_processing+0x62/0xe4
-> Nov 21 17:04:38 x4 kernel: [<ffffffff814c6461>] __slab_alloc.constprop.70+0x1a4/0x1e0
-> Nov 21 17:04:38 x4 kernel: [<ffffffff8106b034>] ? copy_process+0xc4/0xf60
-> Nov 21 17:04:38 x4 kernel: [<ffffffff814ca12a>] ? schedule+0x3a/0x50
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81104d66>] kmem_cache_alloc+0x126/0x160
-> Nov 21 17:04:38 x4 kernel: [<ffffffff8106b034>] ? copy_process+0xc4/0xf60
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81065f18>] ? enqueue_task_fair+0xf8/0x140
-> Nov 21 17:04:38 x4 kernel: [<ffffffff8106b034>] copy_process+0xc4/0xf60
-> Nov 21 17:04:38 x4 kernel: [<ffffffff8106c000>] do_fork+0x100/0x2b0
-> Nov 21 17:04:38 x4 kernel: [<ffffffff810920fd>] ? sched_clock_local+0x1d/0x90
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81044dec>] kernel_thread+0x6c/0x70
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81084430>] ? proc_cap_handler+0x180/0x180
-> Nov 21 17:04:38 x4 kernel: [<ffffffff814cdd30>] ? gs_change+0xb/0xb
-> Nov 21 17:04:38 x4 kernel: [<ffffffff810845a1>] __call_usermodehelper+0x31/0xa0
-> Nov 21 17:04:38 x4 kernel: [<ffffffff810869ba>] process_one_work+0x11a/0x430
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81084570>] ? call_usermodehelper_freeinfo+0x30/0x30
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81087026>] worker_thread+0x126/0x2d0
-> Nov 21 17:04:38 x4 kernel: [<ffffffff81086f00>] ? rescuer_thread+0x1f0/0x1f0
-> Nov 21 17:04:38 x4 kernel: [<ffffffff8108bb87>] kthread+0x87/0x90
-> Nov 21 17:04:38 x4 kernel: [<ffffffff814cdd34>] kernel_thread_helper+0x4/0x10
-> Nov 21 17:04:38 x4 kernel: [<ffffffff8108bb00>] ? kthread_flush_work_fn+0x10/0x10
-> Nov 21 17:04:38 x4 kernel: [<ffffffff814cdd30>] ? gs_change+0xb/0xb
-> Nov 21 17:04:38 x4 kernel: FIX task_struct: Restoring 0xffff880215c43800-0xffff880215c43803=0x6b
-> Nov 21 17:04:38 x4 kernel:
-> Nov 21 17:04:38 x4 kernel: FIX task_struct: Marking all objects used
-> 
+> diff --git a/drivers/scsi/Kconfig b/drivers/scsi/Kconfig
+> index 06ea3bc..3ab6ad7 100644
+> --- a/drivers/scsi/Kconfig
+> +++ b/drivers/scsi/Kconfig
+> @@ -1902,6 +1902,14 @@ config SCSI_BFA_FC
+>  	  To compile this driver as a module, choose M here. The module will
+>  	  be called bfa.
+>  
+> +config SCSI_VIRTIO
+> +	tristate "virtio-scsi support (EXPERIMENTAL)"
+> +	depends on EXPERIMENTAL && VIRTIO
+> +	help
+> +          This is the virtual HBA driver for virtio.  It can be used with
+> +          QEMU based VMMs (like KVM or Xen).  Say Y or M.
+> +
+> +
+>  endif # SCSI_LOWLEVEL
+>  
+>  source "drivers/scsi/pcmcia/Kconfig"
+> diff --git a/drivers/scsi/Makefile b/drivers/scsi/Makefile
+> index 2b88749..351b28b 100644
+> --- a/drivers/scsi/Makefile
+> +++ b/drivers/scsi/Makefile
+> @@ -141,6 +141,7 @@ obj-$(CONFIG_SCSI_CXGB4_ISCSI)	+= libiscsi.o libiscsi_tcp.o cxgbi/
+>  obj-$(CONFIG_SCSI_BNX2_ISCSI)	+= libiscsi.o bnx2i/
+>  obj-$(CONFIG_BE2ISCSI)		+= libiscsi.o be2iscsi/
+>  obj-$(CONFIG_SCSI_PMCRAID)	+= pmcraid.o
+> +obj-$(CONFIG_SCSI_VIRTIO)	+= virtio_scsi.o
+>  obj-$(CONFIG_VMWARE_PVSCSI)	+= vmw_pvscsi.o
+>  
+>  obj-$(CONFIG_ARM)		+= arm/
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> new file mode 100644
+> index 0000000..cf8732f
+> --- /dev/null
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -0,0 +1,478 @@
+> +/*
+> + * Virtio SCSI HBA driver
+> + *
+> + * Copyright IBM Corp. 2010
+> + * Copyright Red Hat, Inc. 2011
+> + *
+> + * Authors:
+> + *  Stefan Hajnoczi   <stefanha@linux.vnet.ibm.com>
+> + *  Paolo Bonzini   <pbonzini@redhat.com>
+> + *
+> + * This work is licensed under the terms of the GNU GPL, version 2 or later.
+> + * See the COPYING file in the top-level directory.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/virtio.h>
+> +#include <linux/virtio_ids.h>
+> +#include <linux/virtio_config.h>
+> +#include <linux/virtio_scsi.h>
+> +#include <scsi/scsi_host.h>
+> +#include <scsi/scsi_device.h>
+> +#include <scsi/scsi_cmnd.h>
+> +
+> +#define VIRTIO_SCSI_DEBUG 0
+> +
+> +static void dbg(const char *fmt, ...)
+> +{
+> +	if (VIRTIO_SCSI_DEBUG) {
+> +		va_list args;
+> +
+> +		va_start(args, fmt);
+> +		vprintk(fmt, args);
+> +		va_end(args);
+> +	}
+> +}
+> +
+> +/* Command queue element */
+> +struct virtio_scsi_cmd {
+> +	struct scsi_cmnd *sc;
+> +	union {
+> +		struct virtio_scsi_cmd_req       cmd;
+> +		struct virtio_scsi_ctrl_tmf_req  tmf;
+> +		struct virtio_scsi_ctrl_an_req   an;
+> +	} req;
+> +	union {
+> +		struct virtio_scsi_cmd_resp      cmd;
+> +		struct virtio_scsi_ctrl_tmf_resp tmf;
+> +		struct virtio_scsi_ctrl_an_resp  an;
+> +		struct virtio_scsi_event         evt;
+> +	} resp;
+> +} ____cacheline_aligned_in_smp;
+> +
+> +/* Driver instance state */
+> +struct virtio_scsi {
+> +	/* Protects cmd_vq and sg[] */
+> +	spinlock_t cmd_vq_lock;
+> +
+> +	struct virtio_device *vdev;
+> +	struct virtqueue *ctrl_vq;
+> +	struct virtqueue *event_vq;
+> +	struct virtqueue *cmd_vq;
+> +
+> +	/* For sglist construction when adding commands to the virtqueue.  */
+> +	struct scatterlist sg[];
+> +};
+> +
+> +static struct kmem_cache *virtscsi_cmd_cache;
+> +
+> +static inline struct Scsi_Host *virtio_scsi_host(struct virtio_device *vdev)
+> +{
+> +	return vdev->priv;
+> +}
+> +
+> +static void virtscsi_compute_resid(struct scsi_cmnd *sc, u32 resid)
+> +{
+> +	if (!resid)
+> +		return;
+> +
+> +	if (!scsi_bidi_cmnd(sc)) {
+> +		scsi_set_resid(sc, resid);
+> +		return;
+> +	}
+> +
+> +	scsi_in(sc)->resid = min(resid, scsi_in(sc)->length);
+> +	scsi_out(sc)->resid = resid - scsi_in(sc)->resid;
+> +}
+> +
+> +/**
+> + * virtscsi_complete_cmd - finish a scsi_cmd and invoke scsi_done
+> + *
+> + * Called with cmd_vq_lock held.
+> + */
+> +static void virtscsi_complete_cmd(void *buf)
+> +{
+> +	struct virtio_scsi_cmd *cmd = buf;
+> +	struct scsi_cmnd *sc = cmd->sc;
+> +	struct virtio_scsi_cmd_resp *resp = &cmd->resp.cmd;
+> +
+> +	dbg("%s %d:%d:%d:%d cmd %p status %#02x sense_len %u\n", __func__,
+> +		sc->device->host->host_no, sc->device->id,
+> +		sc->device->channel, sc->device->lun,
+> +		sc, resp->status, resp->sense_len);
+> +
+> +	sc->result = resp->status;
+> +	virtscsi_compute_resid(sc, resp->resid);
+> +	switch (resp->response) {
+> +	case VIRTIO_SCSI_S_OK:
+> +		set_host_byte(sc, DID_OK);
+> +		break;
+> +	case VIRTIO_SCSI_S_UNDERRUN:
+> +		set_host_byte(sc, DID_BAD_TARGET);
+> +	case VIRTIO_SCSI_S_ABORTED:
+> +		set_host_byte(sc, DID_ABORT);
+> +		break;
+> +	case VIRTIO_SCSI_S_BAD_TARGET:
+> +		set_host_byte(sc, DID_BAD_TARGET);
+> +		break;
+> +	case VIRTIO_SCSI_S_RESET:
+> +		set_host_byte(sc, DID_RESET);
+> +		break;
+> +	case VIRTIO_SCSI_S_TRANSPORT_FAILURE:
+> +		set_host_byte(sc, DID_TRANSPORT_DISRUPTED);
+> +		break;
+> +	case VIRTIO_SCSI_S_TARGET_FAILURE:
+> +		set_host_byte(sc, DID_TARGET_FAILURE);
+> +		break;
+> +	case VIRTIO_SCSI_S_NEXUS_FAILURE:
+> +		set_host_byte(sc, DID_NEXUS_FAILURE);
+> +		break;
+> +	default:
+> +		scmd_printk(KERN_DEBUG, sc, "Unknown comand response %d",
+> +			    resp->response);
+> +		/* fall through */
+> +	case VIRTIO_SCSI_S_FAILURE:
+> +		set_host_byte(sc, DID_ERROR);
+> +		break;
+> +	}
+> +
+> +	WARN_ON(resp->sense_len > VIRTIO_SCSI_SENSE_SIZE);
+> +	if (sc->sense_buffer) {
+> +		memcpy(sc->sense_buffer, resp->sense,
+> +		       min_t(u32, resp->sense_len, VIRTIO_SCSI_SENSE_SIZE));
+> +		if (resp->sense_len)
+> +			set_driver_byte(sc, DRIVER_SENSE);
+> +	}
+> +
+> +	kmem_cache_free(virtscsi_cmd_cache, cmd);
+> +	sc->scsi_done(sc);
+> +}
+> +
+> +static void virtscsi_vq_done(struct virtqueue *vq, void (*fn)(void *buf))
+> +{
+> +	struct Scsi_Host *sh = virtio_scsi_host(vq->vdev);
+> +	struct virtio_scsi *vscsi = shost_priv(sh);
+> +	void *buf;
+> +	unsigned long flags;
+> +	unsigned int len;
+> +
+> +	spin_lock_irqsave(&vscsi->cmd_vq_lock, flags);
+> +
+> +	do {
+> +		virtqueue_disable_cb(vq);
+> +		while ((buf = virtqueue_get_buf(vq, &len)) != NULL) {
+> +			fn(buf);
+> +		}
+> +	} while (!virtqueue_enable_cb(vq));
+> +
+> +	spin_unlock_irqrestore(&vscsi->cmd_vq_lock, flags);
+> +}
+> +
+> +static void virtscsi_cmd_done(struct virtqueue *vq)
+> +{
+> +	virtscsi_vq_done(vq, virtscsi_complete_cmd);
+> +};
+> +
+> +/* These are still stubs.  */
+> +static void virtscsi_complete_free(void *buf)
+> +{
+> +	struct virtio_scsi_cmd *cmd = buf;
+> +
+> +	kmem_cache_free(virtscsi_cmd_cache, cmd);
+> +}
+> +
+> +static void virtscsi_ctrl_done(struct virtqueue *vq)
+> +{
+> +	virtscsi_vq_done(vq, virtscsi_complete_free);
+> +};
+> +
+> +static void virtscsi_event_done(struct virtqueue *vq)
+> +{
+> +	virtscsi_vq_done(vq, virtscsi_complete_free);
+> +};
+> +
+> +/**
+> + * virtscsi_map_cmd - map a scsi_cmd to a virtqueue scatterlist
+> + * @vscsi	: virtio_scsi state
+> + * @sc		: command to be mapped
+> + * @cmd		: command structure
+> + * @out_num	: number of read-only elements
+> + * @in_num	: number of write-only elements
+> + *
+> + * Called with cmd_vq_lock held.
+> + */
+> +static void virtscsi_map_sgl(struct scatterlist *sg, unsigned int *p_idx,
+> +			     struct scsi_data_buffer *sdb)
+> +{
+> +	struct sg_table *table = &sdb->table;
+> +	struct scatterlist *sg_elem;
+> +	unsigned int idx = *p_idx;
+> +	int i;
+> +
+> +	for_each_sg(table->sgl, sg_elem, table->nents, i)
+> +		sg_set_buf(&sg[idx++], sg_virt(sg_elem), sg_elem->length);
+> +
+> +	*p_idx = idx;
+> +}
+> +
+> +static void virtscsi_map_cmd(struct virtio_scsi *vscsi, struct virtqueue *vq,
+> +			     struct virtio_scsi_cmd *cmd, unsigned *out_num,
+> +			     unsigned *in_num)
+> +{
+> +	struct scsi_cmnd *sc = cmd->sc;
+> +	struct scatterlist *sg = vscsi->sg;
+> +	unsigned int idx = 0;
+> +
+> +	if (sc) {
+> +		struct Scsi_Host *shost = virtio_scsi_host(vscsi->vdev);
+> +		BUG_ON(scsi_sg_count(sc) > shost->sg_tablesize);
+> +
+> +		/* TODO: check feature bit and fail if unsupported?  */
+> +		BUG_ON(sc->sc_data_direction == DMA_BIDIRECTIONAL);
+> +	}
+> +
+> +	/* Request header.  */
+> +	sg_set_buf(&sg[idx++], &cmd->req.cmd, sizeof(cmd->req.cmd));
+> +
+> +	/* Data-out buffer.  */
+> +	if (sc && sc->sc_data_direction != DMA_FROM_DEVICE)
+> +		virtscsi_map_sgl(sg, &idx, scsi_out(sc));
+> +
+> +	*out_num = idx;
+> +
+> +	/* Response header.  */
+> +	sg_set_buf(&sg[idx++], &cmd->resp, sizeof(cmd->resp));
+> +
+> +	/* Data-in buffer */
+> +	if (sc && sc->sc_data_direction != DMA_TO_DEVICE)
+> +		virtscsi_map_sgl(sg, &idx, scsi_in(sc));
+> +
+> +	*in_num = idx - *out_num;
+> +}
+> +
+> +static int virtscsi_kick_cmd(struct virtio_scsi *vscsi, struct virtqueue *vq,
+> +			     struct virtio_scsi_cmd *cmd)
+> +{
+> +	unsigned int out_num, in_num;
+> +	unsigned long flags;
+> +	int ret;
+> +
+> +	spin_lock_irqsave(&vscsi->cmd_vq_lock, flags);
+> +
+> +	virtscsi_map_cmd(vscsi, vq, cmd, &out_num, &in_num);
+> +
+> +	ret = virtqueue_add_buf(vq, vscsi->sg, out_num, in_num, cmd);
+> +	if (ret >= 0)
+> +		virtqueue_kick(vq);
+> +
+> +	spin_unlock_irqrestore(&vscsi->cmd_vq_lock, flags);
+> +	return ret;
+> +}
+> +
+> +static int virtscsi_queuecommand(struct Scsi_Host *sh, struct scsi_cmnd *sc)
+> +{
+> +	struct virtio_scsi *vscsi = shost_priv(sh);
+> +	struct virtio_scsi_cmd *cmd;
+> +	int ret;
+> +
+> +	dbg("%s %d:%d:%d:%d got cmd %p CDB: %#02x\n", __func__,
+> +		sc->device->host->host_no, sc->device->id,
+> +		sc->device->channel, sc->device->lun,
+> +		sc, sc->cmnd[0]);
+> +
+> +	ret = SCSI_MLQUEUE_HOST_BUSY;
+> +	cmd = kmem_cache_zalloc(virtscsi_cmd_cache, GFP_ATOMIC);
+> +	if (!cmd)
+> +		goto out;
+> +
+> +	cmd->sc = sc;
+> +	cmd->req.cmd = (struct virtio_scsi_cmd_req){
+> +		.lun[0] = 1,
+> +		.lun[1] = sc->device->id,
+> +		.lun[2] = (sc->device->lun >> 8) | 0x40,
+> +		.lun[3] = sc->device->lun & 0xff,
+> +		.tag = (__u64)sc,
+> +		.task_attr = VIRTIO_SCSI_S_SIMPLE,
+> +		.prio = 0,
+> +		.crn = 0,
+> +	};
+> +
+> +	BUG_ON(sc->cmd_len > VIRTIO_SCSI_CDB_SIZE);
+> +	memcpy(cmd->req.cmd.cdb, sc->cmnd, sc->cmd_len);
+> +
+> +	if (virtscsi_kick_cmd(vscsi, vscsi->cmd_vq, cmd) >= 0)
+> +		ret = 0;
+> +
+> +out:
+> +	return ret;
+> +}
+> +
+> +static struct scsi_host_template virtscsi_host_template = {
+> +	.module = THIS_MODULE,
+> +	.name = "Virtio SCSI HBA",
+> +	.proc_name = "virtio_scsi",
+> +	.queuecommand = virtscsi_queuecommand,
+> +	.this_id = -1,
+> +
+> +	.can_queue = 1024,
+> +	.max_sectors = 0xFFFF,
+> +	.dma_boundary = UINT_MAX,
+> +	.use_clustering = ENABLE_CLUSTERING,
+> +	.cmd_per_lun = 1,
+> +};
+> +
+> +#define virtscsi_config_get(vdev, fld) \
+> +	({ \
+> +		typeof(((struct virtio_scsi_config *)0)->fld) __val; \
+> +		vdev->config->get(vdev, \
+> +				  offsetof(struct virtio_scsi_config, fld), \
+> +				  &__val, sizeof(__val)); \
+> +		__val; \
+> +	})
+> +
+> +#define virtscsi_config_set(vdev, fld, val) \
+> +	(void)({ \
+> +		typeof(((struct virtio_scsi_config *)0)->fld) __val = (val); \
+> +		vdev->config->set(vdev, \
+> +				  offsetof(struct virtio_scsi_config, fld), \
+> +				  &__val, sizeof(__val)); \
+> +	})
+> +
+> +static int __devinit virtscsi_init(struct virtio_device *vdev, struct virtio_scsi *vscsi)
+> +{
+> +	int err;
+> +	struct virtqueue *vqs[3];
+> +	vq_callback_t *callbacks[] = {
+> +		virtscsi_ctrl_done,
+> +		virtscsi_event_done,
+> +		virtscsi_cmd_done
+> +	};
+> +	const char *names[] = {
+> +		"control",
+> +		"event",
+> +		"command"
+> +	};
+> +
+> +	/* Discover virtqueues and write information to configuration.  */
+> +	err = vdev->config->find_vqs(vdev, 3, vqs, callbacks, names);
+> +	if (err)
+> +		return err;
+> +
+> +	vscsi->ctrl_vq = vqs[0];
+> +	vscsi->event_vq = vqs[1];
+> +	vscsi->cmd_vq = vqs[2];
+> +
+> +	virtscsi_config_set(vdev, cdb_size, VIRTIO_SCSI_CDB_SIZE);
+> +	virtscsi_config_set(vdev, sense_size, VIRTIO_SCSI_SENSE_SIZE);
+> +	return 0;
+> +}
+> +
+> +static int __devinit virtscsi_probe(struct virtio_device *vdev)
+> +{
+> +	struct Scsi_Host *shost;
+> +	struct virtio_scsi *vscsi;
+> +	int err;
+> +	u32 sg_elems;
+> +
+> +	/* We need to know how many segments before we allocate.
+> +         * We need an extra sg elements at head and tail.
+> +	 */
+> +	sg_elems = virtscsi_config_get(vdev, seg_max);
+> +
+> +	dbg(KERN_ALERT "virtio-scsi sg_elems %d", __func__, sg_elems);
+> +
+> +	/* Allocate memory and link the structs together.  */
+> +        shost = scsi_host_alloc(&virtscsi_host_template,
+> +		sizeof(*vscsi) + sizeof(vscsi->sg[0]) * (sg_elems + 2));
+> +
+> +	if (!shost)
+> +		return -ENOMEM;
+> +
+> +	shost->sg_tablesize = sg_elems;
+> +	vscsi = shost_priv(shost);
+> +	vscsi->vdev = vdev;
+> +	vdev->priv = shost;
+> +
+> +	/* Random initializations.  */
+> +	spin_lock_init(&vscsi->cmd_vq_lock);
+> +	sg_init_table(vscsi->sg, sg_elems + 2);
+> +
+> +	err = virtscsi_init(vdev, vscsi);
+> +	if (err)
+> +		goto virtio_init_failed;
+> +
+> +	shost->max_lun = virtscsi_config_get(vdev, max_lun) + 1;
+> +	shost->max_id = virtscsi_config_get(vdev, max_target) + 1;
+> +	shost->max_channel = 0;
+> +	shost->max_cmd_len = VIRTIO_SCSI_CDB_SIZE;
+> +	err = scsi_add_host(shost, &vdev->dev);
+> +	if (err)
+> +		goto scsi_add_host_failed;
+> +
+> +	scsi_scan_host(shost);
+> +
+> +	return 0;
+> +
+> +scsi_add_host_failed:
+> +	vdev->config->del_vqs(vdev);
+> +virtio_init_failed:
+> +	scsi_host_put(shost);
+> +	return err;
+> +}
+> +
+> +static void __devexit virtscsi_remove_vqs(struct virtio_device *vdev)
+> +{
+> +	/* Stop all the virtqueues. */
+> +	vdev->config->reset(vdev);
+> +
+> +	vdev->config->del_vqs(vdev);
+> +}
+> +
+> +static void __devexit virtscsi_remove(struct virtio_device *vdev)
+> +{
+> +	struct Scsi_Host *shost = virtio_scsi_host(vdev);
+> +
+> +	scsi_remove_host(shost);
+> +
+> +	virtscsi_remove_vqs(vdev);
+> +	scsi_host_put(shost);
+> +}
+> +
+> +static struct virtio_device_id id_table[] = {
+> +	{ VIRTIO_ID_SCSI, VIRTIO_DEV_ANY_ID },
+> +	{ 0 },
+> +};
+> +
+> +static struct virtio_driver virtio_scsi_driver = {
+> +	.driver.name = KBUILD_MODNAME,
+> +	.driver.owner = THIS_MODULE,
+> +	.id_table = id_table,
+> +	.probe = virtscsi_probe,
+> +	.remove = __devexit_p(virtscsi_remove),
+> +};
+> +
+> +static int __init init(void)
+> +{
+> +	virtscsi_cmd_cache = KMEM_CACHE(virtio_scsi_cmd, 0);
+> +	if (!virtscsi_cmd_cache) {
+> +		printk(KERN_ERR "kmem_cache_create() for "
+> +				"virtscsi_cmd_cache failed\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	return register_virtio_driver(&virtio_scsi_driver);
+> +}
+> +
+> +static void __exit fini(void)
+> +{
+> +	unregister_virtio_driver(&virtio_scsi_driver);
+> +	kmem_cache_destroy(virtscsi_cmd_cache);
+> +}
+> +module_init(init);
+> +module_exit(fini);
+> +
+> +MODULE_DEVICE_TABLE(virtio, id_table);
+> +MODULE_DESCRIPTION("Virtio SCSI HBA driver");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/virtio_ids.h b/include/linux/virtio_ids.h
+> index 85bb0bb..fee54c4 100644
+> --- a/include/linux/virtio_ids.h
+> +++ b/include/linux/virtio_ids.h
+> @@ -34,6 +34,7 @@
+>  #define VIRTIO_ID_CONSOLE	3 /* virtio console */
+>  #define VIRTIO_ID_RNG		4 /* virtio ring */
+>  #define VIRTIO_ID_BALLOON	5 /* virtio balloon */
+> +#define VIRTIO_ID_SCSI		7 /* virtio scsi */
+>  #define VIRTIO_ID_9P		9 /* 9p virtio console */
+>  
+>  #endif /* _LINUX_VIRTIO_IDS_H */
 
-I really don't think that drm or radeon is guilty. I tried to reproduce
-with rc3+ & rc4+ with slub or slab, did more then 20 kexec cycle with
-same kernel parameter and no issue.
 
-To confirm that radeon or drm is not to blame can you trigger the issue
-by using nomodeset kernel option (your fb rotate option is then
-useless). If with nomodeset you can trigger the issue can you then try
-to trigger it with KMS enabled and with attached patch (real ugly printk
-debuging)
-
-Note that i walked over the drm mode init code and i believe the root
-issue is that some code in the kernel do a double idr_remove/destroy
-which trigger the idr slub/slab error. It just happen that radeon/drm
-is call after the idr double free but is not the one guilty.
-
-Note that i don't understand the idr code much, so my theory can be
-completely wrong but attached patch might help to shed some light.
-
-Cheers,
-Jerome
-
---6c2NcOVqGQ03X4Wi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-UGLY-DEBUGING.patch"
-
->From 4262819d046dacfb75ad2d639cb61c5b6985e159 Mon Sep 17 00:00:00 2001
-From: Jerome Glisse <jglisse@redhat.com>
-Date: Fri, 2 Dec 2011 17:50:02 -0500
-Subject: [PATCH] UGLY DEBUGING
-
-WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
----
- drivers/gpu/drm/drm_crtc.c     |    2 ++
- drivers/gpu/drm/drm_pci.c      |    2 ++
- drivers/gpu/drm/drm_platform.c |    2 ++
- lib/idr.c                      |    6 +++++-
- mm/slab.c                      |    2 +-
- 5 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index 8323fc3..a1a0a69 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -242,6 +242,7 @@ again:
- 
- 	obj->id = new_id;
- 	obj->type = obj_type;
-+DRM_INFO("allocating idr %p %d idr %d\n", obj, obj_type, new_id);
- 	return 0;
- }
- 
-@@ -259,6 +260,7 @@ static void drm_mode_object_put(struct drm_device *dev,
- 				struct drm_mode_object *object)
- {
- 	mutex_lock(&dev->mode_config.idr_mutex);
-+DRM_INFO("remove idr %p %d idr %d\n", object, object->type, object->id);
- 	idr_remove(&dev->mode_config.crtc_idr, object->id);
- 	mutex_unlock(&dev->mode_config.idr_mutex);
- }
-diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
-index d4d10b7..7932ebb 100644
---- a/drivers/gpu/drm/drm_pci.c
-+++ b/drivers/gpu/drm/drm_pci.c
-@@ -345,11 +345,13 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
- 
- 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
- 		pci_set_drvdata(pdev, dev);
-+printk(KERN_INFO "%s %d\n", __func__, __LINE__);
- 		ret = drm_get_minor(dev, &dev->control, DRM_MINOR_CONTROL);
- 		if (ret)
- 			goto err_g2;
- 	}
- 
-+printk(KERN_INFO "%s %d\n", __func__, __LINE__);
- 	if ((ret = drm_get_minor(dev, &dev->primary, DRM_MINOR_LEGACY)))
- 		goto err_g3;
- 
-diff --git a/drivers/gpu/drm/drm_platform.c b/drivers/gpu/drm/drm_platform.c
-index ae9db5e..3e7e401 100644
---- a/drivers/gpu/drm/drm_platform.c
-+++ b/drivers/gpu/drm/drm_platform.c
-@@ -65,11 +65,13 @@ int drm_get_platform_dev(struct platform_device *platdev,
- 
- 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
- 		dev_set_drvdata(&platdev->dev, dev);
-+printk(KERN_INFO "%s %d\n", __func__, __LINE__);
- 		ret = drm_get_minor(dev, &dev->control, DRM_MINOR_CONTROL);
- 		if (ret)
- 			goto err_g1;
- 	}
- 
-+printk(KERN_INFO "%s %d\n", __func__, __LINE__);
- 	ret = drm_get_minor(dev, &dev->primary, DRM_MINOR_LEGACY);
- 	if (ret)
- 		goto err_g2;
-diff --git a/lib/idr.c b/lib/idr.c
-index ed055b2..22c3ec6 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -427,6 +427,7 @@ void idr_remove(struct idr *idp, int id)
- 		 * layers that fall into the freelist are those that have been
- 		 * preallocated.
- 		 */
-+printk(KERN_INFO "%s free idr %p\n", __func__, p);
- 		kmem_cache_free(idr_layer_cache, p);
- 	}
- 	return;
-@@ -489,6 +490,7 @@ void idr_destroy(struct idr *idp)
- {
- 	while (idp->id_free_cnt) {
- 		struct idr_layer *p = get_from_free_list(idp);
-+printk(KERN_INFO "%s free idr %p\n", __func__, p);
- 		kmem_cache_free(idr_layer_cache, p);
- 	}
- }
-@@ -841,8 +843,10 @@ int ida_get_new_above(struct ida *ida, int starting_id, int *p_id)
- 	 */
- 	if (ida->idr.id_free_cnt || ida->free_bitmap) {
- 		struct idr_layer *p = get_from_free_list(&ida->idr);
--		if (p)
-+		if (p) {
-+printk(KERN_INFO "%s free idr %p\n", __func__, p);
- 			kmem_cache_free(idr_layer_cache, p);
-+		}
- 	}
- 
- 	return 0;
-diff --git a/mm/slab.c b/mm/slab.c
-index 708efe8..83864f9 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1926,7 +1926,7 @@ static void check_poison_obj(struct kmem_cache *cachep, void *objp)
- 			/* Mismatch ! */
- 			/* Print header */
- 			if (lines == 0) {
--				printk(KERN_ERR
-+				WARN(1, 
- 					"Slab corruption: %s start=%p, len=%d\n",
- 					cachep->name, realobj, size);
- 				print_objinfo(cachep, objp, 0);
--- 
-1.7.7.1
-
-
---6c2NcOVqGQ03X4Wi--
