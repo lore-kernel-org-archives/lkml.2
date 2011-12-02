@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab1LBMf6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 07:35:58 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58515 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab1LBMf5 (ORCPT
+	id S1756035Ab1LBMlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 07:41:18 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:58955 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755590Ab1LBMlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 07:35:57 -0500
+	Fri, 2 Dec 2011 07:41:16 -0500
+From: Pedro Alves <pedro@codesourcery.com>
+Organization: CodeSourcery
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
+Date: Fri, 2 Dec 2011 12:41:04 +0000
+User-Agent: KMail/1.13.6 (Linux/2.6.38-13-generic; KDE/4.7.2; x86_64; ; )
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+References: <20111129191252.769160532@openvz.org> <20111201095434.GR14515@moon> <20111202094010.ca2dee4c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111202094010.ca2dee4c.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20111202122205.GL8245@opensource.wolfsonmicro.com>
-References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
-	<1321848532-8784-2-git-send-email-tomoya.rohm@gmail.com>
-	<20111121113433.GD3784@opensource.wolfsonmicro.com>
-	<CANKRQnjdS1NvcGLa=S1M0D4U_NV3+JR1E4YfAV7Ziq-fE2LQgg@mail.gmail.com>
-	<20111202114638.GI8245@opensource.wolfsonmicro.com>
-	<CANKRQng5OzqjiQ81OUH+2Aet8DAM198s6B=_1FuASnd19BU26w@mail.gmail.com>
-	<20111202122205.GL8245@opensource.wolfsonmicro.com>
-Date: Fri, 2 Dec 2011 21:35:57 +0900
-Message-ID: <CANKRQnhcA-bzcMnR2BBPStb7XgZp2pe=XE2YjKOMjUKPw2Ms5w@mail.gmail.com>
-Subject: Re: [PATCH 2/3] sound/soc/lapis: add machine driver
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112021241.04471.pedro@codesourcery.com>
+X-OriginalArrivalTime: 02 Dec 2011 12:41:06.0646 (UTC) FILETIME=[A9082F60:01CCB0EF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/2 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Fri, Dec 02, 2011 at 09:09:34PM +0900, Tomoya MORINAGA wrote:
->> 2011/12/2 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->
->> > The CPU side audio drivers are not there - there seemed to be some quite
->> > serious review issues with those.
->
->> Let me clarify your saying.
->> Does the above "audio drivers" mean i2s (of south bridge) driver or HD
->> audio (of north bridge) or another?
->
-> I2S and audio DMA.
+On Friday 02 December 2011 00:40:10, KAMEZAWA Hiroyuki wrote:
+> > What about this one?
+> > ---
+> > fs, proc: Introduce the /proc/<pid>/children entry
+> > 
+> > There is no easy way to make a reverse parent->children chain
+> > from the task status, in turn children->parent provided with "PPid"
+> > field.
+> > 
+> > So instead of walking over all pids in system to figure out what
+> > children the task have -- we add explicit /proc/<pid>/children entry,
+> > since kernel already knows this kind of information but it was not
+> > yet exported.
+> > 
+> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> > Cc: Pavel Emelyanov <xemul@parallels.com>
+> > Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> > Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Yes, I like /children file. other points seems to be pointed out by other
+> reviewers. 
 
-OK.
-As you know, I post i2s/dma driver once. I understand need to do much
-modification.
-I'm going to develop codec driver, machine driver and
-platform(i2s/dma) driver in turn obeying modern ASoC framework.
+Any reason this is a file instead of a directory like /proc/PID/task/ ?
 
-Do you mean you cannot review this codec driver any more unless I
-provide other 2 drivers (machine and platform) ?
+$ sudo ls /proc/8167/task/
+8167  854  855  856  857  858  859
+$ sudo ls /proc/8167/task/855/
+attr    clear_refs  cpuset   exe     io       loginuid  mountinfo  oom_adj        pagemap      sched      smaps  statm    wchan
+auxv    cmdline     cwd      fd      latency  maps      mounts     oom_score      personality  schedstat  stack  status
+cgroup  comm        environ  fdinfo  limits   mem       numa_maps  oom_score_adj  root         sessionid  stat   syscall
 
-Thanks,
-tomoya
+Much easier to follow the chain from the command line this way.
+
+-- 
+Pedro Alves
