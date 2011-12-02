@@ -1,160 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529Ab1LBFLL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 00:11:11 -0500
-Received: from matrix.voodoobox.net ([75.127.97.206]:38325 "EHLO
-	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab1LBFK5 (ORCPT
+	id S1751459Ab1LBFMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 00:12:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35916 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750937Ab1LBFMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 00:10:57 -0500
-X-Greylist: delayed 2460 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 00:10:56 EST
-Subject: [PATCH 1/2] ALSA: sis7019 - give slow codecs more time to reset
-From: David Dillow <dave@thedillows.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel mailing list <alsa-devel@alsa-project.org>,
-        linux-kernel@vger.kernel.org, misiu <tjosko@yahoo.com>
-Date: Thu, 01 Dec 2011 23:26:53 -0500
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1322800014.26859.4.camel@obelisk.thedillows.org>
-Mime-Version: 1.0
+	Fri, 2 Dec 2011 00:12:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <4ED7D734.4020301@metafoo.de>
+References: <1322474755-18785-1-git-send-email-tomoya.rohm@gmail.com>
+	<4ED37CE3.6040008@metafoo.de>
+	<CANKRQnh7MnSQdKXvPJvSPzf-7afXmHip9LqR1cKCgB6HXqcnBg@mail.gmail.com>
+	<4ED4EE48.8070100@metafoo.de>
+	<CANKRQniP=UUAPbbyoZNvxs16H7QZzS=O9zwt6kJu69u8s8qGTQ@mail.gmail.com>
+	<4ED7D734.4020301@metafoo.de>
+Date: Fri, 2 Dec 2011 14:12:20 +0900
+Message-ID: <CANKRQni0BCkS4ZkopnqWyDvwtb7+tbh9Utow9kkEFqnzGe1Wkg@mail.gmail.com>
+Subject: Re: [PATCH v3] sound/soc/codecs: add LAPIS Semiconductor ML26124
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some AC97 codec and board combinations that have been observed
-to take a very long time to respond after the cold reset has completed.
-In one case, more than 350 ms was required. To allow users to have sound
-on those platforms, we'll wait up to 500ms for the codec to become
-ready.
-    
-As a board may have multiple codecs, with some faster than others to
-reset, we add a module parameter to inform the driver which codecs
-should be present.
-    
-Reported-by: KotCzarny <tjosko@yahoo.com>
-Signed-off-by: David Dillow <dave@thedillows.org>
---
-This should probably be fed to stable as well.
+2011/12/2 Lars-Peter Clausen <lars@metafoo.de>:
+> The middle part(the control) of the path must either be a control attached to
+> the mixer on the left side(the sink) or a element of the mux's enum if a mux is
+> on the left side. If the left side is neither a mixer or a mux the middle part
+> is ignored.
+>
+> The other problem probably is that you have one mux which lets you switch
+> between single-ended analog input, differential analog input and digital input.
+> The first two options are routed through PGA and ADC the later not.
+I can understand.
+The "digital input" description shouldn't be at snd_soc_dpram_route description.
+So, I've modified like below. These satisfies your showed condition.
 
- sound/pci/sis7019.c |   64 ++++++++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 53 insertions(+), 11 deletions(-)
+	/* Supply */
+	{"DAC", NULL, "MCLK"},
+	{"ADC", NULL, "MCLK"},
+	{"DAC", NULL, "PLL"},
+	{"ADC", NULL, "PLL"},
 
+	/* output mixer */
+	{"Output Mixer", "PGA Switch", "PGA"},
+	{"Output Mixer", "DAC Switch", "DAC"},
+	{"Output Mixer", "Line in Switch", "LIN"},
 
-diff --git a/sound/pci/sis7019.c b/sound/pci/sis7019.c
-index a391e62..28dfafb 100644
---- a/sound/pci/sis7019.c
-+++ b/sound/pci/sis7019.c
-@@ -41,6 +41,7 @@ MODULE_SUPPORTED_DEVICE("{{SiS,SiS7019 Audio Accelerator}}");
- static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
- static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
- static int enable = 1;
-+static int codecs = 1;
- 
- module_param(index, int, 0444);
- MODULE_PARM_DESC(index, "Index value for SiS7019 Audio Accelerator.");
-@@ -48,6 +49,8 @@ module_param(id, charp, 0444);
- MODULE_PARM_DESC(id, "ID string for SiS7019 Audio Accelerator.");
- module_param(enable, bool, 0444);
- MODULE_PARM_DESC(enable, "Enable SiS7019 Audio Accelerator.");
-+module_param(codecs, int, 0444);
-+MODULE_PARM_DESC(codecs, "Set bit to indicate that codec number is expected to be present (default 1)");
- 
- static DEFINE_PCI_DEVICE_TABLE(snd_sis7019_ids) = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_SI, 0x7019) },
-@@ -140,6 +143,9 @@ struct sis7019 {
- 	dma_addr_t silence_dma_addr;
- };
- 
-+/* These values are also used by the module param 'codecs' to indicate
-+ * which codecs should be present.
-+ */
- #define SIS_PRIMARY_CODEC_PRESENT	0x0001
- #define SIS_SECONDARY_CODEC_PRESENT	0x0002
- #define SIS_TERTIARY_CODEC_PRESENT	0x0004
-@@ -1078,6 +1084,7 @@ static int sis_chip_init(struct sis7019 *sis)
- {
- 	unsigned long io = sis->ioport;
- 	void __iomem *ioaddr = sis->ioaddr;
-+	unsigned long timeout;
- 	u16 status;
- 	int count;
- 	int i;
-@@ -1104,21 +1111,45 @@ static int sis_chip_init(struct sis7019 *sis)
- 	while ((inw(io + SIS_AC97_STATUS) & SIS_AC97_STATUS_BUSY) && --count)
- 		udelay(1);
- 
-+	/* Command complete, we can let go of the semaphore now.
-+	 */
-+	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
-+	if (!count)
-+		return -EIO;
-+
- 	/* Now that we've finished the reset, find out what's attached.
-+	 * There are some codec/board combinations that take an extremely
-+	 * long time to come up. 350+ ms has been observed in the field,
-+	 * so we'll give them up to 500ms.
- 	 */
--	status = inl(io + SIS_AC97_STATUS);
--	if (status & SIS_AC97_STATUS_CODEC_READY)
--		sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
--	if (status & SIS_AC97_STATUS_CODEC2_READY)
--		sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
--	if (status & SIS_AC97_STATUS_CODEC3_READY)
--		sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
--
--	/* All done, let go of the semaphore, and check for errors
-+	sis->codecs_present = 0;
-+	timeout = msecs_to_jiffies(500) + jiffies;
-+	while (time_before_eq(jiffies, timeout)) {
-+		status = inl(io + SIS_AC97_STATUS);
-+		if (status & SIS_AC97_STATUS_CODEC_READY)
-+			sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
-+		if (status & SIS_AC97_STATUS_CODEC2_READY)
-+			sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
-+		if (status & SIS_AC97_STATUS_CODEC3_READY)
-+			sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
-+
-+		if (sis->codecs_present == codecs)
-+			break;
-+
-+		msleep(1);
-+	}
-+
-+	/* All done, check for errors.
- 	 */
--	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
--	if (!sis->codecs_present || !count)
-+	if (!sis->codecs_present) {
-+		printk(KERN_ERR "sis7019: could not find any codecs\n");
- 		return -EIO;
-+	}
-+
-+	if (sis->codecs_present != codecs) {
-+		printk(KERN_WARNING "sis7019: missing codecs, found %0x, expected %0x\n",
-+		       sis->codecs_present, codecs);
-+	}
- 
- 	/* Let the hardware know that the audio driver is alive,
- 	 * and enable PCM slots on the AC-link for L/R playback (3 & 4) and
-@@ -1390,6 +1421,17 @@ static int __devinit snd_sis7019_probe(struct pci_dev *pci,
- 	if (!enable)
- 		goto error_out;
- 
-+	/* The user can specify which codecs should be present so that we
-+	 * can wait for them to show up if they are slow to recover from
-+	 * the AC97 cold reset. We default to a single codec, the primary.
-+	 *
-+	 * We assume that SIS_PRIMARY_*_PRESENT matches bits 0-2.
-+	 */
-+	codecs &= SIS_PRIMARY_CODEC_PRESENT | SIS_SECONDARY_CODEC_PRESENT |
-+		  SIS_TERTIARY_CODEC_PRESENT;
-+	if (!codecs)
-+		codecs = SIS_PRIMARY_CODEC_PRESENT;
-+
- 	rc = snd_card_create(index, id, THIS_MODULE, sizeof(*sis), &card);
- 	if (rc < 0)
- 		goto error_out;
+	/* outputs */
+	{"LOUT", NULL, "Output Mixer"},
+	{"SPOUT", NULL, "Output Mixer"},
+
+	/* input */
+	{"Input Mux", "Analog MIC SingleEnded in", "MIN"},
+	{"Input Mux", "Analog MIC Differential in", "MIN"},
+	{"ADC", NULL, "Input Mux"},
 
 
+Thanks,
+tomoya
