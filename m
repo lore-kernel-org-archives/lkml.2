@@ -1,117 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab1LBPbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 10:31:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65146 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754065Ab1LBPa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 10:30:58 -0500
-Message-ID: <4ED8EF27.5060906@redhat.com>
-Date: Fri, 02 Dec 2011 09:30:47 -0600
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Kyungmin Park <kmpark@infradead.org>
-CC: Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu, tm@tao.ma,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
-References: <20111201070052.GA29708@july> <4ED7FA81.9090802@redhat.com> <CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
-In-Reply-To: <CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756853Ab1LBPdk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 10:33:40 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:43632 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754065Ab1LBPdk convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 2 Dec 2011 10:33:40 -0500
+Message-Id: <4ED8FDE102000078000651E5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 02 Dec 2011 15:33:37 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Borislav Petkov" <bp@amd64.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH] x86: fix error paths in microcode_init()
+References: <4ED8E2270200007800065120@nat28.tlf.novell.com>
+ <20111202143517.GA16690@gere.osrc.amd.com>
+ <4ED8F46E0200007800065178@nat28.tlf.novell.com>
+ <4ED8EB7D.5070802@linux.vnet.ibm.com>
+ <20111202152403.GB16690@gere.osrc.amd.com>
+In-Reply-To: <20111202152403.GB16690@gere.osrc.amd.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/1/11 6:01 PM, Kyungmin Park wrote:
-> On 12/2/11, Eric Sandeen <sandeen@redhat.com> wrote:
->> On 12/1/11 1:00 AM, Kyungmin Park wrote:
->>> From: Kyungmin Park <kyungmin.park@samsung.com>
->>>
->>> Now trim information doesn't stored at disk so every boot time. it's
->>> cleared.
->>> and do the trim all disk groups.
->>> But assume that it's already trimmed at previous time so don't need to
->>> trim it again. So set the intial state as trimmed.
->>>
->>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>> ---
->>> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
->>> index e2d8be8..97ef342 100644
->>> --- a/fs/ext4/mballoc.c
->>> +++ b/fs/ext4/mballoc.c
->>> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
->>> ext4_group_t group)
->>>  		goto err;
->>>  	}
->>>  	mark_page_accessed(page);
->>> +
->>> +	/*
->>> +	 * TRIM information is not stored at disk so set the initial
->>> +	 * state as trimmed. Since previous time it's already trimmed all
->>> +	 */
->>> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
->>
-> Hi,
+>>> On 02.12.11 at 16:24, Borislav Petkov <bp@amd64.org> wrote:
+> On Fri, Dec 02, 2011 at 08:45:09PM +0530, Srivatsa S. Bhat wrote:
+>> Your patch fixes the issue more properly than mine, but adding your part
+>> on top of my patch makes the code look better. For example,
+>> platform_device_unregister() wouldn't need to be called twice; and we 
+>> can use the quite popular way of handling error path via goto statements,
+>> which makes the code flow much more comprehensible and intuitive.
 > 
->> Hm, so if there were freed but un-trimmed blocks at this point, we will
->> never trim them until we free _another_ block in the group, right?  That
->> might be a reasonable tradeoff, but it is somewhat surprising behavior.
->>
->> i.e. say we do:
->>
->> mount /mnt
->> rm -rf /mnt/very_big_file
->> umount /mnt
->>
->> mount /mnt
->> fitrim /mnt
-> another word, you can run fitrim after rm -rf
-> yes, it's trade-off.
+> Yes,
 > 
-> In my case, phone scenario, no umount system and data partition. it's
-> burden to trim at boot time. it has still slower boot time.
-> some daemon or program run fitrm at filesystem. it consumes time and
-> hurt other boot processes.
->>
->> then we won't trim anything at all, right, despite there being many
->> new free blocks?  Which would be rather unexpected.
->>
->> If we don't store the trimmed state on disk, I think we should
->> probably stick with the slower first-time trim, and the more obvious
->> behavior (all free blocks are always trimmed whenever a trim
->> command is issued).
-> 
-> Umm how do you think, introduce the trim force command for this?
+> goto labels is the proper way for spelling error handling in the kernel
+> so I could very well take your patch Jan, instead, if you change it to
+> use goto labels for the error path as Srivatsa's patch does it. That is,
+> in case Ingo hasn't pulled yet.
 
-One that ignores the state flag?  Maybe, but IMHO that's getting even
-kludgier, or at least more complicated.  I think it will be difficult
-getting that past the vfs folks.  "Here is a new flag which says that
-when we issue a trim command, we really should issue the trim command,
-even if we are issuing it on ext4, and ext4 hasn't kept proper track,
-and defaults to assuming that there is no work to do on a trim."
+Sorry, no, I won't introduce new labels in functions not already using
+some (I'm already feeling guilty enough each time I end up doing so
+when a function already is coded that way, to limit the impact of a
+particular change). This is just bad programming style in my opinion, no
+matter what other developers may think on this subject.
 
-If we don't have space on-disk for the state, then we are kind of stuck.
-
-But marking groups as "trimmed" when they are not, thereby ignoring
-subsequent trim commands, strikes me as a very surprising behavior for
-the user.
-
--Eric
-
-> Thank you,
-> Kyungmin Park
->>
->> -Eric
->>
->>>  err:
->>>  	ext4_mb_put_buddy_page_lock(&e4b);
->>>  	return ret;
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->>
+Jan
 
