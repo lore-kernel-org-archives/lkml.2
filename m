@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab1LBTXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:23:34 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45851 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab1LBTXd convert rfc822-to-8bit (ORCPT
+	id S1753043Ab1LBT0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:26:25 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58907 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab1LBT0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:23:33 -0500
+	Fri, 2 Dec 2011 14:26:23 -0500
+Date: Fri, 2 Dec 2011 19:26:18 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeff Garzik <jgarzik@redhat.com>, Pawel Moll <pawel.moll@arm.com>,
+        linux-arm-kernel@localhost.localdomain
+Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
+Message-ID: <20111202192618.GC3037@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20111202072800.GC14515@moon>
-References: <20111129191252.769160532@openvz.org>
-	<20111129191638.756761754@openvz.org>
-	<20111129200627.GO5169@outflux.net>
-	<20111202002405.GA7701@p183.telecom.by>
-	<20111202072800.GC14515@moon>
-Date: Fri, 2 Dec 2011 11:23:32 -0800
-X-Google-Sender-Auth: BsA2-PAxj0_48ZQ27yPGVjcQlc4
-Message-ID: <CAGXu5jLSuvFnV5er6A5abg6EMWM6XVZmVaOCRjwTMS+p4oEXAQ@mail.gmail.com>
-Subject: Re: [rfc 1/3] fs, proc: Add start_data, end_data, start_brk members
- to /proc/$pid/stat
-From: Kees Cook <keescook@chromium.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 11:28 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Fri, Dec 02, 2011 at 03:24:06AM +0300, Alexey Dobriyan wrote:
->> > > +         cputime_to_clock_t(cgtime),
->> > > +         mm ? (permitted ? mm->start_data : 1) : 0,
->> > > +         mm ? (permitted ? mm->end_data : 1) : 0,
->> > > +         mm ? (permitted ? mm->start_brk : 1) : 0);
->> > >   if (mm)
->> > >           mmput(mm);
->> > >   return 0;
->> >
->> > Thanks for using "permitted" here. :)
->>
->> And these are new fields, so "1" hack is unnecessary.
->
-> I perhaps miss some history here, you mean just print 0
-> instead of 1, right?
+[expanding CC -- apologies to anyone who gets this mail twice]
 
-The history is that when "0" is seen for start_code, tools like "ps"
-assumed the process was a kernel thread, so "1" was used as a hack to
-not break userspace reporting. So yeah, since this is a new field,
-it's fine to just do:
+On Thu, Nov 10, 2011 at 08:28:59PM +0400, Anton Vorontsov wrote:
+> Drivers should not use NO_IRQ; moreover, some architectures don't
+> have it nowadays. '0' is the 'no irq' case.
+> 
+> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> Acked-by: Alan Cox <alan@linux.intel.com>
+> ---
+> 
+> On Thu, Nov 10, 2011 at 03:38:16PM +0000, Alan Cox wrote:
+> > On Thu, 10 Nov 2011 19:26:06 +0400
+> > Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> > 
+> > > Drivers should not use NO_IRQ; moreover, some architectures don't
+> > > have it nowadays. '0' is the 'no irq' case.
+> > > 
+> > > Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> > 
+> > Acked-by: Alan Cox <alan@linux.intel.com>
+> 
+> In case if we don't want a "band-aid fix" for 3.2, here is the patch
+> that just does the proper fix (w/ a risk to break minor architectures).
 
-+         (mm && permitted) ? mm->start_data : 0,
-+         (mm && permitted) ? mm->end_data : 0,
-+         (mm && permitted) ? mm->start_brk : 0,
+This is now broken on ARM where, for good or bad, NO_IRQ currently is
+used and is -1.
 
--Kees
+How do we resolve it?  If we are ready to eliminate NO_IRQ from
+drivers/of/irq.c (or indeed, all code that uses it) and just use 0 for
+that case, we should surely just do it... but I'm not confident I can
+judge on that.
 
--- 
-Kees Cook
-ChromeOS Security
+Half-removing NO_IRQ is going to be problematic, though...
+I really don't care whether the "no irq" value is 0 or -1, but it is
+abundantly clear that choosing different values to mean the same thing
+on opposite sides of an interface does not work.
+
+Cheers
+---Dave
+
+> 
+>  drivers/ata/pata_of_platform.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/ata/pata_of_platform.c b/drivers/ata/pata_of_platform.c
+> index a72ab0d..2a472c5 100644
+> --- a/drivers/ata/pata_of_platform.c
+> +++ b/drivers/ata/pata_of_platform.c
+> @@ -52,7 +52,7 @@ static int __devinit pata_of_platform_probe(struct platform_device *ofdev)
+>  	}
+>  
+>  	ret = of_irq_to_resource(dn, 0, &irq_res);
+> -	if (ret == NO_IRQ)
+> +	if (!ret)
+>  		irq_res.start = irq_res.end = 0;
+>  	else
+>  		irq_res.flags = 0;
+> -- 
+> 1.7.5.3
+> 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
