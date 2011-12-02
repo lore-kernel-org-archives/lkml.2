@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab1LBRIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:08:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59174 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895Ab1LBRIL (ORCPT
+	id S1757171Ab1LBRNN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:13:13 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:33611 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757033Ab1LBRNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:08:11 -0500
-Message-ID: <4ED905EC.80700@gmail.com>
-Date: Fri, 02 Dec 2011 10:07:56 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	Fri, 2 Dec 2011 12:13:12 -0500
+Date: Fri, 2 Dec 2011 10:13:10 -0700 (MST)
+From: Paul Walmsley <paul@pwsan.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
+        tglx@linutronix.de, linus.walleij@stericsson.com,
+        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
+        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org, Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
+In-Reply-To: <20111201084547.GD19739@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1112012352000.6289@utopia.booyaka.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1111291619110.6289@utopia.booyaka.com> <20111201084547.GD19739@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/4] perf test: Validate PERF_RECORD_ events and perf_sample
- fields
-References: <1322842769-7232-1-git-send-email-acme@infradead.org> <1322842769-7232-5-git-send-email-acme@infradead.org>
-In-Reply-To: <1322842769-7232-5-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Russell,
+
+On Thu, 1 Dec 2011, Russell King - ARM Linux wrote:
+
+> On Wed, Nov 30, 2011 at 06:20:50PM -0700, Paul Walmsley wrote:
+> > 1. When a clock user calls clk_enable() on a clock, the clock framework 
+> > should prevent other users of the clock from changing the clock's rate.  
+> > This should persist until the clock user calls clk_disable() (but see also 
+> > #2 below).  This will ensure that clock users can rely on the rate 
+> > returned by clk_get_rate(), as long as it's called between clk_enable() 
+> > and clk_disable().  And since the clock's rate is guaranteed to remain the 
+> > same during this time, code that cannot tolerate clock rate changes 
+> > without special handling (such as driver code for external I/O devices) 
+> > will work safely without further modification.
+> 
+> So, if you have a PLL whose parent clock is not used by anything else.
+> You want to program it to a certain rate.
+> 
+> You call clk_disable() on the PLL clock.
+
+The approach described wouldn't require the PLL to be disabled before 
+changing its rate.  If there are no other users of the PLL, or if the 
+other users of the PLL have indicated that it's safe for others to change 
+the PLL's rate, the clock framework would allow the PLL rate change, even 
+if the PLL is enabled.  (modulo any notifier activity, and assuming that 
+the underlying PLL hardware allows its frequency to be reprogrammed while 
+the PLL is enabled)
+
+> This walks up the tree and disables the parent.  You then try to set the 
+> rate using clk_set_rate(). clk_set_rate() in this circumstance can't 
+> wait for the PLL to lock because it can't - there's no reference clock 
+> for it.
+
+As an aside, this seems like a good time to mention that the behavior of 
+clk_set_rate() on a disabled clock needs to be clarified.
 
 
-On 12/02/2011 09:19 AM, Arnaldo Carvalho de Melo wrote:
-> +found_exit:
-> +	if (nr_events[PERF_RECORD_COMM] > 1) {
-> +		pr_debug("Excessive number of PERF_RECORD_COMM events!\n");
-> +		goto out_err;
-> +	}
-> +
-> +	if (nr_events[PERF_RECORD_COMM] == 0) {
-> +		pr_debug("Missing PERF_RECORD_COMM for %s!\n", cmd);
-> +		goto out_err;
-> +	}
-> +
-> +	if (!found_cmd_mmap) {
-> +		pr_debug("PERF_RECORD_MMAP for %s missing!\n", cmd);
-> +		goto out_err;
-> +	}
-> +
-> +	if (!found_libc_mmap) {
-> +		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "libc");
-> +		goto out_err;
-> +	}
-> +
-> +	if (!found_ld_mmap) {
-> +		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "ld");
-> +		goto out_err;
-> +	}
-> +
-> +	if (!found_vdso_mmap) {
-> +		pr_debug("PERF_RECORD_MMAP for %s missing!\n", "[vdso]");
-> +		goto out_err;
-> +	}
-
-
-Since this is a test why not show all missed events rather than punt to
-out_err on the first missed one?
-
-David
-
-
-> +
-> +	err = 0;
-> +out_err:
-> +	perf_evlist__munmap(evlist);
-> +out_free_cpu_mask:
-> +	CPU_FREE(cpu_mask);
-> +out_delete_evlist:
-> +	perf_evlist__delete(evlist);
-> +out:
-> +	return err;
-> +}
-> +
+- Paul
