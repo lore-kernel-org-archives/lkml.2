@@ -1,145 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab1LBBUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 20:20:20 -0500
-Received: from mga14.intel.com ([143.182.124.37]:37912 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755433Ab1LBBUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 20:20:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,281,1320652800"; 
-   d="scan'208";a="81324907"
-Date: Fri, 2 Dec 2011 09:10:15 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] exit: fix writeback build errors
-Message-ID: <20111202011015.GA9724@localhost>
-References: <20111201155342.45847a6edcf25cde48c4a6de@canb.auug.org.au>
- <4ED7C51F.3090007@xenotime.net>
+	id S1756338Ab1LBBcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 20:32:17 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60816 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755433Ab1LBBcP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 20:32:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED7C51F.3090007@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111202005150.2e9fde43@bob.linux.org.uk>
+References: <1322783258-20443-1-git-send-email-paul.gortmaker@windriver.com>
+	<1322783258-20443-2-git-send-email-paul.gortmaker@windriver.com>
+	<20111202005150.2e9fde43@bob.linux.org.uk>
+Date: Thu, 1 Dec 2011 20:32:13 -0500
+X-Google-Sender-Auth: bQfYHaUEJrrCeMsRGJU_HVgTNFE
+Message-ID: <CAP=VYLpn7kJJ6we3diqhCR+QzjQtzTmkEzSP-uw07=udJKYK6g@mail.gmail.com>
+Subject: Re: [PATCH 1/3] serial: make bugs field not specific to 8250 type uarts.
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: gregkh@suse.de, galak@kernel.crashing.org, scottwood@freescale.com,
+        linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 02:19:11AM +0800, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Fix build errors:
-> kernel/exit.c:1039:3: error: 'dirty_throttle_leaks' undeclared (first use in this function)
-> kernel/exit.c:1039:3: warning: type defaults to 'int' in type name
-> kernel/exit.c:1039:3: warning: initialization makes pointer from integer without a cast
-> kernel/exit.c:1039:1: warning: type defaults to 'int' in declaration of 'pao_T__'
-> kernel/exit.c:1039:1: warning: type defaults to 'int' in declaration of 'pao_T__'
-> kernel/exit.c:1039:1: warning: type defaults to 'int' in declaration of 'pao_T__'
-> kernel/exit.c:1039:1: warning: type defaults to 'int' in declaration of 'pao_T__'
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+On Thu, Dec 1, 2011 at 7:51 PM, Alan Cox <alan@linux.intel.com> wrote:
+>> Make the bugs field part of the globally visible struct
+>> uart_port and remove the 8250 specific one.
+>
+> Except all the bits in it are 8250 specific things or names that are
+> meaningless in generic form - no. I also don't want to encourage flags
+> and bug bits. We already have too many and its making the code a mess.
+> So right now we want less not more.
 
-Thanks! I merged this with the original patch, so as to make it
-bisectable.
+The bits in "bugs" are only passed through -- the idea is that there is
+no "interpretation" of them by any generic layer -- only that they prop
+from the arch down to the driver which knows what they mean.
 
----
-Subject: writeback: charge leaked page dirties to active tasks
-Date: Tue Apr 05 13:21:19 CST 2011
+I can understand the "want less not more" mentality -- I was thinking
+the same thing when I was looking at the replication of fields between
+uart_port and uart_8250_port, and toying with the idea of helping clean
+that up....  (separate topic, to be sure.)
 
-It's a years long problem that a large number of short-lived dirtiers
-(eg. gcc instances in a fast kernel build) may starve long-run dirtiers
-(eg. dd) as well as pushing the dirty pages to the global hard limit.
+If you have an idea in mind how arch/platform code should cleanly
+pass data about known uart bugs to the uart driver, then let me know
+what you have in mind.  I've no real attachment to what I proposed
+here -- it just happened to be the solution I thought would be the least
+offensive.  If there is a better idea floating around, I'll go ahead and
+try to implement it.
 
-The solution is to charge the pages dirtied by the exited gcc to the
-other random dirtying tasks. It sounds not perfect, however should
-behave good enough in practice, seeing as that throttled tasks aren't
-actually running so those that are running are more likely to pick it up
-and get throttled, therefore promoting an equal spread.
+Thanks,
+Paul.
 
-Randy: fix compile error: 'dirty_throttle_leaks' undeclared in exit.c
-
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/writeback.h |    2 ++
- kernel/exit.c             |    3 +++
- mm/page-writeback.c       |   27 +++++++++++++++++++++++++++
- 3 files changed, 32 insertions(+)
-
---- linux-next.orig/include/linux/writeback.h	2011-11-30 15:11:31.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-12-02 09:07:19.000000000 +0800
-@@ -7,6 +7,8 @@
- #include <linux/sched.h>
- #include <linux/fs.h>
- 
-+DECLARE_PER_CPU(int, dirty_throttle_leaks);
-+
- /*
-  * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
-  *
---- linux-next.orig/mm/page-writeback.c	2011-11-30 15:11:39.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-12-02 09:07:19.000000000 +0800
-@@ -1236,6 +1236,22 @@ void set_page_dirty_balance(struct page 
- 
- static DEFINE_PER_CPU(int, bdp_ratelimits);
- 
-+/*
-+ * Normal tasks are throttled by
-+ *	loop {
-+ *		dirty tsk->nr_dirtied_pause pages;
-+ *		take a snap in balance_dirty_pages();
-+ *	}
-+ * However there is a worst case. If every task exit immediately when dirtied
-+ * (tsk->nr_dirtied_pause - 1) pages, balance_dirty_pages() will never be
-+ * called to throttle the page dirties. The solution is to save the not yet
-+ * throttled page dirties in dirty_throttle_leaks on task exit and charge them
-+ * randomly into the running tasks. This works well for the above worst case,
-+ * as the new task will pick up and accumulate the old task's leaked dirty
-+ * count and eventually get throttled.
-+ */
-+DEFINE_PER_CPU(int, dirty_throttle_leaks) = 0;
-+
- /**
-  * balance_dirty_pages_ratelimited_nr - balance dirty memory state
-  * @mapping: address_space which was dirtied
-@@ -1283,6 +1299,17 @@ void balance_dirty_pages_ratelimited_nr(
- 			ratelimit = 0;
- 		}
- 	}
-+	/*
-+	 * Pick up the dirtied pages by the exited tasks. This avoids lots of
-+	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
-+	 * the dirty throttling and livelock other long-run dirtiers.
-+	 */
-+	p = &__get_cpu_var(dirty_throttle_leaks);
-+	if (*p > 0 && current->nr_dirtied < ratelimit) {
-+		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
-+		*p -= nr_pages_dirtied;
-+		current->nr_dirtied += nr_pages_dirtied;
-+	}
- 	preempt_enable();
- 
- 	if (unlikely(current->nr_dirtied >= ratelimit))
---- linux-next.orig/kernel/exit.c	2011-11-30 15:11:31.000000000 +0800
-+++ linux-next/kernel/exit.c	2011-12-02 09:08:12.000000000 +0800
-@@ -51,6 +51,7 @@
- #include <trace/events/sched.h>
- #include <linux/hw_breakpoint.h>
- #include <linux/oom.h>
-+#include <linux/writeback.h>
- 
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
-@@ -1037,6 +1038,8 @@ NORET_TYPE void do_exit(long code)
- 	validate_creds_for_do_exit(tsk);
- 
- 	preempt_disable();
-+	if (tsk->nr_dirtied)
-+		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
- 	exit_rcu();
- 	/* causes final put_task_struct in finish_task_switch(). */
- 	tsk->state = TASK_DEAD;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-serial" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
