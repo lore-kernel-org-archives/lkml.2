@@ -1,78 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1LBTos (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:44:48 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42423 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110Ab1LBToq (ORCPT
+	id S1754768Ab1LBTpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:45:24 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40552 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab1LBTpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:44:46 -0500
-Date: Fri, 2 Dec 2011 14:43:09 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Christoph Lameter <cl@linux.com>, "Alex, Shi" <alex.shi@intel.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Matt Mackall <mpm@selenic.com>, tj@kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111202194309.GA12057@homer.localdomain>
-References: <20111121080554.GB1625@x4.trippels.de>
- <20111121082445.GD1625@x4.trippels.de>
- <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121131531.GA1679@x4.trippels.de>
- <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121153621.GA1678@x4.trippels.de>
- <20111123160353.GA1673@x4.trippels.de>
- <alpine.DEB.2.00.1111231004490.17317@router.home>
- <20111124085040.GA1677@x4.trippels.de>
- <20111201084437.GA1529@x4.trippels.de>
+	Fri, 2 Dec 2011 14:45:23 -0500
+Date: Fri, 2 Dec 2011 20:45:18 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Jan Beulich <JBeulich@suse.com>, Borislav Petkov <bp@amd64.org>,
+        mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Subject: Re: [PATCH] x86: fix error paths in microcode_init()
+Message-ID: <20111202194518.GE15204@aftab>
+References: <4ED8E2270200007800065120@nat28.tlf.novell.com>
+ <20111202143517.GA16690@gere.osrc.amd.com>
+ <4ED8F46E0200007800065178@nat28.tlf.novell.com>
+ <4ED8EB7D.5070802@linux.vnet.ibm.com>
+ <20111202152403.GB16690@gere.osrc.amd.com>
+ <4ED8FDE102000078000651E5@nat28.tlf.novell.com>
+ <4ED8FF7C.2090509@linux.vnet.ibm.com>
+ <4ED90EBF02000078000652BE@nat28.tlf.novell.com>
+ <4ED901F5.3080302@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111201084437.GA1529@x4.trippels.de>
+In-Reply-To: <4ED901F5.3080302@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 09:44:37AM +0100, Markus Trippelsdorf wrote:
-> On 2011.11.24 at 09:50 +0100, Markus Trippelsdorf wrote:
-> > On 2011.11.23 at 10:06 -0600, Christoph Lameter wrote:
-> > > On Wed, 23 Nov 2011, Markus Trippelsdorf wrote:
-> > > 
-> > > > > FIX idr_layer_cache: Marking all objects used
-> > > >
-> > > > Yesterday I couldn't reproduce the issue at all. But today I've hit
-> > > > exactly the same spot again. (CCing the drm list)
-> > > 
-> > > Well this is looks like write after free.
-> > > 
-> > > > =============================================================================
-> > > > BUG idr_layer_cache: Poison overwritten
-> > > > -----------------------------------------------------------------------------
-> > > > Object ffff8802156487c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > Object ffff8802156487d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > Object ffff8802156487e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > Object ffff8802156487f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > Object ffff880215648800: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
-> > > > Object ffff880215648810: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > 
-> > > And its an integer sized write of 0. If you look at the struct definition
-> > > and lookup the offset you should be able to locate the field that
-> > > was modified.
-> 
-> It also happens with CONFIG_SLAB. 
-> (If someone wants to reproduce the issue, just run a kexec boot loop and
-> the bug will occur after a few (~10) iterations.)
-> 
+On Fri, Dec 02, 2011 at 10:21:01PM +0530, Srivatsa S. Bhat wrote:
+> Wow! Good to know that we have an agreement :-)
+> Boris, it is again up to you to choose among the two(Signed-off-by or Acked-by)
+> for Jan. Hehe ;-)
 
-Can you provide the kexec command line you are using and full kernel
-log (mostly interested in kernel option).
+Well,
 
-Cheers,
-Jerome
+since Ingo hasn't pulled yet, I merged the two patches after adding the
+required S-O-Bs into the following:
+
+--
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Mon, 7 Nov 2011 18:05:32 +0530
+Subject: [PATCH] x86, microcode: Fix the failure path of microcode update
+ driver init code
+
+The microcode update driver's initialization code does not handle
+failures correctly. This patch fixes this issue.
+
+Signed-off-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20111107123530.12164.31227.stgit@srivatsabhat.in.ibm.com
+Link: http://lkml.kernel.org/r/4ED8E2270200007800065120@nat28.tlf.novell.com
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/microcode_core.c |   28 +++++++++++++++++++---------
+ 1 files changed, 19 insertions(+), 9 deletions(-)
+
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index f2d2a66..9d46f5e 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -256,7 +256,7 @@ static int __init microcode_dev_init(void)
+ 	return 0;
+ }
+ 
+-static void microcode_dev_exit(void)
++static void __exit microcode_dev_exit(void)
+ {
+ 	misc_deregister(&microcode_dev);
+ }
+@@ -519,10 +519,8 @@ static int __init microcode_init(void)
+ 
+ 	microcode_pdev = platform_device_register_simple("microcode", -1,
+ 							 NULL, 0);
+-	if (IS_ERR(microcode_pdev)) {
+-		microcode_dev_exit();
++	if (IS_ERR(microcode_pdev))
+ 		return PTR_ERR(microcode_pdev);
+-	}
+ 
+ 	get_online_cpus();
+ 	mutex_lock(&microcode_mutex);
+@@ -532,14 +530,12 @@ static int __init microcode_init(void)
+ 	mutex_unlock(&microcode_mutex);
+ 	put_online_cpus();
+ 
+-	if (error) {
+-		platform_device_unregister(microcode_pdev);
+-		return error;
+-	}
++	if (error)
++		goto out_pdev;
+ 
+ 	error = microcode_dev_init();
+ 	if (error)
+-		return error;
++		goto out_sysdev_driver;
+ 
+ 	register_syscore_ops(&mc_syscore_ops);
+ 	register_hotcpu_notifier(&mc_cpu_notifier);
+@@ -548,6 +544,20 @@ static int __init microcode_init(void)
+ 		" <tigran@aivazian.fsnet.co.uk>, Peter Oruba\n");
+ 
+ 	return 0;
++
++out_sysdev_driver:
++	get_online_cpus();
++	mutex_lock(&microcode_mutex);
++
++	sysdev_driver_unregister(&cpu_sysdev_class, &mc_sysdev_driver);
++
++	mutex_unlock(&microcode_mutex);
++	put_online_cpus();
++
++out_pdev:
++	platform_device_unregister(microcode_pdev);
++	return error;
++
+ }
+ module_init(microcode_init);
+ 
+-- 
+1.7.8.rc0
+
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
