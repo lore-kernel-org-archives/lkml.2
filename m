@@ -1,97 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab1LBLEh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 06:04:37 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:34485 "EHLO gir.skynet.ie"
+	id S1754082Ab1LBLO6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 06:14:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51178 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753117Ab1LBLEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 06:04:34 -0500
-Date: Fri, 2 Dec 2011 11:07:02 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1112021102400.28364@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753547Ab1LBLO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 06:14:56 -0500
+Message-ID: <4ED8B327.9090505@redhat.com>
+Date: Fri, 02 Dec 2011 09:14:47 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Andreas Oberritter <obi@linuxtv.org>
+CC: HoP <jpetrous@gmail.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <4ED7BBA3.5020002@redhat.com> <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com> <4ED7E5D7.8070909@redhat.com> <4ED805CB.5020302@linuxtv.org>
+In-Reply-To: <4ED805CB.5020302@linuxtv.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01-12-2011 20:55, Andreas Oberritter wrote:
+> On 01.12.2011 21:38, Mauro Carvalho Chehab wrote:
+>> I fail to see where do you need to duplicate dvb-core. An userspace
+>> LD_PRELOAD handler that would do:
+>>
+>> int socket;
+>>
+>> int dvb_ioctl(int fd, unsigned long int request, ...)
+>> {
+>>          void *arg;
+>>          va_list ap;
+>>
+>>          va_start(ap, request);
+>>          arg = va_arg(ap, void *);
+>>          va_end(ap);
+>>
+>>      send_net_ioctl_packet(socket, request, arg);
+>> }
+>>
+>> Is probably all you need to send _any_ ioctl's to a remote machine
+>> (plus client's machine that would decode the ioctl packet and send
+>> the ioctl to the actual driver).
+>>
+>> Of course, you'll need hooks for all syscalls used (likely open, close,
+>> ioctl, read, poll).
+>>
+>> So, there's not much duplication, even if, for whatever reason, you
+>> might need to hook some specific ioctls in order to optimize the
+>> network performance.
+>
+> Mauro, we've already had that discussion last time. In order to
+> intercept ioctls of a device, the device needs to exist to begin with,
+> right? That's where vtuner comes in: It creates the virtual device.
 
-Hi Linus,
+Yes.
 
-nouveau fixes contain a few oops fixes found on Fedora recently, 
-main radeon one fixes a GPU reset race where the CPU hangs in an endless loop,
-and in core a framebuffer leak fix from Chris.
+> For that reason your suggested approach using LD_PRELOAD won't work.
 
-Otherwise a couple of radeon scanout fixes for a case we hadn't tested a 
-lot, and dropping an ACPI message that was a bit louder than it should 
-have been.
+If you're referring to the device name under /dev, a daemon emulating
+a physical device could create Unix sockets under /dev/dvb.
 
-Dave.
+Or (with is the right solution) bind such library into the applications
+that will be used.
 
+> Besides that, suggesting LD_PRELOAD for something other than a hack
+> can't be taken seriously.
 
-The following changes since commit 11d814a20166461358e1cefaf6bcd425698b8460:
+A Kernel pigback plugin is also a hack.
 
-  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband (2011-11-30 16:25:02 -0800)
+> I think you didn't even understand what vtuner does, after all the
+> discussion that took place.
+>
+>>>>> Of course
+>>>>> I can be wrong, I'm no big kernel hacker. So please show me the
+>>>>> way for it. BTW, even if you can find the way, then data copying
+>>>>> from userspace to the kernel and back is also necessery.
+>>>>
+>>>> See libv4l, at v4l2-utils.git (at linuxtv.org).
+>>>>
+>>>>> I really
+>>>>> don't see any advantage of you solution.
+>>>>
+>>>> And I can't see any advantage on yours ;) Putting something that belongs
+>>>> to userspace into kernelspace just because it is easier to re-use the
+>>>> existing code inside the kernel is not a good argument.
+>>>
+>>> It is only your POV that it should be in userspace.
+>>>
+>>> Creating additional code which not only enlarge code size by 2
+>>> but I think by 10 is really not good idea.  And it get no advantage
+>>> only disadvantages.
+>>>
+>>>>
+>>>> Don't get me wrong but if you want to submit a code to be merged
+>>>> on any existing software (being open source or not), you should be
+>>>> prepared to defend your code and justify the need for it to the
+>>>> other developers.
+>>>
+>>> Sure. I was prepared for technical disscussion, but was fully suprised
+>>> that it was not happend (ok, to be correct, few guys are exception, like
+>>> Andreas and few others. I really appreciate it).
+>>>
+>>> So, my question was still not answered: "Can be driver NACKed only
+>>> because of worrying about possible misuse?"
+>>
+>> To answer your question: your driver were nacked because of several
+>> reasons:
+>> it is not a driver for an unsupported hardware,
+>
+> It's not a driver for supported hardware either. You named it before:
+> It's not a driver in your definition at all. It's a way to remotely
+> access digital TV tuners over a network.
 
-are available in the git repository at:
+Yes, this is not a driver. It is just a hack to avoid adding network
+support at the userspace applications.
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+>> you failed to convince
+>> people
+>> why this can't be implemented on userspace,
+>
+> Wrong. You failed to convince people why this must be implemented in
+> userspace. Even Michael Krufky, who's "only" against merging it, likes
+> the idea, because it's useful.
 
-Alex Deucher (4):
-      drm/radeon/kms: add some loop timeouts in pageflip code
-      drm/radeon/kms: add some new pci ids
-      drm/radeon/kms: fix scanout of 2D tiled buffers on EG/CM
-      drm/radeon/kms: fix 2D tiling CS support on EG/CM
+Sometimes, when I'm debugging a driver, I use to add several hacks inside
+the kernelspace, in order to do things that are useful on my development
+(debug printk's, dirty hacks, etc). I even have my own set of patches that
+I apply on kvm, in order to sniff PCI traffic. This doesn't mean that
+I should send all those crap upstream.
 
-Ben Skeggs (4):
-      drm/nouveau: add dumb ioctl support
-      drm/nvd0/disp: fix sor dpms typo, preventing dpms on in some situations
-      drm/nouveau: fix oopses caused by clear being called on unpopulated ttms
-      drm/nv50/disp: silence compiler warning
+> Just because something can be implemented in userspace doesn't mean that
+> it's technically superior.
 
-Chris Wilson (1):
-      drm: Fix lack of CRTC disable for drm_crtc_helper_set_config(.fb=NULL)
+True, but I didn't see anything at the submitted code or at the discussions
+showing that implementing it in kernelspace is technically superior.
 
-Christoph Bumiller (1):
-      drm/nvc0/gr: fix TP init for transform feedback offset queries
+What I'm seeing is what is coded there:
 
-Dave Airlie (1):
-      Merge branch 'drm-nouveau-fixes' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
+	http://code.google.com/p/vtuner/
 
-Jean Delvare (2):
-      drm/radeon/kms: Hide debugging message
-      drm/radeon/kms: Skip ACPI call to ATIF when possible
+The kernelspace part is just a piggyback driver, that just copies data from/to
+the dvb calls into another device, that sends the request back to userspace.
 
-Xi Wang (1):
-      vmwgfx: integer overflow in vmw_kms_update_layout_ioctl()
+A separate userspace daemon will get such results and send to the network stack:
+	http://code.google.com/p/vtuner/source/browse/vtuner-network.c?repo=apps
 
-Younes Manton (1):
-      drm/nouveau: Keep RAMIN heap within the channel.
+This is technically inferior of letting the application just talk to vtuner
+directly via some library call.
 
- drivers/gpu/drm/drm_crtc_helper.c         |   27 +++++-
- drivers/gpu/drm/nouveau/nouveau_display.c |   45 +++++++++
- drivers/gpu/drm/nouveau/nouveau_drv.c     |    4 +
- drivers/gpu/drm/nouveau/nouveau_drv.h     |    6 +
- drivers/gpu/drm/nouveau/nouveau_object.c  |    2 +-
- drivers/gpu/drm/nouveau/nouveau_sgdma.c   |    3 +
- drivers/gpu/drm/nouveau/nv50_display.c    |    4 +-
- drivers/gpu/drm/nouveau/nvc0_graph.c      |    2 +
- drivers/gpu/drm/nouveau/nvd0_display.c    |    2 +-
- drivers/gpu/drm/radeon/atombios_crtc.c    |   35 +++++++-
- drivers/gpu/drm/radeon/evergreen.c        |    7 +-
- drivers/gpu/drm/radeon/evergreen_cs.c     |  149 ++++++++++++++++++++++++-----
- drivers/gpu/drm/radeon/evergreen_reg.h    |   29 ++++++
- drivers/gpu/drm/radeon/evergreend.h       |   31 ++++++
- drivers/gpu/drm/radeon/r100.c             |    7 +-
- drivers/gpu/drm/radeon/radeon_acpi.c      |   11 +-
- drivers/gpu/drm/radeon/rs600.c            |    7 +-
- drivers/gpu/drm/radeon/rv770.c            |    7 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c       |   11 +-
- include/drm/drm_pciids.h                  |    8 ++
- 20 files changed, 349 insertions(+), 48 deletions(-)
+Btw, applications like vdr, vlc, kaffeine and others already implement their
+own ways to remotelly access the DVB devices without requiring any
+kernelspace piggyback driver.
+
+>> the driver adds hooks at
+>> kernelspace
+>> that would open internal API's that several developers don't agree on
+>> exposing
+>> at userspace, as would allow non GPL license compatible drivers to re-use
+>> their work in a way they are against.
+>
+> What's left is your unreasonable GPL blah blah. So the answer to Honza's
+> question is: Yes, Mauro is nacking the driver because he's worrying
+> about possible misuse.
+>
+> Regards,
+> Andreas
+
