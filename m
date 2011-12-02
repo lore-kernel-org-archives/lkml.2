@@ -1,211 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab1LBU0E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 15:26:04 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:64747 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754752Ab1LBU0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 15:26:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
-	MolIFoHlV9OmktzkkGrJ8c0vWQySfpwZCPMpN4TdVgOEg+LwDpcOmh82pgKsLfsJ
-	N48onkWxl9NAudJUn9MUFByfDft3ATtklUL0h3ztSgD/61YLQ5ExgP06c9DKzKmf
-	m7DJ8kxW7kylDwOkBxogB6K8qPXywjwbGXNVWZeaCrM=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.8
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 02 Dec 2011 12:25:58 -0800
-Message-ID: <7v7h2eoh49.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755025Ab1LBUc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 15:32:26 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41701 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754853Ab1LBUcZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 15:32:25 -0500
+Date: Fri, 2 Dec 2011 21:32:03 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Paul Walmsley <paul@pwsan.com>, Mike Turquette <mturquette@linaro.org>,
+        linaro-dev@lists.linaro.org, linus.walleij@stericsson.com,
+        patches@linaro.org, eric.miao@linaro.org,
+        broonie@opensource.wolfsonmicro.com, magnus.damm@gmail.com,
+        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
+        richard.zhao@linaro.org, grant.likely@secretlab.ca, dsaxena@linaro.org,
+        arnd.bergmann@linaro.org, shawn.guo@freescale.com, skannan@quicinc.com,
+        sboyd@quicinc.com, jeremy.kerr@canonical.com,
+        linux-omap@vger.kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
+Message-ID: <20111202203203.GB4585@pengutronix.de>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org>
+ <1321926047-14211-4-git-send-email-mturquette@linaro.org>
+ <alpine.DEB.2.00.1111291619110.6289@utopia.booyaka.com>
+ <20111201084547.GD19739@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.00.1112012352000.6289@utopia.booyaka.com>
+ <20111202202306.GF19739@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: D8FDACD6-1D23-11E1-9293-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111202202306.GF19739@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest feature release Git 1.7.8 is available.
+Hello,
 
-The release tarballs are found at:
+On Fri, Dec 02, 2011 at 08:23:06PM +0000, Russell King - ARM Linux wrote:
+> On Fri, Dec 02, 2011 at 10:13:10AM -0700, Paul Walmsley wrote:
+> > Hi Russell,
+> > 
+> > On Thu, 1 Dec 2011, Russell King - ARM Linux wrote:
+> > 
+> > > On Wed, Nov 30, 2011 at 06:20:50PM -0700, Paul Walmsley wrote:
+> > > > 1. When a clock user calls clk_enable() on a clock, the clock framework 
+> > > > should prevent other users of the clock from changing the clock's rate.  
+> > > > This should persist until the clock user calls clk_disable() (but see also 
+> > > > #2 below).  This will ensure that clock users can rely on the rate 
+> > > > returned by clk_get_rate(), as long as it's called between clk_enable() 
+> > > > and clk_disable().  And since the clock's rate is guaranteed to remain the 
+> > > > same during this time, code that cannot tolerate clock rate changes 
+> > > > without special handling (such as driver code for external I/O devices) 
+> > > > will work safely without further modification.
+> > > 
+> > > So, if you have a PLL whose parent clock is not used by anything else.
+> > > You want to program it to a certain rate.
+> > > 
+> > > You call clk_disable() on the PLL clock.
+> > 
+> > The approach described wouldn't require the PLL to be disabled before 
+> > changing its rate.  If there are no other users of the PLL, or if the 
+> > other users of the PLL have indicated that it's safe for others to change 
+> > the PLL's rate, the clock framework would allow the PLL rate change, even 
+> > if the PLL is enabled.  (modulo any notifier activity, and assuming that 
+> > the underlying PLL hardware allows its frequency to be reprogrammed while 
+> > the PLL is enabled)
+> > 
+> > > This walks up the tree and disables the parent.  You then try to set the 
+> > > rate using clk_set_rate(). clk_set_rate() in this circumstance can't 
+> > > wait for the PLL to lock because it can't - there's no reference clock 
+> > > for it.
+> > 
+> > As an aside, this seems like a good time to mention that the behavior of 
+> > clk_set_rate() on a disabled clock needs to be clarified.
+> 
+> It's more complicated than that.  Clocks have more states than just
+> enabled and disabled.
+> 
+> There is:
+> - unprepared
+> - prepared and disabled
+> - prepared and enabled
+> 
+> Implementations can chose at which point to enable their PLLs and wait
+> for them to lock - but if they want to sleep while waiting, they must
+> do this in the prepare method, not the enable method (remember, enable
+> is to be callable from atomic contexts.)
+> 
+> So, it's entirely possible that a prepared clock will have the PLLs up
+> and running, which means that clk_set_rate() can also wait for the PLL
+> to stablize (which would be a good idea.)
+> 
+> Now... we can say that PLLs should be locked when the prepare method
+> returns, or whenever clk_set_rate() returns.  The problem with that is
+> there's a race condition between clk_enable() and clk_set_rate() - if
+> we allow clk_set_rate() to sleep waiting for the PLL to lock, a
+> concurrent clk_enable() can't be prevented from returning because
+> that would involve holding a spinlock...
+But you can achieve that the concurrent clk_enable fails. Would that be
+sane?
 
-    http://code.google.com/p/git-core/downloads/list
+Best regards
+Uwe
 
-and their SHA-1 checksums are:
-
-7453e737e008f7319a5eca24a9ef3c5fb1f13398  git-1.7.8.tar.gz
-2734079e22a0a6e3e78779582be9138ffc7de6f7  git-htmldocs-1.7.8.tar.gz
-93315f7f51d7f27d3e421c9b0d64afa27f3d16df  git-manpages-1.7.8.tar.gz
-
-Also the following public repositories all have a copy of the v1.7.8
-tag and the master branch that the tag points at:
-
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-
-Git v1.7.8 Release Notes
-========================
-
-Updates since v1.7.7
---------------------
-
- * Some git-svn, git-gui, git-p4 (in contrib) and msysgit updates.
-
- * Updates to bash completion scripts.
-
- * The build procedure has been taught to take advantage of computed
-   dependency automatically when the complier supports it.
-
- * The date parser now accepts timezone designators that lack minutes
-   part and also has a colon between "hh:mm".
-
- * The contents of the /etc/mailname file, if exists, is used as the
-   default value of the hostname part of the committer/author e-mail.
-
- * "git am" learned how to read from patches generated by Hg.
-
- * "git archive" talking with a remote repository can report errors
-   from the remote side in a more informative way.
-
- * "git branch" learned an explicit --list option to ask for branches
-   listed, optionally with a glob matching pattern to limit its output.
-
- * "git check-attr" learned "--cached" option to look at .gitattributes
-   files from the index, not from the working tree.
-
- * Variants of "git cherry-pick" and "git revert" that take multiple
-   commits learned to "--continue" and "--abort".
-
- * "git daemon" gives more human readble error messages to clients
-   using ERR packets when appropriate.
-
- * Errors at the network layer is logged by "git daemon".
-
- * "git diff" learned "--minimal" option to spend extra cycles to come
-   up with a minimal patch output.
-
- * "git diff" learned "--function-context" option to show the whole
-   function as context that was affected by a change.
-
- * "git difftool" can be told to skip launching the tool for a path by
-   answering 'n' to its prompt.
-
- * "git fetch" learned to honor transfer.fsckobjects configuration to
-   validate the objects that were received from the other end, just like
-   "git receive-pack" (the receiving end of "git push") does.
-
- * "git fetch" makes sure that the set of objects it received from the
-   other end actually completes the history before updating the refs.
-   "git receive-pack" (the receiving end of "git push") learned to do the
-   same.
-
- * "git fetch" learned that fetching/cloning from a regular file on the
-   filesystem is not necessarily a request to unpack a bundle file; the
-   file could be ".git" with "gitdir: <path>" in it.
-
- * "git for-each-ref" learned "%(contents:subject)", "%(contents:body)"
-   and "%(contents:signature)". The last one is useful for signed tags.
-
- * "git grep" used to incorrectly pay attention to .gitignore files
-   scattered in the directory it was working in even when "--no-index"
-   option was used. It no longer does this. The "--exclude-standard"
-   option needs to be given to explicitly activate the ignore
-   mechanism.
-
- * "git grep" learned "--untracked" option, where given patterns are
-    searched in untracked (but not ignored) files as well as tracked
-    files in the working tree, so that matches in new but not yet
-    added files do not get missed.
-
- * The recursive merge backend no longer looks for meaningless
-   existing merges in submodules unless in the outermost merge.
-
- * "git log" and friends learned "--children" option.
-
- * "git ls-remote" learned to respond to "-h"(elp) requests.
-
- * "mediawiki" remote helper can interact with (surprise!) MediaWiki
-   with "git fetch" & "git push".
-
- * "git merge" learned the "--edit" option to allow users to edit the
-   merge commit log message.
-
- * "git rebase -i" can be told to use special purpose editor suitable
-   only for its insn sheet via sequence.editor configuration variable.
-
- * "git send-email" learned to respond to "-h"(elp) requests.
-
- * "git send-email" allows the value given to sendemail.aliasfile to begin
-   with "~/" to refer to the $HOME directory.
-
- * "git send-email" forces use of Authen::SASL::Perl to work around
-   issues between Authen::SASL::Cyrus and AUTH PLAIN/LOGIN.
-
- * "git stash" learned "--include-untracked" option to stash away
-   untracked/ignored cruft from the working tree.
-
- * "git submodule clone" does not leak an error message to the UI
-   level unnecessarily anymore.
-
- * "git submodule update" learned to honor "none" as the value for
-   submodule.<name>.update to specify that the named submodule should
-   not be checked out by default.
-
- * When populating a new submodule directory with "git submodule init",
-   the $GIT_DIR metainformation directory for submodules is created inside
-   $GIT_DIR/modules/<name>/ directory of the superproject and referenced
-   via the gitfile mechanism. This is to make it possible to switch
-   between commits in the superproject that has and does not have the
-   submodule in the tree without re-cloning.
-
- * "gitweb" leaked unescaped control characters from syntax hiliter
-   outputs.
-
- * "gitweb" can be told to give custom string at the end of the HTML
-   HEAD element.
-
- * "gitweb" now has its own manual pages.
-
-
-Also contains other documentation updates and minor code cleanups.
-
-
-Fixes since v1.7.7
-------------------
-
-Unless otherwise noted, all fixes in the 1.7.7.X maintenance track are
-included in this release.
-
- * HTTP transport did not use pushurl correctly, and also did not tell
-   what host it is trying to authenticate with when asking for
-   credentials.
-   (merge deba493 jk/http-auth later to maint).
-
- * "git blame" was aborted if started from an uncommitted content and
-   the path had the textconv filter in effect.
-   (merge 8518088 ss/blame-textconv-fake-working-tree later to maint).
-
- * Adding many refs to the local repository in one go (e.g. "git fetch"
-   that fetches many tags) and looking up a ref by name in a repository
-   with too many refs were unnecessarily slow.
-   (merge 17d68a54d jp/get-ref-dir-unsorted later to maint).
-
- * Report from "git commit" on untracked files was confused under
-   core.ignorecase option.
-   (merge 395c7356 jk/name-hash-dirent later to maint).
-
- * "git merge" did not understand ":/<pattern>" as a way to name a commit.
-
- " "git push" on the receiving end used to call post-receive and post-update
-   hooks for attempted removal of non-existing refs.
-   (merge 160b81ed ph/push-to-delete-nothing later to maint).
-
- * Help text for "git remote set-url" and "git remote set-branches"
-   were misspelled.
-   (merge c49904e fc/remote-seturl-usage-fix later to maint).
-   (merge 656cdf0 jc/remote-setbranches-usage-fix later to maint).
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
