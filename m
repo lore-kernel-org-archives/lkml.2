@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab1LBNa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 08:30:26 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:44637 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab1LBNaZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 08:30:25 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, dave.martin@linaro.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH v2] irqdomain: protect macro variable in domain iterators
-Date: Fri,  2 Dec 2011 14:30:09 +0100
-Message-Id: <1322832609-24956-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1322833997-32083-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1322833997-32083-1-git-send-email-nicolas.ferre@atmel.com>
+	id S1756648Ab1LBNfT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 08:35:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55581 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755095Ab1LBNfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 08:35:17 -0500
+Date: Fri, 2 Dec 2011 14:35:15 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: pomac@vapor.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        tino.keitel@tikei.de
+Subject: Re: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage
+Message-ID: <20111202133515.GB21070@tiehlicka.suse.cz>
+References: <20111128222803.GA4925@pomac.netswarm.net>
+ <20111129075242.GB2675@tiehlicka.suse.cz>
+ <2146795727.780801.1322566727488.JavaMail.mail@webmail05>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2146795727.780801.1322566727488.JavaMail.mail@webmail05>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-v2: add brackets to each macro variable.
+On Tue 29-11-11 11:38:47, Artem S. Tashkinov wrote:
+> On Nov 29, 2011, Michal Hocko <mhocko@suse.cz> wrote: 
+>  
+> > As I have written in other email could you post your config and collect
+> > the following data?
+> > for i in `seq 30`; 
+> > do 
+> >         cat /proc/stat > `date +'%s'`
+> >         sleep 1
+> > done
+> > export old_user=0 old_nice=0 old_sys=0 old_idle=0 old_iowait=0; 
+> > 
+> > # for all your available CPUs
+> > grep cpu0 * | while read cpu user nice sys idle iowait rest; 
+> > do 
+> >         echo $cpu $(($user-$old_user)) $(($nice-$old_nice)) $(($sys-$old_sys)) $(($idle-$old_idle)) $(($iowait-$old_iowait))
+> >         old_user=$user old_nice=$nice old_sys=$sys old_idle=$idle old_iowait=$iowait
+> > done
+> 
+> 1322566208:cpu0 5199 0 2931 357890604 2541
+> 1322566209:cpu0 0 0 1 0 0
+> 1322566210:cpu0 0 0 0 0 0
+> 1322566211:cpu0 0 0 0 0 0
+> 1322566212:cpu0 0 0 0 0 0
+> 1322566213:cpu0 0 0 0 0 0
+> 1322566214:cpu0 1 0 0 0 0
+> 1322566215:cpu0 2 0 0 0 0
+> 1322566216:cpu0 3 0 0 0 0
+> 1322566217:cpu0 2 0 0 0 0
+> 1322566218:cpu0 4 0 0 0 0
+> 1322566219:cpu0 1 0 0 0 0
+> 1322566220:cpu0 2 0 0 0 0
+> 1322566221:cpu0 2 0 1 0 0
+> 1322566222:cpu0 1 0 0 0 0
+> 1322566223:cpu0 2 0 0 0 0
+> 1322566224:cpu0 1 0 1 0 0
+> 1322566225:cpu0 1 0 0 0 0
+> 1322566226:cpu0 2 0 0 0 0
+> 1322566227:cpu0 1 0 1 0 0
+> 1322566228:cpu0 2 0 0 0 0
+> 1322566229:cpu0 2 0 0 0 0
+> 1322566230:cpu0 6 0 3 0 0
+> 1322566231:cpu0 1 0 0 0 0
+> 1322566232:cpu0 2 0 0 0 0
+> 1322566233:cpu0 3 0 0 0 0
+> 1322566234:cpu0 2 0 0 0 0
+> 1322566235:cpu0 2 0 2 0 0
+> 1322566236:cpu0 0 0 1 0 0
+> 1322566237:cpu0 1 0 0 0 0
 
- include/linux/irqdomain.h |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+Could you post raw data as well? Ideally starting right after boot and
+collected for more than 30s (longer better...)
 
-diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
-index bd4272b..e535063 100644
---- a/include/linux/irqdomain.h
-+++ b/include/linux/irqdomain.h
-@@ -82,12 +82,14 @@ static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
- }
- 
- #define irq_domain_for_each_hwirq(d, hw) \
--	for (hw = d->hwirq_base; hw < d->hwirq_base + d->nr_irq; hw++)
-+	for ((hw) = (d)->hwirq_base; \
-+	     (hw) < (d)->hwirq_base + (d)->nr_irq; \
-+	     (hw)++)
- 
- #define irq_domain_for_each_irq(d, hw, irq) \
--	for (hw = d->hwirq_base, irq = irq_domain_to_irq(d, hw); \
--	     hw < d->hwirq_base + d->nr_irq; \
--	     hw++, irq = irq_domain_to_irq(d, hw))
-+	for ((hw) = (d)->hwirq_base, (irq) = irq_domain_to_irq((d), (hw)); \
-+	     (hw) < (d)->hwirq_base + (d)->nr_irq; \
-+	     (hw)++, (irq) = irq_domain_to_irq((d), (hw)))
- 
- extern void irq_domain_add(struct irq_domain *domain);
- extern void irq_domain_del(struct irq_domain *domain);
+Thanks!
 -- 
-1.7.5.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
