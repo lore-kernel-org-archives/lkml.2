@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab1LBQUs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 11:20:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:32817 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757006Ab1LBQTn (ORCPT
+	id S1757052Ab1LBQXk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 11:23:40 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:60550 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756864Ab1LBQXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 11:19:43 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: [GIT PULL 0/4] perf test improvements
-Date: Fri,  2 Dec 2011 14:19:25 -0200
-Message-Id: <1322842769-7232-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 2 Dec 2011 11:23:38 -0500
+Date: Fri, 2 Dec 2011 11:23:36 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: Suspend and resume on ASUS Laptops
+In-Reply-To: <1322842169.30977.44.camel@frodo>
+Message-ID: <Pine.LNX.4.44L0.1112021114540.1420-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Fri, 2 Dec 2011, Steven Rostedt wrote:
 
-        Please consider pulling from:
+> Hi Alan,
+> 
+> On Fri, 2011-12-02 at 10:43 -0500, Alan Stern wrote:
+> 
+> > It's possible that this problem is related to wakeup settings.  Have 
+> > you tried disabling wakeup for the EHCI controllers?
+> 
+> I'm totally ignorant of the inner workings of suspend to ram and how
+> devices deal with it. How do I disable wakeup for the EHCI controllers?
 
-git://github.com/acmel/linux.git perf/core
+Take a look at the two files
 
-	Now there are 29 outstanding changesets on this branch.
+	/sys/bus/pci/devices/0000:00:1[ad].0/power/wakeup
 
-Regards,
+If they contain the word "enabled", write "disabled" to them.  See 
+Documentation/ABI/testing/sysfs-devices-power.
 
-- Arnaldo
+> Also, does wakeup have anything to do with suspend. As the name
+> suggests, it sounds like its more of a resume thing. But again, I'm
+> ignorant when it comes to these matters. I just want to point out that
+> without the script, the machine never makes it to a suspend state.
 
-Arnaldo Carvalho de Melo (4):
-  perf evlist: Always do automatic allocation of pollfd and mmap structures
-  perf test: Allow running just a subset of the available tests
-  perf event: Introduce perf_event__fprintf
-  perf test: Validate PERF_RECORD_ events and perf_sample fields
+The wakeup setting affects the hardware, which could cause the system 
+to hang.  And of course, the wakeup setting has to be installed in the 
+hardware during the suspend procedure, so that it will remain in effect 
+while the system is asleep.
 
- tools/perf/Documentation/perf-test.txt |    8 +-
- tools/perf/builtin-record.c            |    6 -
- tools/perf/builtin-stat.c              |    3 +-
- tools/perf/builtin-test.c              |  418 ++++++++++++++++++++++++++++++--
- tools/perf/builtin-top.c               |   19 +--
- tools/perf/util/event.c                |   54 ++++-
- tools/perf/util/event.h                |    6 +
- tools/perf/util/evlist.c               |    4 +-
- tools/perf/util/evlist.h               |    2 -
- 9 files changed, 465 insertions(+), 55 deletions(-)
+> > This certainly appears to be some sort of bug in the firmware.  Finding 
+> > it and working around it isn't likely to be easy.  Unbinding (or 
+> > unloading) ehci-hcd may indeed be the path of least resistance.
+> 
+> I wounder what windows does.
 
--- 
-1.7.8.rc0.35.gee6df
+As in many other cases, it would be nice to know.
+
+>  Of course, vendors bend over backwards for
+> MS, so it may not need to do much, or MS does something completely
+> different. I do have this still as a dual boot with Windows7. I don't
+> wipe my boxes clean of windows anymore. If I have to pay the damn MS
+> tax, I might as well keep what I paid for :-p
+
+I know; me too.  Even though I almost never use it.
+
+Alan Stern
 
