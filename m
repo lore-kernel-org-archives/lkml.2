@@ -1,145 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab1LBT42 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:56:28 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42719
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751028Ab1LBT40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:56:26 -0500
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: haiyangz@microsoft.com, kys@microsoft.com, davem@davemloft.net,
-        gregkh@suse.de, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH] net/hyperv: Fix the stop/wake queue mechanism
-Date: Fri,  2 Dec 2011 11:56:25 -0800
-Message-Id: <1322855785-22776-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754674Ab1LBT6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:58:14 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:43830 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754331Ab1LBT6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 14:58:13 -0500
+X-Sasl-enc: icJk7WszEWVqEsHDyd6RpObxetztacsFnU5Jm9BgVERG 1322855892
+Date: Fri, 2 Dec 2011 11:58:09 -0800
+From: Greg KH <greg@kroah.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        fengguang.wu@intel.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] DEBUGFS: Automatically create parents for debugfs
+ files
+Message-ID: <20111202195809.GA14660@kroah.com>
+References: <1322851407-17182-1-git-send-email-andi@firstfloor.org>
+ <1322851407-17182-2-git-send-email-andi@firstfloor.org>
+ <20111202191724.GA13613@kroah.com>
+ <20111202194219.GU24062@one.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111202194219.GU24062@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ring buffer is only used to pass meta data for outbound packets. The
-actual payload is accessed by DMA from the host. So the stop/wake queue
-mechanism based on counting and comparing number of pages sent v.s. number
-of pages in the ring buffer is wrong. Also, there is a race condition in
-the stop/wake queue calls, which can stop xmit queue forever.
+On Fri, Dec 02, 2011 at 08:42:19PM +0100, Andi Kleen wrote:
+> On Fri, Dec 02, 2011 at 11:17:24AM -0800, Greg KH wrote:
+> > I like this, but some documentation will probably need to be added
+> > somwhere saying that it's now legal to create a debugfs file with
+> > "this/is/a/tree" and have it all be expanded out.
+> 
+> Ok. Updating the kerneldoc entries.
+> 
+> > 
+> > And yes, cleaning up the directories shouldn't be a big issue, but what
+> > if the directory is already there and it tries to be created again?
+> > Shouldn't you do a lookup first and use that dentry if it's there?
+> 
+> In this case debugfs_create_dir() errors out, the caller ignores
+> the error and just looks it up. So yes should work.
 
-The new stop/wake queue mechanism is based on the actual bytes used by
-outbound packets in the ring buffer. The check for number of outstanding
-sends after stop queue prevents the race condition that can cause wake
-queue happening earlier than stop queue.
+Ah, ok, nevermind then :)
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reported-by: Long Li <longli@microsoft.com>
----
- drivers/net/hyperv/netvsc.c     |   14 +++++++++++---
- drivers/net/hyperv/netvsc_drv.c |   24 +-----------------------
- 2 files changed, 12 insertions(+), 26 deletions(-)
+thanks,
 
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index 4a807e4..b6ac152 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -435,6 +435,9 @@ static void netvsc_send_completion(struct hv_device *device,
- 			nvsc_packet->completion.send.send_completion_ctx);
- 
- 		atomic_dec(&net_device->num_outstanding_sends);
-+
-+		if (netif_queue_stopped(ndev))
-+			netif_wake_queue(ndev);
- 	} else {
- 		netdev_err(ndev, "Unknown send completion packet type- "
- 			   "%d received!!\n", nvsp_packet->hdr.msg_type);
-@@ -485,11 +488,16 @@ int netvsc_send(struct hv_device *device,
- 
- 	}
- 
--	if (ret != 0)
-+	if (ret == 0) {
-+		atomic_inc(&net_device->num_outstanding_sends);
-+	} else if (ret == -EAGAIN) {
-+		netif_stop_queue(ndev);
-+		if (atomic_read(&net_device->num_outstanding_sends) < 1)
-+			netif_wake_queue(ndev);
-+	} else {
- 		netdev_err(ndev, "Unable to send packet %p ret %d\n",
- 			   packet, ret);
--	else
--		atomic_inc(&net_device->num_outstanding_sends);
-+	}
- 
- 	return ret;
- }
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index b69c3a4..7da85eb 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -43,15 +43,10 @@
- struct net_device_context {
- 	/* point back to our device context */
- 	struct hv_device *device_ctx;
--	atomic_t avail;
- 	struct delayed_work dwork;
- };
- 
- 
--#define PACKET_PAGES_LOWATER  8
--/* Need this many pages to handle worst case fragmented packet */
--#define PACKET_PAGES_HIWATER  (MAX_SKB_FRAGS + 2)
--
- static int ring_size = 128;
- module_param(ring_size, int, S_IRUGO);
- MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
-@@ -144,18 +139,8 @@ static void netvsc_xmit_completion(void *context)
- 
- 	kfree(packet);
- 
--	if (skb) {
--		struct net_device *net = skb->dev;
--		struct net_device_context *net_device_ctx = netdev_priv(net);
--		unsigned int num_pages = skb_shinfo(skb)->nr_frags + 2;
--
-+	if (skb)
- 		dev_kfree_skb_any(skb);
--
--		atomic_add(num_pages, &net_device_ctx->avail);
--		if (atomic_read(&net_device_ctx->avail) >=
--				PACKET_PAGES_HIWATER)
--			netif_wake_queue(net);
--	}
- }
- 
- static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
-@@ -167,8 +152,6 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 
- 	/* Add 1 for skb->data and additional one for RNDIS */
- 	num_pages = skb_shinfo(skb)->nr_frags + 1 + 1;
--	if (num_pages > atomic_read(&net_device_ctx->avail))
--		return NETDEV_TX_BUSY;
- 
- 	/* Allocate a netvsc packet based on # of frags. */
- 	packet = kzalloc(sizeof(struct hv_netvsc_packet) +
-@@ -218,10 +201,6 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 	if (ret == 0) {
- 		net->stats.tx_bytes += skb->len;
- 		net->stats.tx_packets++;
--
--		atomic_sub(num_pages, &net_device_ctx->avail);
--		if (atomic_read(&net_device_ctx->avail) < PACKET_PAGES_LOWATER)
--			netif_stop_queue(net);
- 	} else {
- 		/* we are shutting down or bus overloaded, just drop packet */
- 		net->stats.tx_dropped++;
-@@ -391,7 +370,6 @@ static int netvsc_probe(struct hv_device *dev,
- 
- 	net_device_ctx = netdev_priv(net);
- 	net_device_ctx->device_ctx = dev;
--	atomic_set(&net_device_ctx->avail, ring_size);
- 	hv_set_drvdata(dev, net);
- 	INIT_DELAYED_WORK(&net_device_ctx->dwork, netvsc_send_garp);
- 
--- 
-1.7.4.1
-
+greg k-h
