@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab1LBLpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 06:45:40 -0500
-Received: from out-58.smtp.ucla.edu ([169.232.46.177]:50128 "EHLO
-	out-58.smtp.ucla.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab1LBLpj convert rfc822-to-8bit (ORCPT
+	id S1754422Ab1LBLqm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 06:46:42 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47188 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753904Ab1LBLql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 06:45:39 -0500
-X-Greylist: delayed 315 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 06:45:38 EST
-Message-Id: <201112021137.pB2BUeQq024962@mail.ucla.edu>
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 2 Dec 2011 06:46:41 -0500
+Date: Fri, 2 Dec 2011 11:46:38 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 2/3] sound/soc/lapis: add machine driver
+Message-ID: <20111202114638.GI8245@opensource.wolfsonmicro.com>
+References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
+ <1321848532-8784-2-git-send-email-tomoya.rohm@gmail.com>
+ <20111121113433.GD3784@opensource.wolfsonmicro.com>
+ <CANKRQnjdS1NvcGLa=S1M0D4U_NV3+JR1E4YfAV7Ziq-fE2LQgg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Re: partner with me.!!!.
-To: Kuo_Fung@gmail.com
-From: "IndependentNon-executiveDirector.." <Kuo_Fung@gmail.com>
-Date: Fri, 02 Dec 2011 12:36:08 +0100
-Reply-To: drraymondd@yahoo.cn
-X-Probable-Spam: yes
-X-Spam-Hits: 7.841
-X-Spam-Score: ********
-X-Spam-Report: ADVANCE_FEE_2,ADVANCE_FEE_3,DCC_CHECK,MILLION_USD,SPF_NEUTRAL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANKRQnjdS1NvcGLa=S1M0D4U_NV3+JR1E4YfAV7Ziq-fE2LQgg@mail.gmail.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KINDLY VIEW THE ATTACHED PDF FILE AND READ MY BUSINESS PROPOSAL AND GET TO ME
-Dear friend
-I am Dr Raymond Chien Independent Non-executive Director of Hang Seng
-Bank Hong Kong I have a business transaction of $44.5 million USD
-to share with you,If interested contact me for more details via my
+On Fri, Dec 02, 2011 at 02:33:59PM +0900, Tomoya MORINAGA wrote:
+> 2011/11/21 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
-personal email:  drhraymondd@yahoo.com.hk
-Full names:Address:Age:Occupation:Phone/Fax
-Regards
-Dr Raymond Chien Kuo Fung
+> > This needs to come after you add the base platform support in the series
+> > - clearly this won't work without the CPU side drivers it depends on.
+
+> Most of the chipset drivers for Intel Atom E6xx series have already
+> accepted by upstream.
+> e.g. i2c-eg20t, pch_dma, pch_uart, spi-topcliff-pch, ml-ioh-gpio, etc...
+
+The CPU side audio drivers are not there - there seemed to be some quite
+serious review issues with those.
