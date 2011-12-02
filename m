@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab1LBJ6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 04:58:11 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37063 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab1LBJ6J (ORCPT
+	id S1753791Ab1LBKDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 05:03:32 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47600 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab1LBKDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 04:58:09 -0500
-Date: Fri, 2 Dec 2011 15:27:56 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] nohz: Remove update_ts_time_stat from
- tick_nohz_start_idle
-Message-ID: <20111202095756.GB15975@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <1322755222-6951-1-git-send-email-mhocko@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1322755222-6951-1-git-send-email-mhocko@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11120123-7014-0000-0000-00000031DB25
+	Fri, 2 Dec 2011 05:03:30 -0500
+From: Xi Wang <xi.wang@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Manjunatha Halli <manjunatha_halli@ti.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xi Wang <xi.wang@gmail.com>
+Subject: [PATCH 0/3] wl128x: fix multiple signedness bugs
+Date: Fri,  2 Dec 2011 05:01:10 -0500
+Message-Id: <1322820073-19347-1-git-send-email-xi.wang@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Michal Hocko <mhocko@suse.cz> [2011-12-01 17:00:22]:
+Fix multiple signedness bugs which would break the error handling.
 
-> There is no reason to call update_ts_time_stat from tick_nohz_start_idle
-> anymore (after e0e37c20 sched: Eliminate the ts->idle_lastupdate field)
-> when we updated idle_lastupdate unconditionally.
-> 
-> We haven't set idle_active yet and do not provide last_update_time so
-> the whole call end up being just 2 wasted branches.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> CC: Arjan van de Ven <arjan@linux.intel.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
+Xi Wang (3):
+  wl128x: fmdrv_common: fix signedness bugs
+  wl128x: fmdrv_rx: fix signedness bugs
+  wl128x: fmdrv_tx: fix signedness bugs
 
-Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+ drivers/media/radio/wl128x/fmdrv_common.c |   58 ++++++++++----------
+ drivers/media/radio/wl128x/fmdrv_common.h |   28 +++++-----
+ drivers/media/radio/wl128x/fmdrv_rx.c     |   84 +++++++++++++++--------------
+ drivers/media/radio/wl128x/fmdrv_rx.h     |   50 +++++++++---------
+ drivers/media/radio/wl128x/fmdrv_tx.c     |   61 +++++++++++----------
+ drivers/media/radio/wl128x/fmdrv_tx.h     |   20 ++++----
+ 6 files changed, 151 insertions(+), 150 deletions(-)
+
+-- 
+1.7.5.4
 
