@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab1LBPvX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 10:51:23 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:7276 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab1LBPvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 10:51:22 -0500
-From: "Altobelli, David" <david.altobelli@hp.com>
-To: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Jiri Slaby <jirislaby@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Brent Casavant <bcasavan@sgi.com>,
-        J Freyensee <james_p_freyensee@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>
-Subject: RE: [PATCH] MISC: Convert to DEFINE_PCI_DEVICE_TABLE
-Thread-Topic: [PATCH] MISC: Convert to DEFINE_PCI_DEVICE_TABLE
-Thread-Index: AQHMsJ7vaXlch82gwkukN9Nu11XvRJXIsjHw
-Date: Fri, 2 Dec 2011 15:50:41 +0000
-Message-ID: <37C4B87385134E45B7F39B3000A56E9509248AEA@G4W3229.americas.hpqcorp.net>
-References: <1322794977.25851.1.camel@phoenix>
-In-Reply-To: <1322794977.25851.1.camel@phoenix>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.216.12.12]
-Content-Type: text/plain; charset="utf-8"
+	id S1756935Ab1LBP5g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 10:57:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756864Ab1LBP5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 10:57:35 -0500
+Message-ID: <4ED8F566.4050005@redhat.com>
+Date: Fri, 02 Dec 2011 09:57:26 -0600
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
+To: Kyungmin Park <kmpark@infradead.org>
+CC: Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu, tm@tao.ma,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
+References: <20111201070052.GA29708@july> <4ED7FA81.9090802@redhat.com> <CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
+In-Reply-To: <CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pB2FpS8N026416
 
------Original Message-----
-> From: Axel Lin 
-> Subject: [PATCH] MISC: Convert to DEFINE_PCI_DEVICE_TABLE
+On 12/1/11 6:01 PM, Kyungmin Park wrote:
+> On 12/2/11, Eric Sandeen <sandeen@redhat.com> wrote:
+>> On 12/1/11 1:00 AM, Kyungmin Park wrote:
+>>> From: Kyungmin Park <kyungmin.park@samsung.com>
+>>>
+>>> Now trim information doesn't stored at disk so every boot time. it's
+>>> cleared.
+>>> and do the trim all disk groups.
+>>> But assume that it's already trimmed at previous time so don't need to
+>>> trim it again. So set the intial state as trimmed.
+>>>
+>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+>>> index e2d8be8..97ef342 100644
+>>> --- a/fs/ext4/mballoc.c
+>>> +++ b/fs/ext4/mballoc.c
+>>> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
+>>> ext4_group_t group)
+>>>  		goto err;
+>>>  	}
+>>>  	mark_page_accessed(page);
+>>> +
+>>> +	/*
+>>> +	 * TRIM information is not stored at disk so set the initial
+>>> +	 * state as trimmed. Since previous time it's already trimmed all
+>>> +	 */
+>>> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
+>>
+> Hi,
+> 
+>> Hm, so if there were freed but un-trimmed blocks at this point, we will
+>> never trim them until we free _another_ block in the group, right?  That
+>> might be a reasonable tradeoff, but it is somewhat surprising behavior.
+>>
+>> i.e. say we do:
+>>
+>> mount /mnt
+>> rm -rf /mnt/very_big_file
+>> umount /mnt
+>>
+>> mount /mnt
+>> fitrim /mnt
+> another word, you can run fitrim after rm -rf
+> yes, it's trade-off.
+> 
+> In my case, phone scenario, no umount system and data partition. it's
+> burden to trim at boot time. it has still slower boot time.
+> some daemon or program run fitrm at filesystem. it consumes time and
+> hurt other boot processes.
+>>
+>> then we won't trim anything at all, right, despite there being many
+>> new free blocks?  Which would be rather unexpected.
+>>
+>> If we don't store the trimmed state on disk, I think we should
+>> probably stick with the slower first-time trim, and the more obvious
+>> behavior (all free blocks are always trimmed whenever a trim
+>> command is issued).
+> 
+> Umm how do you think, introduce the trim force command for this?
 
-> Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
-> tables. Also convert to the PCI_DEVICE/PCI_VDEVICE macros for better
-> readablity.
+Alternately, can we use a bit in bg_flags to keep a better view of this
+state on disk, if this is critical?
 
-> drivers/misc/hpilo.c     |    2 +-
- 
-> diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
-> index fffc227..f705cbb 100644
-> --- a/drivers/misc/hpilo.c
-> +++ b/drivers/misc/hpilo.c
-> @@ -828,7 +828,7 @@ out:
->  	return error;
-> }
- 
-> -static struct pci_device_id ilo_devices[] = {
-> +static DEFINE_PCI_DEVICE_TABLE(ilo_devices) = {
->  	{ PCI_DEVICE(PCI_VENDOR_ID_COMPAQ, 0xB204) },
-> 	{ PCI_DEVICE(PCI_VENDOR_ID_HP, 0x3307) },
-> 	{ }
+-Eric
 
-Acked-by: David Altobelli <david.altobelli@hp.com>
+> Thank you,
+> Kyungmin Park
 
-Thanks
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
