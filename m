@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756690Ab1LBNtT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 08:49:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41281 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754866Ab1LBNtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 08:49:18 -0500
-Date: Fri, 2 Dec 2011 08:49:13 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [patch]cfq-iosched: fix cfq_cic_link() race confition
-Message-ID: <20111202134913.GA28102@redhat.com>
-References: <4ED886DC.1000608@jp.fujitsu.com>
+	id S1756658Ab1LBNva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 08:51:30 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:36231 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756087Ab1LBNv3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 08:51:29 -0500
+Date: Fri, 2 Dec 2011 08:51:26 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
+        lttng-dev@lists.lttng.org, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Darren Hart <darren@dvhart.com>
+Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
+Message-ID: <20111202135126.GA20115@Krystal>
+References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com> <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com> <1322776568.4699.52.camel@twins> <20111201220445.GA10552@Krystal> <1322777407.4699.59.camel@twins> <20111201221500.GC10552@Krystal> <20111201223607.GF10552@Krystal> <1322780758.4699.60.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4ED886DC.1000608@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1322780758.4699.60.camel@twins>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 08:44:41 up 373 days, 18:47,  6 users,  load average: 0.15, 0.12,
+	0.09
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 05:05:48PM +0900, Yasuaki Ishimatsu wrote:
-> cfq_cic_link() has race condition. When some processes which shared ioc
-> issue I/O to same block device simultaneously, cfq_cic_link() returns -EEXIST
-> sometimes. The race condition might stop I/O by following steps:
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Thu, 2011-12-01 at 17:36 -0500, Mathieu Desnoyers wrote:
+> > So what you are saying is that it is fine to export task_prio to
+> > _userspace_, thus making it part of the ABI, but it's not OK to export
+> > it to GPL modules ? 
 > 
-> step  1: Process A: Issue an I/O to /dev/sda
-> step  2: Process A: Get an ioc (iocA here) in get_io_context() which does not
-> 		    linked with a cic for the device
-> step  3: Process A: Get a new cic for the device (cicA here) in
-> 		    cfq_alloc_io_context()
-> 
-> step  4: Process B: Issue an I/O to /dev/sda
-> step  5: Process B: Get iocA in get_io_context() since process A and B share the
-> 		    same ioc
-> step  6: Process B: Get a new cic for the device (cicB here) in
-> 		    cfq_alloc_io_context() since iocA has not been linked with a
-> 		    cic for the device yet
-> 
-> step  7: Process A: Link cicA to iocA in cfq_cic_link()
-> step  8: Process A: Dispatch I/O to driver and finish it
-> 
-> step  9: Process B: Try to link cicB to iocA in cfq_cic_link()
-> 		    But it fails with showing "cfq: cic link failed!" kernel
-> 		    message, since iocA has already linked with cicA at step 7.
-> step 10: Process B: Wait for finishig I/O in get_request_wait()
-> 		    The function does not wake up, when there is no I/O to the
-> 		    device.
-> 
-> When cfq_cic_link() returns -EEXIST, it means ioc has already linked with cic.
-> So when cfq_cic_link() return -EEXIST, retry cfq_cic_lookup().
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> that's a SCHED_DEBUG proc file.
 
-Looks good to me.  Thanks.
+Fair point. You'll then notice that /proc/<pid>/stat (18th field)
+exports it too, and it's not under SCHED_DEBUG:
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+ok:/proc/20# cat stat
+20 (migration/5) S 2 0 0 0 -1 2216722496 0 0 0 0 0 0 0 0 -100 0 1 0 70 0
+0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744071579371389 0
+0 17 5 99 1 0 0 0
 
-Vivek
+(see -100 above)
 
+as defined in Documentation/filesystems/proc.txt:
+
+"Table 1-4: Contents of the stat files (as of 2.6.30-rc7)
+[...]
+priority      priority level"
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
