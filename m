@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab1LBOhR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 09:37:17 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:15744 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab1LBOhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 09:37:15 -0500
-Message-ID: <4ED8E296.3070005@parallels.com>
-Date: Fri, 02 Dec 2011 18:37:10 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Pedro Alves <pedro@codesourcery.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
-References: <20111129191252.769160532@openvz.org> <201112021400.42762.pedro@codesourcery.com> <4ED8DDE4.8040609@parallels.com> <201112021425.44897.pedro@codesourcery.com>
-In-Reply-To: <201112021425.44897.pedro@codesourcery.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756795Ab1LBOia (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 09:38:30 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64675 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756751Ab1LBOi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 09:38:29 -0500
+Message-ID: <1322836693.3780.7.camel@lappy>
+Subject: Re: [PATCH 1/1] hv: Update MAINTAINERS
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com, joe@perches.com,
+        dmitry.torokhov@gmail.com, Haiyang Zhang <haiyangz@microsoft.com>
+Date: Fri, 02 Dec 2011 16:38:13 +0200
+In-Reply-To: <alpine.LNX.2.00.1112021531230.18207@pobox.suse.cz>
+References: <1322778690-17381-1-git-send-email-kys@microsoft.com>
+	 <alpine.LNX.2.00.1112021531230.18207@pobox.suse.cz>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2011 06:25 PM, Pedro Alves wrote:
-> On Friday 02 December 2011 14:17:08, Pavel Emelyanov wrote:
+On Fri, 2011-12-02 at 15:31 +0100, Jiri Kosina wrote:
+> On Thu, 1 Dec 2011, K. Y. Srinivasan wrote:
 > 
->> O_O   OK, I was wrong, they do live there. But I consider this as bug.
+> > Update the MAINTAINERS file to reflect the current state
+> > of the Hyper-V drivers.
+> > 
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > ---
+> >  MAINTAINERS |   16 ++++++++++------
+> >  1 files changed, 10 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 3523ab0..809cad8 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -3197,6 +3197,16 @@ M:	William Irwin <wli@holomorphy.com>
+> >  S:	Maintained
+> >  F:	fs/hugetlbfs/
+> >  
+> > +Hyper-V CORE AND DRIVERS
+> > +M:	K. Y. Srinivasan <kys@microsoft.com>
+> > +M:	Haiyang Zhang <haiyangz@microsoft.com>
+> > +L:	devel@linuxdriverproject.org
+> > +S:	Maintained
+> > +F:	drivers/hv/
+> > +F:	drivers/hid/hid-hyperv.c
+> > +F:	drivers/net/hyperv/
+> > +F:	drivers/staging/hv/
+> > +
 > 
-> You can't change that.  It'd break current gdb at least.
+> I will be taking this through trivial tree. Thanks,
 
-OMG!
+It should probably be 'S: Supported' though, right?
 
->> I.e. each task will be shown multiple times, which is not very fun, but memory exhaustive from my POV.
-> 
-> Now that is a good argument against hard linking.  But not if you make
-> the entries under children/ symlinks.  Then find doesn't recurse.  And
-> then 
-> 
-> $ find -L /proc/PID/
-> 
-> does recurse and give you the whole tree.  Which I'd say is
-> actually useful...
+-- 
 
-It is useful, but the /proc/pid/children file solves the same problem in a much
-more simple way. The memory usage by proc (one file vs one dir and a set of files)
-is less and time to lookup a child is also less (read + lookup vs readdir + lookup 
-(symlink itself) + lookup (symlink resolve)).
+Sasha.
 
-Yes, it doesn't allow you to have fun with find, but frankly, do you really need
-this? Even if we're talking about gdb -- reading /proc/pid/children is not harder
-and not easier than readdir-ing it.
-
-IOW - what's the real benefit of a directory with symlinks against a file except
-for a fun?
-
-Thanks,
-Pavel
