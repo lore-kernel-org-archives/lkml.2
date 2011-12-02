@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab1LBSo5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 13:44:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4986 "EHLO mx1.redhat.com"
+	id S932327Ab1LBSpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 13:45:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62209 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932168Ab1LBSox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 13:44:53 -0500
+	id S932160Ab1LBSpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 13:45:07 -0500
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 11/21] KEYS: RSA signature verification algorithm [ver #3]
+Subject: [PATCH 12/21] PGPLIB: PGP definitions (RFC 4880) [ver #3]
 To: keyrings@linux-nfs.org
 Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
         zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
         alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Fri, 02 Dec 2011 18:44:44 +0000
-Message-ID: <20111202184444.21874.42178.stgit@warthog.procyon.org.uk>
+Date: Fri, 02 Dec 2011 18:44:57 +0000
+Message-ID: <20111202184457.21874.98813.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
 References: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,52 +25,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement the RSA algorithm (PKCS#1 / RFC3447).  At this time, only signature
-verification is supported.  This uses the asymmetric public key subtype to hold
-its key data.
+Provide some useful PGP definitions from RFC 4880.  These describe details of
+public key crypto as used by crypto keys for things like signature
+verification.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- security/keys/Kconfig      |    6 +
- security/keys/Makefile     |    1 
- security/keys/crypto_rsa.c |  282 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 289 insertions(+), 0 deletions(-)
- create mode 100644 security/keys/crypto_rsa.c
+ include/linux/pgp.h |  206 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 206 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/pgp.h
 
 
-diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 76de2ba..0090cd5 100644
---- a/security/keys/Kconfig
-+++ b/security/keys/Kconfig
-@@ -93,3 +93,9 @@ config CRYPTO_KEY_PKEY_ALGO_DSA
- 	help
- 	  This option enables support for the DSA public key algorithm
- 	  (FIPS-186).
-+
-+config CRYPTO_KEY_PKEY_ALGO_RSA
-+	tristate "RSA public-key algorithm"
-+	depends on CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
-+	help
-+	  This option enables support for the RSA algorithm (PKCS#1, RFC3447).
-diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 5f1c627..7245a20 100644
---- a/security/keys/Makefile
-+++ b/security/keys/Makefile
-@@ -27,5 +27,6 @@ obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
- obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto_keys.o
- obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
- obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_DSA) += crypto_dsa.o
-+obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_RSA) += crypto_rsa.o
- 
- crypto_keys-y := crypto_type.o crypto_verify.o
-diff --git a/security/keys/crypto_rsa.c b/security/keys/crypto_rsa.c
+diff --git a/include/linux/pgp.h b/include/linux/pgp.h
 new file mode 100644
-index 0000000..beb5181
+index 0000000..5d4b372
 --- /dev/null
-+++ b/security/keys/crypto_rsa.c
-@@ -0,0 +1,282 @@
-+/* RSA asymmetric public-key algorithm [RFC3447]
++++ b/include/linux/pgp.h
+@@ -0,0 +1,206 @@
++/* PGP definitions (RFC 4880)
 + *
 + * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -81,275 +54,199 @@ index 0000000..beb5181
 + * 2 of the Licence, or (at your option) any later version.
 + */
 +
-+#define pr_fmt(fmt) "RSA: "fmt
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include "public_key.h"
++#ifndef _LINUX_PGP_H
++#define _LINUX_PGP_H
 +
-+MODULE_LICENSE("GPL");
++#include <linux/types.h>
 +
-+#define kenter(FMT, ...) \
-+	pr_devel("==> %s("FMT")\n", __func__, ##__VA_ARGS__)
-+#define kleave(FMT, ...) \
-+	pr_devel("<== %s()"FMT"\n", __func__, ##__VA_ARGS__)
-+
-+/*
-+ * Hash algorithm OIDs plus ASN.1 DER wrappings [RFC4880 sec 5.2.2].
-+ */
-+static const u8 RSA_digest_info_MD5[] = {
-+	0x30, 0x20, 0x30, 0x0C, 0x06, 0x08,
-+	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05, /* OID */
-+	0x05, 0x00, 0x04, 0x10
++struct pgp_key_ID {
++	u8 id[8];
 +};
 +
-+static const u8 RSA_digest_info_SHA1[] = {
-+	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
-+	0x2B, 0x0E, 0x03, 0x02, 0x1A,
-+	0x05, 0x00, 0x04, 0x14
-+};
-+
-+static const u8 RSA_digest_info_RIPE_MD_160[] = {
-+	0x30, 0x21, 0x30, 0x09, 0x06, 0x05,
-+	0x2B, 0x24, 0x03, 0x02, 0x01,
-+	0x05, 0x00, 0x04, 0x14
-+};
-+
-+static const u8 RSA_digest_info_SHA224[] = {
-+	0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09,
-+	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04,
-+	0x05, 0x00, 0x04, 0x1C
-+};
-+
-+static const u8 RSA_digest_info_SHA256[] = {
-+	0x30, 0x31, 0x30, 0x0d, 0x06, 0x09,
-+	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
-+	0x05, 0x00, 0x04, 0x20
-+};
-+
-+static const u8 RSA_digest_info_SHA384[] = {
-+	0x30, 0x41, 0x30, 0x0d, 0x06, 0x09,
-+	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02,
-+	0x05, 0x00, 0x04, 0x30
-+};
-+
-+static const u8 RSA_digest_info_SHA512[] = {
-+	0x30, 0x51, 0x30, 0x0d, 0x06, 0x09,
-+	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03,
-+	0x05, 0x00, 0x04, 0x40
-+};
-+
-+static const struct {
-+	const u8 const *data;
-+	size_t size;
-+} RSA_ASN1_templates[PKEY_HASH__LAST] = {
-+#define _(X) { RSA_digest_info_##X, sizeof(RSA_digest_info_##X) }
-+	[PKEY_HASH_MD5]		= _(MD5),
-+	[PKEY_HASH_SHA1]	= _(SHA1),
-+	[PKEY_HASH_RIPE_MD_160]	= _(RIPE_MD_160),
-+	[PKEY_HASH_SHA256]	= _(SHA256),
-+	[PKEY_HASH_SHA384]	= _(SHA384),
-+	[PKEY_HASH_SHA512]	= _(SHA512),
-+	[PKEY_HASH_SHA224]	= _(SHA224),
-+#undef _
++struct pgp_time {
++	u8 time[4];
 +};
 +
 +/*
-+ * RSAVP1() function [RFC3447 sec 5.2.2]
++ * PGP public-key algorithm identifiers [RFC4880: 9.1]
 + */
-+static int RSAVP1(const struct public_key *key, MPI s, MPI *_m)
-+{
-+	MPI m;
-+	int ret;
-+
-+	/* (1) Validate 0 <= s < n */
-+	if (mpi_cmp_ui(s, 0) < 0) {
-+		kleave(" = -EBADMSG [s < 0]");
-+		return -EBADMSG;
-+	}
-+	if (mpi_cmp(s, key->rsa.n) >= 0) {
-+		kleave(" = -EBADMSG [s >= n]");
-+		return -EBADMSG;
-+	}
-+
-+	m = mpi_alloc(0);
-+	if (!m)
-+		return -ENOMEM;
-+
-+	/* (2) m = s^e mod n */
-+	ret = mpi_powm(m, s, key->rsa.e, key->rsa.n);
-+	if (ret < 0) {
-+		mpi_free(m);
-+		return ret;
-+	}
-+
-+	*_m = m;
-+	return 0;
-+}
-+
-+/*
-+ * Integer to Octet String conversion [RFC3447 sec 4.1]
-+ */
-+static int RSA_I2OSP(MPI x, size_t xLen, u8 **_X)
-+{
-+	unsigned X_size, x_size;
-+	int X_sign;
-+	u8 *X;
-+
-+	/* Make sure the string is the right length.  The number should begin
-+	 * with { 0x00, 0x01, ... } so we have to account for 15 leading zero
-+	 * bits not being reported by MPI.
-+	 */
-+	x_size = mpi_get_nbits(x);
-+	pr_devel("size(x)=%u xLen*8=%zu\n", x_size, xLen * 8);
-+	if (x_size != xLen * 8 - 15)
-+		return -ERANGE;
-+
-+	X = mpi_get_buffer(x, &X_size, &X_sign);
-+	if (!X)
-+		return -ENOMEM;
-+	if (X_sign < 0) {
-+		kfree(X);
-+		return -EBADMSG;
-+	}
-+	if (X_size != xLen - 1) {
-+		kfree(X);
-+		return -EBADMSG;
-+	}
-+
-+	*_X = X;
-+	return 0;
-+}
-+
-+/*
-+ * Perform the RSA signature verification.
-+ * @H: Value of hash of data and metadata
-+ * @EM: The computed signature value
-+ * @k: The size of EM (EM[0] is an invalid location but should hold 0x00)
-+ * @hash_size: The size of H
-+ * @asn1_template: The DigestInfo ASN.1 template
-+ * @asn1_size: Size of asm1_template[]
-+ */
-+static int RSA_verify(const u8 *H, const u8 *EM, size_t k, size_t hash_size,
-+		      const u8 *asn1_template, size_t asn1_size)
-+{
-+	unsigned PS_end, T_offset, i;
-+
-+	kenter(",,%zu,%zu,%zu", k, hash_size, asn1_size);
-+
-+	if (k < 2 + 1 + asn1_size + hash_size)
-+		return -EBADMSG;
-+
-+	/* Decode the EMSA-PKCS1-v1_5 */
-+	if (EM[1] != 0x01) {
-+		kleave(" = -EBADMSG [EM[1] == %02u]", EM[1]);
-+		return -EBADMSG;
-+	}
-+
-+	T_offset = k - (asn1_size + hash_size);
-+	PS_end = T_offset - 1;
-+	if (EM[PS_end] != 0x00) {
-+		kleave(" = -EBADMSG [EM[T-1] == %02u]", EM[PS_end]);
-+		return -EBADMSG;
-+	}
-+
-+	for (i = 2; i < PS_end; i++) {
-+		if (EM[i] != 0xff) {
-+			kleave(" = -EBADMSG [EM[PS%x] == %02u]", i - 2, EM[i]);
-+			return -EBADMSG;
-+		}
-+	}
-+
-+	if (memcmp(asn1_template, EM + T_offset, asn1_size) != 0) {
-+		kleave(" = -EBADMSG [EM[T] ASN.1 mismatch]");
-+		return -EBADMSG;
-+	}
-+
-+	if (memcmp(H, EM + T_offset + asn1_size, hash_size) != 0) {
-+		kleave(" = -EKEYREJECTED [EM[T] hash mismatch]");
-+		return -EKEYREJECTED;
-+	}
-+
-+	kleave(" = 0");
-+	return 0;
-+}
-+
-+/*
-+ * Perform the verification step [RFC3447 sec 8.2.2].
-+ */
-+static int RSA_verify_signature(const struct public_key *key,
-+				const struct public_key_signature *sig)
-+{
-+	size_t tsize;
-+	int ret;
-+
-+	/* Variables as per RFC3447 sec 8.2.2 */
-+	const u8 *H = sig->digest;
-+	u8 *EM = NULL;
-+	MPI m = NULL;
-+	size_t k;
-+
-+	kenter("");
-+
-+	/* (1) Check the signature size against the public key modulus size */
-+	k = (mpi_get_nbits(key->rsa.n) + 7) / 8;
-+
-+	tsize = (mpi_get_nbits(sig->rsa.s) + 7) / 8;
-+	pr_devel("step 1: k=%zu size(S)=%zu\n", k, tsize);
-+	if (tsize != k) {
-+		ret = -EBADMSG;
-+		goto error;
-+	}
-+
-+	/* (2b) Apply the RSAVP1 verification primitive to the public key */
-+	ret = RSAVP1(key, sig->rsa.s, &m);
-+	if (ret < 0)
-+		goto error;
-+
-+	/* (2c) Convert the message representative (m) to an encoded message
-+	 *      (EM) of length k octets.
-+	 *
-+	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
-+	 *      pointer to the _preceding_ byte to RSA_verify()!
-+	 */
-+	ret = RSA_I2OSP(m, k, &EM);
-+	if (ret < 0)
-+		goto error;
-+
-+#if 0
-+	{
-+		int i;
-+		printk("H:  ");
-+		for (i = 0; i < sig->digest_size; i++)
-+			printk("%02x", H[i]);
-+		printk("\n");
-+	}
-+
-+	{
-+		int i;
-+		printk("EM: 00");
-+		for (i = 0; i < k - 1; i++)
-+			printk("%02x", EM[i]);
-+		printk("\n");
-+	}
-+#endif
-+
-+	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
-+			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
-+			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
-+
-+error:
-+	kfree(EM);
-+	mpi_free(m);
-+	kleave(" = %d", ret);
-+	return ret;
-+}
-+
-+const struct public_key_algorithm RSA_public_key_algorithm = {
-+	.name		= "RSA",
-+	.n_pub_mpi	= 2,
-+	.n_sec_mpi	= 3,
-+	.n_sig_mpi	= 1,
-+	.verify		= RSA_verify_signature,
++enum pgp_pubkey_algo {
++	PGP_PUBKEY_RSA_ENC_OR_SIG	= 1,
++	PGP_PUBKEY_RSA_ENC_ONLY		= 2,
++	PGP_PUBKEY_RSA_SIG_ONLY		= 3,
++	PGP_PUBKEY_ELGAMAL		= 16,
++	PGP_PUBKEY_DSA			= 17,
++	PGP_PUBKEY__LAST
 +};
-+EXPORT_SYMBOL_GPL(RSA_public_key_algorithm);
++
++/*
++ * PGP symmetric-key algorithm identifiers [RFC4880: 9.2]
++ */
++enum pgp_symkey_algo {
++	PGP_SYMKEY_PLAINTEXT		= 0,
++	PGP_SYMKEY_IDEA			= 1,
++	PGP_SYMKEY_3DES			= 2,
++	PGP_SYMKEY_CAST5		= 3,
++	PGP_SYMKEY_BLOWFISH		= 4,
++	PGP_SYMKEY_AES_128KEY		= 7,
++	PGP_SYMKEY_AES_192KEY		= 8,
++	PGP_SYMKEY_AES_256KEY		= 9,
++	PGP_SYMKEY_TWOFISH_256KEY	= 10,
++};
++
++/*
++ * PGP compression algorithm identifiers [RFC4880: 9.3]
++ */
++enum pgp_compr_algo {
++	PGP_COMPR_UNCOMPRESSED		= 0,
++	PGP_COMPR_ZIP			= 1,
++	PGP_COMPR_ZLIB			= 2,
++	PGP_COMPR_BZIP2			= 3,
++};
++
++/*
++ * PGP hash algorithm identifiers [RFC4880: 9.4]
++ */
++enum pgp_hash_algo {
++	PGP_HASH_MD5			= 1,
++	PGP_HASH_SHA1			= 2,
++	PGP_HASH_RIPE_MD_160		= 3,
++	PGP_HASH_SHA256			= 8,
++	PGP_HASH_SHA384			= 9,
++	PGP_HASH_SHA512			= 10,
++	PGP_HASH_SHA224			= 11,
++	PGP_HASH__LAST
++};
++
++extern const char *const pgp_hash_algorithms[PGP_HASH__LAST];
++
++/*
++ * PGP packet type tags [RFC4880: 4.3].
++ */
++enum pgp_packet_tag {
++	PGP_PKT_RESERVED		= 0,
++	PGP_PKT_PUBKEY_ENC_SESSION_KEY	= 1,
++	PGP_PKT_SIGNATURE		= 2,
++	PGP_PKT_SYMKEY_ENC_SESSION_KEY	= 3,
++	PGP_PKT_ONEPASS_SIGNATURE	= 4,
++	PGP_PKT_SECRET_KEY		= 5,
++	PGP_PKT_PUBLIC_KEY		= 6,
++	PGP_PKT_SECRET_SUBKEY		= 7,
++	PGP_PKT_COMPRESSED_DATA		= 8,
++	PGP_PKT_SYM_ENC_DATA		= 9,
++	PGP_PKT_MARKER			= 10,
++	PGP_PKT_LITERAL_DATA		= 11,
++	PGP_PKT_TRUST			= 12,
++	PGP_PKT_USER_ID			= 13,
++	PGP_PKT_PUBLIC_SUBKEY		= 14,
++	PGP_PKT_USER_ATTRIBUTE		= 17,
++	PGP_PKT_SYM_ENC_AND_INTEG_DATA	= 18,
++	PGP_PKT_MODIFY_DETECT_CODE	= 19,
++	PGP_PKT_PRIVATE_0		= 60,
++	PGP_PKT_PRIVATE_3		= 63,
++	PGP_PKT__HIGHEST		= 63
++};
++
++/*
++ * Signature (tag 2) packet [RFC4880: 5.2].
++ */
++enum pgp_signature_version {
++	PGP_SIG_VERSION_3			= 3,
++	PGP_SIG_VERSION_4			= 4,
++};
++
++enum pgp_signature_type {
++	PGP_SIG_BINARY_DOCUMENT_SIG		= 0x00,
++	PGP_SIG_CANONICAL_TEXT_DOCUMENT_SIG	= 0x01,
++	PGP_SIG_STANDALONE_SIG			= 0x02,
++	PGP_SIG_GENERAL_CERT_OF_UID_PUBKEY	= 0x10,
++	PGP_SIG_PERSONAL_CERT_OF_UID_PUBKEY	= 0x11,
++	PGP_SIG_CASUAL_CERT_OF_UID_PUBKEY	= 0x12,
++	PGP_SIG_POSTITIVE_CERT_OF_UID_PUBKEY	= 0x13,
++	PGP_SIG_SUBKEY_BINDING_SIG		= 0x18,
++	PGP_SIG_PRIMARY_KEY_BINDING_SIG		= 0x19,
++	PGP_SIG_DIRECTLY_ON_KEY			= 0x1F,
++	PGP_SIG_KEY_REVOCATION_SIG		= 0x20,
++	PGP_SIG_SUBKEY_REVOCATION_SIG		= 0x28,
++	PGP_SIG_CERT_REVOCATION_SIG		= 0x30,
++	PGP_SIG_TIMESTAMP_SIG			= 0x40,
++	PGP_SIG_THIRD_PARTY_CONFIRM_SIG		= 0x50,
++};
++
++struct pgp_signature_v3_packet {
++	enum pgp_signature_version version : 8; /* == PGP_SIG_VERSION_3 */
++	u8	length_of_hashed;	/* == 5 */
++	struct {
++		enum pgp_signature_type signature_type : 8;
++		struct pgp_time	creation_time;
++	} hashed;
++	struct pgp_key_ID issuer;
++	enum pgp_pubkey_algo pubkey_algo : 8;
++	enum pgp_hash_algo hash_algo : 8;
++};
++
++struct pgp_signature_v4_packet {
++	enum pgp_signature_version version : 8;	/* == PGP_SIG_VERSION_4 */
++	enum pgp_signature_type signature_type : 8;
++	enum pgp_pubkey_algo pubkey_algo : 8;
++	enum pgp_hash_algo hash_algo : 8;
++};
++
++/*
++ * V4 signature subpacket types [RFC4880: 5.2.3.1].
++ */
++enum pgp_sig_subpkt_type {
++	PGP_SIG_CREATION_TIME			= 2,
++	PGP_SIG_EXPIRATION_TIME			= 3,
++	PGP_SIG_EXPORTABLE_CERT			= 4,
++	PGP_SIG_TRUST_SIG			= 5,
++	PGP_SIG_REGEXP				= 6,
++	PGP_SIG_REVOCABLE			= 7,
++	PGP_SIG_KEY_EXPIRATION_TIME		= 9,
++	PGP_SIG_PREF_SYM_ALGO			= 11,
++	PGP_SIG_REVOCATION_KEY			= 12,
++	PGP_SIG_ISSUER				= 16,
++	PGP_SIG_NOTATION_DATA			= 20,
++	PGP_SIG_PREF_HASH_ALGO			= 21,
++	PGP_SIG_PREF_COMPR_ALGO			= 22,
++	PGP_SIG_KEY_SERVER_PREFS		= 23,
++	PGP_SIG_PREF_KEY_SERVER			= 24,
++	PGP_SIG_PRIMARY_USER_ID			= 25,
++	PGP_SIG_POLICY_URI			= 26,
++	PGP_SIG_KEY_FLAGS			= 27,
++	PGP_SIG_SIGNERS_USER_ID			= 28,
++	PGP_SIG_REASON_FOR_REVOCATION		= 29,
++	PGP_SIG_FEATURES			= 30,
++	PGP_SIG_TARGET				= 31,
++	PGP_SIG_EMBEDDED_SIG			= 32,
++	PGP_SIG__LAST
++};
++
++#define PGP_SIG_SUBPKT_TYPE_CRITICAL_MASK	0x80
++
++/*
++ * Key (tag 5, 6, 7 and 14) packet
++ */
++enum pgp_key_version {
++	PGP_KEY_VERSION_2			= 2,
++	PGP_KEY_VERSION_3			= 3,
++	PGP_KEY_VERSION_4			= 4,
++};
++
++struct pgp_key_v3_packet {
++	enum pgp_key_version version : 8;
++	struct pgp_time	creation_time;
++	u8 expiry[2];				/* 0 or time in days till expiry */
++	enum pgp_pubkey_algo pubkey_algo : 8;
++	u8 key_material[0];
++};
++
++struct pgp_key_v4_packet {
++	enum pgp_key_version version : 8;
++	struct pgp_time	creation_time;
++	enum pgp_pubkey_algo pubkey_algo : 8;
++	u8 key_material[0];
++};
++
++#endif /* _LINUX_PGP_H */
 
