@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab1LBL6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 06:58:34 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47493 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754182Ab1LBL6c convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 06:58:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFypH2+MQOZfn8qoO7zo_17Oo8jLaayye45pgo_Hpz2jBQ@mail.gmail.com>
-References: <1322735278-17420-1-git-send-email-jack@suse.cz>
-	<20111201122425.GA16274@localhost>
-	<20111201142704.GT4387@parisc-linux.org>
-	<CA+55aFypH2+MQOZfn8qoO7zo_17Oo8jLaayye45pgo_Hpz2jBQ@mail.gmail.com>
-Date: Fri, 2 Dec 2011 13:58:30 +0200
-Message-ID: <CAO9iq9GwoJD0AJnpS8dLXUT_KfTvaWTd4k8MUpACTR4q=zqR3g@mail.gmail.com>
-Subject: Re: [PATCH] fs: Make write(2) interruptible by a fatal signal
-From: Janne Blomqvist <blomqvist.janne@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matthew Wilcox <matthew@wil.cx>, Wu Fengguang <fengguang.wu@intel.com>,
-        Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Content-Type: text/plain; charset=UTF-8
+	id S1754720Ab1LBMBn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 07:01:43 -0500
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:57317 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab1LBMBm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 07:01:42 -0500
+Message-ID: <1322827296.2313.21.camel@x61.thuisdomein>
+Subject: Re: [RFCv2 8/9] xshm: Makefile and Kconfig for M7400 Shared Memory
+ Drivers
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sjur =?ISO-8859-1?Q?Br=E6ndeland?= 
+	<sjur.brandeland@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        sjurbren@gmail.com
+Date: Fri, 02 Dec 2011 13:01:36 +0100
+In-Reply-To: <1322595550-6473-9-git-send-email-sjur.brandeland@stericsson.com>
+References: <1322595550-6473-1-git-send-email-sjur.brandeland@stericsson.com>
+	 <1322595550-6473-9-git-send-email-sjur.brandeland@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 18:10, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Dec 1, 2011 at 6:27 AM, Matthew Wilcox <matthew@wil.cx> wrote:
->>
->> Another problem scenario is an NFS mounted file going away while the
->> user is writing to it.  The user should be able to kill the stuck process
->> without rebooting their machine.
->
-> Well, NFS has always had the 'intr' mount option.
+Spotted some typos, see below.
 
-For some values of always; My nfs(5) manpage says:
+On Tue, 2011-11-29 at 20:39 +0100, Sjur Brændeland wrote:
+>[...]
+> diff --git a/drivers/xshm/Kconfig b/drivers/xshm/Kconfig
+> new file mode 100644
+> index 0000000..bae0da2
+> --- /dev/null
+> +++ b/drivers/xshm/Kconfig
+> @@ -0,0 +1,17 @@
+> +# XSHM gets selected by whoever wants it.
+> +config XSHM
+> +	depends on CONFIG_C2C
+> +	tristate
+> +
+> +config XSHM_CHR
+> +	tristate "Character device for External Shared Memory (XSHM)"
+> +	select XSHM
+> +	default n
+> +	---help---
+> +	Say "Y" if you want to character device for External Shared
 
-"The intr / nointr mount option is deprecated after kernel 2.6.25.
-Only SIGKILL can interrupt a pending NFS operation on these  kernels,
-and
-if specified, this mount option is ignored to provide backwards
-compatibility with older kernels."
+Perhaps "[...] to use a character device for the [...]"? 
 
-(Apparently this was related to the introduction of TASK_KILLABLE.)
+> +	Memory (XSHM) IPC mechanism. XSHM is an IPC protocol used to
+> +	talk to external device such as modem over a shared memory
+> +	(e.g. Chip to Chip).
+> +	Only say "M" here if you want to test XSHM and needs to load
 
-Isn't this pretty much the same "common sense" semantics that Jan's
-patch is introducing?
+s/needs/need/.
 
-Wu's testing in this thread suggests that at some point this
-TASK_KILLABLE for nfs writer thing was broken, or didn't work very
-robustly to begin with? Anyway, awesome if it's getting fixed, not
-only for NFS but for all regular files!
+> +	and unload its module.
+> +	If unsure say N.
+>[...]
 
--- 
-Janne Blomqvist
+
+Paul Bolle
+
