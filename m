@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab1LBNRx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 08:17:53 -0500
-Received: from mail85.messagelabs.com ([216.82.241.211]:52969 "HELO
-	mail85.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755095Ab1LBNRw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 08:17:52 -0500
-X-Env-Sender: stuart.macdonald@christiedigital.com
-X-Msg-Ref: server-3.tower-85.messagelabs.com!1322831871!5920215!1
-X-Originating-IP: [216.94.43.129]
-X-StarScan-Version: 6.4.2; banners=-,-,-
-X-VirusChecked: Checked
-From: "MacDonald, Stuart" <stuart.macdonald@christiedigital.com>
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: What is the status of linux-kernel-announce?
-Thread-Topic: What is the status of linux-kernel-announce?
-Thread-Index: Acyw9MCAjw2UWIfsTF+Vg51giJopgQ==
-Date: Fri, 2 Dec 2011 13:17:39 +0000
-Message-ID: <99A87C20C62BF341AD334B391AF668121F8352@CCYEXMB02.cds.int>
-Accept-Language: en-CA, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.200.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756616Ab1LBNXb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 08:23:31 -0500
+Received: from smtp203.alice.it ([82.57.200.99]:42015 "EHLO smtp203.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756012Ab1LBNX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 08:23:29 -0500
+X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 08:23:29 EST
+From: "Denis 'GNUtoo' Carikli" <GNUtoo@no-log.org>
+To: David Brown <davidb@codeaurora.org>
+Subject: Re: [PATCH 1/3] ARM: msm: Remove MSM7x00 support
+Date: Fri, 2 Dec 2011 14:17:17 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38-12-generic; KDE/4.6.5; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1322699344-28422-1-git-send-email-davidb@codeaurora.org> <20111201201950.GE9581@n2100.arm.linux.org.uk> <20111201202632.GA25247@huya.qualcomm.com>
+In-Reply-To: <20111201202632.GA25247@huya.qualcomm.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112021417.17082.GNUtoo@no-log.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I haven't seen an email from that mailing list since the end of Aug,
-which is about the time of the break-in, although there have been new
-kernels. The list is not going into my spam "folder".
+>And I've learned what I needed to now: someone does still care about
+>the target.
+However in a response to the following mail:
+[Question] RPC and SMD implementation
+David Brown already told that:
+>Is there much reason to get the msm72xx support into the kernel in the
+>first place?  These targets are old, and I don't believe any new
+>devices are being made using them
+And:
+>Things are a lot easier in the newer RPC/SMD versions,
+>and I don't see a strong reason to keep the kruft in the kernel
+>necessary to support the 72xx chips.
+I guess that means that RPC for msm7x00 won't hit mainline.
+So without RPC the port to mainline cannot be complete(no modem, no audio, no 
+GPS,and maybe more depending on the device).
 
-I checked my email address, the list is still there and operating, and
-I'm still subscribed.
-
-I can't find any news regarding the list or changing where kernel
-announcements are made.
-
-What's going on with lka?
-
-...Stu
+Denis.
