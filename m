@@ -1,67 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab1LBR7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:59:16 -0500
-Received: from yop.chewa.net ([91.121.105.214]:57041 "EHLO yop.chewa.net"
+	id S932096Ab1LBR7g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:59:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39920 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757195Ab1LBR7P convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:59:15 -0500
-X-Greylist: delayed 590 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 12:59:15 EST
-From: "=?iso-8859-1?q?R=E9mi?= Denis-Courmont" <remi@remlab.net>
-Organization: Remlab.net
-To: linux-media@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because of worrying about possible misusage?
-Date: Fri, 2 Dec 2011 19:49:18 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-686-pae; KDE/4.6.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED7BBA3.5020002@redhat.com> <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com>
-In-Reply-To: <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com>
+	id S1757195Ab1LBR7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 12:59:35 -0500
+Date: Fri, 2 Dec 2011 18:59:33 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: pomac@vapor.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
+        tino.keitel@tikei.de
+Subject: Re: [PATCH] proc: Do not overflow get_{idle,iowait}_time for nohz
+ (was: Re: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU usage)
+Message-ID: <20111202175932.GA3894@tiehlicka.suse.cz>
+References: <20111128222803.GA4925@pomac.netswarm.net>
+ <20111129075242.GB2675@tiehlicka.suse.cz>
+ <2146795727.780801.1322566727488.JavaMail.mail@webmail05>
+ <20111202133515.GB21070@tiehlicka.suse.cz>
+ <20111202164917.GA6139@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201112021949.19395.remi@remlab.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111202164917.GA6139@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 1 décembre 2011 21:59:56 HoP, vous avez écrit :
-> > Kernel code is GPLv2. You can use its code on a GPLv2 licensed library.
+On Fri 02-12-11 17:49:17, Michal Hocko wrote:
+> On Fri 02-12-11 14:35:15, Michal Hocko wrote:
+> > On Tue 29-11-11 11:38:47, Artem S. Tashkinov wrote:
+> > > On Nov 29, 2011, Michal Hocko <mhocko@suse.cz> wrote: 
+> > >  
+> > > > As I have written in other email could you post your config and collect
+> > > > the following data?
+> > > > for i in `seq 30`; 
+> > > > do 
+> > > >         cat /proc/stat > `date +'%s'`
+> > > >         sleep 1
+> > > > done
+> > > > export old_user=0 old_nice=0 old_sys=0 old_idle=0 old_iowait=0; 
+> > > > 
+> > > > # for all your available CPUs
+> > > > grep cpu0 * | while read cpu user nice sys idle iowait rest; 
+> > > > do 
+> > > >         echo $cpu $(($user-$old_user)) $(($nice-$old_nice)) $(($sys-$old_sys)) $(($idle-$old_idle)) $(($iowait-$old_iowait))
+> > > >         old_user=$user old_nice=$nice old_sys=$sys old_idle=$idle old_iowait=$iowait
+> > > > done
+> > > 
+> > > 1322566208:cpu0 5199 0 2931 357890604 2541
+> > > 1322566209:cpu0 0 0 1 0 0
+> > > 1322566210:cpu0 0 0 0 0 0
+> > > 1322566211:cpu0 0 0 0 0 0
+> [...]
+> > 
+> > Could you post raw data as well? Ideally starting right after boot and
+> > collected for more than 30s (longer better...)
 > 
-> I see. So if you think it is nice to get dvb-core, make a wrapper around
-> to get it usable in userspace and maintain totally same functionality
-> by myself then I say it is no go. If it looks for you like good idea
-> I must disagree. Code duplication?
-
-Sure, some core code would be duplicated. That is not a big deal.
-
-This proposal however has three big advantages:
-- Proprietary drivers are not enabled as the library would be GPL.
-- The virtual DVB device runs in the same process as the DVB application, 
-which saves context switching and memory copying.
-- It would be your project. You do not need to agree with Mauro ;-)
-
-> Two maintaners? That is crazy idea man.
-
-Someone would have to maintain the device driver anyway. I don't see much of a 
-difference on maintainance side.
-
-> > And I can't see any advantage on yours ;) Putting something that belongs
-> > to userspace into kernelspace just because it is easier to re-use the
-> > existing code inside the kernel is not a good argument.
+> Ahh, missed that you attached data. And also noticed that you are using
+> CONFIG_HZ_300 which explains the problem and why I do cannot reproduce
+> it.
 > 
-> It is only your POV that it should be in userspace.
+> get_{idle,iowait}_time translates us to cputime64_t and it uses
+> usecs_to_cputime which is just an alias for usecs_to_jiffies and it does
+> 	if (u > jiffies_to_usecs(MAX_JIFFY_OFFSET))
+>                 return MAX_JIFFY_OFFSET;
+> which in your case (HZ=300) means that we overflow much more often than
+> for HZ==100. The patch below should fix this:
 
-Except for backward compatiblity, this would actually belong in userspace. It 
-would be more efficient and easier to maintain as a userspace library than as 
-a kernel driver.
+And the one with a more cleaned up changelog. No functional changes
+---
+>From 107887016b91de59194a93c751d040b05d5e37fe Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 2 Dec 2011 16:17:03 +0100
+Subject: [PATCH] proc: Do not overflow get_{idle,iowait}_time for nohz
 
-If you need backward compatibility, I am still inclined to believe that you 
-could write a CUSE frontend, so it does involve some extra work and looses the 
-performance benefit.
+Since a25cac51 [proc: Consider NO_HZ when printing idle and iowait times]
+we are reporting idle/io_wait time also while a CPU is tickless. We rely
+on get_{idle,iowait}_time functions to retrieve proper data.
+
+These functions, however, use usecs_to_cputime to translate micro
+seconds time to cputime64_t. This is just an alias to usecs_to_jiffies
+which reduces the data type from u64 to unsigned int and also checks
+whether the given parameter overflows jiffies_to_usecs(MAX_JIFFY_OFFSET)
+and returns MAX_JIFFY_OFFSET in that case.
+
+When do we overflow depends on CONFIG_HZ but especially for
+CONFIG_HZ_300 it is quite low (1431649781) so we are getting
+MAX_JIFFY_OFFSET for >3000s! until we overflow unsigned int.
+Just for reference CONFIG_100 has an overflow window around 20s,
+CONFIG_250 ~8s and CONFIG_1000 ~2s.
+
+This results in a bug when people saw [h]top going mad reporting 100%
+CPU usage even though there was basically no CPU load. The reason was
+simply that /proc/stat stopped reporting idle/io_wait changes (and
+reported MAX_JIFFY_OFFSET) and so the only change happening was for
+user system time.
+
+Let's use nsecs_to_jiffies64 instead which doesn't reduce the precision
+to 32b type and it is much more appropriate for cumulative time values
+(unlike usecs_to_jiffies which intended for timeout calculations).
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ fs/proc/stat.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 42b274d..2a30d67 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -32,7 +32,7 @@ static cputime64_t get_idle_time(int cpu)
+ 		idle = kstat_cpu(cpu).cpustat.idle;
+ 		idle = cputime64_add(idle, arch_idle_time(cpu));
+ 	} else
+-		idle = usecs_to_cputime(idle_time);
++		idle = nsecs_to_jiffies64(1000 * idle_time);
+ 
+ 	return idle;
+ }
+@@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
+ 		/* !NO_HZ so we can rely on cpustat.iowait */
+ 		iowait = kstat_cpu(cpu).cpustat.iowait;
+ 	else
+-		iowait = usecs_to_cputime(iowait_time);
++		iowait = nsecs_to_jiffies64(1000 * iowait_time);
+ 
+ 	return iowait;
+ }
+-- 
+1.7.7.3
+
 
 -- 
-Rémi Denis-Courmont
-http://www.remlab.net/
-http://fi.linkedin.com/in/remidenis
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
