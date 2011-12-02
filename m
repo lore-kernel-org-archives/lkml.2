@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab1LBWWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 17:22:06 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:34520 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab1LBWWE convert rfc822-to-8bit (ORCPT
+	id S1756408Ab1LBWZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 17:25:12 -0500
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:51787 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755550Ab1LBWZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 17:22:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <4ED9267F.10106@fb.com>
-References: <20111121145114.049265181@chello.nl>
-	<4ED9267F.10106@fb.com>
-Date: Fri, 2 Dec 2011 14:22:02 -0800
-Message-ID: <CABPqkBRpYA-StOTDFwyFhFtBPynbn-FLUzqZvaQn3oM3SJpCWg@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/6] perf: x86 RDPMC and RDTSC support
-From: Stephane Eranian <eranian@google.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
-        William Cohen <wcohen@redhat.com>, Vince Weaver <vince@deater.net>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 2 Dec 2011 17:25:11 -0500
+X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 17:25:11 EST
+From: Bryan Freed <bfreed@chromium.org>
+To: jbrenner@taosinc.com
+Cc: linux-iio@vger.kernel.org, jic23@cam.ac.uk, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, Bryan Freed <bfreed@chromium.org>
+Subject: [PATCH v2] iio: light sensor: Improve granularity of tsl2583 lux values.
+Date: Fri,  2 Dec 2011 14:19:30 -0800
+Message-Id: <1322864370-15126-1-git-send-email-bfreed@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Have you tried with inheritance disabled?
-I don't remember if perf stat has it enabled buy default.
+When illuminance0_calibbias gets 4000 (for a 4x multiplier), we see lux
+granularity of 4.  Reversing the order of the right shift and multiplication
+retains the precision of the unadjusted lux value.
 
-On Fri, Dec 2, 2011 at 11:26 AM, Arun Sharma <asharma@fb.com> wrote:
-> On 11/21/11 6:51 AM, Peter Zijlstra wrote:
->>
->> These few patches implement x86 RDPMC support and add an extention to the
->> self
->> monitoring data to also allow additional time updates using userspace TSC
->> reads.
->>
->> There's a few loose ends, but it mostly seems to work.
->
->
-> I haven't had a chance to test this out yet. But low overhead, always on
-> perf counters is something we're very interested in. Thanks for implementing
-> it.
->
-> However, I suspect the major cost of leaving the perf counters always on
-> seems to be in the hit on context switches, rather than the cost of reading
-> the perf counters themselves. For eg:
->
->  Baseline:
->
->   (for i in `seq 1 10`; do numactl --cpunodebind 1 ./lat_ctx -P1 -s32k 4;
-> done) 2>&1 | tee lmbench1.log
->
->  1 event:
->
->  (for i in `seq 1 10`; do numactl --cpunodebind 1 perf stat -e instructions
-> ./lat_ctx -P1 -s32k 4; done) 2>&1 | tee lmbench2.log
->
->  2 events:
->
->  (for i in `seq 1 10`; do numactl --cpunodebind 1 perf stat -e
-> cycles,instructions ./lat_ctx -P1 -s32k 4; done) 2>&1 | tee lmbench3.log
->
->  Baseline: 2.2us
->  One event: 6.8us
->  Two events: 7.2us
->
-> The cost seems to be at roughly 5us (I measured 2.6.38 and 3.2-rc2). I'll
-> dig a bit more on what may be going on here.
->
->  -Arun
+Signed-off-by: Bryan Freed <bfreed@chromium.org>
+---
+ drivers/staging/iio/light/tsl2583.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/iio/light/tsl2583.c b/drivers/staging/iio/light/tsl2583.c
+index 80f77cf..25f4c1d 100644
+--- a/drivers/staging/iio/light/tsl2583.c
++++ b/drivers/staging/iio/light/tsl2583.c
+@@ -194,6 +194,7 @@ static int taos_get_lux(struct iio_dev *indio_dev)
+ {
+ 	u16 ch0, ch1; /* separated ch0/ch1 data from device */
+ 	u32 lux; /* raw lux calculated from device data */
++	u64 lux64;
+ 	u32 ratio;
+ 	u8 buf[5];
+ 	struct taos_lux *p;
+@@ -297,9 +298,19 @@ static int taos_get_lux(struct iio_dev *indio_dev)
+ 		lux = (lux + (chip->als_time_scale >> 1)) /
+ 			chip->als_time_scale;
+ 
+-	/* adjust for active gain scale */
+-	lux >>= 13; /* tables have factor of 8192 builtin for accuracy */
+-	lux = (lux * chip->taos_settings.als_gain_trim + 500) / 1000;
++	/* Adjust for active gain scale.
++	 * The taos_device_lux tables above have a factor of 8192 built in,
++	 * so we need to shift right.
++	 * User-specified gain provides a multiplier.
++	 * Apply user-specified gain before shifting right to retain precision.
++	 * Use 64 bits to avoid overflow on multiplication.
++	 * Then go back to 32 bits before division to avoid using div_u64().
++	 */
++	lux64 = lux;
++	lux64 = lux64 * chip->taos_settings.als_gain_trim;
++	lux64 >>= 13;
++	lux = lux64;
++	lux = (lux + 500) / 1000;
+ 	if (lux > TSL258X_LUX_CALC_OVER_FLOW) { /* check for overflow */
+ return_max:
+ 		lux = TSL258X_LUX_CALC_OVER_FLOW;
+-- 
+1.7.3.1
+
