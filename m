@@ -1,89 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308Ab1LBRyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:54:13 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:19897 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757197Ab1LBRyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:54:11 -0500
-Message-ID: <4ED910B6.7080000@atmel.com>
-Date: Fri, 02 Dec 2011 18:53:58 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1757286Ab1LBR6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:58:21 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:39288 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757227Ab1LBR6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 12:58:19 -0500
+Message-ID: <4ED91188.6030503@parallels.com>
+Date: Fri, 2 Dec 2011 15:57:28 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Jamie Iles <jamie@jamieiles.com>
-CC: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        netdev@vger.kernel.org, plagnioj@jcrosoft.com,
-        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/macb: add DT support
-References: <20111202153832.GA4998@totoro> <1322846050-4543-1-git-send-email-nicolas.ferre@atmel.com> <20111202172854.GB4998@totoro>
-In-Reply-To: <20111202172854.GB4998@totoro>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
+        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Subject: Re: [PATCH v7 04/10] tcp memory pressure controls
+References: <1322611021-1730-1-git-send-email-glommer@parallels.com> <1322611021-1730-5-git-send-email-glommer@parallels.com> <20111130104943.d9b210ee.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111130104943.d9b210ee.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2011 06:28 PM, Jamie Iles :
-> Hi Nicolas,
+On 11/29/2011 11:49 PM, KAMEZAWA Hiroyuki wrote:
 >
-> On Fri, Dec 02, 2011 at 06:14:10PM +0100, Nicolas Ferre wrote:
->> From: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
+>> -static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+>> +struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
+>>   {
+>>   	return container_of(cgroup_subsys_state(cont,
+>>   				mem_cgroup_subsys_id), struct mem_cgroup,
+>> @@ -4717,14 +4732,27 @@ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
 >>
->> Allow the device tree to provide the mac address and the phy mode.
->>
->> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
->> [nicolas.ferre@atmel.com: change "compatible" node property, doc and DT hwaddr]
->> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
->> Cc: Jamie Iles<jamie@jamieiles.com>
+>>   	ret = cgroup_add_files(cont, ss, kmem_cgroup_files,
+>>   			       ARRAY_SIZE(kmem_cgroup_files));
+>> +
+>> +	if (!ret)
+>> +		ret = mem_cgroup_sockets_init(cont, ss);
+>>   	return ret;
+>>   };
 >
-> Looks nice to me.  There's a patch below to add the GEM stuff to the
-> binding too if you want to role that in.
-
-Yes, I will push it in a "v3" (I was busy correcting a bug and did not 
-see your answer before sending v2...).
-
-> Acked-by: Jamie Iles<jamie@jamieiles.com>
+> You does initizalication here. The reason what I think is
+> 1. 'proto_list' is not available at createion of root cgroup and
+>      you need to delay set up until mounting.
 >
-> 8<----
->
-> diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
-> index 7f0b90a..e09e3fb 100644
-> --- a/Documentation/devicetree/bindings/net/macb.txt
-> +++ b/Documentation/devicetree/bindings/net/macb.txt
-> @@ -1,9 +1,11 @@
-> -* Cadence MACB Ethernet controller
-> +* Cadence MACB/GEM Ethernet controller
->
->   Required properties:
-> -- compatible: Should be "cdns,[<chip>-]macb"
-> +- compatible: Should be "cdns,[<chip>-]{macb,gem}"
->     Use "cdns,at91sam9260-macb" Atmel at91sam9260 and at91sam9263 SoCs.
->     Use "cdns,at32ap7000-macb" for other 10/100 usage or use the generic form: "cdns,macb"
-> +  Use "cnds,pc302-gem" for Picochip picoXcell pc302 and later devices based on
-> +  the Cadence GEM, or the generic form "cdns,gem".
->   - reg: Address and length of the register set for the device
->   - interrupts: Should contain macb interrupt
->   - phy-mode: String, operation mode of the PHY interface.
-> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-> index 103c6e6..89060e6 100644
-> --- a/drivers/net/ethernet/cadence/macb.c
-> +++ b/drivers/net/ethernet/cadence/macb.c
-> @@ -1247,6 +1247,8 @@ static const struct of_device_id macb_dt_ids[] = {
->   	{ .compatible = "cdns,at32ap7000-macb" },
->   	{ .compatible = "cdns,at91sam9260-macb" },
->   	{ .compatible = "cdns,macb" },
-> +	{ .compatible = "cdns,pc302-gem" },
-> +	{ .compatible = "cdns,gem" },
->   	{ /* sentinel */ }
->   };
+> If so, please add comment or find another way.
+> This seems not very clean to me.
 
-BTW, I think we may also modify the MII/RMII selection code for adding 
-gigabit selection... but maybe you already have the patches?
+Yes, we do can run into some ordering issues. A part of the 
+initialization can be done earlier. But I preferred to move it all later
+instead of creating two functions for it. But I can change that if you 
+want, no big deal.
 
-Best regards,
--- 
-Nicolas Ferre
+>
+>
+>
+>
+>> +static DEFINE_RWLOCK(proto_list_lock);
+>> +static LIST_HEAD(proto_list);
+>> +
+>> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+>> +int mem_cgroup_sockets_init(struct cgroup *cgrp, struct cgroup_subsys *ss)
+>> +{
+>> +	struct proto *proto;
+>> +	int ret = 0;
+>> +
+>> +	read_lock(&proto_list_lock);
+>> +	list_for_each_entry(proto,&proto_list, node) {
+>> +		if (proto->init_cgroup)
+>> +			ret = proto->init_cgroup(cgrp, ss);
+>> +			if (ret)
+>> +				goto out;
+>> +	}
+>
+> seems indent is bad or {} is missing.
+>
+Thanks. I'll rewrite it, since I did miss {} around the first if. But no 
+test could possibly catch it, since what I wanted to write, and what I 
+wrote by mistake end up being equivalent.
+
+>> +EXPORT_SYMBOL(memcg_tcp_enter_memory_pressure);
+>> +
+>> +int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+>> +{
+>> +	/*
+>> +	 * The root cgroup does not use res_counters, but rather,
+>> +	 * rely on the data already collected by the network
+>> +	 * subsystem
+>> +	 */
+>> +	struct res_counter *res_parent = NULL;
+>> +	struct cg_proto *cg_proto;
+>> +	struct tcp_memcontrol *tcp;
+>> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+>> +	struct mem_cgroup *parent = parent_mem_cgroup(memcg);
+>> +
+>> +	cg_proto = tcp_prot.proto_cgroup(memcg);
+>> +	if (!cg_proto)
+>> +		return 0;
+>> +
+>> +	tcp = tcp_from_cgproto(cg_proto);
+>> +	cg_proto->parent = tcp_prot.proto_cgroup(parent);
+>> +
+>> +	tcp->tcp_prot_mem[0] = sysctl_tcp_mem[0];
+>> +	tcp->tcp_prot_mem[1] = sysctl_tcp_mem[1];
+>> +	tcp->tcp_prot_mem[2] = sysctl_tcp_mem[2];
+>> +	tcp->tcp_memory_pressure = 0;
+>
+> Question:
+>
+> Is this value will be updated when an admin chages sysctl ?
+
+yes.
+
+> I guess, this value is set at system init script or some which may
+> happen later than mounting cgroup.
+> I don't like to write a guideline 'please set sysctl val before
+> mounting cgroup'
+
+Agreed.
+
+This code is in patch 6 (together with the limiting):
+
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++       rcu_read_lock();
++       memcg = mem_cgroup_from_task(current);
++
++       tcp_prot_mem(memcg, vec[0], 0);
++       tcp_prot_mem(memcg, vec[1], 1);
++       tcp_prot_mem(memcg, vec[2], 2);
++       rcu_read_unlock();
++#endif
+
+tcp_prot_mem is just a wrapper around the assignment so we can access 
+memcg's inner fields.
+
