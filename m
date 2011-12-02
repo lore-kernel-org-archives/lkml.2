@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab1LBNva (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 08:51:30 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:36231 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756087Ab1LBNv3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 08:51:29 -0500
-Date: Fri, 2 Dec 2011 08:51:26 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org,
-        lttng-dev@lists.lttng.org, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, Darren Hart <darren@dvhart.com>
-Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
-Message-ID: <20111202135126.GA20115@Krystal>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com> <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com> <1322776568.4699.52.camel@twins> <20111201220445.GA10552@Krystal> <1322777407.4699.59.camel@twins> <20111201221500.GC10552@Krystal> <20111201223607.GF10552@Krystal> <1322780758.4699.60.camel@twins>
+	id S1756701Ab1LBNwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 08:52:50 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:26567 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756566Ab1LBNwt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 08:52:49 -0500
+Message-ID: <4ED8D82B.9080408@parallels.com>
+Date: Fri, 02 Dec 2011 17:52:43 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322780758.4699.60.camel@twins>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:44:41 up 373 days, 18:47,  6 users,  load average: 0.15, 0.12,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Pedro Alves <pedro@codesourcery.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in /proc/<pid>/status
+References: <20111129191252.769160532@openvz.org> <201112021258.04197.pedro@codesourcery.com> <4ED8CFC4.5010804@parallels.com> <201112021344.40177.pedro@codesourcery.com>
+In-Reply-To: <201112021344.40177.pedro@codesourcery.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Thu, 2011-12-01 at 17:36 -0500, Mathieu Desnoyers wrote:
-> > So what you are saying is that it is fine to export task_prio to
-> > _userspace_, thus making it part of the ABI, but it's not OK to export
-> > it to GPL modules ? 
+On 12/02/2011 05:44 PM, Pedro Alves wrote:
+> On Friday 02 December 2011 13:16:52, Pavel Emelyanov wrote:
+>> On 12/02/2011 04:58 PM, Pedro Alves wrote:
+>>> On Friday 02 December 2011 12:43:10, Pavel Emelyanov wrote:
+>>>
+>>>>>> Yes, I like /children file. other points seems to be pointed out by other
+>>>>>> reviewers. 
+>>>>>
+>>>>> Any reason this is a file instead of a directory like /proc/PID/task/ ?
+>>>>>
+>>>>> $ sudo ls /proc/8167/task/
+>>>>> 8167  854  855  856  857  858  859
+>>>>> $ sudo ls /proc/8167/task/855/
+>>>>> attr    clear_refs  cpuset   exe     io       loginuid  mountinfo  oom_adj        pagemap      sched      smaps  statm    wchan
+>>>>> auxv    cmdline     cwd      fd      latency  maps      mounts     oom_score      personality  schedstat  stack  status
+>>>>> cgroup  comm        environ  fdinfo  limits   mem       numa_maps  oom_score_adj  root         sessionid  stat   syscall
+>>>>>
+>>>>> Much easier to follow the chain from the command line this way.
+>>>>
+>>>> What do you propose to put into these directories? Another directories named with
+>>>> children pid-s?
+>>>
+>>> Yes, just like the task/ dir gives you directories named with the
+>>> processes's thread ids.  Opening /proc/PID/children/PID-CHILD1/ would get
+>>> you the same as opening /proc/PID-CHILD1/.  Just like
+>>> opening /proc/PID/task/PID-CHILD1/ gets you (almost) the same as opening
+>>> /proc/PID-CHILD1/.
+>>
+>> You cannot make the dentry named /proc/<pid1>/children/<pid2> be a hardlink on
+>> the /proc/<pid2>. Thus you have to make arbitrary amount of inodes to point to
+>> a single task. This brings unnecessary complexity and memory usage (by dentries
+>> and proc inodes).
 > 
-> that's a SCHED_DEBUG proc file.
+> How is this different from the _already existing_ /proc/<pid1>/task/ directory?
 
-Fair point. You'll then notice that /proc/<pid>/stat (18th field)
-exports it too, and it's not under SCHED_DEBUG:
+Those living in /proc/<pid1>/task do not live in /proc. At all. This explains
+everything below.
 
-ok:/proc/20# cat stat
-20 (migration/5) S 2 0 0 0 -1 2216722496 0 0 0 0 0 0 0 0 -100 0 1 0 70 0
-0 18446744073709551615 0 0 0 0 0 0 0 2147483647 0 18446744071579371389 0
-0 17 5 99 1 0 0 0
+> I can imagine that 98% of the code would be shared even?  It's "just" a matter of
+> listing thread group children (child/), instead of clone children (task/),
+> isn't it?
+> 
+> They are not symbolic links under task/.  /proc/<pid1>/task/<pid2>/ does not
+> have a task/ subdir, only /proc/<pid1>/ does, I guess to avoid the memory usage
+> issue you raise.
+> 
+>> I'd accept the symbolic links, but how would they look like? Like this:
+>>    # ls -l /proc/123/children
+>>             234 -> ../../234
+>> ?
+> 
+> That'd work for me...  but really, why not reuse tasks/'s code and
+> behave the same?
 
-(see -100 above)
+Why wouldn't /proc/<pid>/children work for you? This is as simple as
 
-as defined in Documentation/filesystems/proc.txt:
+  # ls -l $(cat /proc/<pid>/children)
 
-"Table 1-4: Contents of the stat files (as of 2.6.30-rc7)
-[...]
-priority      priority level"
+:)
 
 Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Pavel
