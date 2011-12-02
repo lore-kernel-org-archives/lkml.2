@@ -1,72 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab1LBQcW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 11:32:22 -0500
-Received: from mail.windriver.com ([147.11.1.11]:60815 "EHLO
+	id S1757134Ab1LBQew (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 11:34:52 -0500
+Received: from mail.windriver.com ([147.11.1.11]:61743 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757041Ab1LBQcV (ORCPT
+	with ESMTP id S1756990Ab1LBQeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 11:32:21 -0500
-Message-ID: <4ED8FD76.3000802@windriver.com>
-Date: Fri, 2 Dec 2011 11:31:50 -0500
+	Fri, 2 Dec 2011 11:34:50 -0500
+Message-ID: <4ED8FE14.7020007@windriver.com>
+Date: Fri, 2 Dec 2011 11:34:28 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm: add default value for PHYS_OFFSET Kconfig setting
-References: <1322711557-8279-1-git-send-email-paul.gortmaker@windriver.com> <201112011419.46751.arnd@arndb.de> <CAP=VYLrp1zqyOzU-xzatF3jE3wL6wBjEDMR=sEXimP2ZvkQ0Lg@mail.gmail.com> <alpine.LFD.2.02.1112020005270.2357@xanadu.home> <alpine.LFD.2.02.1112020024370.2357@xanadu.home> <20111202092124.GR26618@pengutronix.de>
-In-Reply-To: <20111202092124.GR26618@pengutronix.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Kumar Gala <galak@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>, <gregkh@suse.de>,
+        <alan@linux.intel.com>, <linux-serial@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] 8250: add workaround for MPC8[356]xx UART break IRQ
+ storm
+References: <1322783258-20443-1-git-send-email-paul.gortmaker@windriver.com>	<1322783258-20443-4-git-send-email-paul.gortmaker@windriver.com>	<4ED812E4.60905@freescale.com>	<4ED81632.3030809@windriver.com>	<176AE2A1-6AA2-4F14-942F-8ED77AB1DBEC@kernel.crashing.org> <20111202113059.15d73840@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111202113059.15d73840@lxorguk.ukuu.org.uk>
 Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-12-02 04:21 AM, Uwe Kleine-König wrote:
-> Hello Nicolas,
-> 
-> On Fri, Dec 02, 2011 at 12:33:26AM -0500, Nicolas Pitre wrote:
-
-[...]
-
->> And it seems that at91x40 is the only defconfig with MMU=n, so the only 
->> option is really to provide a default CONFIG_PHYS_OFFSET.  So what about 
->> this:
+On 11-12-02 06:30 AM, Alan Cox wrote:
+>>> OK, I'll simply change the above to CONFIG_PPC then.
 >>
->> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
->> index e084b7e981..a24672924f 100644
->> --- a/arch/arm/Kconfig
->> +++ b/arch/arm/Kconfig
->> @@ -222,6 +222,7 @@ config NEED_MACH_MEMORY_H
->>  config PHYS_OFFSET
->>  	hex "Physical address of main memory"
->>  	depends on !ARM_PATCH_PHYS_VIRT && !NEED_MACH_MEMORY_H
->> +	default DRAM_BASE if !MMU
->>  	help
->>  	  Please provide the physical address corresponding to the
->>  	  location of main memory in your system.
->>
->> Eventually the DRAM_BASE config option could simply be replaced by 
->> PHYS_OFFSET directly, but that's a larger change.
-> I'm working on a MMU-less machine, too and had that change already in my
-> working copy. I was about to commit and it send out later today.
+>> It does, the bug is in the uart IP which I don't think we ever plan on fixing, so 32 or 64-bit parts will have it for ever and ever ;)
 > 
-> So: Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> It should be runtime selected, there should be no ifdefs here.
 
-Looks fine to me as well; I had no particular attachment to the
-original patch, and you guys have a much better understanding of
-the specifics of the system.
+The ifdef wasn't strictly required; it just made it so gcc would
+toss the errata code out of the irq handler for !PPC.  Anyway it
+will be a moot point if I can somehow hide all the mess by snooping
+serial_inp() traffic and deploying the errata fix from there....
 
-Thanks,
-Paul.
+P.
 
-> 
-> Best regards
-> Uwe
 > 
