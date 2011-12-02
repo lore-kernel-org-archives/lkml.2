@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab1LBAX1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 19:23:27 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53182 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166Ab1LBAX0 (ORCPT
+	id S1755976Ab1LBAYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 19:24:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52949 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755812Ab1LBAYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 19:23:26 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 2 Dec 2011 09:22:17 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        rostedt@goodmis.org, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] jump_label: jump_label for boot options.
-Message-Id: <20111202092217.50d72f71.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1322751913.4699.19.camel@twins>
-References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
-	<1322751913.4699.19.camel@twins>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 1 Dec 2011 19:24:12 -0500
+Date: Fri, 2 Dec 2011 03:24:06 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [rfc 1/3] fs, proc: Add start_data, end_data, start_brk members
+ to /proc/$pid/stat
+Message-ID: <20111202002405.GA7701@p183.telecom.by>
+References: <20111129191252.769160532@openvz.org>
+ <20111129191638.756761754@openvz.org>
+ <20111129200627.GO5169@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129200627.GO5169@outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 01 Dec 2011 16:05:13 +0100
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Thu, 2011-12-01 at 11:53 +0900, KAMEZAWA Hiroyuki wrote:
-> > I tried to use jump_label for handling memcg's boot options which sets
-> > global variable true/false and never changes after boot. And found jump_table
-> > is larger than expected. This patch is a trial to allow to place jump_table
-> > in .init section. How do you think ? 
+On Tue, Nov 29, 2011 at 12:06:27PM -0800, Kees Cook wrote:
+> On Tue, Nov 29, 2011 at 11:12:53PM +0400, Cyrill Gorcunov wrote:
+> > It helps to dump and restore this mm_struct members.
+> > 
+> > Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> > ---
+> >  fs/proc/array.c |    7 +++++--
+> >  1 file changed, 5 insertions(+), 2 deletions(-)
+> > 
+> > Index: linux-2.6.git/fs/proc/array.c
+> > ===================================================================
+> > --- linux-2.6.git.orig/fs/proc/array.c
+> > +++ linux-2.6.git/fs/proc/array.c
+> > @@ -464,7 +464,7 @@ static int do_task_stat(struct seq_file
+> >  
+> >  	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
+> >  %lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
+> > -%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld\n",
+> > +%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
+> >  		pid_nr_ns(pid, ns),
+> >  		tcomm,
+> >  		state,
+> > @@ -511,7 +511,10 @@ static int do_task_stat(struct seq_file
+> >  		task->policy,
+> >  		(unsigned long long)delayacct_blkio_ticks(task),
+> >  		cputime_to_clock_t(gtime),
+> > -		cputime_to_clock_t(cgtime));
+> > +		cputime_to_clock_t(cgtime),
+> > +		mm ? (permitted ? mm->start_data : 1) : 0,
+> > +		mm ? (permitted ? mm->end_data : 1) : 0,
+> > +		mm ? (permitted ? mm->start_brk : 1) : 0);
+> >  	if (mm)
+> >  		mmput(mm);
+> >  	return 0;
 > 
-> I think its much saner to go help hnaz remove this shadow page table and
-> thus the need for this stupid boot time param.
-> 
+> Thanks for using "permitted" here. :)
 
-Yes, that's an idea. But we also have another stupid shadow swap accounting
-table.  This can be disabled at boot, too.
-
-Thanks,
--Kame
-
+And these are new fields, so "1" hack is unnecessary.
