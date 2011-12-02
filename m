@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab1LBMd6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 07:33:58 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50047 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab1LBMd4 (ORCPT
+	id S1755961Ab1LBMf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 07:35:58 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58515 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab1LBMf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 07:33:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
-Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
-Date: Fri, 02 Dec 2011 13:33:36 +0100
-Message-ID: <42689146.OPtqLboC2m@wuerfel>
-User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <1322817178-8931-6-git-send-email-ming.lei@canonical.com>
-References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com> <1322817178-8931-6-git-send-email-ming.lei@canonical.com>
+	Fri, 2 Dec 2011 07:35:57 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:Bs15LHzdMzNYFGXvDhGyaQjCtSWU65DJz1hQlXNfwXZ
- XtRiMYK8ygLJbklUye5++Csefw6/XQmVPK9/8htDX/bbHXYeeh
- cIPud0f+nU8JSFfGA/RZp2F1Sm/fhOBBDaq6xJjr9NdBS5nNm9
- vDqr8NqfMrZfnrnOxfv5BKtBrEGW30U7PsviV3Vx1LrSlhaDED
- U6wUoLjDYtTEfKmmH+6iVBlWTQVnHq4/M4ECBOpd+fGO+2Porh
- ll0LTMaRYSx9NXQ3R4QJEnyH9ymzHRFHg7afDz1sdwdmV9G0Bv
- 1e5+/I/nkdGR9rDmOGaQqs5W1QzIoA44xEAW1BWafxhXvhQdM9
- zXa7OfLXDEV8wUQ/Qsmk=
+In-Reply-To: <20111202122205.GL8245@opensource.wolfsonmicro.com>
+References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
+	<1321848532-8784-2-git-send-email-tomoya.rohm@gmail.com>
+	<20111121113433.GD3784@opensource.wolfsonmicro.com>
+	<CANKRQnjdS1NvcGLa=S1M0D4U_NV3+JR1E4YfAV7Ziq-fE2LQgg@mail.gmail.com>
+	<20111202114638.GI8245@opensource.wolfsonmicro.com>
+	<CANKRQng5OzqjiQ81OUH+2Aet8DAM198s6B=_1FuASnd19BU26w@mail.gmail.com>
+	<20111202122205.GL8245@opensource.wolfsonmicro.com>
+Date: Fri, 2 Dec 2011 21:35:57 +0900
+Message-ID: <CANKRQnhcA-bzcMnR2BBPStb7XgZp2pe=XE2YjKOMjUKPw2Ms5w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] sound/soc/lapis: add machine driver
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 December 2011 17:12:56 Ming Lei wrote:
-> +/**
-> + * struct v4l2_fd_result - VIDIOC_G_FD_RESULT argument
-> + * @buf_index: entry, index of v4l2_buffer for face detection
-> + * @face_cnt:  return, how many faces detected from the @buf_index
-> + * @fd:                return, result of faces' detection
-> + */
-> +struct v4l2_fd_result {
-> +       __u32   buf_index;
-> +       __u32   face_cnt;
-> +       __u32   reserved[6];
-> +       struct v4l2_fd_detection *fd;
-> +};
+2011/12/2 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Fri, Dec 02, 2011 at 09:09:34PM +0900, Tomoya MORINAGA wrote:
+>> 2011/12/2 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>
+>> > The CPU side audio drivers are not there - there seemed to be some quite
+>> > serious review issues with those.
+>
+>> Let me clarify your saying.
+>> Does the above "audio drivers" mean i2s (of south bridge) driver or HD
+>> audio (of north bridge) or another?
+>
+> I2S and audio DMA.
 
+OK.
+As you know, I post i2s/dma driver once. I understand need to do much
+modification.
+I'm going to develop codec driver, machine driver and
+platform(i2s/dma) driver in turn obeying modern ASoC framework.
 
-This data structure is not 32/64 bit safe: running a 64 bit kernel with 32 bit
-user space will see an incompatible layout.
+Do you mean you cannot review this codec driver any more unless I
+provide other 2 drivers (machine and platform) ?
 
-One way to solve this is to remove the pointer and just start the array
-directly after the __u32 members. Alternatively, you can use a __u64
-to pass the pointer in an integer representation.
-
-A nicer interface from the data structure perspective would be to
-get rid of the array altogether and always return exactly one face.
-
-	Arnd
+Thanks,
+tomoya
