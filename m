@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab1LBQTn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 11:19:43 -0500
-Received: from casper.infradead.org ([85.118.1.10]:32813 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756999Ab1LBQTm (ORCPT
+	id S1757074Ab1LBQTv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 11:19:51 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:40209 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757038Ab1LBQTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 11:19:42 -0500
+	Fri, 2 Dec 2011 11:19:48 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/4] perf evlist: Always do automatic allocation of pollfd and mmap structures
-Date: Fri,  2 Dec 2011 14:19:26 -0200
-Message-Id: <1322842769-7232-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/4] perf test: Allow running just a subset of the available tests
+Date: Fri,  2 Dec 2011 14:19:27 -0200
+Message-Id: <1322842769-7232-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1322842769-7232-1-git-send-email-acme@infradead.org>
 References: <1322842769-7232-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,154 +29,207 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-At first tools were required to do that, but while writing the python
-bindings to simplify the API I made them auto-allocate when needed.
+To obtain a list of available tests:
 
-This just makes record, stat and top use that auto allocation,
-simplifying them a bit.
+[root@emilia linux]# perf test list
+ 1: vmlinux symtab matches kallsyms
+ 2: detect open syscall event
+ 3: detect open syscall event on all cpus
+ 4: read samples using the mmap interface
+ 5: parse events tests
+[root@emilia linux]#
 
+To list just a subset:
+
+[root@emilia linux]# perf test list syscall
+ 2: detect open syscall event
+ 3: detect open syscall event on all cpus
+[root@emilia linux]#
+
+To run a subset:
+
+[root@emilia linux]# perf test detect
+ 2: detect open syscall event: Ok
+ 3: detect open syscall event on all cpus: Ok
+[root@emilia linux]#
+
+Specific tests can be chosen by number:
+
+[root@emilia linux]# perf test 1 3 parse
+ 1: vmlinux symtab matches kallsyms: Ok
+ 3: detect open syscall event on all cpus: Ok
+ 5: parse events tests: Ok
+[root@emilia linux]#
+
+Now to write more tests!
+
+Suggested-by: Peter Zijlstra <peterz@infradead.org>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-iokhcvkzzijr3keioubx8hlq@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-nqec2145qfxdgimux28aw7v8@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |    6 ------
- tools/perf/builtin-stat.c   |    3 +--
- tools/perf/builtin-top.c    |   19 ++++---------------
- tools/perf/util/evlist.c    |    4 ++--
- tools/perf/util/evlist.h    |    2 --
- 5 files changed, 7 insertions(+), 27 deletions(-)
+ tools/perf/Documentation/perf-test.txt |    8 +++-
+ tools/perf/builtin-test.c              |   81 +++++++++++++++++++++++--------
+ 2 files changed, 67 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 7d4fdaa..766fa0a 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -778,16 +778,10 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		usage_with_options(record_usage, record_options);
+diff --git a/tools/perf/Documentation/perf-test.txt b/tools/perf/Documentation/perf-test.txt
+index 2c3b462..b24ac40 100644
+--- a/tools/perf/Documentation/perf-test.txt
++++ b/tools/perf/Documentation/perf-test.txt
+@@ -8,13 +8,19 @@ perf-test - Runs sanity tests.
+ SYNOPSIS
+ --------
+ [verse]
+-'perf test <options>'
++'perf test [<options>] [{list <test-name-fragment>|[<test-name-fragments>|<test-numbers>]}]'
  
- 	list_for_each_entry(pos, &evsel_list->entries, node) {
--		if (perf_evsel__alloc_fd(pos, evsel_list->cpus->nr,
--					 evsel_list->threads->nr) < 0)
--			goto out_free_fd;
- 		if (perf_header__push_event(pos->attr.config, event_name(pos)))
- 			goto out_free_fd;
- 	}
+ DESCRIPTION
+ -----------
+ This command does assorted sanity tests, initially through linked routines but
+ also will look for a directory with more tests in the form of scripts.
  
--	if (perf_evlist__alloc_pollfd(evsel_list) < 0)
--		goto out_free_fd;
--
- 	if (rec->opts.user_interval != ULLONG_MAX)
- 		rec->opts.default_interval = rec->opts.user_interval;
- 	if (rec->opts.user_freq != UINT_MAX)
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 227befb..4356144 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1240,8 +1240,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 
- 	list_for_each_entry(pos, &evsel_list->entries, node) {
- 		if (perf_evsel__alloc_stat_priv(pos) < 0 ||
--		    perf_evsel__alloc_counts(pos, evsel_list->cpus->nr) < 0 ||
--		    perf_evsel__alloc_fd(pos, evsel_list->cpus->nr, evsel_list->threads->nr) < 0)
-+		    perf_evsel__alloc_counts(pos, evsel_list->cpus->nr) < 0)
- 			goto out_free_fd;
- 	}
- 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 50ff362..c3836b9 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1034,9 +1034,7 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- 		symbol_conf.use_callchain = false;
- 
- 		return 0;
--	}
--
--	else
-+	} else
- 		return -1;
- 
- 	/* get the min percentage */
-@@ -1225,22 +1223,13 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 	}
- 
- 	list_for_each_entry(pos, &top.evlist->entries, node) {
--		if (perf_evsel__alloc_fd(pos, top.evlist->cpus->nr,
--					 top.evlist->threads->nr) < 0)
--			goto out_free_fd;
- 		/*
- 		 * Fill in the ones not specifically initialized via -c:
- 		 */
--		if (pos->attr.sample_period)
--			continue;
--
--		pos->attr.sample_period = top.default_interval;
-+		if (!pos->attr.sample_period)
-+			pos->attr.sample_period = top.default_interval;
- 	}
- 
--	if (perf_evlist__alloc_pollfd(top.evlist) < 0 ||
--	    perf_evlist__alloc_mmap(top.evlist) < 0)
--		goto out_free_fd;
--
- 	top.sym_evsel = list_entry(top.evlist->entries.next, struct perf_evsel, node);
- 
- 	symbol_conf.priv_size = sizeof(struct annotation);
-@@ -1270,7 +1259,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __used)
- 	}
- 
- 	status = __cmd_top(&top);
--out_free_fd:
++To get a list of available tests use 'perf test list', specifying a test name
++fragment will show all tests that have it.
 +
- 	perf_evlist__delete(top.evlist);
++To run just specific tests, inform test name fragments or the numbers obtained
++from 'perf test list'.
++
+ OPTIONS
+ -------
+ -v::
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 77d68bf..3ab2722 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -15,8 +15,6 @@
+ #include "util/thread_map.h"
+ #include "../../include/linux/hw_breakpoint.h"
  
- 	return status;
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index b36f26f..8b19e7a 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -275,7 +275,7 @@ void perf_evlist__enable(struct perf_evlist *evlist)
+-static long page_size;
+-
+ static int vmlinux_matches_kallsyms_filter(struct map *map __used, struct symbol *sym)
+ {
+ 	bool *visited = symbol__priv(sym);
+@@ -32,6 +30,7 @@ static int test__vmlinux_matches_kallsyms(void)
+ 	struct map *kallsyms_map, *vmlinux_map;
+ 	struct machine kallsyms, vmlinux;
+ 	enum map_type type = MAP__FUNCTION;
++	long page_size = sysconf(_SC_PAGE_SIZE);
+ 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
+ 
+ 	/*
+@@ -871,41 +870,81 @@ static struct test {
+ 	},
+ };
+ 
+-static int __cmd_test(void)
++static bool perf_test__matches(int curr, int argc, const char *argv[])
+ {
+-	int i = 0;
++	int i;
++
++	if (argc == 0)
++		return true;
++
++	for (i = 0; i < argc; ++i) {
++		char *end;
++		long nr = strtoul(argv[i], &end, 10);
++
++		if (*end == '\0') {
++			if (nr == curr + 1)
++				return true;
++			continue;
++		}
+ 
+-	page_size = sysconf(_SC_PAGE_SIZE);
++		if (strstr(tests[curr].desc, argv[i]))
++			return true;
++	}
++
++	return false;
++}
++
++static int __cmd_test(int argc, const char *argv[])
++{
++	int i = 0;
+ 
+ 	while (tests[i].func) {
+-		int err;
+-		pr_info("%2d: %s:", i + 1, tests[i].desc);
++		int curr = i++, err;
++
++		if (!perf_test__matches(curr, argc, argv))
++			continue;
++
++		pr_info("%2d: %s:", i, tests[curr].desc);
+ 		pr_debug("\n--- start ---\n");
+-		err = tests[i].func();
+-		pr_debug("---- end ----\n%s:", tests[i].desc);
++		err = tests[curr].func();
++		pr_debug("---- end ----\n%s:", tests[curr].desc);
+ 		pr_info(" %s\n", err ? "FAILED!\n" : "Ok");
+-		++i;
  	}
+ 
+ 	return 0;
  }
  
--int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
-+static int perf_evlist__alloc_pollfd(struct perf_evlist *evlist)
- {
- 	int nfds = evlist->cpus->nr * evlist->threads->nr * evlist->nr_entries;
- 	evlist->pollfd = malloc(sizeof(struct pollfd) * nfds);
-@@ -431,7 +431,7 @@ void perf_evlist__munmap(struct perf_evlist *evlist)
- 	evlist->mmap = NULL;
+-static const char * const test_usage[] = {
+-	"perf test [<options>]",
+-	NULL,
+-};
++static int perf_test__list(int argc, const char **argv)
++{
++	int i = 0;
++
++	while (tests[i].func) {
++		int curr = i++;
++
++		if (argc > 1 && !strstr(tests[curr].desc, argv[1]))
++			continue;
++
++		pr_info("%2d: %s\n", i, tests[curr].desc);
++	}
++
++	return 0;
++}
+ 
+-static const struct option test_options[] = {
++int cmd_test(int argc, const char **argv, const char *prefix __used)
++{
++	const char * const test_usage[] = {
++	"perf test [<options>] [{list <test-name-fragment>|[<test-name-fragments>|<test-numbers>]}]",
++	NULL,
++	};
++	const struct option test_options[] = {
+ 	OPT_INTEGER('v', "verbose", &verbose,
+ 		    "be more verbose (show symbol address, etc)"),
+ 	OPT_END()
+-};
++	};
+ 
+-int cmd_test(int argc, const char **argv, const char *prefix __used)
+-{
+ 	argc = parse_options(argc, argv, test_options, test_usage, 0);
+-	if (argc)
+-		usage_with_options(test_usage, test_options);
++	if (argc >= 1 && !strcmp(argv[0], "list"))
++		return perf_test__list(argc, argv);
+ 
+ 	symbol_conf.priv_size = sizeof(int);
+ 	symbol_conf.sort_by_name = true;
+@@ -916,5 +955,5 @@ int cmd_test(int argc, const char **argv, const char *prefix __used)
+ 
+ 	setup_pager();
+ 
+-	return __cmd_test();
++	return __cmd_test(argc, argv);
  }
- 
--int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
-+static int perf_evlist__alloc_mmap(struct perf_evlist *evlist)
- {
- 	evlist->nr_mmaps = evlist->cpus->nr;
- 	if (evlist->cpus->map[0] == -1)
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index f94ed7e..8922aee 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -72,7 +72,6 @@ int perf_evlist__set_tracepoints_handlers(struct perf_evlist *evlist,
- void perf_evlist__id_add(struct perf_evlist *evlist, struct perf_evsel *evsel,
- 			 int cpu, int thread, u64 id);
- 
--int perf_evlist__alloc_pollfd(struct perf_evlist *evlist);
- void perf_evlist__add_pollfd(struct perf_evlist *evlist, int fd);
- 
- struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
-@@ -89,7 +88,6 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist,
- 				  const char *argv[]);
- int perf_evlist__start_workload(struct perf_evlist *evlist);
- 
--int perf_evlist__alloc_mmap(struct perf_evlist *evlist);
- int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
- 		      bool overwrite);
- void perf_evlist__munmap(struct perf_evlist *evlist);
 -- 
 1.7.8.rc0.35.gee6df
 
