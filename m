@@ -1,101 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab1LBUsa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 15:48:30 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:38671 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab1LBUs0 (ORCPT
+	id S1755264Ab1LBUsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 15:48:21 -0500
+Received: from border.exmeritus.com ([70.167.241.26]:52722 "EHLO
+	border.exmeritus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156Ab1LBUsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 15:48:26 -0500
-Date: Fri, 2 Dec 2011 21:48:20 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: Christoph Lameter <cl@linux.com>, "Alex, Shi" <alex.shi@intel.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Matt Mackall <mpm@selenic.com>, tj@kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111202204820.GB1603@x4.trippels.de>
-References: <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121131531.GA1679@x4.trippels.de>
- <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20111121153621.GA1678@x4.trippels.de>
- <20111123160353.GA1673@x4.trippels.de>
- <alpine.DEB.2.00.1111231004490.17317@router.home>
- <20111124085040.GA1677@x4.trippels.de>
- <20111201084437.GA1529@x4.trippels.de>
- <20111202194309.GA12057@homer.localdomain>
- <20111202200649.GA1603@x4.trippels.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111202200649.GA1603@x4.trippels.de>
+	Fri, 2 Dec 2011 15:48:19 -0500
+X-Greylist: delayed 564 seconds by postgrey-1.27 at vger.kernel.org; Fri, 02 Dec 2011 15:48:19 EST
+From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH 1/3] of_gpio: Extend of_gpio_count() to support other property names
+Date: Fri,  2 Dec 2011 15:37:59 -0500
+Message-Id: <1322858281-17831-2-git-send-email-Kyle.D.Moffett@boeing.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1322858281-17831-1-git-send-email-Kyle.D.Moffett@boeing.com>
+References: <1322858281-17831-1-git-send-email-Kyle.D.Moffett@boeing.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011.12.02 at 21:06 +0100, Markus Trippelsdorf wrote:
-> On 2011.12.02 at 14:43 -0500, Jerome Glisse wrote:
-> > On Thu, Dec 01, 2011 at 09:44:37AM +0100, Markus Trippelsdorf wrote:
-> > > On 2011.11.24 at 09:50 +0100, Markus Trippelsdorf wrote:
-> > > > On 2011.11.23 at 10:06 -0600, Christoph Lameter wrote:
-> > > > > On Wed, 23 Nov 2011, Markus Trippelsdorf wrote:
-> > > > > 
-> > > > > > > FIX idr_layer_cache: Marking all objects used
-> > > > > >
-> > > > > > Yesterday I couldn't reproduce the issue at all. But today I've hit
-> > > > > > exactly the same spot again. (CCing the drm list)
-> > > > > 
-> > > > > Well this is looks like write after free.
-> > > > > 
-> > > > > > =============================================================================
-> > > > > > BUG idr_layer_cache: Poison overwritten
-> > > > > > -----------------------------------------------------------------------------
-> > > > > > Object ffff8802156487c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > > > Object ffff8802156487d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > > > Object ffff8802156487e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > > > Object ffff8802156487f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > > > Object ffff880215648800: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
-> > > > > > Object ffff880215648810: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> > > > > 
-> > > > > And its an integer sized write of 0. If you look at the struct definition
-> > > > > and lookup the offset you should be able to locate the field that
-> > > > > was modified.
-> > > 
-> > > It also happens with CONFIG_SLAB. 
-> > > (If someone wants to reproduce the issue, just run a kexec boot loop and
-> > > the bug will occur after a few (~10) iterations.)
-> > > 
-> > 
-> > Can you provide the kexec command line you are using and full kernel
-> > log (mostly interested in kernel option).
-> 
-> /usr/sbin/kexec -l "/usr/src/linux/arch/x86/boot/bzImage" --append="root=PARTUUID=6d6a4009-3a90-40df-806a-e63f48189719 init=/sbin/minit rootflags=logbsize=262144 fbcon=rotate:3 drm_kms_helper.poll=0 quiet"
-> /usr/sbin/kexec -e
-> 
-> (The loop happens after autologin in .zprofile:
-> sleep 4 && sudo /etc/minit/ctrlaltdel/run
-> (the last script kills, unmounts and then runs the two kexec commands
-> above))
+The of_get_named_gpio_flags() function allows the caller to specify the
+property name which should be read for a list of GPIOs.
 
-BTW I always see (mostly only on screen, sometimes in the logs):
+Unfortunately there is no easy way to *count* the number of GPIOs listed
+in an arbitrary property.
 
-[Firmware Bug]: cpu 2, try to use APIC500 (LVT offset 0) for vector 0x10400, but the register is already in use for vector 0xf9 on another cpu
-[Firmware Bug]: cpu 2, IBS interrupt offset 0 not available (MSRC001103A=0x0000000000000100)
-[Firmware Bug]: using offset 1 for IBS interrupts
-[Firmware Bug]: workaround enabled for IBS LVT offset
-perf: AMD IBS detected (0x0000001f) 
+To resolve this, rename of_gpio_count() to of_gpio_count_named() and add
+a new "propname" parameter.
 
-But I hope that it is only a harmless warning. 
-(perf Instruction-Based Sampling)
+Also add a static inline replacement for of_gpio_count() which calls
+of_gpio_count_named() with "gpios" to avoid breaking existing users.
 
-Robert?
+Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+---
+ drivers/of/gpio.c       |   13 ++++++-------
+ include/linux/of_gpio.h |   27 +++++++++++++++++++++++++--
+ 2 files changed, 31 insertions(+), 9 deletions(-)
 
+diff --git a/drivers/of/gpio.c b/drivers/of/gpio.c
+index ef0105f..f349aaf 100644
+--- a/drivers/of/gpio.c
++++ b/drivers/of/gpio.c
+@@ -83,8 +83,9 @@ err0:
+ EXPORT_SYMBOL(of_get_named_gpio_flags);
+ 
+ /**
+- * of_gpio_count - Count GPIOs for a device
++ * of_gpio_count_named - Count GPIOs for a device
+  * @np:		device node to count GPIOs for
++ * @propname:	property name containing gpio specifier(s)
+  *
+  * The function returns the count of GPIOs specified for a node.
+  *
+@@ -98,15 +99,13 @@ EXPORT_SYMBOL(of_get_named_gpio_flags);
+  * defines four GPIOs (so this function will return 4), two of which
+  * are not specified.
+  */
+-unsigned int of_gpio_count(struct device_node *np)
++unsigned int of_gpio_count_named(struct device_node *np, const char *propname)
+ {
+ 	unsigned int cnt = 0;
+ 
+ 	do {
+-		int ret;
+-
+-		ret = of_parse_phandles_with_args(np, "gpios", "#gpio-cells",
+-						  cnt, NULL, NULL);
++		int ret = of_parse_phandles_with_args(np, propname,
++				"#gpio-cells", cnt, NULL, NULL);
+ 		/* A hole in the gpios = <> counts anyway. */
+ 		if (ret < 0 && ret != -EEXIST)
+ 			break;
+@@ -114,7 +113,7 @@ unsigned int of_gpio_count(struct device_node *np)
+ 
+ 	return cnt;
+ }
+-EXPORT_SYMBOL(of_gpio_count);
++EXPORT_SYMBOL(of_gpio_count_named);
+ 
+ /**
+  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index 52280a2..1411a06 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -49,7 +49,8 @@ static inline struct of_mm_gpio_chip *to_of_mm_gpio_chip(struct gpio_chip *gc)
+ extern int of_get_named_gpio_flags(struct device_node *np,
+ 		const char *list_name, int index, enum of_gpio_flags *flags);
+ 
+-extern unsigned int of_gpio_count(struct device_node *np);
++extern unsigned int of_gpio_count_named(struct device_node *np,
++		const char *propname);
+ 
+ extern int of_mm_gpiochip_add(struct device_node *np,
+ 			      struct of_mm_gpio_chip *mm_gc);
+@@ -69,7 +70,8 @@ static inline int of_get_named_gpio_flags(struct device_node *np,
+ 	return -ENOSYS;
+ }
+ 
+-static inline unsigned int of_gpio_count(struct device_node *np)
++static inline unsigned int of_gpio_count_named(struct device_node *np,
++		const char *propname)
+ {
+ 	return 0;
+ }
+@@ -87,6 +89,27 @@ static inline void of_gpiochip_remove(struct gpio_chip *gc) { }
+ #endif /* CONFIG_OF_GPIO */
+ 
+ /**
++ * of_gpio_count - Count GPIOs for a device
++ * @np:		device node to count GPIOs for
++ *
++ * The function returns the count of GPIOs specified for a node.
++ *
++ * Note that the empty GPIO specifiers counts too. For example,
++ *
++ * gpios = <0
++ *          &pio1 1 2
++ *          0
++ *          &pio2 3 4>;
++ *
++ * defines four GPIOs (so this function will return 4), two of which
++ * are not specified.
++ */
++static inline unsigned int of_gpio_count(struct device_node *np)
++{
++	return of_gpio_count_named(np, "gpios");
++}
++
++/**
+  * of_get_gpio_flags() - Get a GPIO number and flags to use with GPIO API
+  * @np:		device node to get GPIO from
+  * @index:	index of the GPIO
 -- 
-Markus
+1.7.2.5
+
