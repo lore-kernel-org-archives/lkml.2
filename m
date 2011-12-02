@@ -1,42 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab1LBK4B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 05:56:01 -0500
-Received: from www.linutronix.de ([62.245.132.108]:47287 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960Ab1LBKz7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 05:55:59 -0500
-Date: Fri, 2 Dec 2011 11:55:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: john stultz <johnstul@us.ibm.com>
-cc: lkml <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        "Yang Honggang (Joseph)" <eagle.rtlinux@gmail.com>
-Subject: Re: [GIT PULL] RTC fixes for 3.2
-In-Reply-To: <1322784117.21423.155.camel@work-vm>
-Message-ID: <alpine.LFD.2.02.1112021155330.2735@ionos>
-References: <1322019132.6445.106.camel@work-vm> <1322784117.21423.155.camel@work-vm>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753892Ab1LBK7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 05:59:53 -0500
+Received: from mout6.freenet.de ([195.4.92.96]:45418 "EHLO mout6.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753117Ab1LBK7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 05:59:52 -0500
+Message-ID: <4ED8AF3D.3070703@01019freenet.de>
+Date: Fri, 02 Dec 2011 11:58:05 +0100
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0.1) Gecko/20111121 Firefox/8.0.1 SeaMonkey/2.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Broken hd or filesystem access after resume from suspend2disk
+References: <jatcd7$4sc$1@ID-44327.news.uni-berlin.de> <CAFLxGvzwbLZrECWRzDxbHMt+SwKyCUukh9=PEpEQZsw=EtgoJw@mail.gmail.com>
+In-Reply-To: <CAFLxGvzwbLZrECWRzDxbHMt+SwKyCUukh9=PEpEQZsw=EtgoJw@mail.gmail.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011, john stultz wrote:
+Hi,
 
-> Hey Thomas,
-> 	I just wanted to ping you again on the following fixes for 3.2. I've
-> added a clocksource fix as well to the queue.
-> 
-> The patches available in the git repository at:
->   git://git.linaro.org/people/jstultz/linux.git fortglx/3.2/tip/timers/urgent
+you can find broken files and traces here:
+https://bugzilla.novell.com/show_bug.cgi?id=732908#c2
 
-Pulled, thanks
- 
-	tglx
+Kind regards,
+Andreas
