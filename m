@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932299Ab1LBSob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 13:44:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21822 "EHLO mx1.redhat.com"
+	id S932313Ab1LBSon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 13:44:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10506 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab1LBSo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 13:44:28 -0500
+	id S932168Ab1LBSol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 13:44:41 -0500
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 09/21] KEYS: Asymmetric public-key algorithm crypto key
- subtype [ver #3]
+Subject: [PATCH 10/21] KEYS: DSA signature verification algorithm [ver #3]
 To: keyrings@linux-nfs.org
 Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
         zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
         alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Fri, 02 Dec 2011 18:44:19 +0000
-Message-ID: <20111202184419.21874.83249.stgit@warthog.procyon.org.uk>
+Date: Fri, 02 Dec 2011 18:44:31 +0000
+Message-ID: <20111202184431.21874.52240.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
 References: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -26,56 +25,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a subtype for supporting asymmetric public-key encryption algorithms such
-as DSA (FIPS-186) and RSA (PKCS#1 / RFC1337).
+Implement the DSA algorithm (FIPS-186).  At this time, only signature
+verification is supported.  This uses the asymmetric public key subtype to hold
+its key data.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- security/keys/Kconfig      |    9 ++++
+ security/keys/Kconfig      |    7 ++
  security/keys/Makefile     |    1 
- security/keys/public_key.c |   55 ++++++++++++++++++++++
- security/keys/public_key.h |  109 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 174 insertions(+), 0 deletions(-)
- create mode 100644 security/keys/public_key.c
- create mode 100644 security/keys/public_key.h
+ security/keys/crypto_dsa.c |  126 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 134 insertions(+), 0 deletions(-)
+ create mode 100644 security/keys/crypto_dsa.c
 
 
 diff --git a/security/keys/Kconfig b/security/keys/Kconfig
-index 290c9d3..07c7f3b 100644
+index 07c7f3b..76de2ba 100644
 --- a/security/keys/Kconfig
 +++ b/security/keys/Kconfig
-@@ -77,3 +77,12 @@ config CRYPTO_KEY_TYPE
- 	  This option provides support for a type of key that holds the keys
- 	  required for cryptographic operations such as encryption, decryption,
- 	  signature generation and signature verification.
+@@ -86,3 +86,10 @@ config CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
+ 	  If signature generation and/or verification are to be used,
+ 	  appropriate hash algorithms (such as SHA-1) must be available.
+ 	  ENOPKG will be reported if the requisite algorithm is unavailable.
 +
-+config CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
-+	tristate "Asymmetric public-key crypto algorithm subtype"
-+	depends on CRYPTO_KEY_TYPE
++config CRYPTO_KEY_PKEY_ALGO_DSA
++	tristate "DSA public-key algorithm"
++	depends on CRYPTO_KEY_PUBLIC_KEY_SUBTYPE
 +	help
-+	  This option provides support for asymmetric public key type handling.
-+	  If signature generation and/or verification are to be used,
-+	  appropriate hash algorithms (such as SHA-1) must be available.
-+	  ENOPKG will be reported if the requisite algorithm is unavailable.
++	  This option enables support for the DSA public key algorithm
++	  (FIPS-186).
 diff --git a/security/keys/Makefile b/security/keys/Makefile
-index 8462904..dc3281f 100644
+index dc3281f..5f1c627 100644
 --- a/security/keys/Makefile
 +++ b/security/keys/Makefile
-@@ -25,5 +25,6 @@ obj-$(CONFIG_SYSCTL) += sysctl.o
- obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
+@@ -26,5 +26,6 @@ obj-$(CONFIG_TRUSTED_KEYS) += trusted.o
  obj-$(CONFIG_ENCRYPTED_KEYS) += encrypted-keys/
  obj-$(CONFIG_CRYPTO_KEY_TYPE) += crypto_keys.o
-+obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
+ obj-$(CONFIG_CRYPTO_KEY_PUBLIC_KEY_SUBTYPE) += public_key.o
++obj-$(CONFIG_CRYPTO_KEY_PKEY_ALGO_DSA) += crypto_dsa.o
  
  crypto_keys-y := crypto_type.o crypto_verify.o
-diff --git a/security/keys/public_key.c b/security/keys/public_key.c
+diff --git a/security/keys/crypto_dsa.c b/security/keys/crypto_dsa.c
 new file mode 100644
-index 0000000..c00ddac
+index 0000000..26b86f2
 --- /dev/null
-+++ b/security/keys/public_key.c
-@@ -0,0 +1,55 @@
-+/* Asymmetric public key crypto subtype
++++ b/security/keys/crypto_dsa.c
+@@ -0,0 +1,126 @@
++/* DSA asymmetric public-key algorithm
 + *
 + * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
 + * Written by David Howells (dhowells@redhat.com)
@@ -86,163 +82,119 @@ index 0000000..c00ddac
 + * 2 of the Licence, or (at your option) any later version.
 + */
 +
-+#define pr_fmt(fmt) "PKEY: "fmt
++#define pr_fmt(fmt) "DSA: "fmt
 +#include <linux/module.h>
 +#include <linux/kernel.h>
 +#include "public_key.h"
 +
 +MODULE_LICENSE("GPL");
 +
-+/*
-+ * Provide a part of a description of the key for /proc/keys.
-+ */
-+static void public_key_describe(const struct key *crypto_key,
-+				struct seq_file *m)
-+{
-+	struct public_key *key = crypto_key->payload.data;
-+
-+	if (key)
-+		seq_puts(m, key->algo->name);
-+}
++#define kenter(FMT, ...) \
++	pr_devel("==> %s("FMT")\n", __func__, ##__VA_ARGS__)
++#define kleave(FMT, ...) \
++	pr_devel("<== %s()"FMT"\n", __func__, ##__VA_ARGS__)
 +
 +/*
-+ * Destroy a public key algorithm key
++ * Perform the actual mathematical DSA signature verification.
 + */
-+static void public_key_destroy(void *payload)
++static int DSA_verify(const MPI datahash,
++		      const struct public_key_signature *sig,
++		      const struct public_key *key)
 +{
-+	struct public_key *key = payload;
-+	int i;
++	MPI w = NULL, u1 = NULL, u2 = NULL, v = NULL;
++	MPI base[3];
++	MPI exp[3];
++	int rc;
 +
-+	if (key) {
-+		for (i = 0; i < ARRAY_SIZE(key->mpi); i++)
-+			mpi_free(key->mpi[i]);
-+		kfree(key);
++	kenter("");
++
++	if (!(mpi_cmp_ui(sig->dsa.r, 0) > 0 &&
++	      mpi_cmp(sig->dsa.r, key->dsa.q) < 0)) {
++		pr_warning("Assertion failed [0 < r < q]\n");
++		return -EKEYREJECTED;
 +	}
++
++	if (!(mpi_cmp_ui(sig->dsa.s, 0) > 0 &&
++	      mpi_cmp(sig->dsa.s, key->dsa.q) < 0)) {
++		pr_warning("Assertion failed [0 < s < q]\n");
++		return -EKEYREJECTED;
++	}
++
++	rc = -ENOMEM;
++	w  = mpi_alloc(mpi_get_nlimbs(key->dsa.q)); if (!w ) goto cleanup;
++	u1 = mpi_alloc(mpi_get_nlimbs(key->dsa.q)); if (!u1) goto cleanup;
++	u2 = mpi_alloc(mpi_get_nlimbs(key->dsa.q)); if (!u2) goto cleanup;
++	v  = mpi_alloc(mpi_get_nlimbs(key->dsa.p)); if (!v ) goto cleanup;
++
++	/* w = s^(-1) mod q */
++	if (mpi_invm(w, sig->dsa.s, key->dsa.q) < 0)
++		goto cleanup;
++
++	/* u1 = (datahash * w) mod q */
++	if (mpi_mulm(u1, datahash, w, key->dsa.q) < 0)
++		goto cleanup;
++
++	/* u2 = r * w mod q  */
++	if (mpi_mulm(u2, sig->dsa.r, w, key->dsa.q) < 0)
++		goto cleanup;
++
++	/* v =  g^u1 * y^u2 mod p mod q */
++	base[0] = key->dsa.g;	exp[0] = u1;
++	base[1] = key->dsa.y;	exp[1] = u2;
++	base[2] = NULL;		exp[2] = NULL;
++
++	if (mpi_mulpowm(v, base, exp, key->dsa.p) < 0)
++		goto cleanup;
++
++	if (mpi_fdiv_r(v, v, key->dsa.q) < 0)
++		goto cleanup;
++
++	rc = (mpi_cmp(v, sig->dsa.r) == 0) ? 0 : -EKEYREJECTED;
++
++cleanup:
++	mpi_free(w);
++	mpi_free(u1);
++	mpi_free(u2);
++	mpi_free(v);
++	kleave(" = %d", rc);
++	return rc;
 +}
 +
 +/*
-+ * Public key algorithm crypto key subtype
++ * Perform the verification step.
 + */
-+struct crypto_key_subtype public_key_crypto_key_subtype = {
-+	.owner		= THIS_MODULE,
-+	.name		= "public_key",
-+	.describe	= public_key_describe,
-+	.destroy	= public_key_destroy,
++static int DSA_verify_signature(const struct public_key *key,
++				const struct public_key_signature *sig)
++{
++	MPI datahash = NULL;
++	int ret;
++
++	kenter("");
++
++	ret = -ENOMEM;
++	datahash = mpi_alloc((sig->digest_size + BYTES_PER_MPI_LIMB - 1) /
++			     BYTES_PER_MPI_LIMB);
++	if (!datahash)
++		goto error;
++
++	ret = mpi_set_buffer(datahash, sig->digest, sig->digest_size, 0);
++	if (ret < 0)
++		goto error;
++
++	ret = DSA_verify(datahash, sig, key);
++
++error:
++	mpi_free(datahash);
++	kleave(" = %d", ret);
++	return ret;
++}
++
++const struct public_key_algorithm DSA_public_key_algorithm = {
++	.name		= "DSA",
++	.n_pub_mpi	= 4,
++	.n_sec_mpi	= 1,
++	.n_sig_mpi	= 2,
++	.verify		= DSA_verify_signature,
 +};
-+EXPORT_SYMBOL_GPL(public_key_crypto_key_subtype);
-diff --git a/security/keys/public_key.h b/security/keys/public_key.h
-new file mode 100644
-index 0000000..b5aab3d
---- /dev/null
-+++ b/security/keys/public_key.h
-@@ -0,0 +1,109 @@
-+/* Asymmetric public-key algorithm definitions
-+ *
-+ * Copyright (C) 2011 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+
-+#ifndef _LINUX_PUBLIC_KEY_H
-+#define _LINUX_PUBLIC_KEY_H
-+
-+#include <linux/mpi.h>
-+#include <crypto/hash.h>
-+#include <keys/crypto-subtype.h>
-+
-+struct public_key;
-+struct public_key_signature;
-+
-+enum pkey_hash_algo {
-+	PKEY_HASH_MD5,
-+	PKEY_HASH_SHA1,
-+	PKEY_HASH_RIPE_MD_160,
-+	PKEY_HASH_SHA256,
-+	PKEY_HASH_SHA384,
-+	PKEY_HASH_SHA512,
-+	PKEY_HASH_SHA224,
-+	PKEY_HASH__LAST
-+};
-+
-+/*
-+ * Public key type definition
-+ */
-+struct public_key_algorithm {
-+	const char	*name;
-+	u8		n_pub_mpi;	/* Number of MPIs in public key */
-+	u8		n_sec_mpi;	/* Number of MPIs in secret key */
-+	u8		n_sig_mpi;	/* Number of MPIs in a signature */
-+	int (*verify)(const struct public_key *key,
-+		      const struct public_key_signature *sig);
-+};
-+
-+extern const struct public_key_algorithm DSA_public_key_algorithm;
-+extern const struct public_key_algorithm RSA_public_key_algorithm;
-+
-+/*
-+ * Asymmetric public key data
-+ */
-+struct public_key {
-+	const struct public_key_algorithm *algo;
-+	u8	capabilities;
-+#define PKEY_CAN_ENCRYPT	0x01
-+#define PKEY_CAN_DECRYPT	0x02
-+#define PKEY_CAN_ENCDEC		(PKEY_CAN_ENCRYPT | PKEY_CAN_DECRYPT)
-+#define PKEY_CAN_SIGN		0x04
-+#define PKEY_CAN_VERIFY		0x08
-+#define PKEY_CAN_SIGVER		(PKEY_CAN_SIGN | PKEY_CAN_VERIFY)
-+	union {
-+		MPI	mpi[5];
-+		struct {
-+			MPI	p;	/* DSA prime */
-+			MPI	q;	/* DSA group order */
-+			MPI	g;	/* DSA group generator */
-+			MPI	y;	/* DSA public-key value = g^x mod p */
-+			MPI	x;	/* DSA secret exponent (if present) */
-+		} dsa;
-+		struct {
-+			MPI	n;	/* RSA public modulus */
-+			MPI	e;	/* RSA public encryption exponent */
-+			MPI	d;	/* RSA secret encryption exponent (if present) */
-+			MPI	p;	/* RSA secret prime (if present) */
-+			MPI	q;	/* RSA secret prime (if present) */
-+		} rsa;
-+	};
-+
-+	u8	key_id[8];	/* ID of this key pair */
-+	u8	key_id_size;	/* Number of bytes in key_id */
-+};
-+
-+/*
-+ * Asymmetric public key algorithm signature data
-+ */
-+struct public_key_signature {
-+	struct crypto_key_verify_context base;
-+	u8 *digest;
-+	enum pkey_hash_algo pkey_hash_algo : 8;
-+	u8 signed_hash_msw[2];
-+	u8 digest_size;	/* Number of bytes in digest */
-+	union {
-+		MPI mpi[2];
-+		struct {
-+			MPI s;			/* m^d mod n */
-+		} rsa;
-+		struct {
-+			MPI r;
-+			MPI s;
-+		} dsa;
-+	};
-+	struct shash_desc hash;			/* This must go last! */
-+};
-+
-+extern struct crypto_key_verify_context *pgp_pkey_verify_sig_begin(
-+	struct key *crypto_key, const u8 *sigdata, size_t siglen);
-+
-+extern struct crypto_key_subtype public_key_crypto_key_subtype;
-+
-+#endif /* _LINUX_PUBLIC_KEY_H */
++EXPORT_SYMBOL_GPL(DSA_public_key_algorithm);
 
