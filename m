@@ -1,105 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab1LBUMR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 15:12:17 -0500
-Received: from smtprelay0032.b.hostedemail.com ([64.98.42.32]:51450 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751395Ab1LBUMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 15:12:16 -0500
-X-Panda: scanned!
-X-Spam-Summary: 2,-1.05263,0,b7cf883a0725da62,d41d8cd98f00b204,t.artem@lycos.com,mhocko@suse.cz:pomac@vapor.com:linux-kernel@vger.kernel.org:rjw@sisk.pl:tino.keitel@tikei.de,RULES_HIT:152:355:379:541:582:599:601:800:945:960:973:988:989:1152:1260:1277:1311:1313:1314:1345:1358:1437:1515:1516:1518:1534:1542:1593:1594:1676:1711:1730:1747:1766:1792:2393:2553:2559:2562:3027:3138:3355:3622:3834:3865:3867:3868:3869:3870:3871:3872:3873:3874:4250:4321:4362:4560:5007:6261:7576:9545:10004:10016:10400:10471:10967:11473:11658:11914:12043,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:none,DNSBL:none,Custom_rules:0:0:0
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 3911
-Date: Fri, 2 Dec 2011 20:12:14 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: mhocko@suse.cz
-Cc: pomac@vapor.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        tino.keitel@tikei.de
-Message-ID: <594802130.20617.1322856734286.JavaMail.mail@webmail10>
-References: <20111128222803.GA4925@pomac.netswarm.net>
- <20111129075242.GB2675@tiehlicka.suse.cz>
- <2146795727.780801.1322566727488.JavaMail.mail@webmail05>
- <20111202133515.GB21070@tiehlicka.suse.cz>
- <20111202164917.GA6139@tiehlicka.suse.cz>
- <20111202175932.GA3894@tiehlicka.suse.cz>
-Subject: Re: Re: [PATCH] proc: Do not overflow get_{idle,iowait}_time for
- nohz (was: Re: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU
- usage)
+	id S1754742Ab1LBUO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 15:14:56 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:47483 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751820Ab1LBUOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 15:14:55 -0500
+Date: Fri, 2 Dec 2011 14:14:52 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
+Message-ID: <20111202201452.GF2164@sgi.com>
+References: <20111108191149.GA7236@sgi.com>
+ <20111122160802.e99d6218.akpm@linux-foundation.org>
+ <20111130152959.GA19205@sgi.com>
+ <20111130161131.31cdccff.akpm@linux-foundation.org>
+ <20111130161610.69c516f7.akpm@linux-foundation.org>
+ <20111201020727.GB30097@sgi.com>
+ <20111130181318.38f4659d.akpm@linux-foundation.org>
+ <20111201163740.GA11693@sgi.com>
+ <20111201145623.d2bf252e.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.146.121.104]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201145623.d2bf252e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 2, 2011, Michal Hocko wrote: 
+On Thu, Dec 01, 2011 at 02:56:23PM -0800, Andrew Morton wrote:
+> On Thu, 1 Dec 2011 10:37:40 -0600
+> Dimitri Sivanich <sivanich@sgi.com> wrote:
+> 
+> > +static ssize_t sysfs_store_do_timer_cpu(struct sys_device *dev,
+> > +						struct sysdev_attribute *attr,
+> > +						const char *buf, size_t size)
+> > +{
+> > +	struct sysdev_ext_attribute *ea = SYSDEV_TO_EXT_ATTR(attr);
+> > +	unsigned int new;
+> > +	int rv;
+> > +
+> > +#ifdef CONFIG_NO_HZ
+> > +	/* nohz mode not supported */
+> > +	if (tick_nohz_enabled)
+> > +		return -EINVAL;
+> > +#endif
+> > +
+> > +	rv = kstrtouint(buf, 0, &new);
+> > +	if (rv)
+> > +		return rv;
+> > +
+> > +	/* Protect against cpu-hotplug */
+> > +	get_online_cpus();
+> > +
+> > +	if (new >= nr_cpu_ids || !cpu_online(new)) {
+> > +		put_online_cpus();
+> > +		return -ERANGE;
+> > +	}
+> > +
+> > +	*(unsigned int *)(ea->var) = new;
+> > +
+> > +	put_online_cpus();
+> > +
+> > +	return size;
+> > +}
+> 
+> OK, I think this fixes one race.  We modify tick_do_timer_cpu inside
+> get_online_cpus().  If that cpu goes offline then
+> tick_handover_do_timer() will correctly hand the timer functions over
+> to a new CPU, and tick_handover_do_timer() runs in the CPU hotplug
+> handler which I assume is locked by get_online_cpus().  Please check
+> all this.
 
-> And the one with a more cleaned up changelog. No functional changes
-> ---
-> From 107887016b91de59194a93c751d040b05d5e37fe Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <>
-> Date: Fri, 2 Dec 2011 16:17:03 +0100
-> Subject: [PATCH] proc: Do not overflow get_{idle,iowait}_time for nohz
-> 
-> Since a25cac51 [proc: Consider NO_HZ when printing idle and iowait times]
-> we are reporting idle/io_wait time also while a CPU is tickless. We rely
-> on get_{idle,iowait}_time functions to retrieve proper data.
-> 
-> These functions, however, use usecs_to_cputime to translate micro
-> seconds time to cputime64_t. This is just an alias to usecs_to_jiffies
-> which reduces the data type from u64 to unsigned int and also checks
-> whether the given parameter overflows jiffies_to_usecs(MAX_JIFFY_OFFSET)
-> and returns MAX_JIFFY_OFFSET in that case.
-> 
-> When do we overflow depends on CONFIG_HZ but especially for
-> CONFIG_HZ_300 it is quite low (1431649781) so we are getting
-> MAX_JIFFY_OFFSET for >3000s! until we overflow unsigned int.
-> Just for reference CONFIG_100 has an overflow window around 20s,
-> CONFIG_250 ~8s and CONFIG_1000 ~2s.
-> 
-> This results in a bug when people saw [h]top going mad reporting 100%
-> CPU usage even though there was basically no CPU load. The reason was
-> simply that /proc/stat stopped reporting idle/io_wait changes (and
-> reported MAX_JIFFY_OFFSET) and so the only change happening was for
-> user system time.
-> 
-> Let's use nsecs_to_jiffies64 instead which doesn't reduce the precision
-> to 32b type and it is much more appropriate for cumulative time values
-> (unlike usecs_to_jiffies which intended for timeout calculations).
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  fs/proc/stat.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-> index 42b274d..2a30d67 100644
-> --- a/fs/proc/stat.c
-> +++ b/fs/proc/stat.c
-> @@ -32,7 +32,7 @@ static cputime64_t get_idle_time(int cpu)
->  		idle = kstat_cpu(cpu).cpustat.idle;
->  		idle = cputime64_add(idle, arch_idle_time(cpu));
->  	} else
-> -		idle = usecs_to_cputime(idle_time);
-> +		idle = nsecs_to_jiffies64(1000 * idle_time);
->  
->  	return idle;
->  }
-> @@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
->  		/* !NO_HZ so we can rely on cpustat.iowait */
->  		iowait = kstat_cpu(cpu).cpustat.iowait;
->  	else
-> -		iowait = usecs_to_cputime(iowait_time);
-> +		iowait = nsecs_to_jiffies64(1000 * iowait_time);
->  
->  	return iowait;
->  }
-> -- 
-> 1.7.7.3
+Yes,  _cpu_down() runs cpu_hotplug_begin(), which locks and holds the mutex
+that get_online_cpus() needs in order to update the refcount
+(cpu_hotplug_begin doesn't exit until refcount==0).
 
-Thank you, this patch has fixed the issue for me.
+The notification that calls tick_handover_do_timer() is done in both the
+CPU_DYING and CPU_DYING_FROZEN (CPU_TASKS_FROZEN), but I believe this always
+comes from _cpu_down() in either case.
 
-Tested-by: Artem S. Tashkinov <t.artem@mailcity.com>
+> 
+> Now, the above code can alter tick_do_timer_cpu while a timer interrupt
+> is actually executing on another CPU.  Will this disrupt aything?  I
+> think it might cause problems.  If we take an interrupt on CPU 5 and
+> that CPU enters tick_periodic() and another CPU alters
+> tick_do_timer_cpu from 5 to 4 at exactly the correct time, tick_periodic()
+> might fail to run do_timer().  Or it might run do_timer() on both CPUs 4 and
+> 5 concurrently?
+> 
+
+Well, we do have to take the write_seqlock() in tick_periodic, so there's
+no danger of do_timer running exactly concurrently.
+
+But yes, we may end up with 2 jiffies ticks occurring close together
+(when 5 runs do_timer while 4 waits for the seqlock), or we might end up
+missing a jiffies update for almost a full tick (when it changes from 5
+to 4 immediately after 4 has done the 'tick_do_timer_cpu == cpu' check).
+
+So at that time, we could be off +- almost a tick.  The question is, how
+critical is that?  When you down a cpu, the same sort of thing could 
+happen via tick_handover_do_timer(), which itself does nothing more than
+change tick_do_timer_cpu.
