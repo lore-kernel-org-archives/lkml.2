@@ -1,102 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1LBIZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 03:25:13 -0500
-Received: from mga14.intel.com ([143.182.124.37]:60268 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab1LBIYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 03:24:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,282,1320652800"; 
-   d="scan'208";a="81430345"
-From: Alex Shi <alex.shi@intel.com>
-To: cl@linux.com, penberg@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 2/3] slub: remove unnecessary statistics, deactivate_to_head/tail
-Date: Fri,  2 Dec 2011 16:23:08 +0800
-Message-Id: <1322814189-17318-2-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
+	id S1753019Ab1LBIZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 03:25:56 -0500
+Received: from ims-d12.mx.aol.com ([205.188.249.149]:11057 "EHLO
+	ims-d12.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab1LBIZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 03:25:54 -0500
+Message-Id: <201112020821.pB28L4OI001089@ims-d12.mx.aol.com>
+Reply-To: <albert_fr01@e-mail.ua>
+From: "Mr. Albert Frank" <walterwfrederick@aol.com>
+Subject: Awaiting your response
+Date: Fri, 2 Dec 2011 09:38:12 +0100
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0127_01C2A9A6.3C1ABCE6"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-AOL-VSS-INFO: 5400.1158/76574
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:213182240:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-VSS-INFO: 5400.1158/76574
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:152241392:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d33864ed88a6f1927
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Shi <alexs@intel.com>
+This is a multi-part message in MIME format.
 
-Since the head or tail were automaticly decided in add_partial(),
-we didn't need this statistics again.
+------=_NextPart_000_0127_01C2A9A6.3C1ABCE6
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- include/linux/slub_def.h |    2 --
- mm/slub.c                |   11 ++---------
- 2 files changed, 2 insertions(+), 11 deletions(-)
+This letter is not intended to cause you any embarrassment in whatever form,Rather it is intended to contact your esteemed self.Firstly,I must solicit your confidentiality.Kindly read the attached message
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index a32bcfd..509841a 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -29,8 +29,6 @@ enum stat_item {
- 	CPUSLAB_FLUSH,		/* Abandoning of the cpu slab */
- 	DEACTIVATE_FULL,	/* Cpu slab was full when deactivated */
- 	DEACTIVATE_EMPTY,	/* Cpu slab was empty when deactivated */
--	DEACTIVATE_TO_HEAD,	/* Cpu slab was moved to the head of partials */
--	DEACTIVATE_TO_TAIL,	/* Cpu slab was moved to the tail of partials */
- 	DEACTIVATE_REMOTE_FREES,/* Slab contained remotely freed objects */
- 	DEACTIVATE_BYPASS,	/* Implicit deactivation */
- 	ORDER_FALLBACK,		/* Number of times fallback was necessary */
-diff --git a/mm/slub.c b/mm/slub.c
-index c419e80..65d901f 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1717,13 +1717,11 @@ static void deactivate_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
- 	enum slab_modes l = M_NONE, m = M_NONE;
- 	void *freelist;
- 	void *nextfree;
--	int tail = DEACTIVATE_TO_HEAD;
- 	struct page new;
- 	struct page old;
- 
- 	if (page->freelist) {
- 		stat(s, DEACTIVATE_REMOTE_FREES);
--		tail = DEACTIVATE_TO_TAIL;
- 	}
- 
- 	c->tid = next_tid(c->tid);
-@@ -1826,12 +1824,11 @@ redo:
- 
- 			remove_full(s, page);
- 
--		if (m == M_PARTIAL) {
-+		if (m == M_PARTIAL)
- 
- 			add_partial(n, page);
--			stat(s, tail);
- 
--		} else if (m == M_FULL) {
-+		else if (m == M_FULL) {
- 
- 			stat(s, DEACTIVATE_FULL);
- 			add_full(s, n, page);
-@@ -5023,8 +5020,6 @@ STAT_ATTR(FREE_SLAB, free_slab);
- STAT_ATTR(CPUSLAB_FLUSH, cpuslab_flush);
- STAT_ATTR(DEACTIVATE_FULL, deactivate_full);
- STAT_ATTR(DEACTIVATE_EMPTY, deactivate_empty);
--STAT_ATTR(DEACTIVATE_TO_HEAD, deactivate_to_head);
--STAT_ATTR(DEACTIVATE_TO_TAIL, deactivate_to_tail);
- STAT_ATTR(DEACTIVATE_REMOTE_FREES, deactivate_remote_frees);
- STAT_ATTR(DEACTIVATE_BYPASS, deactivate_bypass);
- STAT_ATTR(ORDER_FALLBACK, order_fallback);
-@@ -5088,8 +5083,6 @@ static struct attribute *slab_attrs[] = {
- 	&cpuslab_flush_attr.attr,
- 	&deactivate_full_attr.attr,
- 	&deactivate_empty_attr.attr,
--	&deactivate_to_head_attr.attr,
--	&deactivate_to_tail_attr.attr,
- 	&deactivate_remote_frees_attr.attr,
- 	&deactivate_bypass_attr.attr,
- 	&order_fallback_attr.attr,
--- 
-1.7.0.1
+------=_NextPart_000_0127_01C2A9A6.3C1ABCE6
+Content-Type: application/octet-stream;
+	name="Message.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="Message.txt"
 
+RGVhciBGcmllbmQsDQoNClRoaXMgbGV0dGVyIGlzIG5vdCBpbnRlbmRlZCB0
+byBjYXVzZSB5b3UgYW55IGVtYmFycmFzc21lbnQgaW4gd2hhdGV2ZXIgZm9y
+bSxSYXRoZXIgaXQgaXMgaW50ZW5kZWQgdG8gY29udGFjdCB5b3VyIGVzdGVl
+bWVkIHNlbGYuRmlyc3RseSxJIG11c3Qgc29saWNpdCB5b3VyIGNvbmZpZGVu
+dGlhbGl0eS5JIGtub3cgdGhhdCBhIHByb3Bvc2FsIG9mIHRoaXMgbWFnbml0
+dWRlIHdpbGwgbWFrZSBhbnlvbmUgYXBwcmVoZW5zaXZlIGFuZCB3b3JyaWVk
+LCBidXQgSSBhbSBhc3N1cmluZyB5b3UgdGhhdCBpdCBpcyBtYWRlIGluIGdv
+b2QgZmFpdGggYW5kIHdpbGwgYmUgb2YgbXV0dWFsIGJlbmVmaXQuDQoNCkkg
+YW0gTXIuQWxiZXJ0IEZyYW5rICxUaGUgUGVyc29uYWwgYXR0b3JuZXkgdG8g
+TXIuSmltIENydXosYSBjb25zdWx0YW50IHdpdGggYW4gb2lsIGZpcm0gaGVy
+ZSBpbiBOaWdlcmlhLk9uIHRoZSAyNXRoIG9mIEphbnVhcnkgMjAwNSxteSBj
+bGllbnQgYW5kIGhpcyB3aWZlIHdlcmUgaW52b2x2ZWQgaW4gYW4gYXV0byBj
+cmFzaCBhY2NpZGVudCBhbG9uZyBXdXNoaXNoaS1NaW5uYSBFeHByZXNzIFJv
+YWQuVW5mb3J0dW5hdGVseSB0aGV5IGxvc3QgdGhlaXIgbGl2ZXMgaW4gdGhl
+IGV2ZW50IG9mIHRoZSBhY2NpZGVudCwgU2luY2UgdGhlbiBJIGhhdmUgbWFk
+ZSBzZXZlcmFsIGNvbnRhY3RzIGFzIHRvIGxvY2F0ZSBhbnkgb2YgaGlzIGV4
+dGVuZGVkIHJlbGF0aXZlcywgYnV0IGFsbCBwcm92ZWQgYWJvcnRpdmUuSGVu
+Y2UgSSBkZWNpZGVkIHRvIGNvbnRhY3QgeW91Lg0KDQpJIGFtIGNvbnRhY3Rp
+bmcgeW91IHRvIGFzc2lzdCBpbiByZXRyaWV2aW5nIHRoZSBtb25leSB2YWx1
+ZWQgYXQgVVMkMjIuNSBtaWxsaW9uIGRvbGxhcnMgdGhhdCB3YXMgbGVmdCBi
+ZWhpbmQgYnkgbXkgY2xpZW50IHdpdGggdGhlIFNwcmluZyBCYW5rIG9mIE5p
+Z2VyaWEgcGwgYywgYmVmb3JlIGl0IGdldHMgY29uZmlzY2F0ZWQgb3IgZGVj
+bGFyZWQgdW5zZXJ2aWNlYWJsZSBieSB0aGUgYmFuay4NCg0KQ29uc2VxdWVu
+dGx5LFRoZSBiYW5rIGlzc3VlZCBtZSBhIG5vdGljZSB0byBwcm92aWRlIHRo
+ZSBuZXh0IG9mIGtpbiBvciBoYXZlIHRoZSBhY2NvdW50IGNvbmZpc2NhdGVk
+IHdpdGhpbiB0aGUgbmV4dCB0ZW4gb2ZmaWNpYWwgd29ya2luZyBkYXlzLiBz
+aW5jZSBJIGhhdmUgYmVlbiB1bnN1Y2Nlc3NmdWwgaW4gbG9jYXRpbmcgdGhl
+IHJlbGF0aXZlcyBmb3Igb3ZlciAzIHllYXJzIG5vdywgSSBoZXJlYnkgc2Vl
+ayB5b3VyIGNvbnNlbnQgdG8gYWN0IGFzIHRoZSBuZXh0IG9mIGtpbiB0byB0
+aGUgZGVjZWFzZWQsIHRoZSBwcm9jZWVkcyBvZiB0aGlzIGFjY291bnQgdmFs
+dWVkIGF0IChVUyQyMi41IG1pbGxpb24gZG9sbGFycykgY2FuIGJlIHBhaWQg
+dG8geW91IGFuZCB0aGVuIHlvdSBhbmQgSSBjYW4gc2hhcmUgdGhlIG1vbmV5
+LkkgaGF2ZSBhbGwgdGhlIG5lY2Vzc2FyeSBsZWdhbCBkb2N1bWVudHMgdGhh
+dCBjYW4gYmUgdXNlZCB0byBiYWNrIHVwIHRoaXMgcHJvamVjdC4NCg0KTXkg
+c3VnZ2VzdGlvbiB0byB5b3UgaXMgdGhhdCwgSSB3aWxsIGxpa2UgeW91IGFz
+IGEgZm9yZWlnbmVyIHRvIHN0YW5kIGFzIHRoZSBuZXh0IG9mIGtpbi9iZW5l
+ZmljaWFyeSB0byB0aGUgZnVuZCBkZXBvc2l0ZWQgYnkgbXkgbGF0ZSBjbGll
+bnQgc28gdGhhdCB0aGUgcHJvY2VlZHMgdmFsdWVkIGF0IFVTJDIyLjUgbWls
+bGlvbiBkb2xsYXJzIHdpbGwgYmUgcGFpZCB0byAgeW91Lg0KDQpQbGVhc2Ug
+ZW5kZWF2b3IgdG8gb2JzZXJ2ZSB1dG1vc3QgZGlzY3JldGlvbiBpbiBhbGwg
+bWF0dGVycyBjb25jZXJuaW5nIHRoaXMgaXNzdWUuT25jZSB0aGUgZnVuZHMg
+aGF2ZSBiZWVuIHRyYW5zZmVycmVkIHRvIHlvdXIgbm9taW5hdGVkIGJhbmsg
+YWNjb3VudCwgd2hpY2ggeW91IHNoYWxsIHNlbmQgdG8gdGhlIGJhbmssIHdl
+IHNoYWxsIHNoYXJlIGluIHRoZSByYXRpbyBvZiA1MCUgZm9yIHlvdSwgYW5k
+IDUwJSBmb3IgbWUuIEkgaGF2ZSB3b3JrZWQgb3V0IGEgcHJvY2VkdXJlIHRo
+YXQgd2lsbCBlbnN1cmUgc3VjY2VzcywgYW5kIGFzIGEgbGF3eWVyLEkgd2ls
+bCBlbnN1cmUgdGhhdCBhbGwgb3VyIGFjdGlvbnMgYXJlIHdpdGhpbiB0aGUg
+Y29uZmluZXMgb2YgdGhlIGxhdy4NCg0KU2hvdWxkIHlvdSBiZSBpbnRlcmVz
+dGVkIHBsZWFzZSxmdXJuaXNoIG1lIHdpdGggeW91ciBtb3N0IGRpcmVjdCB0
+ZWwgIGFuZCBjZWxsIHBob25lIG51bWJlcnMgZm9yIG9yYWwgY29udmVyc2F0
+aW9uIGFmdGVyIHdoaWNoICBJIHdpbGwgcHJvdmlkZSB5b3Ugd2l0aCBtb3Jl
+IGRldGFpbHMgb2YgdGhpcyB0cmFuc2FjdGlvbiBhbmQgaG93IHRvIHByb2Nl
+ZWQuDQoNCg0KWW91cnMgc2luY2VyZWx5LA0KDQpNci5BbGJlcnQgRnJhbms=
+
+------=_NextPart_000_0127_01C2A9A6.3C1ABCE6--
