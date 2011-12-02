@@ -1,106 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756558Ab1LBDeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 22:34:31 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:40423 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756506Ab1LBDeb (ORCPT
+	id S1756550Ab1LBDi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 22:38:58 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:45151 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485Ab1LBDi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 22:34:31 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1944lkm83p4BsIHozfJA6z/tQJQr5S0+NeMovP0aY
-	Q98d9eta9sgiRR
-Subject: Re: [patch v3 5/6] sched, ttwu_queue: queue remote wakeups only
- when crossing cache domains
-From: Mike Galbraith <efault@gmx.de>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.jf.intel.com>, alex.shi@intel.com
-In-Reply-To: <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
-References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
-	 <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Dec 2011 04:34:24 +0100
-Message-ID: <1322796864.4755.5.camel@marge.simson.net>
+	Thu, 1 Dec 2011 22:38:57 -0500
+Date: Fri, 2 Dec 2011 14:38:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (sound-asoc
+ tree related)
+Message-Id: <20111202143845.9d912c4378d42bcbfa44a8f0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__2_Dec_2011_14_38_45_+1100_wrdODFx3bQOm_cF/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 17:07 -0800, Suresh Siddha wrote:
-> plain text document attachment
-> (use_ttwu_queue_when_crossing_cache_domains.patch)
-> From: Mike Galbraith <efault@gmx.de>
-> 
-> Context-switch intensive microbenchmark on a 8-socket system had
-> ~600K times more resched IPI's on each logical CPU because of the
-> TTWU_QUEUE sched feature, which queues the task on the remote cpu's
-> queue and completes the wakeup locally using an IPI.
-> 
-> As the TTWU_QUEUE sched feature is for minimizing the cache-misses
-> associated with the remote wakeups, use the IPI only when the local and
-> the remote cpu's are from different cache domains. Otherwise use the
-> traditional remote wakeup.
+--Signature=_Fri__2_Dec_2011_14_38_45_+1100_wrdODFx3bQOm_cF/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-FYI, Peter has already (improved and) queued this patch.
+Hi all,
 
-> With this, context-switch microbenchmark performed 5 times better on the
-> 8-socket NHM-EX system.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
->  kernel/sched/core.c |   25 ++++++++++++++++++++++++-
->  1 file changed, 24 insertions(+), 1 deletion(-)
-> 
-> Index: tip/kernel/sched/core.c
-> ===================================================================
-> --- tip.orig/kernel/sched/core.c
-> +++ tip/kernel/sched/core.c
-> @@ -1481,12 +1481,35 @@ static int ttwu_activate_remote(struct t
->  #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
->  #endif /* CONFIG_SMP */
->  
-> +static int ttwu_share_cache(int this_cpu, int cpu)
-> +{
-> +#ifndef CONFIG_X86
-> +	struct sched_domain *sd;
-> +	int ret = 0;
-> +
-> +	rcu_read_lock();
-> +	for_each_domain(this_cpu, sd) {
-> +		if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
-> +			continue;
-> +
-> +		ret = (sd->flags & SD_SHARE_PKG_RESOURCES);
-> +		break;
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	return ret;
-> +#else
-> +	return per_cpu(cpu_llc_id, this_cpu) == per_cpu(cpu_llc_id, cpu);
-> +#endif
-> +}
-> +
->  static void ttwu_queue(struct task_struct *p, int cpu)
->  {
->  	struct rq *rq = cpu_rq(cpu);
->  
->  #if defined(CONFIG_SMP)
-> -	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
-> +	if (sched_feat(TTWU_QUEUE) &&
-> +	    !ttwu_share_cache(smp_processor_id(), cpu)) {
->  		sched_clock_cpu(cpu); /* sync clocks x-cpu */
->  		ttwu_queue_remote(p, cpu);
->  		return;
-> 
-> 
+After merging the final tree, today's linux-next build (powwepc
+allyesconfig) failed like this:
 
+sound/soc/codecs/wm8994.c: In function 'wm8994_codec_probe':
+sound/soc/codecs/wm8994.c:3511:4: error: label 'err' used but not defined
 
+Caused by commit 7270cebef293 ("ASoC: Convert WM8994 to devm_kzalloc()").
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__2_Dec_2011_14_38_45_+1100_wrdODFx3bQOm_cF/
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO2EhFAAoJEECxmPOUX5FEAf8P/ROhLmMbqglPPA8xXTzTWcrF
+L3s2x6a1JTAFW83Wy79Je0eAlzKMJaHpbZ0+vpUolnjcmN2sJEqGigBdYSyd+sEK
+GLba2SjGJoiIYIvv5q/eDaU/mr88ytccspXcUbxTPCo2SNfJn6putLitv+yunQ+L
+5S4ESapQHpMzRSnZPBup+7RETTKVe/npX3Q+Bvng/wUCJdY8fGw5OT1ZDS7zuj/+
+Sj0XDLLYEhFK9BHp+BZm4gPNeQU+FxPHeVVgZahYCI0n/IQrjEF1o8ny79ur1j1/
+6mXeZDKsKq+CZa88YZ1SBN0QkCWbjEA5ZRwun64ke3Jd9enybXAbaP3iqHX5BTEP
+DYpyIhwMYKP0bMdHxn+5AvzPwJx1pVT8rNg6xCvFFYFwEB5GC7WJDg9YBi1JDjCM
+0Ki/1oOjv3XHFOwTJ2NMqT9Wjn0CB+wOAf8+hZgJWSs2cXhSf0cG6WMPHB4vO297
+KhV/s9lE6IjU6BAIJDRDtzmPb97iz/rvW20RSyBlWwxWETQUVoMApljsVqoPRsqc
+Zvl7jjtwF0lUvgN9lp7N499od5cRApwP8JBnV9WW3OiBlJFMGWnU5qBv7wZFmhlH
+YS/M+6Atx8GvqoqIcsAsyCkhSyyTgSxRYVqm8p3aKyauwXckuv4R1IQFSEjb3GHE
+Ls3a1I6EozsRKPB11ykG
+=8Lhr
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__2_Dec_2011_14_38_45_+1100_wrdODFx3bQOm_cF/--
