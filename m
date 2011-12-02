@@ -1,88 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab1LBInk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 03:43:40 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:42359 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab1LBInj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 03:43:39 -0500
-X-AuditID: cbfee61b-b7bdbae000001970-d5-4ed88fb9e6ea
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Marc Zyngier'" <marc.zyngier@arm.com>, "'Axel Lin'" <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "'Russell King'" <linux@arm.linux.org.uk>,
+	id S1752926Ab1LBItZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 03:49:25 -0500
+Received: from 8bytes.org ([88.198.83.132]:58154 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752273Ab1LBItY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 03:49:24 -0500
+Date: Fri, 2 Dec 2011 09:49:22 +0100
+From: "'Joerg Roedel'" <joro@8bytes.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'KyongHo Cho'" <pullip.cho@samsung.com>,
         linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-References: <1322753070.11611.0.camel@phoenix> <4ED7ADCE.8040609@arm.com>
-In-reply-to: <4ED7ADCE.8040609@arm.com>
-Subject: RE: [PATCH 1/2] ARM: exynos4: Fix build error due to 'gic_bank_offset'
- undeclared
-Date: Fri, 02 Dec 2011 17:43:37 +0900
-Message-id: <04f701ccb0ce$7c044d30$740ce790$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcywR9doZA/SJWqfT/6btEbxZwYRFQAgxtJA
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
+Subject: Re: [PATCH v7 0/2] iommu/exynos: Add IOMMU/System MMU driver for
+	Samsung Exynos
+Message-ID: <20111202084922.GM20535@8bytes.org>
+References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com> <20111123114626.GH20535@8bytes.org> <045b01ccaffa$ef48c430$cdda4c90$%kim@samsung.com> <20111201185821.GL20535@8bytes.org> <04f601ccb0ce$72590550$570b0ff0$%kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <04f601ccb0ce$72590550$570b0ff0$%kim@samsung.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc Zyngier wrote:
+On Fri, Dec 02, 2011 at 05:43:21PM +0900, Kukjin Kim wrote:
+> OK, I will merge iommu/exynos into Samsung tree after your creating that.
 > 
-> On 01/12/11 15:24, Axel Lin wrote:
-> > Fix below build error:
-> >   CC      arch/arm/mach-exynos/cpu.o
-> > arch/arm/mach-exynos/cpu.c: In function 'exynos4_init_irq':
-> > arch/arm/mach-exynos/cpu.c:245: error: 'gic_bank_offset' undeclared
-> (first use in this function)
-> > arch/arm/mach-exynos/cpu.c:245: error: (Each undeclared identifier is
-> reported only once
-> > arch/arm/mach-exynos/cpu.c:245: error: for each function it appears in.)
-> > arch/arm/mach-exynos/cpu.c:243: warning: unused variable 'bank_offset'
-> > make[1]: *** [arch/arm/mach-exynos/cpu.o] Error 1
-> > make: *** [arch/arm/mach-exynos] Error 2
-> >
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> 
-> Arghhh... My bad. Thanks for fixing that.
-> 
-> Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-> 
-Hi Marc,
+> I can't look at iommu/exynos branch in your tree,
+> git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git.
 
-Since the commit 4e44d2cb("ARM: exynos4: convert to CONFIG_MULTI_IRQ_HANDLER") is not in my tree, this should be handled in your tree and Axel's patch, "ARM: exynos4: Fix build error" is too.
+That's because I havn't merged any exynos patches yet :) But I will
+create it soon an merge this driver.
 
-Thanks.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
-> > ---
-> >  arch/arm/mach-exynos/cpu.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/arch/arm/mach-exynos/cpu.c b/arch/arm/mach-exynos/cpu.c
-> > index fed62f4..c7cb462 100644
-> > --- a/arch/arm/mach-exynos/cpu.c
-> > +++ b/arch/arm/mach-exynos/cpu.c
-> > @@ -240,7 +240,7 @@ static const struct of_device_id
-> exynos4_dt_irq_match[] = {
-> >  void __init exynos4_init_irq(void)
-> >  {
-> >  	int irq;
-> > -	unsigned int bank_offset;
-> > +	unsigned int gic_bank_offset;
-> >
-> >  	gic_bank_offset = soc_is_exynos4412() ? 0x4000 : 0x8000;
-> >
-> 
-> 
-> --
-> Jazz is not dead. It just smells funny...
+	Joerg
 
