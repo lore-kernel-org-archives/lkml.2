@@ -1,153 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab1LAOVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 09:21:08 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:51482 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754663Ab1LAOVH (ORCPT
+	id S1754752Ab1LAOWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 09:22:17 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34749 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706Ab1LAOWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 09:21:07 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM / Hibernation: Remove deprecated hibernation test modes
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, len.brown@intel.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Thu, 01 Dec 2011 19:50:58 +0530
-Message-ID: <20111201142007.23509.24776.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120114-5564-0000-0000-00000056BD41
+	Thu, 1 Dec 2011 09:22:16 -0500
+From: "Yang Honggang (Joseph)" <eagle.rtlinux@gmail.com>
+To: John Stultz <johnstul@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        ganggexiongqi@126.com,
+        "Yang Honggang (Joseph)" <eagle.rtlinux@gmail.com>
+Subject: [PATCH 1/1] clocksource: In order to leave a margin of 12.5% we should >> 3 not >> 5.
+Date: Thu,  1 Dec 2011 22:22:41 -0500
+Message-Id: <1322796161-28188-1-git-send-email-eagle.rtlinux@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hibernation test modes 'test' and 'testproc' are deprecated, because
-the 'pm_test' framework offers much more fine-grained control for debugging
-suspend and hibernation related problems.
 
-So, remove the deprecated 'test' and 'testproc' hibernation test modes.
-
-Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Yang Honggang (Joseph) <eagle.rtlinux@gmail.com>
 ---
+ kernel/time/clocksource.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- kernel/power/hibernate.c |   33 ++++-----------------------------
- 1 files changed, 4 insertions(+), 29 deletions(-)
-
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 80c2d90..68c278b 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -43,8 +43,6 @@ int in_suspend __nosavedata;
- enum {
- 	HIBERNATION_INVALID,
- 	HIBERNATION_PLATFORM,
--	HIBERNATION_TEST,
--	HIBERNATION_TESTPROC,
- 	HIBERNATION_SHUTDOWN,
- 	HIBERNATION_REBOOT,
- 	/* keep last */
-@@ -96,15 +94,6 @@ static void hibernation_debug_sleep(void)
- 	mdelay(5000);
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index cf52fda..b9bf9d0 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -529,7 +529,7 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
+ 	 * note a margin of 12.5% is used because this can be computed with
+ 	 * a shift, versus say 10% which would require division.
+ 	 */
+-	return max_nsecs - (max_nsecs >> 5);
++	return max_nsecs - (max_nsecs >> 3);
  }
  
--static int hibernation_testmode(int mode)
--{
--	if (hibernation_mode == mode) {
--		hibernation_debug_sleep();
--		return 1;
--	}
--	return 0;
--}
--
- static int hibernation_test(int level)
- {
- 	if (pm_test_level == level) {
-@@ -114,7 +103,6 @@ static int hibernation_test(int level)
- 	return 0;
- }
- #else /* !CONFIG_PM_DEBUG */
--static int hibernation_testmode(int mode) { return 0; }
- static int hibernation_test(int level) { return 0; }
- #endif /* !CONFIG_PM_DEBUG */
- 
-@@ -278,8 +266,7 @@ static int create_image(int platform_mode)
- 		goto Platform_finish;
- 
- 	error = disable_nonboot_cpus();
--	if (error || hibernation_test(TEST_CPUS)
--	    || hibernation_testmode(HIBERNATION_TEST))
-+	if (error || hibernation_test(TEST_CPUS))
- 		goto Enable_cpus;
- 
- 	local_irq_disable();
-@@ -349,8 +336,7 @@ int hibernation_snapshot(int platform_mode)
- 	if (error)
- 		goto Cleanup;
- 
--	if (hibernation_test(TEST_FREEZER) ||
--		hibernation_testmode(HIBERNATION_TESTPROC)) {
-+	if (hibernation_test(TEST_FREEZER)) {
- 
- 		/*
- 		 * Indicate to the caller that we are returning due to a
-@@ -586,9 +572,6 @@ int hibernation_platform_enter(void)
- static void power_down(void)
- {
- 	switch (hibernation_mode) {
--	case HIBERNATION_TEST:
--	case HIBERNATION_TESTPROC:
--		break;
- 	case HIBERNATION_REBOOT:
- 		kernel_restart(NULL);
- 		break;
-@@ -840,8 +823,6 @@ static const char * const hibernation_modes[] = {
- 	[HIBERNATION_PLATFORM]	= "platform",
- 	[HIBERNATION_SHUTDOWN]	= "shutdown",
- 	[HIBERNATION_REBOOT]	= "reboot",
--	[HIBERNATION_TEST]	= "test",
--	[HIBERNATION_TESTPROC]	= "testproc",
- };
- 
- /*
-@@ -850,17 +831,15 @@ static const char * const hibernation_modes[] = {
-  * Hibernation can be handled in several ways.  There are a few different ways
-  * to put the system into the sleep state: using the platform driver (e.g. ACPI
-  * or other hibernation_ops), powering it off or rebooting it (for testing
-- * mostly), or using one of the two available test modes.
-+ * mostly).
-  *
-  * The sysfs file /sys/power/disk provides an interface for selecting the
-  * hibernation mode to use.  Reading from this file causes the available modes
-- * to be printed.  There are 5 modes that can be supported:
-+ * to be printed.  There are 3 modes that can be supported:
-  *
-  *	'platform'
-  *	'shutdown'
-  *	'reboot'
-- *	'test'
-- *	'testproc'
-  *
-  * If a platform hibernation driver is in use, 'platform' will be supported
-  * and will be used by default.  Otherwise, 'shutdown' will be used by default.
-@@ -884,8 +863,6 @@ static ssize_t disk_show(struct kobject *kobj, struct kobj_attribute *attr,
- 		switch (i) {
- 		case HIBERNATION_SHUTDOWN:
- 		case HIBERNATION_REBOOT:
--		case HIBERNATION_TEST:
--		case HIBERNATION_TESTPROC:
- 			break;
- 		case HIBERNATION_PLATFORM:
- 			if (hibernation_ops)
-@@ -926,8 +903,6 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
- 		switch (mode) {
- 		case HIBERNATION_SHUTDOWN:
- 		case HIBERNATION_REBOOT:
--		case HIBERNATION_TEST:
--		case HIBERNATION_TESTPROC:
- 			hibernation_mode = mode;
- 			break;
- 		case HIBERNATION_PLATFORM:
+ #ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
+@@ -651,7 +651,7 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+ 	 * ~ 0.06ppm granularity for NTP. We apply the same 12.5%
+ 	 * margin as we do in clocksource_max_deferment()
+ 	 */
+-	sec = (cs->mask - (cs->mask >> 5));
++	sec = (cs->mask - (cs->mask >> 3));
+ 	do_div(sec, freq);
+ 	do_div(sec, scale);
+ 	if (!sec)
+-- 
+1.7.2.5
 
