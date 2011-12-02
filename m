@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754834Ab1LBUVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 15:21:35 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47439 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab1LBUVd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 15:21:33 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org
-Date: Fri,  2 Dec 2011 21:20:11 +0100
-Message-Id: <1322857211-26654-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.7.3
+	id S1754900Ab1LBUW5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 15:22:57 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:60447 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751820Ab1LBUW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 15:22:56 -0500
+Date: Fri, 2 Dec 2011 14:22:54 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] specific do_timer_cpu value for nohz off mode
+Message-ID: <20111202202254.GG2164@sgi.com>
+References: <20111108191149.GA7236@sgi.com>
+ <20111122160802.e99d6218.akpm@linux-foundation.org>
+ <20111130152959.GA19205@sgi.com>
+ <20111130161131.31cdccff.akpm@linux-foundation.org>
+ <20111130161610.69c516f7.akpm@linux-foundation.org>
+ <20111201020727.GB30097@sgi.com>
+ <20111130181318.38f4659d.akpm@linux-foundation.org>
+ <20111201163740.GA11693@sgi.com>
+ <20111201145623.d2bf252e.akpm@linux-foundation.org>
+ <20111202201452.GF2164@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-Subject: [PATCH] serial/documentation: fix name of DCD cpp symbol
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111202201452.GF2164@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- Documentation/serial/driver |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Fri, Dec 02, 2011 at 02:14:52PM -0600, Dimitri Sivanich wrote:
+> So at that time, we could be off +- almost a tick.  The question is, how
+> critical is that?  When you down a cpu, the same sort of thing could 
+> happen via tick_handover_do_timer(), which itself does nothing more than
+> change tick_do_timer_cpu.
 
-diff --git a/Documentation/serial/driver b/Documentation/serial/driver
-index 77ba0af..0a25a91 100644
---- a/Documentation/serial/driver
-+++ b/Documentation/serial/driver
-@@ -101,7 +101,7 @@ hardware.
- 	Returns the current state of modem control inputs.  The state
- 	of the outputs should not be returned, since the core keeps
- 	track of their state.  The state information should include:
--		- TIOCM_DCD	state of DCD signal
-+		- TIOCM_CAR	state of DCD signal
- 		- TIOCM_CTS	state of CTS signal
- 		- TIOCM_DSR	state of DSR signal
- 		- TIOCM_RI	state of RI signal
--- 
-1.7.7.3
-
+I should clarify that by 'same sort of thing' I mean that the target cpu
+might've just gone through tick_periodic(), so we could miss a tick before
+the next update.
