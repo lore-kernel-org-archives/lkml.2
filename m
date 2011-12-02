@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab1LBQyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 11:54:31 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58997 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab1LBQya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 11:54:30 -0500
-Message-ID: <4ED902C0.5020300@gmail.com>
-Date: Fri, 02 Dec 2011 09:54:24 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1757113Ab1LBREJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:04:09 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:48894 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755875Ab1LBREI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 12:04:08 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 0/2 v2] ARM: OMAP1: Fix dpll1 reprogramming related issues
+Date: Fri, 2 Dec 2011 18:02:24 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
+Cc: Paul Walmsley <paul@pwsan.com>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+References: <201112012023.04635.jkrzyszt@tis.icnet.pl> <1322770382-30718-1-git-send-email-jkrzyszt@tis.icnet.pl> <20111202020936.GY31337@atomide.com>
+In-Reply-To: <20111202020936.GY31337@atomide.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 0/4] perf test improvements
-References: <1322842769-7232-1-git-send-email-acme@infradead.org>
-In-Reply-To: <1322842769-7232-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <201112021802.25037.jkrzyszt@tis.icnet.pl>
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday 02 of December 2011 at 03:09:37, Tony Lindgren wrote:
+> * Janusz Krzysztofik <jkrzyszt@tis.icnet.pl> [111201 11:38]:
+> > After dpll1 reprogramming has been moved from setup_arch() to
+> > kernel_init(), I've been observing several issues, resulting in
+> > undesired system behaviour on my Amstrad Delta. This series fixes
+> > those most important (2/5 and 5/5 v2 previously), with a "stuck at 60MHz
+> > rate" issue going to be fixed with Tony's proposed solution instead of
+> > my previous 3/5.
+> > 
+> > Janusz Krzysztofik (2):
+> >   ARM: OMAP1: Fix ckctl value used for dpll1 defualt rate
+> >   ARM: OMAP1: recalculate loops per jiffy after dpll1 reprogram
+> > 
+> >  arch/arm/mach-omap1/clock_data.c |    9 +++++++--
+> >  1 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> Thanks, got these three patches now applied into fixes on top of -rc4.
+> 
+> Can you please try it out to make sure it's all working for you now?
 
+Yes, it works as expected, re-tested with a custom 150 MHz rate only 
+.config to the extent possible without removing all rates form .config 
+/ omap1_rate_table[], i.e., without triggering the issue addressed by 
+fc92dd3a77bfc59822f869627ba81a6418eed987 "ARM: OMAP1: Fix ckctl value 
+used for dpll1 defualt rate". Can re-test other cases (omap1_defconfig, 
+no rates selected at all) if required.
 
-On 12/02/2011 09:19 AM, Arnaldo Carvalho de Melo wrote:
-> Hi Ingo,
-> 
->         Please consider pulling from:
-> 
-> git://github.com/acmel/linux.git perf/core
-> 
-> 	Now there are 29 outstanding changesets on this branch.
+My only concern left, which I don't feel capable to justify myself, is 
+if 6% inaccuracy in BogoMIPS recalculation, compared to the BogoMIPS 
+value got either with 3.1 or as a result of recalibration, does matter 
+and should still be addressed somehow for next merge window, or can be 
+ignored. 
 
-What about the 2 commits on your urgent branch? I don't recall seeing a
-response that those were picked up, and they are not in Linus' branch.
+Russell, can you please share your opinion?
 
-David
-
-
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (4):
->   perf evlist: Always do automatic allocation of pollfd and mmap structures
->   perf test: Allow running just a subset of the available tests
->   perf event: Introduce perf_event__fprintf
->   perf test: Validate PERF_RECORD_ events and perf_sample fields
-> 
->  tools/perf/Documentation/perf-test.txt |    8 +-
->  tools/perf/builtin-record.c            |    6 -
->  tools/perf/builtin-stat.c              |    3 +-
->  tools/perf/builtin-test.c              |  418 ++++++++++++++++++++++++++++++--
->  tools/perf/builtin-top.c               |   19 +--
->  tools/perf/util/event.c                |   54 ++++-
->  tools/perf/util/event.h                |    6 +
->  tools/perf/util/evlist.c               |    4 +-
->  tools/perf/util/evlist.h               |    2 -
->  9 files changed, 465 insertions(+), 55 deletions(-)
-> 
+Thanks,
+Janusz
