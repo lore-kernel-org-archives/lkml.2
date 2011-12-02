@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab1LBXtq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 18:49:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:36602 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884Ab1LBXtj (ORCPT
+	id S1752682Ab1LBXyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 18:54:52 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.121]:51238 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab1LBXyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 18:49:39 -0500
-X-Authority-Analysis: v=2.0 cv=dOUkaZlb c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=GF5m4V3ccQkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=ueNQj3qIAkRO5doWYREA:9 a=MZEq2DXj14rIVkerGIQA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Fri, 2 Dec 2011 18:54:51 -0500
+X-Authority-Analysis: v=2.0 cv=BK0xXSsG c=1 sm=0 a=QETZmXXmyubuBiJjAgCHWw==:17 a=y8ZX_BOJfaUA:10 a=BjhBlCK6cPEA:10 a=IkcTkHD0fZMA:10 a=ayC55rCoAAAA:8 a=6TUbAxCOOeJgaDh8670A:9 a=QEXdDO2ut3YA:10 a=QETZmXXmyubuBiJjAgCHWw==:117
 X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [RT] sysrq Z: sleeping function called from invalid context
-From: Steven Rostedt <rostedt@goodmis.org>
-To: frank.rowand@am.sony.com
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-In-Reply-To: <4ED95A5F.7030309@am.sony.com>
-References: <4ED95A5F.7030309@am.sony.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Dec 2011 18:49:35 -0500
-Message-ID: <1322869775.30977.61.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+X-Originating-IP: 97.103.252.48
+Message-ID: <4ED96549.1070703@cfl.rr.com>
+Date: Fri, 02 Dec 2011 18:54:49 -0500
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] loop: cleanup partitions when detaching loop device
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-02 at 15:08 -0800, Frank Rowand wrote:
-> Hi Steve,
-> 
-> I get a "sleeping function called from invalid context" when I invoke sysrq Z.
-> 
-> I get this both with CONFIG_MAGIC_SYSRQ_FORCE_PRINTK enabled and disabled.
+Any partitions added by user space to the loop device were being
+left in place after detaching the loop device.  This was because
+the detach path issued a BLKRRPART to clean up partitions if
+LO_FLAGS_PARTSCAN was set, meaning that the partitions were auto
+scanned on attach.  Replace this BLKRRPART with code that
+unconditionally cleans up partitions on detach instead.
 
-Patient:  Hey doctor, it hurts when I do this
+Signed-off-by: Phillip Susi <psusi@cfl.rr.com>
+---
+ drivers/block/loop.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
 
-Doctor:  Don't do that.
-
-
-> 
-> 3.0.12-rt29
-> ARM Pandaboard
-> 
-> I have not tried this on 3.2-rc4-rt5.
-> 
-> [  900.963226] SysRq : Dump ftrace buffer
-> [  900.967163] Dumping ftrace buffer:
-> [  900.970733] BUG: sleeping function called from invalid context at kernel/rtmutex.c:645
-> [  900.985137] in_atomic(): 0, irqs_disabled(): 128, pid: 563, name: irq/106-OMAP UA
-> [  900.992980] 2 locks held by irq/106-OMAP UA/563:
-> [  900.997833]  #0:  (&port_lock_key){+.+...}, at: [<c02d8b14>] serial_omap_irq+0x4c/0x7dc
-> [  901.006286]  #1:  (sysrq_key_table_lock){+.+...}, at: [<c02c13a0>] __handle_sysrq+0x20/0x18c
-> [  901.015167] irq event stamp: 45345
-> [  901.018737] hardirqs last  enabled at (45344): [<c0482f68>] _raw_spin_unlock_irq+0x24/0x4c
-> [  901.027435] hardirqs last disabled at (45345): [<c00fb854>] ftrace_dump+0x14/0x23c
-> [  901.035400] softirqs last  enabled at (0): [<c009dca8>] copy_process+0x364/0xf84
-> [  901.043182] softirqs last disabled at (0): [<  (null)>]   (null)
-> [  901.049499] [<c00681b8>] (unwind_backtrace+0x0/0xf0) from [<c04824d0>] (rt_spin_lock+0x24/0x5c)
-> [  901.058654] [<c04824d0>] (rt_spin_lock+0x24/0x5c) from [<c00f3b34>] (read_buffer_lock+0x4c/0x6c)
-> [  901.067871] [<c00f3b34>] (read_buffer_lock+0x4c/0x6c) from [<c00f5908>] (ring_buffer_empty_cpu+0x50/0x7c)
-
-Grumble. I really don't want to make the read_buffer_lock a real spin
-lock. I'll have to see what else is called when its held. I you could
-try to make it into a raw_spin_lock() if you want and see if it causes
-any more issues.
-
-I guess the other question is, what disabled interrupts?
-
-Oh, it's in the lockdep splat above :-p
-
-It's the ftrace_dump code that disables interrupts.
-
-Oh! looking into the ring_buffer code, could you add this:
-(totally untested)
-
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 2467714..2ffbb9d 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1045,7 +1045,7 @@ static inline int ok_to_lock(void)
- 	if (in_nmi())
- 		return 0;
- #ifdef CONFIG_PREEMPT_RT_FULL
--	if (in_atomic())
-+	if (in_atomic() || irqs_disabled())
- 		return 0;
- #endif
- 	return 1;
-
-
-> [  901.077911] [<c00f5908>] (ring_buffer_empty_cpu+0x50/0x7c) from [<c00fa3cc>] (trace_empty+0x58/0xd8)
-> [  901.087524] [<c00fa3cc>] (trace_empty+0x58/0xd8) from [<c00fb9f8>] (ftrace_dump+0x1b8/0x23c)
-> [  901.096374] [<c00fb9f8>] (ftrace_dump+0x1b8/0x23c) from [<c02c1428>] (__handle_sysrq+0xa8/0x18c)
-> [  901.105621] [<c02c1428>] (__handle_sysrq+0xa8/0x18c) from [<c02d90cc>] (serial_omap_irq+0x604/0x7dc)
-> [  901.115203] [<c02d90cc>] (serial_omap_irq+0x604/0x7dc) from [<c00eb934>] (irq_forced_thread_fn+0x20/0x40)
-> [  901.125244] [<c00eb934>] (irq_forced_thread_fn+0x20/0x40) from [<c00eb7dc>] (irq_thread+0x144/0x1e4)
-> [  901.134887] [<c00eb7dc>] (irq_thread+0x144/0x1e4) from [<c00c094c>] (kthread+0x7c/0x84)
-> [  901.143310] [<c00c094c>] (kthread+0x7c/0x84) from [<c0061e30>] (kernel_thread_exit+0x0/0x8)
-> [  901.152496]    (ftrace buffer empty)
-> 
-> -Frank
-
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 68b205a..49a5eb7 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -1016,8 +1016,19 @@ static int loop_clr_fd(struct loop_device *lo)
+ 	lo->lo_state = Lo_unbound;
+ 	/* This is safe: open() is still holding a reference. */
+ 	module_put(THIS_MODULE);
+-	if (lo->lo_flags & LO_FLAGS_PARTSCAN && bdev)
+-		ioctl_by_bdev(bdev, BLKRRPART, 0);
++	if (bdev)
++	{
++		struct disk_part_iter piter;
++		struct hd_struct *part;
++
++		mutex_lock(&bdev->bd_mutex);
++		invalidate_partition(bdev->bd_disk, 0);
++		disk_part_iter_init(&piter, bdev->bd_disk, DISK_PITER_INCL_EMPTY);
++		while ((part = disk_part_iter_next(&piter)))
++			delete_partition(bdev->bd_disk, part->partno);
++		disk_part_iter_exit(&piter);
++		mutex_unlock(&bdev->bd_mutex);
++	}
+ 	lo->lo_flags = 0;
+ 	if (!part_shift)
+ 		lo->lo_disk->flags |= GENHD_FL_NO_PART_SCAN;
+-- 
+1.7.5.4
 
