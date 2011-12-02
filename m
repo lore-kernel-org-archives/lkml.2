@@ -1,83 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab1LBSnm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 13:43:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12051 "EHLO mx1.redhat.com"
+	id S932240Ab1LBSnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 13:43:35 -0500
+Received: from mga03.intel.com ([143.182.124.21]:54496 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932160Ab1LBSnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 13:43:39 -0500
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 05/21] KEYS: Announce key type (un)registration [ver #3]
-To: keyrings@linux-nfs.org
-Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
-        zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
-        alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Fri, 02 Dec 2011 18:43:30 +0000
-Message-ID: <20111202184329.21874.76730.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
-References: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S932199Ab1LBSnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 13:43:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,285,1320652800"; 
+   d="scan'208";a="81618678"
+From: Andi Kleen <andi@firstfloor.org>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        fengguang.wu@intel.com, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 3/3] VFS: Add event counting to dcache
+Date: Fri,  2 Dec 2011 10:43:27 -0800
+Message-Id: <1322851407-17182-4-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1322851407-17182-1-git-send-email-andi@firstfloor.org>
+References: <1322851407-17182-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Announce the (un)registration of a key type in the core key code rather than
-in the callers.
+From: Andi Kleen <ak@linux.intel.com>
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+Most self respecting subsystems -- like networking or MM -- have
+own counter infrastructure these days. This is useful to understand
+the behaviour of a running system. Counters are low enough
+overhead that they can be always enabled.
+
+This patch adds event counts to the dcache.
+
+Instead of developing an own counter infrastructure for the VFS
+I'm using generic counters implemented in debugfs.
+
+Since we had problems with this recently I instrumented the dcache
+RCU code. This is rather tricky code which is difficult to tune,
+and some indication on why aborts happen is quite useful.
+
+I'm especially interested in feedback on the placement of the event counters.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
+ fs/namei.c |   42 ++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 36 insertions(+), 6 deletions(-)
 
- net/dns_resolver/dns_key.c |    5 -----
- security/keys/key.c        |    3 +++
- 2 files changed, 3 insertions(+), 5 deletions(-)
-
-
-diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
-index fa000d2..689d7c8 100644
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -249,9 +249,6 @@ static int __init init_dns_resolver(void)
- 	struct key *keyring;
- 	int ret;
+diff --git a/fs/namei.c b/fs/namei.c
+index 5008f01..bfbe36a 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -33,10 +33,22 @@
+ #include <linux/device_cgroup.h>
+ #include <linux/fs_struct.h>
+ #include <linux/posix_acl.h>
++#include <linux/debugfs.h>
+ #include <asm/uaccess.h>
  
--	printk(KERN_NOTICE "Registering the %s key type\n",
--	       key_type_dns_resolver.name);
--
- 	/* create an override credential set with a special thread keyring in
- 	 * which DNS requests are cached
- 	 *
-@@ -300,8 +297,6 @@ static void __exit exit_dns_resolver(void)
- 	key_revoke(dns_resolver_cache->thread_keyring);
- 	unregister_key_type(&key_type_dns_resolver);
- 	put_cred(dns_resolver_cache);
--	printk(KERN_NOTICE "Unregistered %s key type\n",
--	       key_type_dns_resolver.name);
- }
+ #include "internal.h"
  
- module_init(init_dns_resolver)
-diff --git a/security/keys/key.c b/security/keys/key.c
-index 4414abd..a8086a1 100644
---- a/security/keys/key.c
-+++ b/security/keys/key.c
-@@ -957,6 +957,8 @@ int register_key_type(struct key_type *ktype)
- 
- 	/* store the type */
- 	list_add(&ktype->link, &key_types_list);
++const char dname[] = "vfs/dcache";
++DEFINE_DEBUGFS_COUNTER(dcache_rcu_root_changed_abort, dname);
++DEFINE_DEBUGFS_COUNTER(dcache_rcu_dir_changed_abort, dname);
++DEFINE_DEBUGFS_COUNTER(dcache_rcu_entry_changed_abort, dname);
++DEFINE_DEBUGFS_COUNTER(dcache_rcu_permission_abort, dname);
++DEFINE_DEBUGFS_COUNTER(dcache_rcu_revalidate_abort, dname);
++DEFINE_DEBUGFS_COUNTER(dcache_ref_walks, dname);
++DEFINE_DEBUGFS_COUNTER(dcache_rcu_walks, dname);
++DEFINE_DEBUGFS_COUNTER(dcache_reval_walks, dname);
 +
-+	pr_notice("Key type %s registered\n", ktype->name);
- 	ret = 0;
- 
- out:
-@@ -979,6 +981,7 @@ void unregister_key_type(struct key_type *ktype)
- 	list_del_init(&ktype->link);
- 	downgrade_write(&key_types_sem);
- 	key_gc_keytype(ktype);
-+	pr_notice("Key type %s unregistered\n", ktype->name);
- 	up_read(&key_types_sem);
++
+ /* [Feb-1997 T. Schoebel-Theuer]
+  * Fundamental changes in the pathname lookup mechanisms (namei)
+  * were necessary because of omirr.  The reason is that omirr needs
+@@ -430,20 +442,26 @@ static int unlazy_walk(struct nameidata *nd, struct dentry *dentry)
+ 		want_root = 1;
+ 		spin_lock(&fs->lock);
+ 		if (nd->root.mnt != fs->root.mnt ||
+-				nd->root.dentry != fs->root.dentry)
++		    nd->root.dentry != fs->root.dentry) {
++			debugfs_counter_inc(dcache_rcu_root_changed_abort);
+ 			goto err_root;
++		}
+ 	}
+ 	spin_lock(&parent->d_lock);
+ 	if (!dentry) {
+-		if (!__d_rcu_to_refcount(parent, nd->seq))
++		if (!__d_rcu_to_refcount(parent, nd->seq)) {
++			debugfs_counter_inc(dcache_rcu_dir_changed_abort);
+ 			goto err_parent;
++		}
+ 		BUG_ON(nd->inode != parent->d_inode);
+ 	} else {
+ 		if (dentry->d_parent != parent)
+ 			goto err_parent;
+ 		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+-		if (!__d_rcu_to_refcount(dentry, nd->seq))
++		if (!__d_rcu_to_refcount(dentry, nd->seq)) {
++			debugfs_counter_inc(dcache_rcu_entry_changed_abort);
+ 			goto err_child;
++		}
+ 		/*
+ 		 * If the sequence check on the child dentry passed, then
+ 		 * the child has not been removed from its parent. This
+@@ -474,6 +492,7 @@ err_parent:
+ err_root:
+ 	if (want_root)
+ 		spin_unlock(&fs->lock);
++	debugfs_counter_inc(dcache_rcu_root_changed_abort);
+ 	return -ECHILD;
  }
- EXPORT_SYMBOL(unregister_key_type);
+ 
+@@ -522,6 +541,7 @@ static int complete_walk(struct nameidata *nd)
+ 			spin_unlock(&dentry->d_lock);
+ 			rcu_read_unlock();
+ 			br_read_unlock(vfsmount_lock);
++			debugfs_counter_inc(dcache_rcu_entry_changed_abort);
+ 			return -ECHILD;
+ 		}
+ 		BUG_ON(nd->inode != dentry->d_inode);
+@@ -960,6 +980,7 @@ failed:
+ 		nd->root.mnt = NULL;
+ 	rcu_read_unlock();
+ 	br_read_unlock(vfsmount_lock);
++	debugfs_counter_inc(dcache_rcu_entry_changed_abort);
+ 	return -ECHILD;
+ }
+ 
+@@ -1132,8 +1153,10 @@ static int do_lookup(struct nameidata *nd, struct qstr *name,
+ 			goto unlazy;
+ 
+ 		/* Memory barrier in read_seqcount_begin of child is enough */
+-		if (__read_seqcount_retry(&parent->d_seq, nd->seq))
++		if (__read_seqcount_retry(&parent->d_seq, nd->seq)) {
++			debugfs_counter_inc(dcache_rcu_dir_changed_abort);
+ 			return -ECHILD;
++		}
+ 		nd->seq = seq;
+ 
+ 		if (unlikely(dentry->d_flags & DCACHE_OP_REVALIDATE)) {
+@@ -1141,6 +1164,7 @@ static int do_lookup(struct nameidata *nd, struct qstr *name,
+ 			if (unlikely(status <= 0)) {
+ 				if (status != -ECHILD)
+ 					need_reval = 0;
++				debugfs_counter_inc(dcache_rcu_revalidate_abort);
+ 				goto unlazy;
+ 			}
+ 		}
+@@ -1226,6 +1250,7 @@ static inline int may_lookup(struct nameidata *nd)
+ 		int err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
+ 		if (err != -ECHILD)
+ 			return err;
++		debugfs_counter_inc(dcache_rcu_permission_abort);
+ 		if (unlazy_walk(nd, NULL))
+ 			return -ECHILD;
+ 	}
+@@ -1643,10 +1668,15 @@ static int do_path_lookup(int dfd, const char *name,
+ 				unsigned int flags, struct nameidata *nd)
+ {
+ 	int retval = path_lookupat(dfd, name, flags | LOOKUP_RCU, nd);
+-	if (unlikely(retval == -ECHILD))
++	debugfs_counter_inc(dcache_rcu_walks);
++	if (unlikely(retval == -ECHILD)) {
++		debugfs_counter_inc(dcache_ref_walks);
+ 		retval = path_lookupat(dfd, name, flags, nd);
+-	if (unlikely(retval == -ESTALE))
++	}
++	if (unlikely(retval == -ESTALE)) {
++		debugfs_counter_inc(dcache_reval_walks);
+ 		retval = path_lookupat(dfd, name, flags | LOOKUP_REVAL, nd);
++	}
+ 
+ 	if (likely(!retval)) {
+ 		if (unlikely(!audit_dummy_context())) {
+-- 
+1.7.4.4
 
