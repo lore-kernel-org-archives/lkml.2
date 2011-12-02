@@ -1,72 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab1LBVLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 16:11:22 -0500
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:42986 "EHLO
+	id S1755491Ab1LBVLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 16:11:33 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:35755 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752808Ab1LBVLU (ORCPT
+	by vger.kernel.org with ESMTP id S1755248Ab1LBVLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 16:11:20 -0500
-X-Sasl-enc: QBN/O5lKiaYLVwvdIsAeWI7CiaqP2svOR7ToVlYcliwO 1322860279
-Date: Fri, 2 Dec 2011 13:11:01 -0800
-From: Greg KH <greg@kroah.com>
+	Fri, 2 Dec 2011 16:11:21 -0500
+X-Sasl-enc: XsS8qY7kL05L8EP7ErVUT/z1tKZE+vDxU1VspAXFttOp 1322860280
+Date: Fri, 2 Dec 2011 13:11:10 -0800
+From: Greg KH <gregkh@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] more staging fixes for 3.2
-Message-ID: <20111202211101.GA18222@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] more USB fixes for 3.2
+Message-ID: <20111202211110.GB18222@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You're right, I have been chuckling evilly here, but that's for the 3.3
-merge, not for 3.2 :)
+Here are a small number of USB fixes and new device ids for the 3.2 tree.
 
-Here are a few minor fixes for the staging tree to be merged into your tree.
+All pretty minor, full details are in the shortlog below.
 
 Please pull from:
-	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ staging-linus
+	git.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb.git/ usb-linus
 
-All patches have been in the -next releases for a while now.
+All have been in the -next releases.
+
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
 
 thanks,
 
 greg k-h
 
---------------
+------------
 
- drivers/staging/comedi/comedi_fops.c         |   96 +++++++++++++++++++------
- drivers/staging/comedi/drivers/usbduxsigma.c |    7 +-
- drivers/staging/rts_pstor/rtsx.c             |    1 +
- drivers/staging/usbip/vhci_rx.c              |   10 ++-
- 4 files changed, 84 insertions(+), 30 deletions(-)
+ Documentation/usb/linux-cdc-acm.inf    |    4 +-
+ drivers/usb/gadget/amd5536udc.c        |    2 +-
+ drivers/usb/gadget/f_serial.c          |    4 +-
+ drivers/usb/gadget/fsl_mxc_udc.c       |    3 +-
+ drivers/usb/gadget/fsl_qe_udc.c        |    3 +-
+ drivers/usb/gadget/fsl_udc_core.c      |   75 +++++++++++++++-----------------
+ drivers/usb/gadget/fsl_usb2_udc.h      |   10 ++++
+ drivers/usb/gadget/m66592-udc.c        |    2 +-
+ drivers/usb/gadget/net2280.c           |    2 +-
+ drivers/usb/gadget/r8a66597-udc.c      |    2 +-
+ drivers/usb/gadget/s3c-hsotg.c         |    4 +-
+ drivers/usb/gadget/s3c-hsudc.c         |    3 +-
+ drivers/usb/host/ehci-sched.c          |    9 ++--
+ drivers/usb/host/whci/qset.c           |    2 +-
+ drivers/usb/host/xhci.c                |    5 ++-
+ drivers/usb/musb/musb_core.c           |    6 ---
+ drivers/usb/musb/musb_gadget.c         |    2 +-
+ drivers/usb/renesas_usbhs/mod_gadget.c |   47 ++++++++-----------
+ drivers/usb/serial/ftdi_sio.c          |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h      |    1 +
+ drivers/usb/serial/option.c            |    4 ++
+ drivers/usb/storage/unusual_devs.h     |    7 +++
+ 22 files changed, 101 insertions(+), 97 deletions(-)
 
 ---------------
 
-Bart Westgeest (1):
-      staging: usbip: bugfix for deadlock
-
-Bernd Porr (2):
-      staging: comedi: usbduxsigma: Fixed wrong range for the analogue channel.
-      staging: comedi: fix oops for USB DAQ devices.
+Andiry Xu (2):
+      xHCI: reset-on-resume quirk for NEC uPD720200
+      xHCI: fix bug in xhci_clear_command_ring()
 
 Dan Carpenter (1):
-      Staging: comedi: integer overflow in do_insnlist_ioctl()
+      USB: whci-hcd: fix endian conversion in qset_clear()
 
-Federico Vaga (2):
-      Staging: comedi: fix mmap_count
-      Staging: comedi: fix signal handling in read and write
+Dirk Nehring (1):
+      usb: option: add Huawei E353 controlling interfaces
 
-Greg Kroah-Hartman (1):
-      Revert "Staging: comedi: integer overflow in do_insnlist_ioctl()"
+Fabio Estevam (2):
+      usb: fsl_mxc_udc.c: Fix build issue by including missing header file
+      usb: fsl_mxc_udc.c: Remove compile-time dependency of MX35 SoC type
 
-Xi Wang (1):
-      Staging: comedi: fix integer overflow in do_insnlist_ioctl()
+Kevin Hilman (1):
+      usb: musb: PM: fix context save/restore in suspend/resume path
 
-wwang (1):
-      staging:rts_pstor:Complete scanning_done variable
+Klaus Schwarzkopf (1):
+      USB: linux-cdc-acm.inf: add support for the acm_ms gadget
+
+Kuninori Morimoto (4):
+      usb: renesas_usbhs: fixup device_register timing
+      usb: renesas_usbhs: fixup signal the driver that cable was disconnected
+      usb: renesas_usbhs: fixup gadget.dev.driver when udc_stop.
+      usb: renesas_usbhs: fixup driver speed
+
+Li Yang (1):
+      usb: gadget: fsl_udc: fix dequeuing a request in progress
+
+Marcin Kościelnicki (1):
+      usb: ftdi_sio: add PID for Propox ISPcable III
+
+Matthieu CASTET (1):
+      EHCI : Fix a regression in the ISO scheduler
+
+Michal Nazarewicz (1):
+      usb: udc: Fix gadget driver's speed check in various UDC drivers
+
+Peter Chen (1):
+      USB: fsl_udc_core: use usb_endpoint_xfer_isoc to judge ISO XFER
+
+Qinglin Ye (1):
+      USB: usb-storage: unusual_devs entry for Kingston DT 101 G2
+
+Robert Jarzmik (1):
+      usb: gadget: fix g_serial regression
+
+Sarah Sharp (1):
+      Revert "xHCI: reset-on-resume quirk for NEC uPD720200"
+
+Veli-Pekka Peltola (1):
+      usb: option: add SIMCom SIM5218
 
