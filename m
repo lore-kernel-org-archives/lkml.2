@@ -1,45 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757134Ab1LBQew (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 11:34:52 -0500
-Received: from mail.windriver.com ([147.11.1.11]:61743 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756990Ab1LBQeu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 11:34:50 -0500
-Message-ID: <4ED8FE14.7020007@windriver.com>
-Date: Fri, 2 Dec 2011 11:34:28 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S932091Ab1LBQfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 11:35:23 -0500
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:33902 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757016Ab1LBQfW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 11:35:22 -0500
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Kumar Gala <galak@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>, <gregkh@suse.de>,
-        <alan@linux.intel.com>, <linux-serial@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] 8250: add workaround for MPC8[356]xx UART break IRQ
- storm
-References: <1322783258-20443-1-git-send-email-paul.gortmaker@windriver.com>	<1322783258-20443-4-git-send-email-paul.gortmaker@windriver.com>	<4ED812E4.60905@freescale.com>	<4ED81632.3030809@windriver.com>	<176AE2A1-6AA2-4F14-942F-8ED77AB1DBEC@kernel.crashing.org> <20111202113059.15d73840@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111202113059.15d73840@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+In-Reply-To: <1322817178-8931-5-git-send-email-ming.lei@canonical.com>
+References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com> <1322817178-8931-5-git-send-email-ming.lei@canonical.com>
+From: "Aguirre, Sergio" <saaguirre@ti.com>
+Date: Fri, 2 Dec 2011 10:35:00 -0600
+Message-ID: <CAKnK67SDyFCbLjpwzY9JQiBHJTgpF9uXOq+GUBW7oWv_5gZzbA@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 4/7] media: videobuf2: introduce VIDEOBUF2_PAGE memops
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Sylwester Nawrocki <snjw23@gmail.com>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-12-02 06:30 AM, Alan Cox wrote:
->>> OK, I'll simply change the above to CONFIG_PPC then.
->>
->> It does, the bug is in the uart IP which I don't think we ever plan on fixing, so 32 or 64-bit parts will have it for ever and ever ;)
-> 
-> It should be runtime selected, there should be no ifdefs here.
+Hi Ming,
 
-The ifdef wasn't strictly required; it just made it so gcc would
-toss the errata code out of the irq handler for !PPC.  Anyway it
-will be a moot point if I can somehow hide all the mess by snooping
-serial_inp() traffic and deploying the errata fix from there....
+On Fri, Dec 2, 2011 at 3:12 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> DMA contig memory resource is very limited and precious, also
+> accessing to it from CPU is very slow on some platform.
+>
+> For some cases(such as the comming face detection driver), DMA Streaming
+> buffer is enough, so introduce VIDEOBUF2_PAGE to allocate continuous
+> physical memory but letting video device driver to handle DMA buffer mapping
+> and unmapping things.
+>
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> ---
+>  drivers/media/video/Kconfig          |    4 +
+>  drivers/media/video/Makefile         |    1 +
+>  drivers/media/video/videobuf2-page.c |  115 ++++++++++++++++++++++++++++++++++
+>  include/media/videobuf2-page.h       |   20 ++++++
+>  4 files changed, 140 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/media/video/videobuf2-page.c
+>  create mode 100644 include/media/videobuf2-page.h
+>
+> diff --git a/drivers/media/video/Kconfig b/drivers/media/video/Kconfig
+> index 4e8a0c4..5684a00 100644
+> --- a/drivers/media/video/Kconfig
+> +++ b/drivers/media/video/Kconfig
+> @@ -60,6 +60,10 @@ config VIDEOBUF2_VMALLOC
+>        select VIDEOBUF2_MEMOPS
+>        tristate
+>
+> +config VIDEOBUF2_PAGE
+> +       select VIDEOBUF2_CORE
+> +       select VIDEOBUF2_MEMOPS
+> +       tristate
+>
+>  config VIDEOBUF2_DMA_SG
+>        #depends on HAS_DMA
+> diff --git a/drivers/media/video/Makefile b/drivers/media/video/Makefile
+> index ddeaa6c..bc797f2 100644
+> --- a/drivers/media/video/Makefile
+> +++ b/drivers/media/video/Makefile
+> @@ -125,6 +125,7 @@ obj-$(CONFIG_VIDEO_BTCX)  += btcx-risc.o
+>  obj-$(CONFIG_VIDEOBUF2_CORE)           += videobuf2-core.o
+>  obj-$(CONFIG_VIDEOBUF2_MEMOPS)         += videobuf2-memops.o
+>  obj-$(CONFIG_VIDEOBUF2_VMALLOC)                += videobuf2-vmalloc.o
+> +obj-$(CONFIG_VIDEOBUF2_PAGE)           += videobuf2-page.o
+>  obj-$(CONFIG_VIDEOBUF2_DMA_CONTIG)     += videobuf2-dma-contig.o
+>  obj-$(CONFIG_VIDEOBUF2_DMA_SG)         += videobuf2-dma-sg.o
+>
+> diff --git a/drivers/media/video/videobuf2-page.c b/drivers/media/video/videobuf2-page.c
+> new file mode 100644
+> index 0000000..b3f003a
+> --- /dev/null
+> +++ b/drivers/media/video/videobuf2-page.c
+> @@ -0,0 +1,115 @@
+> +/*
+> + * videobuf2-page.c - page memory allocator for videobuf2
+> + *
+> + * Copyright (C) 2011 Canonical Ltd.
+> + *
+> + * Author: Ming Lei <ming.lei@canonical.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/mm.h>
+> +#include <linux/slab.h>
+> +
+> +#include <media/videobuf2-core.h>
+> +#include <media/videobuf2-memops.h>
+> +
+> +struct vb2_page_buf {
+> +       void                            *vaddr;
+> +       unsigned long                   size;
+> +       atomic_t                        refcount;
+> +       struct vb2_vmarea_handler       handler;
+> +};
+> +
+> +static void vb2_page_put(void *buf_priv);
+> +
+> +static void *vb2_page_alloc(void *alloc_ctx, unsigned long size)
+> +{
+> +       struct vb2_page_buf *buf;
+> +
+> +       buf = kzalloc(sizeof *buf, GFP_KERNEL);
+> +       if (!buf)
+> +               return NULL;
+> +
+> +       buf->size = size;
+> +       buf->vaddr = (void *)__get_free_pages(GFP_KERNEL,
+> +                       get_order(buf->size));
+> +       buf->handler.refcount = &buf->refcount;
+> +       buf->handler.put = vb2_page_put;
+> +       buf->handler.arg = buf;
+> +
+> +       if (!buf->vaddr) {
+> +               printk(KERN_ERR "page of size %ld failed\n", buf->size);
+> +               kfree(buf);
+> +               return NULL;
+> +       }
+> +
+> +       atomic_inc(&buf->refcount);
+> +       printk(KERN_DEBUG "Allocated page buffer of size %ld at vaddr=%p\n",
+> +                       buf->size, buf->vaddr);
+> +
+> +       return buf;
+> +}
+> +
+> +static void vb2_page_put(void *buf_priv)
+> +{
+> +       struct vb2_page_buf *buf = buf_priv;
+> +
+> +       if (atomic_dec_and_test(&buf->refcount)) {
+> +               printk(KERN_DEBUG "%s: Freeing page mem at vaddr=%p\n",
+> +                       __func__, buf->vaddr);
+> +               free_pages((unsigned long)buf->vaddr, get_order(buf->size));
+> +               kfree(buf);
+> +       }
+> +}
+> +
+> +static void *vb2_page_vaddr(void *buf_priv)
+> +{
+> +       struct vb2_page_buf *buf = buf_priv;
+> +
+> +       BUG_ON(!buf);
+> +
+> +       if (!buf->vaddr) {
+> +               printk(KERN_ERR "Address of an unallocated plane requested\n");
+> +               return NULL;
+> +       }
+> +
+> +       return buf->vaddr;
+> +}
+> +
+> +static unsigned int vb2_page_num_users(void *buf_priv)
+> +{
+> +       struct vb2_page_buf *buf = buf_priv;
+> +       return atomic_read(&buf->refcount);
+> +}
+> +
+> +static int vb2_page_mmap(void *buf_priv, struct vm_area_struct *vma)
+> +{
+> +       struct vb2_page_buf *buf = buf_priv;
+> +
+> +       if (!buf) {
+> +               printk(KERN_ERR "No memory to map\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+> +       return vb2_mmap_pfn_range(vma, virt_to_phys(buf->vaddr),
+> +                       buf->size, &vb2_common_vm_ops,
+> +                       &buf->handler);
+> +}
+> +
+> +const struct vb2_mem_ops vb2_page_memops = {
+> +       .alloc          = vb2_page_alloc,
+> +       .put            = vb2_page_put,
+> +       .vaddr          = vb2_page_vaddr,
+> +       .mmap           = vb2_page_mmap,
+> +       .num_users      = vb2_page_num_users,
+> +};
+> +EXPORT_SYMBOL_GPL(vb2_page_memops);
+> +
+> +MODULE_DESCRIPTION("page memory handling routines for videobuf2");
+> +MODULE_AUTHOR("Ming Lei");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/media/videobuf2-page.h b/include/media/videobuf2-page.h
+> new file mode 100644
+> index 0000000..29b3e20
+> --- /dev/null
+> +++ b/include/media/videobuf2-page.h
+> @@ -0,0 +1,20 @@
+> +/*
+> + * videobuf2-vmalloc.h - vmalloc memory allocator for videobuf2
+> + *
+> + * Copyright (C) 2010 Samsung Electronics
+> + *
+> + * Author: Pawel Osciak <pawel@osciak.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation.
+> + */
+> +
+> +#ifndef _MEDIA_VIDEOBUF2_VMALLOC_H
+> +#define _MEDIA_VIDEOBUF2_VMALLOC_H
 
-P.
+Copy-paste much? :)
 
-> 
+Fix header and match above define with something that matches the actual file:
+
+#ifndef _MEDIA_VIDEOBUF2_PAGE_H
+#define _MEDIA_VIDEOBUF2_PAGE_H
+
+Regards,
+Sergio
+
+> +
+> +#include <media/videobuf2-core.h>
+> +
+> +extern const struct vb2_mem_ops vb2_page_memops;
+> +
+> +#endif
+> --
+> 1.7.5.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
