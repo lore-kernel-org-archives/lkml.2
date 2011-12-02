@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1LBT0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:26:25 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58907 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab1LBT0X (ORCPT
+	id S1753320Ab1LBT1J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:27:09 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:58021 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab1LBT1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:26:23 -0500
-Date: Fri, 2 Dec 2011 19:26:18 +0000
-From: Dave Martin <dave.martin@linaro.org>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Garzik <jgarzik@redhat.com>, Pawel Moll <pawel.moll@arm.com>,
-        linux-arm-kernel@localhost.localdomain
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-Message-ID: <20111202192618.GC3037@localhost.localdomain>
+	Fri, 2 Dec 2011 14:27:08 -0500
+Date: Fri, 2 Dec 2011 14:27:04 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: add default value for PHYS_OFFSET Kconfig setting
+In-Reply-To: <20111202190716.GA4585@pengutronix.de>
+Message-ID: <alpine.LFD.2.02.1112021426420.2357@xanadu.home>
+References: <1322711557-8279-1-git-send-email-paul.gortmaker@windriver.com> <201112011419.46751.arnd@arndb.de> <CAP=VYLrp1zqyOzU-xzatF3jE3wL6wBjEDMR=sEXimP2ZvkQ0Lg@mail.gmail.com> <alpine.LFD.2.02.1112020005270.2357@xanadu.home> <alpine.LFD.2.02.1112020024370.2357@xanadu.home>
+ <20111202092124.GR26618@pengutronix.de> <4ED8FD76.3000802@windriver.com> <20111202190716.GA4585@pengutronix.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-858183275-1322854026=:2357"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[expanding CC -- apologies to anyone who gets this mail twice]
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Thu, Nov 10, 2011 at 08:28:59PM +0400, Anton Vorontsov wrote:
-> Drivers should not use NO_IRQ; moreover, some architectures don't
-> have it nowadays. '0' is the 'no irq' case.
+--8323328-858183275-1322854026=:2357
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 2 Dec 2011, Uwe Kleine-König wrote:
+
+> Hello,
 > 
-> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-> Acked-by: Alan Cox <alan@linux.intel.com>
-> ---
-> 
-> On Thu, Nov 10, 2011 at 03:38:16PM +0000, Alan Cox wrote:
-> > On Thu, 10 Nov 2011 19:26:06 +0400
-> > Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> > 
-> > > Drivers should not use NO_IRQ; moreover, some architectures don't
-> > > have it nowadays. '0' is the 'no irq' case.
+> On Fri, Dec 02, 2011 at 11:31:50AM -0500, Paul Gortmaker wrote:
+> > On 11-12-02 04:21 AM, Uwe Kleine-König wrote:
+> > > Hello Nicolas,
 > > > 
-> > > Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+> > > On Fri, Dec 02, 2011 at 12:33:26AM -0500, Nicolas Pitre wrote:
 > > 
-> > Acked-by: Alan Cox <alan@linux.intel.com>
+> > [...]
+> > 
+> > >> And it seems that at91x40 is the only defconfig with MMU=n, so the only 
+> > >> option is really to provide a default CONFIG_PHYS_OFFSET.  So what about 
+> > >> this:
+> > >>
+> > >> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > >> index e084b7e981..a24672924f 100644
+> > >> --- a/arch/arm/Kconfig
+> > >> +++ b/arch/arm/Kconfig
+> > >> @@ -222,6 +222,7 @@ config NEED_MACH_MEMORY_H
+> > >>  config PHYS_OFFSET
+> > >>  	hex "Physical address of main memory"
+> > >>  	depends on !ARM_PATCH_PHYS_VIRT && !NEED_MACH_MEMORY_H
+> > >> +	default DRAM_BASE if !MMU
+> > >>  	help
+> > >>  	  Please provide the physical address corresponding to the
+> > >>  	  location of main memory in your system.
+> > >>
+> > >> Eventually the DRAM_BASE config option could simply be replaced by 
+> > >> PHYS_OFFSET directly, but that's a larger change.
+> > > I'm working on a MMU-less machine, too and had that change already in my
+> > > working copy. I was about to commit and it send out later today.
+> > > 
+> > > So: Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > 
+> > Looks fine to me as well; I had no particular attachment to the
+> > original patch, and you guys have a much better understanding of
+> > the specifics of the system.
+> A post-ack comment: would it make sense to make this:
 > 
-> In case if we don't want a "band-aid fix" for 3.2, here is the patch
-> that just does the proper fix (w/ a risk to break minor architectures).
-
-This is now broken on ARM where, for good or bad, NO_IRQ currently is
-used and is -1.
-
-How do we resolve it?  If we are ready to eliminate NO_IRQ from
-drivers/of/irq.c (or indeed, all code that uses it) and just use 0 for
-that case, we should surely just do it... but I'm not confident I can
-judge on that.
-
-Half-removing NO_IRQ is going to be problematic, though...
-I really don't care whether the "no irq" value is 0 or -1, but it is
-abundantly clear that choosing different values to mean the same thing
-on opposite sides of an interface does not work.
-
-Cheers
----Dave
-
+> 	config PHYS_OFFSET
+> 		hex "Physical address of main memory" if MMU
+> 	...
 > 
->  drivers/ata/pata_of_platform.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/ata/pata_of_platform.c b/drivers/ata/pata_of_platform.c
-> index a72ab0d..2a472c5 100644
-> --- a/drivers/ata/pata_of_platform.c
-> +++ b/drivers/ata/pata_of_platform.c
-> @@ -52,7 +52,7 @@ static int __devinit pata_of_platform_probe(struct platform_device *ofdev)
->  	}
->  
->  	ret = of_irq_to_resource(dn, 0, &irq_res);
-> -	if (ret == NO_IRQ)
-> +	if (!ret)
->  		irq_res.start = irq_res.end = 0;
->  	else
->  		irq_res.flags = 0;
-> -- 
-> 1.7.5.3
-> 
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> such that !MMU build don't get a chance to misconfigure it?
+
+Sure.
+
+
+Nicolas
+--8323328-858183275-1322854026=:2357--
