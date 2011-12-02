@@ -1,101 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab1LBLAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 06:00:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37165 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab1LBLAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 06:00:07 -0500
-Date: Fri, 2 Dec 2011 02:59:45 -0800
-From: tip-bot for Ido Yariv <ido@wizery.com>
-Message-ID: <tip-550acb19269d65f32e9ac4ddb26c2b2070e37f1c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        ido@wizery.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, ido@wizery.com
-In-Reply-To: <1322740508-22640-1-git-send-email-ido@wizery.com>
-References: <1322740508-22640-1-git-send-email-ido@wizery.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] genirq: Fix race condition when stopping the irq thread
-Git-Commit-ID: 550acb19269d65f32e9ac4ddb26c2b2070e37f1c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1754033Ab1LBLEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 06:04:37 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:34485 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753117Ab1LBLEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 06:04:34 -0500
+Date: Fri, 2 Dec 2011 11:07:02 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1112021102400.28364@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 02 Dec 2011 02:59:52 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  550acb19269d65f32e9ac4ddb26c2b2070e37f1c
-Gitweb:     http://git.kernel.org/tip/550acb19269d65f32e9ac4ddb26c2b2070e37f1c
-Author:     Ido Yariv <ido@wizery.com>
-AuthorDate: Thu, 1 Dec 2011 13:55:08 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 2 Dec 2011 11:54:24 +0100
 
-genirq: Fix race condition when stopping the irq thread
+Hi Linus,
 
-In irq_wait_for_interrupt(), the should_stop member is verified before
-setting the task's state to TASK_INTERRUPTIBLE and calling schedule().
-In case kthread_stop sets should_stop and wakes up the process after
-should_stop is checked by the irq thread but before the task's state
-is changed, the irq thread might never exit:
+nouveau fixes contain a few oops fixes found on Fedora recently, 
+main radeon one fixes a GPU reset race where the CPU hangs in an endless loop,
+and in core a framebuffer leak fix from Chris.
 
-kthread_stop                    irq_wait_for_interrupt
-------------                    ----------------------
+Otherwise a couple of radeon scanout fixes for a case we hadn't tested a 
+lot, and dropping an ACPI message that was a bit louder than it should 
+have been.
 
-                                 ...
-...                              while (!kthread_should_stop()) {
-kthread->should_stop = 1;
-wake_up_process(k);
-wait_for_completion(&kthread->exited);
-...
-                                     set_current_state(TASK_INTERRUPTIBLE);
+Dave.
 
-                                     ...
 
-                                     schedule();
-                                 }
+The following changes since commit 11d814a20166461358e1cefaf6bcd425698b8460:
 
-Fix this by checking if the thread should stop after modifying the
-task's state.
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband (2011-11-30 16:25:02 -0800)
 
-[ tglx: Simplified it a bit ]
+are available in the git repository at:
 
-Signed-off-by: Ido Yariv <ido@wizery.com>
-Link: http://lkml.kernel.org/r/1322740508-22640-1-git-send-email-ido@wizery.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@kernel.org
----
- kernel/irq/manage.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+  git://people.freedesktop.org/~airlied/linux drm-fixes
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0e2b179..1da999f 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -623,8 +623,9 @@ static irqreturn_t irq_nested_primary_handler(int irq, void *dev_id)
- 
- static int irq_wait_for_interrupt(struct irqaction *action)
- {
-+	set_current_state(TASK_INTERRUPTIBLE);
-+
- 	while (!kthread_should_stop()) {
--		set_current_state(TASK_INTERRUPTIBLE);
- 
- 		if (test_and_clear_bit(IRQTF_RUNTHREAD,
- 				       &action->thread_flags)) {
-@@ -632,7 +633,9 @@ static int irq_wait_for_interrupt(struct irqaction *action)
- 			return 0;
- 		}
- 		schedule();
-+		set_current_state(TASK_INTERRUPTIBLE);
- 	}
-+	__set_current_state(TASK_RUNNING);
- 	return -1;
- }
- 
+Alex Deucher (4):
+      drm/radeon/kms: add some loop timeouts in pageflip code
+      drm/radeon/kms: add some new pci ids
+      drm/radeon/kms: fix scanout of 2D tiled buffers on EG/CM
+      drm/radeon/kms: fix 2D tiling CS support on EG/CM
+
+Ben Skeggs (4):
+      drm/nouveau: add dumb ioctl support
+      drm/nvd0/disp: fix sor dpms typo, preventing dpms on in some situations
+      drm/nouveau: fix oopses caused by clear being called on unpopulated ttms
+      drm/nv50/disp: silence compiler warning
+
+Chris Wilson (1):
+      drm: Fix lack of CRTC disable for drm_crtc_helper_set_config(.fb=NULL)
+
+Christoph Bumiller (1):
+      drm/nvc0/gr: fix TP init for transform feedback offset queries
+
+Dave Airlie (1):
+      Merge branch 'drm-nouveau-fixes' of git://git.freedesktop.org/git/nouveau/linux-2.6 into drm-fixes
+
+Jean Delvare (2):
+      drm/radeon/kms: Hide debugging message
+      drm/radeon/kms: Skip ACPI call to ATIF when possible
+
+Xi Wang (1):
+      vmwgfx: integer overflow in vmw_kms_update_layout_ioctl()
+
+Younes Manton (1):
+      drm/nouveau: Keep RAMIN heap within the channel.
+
+ drivers/gpu/drm/drm_crtc_helper.c         |   27 +++++-
+ drivers/gpu/drm/nouveau/nouveau_display.c |   45 +++++++++
+ drivers/gpu/drm/nouveau/nouveau_drv.c     |    4 +
+ drivers/gpu/drm/nouveau/nouveau_drv.h     |    6 +
+ drivers/gpu/drm/nouveau/nouveau_object.c  |    2 +-
+ drivers/gpu/drm/nouveau/nouveau_sgdma.c   |    3 +
+ drivers/gpu/drm/nouveau/nv50_display.c    |    4 +-
+ drivers/gpu/drm/nouveau/nvc0_graph.c      |    2 +
+ drivers/gpu/drm/nouveau/nvd0_display.c    |    2 +-
+ drivers/gpu/drm/radeon/atombios_crtc.c    |   35 +++++++-
+ drivers/gpu/drm/radeon/evergreen.c        |    7 +-
+ drivers/gpu/drm/radeon/evergreen_cs.c     |  149 ++++++++++++++++++++++++-----
+ drivers/gpu/drm/radeon/evergreen_reg.h    |   29 ++++++
+ drivers/gpu/drm/radeon/evergreend.h       |   31 ++++++
+ drivers/gpu/drm/radeon/r100.c             |    7 +-
+ drivers/gpu/drm/radeon/radeon_acpi.c      |   11 +-
+ drivers/gpu/drm/radeon/rs600.c            |    7 +-
+ drivers/gpu/drm/radeon/rv770.c            |    7 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c       |   11 +-
+ include/drm/drm_pciids.h                  |    8 ++
+ 20 files changed, 349 insertions(+), 48 deletions(-)
