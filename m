@@ -1,103 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752459Ab1LBIFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 03:05:51 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58669 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752058Ab1LBIFu (ORCPT
+	id S1752532Ab1LBIMj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 03:12:39 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44531 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab1LBIMi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 03:05:50 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4ED886DC.1000608@jp.fujitsu.com>
-Date: Fri, 02 Dec 2011 17:05:48 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Fri, 2 Dec 2011 03:12:38 -0500
 MIME-Version: 1.0
-To: axboe@kernel.dk, vgoyal@redhat.com
-CC: linux-kernel@vger.kernel.org
-Subject: [patch]cfq-iosched: fix cfq_cic_link() race confition
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111202060424.GA26155@july>
+References: <20111202060424.GA26155@july>
+Date: Fri, 2 Dec 2011 17:12:36 +0900
+Message-ID: <CAKYAXd9trE9b8LYuJLQ3sYn-3b-56MArTMaG0sMS01TPd+cfvA@mail.gmail.com>
+Subject: Re: [RFC PATCH] ext4: auto batched discard support at kernel thread
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: tytso@mit.edu, tm@tao.ma, lczerner@redhat.com, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cfq_cic_link() has race condition. When some processes which shared ioc
-issue I/O to same block device simultaneously, cfq_cic_link() returns -EEXIST
-sometimes. The race condition might stop I/O by following steps:
-
-step  1: Process A: Issue an I/O to /dev/sda
-step  2: Process A: Get an ioc (iocA here) in get_io_context() which does not
-		    linked with a cic for the device
-step  3: Process A: Get a new cic for the device (cicA here) in
-		    cfq_alloc_io_context()
-
-step  4: Process B: Issue an I/O to /dev/sda
-step  5: Process B: Get iocA in get_io_context() since process A and B share the
-		    same ioc
-step  6: Process B: Get a new cic for the device (cicB here) in
-		    cfq_alloc_io_context() since iocA has not been linked with a
-		    cic for the device yet
-
-step  7: Process A: Link cicA to iocA in cfq_cic_link()
-step  8: Process A: Dispatch I/O to driver and finish it
-
-step  9: Process B: Try to link cicB to iocA in cfq_cic_link()
-		    But it fails with showing "cfq: cic link failed!" kernel
-		    message, since iocA has already linked with cicA at step 7.
-step 10: Process B: Wait for finishig I/O in get_request_wait()
-		    The function does not wake up, when there is no I/O to the
-		    device.
-
-When cfq_cic_link() returns -EEXIST, it means ioc has already linked with cic.
-So when cfq_cic_link() return -EEXIST, retry cfq_cic_lookup().
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- block/cfq-iosched.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-Index: linux-3.2-rc3-fix/block/cfq-iosched.c
-===================================================================
---- linux-3.2-rc3-fix.orig/block/cfq-iosched.c	2011-11-30 18:32:28.000000000 +0900
-+++ linux-3.2-rc3-fix/block/cfq-iosched.c	2011-11-30 18:24:02.000000000 +0900
-@@ -3184,7 +3184,7 @@
- 		}
- 	}
-
--	if (ret)
-+	if (ret && ret != -EEXIST)
- 		printk(KERN_ERR "cfq: cic link failed!\n");
-
- 	return ret;
-@@ -3200,6 +3200,7 @@
- {
- 	struct io_context *ioc = NULL;
- 	struct cfq_io_context *cic;
-+	int ret;
-
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
-
-@@ -3207,6 +3208,7 @@
- 	if (!ioc)
- 		return NULL;
-
-+retry:
- 	cic = cfq_cic_lookup(cfqd, ioc);
- 	if (cic)
- 		goto out;
-@@ -3215,7 +3217,12 @@
- 	if (cic == NULL)
- 		goto err;
-
--	if (cfq_cic_link(cfqd, ioc, cic, gfp_mask))
-+	ret = cfq_cic_link(cfqd, ioc, cic, gfp_mask);
-+	if (ret == -EEXIST) {
-+		/* someone has linked cic to ioc already */
-+		cfq_cic_free(cic);
-+		goto retry;
-+	} else if (ret)
- 		goto err_free;
-
- out:
-
+2011/12/2 Kyungmin Park <kmpark@infradead.org>:
+> Hi,
+>
+> It's proof of concept to run kernel thread for batched discard.
+>
+> Now it can run fitrim at user level. but it's not clear which deamon run this activity.
+> In case of android platform, the launcher is candidate
+> but user can change the default launcher then it can't use the fitrim any more.
+>
+> To address this issue. no dependency with platform. run the fitrim at kernel.
+> Basically don't bother the user it runs at 2 clock. Please note that if it's clean state, it doesn't take much time.
+>
+> Please give opinions and comments.
+I think that it is good approach. If we can adjust wake up time and
+cycle, it is more better.
+And we can avoid performance degradation by copy merging in mmc/sdd internal.
+On the other hand lifetime of ssd/mmc is decreased by this patch ?
+> Thank you,
+> Kyungmin Park
+> ---
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 5b0e26a..2cad9b3 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -942,6 +942,7 @@ struct ext4_inode_info {
+>
+>  #define EXT4_MOUNT2_EXPLICIT_DELALLOC  0x00000001 /* User explicitly
+>                                                      specified delalloc */
+> +#define EXT4_MOUNT2_AUTO_DISCARD       0x00000002 /* Auto batched discard */
+>
+>  #define clear_opt(sb, opt)             EXT4_SB(sb)->s_mount_opt &= \
+>                                                ~EXT4_MOUNT_##opt
+> @@ -1249,6 +1250,10 @@ struct ext4_sb_info {
+>
+>        /* record the last minlen when FITRIM is called. */
+>        atomic_t s_last_trim_minblks;
+> +
+> +       /* timer for periodic auto batched discard */
+> +       struct timer_list s_auto_discard;
+> +       struct task_struct *s_auto_discard_thread;
+>  };
+>
+>  static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index 3858767..a2e9920 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -818,6 +818,10 @@ static void ext4_put_super(struct super_block *sb)
+>                        ext4_abort(sb, "Couldn't clean up the journal");
+>        }
+>
+> +       if (test_opt2(sb, AUTO_DISCARD)) {
+> +               kthread_stop(sbi->s_auto_discard_thread);
+> +               del_timer(&sbi->s_auto_discard);
+> +       }
+>        del_timer(&sbi->s_err_report);
+>        ext4_release_system_zone(sb);
+>        ext4_mb_release(sb);
+> @@ -1144,6 +1148,9 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
+>        if (test_opt(sb, DISCARD) && !(def_mount_opts & EXT4_DEFM_DISCARD))
+>                seq_puts(seq, ",discard");
+>
+> +       if (test_opt2(sb, AUTO_DISCARD))
+> +               seq_puts(seq, ",auto_batched_discard");
+> +
+>        if (test_opt(sb, NOLOAD))
+>                seq_puts(seq, ",norecovery");
+>
+> @@ -1333,7 +1340,7 @@ enum {
+>        Opt_nomblk_io_submit, Opt_block_validity, Opt_noblock_validity,
+>        Opt_inode_readahead_blks, Opt_journal_ioprio,
+>        Opt_dioread_nolock, Opt_dioread_lock,
+> -       Opt_discard, Opt_nodiscard,
+> +       Opt_discard, Opt_nodiscard, Opt_auto_discard,
+>        Opt_init_inode_table, Opt_noinit_inode_table,
+>  };
+>
+> @@ -1407,6 +1414,7 @@ static const match_table_t tokens = {
+>        {Opt_dioread_lock, "dioread_lock"},
+>        {Opt_discard, "discard"},
+>        {Opt_nodiscard, "nodiscard"},
+> +       {Opt_auto_discard, "auto_batched_discard"},
+>        {Opt_init_inode_table, "init_itable=%u"},
+>        {Opt_init_inode_table, "init_itable"},
+>        {Opt_noinit_inode_table, "noinit_itable"},
+> @@ -1886,6 +1894,9 @@ set_qf_format:
+>                case Opt_nodiscard:
+>                        clear_opt(sb, DISCARD);
+>                        break;
+> +               case Opt_auto_discard:
+> +                       set_opt2(sb, AUTO_DISCARD);
+> +                       break;
+>                case Opt_dioread_nolock:
+>                        set_opt(sb, DIOREAD_NOLOCK);
+>                        break;
+> @@ -2763,6 +2774,71 @@ static void print_daily_error_info(unsigned long arg)
+>        mod_timer(&sbi->s_err_report, jiffies + 24*60*60*HZ);  /* Once a day */
+>  }
+>
+> +/*
+> + * This function is called once a day to make a trim the device
+> + */
+> +static int ext4_auto_batched_discard_thread(void *data)
+> +{
+> +       struct super_block *sb = data;
+> +       struct ext4_sb_info *sbi = EXT4_SB(sb);
+> +       struct fstrim_range range;
+> +       struct timeval now;
+> +       struct tm tm;
+> +       long next;
+> +       int ret;
+> +
+> +       set_freezable();
+> +
+> +       for (;;) {
+> +               if (kthread_should_stop())
+> +                       break;
+> +
+> +               if (try_to_freeze())
+> +                       continue;
+> +
+> +               range.start = 0;
+> +               range.len = ~(__u64)0;
+> +               range.minlen = SZ_1M;
+> +
+> +               ret = ext4_trim_fs(sb, &range);
+> +               if (ret < 0)
+> +                       ext4_msg(sb, KERN_NOTICE, "error count: %u", ret);
+> +               else
+> +                       ext4_msg(sb, KERN_NOTICE, "trimmed size %llu",
+> +                                       range.len);
+> +
+> +               do_gettimeofday(&now);
+> +               time_to_tm((time_t) now.tv_sec, 0, &tm);
+> +
+> +               /* Run the every day at 2 clock */
+> +               /* XXX need to consider the timezone? */
+> +               next = 2 - tm.tm_hour;
+> +               if (next <= 0)
+> +                       next += 24;
+> +               next *= 60*60*HZ;
+> +
+> +               /* Re-arm the timer for next trim */
+> +               mod_timer(&sbi->s_auto_discard, jiffies + next);
+> +
+> +               set_current_state(TASK_INTERRUPTIBLE);
+> +               schedule();
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static void ext4_auto_batched_discard(unsigned long arg)
+> +{
+> +       struct super_block *sb = (struct super_block *) arg;
+> +       struct ext4_sb_info *sbi = EXT4_SB(sb);
+> +
+> +       /*
+> +        * The ext4_trim_fs can't run at timer context
+> +        * So use the created kthread.
+> +        */
+> +       wake_up_process(sbi->s_auto_discard_thread);
+> +}
+> +
+>  /* Find next suitable group and run ext4_init_inode_table */
+>  static int ext4_run_li_request(struct ext4_li_request *elr)
+>  {
+> @@ -3576,6 +3652,21 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+>        sbi->s_err_report.function = print_daily_error_info;
+>        sbi->s_err_report.data = (unsigned long) sb;
+>
+> +       if (test_opt2(sb, AUTO_DISCARD)) {
+> +               init_timer(&sbi->s_auto_discard);
+> +               sbi->s_auto_discard.function = ext4_auto_batched_discard;
+> +               sbi->s_auto_discard.data = (unsigned long) sb;
+> +               sbi->s_auto_discard_thread =
+> +                       kthread_create(ext4_auto_batched_discard_thread, sb,
+> +                               "ext4-batched-discard");
+> +               if (IS_ERR(sbi->s_auto_discard_thread)) {
+> +                       err = PTR_ERR(sbi->s_auto_discard_thread);
+> +                       goto failed_mount2;
+> +               }
+> +               /* One hour is enough to know the time */
+> +               mod_timer(&sbi->s_auto_discard, jiffies + 1*60*60*HZ);
+> +       }
+> +
+>        err = percpu_counter_init(&sbi->s_freeclusters_counter,
+>                        ext4_count_free_clusters(sb));
+>        if (!err) {
+> @@ -3848,6 +3939,10 @@ failed_mount_wq:
+>                sbi->s_journal = NULL;
+>        }
+>  failed_mount3:
+> +       if (test_opt2(sb, AUTO_DISCARD)) {
+> +               kthread_stop(sbi->s_auto_discard_thread);
+> +               del_timer(&sbi->s_auto_discard);
+> +       }
+>        del_timer(&sbi->s_err_report);
+>        if (sbi->s_flex_groups)
+>                ext4_kvfree(sbi->s_flex_groups);
+> @@ -4546,6 +4641,22 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+>        if (sbi->s_journal == NULL)
+>                ext4_commit_super(sb, 1);
+>
+> +       if (test_opt2(sb, AUTO_DISCARD) && !sbi->s_auto_discard_thread) {
+> +               init_timer(&sbi->s_auto_discard);
+> +               sbi->s_auto_discard.function = ext4_auto_batched_discard;
+> +               sbi->s_auto_discard.data = (unsigned long) sb;
+> +               sbi->s_auto_discard_thread =
+> +                       kthread_create(ext4_auto_batched_discard_thread, sb,
+> +                               "ext4-batched-discard");
+> +               if (IS_ERR(sbi->s_auto_discard_thread)) {
+> +                       err = PTR_ERR(sbi->s_auto_discard_thread);
+> +                       goto restore_opts;
+> +               }
+> +
+> +               /* One hour is enough to know the time */
+> +               mod_timer(&sbi->s_auto_discard, jiffies + 1*60*60*HZ);
+> +       }
+> +
+>  #ifdef CONFIG_QUOTA
+>        /* Release old quota file names */
+>        for (i = 0; i < MAXQUOTAS; i++)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
