@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471Ab1LBBLZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 20:11:25 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:39241 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756280Ab1LBBLX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 20:11:23 -0500
+	id S1756419Ab1LBBLD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 20:11:03 -0500
+Received: from ozlabs.org ([203.10.76.45]:35300 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756358Ab1LBBK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 1 Dec 2011 20:10:58 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC] virtio: use mandatory barriers for remote processor vdevs
+In-Reply-To: <20111201081236.GB5479@redhat.com>
+References: <1322569886-13055-1-git-send-email-ohad@wizery.com> <20111129131110.GC19157@redhat.com> <CAK=WgbZoGYVyKt=XXvnPVdh0koSBJC0zcgkLaYRkmjwBLOFA-A@mail.gmail.com> <20111129151958.GA31789@redhat.com> <CAK=WgbZ5aBFNro3XC0cN+Ao4ZWrBHwwd3d__CSHA=n56gKmKXw@mail.gmail.com> <20111130145004.GD21413@redhat.com> <CAK=WgbY59n9N_-2_TZ9wNBNcTMV1DCrz65e-Ae=xamcg6A0dOA@mail.gmail.com> <20111130231306.GD30031@redhat.com> <87zkfdrpn8.fsf@rustcorp.com.au> <20111201081236.GB5479@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 02 Dec 2011 10:56:33 +1030
+Message-ID: <8762hzsts6.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <CAF+7xWnf+wK8EBoGZWNr=9R+WbuAMZbdjjPCP4cubNw8xLyudw@mail.gmail.com>
-References: <1322283343.14278.2.camel@phoenix> <87borsjeez.fsf@laptop.org> <CAF+7xWnf+wK8EBoGZWNr=9R+WbuAMZbdjjPCP4cubNw8xLyudw@mail.gmail.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Fri, 2 Dec 2011 09:11:00 +0800
-Message-ID: <CAF+7xWn_FNFtOEzbyfV23DUBEpQy0zSVHrotysWb_YDmuaPQng@mail.gmail.com>
-Subject: Re: [PATCH] mmc: convert drivers/mmc/host/* to use module_platform_driver()
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-kernel@vger.kernel.org, Micha <mirq-linux@rere.qmqm.pl>,
-        linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Thu, 1 Dec 2011 10:12:37 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Thu, Dec 01, 2011 at 12:58:59PM +1030, Rusty Russell wrote:
+> > On Thu, 1 Dec 2011 01:13:07 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > For x86, stores into memory are ordered. So I think that yes, smp_XXX
+> > > can be selected at compile time.
+> > > 
+> > > So let's forget the virtio strangeness for a minute,
+> > 
+> > Hmm, we got away with light barriers because we knew we were not
+> > *really* talking to a device.  But now with virtio-mmio, turns out we
+> > are :)
+> 
+> You think virtio-mmio this issue too?  It's reported on remoteproc...
 
-2011/12/2 Axel Lin <axel.lin@gmail.com>:
-> 2011/12/2 Chris Ball <cjb@laptop.org>:
->> Hi Axel, Micha,
->>
->> On Fri, Nov 25 2011, Axel Lin wrote:
->>> This patch converts the drivers in drivers/mmc/host/* to use the
->>> module_platform_driver() macro which makes the code smaller and a bit
->>> simpler.
->>
->> This makes cb710_mmc unhappy:
->>
->> /home/cjb/git/mmc/drivers/mmc/host/cb710-mmc.c:783:1: warning: data definition has no type or storage class [enabled by default]
->> /home/cjb/git/mmc/drivers/mmc/host/cb710-mmc.c:783:1: warning: type defaults to ‘int’ in declaration of ‘module_platform_driver’ [-Wimplicit-int]
->> /home/cjb/git/mmc/drivers/mmc/host/cb710-mmc.c:783:1: warning: parameter names (without types) in function declaration [enabled by default]
->> /home/cjb/git/mmc/drivers/mmc/host/cb710-mmc.c:773:31: warning: ‘cb710_mmc_driver’ defined but not used [-Wunused-variable]
->
-> Strange. I don't see above warning in my build after apply this patch.
-> ( Tested on linux-next tree ).
->
-I found the problem now.
-It is because the define of module_platform_driver does not exist in
-your mmc-next branch.
-However, it does exist in your master branch. ( see
-include/linux/platform_device.h )
+I think any non-virtual, non-PCI device has to worry about it.  Perhaps
+all virtio-mmio are virtual (at this point).
 
-Axel
+I'm tempted to say we want permission from the device to do relaxed
+barriers (so I don't have to worry about it!)
+
+> > I'm really tempted to revert d57ed95 for 3.2, and we can revisit this
+> > optimization later if it proves worthwhile.
+> 
+> Generally it does seem the best we can do for 3.2.
+> 
+> Given it's rc3, I'd be a bit wary of introducing regressions - I'll try
+> to find some real setups (as in - not my laptop) to run some benchmarks
+> on, to verify there's no major problem.
+> I hope I can report on this in about a week from now - want to hold onto this meanwhile?
+
+Yep, no huge hurry.  Thanks!
+
+Cheers,
+Rusty.
