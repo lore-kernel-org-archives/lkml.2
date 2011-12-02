@@ -1,330 +1,403 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab1LBDrc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 22:47:32 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:39178 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756485Ab1LBDra (ORCPT
+	id S1756574Ab1LBDzl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 22:55:41 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:41176 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485Ab1LBDzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 22:47:30 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zzc89bh542M1432N98dK4015Lzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Shi Xuelin-B29237 <B29237@freescale.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Yang-R58472 <r58472@freescale.com>
-Subject: RE: [PATCH][RFC] fsldma: fix performance degradation by optimizing
- spinlock use.
-Thread-Topic: [PATCH][RFC] fsldma: fix performance degradation by optimizing
- spinlock use.
-Thread-Index: AQHMqUjerURab3Fr/EKddPxu6BzsrpW7rS8AgAc9FICAALMMgIAA7IkAgACpYSCAAOPqAIAB3jNw
-Date: Fri, 2 Dec 2011 03:47:27 +0000
-Message-ID: <DBB740589CE8814680DECFE34BE197AB14BCBC@039-SN1MPN1-006.039d.mgd.msft.net>
-References: <1321937705-19587-1-git-send-email-b29237@freescale.com>
- <20111122185924.GA23323@ovro.caltech.edu>
- <DBB740589CE8814680DECFE34BE197AB148CDD@039-SN1MPN1-006.039d.mgd.msft.net>
- <20111128163814.GA10919@ovro.caltech.edu>
- <3F607A5180246847A760FD34122A1E052E07B7@039-SN1MPN1-003.039d.mgd.msft.net>
- <20111129172539.GB15331@ovro.caltech.edu>
- <DBB740589CE8814680DECFE34BE197AB14A1E0@039-SN1MPN1-006.039d.mgd.msft.net>
- <20111130170737.GA25892@ovro.caltech.edu>
-In-Reply-To: <20111130170737.GA25892@ovro.caltech.edu>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.103]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Thu, 1 Dec 2011 22:55:39 -0500
+Date: Thu, 01 Dec 2011 22:55:33 -0500 (EST)
+Message-Id: <20111201.225533.1697648312581583377.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=utf-8
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 01 Dec 2011 19:55:37 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pB23lrpZ023824
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pB23tsAa023848
 
-Hi Iris,
 
->I'm convinced that "smp_rmb()" is needed when removing the spinlock. As noted, Documentation/memory-barriers.txt says that stores on one CPU can be
->observed by another CPU in a different order.
->Previously, there was an UNLOCK (in fsl_dma_tx_submit) followed by a LOCK (in fsl_tx_status). This provided a "full barrier", forcing the operations to 
->complete correctly when viewed by the second CPU. 
+Lots of tiny fixes, pretty much everywhere.  Nothing really stands out, but
+each bug is certainly a bummer if you happen to run into it.
 
-I do not agree this smp_rmb() works here. Because when this smp_rmb() executed and begin to read chan->common.cookie, you still cannot avoid the order issue. Something like one is reading old value, but another CPU is updating the new value. 
+I hope all the PMTU and redirect regressions I added to the ipv4 code
+are really fixed now :-)  A huge thanks to Steffen Klassert, Eric Dumazet,
+and others for helping to resolve these problems.
 
-My point is here the order is not important for the DMA decision.
-Completed DMA tx is decided as not complete is not a big deal, because next time it will be OK.
+The netfilter ADVANCED depency adjustments are, of course, in here too.
 
-I believe there is no case that could cause uncompleted DMA tx is decided as completed, because the fsl_tx_status is called after fsl_dma_tx_submit for a specific cookie. If you can give me an example here, I will agree with you.
+1) ARCNET and PHYLIB were inadvertantly changed to bool, revert back to
+   tristate.  From Ben Hutchings.
 
-Thanks,
-Forrest 
+2) Two netfilter ADVANCED adjustments.
 
------Original Message-----
-From: Ira W. Snyder [mailto:iws@ovro.caltech.edu] 
-Sent: 2011Âπ¥12Êúà1Êó• 1:08
-To: Shi Xuelin-B29237
-Cc: vinod.koul@intel.com; dan.j.williams@intel.com; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Li Yang-R58472
-Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing spinlock use.
+3) Cached route lookups must validate referenced inetpeer.
 
-On Wed, Nov 30, 2011 at 09:57:47AM +0000, Shi Xuelin-B29237 wrote:
-> Hello Ira,
-> 
-> In drivers/dma/dmaengine.c, we have below tight loop to check DMA completion in mainline Linux:
->        do {
->                 status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
->                 if (time_after_eq(jiffies, dma_sync_wait_timeout)) {
->                         printk(KERN_ERR "dma_sync_wait_timeout!\n");
->                         return DMA_ERROR;
->                 }
->         } while (status == DMA_IN_PROGRESS);
-> 
+4) Revert old udp_recvmsg() 'redundant variable' change, because in fact
+   the 'copied' variable was not redundant and this broke things when
+   encountering UDP packets with bad checksums.
 
-That is the body of dma_sync_wait(). It is mostly used in the raid code.
-I understand that you don't want to change the raid code to use callbacks.
+5) TCP ipv6 input packet processing could crash under various
+   circumstances in error paths, fixes from Eric Dumazet.
 
-In any case, I think we've strayed from the topic under consideration, which is: can we remove this spinlock without introducing a bug.
+6) Fix bad decnet socket refcounting, also from Eric Dumazet.
 
-I'm convinced that "smp_rmb()" is needed when removing the spinlock. As noted, Documentation/memory-barriers.txt says that stores on one CPU can be observed by another CPU in a different order.
+7) L2TP needs to validate attached socket route, fix from Florian Westphal.
 
-Previously, there was an UNLOCK (in fsl_dma_tx_submit) followed by a LOCK (in fsl_tx_status). This provided a "full barrier", forcing the operations to complete correctly when viewed by the second CPU. From the
-text:
+8) Proxy ARP entries listed improperly in network namespace, fix from
+   Jorge Boncompte.
 
-> Therefore, from (1), (2) and (4) an UNLOCK followed by an 
-> unconditional LOCK is equivalent to a full barrier, but a LOCK followed by an UNLOCK is not.
+9) IGMP's ip_mc_add_src() incorrectly decrements the entry refcount,
+   fix from Jun Zhao.
 
-Also, please read "EXAMPLES OF MEMORY BARRIER SEQUENCES" and "INTER-CPU LOCKING BARRIER EFFECTS". Particularly, in "EXAMPLES OF MEMORY BARRIER SEQUENCES", the text notes:
+10) bnx2x LED handling fix from Yaniv Rosner.
 
-> Without intervention, CPU 2 may perceive the events on CPU 1 in some 
-> effectively random order, despite the write barrier issued by CPU 1:
->
-> [snip diagram]
->
-> And thirdly, a read barrier acts as a partial order on loads. Consider 
-> the following sequence of events:
->
-> [snip diagram]
->
-> Without intervention, CPU 2 may then choose to perceive the events on 
-> CPU 1 in some effectively random order, despite the write barrier issued by CPU 1:
->
-> [snip diagram]
->
+11) TX descriptor list was mis-sized in qlge driver, fix from Thadeu
+    Lima de Souza Cascardo.
 
-And so on. Please read this entire section in the document.
+12) ehea per-TX-queue memory consumption was enormous, scale it
+    down to be more reasonable, from Anton Blanchard.
 
-I can't give you an ACK on the proposed patch. To the best of my understanding, I believe it introduces a bug. I've tried to provide as much evidence for this belief as I can, in the form of documentation in the kernel source tree. If you can cite some documentation that shows I am wrong, I will happily change my mind!
+13) We have to adjust the IP header ->daddr in ip_forward_options()
+    not ip_options_rcv_srr() as the latter is too early.  Fix from
+    Li Wei.
 
-Ira
+14) Netlabel adds to ipv4 map list in ipv6 code :-)  Fix from
+    Dan Carpenter.
 
-> -----Original Message-----
-> From: Ira W. Snyder [mailto:iws@ovro.caltech.edu]
-> Sent: 2011Âπ¥11Êúà30Êó• 1:26
-> To: Li Yang-R58472
-> Cc: Shi Xuelin-B29237; vinod.koul@intel.com; dan.j.williams@intel.com; 
-> linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by optimizing spinlock use.
-> 
-> On Tue, Nov 29, 2011 at 03:19:05AM +0000, Li Yang-R58472 wrote:
-> > > Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by 
-> > > optimizing spinlock use.
-> > > 
-> > > On Thu, Nov 24, 2011 at 08:12:25AM +0000, Shi Xuelin-B29237 wrote:
-> > > > Hi Ira,
-> > > >
-> > > > Thanks for your review.
-> > > >
-> > > > After second thought, I think your scenario may not occur.
-> > > > Because the cookie 20 we query must be returned by
-> > > > fsl_dma_tx_submit(...) in
-> > > practice.
-> > > > We never query a cookie not returned by fsl_dma_tx_submit(...).
-> > > >
-> > > 
-> > > I agree about this part.
-> > > 
-> > > > When we call fsl_tx_status(20), the chan->common.cookie is 
-> > > > definitely wrote as
-> > > 20 and cpu2 could not read as 19.
-> > > >
-> > > 
-> > > This is what I don't agree about. However, I'm not an expert on CPU cache vs.
-> > > memory accesses in an multi-processor system. The section titled 
-> > > "CACHE COHERENCY" in Documentation/memory-barriers.txt leads me to 
-> > > believe that the scenario I described is possible.
-> > 
-> > For Freescale PowerPC, the chip automatically takes care of cache coherency.  Even if this is a concern, spinlock can't address it.
-> > 
-> > > 
-> > > What happens if CPU1's write of chan->common.cookie only goes into 
-> > > CPU1's cache. It never makes it to main memory before CPU2 fetches the old value of 19.
-> > > 
-> > > I don't think you should see any performance impact from the
-> > > smp_mb() operation.
-> > 
-> > Smp_mb() do have impact on performance if it's in the hot path.  While it might be safer having it, I doubt it is really necessary.  If the CPU1 doesn't have the updated last_used, it's shouldn't have known there is a cookie 20 existed either.
-> > 
-> 
-> I believe that you are correct, for powerpc. However, anything outside of arch/powerpc shouldn't assume it only runs on powerpc. I wouldn't be surprised to see fsldma running on an iMX someday (ARM processor).
-> 
-> My interpretation says that the change introduces the possibility that
-> fsl_tx_status() returns the wrong answer for an extremely small time window, on SMP only, based on Documentation/memory-barriers.txt. But I can't seem convince you.
-> 
-> My real question is what code path is hitting this spinlock? Is it in mainline Linux? Why is it polling rather than using callbacks to determine DMA completion?
-> 
-> Thanks,
-> Ira
-> 
-> > > > -----Original Message-----
-> > > > From: Ira W. Snyder [mailto:iws@ovro.caltech.edu]
-> > > > Sent: 2011Âπ¥11Êúà23Êó• 2:59
-> > > > To: Shi Xuelin-B29237
-> > > > Cc: dan.j.williams@intel.com; Li Yang-R58472; zw@zh-kernel.org; 
-> > > > vinod.koul@intel.com; linuxppc-dev@lists.ozlabs.org; 
-> > > > linux-kernel@vger.kernel.org
-> > > > Subject: Re: [PATCH][RFC] fsldma: fix performance degradation by 
-> > > > optimizing
-> > > spinlock use.
-> > > >
-> > > > On Tue, Nov 22, 2011 at 12:55:05PM +0800, b29237@freescale.com wrote:
-> > > > > From: Forrest Shi <b29237@freescale.com>
-> > > > >
-> > > > >     dma status check function fsl_tx_status is heavily called in
-> > > > >     a tight loop and the desc lock in fsl_tx_status contended by
-> > > > >     the dma status update function. this caused the dma performance
-> > > > >     degrades much.
-> > > > >
-> > > > >     this patch releases the lock in the fsl_tx_status function.
-> > > > >     I believe it has no neglect impact on the following call of
-> > > > >     dma_async_is_complete(...).
-> > > > >
-> > > > >     we can see below three conditions will be identified as success
-> > > > >     a)  x < complete < use
-> > > > >     b)  x < complete+N < use+N
-> > > > >     c)  x < complete < use+N
-> > > > >     here complete is the completed_cookie, use is the last_used
-> > > > >     cookie, x is the querying cookie, N is MAX cookie
-> > > > >
-> > > > >     when chan->completed_cookie is being read, the last_used may
-> > > > >     be incresed. Anyway it has no neglect impact on the dma status
-> > > > >     decision.
-> > > > >
-> > > > >     Signed-off-by: Forrest Shi <xuelin.shi@freescale.com>
-> > > > > ---
-> > > > >  drivers/dma/fsldma.c |    5 -----
-> > > > >  1 files changed, 0 insertions(+), 5 deletions(-)
-> > > > >
-> > > > > diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c index 
-> > > > > 8a78154..1dca56f 100644
-> > > > > --- a/drivers/dma/fsldma.c
-> > > > > +++ b/drivers/dma/fsldma.c
-> > > > > @@ -986,15 +986,10 @@ static enum dma_status 
-> > > > > fsl_tx_status(struct
-> > > dma_chan *dchan,
-> > > > >  	struct fsldma_chan *chan = to_fsl_chan(dchan);
-> > > > >  	dma_cookie_t last_complete;
-> > > > >  	dma_cookie_t last_used;
-> > > > > -	unsigned long flags;
-> > > > > -
-> > > > > -	spin_lock_irqsave(&chan->desc_lock, flags);
-> > > > >
-> > > >
-> > > > This will cause a bug. See below for a detailed explanation. You need this instead:
-> > > >
-> > > > 	/*
-> > > > 	 * On an SMP system, we must ensure that this CPU has seen the
-> > > > 	 * memory accesses performed by another CPU under the
-> > > > 	 * chan->desc_lock spinlock.
-> > > > 	 */
-> > > > 	smp_mb();
-> > > > >  	last_complete = chan->completed_cookie;
-> > > > >  	last_used = dchan->cookie;
-> > > > >
-> > > > > -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> > > > > -
-> > > > >  	dma_set_tx_state(txstate, last_complete, last_used, 0);
-> > > > >  	return dma_async_is_complete(cookie, last_complete, 
-> > > > > last_used);  }
-> > > >
-> > > > Facts:
-> > > > - dchan->cookie is the same member as chan->common.cookie (same 
-> > > > memory
-> > > > location)
-> > > > - chan->common.cookie is the "last allocated cookie for a pending transaction"
-> > > > - chan->completed_cookie is the "last completed transaction"
-> > > >
-> > > > I have replaced "dchan->cookie" with "chan->common.cookie" in 
-> > > > the below
-> > > explanation, to keep everything referenced from the same structure.
-> > > >
-> > > > Variable usage before your change. Everything is used locked.
-> > > > - RW chan->common.cookie		(fsl_dma_tx_submit)
-> > > > - R  chan->common.cookie		(fsl_tx_status)
-> > > > - R  chan->completed_cookie		(fsl_tx_status)
-> > > > - W  chan->completed_cookie		(dma_do_tasklet)
-> > > >
-> > > > Variable usage after your change:
-> > > > - RW chan->common.cookie		LOCKED
-> > > > - R  chan->common.cookie		NO LOCK
-> > > > - R  chan->completed_cookie		NO LOCK
-> > > > - W  chan->completed_cookie             LOCKED
-> > > >
-> > > > What if we assume that you have a 2 CPU system (such as a P2020). 
-> > > > After your
-> > > changes, one possible sequence is:
-> > > >
-> > > > === CPU1 - allocate + submit descriptor: fsl_dma_tx_submit() === 
-> > > > spin_lock_irqsave
-> > > > descriptor->cookie = 20		(x in your example)
-> > > > chan->common.cookie = 20	(used in your example)
-> > > > spin_unlock_irqrestore
-> > > >
-> > > > === CPU2 - immediately calls fsl_tx_status() ===
-> > > > chan->common.cookie == 19
-> > > > chan->completed_cookie == 19
-> > > > descriptor->cookie == 20
-> > > >
-> > > > Since we don't have locks anymore, CPU2 may not have seen the 
-> > > > write to
-> > > > chan->common.cookie yet.
-> > > >
-> > > > Also assume that the DMA hardware has not started processing the 
-> > > > transaction yet. Therefore dma_do_tasklet() has not been called, 
-> > > > and
-> > > > chan->completed_cookie has not been updated.
-> > > >
-> > > > In this case, dma_async_is_complete() (on CPU2) returns 
-> > > > DMA_SUCCESS, even
-> > > though the DMA operation has not succeeded. The DMA operation has 
-> > > not even started yet!
-> > > >
-> > > > The smp_mb() fixes this, since it forces CPU2 to have seen all 
-> > > > memory operations
-> > > that happened before CPU1 released the spinlock. Spinlocks are 
-> > > implicit SMP memory barriers.
-> > > >
-> > > > Therefore, the above example becomes:
-> > > > smp_mb();
-> > > > chan->common.cookie == 20
-> > > > chan->completed_cookie == 19
-> > > > descriptor->cookie == 20
-> > > >
-> > > > Then dma_async_is_complete() returns DMA_IN_PROGRESS, which is correct.
-> > > >
-> > > > Thanks,
-> > > > Ira
-> > > >
-> > > >
-> > > > _______________________________________________
-> > > > Linuxppc-dev mailing list
-> > > > Linuxppc-dev@lists.ozlabs.org
-> > > > https://lists.ozlabs.org/listinfo/linuxppc-dev
-> > 
-> 
+15) Several MTU handling regression fixes in ipv4 from Steffen Klassert.
 
+16) DM9000 driver tests bit using && instead of &.  Fix from Mark Brown.
+
+17) Concurrent stream socket reads may cause poll() to incorrectly block
+    for AF_UNIX sockets, report and fix from Alexey Moiseytsev.
+
+18) Invalidate cached ipv4 redirects properly, fix from Eric Dumazet.
+
+19) Some 802.11 netlink attributes were not being validated properly,
+    fix from Eliad Peller.
+
+20) Wireless TX aggregation accidental double-stop fix from Johannes Berg.
+
+21) rtlwifi can deadlock on lps_lock, fix from Stanislaw Gruszka.
+
+22) /proc/*/net/dev_mcast output corruption fix from Anton Blanchard.
+
+23) "-1" means default for multicast hops in ipv6, fix from Li Wei.
+
+24) Integer overflow fix in SCTP from Xi Wang, although it took me two
+    tries to get it committed properly, my bad.
+
+25) ISDN string NULL termination fixes from Dan Carpenter.
+
+26) TEQL driver needs to perform dst_get_neighbour() under proper
+    RCU protection, fix from Eric Dumazet.
+
+27) Likewise, fix a similar lockdep splat in rt_cache_seq_show, also
+    from Eric Dumazet.
+
+28) When the PSCHED_SHIFT was adjusted from 10 to 6 the RED packet scheduler did
+    not have it's idle period handling adjusted properly.  Fix from Eric Dumazet.
+    
+29) When bridge user-stp mode is used, we can get the device stuck in no-carrier
+    state forever.  Fix from Vitalii Demianets.
+
+30) When the RED packet scheduler was made classful, we didn't update the test
+    for queue empty.  It must check q->qdisc->q.len not whether sch->q is empty.
+    Fix from Eric Dumazet.
+
+31) Missing spin_lock_init() and workqueue deadlock fix in p54spi driver from
+    Michael Buesch.
+
+32) ip_route_me_harder() in netfilter needs to use HH_DATA_ALIGN when expanding
+    the SKB header area, otherwise packet headers become misaligned.  Fix
+    from Paul Guo.
+
+33) iseries_veth uses wrong length argument to memset() call, from Thomas Jarosch.
+
+34) When DCCP ipv4 connect fails to lookup a route, we don't record the error
+    from the 'rt' error pointer properly, fix from RongQing Li.
+
+35) Fix namespace based OOPS in nf_conntrack by making event callback
+    registration per-ns.  Fix from Pablo Neira Ayuso.
+
+36) In netlink socket dumps, report the TOS attribute of inet sockets,
+    regardless of whether they are ipv4 or ipv6, because this value
+    has meaning for ipv4 mapped ipv6 connections.  Fix from Maciej
+    ≈ªenczykowski.
+
+37) ndisc_send_redirect() has reversed rate limiting check, oops.  Fix from
+    Li Wei.
+
+38) B44 needs to use dev_kfree_skb_irq() when releasing TX buffers because
+    the free runs with an IRQ safe spinlock held, fix from Xander Hover.
+
+39) If we reuse a TCP time-wait socket in ipv6, we erroneously drop the SYN
+    because treq->iif is not set early enough in tcp_v6_conn_request().  Fix
+    from Eric Dumazet.  This was largely not noticed because 1 second later the
+    client would resend the SYN and that would work since the first SYN
+    killed off the time-wait entry.
+
+40) Fix PHY initialization in jme driver, from Aries Lee.
+
+Please pull, thanks a lot.
+
+The following changes since commit 5611cc4572e889b62a7b4c72a413536bf6a9c416:
+
+  Linux 3.2-rc4 (2011-12-01 14:56:01 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Alexey Moiseytsev (1):
+      AF_UNIX: Fix poll blocking problem when reading from a stream socket
+
+Anton Blanchard (3):
+      ehea: Reduce memory usage in buffer pools
+      ehea: Use round_jiffies_relative to align workqueue
+      net: Fix corruption in /proc/*/net/dev_mcast
+
+Aries Lee (1):
+      jme: PHY configuration for compatible issue
+
+Ben Greear (1):
+      mac80211: Fix AMSDU rate printout in debugfs.
+
+Ben Hutchings (1):
+      net: Revert ARCNET and PHYLIB to tristate options
+
+Dan Carpenter (5):
+      prism54: potential memory corruption in prism54_get_essid()
+      caif: fix endian conversion in cffrml_transmit()
+      net/netlabel: copy and paste bug in netlbl_cfg_unlbl_map_add()
+      isdn: make sure strings are null terminated
+      isdn: avoid copying too long drvid
+
+David S. Miller (5):
+      netfilter: Remove NOTRACK/RAW dependency on NETFILTER_ADVANCED.
+      Merge branch 'nf' of git://1984.lsi.us.es/net
+      ipv4: Perform peer validation on cached route lookup.
+      Revert "udp: remove redundant variable"
+      netfilter: Remove ADVANCED dependency from NF_CONNTRACK_NETBIOS_NS
+
+Eliad Peller (1):
+      nl80211: fix MAC address validation
+
+Emmanuel Grumbach (1):
+      mac80211: fix race between the AGG SM and the Tx data path
+
+Eric Dumazet (8):
+      ipv6: tcp: fix panic in SYN processing
+      ipv6: tcp: fix tcp_v6_conn_request()
+      decnet: proper socket refcounting
+      inet: add a redirect generation id in inetpeer
+      sch_teql: fix lockdep splat
+      ipv4: fix lockdep splat in rt_cache_seq_show
+      sch_red: fix red_calc_qavg_from_idle_time
+      sch_red: fix red_change
+
+Fabio Estevam (1):
+      net: fec: Select the FEC driver by default for i.MX SoCs
+
+Feng King (1):
+      net: correct comments of skb_shift
+
+Florian Westphal (1):
+      l2tp: ensure sk->dst is still valid
+
+Gertjan van Wingerde (1):
+      rt2x00: Fix efuse EEPROM reading on PPC32.
+
+Giuseppe CAVALLARO (1):
+      stmmac: mask mmc interrupts
+
+Helmut Schaa (1):
+      mac80211: Fix endian bug in radiotap header generation
+
+Henrik Saavedra Persson (1):
+      bonding: only use primary address for ARP
+
+Jan Beulich (1):
+      xen-netback: use correct index for invalidation in xen_netbk_tx_check_gop()
+
+Jesper Juhl (1):
+      net, sja1000: Don't include version.h in peak_pci.c when not needed
+
+Johannes Berg (2):
+      cfg80211: fix regulatory NULL dereference
+      mac80211: don't stop a single aggregation session twice
+
+John W. Linville (4):
+      Revert "rt2x00: handle spurious pci interrupts"
+      Revert "rt2800pci: handle spurious interrupts"
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Jorge Boncompte [DTI2] (1):
+      netns: fix proxy ARP entries listing on a netns
+
+Jozsef Kadlecsik (1):
+      netfilter: ipset: suppress compile-time warnings in ip_set_hash_ipport*.c
+
+Jun Zhao (1):
+      ipv4 : igmp : fix error handle in ip_mc_add_src()
+
+Li Wei (3):
+      ipv6: fix a bug in ndisc_send_redirect
+      ipv4: Save nexthop address of LSRR/SSRR option to IPCB.
+      ipv6: Set mcast_hops to IPV6_DEFAULT_MCASTHOPS when -1 was given.
+
+Maciej ≈ªenczykowski (1):
+      net-netlink: fix diag to export IPv4 tos for dual-stack IPv6 sockets
+
+Mark Brown (1):
+      dm9000: Fix check for disabled wake on LAN
+
+Michael Buesch (2):
+      p54spi: Add missing spin_lock_init
+      p54spi: Fix workqueue deadlock
+
+Nikolay Martynov (1):
+      mac80211: fix race condition caused by late addBA response
+
+Pablo Neira Ayuso (1):
+      netfilter: nf_conntrack: make event callback registration per-netns
+
+Paul Guo (1):
+      netfilter: possible unaligned packet header in ip_route_me_harder
+
+Paul Moore (1):
+      netlabel: Fix build problems when IPv6 is not enabled
+
+Peter Pan(ÊΩòÂç´Âπ≥) (1):
+      ipv4: flush route cache after change accept_local
+
+Rafael J. Wysocki (1):
+      ath9k: Revert change that broke AR928X on Acer Ferrari One
+
+RongQing.Li (2):
+      dccp: fix error propagation in dccp_v4_connect
+      net/core: fix rollback handler in register_netdevice_notifier
+
+Stanislaw Gruszka (3):
+      rt2800pci: handle spurious interrupts
+      rt2x00: handle spurious pci interrupts
+      rtlwifi: fix lps_lock deadlock
+
+Steffen Klassert (5):
+      route: Use the device mtu as the default for blackhole routes
+      net: Rename the dst_opt default_mtu method to mtu
+      net: Move mtu handling down to the protocol depended handlers
+      route: struct rtable can be const in rt_is_input_route and rt_is_output_route
+      ipv4: Don't use the cached pmtu informations for input routes
+
+Thadeu Lima de Souza Cascardo (1):
+      qlge: fix size of external list for TX address descriptors
+
+Thomas Jarosch (1):
+      iseries_veth: Fix wrong parameter given to sizeof call
+
+Vitalii Demianets (1):
+      bridge: master device stuck in no-carrier state forever when in user-stp mode
+
+Xander Hover (1):
+      b44: Use dev_kfree_skb_irq() in b44_tx()
+
+Xi Wang (2):
+      sctp: integer overflow in sctp_auth_create_key()
+      sctp: better integer overflow check in sctp_auth_create_key()
+
+Yaniv Rosner (1):
+      bnx2x: Fix 5461x LED
+
+stephen hemminger (1):
+      tc: comment spelling fixes
+
+ drivers/isdn/divert/divert_procfs.c               |    6 +
+ drivers/isdn/i4l/isdn_net.c                       |    3 +
+ drivers/net/arcnet/Kconfig                        |    2 +-
+ drivers/net/bonding/bond_main.c                   |   33 +-----
+ drivers/net/can/sja1000/peak_pci.c                |    1 -
+ drivers/net/ethernet/broadcom/b44.c               |    2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c  |   39 +++++++-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_reg.h   |    1 +
+ drivers/net/ethernet/davicom/dm9000.c             |    2 +-
+ drivers/net/ethernet/freescale/Kconfig            |    1 +
+ drivers/net/ethernet/ibm/ehea/ehea.h              |    4 +-
+ drivers/net/ethernet/ibm/ehea/ehea_main.c         |    6 +-
+ drivers/net/ethernet/ibm/iseries_veth.c           |    2 +-
+ drivers/net/ethernet/jme.c                        |  113 ++++++++++++++++++++-
+ drivers/net/ethernet/jme.h                        |   19 ++++
+ drivers/net/ethernet/qlogic/qlge/qlge.h           |    8 +-
+ drivers/net/ethernet/stmicro/stmmac/stmmac_main.c |   14 ++-
+ drivers/net/phy/Kconfig                           |    2 +-
+ drivers/net/wireless/ath/ath9k/hw.c               |    3 +-
+ drivers/net/wireless/p54/p54spi.c                 |    5 +-
+ drivers/net/wireless/prism54/isl_ioctl.c          |    2 +-
+ drivers/net/wireless/rt2x00/rt2800lib.c           |    2 +-
+ drivers/net/wireless/rtlwifi/ps.c                 |   17 ++--
+ drivers/net/xen-netback/netback.c                 |    2 +-
+ include/linux/netdevice.h                         |    2 +
+ include/linux/pkt_sched.h                         |    6 +-
+ include/net/dst.h                                 |    7 +-
+ include/net/dst_ops.h                             |    2 +-
+ include/net/inet_sock.h                           |    2 +
+ include/net/inetpeer.h                            |    1 +
+ include/net/netfilter/nf_conntrack_ecache.h       |   19 ++--
+ include/net/netns/conntrack.h                     |    2 +
+ include/net/red.h                                 |   15 +--
+ include/net/route.h                               |    4 +-
+ net/bridge/br_netlink.c                           |    6 +
+ net/bridge/br_stp.c                               |   29 +++---
+ net/caif/cffrml.c                                 |   11 +-
+ net/core/dev.c                                    |    9 ++-
+ net/core/dev_addr_lists.c                         |    3 +-
+ net/core/neighbour.c                              |    5 +-
+ net/core/skbuff.c                                 |    2 +-
+ net/dccp/ipv4.c                                   |    1 +
+ net/decnet/dn_route.c                             |   10 +-
+ net/decnet/dn_timer.c                             |   17 +--
+ net/ipv4/devinet.c                                |    5 +
+ net/ipv4/igmp.c                                   |    3 +-
+ net/ipv4/inet_diag.c                              |   14 ++-
+ net/ipv4/ip_forward.c                             |    2 +-
+ net/ipv4/ip_options.c                             |    5 +-
+ net/ipv4/netfilter.c                              |    3 +-
+ net/ipv4/netfilter/Kconfig                        |    1 -
+ net/ipv4/route.c                                  |   67 +++++++++----
+ net/ipv4/udp.c                                    |   15 ++--
+ net/ipv6/inet6_connection_sock.c                  |    2 +-
+ net/ipv6/ipv6_sockglue.c                          |    2 +-
+ net/ipv6/ndisc.c                                  |    2 +-
+ net/ipv6/netfilter/Kconfig                        |    1 -
+ net/ipv6/route.c                                  |   21 +++--
+ net/ipv6/tcp_ipv6.c                               |   13 ++-
+ net/ipv6/udp.c                                    |   15 ++--
+ net/l2tp/l2tp_core.c                              |    2 +-
+ net/mac80211/agg-tx.c                             |   42 +++++++-
+ net/mac80211/debugfs_sta.c                        |    4 +-
+ net/mac80211/status.c                             |    8 +-
+ net/netfilter/Kconfig                             |    2 -
+ net/netfilter/ipset/ip_set_hash_ipport.c          |    2 +-
+ net/netfilter/ipset/ip_set_hash_ipportip.c        |    2 +-
+ net/netfilter/ipset/ip_set_hash_ipportnet.c       |    2 +-
+ net/netfilter/nf_conntrack_ecache.c               |   37 ++++----
+ net/netfilter/nf_conntrack_netlink.c              |   73 ++++++++++----
+ net/netlabel/netlabel_kapi.c                      |   26 +++--
+ net/sched/sch_red.c                               |    4 +-
+ net/sched/sch_teql.c                              |   31 ++++--
+ net/sctp/auth.c                                   |    2 +-
+ net/unix/af_unix.c                                |    4 +
+ net/wireless/nl80211.c                            |    4 +-
+ net/wireless/reg.c                                |    4 +
+ net/xfrm/xfrm_policy.c                            |   10 +-
+ 78 files changed, 591 insertions(+), 281 deletions(-)
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
