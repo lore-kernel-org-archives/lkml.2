@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab1LBSMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 13:12:40 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:57479 "EHLO mx2.parallels.com"
+	id S932141Ab1LBSQs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 13:16:48 -0500
+Received: from ffm.saftware.de ([83.141.3.46]:60137 "EHLO ffm.saftware.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757189Ab1LBSMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 13:12:38 -0500
-Message-ID: <4ED914EC.6020500@parallels.com>
-Date: Fri, 2 Dec 2011 16:11:56 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S932066Ab1LBSQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 13:16:47 -0500
+Message-ID: <4ED91608.5020503@linuxtv.org>
+Date: Fri, 02 Dec 2011 19:16:40 +0100
+From: Andreas Oberritter <obi@linuxtv.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v7 10/10] Disable task moving when using kernel memory
- accounting
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com> <1322611021-1730-11-git-send-email-glommer@parallels.com> <20111130112210.1d979512.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111130112210.1d979512.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+To: =?ISO-8859-1?Q?R=E9mi_Denis-Courmont?= <remi@remlab.net>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED7BBA3.5020002@redhat.com> <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com> <201112021949.19395.remi@remlab.net>
+In-Reply-To: <201112021949.19395.remi@remlab.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2011 12:22 AM, KAMEZAWA Hiroyuki wrote:
-> On Tue, 29 Nov 2011 21:57:01 -0200
-> Glauber Costa<glommer@parallels.com>  wrote:
->
->> Since this code is still experimental, we are leaving the exact
->> details of how to move tasks between cgroups when kernel memory
->> accounting is used as future work.
+On 02.12.2011 18:49, Rémi Denis-Courmont wrote:
+> Le jeudi 1 décembre 2011 21:59:56 HoP, vous avez écrit :
+>>> Kernel code is GPLv2. You can use its code on a GPLv2 licensed library.
 >>
->> For now, we simply disallow movement if there are any pending
->> accounted memory.
+>> I see. So if you think it is nice to get dvb-core, make a wrapper around
+>> to get it usable in userspace and maintain totally same functionality
+>> by myself then I say it is no go. If it looks for you like good idea
+>> I must disagree. Code duplication?
+> 
+> Sure, some core code would be duplicated. That is not a big deal.
+> 
+> This proposal however has three big advantages:
+> - Proprietary drivers are not enabled as the library would be GPL.
+> - The virtual DVB device runs in the same process as the DVB application, 
+> which saves context switching and memory copying.
+> - It would be your project. You do not need to agree with Mauro ;-)
+> 
+>> Two maintaners? That is crazy idea man.
+> 
+> Someone would have to maintain the device driver anyway. I don't see much of a 
+> difference on maintainance side.
+> 
+>>> And I can't see any advantage on yours ;) Putting something that belongs
+>>> to userspace into kernelspace just because it is easier to re-use the
+>>> existing code inside the kernel is not a good argument.
 >>
->> Signed-off-by: Glauber Costa<glommer@parallels.com>
->> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->> ---
->>   mm/memcontrol.c |   23 ++++++++++++++++++++++-
->>   1 files changed, 22 insertions(+), 1 deletions(-)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index a31a278..dd9a6d9 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -5453,10 +5453,19 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
->>   {
->>   	int ret = 0;
->>   	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
->> +	struct mem_cgroup *from = mem_cgroup_from_task(p);
->> +
->> +#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)&&  defined(CONFIG_INET)
->> +	if (from != memcg&&  !mem_cgroup_is_root(from)&&
->> +	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
->> +		printk(KERN_WARNING "Can't move tasks between cgroups: "
->> +			"Kernel memory held.\n");
->> +		return 1;
->> +	}
->> +#endif
->
-> I wonder....reading all codes again, this is incorrect check.
->
-> Hm, let me cralify. IIUC, in old code, "prevent moving" is because you hold
-> reference count of cgroup, which can cause trouble at rmdir() as leaking refcnt.
-right.
+>> It is only your POV that it should be in userspace.Also, LGPL drivers 
+> 
+> Except for backward compatiblity, this would actually belong in userspace. It 
+> would be more efficient and easier to maintain as a userspace library than as 
+> a kernel driver.
 
-> BTW, because socket is a shared resource between cgroup, changes in mm->owner
-> may cause task cgroup moving implicitly. So, if you allow leak of resource
-> here, I guess... you can take mem_cgroup_get() refcnt which is memcg-local and
-> allow rmdir(). Then, this limitation may disappear.
+Maintaining the kernel module would be rather easy, because new
+properties added to dvb_frontend would be handled transparently. The
+implementation is quite simple. In contrast, implementing and then
+maintaining all the users of a newly written userspace library would be
+a nightmare in comparison.
 
-Sorry, I didn't fully understand. Can you clarify further?
-If the task is implicitly moved, it will end up calling can_attach as 
-well, right?
+> If you need backward compatibility, I am still inclined to believe that you 
+> could write a CUSE frontend, so it does involve some extra work and looses the 
+> performance benefit.
 
+How would all this allow to use e.g. dvbsnoop or w_scan on a remote
+tuner? Do you propose to add a dependency to this proposed library to
+every application?
 
->
-> Then, users will be happy but admins will have unseen kernel resource usage in
-> not populated(by rmdir) memcg. Hm, big trouble ?
->
-> Thanks,
-> -Kame
->
+Furthermore, a GPLv2 library would artificially restrict its users, e.g.
+you wouldn't be allowed to use it with gstreamer or just with anything
+that isn't GPLv2, not even v3.
 
+Regards,
+Andreas
