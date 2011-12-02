@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab1LBSEs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 13:04:48 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:59178 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168Ab1LBSEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 13:04:47 -0500
-Message-ID: <4ED91318.1030803@parallels.com>
-Date: Fri, 2 Dec 2011 16:04:08 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v7 00/10] Request for Inclusion: per-cgroup tcp memory
- pressure
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com> <20111130111152.6b1c7366.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111130111152.6b1c7366.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S932124Ab1LBSFa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 13:05:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59458 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932066Ab1LBSF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 13:05:29 -0500
+X-Authority-Analysis: v=2.0 cv=QqvcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=RlPbyBo6Jk8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=QyXUC8HyAAAA:8 a=pGLkceISAAAA:8 a=80Tajo_Xs6IX53R-FEQA:9 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH v3] printk: add console output tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Christoph Hellwig <hch@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20111125174108.GA23978@somewhere.redhat.com>
+References: <20111117150040.GB18437@somewhere>
+	 <1321543268.3997.40.camel@jlt3.sipsolutions.net>
+	 <20111118184401.GA24787@somewhere.redhat.com>
+	 <1321641975.10266.73.camel@jlt3.sipsolutions.net>
+	 <20111118185449.GB24787@somewhere.redhat.com>
+	 <1321642752.10266.75.camel@jlt3.sipsolutions.net>
+	 <20111123131622.GA10669@somewhere.redhat.com>
+	 <1322140919.5366.17.camel@jlt3.sipsolutions.net>
+	 <20111124154519.GB18579@somewhere.redhat.com>
+	 <1322161388.5366.54.camel@jlt3.sipsolutions.net>
+	 <20111125174108.GA23978@somewhere.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Dec 2011 13:05:27 -0500
+Message-ID: <1322849127.30977.51.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2011 12:11 AM, KAMEZAWA Hiroyuki wrote:
-> On Tue, 29 Nov 2011 21:56:51 -0200
-> Glauber Costa<glommer@parallels.com>  wrote:
->
->> Hi,
->>
->> This patchset implements per-cgroup tcp memory pressure controls. It did not change
->> significantly since last submission: rather, it just merges the comments Kame had.
->> Most of them are style-related and/or Documentation, but there are two real bugs he
->> managed to spot (thanks)
->>
->> Please let me know if there is anything else I should address.
->>
->
-> After reading all codes again, I feel some strange. Could you clarify ?
->
-> Here.
-> ==
-> +void sock_update_memcg(struct sock *sk)
-> +{
-> +	/* right now a socket spends its whole life in the same cgroup */
-> +	if (sk->sk_cgrp) {
-> +		WARN_ON(1);
-> +		return;
-> +	}
-> +	if (static_branch(&memcg_socket_limit_enabled)) {
-> +		struct mem_cgroup *memcg;
-> +
-> +		BUG_ON(!sk->sk_prot->proto_cgroup);
-> +
-> +		rcu_read_lock();
-> +		memcg = mem_cgroup_from_task(current);
-> +		if (!mem_cgroup_is_root(memcg))
-> +			sk->sk_cgrp = sk->sk_prot->proto_cgroup(memcg);
-> +		rcu_read_unlock();
-> ==
->
-> sk->sk_cgrp is set to a memcg without any reference count.
->
-> Then, no check for preventing rmdir() and freeing memcgroup.
->
-> Is there some css_get() or mem_cgroup_get() somewhere ?
->
+On Fri, 2011-11-25 at 18:41 +0100, Frederic Weisbecker wrote:
+> On Thu, Nov 24, 2011 at 08:03:08PM +0100, Johannes Berg wrote:
+> > From: Johannes Berg <johannes.berg@intel.com>
+> > 
+> > Add a printk.console trace point to record any printk
+> > messages into the trace, regardless of the current
+> > console loglevel. This can help correlate (existing)
+> > printk debugging with other tracing.
+> > 
+> > Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+> 
+> Thanks!
+> 
+> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-There were a css_get in the first version of this patchset. It was 
-removed, however, because it was deemed anti-intuitive to prevent rmdir, 
-since we can't know which sockets are blocking it, or do anything about 
-it. Or did I misunderstand something ?
+Is everyone happy with this change?
+
+Should I pull it into my queue for 3.3?
+
+-- Steve
+
+
