@@ -1,197 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549Ab1LBDcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 22:32:09 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:52349 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756485Ab1LBDcG (ORCPT
+	id S1756558Ab1LBDeb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 22:34:31 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:40423 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756506Ab1LBDeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 22:32:06 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnsFAAJE2E55LatN/2dsb2JhbABDqBOCcYEGgXIBAQU6HCMQCAMYFgEXFCUDIROID7gFBBKDW4QbAYI1YwSUVpIn
-Date: Fri, 2 Dec 2011 14:31:48 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [3.2-rc3] OOM killer doesn't kill the obvious memory hog
-Message-ID: <20111202033148.GA7046@dastard>
-References: <20111201093644.GW7046@dastard>
- <20111201185001.5bf85500.kamezawa.hiroyu@jp.fujitsu.com>
- <20111201124634.GY7046@dastard>
- <alpine.DEB.2.00.1112011432110.27778@chino.kir.corp.google.com>
- <20111202015921.GZ7046@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111202015921.GZ7046@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 1 Dec 2011 22:34:31 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1944lkm83p4BsIHozfJA6z/tQJQr5S0+NeMovP0aY
+	Q98d9eta9sgiRR
+Subject: Re: [patch v3 5/6] sched, ttwu_queue: queue remote wakeups only
+ when crossing cache domains
+From: Mike Galbraith <efault@gmx.de>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.jf.intel.com>, alex.shi@intel.com
+In-Reply-To: <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
+References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
+	 <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 02 Dec 2011 04:34:24 +0100
+Message-ID: <1322796864.4755.5.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 12:59:21PM +1100, Dave Chinner wrote:
-> On Thu, Dec 01, 2011 at 02:35:31PM -0800, David Rientjes wrote:
-> > On Thu, 1 Dec 2011, Dave Chinner wrote:
-> > 
-> > > > /*
-> > > >  * /proc/<pid>/oom_score_adj set to OOM_SCORE_ADJ_MIN disables oom killing for
-> > > >  * pid.
-> > > >  */
-> > > > #define OOM_SCORE_ADJ_MIN       (-1000)
-> > > > 
-> > > >  
-> > > > IIUC, this task cannot be killed by oom-killer because of oom_score_adj settings.
-> > > 
-> > > It's not me or the test suite that setting this, so it's something
-> > > the kernel must be doing automagically.
-> > > 
-> > 
-> > The kernel does not set oom_score_adj to ever disable oom killing for a 
-> > thread.  The only time the kernel touches oom_score_adj is when setting it 
-> > to "1000" in ksm and swap to actually prefer a memory allocator for oom 
-> > killing.
-> > 
-> > It's also possible to change this value via the deprecated 
-> > /proc/pid/oom_adj interface until it is removed next year.  Check your 
-> > dmesg for warnings about using the deprecated oom_adj interface or change 
-> > the printk_once() in oom_adjust_write() to a normal printk() to catch it.
+On Thu, 2011-12-01 at 17:07 -0800, Suresh Siddha wrote:
+> plain text document attachment
+> (use_ttwu_queue_when_crossing_cache_domains.patch)
+> From: Mike Galbraith <efault@gmx.de>
 > 
-> No warnings at all, as I've already said. If it is userspace,
-> whatever is doing it is using the oom_score_adj interface correctly.
-
-.....
-
-> <sigh>
+> Context-switch intensive microbenchmark on a 8-socket system had
+> ~600K times more resched IPI's on each logical CPU because of the
+> TTWU_QUEUE sched feature, which queues the task on the remote cpu's
+> queue and completes the wakeup locally using an IPI.
 > 
-> The reports all cycle around this loop:
+> As the TTWU_QUEUE sched feature is for minimizing the cache-misses
+> associated with the remote wakeups, use the IPI only when the local and
+> the remote cpu's are from different cache domains. Otherwise use the
+> traditional remote wakeup.
+
+FYI, Peter has already (improved and) queued this patch.
+
+> With this, context-switch microbenchmark performed 5 times better on the
+> 8-socket NHM-EX system.
 > 
-> 	linux-mm says userspace/distro problem
-> 	distro says openssh problem
-> 	openssh says kernel problem
+> Signed-off-by: Mike Galbraith <efault@gmx.de>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> ---
+>  kernel/sched/core.c |   25 ++++++++++++++++++++++++-
+>  1 file changed, 24 insertions(+), 1 deletion(-)
 > 
-> And there doesn't appear to be any resolution in any of the reports,
-> just circular finger pointing and frustrated users.
+> Index: tip/kernel/sched/core.c
+> ===================================================================
+> --- tip.orig/kernel/sched/core.c
+> +++ tip/kernel/sched/core.c
+> @@ -1481,12 +1481,35 @@ static int ttwu_activate_remote(struct t
+>  #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
+>  #endif /* CONFIG_SMP */
+>  
+> +static int ttwu_share_cache(int this_cpu, int cpu)
+> +{
+> +#ifndef CONFIG_X86
+> +	struct sched_domain *sd;
+> +	int ret = 0;
+> +
+> +	rcu_read_lock();
+> +	for_each_domain(this_cpu, sd) {
+> +		if (!cpumask_test_cpu(cpu, sched_domain_span(sd)))
+> +			continue;
+> +
+> +		ret = (sd->flags & SD_SHARE_PKG_RESOURCES);
+> +		break;
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	return ret;
+> +#else
+> +	return per_cpu(cpu_llc_id, this_cpu) == per_cpu(cpu_llc_id, cpu);
+> +#endif
+> +}
+> +
+>  static void ttwu_queue(struct task_struct *p, int cpu)
+>  {
+>  	struct rq *rq = cpu_rq(cpu);
+>  
+>  #if defined(CONFIG_SMP)
+> -	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
+> +	if (sched_feat(TTWU_QUEUE) &&
+> +	    !ttwu_share_cache(smp_processor_id(), cpu)) {
+>  		sched_clock_cpu(cpu); /* sync clocks x-cpu */
+>  		ttwu_queue_remote(p, cpu);
+>  		return;
 > 
-> I can't find anything in the distro startup or udev scripts that
-> modify the oom parameters, and the openssh guys say they only
-> pass on the value inhereted from ssh's parent process, so it clearly
-> not obvious where the bug lies at this point. It's been around for
-> some time, though...
 > 
-> More digging to do...
 
-A working sshd startup and login:
 
-Dec  2 13:16:32 test-2 sshd[2119]: Set /proc/self/oom_score_adj from 0 to -1000
-Dec  2 13:16:32 test-2 sshd[2119]: debug1: Bind to port 22 on 0.0.0.0.
-Dec  2 13:16:32 test-2 sshd[2119]: Server listening on 0.0.0.0 port 22.
-Dec  2 13:16:32 test-2 sshd[2119]: socket: Address family not supported by protocol
-Dec  2 13:16:36 test-2 sshd[2119]: debug1: Forked child 2576.
-Dec  2 13:16:36 test-2 sshd[2576]: Set /proc/self/oom_score_adj to 0
-
-The child process sets itself back to 0 correctly. Now, a non-working
-startup and login:
-
-Dec  2 13:19:56 test-2 sshd[2126]: Set /proc/self/oom_score_adj from 0 to -1000
-Dec  2 13:19:56 test-2 sshd[2126]: debug1: Bind to port 22 on 0.0.0.0.
-Dec  2 13:19:56 test-2 sshd[2126]: Server listening on 0.0.0.0 port 22.
-Dec  2 13:19:56 test-2 sshd[2126]: socket: Address family not supported by protocol
-Dec  2 13:19:57 test-2 sshd[2126]: Received signal 15; terminating.
-Dec  2 13:19:57 test-2 sshd[2317]: Set /proc/self/oom_score_adj from -1000 to -1000
-Dec  2 13:19:57 test-2 sshd[2317]: debug1: Bind to port 22 on 0.0.0.0.
-Dec  2 13:19:57 test-2 sshd[2317]: Server listening on 0.0.0.0 port 22.
-Dec  2 13:19:57 test-2 sshd[2317]: socket: Address family not supported by protocol
-Dec  2 13:20:01 test-2 sshd[2317]: debug1: Forked child 2322.
-Dec  2 13:20:01 test-2 sshd[2322]: Set /proc/self/oom_score_adj to -1000
-
-Somewhere in the statup process, a sshd process is getting a SIGTERM
-and dying. It is then restarted immediately form a context that has
-a /proc/self/oom_score_adj value of -1000, which is where the
-problem lies. So, how does this occur? Looks like a distro problem -
-I added 'echo "sshd restart" >> /var/log/auth.log' to the
-/etc/init.d/ssh restart command, and this pops out now:
-
-Dec  2 14:00:08 test-2 sshd[2037]: debug3: oom_adjust_setup
-Dec  2 14:00:08 test-2 sshd[2037]: Set /proc/self/oom_score_adj from 0 to -1000
-Dec  2 14:00:08 test-2 sshd[2037]: debug2: fd 3 setting O_NONBLOCK
-Dec  2 14:00:08 test-2 sshd[2037]: debug1: Bind to port 22 on 0.0.0.0.
-Dec  2 14:00:08 test-2 sshd[2037]: Server listening on 0.0.0.0 port 22.
-Dec  2 14:00:08 test-2 sshd[2037]: socket: Address family not supported by protocol
-sshd restart
-Dec  2 14:00:11 test-2 sshd[2037]: Received signal 15; terminating.
-Dec  2 14:00:11 test-2 sshd[2330]: debug3: oom_adjust_setup
-Dec  2 14:00:11 test-2 sshd[2330]: Set /proc/self/oom_score_adj from -1000 to -1000
-
-So, something in a startup script is causing an sshd restart from a
-context where the oom_score_adj = -1000. There's only two
-possibilities here - the dhcp client bringing the network interface
-up or a udev event after the sshd has been started.
-
-Bingo:
-
-$ sudo ifup --verbose eth0
-Configuring interface eth0=eth0 (inet)
-run-parts --verbose /etc/network/if-pre-up.d
-run-parts: executing /etc/network/if-pre-up.d/bridge
-run-parts: executing /etc/network/if-pre-up.d/uml-utilities
-
-dhclient -v -pf /var/run/dhclient.eth0.pid -lf
-/var/lib/dhcp/dhclient.eth0.leases eth0
-Internet Systems Consortium DHCP Client 4.1.1-P1
-Copyright 2004-2010 Internet Systems Consortium.
-All rights reserved.
-For info, please visit https://www.isc.org/software/dhcp/
-
-Listening on LPF/eth0/00:e4:b6:63:63:6e
-Sending on   LPF/eth0/00:e4:b6:63:63:6e
-Sending on   Socket/fallback
-DHCPDISCOVER on eth0 to 255.255.255.255 port 67 interval 6
-DHCPOFFER from 192.168.1.254
-DHCPREQUEST on eth0 to 255.255.255.255 port 67
-DHCPACK from 192.168.1.254
-bound to 192.168.1.61 -- renewal in 17198 seconds.
-run-parts --verbose /etc/network/if-up.d
-run-parts: executing /etc/network/if-up.d/mountnfs
-run-parts: executing /etc/network/if-up.d/ntpdate
-run-parts: executing /etc/network/if-up.d/openssh-server
-run-parts: executing /etc/network/if-up.d/uml-utilities
-$
-
-and /etc/network/if-up.d/openssh-server does a restart on the
-ssh server.
-
-And this is set in /etc/network/interfaces:
-
-allow-hotplug eth0
-
-which means udev can execute the ifup command whenteh device
-appears, asynchronously to the startup scripts that are running.
-
-So, it's a distro bug - sshd should never be started from from udev
-context because of this inherited oom_score_adj thing.
-Interestingly, the ifup ssh restart script says this:
-
-# We'd like to use 'reload' here, but it has some problems; see #502444.
-if [ -x /usr/sbin/invoke-rc.d ]; then
-        invoke-rc.d ssh restart >/dev/null 2>&1 || true
-else
-        /etc/init.d/ssh restart >/dev/null 2>&1 || true
-fi
-
-Bug 502444 describes the exact startup race condition that I've just
-found. It does a ssh server restart because reload causes the sshd
-server to fail to start if a start is currently in progress.  So,
-rather than solving the start vs reload race condition, it got a
-bandaid (use restart to restart sshd from the reload context) and
-left it as a landmine.....
-
-<sigh>
-
-Cheers,
-
-Dave.
-
--- 
-Dave Chinner
-david@fromorbit.com
