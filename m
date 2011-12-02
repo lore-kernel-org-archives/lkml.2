@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab1LBJFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 04:05:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49215 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab1LBJFV (ORCPT
+	id S1753204Ab1LBJGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 04:06:40 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:50943 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938Ab1LBJGe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 04:05:21 -0500
-Message-ID: <4ED894CB.80005@kernel.dk>
-Date: Fri, 02 Dec 2011 10:05:15 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: vgoyal@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [patch]cfq-iosched: fix cfq_cic_link() race confition
-References: <4ED886DC.1000608@jp.fujitsu.com>
-In-Reply-To: <4ED886DC.1000608@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Dec 2011 04:06:34 -0500
+X-AuditID: cbfee61b-b7bdbae000001970-2c-4ed895174a45
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: merez@codeaurora.org
+Cc: "'S, Venkatraman'" <svenkatr@ti.com>, linux-mmc@vger.kernel.org,
+        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        dh.han@samsung.com
+References: <aad7cb35699550e89526a5fb083c520d.squirrel@www.codeaurora.org>
+ <000201ccadab$1e57b8a0$5b0729e0$%jun@samsung.com>
+ <5573ef5046779298ee1555838015e0e3.squirrel@www.codeaurora.org>
+In-reply-to: <5573ef5046779298ee1555838015e0e3.squirrel@www.codeaurora.org>
+Subject: RE: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 device
+Date: Fri, 02 Dec 2011 18:06:30 +0900
+Message-id: <003201ccb0d1$ae9474c0$0bbd5e40$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcywMF/azt4PXjEJQZaBnW9MypfLygAnjRQQ
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-02 09:05, Yasuaki Ishimatsu wrote:
-> cfq_cic_link() has race condition. When some processes which shared ioc
-> issue I/O to same block device simultaneously, cfq_cic_link() returns -EEXIST
-> sometimes. The race condition might stop I/O by following steps:
-> 
-> step  1: Process A: Issue an I/O to /dev/sda
-> step  2: Process A: Get an ioc (iocA here) in get_io_context() which does not
-> 		    linked with a cic for the device
-> step  3: Process A: Get a new cic for the device (cicA here) in
-> 		    cfq_alloc_io_context()
-> 
-> step  4: Process B: Issue an I/O to /dev/sda
-> step  5: Process B: Get iocA in get_io_context() since process A and B share the
-> 		    same ioc
-> step  6: Process B: Get a new cic for the device (cicB here) in
-> 		    cfq_alloc_io_context() since iocA has not been linked with a
-> 		    cic for the device yet
-> 
-> step  7: Process A: Link cicA to iocA in cfq_cic_link()
-> step  8: Process A: Dispatch I/O to driver and finish it
-> 
-> step  9: Process B: Try to link cicB to iocA in cfq_cic_link()
-> 		    But it fails with showing "cfq: cic link failed!" kernel
-> 		    message, since iocA has already linked with cicA at step 7.
-> step 10: Process B: Wait for finishig I/O in get_request_wait()
-> 		    The function does not wake up, when there is no I/O to the
-> 		    device.
-> 
-> When cfq_cic_link() returns -EEXIST, it means ioc has already linked with cic.
-> So when cfq_cic_link() return -EEXIST, retry cfq_cic_lookup().
+Maya Erez wrote:
+> > Maya Erez wrote:
+> >> >> >> On Wed, Nov 2, 2011 at 1:33 PM, Seungwon Jeon
+> >> <tgih.jun@samsung.com>
+> >> >> wrote:
+> >> >> >> > @@ -980,12 +988,67 @@ static int mmc_blk_err_check(struct
+> >> mmc_card
+> >> >> *card,
+> >> >> >> >        if (!brq->data.bytes_xfered)
+> >> >> >> >                return MMC_BLK_RETRY;
+> >> >> >> >
+> >> >> >> > +       if (mq_mrq->packed_cmd != MMC_PACKED_NONE) {
+> >> >> >> > +               if (unlikely(brq->data.blocks << 9 !=
+> >> >> brq->data.bytes_xfered))
+> >> >> >> > +                       return MMC_BLK_PARTIAL;
+> >> >> >> > +               else
+> >> >> >> > +                       return MMC_BLK_SUCCESS;
+> >> >> >> > +       }
+> >> >> >> > +
+> >> >> >> >        if (blk_rq_bytes(req) != brq->data.bytes_xfered)
+> >> >> >> >                return MMC_BLK_PARTIAL;
+> >> >> >> >
+> >> >> >> >        return MMC_BLK_SUCCESS;
+> >> >> >> >  }
+> >> >> >> >
+> >> >> >> > +static int mmc_blk_packed_err_check(struct mmc_card *card, +
+> >>                        struct mmc_async_req *areq)
+> >> >> >> > +{
+> >> >> >> > +       struct mmc_queue_req *mq_mrq = container_of(areq, struct
+> >> >> mmc_queue_req,
+> >> >> >> > +                                                   mmc_active);
+> >> +
+> >>       int err, check, status;
+> >> >> >> > +       u8 ext_csd[512];
+> >> >> >> > +
+> >> >> >> > +       check = mmc_blk_err_check(card, areq);
+> >> >> >> > +
+> >> >> >> > +       if (check == MMC_BLK_SUCCESS)
+> >> >> >> > +               return check;
+> >> I think we need to check the status for all cases and not only in case
+> >> of
+> >> MMC_BLK_PARTIAL. For example, in cases where the header was traferred
+> >> successfully but had logic errors (wrong number of sectors etc.)
+> >> mmc_blk_err_check will return MMC_BLK_SUCCESS although the packed
+> >> commands
+> >> failed.
+> > Similarly, Sahitya Tummala is already mentioned this.
+> > Other error case will be checked in next version.
+> > The case you suggested is about read or write?
+> > Device may detect error and stop transferring the data.
+> Sahitya suggested to also check other error cases that mmc_blk_err_check
+> returns (such as MMC_BLK_CMD_ERR, MMC_BLK_ECC_ERR and MMC_BLK_DATA_ERR).
+> I suggest to also check the exception bit in the status even if
+> mmc_blk_err_check returned success, since mmc_blk_err_check might not
+> catch all the packed commands failures. One example for such a failure is
+> when the header of read packed commands will have logical error.
+This part is modified in next version.
 
-Thanks, your analysis and fix looks correct. Good work! Applied.
+Thanks,
+Seungwon Jeon.
 
--- 
-Jens Axboe
+> Thanks,
+> Maya
+> --
+> Seny by a Consultant for Qualcomm innovation center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
