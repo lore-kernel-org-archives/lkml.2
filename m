@@ -1,109 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab1LBIZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 03:25:56 -0500
-Received: from ims-d12.mx.aol.com ([205.188.249.149]:11057 "EHLO
-	ims-d12.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab1LBIZy (ORCPT
+	id S1753094Ab1LBI0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 03:26:33 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64216 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752243Ab1LBI0b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 03:25:54 -0500
-Message-Id: <201112020821.pB28L4OI001089@ims-d12.mx.aol.com>
-Reply-To: <albert_fr01@e-mail.ua>
-From: "Mr. Albert Frank" <walterwfrederick@aol.com>
-Subject: Awaiting your response
-Date: Fri, 2 Dec 2011 09:38:12 +0100
+	Fri, 2 Dec 2011 03:26:31 -0500
+Message-ID: <4ED88A40.6000808@gmail.com>
+Date: Fri, 02 Dec 2011 09:20:16 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0127_01C2A9A6.3C1ABCE6"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/76574
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:213182240:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-VSS-INFO: 5400.1158/76574
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:152241392:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d33864ed88a6f1927
-To: unlisted-recipients:; (no To-header on input)
+To: Chen Gong <gong.chen@linux.intel.com>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@gmail.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] ramoops: use pstore interface
+References: <20111128200951.GA3492@www.outflux.net>	<4ED4647D.4060305@linux.intel.com> <CAGXu5j+kzXpAhCYELDBBeMDPg2XMHt8jWRjZf2xiPVSMfUhjzA@mail.gmail.com> <4ED75765.5020002@gmail.com> <4ED83AB8.3000000@linux.intel.com>
+In-Reply-To: <4ED83AB8.3000000@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Il 02/12/2011 03:40, Chen Gong ha scritto:
+> 于 2011/12/1 18:31, Marco Stornelli 写道:
+>> Il 29/11/2011 18:24, Kees Cook ha scritto:
+>>> On Mon, Nov 28, 2011 at 8:50 PM, Chen Gong<gong.chen@linux.intel.com>
+>>> wrote:
+>>>> 于 2011/11/29 4:09, Kees Cook 写道:
+>>>>>
+>>>>> Instead of using /dev/mem directly, use the common pstore
+>>>>> infrastructure
+>>>>> to handle Oops gathering and extraction.
+>>>>>
+>>>>> Signed-off-by: Kees Cook<keescook@chromium.org>
+>>>>> ---
+>>>>> This depends on the pstore changes waiting for -next in:
+>>>>>
+>>>>> http://git.kernel.org/?p=linux/kernel/git/aegl/linux.git;a=shortlog;h=refs/heads/next
+>>>>>
+>>>>>
+>>>>> ---
+>>>>> Documentation/ramoops.txt | 8 +-
+>>>>> drivers/char/Kconfig | 1 +
+>>>>> drivers/char/ramoops.c | 206
+>>>>> ++++++++++++++++++++++++++++++++++-----------
+>>>>> 3 files changed, 160 insertions(+), 55 deletions(-)
+>>>>>
+>>>>> diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+>>>>> index 8fb1ba7..a0b9d8e 100644
+>>>>> --- a/Documentation/ramoops.txt
+>>>>> +++ b/Documentation/ramoops.txt
+>>>>> @@ -3,7 +3,7 @@ Ramoops oops/panic logger
+>>>>>
+>>>>> Sergiu Iordache<sergiu@chromium.org>
+>>>>>
+>>>>> -Updated: 8 August 2011
+>>>>> +Updated: 17 November 2011
+>>>>>
+>>>>> 0. Introduction
+>>>>>
+>>>>> @@ -71,6 +71,6 @@ timestamp and a new line. The dump then continues
+>>>>> with
+>>>>> the actual data.
+>>>>>
+>>>>> 4. Reading the data
+>>>>>
+>>>>> -The dump data can be read from memory (through /dev/mem or other
+>>>>> means).
+>>>>> -Getting the module parameters, which are needed in order to parse the
+>>>>> data, can
+>>>>> -be done through /sys/module/ramoops/parameters/* .
+>>>>> +The dump data can be read from the pstore filesystem. The format for
+>>>>> these
+>>>>> +files is "dmesg-ramoops-N", where N is the record number in
+>>>>> memory. To
+>>>>> delete
+>>>>> +a stored record from RAM, simply unlink the respective pstore file.
+>>>>
+>>>> I think the definition of "mem_address" in the doc is not very
+>>>> clear. It is
+>>>> not a normal memory instead of a persistent RAM. I suggest adding more
+>>>> descriptions.
+>>>> It's better if there is a real example.
+>>>
+>>> Okay. I'm not sure it's in the scope of this patch, but I can try.
+>>>
+>>> Marco, do you have suggestions for how this could be enhanced?
+>>>
+>>
+>> I don't know actually. It's not mandatory use a persistent memory. A
+>> simple
+>> piece of reserved RAM is ok. Obviously it will work only over reboot
+>> and not
+>> over power down. I define mem_address as a generic piece of reserved
+>> memory.
+>>
+>> Marco
+>
+> Anyway, we need a pratical exmaple to instruct us how to use this diver.
+>
+>
 
-------=_NextPart_000_0127_01C2A9A6.3C1ABCE6
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-
-This letter is not intended to cause you any embarrassment in whatever form,Rather it is intended to contact your esteemed self.Firstly,I must solicit your confidentiality.Kindly read the attached message
-
-------=_NextPart_000_0127_01C2A9A6.3C1ABCE6
-Content-Type: application/octet-stream;
-	name="Message.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="Message.txt"
-
-RGVhciBGcmllbmQsDQoNClRoaXMgbGV0dGVyIGlzIG5vdCBpbnRlbmRlZCB0
-byBjYXVzZSB5b3UgYW55IGVtYmFycmFzc21lbnQgaW4gd2hhdGV2ZXIgZm9y
-bSxSYXRoZXIgaXQgaXMgaW50ZW5kZWQgdG8gY29udGFjdCB5b3VyIGVzdGVl
-bWVkIHNlbGYuRmlyc3RseSxJIG11c3Qgc29saWNpdCB5b3VyIGNvbmZpZGVu
-dGlhbGl0eS5JIGtub3cgdGhhdCBhIHByb3Bvc2FsIG9mIHRoaXMgbWFnbml0
-dWRlIHdpbGwgbWFrZSBhbnlvbmUgYXBwcmVoZW5zaXZlIGFuZCB3b3JyaWVk
-LCBidXQgSSBhbSBhc3N1cmluZyB5b3UgdGhhdCBpdCBpcyBtYWRlIGluIGdv
-b2QgZmFpdGggYW5kIHdpbGwgYmUgb2YgbXV0dWFsIGJlbmVmaXQuDQoNCkkg
-YW0gTXIuQWxiZXJ0IEZyYW5rICxUaGUgUGVyc29uYWwgYXR0b3JuZXkgdG8g
-TXIuSmltIENydXosYSBjb25zdWx0YW50IHdpdGggYW4gb2lsIGZpcm0gaGVy
-ZSBpbiBOaWdlcmlhLk9uIHRoZSAyNXRoIG9mIEphbnVhcnkgMjAwNSxteSBj
-bGllbnQgYW5kIGhpcyB3aWZlIHdlcmUgaW52b2x2ZWQgaW4gYW4gYXV0byBj
-cmFzaCBhY2NpZGVudCBhbG9uZyBXdXNoaXNoaS1NaW5uYSBFeHByZXNzIFJv
-YWQuVW5mb3J0dW5hdGVseSB0aGV5IGxvc3QgdGhlaXIgbGl2ZXMgaW4gdGhl
-IGV2ZW50IG9mIHRoZSBhY2NpZGVudCwgU2luY2UgdGhlbiBJIGhhdmUgbWFk
-ZSBzZXZlcmFsIGNvbnRhY3RzIGFzIHRvIGxvY2F0ZSBhbnkgb2YgaGlzIGV4
-dGVuZGVkIHJlbGF0aXZlcywgYnV0IGFsbCBwcm92ZWQgYWJvcnRpdmUuSGVu
-Y2UgSSBkZWNpZGVkIHRvIGNvbnRhY3QgeW91Lg0KDQpJIGFtIGNvbnRhY3Rp
-bmcgeW91IHRvIGFzc2lzdCBpbiByZXRyaWV2aW5nIHRoZSBtb25leSB2YWx1
-ZWQgYXQgVVMkMjIuNSBtaWxsaW9uIGRvbGxhcnMgdGhhdCB3YXMgbGVmdCBi
-ZWhpbmQgYnkgbXkgY2xpZW50IHdpdGggdGhlIFNwcmluZyBCYW5rIG9mIE5p
-Z2VyaWEgcGwgYywgYmVmb3JlIGl0IGdldHMgY29uZmlzY2F0ZWQgb3IgZGVj
-bGFyZWQgdW5zZXJ2aWNlYWJsZSBieSB0aGUgYmFuay4NCg0KQ29uc2VxdWVu
-dGx5LFRoZSBiYW5rIGlzc3VlZCBtZSBhIG5vdGljZSB0byBwcm92aWRlIHRo
-ZSBuZXh0IG9mIGtpbiBvciBoYXZlIHRoZSBhY2NvdW50IGNvbmZpc2NhdGVk
-IHdpdGhpbiB0aGUgbmV4dCB0ZW4gb2ZmaWNpYWwgd29ya2luZyBkYXlzLiBz
-aW5jZSBJIGhhdmUgYmVlbiB1bnN1Y2Nlc3NmdWwgaW4gbG9jYXRpbmcgdGhl
-IHJlbGF0aXZlcyBmb3Igb3ZlciAzIHllYXJzIG5vdywgSSBoZXJlYnkgc2Vl
-ayB5b3VyIGNvbnNlbnQgdG8gYWN0IGFzIHRoZSBuZXh0IG9mIGtpbiB0byB0
-aGUgZGVjZWFzZWQsIHRoZSBwcm9jZWVkcyBvZiB0aGlzIGFjY291bnQgdmFs
-dWVkIGF0IChVUyQyMi41IG1pbGxpb24gZG9sbGFycykgY2FuIGJlIHBhaWQg
-dG8geW91IGFuZCB0aGVuIHlvdSBhbmQgSSBjYW4gc2hhcmUgdGhlIG1vbmV5
-LkkgaGF2ZSBhbGwgdGhlIG5lY2Vzc2FyeSBsZWdhbCBkb2N1bWVudHMgdGhh
-dCBjYW4gYmUgdXNlZCB0byBiYWNrIHVwIHRoaXMgcHJvamVjdC4NCg0KTXkg
-c3VnZ2VzdGlvbiB0byB5b3UgaXMgdGhhdCwgSSB3aWxsIGxpa2UgeW91IGFz
-IGEgZm9yZWlnbmVyIHRvIHN0YW5kIGFzIHRoZSBuZXh0IG9mIGtpbi9iZW5l
-ZmljaWFyeSB0byB0aGUgZnVuZCBkZXBvc2l0ZWQgYnkgbXkgbGF0ZSBjbGll
-bnQgc28gdGhhdCB0aGUgcHJvY2VlZHMgdmFsdWVkIGF0IFVTJDIyLjUgbWls
-bGlvbiBkb2xsYXJzIHdpbGwgYmUgcGFpZCB0byAgeW91Lg0KDQpQbGVhc2Ug
-ZW5kZWF2b3IgdG8gb2JzZXJ2ZSB1dG1vc3QgZGlzY3JldGlvbiBpbiBhbGwg
-bWF0dGVycyBjb25jZXJuaW5nIHRoaXMgaXNzdWUuT25jZSB0aGUgZnVuZHMg
-aGF2ZSBiZWVuIHRyYW5zZmVycmVkIHRvIHlvdXIgbm9taW5hdGVkIGJhbmsg
-YWNjb3VudCwgd2hpY2ggeW91IHNoYWxsIHNlbmQgdG8gdGhlIGJhbmssIHdl
-IHNoYWxsIHNoYXJlIGluIHRoZSByYXRpbyBvZiA1MCUgZm9yIHlvdSwgYW5k
-IDUwJSBmb3IgbWUuIEkgaGF2ZSB3b3JrZWQgb3V0IGEgcHJvY2VkdXJlIHRo
-YXQgd2lsbCBlbnN1cmUgc3VjY2VzcywgYW5kIGFzIGEgbGF3eWVyLEkgd2ls
-bCBlbnN1cmUgdGhhdCBhbGwgb3VyIGFjdGlvbnMgYXJlIHdpdGhpbiB0aGUg
-Y29uZmluZXMgb2YgdGhlIGxhdy4NCg0KU2hvdWxkIHlvdSBiZSBpbnRlcmVz
-dGVkIHBsZWFzZSxmdXJuaXNoIG1lIHdpdGggeW91ciBtb3N0IGRpcmVjdCB0
-ZWwgIGFuZCBjZWxsIHBob25lIG51bWJlcnMgZm9yIG9yYWwgY29udmVyc2F0
-aW9uIGFmdGVyIHdoaWNoICBJIHdpbGwgcHJvdmlkZSB5b3Ugd2l0aCBtb3Jl
-IGRldGFpbHMgb2YgdGhpcyB0cmFuc2FjdGlvbiBhbmQgaG93IHRvIHByb2Nl
-ZWQuDQoNCg0KWW91cnMgc2luY2VyZWx5LA0KDQpNci5BbGJlcnQgRnJhbms=
-
-------=_NextPart_000_0127_01C2A9A6.3C1ABCE6--
+For example we can use the mem parameter to reserve memory and use it as 
+ramoops buffer, very simple.
