@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab1LBCUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 21:20:24 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45133 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755908Ab1LBCUX convert rfc822-to-8bit (ORCPT
+	id S1756402Ab1LBCVZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 21:21:25 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:58709 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755210Ab1LBCVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 21:20:23 -0500
+	Thu, 1 Dec 2011 21:21:24 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.15 with qID pB22L8vG024211, This message is released by code: ctlocs8528
+From: hayeswang <hayeswang@realtek.com>
+To: "'Francois Romieu'" <romieu@fr.zoreil.com>
+CC: <booster@wolke7.net>, "'Jonathan Nieder'" <jrnieder@gmail.com>,
+        "'Eric Dumazet'" <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
+        "'nic_swsd'" <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        "'Armin Kazmi'" <armin.kazmi@tu-dortmund.de>
+References: <20111125201936.GA26692@elie.hsd1.il.comcast.net> <1322253122.2550.3.camel@edumazet-laptop> <20111125222211.GA13719@electric-eye.fr.zoreil.com> <1322262357.2550.12.camel@edumazet-laptop> <20111126004447.GA14744@electric-eye.fr.zoreil.com> <1322280423.10212.3.camel@edumazet-laptop> <20111127092808.GE21635@elie.hsd1.il.comcast.net> <4ED2A573.1020807@wolke7.net> <20111127231147.GA1784@electric-eye.fr.zoreil.com> <D95C09DB1A7E493E89FE5A0B3879CEB0@realtek.com.tw> <20111129105440.GA2410@electric-eye.fr.zoreil.com>
+Subject: RE: [bug?] r8169: hangs under heavy load
+Date: Fri, 2 Dec 2011 10:21:08 +0800
+Message-ID: <FCF60BC8872E4F1C9C72CE56F0E570C0@realtek.com.tw>
 MIME-Version: 1.0
-In-Reply-To: <20111202010644.GC31948@opensource.wolfsonmicro.com>
-References: <1322474755-18785-1-git-send-email-tomoya.rohm@gmail.com>
-	<20111128132317.GD8275@opensource.wolfsonmicro.com>
-	<CANKRQng3YtYZggVWp3BWyaWyaHAbN1hccJksWELnv2co37rEcQ@mail.gmail.com>
-	<20111129122916.GM2851@opensource.wolfsonmicro.com>
-	<CANKRQnjpYDJWfJO-G5HsE6es7metHeqgP32R3eo99MaE2zdNpQ@mail.gmail.com>
-	<s5hhb1kvix5.wl%tiwai@suse.de>
-	<CANKRQniRonz5UcQ-KgnFJptPkqgWWrJsFuW31f8bWCf_xx-tTA@mail.gmail.com>
-	<20111201111137.GC2915@opensource.wolfsonmicro.com>
-	<CANKRQng4+fKY-3FLMKB_Z-JLB-Xhqpvx90uecFNQCS=NDG55pw@mail.gmail.com>
-	<20111202010644.GC31948@opensource.wolfsonmicro.com>
-Date: Fri, 2 Dec 2011 11:20:22 +0900
-Message-ID: <CANKRQnjrpBvWRWssazs_bpQcidbRfSivdrYp10pxtX5kMTPfWg@mail.gmail.com>
-Subject: Re: [PATCH v3] sound/soc/codecs: add LAPIS Semiconductor ML26124
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lrg@ti.com>,
-        Jaroslav Kysela <perex@perex.cz>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+Thread-Index: AcyuhiyHvp6Y1/EVR6qmio0m7OqoygCESGYg
+In-Reply-To: <20111129105440.GA2410@electric-eye.fr.zoreil.com>
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/2 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Fri, Dec 02, 2011 at 09:33:23AM +0900, Tomoya MORINAGA wrote:
->
->> Which description do you want ?
->
->> EQ Band1 Volume
->> EQ Band1 Switch
->
->> or
->
->> EQ Band1 Input Volume
->> EQ Band1 Input Switch
->
-> Either is fine, if I had to pick one I'd go with the first one.  The
-> important thing is that Switch and Volume use the same string.
->
+Francois Romieu [mailto:romieu@fr.zoreil.com] 
+[...]
+> > For the 8168c and the later chips, our hardware engineer 
+> says that don't enable
+> > the RxFIFOOver of IntrMask and don't clear the RxFIFOOver 
+> of IntrStatus. The
+> > hardware will automatically escape Rx fifo full situation. 
+> Although you try to
+> > clear the RxFIFOOver of IntrStatus, maybe the bit wouldn't 
+> be cleared. Just
+> > disregard it.
+> 
+> Should "later" be understood as gigabit PCI-E only or is 
+> there a similar
+> difference of behavior between older fast-ethernet PCI-E and 
+> more recent
+> ones ?
+> 
 
-OK, I would use the first one.
+For the fast controller, it should start from rtl8105e. 
 
-Thanks,
+Best Regards,
+Hayes
 
-tomoya
