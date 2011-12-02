@@ -1,44 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab1LAX6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 18:58:33 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:33071 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755437Ab1LAX6c (ORCPT
+	id S1755825Ab1LBABN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 19:01:13 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56026 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755597Ab1LBABL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 18:58:32 -0500
-Message-ID: <1322783907.21423.153.camel@work-vm>
-Subject: Re: [PATCH 1/3] clocksource: Also tweak ->maxadj in
- clocksource_calc_mult_shift()
-From: john stultz <johnstul@us.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 01 Dec 2011 15:58:27 -0800
-In-Reply-To: <1322724016-9770-2-git-send-email-yong.zhang0@gmail.com>
-References: <1322724016-9770-1-git-send-email-yong.zhang0@gmail.com>
-	 <1322724016-9770-2-git-send-email-yong.zhang0@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11120123-4242-0000-0000-00000041037A
+	Thu, 1 Dec 2011 19:01:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <4ED7FA81.9090802@redhat.com>
+References: <20111201070052.GA29708@july>
+	<4ED7FA81.9090802@redhat.com>
+Date: Fri, 2 Dec 2011 09:01:10 +0900
+X-Google-Sender-Auth: AxLuUpMwBoRJFTAuWNuMBuvJ0GM
+Message-ID: <CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
+Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
+From: Kyungmin Park <kmpark@infradead.org>
+To: Eric Sandeen <sandeen@redhat.com>, Lukas Czerner <lczerner@redhat.com>
+Cc: tytso@mit.edu, tm@tao.ma, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 15:20 +0800, Yong Zhang wrote:
-> There is still user of clocksource_calc_mult_shift(), and it's
-> complement to commit d65670a7 [clocksource: Avoid selecting mult
-> values that might overflow when adjusted]
+On 12/2/11, Eric Sandeen <sandeen@redhat.com> wrote:
+> On 12/1/11 1:00 AM, Kyungmin Park wrote:
+>> From: Kyungmin Park <kyungmin.park@samsung.com>
+>>
+>> Now trim information doesn't stored at disk so every boot time. it's
+>> cleared.
+>> and do the trim all disk groups.
+>> But assume that it's already trimmed at previous time so don't need to
+>> trim it again. So set the intial state as trimmed.
+>>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+>> index e2d8be8..97ef342 100644
+>> --- a/fs/ext4/mballoc.c
+>> +++ b/fs/ext4/mballoc.c
+>> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
+>> ext4_group_t group)
+>>  		goto err;
+>>  	}
+>>  	mark_page_accessed(page);
+>> +
+>> +	/*
+>> +	 * TRIM information is not stored at disk so set the initial
+>> +	 * state as trimmed. Since previous time it's already trimmed all
+>> +	 */
+>> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
+>
+Hi,
 
-I'd probably drop this patch, as its just extra churn.
+> Hm, so if there were freed but un-trimmed blocks at this point, we will
+> never trim them until we free _another_ block in the group, right?  That
+> might be a reasonable tradeoff, but it is somewhat surprising behavior.
+>
+> i.e. say we do:
+>
+> mount /mnt
+> rm -rf /mnt/very_big_file
+> umount /mnt
+>
+> mount /mnt
+> fitrim /mnt
+another word, you can run fitrim after rm -rf
+yes, it's trade-off.
 
-Again, I've queued 2/3 to resolve the issue and queued a simplified 3/3
-to just remove clocksource_calc_mult_shift. 
+In my case, phone scenario, no umount system and data partition. it's
+burden to trim at boot time. it has still slower boot time.
+some daemon or program run fitrm at filesystem. it consumes time and
+hurt other boot processes.
+>
+> then we won't trim anything at all, right, despite there being many
+> new free blocks?  Which would be rather unexpected.
+>
+> If we don't store the trimmed state on disk, I think we should
+> probably stick with the slower first-time trim, and the more obvious
+> behavior (all free blocks are always trimmed whenever a trim
+> command is issued).
 
-thanks
--john
+Umm how do you think, introduce the trim force command for this?
 
-
-
-
+Thank you,
+Kyungmin Park
+>
+> -Eric
+>
+>>  err:
+>>  	ext4_mb_put_buddy_page_lock(&e4b);
+>>  	return ret;
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
