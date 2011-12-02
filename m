@@ -1,118 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456Ab1LBB7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 1 Dec 2011 20:59:30 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:58889 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756418Ab1LBB71 (ORCPT
+	id S1755948Ab1LBCAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 1 Dec 2011 21:00:14 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62106 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752012Ab1LBCAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 1 Dec 2011 20:59:27 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAOIu2E55LatN/2dsb2JhbABDqwSBBoFyAQEFOhwjEAgDGBYBARYUJQMhE8AVEod2AQWDEwSUVpIn
-Date: Fri, 2 Dec 2011 12:59:21 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [3.2-rc3] OOM killer doesn't kill the obvious memory hog
-Message-ID: <20111202015921.GZ7046@dastard>
-References: <20111201093644.GW7046@dastard>
- <20111201185001.5bf85500.kamezawa.hiroyu@jp.fujitsu.com>
- <20111201124634.GY7046@dastard>
- <alpine.DEB.2.00.1112011432110.27778@chino.kir.corp.google.com>
-MIME-Version: 1.0
+	Thu, 1 Dec 2011 21:00:12 -0500
+Subject: Re: [PATCH] mm: incorrect overflow check in shrink_slab()
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1112011432110.27778@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Xi Wang <xi.wang@gmail.com>
+In-Reply-To: <20111201125457.fdf79489.akpm@linux-foundation.org>
+Date: Thu, 1 Dec 2011 21:00:08 -0500
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <829F10B1-D23B-4CCD-B73F-38501B900DDA@gmail.com>
+References: <0D9D9F79-204D-4460-8CE7-A583C5C38A1E@gmail.com> <20111201183202.2e5bd872.kamezawa.hiroyu@jp.fujitsu.com> <20111201125457.fdf79489.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 02:35:31PM -0800, David Rientjes wrote:
-> On Thu, 1 Dec 2011, Dave Chinner wrote:
-> 
-> > > /*
-> > >  * /proc/<pid>/oom_score_adj set to OOM_SCORE_ADJ_MIN disables oom killing for
-> > >  * pid.
-> > >  */
-> > > #define OOM_SCORE_ADJ_MIN       (-1000)
-> > > 
-> > >  
-> > > IIUC, this task cannot be killed by oom-killer because of oom_score_adj settings.
-> > 
-> > It's not me or the test suite that setting this, so it's something
-> > the kernel must be doing automagically.
-> > 
-> 
-> The kernel does not set oom_score_adj to ever disable oom killing for a 
-> thread.  The only time the kernel touches oom_score_adj is when setting it 
-> to "1000" in ksm and swap to actually prefer a memory allocator for oom 
-> killing.
-> 
-> It's also possible to change this value via the deprecated 
-> /proc/pid/oom_adj interface until it is removed next year.  Check your 
-> dmesg for warnings about using the deprecated oom_adj interface or change 
-> the printk_once() in oom_adjust_write() to a normal printk() to catch it.
+On Dec 1, 2011, at 3:54 PM, Andrew Morton wrote:
+> Konstantin Khlebnikov's "vmscan: fix initial shrinker size handling"
+> does change it to `long'.  That patch is in -mm and linux-next and is
+> queued for 3.3.  It was queued for 3.2 but didn't make it due to some
+> me/Dave Chinner confusion.
 
-No warnings at all, as I've already said. If it is userspace,
-whatever is doing it is using the oom_score_adj interface correctly.
+I see.  Cool.  Thanks for the pointer.
 
-Hmmm - google is finding reports of sshd randomly inheriting -17 at
-startup depending modules loaded on debian systems. Except, I'm not
-using a modular kernel and it's running in a VM so there's no
-firmware being loaded.
-
-Yup, all my systems end up with a random value for sessions logged
-in via ssh:
-
-$ ssh -X test-2
-Linux test-2 3.2.0-rc3-dgc+ #114 SMP Thu Dec 1 22:14:55 EST 2011 x86_64
-No mail.
-Last login: Fri Dec  2 11:34:44 2011 from deranged
-$ cat /proc/self/oom_adj
--17
-$ sudo reboot;exit
-[sudo] password for dave:
-
-Broadcast message from root@test-2 (pts/0) (Fri Dec  2 12:39:39 2011):
-
-The system is going down for reboot NOW!
-logout
-Connection to test-2 closed.
-$ ssh -X test-2
-Linux test-2 3.2.0-rc3-dgc+ #114 SMP Thu Dec 1 22:14:55 EST 2011 x86_64
-No mail.
-Last login: Fri Dec  2 12:40:15 2011 from deranged
-$ cat /proc/self/oom_adj 
-0
-$ 
-
-That'll be the root cause of the problem - I just caused an OOM
-panic with test 019....
-
-<sigh>
-
-The reports all cycle around this loop:
-
-	linux-mm says userspace/distro problem
-	distro says openssh problem
-	openssh says kernel problem
-
-And there doesn't appear to be any resolution in any of the reports,
-just circular finger pointing and frustrated users.
-
-I can't find anything in the distro startup or udev scripts that
-modify the oom parameters, and the openssh guys say they only
-pass on the value inhereted from ssh's parent process, so it clearly
-not obvious where the bug lies at this point. It's been around for
-some time, though...
-
-More digging to do...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+- xi
