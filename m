@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab1LBFeR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 00:34:17 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:57227 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751602Ab1LBFeN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 00:34:13 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX196intZjlV6Tk4ZDM0js0AoYLT71TjGSIbX3eai4r
-	ATrsoO4I8NJi2p
-Subject: Re: [PATCH] jump_label: jump_label for boot options.
-From: Mike Galbraith <efault@gmx.de>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Jason Baron <jbaron@redhat.com>,
+	id S1752267Ab1LBFfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 00:35:55 -0500
+Received: from mga03.intel.com ([143.182.124.21]:45125 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751396Ab1LBFfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 00:35:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,281,1320652800"; 
+   d="scan'208";a="43173723"
+Subject: Re: [PATCH v4 0/6] ata port runtime power management support
+From: Lin Ming <ming.m.lin@intel.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Tejun Heo <tj@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        rostedt@goodmis.org
-In-Reply-To: <20111202092837.58e11827.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20111201154036.GA2443@redhat.com>
-	 <20111202092837.58e11827.kamezawa.hiroyu@jp.fujitsu.com>
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+In-Reply-To: <1322753439.6920.21.camel@dabdike>
+References: <1322442950-16268-1-git-send-email-ming.m.lin@intel.com>
+	 <CAF1ivSa8d-VNbOmO9UyG-J3TKDmfuuX9pWEtT_7a7OcCC-0Uow@mail.gmail.com>
+	 <1322753439.6920.21.camel@dabdike>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 02 Dec 2011 06:34:05 +0100
-Message-ID: <1322804045.4755.13.camel@marge.simson.net>
+Date: Fri, 02 Dec 2011 13:35:50 +0800
+Message-ID: <1322804150.344.3.camel@minggr>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-02 at 09:28 +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 1 Dec 2011 10:40:36 -0500
-> Jason Baron <jbaron@redhat.com> wrote:
-> 
-> > On Thu, Dec 01, 2011 at 11:53:53AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > I tried to use jump_label for handling memcg's boot options which sets
-> > > global variable true/false and never changes after boot. And found jump_table
-> > > is larger than expected. This patch is a trial to allow to place jump_table
-> > > in .init section. How do you think ?
-> > > 
+On Thu, 2011-12-01 at 23:30 +0800, James Bottomley wrote:
+> On Thu, 2011-12-01 at 22:09 +0800, Lin Ming wrote:
+> > On Mon, Nov 28, 2011 at 9:15 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> > > Hi all,
+> > >
+> > > This is the v4 patches to add ata port runtime pm support.
+> > > Applied on top of v3.2-rc2.
+> > >
+> > > Jeff, any comment on the ata patches?
+> > > James, any comment on the scsi patches?
 > > 
-> > Remeber too, that 'static_branch()' is inherently biased. That is, the
-> > 'false' path is assumed to be the the most likely path. Thus, the 'true'
-> > path is move out-of-line. Thus, if the 'true' branch is potentially
-> > used all the time, we would want to make sure that the savings of not
-> > having to check a variable is still worth it. I should probably rename
-> > static_branch() -> 'static_branch_default_false()' to make that clear.
+> > Ping ...
 > > 
-> Thank you for pointing out.
+> > Which git tree should these patches go into? ATA or SCSI?
 > 
-> My assumption is that it's disabled at boot by few people because sane
-> people will not config memcg if they don't want. Most of distro users
-> will not turn off it...
+> >  drivers/ata/libata-core.c      |  154 ++++++++++++++++++++++------------------
+> >  drivers/ata/libata-scsi.c      |    3 +-
+> >  drivers/ata/libata-transport.c |    5 ++
+> >  drivers/ata/libata.h           |    1 +
+> >  drivers/scsi/scsi_error.c      |    5 +-
+> >  drivers/scsi/scsi_pm.c         |   16 ++++-
+> >  drivers/scsi/sd.c              |    5 ++
+> >  include/scsi/scsi_host.h       |    3 +
+> >  8 files changed, 118 insertions(+), 74 deletions(-)
+> 
+> I think the line count implies ATA since it's the most changed.
+> 
+> For the SCSI piece, the acks should come from Alan Stern, since real
+> SCSI doesn't use suspend/resume and the hooks were put in for the
+> benefit of USB storage.
 
-I think that's a bad assumption.  I see a lot of cgroup_disable=memory
-command lines, and _always_ add it to grub when installing "everything
-plus the kitchen sink" distro kernels on my boxen. 
+Hi Alan,
 
-	-Mike
+You have signed Patch 3: [SCSI] check runtime PM status in system PM.
+
+How about the other two SCSI patches?
+
+Patch 2: [SCSI] add flag to skip the runtime PM calls on the host
+Patch 4: [SCSI] sd: check runtime PM status in sd_shutdown
+
+Regards,
+Lin Ming
+
+> 
+> James
+> 
+> 
+
 
