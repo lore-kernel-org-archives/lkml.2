@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab1LBTal (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:30:41 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54645 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992Ab1LBTaj (ORCPT
+	id S1754583Ab1LBTbA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:31:00 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:58193 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754005Ab1LBTa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:30:39 -0500
-Date: Fri, 2 Dec 2011 20:30:37 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, len.brown@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH] PM / Hibernate: Thaw processes in
-	SNAPSHOT_CREATE_IMAGE ioctl error/test paths
-Message-ID: <20111202193037.GA31987@atrey.karlin.mff.cuni.cz>
-References: <20111201131532.21615.86479.stgit@srivatsabhat.in.ibm.com> <20111201154722.GB12668@google.com> <4ED7AB26.4080804@linux.vnet.ibm.com>
+	Fri, 2 Dec 2011 14:30:58 -0500
+X-Sasl-enc: w/uRG9zObMD/98xSkHCFGtO7uyB0OhjidpSFZGeBcFjT 1322854257
+Date: Fri, 2 Dec 2011 11:27:01 -0800
+From: Greg KH <greg@kroah.com>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: rusty@ozlabs.org, linux-kernel@vger.kernel.org, siglesia@cern.ch,
+        manohar.vanga@cern.ch, dave.martin@linaro.org
+Subject: Re: [RFC PATCH V2 0/1] making order in file2alias
+Message-ID: <20111202192701.GB13860@kroah.com>
+References: <87pqg7r8q9.fsf@rustcorp.com.au>
+ <cover.1322781825.git.rubini@gnudd.com>
+ <20111202000350.GA6507@kroah.com>
+ <20111202084213.GA3415@mail.gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4ED7AB26.4080804@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111202084213.GA3415@mail.gnudd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 12/01/2011 09:17 PM, Tejun Heo wrote:
+On Fri, Dec 02, 2011 at 09:42:13AM +0100, Alessandro Rubini wrote:
+> > But splitting 15-line functions into separate files?  Less compact, less
+> > simple.
 > 
-> > On Thu, Dec 01, 2011 at 06:45:37PM +0530, Srivatsa S. Bhat wrote:
-> >> Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
-> >> kernel threads after preallocating memory) moved the freezing of kernel
-> >> threads to hibernation_snapshot() function.
-> >>
-> >> So now, if the call to hibernation_snapshot() fails or returns early due
-> >> to a successful hibernation test, the caller has to thaw processes to
-> >> ensure that the system gets back to its original state.
-> >>
-> >> But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
-> >> processes. Fix this issue. But note that if hibernation_snapshot() returned
-> >> due to a successful freezer test, we still send the value of 'in_suspend'
-> >> (which is now 0) to userspace, because we are not in an error path per-se,
-> >> and moreover, the value of in_suspend correctly depicts the situation here.
-> >>
-> >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > 
-> > Is this still applicable on top of pm-freezer branch?
-> > 
-> 
-> 
-> Well, yes, but not in this form. Thanks for bringing that up!
-> 
-> If the call to hibernation_snapshot() returns an error, we need not do
-> anything since your freezer changes handle that case and call thaw_processes()
-> automatically.
-> But in case of return due to a successful freezer test, we would need to
-> explicitly thaw processes since the freezer successfully froze them in the
-> previous step.
-> 
-> So the following patch would do that, for the pm-freezer branch:
-> 
-> ---
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: [PATCH] PM / Hibernate: Thaw processes in SNAPSHOT_CREATE_IMAGE ioctl test path
-> 
-> Commit 2aede851ddf08666f68ffc17be446420e9d2a056 (PM / Hibernate: Freeze
-> kernel threads after preallocating memory) moved the freezing of kernel
-> threads to hibernation_snapshot() function.
-> 
-> So now, if the call to hibernation_snapshot() returns early due to a
-> successful hibernation test, the caller has to thaw processes to ensure
-> that the system gets back to its original state.
-> 
-> But in SNAPSHOT_CREATE_IMAGE hibernation ioctl, the caller does not thaw
-> processes in case hibernation_snapshot() returned due to a successful
-> freezer test. Fix this issue. But note we still send the value of 'in_suspend'
-> (which is now 0) to userspace, because we are not in an error path per-se,
-> and moreover, the value of in_suspend correctly depicts the situation here.
-> 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Personally, I'm more interested in the addition of new busses (as
+> drop-in files) than the split up of current ones. But I see your point.
 
-Ack.
+Yes, that's what me and Linus have asked about having in the past,
+making things easier to merge and the like.  Now admittedly, this file
+isn't all that hard to merge these days given that the addition of new
+busses is pretty rare, these complaints might have been from before git
+times, when merges were harder than they are now.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Anyway, I like your patch as well, as it seems to get us to that goal.
+
+thanks,
+
+greg k-h
