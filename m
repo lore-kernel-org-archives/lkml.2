@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab1LBRcr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:32:47 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:55430 "EHLO relay.sgi.com"
+	id S1757230Ab1LBRd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:33:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62249 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756796Ab1LBRcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:32:47 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.2-rc5
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20111202173306.91F81426DA7@whiskey.americas.sgi.com>
-Date: Fri,  2 Dec 2011 11:33:06 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1757170Ab1LBRd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 12:33:56 -0500
+Message-ID: <4ED90BFD.3040805@redhat.com>
+Date: Fri, 02 Dec 2011 15:33:49 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: HoP <jpetrous@gmail.com>
+CC: Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <4ED7BBA3.5020002@redhat.com> <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com> <4ED7E5D7.8070909@redhat.com> <4ED805CB.5020302@linuxtv.org> <4ED8B327.9090505@redhat.com> <CAJbz7-2EVgwPY0wkqPVCoOyH2gM_7pf0DzP-Lf4Y65uZpci9GQ@mail.gmail.com>
+In-Reply-To: <CAJbz7-2EVgwPY0wkqPVCoOyH2gM_7pf0DzP-Lf4Y65uZpci9GQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [GIT PULL] XFS update for 3.2-rc5
+On 02-12-2011 09:57, HoP wrote:
 
-Linus, please pull the following bug fixes for XFS for 3.2-rc5.
+> If you want to disscuss,
 
-fa8b18e fixes memory corruption if the on-disk ACL is corrupted,
-4dd2cb4 fixes a delay in inode reclaim, and
-4c393a6 fixes a reproducible crash when operating on the attribute fork.
+No, I don't want. There are architectural issues on your solution. As I said,
+from the Kernel POV, just the network drivers is enough to run *any* client-server
+solution on any OS that uses the TCP/IP stack. All streaming applications (DVB
+or not) have their solution without requiring any virtual driver, using the TCP/IP
+stack. You still think that your solution is technically better than theirs.
+So, we agree do disagree on that matter.
 
-Thanks,
-	Ben
+ From my side, I won't merge it due to the already explained reasons.
+Mauro.
 
-
-
-The following changes since commit 5983fe2b29df5885880d7fa3b91aca306c7564ef:
-  Linus Torvalds (1):
-        Merge git://git.kernel.org/.../davem/net
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Christoph Hellwig (3):
-      xfs: validate acl count
-      xfs: force buffer writeback before blocking on the ilock in inode reclaim
-      xfs: fix attr2 vs large data fork assert
-
- fs/xfs/xfs_acl.c       |    2 +
- fs/xfs/xfs_attr_leaf.c |   64 +++++++++++++++++++++++++++++------------------
- fs/xfs/xfs_inode.c     |   21 +++++++++++++++
- fs/xfs/xfs_inode.h     |    1 +
- fs/xfs/xfs_sync.c      |   11 ++++++++
- 5 files changed, 74 insertions(+), 25 deletions(-)
