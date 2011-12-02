@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab1LBMnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 07:43:55 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:49391 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755699Ab1LBMny (ORCPT
+	id S1756148Ab1LBMp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 07:45:58 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37931 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237Ab1LBMp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 07:43:54 -0500
-Date: Fri, 2 Dec 2011 07:43:52 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Greg KH <greg@kroah.com>
-Cc: Jens Axboe <jens@axboe.dk>, lttng-dev@lists.lttng.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Subject: [PATCH] fs/splice: export splice_to_pipe to modules
-Message-ID: <20111202124352.GB13082@Krystal>
+	Fri, 2 Dec 2011 07:45:57 -0500
+Date: Fri, 2 Dec 2011 16:45:51 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Pedro Alves <pedro@codesourcery.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Subject: Re: [rfc 2/3] fs, proc: Introduce the Children: line in
+ /proc/<pid>/status
+Message-ID: <20111202124551.GD14515@moon>
+References: <20111129191252.769160532@openvz.org>
+ <20111201095434.GR14515@moon>
+ <20111202094010.ca2dee4c.kamezawa.hiroyu@jp.fujitsu.com>
+ <201112021241.04471.pedro@codesourcery.com>
+ <4ED8C7DE.4050107@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 07:40:48 up 373 days, 17:43,  2 users,  load average: 0.07, 0.18,
-	0.32
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4ED8C7DE.4050107@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The LTTng driver needs this symbol exported because it implements its
-own splice actor.
+On Fri, Dec 02, 2011 at 04:43:10PM +0400, Pavel Emelyanov wrote:
+...
+> >>
+> >> Yes, I like /children file. other points seems to be pointed out by other
+> >> reviewers. 
+> > 
+> > Any reason this is a file instead of a directory like /proc/PID/task/ ?
+> > 
+> > $ sudo ls /proc/8167/task/
+> > 8167  854  855  856  857  858  859
+> > $ sudo ls /proc/8167/task/855/
+> > attr    clear_refs  cpuset   exe     io       loginuid  mountinfo  oom_adj        pagemap      sched      smaps  statm    wchan
+> > auxv    cmdline     cwd      fd      latency  maps      mounts     oom_score      personality  schedstat  stack  status
+> > cgroup  comm        environ  fdinfo  limits   mem       numa_maps  oom_score_adj  root         sessionid  stat   syscall
+> > 
+> > Much easier to follow the chain from the command line this way.
+> 
+> What do you propose to put into these directories? Another directories named with
+> children pid-s?
+> 
 
-All other exports in splice are EXPORT_SYMBOL(), so follow the local
-trend by not using a _GPL() export.
+Yes, I suppose additional directory/links and whatever would be just
+noneeded overhead.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: linux-kernel@vger.kernel.org
-CC: Greg KH <greg@kroah.com>
----
- fs/splice.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/fs/splice.c b/fs/splice.c
-index fa2defa..492585d 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -263,6 +263,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
- 
- 	return ret;
- }
-+EXPORT_SYMBOL(splice_to_pipe);
- 
- void spd_release_page(struct splice_pipe_desc *spd, unsigned int i)
- {
--- 
-1.7.5.4
+	Cyrill
