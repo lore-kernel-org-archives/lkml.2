@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab1LBToP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 14:44:15 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:59533 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab1LBToO (ORCPT
+	id S1754722Ab1LBTos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 14:44:48 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42423 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110Ab1LBToq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 14:44:14 -0500
-Message-ID: <1322855029.21423.170.camel@work-vm>
-Subject: Re: System freezes with high network activity
-From: john stultz <johnstul@us.ibm.com>
-To: Jose Luis Salas <josacar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Date: Fri, 02 Dec 2011 11:43:49 -0800
-In-Reply-To: <CAJPugqsJgN9ZL3jQAZ+eGKfzxH0PAZonj-36H6PB1cHSpQHqSw@mail.gmail.com>
-References: <CAJPugqsJgN9ZL3jQAZ+eGKfzxH0PAZonj-36H6PB1cHSpQHqSw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11120219-5518-0000-0000-000000C4A660
+	Fri, 2 Dec 2011 14:44:46 -0500
+Date: Fri, 2 Dec 2011 14:43:09 -0500
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Christoph Lameter <cl@linux.com>, "Alex, Shi" <alex.shi@intel.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Pekka Enberg <penberg@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Matt Mackall <mpm@selenic.com>, tj@kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111202194309.GA12057@homer.localdomain>
+References: <20111121080554.GB1625@x4.trippels.de>
+ <20111121082445.GD1625@x4.trippels.de>
+ <1321866988.2552.10.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121131531.GA1679@x4.trippels.de>
+ <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121153621.GA1678@x4.trippels.de>
+ <20111123160353.GA1673@x4.trippels.de>
+ <alpine.DEB.2.00.1111231004490.17317@router.home>
+ <20111124085040.GA1677@x4.trippels.de>
+ <20111201084437.GA1529@x4.trippels.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111201084437.GA1529@x4.trippels.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-02 at 17:44 +0100, Jose Luis Salas wrote:
-> Hello there,
+On Thu, Dec 01, 2011 at 09:44:37AM +0100, Markus Trippelsdorf wrote:
+> On 2011.11.24 at 09:50 +0100, Markus Trippelsdorf wrote:
+> > On 2011.11.23 at 10:06 -0600, Christoph Lameter wrote:
+> > > On Wed, 23 Nov 2011, Markus Trippelsdorf wrote:
+> > > 
+> > > > > FIX idr_layer_cache: Marking all objects used
+> > > >
+> > > > Yesterday I couldn't reproduce the issue at all. But today I've hit
+> > > > exactly the same spot again. (CCing the drm list)
+> > > 
+> > > Well this is looks like write after free.
+> > > 
+> > > > =============================================================================
+> > > > BUG idr_layer_cache: Poison overwritten
+> > > > -----------------------------------------------------------------------------
+> > > > Object ffff8802156487c0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > > Object ffff8802156487d0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > > Object ffff8802156487e0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > > Object ffff8802156487f0: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > > Object ffff880215648800: 00 00 00 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ....kkkkkkkkkkkk
+> > > > Object ffff880215648810: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> > > 
+> > > And its an integer sized write of 0. If you look at the struct definition
+> > > and lookup the offset you should be able to locate the field that
+> > > was modified.
 > 
-> I' ve filled a bug against linux kernel in Debian [1] for the
-> linux-kernel-image 2.6.32.
+> It also happens with CONFIG_SLAB. 
+> (If someone wants to reproduce the issue, just run a kexec boot loop and
+> the bug will occur after a few (~10) iterations.)
 > 
-> The problem is that the system freezes ( no complete ) when high
-> network activity occurrs, for example copying files over NFS or
-> downloading files with Bittorrent.
-> 
-> When the system is frozen, there is no network connecivity, the
-> console freezes ( with top program, for ex. ) until a key from the
-> laptop is pressed or when network activity drops. The  network
-> throughtput also drops before the freeze.
-> 
-> I've also realized that clock drifts ( it's frozen too ) when the
-> system is frozen.
-> 
-> This problem didn't occur in Linux kernel 2.6.26 ( from the Lenny
-> release ), I think >2.6.26 are affected, but I need to confirm it ( >=
-> 2.6.30 are included for sure ).
-> 
-> After investigating for a while (  tested noapic, noacpi and several
-> switches with no luck.) , I've search for a solution and I finally
-> found it.  I think that the bug is caused by changes in the
-> clocksource between kernels and the powernow-k8 module.
-> 
-> One time I tested booting the xen-patched the linux kernel and the
-> problem dissapeared, the net worked at full speed but there was no cpu
-> scaling.
-> 
-> Now, with recent kernels, I boot the kernel with the
-> clocksource=jiffies option and the powersaved daemon to do the
-> frequency scaling, the net works al full speed. With acpi_pm and tsc
-> options doesn't work neither.
 
-So, could you attach a full dmesg when you're not using
-clocksource=jiffies?
+Can you provide the kexec command line you are using and full kernel
+log (mostly interested in kernel option).
 
-Also, when not using clocksource=jiffies, does booting with nohz=off
-change the behavior?
-
-thanks
--john
-
-
+Cheers,
+Jerome
