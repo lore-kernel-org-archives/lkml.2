@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932412Ab1LBSqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 13:46:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51741 "EHLO mx1.redhat.com"
+	id S932425Ab1LBSqv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 13:46:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26848 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932169Ab1LBSqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 13:46:36 -0500
+	id S932169Ab1LBSqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 13:46:48 -0500
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 19/21] MODSIGN: Add indications of module ELF types [ver #3]
+Subject: [PATCH 20/21] MODSIGN: Module ELF verifier [ver #3]
 To: keyrings@linux-nfs.org
 Cc: linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, dmitry.kasatkin@intel.com,
         zohar@linux.vnet.ibm.com, arjan.van.de.ven@intel.com,
         alan.cox@intel.com, David Howells <dhowells@redhat.com>
-Date: Fri, 02 Dec 2011 18:46:27 +0000
-Message-ID: <20111202184627.21874.58166.stgit@warthog.procyon.org.uk>
+Date: Fri, 02 Dec 2011 18:46:39 +0000
+Message-ID: <20111202184639.21874.22040.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
 References: <20111202184229.21874.25782.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -25,303 +25,541 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add per-arch indications of module ELF types and relocation table entry types.
+Do preliminary verification of the ELF structure of a module.  This is used to
+make sure that the ELF structure can then be used to check the module signature
+and access the module data without breaking the module loader.
+
+If the module's ELF metadata is determined to be bad, then ELIBBAD will be
+returned and a message will be logged to the kernel log.
 
 Signed-Off-By: David Howells <dhowells@redhat.com>
 ---
 
- arch/alpha/include/asm/module.h   |    3 +++
- arch/arm/include/asm/module.h     |    5 +++++
- arch/cris/include/asm/module.h    |    5 +++++
- arch/h8300/include/asm/module.h   |    5 +++++
- arch/ia64/include/asm/module.h    |    5 +++++
- arch/m32r/include/asm/module.h    |    5 +++++
- arch/m68k/include/asm/module.h    |    5 +++++
- arch/mips/include/asm/module.h    |   12 ++++++++++--
- arch/parisc/include/asm/module.h  |    8 ++++++++
- arch/powerpc/include/asm/module.h |   10 ++++++++++
- arch/s390/include/asm/module.h    |    3 +++
- include/asm-generic/module.h      |   10 ++++++++++
- 12 files changed, 74 insertions(+), 2 deletions(-)
+ init/Kconfig               |   11 +
+ kernel/Makefile            |    2 
+ kernel/module-verify-elf.c |  344 ++++++++++++++++++++++++++++++++++++++++++++
+ kernel/module-verify.c     |   41 +++++
+ kernel/module-verify.h     |   53 +++++++
+ kernel/module.c            |    6 +
+ 6 files changed, 457 insertions(+), 0 deletions(-)
+ create mode 100644 kernel/module-verify-elf.c
+ create mode 100644 kernel/module-verify.c
+ create mode 100644 kernel/module-verify.h
 
 
-diff --git a/arch/alpha/include/asm/module.h b/arch/alpha/include/asm/module.h
-index 7b63743..3d5a3ea 100644
---- a/arch/alpha/include/asm/module.h
-+++ b/arch/alpha/include/asm/module.h
-@@ -6,6 +6,7 @@ struct mod_arch_specific
- 	unsigned int gotsecindex;
- };
+diff --git a/init/Kconfig b/init/Kconfig
+index 43298f9..42e685d 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1383,6 +1383,17 @@ config MODULE_SRCVERSION_ALL
+ 	  the version).  With this option, such a "srcversion" field
+ 	  will be created for all modules.  If unsure, say N.
  
-+#define MODULES_ARE_ELF64
- #define Elf_Sym Elf64_Sym
- #define Elf_Shdr Elf64_Shdr
- #define Elf_Ehdr Elf64_Ehdr
-@@ -13,6 +14,8 @@ struct mod_arch_specific
- #define Elf_Dyn Elf64_Dyn
- #define Elf_Rel Elf64_Rel
- #define Elf_Rela Elf64_Rela
-+#define ELF_R_TYPE(X)	ELF64_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF64_R_SYM(X)
++config MODULE_VERIFY_ELF
++	bool "Module ELF structure verification"
++	depends on MODULES
++	help
++	  Check ELF structure of modules upon load
++
++config MODULE_VERIFY
++	bool
++	depends on MODULES
++	default y if MODULE_VERIFY_ELF
++
+ endif # MODULES
  
- #define ARCH_SHF_SMALL SHF_ALPHA_GPREL
+ config INIT_ALL_POSSIBLE
+diff --git a/kernel/Makefile b/kernel/Makefile
+index e898c5b..3c34fab 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -51,6 +51,8 @@ obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock.o
+ obj-$(CONFIG_PROVE_LOCKING) += spinlock.o
+ obj-$(CONFIG_UID16) += uid16.o
+ obj-$(CONFIG_MODULES) += module.o
++obj-$(CONFIG_MODULE_VERIFY) += module-verify.o
++obj-$(CONFIG_MODULE_VERIFY_ELF) += module-verify-elf.o
+ obj-$(CONFIG_KALLSYMS) += kallsyms.o
+ obj-$(CONFIG_PM) += power/
+ obj-$(CONFIG_FREEZER) += power/
+diff --git a/kernel/module-verify-elf.c b/kernel/module-verify-elf.c
+new file mode 100644
+index 0000000..4dea8d0
+--- /dev/null
++++ b/kernel/module-verify-elf.c
+@@ -0,0 +1,344 @@
++/* module-verify-elf.c: module ELF verifier
++ *
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/elf.h>
++#include <linux/ctype.h>
++#include "module-verify.h"
++
++#if 0
++#define _debug(FMT, ...) printk(FMT, ##__VA_ARGS__)
++#else
++#define _debug(FMT, ...) do {} while (0)
++#endif
++
++/*
++ * verify the ELF structure of a module
++ */
++int module_verify_elf(struct module_verify_data *mvdata)
++{
++	const struct elf_note *note;
++	const Elf_Ehdr *hdr = mvdata->hdr;
++	const Elf_Shdr *section, *section2, *secstop;
++	const Elf_Rela *relas, *rela, *relastop;
++	const Elf_Rel *rels, *rel, *relstop;
++	const Elf_Sym *symbol, *symstop;
++	const void *start, *p, *stop;
++	const char *q, *qs;
++	size_t size, sssize, *secsize, tmp, tmp2;
++	long last;
++	int line;
++
++	size = mvdata->size;
++	mvdata->nsects = hdr->e_shnum;
++
++#define elfcheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto elfcheck_error; } } while(0)
++
++#define seccheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto seccheck_error; } } while(0)
++
++#define symcheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto symcheck_error; } } while(0)
++
++#define relcheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto relcheck_error; } } while(0)
++
++#define relacheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto relacheck_error; } } while(0)
++
++#define notecheck(X)							\
++do { if (unlikely(!(X))) { line = __LINE__; goto notecheck_error; } } while(0)
++
++	/* validate the ELF header */
++	elfcheck(hdr->e_ehsize < size);
++	/*elfcheck(hdr->e_entry == 0);*/
++	elfcheck(hdr->e_phoff == 0);
++	elfcheck(hdr->e_phnum == 0);
++
++	elfcheck(hdr->e_shnum < SHN_LORESERVE);
++	elfcheck(hdr->e_shoff < size);
++	elfcheck(hdr->e_shoff >= hdr->e_ehsize);
++	elfcheck((hdr->e_shoff & (sizeof(long) - 1)) == 0);
++	elfcheck(hdr->e_shstrndx > 0);
++	elfcheck(hdr->e_shstrndx < hdr->e_shnum);
++	elfcheck(hdr->e_shentsize == sizeof(Elf_Shdr));
++
++	tmp = (size_t) hdr->e_shentsize * (size_t) hdr->e_shnum;
++	elfcheck(tmp <= size - hdr->e_shoff);
++
++	/* allocate a table to hold in-file section sizes */
++	mvdata->secsizes = kcalloc(hdr->e_shnum, sizeof(size_t), GFP_KERNEL);
++	if (!mvdata->secsizes)
++		return -ENOMEM;
++
++	/* validate the ELF section headers */
++	mvdata->sections = mvdata->buffer + hdr->e_shoff;
++	secstop = mvdata->sections + mvdata->nsects;
++
++	sssize = mvdata->sections[hdr->e_shstrndx].sh_size;
++	elfcheck(sssize > 0);
++
++	section = mvdata->sections;
++	seccheck(section->sh_type == SHT_NULL);
++	seccheck(section->sh_size == 0);
++	seccheck(section->sh_offset == 0);
++
++	secsize = mvdata->secsizes + 1;
++	for (section++; section < secstop; secsize++, section++) {
++		seccheck(section->sh_name < sssize);
++		seccheck(section->sh_link < hdr->e_shnum);
++
++		if (section->sh_entsize > 0)
++			seccheck(section->sh_size % section->sh_entsize == 0);
++
++		seccheck(section->sh_offset >= hdr->e_ehsize);
++		seccheck(section->sh_offset < size);
++
++		/* determine the section's in-file size */
++		tmp = size - section->sh_offset;
++		if (section->sh_offset < hdr->e_shoff)
++			tmp = hdr->e_shoff - section->sh_offset;
++
++		for (section2 = mvdata->sections + 1;
++		     section2 < secstop;
++		     section2++) {
++			if (section->sh_offset < section2->sh_offset) {
++				tmp2 = section2->sh_offset -
++					section->sh_offset;
++				if (tmp2 < tmp)
++					tmp = tmp2;
++			}
++		}
++		*secsize = tmp;
++
++		_debug("Section %ld: %zx bytes at %lx\n",
++		       section - mvdata->sections,
++		       *secsize,
++		       (unsigned long) section->sh_offset);
++
++		/* perform section type specific checks */
++		switch (section->sh_type) {
++		case SHT_NOBITS:
++			break;
++
++		case SHT_REL:
++			seccheck(section->sh_entsize == sizeof(Elf_Rel));
++			goto more_rel_checks;
++
++		case SHT_RELA:
++			seccheck(section->sh_entsize == sizeof(Elf_Rela));
++		more_rel_checks:
++			seccheck(section->sh_info > 0);
++			seccheck(section->sh_info < hdr->e_shnum);
++			goto more_sec_checks;
++
++		case SHT_SYMTAB:
++			seccheck(section->sh_entsize == sizeof(Elf_Sym));
++			goto more_sec_checks;
++
++		default:
++		more_sec_checks:
++			/* most types of section must be contained entirely
++			 * within the file */
++			seccheck(section->sh_size <= *secsize);
++			break;
++		}
++	}
++
++	/* validate the ELF section names */
++	section = &mvdata->sections[hdr->e_shstrndx];
++
++	seccheck(section->sh_offset != hdr->e_shoff);
++
++	mvdata->secstrings = mvdata->buffer + section->sh_offset;
++
++	last = -1;
++	for (section = mvdata->sections + 1; section < secstop; section++) {
++		const char *secname;
++		tmp = sssize - section->sh_name;
++		secname = mvdata->secstrings + section->sh_name;
++		seccheck(secname[0] != 0);
++		if (section->sh_name > last)
++			last = section->sh_name;
++	}
++
++	if (last > -1) {
++		tmp = sssize - last;
++		elfcheck(memchr(mvdata->secstrings + last, 0, tmp) != NULL);
++	}
++
++	/* look for various sections in the module */
++	for (section = mvdata->sections + 1; section < secstop; section++) {
++		switch (section->sh_type) {
++		case SHT_SYMTAB:
++			if (strcmp(mvdata->secstrings + section->sh_name,
++				   ".symtab") == 0
++			    ) {
++				seccheck(mvdata->symbols == NULL);
++				mvdata->symbols =
++					mvdata->buffer + section->sh_offset;
++				mvdata->nsyms =
++					section->sh_size / sizeof(Elf_Sym);
++				seccheck(section->sh_size > 0);
++			}
++			break;
++
++		case SHT_STRTAB:
++			if (strcmp(mvdata->secstrings + section->sh_name,
++				   ".strtab") == 0
++			    ) {
++				seccheck(mvdata->strings == NULL);
++				mvdata->strings =
++					mvdata->buffer + section->sh_offset;
++				sssize = mvdata->nstrings = section->sh_size;
++				seccheck(section->sh_size > 0);
++			}
++			break;
++		}
++	}
++
++	if (!mvdata->symbols) {
++		printk("Couldn't locate module symbol table\n");
++		goto format_error;
++	}
++
++	if (!mvdata->strings) {
++		printk("Couldn't locate module strings table\n");
++		goto format_error;
++	}
++
++	/* validate the symbol table */
++	symstop = mvdata->symbols + mvdata->nsyms;
++
++	symbol = mvdata->symbols;
++	symcheck(ELF_ST_TYPE(symbol[0].st_info) == STT_NOTYPE);
++	symcheck(symbol[0].st_shndx == SHN_UNDEF);
++	symcheck(symbol[0].st_value == 0);
++	symcheck(symbol[0].st_size == 0);
++
++	last = -1;
++	for (symbol++; symbol < symstop; symbol++) {
++		symcheck(symbol->st_name < sssize);
++		if (symbol->st_name > last)
++			last = symbol->st_name;
++		symcheck(symbol->st_shndx < mvdata->nsects ||
++			 symbol->st_shndx >= SHN_LORESERVE);
++	}
++
++	if (last > -1) {
++		tmp = sssize - last;
++		elfcheck(memchr(mvdata->strings + last, 0, tmp) != NULL);
++	}
++
++	/* validate each relocation table and note list as best we can */
++	for (section = mvdata->sections + 1; section < secstop; section++) {
++		section2 = mvdata->sections + section->sh_info;
++		start = mvdata->buffer + section->sh_offset;
++		stop = start + section->sh_size;
++
++		switch (section->sh_type) {
++		case SHT_REL:
++			rels = start;
++			relstop = stop;
++
++			for (rel = rels; rel < relstop; rel++) {
++				relcheck(rel->r_offset < section2->sh_size);
++				relcheck(ELF_R_SYM(rel->r_info) <
++					 mvdata->nsyms);
++			}
++
++			break;
++
++		case SHT_RELA:
++			relas = start;
++			relastop = stop;
++
++			for (rela = relas; rela < relastop; rela++) {
++				relacheck(rela->r_offset < section2->sh_size);
++				relacheck(ELF_R_SYM(rela->r_info) <
++					  mvdata->nsyms);
++			}
++
++			break;
++
++		case SHT_NOTE:
++			p = start;
++			while (p < stop) {
++				note = p;
++				notecheck(stop - p >= sizeof(*note));
++				p += sizeof(*note);
++				tmp = note->n_namesz;
++				if (tmp > 0) {
++					notecheck(stop - p >= tmp);
++					qs = p + tmp - 1;
++					notecheck(*qs == '\0');
++					for (q = p; q < qs; q++)
++						notecheck(*q != '\0');
++					tmp = roundup(tmp, 4);
++					notecheck(stop - p >= tmp);
++					p += tmp;
++				}
++				tmp = note->n_descsz;
++				if (tmp > 0) {
++					notecheck(stop - p >= tmp);
++					tmp = roundup(tmp, 4);
++					notecheck(stop - p >= tmp);
++					p += tmp;
++				}
++			}
++			seccheck(p == stop);
++			break;
++
++		default:
++			break;
++		}
++	}
++
++	_debug("ELF okay\n");
++	return 0;
++
++elfcheck_error:
++	printk("Verify ELF error (assertion %d)\n", line);
++	goto format_error;
++
++seccheck_error:
++	printk("Verify ELF error [sec %ld] (assertion %d)\n",
++	       (long)(section - mvdata->sections), line);
++	goto format_error;
++
++symcheck_error:
++	printk("Verify ELF error [sym %ld] (assertion %d)\n",
++	       (long)(symbol - mvdata->symbols), line);
++	goto format_error;
++
++relcheck_error:
++	printk("Verify ELF error [sec %ld rel %ld] (assertion %d)\n",
++	       (long)(section - mvdata->sections),
++	       (long)(rel - rels), line);
++	goto format_error;
++
++relacheck_error:
++	printk("Verify ELF error [sec %ld rela %ld] (assertion %d)\n",
++	       (long)(section - mvdata->sections),
++	       (long)(rela - relas), line);
++	goto format_error;
++
++notecheck_error:
++	printk("Verify ELF error [sec %ld note %ld] (assertion %d)\n",
++	       (long)(section - mvdata->sections),
++	       (long)(p - start), line);
++	goto format_error;
++
++format_error:
++	return -ELIBBAD;
++}
+diff --git a/kernel/module-verify.c b/kernel/module-verify.c
+new file mode 100644
+index 0000000..875279f
+--- /dev/null
++++ b/kernel/module-verify.c
+@@ -0,0 +1,41 @@
++/* module-verify.c: module verifier
++ *
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include "module-verify.h"
++
++/*
++ * verify a module's integrity
++ * - check the ELF is viable
++ */
++int module_verify(const Elf_Ehdr *hdr, size_t size)
++{
++	struct module_verify_data mvdata;
++	int ret;
++
++	memset(&mvdata, 0, sizeof(mvdata));
++	mvdata.buffer	= hdr;
++	mvdata.hdr	= hdr;
++	mvdata.size	= size;
++
++	ret = module_verify_elf(&mvdata);
++	if (ret < 0) {
++		if (ret == -ELIBBAD)
++			printk("Module failed ELF checks\n");
++		goto error;
++	}
++
++error:
++	kfree(mvdata.secsizes);
++	kfree(mvdata.canonlist);
++	return ret;
++}
+diff --git a/kernel/module-verify.h b/kernel/module-verify.h
+new file mode 100644
+index 0000000..20884fc
+--- /dev/null
++++ b/kernel/module-verify.h
+@@ -0,0 +1,53 @@
++/* module-verify.h: module verification definitions
++ *
++ * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
++
++#include <linux/types.h>
++#include <asm/module.h>
++
++#ifdef CONFIG_MODULE_VERIFY
++struct module_verify_data {
++	const void		*buffer;	/* module buffer */
++	const Elf_Ehdr		*hdr;		/* ELF header */
++	const Elf_Shdr		*sections;	/* ELF section table */
++	const Elf_Sym		*symbols;	/* ELF symbol table */
++	const char		*secstrings;	/* ELF section string table */
++	const char		*strings;	/* ELF string table */
++	size_t			*secsizes;	/* section size list */
++	size_t			size;		/* module object size */
++	size_t			nsects;		/* number of sections */
++	size_t			nsyms;		/* number of symbols */
++	size_t			nstrings;	/* size of strings section */
++	size_t			signed_size;	/* count of bytes contributed to digest */
++	int			*canonlist;	/* list of canonicalised sections */
++	int			*canonmap;	/* section canonicalisation map */
++	int			ncanon;		/* number of canonicalised sections */
++	int			sig_index;	/* module signature section index */
++	uint8_t			xcsum;		/* checksum of bytes contributed to digest */
++	uint8_t			csum;		/* checksum of bytes representing a section */
++};
++
++/*
++ * module-verify.c
++ */
++extern int module_verify(const Elf_Ehdr *hdr, size_t size);
++
++/*
++ * module-verify-elf.c
++ */
++#ifdef CONFIG_MODULE_VERIFY_ELF
++extern int module_verify_elf(struct module_verify_data *mvdata);
++#else
++#define module_verify_elf(m) (0)
++#endif
++
++#else
++#define module_verify(h, s) (0)
++#endif
+diff --git a/kernel/module.c b/kernel/module.c
+index 178333c..8309389 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -58,6 +58,7 @@
+ #include <linux/jump_label.h>
+ #include <linux/pfn.h>
+ #include <linux/bsearch.h>
++#include "module-verify.h"
  
-diff --git a/arch/arm/include/asm/module.h b/arch/arm/include/asm/module.h
-index 6c6809f..f47d9cd 100644
---- a/arch/arm/include/asm/module.h
-+++ b/arch/arm/include/asm/module.h
-@@ -1,9 +1,14 @@
- #ifndef _ASM_ARM_MODULE_H
- #define _ASM_ARM_MODULE_H
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/module.h>
+@@ -2365,6 +2366,11 @@ static int copy_and_check(struct load_info *info,
+ 		goto free_hdr;
+ 	}
  
-+#define MODULES_ARE_ELF32
- #define Elf_Shdr	Elf32_Shdr
- #define Elf_Sym		Elf32_Sym
- #define Elf_Ehdr	Elf32_Ehdr
-+#define Elf_Rel		Elf32_Rel
-+#define Elf_Rela	Elf32_Rela
-+#define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF32_R_SYM(X)
- 
- struct unwind_table;
- 
-diff --git a/arch/cris/include/asm/module.h b/arch/cris/include/asm/module.h
-index 7ee7231..03f7b2e 100644
---- a/arch/cris/include/asm/module.h
-+++ b/arch/cris/include/asm/module.h
-@@ -3,7 +3,12 @@
- /* cris is simple */
- struct mod_arch_specific { };
- 
-+#define MODULES_ARE_ELF32
- #define Elf_Shdr Elf32_Shdr
- #define Elf_Sym Elf32_Sym
- #define Elf_Ehdr Elf32_Ehdr
-+#define Elf_Rel Elf32_Rel
-+#define Elf_Rela Elf32_Rela
-+#define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF32_R_SYM(X)
- #endif /* _ASM_CRIS_MODULE_H */
-diff --git a/arch/h8300/include/asm/module.h b/arch/h8300/include/asm/module.h
-index 8e46724..5140128 100644
---- a/arch/h8300/include/asm/module.h
-+++ b/arch/h8300/include/asm/module.h
-@@ -4,8 +4,13 @@
-  * This file contains the H8/300 architecture specific module code.
-  */
- struct mod_arch_specific { };
-+#define MODULES_ARE_ELF32
- #define Elf_Shdr Elf32_Shdr
- #define Elf_Sym Elf32_Sym
- #define Elf_Ehdr Elf32_Ehdr
-+#define Elf_Rel Elf32_Rel
-+#define Elf_Rela Elf32_Rela
-+#define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF32_R_SYM(X)
- 
- #endif /* _ASM_H8/300_MODULE_H */
-diff --git a/arch/ia64/include/asm/module.h b/arch/ia64/include/asm/module.h
-index 908eaef..3c4cd94 100644
---- a/arch/ia64/include/asm/module.h
-+++ b/arch/ia64/include/asm/module.h
-@@ -29,9 +29,14 @@ struct mod_arch_specific {
- 	unsigned int next_got_entry;	/* index of next available got entry */
- };
- 
-+#define MODULES_ARE_ELF64
- #define Elf_Shdr	Elf64_Shdr
- #define Elf_Sym		Elf64_Sym
- #define Elf_Ehdr	Elf64_Ehdr
-+#define Elf_Rel		Elf64_Rel
-+#define Elf_Rela	Elf64_Rela
-+#define ELF_R_TYPE(X)	ELF64_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF64_R_SYM(X)
- 
- #define MODULE_PROC_FAMILY	"ia64"
- #define MODULE_ARCH_VERMAGIC	MODULE_PROC_FAMILY \
-diff --git a/arch/m32r/include/asm/module.h b/arch/m32r/include/asm/module.h
-index eb73ee0..7146455 100644
---- a/arch/m32r/include/asm/module.h
-+++ b/arch/m32r/include/asm/module.h
-@@ -3,8 +3,13 @@
- 
- struct mod_arch_specific { };
- 
-+#define MODULES_ARE_ELF32
- #define Elf_Shdr	Elf32_Shdr
- #define Elf_Sym		Elf32_Sym
- #define Elf_Ehdr	Elf32_Ehdr
-+#define Elf_Rel		Elf32_Rel
-+#define Elf_Rela	Elf32_Rela
-+#define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF32_R_SYM(X)
- 
- #endif /* _ASM_M32R_MODULE_H */
-diff --git a/arch/m68k/include/asm/module.h b/arch/m68k/include/asm/module.h
-index edffe66..9e2cd74 100644
---- a/arch/m68k/include/asm/module.h
-+++ b/arch/m68k/include/asm/module.h
-@@ -36,8 +36,13 @@ struct module;
- extern void module_fixup(struct module *mod, struct m68k_fixup_info *start,
- 			 struct m68k_fixup_info *end);
- 
-+#define MODULES_ARE_ELF32
- #define Elf_Shdr Elf32_Shdr
- #define Elf_Sym Elf32_Sym
- #define Elf_Ehdr Elf32_Ehdr
-+#define Elf_Rel		Elf32_Rel
-+#define Elf_Rela	Elf32_Rela
-+#define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF32_R_SYM(X)
- 
- #endif /* _ASM_M68K_MODULE_H */
-diff --git a/arch/mips/include/asm/module.h b/arch/mips/include/asm/module.h
-index bc01a02..73c71a2 100644
---- a/arch/mips/include/asm/module.h
-+++ b/arch/mips/include/asm/module.h
-@@ -33,11 +33,15 @@ typedef struct {
- } Elf64_Mips_Rela;
- 
- #ifdef CONFIG_32BIT
--
-+#define MODULES_ARE_ELF32
- #define Elf_Shdr	Elf32_Shdr
- #define Elf_Sym		Elf32_Sym
- #define Elf_Ehdr	Elf32_Ehdr
- #define Elf_Addr	Elf32_Addr
-+#define Elf_Rel		Elf32_Rel
-+#define Elf_Rela	Elf32_Rela
-+#define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF32_R_SYM(X)
- 
- #define Elf_Mips_Rel	Elf32_Rel
- #define Elf_Mips_Rela	Elf32_Rela
-@@ -48,11 +52,15 @@ typedef struct {
- #endif
- 
- #ifdef CONFIG_64BIT
--
-+#define MODULES_ARE_ELF64
- #define Elf_Shdr	Elf64_Shdr
- #define Elf_Sym		Elf64_Sym
- #define Elf_Ehdr	Elf64_Ehdr
- #define Elf_Addr	Elf64_Addr
-+#define Elf_Rel		Elf64_Rel
-+#define Elf_Rela	Elf64_Rela
-+#define ELF_R_TYPE(X)	ELF64_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF64_R_SYM(X)
- 
- #define Elf_Mips_Rel	Elf64_Mips_Rel
- #define Elf_Mips_Rela	Elf64_Mips_Rela
-diff --git a/arch/parisc/include/asm/module.h b/arch/parisc/include/asm/module.h
-index 1f41234..3e13f69 100644
---- a/arch/parisc/include/asm/module.h
-+++ b/arch/parisc/include/asm/module.h
-@@ -4,17 +4,25 @@
-  * This file contains the parisc architecture specific module code.
-  */
- #ifdef CONFIG_64BIT
-+#define MODULES_ARE_ELF64
- #define Elf_Shdr Elf64_Shdr
- #define Elf_Sym Elf64_Sym
- #define Elf_Ehdr Elf64_Ehdr
- #define Elf_Addr Elf64_Addr
-+#define Elf_Rel	 Elf64_Rel
- #define Elf_Rela Elf64_Rela
-+#define ELF_R_TYPE(X)	ELF64_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF64_R_SYM(X)
- #else
-+#define MODULES_ARE_ELF32
- #define Elf_Shdr Elf32_Shdr
- #define Elf_Sym Elf32_Sym
- #define Elf_Ehdr Elf32_Ehdr
- #define Elf_Addr Elf32_Addr
-+#define Elf_Rel  Elf32_Rel
- #define Elf_Rela Elf32_Rela
-+#define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF32_R_SYM(X)
- #endif
- 
- struct unwind_table;
-diff --git a/arch/powerpc/include/asm/module.h b/arch/powerpc/include/asm/module.h
-index 0192a4e..e949704 100644
---- a/arch/powerpc/include/asm/module.h
-+++ b/arch/powerpc/include/asm/module.h
-@@ -60,16 +60,26 @@ struct mod_arch_specific {
-  */
- 
- #ifdef __powerpc64__
-+#    define MODULES_ARE_ELF64
- #    define Elf_Shdr	Elf64_Shdr
- #    define Elf_Sym	Elf64_Sym
- #    define Elf_Ehdr	Elf64_Ehdr
-+#    define Elf_Rel Elf64_Rel
-+#    define Elf_Rela Elf64_Rela
-+#    define ELF_R_TYPE(X)	ELF64_R_TYPE(X)
-+#    define ELF_R_SYM(X)	ELF64_R_SYM(X)
- #    ifdef MODULE
- 	asm(".section .stubs,\"ax\",@nobits; .align 3; .previous");
- #    endif
- #else
-+#    define MODULES_ARE_ELF32
- #    define Elf_Shdr	Elf32_Shdr
- #    define Elf_Sym	Elf32_Sym
- #    define Elf_Ehdr	Elf32_Ehdr
-+#    define Elf_Rel Elf32_Rel
-+#    define Elf_Rela Elf32_Rela
-+#    define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#    define ELF_R_SYM(X)	ELF32_R_SYM(X)
- #    ifdef MODULE
- 	asm(".section .plt,\"ax\",@nobits; .align 3; .previous");
- 	asm(".section .init.plt,\"ax\",@nobits; .align 3; .previous");
-diff --git a/arch/s390/include/asm/module.h b/arch/s390/include/asm/module.h
-index 1cc1c5a..b64dab0 100644
---- a/arch/s390/include/asm/module.h
-+++ b/arch/s390/include/asm/module.h
-@@ -29,14 +29,17 @@ struct mod_arch_specific
- };
- 
- #ifdef __s390x__
-+#define MODULES_ARE_ELF64
- #define ElfW(x) Elf64_ ## x
- #define ELFW(x) ELF64_ ## x
- #else
-+#define MODULES_ARE_ELF32
- #define ElfW(x) Elf32_ ## x
- #define ELFW(x) ELF32_ ## x
- #endif
- 
- #define Elf_Addr ElfW(Addr)
-+#define Elf_Rel ElfW(Rel)
- #define Elf_Rela ElfW(Rela)
- #define Elf_Shdr ElfW(Shdr)
- #define Elf_Sym ElfW(Sym)
-diff --git a/include/asm-generic/module.h b/include/asm-generic/module.h
-index ed5b44d..e053617b 100644
---- a/include/asm-generic/module.h
-+++ b/include/asm-generic/module.h
-@@ -10,13 +10,23 @@ struct mod_arch_specific
- };
- 
- #ifdef CONFIG_64BIT
-+#define MODULES_ARE_ELF64
- #define Elf_Shdr Elf64_Shdr
- #define Elf_Sym Elf64_Sym
- #define Elf_Ehdr Elf64_Ehdr
-+#define Elf_Rel		Elf64_Rel
-+#define Elf_Rela	Elf64_Rela
-+#define ELF_R_TYPE(X)	ELF64_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF64_R_SYM(X)
- #else
-+#define MODULES_ARE_ELF32
- #define Elf_Shdr Elf32_Shdr
- #define Elf_Sym Elf32_Sym
- #define Elf_Ehdr Elf32_Ehdr
-+#define Elf_Rel		Elf32_Rel
-+#define Elf_Rela	Elf32_Rela
-+#define ELF_R_TYPE(X)	ELF32_R_TYPE(X)
-+#define ELF_R_SYM(X)	ELF32_R_SYM(X)
- #endif
- 
- #endif /* __ASM_GENERIC_MODULE_H */
++	/* Verify the module's contents */
++	err = module_verify(hdr, len);
++	if (err < 0)
++		goto free_hdr;
++
+ 	info->hdr = hdr;
+ 	info->len = len;
+ 	return 0;
 
