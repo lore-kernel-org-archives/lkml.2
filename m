@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752179Ab1LBFdu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 00:33:50 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51448 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab1LBFds (ORCPT
+	id S1752247Ab1LBFeC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 00:34:02 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40253 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab1LBFeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 00:33:48 -0500
-Date: Fri, 2 Dec 2011 08:33:42 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: mmarek@suse.cz, sam@ravnborg.org
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Rewriting kernel config after generation
-Message-ID: <20111202053342.GA13877@p183.telecom.by>
+	Fri, 2 Dec 2011 00:34:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111121113433.GD3784@opensource.wolfsonmicro.com>
+References: <1321848532-8784-1-git-send-email-tomoya.rohm@gmail.com>
+	<1321848532-8784-2-git-send-email-tomoya.rohm@gmail.com>
+	<20111121113433.GD3784@opensource.wolfsonmicro.com>
+Date: Fri, 2 Dec 2011 14:33:59 +0900
+Message-ID: <CANKRQnjdS1NvcGLa=S1M0D4U_NV3+JR1E4YfAV7Ziq-fE2LQgg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] sound/soc/lapis: add machine driver
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm trying to add compiling with -march=native to the kernel.
-The problem is that then some config options become discoverable at
-the beginning of the compilation. For example,
-CONFIG_X86_L1_CACHE_SHIFT=6 can be derived from "--param l1-cache-line-size=64".
-I suspect this is no-go, because all the dependency logic must be
-duplicated somewhere else (in the march=native script) for the above
-to work.
+2011/11/21 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Mon, Nov 21, 2011 at 01:08:51PM +0900, Tomoya MORINAGA wrote:
+>> Add machine driver for LAPIS Semiconductor ML7213 IOH.
+>
+> This needs to come after you add the base platform support in the series
+> - clearly this won't work without the CPU side drivers it depends on.
 
-Is there any cleaner way I'm missing?
+Most of the chipset drivers for Intel Atom E6xx series have already
+accepted by upstream.
+e.g. i2c-eg20t, pch_dma, pch_uart, spi-topcliff-pch, ml-ioh-gpio, etc...
 
-In theory, such script could even turn off CONFIG_CPU_SUP_AMD
-if it detects Intel CPU.
+BTW, every time I send mail to "alsa-devel@alsa-project.org",
+I receive returned mail "Your message to Alsa-devel awaits moderator approval".
+Is this normal things ?
+Of course, I've already subscribed to "alsa-devel@alsa-project.org".
 
-	Alexey
+thanks,
+tomoya
