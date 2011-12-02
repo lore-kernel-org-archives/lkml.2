@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab1LBItZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 03:49:25 -0500
-Received: from 8bytes.org ([88.198.83.132]:58154 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273Ab1LBItY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 03:49:24 -0500
-Date: Fri, 2 Dec 2011 09:49:22 +0100
-From: "'Joerg Roedel'" <joro@8bytes.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'KyongHo Cho'" <pullip.cho@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
-Subject: Re: [PATCH v7 0/2] iommu/exynos: Add IOMMU/System MMU driver for
-	Samsung Exynos
-Message-ID: <20111202084922.GM20535@8bytes.org>
-References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com> <20111123114626.GH20535@8bytes.org> <045b01ccaffa$ef48c430$cdda4c90$%kim@samsung.com> <20111201185821.GL20535@8bytes.org> <04f601ccb0ce$72590550$570b0ff0$%kim@samsung.com>
+	id S1752974Ab1LBIx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 03:53:26 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:52507
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752685Ab1LBIxY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 03:53:24 -0500
+X-SpamScore: -25
+X-BigFish: VPS-25(zz179dN1432N98dKzz1202hzz15d4R8275bh8275dhz2dh668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVKJCQ-02-8RY-02
+X-M-MSG: 
+Date: Fri, 2 Dec 2011 09:53:16 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM: SVM: Notify if SVM is already in use
+Message-ID: <20111202085316.GI13268@amd.com>
+References: <1322764218-4698-1-git-send-email-levinsasha928@gmail.com>
+ <1322764218-4698-2-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <04f601ccb0ce$72590550$570b0ff0$%kim@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1322764218-4698-2-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 05:43:21PM +0900, Kukjin Kim wrote:
-> OK, I will merge iommu/exynos into Samsung tree after your creating that.
+On Thu, Dec 01, 2011 at 08:30:18PM +0200, Sasha Levin wrote:
+> Currently we silently fail if SVM is already in use by a different
+> virtualization technology.
 > 
-> I can't look at iommu/exynos branch in your tree,
-> git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git.
+> This is bad since it's non-obvious for the user, and its not too uncommon
+> for users to have several of these installed on same host.
+> 
+> This patch adds a message to notify the user of the problem.
+> 
+> Cc: Joerg Roedel <joerg.roedel@amd.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: kvm@vger.kernel.org
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+>  arch/x86/kvm/svm.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index e32243e..8d1a066 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -587,8 +587,11 @@ static int svm_hardware_enable(void *garbage)
+>  	int me = raw_smp_processor_id();
+>  
+>  	rdmsrl(MSR_EFER, efer);
+> -	if (efer & EFER_SVME)
+> +	if (efer & EFER_SVME) {
+> +		printk(KERN_ERR "svm_hardware_enable: SVM already in use on CPU%d. "
+> +				"Are you already another hypervisor?\n", me);
 
-That's because I havn't merged any exynos patches yet :) But I will
-create it soon an merge this driver.
+Hmm, this can nicely flood dmesg on a machine with many cores :) How
+about removing the CPU%d part of the message and using printk_once?
 
 
 	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
