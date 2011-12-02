@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab1LBRpl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:45:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757200Ab1LBRpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:45:40 -0500
-Date: Fri, 2 Dec 2011 18:45:27 +0100
-From: Frantisek Hrbata <fhrbata@redhat.com>
-To: rientjes@google.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        oleg@redhat.com, minchan.kim@gmail.com, stable@kernel.org,
-        eteo@redhat.com, pmatouse@redhat.com, gregkh@suse.de
-Subject: [PATCH v2 RESEND] oom: fix integer overflow of points in oom_badness
-Message-ID: <20111202174526.GA11483@dhcp-26-164.brq.redhat.com>
-References: <1320048865-13175-1-git-send-email-fhrbata@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320048865-13175-1-git-send-email-fhrbata@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757307Ab1LBRrW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:47:22 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51611 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757244Ab1LBRrU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 12:47:20 -0500
+Message-ID: <1322848025.3780.8.camel@lappy>
+Subject: Re: [PATCH v2] pipe: Fail cleanly when root tries F_SETPIPE_SZ with
+ big size
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Date: Fri, 02 Dec 2011 19:47:05 +0200
+In-Reply-To: <CAOJsxLFvVUbnHrCKGL-kuN_JYQ6qwtU_kzvncrAmWAdjP2RvQw@mail.gmail.com>
+References: <1321688059-3844-1-git-send-email-levinsasha928@gmail.com>
+	 <CAOJsxLFvVUbnHrCKGL-kuN_JYQ6qwtU_kzvncrAmWAdjP2RvQw@mail.gmail.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An integer overflow will happen on 64bit archs if task's sum of rss, swapents
-and nr_ptes exceeds (2^31)/1000 value. This was introduced by commit
+Al, Ping?
 
-f755a04 oom: use pte pages in OOM score
+On Sat, 2011-11-19 at 10:06 +0200, Pekka Enberg wrote:
+> On Sat, Nov 19, 2011 at 9:34 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > When a user with the CAP_SYS_RESOURCE cap tries to F_SETPIPE_SZ a pipe with
+> > size bigger than what kmalloc() can alloc it spits out an ugly warning:
+> 
+> [snip]
+> 
+> > Instead, make kcalloc() handle the overflow case and fail quietly.
+> >
+> > Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> > Cc: Pekka Enberg <penberg@kernel.org>
+> > Cc: linux-fsdevel@vger.kernel.org
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> 
+> Acked-by: Pekka Enberg <penberg@kernel.org>
+> 
+> > ---
+> >  fs/pipe.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/fs/pipe.c b/fs/pipe.c
+> > index 4065f07..3e38dc6 100644
+> > --- a/fs/pipe.c
+> > +++ b/fs/pipe.c
+> > @@ -1137,7 +1137,7 @@ static long pipe_set_size(struct pipe_inode_info *pipe, unsigned long nr_pages)
+> >        if (nr_pages < pipe->nrbufs)
+> >                return -EBUSY;
+> >
+> > -       bufs = kcalloc(nr_pages, sizeof(struct pipe_buffer), GFP_KERNEL);
+> > +       bufs = kcalloc(nr_pages, sizeof(struct pipe_buffer), GFP_KERNEL | __GFP_NOWARN);
+> >        if (unlikely(!bufs))
+> >                return -ENOMEM;
+> >
+> > --
+> > 1.7.8.rc1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
 
-where the oom score computation was divided into several steps and it's no
-longer computed as one expression in unsigned long(rss, swapents, nr_pte are
-unsigned long), where the result value assigned to points(int) is in
-range(1..1000). So there could be an int overflow while computing
-
-176          points *= 1000;
-
-and points may have negative value. Meaning the oom score for a mem hog task
-will be one.
-
-196          if (points <= 0)
-197                  return 1;
-
-For example:
-[ 3366]     0  3366 35390480 24303939   5       0             0 oom01
-Out of memory: Kill process 3366 (oom01) score 1 or sacrifice child
-
-Here the oom1 process consumes more than 24303939(rss)*4096~=92GB physical
-memory, but it's oom score is one.
-
-In this situation the mem hog task is skipped and oom killer kills another and
-most probably innocent task with oom score greater than one.
-
-The points variable should be of type long instead of int to prevent the int
-overflow.
-
-Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: stable@kernel.org [2.6.36+]
----
- mm/oom_kill.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 626303b..e9a1785 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -162,7 +162,7 @@ static bool oom_unkillable_task(struct task_struct *p,
- unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 		      const nodemask_t *nodemask, unsigned long totalpages)
- {
--	int points;
-+	long points;
- 
- 	if (oom_unkillable_task(p, mem, nodemask))
- 		return 0;
 -- 
-1.7.6.4
 
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+Sasha.
+
