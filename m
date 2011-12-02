@@ -1,346 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1LBUsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 15:48:22 -0500
-Received: from border.exmeritus.com ([70.167.241.26]:52724 "EHLO
-	border.exmeritus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755163Ab1LBUsT (ORCPT
+	id S1755286Ab1LBUuD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 15:50:03 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47980 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755009Ab1LBUuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 15:48:19 -0500
-From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 2/3] of_gpio: Add new helpers for easily requesting lots of GPIOs
-Date: Fri,  2 Dec 2011 15:38:00 -0500
-Message-Id: <1322858281-17831-3-git-send-email-Kyle.D.Moffett@boeing.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1322858281-17831-1-git-send-email-Kyle.D.Moffett@boeing.com>
-References: <1322858281-17831-1-git-send-email-Kyle.D.Moffett@boeing.com>
+	Fri, 2 Dec 2011 15:50:02 -0500
+Date: Fri, 2 Dec 2011 23:50:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Marcos Paulo de Souza <marcos.mage@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Forest Bond <forest@alittletooquiet.net>,
+        Greg Kroah-Hartman <gregkh@susse.de>
+Subject: Re: [PATCH 1/5] staging: vt6656: datarate.c: Use memset instead a
+ for loop
+Message-ID: <20111202205026.GA3195@mwanda>
+References: <1322783915-19570-1-git-send-email-marcos.mage@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2fowzm2eVyDiEwGH"
+Content-Disposition: inline
+In-Reply-To: <1322783915-19570-1-git-send-email-marcos.mage@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4ED939F3.0016,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mirroring the new gpio_request_array() interface, we add several a few
-helper functions for operating on entire arrays of GPIOs.
 
-Also, to make it easier to write various combinations of "of_get_gpio()"
-followed by "gpio_request()", add several other new inline wrappers.
+--2fowzm2eVyDiEwGH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
----
- drivers/of/gpio.c       |   96 +++++++++++++++++++++++++++++
- include/linux/of_gpio.h |  154 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 250 insertions(+), 0 deletions(-)
+On Thu, Dec 01, 2011 at 11:58:35PM +0000, Marcos Paulo de Souza wrote:
+> As Dan Carpenteder suggested, this makes the atribution more simple.
+>=20
+> Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-diff --git a/drivers/of/gpio.c b/drivers/of/gpio.c
-index f349aaf..4c04f2f 100644
---- a/drivers/of/gpio.c
-+++ b/drivers/of/gpio.c
-@@ -83,6 +83,47 @@ err0:
- EXPORT_SYMBOL(of_get_named_gpio_flags);
- 
- /**
-+ * of_get_gpio_array_flags() - Get array of gpios to use with GPIO API
-+ * @np:		device node to get GPIOs from
-+ * @of_gpios:	array of "struct of_gpio" to select which GPIOs to look up
-+ * @of_flags:	array of "enum of_gpio_flags" to be filled in (may be NULL)
-+ * @gpios:	array of "struct gpio" to be filled in
-+ * @num:	the number of GPIOs to look up
-+ *
-+ * Takes a constant array of "struct of_gpio" and looks up each item in the
-+ * indicated device-node.  The results are stored into the @gpios array,
-+ * along with the optional GPIO "label" and "flags" values from the "of_gpio"
-+ * structure.
-+ *
-+ * If an array of @of_flags is provided then any flags from the translate
-+ * function will be stored into the corresponding element there.
-+ */
-+int of_get_gpio_array_flags(struct device_node *np,
-+		const struct of_gpio *of_gpios, enum of_gpio_flags *of_flags,
-+		struct gpio *gpios, size_t num)
-+{
-+	int err = 0;
-+
-+	size_t i;
-+	for (i = 0; i < num; i++) {
-+		/* Copy over the GPIO values */
-+		gpios[i].flags = of_gpios[i].gpio_flags;
-+		gpios[i].label = of_gpios[i].gpio_label;
-+
-+		/* Now dig the rest out of the device-tree */
-+		gpios[i].gpio = of_get_named_gpio_flags(np,
-+				of_gpios[i].propname, of_gpios[i].index,
-+				(of_flags ? &of_flags[num] : NULL));
-+
-+		if (gpios[i].gpio < 0)
-+			err = err ?: gpios[i].gpio;
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL(of_get_gpio_array_flags);
-+
-+/**
-  * of_gpio_count_named - Count GPIOs for a device
-  * @np:		device node to count GPIOs for
-  * @propname:	property name containing gpio specifier(s)
-@@ -116,6 +157,61 @@ unsigned int of_gpio_count_named(struct device_node *np, const char *propname)
- EXPORT_SYMBOL(of_gpio_count_named);
- 
- /**
-+ * of_gpio_request_named_flags() - Request a GPIO using the device-tree
-+ * @np:		device node to get GPIO from
-+ * @propname:	property name containing gpio specifier(s)
-+ * @index:	index of the GPIO
-+ * @flags:	a flags pointer to fill in
-+ * @gpio_flags:	The setup flags to pass into the GPIO API
-+ * @gpio_label:	The label to pass into the GPIO API
-+ *
-+ * This is a simple wrapper around gpio_request_one() that looks up the GPIO
-+ * from the device-tree first using of_get_named_gpio_flags().
-+ */
-+int of_gpio_request_named_flags(struct device_node *np,
-+		const char *propname, int index, enum of_gpio_flags *of_flags,
-+		unsigned long gpio_flags, const char *gpio_label)
-+{
-+	int err;
-+
-+	/* Retrieve the GPIO information from the device-tree */
-+	int gpio = of_get_named_gpio_flags(np, propname, index, of_flags);
-+	if (gpio < 0)
-+		return gpio;
-+
-+	/* Request the GPIO */
-+	err = gpio_request_one(gpio, gpio_flags, gpio_label);
-+	return err ? err : gpio;
-+}
-+EXPORT_SYMBOL(of_gpio_request_named_flags);
-+
-+/**
-+ * of_gpio_request_array_flags() - Request GPIOs using the device-tree
-+ * @np:		device node to get GPIO from
-+ * @of_gpios:	array of "struct of_gpio" to select which GPIOs to request
-+ * @of_flags:	array of "enum of_gpio_flags" to be filled in (may be NULL)
-+ * @gpios:	array of "struct gpio" to be filled in
-+ * @num:	the number of GPIOs to request
-+ *
-+ * This is a simple wrapper around gpio_request_array() that looks up the
-+ * GPIOs from the device-tree first using of_get_gpio_array_flags().
-+ */
-+int of_gpio_request_array_flags(struct device_node *np,
-+		const struct of_gpio *of_gpios, enum of_gpio_flags *of_flags,
-+		struct gpio *gpios, size_t num)
-+{
-+	/* Retrieve the GPIO information from the device-tree */
-+	int err = of_get_gpio_array_flags(np, of_gpios,
-+			of_flags, gpios, num);
-+	if (err)
-+		return err;
-+
-+	/* Request all of the GPIOs */
-+	return gpio_request_array(gpios, num);
-+}
-+EXPORT_SYMBOL(of_gpio_request_array_flags);
-+
-+/**
-  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
-  * @gc:		pointer to the gpio_chip structure
-  * @np:		device node of the GPIO chip
-diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
-index 1411a06..babce09 100644
---- a/include/linux/of_gpio.h
-+++ b/include/linux/of_gpio.h
-@@ -30,6 +30,20 @@ enum of_gpio_flags {
- 	OF_GPIO_ACTIVE_LOW = 0x1,
- };
- 
-+/*
-+ * This struct is passed to of_named_gpio_request_array() to initialize the
-+ * passed-in array of "struct gpio" for use by gpio_request_array().
-+ */
-+struct of_gpio {
-+	/* These values are used to locate the GPIO in the device-tree */
-+	const char *propname;
-+	int index;
-+
-+	/* These values are used to request the discovered GPIO */
-+	unsigned long gpio_flags;
-+	const char *gpio_label;
-+};
-+
- #ifdef CONFIG_OF_GPIO
- 
- /*
-@@ -49,9 +63,21 @@ static inline struct of_mm_gpio_chip *to_of_mm_gpio_chip(struct gpio_chip *gc)
- extern int of_get_named_gpio_flags(struct device_node *np,
- 		const char *list_name, int index, enum of_gpio_flags *flags);
- 
-+extern int of_get_gpio_array_flags(struct device_node *np,
-+		const struct of_gpio *of_gpios, enum of_gpio_flags *of_flags,
-+		struct gpio *gpios, size_t num);
-+
- extern unsigned int of_gpio_count_named(struct device_node *np,
- 		const char *propname);
- 
-+extern int of_gpio_request_named_flags(struct device_node *np,
-+		const char *propname, int index, enum of_gpio_flags *of_flags,
-+		unsigned long gpio_flags, const char *gpio_label);
-+
-+extern int of_gpio_request_array_flags(struct device_node *np,
-+		const struct of_gpio *of_gpios, enum of_gpio_flags *of_flags,
-+		struct gpio *gpios, size_t num);
-+
- extern int of_mm_gpiochip_add(struct device_node *np,
- 			      struct of_mm_gpio_chip *mm_gc);
- 
-@@ -70,12 +96,51 @@ static inline int of_get_named_gpio_flags(struct device_node *np,
- 	return -ENOSYS;
- }
- 
-+static inline int of_get_gpio_array_flags(struct device_node *np,
-+		const struct of_gpio *of_gpios, enum of_gpio_flags *of_flags,
-+		struct gpio *gpios, size_t num)
-+{
-+	/*
-+	 * This function must always initialize all the "struct gpio"s even
-+	 * if they cannot be probed to allow the user to detect the source of
-+	 * each error.
-+	 */
-+	size_t i;
-+	for (i = 0; i < num; i++) {
-+		gpios[i].gpio = -ENOSYS;
-+		gpios[i].label = of_gpios[i].label;
-+		gpios[i].flags = of_gpios[i].flags;
-+	}
-+	return -ENOSYS;
-+}
-+
- static inline unsigned int of_gpio_count_named(struct device_node *np,
- 		const char *propname)
- {
- 	return 0;
- }
- 
-+static inline int of_gpio_request_named_flags(struct device_node *np,
-+		const char *propname, int index, enum of_gpio_flags *of_flags,
-+		unsigned long gpio_flags, const char *gpio_label)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline int of_gpio_request_array_flags(struct device_node *np,
-+		const struct of_gpio *of_gpios, enum of_gpio_flags *of_flags,
-+		struct gpio *gpios, size_t num)
-+{
-+	/* Same initialization as of_get_gpio_array_flags() above */
-+	size_t i;
-+	for (i = 0; i < num; i++) {
-+		gpios[i].gpio = -ENOSYS;
-+		gpios[i].label = of_gpios[i].label;
-+		gpios[i].flags = of_gpios[i].flags;
-+	}
-+	return -ENOSYS;
-+}
-+
- static inline int of_gpio_simple_xlate(struct gpio_chip *gc,
- 				       struct device_node *np,
- 				       const void *gpio_spec, u32 *flags)
-@@ -153,4 +218,93 @@ static inline int of_get_gpio(struct device_node *np, int index)
- 	return of_get_gpio_flags(np, index, NULL);
- }
- 
-+/**
-+ * of_gpio_request_one_flags() - Request a GPIO using the device-tree
-+ * @np:		device node to get GPIO from
-+ * @index:	index of the GPIO
-+ * @flags:	a flags pointer to fill in
-+ * @gpio_flags:	The setup flags to pass into the GPIO API
-+ * @gpio_label:	The label to pass into the GPIO API
-+ *
-+ * This is a simple wrapper around gpio_request_one() that looks up the GPIO
-+ * from the device-tree first using of_get_gpio_flags().
-+ */
-+static inline int of_gpio_request_one_flags(struct device_node *np,
-+		int index, enum of_gpio_flags *of_flags,
-+		unsigned long gpio_flags, const char *gpio_label)
-+{
-+	return of_gpio_request_named_flags(np, "gpios", index,
-+			of_flags, gpio_flags, gpio_label);
-+}
-+
-+/**
-+ * of_gpio_request_named() - Request a GPIO using the device-tree
-+ * @np:		device node to get GPIO from
-+ * @propname:	Name of property containing gpio specifier(s)
-+ * @index:	index of the GPIO
-+ * @gpio_flags:	The setup flags to pass into the GPIO API
-+ * @gpio_label:	The label to pass into the GPIO API
-+ *
-+ * This is a simple wrapper around gpio_request_one() that looks up the GPIO
-+ * from the device-tree first using of_get_named_gpio().
-+ */
-+static inline int of_gpio_request_named(struct device_node *np,
-+		const char *propname, int index,
-+		unsigned long gpio_flags, const char *gpio_label)
-+{
-+	return of_gpio_request_named_flags(np, propname, index,
-+			NULL, gpio_flags, gpio_label);
-+}
-+
-+/**
-+ * of_gpio_request_one() - Request a GPIO using the device-tree
-+ * @np:		device node to get GPIO from
-+ * @index:	index of the GPIO
-+ * @gpio_flags:	The setup flags to pass into the GPIO API
-+ * @gpio_label:	The label to pass into the GPIO API
-+ *
-+ * This is a simple wrapper around gpio_request_one() that looks up the GPIO
-+ * from the device-tree first using of_get_gpio().
-+ */
-+static inline int of_gpio_request_one(struct device_node *np,
-+		int index, unsigned long gpio_flags, const char *gpio_label)
-+{
-+	return of_gpio_request_one_flags(np, index, NULL,
-+			gpio_flags, gpio_label);
-+}
-+
-+/**
-+ * of_get_gpio_array() - Get an array of GPIO numbers to use with GPIO API
-+ * @np:		device node to get GPIO from
-+ * @of_gpios:	array of "struct of_gpio" to select which GPIOs to look up
-+ * @gpios:	array of "struct gpio" to be filled in
-+ * @num:	the number of GPIOs to look up
-+ *
-+ * Takes a constant array of "struct of_gpio" and looks up each item in the
-+ * indicated device-node.  The results are stored into the @gpios array,
-+ * along with the optional GPIO "label" and "flags" values from the "of_gpio"
-+ * structure.
-+ */
-+static inline int of_get_gpio_array(struct device_node *np,
-+		const struct of_gpio *of_gpios, struct gpio *gpios, size_t num)
-+{
-+	return of_get_gpio_array_flags(np, of_gpios, NULL, gpios, num);
-+}
-+
-+/**
-+ * of_gpio_request_array() - Request GPIOs using the device-tree
-+ * @np:		device node to get GPIO from
-+ * @of_gpios:	array of "struct of_gpio" to select which GPIOs to request
-+ * @gpios:	array of "struct gpio" to be filled in
-+ * @num:	the number of GPIOs to request
-+ *
-+ * This is a simple wrapper around gpio_request_array() that looks up the
-+ * GPIOs from the device-tree first using of_get_gpio_array().
-+ */
-+static inline int of_gpio_request_array(struct device_node *np,
-+		const struct of_gpio *of_gpios, struct gpio *gpios, size_t num)
-+{
-+	return of_gpio_request_array_flags(np, of_gpios, NULL, gpios, num);
-+}
-+
- #endif /* __LINUX_OF_GPIO_H */
--- 
-1.7.2.5
+Normally I wouldn't get the Signed-off-by line here.  People can
+only can sign things for themselves, but in this case it's fine,
+whatever.
 
+Reviewed-by: Dan Carpenter <dan.carpenter@oracle.com>
+
+regards,
+dan carpenter
+
+--2fowzm2eVyDiEwGH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO2ToSAAoJEOnZkXI/YHqRFgsP/3vV1nTX8jYoX8JCLJE5o4Jp
+SyEmzjbfNJlA/1kkynDZgd4oHx1ftKQDW2zDLEQsGrSYAVvrGW3KDFh9YWpNCw8w
+vbZa85+r3s/027G2dar4YVl7pCRH1pUtx6LIfk9cr2isN0neCXYblRAD3Y0qhHMi
+ohANf379lQuNnFvZYi3LeqyzbMGif9oU4C8lPbB91yMIDbx1p+qtmG7Fm1rApLG1
+Uuy1OA27ZX6l+phn7QCXPvbTK/GHFuWGXEGiBwhrfptxuDpjCv093m9Jcu/lcYS5
+eBGHswcc8G82i4JXwu+Y5lZnP6fipOe9tuypJIa1c8HTyf9ykTsqQIAmLhn7Uijm
+VoyHdRuAVDTNlqerMo5aQ5UJb+7Rj+DNnGjgElS5M8tmKFHTQG26PEsRbOAupbhb
+QkB36af5uXYcgCBf/hGloMzFXmJwkYJaeLL71wiQhpHjZXyEUWs2W+wNtItADZuo
+JQjioJDx5uEN7rdQHfb6qdELE8tVu4DkIlIeMZ3NvKqSSFGI599l3b2FH2ruN60e
+z1BCK8Rdf62lY3ssP8N1mAyHz/liIng8Qsaxah8CfqccwIWFIzD13/Q1A8PCa4Xj
+QIw+++3Nv85Wdy41/+IvmfkFmwHvtjWdwJRLsT66+jB677eq36DyADlGUQSTDx2h
+XdID2NAm3r8ni1j9C0LS
+=L3j6
+-----END PGP SIGNATURE-----
+
+--2fowzm2eVyDiEwGH--
