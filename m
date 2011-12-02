@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab1LBWqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 17:46:43 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45269 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865Ab1LBWql (ORCPT
+	id S1751594Ab1LBWr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 17:47:59 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52531 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab1LBWr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 17:46:41 -0500
-Date: Sat, 3 Dec 2011 02:46:36 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Garzik <jgarzik@redhat.com>, Pawel Moll <pawel.moll@arm.com>
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-Message-ID: <20111202224636.GA10432@oksana.dev.rtsoft.ru>
-References: <20111110151852.GA7465@oksana.dev.rtsoft.ru>
- <20111110152606.GB3207@oksana.dev.rtsoft.ru>
- <20111110153816.239af1d7@lxorguk.ukuu.org.uk>
- <20111110162859.GA7088@oksana.dev.rtsoft.ru>
- <20111202191917.GB3037@localhost.localdomain>
- <20111202223402.GA7780@oksana.dev.rtsoft.ru>
- <20111202224018.GB7780@oksana.dev.rtsoft.ru>
+	Fri, 2 Dec 2011 17:47:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111202224018.GB7780@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1320712291.git.luto@amacapital.net>
+References: <CALCETrXAiHs9PyziHBm-gZRiyahYafbxxUSxJUcFh=a-0th0EQ@mail.gmail.com>
+ <cover.1320712291.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 2 Dec 2011 14:47:35 -0800
+Message-ID: <CALCETrVxHvH61D-xY6vq4ymWXAVOdj8=XV_ENqLQUJ5rMieuEg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Fix and re-enable vsyscall=emulate
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 03, 2011 at 02:40:18AM +0400, Anton Vorontsov wrote:
-> On Sat, Dec 03, 2011 at 02:34:02AM +0400, Anton Vorontsov wrote:
-> > On Fri, Dec 02, 2011 at 07:19:17PM +0000, Dave Martin wrote:
-> > [...]
-> > > > > > Drivers should not use NO_IRQ; moreover, some architectures don't
-> > > > > > have it nowadays. '0' is the 'no irq' case.
-> > > > > > 
-> > > > > > Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-> > > > > 
-> > > > > Acked-by: Alan Cox <alan@linux.intel.com>
-> > > > 
-> > > > In case if we don't want a "band-aid fix" for 3.2, here is the patch
-> > > > that just does the proper fix (w/ a risk to break minor architectures).
-> > > 
-> > > This is now broken on ARM where, for good or bad, NO_IRQ currently is
-> > > used and is -1.
-> > > 
-> > > How do we resolve it?
-> > 
-> > One option is to test this patch on a board that is now broken:
-> > 
-> > http://lkml.org/lkml/2011/11/10/290
-> 
-> Oh, actually, reading my own patch:
-> 
-> "ARM defines NO_IRQ to -1, but OF code relies on IRQ domains support,
->  which returns correct ('0') value in 'no irq' case. So everything
->  should be fine."
+On Mon, Nov 7, 2011 at 4:33 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> The really nice fix (wiring up access_ok failures to be able to raise
+> signals) won't be ready on time for 3.2, so let's try the simpler fix
+> for now.
 
-Ahh. Forget it, the remark was for the of/irq.c fix itself.
+I spoke to hpa about this a couple days ago, and he pointed out a
+problem with making access_ok send signals.  Userspace expects signals
+that come with full context information to be restartable, and many
+system calls are not restartable.  read() and write() are the obvious
+examples: once they're processed the beginning of the buffer, unless
+they adjust their parameters, they can't safely be restarted.  So
+without massive changes, I think allowing access_ok to raise a signal
+with full context is asking for trouble.
 
-So, we need the http://lkml.org/lkml/2011/11/10/290 fix. Otherwise
-the driver is indeed broken for ARM. Would be great if somebody could
-test it.
+I can still do the patch with two modes: signals without context via
+arch_prctl and signals with context via vsyscall emulation, but that's
+probably overkill for fixing this bug.  I'd say just apply these
+patches as is (for 3.3).
 
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+--Andy
