@@ -1,43 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab1LBQDq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 11:03:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34283 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756849Ab1LBQDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756896Ab1LBQDg (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 2 Dec 2011 11:03:36 -0500
-Date: Fri, 2 Dec 2011 17:03:33 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1112021702040.18207@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Received: from xyratex197.xyratex.com ([194.131.166.197]:53440 "EHLO
+	XY01EX21.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756788Ab1LBQDf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 11:03:35 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] SCSI: aacraid: potential integer overflow in aac_get_containers()
+Date: Fri, 2 Dec 2011 08:03:29 -0800
+Message-ID: <FC1F9E38C0703341A1A750524E2525A9019791E6@XYUS-EX22.xyus.xyratex.com>
+In-Reply-To: <1322706601-26181-1-git-send-email-haogangchen@gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] SCSI: aacraid: potential integer overflow in aac_get_containers()
+Thread-Index: Acyv0U3D1yRGBPsYTxGL3pZ1l+cbRQBOBu/Q
+References: <1322706601-26181-1-git-send-email-haogangchen@gmail.com>
+From: "Mark Salyzyn" <mark_salyzyn@us.xyratex.com>
+To: "Haogang Chen" <haogangchen@gmail.com>, <aacraid@adaptec.com>
+Cc: <JBottomley@parallels.com>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 02 Dec 2011 16:03:32.0981 (UTC) FILETIME=[F0CFD250:01CCB10B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+NAK
 
-please pull from
+I dispute that it is necessary or worth the additional abstraction,
+since MAXIMUM_NUM_CONTAINERS is in the order of 32, and
+sizeof(*fsa_dev_ptr) is in the range of 80 bytes ... There is a LONG
+road to hoe to get to the point of overload!
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+kcalloc -> __kmalloc(size_t, flags | __GFP_ZERO);
+kzalloc -> kmalloc(size_t, flags | __GFP_ZERO);
+kmalloc -> __kmalloc(size_t, flags);
 
-to receive the commit below. It fixes product ID for one particular 
-device.
+kcalloc can not allocate a larger entity than kzalloc. But alas it can
+report that the size has exceeded ULONG_MAX so that part of the patch is
+VERY sound.
 
-Thanks.
+Sincerely -- Mark Salyzyn
 
-Benjamin Tissoires (1):
-      HID: Correct General touch PID
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org
+[mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Haogang Chen
+Sent: Wednesday, November 30, 2011 9:30 PM
+To: aacraid@adaptec.com
+Cc: JBottomley@parallels.com; linux-scsi@vger.kernel.org;
+linux-kernel@vger.kernel.org; haogangchen@gmail.com
+Subject: [PATCH] SCSI: aacraid: potential integer overflow in
+aac_get_containers()
 
- drivers/hid/hid-core.c |    2 +-
- drivers/hid/hid-ids.h  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+There is a potential integer overflow in aac_get_containers(). When
+maximum_num_containers is large, the subsequent call to kzalloc() will
+allocate a buffer smaller than expected, which leads to memory
+corruption in the for loop.
 
+The patch replaces kzalloc with kcalloc.
+
+Signed-off-by: Haogang Chen <haogangchen@gmail.com>
+---
+ drivers/scsi/aacraid/aachba.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/aacraid/aachba.c
+b/drivers/scsi/aacraid/aachba.c
+index 409f580..440b84d 100644
+--- a/drivers/scsi/aacraid/aachba.c
++++ b/drivers/scsi/aacraid/aachba.c
+@@ -381,7 +381,7 @@ int aac_get_containers(struct aac_dev *dev)
+ 
+ 	if (maximum_num_containers < MAXIMUM_NUM_CONTAINERS)
+ 		maximum_num_containers = MAXIMUM_NUM_CONTAINERS;
+-	fsa_dev_ptr = kzalloc(sizeof(*fsa_dev_ptr) *
+maximum_num_containers,
++	fsa_dev_ptr = kcalloc(maximum_num_containers,
+sizeof(*fsa_dev_ptr), 
+ 			GFP_KERNEL);
+ 	if (!fsa_dev_ptr)
+ 		return -ENOMEM;
 -- 
-Jiri Kosina
-SUSE Labs
-
+1.7.5.4
