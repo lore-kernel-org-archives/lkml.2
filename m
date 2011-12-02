@@ -1,206 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab1LBROb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 12:14:31 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:46137 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153Ab1LBRO3 (ORCPT
+	id S1757206Ab1LBRO5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 12:14:57 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65254 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757177Ab1LBRO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 12:14:29 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        netdev@vger.kernel.org, plagnioj@jcrosoft.com
-Cc: linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, jamie@jamieiles.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] net/macb: add DT support
-Date: Fri,  2 Dec 2011 18:14:10 +0100
-Message-Id: <1322846050-4543-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <20111202153832.GA4998@totoro>
-References: <20111202153832.GA4998@totoro>
+	Fri, 2 Dec 2011 12:14:56 -0500
+MIME-Version: 1.0
+Date: Sat, 3 Dec 2011 01:14:55 +0800
+Message-ID: <CABexPfGv2TsALh44kif26SDu7JH=S9k+=MGWmW4QvkwMjuhh-Q@mail.gmail.com>
+Subject: [Provisional Page Table] Why the linear address ranges starting both
+ from 0 and PAGE_OFFSET are mapped to a same physical address range in
+ provisional page table?
+From: zhihua che <zhihua.che@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Hi everyone
+        I know that the linux kernel constructs a provisional page
+table to map the linear address ranges starting both from 0 and
+PAGE_OFFSET to a same physical address range. I thought it's not
+necessary because the kernel, precisely the protected mode part, is
+linked to the VMA PAGE_OFFSET.
+        But i found I was wrong. I'm writing a toy os which is similar
+with the linux kernel. it also constructs a provisional page table as
+the linux kernel does. In the first place it works well with it. I
+mean it can enable the paging successfully and execute as I expect
+after that far-jump instruction. However, if the provisional page
+table maps only the linear address range starting from PAGE_OFFSET, my
+kernel would load the cs and eip with random values right after that
+far-jump instruction and went crazy. By the way, my kernel is also
+linked to VMA PAGE_OFFSET.
+        Here are the relating codes. Obviously the are the same with
+the linux kernel (32-bit and disable PAE)
 
-Allow the device tree to provide the mac address and the phy mode.
+page_pde_offset = (__PAGE_OFFSET >> 20);
 
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-[nicolas.ferre@atmel.com: change "compatible" node property, doc and DT hwaddr]
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jamie Iles <jamie@jamieiles.com>
----
- Documentation/devicetree/bindings/net/macb.txt |   22 +++++++
- drivers/net/ethernet/cadence/macb.c            |   71 +++++++++++++++++++++---
- drivers/net/ethernet/cadence/macb.h            |    2 +
- 3 files changed, 87 insertions(+), 8 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/net/macb.txt
+        movl $pa(__brk_base), %edi
+        movl $pa(initial_page_table), %edx
+        movl $PTE_IDENT_ATTR, %eax
+1:
+        leal PDE_IDENT_ATTR(%edi),%ecx
+        movl %ecx,(%edx)                                   /* this
+special line */
+        movl %ecx,page_pde_offset(%edx)
+        addl $4,%edx
+        movl $1024, %ecx
+2:
+        stosl
+        addl $0x1000,%eax
+        loop 2b
 
-diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
-new file mode 100644
-index 0000000..7f0b90a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/macb.txt
-@@ -0,0 +1,22 @@
-+* Cadence MACB Ethernet controller
-+
-+Required properties:
-+- compatible: Should be "cdns,[<chip>-]macb"
-+  Use "cdns,at91sam9260-macb" Atmel at91sam9260 and at91sam9263 SoCs.
-+  Use "cdns,at32ap7000-macb" for other 10/100 usage or use the generic form: "cdns,macb"
-+- reg: Address and length of the register set for the device
-+- interrupts: Should contain macb interrupt
-+- phy-mode: String, operation mode of the PHY interface.
-+  Supported values are: "mii", "rmii", "gmii", "rgmii".
-+
-+Optional properties:
-+- local-mac-address: 6 bytes, mac address
-+
-+Examples:
-+
-+	macb0: ethernet@fffc4000 {
-+		compatible = "cdns,at32ap7000-macb";
-+		reg = <0xfffc4000 0x4000>;
-+		interrupts = <21>;
-+		phy-mode = "rmii";
-+	};
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 64d6146..103c6e6 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -23,6 +23,8 @@
- #include <linux/platform_data/macb.h>
- #include <linux/platform_device.h>
- #include <linux/phy.h>
-+#include <linux/of_device.h>
-+#include <linux/of_net.h>
- 
- #include "macb.h"
- 
-@@ -191,7 +193,6 @@ static int macb_mii_probe(struct net_device *dev)
- {
- 	struct macb *bp = netdev_priv(dev);
- 	struct phy_device *phydev;
--	struct macb_platform_data *pdata;
- 	int ret;
- 
- 	phydev = phy_find_first(bp->mii_bus);
-@@ -200,14 +201,11 @@ static int macb_mii_probe(struct net_device *dev)
- 		return -1;
- 	}
- 
--	pdata = bp->pdev->dev.platform_data;
- 	/* TODO : add pin_irq */
- 
- 	/* attach the mac to the phy */
- 	ret = phy_connect_direct(dev, phydev, &macb_handle_link_change, 0,
--				 pdata && pdata->is_rmii ?
--				 PHY_INTERFACE_MODE_RMII :
--				 PHY_INTERFACE_MODE_MII);
-+				 bp->phy_interface);
- 	if (ret) {
- 		netdev_err(dev, "Could not attach to PHY\n");
- 		return ret;
-@@ -1244,6 +1242,50 @@ static const struct net_device_ops macb_netdev_ops = {
- #endif
- };
- 
-+#if defined(CONFIG_OF)
-+static const struct of_device_id macb_dt_ids[] = {
-+	{ .compatible = "cdns,at32ap7000-macb" },
-+	{ .compatible = "cdns,at91sam9260-macb" },
-+	{ .compatible = "cdns,macb" },
-+	{ /* sentinel */ }
-+};
-+
-+MODULE_DEVICE_TABLE(of, macb_dt_ids);
-+
-+static int __devinit macb_get_phy_mode_dt(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+
-+	if (np)
-+		return of_get_phy_mode(np);
-+
-+	return -ENODEV;
-+}
-+
-+static int __devinit macb_get_hwaddr_dt(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	if (np) {
-+		const char *mac = of_get_mac_address(np);
-+		if (mac) {
-+			memcpy(pdev->dev->dev_addr, mac, ETH_ALEN);
-+			return 0;
-+		}
-+	}
-+
-+	return -ENODEV;
-+}
-+#else
-+static int __devinit macb_get_phy_mode_dt(struct platform_device *pdev)
-+{
-+	return -ENODEV;
-+}
-+static int __devinit macb_get_hwaddr_dt(struct platform_device *pdev)
-+{
-+	return -ENODEV;
-+}
-+#endif
-+
- static int __init macb_probe(struct platform_device *pdev)
- {
- 	struct macb_platform_data *pdata;
-@@ -1318,10 +1360,22 @@ static int __init macb_probe(struct platform_device *pdev)
- 	config |= macb_dbw(bp);
- 	macb_writel(bp, NCFGR, config);
- 
--	macb_get_hwaddr(bp);
--	pdata = pdev->dev.platform_data;
-+	err = macb_get_hwaddr_dt(pdev);
-+	if (err < 0)
-+		macb_get_hwaddr(bp);
-+
-+	err = macb_get_phy_mode_dt(pdev);
-+	if (err < 0) {
-+		pdata = pdev->dev.platform_data;
-+		if (pdata && pdata->is_rmii)
-+			bp->phy_interface = PHY_INTERFACE_MODE_RMII;
-+		else
-+			bp->phy_interface = PHY_INTERFACE_MODE_MII;
-+	} else {
-+		bp->phy_interface = err;
-+	}
- 
--	if (pdata && pdata->is_rmii)
-+	if (bp->phy_interface == PHY_INTERFACE_MODE_RMII)
- #if defined(CONFIG_ARCH_AT91)
- 		macb_or_gem_writel(bp, USRIO, (MACB_BIT(RMII) |
- 					       MACB_BIT(CLKEN)));
-@@ -1444,6 +1498,7 @@ static struct platform_driver macb_driver = {
- 	.driver		= {
- 		.name		= "macb",
- 		.owner	= THIS_MODULE,
-+		.of_match_table	= of_match_ptr(macb_dt_ids),
- 	},
- };
- 
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index 1931078..335e288 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -532,6 +532,8 @@ struct macb {
- 	unsigned int 		link;
- 	unsigned int 		speed;
- 	unsigned int 		duplex;
-+
-+	phy_interface_t		phy_interface;
- };
- 
- static inline bool macb_is_gem(struct macb *bp)
--- 
-1.7.5.4
+        . . .
 
+        ljmp __BOOT_CS, 1f
+1:
+
+        Precisely,  my kernel goes well if the special line above is
+kept while it could go crazy if the line is commented.
+        I can't figure out why because my kernel and the linux are
+both linked to a VMA equal with or greater than PAGE_OFFSET. The lower
+linear addresses are not accessed at all.
