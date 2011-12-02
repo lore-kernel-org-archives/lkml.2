@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab1LBPBh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 10:01:37 -0500
-Received: from mx3.schottelius.org ([77.109.138.221]:54622 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984Ab1LBPBg (ORCPT
+	id S1756781Ab1LBPDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 10:03:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55237 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab1LBPDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 10:01:36 -0500
-Date: Fri, 2 Dec 2011 16:01:28 +0100
-From: Nico Schottelius <nico-linux-20111201@schottelius.org>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Nico Schottelius <nico-linux-20111201@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        b43-dev@lists.infradead.org, Greg KH <gregkh@suse.de>
-Subject: Re: BCM43224: 00:00:00:00:00:00 address (3.2.0-rc3-00099-g883381d)
-Message-ID: <20111202150128.GC3096@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20111201@schottelius.org>,
-	Arend van Spriel <arend@broadcom.com>,
-	LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-	b43-dev@lists.infradead.org, Greg KH <gregkh@suse.de>
-References: <20111201224851.GB20536@ethz.ch>
- <4ED8B610.2010703@broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4ED8B610.2010703@broadcom.com>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.2.0-rc4-00077-g5983fe2 x86_64)
+	Fri, 2 Dec 2011 10:03:16 -0500
+From: Ming Lei <ming.lei@canonical.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Tony Lindgren <tony@atomide.com>
+Cc: Sylwester Nawrocki <snjw23@gmail.com>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: [RFC PATCH v1 0/7] media&omap4: introduce face detection(FD) driver
+Date: Fri,  2 Dec 2011 23:02:45 +0800
+Message-Id: <1322838172-11149-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Arend,
+Hi,
 
-Arend van Spriel [Fri, Dec 02, 2011 at 12:27:12PM +0100]:
-> Have you tried the brcmsmac driver?
+These v1 patches(against -next tree) introduce v4l2 based face
+detection(FD) device driver, and enable FD hardware[1] on omap4 SoC..
+The idea of implementing it on v4l2 is from from Alan Cox, Sylwester
+and Greg-Kh.
 
+For verification purpose, I write one user space utility[2] to
+test the module and driver, follows its basic functions:
 
-I've been mislead: bcma was enabled and thus brcmsmac
-not shown in menuconfig.
+	- detect faces in input grayscal picture(PGM raw, 320 by 240)
+	- detect faces in input y8 format video stream
+	- plot a rectangle to mark the detected faces, and save it as 
+	another same type grayscal picture
 
-Upgrade the kernel to 3.2.0-rc4-00077-g5983fe2, fired
-up wpa_supplicant. Result: wpa_cli can connect to wpa_supplicant,
-but stops working after a few seconds:
+Looks the performance of the module is not bad, see some detection
+results on the link[3][4].
 
-wpa_state=ASSOCIATING
-> 'PING' command timed out.
-Connection to wpa_supplicant lost - trying to reconnect
-Warning: Failed to attach to wpa_supplicant.
-> 'PING' command timed out.
-Connection to wpa_supplicant lost - trying to reconnect
-Warning: Failed to attach to wpa_supplicant.
-'PING' command timed out.
-Connection to wpa_supplicant lost - trying to reconnect
-Warning: Failed to attach to wpa_supplicant.
-'PING' command timed out.
-Connection to wpa_supplicant lost - trying to reconnect
-Warning: Failed to attach to wpa_supplicant.
+Face detection can be used to implement some interesting applications
+(camera, face unlock, baby monitor, ...).
 
-No network connectivity and network processes are hanging.
-I.e. same behaviour as reported on 2011-10-18.
+TODO:
+	- implement FD setting interfaces with v4l2 controls or
+	ext controls
 
-Is it possible the related patch as discussed
-in "BUG: All network processes hang (brcmsmac/wpa_supplicant)"
-has not been merged into 3.2.0-rc4-00077-g5983fe2?
+thanks,
+--
+Ming Lei
 
-And regarding b43: Wouldn't it be good to remove support for the
-specific pci-ids from it so it does not create a non-functional
-wlan0 device?
+[1], Ch9 of OMAP4 Technical Reference Manual
+[2], http://kernel.ubuntu.com/git?p=ming/fdif.git;a=shortlog;h=refs/heads/v4l2-fdif
+[3], http://kernel.ubuntu.com/~ming/dev/fdif/output
+[4], All pictures are taken from http://www.google.com/imghp
+and converted to pnm from jpeg format, only for test purpose.
 
-Cheers,
-
-Nico
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
