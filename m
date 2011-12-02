@@ -1,173 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab1LBLO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 06:14:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51178 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753547Ab1LBLO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 06:14:56 -0500
-Message-ID: <4ED8B327.9090505@redhat.com>
-Date: Fri, 02 Dec 2011 09:14:47 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1754105Ab1LBLVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 06:21:03 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:40169
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753724Ab1LBLVB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 06:21:01 -0500
+X-SpamScore: -15
+X-BigFish: VPS-15(zzbb2dK9371K1432N98dKzz1202hzzz2dh668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVKQ6V-02-3RW-02
+X-M-MSG: 
+Date: Fri, 2 Dec 2011 12:20:50 +0100
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andi Kleen <andi@firstfloor.org>, <tglx@linutronix.de>, <mingo@elte.hu>,
+        <suresh.b.siddha@intel.com>, <eranian@google.com>, <brgerst@gmail.com>,
+        <robert.richter@amd.com>, <Andreas.Herrmann3@amd.com>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] rework of extended state handling, LWP support
+Message-ID: <20111202112050.GC411@escobedo.osrc.amd.com>
+References: <1322570488-21798-1-git-send-email-hans.rosenfeld@amd.com>
+ <m2ipm2lioy.fsf@firstfloor.org>
+ <20111130173745.GT878@escobedo.osrc.amd.com>
+ <20111130215200.GS24062@one.firstfloor.org>
+ <20111201203605.GB411@escobedo.osrc.amd.com>
+ <4ED83177.7070706@zytor.com>
 MIME-Version: 1.0
-To: Andreas Oberritter <obi@linuxtv.org>
-CC: HoP <jpetrous@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <4ED7BBA3.5020002@redhat.com> <CAJbz7-1_Nb8d427bOMzCDbRcvwQ3QjD=2KhdPQS_h_jaYY5J3w@mail.gmail.com> <4ED7E5D7.8070909@redhat.com> <4ED805CB.5020302@linuxtv.org>
-In-Reply-To: <4ED805CB.5020302@linuxtv.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4ED83177.7070706@zytor.com>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01-12-2011 20:55, Andreas Oberritter wrote:
-> On 01.12.2011 21:38, Mauro Carvalho Chehab wrote:
->> I fail to see where do you need to duplicate dvb-core. An userspace
->> LD_PRELOAD handler that would do:
->>
->> int socket;
->>
->> int dvb_ioctl(int fd, unsigned long int request, ...)
->> {
->>          void *arg;
->>          va_list ap;
->>
->>          va_start(ap, request);
->>          arg = va_arg(ap, void *);
->>          va_end(ap);
->>
->>      send_net_ioctl_packet(socket, request, arg);
->> }
->>
->> Is probably all you need to send _any_ ioctl's to a remote machine
->> (plus client's machine that would decode the ioctl packet and send
->> the ioctl to the actual driver).
->>
->> Of course, you'll need hooks for all syscalls used (likely open, close,
->> ioctl, read, poll).
->>
->> So, there's not much duplication, even if, for whatever reason, you
->> might need to hook some specific ioctls in order to optimize the
->> network performance.
->
-> Mauro, we've already had that discussion last time. In order to
-> intercept ioctls of a device, the device needs to exist to begin with,
-> right? That's where vtuner comes in: It creates the virtual device.
+On Thu, Dec 01, 2011 at 06:01:27PM -0800, H. Peter Anvin wrote:
+> On 12/01/2011 12:36 PM, Hans Rosenfeld wrote:
+> > 
+> > So I assume, if you have 10000s of processes on a legacy 32bit system
+> > that never do any FPU stuff or SSE optimizations, you might indeed waste
+> > a couple of megabytes. I don't think thats very realistic, but that's
+> > just my opinion.
+> > 
+> 
+> A couple of megabytes of *lowmem*...
 
-Yes.
+Ok, I'll rework that part, so that preallocation only happens on systems
+that support non-lazy states. That means patch #7 is going away and
+patch #8 is getting slightly bigger. This may take a few days as I have
+to test that again.
 
-> For that reason your suggested approach using LD_PRELOAD won't work.
+Meanwhile, could you please take a look at patches #1 to #6?
 
-If you're referring to the device name under /dev, a daemon emulating
-a physical device could create Unix sockets under /dev/dvb.
 
-Or (with is the right solution) bind such library into the applications
-that will be used.
+Hans
 
-> Besides that, suggesting LD_PRELOAD for something other than a hack
-> can't be taken seriously.
 
-A Kernel pigback plugin is also a hack.
-
-> I think you didn't even understand what vtuner does, after all the
-> discussion that took place.
->
->>>>> Of course
->>>>> I can be wrong, I'm no big kernel hacker. So please show me the
->>>>> way for it. BTW, even if you can find the way, then data copying
->>>>> from userspace to the kernel and back is also necessery.
->>>>
->>>> See libv4l, at v4l2-utils.git (at linuxtv.org).
->>>>
->>>>> I really
->>>>> don't see any advantage of you solution.
->>>>
->>>> And I can't see any advantage on yours ;) Putting something that belongs
->>>> to userspace into kernelspace just because it is easier to re-use the
->>>> existing code inside the kernel is not a good argument.
->>>
->>> It is only your POV that it should be in userspace.
->>>
->>> Creating additional code which not only enlarge code size by 2
->>> but I think by 10 is really not good idea.  And it get no advantage
->>> only disadvantages.
->>>
->>>>
->>>> Don't get me wrong but if you want to submit a code to be merged
->>>> on any existing software (being open source or not), you should be
->>>> prepared to defend your code and justify the need for it to the
->>>> other developers.
->>>
->>> Sure. I was prepared for technical disscussion, but was fully suprised
->>> that it was not happend (ok, to be correct, few guys are exception, like
->>> Andreas and few others. I really appreciate it).
->>>
->>> So, my question was still not answered: "Can be driver NACKed only
->>> because of worrying about possible misuse?"
->>
->> To answer your question: your driver were nacked because of several
->> reasons:
->> it is not a driver for an unsupported hardware,
->
-> It's not a driver for supported hardware either. You named it before:
-> It's not a driver in your definition at all. It's a way to remotely
-> access digital TV tuners over a network.
-
-Yes, this is not a driver. It is just a hack to avoid adding network
-support at the userspace applications.
-
->> you failed to convince
->> people
->> why this can't be implemented on userspace,
->
-> Wrong. You failed to convince people why this must be implemented in
-> userspace. Even Michael Krufky, who's "only" against merging it, likes
-> the idea, because it's useful.
-
-Sometimes, when I'm debugging a driver, I use to add several hacks inside
-the kernelspace, in order to do things that are useful on my development
-(debug printk's, dirty hacks, etc). I even have my own set of patches that
-I apply on kvm, in order to sniff PCI traffic. This doesn't mean that
-I should send all those crap upstream.
-
-> Just because something can be implemented in userspace doesn't mean that
-> it's technically superior.
-
-True, but I didn't see anything at the submitted code or at the discussions
-showing that implementing it in kernelspace is technically superior.
-
-What I'm seeing is what is coded there:
-
-	http://code.google.com/p/vtuner/
-
-The kernelspace part is just a piggyback driver, that just copies data from/to
-the dvb calls into another device, that sends the request back to userspace.
-
-A separate userspace daemon will get such results and send to the network stack:
-	http://code.google.com/p/vtuner/source/browse/vtuner-network.c?repo=apps
-
-This is technically inferior of letting the application just talk to vtuner
-directly via some library call.
-
-Btw, applications like vdr, vlc, kaffeine and others already implement their
-own ways to remotelly access the DVB devices without requiring any
-kernelspace piggyback driver.
-
->> the driver adds hooks at
->> kernelspace
->> that would open internal API's that several developers don't agree on
->> exposing
->> at userspace, as would allow non GPL license compatible drivers to re-use
->> their work in a way they are against.
->
-> What's left is your unreasonable GPL blah blah. So the answer to Honza's
-> question is: Yes, Mauro is nacking the driver because he's worrying
-> about possible misuse.
->
-> Regards,
-> Andreas
+-- 
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
 
