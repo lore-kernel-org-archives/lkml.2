@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab1LBXVb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 18:21:31 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41613 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752118Ab1LBXVa (ORCPT
+	id S1753450Ab1LBXVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 18:21:48 -0500
+Received: from www.linutronix.de ([62.245.132.108]:49614 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753289Ab1LBXVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 18:21:30 -0500
-Date: Fri, 2 Dec 2011 23:22:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-Message-ID: <20111202232243.6af6f1e2@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111202191917.GB3037@localhost.localdomain>
-References: <20111110151852.GA7465@oksana.dev.rtsoft.ru>
-	<20111110152606.GB3207@oksana.dev.rtsoft.ru>
-	<20111110153816.239af1d7@lxorguk.ukuu.org.uk>
-	<20111110162859.GA7088@oksana.dev.rtsoft.ru>
-	<20111202191917.GB3037@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 2 Dec 2011 18:21:47 -0500
+Date: Sat, 3 Dec 2011 00:21:46 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ido Yariv <ido@wizery.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] genirq: Flush the irq thread on synchronization
+In-Reply-To: <1322843052-7166-1-git-send-email-ido@wizery.com>
+Message-ID: <alpine.LFD.2.02.1112022345300.2735@ionos>
+References: <1322843052-7166-1-git-send-email-ido@wizery.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This is now broken on ARM where, for good or bad, NO_IRQ currently is
-> used and is -1.
+On Fri, 2 Dec 2011, Ido Yariv wrote:
 
-Good.
+> The current implementation does not always flush the threaded handler
+> when disabling the irq. In case the irq handler was called, but the
+> threaded handler hasn't started running yet, the interrupt will be
+> flagged as pending, and the handler will not run. This implementation
+> has some issues:
+> 
+> First, if the interrupt is a wake source and flagged as pending, the
+> system will not be able to suspend.
+> 
+> Second, when quickly disabling and re-enabling the irq, the threaded
+> handler might continue to run after the irq is re-enabled without the
+> irq handler being called first. This might be an unexpected behavior.
 
-ARM developers have been told to change this for several years. The nice
-approach hasn't worked, the patient approach hasn't worked so now finally
-ARM is going to be dragged kicking and screaming into doing the work
-everyone else did several years ago.
+I'd wish people would stop calling disable/enable_irq() in loops and
+circles for no reason.
 
-I have so little sympathy over this that you'll need a quantum physicist
-to measure it.
+> In addition, it might be counter-intuitive that the threaded handler
+> will not be called even though the irq handler was called and returned
+> IRQ_WAKE_THREAD.
+> 
+> Fix this by always waiting for the threaded handler to complete in
+> synchronize_irq().
 
-> Half-removing NO_IRQ is going to be problematic, though...
-> I really don't care whether the "no irq" value is 0 or -1, but it is
-> abundantly clear that choosing different values to mean the same thing
-> on opposite sides of an interface does not work.
+I can see your problem, but this might lead to threads_active leaks
+under certain conditions. desc->threads_active was only meant to deal
+with shared interrupts.
 
-You've had years to fix it. If I were you I'd delete NO_IRQ from your
-tree, type make and get it done. It's not even a big job to clean it out.
+We explicitely allow a design where the primary handler can leave the
+device interrupt enabled and allow further interrupts to occur while
+the handler is running. We only have a single bit to note that the
+thread should run, but your wakeup would up the threads_active count
+in that scenario several times w/o a counterpart which decrements it.
 
-At that point various other drivers will also start working properly on
-ARM because they use 0 for polled mode.
+The solution for this is to keep the current threads_active semantics
+and make the wait function different. Instead of waiting for
+threads_active to become 0 it should wait for threads_active == 0 and
+the IRQTF_RUNTHREAD for all actions to be cleared. To avoid looping
+over the actions, we can take a similar approach as we take with the
+desc->threads_oneshot bitfield.
 
-Alan
+Thanks,
+
+	tglx
+
+
