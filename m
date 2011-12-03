@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab1LCLBS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 06:01:18 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:46634 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498Ab1LCLBQ (ORCPT
+	id S1754998Ab1LCLqS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 06:46:18 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52461 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754732Ab1LCLqQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 06:01:16 -0500
-Date: Sat, 3 Dec 2011 19:00:50 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Theodore Tso <tytso@mit.edu>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v5.2 00/14] crc32c: Add faster algorithm and self-test
-	code
-Message-ID: <20111203110049.GA31151@gondor.apana.org.au>
-References: <20111201201341.5876.83743.stgit@elm3c44.beaverton.ibm.com> <20111201202053.GG1495@noexit.corp.google.com> <20111201203122.GC23175@tux1.beaverton.ibm.com> <20111202002358.GA19842@gondor.apana.org.au> <20111203023037.GA16577@tux1.beaverton.ibm.com>
+	Sat, 3 Dec 2011 06:46:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111203023037.GA16577@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1322600880.1534.325.camel@localhost.localdomain>
+References: <1322600880.1534.325.camel@localhost.localdomain>
+Date: Sat, 3 Dec 2011 12:46:15 +0100
+Message-ID: <CAOZOX0UU7Jcd1XbV-bM4OBCwwySNyVOwQ_u2yhwyigfUgx=eBA@mail.gmail.com>
+Subject: Re: [PATCH] rt2x00: Use kcalloc instead of kzalloc to allocate array
+From: Ivo Van Doorn <ivdoorn@gmail.com>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: gwingerde@gmail.com, helmut.schaa@googlemail.com, linville@tuxdriver.com,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 06:30:37PM -0800, Darrick J. Wong wrote:
-> On Fri, Dec 02, 2011 at 08:23:58AM +0800, Herbert Xu wrote:
-> > On Thu, Dec 01, 2011 at 12:31:22PM -0800, Darrick J. Wong wrote:
-> > .
-> > > They seem to call crc32c(), which is in crypto/crc32c.  If you're interested in
-> > 
-> > Nope, the crypto API layer will use the SSE implementation
-> > where available.  Only when it isn't available will the C version
-> > in crypto/ be used.
-> 
-> There's a SSE version other than what's in crc32c-intel?
+On Tue, Nov 29, 2011 at 10:08 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> The advantage of kcalloc is, that will prevent integer overflows which could
+> result from the multiplication of number of elements and size and it is also
+> a bit nicer to read.
+>
+> The semantic patch that makes this change is available
+> in https://lkml.org/lkml/2011/11/25/107
+>
+> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 
-crc32c-intel is what I meant.  My point is that it'll be used
-automatically.
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+> ---
+>
+> diff -u -p a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+> --- a/drivers/net/wireless/rt2x00/rt2x00dev.c 2011-11-28 19:36:47.770108588 +0100
+> +++ b/drivers/net/wireless/rt2x00/rt2x00dev.c 2011-11-28 19:54:53.495525543 +0100
+> @@ -831,11 +831,11 @@ static int rt2x00lib_probe_hw_modes(stru
+>        if (spec->supported_rates & SUPPORT_RATE_OFDM)
+>                num_rates += 8;
+>
+> -       channels = kzalloc(sizeof(*channels) * spec->num_channels, GFP_KERNEL);
+> +       channels = kcalloc(spec->num_channels, sizeof(*channels), GFP_KERNEL);
+>        if (!channels)
+>                return -ENOMEM;
+>
+> -       rates = kzalloc(sizeof(*rates) * num_rates, GFP_KERNEL);
+> +       rates = kcalloc(num_rates, sizeof(*rates), GFP_KERNEL);
+>        if (!rates)
+>                goto exit_free_channels;
+>
