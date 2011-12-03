@@ -1,58 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296Ab1LCWXH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 17:23:07 -0500
-Received: from gate.crashing.org ([63.228.1.57]:36960 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911Ab1LCWXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 17:23:04 -0500
-Message-ID: <1322950969.11728.24.camel@pasglop>
-Subject: Re: [PATCH 1/2] virtio-scsi: first version
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Date: Sun, 04 Dec 2011 09:22:49 +1100
-In-Reply-To: <4EDA5E7F.30508@redhat.com>
-References: <1322661299-28855-1-git-send-email-pbonzini@redhat.com>
-	 <1322661299-28855-2-git-send-email-pbonzini@redhat.com>
-	 <1322867228.11728.19.camel@pasglop> <4EDA5E7F.30508@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1752479Ab1LCWlv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 17:41:51 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:48352 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752172Ab1LCWlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Dec 2011 17:41:49 -0500
+X-Sasl-enc: uBgjsZJ7zzUQKSKxNHi3H0n6lLa8qaEXZhMMd+GU1IiI 1322952106
+Message-ID: <4EDAA59B.6080900@ladisch.de>
+Date: Sat, 03 Dec 2011 23:41:31 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: fix number of mapped SG DMA entries
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-12-03 at 18:38 +0100, Paolo Bonzini wrote:
-> On 12/03/2011 12:07 AM, Benjamin Herrenschmidt wrote:
-> > This is typically the one thing you should -really- obtain from the
-> > other side. This is the number one reason why we cannot today reliably
-> > emulate a SCSI controller in qemu -and- pass-through the SCSI commands
-> > to the host /dev/sg or equivalent (only full device emulation is
-> > reliable).
-> >
-> > This is also typically what something like virtio-scsi allows us to fix,
-> > so let's fix it. IE. we have the ability to query the "limits" of the
-> > real HBA /  transport on the host side and to pass them along to the
-> > guest, which enables us to do real pass-through.
-> 
-> You can fix this in QEMU; READ and WRITE commands can be split in 
-> multiple parts.  The scsi-block device I added recently does this.
+Add a new field num_mapped_sgs to struct urb so that we have a place to
+store the number of mapped entries and can also retain the original
+value of entries in num_sgs.  Previously, usb_hcd_map_urb_for_dma()
+would overwrite this with the number of mapped entries, which would
+break dma_unmap_sg() because it requires the original number of entries.
 
-You can split -some- commands... it's clumsy and not always legit, you
-don't always know all commands (what about vendor commands such as
-firmware updates etc...) and it can be really tricky with tagged queues
-and barriers.
+This fixes warnings like the following when using USB storage devices:
+ ------------[ cut here ]------------
+ WARNING: at lib/dma-debug.c:902 check_unmap+0x4e4/0x695()
+ ehci_hcd 0000:00:12.2: DMA-API: device driver frees DMA sg list with different entry count [map count=4] [unmap count=1]
+ Modules linked in: ohci_hcd ehci_hcd
+ Pid: 0, comm: kworker/0:1 Not tainted 3.2.0-rc2+ #319
+ Call Trace:
+  <IRQ>  [<ffffffff81036d3b>] warn_slowpath_common+0x80/0x98
+  [<ffffffff81036de7>] warn_slowpath_fmt+0x41/0x43
+  [<ffffffff811fa5ae>] check_unmap+0x4e4/0x695
+  [<ffffffff8105e92c>] ? trace_hardirqs_off+0xd/0xf
+  [<ffffffff8147208b>] ? _raw_spin_unlock_irqrestore+0x33/0x50
+  [<ffffffff811fa84a>] debug_dma_unmap_sg+0xeb/0x117
+  [<ffffffff8137b02f>] usb_hcd_unmap_urb_for_dma+0x71/0x188
+  [<ffffffff8137b166>] unmap_urb_for_dma+0x20/0x22
+  [<ffffffff8137b1c5>] usb_hcd_giveback_urb+0x5d/0xc0
+  [<ffffffffa0000d02>] ehci_urb_done+0xf7/0x10c [ehci_hcd]
+  [<ffffffffa0001140>] qh_completions+0x429/0x4bd [ehci_hcd]
+  [<ffffffffa000340a>] ehci_work+0x95/0x9c0 [ehci_hcd]
+  ...
+ ---[ end trace f29ac88a5a48c580 ]---
+ Mapped at:
+  [<ffffffff811faac4>] debug_dma_map_sg+0x45/0x139
+  [<ffffffff8137bc0b>] usb_hcd_map_urb_for_dma+0x22e/0x478
+  [<ffffffff8137c494>] usb_hcd_submit_urb+0x63f/0x6fa
+  [<ffffffff8137d01c>] usb_submit_urb+0x2c7/0x2de
+  [<ffffffff8137dcd4>] usb_sg_wait+0x55/0x161
 
-> However, it seems like a simple change, so I'll do it.  I'll add 
-> max_sectors and cmd_per_lun to the config space.
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ drivers/usb/core/hcd.c       |    5 ++---
+ drivers/usb/host/ehci-q.c    |    2 +-
+ drivers/usb/host/uhci-q.c    |    2 +-
+ drivers/usb/host/whci/qset.c |    4 ++--
+ drivers/usb/host/xhci-ring.c |    4 ++--
+ include/linux/usb.h          |    1 +
+ 6 files changed, 9 insertions(+), 9 deletions(-)
 
-Sounds like a good start :-)
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 13222d3..179e364 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1412,11 +1412,10 @@ int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
+ 					ret = -EAGAIN;
+ 				else
+ 					urb->transfer_flags |= URB_DMA_MAP_SG;
++				urb->num_mapped_sgs = n;
+-				if (n != urb->num_sgs) {
++				if (n != urb->num_sgs)
+-					urb->num_sgs = n;
+ 					urb->transfer_flags |=
+ 							URB_DMA_SG_COMBINED;
+-				}
+ 			} else if (urb->sg) {
+ 				struct scatterlist *sg = urb->sg;
+ 				urb->transfer_dma = dma_map_page(
+diff --git a/drivers/usb/host/ehci-q.c b/drivers/usb/host/ehci-q.c
+index 4e4066c..fef1db3 100644
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -647,7 +647,7 @@ qh_urb_transaction (
+ 	/*
+ 	 * data transfer stage:  buffer setup
+ 	 */
+-	i = urb->num_sgs;
++	i = urb->num_mapped_sgs;
+ 	if (len > 0 && i > 0) {
+ 		sg = urb->sg;
+ 		buf = sg_dma_address(sg);
+diff --git a/drivers/usb/host/uhci-q.c b/drivers/usb/host/uhci-q.c
+index f6ca80e..d2c6f5a 100644
+--- a/drivers/usb/host/uhci-q.c
++++ b/drivers/usb/host/uhci-q.c
+@@ -943,7 +943,7 @@ static int uhci_submit_common(struct uhci_hcd *uhci, struct urb *urb,
+ 	if (usb_pipein(urb->pipe))
+ 		status |= TD_CTRL_SPD;
 
-Cheers,
-Ben.
+-	i = urb->num_sgs;
++	i = urb->num_mapped_sgs;
+ 	if (len > 0 && i > 0) {
+ 		sg = urb->sg;
+ 		data = sg_dma_address(sg);
+diff --git a/drivers/usb/host/whci/qset.c b/drivers/usb/host/whci/qset.c
+index d6e1754..a91712c 100644
+--- a/drivers/usb/host/whci/qset.c
++++ b/drivers/usb/host/whci/qset.c
+@@ -443,7 +443,7 @@ static int qset_add_urb_sg(struct whc *whc, struct whc_qset *qset, struct urb *u
 
+ 	remaining = urb->transfer_buffer_length;
 
+-	for_each_sg(urb->sg, sg, urb->num_sgs, i) {
++	for_each_sg(urb->sg, sg, urb->num_mapped_sgs, i) {
+ 		dma_addr_t dma_addr;
+ 		size_t dma_remaining;
+ 		dma_addr_t sp, ep;
+@@ -561,7 +561,7 @@ static int qset_add_urb_sg_linearize(struct whc *whc, struct whc_qset *qset,
+
+ 	remaining = urb->transfer_buffer_length;
+
+-	for_each_sg(urb->sg, sg, urb->num_sgs, i) {
++	for_each_sg(urb->sg, sg, urb->num_mapped_sgs, i) {
+ 		size_t len;
+ 		size_t sg_remaining;
+ 		void *orig;
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 9f1d4b1..d28c586 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2561,7 +2561,7 @@ static unsigned int count_sg_trbs_needed(struct xhci_hcd *xhci, struct urb *urb)
+ 	struct scatterlist *sg;
+
+ 	sg = NULL;
+-	num_sgs = urb->num_sgs;
++	num_sgs = urb->num_mapped_sgs;
+ 	temp = urb->transfer_buffer_length;
+
+ 	xhci_dbg(xhci, "count sg list trbs: \n");
+@@ -2745,7 +2745,7 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 		return -EINVAL;
+
+ 	num_trbs = count_sg_trbs_needed(xhci, urb);
+-	num_sgs = urb->num_sgs;
++	num_sgs = urb->num_mapped_sgs;
+ 	total_packet_count = roundup(urb->transfer_buffer_length,
+ 			usb_endpoint_maxp(&urb->ep->desc));
+
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index d3d0c13..7503352 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -1221,6 +1221,7 @@ struct urb {
+ 	void *transfer_buffer;		/* (in) associated data buffer */
+ 	dma_addr_t transfer_dma;	/* (in) dma addr for transfer_buffer */
+ 	struct scatterlist *sg;		/* (in) scatter gather buffer list */
++	int num_mapped_sgs;		/* (internal) mapped sg entries */
+ 	int num_sgs;			/* (in) number of entries in the sg list */
+ 	u32 transfer_buffer_length;	/* (in) data buffer length */
+ 	u32 actual_length;		/* (return) actual transfer length */
