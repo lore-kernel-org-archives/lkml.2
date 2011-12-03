@@ -1,116 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab1LCMLY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 07:11:24 -0500
-Received: from ims-d14.mx.aol.com ([205.188.249.151]:56670 "EHLO
-	ims-d14.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539Ab1LCMLX (ORCPT
+	id S1755318Ab1LCMTY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 07:19:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40005 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893Ab1LCMTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 07:11:23 -0500
-Message-Id: <201112031209.pB3C92Uc011776@ims-d14.mx.aol.com>
-Reply-To: <fbicrimesdivision@w.cn>
-From: "FBI" <wpwilt@aol.com>
-Subject: VERY URGENT===========READ ATTACHMENT
-Date: Sat, 3 Dec 2011 07:12:17 -0500
+	Sat, 3 Dec 2011 07:19:23 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_00CD_01C2A9A6.1F7D3BCE"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/76605
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:156727920:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-VSS-INFO: 5400.1158/76605
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:5:84069440:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d33844eda115f7e6b
-To: unlisted-recipients:; (no To-header on input)
+Date: Sat, 3 Dec 2011 13:19:22 +0100
+Message-ID: <CAOY=C6HuVEYpkap3dVmgmC7d+SDhvO-zc79RvCvkZCham3MiXg@mail.gmail.com>
+Subject: Oops in d_instantiate (fs/cache.c)
+From: Stijn Devriendt <highguy@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi all,
 
-------=_NextPart_000_00CD_01C2A9A6.1F7D3BCE
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+I've had 2 occasions where udev crashed during bootup.
+The second time carried a kernel log where the following line
+"BUG_ON(!list_empty(&entry->d_alias))"
+in d_instantiate is triggered when udev is attempting to
+create a symlink in /dev (which is tmpfs/shmem).
 
-OPEN ATTACTMENT
+I've tried reproducing this by doing as udev does:
+- create temporary symlink
+- move temporary symlink into place
+in a tight loop (multiple processes) while multiple
+other processes were removing the symlink in a
+tight loop.
+A third script was flushing the dentry/inode cache
+every so often using drop_caches.
+All to no avail.
 
-------=_NextPart_000_00CD_01C2A9A6.1F7D3BCE
-Content-Type: application/octet-stream;
-	name="FBI NOTIFICATION.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="FBI NOTIFICATION.txt"
+I've been digging around in the kernel sources,
+but I'm not sure what the d_alias field means
+and what the actual case is the BUG_ON is
+meant to catch. I'd like to be able to find a way
+to reproduce this, because so far it's happened only
+twice in 2 weeks over multiple systems doing
+many reboots in a testing setup.
+Can someone explain this to me in short?
 
-DQpBTlRJLVRFUlJPUklTVCBBTkQgTU9ORVRBUlkgQ1JJTUVTIERJVklTSU9O
-DQpGQkkgSEVBRFFVQVJURVJTIElOIFdBU0hJTkdUT04sIEQuQy4NCkZlZGVy
-YWwgQnVyZWF1IE9mIEludmVzdGlnYXRpb24uDQpGQkktV2FzaGluZ3RvbiBG
-aWVsZCBPZmZpY2UNCjYwMSA0dGggU3RyZWV0LCBOVw0KV2FzaGluZ3Rvbiwg
-REMgMjA1MzUNCldlYnNpdGU6IHd3dy5mYmkuZ292DQogDQpEQVRFOjEyLzAz
-LzIwMTENCiANCkl0IGhhcyBiZWVuIGRpc2NvdmVyZWQgdGhhdCB5b3VyIGNv
-bnRyYWN0L2luaGVyaXRhbmNlL3dpbm5pbmcgRlVORCB3YXMgYWJvdXQgYmVp
-bmcgdHJhbnNmZXJyZWQgdG8gYW4gdW5rbm93biBhY2NvdW50IHVuZGVyIHlv
-dXIgbmFtZS5UaGlzIGF0dGVtcHQgd2FzIHBlcnBldHJhdGVkIGJ5IHNvbWVv
-bmUgd2hvIGNsYWltcyB0byBiZSB3b3JraW5nIGZvciB5b3UsIGFuZCB0aGF0
-IHlvdSBoYXZlIGdpdmVuIGhpbSBkdWUgYXV0aG9yaXR5IHRvIGhhdmUgdGhl
-IEZVTkQgbW92ZWQgdG8gdGhlIGFjY291bnQgc3BlY2lmaWVkIGJlbG93Og0K
-IA0KU09VVEhXRVNURVJOIEZFREVSQUwgQ1JFRElUIFVOSU9ODQpXRVNDT1JQ
-IDkyNCBPVkVSTEFORCBDT1VSVA0KU0FOIERJTUFTLCBDQSA5MTc3Mi4gVVNB
-Lg0KQUNDT1VOVCBOVU1CRVI6IDMyMjY4MjEzMw0KQUJBL1JPVVRJTkcgTlVN
-QkVSOiAxMjExLTcxLTQxLTgNClNIQVJFVFlQRSBOTy46IDM1DQpGSU5BTCBD
-UkVESVQgIEpPSE5TT04gRkVOWkkgQU5EIENPLiAoQmVuZWZpY2lhcnkpLg0K
-IA0KVGhlIEZlZGVyYWwgQnVyZWF1IG9mIEludmVzdGlnYXRpb24gKEYuQi5J
-Likgd2FkZWQgaW4gYWZ0ZXIgYmVpbmcgYWxlcnRlZCBieSB0aGUgc3VwcG9z
-ZWQgYmFuay4gV2UgaW52ZXN0aWdhdGVkIGFuZCBmb3VuZCB0aGF0IHRoZXJl
-IGlzIGEgcG9zc2libGUgbW9uZXkgbGF1bmRlcmluZyBhY3Rpdml0eSBpbiBw
-bGF5LlRoZSBGVU5EIFVTJDEwLDUwMCwwMDAuMDAoVGVuIE1pbGxpb24gRml2
-ZSBIdW5kcmVkIFRob3VzYW5kIFVuaXRlZCBTdGF0ZXMgRG9sbGFycykgd2Fz
-IGZvdW5kIHRvIGJlIGRlcG9zaXRlZCBpbiBCYW5rIG9mIEFtZXJpY2EgaW4g
-eW91ciBuYW1lIHBlbmRpbmcgeW91ciBjb25zZW50IHRvIGhhdmUgaXQgdHJh
-bnNmZXJyZWQgdG8gdGhlIG5ldyBhY2NvdW50IGluZGljYXRlZCBhYm92ZS4g
-SXQgd2FzIGZ1cnRoZXIgcmV2ZWFsZWQgdGhhdCBpbml0aWFsIEZVTkQgdHJh
-bnNmZXIgb3JpZ2luYXRlZCBmcm9tIE5pZ2VyaWEgdG8gRW5nbGFuZCBhbmQg
-bm93IGhlcmUgaW4gQmFuayBvZiBBbWVyaWNhIGluIFVTQS4NCiANClRoZXNl
-IHRyYW5zZmVycyBkaWQgbm90IGZvbGxvdyBkdWUgcHJvY2VzcyBpbiBsaW5l
-IHdpdGggdGhlIEludGVybmF0aW9uYWwgRlVORCB0cmFuc2ZlciBydWxlcyBh
-bmQgcmVndWxhdGlvbi5Db25zZXF1ZW50bHksd2Ugc3VzcGVjdCB0aGlzIGJl
-IGEgdGVycm9yaXNtIGZ1bmRpbmcsIGRydWcgcmVsYXRlZCBmdW5kIGRlcG9z
-aXQgYW5kL29yIG1vbmV5IGxhdW5kZXJpbmcuIEFzIHN0YXRlZCBhYm92ZSwg
-dGhlIEZVTkQgaGFzIHlvdXIgbmFtZSBvbiBpdDsgYW5kIHlvdSBtdXN0IGhh
-dmUgaXQgY2xlYXJlZCBvZiBhbnkgY29ubmVjdGlvbiB3aXRoIGFueSBvZiB0
-aGVzZSBpbGxlZ2FsIGFjdGl2aXRpZXMuQmUgaW5mb3JtZWQgdGhhdCBGQUlM
-VVJFIHRvIGhhdmUgdGhpcyBjbGVhcmVkIG91dCB3aWxsIGF0dHJhY3QgYSBK
-QUlMIFRFUk0uV2Ugd2lsbCBub3QgaGVzaXRhdGUgdG8gdmlzaXQgdGhlIGZ1
-bGwgd2VpZ2h0IG9mIHRoZSBsYXcgdXBvbiB5b3UgaWYgeW91IGRvIG5vdCBj
-bGVhciB0aGlzIGZ1bmQuVGhlcmUgaXMgZXZlcnkgaW5kaWNhdGlvbiB0aGF0
-IHlvdSBhcmUgaW52b2x2ZWQgaW4gdGhpcyBzaGFkeSBkZWFsLg0KIA0KRmlu
-YWxseSwgeW91IGFyZSBleHBlY3RlZCB0byBoYXZlIHRoZSBDTEVBUkFOQ0Ug
-RE9DVU1FTlQgb2J0YWluIGZyb20gd2hlcmUgdGhlIEZVTkQgb3JpZ2luYXRl
-ZCBmcm9tIHRvIGhhdmUgeW91IGFuZCB5b3VyIGZ1bmQgY2xlYXJlZC4gT25s
-eSB0aGVuIHNoYWxsIHdlIHJlbGVhc2UgeW91ciBGVU5EIGFzIGNsZWFuIG1v
-bmV5IGRldm9pZCBvZiBhbnkgaWxsZWdhbGl0eSwgYW5kIHlvdSB3aWxsIGJl
-IGZyZWUgb2YgYW55IGludm9sdmVtZW50LiBUbyB0aGlzIGVuZCwgeW91IGFy
-ZSB0byBjb250YWN0IE1yLiBBbnRob255IE1hcmtzb24gb2YgdGhlIEFudGkg
-R3JhZnQgRGVwYXJ0bWVudCBOb3J0aCBDYXJvbGluYSBSZWdpb25hbCBPZmZp
-Y2UgYW5kIGhhdmUgdGhlIEZVTkQgQkVORUZJQ0lBUlkgU0VBTCBvZiBUUkFO
-U0ZFUiAoRkJTVCkgQ0xFQVJBTkNFIERPQ1VNRU5UIG9idGFpbmVkLiBDb250
-YWN0IGhpbSB0aHJvdWdoIHRoaXMgZGlyZWN0IGVtYWlsOiBhbnRpZ3JhZnRf
-ZGVwYXJ0bWVudEB3LmNuICxOb3RlIHRoYXQgeW91IGhhdmUgNzJocnMgdG8g
-b2J0YWluIHRoaXMgY3J1Y2lhbCBEb2N1bWVudGF0aW9uLg0KDQpUaGlzIGhh
-cyB0byBiZSBjbGVhcmVkIQ0KIA0KRmFpdGhmdWxseSBZb3Vycw0KUm9iZXJ0
-IFMuIE11ZWxsZXIgSUlJDQpGQkkgRGlyZWN0b3INCkZlZGVyYWwgQnVyZWF1
-IE9mIEludmVzdGlnYXRpb24uDQpGQkktV2FzaGluZ3RvbiBGaWVsZCBPZmZp
-Y2UNCjYwMSA0dGggU3RyZWV0LCBOVw0KV2FzaGluZ3RvbiwgREMgMjA1MzUN
-Cnd3dy5mYmkuZ292
-
-------=_NextPart_000_00CD_01C2A9A6.1F7D3BCE--
+Thanks,
+Stijn
