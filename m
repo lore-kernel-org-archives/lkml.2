@@ -1,151 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab1LCXOk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 18:14:40 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:35826 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650Ab1LCXOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 18:14:38 -0500
-Date: Sat, 3 Dec 2011 15:14:29 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 6/7] driver-core/cpu: Add
- cpu_is_hotpluggable() for rcutorture error analysis
-Message-ID: <20111203231429.GB18961@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
- <1322937282-19846-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111203210650.GA17377@leaf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111203210650.GA17377@leaf>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11120323-5930-0000-0000-000002DBDD1B
+	id S1752662Ab1LCXva (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 18:51:30 -0500
+Received: from smtp01.smtpout.orange.fr ([80.12.242.123]:45812 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1LCXv3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Dec 2011 18:51:29 -0500
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+To: akpm@linux-foundation.org
+Cc: serge.hallyn@canonical.com, oleg@redhat.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1][V2] Handle reboot in a child pid namespace
+Date: Sun,  4 Dec 2011 00:51:19 +0100
+Message-Id: <1322956280-13831-1-git-send-email-daniel.lezcano@free.fr>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 03, 2011 at 01:06:50PM -0800, Josh Triplett wrote:
-> On Sat, Dec 03, 2011 at 10:34:41AM -0800, Paul E. McKenney wrote:
-> > The rcutorture test now can automatically exercise CPU hotplug and
-> > collect success statistics, which can be correlated with other rcutorture
-> > activity.  This permits rcutorture to completely exercise RCU regardless
-> > of what sort of userspace and filesystem layout is in use.  Unfortunately,
-> > rcutorture is happy to attempt to offline CPUs that cannot be offlined,
-> > for example, CPU 0 in both the x86 and ARM architectures.  Although this
-> > allows rcutorture testing to proceed normally, it confounds attempts at
-> > error analysis due to the resulting flood of spurious CPU-hotplug errors.
-> > 
-> > Therefore, this commit creates a cpu_is_hotpluggable() function that
-> > allows rcutorture to avoid attempting to offline CPUs that are not
-> > hotpluggable, which in turn allows rcutorture to avoid reporting spurious
-> > CPU-hotplug errors.  Note that this function is EXPORT_SYMBOL_GPL()
-> > to allow rcutorture to use it when compiled as a kernel module.
-> > This commit also includes modifications to rcutorture to use this
-> > new function.
-> 
-> I'd suggest writing this as a two-patch series: add the API, then use
-> it.
-> 
-> I'd also suggest making the more general case for this API, beyond just
-> rcutorture.
-> 
-> > --- a/drivers/base/cpu.c
-> > +++ b/drivers/base/cpu.c
-> > @@ -23,6 +23,7 @@ struct sysdev_class cpu_sysdev_class = {
-> >  EXPORT_SYMBOL(cpu_sysdev_class);
-> >  
-> >  static DEFINE_PER_CPU(struct sys_device *, cpu_sys_devices);
-> > +static DEFINE_PER_CPU(bool, is_hotpluggable);
-> [...]
-> > @@ -224,8 +226,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
-> >  
-> >  	error = sysdev_register(&cpu->sysdev);
-> >  
-> > -	if (!error && cpu->hotpluggable)
-> > +	if (!error && cpu->hotpluggable) {
-> >  		register_cpu_control(cpu);
-> > +		per_cpu(is_hotpluggable, num) = 1;
-> > +	}
-> 
-> This information already exists in the ->hotpluggable field of "struct
-> cpu".  I'd suggest an alternate approach (included as a patch below),
-> which avoids the need to add a new per_cpu property redundant with
-> ->hotpluggable.
+ChangeLog:
 
-I do like your patch better, as it is smaller, less intrusive, and
-makes better use of existing facilities.  I have therefore replaced
-mine with it.  I also created a separate patch containing the rcutorture
-modifications from my original.
+ * V2
+   - added a lock for the pid namespace to prevent racy call
+     to the 'reboot' syscall
+   - Moved 'reboot' command assigned in zap_pid_ns_processes
+     instead of wait_task_zombie
+   - added tasklist lock around force_sig
+   - added do_exit in pid_ns_reboot
+   - used task_active_pid_ns instead of declaring a new variable in sys_reboot
+   - moved code up before POWER_OFF changed to HALT in sys_reboot
 
-> Note that you can get to the patch below via "git am --scissors", or
-> just by copy/pasting it.
+Daniel Lezcano (1):
+  Add reboot_pid_ns to handle the reboot syscall
 
-Very cool -- wasn't aware of --scissors before.  ;-)
+ include/linux/pid_namespace.h |    9 ++++++-
+ kernel/pid_namespace.c        |   54 +++++++++++++++++++++++++++++++++++++++++
+ kernel/sys.c                  |    3 ++
+ 3 files changed, 65 insertions(+), 1 deletions(-)
 
-							Thanx, Paul
-
-> ---8<---
-> From: Josh Triplett <josh@joshtriplett.org>
-> Subject: [PATCH] driver-core/cpu: Expose hotpluggability to the rest of the kernel
-> 
-> When architectures register CPUs, they indicate whether the CPU allows
-> hotplugging; notably, x86 and ARM don't allow hotplugging CPU 0.
-> Userspace can easily query the hotpluggability of a CPU via sysfs;
-> however, the kernel has no convenient way of accessing that property in
-> an architecture-independent way.  While the kernel can simply try it and
-> see, some code needs to distinguish between "hotplug failed" and
-> "hotplug has no hope of working on this CPU"; for example, rcutorture's
-> CPU hotplug tests want to avoid drowning out real hotplug failures with
-> expected failures.
-> 
-> Expose this property via a new cpu_is_hotpluggable function, so that the
-> rest of the kernel can access it in an architecture-independent way.
-> 
-> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
-> ---
->  drivers/base/cpu.c  |    7 +++++++
->  include/linux/cpu.h |    1 +
->  2 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-> index 251acea..3991502 100644
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -247,6 +247,13 @@ struct sys_device *get_cpu_sysdev(unsigned cpu)
->  }
->  EXPORT_SYMBOL_GPL(get_cpu_sysdev);
-> 
-> +bool cpu_is_hotpluggable(unsigned cpu)
-> +{
-> +	struct sys_device *dev = get_cpu_sysdev(cpu);
-> +	return dev && container_of(dev, struct cpu, sysdev)->hotpluggable;
-> +}
-> +EXPORT_SYMBOL_GPL(cpu_is_hotpluggable);
-> +
->  int __init cpu_dev_init(void)
->  {
->  	int err;
-> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-> index 6cb60fd..305c263 100644
-> --- a/include/linux/cpu.h
-> +++ b/include/linux/cpu.h
-> @@ -27,6 +27,7 @@ struct cpu {
-> 
->  extern int register_cpu(struct cpu *cpu, int num);
->  extern struct sys_device *get_cpu_sysdev(unsigned cpu);
-> +extern bool cpu_is_hotpluggable(unsigned cpu);
-> 
->  extern int cpu_add_sysdev_attr(struct sysdev_attribute *attr);
->  extern void cpu_remove_sysdev_attr(struct sysdev_attribute *attr);
-> -- 
-> 1.7.7.3
-> 
+-- 
+1.7.5.4
 
