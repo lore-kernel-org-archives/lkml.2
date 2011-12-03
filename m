@@ -1,77 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab1LCP5R (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 10:57:17 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58482 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601Ab1LCP5Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 10:57:16 -0500
+	id S1752988Ab1LCQNz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 11:13:55 -0500
+Received: from ffm.saftware.de ([83.141.3.46]:49205 "EHLO ffm.saftware.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751622Ab1LCQNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Dec 2011 11:13:51 -0500
+Message-ID: <4EDA4AB4.90303@linuxtv.org>
+Date: Sat, 03 Dec 2011 17:13:40 +0100
+From: Andreas Oberritter <obi@linuxtv.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20111201212017.GE2443@redhat.com>
-References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com> <20111201212017.GE2443@redhat.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Sat, 3 Dec 2011 08:56:42 -0700
-Message-ID: <CAJfuBxzbwRRfbWK8LQAi4SdoSBX8ByfpGUePvRia+0W5j4iJOA@mail.gmail.com>
-Subject: Re: [patch 00/25] dynamic-debug during module initialization
-To: Jason Baron <jbaron@redhat.com>
-Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: HoP <jpetrous@gmail.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 1, 2011 at 2:20 PM, Jason Baron <jbaron@redhat.com> wrote:
-> On Wed, Nov 30, 2011 at 12:56:29PM -0700, jim.cromie@gmail.com wrote:
->> This patchset adds
->> - dynamic-debug during module initialization
->> - multiple queries
+Hello Alan,
+
+On 03.12.2011 00:19, Alan Cox wrote:
+> On Thu, 1 Dec 2011 15:58:41 +0100
+> HoP <jpetrous@gmail.com> wrote:
+> 
+>> Hi,
 >>
->> Unlike previous versions, this drops pending-query approach in
->> favor of "fake module parameter" approach proposed by Thomas Renninger.
->>     https://lkml.org/lkml/2010/9/15/397
+>> let me ask you some details of your interesting idea (how to
+>> achieve the same functionality as with vtunerc driver):
 >>
->> Its based upon v3.2-rc3, cuz it includes a few adjustments to
->> dynamic_debug.h which are not in driver-core-next atm.
+>> [...]
 >>
+>>> The driver, as proposed, is not really a driver, as it doesn't support any
+>>> hardware. The kernel driver would be used to just copy data from one
+>>> userspace
 >>
->> 1     bug-fix for kernel/module.c under DEBUGP
->> 2     whitespace cleanup
->> 3-12  dynamic-debug cleanups, should be relatively uncontroversial
->> 13-17 multiple queries in ddebug_query="..."
->>
->> 18-25 fake module parameter
->> 20    maybe fold into 18 (kept separate since 18 is Thomas's work)
->> 23    *.dyndbg=...
->> 25    BUILD_BUG_DECL (likely discussion point ;-)
->>
->
-> I like 25, it truly makes 'dyndbg' a reserved module parameter, which is the
-> intention.
->
+>> Please stop learning me what can be called driver and what nope.
+>> Your definition is nonsense and I don't want to follow you on it.
+> 
+> You can stick your fingers in your ears and shout all you like but given
+> Mauro is the maintainer I'd suggest you work with him rather than making
+> it painful. One of the failures we routinely exclude code from the kernel
+> for is best described as "user interface of contributor"
+> 
+> It's a loopback that adds a performance hit. The right way to do this is
+> in userspace with the userspace infrastructure. At that point you can
+> handle all the corner cases properly, integrate things like service
+> discovery into your model and so on - stuff you'll never get to work that
+> well with kernel loopback hackery.
 
-heres a failing usage:
+FWIW, the virtual DVB device we're talking about doesn't have any
+networking capabilities by itself. It only allows to create virtual DVB
+adapters and to relay DVB API ioctls to userspace in a
+transport-agnostic way. Networking already takes place in a separate
+userspace process.
 
-...
-#include <linux/device.h>
-#include <linux/netdevice.h>
+>> Can you show me, how then can be reused most important part
+>> of dvb-core subsystem like tuning and demuxing? Or do you want me
+>> to invent wheels and to recode everything in the library? Of course
+> 
+> You could certainly build a library from the same code. That might well
+> be a good thing for all kinds of 'soft' DV applications. At that point
+> the discussion to have is the best way to make that code sharable between
+> a userspace library and the kernel and buildable for both.
 
-BUILD_BUG_DECL(foo,(1==1));
+You could certainly build a library to reach a different goal. The goal
+of vtuner is to access remote tuners with any existing program
+implementing the DVB API.
 
-heres what it looks like expanded:
+One of my primary use cases is to develop DVB API software on my
+notebook, while receiving the data from an embedded device, so I don't
+need an antenna cable connected to my notebook (or don't need to have an
+antenna at my location at all, if an internet connection is available).
 
-static struct __BUILD_BUG_DECL_foo { int __BUILD_BUG_DECL_foo[1 -
-2*!!(1==1)]; } __BUILD_BUG_DECL_foo[0] __attribute__((unused));
+Another use case is to receive data streams over the internet from
+satellite, cable and terrestrial networks that are impossible to receive
+in my area to verify that my DVB API software works with those streams.
 
-and heres the error:
+Furthermore, I'd like to use standard tools implementing theDid you even
+unders DVB API, e.g. to scan for channels, to measure signal quality or
+to decode streams on remote locations.
 
-  CALL    /home/jimc/projects/lx/linux-2.6/scripts/checksyscalls.sh
-  CC      lib/dynamic_debug.o
-/home/jimc/projects/lx/linux-2.6/lib/dynamic_debug.c:37:42: error:
-size of array ‘__BUILD_BUG_DECL_foo’ is negative
-make[3]: *** [lib/dynamic_debug.o] Error 1
+With vtuner, and an accompanying open source networking daemon, all of
+the above works out of the box. If I'd like to change the way data gets
+relayed between hosts (e.g. add IPv6 or SSL), I'd just need to update
+the userspace client and server.
 
+With a library, I'd need to implement networking in every little DVB API
+tool I want to use, multiplying the code size of every tool, restricting
+each tool to some arbitrarily chosen network protocol. If I'd like to
+change the way data gets relayed between hosts, I'd need to update every
+application using it.
 
-I havent seen any unused-var warnings, but maybe Ive not stimulated it enough.
+>> I can be wrong, I'm no big kernel hacker. So please show me the
+>> way for it. BTW, even if you can find the way, then data copying
+>> from userspace to the kernel and back is also necessery. I really
+>> don't see any advantage of you solution.
+> 
+> In a properly built media subsystem you shouldn't need any copies beyond
+> those that naturally occur as part of a processing pass and are therefore
+> free.
+
+The original version of the vtuner interface makes use of demux hardware
+and also feeds the relevant streams to a/v decoders, in which case you
+cannot avoid copying the MPEG data to kernel space.
+
+That's also the way to playback local DVB recordings works today without
+vtuners.
+
+I'm fine with not merging this code, if there are technical arguments
+against it. And personally I don't need it to be merged to be able to
+use it.
+
+However, Mauro invents half-baked arguments against it, because he fears
+that the code may be "abused" by closed-source userspace drivers (he
+already declared the latter publicly on the linux-media list).
+
+Unfortunately, I must assume that your own arguments are based on
+Mauro's emails instead of on the source code, because you clearly didn't
+understand the architecture of vtuner, regarding what's supposed to
+happen in kernel space and what not.
+
+Regards,
+Andreas
