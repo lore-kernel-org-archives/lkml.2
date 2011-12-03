@@ -1,95 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab1LCUWA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 15:22:00 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35915 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360Ab1LCUV6 (ORCPT
+	id S1754114Ab1LCUXt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 15:23:49 -0500
+Received: from ellpspace.math.ualberta.ca ([129.128.207.67]:52674 "EHLO
+	ellpspace.math.ualberta.ca" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753321Ab1LCUXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 15:21:58 -0500
-Message-ID: <1322943701.4040.0.camel@lappy>
-Subject: Re: [BUG] net: kernel BUG at include/net/netns/generic.h:40!
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev <netdev@vger.kernel.org>
-Date: Sat, 03 Dec 2011 22:21:41 +0200
-In-Reply-To: <1322892365.2664.2.camel@sasha>
-References: <1322892365.2664.2.camel@sasha>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 3 Dec 2011 15:23:48 -0500
+Date: Sat, 3 Dec 2011 13:23:30 -0700
+From: Michal Jaegermann <michal@ellpspace.math.ualberta.ca>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: Suspend and resume on ASUS Laptops
+Message-ID: <20111203202330.GA21011@ellpspace.math.ualberta.ca>
+References: <20111203024317.GA5370@ellpspace.math.ualberta.ca>
+ <Pine.LNX.4.44L0.1112031018530.16284-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1112031018530.16284-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've also got it bisected to:
-
-bd30ce4bc0b7dc859c1d1cba7ad87e08642418b0
-f36214408470ecf6a052e76b72d05b2328b60fcf
-
-The second commit doesn't build, so it could be either one of those.
-
-On Sat, 2011-12-03 at 08:06 +0200, Sasha Levin wrote:
-> Hi all,
+On Sat, Dec 03, 2011 at 10:19:27AM -0500, Alan Stern wrote:
+> On Fri, 2 Dec 2011, Michal Jaegermann wrote:
+> > 
+> > On my ASUS K52Jc these controllers are also reported "disabled".  This
 > 
-> I got the following when trying a clone():
-> 
-> [  126.413983] ------------[ cut here ]------------
-> [  126.414023] kernel BUG at include/net/netns/generic.h:40!
-> [  126.414023] invalid opcode: 0000 [#1] PREEMPT SMP 
-> [  126.414023] CPU 0 
-> [  126.414023] Pid: 2507, comm: trinity Not tainted 3.2.0-rc3-next-20111202-sasha-00003-gc9d4348 #17  
-> [  126.414023] RIP: 0010:[<ffffffff8235762e>]  [<ffffffff8235762e>] get_cfcnfg+0xee/0x100
-> [  126.414023] RSP: 0018:ffff88001108db00  EFLAGS: 00010212
-> [  126.414023] RAX: 0000000000000001 RBX: 0000000000000010 RCX: 0000000000000000
-> [  126.414023] RDX: 0000000000000001 RSI: ffffffff82c1ff20 RDI: 0000000000000282
-> [  126.414023] RBP: ffff88001108db20 R08: 0000000000000003 R09: 0000000000000001
-> [  126.414023] R10: 0000000000000000 R11: 0000000000000001 R12: ffff88001107ed80
-> [  126.414023] R13: ffffffff82db4b20 R14: 0000000000000000 R15: 0000000000000010
-> [  126.414023] FS:  00007f77a32d7700(0000) GS:ffff880013a00000(0000) knlGS:0000000000000000
-> [  126.414023] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  126.414023] CR2: 00007f77a2e054d0 CR3: 0000000011029000 CR4: 00000000000006f0
-> [  126.414023] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  126.414023] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  126.414023] Process trinity (pid: 2507, threadinfo ffff88001108c000, task ffff8800115c1610)
-> [  126.414023] Stack:
-> [  126.414023]  ffffffff82357557 ffffffff8203cc20 ffff8800110b4000 00000000ffffffd9
-> [  126.414023]  ffff88001108db80 ffffffff823579ae ffff88001108db80 ffffffff8216292d
-> [  126.414023]  0000000000000001 ffff8800115c1610 ffff88001108db80 ffff8800110b4000
-> [  126.414023] Call Trace:
-> [  126.414023]  [<ffffffff82357557>] ? get_cfcnfg+0x17/0x100
-> [  126.414023]  [<ffffffff8203cc20>] ? lockdep_rtnl_is_held+0x10/0x20
-> [  126.414023]  [<ffffffff823579ae>] caif_device_notify+0x2e/0x380
-> [  126.414023]  [<ffffffff8216292d>] ? packet_notifier+0x19d/0x220
-> [  126.414023]  [<ffffffff810d5a73>] notifier_call_chain+0x93/0xf0
-> [  126.414023]  [<ffffffff810d5fd1>] raw_notifier_call_chain+0x11/0x20
-> [  126.414023]  [<ffffffff820296d2>] call_netdevice_notifiers+0x32/0x60
-> [  126.414023]  [<ffffffff82030c06>] register_netdevice+0x196/0x300
-> [  126.414023]  [<ffffffff82030d89>] register_netdev+0x19/0x30
-> [  126.414023]  [<ffffffff81afe29a>] loopback_net_init+0x4a/0xa0
-> [  126.414023]  [<ffffffff82024c92>] ops_init+0x42/0x180
-> [  126.414023]  [<ffffffff82024e3b>] setup_net+0x6b/0x100
-> [  126.414023]  [<ffffffff82025296>] copy_net_ns+0x86/0x110
-> [  126.414023]  [<ffffffff810d5009>] create_new_namespaces+0xd9/0x190
-> [  126.414023]  [<ffffffff810d51d4>] copy_namespaces+0x84/0xc0
-> [  126.414023]  [<ffffffff810d343c>] ? __mutex_init+0x5c/0x70
-> [  126.414023]  [<ffffffff810ad531>] copy_process+0xa31/0x1490
-> [  126.414023]  [<ffffffff810ae043>] do_fork+0x73/0x350
-> [  126.414023]  [<ffffffff810e828d>] ? trace_hardirqs_on+0xd/0x10
-> [  126.414023]  [<ffffffff823e361d>] ? retint_swapgs+0x13/0x1b
-> [  126.414023]  [<ffffffff8104bd63>] sys_clone+0x23/0x30
-> [  126.414023]  [<ffffffff823e4273>] stub_clone+0x13/0x20
-> [  126.414023]  [<ffffffff823e3ed2>] ? system_call_fastpath+0x16/0x1b
-> [  126.414023] Code: 20 d9 fe 85 c0 75 8f 48 c7 c2 68 62 93 82 be 27 00 00 00 48 c7 c7 fa 49 a2 82 c6 05 a0 f2 bc 01 01 e8 47 5e d9 fe e9 6b ff ff ff <0f> 0b 0f 0b 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 
-> [  126.414023] RIP  [<ffffffff8235762e>] get_cfcnfg+0xee/0x100
-> [  126.414023]  RSP <ffff88001108db00>
-> [  126.475257] ---[ end trace c62732ec90be8c83 ]---
-> 
-> Please let me know if I can help debugging this issue.
-> 
+> What exactly do you mean by that?
 
--- 
+I mean that you asked Steven about a content of
+/sys/bus/pci/devices/0000\:00\:1[ad].0/power/wakeup
+On my ASUS K52Jc these ids also happen to belong to ehci_hcd devices
+(both "Intel Corporation 5 Series/3400 Series Chipset USB2 Enhanced Host
+Controller") and both 'wakeup' files show "disabled" too.
 
-Sasha.
+With that above I have to do all these manipulations with unbinding
+and binding drivers and removing inserting modules or a laptop will hang
+after a suspend.  Now with a recent kernel I need additionally put
+wireless driver modules on a "special handling" list or I will loose
+such connection (no hang here, just a dead driver).
 
+All of this looks like pretty consistent, from what one can find on the
+net, across various models of ASUS laptops.
+
+   Michal
