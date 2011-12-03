@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab1LCBjA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 20:39:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48336 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439Ab1LCBhx (ORCPT
+	id S1754806Ab1LCBjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 20:39:42 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:39548 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753792Ab1LCBht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 20:37:53 -0500
-Date: Sat, 3 Dec 2011 10:38:37 +0900
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2011-12-03
-Message-ID: <20111203013837.GA2816@joana>
-Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 2 Dec 2011 20:37:49 -0500
+X-Authority-Analysis: v=2.0 cv=Xd0LPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=i9mJVuLNXSAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=YOHAqSSgXUB0i1AXnCkA:9 a=3AQ5DN9QyJt3oUb-8IIA:7 a=QEXdDO2ut3YA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=FsiXdNLXvM_hpptLwzoA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20111203013745.600845619@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 02 Dec 2011 20:36:59 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable-rt@vger.kernel.org
+Subject: [PATCH 06/10] pci: Use __wake_up_all_locked pci_unblock_user_cfg_access()
+References: <20111203013653.090501690@goodmis.org>
+Content-Disposition: inline; filename=0006-pci-Use-__wake_up_all_locked-pci_unblock_user_cfg_ac.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Another big pull for -next. Some work on LE scanning from Andre Guedes, more
-AMP work from Andrei Emeltchenko. HCI Management Interface improvements from
-Johan Hedberg and Management and SMP work from Brian Gix. The rest are just
-fixes and clean ups.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Please pull, or let me know any problems. Thanks.
+The waitqueue is protected by the pci_lock, so we can just avoid to
+lock the waitqueue lock itself. That prevents the
+might_sleep()/scheduling while atomic problem on RT
 
-	Gustavo
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/pci/access.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The following changes since commit ba5736a5e9ac20c378ae4179e8a0ed3cc4b44351:
+diff --git a/drivers/pci/access.c b/drivers/pci/access.c
+index fdaa42a..1a6cc67 100644
+--- a/drivers/pci/access.c
++++ b/drivers/pci/access.c
+@@ -441,7 +441,7 @@ void pci_unblock_user_cfg_access(struct pci_dev *dev)
+ 	WARN_ON(!dev->block_ucfg_access);
+=20
+ 	dev->block_ucfg_access =3D 0;
+-	wake_up_all(&pci_ucfg_wait);
++	wake_up_all_locked(&pci_ucfg_wait);
+ 	raw_spin_unlock_irqrestore(&pci_lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(pci_unblock_user_cfg_access);
+--=20
+1.7.7.1
 
-  ath9k_hw: add default chainmask for AR9462 (2011-11-30 15:09:02 -0500)
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-next master
 
-Andre Guedes (4):
-      Bluetooth: Rename mgmt_inquiry_failed()
-      Bluetooth: mgmt_stop_discovery_failed()
-      Bluetooth: Add dev_flags to struct hci_dev
-      Bluetooth: LE Set Scan Parameter Command
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Andrei Emeltchenko (10):
-      Bluetooth: Move scope of kernel parameter enable_hs
-      Bluetooth: Do not set HCI_RAW when HS enabled
-      Bluetooth: Allow to set AMP type for virtual HCI
-      Bluetooth: making enable_hs independent from L2CAP
-      Bluetooth: Use queue in the device list
-      Bluetooth: Add HCI Read Flow Control Mode function
-      Bluetooth: remove old code
-      Bluetooth: Correct version check in hci_setup
-      Bluetooth: Remove magic bluetooth version numbers
-      Bluetooth: trivial: correct check for LMP version
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Bing Zhao (1):
-      Bluetooth: btmrvl: support Marvell Bluetooth device SD8797
+iQIcBAABAgAGBQJO2X1pAAoJEIy3vGnGbaoAf/oQAO49cJtpx076O8C/LBF7gjKI
+RdJC0WiJeah0G0Uiy00vjxIbyCa5XVQIhKho3JuLdAr16pkrtMcmZy9jTYe7F9jH
+/bqnqH/Gax8CgI6cYGGQwMbGuXvo9LdKf5eFDNa2IeGFS9ZFP7/mvjArgROdlkL7
+xbENAcIQ3Sp+ZN47u38OpDkUJcjzS8T8j+3ZluyztGov1S/k1xcp/juw7fYbPY1o
+wgB+B0Sk81Cicq+Yw57bm/SLb8ct5lpCkyduj/bxYF/Fg/hxxH/5bp23cVJxwmLb
+TMahLynm52/gQ5E+tEs6jkoo5jdxDV+0wTQWnC213/AK+o8d0J5yXJiQjZY1+IJK
+yduI132JCXu1WXMpK2VKAYImzh6SF/lwBnFgA9VOrkS857yNDOW+DycGY8UUKWy9
+BFCONgPYEEnhtKlz5cvfU5ysLAOgttw3ZYj8Jm4u0FWFg250/AKRETvtPFYbSbXB
+mvm7ljYaizsPd7o6RGb5QvDU6jRa/3gVcBbqxhCBZ8MalM6tJJqa38dqbmRw3Oh+
+y3r4OAIdBL3X4rb6ushQlmTHj3Yp8vctnGkbKQQ5XLe9inxdqGJCrAbHmNh8daup
+mTgaX06t6zAOIpx3CG9UO6Q4K/WkKBpPooYlcNduwAc7pvoN2Ntgqj598lrW7ky0
+NfDrqI+rtbLWlipoKt1P
+=xinp
+-----END PGP SIGNATURE-----
 
-Brian Gix (9):
-      Bluetooth: Add HCI defines for User Passkey entry
-      Bluetooth: Add MGMT opcodes for Passkey Entry
-      Bluetooth: Add MGMT event for Passkey Entry
-      Bluetooth: User Pairing Response restructuring
-      Bluetooth: Differentiate LE User Pairing Responses
-      Bluetooth: Add User Passkey Response handling
-      Bluetooth: Add HCI User Passkey Req Evt handling
-      Bluetooth: Cleanup blkcipher on SMP termination
-      Bluetooth: Centralize SMP pairing failure handling
-
-Cong Wang (1):
-      btusb: fix a memory leak in btusb_send_frame()
-
-David Herrmann (2):
-      Bluetooth: cmtp: Fix module reference
-      Bluetooth: bnep: Fix module reference
-
-Gustavo F. Padovan (5):
-      Bluetooth: Rename l2cap_check_security()
-      Bluetooth: Allow L2CAP to increase the security level
-      Bluetooth: Only set ack_timer if we didn't send and ack
-      Bluetooth: Add user readable debug for state changes
-      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth
-
-Johan Hedberg (10):
-      Bluetooth: Add public/random LE address information to mgmt messages
-      Bluetooth: Fix deadlock with mgmt_pair_device
-      Bluetooth: Add proper response to mgmt_remove_keys command
-      Bluetooth: Add status parameter to mgmt_disconnect response
-      Bluetooth: Add address type to mgmt_pair_device
-      Bluetooth: Fix mgmt_pair_device imediate error responses
-      Bluetooth: Return success instead of EALREADY for mgmt commands
-      Bluetooth: Create a unique mgmt error code hierarchy
-      Bluetooth: Add missing cmd_complete for mgmt_load_link_keys
-      Bluetooth: Pass all message parameters to mgmt_start_discovery
-
-Szymon Janc (5):
-      Bluetooth: Fix possible NULL pointer derefence in l2cap code
-      Bluetooth: Simplify l2cap_add_to_srej_queue
-      Bluetooth: Refactor loop in l2cap_retransmit_one_frame
-      Bluetooth: Simplify __l2cap_global_chan_by_addr
-      Bluetooth: Fix some checkpatch.pl errors and warnings
-
- drivers/bluetooth/Kconfig         |    6 +-
- drivers/bluetooth/btmrvl_sdio.c   |   15 +-
- drivers/bluetooth/btusb.c         |    3 +-
- drivers/bluetooth/hci_vhci.c      |    8 +
- include/net/bluetooth/bluetooth.h |    5 +
- include/net/bluetooth/hci.h       |   38 +++
- include/net/bluetooth/hci_core.h  |   28 ++-
- include/net/bluetooth/l2cap.h     |    2 +-
- include/net/bluetooth/mgmt.h      |   49 +++-
- net/bluetooth/bnep/core.c         |    8 +-
- net/bluetooth/cmtp/core.c         |    5 +-
- net/bluetooth/hci_conn.c          |    2 +-
- net/bluetooth/hci_core.c          |   31 +-
- net/bluetooth/hci_event.c         |  152 +++++++--
- net/bluetooth/l2cap_core.c        |  101 ++++--
- net/bluetooth/l2cap_sock.c        |   16 +-
- net/bluetooth/mgmt.c              |  660 ++++++++++++++++++++++++++++---------
- net/bluetooth/smp.c               |   32 ++-
- 18 files changed, 880 insertions(+), 281 deletions(-)
-
+--00GvhwF7k39YY--
