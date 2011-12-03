@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab1LCA6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 19:58:15 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47672 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab1LCA6N convert rfc822-to-8bit (ORCPT
+	id S1753791Ab1LCBEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 20:04:45 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:45760 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab1LCBEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 19:58:13 -0500
+	Fri, 2 Dec 2011 20:04:44 -0500
+Date: Fri, 2 Dec 2011 18:04:43 -0700 (MST)
+From: Paul Walmsley <paul@pwsan.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Turquette, Mike" <mturquette@ti.com>, linus.walleij@stericsson.com,
+        patches@linaro.org, shawn.guo@freescale.com, magnus.damm@gmail.com,
+        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
+        richard.zhao@linaro.org, grant.likely@secretlab.ca, dsaxena@linaro.org,
+        eric.miao@linaro.org, sboyd@quicinc.com, skannan@quicinc.com,
+        linaro-dev@lists.linaro.org, jeremy.kerr@canonical.com,
+        linux-omap@vger.kernel.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org
+Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
+In-Reply-To: <20111201220337.GE19739@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1112021440270.6289@utopia.booyaka.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1111291619110.6289@utopia.booyaka.com> <CAJOA=zM4vcyTt_RBEVm6JxmzW-Dna0gpuWda7ytq_mqFSuXw9g@mail.gmail.com>
+ <alpine.DEB.2.00.1111302308280.6289@utopia.booyaka.com> <20111201144205.GA2103@sirena.org.uk> <alpine.DEB.2.00.1112011124221.6289@utopia.booyaka.com> <20111201220337.GE19739@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CABexPfGvJB-Fvx2SbUbJaBVouAkv3UVmmfsTpp_zE8whpHVZEw@mail.gmail.com>
-References: <CABexPfGvJB-Fvx2SbUbJaBVouAkv3UVmmfsTpp_zE8whpHVZEw@mail.gmail.com>
-Date: Fri, 2 Dec 2011 19:58:12 -0500
-Message-ID: <CAMzpN2haQjckBGkA1ujaCD0iehAsC2S-xO7eN89S+u+FQ65zXw@mail.gmail.com>
-Subject: Re: [Provisional Page Table] Why the linear address ranges starting
- both from 0 and PAGE_OFFSET are mapped to the same physical address range in
- the provisional page table?
-From: Brian Gerst <brgerst@gmail.com>
-To: zhihua che <zhihua.che@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 2, 2011 at 11:35 AM, zhihua che <zhihua.che@gmail.com> wrote:
-> Hi, everyone
->        I know that the kernel constructs a provisional page table in
-> head_32.S which maps the linear address ranges starting both from 0
-> and PAGE_OFFSET to the same physical address range.  My question is
-> why the linear address range starting from 0 needs to be mapped to the
-> same physical address range as the leaner address range starting from
-> PAGE_OFFSET does. I thought it's not necessary because the whole
-> kernel (the protected mode part) is linked to the VMA PAGE_OFFSET.
->        But I found I was wrong. I'm writing a toy os which is also
-> linked to VMA PAGE_OFFSET and constructs a provisional page table as
-> the linux kernel does, and it works well with it. I mean it can enable
-> paging successfully and continue to execute as I expect after that
-> far-jump instruction. However, if I mapped only the linear address
-> starting from 0xc0000000, the far-jump instructions would load random
-> values to cs and eip respectfully and my os went crazy.
+On Thu, 1 Dec 2011, Russell King - ARM Linux wrote:
 
-The identity mapping is required for the brief period between when
-paging is enabled and the jump to the virtual address.  Once paging is
-enabled, eip still points to the low address for the next instruction,
-and the instruction fetch will cause a page fault if the identity
-mapping doesn't exist.
+> On Thu, Dec 01, 2011 at 11:30:16AM -0700, Paul Walmsley wrote:
+> > The intention behind the clk_{allow,block}_rate_change() proposal was to 
+> > allow the current user of the clock to change its rate without having to 
+> > call clk_{allow,block}_rate_change(), if that driver was the sole user of 
+> > the clock.
+> 
+> And how does a driver know that?
 
---
-Brian Gerst
+The driver author might make this assumption when the device's upstream 
+clock tree is simple.  This assumption simplifies the driver's clock code, 
+since no clock rate change notifier callback would be needed.
+
+This should be possible:
+
+1. when there are no other users of the device's upstream clocks; or,
+
+2. when a subset of the device's upstream clock tree can be used by
+   other devices, but the rates or source clocks of that subset either 
+   cannot be changed, or should never change.
+
+For example, consider an external audio codec device, such as the 
+TLV320AIC23.  The input clock source rate for this chip is likely to be 
+fixed for a given board design[1].  So the driver wouldn't need a clock 
+rate change notifier callback for its input clock source, since it would 
+never be called.  The clock dividers inside the codec may be represented 
+by clock nodes, but since they are handled by the same driver, the 
+coordination between them doesn't require any notifier callbacks.
+
+Another example would be a device that shares a portion of its upstream 
+clock tree with other devices, where the upstream clock tree is designed 
+to run at the same rate for all of the devices, such as the USIM IP block 
+on OMAP3430/3630[2].  The USIM shares a dedicated DPLL with the USBHOST 
+and USBTLL devices, but the DPLL is only intended to be programmed at a 
+single rate.  When the USIM is using this DPLL as a clock source, a 
+dedicated downstream clock divider is available that can be used to reduce 
+the USIM's input clock rate.  So the USIM driver would also not require 
+any clock rate change notifier callbacks, since the shared portions of its 
+parent clock tree should never change.
+
+Of course, it is possible that a new chip could appear with an identical 
+IP block inside it, but where cases 1 and 2 above are no longer true.  
+The worst outcome is that the driver's clk_set_rate() may no longer 
+succeed, returning -EBUSY, since another device may be blocking the rate 
+change.  The remedy is to update the driver to add the rate change 
+callback, and the associated internal logic to deal with it.
+
+
+- Paul
+
+1. Texas Instruments, _TLV320AIC23 Stereo Audio CODEC, 8- to 96-kHz, With 
+   Integrated Headphone Amplifier Data Manual_ (SLWS106D), May 2002, 
+   Section 3.3.2 "Audio Sampling Rates" and section 1.2 "Functional Block 
+   Diagram".   Available from http://www.ti.com/lit/gpn/tlv320aic23
+   (among others)
+
+2. Linux kernel v3.1-rc4, arch/arm/mach-omap2/clock3xxx_data.c, 
+   usim_clksel (line 2300).  Available from 
+   http://git.kernel.org/gitweb.cgi?p=linux/kernel/git/torvalds/linux.git;a=blob;f=arch/arm/mach-omap2/clock3xxx_data.c;h=5d0064a4fb5a638bb1141489354244e95899c1a1;hb=HEAD#l2300
+   (among others)
+
+
