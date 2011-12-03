@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab1LCMoS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 07:44:18 -0500
-Received: from mail.academia.cl ([200.54.164.151]:52109 "EHLO smtp.academia.cl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754915Ab1LCMoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 07:44:17 -0500
-X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Dec 2011 07:44:16 EST
-From: <westernunion@westernunion.com>
-To: linux-kernel@vger.kernel.org
-Subject: Western Union Online : Message Alert!
-Date: 03 Dec 2011 13:35:39 +0100
-Message-ID: <20111203133539.4255B889EA139689@westernunion.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1751805Ab1LCORH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 09:17:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64581 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab1LCORD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Dec 2011 09:17:03 -0500
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: [PATCH] perf report: Document '--call-graph' for optional print_limit argument
+Date: Sat,  3 Dec 2011 23:16:54 +0900
+Message-Id: <1322921814-12338-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Western Union Customer
+The '--call-graph' command line option can receive undocumented
+optional print_limit argument. Besides, use strtol to parse
+the option since its type is u32.
 
-From: westernunion@westernunion.com
-Subject: Western Union Online : Message Alert!
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ tools/perf/Documentation/perf-report.txt |    5 +++--
+ tools/perf/builtin-report.c              |    6 +++---
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-You have (1) unread Message!
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 212f24d672e1..12a5bd9b502a 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -80,9 +80,10 @@ OPTIONS
+ --dump-raw-trace::
+         Dump raw trace in ASCII.
+ 
+--g [type,min,order]::
++-g [type,min[,limit],order]::
+ --call-graph::
+-        Display call chains using type, min percent threshold and order.
++        Display call chains using type, min percent threshold, optional print
++	limit and order.
+ 	type can be either:
+ 	- flat: single column, linear exposure of call chains.
+ 	- graph: use a graph tree, displaying absolute overhead rates.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 4d7c8340c326..b0bb79dc6251 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -412,7 +412,7 @@ parse_callchain_opt(const struct option *opt __used, const char *arg,
+ 		goto setup;
+ 
+ 	if (tok2[0] != 'c') {
+-		callchain_param.print_limit = strtod(tok2, &endptr);
++		callchain_param.print_limit = strtol(tok2, &endptr, 0);
+ 		tok2 = strtok(NULL, ",");
+ 		if (!tok2)
+ 			goto setup;
+@@ -468,8 +468,8 @@ static const struct option options[] = {
+ 		   "regex filter to identify parent, see: '--sort parent'"),
+ 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
+ 		    "Only display entries with parent-match"),
+-	OPT_CALLBACK_DEFAULT('g', "call-graph", NULL, "output_type,min_percent, call_order",
+-		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold and callchain order. "
++	OPT_CALLBACK_DEFAULT('g', "call-graph", NULL, "output_type,min_percent[,print_limit],call_order",
++		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit and callchain order. "
+ 		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
+ 	OPT_BOOLEAN('G', "inverted", &inverted_callchain, "alias for inverted call graph"),
+ 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+-- 
+1.7.6
 
-
-Your Western Union Account is currently locked.
-
-
-As a security measure you must provide your credit card cvv ( the
-last 3 digits on the back of your card ) to unlock your account.
-
-
-Regarding this, please follow the link below to resolve this
-issue:
-
-http://www.bavaria-waermepumpen.com/www.westernunion.no/WUCOMWEB/staticMid.do/countryCode/NO/
-
-
-Western Union Holdings, All Rights Reserved .
-  
