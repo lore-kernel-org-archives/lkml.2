@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab1LCBrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 20:47:41 -0500
+	id S1755058Ab1LCBrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 20:47:47 -0500
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:59391 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753901Ab1LCBrk (ORCPT
+	with ESMTP id S1753901Ab1LCBrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 20:47:40 -0500
-X-Authority-Analysis: v=2.0 cv=dOUkaZlb c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=MRl6tNtsfWYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=Dy9FSkG8L0gs_orUxm0A:9 a=QEXdDO2ut3YA:10 a=U62fhAwekXMA:10 a=kkAt2wmzNdCbEbRB_isA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Fri, 2 Dec 2011 20:47:42 -0500
+X-Authority-Analysis: v=2.0 cv=dOUkaZlb c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=XVihffWrktQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=EO7VT9wZ8Z5xNPfChsEA:9 a=AwCO3NkD7Aufx0xrKXIA:7 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=IvHuggfspKB4HRSFeeQA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111203014641.165123482@goodmis.org>
+Message-Id: <20111203014739.384974971@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 02 Dec 2011 20:46:41 -0500
+Date: Fri, 02 Dec 2011 20:46:42 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH 00/10] [ANNOUNCE] 3.0.12-rt30-rc1
+        John Kacur <jkacur@redhat.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 01/10] tasklet/rt: Prevent tasklets from going into infinite spin in RT
+References: <20111203014641.165123482@goodmis.org>
+Content-Disposition: inline; filename=0001-tasklet-rt-Prevent-tasklets-from-going-into-infinite.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,94 +30,421 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-[ Sorry for the duplicates, this one has the correct Cc's attached ]
+From: Ingo Molnar <mingo@elte.hu>
 
-Dear RT Folks,
+When CONFIG_PREEMPT_RT_FULL is enabled, tasklets run as threads,
+and spinlocks turn are mutexes. But this can cause issues with
+tasks disabling tasklets. A tasklet runs under ksoftirqd, and
+if a tasklets are disabled with tasklet_disable(), the tasklet
+count is increased. When a tasklet runs, it checks this counter
+and if it is set, it adds itself back on the softirq queue and
+returns.
 
-This is the RT stable review cycle of patch 3.0.12-rt30-rc1.
+The problem arises in RT because ksoftirq will see that a softirq
+is ready to run (the tasklet softirq just re-armed itself), and will
+not sleep, but instead run the softirqs again. The tasklet softirq
+will still see that the count is non-zero and will not execute
+the tasklet and requeue itself on the softirq again, which will
+cause ksoftirqd to run it again and again and again.
 
-Please scream at me if I messed something up. Please test the patches too.
+It gets worse because ksoftirqd runs as a real-time thread.
+If it preempted the task that disabled tasklets, and that task
+has migration disabled, or can't run for other reasons, the tasklet
+softirq will never run because the count will never be zero, and
+ksoftirqd will go into an infinite loop. As an RT task, it this
+becomes a big problem.
 
-The -rc release will be uploaded to kernel.org and will be deleted when
-the final release is out. This is just a review release (or release candida=
-te).
+This is a hack solution to have tasklet_disable stop tasklets, and
+when a tasklet runs, instead of requeueing the tasklet softirqd
+it delays it. When tasklet_enable() is called, and tasklets are
+waiting, then the tasklet_enable() will kick the tasklets to continue.
+This prevents the lock up from ksoftirq going into an infinite loop.
 
-The pre-releases will not be pushed to the git repository, only the
-final release is.
-
-If all goes well, this patch will be converted to the main release
-next on Wednesday (12/7/2011).
-
-Enjoy,
-
--- Steve
-
-
-To build 3.0.12-rt30-rc1 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.12.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.12-rt30-=
-rc1.patch.xz
-
-You can also build from 3.0.12-rt29 by applying the incremental patch:
-
-http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.12-rt=
-29-rt30-rc1.patch.xz
-
-
-Changes from 3.0.12-rt29:
-
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+[ ported to 3.0-rt ]
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
-
-Avi Kivity (1):
-      KVM: Sanitize cpuid
-
-Edward Donovan (1):
-      genirq: fix regression in irqfixup, irqpoll
-
-Ingo Molnar (1):
-      tasklet/rt: Prevent tasklets from going into infinite spin in RT
-
-Peter Zijlstra (2):
-      slab, lockdep: Fix silly bug
-      slab, lockdep: Annotate all slab caches
-
-Roland Dreier (1):
-      intel-iommu: Fix AB-BA lockdep report
-
-Steven Rostedt (1):
-      Linux v3.0.12-rt30-rc1
-
-Thomas Gleixner (3):
-      wait: Provide __wake_up_all_locked
-      pci: Use __wake_up_all_locked pci_unblock_user_cfg_access()
-      acpi: Make gbl_[hardware|gpe]_lock raw
-
+ include/linux/interrupt.h |   39 +++++----
+ kernel/softirq.c          |  208 ++++++++++++++++++++++++++++++++---------=
 ----
- arch/x86/kvm/x86.c              |   37 +++++++-
- drivers/acpi/acpica/acglobal.h  |    4 +-
- drivers/acpi/acpica/evgpe.c     |    4 +-
- drivers/acpi/acpica/evgpeblk.c  |    8 +-
- drivers/acpi/acpica/evgpeutil.c |   12 +-
- drivers/acpi/acpica/evxface.c   |   10 +-
- drivers/acpi/acpica/evxfgpe.c   |   24 +++---
- drivers/acpi/acpica/hwregs.c    |    4 +-
- drivers/acpi/acpica/hwxface.c   |    4 +-
- drivers/acpi/acpica/utmutex.c   |   21 +----
- drivers/pci/access.c            |    2 +-
- drivers/pci/intel-iommu.c       |    4 +-
- include/linux/interrupt.h       |   39 ++++----
- include/linux/wait.h            |    5 +-
- kernel/irq/spurious.c           |    4 +-
- kernel/sched.c                  |    4 +-
- kernel/softirq.c                |  208 ++++++++++++++++++++++++++++-------=
-----
- localversion-rt                 |    2 +-
- mm/slab.c                       |   55 ++++++-----
- 19 files changed, 286 insertions(+), 165 deletions(-)
+ 2 files changed, 170 insertions(+), 77 deletions(-)
+
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index a62158f..3142442 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -501,8 +501,9 @@ extern void __send_remote_softirq(struct call_single_da=
+ta *cp, int cpu,
+      to be executed on some cpu at least once after this.
+    * If the tasklet is already scheduled, but its execution is still not
+      started, it will be executed only once.
+-   * If this tasklet is already running on another CPU (or schedule is cal=
+led
+-     from tasklet itself), it is rescheduled for later.
++   * If this tasklet is already running on another CPU, it is rescheduled
++     for later.
++   * Schedule must not be called from the tasklet itself (a lockup occurs)
+    * Tasklet is strictly serialized wrt itself, but not
+      wrt another tasklets. If client needs some intertask synchronization,
+      he makes it with spinlocks.
+@@ -527,27 +528,36 @@ struct tasklet_struct name =3D { NULL, 0, ATOMIC_INIT=
+(1), func, data }
+ enum
+ {
+ 	TASKLET_STATE_SCHED,	/* Tasklet is scheduled for execution */
+-	TASKLET_STATE_RUN	/* Tasklet is running (SMP only) */
++	TASKLET_STATE_RUN,	/* Tasklet is running (SMP only) */
++	TASKLET_STATE_PENDING	/* Tasklet is pending */
+ };
+=20
+-#ifdef CONFIG_SMP
++#define TASKLET_STATEF_SCHED	(1 << TASKLET_STATE_SCHED)
++#define TASKLET_STATEF_RUN	(1 << TASKLET_STATE_RUN)
++#define TASKLET_STATEF_PENDING	(1 << TASKLET_STATE_PENDING)
++
++#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT_RT_FULL)
+ static inline int tasklet_trylock(struct tasklet_struct *t)
+ {
+ 	return !test_and_set_bit(TASKLET_STATE_RUN, &(t)->state);
+ }
+=20
++static inline int tasklet_tryunlock(struct tasklet_struct *t)
++{
++	return cmpxchg(&t->state, TASKLET_STATEF_RUN, 0) =3D=3D TASKLET_STATEF_RU=
+N;
++}
++
+ static inline void tasklet_unlock(struct tasklet_struct *t)
+ {
+ 	smp_mb__before_clear_bit();=20
+ 	clear_bit(TASKLET_STATE_RUN, &(t)->state);
+ }
+=20
+-static inline void tasklet_unlock_wait(struct tasklet_struct *t)
+-{
+-	while (test_bit(TASKLET_STATE_RUN, &(t)->state)) { barrier(); }
+-}
++extern void tasklet_unlock_wait(struct tasklet_struct *t);
++
+ #else
+ #define tasklet_trylock(t) 1
++#define tasklet_tryunlock(t)	1
+ #define tasklet_unlock_wait(t) do { } while (0)
+ #define tasklet_unlock(t) do { } while (0)
+ #endif
+@@ -596,17 +606,8 @@ static inline void tasklet_disable(struct tasklet_stru=
+ct *t)
+ 	smp_mb();
+ }
+=20
+-static inline void tasklet_enable(struct tasklet_struct *t)
+-{
+-	smp_mb__before_atomic_dec();
+-	atomic_dec(&t->count);
+-}
+-
+-static inline void tasklet_hi_enable(struct tasklet_struct *t)
+-{
+-	smp_mb__before_atomic_dec();
+-	atomic_dec(&t->count);
+-}
++extern  void tasklet_enable(struct tasklet_struct *t);
++extern  void tasklet_hi_enable(struct tasklet_struct *t);
+=20
+ extern void tasklet_kill(struct tasklet_struct *t);
+ extern void tasklet_kill_immediate(struct tasklet_struct *t, unsigned int =
+cpu);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 026a283..3489d06 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -21,6 +21,7 @@
+ #include <linux/freezer.h>
+ #include <linux/kthread.h>
+ #include <linux/rcupdate.h>
++#include <linux/delay.h>
+ #include <linux/ftrace.h>
+ #include <linux/smp.h>
+ #include <linux/tick.h>
+@@ -670,15 +671,45 @@ struct tasklet_head
+ static DEFINE_PER_CPU(struct tasklet_head, tasklet_vec);
+ static DEFINE_PER_CPU(struct tasklet_head, tasklet_hi_vec);
+=20
++static void inline
++__tasklet_common_schedule(struct tasklet_struct *t, struct tasklet_head *h=
+ead, unsigned int nr)
++{
++	if (tasklet_trylock(t)) {
++again:
++		/* We may have been preempted before tasklet_trylock
++		 * and __tasklet_action may have already run.
++		 * So double check the sched bit while the takslet
++		 * is locked before adding it to the list.
++		 */
++		if (test_bit(TASKLET_STATE_SCHED, &t->state)) {
++			t->next =3D NULL;
++			*head->tail =3D t;
++			head->tail =3D &(t->next);
++			raise_softirq_irqoff(nr);
++			tasklet_unlock(t);
++		} else {
++			/* This is subtle. If we hit the corner case above
++			 * It is possible that we get preempted right here,
++			 * and another task has successfully called
++			 * tasklet_schedule(), then this function, and
++			 * failed on the trylock. Thus we must be sure
++			 * before releasing the tasklet lock, that the
++			 * SCHED_BIT is clear. Otherwise the tasklet
++			 * may get its SCHED_BIT set, but not added to the
++			 * list
++			 */
++			if (!tasklet_tryunlock(t))
++				goto again;
++		}
++	}
++}
++
+ void __tasklet_schedule(struct tasklet_struct *t)
+ {
+ 	unsigned long flags;
+=20
+ 	local_irq_save(flags);
+-	t->next =3D NULL;
+-	*__this_cpu_read(tasklet_vec.tail) =3D t;
+-	__this_cpu_write(tasklet_vec.tail, &(t->next));
+-	raise_softirq_irqoff(TASKLET_SOFTIRQ);
++	__tasklet_common_schedule(t, &__get_cpu_var(tasklet_vec), TASKLET_SOFTIRQ=
+);
+ 	local_irq_restore(flags);
+ }
+=20
+@@ -689,10 +720,7 @@ void __tasklet_hi_schedule(struct tasklet_struct *t)
+ 	unsigned long flags;
+=20
+ 	local_irq_save(flags);
+-	t->next =3D NULL;
+-	*__this_cpu_read(tasklet_hi_vec.tail) =3D t;
+-	__this_cpu_write(tasklet_hi_vec.tail,  &(t->next));
+-	raise_softirq_irqoff(HI_SOFTIRQ);
++	__tasklet_common_schedule(t, &__get_cpu_var(tasklet_hi_vec), HI_SOFTIRQ);
+ 	local_irq_restore(flags);
+ }
+=20
+@@ -700,50 +728,119 @@ EXPORT_SYMBOL(__tasklet_hi_schedule);
+=20
+ void __tasklet_hi_schedule_first(struct tasklet_struct *t)
+ {
+-	BUG_ON(!irqs_disabled());
+-
+-	t->next =3D __this_cpu_read(tasklet_hi_vec.head);
+-	__this_cpu_write(tasklet_hi_vec.head, t);
+-	__raise_softirq_irqoff(HI_SOFTIRQ);
++	__tasklet_hi_schedule(t);
+ }
+=20
+ EXPORT_SYMBOL(__tasklet_hi_schedule_first);
++=20
++void  tasklet_enable(struct tasklet_struct *t)
++{
++	if (!atomic_dec_and_test(&t->count))
++		return;
++	if (test_and_clear_bit(TASKLET_STATE_PENDING, &t->state))
++		tasklet_schedule(t);
++}
++=20
++EXPORT_SYMBOL(tasklet_enable);
+=20
+-static void tasklet_action(struct softirq_action *a)
++void  tasklet_hi_enable(struct tasklet_struct *t)
+ {
+-	struct tasklet_struct *list;
++	if (!atomic_dec_and_test(&t->count))
++		return;
++	if (test_and_clear_bit(TASKLET_STATE_PENDING, &t->state))
++		tasklet_hi_schedule(t);
++}
+=20
+-	local_irq_disable();
+-	list =3D __this_cpu_read(tasklet_vec.head);
+-	__this_cpu_write(tasklet_vec.head, NULL);
+-	__this_cpu_write(tasklet_vec.tail, &__get_cpu_var(tasklet_vec).head);
+-	local_irq_enable();
++EXPORT_SYMBOL(tasklet_hi_enable);
++
++static void
++__tasklet_action(struct softirq_action *a, struct tasklet_struct *list)
++{
++	int loops =3D 1000000;
+=20
+ 	while (list) {
+ 		struct tasklet_struct *t =3D list;
+=20
+ 		list =3D list->next;
+=20
+-		if (tasklet_trylock(t)) {
+-			if (!atomic_read(&t->count)) {
+-				if (!test_and_clear_bit(TASKLET_STATE_SCHED, &t->state))
+-					BUG();
+-				t->func(t->data);
+-				tasklet_unlock(t);
+-				continue;
+-			}
+-			tasklet_unlock(t);
++		/*
++		 * Should always succeed - after a tasklist got on the
++		 * list (after getting the SCHED bit set from 0 to 1),
++		 * nothing but the tasklet softirq it got queued to can
++		 * lock it:
++		 */
++		if (!tasklet_trylock(t)) {
++			WARN_ON(1);
++			continue;
+ 		}
+=20
+-		local_irq_disable();
+ 		t->next =3D NULL;
+-		*__this_cpu_read(tasklet_vec.tail) =3D t;
+-		__this_cpu_write(tasklet_vec.tail, &(t->next));
+-		__raise_softirq_irqoff(TASKLET_SOFTIRQ);
+-		local_irq_enable();
++
++		/*
++		 * If we cannot handle the tasklet because it's disabled,
++		 * mark it as pending. tasklet_enable() will later
++		 * re-schedule the tasklet.
++		 */
++		if (unlikely(atomic_read(&t->count))) {
++out_disabled:
++			/* implicit unlock: */
++			wmb();
++			t->state =3D TASKLET_STATEF_PENDING;
++			continue;
++		}
++
++		/*
++		 * After this point on the tasklet might be rescheduled
++		 * on another CPU, but it can only be added to another
++		 * CPU's tasklet list if we unlock the tasklet (which we
++		 * dont do yet).
++		 */
++		if (!test_and_clear_bit(TASKLET_STATE_SCHED, &t->state))
++			WARN_ON(1);
++
++again:
++		t->func(t->data);
++
++		/*
++		 * Try to unlock the tasklet. We must use cmpxchg, because
++		 * another CPU might have scheduled or disabled the tasklet.
++		 * We only allow the STATE_RUN -> 0 transition here.
++		 */
++		while (!tasklet_tryunlock(t)) {
++			/*
++			 * If it got disabled meanwhile, bail out:
++			 */
++			if (atomic_read(&t->count))
++				goto out_disabled;
++			/*
++			 * If it got scheduled meanwhile, re-execute
++			 * the tasklet function:
++			 */
++			if (test_and_clear_bit(TASKLET_STATE_SCHED, &t->state))
++				goto again;
++			if (!--loops) {
++				printk("hm, tasklet state: %08lx\n", t->state);
++				WARN_ON(1);
++				tasklet_unlock(t);
++				break;
++			}
++		}
+ 	}
+ }
+=20
++static void tasklet_action(struct softirq_action *a)
++{
++	struct tasklet_struct *list;
++
++	local_irq_disable();
++	list =3D __get_cpu_var(tasklet_vec).head;
++	__get_cpu_var(tasklet_vec).head =3D NULL;
++	__get_cpu_var(tasklet_vec).tail =3D &__get_cpu_var(tasklet_vec).head;
++	local_irq_enable();
++
++	__tasklet_action(a, list);
++}
++
+ static void tasklet_hi_action(struct softirq_action *a)
+ {
+ 	struct tasklet_struct *list;
+@@ -754,29 +851,7 @@ static void tasklet_hi_action(struct softirq_action *a)
+ 	__this_cpu_write(tasklet_hi_vec.tail, &__get_cpu_var(tasklet_hi_vec).head=
+);
+ 	local_irq_enable();
+=20
+-	while (list) {
+-		struct tasklet_struct *t =3D list;
+-
+-		list =3D list->next;
+-
+-		if (tasklet_trylock(t)) {
+-			if (!atomic_read(&t->count)) {
+-				if (!test_and_clear_bit(TASKLET_STATE_SCHED, &t->state))
+-					BUG();
+-				t->func(t->data);
+-				tasklet_unlock(t);
+-				continue;
+-			}
+-			tasklet_unlock(t);
+-		}
+-
+-		local_irq_disable();
+-		t->next =3D NULL;
+-		*__this_cpu_read(tasklet_hi_vec.tail) =3D t;
+-		__this_cpu_write(tasklet_hi_vec.tail, &(t->next));
+-		__raise_softirq_irqoff(HI_SOFTIRQ);
+-		local_irq_enable();
+-	}
++	__tasklet_action(a, list);
+ }
+=20
+=20
+@@ -799,7 +874,7 @@ void tasklet_kill(struct tasklet_struct *t)
+=20
+ 	while (test_and_set_bit(TASKLET_STATE_SCHED, &t->state)) {
+ 		do {
+-			yield();
++			msleep(1);
+ 		} while (test_bit(TASKLET_STATE_SCHED, &t->state));
+ 	}
+ 	tasklet_unlock_wait(t);
+@@ -1005,6 +1080,23 @@ void __init softirq_init(void)
+ 	open_softirq(HI_SOFTIRQ, tasklet_hi_action);
+ }
+=20
++#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT_RT_FULL)
++void tasklet_unlock_wait(struct tasklet_struct *t)
++{
++	while (test_bit(TASKLET_STATE_RUN, &(t)->state)) {
++		/*
++		 * Hack for now to avoid this busy-loop:
++		 */
++#ifdef CONFIG_PREEMPT_RT_FULL
++		msleep(1);
++#else
++		barrier();
++#endif
++	}
++}
++EXPORT_SYMBOL(tasklet_unlock_wait);
++#endif
++
+ static int run_ksoftirqd(void * __bind_cpu)
+ {
+ 	ksoftirqd_set_sched_params();
+--=20
+1.7.7.1
+
+
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -124,19 +453,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO2X+4AAoJEIy3vGnGbaoAAn0P/38/GUkfPZDs8YW3x+48jvFk
-xb8wD4480TprCOkmkoBGs9nH9Kx05pMfE6slijIWehiQqgk6Z0u1I3jI8UpN8XJB
-WwGalBRWghL7CjQYI3CTTdrqMbsCTziHKvnOXc6aduNqbGniIyvFbYYiCF+rwN+g
-2t9CXyXsGP5doAFvfVjIGTBImq9kys5vwwtDUTE9hp91ey0osCJnRfKNGCP7oE9u
-gE1TY3Qt+624eTKYfyydXTnsh/38SfU+e1WnM7BlfJ95jvm5sOY0PW/0oXLw101a
-hPBCRRprqBKgF/7ypjvTzyEuMUVEilXZpbuhbZ5XTJh7IOPxwikjZNbEiq/S2CTS
-3k8MpkPXFMlbHTIAXU/d3AKO+zBKVdc2hJlardqKkPNypCLTFxjtOxyKtWYMZYMk
-DuNUYea/cZ+87gaSZm2fW+ol/YrSjlHPv0xQGRfFW96Th6fpll5wDkjIh8tp6X3w
-hQEfCEXSMWRS8CGBALsn8rdzCiTjkmwKL6I8J1gOS6/bGCi3yI6fyRvSvEM7eB24
-JmdzEmbmS3SfblI+Gy+gBtNEWke9Ohl9ZPlF2kTWaAEE0B2cut19Pt90r3qoq9n/
-0zNUtMLBX5Qta9K5zd3rB3hGSwvdXkY/C0pulO3fh/xSrRaMo0eBjoUED/kBYxuX
-GC6JytjB3u0OyN9Z0y0A
-=DPWx
+iQIcBAABAgAGBQJO2X+7AAoJEIy3vGnGbaoA9LsP/iA2JShtFxFWbq82XhV7K+Hu
+VN7euY9WUqp2zHWFsqR/JgDPDtQkAJcFy1xuo+I0MnFI5Qh2gTyfO07GrovUCWnV
+XZFbVsKSmtDvdXbmTRYTUQzt4ZLOm05v1r833qp4tel3YtRhK+DXHIoKpimLhWFI
+PrOay9FkOzQOEKS2v+YmDJ7PFPJXuxmI8KuyfuGd5BIIcpIq2gCu51FYTa7J7vVu
+9Rc5nJ18mp0GvbyQLsHONazAjLX8j2tCWdkA4fmv9WrDFPIZghv6Sl3aiwinhp9o
+5sT+zo17TnA//ADEE4pqri8W36LkQAQ9480zUJVJLlsi0O+hqxmmRlIvOfxtizc0
+944TqjGAcDaggglVExPw43HAUQoOkQQHcKamO82NGtm0JxAXM07p/4K/NfkVUgBj
+ZXz8Tv+l3bW3qIlLI4cH5O29F6H8pRFLUNKjD/wDH5DT3/G5VA3NGIQp6fbNs1dF
+sHqgFO6wOTxrXVHnwiMfkRGD3QQNPVMPbL/WLNkbCv5lMV11t+SuorZ2JCdOvn++
+ZgHLM7HjRi23cwv2JtbkaVCJ9UOm53S2yCBzGMrVUhnhbpkefL7/VDb0TLI35xV5
+sU8fSgOZbbRicPuA30VEYIbW9MvADmcNE2KKQ38xsMXfO7ii1ynwVeayFMuTjBn1
+WrxaD7Af8A/T4Yd3OqqF
+=slaj
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
