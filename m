@@ -1,131 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab1LCQNz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 11:13:55 -0500
-Received: from ffm.saftware.de ([83.141.3.46]:49205 "EHLO ffm.saftware.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab1LCQNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 11:13:51 -0500
-Message-ID: <4EDA4AB4.90303@linuxtv.org>
-Date: Sat, 03 Dec 2011 17:13:40 +0100
-From: Andreas Oberritter <obi@linuxtv.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1753087Ab1LCQVB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 11:21:01 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49618 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab1LCQU7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Dec 2011 11:20:59 -0500
+Message-ID: <4EDA4C62.6050507@linux.vnet.ibm.com>
+Date: Sat, 03 Dec 2011 21:50:50 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: HoP <jpetrous@gmail.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+To: Miles Lane <miles.lane@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: 3.2.0-rc4+ (Linus GIT af968e29acd91ebeb4224e899202c46c93171ecd)
+ -- Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze,
+ wq_busy=0):
+References: <CAHFgRy_ae70MZOgY8q3i36NJh42=GK=XP=EA=ktxgXiFzjY49w@mail.gmail.com> <4ED9C7D7.5030300@linux.vnet.ibm.com> <CAHFgRy_o6b9ih=BXysL9Ws6KDcVcOkJ2hnLa9zZJ=m-=zoLmPA@mail.gmail.com>
+In-Reply-To: <CAHFgRy_o6b9ih=BXysL9Ws6KDcVcOkJ2hnLa9zZJ=m-=zoLmPA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 11120316-5564-0000-0000-0000005C3DEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan,
+On 12/03/2011 09:07 PM, Miles Lane wrote:
 
-On 03.12.2011 00:19, Alan Cox wrote:
-> On Thu, 1 Dec 2011 15:58:41 +0100
-> HoP <jpetrous@gmail.com> wrote:
+> Thanks!  The patch worked perfectly.
 > 
->> Hi,
->>
->> let me ask you some details of your interesting idea (how to
->> achieve the same functionality as with vtunerc driver):
->>
->> [...]
->>
->>> The driver, as proposed, is not really a driver, as it doesn't support any
->>> hardware. The kernel driver would be used to just copy data from one
->>> userspace
->>
->> Please stop learning me what can be called driver and what nope.
->> Your definition is nonsense and I don't want to follow you on it.
-> 
-> You can stick your fingers in your ears and shout all you like but given
-> Mauro is the maintainer I'd suggest you work with him rather than making
-> it painful. One of the failures we routinely exclude code from the kernel
-> for is best described as "user interface of contributor"
-> 
-> It's a loopback that adds a performance hit. The right way to do this is
-> in userspace with the userspace infrastructure. At that point you can
-> handle all the corner cases properly, integrate things like service
-> discovery into your model and so on - stuff you'll never get to work that
-> well with kernel loopback hackery.
+>         Miles
 
-FWIW, the virtual DVB device we're talking about doesn't have any
-networking capabilities by itself. It only allows to create virtual DVB
-adapters and to relay DVB API ioctls to userspace in a
-transport-agnostic way. Networking already takes place in a separate
-userspace process.
 
->> Can you show me, how then can be reused most important part
->> of dvb-core subsystem like tuning and demuxing? Or do you want me
->> to invent wheels and to recode everything in the library? Of course
-> 
-> You could certainly build a library from the same code. That might well
-> be a good thing for all kinds of 'soft' DV applications. At that point
-> the discussion to have is the best way to make that code sharable between
-> a userspace library and the kernel and buildable for both.
-
-You could certainly build a library to reach a different goal. The goal
-of vtuner is to access remote tuners with any existing program
-implementing the DVB API.
-
-One of my primary use cases is to develop DVB API software on my
-notebook, while receiving the data from an embedded device, so I don't
-need an antenna cable connected to my notebook (or don't need to have an
-antenna at my location at all, if an internet connection is available).
-
-Another use case is to receive data streams over the internet from
-satellite, cable and terrestrial networks that are impossible to receive
-in my area to verify that my DVB API software works with those streams.
-
-Furthermore, I'd like to use standard tools implementing theDid you even
-unders DVB API, e.g. to scan for channels, to measure signal quality or
-to decode streams on remote locations.
-
-With vtuner, and an accompanying open source networking daemon, all of
-the above works out of the box. If I'd like to change the way data gets
-relayed between hosts (e.g. add IPv6 or SSL), I'd just need to update
-the userspace client and server.
-
-With a library, I'd need to implement networking in every little DVB API
-tool I want to use, multiplying the code size of every tool, restricting
-each tool to some arbitrarily chosen network protocol. If I'd like to
-change the way data gets relayed between hosts, I'd need to update every
-application using it.
-
->> I can be wrong, I'm no big kernel hacker. So please show me the
->> way for it. BTW, even if you can find the way, then data copying
->> from userspace to the kernel and back is also necessery. I really
->> don't see any advantage of you solution.
-> 
-> In a properly built media subsystem you shouldn't need any copies beyond
-> those that naturally occur as part of a processing pass and are therefore
-> free.
-
-The original version of the vtuner interface makes use of demux hardware
-and also feeds the relevant streams to a/v decoders, in which case you
-cannot avoid copying the MPEG data to kernel space.
-
-That's also the way to playback local DVB recordings works today without
-vtuners.
-
-I'm fine with not merging this code, if there are technical arguments
-against it. And personally I don't need it to be merged to be able to
-use it.
-
-However, Mauro invents half-baked arguments against it, because he fears
-that the code may be "abused" by closed-source userspace drivers (he
-already declared the latter publicly on the linux-media list).
-
-Unfortunately, I must assume that your own arguments are based on
-Mauro's emails instead of on the source code, because you clearly didn't
-understand the architecture of vtuner, regarding what's supposed to
-happen in kernel space and what not.
+Thanks a lot for testing Miles!
 
 Regards,
-Andreas
+Srivatsa S. Bhat
+
+> 
+> On Sat, Dec 3, 2011 at 1:55 AM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> On 12/03/2011 09:22 AM, Miles Lane wrote:
+>>
+>>> While reading a file in sysfs, I suspended tried to suspend the machine and got:
+>>>
+>>> [ 1058.644957] PM: Syncing filesystems ... done.
+>>> [ 1059.670167] Freezing user space processes ...
+>>> [ 1079.681175] Freezing of tasks failed after 20.01 seconds (1 tasks
+>>> refusing to freeze, wq_busy=0):
+>>> [ 1079.682077] head            D ffff88013a753680  5328  9761   9402 0x00800004
+>>> [ 1079.682086]  ffff88011b15fd28 0000000000000046 0000000000000006
+>>> ffffffff8160d020
+>>> [ 1079.682095]  ffff880100000000 ffff88013a7532d0 ffff88011b15ffd8
+>>> ffff88011b15ffd8
+>>> [ 1079.682102]  0000000000010bc0 ffff88013a7532d0 ffffffff81372d96
+>>> 000000013a7532d0
+>>> [ 1079.682110] Call Trace:
+>>> [ 1079.682120]  [<ffffffff81372d96>] ? __mutex_lock_common+0x26e/0x41e
+>>> [ 1079.682126]  [<ffffffff8137241a>] schedule+0x55/0x57
+>>> [ 1079.682131]  [<ffffffff81372dbf>] __mutex_lock_common+0x297/0x41e
+>>> [ 1079.682137]  [<ffffffff810c675d>] ? lock_memory_hotplug+0x20/0x22
+>>> [ 1079.682142]  [<ffffffff810c675d>] ? lock_memory_hotplug+0x20/0x22
+>>> [ 1079.682149]  [<ffffffff8137302d>] mutex_lock_nested+0x36/0x3b
+>>> [ 1079.682153]  [<ffffffff810c675d>] lock_memory_hotplug+0x20/0x22
+>>
+>>
+>>                                        ^^^^^^^^^^^^^^^^^^
+>> Wow! There, Tejun, did you see that? That is just what we fixed in
+>> https://lkml.org/lkml/2011/11/21/334 !! :-)
+>>
+>> But since Rafael kept it for the next merge window, we hit this failure
+>> in 3.2-rc4.
+>>
+>> Well, atleast for once I am feeling extremely happy that we *actually*
+>> fixed a problem _before_ hitting it! :-)
+>>
+>> Miles, thanks for the report. Can you please try the patch given in the
+>> above link?
+>>
+>>> [ 1079.682160]  [<ffffffff810c53e7>] show_slab_objects+0xfc/0x1e5
+>>> [ 1079.682166]  [<ffffffff810c550e>] partial_show+0xe/0x10
+>>> [ 1079.682171]  [<ffffffff810c23b7>] slab_attr_show+0x1d/0x21
+>>> [ 1079.682177]  [<ffffffff811235c9>] sysfs_read_file+0xb7/0x13c
+>>> [ 1079.682183]  [<ffffffff810ccdd3>] vfs_read+0xa0/0xc7
+>>> [ 1079.682188]  [<ffffffff810ce0d3>] ? fget_light+0x35/0x97
+>>> [ 1079.682194]  [<ffffffff810cce3f>] sys_read+0x45/0x69
+>>> [ 1079.682199]  [<ffffffff81378d3b>] system_call_fastpath+0x16/0x1b
+>>>
+>>
+>>
+
+
