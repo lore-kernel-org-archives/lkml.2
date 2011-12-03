@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab1LCACh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 19:02:37 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:48607 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752459Ab1LCACf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 19:02:35 -0500
-Message-ID: <1322870543.21423.186.camel@work-vm>
-Subject: Re: [stable] 2.6.32.21 - uptime related crashes?
-From: john stultz <johnstul@us.ibm.com>
-To: Greg KH <greg@kroah.com>
-Cc: Willy Tarreau <w@1wt.eu>, Ruben Kerkhof <ruben@rubenkerkhof.com>,
-        linux-kernel@vger.kernel.org, seto.hidetoshi@jp.fujitsu.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        MINOURA Makoto <minoura@valinux.co.jp>, Ingo Molnar <mingo@elte.hu>,
-        stable@kernel.org,
-        =?ISO-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
-        Rand@jasper.es, Andrew Morton <akpm@linux-foundation.org>,
-        Faidon Liambotis <paravoid@debian.org>
-Date: Fri, 02 Dec 2011 16:02:23 -0800
-In-Reply-To: <20111202234537.GB3818@kroah.com>
-References: <1311251098.29152.130.camel@twins>
-	 <20110721125008.GF11246@pcnci.linuxbox.cz>
-	 <1311252799.29152.147.camel@twins> <20110721184524.GB381@elte.hu>
-	 <20110825185616.GA17078@faidon.noc.grnet.gr>
-	 <20110830223829.GB17450@kroah.com> <20110904232657.GC6749@tty.gr>
-	 <CAPed3OHzO5usHfyeD_rK8dDhcGakZF+ByzEyZZb_Tdh3U00vOg@mail.gmail.com>
-	 <1319582670.17505.31.camel@work-vm> <20111025232545.GB14714@1wt.eu>
-	 <20111202234537.GB3818@kroah.com>
+	id S1753488Ab1LCAdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 19:33:37 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:18059
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752416Ab1LCAde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 2 Dec 2011 19:33:34 -0500
+X-SpamScore: -20
+X-BigFish: VPS-20(zzbb2dK936eK1432N1418M98dKzz1202hzzz2fh668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4ED96CEA.7060404@am.sony.com>
+Date: Fri, 2 Dec 2011 16:27:22 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "Rowand, Frank" <Frank_Rowand@sonyusa.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
+Subject: Re: [RT] sysrq Z: sleeping function called from invalid context
+References: <4ED95A5F.7030309@am.sony.com> <1322869775.30977.61.camel@frodo>
+In-Reply-To: <1322869775.30977.61.camel@frodo>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11120300-8974-0000-0000-000003DF241C
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-02 at 15:45 -0800, Greg KH wrote:
-> On Wed, Oct 26, 2011 at 01:25:45AM +0200, Willy Tarreau wrote:
-> > Hi John,
-> > 
-> > On Tue, Oct 25, 2011 at 03:44:30PM -0700, john stultz wrote:
-> > > The softlockup false positive issue should have been fixed by Peter's
-> > > "x86, intel: Don't mark sched_clock() as stable" below. But I'm not
-> > > seeing it upstream.  Peter, is this still the right fix?
-> > 
-> > I've not seen any other one proposed, and both you and Peter appeared
-> > to like it. I understood that Ingo was waiting for the merge window to
-> > submit it and I think that it simply got lost.
-> > 
-> > Ingo, can you confirm ?
+On 12/02/11 15:49, Steven Rostedt wrote:
+> On Fri, 2011-12-02 at 15:08 -0800, Frank Rowand wrote:
+>> Hi Steve,
+>>
+>> I get a "sleeping function called from invalid context" when I invoke sysrq Z.
+>>
+>> I get this both with CONFIG_MAGIC_SYSRQ_FORCE_PRINTK enabled and disabled.
 > 
-> I'm totally confused here, what's the status of this, and what exactly
-> is the patch?
+> Patient:  Hey doctor, it hurts when I do this
+> 
+> Doctor:  Don't do that.
 
-Ingo has the fix from Salman queued in -tip, but I'm not sure why its
-not been pushed to Linus yet.
+I had similar thoughts as I was writing my email.
 
-http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commit;h=4cecf6d401a01d054afc1e5f605bcbfe553cb9b9
+< snip >
 
-thanks
--john
+> 
+> Oh! looking into the ring_buffer code, could you add this:
+> (totally untested)
+> 
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index 2467714..2ffbb9d 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -1045,7 +1045,7 @@ static inline int ok_to_lock(void)
+>  	if (in_nmi())
+>  		return 0;
+>  #ifdef CONFIG_PREEMPT_RT_FULL
+> -	if (in_atomic())
+> +	if (in_atomic() || irqs_disabled())
+>  		return 0;
+>  #endif
+>  	return 1;
+
+I would say the result is good with the patch applied.
+
+If CONFIG_MAGIC_SYSRQ_FORCE_PRINTK is disabled then the splat does not occur
+and the ftrace buffer is printed on the console.
+
+If CONFIG_MAGIC_SYSRQ_FORCE_PRINTK is enabled, then the splat does not occur
+and the ftrace buffer sometimes is printed on the console.  I think that
+this is good enough, given that sysrq when CONFIG_PREEMPT_RT_FULL is enabled
+is somewhat dicey to begin with.
+
+-Frank
 
