@@ -1,104 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab1LCXIV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 18:08:21 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48979 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab1LCXIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 18:08:20 -0500
+	id S1752607Ab1LCXOk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 18:14:40 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:35826 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751650Ab1LCXOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Dec 2011 18:14:38 -0500
+Date: Sat, 3 Dec 2011 15:14:29 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 6/7] driver-core/cpu: Add
+ cpu_is_hotpluggable() for rcutorture error analysis
+Message-ID: <20111203231429.GB18961@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111203183417.GA18914@linux.vnet.ibm.com>
+ <1322937282-19846-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20111203210650.GA17377@leaf>
 MIME-Version: 1.0
-In-Reply-To: <4EDA89F2.9070107@lwfinger.net>
-References: <4ED5B70F.606@lwfinger.net> <4ED5C640.8030102@linux.vnet.ibm.com>
- <4ED5D6C5.5050704@lwfinger.net> <4EDA89F2.9070107@lwfinger.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 3 Dec 2011 15:07:56 -0800
-X-Google-Sender-Auth: mOOXGiTzO8OLbFAl742PgdluqU8
-Message-ID: <CA+55aFwWVeAGT2p3tohRLh7VL8f4ztGwAHZxBmosEAGKJfL+Qg@mail.gmail.com>
-Subject: Re: 3.2-rc2 freezes on boot for AMD K6 - bisected to commit bcb80e53877c2045d9e52f4a71372c3fe6501f6f
-To: Larry Finger <Larry.Finger@lwfinger.net>, Ingo Molnar <mingo@elte.hu>
-Cc: Borislav Petkov <borislav.petkov@amd.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0016e6d7e82a2fc4a804b33829de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111203210650.GA17377@leaf>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11120323-5930-0000-0000-000002DBDD1B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6d7e82a2fc4a804b33829de
-Content-Type: text/plain; charset=ISO-8859-1
+On Sat, Dec 03, 2011 at 01:06:50PM -0800, Josh Triplett wrote:
+> On Sat, Dec 03, 2011 at 10:34:41AM -0800, Paul E. McKenney wrote:
+> > The rcutorture test now can automatically exercise CPU hotplug and
+> > collect success statistics, which can be correlated with other rcutorture
+> > activity.  This permits rcutorture to completely exercise RCU regardless
+> > of what sort of userspace and filesystem layout is in use.  Unfortunately,
+> > rcutorture is happy to attempt to offline CPUs that cannot be offlined,
+> > for example, CPU 0 in both the x86 and ARM architectures.  Although this
+> > allows rcutorture testing to proceed normally, it confounds attempts at
+> > error analysis due to the resulting flood of spurious CPU-hotplug errors.
+> > 
+> > Therefore, this commit creates a cpu_is_hotpluggable() function that
+> > allows rcutorture to avoid attempting to offline CPUs that are not
+> > hotpluggable, which in turn allows rcutorture to avoid reporting spurious
+> > CPU-hotplug errors.  Note that this function is EXPORT_SYMBOL_GPL()
+> > to allow rcutorture to use it when compiled as a kernel module.
+> > This commit also includes modifications to rcutorture to use this
+> > new function.
+> 
+> I'd suggest writing this as a two-patch series: add the API, then use
+> it.
+> 
+> I'd also suggest making the more general case for this API, beyond just
+> rcutorture.
+> 
+> > --- a/drivers/base/cpu.c
+> > +++ b/drivers/base/cpu.c
+> > @@ -23,6 +23,7 @@ struct sysdev_class cpu_sysdev_class = {
+> >  EXPORT_SYMBOL(cpu_sysdev_class);
+> >  
+> >  static DEFINE_PER_CPU(struct sys_device *, cpu_sys_devices);
+> > +static DEFINE_PER_CPU(bool, is_hotpluggable);
+> [...]
+> > @@ -224,8 +226,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+> >  
+> >  	error = sysdev_register(&cpu->sysdev);
+> >  
+> > -	if (!error && cpu->hotpluggable)
+> > +	if (!error && cpu->hotpluggable) {
+> >  		register_cpu_control(cpu);
+> > +		per_cpu(is_hotpluggable, num) = 1;
+> > +	}
+> 
+> This information already exists in the ->hotpluggable field of "struct
+> cpu".  I'd suggest an alternate approach (included as a patch below),
+> which avoids the need to add a new per_cpu property redundant with
+> ->hotpluggable.
 
-On Sat, Dec 3, 2011 at 12:43 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> On 11/30/2011 01:09 AM, Larry Finger wrote:
->> On 11/29/2011 11:59 PM, Srivatsa S. Bhat wrote:
->>>
->>> Can you please try out the patch posted in
->>> https://lkml.org/lkml/2011/11/28/178 ?
+I do like your patch better, as it is smaller, less intrusive, and
+makes better use of existing facilities.  I have therefore replaced
+mine with it.  I also created a separate patch containing the rcutorture
+modifications from my original.
 
-Ugh. I hate that patch.
+> Note that you can get to the patch below via "git am --scissors", or
+> just by copy/pasting it.
 
-It's completely stupid. If "rdmsr_safe()" doesn't work at that point
-in the boot, then it's pointless to call it.
+Very cool -- wasn't aware of --scissors before.  ;-)
 
-So this change is pure and utter crap:
+							Thanx, Paul
 
-  -	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
-  +	if (c->x86 >= 0xf)
-  +		rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
+> ---8<---
+> From: Josh Triplett <josh@joshtriplett.org>
+> Subject: [PATCH] driver-core/cpu: Expose hotpluggability to the rest of the kernel
+> 
+> When architectures register CPUs, they indicate whether the CPU allows
+> hotplugging; notably, x86 and ARM don't allow hotplugging CPU 0.
+> Userspace can easily query the hotpluggability of a CPU via sysfs;
+> however, the kernel has no convenient way of accessing that property in
+> an architecture-independent way.  While the kernel can simply try it and
+> see, some code needs to distinguish between "hotplug failed" and
+> "hotplug has no hope of working on this CPU"; for example, rcutorture's
+> CPU hotplug tests want to avoid drowning out real hotplug failures with
+> expected failures.
+> 
+> Expose this property via a new cpu_is_hotpluggable function, so that the
+> rest of the kernel can access it in an architecture-independent way.
+> 
+> Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+> ---
+>  drivers/base/cpu.c  |    7 +++++++
+>  include/linux/cpu.h |    1 +
+>  2 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+> index 251acea..3991502 100644
+> --- a/drivers/base/cpu.c
+> +++ b/drivers/base/cpu.c
+> @@ -247,6 +247,13 @@ struct sys_device *get_cpu_sysdev(unsigned cpu)
+>  }
+>  EXPORT_SYMBOL_GPL(get_cpu_sysdev);
+> 
+> +bool cpu_is_hotpluggable(unsigned cpu)
+> +{
+> +	struct sys_device *dev = get_cpu_sysdev(cpu);
+> +	return dev && container_of(dev, struct cpu, sysdev)->hotpluggable;
+> +}
+> +EXPORT_SYMBOL_GPL(cpu_is_hotpluggable);
+> +
+>  int __init cpu_dev_init(void)
+>  {
+>  	int err;
+> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+> index 6cb60fd..305c263 100644
+> --- a/include/linux/cpu.h
+> +++ b/include/linux/cpu.h
+> @@ -27,6 +27,7 @@ struct cpu {
+> 
+>  extern int register_cpu(struct cpu *cpu, int num);
+>  extern struct sys_device *get_cpu_sysdev(unsigned cpu);
+> +extern bool cpu_is_hotpluggable(unsigned cpu);
+> 
+>  extern int cpu_add_sysdev_attr(struct sysdev_attribute *attr);
+>  extern void cpu_remove_sysdev_attr(struct sysdev_attribute *attr);
+> -- 
+> 1.7.7.3
+> 
 
-because it is misleading as hell: that rdmsr isn't *safe* at all, so
-why are we calling "rdmsr_safe()"?
-
-It's wrong.
-
-The right patch would either just remove the "safe" part (and just say
-that the register has to be supported if c->x86 >= 0xf), but quite
-honestly, I don't see why we do that thing in early_init_amd() AT ALL.
-Afaik, the microcode version field isn't really *needed* by the
-kernelin the first place, much less is it needed by the *early* boot,
-so why isn't this in 'init_amd()' a bit later when the "safe" version
-actually *works*?
-
-IOW, I think the patch should be something like the attached (TOTALLY
-UNTESTED) patch. Larry, does this work for you? It just moves the
-rdmsr_safe() to the later function.
-
-Borislav?
-
-> I just updated mainline to 3.2-rc4, and that patch is not included. Please
-> check with Ingo to see why it was not available. It is a real show stopper
-> for old AMD CPUs.
-
-Ingo seems to have fallen off the earth for the last two weeks.
-There's *one* email form him about 12 hours ago, before that the last
-one I see is from early November.
-
-Ingo, everything ok?
-
-                   Linus
-
---0016e6d7e82a2fc4a804b33829de
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gvr8d4630
-
-IGFyY2gveDg2L2tlcm5lbC9jcHUvYW1kLmMgfCAgICA4ICsrKystLS0tCiAxIGZpbGVzIGNoYW5n
-ZWQsIDQgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4
-Ni9rZXJuZWwvY3B1L2FtZC5jIGIvYXJjaC94ODYva2VybmVsL2NwdS9hbWQuYwppbmRleCBjN2U0
-NmNiMzUzMjcuLjBiYWIyYjE4YmIyMCAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2VybmVsL2NwdS9h
-bWQuYworKysgYi9hcmNoL3g4Ni9rZXJuZWwvY3B1L2FtZC5jCkBAIC00NDIsOCArNDQyLDYgQEAg
-c3RhdGljIHZvaWQgX19jcHVpbml0IGJzcF9pbml0X2FtZChzdHJ1Y3QgY3B1aW5mb194ODYgKmMp
-CiAKIHN0YXRpYyB2b2lkIF9fY3B1aW5pdCBlYXJseV9pbml0X2FtZChzdHJ1Y3QgY3B1aW5mb194
-ODYgKmMpCiB7Ci0JdTMyIGR1bW15OwotCiAJZWFybHlfaW5pdF9hbWRfbWMoYyk7CiAKIAkvKgpA
-QCAtNDczLDEyICs0NzEsMTIgQEAgc3RhdGljIHZvaWQgX19jcHVpbml0IGVhcmx5X2luaXRfYW1k
-KHN0cnVjdCBjcHVpbmZvX3g4NiAqYykKIAkJCXNldF9jcHVfY2FwKGMsIFg4Nl9GRUFUVVJFX0VY
-VERfQVBJQ0lEKTsKIAl9CiAjZW5kaWYKLQotCXJkbXNyX3NhZmUoTVNSX0FNRDY0X1BBVENIX0xF
-VkVMLCAmYy0+bWljcm9jb2RlLCAmZHVtbXkpOwogfQogCiBzdGF0aWMgdm9pZCBfX2NwdWluaXQg
-aW5pdF9hbWQoc3RydWN0IGNwdWluZm9feDg2ICpjKQogeworCXUzMiBkdW1teTsKKwogI2lmZGVm
-IENPTkZJR19TTVAKIAl1bnNpZ25lZCBsb25nIGxvbmcgdmFsdWU7CiAKQEAgLTY1Nyw2ICs2NTUs
-OCBAQCBzdGF0aWMgdm9pZCBfX2NwdWluaXQgaW5pdF9hbWQoc3RydWN0IGNwdWluZm9feDg2ICpj
-KQogCQkJY2hlY2tpbmdfd3Jtc3JsKE1TUl9BTUQ2NF9NQ3hfTUFTSyg0KSwgbWFzayk7CiAJCX0K
-IAl9CisKKwlyZG1zcl9zYWZlKE1TUl9BTUQ2NF9QQVRDSF9MRVZFTCwgJmMtPm1pY3JvY29kZSwg
-JmR1bW15KTsKIH0KIAogI2lmZGVmIENPTkZJR19YODZfMzIK
---0016e6d7e82a2fc4a804b33829de--
