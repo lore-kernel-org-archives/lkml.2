@@ -1,139 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab1LCXBy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 18:01:54 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:49051 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650Ab1LCXBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 18:01:53 -0500
-Message-ID: <4EDAAA4F.7060206@free.fr>
-Date: Sun, 04 Dec 2011 00:01:35 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S1752390Ab1LCXIV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 18:08:21 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48979 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab1LCXIU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Dec 2011 18:08:20 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: akpm@linux-foundation.org, serge.hallyn@canonical.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add reboot_pid_ns to handle the reboot syscall
-References: <1322905364-29538-1-git-send-email-daniel.lezcano@free.fr> <20111203164950.GA32004@redhat.com>
-In-Reply-To: <20111203164950.GA32004@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4EDA89F2.9070107@lwfinger.net>
+References: <4ED5B70F.606@lwfinger.net> <4ED5C640.8030102@linux.vnet.ibm.com>
+ <4ED5D6C5.5050704@lwfinger.net> <4EDA89F2.9070107@lwfinger.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 3 Dec 2011 15:07:56 -0800
+X-Google-Sender-Auth: mOOXGiTzO8OLbFAl742PgdluqU8
+Message-ID: <CA+55aFwWVeAGT2p3tohRLh7VL8f4ztGwAHZxBmosEAGKJfL+Qg@mail.gmail.com>
+Subject: Re: 3.2-rc2 freezes on boot for AMD K6 - bisected to commit bcb80e53877c2045d9e52f4a71372c3fe6501f6f
+To: Larry Finger <Larry.Finger@lwfinger.net>, Ingo Molnar <mingo@elte.hu>
+Cc: Borislav Petkov <borislav.petkov@amd.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=0016e6d7e82a2fc4a804b33829de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2011 05:49 PM, Oleg Nesterov wrote:
-> On 12/03, Daniel Lezcano wrote:
->> This patch propose to store the reboot value in the 16 upper bits of the
->> exit code from the processes belonging to a pid namespace which has
->> rebooted. When the reboot syscall is called and we are not in the initial
->> pid namespace, we kill the pid namespace.
-> OK, this is close to what we discussed before.
->
-> But why does this patch uglify wait_task_zombie() ?
+--0016e6d7e82a2fc4a804b33829de
+Content-Type: text/plain; charset=ISO-8859-1
 
-Right, see below :)
+On Sat, Dec 3, 2011 at 12:43 PM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
+> On 11/30/2011 01:09 AM, Larry Finger wrote:
+>> On 11/29/2011 11:59 PM, Srivatsa S. Bhat wrote:
+>>>
+>>> Can you please try out the patch posted in
+>>> https://lkml.org/lkml/2011/11/28/178 ?
 
->> @@ -1192,6 +1192,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
->>  	pid_t pid = task_pid_vnr(p);
->>  	uid_t uid = __task_cred(p)->uid;
->>  	struct siginfo __user *infop;
->> +	struct pid_namespace *pid_ns = task_active_pid_ns(p);
->>
->>  	if (!likely(wo->wo_flags & WEXITED))
->>  		return 0;
->> @@ -1291,8 +1292,10 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
->>  		? getrusage(p, RUSAGE_BOTH, wo->wo_rusage) : 0;
->>  	status = (p->signal->flags & SIGNAL_GROUP_EXIT)
->>  		? p->signal->group_exit_code : p->exit_code;
->> -	if (!retval && wo->wo_stat)
->> +	if (!retval && wo->wo_stat) {
->> +		status |= (pid_ns->reboot & ~0xffff);
->>  		retval = put_user(status, wo->wo_stat);
->> +	}
-> This doesn't cover WNOWAIT.
->
-> But I think this change is not needed at all.
-> Instead, can't you
-> add something like
->
-> 	if (pid_ns->reboot)
-> 		current->signal->group_exit_code = pid_ns->reboot;
->
-> into zap_pid_ns_processes() ? IIRC this was discussed too, I do
-> not understand why do you think we should hack do_wait()...
+Ugh. I hate that patch.
 
-Gah ! Right ! I puzzled myself, I will change that.
+It's completely stupid. If "rdmsr_safe()" doesn't work at that point
+in the boot, then it's pointless to call it.
 
->> +int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
->> +{
->> +	switch(cmd) {
->> +	case LINUX_REBOOT_CMD_RESTART2:
->> +	case LINUX_REBOOT_CMD_RESTART:
->> +		pid_ns->reboot = SYSTEM_RESTART << 16;
->> +		break;
->> +
->> +	case LINUX_REBOOT_CMD_HALT:
->> +		pid_ns->reboot = SYSTEM_HALT << 16;
->> +		break;
->> +
->> +	case LINUX_REBOOT_CMD_POWER_OFF:
->> +		pid_ns->reboot = SYSTEM_POWER_OFF << 16;
->> +		break;
->> +	default:
->> +		return -EINVAL;
->> +	}
->> +
->> +	force_sig(SIGKILL, pid_ns->child_reaper);
-> In theory this is racy. Nothing protects ->child_reaper if it is
-> multi-threaded. read_lock(tasklist) should help.
+So this change is pure and utter crap:
 
-Ok.
+  -	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
+  +	if (c->x86 >= 0xf)
+  +		rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
 
->> +
->> +	return 0;
->> +}
-> I am not sure "return 0" is really correct. Perhaps HALT/POWER_OFF
-> should do do_exit() like the the "normal" sys_reboot() does ?
+because it is misleading as hell: that rdmsr isn't *safe* at all, so
+why are we calling "rdmsr_safe()"?
 
-Yes.
+It's wrong.
 
->>  static __init int pid_namespaces_init(void)
->>  {
->>  	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
->> diff --git a/kernel/sys.c b/kernel/sys.c
->> index ddf8155..02d9645 100644
->> --- a/kernel/sys.c
->> +++ b/kernel/sys.c
->> @@ -429,6 +429,7 @@ static DEFINE_MUTEX(reboot_mutex);
->>  SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->>  		void __user *, arg)
->>  {
->> +	struct pid_namespace *pid_ns = current->nsproxy->pid_ns;
->>  	char buffer[256];
->>  	int ret = 0;
->>
->> @@ -450,6 +451,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->>  	if ((cmd == LINUX_REBOOT_CMD_POWER_OFF) && !pm_power_off)
->>  		cmd = LINUX_REBOOT_CMD_HALT;
->>
->> +	if (pid_ns != &init_pid_ns)
->> +		return reboot_pid_ns(pid_ns, cmd);
-> Cosmetic nit,
->
-> 	if (task_active_pid_ns(current) != &init_pid_ns)
-> 		return reboot_pid_ns(cmd);
->
-> this way we do not need the new variable.
->
-> Also. I do not know if this is important, but perhaps it makes
-> sense to move this code up, before the !pm_power_off check which
-> can transform POWER_OFF into HALT?
+The right patch would either just remove the "safe" part (and just say
+that the register has to be supported if c->x86 >= 0xf), but quite
+honestly, I don't see why we do that thing in early_init_amd() AT ALL.
+Afaik, the microcode version field isn't really *needed* by the
+kernelin the first place, much less is it needed by the *early* boot,
+so why isn't this in 'init_amd()' a bit later when the "safe" version
+actually *works*?
 
-Yes.
+IOW, I think the patch should be something like the attached (TOTALLY
+UNTESTED) patch. Larry, does this work for you? It just moves the
+rdmsr_safe() to the later function.
 
-Thanks Oleg for your comments and your help. I will send a new patch.
+Borislav?
 
-  -- Daniel
+> I just updated mainline to 3.2-rc4, and that patch is not included. Please
+> check with Ingo to see why it was not available. It is a real show stopper
+> for old AMD CPUs.
+
+Ingo seems to have fallen off the earth for the last two weeks.
+There's *one* email form him about 12 hours ago, before that the last
+one I see is from early November.
+
+Ingo, everything ok?
+
+                   Linus
+
+--0016e6d7e82a2fc4a804b33829de
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gvr8d4630
+
+IGFyY2gveDg2L2tlcm5lbC9jcHUvYW1kLmMgfCAgICA4ICsrKystLS0tCiAxIGZpbGVzIGNoYW5n
+ZWQsIDQgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9hcmNoL3g4
+Ni9rZXJuZWwvY3B1L2FtZC5jIGIvYXJjaC94ODYva2VybmVsL2NwdS9hbWQuYwppbmRleCBjN2U0
+NmNiMzUzMjcuLjBiYWIyYjE4YmIyMCAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2VybmVsL2NwdS9h
+bWQuYworKysgYi9hcmNoL3g4Ni9rZXJuZWwvY3B1L2FtZC5jCkBAIC00NDIsOCArNDQyLDYgQEAg
+c3RhdGljIHZvaWQgX19jcHVpbml0IGJzcF9pbml0X2FtZChzdHJ1Y3QgY3B1aW5mb194ODYgKmMp
+CiAKIHN0YXRpYyB2b2lkIF9fY3B1aW5pdCBlYXJseV9pbml0X2FtZChzdHJ1Y3QgY3B1aW5mb194
+ODYgKmMpCiB7Ci0JdTMyIGR1bW15OwotCiAJZWFybHlfaW5pdF9hbWRfbWMoYyk7CiAKIAkvKgpA
+QCAtNDczLDEyICs0NzEsMTIgQEAgc3RhdGljIHZvaWQgX19jcHVpbml0IGVhcmx5X2luaXRfYW1k
+KHN0cnVjdCBjcHVpbmZvX3g4NiAqYykKIAkJCXNldF9jcHVfY2FwKGMsIFg4Nl9GRUFUVVJFX0VY
+VERfQVBJQ0lEKTsKIAl9CiAjZW5kaWYKLQotCXJkbXNyX3NhZmUoTVNSX0FNRDY0X1BBVENIX0xF
+VkVMLCAmYy0+bWljcm9jb2RlLCAmZHVtbXkpOwogfQogCiBzdGF0aWMgdm9pZCBfX2NwdWluaXQg
+aW5pdF9hbWQoc3RydWN0IGNwdWluZm9feDg2ICpjKQogeworCXUzMiBkdW1teTsKKwogI2lmZGVm
+IENPTkZJR19TTVAKIAl1bnNpZ25lZCBsb25nIGxvbmcgdmFsdWU7CiAKQEAgLTY1Nyw2ICs2NTUs
+OCBAQCBzdGF0aWMgdm9pZCBfX2NwdWluaXQgaW5pdF9hbWQoc3RydWN0IGNwdWluZm9feDg2ICpj
+KQogCQkJY2hlY2tpbmdfd3Jtc3JsKE1TUl9BTUQ2NF9NQ3hfTUFTSyg0KSwgbWFzayk7CiAJCX0K
+IAl9CisKKwlyZG1zcl9zYWZlKE1TUl9BTUQ2NF9QQVRDSF9MRVZFTCwgJmMtPm1pY3JvY29kZSwg
+JmR1bW15KTsKIH0KIAogI2lmZGVmIENPTkZJR19YODZfMzIK
+--0016e6d7e82a2fc4a804b33829de--
