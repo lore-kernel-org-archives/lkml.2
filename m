@@ -1,54 +1,856 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab1LCUXt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 15:23:49 -0500
-Received: from ellpspace.math.ualberta.ca ([129.128.207.67]:52674 "EHLO
-	ellpspace.math.ualberta.ca" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753321Ab1LCUXs (ORCPT
+	id S1754352Ab1LCUg4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 15:36:56 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34735 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab1LCUgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 15:23:48 -0500
-Date: Sat, 3 Dec 2011 13:23:30 -0700
-From: Michal Jaegermann <michal@ellpspace.math.ualberta.ca>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: Suspend and resume on ASUS Laptops
-Message-ID: <20111203202330.GA21011@ellpspace.math.ualberta.ca>
-References: <20111203024317.GA5370@ellpspace.math.ualberta.ca>
- <Pine.LNX.4.44L0.1112031018530.16284-100000@netrider.rowland.org>
+	Sat, 3 Dec 2011 15:36:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1112031018530.16284-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1E8B869C0C6913418421A406C094DF7C0205358F@sshaexmb1.amd.com>
+References: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com>
+	<20111130154445.GA27198@gere.osrc.amd.com>
+	<1E8B869C0C6913418421A406C094DF7C0205358F@sshaexmb1.amd.com>
+Date: Sat, 3 Dec 2011 21:36:54 +0100
+Message-ID: <CAPRPZsAL=xUCjTKaSgq117zppvZS0S7fHB0Ebk-JqXvV1vTPCQ@mail.gmail.com>
+Subject: Re: Unhandled IRQs on AMD E-450
+From: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+To: "Huang, Shane" <Shane.Huang@amd.com>
+Cc: Borislav Petkov <bp@amd64.org>, "Nguyen, Dong" <Dong.Nguyen@amd.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 03, 2011 at 10:19:27AM -0500, Alan Stern wrote:
-> On Fri, 2 Dec 2011, Michal Jaegermann wrote:
-> > 
-> > On my ASUS K52Jc these controllers are also reported "disabled".  This
-> 
-> What exactly do you mean by that?
+I have tried the following kernel options:
 
-I mean that you asked Steven about a content of
-/sys/bus/pci/devices/0000\:00\:1[ad].0/power/wakeup
-On my ASUS K52Jc these ids also happen to belong to ehci_hcd devices
-(both "Intel Corporation 5 Series/3400 Series Chipset USB2 Enhanced Host
-Controller") and both 'wakeup' files show "disabled" too.
+- acpi=noirq acpi_irq_nobalance
+- acpi=noirq
+- acpi=irq_nobalance
+- irqfixup
+- pci=nomsi
 
-With that above I have to do all these manipulations with unbinding
-and binding drivers and removing inserting modules or a laptop will hang
-after a suspend.  Now with a recent kernel I need additionally put
-wireless driver modules on a "special handling" list or I will loose
-such connection (no hang here, just a dead driver).
+all on the 3.2.0-rc2 kernel. I also threw out sound modules (based on
+snd_hda_intel both on Realtek and the built-in HDMI interfaces. Both
+sound interfaces shared the same driver and interrupts (IRQ16 and
+IRQ19)).
 
-All of this looks like pretty consistent, from what one can find on the
-net, across various models of ASUS laptops.
+But to no avail. Both IRQ19 and IRQ16 keep becoming lost after a while.
 
-   Michal
+I suspect that the post to this list made by Alan Stern on 22-10
+concerning an Asus E35M1-M PRO refers to the same problem.
+
+I'm adding a full /proc/interrupts and lspci -vv output at the bottom,
+all from the 3.0.0 Ubuntu kernel. Feel free to mention any bad guys
+you recognize in this log. I could also add the dmesg log, but I fear
+it is too big to be appropriate in the list. If wanted, let me know.
+
+One point of interest, though: /proc/interrupts shows ERR: 1. Could
+this be related ?
+
+Is there any way of obtaining more output such as IO-APIC register
+states to verify that it is indeed a stuck IRQ input line and not an
+unsuccesful EOI ack ? I'm still a bit cautious about blaming a stuck
+device IRQ as there would have to be already two of them misbehaving.
+
+
+Rgds,
+
+J.
+
+
+$ cat /proc/interrupts (Note ERR:1)
+
+           CPU0       CPU1
+  0:         45          1   IO-APIC-edge      timer
+  1:          1          1   IO-APIC-edge      i8042
+  5:          0          0   IO-APIC-edge      parport0
+  7:          1          0   IO-APIC-edge
+  8:          1          0   IO-APIC-edge      rtc0
+  9:          0          0   IO-APIC-fasteoi   acpi
+ 12:          0          4   IO-APIC-edge      i8042
+ 16:          1        783   IO-APIC-fasteoi   firewire_ohci, hda_intel
+ 17:          3        112   IO-APIC-fasteoi   ehci_hcd:usb1,
+ehci_hcd:usb2, ehci_hcd:usb3
+ 18:          0          4   IO-APIC-fasteoi   ohci_hcd:usb4,
+ohci_hcd:usb5, ohci_hcd:usb6, ohci_hcd:usb7
+ 19:        700       7243   IO-APIC-fasteoi   ahci
+ 40:        269         54   PCI-MSI-edge      eth0
+ 41:          0          0   PCI-MSI-edge      xhci_hcd
+ 42:          0          0   PCI-MSI-edge      xhci_hcd
+ 43:          0          0   PCI-MSI-edge      xhci_hcd
+ 44:          1        400   PCI-MSI-edge      hda_intel
+ 45:          0          3   PCI-MSI-edge      fglrx[0]@PCI:0:1:0
+NMI:          0          0   Non-maskable interrupts
+LOC:       8508       9855   Local timer interrupts
+SPU:          0          0   Spurious interrupts
+PMI:          0          0   Performance monitoring interrupts
+IWI:          0          0   IRQ work interrupts
+RES:       4350       2704   Rescheduling interrupts
+CAL:        180        287   Function call interrupts
+TLB:        413        296   TLB shootdowns
+TRM:          0          0   Thermal event interrupts
+THR:          0          0   Threshold APIC interrupts
+MCE:          0          0   Machine check exceptions
+MCP:          1          1   Machine check polls
+ERR:          1
+MIS:          0
+
+
+# lspci -vv
+
+00:00.0 Host bridge: Advanced Micro Devices [AMD] Family 14h Processor
+Root Complex
+        Subsystem: ASUSTeK Computer Inc. Device 84e7
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32
+
+00:01.0 VGA compatible controller: ATI Technologies Inc Device 9806
+(prog-if 00 [VGA controller])
+        Subsystem: ASUSTeK Computer Inc. Device 84e7
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 45
+        Region 0: Memory at c0000000 (32-bit, prefetchable) [size=256M]
+        Region 1: I/O ports at f000 [size=256]
+        Region 2: Memory at feb00000 (32-bit, non-prefetchable) [size=256K]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [58] Express (v2) Root Complex Integrated Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+<4us, L1 unlimited
+                        ExtTag+ RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 128 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+                LnkCap: Port #0, Speed unknown, Width x0, ASPM
+unknown, Latency L0 <64ns, L1 <1us
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; Disabled- Retrain- CommClk-
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed unknown, Width x0, TrErr- Train-
+SlotClk- DLActive- BWMgmt- ABWMgmt-
+                DevCap2: Completion Timeout: Not Supported, TimeoutDis-
+                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -6dB
+                         Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -6dB
+        Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000fee0300c  Data: 4181
+        Capabilities: [100 v1] Vendor Specific Information: ID=0001
+Rev=1 Len=010 <?>
+        Kernel driver in use: fglrx_pci
+        Kernel modules: fglrx, radeon
+
+00:01.1 Audio device: ATI Technologies Inc Wrestler HDMI Audio [Radeon
+HD 6250/6310]
+        Subsystem: ASUSTeK Computer Inc. Device 84e7
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin B routed to IRQ 44
+        Region 0: Memory at feb44000 (32-bit, non-prefetchable) [size=16K]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [58] Express (v2) Root Complex Integrated Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+<4us, L1 unlimited
+                        ExtTag+ RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 128 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+                LnkCap: Port #0, Speed unknown, Width x0, ASPM
+unknown, Latency L0 <64ns, L1 <1us
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; Disabled- Retrain- CommClk-
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed unknown, Width x0, TrErr- Train-
+SlotClk- DLActive- BWMgmt- ABWMgmt-
+                DevCap2: Completion Timeout: Not Supported, TimeoutDis-
+                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -6dB
+                         Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -6dB
+        Capabilities: [a0] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000fee0100c  Data: 4179
+        Capabilities: [100 v1] Vendor Specific Information: ID=0001
+Rev=1 Len=010 <?>
+        Kernel driver in use: HDA Intel
+        Kernel modules: snd-hda-intel
+
+00:11.0 SATA controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 SATA
+Controller [AHCI mode] (rev 40) (prog-if 01 [AHCI 1.0])
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32
+        Interrupt: pin A routed to IRQ 19
+        Region 0: I/O ports at f140 [size=8]
+        Region 1: I/O ports at f130 [size=4]
+        Region 2: I/O ports at f120 [size=8]
+        Region 3: I/O ports at f110 [size=4]
+        Region 4: I/O ports at f100 [size=16]
+        Region 5: Memory at feb4f000 (32-bit, non-prefetchable) [size=1K]
+        Capabilities: [70] SATA HBA v1.0 InCfgSpace
+        Capabilities: [a4] PCI Advanced Features
+                AFCap: TP+ FLR+
+                AFCtrl: FLR-
+                AFStatus: TP-
+        Kernel driver in use: ahci
+        Kernel modules: ahci
+
+00:12.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB
+OHCI0 Controller (prog-if 10 [OHCI])
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 18
+        Region 0: Memory at feb4e000 (32-bit, non-prefetchable) [size=4K]
+        Kernel driver in use: ohci_hcd
+
+00:12.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB
+EHCI Controller (prog-if 20 [EHCI])
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32, Cache Line Size: 64 bytes
+        Interrupt: pin B routed to IRQ 17
+        Region 0: Memory at feb4d000 (32-bit, non-prefetchable) [size=256]
+        Capabilities: [c0] Power Management version 2
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0+,D1+,D2+,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+                Bridge: PM- B3+
+        Capabilities: [e4] Debug port: BAR=1 offset=00e0
+        Kernel driver in use: ehci_hcd
+
+00:13.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB
+OHCI0 Controller (prog-if 10 [OHCI])
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 18
+        Region 0: Memory at feb4c000 (32-bit, non-prefetchable) [size=4K]
+        Kernel driver in use: ohci_hcd
+
+00:13.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB
+EHCI Controller (prog-if 20 [EHCI])
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32, Cache Line Size: 64 bytes
+        Interrupt: pin B routed to IRQ 17
+        Region 0: Memory at feb4b000 (32-bit, non-prefetchable) [size=256]
+        Capabilities: [c0] Power Management version 2
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0+,D1+,D2+,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+                Bridge: PM- B3+
+        Capabilities: [e4] Debug port: BAR=1 offset=00e0
+        Kernel driver in use: ehci_hcd
+
+00:14.0 SMBus: ATI Technologies Inc SBx00 SMBus Controller (rev 42)
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap- 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Kernel driver in use: piix4_smbus
+        Kernel modules: sp5100_tco, i2c-piix4
+
+00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA) (rev 40)
+        Subsystem: ASUSTeK Computer Inc. Device 8445
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=slow >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 16
+        Region 0: Memory at feb40000 (64-bit, non-prefetchable) [size=16K]
+        Capabilities: [50] Power Management version 2
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=55mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Kernel driver in use: HDA Intel
+        Kernel modules: snd-hda-intel
+
+00:14.3 ISA bridge: ATI Technologies Inc SB7x0/SB8x0/SB9x0 LPC host
+controller (rev 40)
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle+ MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0
+
+00:14.4 PCI bridge: ATI Technologies Inc SBx00 PCI to PCI Bridge (rev
+40) (prog-if 01 [Subtractive decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop+
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 64
+        Bus: primary=00, secondary=01, subordinate=01, sec-latency=64
+        Secondary status: 66MHz- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort+ <SERR- <PERR-
+        BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+
+00:14.5 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB
+OHCI2 Controller (prog-if 10 [OHCI])
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32, Cache Line Size: 64 bytes
+        Interrupt: pin C routed to IRQ 18
+        Region 0: Memory at feb4a000 (32-bit, non-prefetchable) [size=4K]
+        Kernel driver in use: ohci_hcd
+
+00:15.0 PCI bridge: ATI Technologies Inc SB700/SB800/SB900 PCI to PCI
+bridge (PCIE port 0) (prog-if 00 [Normal decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Bus: primary=00, secondary=02, subordinate=02, sec-latency=0
+        Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+        BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [58] Express (v2) Root Port (Slot-), MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                        ExtTag+ RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 128 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+                LnkCap: Port #247, Speed 2.5GT/s, Width x1, ASPM L0s
+L1, Latency L0 <64ns, L1 <1us
+                        ClockPM- Surprise- LLActRep+ BwNot+
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed unknown, Width x16, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal-
+PMEIntEna- CRSVisible-
+                RootCap: CRSVisible-
+                RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+                DevCap2: Completion Timeout: Range ABCD, TimeoutDis+ ARIFwd-
+                DevCtl2: Completion Timeout: 65ms to 210ms, TimeoutDis- ARIFwd-
+                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -3.5dB
+                         Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -6dB
+        Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [b0] Subsystem: ATI Technologies Inc Device 0000
+        Capabilities: [b8] HyperTransport: MSI Mapping Enable+ Fixed+
+        Capabilities: [100 v1] Vendor Specific Information: ID=0001
+Rev=1 Len=010 <?>
+        Kernel driver in use: pcieport
+        Kernel modules: shpchp
+
+00:15.1 PCI bridge: ATI Technologies Inc SB700/SB800/SB900 PCI to PCI
+bridge (PCIE port 1) (prog-if 00 [Normal decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Bus: primary=00, secondary=03, subordinate=03, sec-latency=0
+        I/O behind bridge: 0000e000-0000efff
+        Prefetchable memory behind bridge: 00000000d0000000-00000000d00fffff
+        Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+        BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [58] Express (v2) Root Port (Slot-), MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                        ExtTag+ RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 128 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+                LnkCap: Port #1, Speed 5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <64ns, L1 <1us
+                        ClockPM- Surprise- LLActRep+ BwNot+
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive+ BWMgmt+ ABWMgmt-
+                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal-
+PMEIntEna- CRSVisible-
+                RootCap: CRSVisible-
+                RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+                DevCap2: Completion Timeout: Range ABCD, TimeoutDis+ ARIFwd-
+                DevCtl2: Completion Timeout: 65ms to 210ms, TimeoutDis- ARIFwd-
+                LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -3.5dB
+                         Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -3.5dB
+        Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [b0] Subsystem: ATI Technologies Inc Device 0000
+        Capabilities: [b8] HyperTransport: MSI Mapping Enable+ Fixed+
+        Capabilities: [100 v1] Vendor Specific Information: ID=0001
+Rev=1 Len=010 <?>
+        Kernel driver in use: pcieport
+        Kernel modules: shpchp
+
+00:15.2 PCI bridge: ATI Technologies Inc SB900 PCI to PCI bridge (PCIE
+port 2) (prog-if 00 [Normal decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Bus: primary=00, secondary=04, subordinate=05, sec-latency=0
+        I/O behind bridge: 0000d000-0000dfff
+        Memory behind bridge: fea00000-feafffff
+        Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort+ <SERR- <PERR-
+        BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [58] Express (v2) Root Port (Slot-), MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                        ExtTag+ RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 128 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+                LnkCap: Port #2, Speed 5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <64ns, L1 <1us
+                        ClockPM- Surprise- LLActRep+ BwNot+
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive+ BWMgmt- ABWMgmt-
+                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal-
+PMEIntEna- CRSVisible-
+                RootCap: CRSVisible-
+                RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+                DevCap2: Completion Timeout: Range ABCD, TimeoutDis+ ARIFwd-
+                DevCtl2: Completion Timeout: 65ms to 210ms, TimeoutDis- ARIFwd-
+                LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -3.5dB
+                         Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -3.5dB
+        Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [b0] Subsystem: ATI Technologies Inc Device 0000
+        Capabilities: [b8] HyperTransport: MSI Mapping Enable+ Fixed+
+        Capabilities: [100 v1] Vendor Specific Information: ID=0001
+Rev=1 Len=010 <?>
+        Kernel driver in use: pcieport
+        Kernel modules: shpchp
+
+00:15.3 PCI bridge: ATI Technologies Inc SB900 PCI to PCI bridge (PCIE
+port 3) (prog-if 00 [Normal decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Bus: primary=00, secondary=06, subordinate=06, sec-latency=0
+        Memory behind bridge: fe900000-fe9fffff
+        Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- <SERR- <PERR-
+        BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot-,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [58] Express (v2) Root Port (Slot-), MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <1us
+                        ExtTag+ RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 128 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+                LnkCap: Port #3, Speed 5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <64ns, L1 <1us
+                        ClockPM- Surprise- LLActRep+ BwNot+
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 5GT/s, Width x1, TrErr- Train- SlotClk+
+DLActive+ BWMgmt+ ABWMgmt+
+                RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal-
+PMEIntEna- CRSVisible-
+                RootCap: CRSVisible-
+                RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+                DevCap2: Completion Timeout: Range ABCD, TimeoutDis+ ARIFwd-
+                DevCtl2: Completion Timeout: 65ms to 210ms, TimeoutDis- ARIFwd-
+                LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -3.5dB
+                         Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -3.5dB
+        Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [b0] Subsystem: ATI Technologies Inc Device 0000
+        Capabilities: [b8] HyperTransport: MSI Mapping Enable+ Fixed+
+        Capabilities: [100 v1] Vendor Specific Information: ID=0001
+Rev=1 Len=010 <?>
+        Kernel driver in use: pcieport
+        Kernel modules: shpchp
+
+00:16.0 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB
+OHCI0 Controller (prog-if 10 [OHCI])
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 18
+        Region 0: Memory at feb49000 (32-bit, non-prefetchable) [size=4K]
+        Kernel driver in use: ohci_hcd
+
+00:16.2 USB Controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB
+EHCI Controller (prog-if 20 [EHCI])
+        Subsystem: ASUSTeK Computer Inc. Device 8496
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32, Cache Line Size: 64 bytes
+        Interrupt: pin B routed to IRQ 17
+        Region 0: Memory at feb48000 (32-bit, non-prefetchable) [size=256]
+        Capabilities: [c0] Power Management version 2
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA
+PME(D0+,D1+,D2+,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+                Bridge: PM- B3+
+        Capabilities: [e4] Debug port: BAR=1 offset=00e0
+        Kernel driver in use: ehci_hcd
+
+00:18.0 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h
+Processor Function 0 (rev 43)
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+
+00:18.1 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h
+Processor Function 1
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+
+00:18.2 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h
+Processor Function 2
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+
+00:18.3 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h
+Processor Function 3
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Capabilities: [f0] Secure device <?>
+        Kernel driver in use: k10temp
+        Kernel modules: k10temp
+
+00:18.4 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h
+Processor Function 4
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+
+00:18.5 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h
+Processor Function 6
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+
+00:18.6 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h
+Processor Function 5
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+
+00:18.7 Host bridge: Advanced Micro Devices [AMD] Family 12h/14h
+Processor Function 7
+        Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+
+03:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
+RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 06)
+        Subsystem: ASUSTeK Computer Inc. P8P67 and other motherboards
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 40
+        Region 0: I/O ports at e000 [size=256]
+        Region 2: Memory at d0004000 (64-bit, prefetchable) [size=4K]
+        Region 4: Memory at d0000000 (64-bit, prefetchable) [size=16K]
+        Capabilities: [40] Power Management version 3
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=375mA
+PME(D0+,D1+,D2+,D3hot+,D3cold+)
+                Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000fee0100c  Data: 4159
+        Capabilities: [70] Express (v2) Endpoint, MSI 01
+                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s
+<512ns, L1 <64us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
+                        MaxPayload 128 bytes, MaxReadReq 4096 bytes
+                DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq+
+AuxPwr+ TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1,
+Latency L0 <512ns, L1 <64us
+                        ClockPM+ Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train-
+SlotClk+ DLActive- BWMgmt- ABWMgmt-
+                DevCap2: Completion Timeout: Not Supported, TimeoutDis+
+                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -6dB
+                         Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -6dB
+        Capabilities: [b0] MSI-X: Enable- Count=4 Masked-
+                Vector table: BAR=4 offset=00000000
+                PBA: BAR=4 offset=00000800
+        Capabilities: [d0] Vital Product Data
+                Unknown small resource type 00, will not decode more.
+        Capabilities: [100 v1] Advanced Error Reporting
+                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
+                UESvrt: DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt-
+UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
+                CESta:  RxErr+ BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+                AERCap: First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
+        Capabilities: [140 v1] Virtual Channel
+                Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
+                Arb:    Fixed- WRR32- WRR64- WRR128-
+                Ctrl:   ArbSelect=Fixed
+                Status: InProgress-
+                VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+                        Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+                        Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=01
+                        Status: NegoPending- InProgress-
+        Capabilities: [160 v1] Device Serial Number 43-00-00-00-68-4c-e0-00
+        Kernel driver in use: r8169
+        Kernel modules: r8169
+
+04:00.0 PCI bridge: ASMedia Technology Inc. Device 1080 (rev 01)
+(prog-if 01 [Subtractive decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Bus: primary=04, secondary=05, subordinate=05, sec-latency=32
+        I/O behind bridge: 0000d000-0000dfff
+        Memory behind bridge: fea00000-feafffff
+        Secondary status: 66MHz+ FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort+ <SERR- <PERR+
+        BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+        Capabilities: [c0] Subsystem: ASUSTeK Computer Inc. Device 8489
+
+05:01.0 Ethernet controller: Intel Corporation 82541PI Gigabit
+Ethernet Controller (rev 05)
+        Subsystem: Intel Corporation PRO/1000 GT Desktop Adapter
+        Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Interrupt: pin A routed to IRQ 19
+        Region 0: Memory at fea40000 (32-bit, non-prefetchable) [size=128K]
+        Region 1: Memory at fea20000 (32-bit, non-prefetchable) [size=128K]
+        Region 2: I/O ports at d080 [size=64]
+        Expansion ROM at fea00000 [disabled] [size=128K]
+        Capabilities: [dc] Power Management version 2
+                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA
+PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
+        Capabilities: [e4] PCI-X non-bridge device
+                Command: DPERE- ERO+ RBC=512 OST=1
+                Status: Dev=00:00.0 64bit- 133MHz- SCD- USC- DC=simple
+DMMRBC=2048 DMOST=1 DMCRS=8 RSCEM- 266MHz- 533MHz-
+        Kernel modules: e1000
+
+05:02.0 FireWire (IEEE 1394): VIA Technologies, Inc. VT6306/7/8 [Fire
+II(M)] IEEE 1394 OHCI Controller (rev c0) (prog-if 10 [OHCI])
+        Subsystem: ASUSTeK Computer Inc. M4A series motherboard
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium
+>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 32 (8000ns max), Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 16
+        Region 0: Memory at fea60000 (32-bit, non-prefetchable) [size=2K]
+        Region 1: I/O ports at d000 [size=128]
+        Capabilities: [50] Power Management version 2
+                Flags: PMEClk- DSI- D1- D2+ AuxCurrent=0mA
+PME(D0-,D1-,D2+,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Kernel driver in use: firewire_ohci
+        Kernel modules: firewire-ohci
+
+06:00.0 USB Controller: ASMedia Technology Inc. ASM1042 SuperSpeed USB
+Host Controller (prog-if 30 [XHCI])
+        Subsystem: ASUSTeK Computer Inc. Device 8488
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 19
+        Region 0: Memory at fe900000 (64-bit, non-prefetchable) [size=32K]
+        Capabilities: [50] MSI: Enable- Count=1/8 Maskable- 64bit+
+                Address: 0000000000000000  Data: 0000
+        Capabilities: [68] MSI-X: Enable+ Count=8 Masked-
+                Vector table: BAR=0 offset=00002000
+                PBA: BAR=0 offset=00002080
+        Capabilities: [78] Power Management version 3
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=55mA
+PME(D0-,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [80] Express (v2) Legacy Endpoint, MSI 00
+                DevCap: MaxPayload 512 bytes, PhantFunc 0, Latency L0s
+<64ns, L1 <2us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
+Unsupported-
+                        RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq-
+AuxPwr- TransPend-
+                LnkCap: Port #1, Speed 5GT/s, Width x1, ASPM L0s L1,
+Latency L0 unlimited, L1 unlimited
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 5GT/s, Width x1, TrErr- Train- SlotClk+
+DLActive- BWMgmt- ABWMgmt-
+                DevCap2: Completion Timeout: Not Supported, TimeoutDis-
+                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+                LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance-
+SpeedDis-, Selectable De-emphasis: -6dB
+                         Transmit Margin: Normal Operating Range,
+EnterModifiedCompliance- ComplianceSOS-
+                         Compliance De-emphasis: -6dB
+                LnkSta2: Current De-emphasis Level: -3.5dB
+        Capabilities: [100 v1] Virtual Channel
+                Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
+                Arb:    Fixed- WRR32- WRR64- WRR128-
+                Ctrl:   ArbSelect=Fixed
+                Status: InProgress-
+                VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
+                        Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
+                        Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=01
+                        Status: NegoPending- InProgress-
+        Kernel driver in use: xhci_hcd
+        Kernel modules: xhci-hcd
+
+
+2011/12/1 Huang, Shane <Shane.Huang@amd.com>:
+> Boris,
+>
+>> Shane, can you guys take a look at this, sounds like some unfortunate
+>> sharing of AHCI and network IRQ numbers.
+>
+> I'm adding Dong who might help on this.
+>
+>
+> Thanks,
+> Shane
+>
+>
