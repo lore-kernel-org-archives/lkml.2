@@ -1,136 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab1LCL6x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 06:58:53 -0500
-Received: from queue01.mail.zen.net.uk ([212.23.3.234]:44902 "EHLO
-	queue01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754801Ab1LCL6w (ORCPT
+	id S1755057Ab1LCMLY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 07:11:24 -0500
+Received: from ims-d14.mx.aol.com ([205.188.249.151]:56670 "EHLO
+	ims-d14.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab1LCMLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 06:58:52 -0500
-X-Greylist: delayed 1143 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Dec 2011 06:58:52 EST
-Subject: Re: [RFC][PATCH] ARM: kirkwood: Remove eSATA SheevaPlug board
- support
-From: Tixy <yxit@yxit.co.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, John Holland <john.holland@cellent-fs.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Lennert Buytenhek <kernel@wantstofly.org>,
-        linux-arm-kernel@lists.infradead.org, Nicolas Pitre <nico@fluxnic.net>
-In-Reply-To: <1322737480.9622.5.camel@phoenix>
-References: <1322737480.9622.5.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 03 Dec 2011 11:39:43 +0000
-Message-ID: <1322912383.2378.79.camel@computer2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost04-IP: [82.69.122.217]
+	Sat, 3 Dec 2011 07:11:23 -0500
+Message-Id: <201112031209.pB3C92Uc011776@ims-d14.mx.aol.com>
+Reply-To: <fbicrimesdivision@w.cn>
+From: "FBI" <wpwilt@aol.com>
+Subject: VERY URGENT===========READ ATTACHMENT
+Date: Sat, 3 Dec 2011 07:12:17 -0500
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00CD_01C2A9A6.1F7D3BCE"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-AOL-VSS-INFO: 5400.1158/76605
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:156727920:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-VSS-INFO: 5400.1158/76605
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:5:84069440:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d33844eda115f7e6b
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-01 at 19:04 +0800, Axel Lin wrote: 
-> commit bb9b25f923 "ARM: Update mach-types" removes sheeva_esata entry
-> from mach-types, so current code in arch/arm/mach-kirkwood/sheevaplug-setup.c
-> always compile fail.
-> 
-> This patch removes sheeva_esata related code.
+This is a multi-part message in MIME format.
 
-As I use this device I would rather not see support for it dropped.
+------=_NextPart_000_00CD_01C2A9A6.1F7D3BCE
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-After doing some digging in the mail archives I believe the eSata
-SheevaPlug entry has been deleted due to the machine_is_xxx() name not
-matching the CONFIG_XXX name. A fix for this was proposed a while back
-by Nicolas Pitre: http://www.spinics.net/lists/arm-kernel/msg140555.html
+OPEN ATTACTMENT
 
-Is it now too late to fix this now?
+------=_NextPart_000_00CD_01C2A9A6.1F7D3BCE
+Content-Type: application/octet-stream;
+	name="FBI NOTIFICATION.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="FBI NOTIFICATION.txt"
 
-Below is a respin of Nicolas's original patch based on yesterdays
-linux-next...
+DQpBTlRJLVRFUlJPUklTVCBBTkQgTU9ORVRBUlkgQ1JJTUVTIERJVklTSU9O
+DQpGQkkgSEVBRFFVQVJURVJTIElOIFdBU0hJTkdUT04sIEQuQy4NCkZlZGVy
+YWwgQnVyZWF1IE9mIEludmVzdGlnYXRpb24uDQpGQkktV2FzaGluZ3RvbiBG
+aWVsZCBPZmZpY2UNCjYwMSA0dGggU3RyZWV0LCBOVw0KV2FzaGluZ3Rvbiwg
+REMgMjA1MzUNCldlYnNpdGU6IHd3dy5mYmkuZ292DQogDQpEQVRFOjEyLzAz
+LzIwMTENCiANCkl0IGhhcyBiZWVuIGRpc2NvdmVyZWQgdGhhdCB5b3VyIGNv
+bnRyYWN0L2luaGVyaXRhbmNlL3dpbm5pbmcgRlVORCB3YXMgYWJvdXQgYmVp
+bmcgdHJhbnNmZXJyZWQgdG8gYW4gdW5rbm93biBhY2NvdW50IHVuZGVyIHlv
+dXIgbmFtZS5UaGlzIGF0dGVtcHQgd2FzIHBlcnBldHJhdGVkIGJ5IHNvbWVv
+bmUgd2hvIGNsYWltcyB0byBiZSB3b3JraW5nIGZvciB5b3UsIGFuZCB0aGF0
+IHlvdSBoYXZlIGdpdmVuIGhpbSBkdWUgYXV0aG9yaXR5IHRvIGhhdmUgdGhl
+IEZVTkQgbW92ZWQgdG8gdGhlIGFjY291bnQgc3BlY2lmaWVkIGJlbG93Og0K
+IA0KU09VVEhXRVNURVJOIEZFREVSQUwgQ1JFRElUIFVOSU9ODQpXRVNDT1JQ
+IDkyNCBPVkVSTEFORCBDT1VSVA0KU0FOIERJTUFTLCBDQSA5MTc3Mi4gVVNB
+Lg0KQUNDT1VOVCBOVU1CRVI6IDMyMjY4MjEzMw0KQUJBL1JPVVRJTkcgTlVN
+QkVSOiAxMjExLTcxLTQxLTgNClNIQVJFVFlQRSBOTy46IDM1DQpGSU5BTCBD
+UkVESVQgIEpPSE5TT04gRkVOWkkgQU5EIENPLiAoQmVuZWZpY2lhcnkpLg0K
+IA0KVGhlIEZlZGVyYWwgQnVyZWF1IG9mIEludmVzdGlnYXRpb24gKEYuQi5J
+Likgd2FkZWQgaW4gYWZ0ZXIgYmVpbmcgYWxlcnRlZCBieSB0aGUgc3VwcG9z
+ZWQgYmFuay4gV2UgaW52ZXN0aWdhdGVkIGFuZCBmb3VuZCB0aGF0IHRoZXJl
+IGlzIGEgcG9zc2libGUgbW9uZXkgbGF1bmRlcmluZyBhY3Rpdml0eSBpbiBw
+bGF5LlRoZSBGVU5EIFVTJDEwLDUwMCwwMDAuMDAoVGVuIE1pbGxpb24gRml2
+ZSBIdW5kcmVkIFRob3VzYW5kIFVuaXRlZCBTdGF0ZXMgRG9sbGFycykgd2Fz
+IGZvdW5kIHRvIGJlIGRlcG9zaXRlZCBpbiBCYW5rIG9mIEFtZXJpY2EgaW4g
+eW91ciBuYW1lIHBlbmRpbmcgeW91ciBjb25zZW50IHRvIGhhdmUgaXQgdHJh
+bnNmZXJyZWQgdG8gdGhlIG5ldyBhY2NvdW50IGluZGljYXRlZCBhYm92ZS4g
+SXQgd2FzIGZ1cnRoZXIgcmV2ZWFsZWQgdGhhdCBpbml0aWFsIEZVTkQgdHJh
+bnNmZXIgb3JpZ2luYXRlZCBmcm9tIE5pZ2VyaWEgdG8gRW5nbGFuZCBhbmQg
+bm93IGhlcmUgaW4gQmFuayBvZiBBbWVyaWNhIGluIFVTQS4NCiANClRoZXNl
+IHRyYW5zZmVycyBkaWQgbm90IGZvbGxvdyBkdWUgcHJvY2VzcyBpbiBsaW5l
+IHdpdGggdGhlIEludGVybmF0aW9uYWwgRlVORCB0cmFuc2ZlciBydWxlcyBh
+bmQgcmVndWxhdGlvbi5Db25zZXF1ZW50bHksd2Ugc3VzcGVjdCB0aGlzIGJl
+IGEgdGVycm9yaXNtIGZ1bmRpbmcsIGRydWcgcmVsYXRlZCBmdW5kIGRlcG9z
+aXQgYW5kL29yIG1vbmV5IGxhdW5kZXJpbmcuIEFzIHN0YXRlZCBhYm92ZSwg
+dGhlIEZVTkQgaGFzIHlvdXIgbmFtZSBvbiBpdDsgYW5kIHlvdSBtdXN0IGhh
+dmUgaXQgY2xlYXJlZCBvZiBhbnkgY29ubmVjdGlvbiB3aXRoIGFueSBvZiB0
+aGVzZSBpbGxlZ2FsIGFjdGl2aXRpZXMuQmUgaW5mb3JtZWQgdGhhdCBGQUlM
+VVJFIHRvIGhhdmUgdGhpcyBjbGVhcmVkIG91dCB3aWxsIGF0dHJhY3QgYSBK
+QUlMIFRFUk0uV2Ugd2lsbCBub3QgaGVzaXRhdGUgdG8gdmlzaXQgdGhlIGZ1
+bGwgd2VpZ2h0IG9mIHRoZSBsYXcgdXBvbiB5b3UgaWYgeW91IGRvIG5vdCBj
+bGVhciB0aGlzIGZ1bmQuVGhlcmUgaXMgZXZlcnkgaW5kaWNhdGlvbiB0aGF0
+IHlvdSBhcmUgaW52b2x2ZWQgaW4gdGhpcyBzaGFkeSBkZWFsLg0KIA0KRmlu
+YWxseSwgeW91IGFyZSBleHBlY3RlZCB0byBoYXZlIHRoZSBDTEVBUkFOQ0Ug
+RE9DVU1FTlQgb2J0YWluIGZyb20gd2hlcmUgdGhlIEZVTkQgb3JpZ2luYXRl
+ZCBmcm9tIHRvIGhhdmUgeW91IGFuZCB5b3VyIGZ1bmQgY2xlYXJlZC4gT25s
+eSB0aGVuIHNoYWxsIHdlIHJlbGVhc2UgeW91ciBGVU5EIGFzIGNsZWFuIG1v
+bmV5IGRldm9pZCBvZiBhbnkgaWxsZWdhbGl0eSwgYW5kIHlvdSB3aWxsIGJl
+IGZyZWUgb2YgYW55IGludm9sdmVtZW50LiBUbyB0aGlzIGVuZCwgeW91IGFy
+ZSB0byBjb250YWN0IE1yLiBBbnRob255IE1hcmtzb24gb2YgdGhlIEFudGkg
+R3JhZnQgRGVwYXJ0bWVudCBOb3J0aCBDYXJvbGluYSBSZWdpb25hbCBPZmZp
+Y2UgYW5kIGhhdmUgdGhlIEZVTkQgQkVORUZJQ0lBUlkgU0VBTCBvZiBUUkFO
+U0ZFUiAoRkJTVCkgQ0xFQVJBTkNFIERPQ1VNRU5UIG9idGFpbmVkLiBDb250
+YWN0IGhpbSB0aHJvdWdoIHRoaXMgZGlyZWN0IGVtYWlsOiBhbnRpZ3JhZnRf
+ZGVwYXJ0bWVudEB3LmNuICxOb3RlIHRoYXQgeW91IGhhdmUgNzJocnMgdG8g
+b2J0YWluIHRoaXMgY3J1Y2lhbCBEb2N1bWVudGF0aW9uLg0KDQpUaGlzIGhh
+cyB0byBiZSBjbGVhcmVkIQ0KIA0KRmFpdGhmdWxseSBZb3Vycw0KUm9iZXJ0
+IFMuIE11ZWxsZXIgSUlJDQpGQkkgRGlyZWN0b3INCkZlZGVyYWwgQnVyZWF1
+IE9mIEludmVzdGlnYXRpb24uDQpGQkktV2FzaGluZ3RvbiBGaWVsZCBPZmZp
+Y2UNCjYwMSA0dGggU3RyZWV0LCBOVw0KV2FzaGluZ3RvbiwgREMgMjA1MzUN
+Cnd3dy5mYmkuZ292
 
-8<---------------------------------------------------------------------->8
-
-[PATCH] Fix machine_is_xxx() naming for eSata SheevaPlug and QNAP TS-209
-
-The eSata SheevaPlug and QNAP TS-209 devices were removed from
-mach-types due to naming mismatches between machine_is_xxx(), CONFIG_XXX
-and MACH_TYPE_XXX.
-
-This patch fixes those mismatches and adds the devices back into
-mach-types.
-
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Lennert Buytenhek <kernel@wantstofly.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Jon Medhurst <tixy@yxit.co.uk>
----
- arch/arm/mach-kirkwood/sheevaplug-setup.c |    6 +++---
- arch/arm/mach-orion5x/ts209-setup.c       |    2 +-
- arch/arm/tools/mach-types                 |    2 ++
- 3 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-kirkwood/sheevaplug-setup.c b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-index 85bff6b..4ea70e5 100644
---- a/arch/arm/mach-kirkwood/sheevaplug-setup.c
-+++ b/arch/arm/mach-kirkwood/sheevaplug-setup.c
-@@ -107,7 +107,7 @@ static void __init sheevaplug_init(void)
- 	kirkwood_init();
- 
- 	/* setup gpio pin select */
--	if (machine_is_sheeva_esata())
-+	if (machine_is_esata_sheevaplug())
- 		kirkwood_mpp_conf(sheeva_esata_mpp_config);
- 	else
- 		kirkwood_mpp_conf(sheevaplug_mpp_config);
-@@ -123,11 +123,11 @@ static void __init sheevaplug_init(void)
- 	kirkwood_ge00_init(&sheevaplug_ge00_data);
- 
- 	/* honor lower power consumption for plugs with out eSATA */
--	if (machine_is_sheeva_esata())
-+	if (machine_is_esata_sheevaplug())
- 		kirkwood_sata_init(&sheeva_esata_sata_data);
- 
- 	/* enable sd wp and sd cd on plugs with esata */
--	if (machine_is_sheeva_esata())
-+	if (machine_is_esata_sheevaplug())
- 		kirkwood_sdio_init(&sheeva_esata_mvsdio_data);
- 	else
- 		kirkwood_sdio_init(&sheevaplug_mvsdio_data);
-diff --git a/arch/arm/mach-orion5x/ts209-setup.c b/arch/arm/mach-orion5x/ts209-setup.c
-index 62c156b..5d64087 100644
---- a/arch/arm/mach-orion5x/ts209-setup.c
-+++ b/arch/arm/mach-orion5x/ts209-setup.c
-@@ -178,7 +178,7 @@ static struct hw_pci qnap_ts209_pci __initdata = {
- 
- static int __init qnap_ts209_pci_init(void)
- {
--	if (machine_is_ts_x09())
-+	if (machine_is_ts209())
- 		pci_common_init(&qnap_ts209_pci);
- 
- 	return 0;
-diff --git a/arch/arm/tools/mach-types b/arch/arm/tools/mach-types
-index 459d114..7f9809a 100644
---- a/arch/arm/tools/mach-types
-+++ b/arch/arm/tools/mach-types
-@@ -269,6 +269,7 @@ dns323			MACH_DNS323		DNS323			1542
- omap3_beagle		MACH_OMAP3_BEAGLE	OMAP3_BEAGLE		1546
- nokia_n810		MACH_NOKIA_N810		NOKIA_N810		1548
- pcm038			MACH_PCM038		PCM038			1551
-+ts209			MACH_TS209		TS209			1565
- at91cap9adk		MACH_AT91CAP9ADK	AT91CAP9ADK		1566
- mx31moboard		MACH_MX31MOBOARD	MX31MOBOARD		1574
- vision_ep9307		MACH_VISION_EP9307	VISION_EP9307		1578
-@@ -457,6 +458,7 @@ guruplug		MACH_GURUPLUG		GURUPLUG		2659
- spear310		MACH_SPEAR310		SPEAR310		2660
- spear320		MACH_SPEAR320		SPEAR320		2661
- aquila			MACH_AQUILA		AQUILA			2676
-+esata_sheevaplug	MACH_ESATA_SHEEVAPLUG	ESATA_SHEEVAPLUG	2678
- msm7x30_surf		MACH_MSM7X30_SURF	MSM7X30_SURF		2679
- ea2478devkit		MACH_EA2478DEVKIT	EA2478DEVKIT		2683
- terastation_wxl		MACH_TERASTATION_WXL	TERASTATION_WXL		2697
--- 
-1.7.2.5
-
-
-
+------=_NextPart_000_00CD_01C2A9A6.1F7D3BCE--
