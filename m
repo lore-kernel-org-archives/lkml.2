@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876Ab1LCPh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 10:37:59 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:51933 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598Ab1LCPh5 convert rfc822-to-8bit (ORCPT
+	id S1753025Ab1LCP5R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 10:57:17 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58482 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab1LCP5Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 10:37:57 -0500
+	Sat, 3 Dec 2011 10:57:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <4ED9C7D7.5030300@linux.vnet.ibm.com>
-References: <CAHFgRy_ae70MZOgY8q3i36NJh42=GK=XP=EA=ktxgXiFzjY49w@mail.gmail.com>
-	<4ED9C7D7.5030300@linux.vnet.ibm.com>
-Date: Sat, 3 Dec 2011 10:37:54 -0500
-Message-ID: <CAHFgRy_o6b9ih=BXysL9Ws6KDcVcOkJ2hnLa9zZJ=m-=zoLmPA@mail.gmail.com>
-Subject: Re: 3.2.0-rc4+ (Linus GIT af968e29acd91ebeb4224e899202c46c93171ecd)
- -- Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze, wq_busy=0):
-From: Miles Lane <miles.lane@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20111201212017.GE2443@redhat.com>
+References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com> <20111201212017.GE2443@redhat.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Sat, 3 Dec 2011 08:56:42 -0700
+Message-ID: <CAJfuBxzbwRRfbWK8LQAi4SdoSBX8ByfpGUePvRia+0W5j4iJOA@mail.gmail.com>
+Subject: Re: [patch 00/25] dynamic-debug during module initialization
+To: Jason Baron <jbaron@redhat.com>
+Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks!  The patch worked perfectly.
-
-        Miles
-
-On Sat, Dec 3, 2011 at 1:55 AM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 12/03/2011 09:22 AM, Miles Lane wrote:
->
->> While reading a file in sysfs, I suspended tried to suspend the machine and got:
+On Thu, Dec 1, 2011 at 2:20 PM, Jason Baron <jbaron@redhat.com> wrote:
+> On Wed, Nov 30, 2011 at 12:56:29PM -0700, jim.cromie@gmail.com wrote:
+>> This patchset adds
+>> - dynamic-debug during module initialization
+>> - multiple queries
 >>
->> [ 1058.644957] PM: Syncing filesystems ... done.
->> [ 1059.670167] Freezing user space processes ...
->> [ 1079.681175] Freezing of tasks failed after 20.01 seconds (1 tasks
->> refusing to freeze, wq_busy=0):
->> [ 1079.682077] head            D ffff88013a753680  5328  9761   9402 0x00800004
->> [ 1079.682086]  ffff88011b15fd28 0000000000000046 0000000000000006
->> ffffffff8160d020
->> [ 1079.682095]  ffff880100000000 ffff88013a7532d0 ffff88011b15ffd8
->> ffff88011b15ffd8
->> [ 1079.682102]  0000000000010bc0 ffff88013a7532d0 ffffffff81372d96
->> 000000013a7532d0
->> [ 1079.682110] Call Trace:
->> [ 1079.682120]  [<ffffffff81372d96>] ? __mutex_lock_common+0x26e/0x41e
->> [ 1079.682126]  [<ffffffff8137241a>] schedule+0x55/0x57
->> [ 1079.682131]  [<ffffffff81372dbf>] __mutex_lock_common+0x297/0x41e
->> [ 1079.682137]  [<ffffffff810c675d>] ? lock_memory_hotplug+0x20/0x22
->> [ 1079.682142]  [<ffffffff810c675d>] ? lock_memory_hotplug+0x20/0x22
->> [ 1079.682149]  [<ffffffff8137302d>] mutex_lock_nested+0x36/0x3b
->> [ 1079.682153]  [<ffffffff810c675d>] lock_memory_hotplug+0x20/0x22
->
->
->                                        ^^^^^^^^^^^^^^^^^^
-> Wow! There, Tejun, did you see that? That is just what we fixed in
-> https://lkml.org/lkml/2011/11/21/334 !! :-)
->
-> But since Rafael kept it for the next merge window, we hit this failure
-> in 3.2-rc4.
->
-> Well, atleast for once I am feeling extremely happy that we *actually*
-> fixed a problem _before_ hitting it! :-)
->
-> Miles, thanks for the report. Can you please try the patch given in the
-> above link?
->
->> [ 1079.682160]  [<ffffffff810c53e7>] show_slab_objects+0xfc/0x1e5
->> [ 1079.682166]  [<ffffffff810c550e>] partial_show+0xe/0x10
->> [ 1079.682171]  [<ffffffff810c23b7>] slab_attr_show+0x1d/0x21
->> [ 1079.682177]  [<ffffffff811235c9>] sysfs_read_file+0xb7/0x13c
->> [ 1079.682183]  [<ffffffff810ccdd3>] vfs_read+0xa0/0xc7
->> [ 1079.682188]  [<ffffffff810ce0d3>] ? fget_light+0x35/0x97
->> [ 1079.682194]  [<ffffffff810cce3f>] sys_read+0x45/0x69
->> [ 1079.682199]  [<ffffffff81378d3b>] system_call_fastpath+0x16/0x1b
+>> Unlike previous versions, this drops pending-query approach in
+>> favor of "fake module parameter" approach proposed by Thomas Renninger.
+>>     https://lkml.org/lkml/2010/9/15/397
+>>
+>> Its based upon v3.2-rc3, cuz it includes a few adjustments to
+>> dynamic_debug.h which are not in driver-core-next atm.
+>>
+>>
+>> 1     bug-fix for kernel/module.c under DEBUGP
+>> 2     whitespace cleanup
+>> 3-12  dynamic-debug cleanups, should be relatively uncontroversial
+>> 13-17 multiple queries in ddebug_query="..."
+>>
+>> 18-25 fake module parameter
+>> 20    maybe fold into 18 (kept separate since 18 is Thomas's work)
+>> 23    *.dyndbg=...
+>> 25    BUILD_BUG_DECL (likely discussion point ;-)
 >>
 >
+> I like 25, it truly makes 'dyndbg' a reserved module parameter, which is the
+> intention.
 >
-> Regards,
-> Srivatsa S. Bhat
-> IBM Linux Technology Center
->
+
+heres a failing usage:
+
+...
+#include <linux/device.h>
+#include <linux/netdevice.h>
+
+BUILD_BUG_DECL(foo,(1==1));
+
+heres what it looks like expanded:
+
+static struct __BUILD_BUG_DECL_foo { int __BUILD_BUG_DECL_foo[1 -
+2*!!(1==1)]; } __BUILD_BUG_DECL_foo[0] __attribute__((unused));
+
+and heres the error:
+
+  CALL    /home/jimc/projects/lx/linux-2.6/scripts/checksyscalls.sh
+  CC      lib/dynamic_debug.o
+/home/jimc/projects/lx/linux-2.6/lib/dynamic_debug.c:37:42: error:
+size of array ‘__BUILD_BUG_DECL_foo’ is negative
+make[3]: *** [lib/dynamic_debug.o] Error 1
+
+
+I havent seen any unused-var warnings, but maybe Ive not stimulated it enough.
