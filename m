@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482Ab1LCGGN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 01:06:13 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65392 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab1LCGGK (ORCPT
+	id S1751578Ab1LCGKS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 01:10:18 -0500
+Received: from 7.mo1.mail-out.ovh.net ([87.98.158.110]:40606 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750909Ab1LCGKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 01:06:10 -0500
-Message-ID: <1322892365.2664.2.camel@sasha>
-Subject: [BUG] net: kernel BUG at include/net/netns/generic.h:40!
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Sat, 03 Dec 2011 08:06:05 +0200
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 3 Dec 2011 01:10:15 -0500
+Date: Sat, 3 Dec 2011 06:56:59 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        jamie@jamieiles.com
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [PATCH] ARM: at91/net: add macb ethernet controller in 9g45 DT
+Message-ID: <20111203055659.GL18533@game.jcrosoft.org>
+References: <1322847782-22650-1-git-send-email-nicolas.ferre@atmel.com>
+ <1322848237-23154-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322848237-23154-1-git-send-email-nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13471673860529892204
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedruddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeguvghnrdhnvghtne
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedrtdekucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeen
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 18:50 Fri 02 Dec     , Nicolas Ferre wrote:
+> Add the Cadence macb ethernet controller in at91sam9g45 .dtsi and
+> enable it in at91sam9m10g45ek board device tree file.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  arch/arm/boot/dts/at91sam9g45.dtsi     |    7 +++++++
+>  arch/arm/boot/dts/at91sam9m10g45ek.dts |    6 ++++++
+>  2 files changed, 13 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+> index e89b1d7..67f94d3 100644
+> --- a/arch/arm/boot/dts/at91sam9g45.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+> @@ -101,6 +101,13 @@
+>  				atmel,use-dma-tx;
+>  				status = "disabled";
+>  			};
+> +
+> +			macb0: ethernet@fffbc000 {
+> +				compatible = "cdns,at32ap7000-macb", "cdns,macb";
+> +				reg = <0xfffbc000 0x100>;
+> +				interrupts = <25 4>;
+why?
+> +				status = "disabled";
+> +			};
+>  		};
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/at91sam9m10g45ek.dts b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+> index 85b34f5..17377a2 100644
+> --- a/arch/arm/boot/dts/at91sam9m10g45ek.dts
+> +++ b/arch/arm/boot/dts/at91sam9m10g45ek.dts
+> @@ -30,6 +30,12 @@
+>  			usart1: serial@fff90000 {
+>  				status = "okay";
+>  			};
+> +
+> +			macb0: ethernet@fffbc000 {
+> +				local-mac-address = [3a 0e 03 04 05 06];
+please drop this is not supposed to be in the dts but updated for each board
 
-I got the following when trying a clone():
-
-[  126.413983] ------------[ cut here ]------------
-[  126.414023] kernel BUG at include/net/netns/generic.h:40!
-[  126.414023] invalid opcode: 0000 [#1] PREEMPT SMP 
-[  126.414023] CPU 0 
-[  126.414023] Pid: 2507, comm: trinity Not tainted 3.2.0-rc3-next-20111202-sasha-00003-gc9d4348 #17  
-[  126.414023] RIP: 0010:[<ffffffff8235762e>]  [<ffffffff8235762e>] get_cfcnfg+0xee/0x100
-[  126.414023] RSP: 0018:ffff88001108db00  EFLAGS: 00010212
-[  126.414023] RAX: 0000000000000001 RBX: 0000000000000010 RCX: 0000000000000000
-[  126.414023] RDX: 0000000000000001 RSI: ffffffff82c1ff20 RDI: 0000000000000282
-[  126.414023] RBP: ffff88001108db20 R08: 0000000000000003 R09: 0000000000000001
-[  126.414023] R10: 0000000000000000 R11: 0000000000000001 R12: ffff88001107ed80
-[  126.414023] R13: ffffffff82db4b20 R14: 0000000000000000 R15: 0000000000000010
-[  126.414023] FS:  00007f77a32d7700(0000) GS:ffff880013a00000(0000) knlGS:0000000000000000
-[  126.414023] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  126.414023] CR2: 00007f77a2e054d0 CR3: 0000000011029000 CR4: 00000000000006f0
-[  126.414023] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  126.414023] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  126.414023] Process trinity (pid: 2507, threadinfo ffff88001108c000, task ffff8800115c1610)
-[  126.414023] Stack:
-[  126.414023]  ffffffff82357557 ffffffff8203cc20 ffff8800110b4000 00000000ffffffd9
-[  126.414023]  ffff88001108db80 ffffffff823579ae ffff88001108db80 ffffffff8216292d
-[  126.414023]  0000000000000001 ffff8800115c1610 ffff88001108db80 ffff8800110b4000
-[  126.414023] Call Trace:
-[  126.414023]  [<ffffffff82357557>] ? get_cfcnfg+0x17/0x100
-[  126.414023]  [<ffffffff8203cc20>] ? lockdep_rtnl_is_held+0x10/0x20
-[  126.414023]  [<ffffffff823579ae>] caif_device_notify+0x2e/0x380
-[  126.414023]  [<ffffffff8216292d>] ? packet_notifier+0x19d/0x220
-[  126.414023]  [<ffffffff810d5a73>] notifier_call_chain+0x93/0xf0
-[  126.414023]  [<ffffffff810d5fd1>] raw_notifier_call_chain+0x11/0x20
-[  126.414023]  [<ffffffff820296d2>] call_netdevice_notifiers+0x32/0x60
-[  126.414023]  [<ffffffff82030c06>] register_netdevice+0x196/0x300
-[  126.414023]  [<ffffffff82030d89>] register_netdev+0x19/0x30
-[  126.414023]  [<ffffffff81afe29a>] loopback_net_init+0x4a/0xa0
-[  126.414023]  [<ffffffff82024c92>] ops_init+0x42/0x180
-[  126.414023]  [<ffffffff82024e3b>] setup_net+0x6b/0x100
-[  126.414023]  [<ffffffff82025296>] copy_net_ns+0x86/0x110
-[  126.414023]  [<ffffffff810d5009>] create_new_namespaces+0xd9/0x190
-[  126.414023]  [<ffffffff810d51d4>] copy_namespaces+0x84/0xc0
-[  126.414023]  [<ffffffff810d343c>] ? __mutex_init+0x5c/0x70
-[  126.414023]  [<ffffffff810ad531>] copy_process+0xa31/0x1490
-[  126.414023]  [<ffffffff810ae043>] do_fork+0x73/0x350
-[  126.414023]  [<ffffffff810e828d>] ? trace_hardirqs_on+0xd/0x10
-[  126.414023]  [<ffffffff823e361d>] ? retint_swapgs+0x13/0x1b
-[  126.414023]  [<ffffffff8104bd63>] sys_clone+0x23/0x30
-[  126.414023]  [<ffffffff823e4273>] stub_clone+0x13/0x20
-[  126.414023]  [<ffffffff823e3ed2>] ? system_call_fastpath+0x16/0x1b
-[  126.414023] Code: 20 d9 fe 85 c0 75 8f 48 c7 c2 68 62 93 82 be 27 00 00 00 48 c7 c7 fa 49 a2 82 c6 05 a0 f2 bc 01 01 e8 47 5e d9 fe e9 6b ff ff ff <0f> 0b 0f 0b 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 48 89 
-[  126.414023] RIP  [<ffffffff8235762e>] get_cfcnfg+0xee/0x100
-[  126.414023]  RSP <ffff88001108db00>
-[  126.475257] ---[ end trace c62732ec90be8c83 ]---
-
-Please let me know if I can help debugging this issue.
-
--- 
-
-Sasha.
-
+Best Regards,
+J.
