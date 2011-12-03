@@ -1,1053 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab1LCPXe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 10:23:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36255 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab1LCPXd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 10:23:33 -0500
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-To: linaro-dev@lists.linaro.org, linux-kernel@vger.kernel.org
-Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Anson Huang <b20788@freescale.com>
-Subject: [PATCH] thermal: Add anatop thermal driver
-Date: Sat,  3 Dec 2011 23:22:59 +0800
-Message-Id: <1322925779-15556-2-git-send-email-paul.liu@linaro.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1322925779-15556-1-git-send-email-paul.liu@linaro.org>
-References: <1322925779-15556-1-git-send-email-paul.liu@linaro.org>
+	id S1752890Ab1LCPfv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 10:35:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752126Ab1LCPfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 3 Dec 2011 10:35:48 -0500
+Date: Sat, 3 Dec 2011 09:35:37 -0600
+From: Clark Williams <williams@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: RT <linux-rt-users@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH RT]  scheduling while atomic splats on 3.2-rc4-rt5
+Message-ID: <20111203093537.7d805f64@redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/qqcCkFo1Ov0tlITMCj8D7fp"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+--Sig_/qqcCkFo1Ov0tlITMCj8D7fp
+Content-Type: multipart/mixed; boundary="MP_/vpQJX5Dx26lcOP8XRWCYO5/"
 
-Anatop thermal driver for Freescale imx6 system. This driver currently
-supports basic temperature reading.
+--MP_/vpQJX5Dx26lcOP8XRWCYO5/
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-Signed-off-by: Anson Huang <b20788@freescale.com>
-Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
----
- drivers/thermal/Kconfig          |   11 +
- drivers/thermal/Makefile         |    1 +
- drivers/thermal/anatop_driver.h  |  146 +++++++
- drivers/thermal/anatop_thermal.c |  825 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 983 insertions(+), 0 deletions(-)
- create mode 100644 drivers/thermal/anatop_driver.h
- create mode 100644 drivers/thermal/anatop_thermal.c
+Thomas,
 
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index f7f71b2..792152e 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -18,3 +18,14 @@ config THERMAL_HWMON
- 	depends on THERMAL
- 	depends on HWMON=y || HWMON=THERMAL
- 	default y
-+
-+config THERMAL_ANATOP
-+	tristate "Anatop Thermal Zone"
-+	depends on THERMAL
-+	default y
-+	help
-+	  This driver supports ANATOP thermal zones. It is HIGHLY
-+	  recommended that this option be enabled on MX6 platform, as
-+	  your processor(s) may be damaged without it.
-+
-+	  To compile this driver as a module, choose M here.
-diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
-index 31108a0..2f88011 100644
---- a/drivers/thermal/Makefile
-+++ b/drivers/thermal/Makefile
-@@ -3,3 +3,4 @@
- #
- 
- obj-$(CONFIG_THERMAL)		+= thermal_sys.o
-+obj-$(CONFIG_THERMAL_ANATOP)	+= anatop_thermal.o
-diff --git a/drivers/thermal/anatop_driver.h b/drivers/thermal/anatop_driver.h
-new file mode 100644
-index 0000000..5879fca
---- /dev/null
-+++ b/drivers/thermal/anatop_driver.h
-@@ -0,0 +1,146 @@
-+/*
-+ *  anatop_drivers.h
-+ *
-+ *  Copyright (C) 2001, 2002 Andy Grover <andrew.grover@intel.com>
-+ *  Copyright (C) 2001, 2002 Paul Diefenbaugh <paul.s.diefenbaugh@intel.com>
-+ *
-+ *  Copyright (C) 2011 Freescale Semiconductor, Inc.
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or (at
-+ *  your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful, but
-+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *  General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ */
-+
-+#ifndef __ANATOP_DRIVERS_H__
-+#define __ANATOP_DRIVERS_H__
-+
-+/* Device */
-+#define ANATOP_ACPI_MAX_HANDLES	10
-+struct anatop_handle_list {
-+	u32 count;
-+	acpi_namespace_node * handles[ANATOP_ACPI_MAX_HANDLES];
-+};
-+
-+struct anatop_device {
-+	struct device dev;
-+	acpi_namespace_node *handle;	/* no handle for fixed hardware */
-+	char name[40];
-+	int id;
-+	void *driver_data;
-+};
-+struct anatop_device_id {
-+	__u8 id[ACPI_ID_LEN];
-+	kernel_ulong_t driver_data;
-+};
-+typedef int (*anatop_op_add) (struct anatop_device *device);
-+typedef int (*anatop_op_remove) (struct anatop_device *device, int type);
-+typedef int (*anatop_op_start) (struct anatop_device *device);
-+typedef int (*anatop_op_suspend) (struct anatop_device *device,
-+				pm_message_t state);
-+typedef int (*anatop_op_resume) (struct anatop_device *device);
-+typedef int (*anatop_op_bind) (struct anatop_device *device);
-+typedef int (*anatop_op_unbind) (struct anatop_device *device);
-+typedef void (*anatop_op_notify) (struct anatop_device *device, u32 event);
-+
-+struct anatop_ops {
-+	u32 anatop_op_add:1;
-+	u32 anatop_op_start:1;
-+};
-+
-+struct anatop_device_ops {
-+	anatop_op_add add;
-+	anatop_op_remove remove;
-+	anatop_op_start start;
-+	anatop_op_suspend suspend;
-+	anatop_op_resume resume;
-+	anatop_op_bind bind;
-+	anatop_op_unbind unbind;
-+	anatop_op_notify notify;
-+};
-+
-+struct anatop_driver {
-+	char name[80];
-+	char class[80];
-+	const struct acpi_device_id *ids; /* Supported Hardware IDs */
-+	unsigned int flags;
-+	struct anatop_device_ops ops;
-+	struct device_driver drv;
-+	struct module *owner;
-+};
-+
-+
-+
-+typedef u32 anatop_status;	/* All ANATOP Exceptions */
-+
-+#define AT_OK                   (anatop_status) 0x0000
-+#define AT_ERROR                (anatop_status) 0x0001
-+
-+
-+#define ANATOP_MAX_STRING			80
-+
-+/*
-+ * Please update drivers/acpi/debug.c and Documentation/acpi/debug.txt
-+ * if you add to this list.
-+ */
-+#define ANATOP_BUS_COMPONENT		0x00010000
-+#define ANATOP_AC_COMPONENT		0x00020000
-+#define ANATOP_BATTERY_COMPONENT		0x00040000
-+#define ANATOP_BUTTON_COMPONENT		0x00080000
-+#define ANATOP_SBS_COMPONENT		0x00100000
-+#define ANATOP_FAN_COMPONENT		0x00200000
-+#define ANATOP_PCI_COMPONENT		0x00400000
-+#define ANATOP_POWER_COMPONENT		0x00800000
-+#define ANATOP_CONTAINER_COMPONENT	0x01000000
-+#define ANATOP_SYSTEM_COMPONENT		0x02000000
-+#define ANATOP_THERMAL_COMPONENT		0x04000000
-+#define ANATOP_MEMORY_DEVICE_COMPONENT	0x08000000
-+#define ANATOP_VIDEO_COMPONENT		0x10000000
-+#define ANATOP_PROCESSOR_COMPONENT	0x20000000
-+
-+/*
-+ * _HID definitions
-+ * HIDs must conform to ACPI spec(6.1.4)
-+ * Linux specific HIDs do not apply to this and begin with LNX:
-+ */
-+
-+#define ANATOP_POWER_HID			"LNXPOWER"
-+#define ANATOP_PROCESSOR_OBJECT_HID	"LNXCPU"
-+#define ANATOP_SYSTEM_HID			"LNXSYSTM"
-+#define ANATOP_THERMAL_HID		"LNXTHERM"
-+#define ANATOP_BUTTON_HID_POWERF		"LNXPWRBN"
-+#define ANATOP_BUTTON_HID_SLEEPF		"LNXSLPBN"
-+#define ANATOP_VIDEO_HID			"LNXVIDEO"
-+#define ANATOP_BAY_HID			"LNXIOBAY"
-+#define ANATOP_DOCK_HID			"LNXDOCK"
-+/* Quirk for broken IBM BIOSes */
-+#define ANATOP_SMBUS_IBM_HID		"SMBUSIBM"
-+
-+/*
-+ * For fixed hardware buttons, we fabricate acpi_devices with HID
-+ * ACPI_BUTTON_HID_POWERF or ACPI_BUTTON_HID_SLEEPF.  Fixed hardware
-+ * signals only an event; it doesn't supply a notification value.
-+ * To allow drivers to treat notifications from fixed hardware the
-+ * same as those from real devices, we turn the events into this
-+ * notification value.
-+ */
-+#define ANATOP_FIXED_HARDWARE_EVENT	0x100
-+
-+static inline void *anatop_driver_data(struct anatop_device *d)
-+{
-+	return d->driver_data;
-+}
-+
-+#endif /*__ANATOP_DRIVERS_H__*/
-diff --git a/drivers/thermal/anatop_thermal.c b/drivers/thermal/anatop_thermal.c
-new file mode 100644
-index 0000000..45d817a
---- /dev/null
-+++ b/drivers/thermal/anatop_thermal.c
-@@ -0,0 +1,825 @@
-+/*
-+ *  anatop_thermal.c - anatop Thermal Zone Driver
-+ *
-+ *  Copyright (C) 2001, 2002 Andy Grover <andrew.grover@intel.com>
-+ *  Copyright (C) 2001, 2002 Paul Diefenbaugh <paul.s.diefenbaugh@intel.com>
-+ *  Copyright (C) 2011 Freescale Semiconductor, Inc.
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or (at
-+ *  your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful, but
-+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ *  General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-+ *
-+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ *
-+ *  This driver fully implements the anatop thermal policy as described in the
-+ *  anatop 2.0 Specification.
-+ *
-+ *  TBD: 1. Implement passive cooling hysteresis.
-+ *       2. Enhance passive cooling (CPU) states/limit interface to support
-+ *          concepts of 'multiple limiters', upper/lower limits, etc.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/dmi.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/types.h>
-+#include <linux/jiffies.h>
-+#include <linux/kmod.h>
-+#include <linux/reboot.h>
-+#include <linux/device.h>
-+#include <linux/uaccess.h>
-+#include <linux/thermal.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include "anatop_driver.h"
-+
-+/* register define of anatop */
-+#define HW_ANADIG_ANA_MISC0	(0x00000150)
-+#define HW_ANADIG_ANA_MISC0_SET	(0x00000154)
-+#define HW_ANADIG_ANA_MISC0_CLR	(0x00000158)
-+#define HW_ANADIG_ANA_MISC0_TOG	(0x0000015c)
-+
-+#define HW_ANADIG_TEMPSENSE0	(0x00000180)
-+#define HW_ANADIG_TEMPSENSE0_SET	(0x00000184)
-+#define HW_ANADIG_TEMPSENSE0_CLR	(0x00000188)
-+#define HW_ANADIG_TEMPSENSE0_TOG	(0x0000018c)
-+
-+#define HW_ANADIG_TEMPSENSE1	(0x00000190)
-+#define HW_ANADIG_TEMPSENSE1_SET	(0x00000194)
-+#define HW_ANADIG_TEMPSENSE1_CLR	(0x00000198)
-+
-+#define BM_ANADIG_ANA_MISC0_REFTOP_SELBIASOFF 0x00000008
-+
-+#define BP_ANADIG_TEMPSENSE0_TEMP_VALUE      8
-+#define BM_ANADIG_TEMPSENSE0_TEMP_VALUE 0x000FFF00
-+#define BF_ANADIG_TEMPSENSE0_TEMP_VALUE(v)  \
-+	(((v) << 8) & BM_ANADIG_TEMPSENSE0_TEMP_VALUE)
-+#define BM_ANADIG_TEMPSENSE0_RSVD0 0x00000080
-+#define BM_ANADIG_TEMPSENSE0_TEST 0x00000040
-+#define BP_ANADIG_TEMPSENSE0_VBGADJ      3
-+#define BM_ANADIG_TEMPSENSE0_VBGADJ 0x00000038
-+#define BF_ANADIG_TEMPSENSE0_VBGADJ(v)  \
-+	(((v) << 3) & BM_ANADIG_TEMPSENSE0_VBGADJ)
-+#define BM_ANADIG_TEMPSENSE0_FINISHED 0x00000004
-+#define BM_ANADIG_TEMPSENSE0_MEASURE_TEMP 0x00000002
-+#define BM_ANADIG_TEMPSENSE0_POWER_DOWN 0x00000001
-+
-+#define BP_ANADIG_TEMPSENSE1_RSVD0      16
-+#define BM_ANADIG_TEMPSENSE1_RSVD0 0xFFFF0000
-+#define BF_ANADIG_TEMPSENSE1_RSVD0(v) \
-+	(((v) << 16) & BM_ANADIG_TEMPSENSE1_RSVD0)
-+#define BP_ANADIG_TEMPSENSE1_MEASURE_FREQ      0
-+#define BM_ANADIG_TEMPSENSE1_MEASURE_FREQ 0x0000FFFF
-+#define BF_ANADIG_TEMPSENSE1_MEASURE_FREQ(v)  \
-+	(((v) << 0) & BM_ANADIG_TEMPSENSE1_MEASURE_FREQ)
-+
-+
-+#define PREFIX "ANATOP: "
-+
-+#define ANATOP_THERMAL_DRIVER_NAME	"Anatop Thermal"
-+#define ANATOP_THERMAL_DEVICE_NAME	"Thermal Zone"
-+#define ANATOP_THERMAL_FILE_STATE		"state"
-+#define ANATOP_THERMAL_FILE_TEMPERATURE	"temperature"
-+#define ANATOP_THERMAL_FILE_TRIP_POINTS	"trip_points"
-+#define ANATOP_THERMAL_FILE_COOLING_MODE	"cooling_mode"
-+#define ANATOP_THERMAL_FILE_POLLING_FREQ	"polling_frequency"
-+#define ANATOP_THERMAL_NOTIFY_TEMPERATURE	0x80
-+#define ANATOP_THERMAL_NOTIFY_THRESHOLDS	0x81
-+#define ANATOP_THERMAL_NOTIFY_DEVICES	0x82
-+#define ANATOP_THERMAL_NOTIFY_CRITICAL	0xF0
-+#define ANATOP_THERMAL_NOTIFY_HOT		0xF1
-+#define ANATOP_THERMAL_MODE_ACTIVE	0x00
-+
-+#define ANATOP_THERMAL_MAX_ACTIVE	10
-+#define ANATOP_THERMAL_MAX_LIMIT_STR_LEN 65
-+
-+#define _COMPONENT		ANATOP_THERMAL_COMPONENT
-+#define POLLING_FREQ		20
-+#define TEMP_CRITICAL_SHUTDOWN	380
-+#define TEMP_CRITICAL_SLEEP	360
-+#define TEMP_PASSIVE		320
-+#define MEASURE_FREQ		327  /* 327 RTC clocks delay, 10ms */
-+#define CONVER_CONST		1413 /* rough value, need calibration */
-+#define CONVER_DIV_1024		550  /* div value, need calibration */
-+
-+MODULE_AUTHOR("Anson Huang");
-+MODULE_DESCRIPTION("ANATOP Thermal Zone Driver");
-+MODULE_LICENSE("GPL");
-+
-+static int psv;
-+unsigned long anatop_base;
-+
-+module_param(psv, int, 0644);
-+MODULE_PARM_DESC(psv, "Disable or override all passive trip points.");
-+
-+static int anatop_thermal_add(struct anatop_device *device);
-+static int anatop_thermal_remove(struct platform_device *pdev);
-+static int anatop_thermal_resume(struct platform_device *pdev);
-+/* static void anatop_thermal_notify(struct anatop_device *device,
-+ * u32 event); */
-+static int anatop_thermal_power_on(void);
-+static int anatop_thermal_power_down(void);
-+
-+static const struct anatop_device_id thermal_device_ids[] = {
-+	{ANATOP_THERMAL_HID, 0},
-+	{"", 0},
-+};
-+MODULE_DEVICE_TABLE(anatop, thermal_device_ids);
-+
-+struct anatop_thermal_state {
-+	u8 critical:1;
-+	u8 hot:1;
-+	u8 passive:1;
-+	u8 active:1;
-+	u8 reserved:4;
-+	int active_index;
-+};
-+
-+struct anatop_thermal_state_flags {
-+	u8 valid:1;
-+	u8 enabled:1;
-+	u8 reserved:6;
-+};
-+
-+struct anatop_thermal_critical {
-+	struct anatop_thermal_state_flags flags;
-+	unsigned long temperature;
-+};
-+
-+struct anatop_thermal_hot {
-+	struct anatop_thermal_state_flags flags;
-+	unsigned long temperature;
-+};
-+
-+struct anatop_thermal_passive {
-+	struct anatop_thermal_state_flags flags;
-+	unsigned long temperature;
-+	unsigned long tc1;
-+	unsigned long tc2;
-+	unsigned long tsp;
-+};
-+
-+struct anatop_thermal_active {
-+	struct anatop_thermal_state_flags flags;
-+	unsigned long temperature;
-+};
-+
-+struct anatop_thermal_trips {
-+	struct anatop_thermal_critical critical;
-+	struct anatop_thermal_hot hot;
-+	struct anatop_thermal_passive passive;
-+	struct anatop_thermal_active active[ANATOP_THERMAL_MAX_ACTIVE];
-+};
-+
-+struct anatop_thermal_flags {
-+	u8 cooling_mode:1;	/* _SCP */
-+	u8 devices:1;		/* _TZD */
-+	u8 reserved:6;
-+};
-+
-+struct anatop_thermal {
-+	struct anatop_device *device;
-+	unsigned long temperature;
-+	unsigned long last_temperature;
-+	unsigned long polling_frequency;
-+	u8 zombie;
-+	struct anatop_thermal_flags flags;
-+	struct anatop_thermal_state state;
-+	struct anatop_thermal_trips trips;
-+	struct anatop_handle_list devices;
-+	struct thermal_zone_device *thermal_zone;
-+	int tz_enabled;
-+	int kelvin_offset;
-+	struct mutex lock;
-+};
-+
-+/* ---------------------------------------------
-+			Thermal Zone Management
-+   --------------------------------------------- */
-+static int anatop_dump_temperature_register(void)
-+{
-+	if (!anatop_base) {
-+		pr_info("anatop_base is not initialized!!!\n");
-+		return -EINVAL;
-+	}
-+
-+	pr_info("HW_ANADIG_TEMPSENSE0 = 0x%x\n",
-+			__raw_readl(anatop_base + HW_ANADIG_TEMPSENSE0));
-+	pr_info("HW_ANADIG_TEMPSENSE1 = 0x%x\n",
-+			__raw_readl(anatop_base + HW_ANADIG_TEMPSENSE1));
-+}
-+
-+static int anatop_tempsense_value_to_dc(int val)
-+{
-+	int val_dc;
-+	val_dc = (CONVER_CONST - val) * CONVER_DIV_1024 / 1024;
-+
-+	return val_dc;
-+}
-+
-+static int anatop_thermal_get_temperature(struct anatop_thermal *tz)
-+{
-+	unsigned int tmp = 300;
-+	unsigned int reg;
-+	unsigned int i;
-+	if (!tz)
-+		return -EINVAL;
-+
-+	tz->last_temperature = tz->temperature;
-+
-+	/* now we only using single measure, every time we measure
-+	the temperature, we will power on/down the anadig module*/
-+	anatop_thermal_power_on();
-+
-+	/* write measure freq */
-+	reg = __raw_readl(anatop_base + HW_ANADIG_TEMPSENSE1);
-+	reg &= ~BM_ANADIG_TEMPSENSE1_MEASURE_FREQ;
-+	reg |= MEASURE_FREQ;
-+	__raw_writel(reg, anatop_base + HW_ANADIG_TEMPSENSE1);
-+
-+	__raw_writel(BM_ANADIG_TEMPSENSE0_MEASURE_TEMP,
-+		anatop_base + HW_ANADIG_TEMPSENSE0_CLR);
-+	__raw_writel(BM_ANADIG_TEMPSENSE0_FINISHED,
-+		anatop_base + HW_ANADIG_TEMPSENSE0_CLR);
-+	__raw_writel(BM_ANADIG_TEMPSENSE0_MEASURE_TEMP,
-+		anatop_base + HW_ANADIG_TEMPSENSE0_SET);
-+
-+	tmp = 0;
-+	/* read five times of temperature values to get average*/
-+	for (i = 0; i < 5; i++) {
-+		while ((__raw_readl(anatop_base + HW_ANADIG_TEMPSENSE0)
-+			& BM_ANADIG_TEMPSENSE0_FINISHED) == 0)
-+			msleep(20);
-+		reg = __raw_readl(anatop_base + HW_ANADIG_TEMPSENSE0);
-+		tmp += (reg & BM_ANADIG_TEMPSENSE0_TEMP_VALUE)
-+				>> BP_ANADIG_TEMPSENSE0_TEMP_VALUE;
-+		__raw_writel(BM_ANADIG_TEMPSENSE0_FINISHED,
-+			anatop_base + HW_ANADIG_TEMPSENSE0_CLR);
-+		/* anatop_dump_temperature_register(); */
-+	}
-+
-+	tmp = tmp / 5;
-+	tz->temperature = anatop_tempsense_value_to_dc(tmp);
-+
-+	pr_debug("Temperature is %lu C\n", tz->temperature);
-+	anatop_thermal_power_down();
-+
-+	return 0;
-+}
-+
-+static int anatop_thermal_get_polling_frequency(struct anatop_thermal *tz)
-+{
-+	/* treat the polling interval as freq */
-+	tz->polling_frequency = POLLING_FREQ;
-+
-+	return 0;
-+}
-+
-+static int anatop_thermal_set_cooling_mode(struct anatop_thermal *tz, int mode)
-+{
-+
-+	return 0;
-+}
-+
-+#define ANATOP_TRIPS_CRITICAL	0x01
-+#define ANATOP_TRIPS_HOT		0x02
-+#define ANATOP_TRIPS_PASSIVE	0x04
-+#define ANATOP_TRIPS_ACTIVE	    0x08
-+#define ANATOP_TRIPS_DEVICES	0x10
-+
-+#define ANATOP_TRIPS_INIT      (ANATOP_TRIPS_CRITICAL | \
-+		ANATOP_TRIPS_HOT | ANATOP_TRIPS_PASSIVE)
-+
-+static int anatop_thermal_trips_update(struct anatop_thermal *tz, int flag)
-+{
-+	/* Critical Shutdown */
-+	if (flag & ANATOP_TRIPS_CRITICAL) {
-+		tz->trips.critical.temperature = TEMP_CRITICAL_SHUTDOWN;
-+		tz->trips.critical.flags.valid = 1;
-+
-+	}
-+
-+	/* Critical Sleep(HOT) (optional) */
-+	if (flag & ANATOP_TRIPS_HOT) {
-+			tz->trips.hot.temperature = TEMP_CRITICAL_SLEEP;
-+			tz->trips.hot.flags.valid = 1;
-+
-+	}
-+
-+	/* Passive (optional) */
-+	if (flag & ANATOP_TRIPS_PASSIVE) {
-+			tz->trips.passive.temperature = TEMP_PASSIVE;
-+			tz->trips.passive.flags.valid = 1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int anatop_thermal_get_trip_points(struct anatop_thermal *tz)
-+{
-+	int i, valid, ret = anatop_thermal_trips_update(tz, ANATOP_TRIPS_INIT);
-+
-+	if (ret)
-+		return ret;
-+
-+	valid = tz->trips.critical.flags.valid |
-+		tz->trips.hot.flags.valid |
-+		tz->trips.passive.flags.valid;
-+
-+	for (i = 0; i < ANATOP_THERMAL_MAX_ACTIVE; i++)
-+		valid |= tz->trips.active[i].flags.valid;
-+
-+	if (!valid) {
-+		printk(KERN_WARNING FW_BUG "No valid trip found\n");
-+		return -ENODEV;
-+	}
-+	return 0;
-+}
-+
-+static void anatop_thermal_check(void *data)
-+{
-+	struct anatop_thermal *tz = data;
-+
-+	thermal_zone_device_update(tz->thermal_zone);
-+}
-+
-+/* sys I/F for generic thermal sysfs support */
-+#define KELVIN_TO_CEL(t, off) (((t) - (off)))
-+
-+static int thermal_get_temp(struct thermal_zone_device *thermal,
-+			    unsigned long *temp)
-+{
-+	struct anatop_thermal *tz = thermal->devdata;
-+	int result;
-+
-+	if (!tz)
-+		return -EINVAL;
-+	result = 0;
-+	result = anatop_thermal_get_temperature(tz);
-+	*temp = tz->temperature;
-+	if (result)
-+		return result;
-+	else
-+		return 0;
-+}
-+static const char enabled[] = "kernel";
-+static const char disabled[] = "user";
-+static int thermal_get_mode(struct thermal_zone_device *thermal,
-+				enum thermal_device_mode *mode)
-+{
-+	struct anatop_thermal *tz = thermal->devdata;
-+
-+	if (!tz)
-+		return -EINVAL;
-+
-+	*mode = tz->tz_enabled ? THERMAL_DEVICE_ENABLED :
-+		THERMAL_DEVICE_DISABLED;
-+
-+	return 0;
-+}
-+
-+static int thermal_set_mode(struct thermal_zone_device *thermal,
-+				enum thermal_device_mode mode)
-+{
-+	struct anatop_thermal *tz = thermal->devdata;
-+	int enable;
-+
-+	if (!tz)
-+		return -EINVAL;
-+
-+	/* enable/disable thermal management from thermal driver */
-+	if (mode == THERMAL_DEVICE_ENABLED)
-+		enable = 1;
-+	else if (mode == THERMAL_DEVICE_DISABLED)
-+		enable = 0;
-+	else
-+		return -EINVAL;
-+
-+	if (enable != tz->tz_enabled) {
-+		tz->tz_enabled = enable;
-+		/*
-+		printk((KERN_INFO,
-+			"%s anatop thermal control\n",
-+			tz->tz_enabled ? enabled : disabled));
-+		*/
-+		anatop_thermal_check(tz);
-+	}
-+	return 0;
-+}
-+
-+static int thermal_get_trip_type(struct thermal_zone_device *thermal,
-+				 int trip, enum thermal_trip_type *type)
-+{
-+	struct anatop_thermal *tz = thermal->devdata;
-+	int i;
-+
-+	if (!tz || trip < 0)
-+		return -EINVAL;
-+
-+	if (tz->trips.critical.flags.valid) {
-+		if (!trip) {
-+			*type = THERMAL_TRIP_CRITICAL;
-+			return 0;
-+		}
-+		trip--;
-+	}
-+
-+	if (tz->trips.hot.flags.valid) {
-+		if (!trip) {
-+			*type = THERMAL_TRIP_HOT;
-+			return 0;
-+		}
-+		trip--;
-+	}
-+
-+	if (tz->trips.passive.flags.valid) {
-+		if (!trip) {
-+			*type = THERMAL_TRIP_PASSIVE;
-+			return 0;
-+		}
-+		trip--;
-+	}
-+
-+	for (i = 0; i < ANATOP_THERMAL_MAX_ACTIVE &&
-+		tz->trips.active[i].flags.valid; i++) {
-+		if (!trip) {
-+			*type = THERMAL_TRIP_ACTIVE;
-+			return 0;
-+		}
-+		trip--;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static int thermal_get_trip_temp(struct thermal_zone_device *thermal,
-+				 int trip, unsigned long *temp)
-+{
-+	struct anatop_thermal *tz = thermal->devdata;
-+	int i;
-+
-+	if (!tz || trip < 0)
-+		return -EINVAL;
-+	if (tz->trips.critical.flags.valid) {
-+		if (!trip) {
-+			*temp = KELVIN_TO_CEL(
-+				tz->trips.critical.temperature,
-+				tz->kelvin_offset);
-+			return 0;
-+		}
-+		trip--;
-+	}
-+
-+	if (tz->trips.hot.flags.valid) {
-+		if (!trip) {
-+			*temp = KELVIN_TO_CEL(
-+				tz->trips.hot.temperature,
-+				tz->kelvin_offset);
-+			return 0;
-+		}
-+		trip--;
-+	}
-+
-+	if (tz->trips.passive.flags.valid) {
-+		if (!trip) {
-+			*temp = KELVIN_TO_CEL(
-+				tz->trips.passive.temperature,
-+				tz->kelvin_offset);
-+			return 0;
-+		}
-+		trip--;
-+	}
-+
-+	for (i = 0; i < ANATOP_THERMAL_MAX_ACTIVE &&
-+		tz->trips.active[i].flags.valid; i++) {
-+		if (!trip) {
-+			*temp = KELVIN_TO_CEL(
-+				tz->trips.active[i].temperature,
-+				tz->kelvin_offset);
-+			return 0;
-+		}
-+		trip--;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static int thermal_get_crit_temp(struct thermal_zone_device *thermal,
-+				unsigned long *temperature) {
-+	struct anatop_thermal *tz = thermal->devdata;
-+
-+	if (tz->trips.critical.flags.valid) {
-+		*temperature = KELVIN_TO_CEL(
-+				tz->trips.critical.temperature,
-+				tz->kelvin_offset);
-+		return 0;
-+	} else
-+		return -EINVAL;
-+}
-+
-+static int thermal_notify(struct thermal_zone_device *thermal, int trip,
-+			   enum thermal_trip_type trip_type)
-+{
-+	u8 type = 0;
-+	/* struct anatop_thermal *tz = thermal->devdata; */
-+
-+	if (trip_type == THERMAL_TRIP_CRITICAL)
-+		type = ANATOP_THERMAL_NOTIFY_CRITICAL;
-+	else if (trip_type == THERMAL_TRIP_HOT)
-+		type = ANATOP_THERMAL_NOTIFY_HOT;
-+	else
-+		return 0;
-+/*
-+	if (trip_type == THERMAL_TRIP_CRITICAL && nocrt)
-+		return 1;
-+*/
-+	return 0;
-+}
-+
-+typedef int (*cb)(struct thermal_zone_device *, int,
-+		  struct thermal_cooling_device *);
-+static int anatop_thermal_cooling_device_cb(struct thermal_zone_device *thermal,
-+					struct thermal_cooling_device *cdev,
-+					cb action)
-+{
-+	/* struct anatop_thermal *tz = thermal->devdata; */
-+
-+	int result = 0;
-+
-+	return result;
-+}
-+
-+static int
-+anatop_thermal_bind_cooling_device(struct thermal_zone_device *thermal,
-+					struct thermal_cooling_device *cdev)
-+{
-+	return anatop_thermal_cooling_device_cb(thermal, cdev,
-+				thermal_zone_bind_cooling_device);
-+}
-+
-+static int
-+anatop_thermal_unbind_cooling_device(struct thermal_zone_device *thermal,
-+					struct thermal_cooling_device *cdev)
-+{
-+	return anatop_thermal_cooling_device_cb(thermal, cdev,
-+				thermal_zone_unbind_cooling_device);
-+}
-+
-+static struct thermal_zone_device_ops anatop_thermal_zone_ops = {
-+	.bind = anatop_thermal_bind_cooling_device,
-+	.unbind	= anatop_thermal_unbind_cooling_device,
-+	.get_temp = thermal_get_temp,
-+	.get_mode = thermal_get_mode,
-+	.set_mode = thermal_set_mode,
-+	.get_trip_type = thermal_get_trip_type,
-+	.get_trip_temp = thermal_get_trip_temp,
-+	.get_crit_temp = thermal_get_crit_temp,
-+	.notify = thermal_notify,
-+};
-+
-+static int anatop_thermal_register_thermal_zone(struct anatop_thermal *tz)
-+{
-+	int trips = 0;
-+	int i;
-+
-+	if (tz->trips.critical.flags.valid)
-+		trips++;
-+
-+	if (tz->trips.hot.flags.valid)
-+		trips++;
-+
-+	if (tz->trips.passive.flags.valid)
-+		trips++;
-+
-+	for (i = 0; i < ANATOP_THERMAL_MAX_ACTIVE
-+			&& tz->trips.active[i].flags.valid; i++, trips++)
-+		;
-+
-+	if (tz->trips.passive.flags.valid)
-+		tz->thermal_zone =
-+			thermal_zone_device_register("anatoptz", trips, tz,
-+						     &anatop_thermal_zone_ops,
-+						     tz->trips.passive.tc1,
-+						     tz->trips.passive.tc2,
-+						     tz->trips.passive.tsp*100,
-+						     tz->polling_frequency*100);
-+	else
-+		tz->thermal_zone =
-+			thermal_zone_device_register("anatoptz", trips, tz,
-+						     &anatop_thermal_zone_ops,
-+						     0, 0, 0,
-+						     tz->polling_frequency*100);
-+#if 0
-+	result = sysfs_create_link(&tz->device->dev.kobj,
-+				&tz->thermal_zone->device.kobj, "thermal_zone");
-+	if (result)
-+		return result;
-+
-+	result = sysfs_create_link(&tz->thermal_zone->device.kobj,
-+				   &tz->device->dev.kobj, "device");
-+	if (result)
-+		return result;
-+#endif
-+
-+	tz->tz_enabled = 1;
-+
-+	dev_info(&tz->device->dev, "registered as thermal_zone%d\n",
-+		 tz->thermal_zone->id);
-+	return 0;
-+}
-+/*
-+static void anatop_thermal_unregister_thermal_zone(struct anatop_thermal *tz)
-+{
-+	sysfs_remove_link(&tz->device->dev.kobj, "thermal_zone");
-+	sysfs_remove_link(&tz->thermal_zone->device.kobj, "device");
-+	thermal_zone_device_unregister(tz->thermal_zone);
-+	tz->thermal_zone = NULL;
-+}
-+*/
-+
-+/* --------------------------------------------------------------
-+						Driver Interface
-+   ------------------------------------------------------------- */
-+static int anatop_thermal_get_info(struct anatop_thermal *tz)
-+{
-+	int result = 0;
-+
-+	if (!tz)
-+		return -EINVAL;
-+
-+	/* Get temperature [_TMP] (required) */
-+	result = anatop_thermal_get_temperature(tz);
-+	if (result)
-+		return result;
-+
-+	/* Get trip points [_CRT, _PSV, etc.] (required) */
-+	result = anatop_thermal_get_trip_points(tz);
-+	if (result)
-+		return result;
-+
-+	/* Set the cooling mode [_SCP] to active cooling (default) */
-+	result = anatop_thermal_set_cooling_mode(tz,
-+			ANATOP_THERMAL_MODE_ACTIVE);
-+	if (!result)
-+		tz->flags.cooling_mode = 1;
-+
-+	/* Get default polling frequency [_TZP] (optional) */
-+	anatop_thermal_get_polling_frequency(tz);
-+
-+	return 0;
-+}
-+
-+static void anatop_thermal_guess_offset(struct anatop_thermal *tz)
-+{
-+	tz->kelvin_offset = 273;
-+}
-+
-+static int anatop_thermal_add(struct anatop_device *device)
-+{
-+	int result = 0;
-+	struct anatop_thermal *tz = NULL;
-+	if (!device)
-+		return -EINVAL;
-+
-+	tz = kzalloc(sizeof(struct anatop_thermal), GFP_KERNEL);
-+	if (!tz)
-+		return -ENOMEM;
-+
-+	tz->device = device;
-+	strcpy(device->name, ANATOP_THERMAL_DEVICE_NAME);
-+	device->driver_data = tz;
-+	mutex_init(&tz->lock);
-+
-+	result = anatop_thermal_get_info(tz);
-+	if (result)
-+		goto free_memory;
-+
-+	anatop_thermal_guess_offset(tz);
-+
-+	result = anatop_thermal_register_thermal_zone(tz);
-+	if (result)
-+		goto free_memory;
-+
-+	goto end;
-+
-+free_memory:
-+	kfree(tz);
-+end:
-+	return result;
-+}
-+static int anatop_thermal_remove(struct platform_device *pdev)
-+{
-+	/* struct anatop_device *device = platform_get_drvdata(pdev); */
-+	return 0;
-+}
-+
-+static int anatop_thermal_resume(struct platform_device *pdev)
-+{
-+
-+	return 0;
-+}
-+static int anatop_thermal_power_on(void)
-+{
-+	__raw_writel(BM_ANADIG_TEMPSENSE0_POWER_DOWN,
-+			anatop_base + HW_ANADIG_TEMPSENSE0_CLR);
-+
-+	__raw_writel(BM_ANADIG_ANA_MISC0_REFTOP_SELBIASOFF,
-+			anatop_base + HW_ANADIG_ANA_MISC0_SET);
-+	return 0;
-+}
-+
-+static int anatop_thermal_power_down(void)
-+{
-+	__raw_writel(BM_ANADIG_TEMPSENSE0_POWER_DOWN,
-+			anatop_base + HW_ANADIG_TEMPSENSE0_SET);
-+
-+	__raw_writel(BM_ANADIG_ANA_MISC0_REFTOP_SELBIASOFF,
-+			anatop_base + HW_ANADIG_ANA_MISC0_CLR);
-+	return 0;
-+}
-+
-+static int anatop_thermal_probe(struct platform_device *pdev)
-+{
-+	int retval = 0;
-+	struct resource *res;
-+	void __iomem *base;
-+
-+	struct anatop_device *device;
-+	device = kzalloc(sizeof(*device), GFP_KERNEL);
-+	if (!device) {
-+		retval = -ENOMEM;
-+		goto device_alloc_failed;
-+	}
-+
-+	platform_set_drvdata(pdev, device);
-+
-+	/* ioremap the base address */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res == NULL) {
-+		dev_err(&pdev->dev, "No anatop base address provided\n");
-+		goto anatop_failed;
-+	}
-+
-+	base = ioremap(res->start, res->end - res->start);
-+	if (base == NULL) {
-+		dev_err(&pdev->dev, "failed to rebase anatop base address\n");
-+		goto anatop_failed;
-+	}
-+	anatop_base = (unsigned long)base;
-+
-+	anatop_thermal_add(device);
-+
-+	goto success;
-+anatop_failed:
-+	kfree(device);
-+device_alloc_failed:
-+success:
-+	pr_info("%s\n", __func__);
-+	return retval;
-+}
-+static int anatop_thermal_suspend(struct platform_device *pdev,
-+				  pm_message_t state)
-+{
-+	return 0;
-+}
-+
-+static struct platform_driver anatop_thermal_driver_ldm = {
-+	.driver = {
-+		   .name = "anatop_thermal",
-+		   .bus = &platform_bus_type,
-+		   },
-+	.probe = anatop_thermal_probe,
-+	.remove = anatop_thermal_remove,
-+	.suspend = anatop_thermal_suspend,
-+	.resume = anatop_thermal_resume,
-+};
-+
-+static int __init anatop_thermal_init(void)
-+{
-+	pr_debug("Anatop Thermal driver loading\n");
-+	return platform_driver_register(&anatop_thermal_driver_ldm);
-+}
-+
-+static void __exit anatop_thermal_exit(void)
-+{
-+	platform_driver_unregister(&anatop_thermal_driver_ldm);
-+	pr_debug("Anatop Thermal driver successfully unloaded\n");
-+}
-+
-+module_init(anatop_thermal_init);
-+module_exit(anatop_thermal_exit);
--- 
-1.7.7.3
+I was seeing a bunch of scheduling while atomic backtraces from rc4-rt5
+on my laptop:
 
+Dec  2 17:50:56 localhost kernel: [ 1397.730931] Call Trace:
+Dec  2 17:50:56 localhost kernel: [ 1397.730938]  [<ffffffff814d5006>] __sc=
+hedule_bug+0x75/0x7a
+Dec  2 17:50:56 localhost kernel: [ 1397.730943]  [<ffffffff814e8e4a>] __sc=
+hedule+0x8a/0x505
+Dec  2 17:50:56 localhost kernel: [ 1397.730947]  [<ffffffff814e96df>] sche=
+dule+0x75/0x91
+Dec  2 17:50:56 localhost kernel: [ 1397.730951]  [<ffffffff814ea64e>] rt_s=
+pin_lock_slowlock+0x182/0x21e
+Dec  2 17:50:56 localhost kernel: [ 1397.730954]  [<ffffffff814ea5d9>] ? rt=
+_spin_lock_slowlock+0x10d/0x21e
+Dec  2 17:50:56 localhost kernel: [ 1397.730961]  [<ffffffff81090477>] rt_s=
+pin_lock_fastlock.constprop.12+0x24/0x26
+Dec  2 17:50:56 localhost kernel: [ 1397.730965]  [<ffffffff814eaabb>] rt_s=
+pin_lock+0x16/0x3d
+Dec  2 17:50:56 localhost kernel: [ 1397.730969]  [<ffffffff812acbe3>] adva=
+nce_transaction+0x31/0x141
+Dec  2 17:50:56 localhost kernel: [ 1397.730972]  [<ffffffff812ad819>] acpi=
+_ec_gpe_handler+0x3f/0xc0
+Dec  2 17:50:56 localhost kernel: [ 1397.730977]  [<ffffffff812b862a>] acpi=
+_ev_gpe_dispatch+0xc5/0x13e
+Dec  2 17:50:56 localhost kernel: [ 1397.730983]  [<ffffffff812b8758>] acpi=
+_ev_gpe_detect+0xb5/0x10d
+Dec  2 17:50:56 localhost kernel: [ 1397.730987]  [<ffffffff810b5048>] ? ir=
+q_thread_fn+0x3a/0x3a
+Dec  2 17:50:56 localhost kernel: [ 1397.730990]  [<ffffffff812b6d26>] acpi=
+_ev_sci_xrupt_handler+0x22/0x2b
+Dec  2 17:50:56 localhost kernel: [ 1397.730994]  [<ffffffff812a7a08>] acpi=
+_irq+0x16/0x31
+Dec  2 17:50:56 localhost kernel: [ 1397.730996]  [<ffffffff810b506d>] irq_=
+forced_thread_fn+0x25/0x46
+Dec  2 17:50:56 localhost kernel: [ 1397.730998]  [<ffffffff814eb566>] ? _r=
+aw_spin_unlock_irq+0x53/0x60
+Dec  2 17:50:56 localhost kernel: [ 1397.731001]  [<ffffffff810b4f26>] irq_=
+thread+0xa5/0x18d
+Dec  2 17:50:56 localhost kernel: [ 1397.731003]  [<ffffffff810b4e81>] ? ir=
+q_finalize_oneshot+0x19/0x19
+Dec  2 17:50:56 localhost kernel: [ 1397.731006]  [<ffffffff81077ad2>] kthr=
+ead+0x99/0xa1
+Dec  2 17:50:56 localhost kernel: [ 1397.731009]  [<ffffffff814eb8b8>] ? re=
+tint_restore_args+0x13/0x13
+Dec  2 17:50:56 localhost kernel: [ 1397.731014]  [<ffffffff814f3984>] kern=
+el_thread_helper+0x4/0x10
+Dec  2 17:50:56 localhost kernel: [ 1397.731016]  [<ffffffff814eb8b8>] ? re=
+tint_restore_args+0x13/0x13
+Dec  2 17:50:56 localhost kernel: [ 1397.731019]  [<ffffffff81077a39>] ? __=
+init_kthread_worker+0x89/0x89
+Dec  2 17:50:56 localhost kernel: [ 1397.731022]  [<ffffffff814f3980>] ? gs=
+_change+0x13/0x13
+
+
+The attached patch converts the ACPI Embedded Controller lock to a raw
+spinlock. Boots and suspends/resumes with no backtraces (from this
+anyway...let's not talk about nouveau right now...)
+
+Clark
+
+--MP_/vpQJX5Dx26lcOP8XRWCYO5/
+Content-Type: text/x-patch
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename=ec_raw_spinlock.patch
+
+commit 03981ccbd4b3d368aa227aa55961f8481e9e645c
+Author: Clark Williams <williams@redhat.com>
+Date:   Sat Dec 3 09:15:46 2011 -0600
+
+    convert ACPI embedded controller lock to raw spinlock
+   =20
+    Was seeing multiple "scheduling while atomic" backtraces on the
+    3.2-rc2-rt5 realtime kernel. This patch converts the spinlock in
+    the ACPI embedded controller structure (curr_lock) to be a raw
+    spinlock.
+   =20
+    Signed-off-by: Clark Williams <williams@redhat.com>
+
+diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
+index b19a18d..5812e01 100644
+--- a/drivers/acpi/ec.c
++++ b/drivers/acpi/ec.c
+@@ -152,10 +152,10 @@ static int ec_transaction_done(struct acpi_ec *ec)
+ {
+ 	unsigned long flags;
+ 	int ret =3D 0;
+-	spin_lock_irqsave(&ec->curr_lock, flags);
++	raw_spin_lock_irqsave(&ec->curr_lock, flags);
+ 	if (!ec->curr || ec->curr->done)
+ 		ret =3D 1;
+-	spin_unlock_irqrestore(&ec->curr_lock, flags);
++	raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
+ 	return ret;
+ }
+=20
+@@ -169,7 +169,7 @@ static void start_transaction(struct acpi_ec *ec)
+ static void advance_transaction(struct acpi_ec *ec, u8 status)
+ {
+ 	unsigned long flags;
+-	spin_lock_irqsave(&ec->curr_lock, flags);
++	raw_spin_lock_irqsave(&ec->curr_lock, flags);
+ 	if (!ec->curr)
+ 		goto unlock;
+ 	if (ec->curr->wlen > ec->curr->wi) {
+@@ -194,7 +194,7 @@ err:
+ 	if (in_interrupt())
+ 		++ec->curr->irq_count;
+ unlock:
+-	spin_unlock_irqrestore(&ec->curr_lock, flags);
++	raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
+ }
+=20
+ static int acpi_ec_sync_query(struct acpi_ec *ec);
+@@ -232,9 +232,9 @@ static int ec_poll(struct acpi_ec *ec)
+ 		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
+ 			break;
+ 		pr_debug(PREFIX "controller reset, restart transaction\n");
+-		spin_lock_irqsave(&ec->curr_lock, flags);
++		raw_spin_lock_irqsave(&ec->curr_lock, flags);
+ 		start_transaction(ec);
+-		spin_unlock_irqrestore(&ec->curr_lock, flags);
++		raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
+ 	}
+ 	return -ETIME;
+ }
+@@ -247,17 +247,17 @@ static int acpi_ec_transaction_unlocked(struct acpi_e=
+c *ec,
+ 	if (EC_FLAGS_MSI)
+ 		udelay(ACPI_EC_MSI_UDELAY);
+ 	/* start transaction */
+-	spin_lock_irqsave(&ec->curr_lock, tmp);
++	raw_spin_lock_irqsave(&ec->curr_lock, tmp);
+ 	/* following two actions should be kept atomic */
+ 	ec->curr =3D t;
+ 	start_transaction(ec);
+ 	if (ec->curr->command =3D=3D ACPI_EC_COMMAND_QUERY)
+ 		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
+-	spin_unlock_irqrestore(&ec->curr_lock, tmp);
++	raw_spin_unlock_irqrestore(&ec->curr_lock, tmp);
+ 	ret =3D ec_poll(ec);
+-	spin_lock_irqsave(&ec->curr_lock, tmp);
++	raw_spin_lock_irqsave(&ec->curr_lock, tmp);
+ 	ec->curr =3D NULL;
+-	spin_unlock_irqrestore(&ec->curr_lock, tmp);
++	raw_spin_unlock_irqrestore(&ec->curr_lock, tmp);
+ 	return ret;
+ }
+=20
+@@ -678,7 +678,7 @@ static struct acpi_ec *make_acpi_ec(void)
+ 	mutex_init(&ec->lock);
+ 	init_waitqueue_head(&ec->wait);
+ 	INIT_LIST_HEAD(&ec->list);
+-	spin_lock_init(&ec->curr_lock);
++	raw_spin_lock_init(&ec->curr_lock);
+ 	return ec;
+ }
+=20
+diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+index ca75b9c..68ed95f 100644
+--- a/drivers/acpi/internal.h
++++ b/drivers/acpi/internal.h
+@@ -62,7 +62,7 @@ struct acpi_ec {
+ 	wait_queue_head_t wait;
+ 	struct list_head list;
+ 	struct transaction *curr;
+-	spinlock_t curr_lock;
++	raw_spinlock_t curr_lock;
+ };
+=20
+ extern struct acpi_ec *first_ec;
+
+--MP_/vpQJX5Dx26lcOP8XRWCYO5/--
+
+--Sig_/qqcCkFo1Ov0tlITMCj8D7fp
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEARECAAYFAk7aQc0ACgkQHyuj/+TTEp1wdQCdGi7huqfZZYwMBW91bICU9zew
+FZcAoM6leP805J/d5rruxEvbU1nNPQ6Z
+=+fyw
+-----END PGP SIGNATURE-----
+
+--Sig_/qqcCkFo1Ov0tlITMCj8D7fp--
