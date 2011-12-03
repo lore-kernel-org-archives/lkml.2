@@ -1,134 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab1LCB4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 2 Dec 2011 20:56:43 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63117 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754102Ab1LCB4l (ORCPT
+	id S1755418Ab1LCCYB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 2 Dec 2011 21:24:01 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46865 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754309Ab1LCCYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 2 Dec 2011 20:56:41 -0500
-X-Authority-Analysis: v=2.0 cv=dOUkaZlb c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=iwpXj59KtUAA:10 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=_V_zpGV5dmoCMt7CtL0A:9 a=FEmMcp-wLpeZZHpRqskA:7 a=QEXdDO2ut3YA:10 a=LI9Vle30uBYA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=sl2m2tP-tFcFG2WKpe8A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: [PATCH][GIT PULL][v3.2] trace_events_filter: Use
- rcu_assign_pointer() when setting ftrace_event_call->filter
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-dUKei558pZ74FBESM18I"
-Date: Fri, 02 Dec 2011 20:56:39 -0500
-Message-ID: <1322877399.30977.68.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Fri, 2 Dec 2011 21:24:00 -0500
+MIME-Version: 1.0
+Date: Fri, 2 Dec 2011 18:23:58 -0800
+Message-ID: <CA+XNFZNKmH5a1fTvGonG=Z5KaN66gEKCzgeDO-EFKz1VgTxD_w@mail.gmail.com>
+Subject: sendmsg/recvmsg ambiguities
+From: Ben Longbons <brlongbons@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-dUKei558pZ74FBESM18I
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Sorry to bother you guys with this wall of text, but I've searched and
+asked for help in other places and nobody else seems to know anything.
 
+I'm programming in userspace, but dealing with some poorly documented
+system calls, so I hope this isn't inappropriate.
 
-Ingo,
+There's not a lot of documentation about passing an arbitrary number
+of file descriptors over a stream-based Unix socket, at any time. Most
+example code out there assumes that you're only passing one or a small
+constant number, and/or not passing any normal data with it.
 
-Please pull the latest tip/perf/urgent tree, which can be found at:
+What I need to do is pass normal data and file descriptors both ways
+across the socket, without getting MSG_CTRUNC (which is essentially
+unrecoverable, since there's no way of knowing *how much* was lost -
+otherwise I could resend).
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/urgent
+I've discovered empirically that all the ancillary data is associated
+with a single byte in the stream; if you read that byte into your
+buffer, then you get all the ancillary data. Even if your buffers are
+large enough, it will stop reading before a subsequent "heavy" byte;
+conversely, it will set MSG_CTRUNC rather than return the data with
+subsequent "light" bytes. If you pass multiple struct cmsgs to
+sendmsg, all the file descriptors get aggregated into one for recvmsg.
 
-Head SHA1: d3d9acf646679c1981032b0985b386d12fccc60c
+I thought about implementing a loop with MSG_PEEK, but the behavior is
+undefined and might change? (Search in net/unix/af_unix.c for "It is
+questionable: on PEEK we could") but in any case it would be wasteful
+for the common case of having a big enough buffer.
 
+How much of the preceding is "fixed" and how much is subject to
+change? This really needs to be documented.
 
-Tejun Heo (1):
-      trace_events_filter: Use rcu_assign_pointer() when setting ftrace_eve=
-nt_call->filter
+It would be nice if there were an ioctl analogous to FIONREAD, but for
+ancillary data instead of normal data. Speaking of which - FIONREAD
+returns the total amount of data bytes available, which is pretty
+useless for allocating a buffer because you won't actually get that
+many bytes in the case where there are multiple pieces of ancillary
+data.
 
-----
- kernel/trace/trace_events_filter.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
----------------------------
-commit d3d9acf646679c1981032b0985b386d12fccc60c
-Author: Tejun Heo <tj@kernel.org>
-Date:   Wed Nov 23 08:49:49 2011 -0800
+Are there any other kinds of ancillary data that may spontaneously add
+themselves in the future (besides the 2 mentioned in unix(7) ),
+leading to a possible MSG_CTRUNC or some kind of resource limit?
+Obviously, ignoring SCM_RIGHTS will lead to a shortage of file
+descriptors ... I've read about setting SO_PASSCRED (which I don't
+need) to get SCM_CREDENTIALS, which seems pointless as it's safe to
+ignore while looping over the cmsg structures.
 
-    trace_events_filter: Use rcu_assign_pointer() when setting ftrace_event=
-_call->filter
-   =20
-    ftrace_event_call->filter is sched RCU protected but didn't use
-    rcu_assign_pointer().  Use it.
-   =20
-    TODO: Add proper __rcu annotation to call->filter and all its users.
-   =20
-    -v2: Use RCU_INIT_POINTER() for %NULL clearing as suggested by Eric.
-   =20
-    Link: http://lkml.kernel.org/r/20111123164949.GA29639@google.com
-   =20
-    Cc: Eric Dumazet <eric.dumazet@gmail.com>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Jiri Olsa <jolsa@redhat.com>
-    Cc: stable@kernel.org # (2.6.39+)
-    Signed-off-by: Tejun Heo <tj@kernel.org>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+If a hostile or buggy process connects and intentionally passes a
+larger buffer and I get MSG_CTRUNC, I can just kill their connection
+(and be careful to close any file descriptors in the truncated
+message, etc).
 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events=
-_filter.c
-index 816d3d0..d6e7926 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -1686,7 +1686,7 @@ static int replace_system_preds(struct event_subsyste=
-m *system,
- 		 * replace the filter for the call.
- 		 */
- 		filter =3D call->filter;
--		call->filter =3D filter_item->filter;
-+		rcu_assign_pointer(call->filter, filter_item->filter);
- 		filter_item->filter =3D filter;
-=20
- 		fail =3D false;
-@@ -1741,7 +1741,7 @@ int apply_event_filter(struct ftrace_event_call *call=
-, char *filter_string)
- 		filter =3D call->filter;
- 		if (!filter)
- 			goto out_unlock;
--		call->filter =3D NULL;
-+		RCU_INIT_POINTER(call->filter, NULL);
- 		/* Make sure the filter is not being used */
- 		synchronize_sched();
- 		__free_filter(filter);
-@@ -1782,7 +1782,7 @@ out:
- 	 * string
- 	 */
- 	tmp =3D call->filter;
--	call->filter =3D filter;
-+	rcu_assign_pointer(call->filter, filter);
- 	if (tmp) {
- 		/* Make sure the call is done with the filter */
- 		synchronize_sched();
+I'm also being paranoid about whether the amount of data available can
+change (for FIONREAD or MSG_PEEK). I can deal with spurious
+notifications from ppoll(2) - I'm looping until EAGAIN/EWOULDBLOCK,
+which is needed anyway to handle the case of *more* data arriving, or
+working without FIONREAD. Common sense says that a file descriptor
+won't suddenly have less data available, but common sense is wrong -
+it's quite possible that someone else has a dup, i.e. because
+depending on the interpretation of the data bytes, I may start
+listening to the file descriptor I get passed.
 
+Is it safe to close the passed file descriptor as soon sendmsg returns
+successfully? That would imply that there's a brief period of time
+when no userland process holds an open file descriptor referring to
+the underlying file description.
 
---=-dUKei558pZ74FBESM18I
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+cmsg(3) says that msg_controllen should be set to the sum of the
+CMSG_SPACE of each struct cmsg (presumably this means the size before
+being passed to CMSG_LEN). But the code below it initializes it to
+cmsg->cmsg_len, which was initialized via CMSG_LEN. If I've chosen my
+buffer size carefully via CMSG_SPACE in the first place, I shouldn't
+have to change it a second time, right?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I'm aware that it would be too much trouble to change the API, but
+wouldn't it be perfectly valid to have CMSG_LEN be a noop, since the
+only thing it's supposed to be used for is initializing
+cmsg->cmsg_len, everything else should use CMSG_SPACE? And this would
+make the above mistake more easily caught.
 
-iQIcBAABAgAGBQJO2YHUAAoJEIy3vGnGbaoAfVMQALnYAxWcTVZjAu9yE6Xj3JIE
-0/hCvRtIVebIfMxnJT6ofXts999EcPwkhCeqDfF/TPCx07OblIF5VsLvY8nGz0TK
-vQTHzem2oZELNFfLQApxroqJLSvNW+rYs318jU7YqZ+Owi2+DuHeTrFSxZZ8zwUX
-jHyKA0vc1D6sazKJWY75/FtGTr2xSvPEfIRWPI/HedGvuIZsaWvMp7Td7aZ/y4HX
-4chOuYmLeiv91GEcdvAeAu1OUTVff+ki4QQ4DT2EpA23TpCLxs7/4e+X3018RD7e
-WOCfxwX/oKz5TeJ9uVK2dbiSAXAvD9R93HTHLLzr6qdHie3VktlYQSxXDr7bLD38
-hFeL/0PA2jETWBNQgNclb5NiCC9M2lcJVl7oxir91CsqNEl9+x/ao8V8sMklUg3h
-/x8e0mfSiql2rZ/92cBRGWmwbkJWaGGrMUqtzjinnFowW83UPr1X3oc9qWckwVwq
-dr2P4XokjnzAnDjNKu4d9u7lZs7zXw+PAgiUuiiP5HOj7B7h/wq0fWmHxH++xj6z
-HkH0lR7LfYO/+9cZRc4kI27RedBPOY0xd10ZcupH/SYpNlA4rmWu2yZNocrANgyt
-u76S6kfQTiWXzEWjX+FTPtCQc3FHLaWgqY846Ti5DYS7G7rTZuE3WuLggUcNCDWc
-5cfldVCPG69k6Fdru9Cr
-=dEcP
------END PGP SIGNATURE-----
+It would be *very* useful if that header provided an inverse function
+to CMSG_LEN (for the above reason) and CMSG_SPACE (so, given the
+maximum buffer size (/proc/sys/net/core/optmem_max), you can figure
+out how much you can actually use (i.e., how many fds you can pass in
+a single call), after the overhead of struct cmsg).
 
---=-dUKei558pZ74FBESM18I--
+Is there a sane minimum for optmem_max? RFC 2292 demands 10240 but
+mentions many BSD-derived systems having 108 (I don't want to rule out
+running my program on other unices) ... the main server has exactly
+10240 and my home systems have double that.
 
+It's also not clear whether optmem_max falls under the statement from
+socket(7): "thus the values in the corresponding /proc files are twice
+what can be observed on the wire"
+
+Also - for the case of a non-unix socket, or when I don't have any
+ancillary data: is writev any more efficient than sendmsg? Also, is
+sendmsg (with no ancillary data) even valid for non-sockets?
+
+I'm not subscribed to the list, so please CC me.
+
+Thanks,
+-Ben Longbons (aka o11c in some circles)
