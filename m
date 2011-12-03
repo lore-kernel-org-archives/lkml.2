@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab1LDKuK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 05:50:10 -0500
-Received: from ozlabs.org ([203.10.76.45]:39931 "EHLO ozlabs.org"
+	id S1753551Ab1LDKuI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 05:50:08 -0500
+Received: from ozlabs.org ([203.10.76.45]:51806 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753239Ab1LDKuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753230Ab1LDKuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 4 Dec 2011 05:50:06 -0500
-From: Rusty Russell <rusty@ozlabs.org>
-To: Greg KH <greg@kroah.com>, Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, siglesia@cern.ch, manohar.vanga@cern.ch,
-        dave.martin@linaro.org
-Subject: Re: [RFC PATCH V2 0/1] making order in file2alias
-In-Reply-To: <20111202192701.GB13860@kroah.com>
-References: <87pqg7r8q9.fsf@rustcorp.com.au> <cover.1322781825.git.rubini@gnudd.com> <20111202000350.GA6507@kroah.com> <20111202084213.GA3415@mail.gnudd.com> <20111202192701.GB13860@kroah.com>
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: dave@gnu.org, lguest@lists.ozlabs.org
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lguest: move the lguest tool to the tools directory
+In-Reply-To: <1322862759.3264.2.camel@offbook>
+References: <1322862759.3264.2.camel@offbook>
 User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Sat, 03 Dec 2011 15:21:43 +1030
-Message-ID: <87mxbaqmu8.fsf@rustcorp.com.au>
+Date: Sat, 03 Dec 2011 15:38:42 +1030
+Message-ID: <87k46eqm1x.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Dec 2011 11:27:01 -0800, Greg KH <greg@kroah.com> wrote:
-> On Fri, Dec 02, 2011 at 09:42:13AM +0100, Alessandro Rubini wrote:
-> > > But splitting 15-line functions into separate files?  Less compact, less
-> > > simple.
-> > 
-> > Personally, I'm more interested in the addition of new busses (as
-> > drop-in files) than the split up of current ones. But I see your point.
+On Fri, 02 Dec 2011 22:52:39 +0100, Davidlohr Bueso <dave@gnu.org> wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
 > 
-> Yes, that's what me and Linus have asked about having in the past,
-> making things easier to merge and the like.  Now admittedly, this file
-> isn't all that hard to merge these days given that the addition of new
-> busses is pretty rare, these complaints might have been from before git
-> times, when merges were harder than they are now.
+> This is a better location instead of having it in Documentation.
 > 
-> Anyway, I like your patch as well, as it seems to get us to that goal.
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-But it doesn't :( Trivial conflict in file2alias.c becomes trivial
-conflict in Makefile.
+Applied, thanks!  This has been on my TODO list for ages.  Almost since
+tools/ was created.
 
-We could use $(wildcard) in the Makefile, but that's not used much in
-the kernel so it'd seem a bit weird.
+Weird that your patch didn't come through as a simple move and slight
+mod though: this way it's a pain to read :(  I checked, you didn't
+change anything.
 
-So honestly, I think we should reorder file2alias.c into alphabetical
-order.  In practice, that'll prevent conflicts.
+But unfortunately that's a problem:
+$ make
+cc -m32 -Wall -Wmissing-declarations -Wmissing-prototypes -O3 -U_FORTIFY_SOURCE    lguest.c   -o lguest
+lguest.c:52:52: fatal error: ../../../include/linux/lguest_launcher.h: No such file or directory
+compilation terminated.
+make: *** [lguest] Error 1
 
-As I said, I'm happy for Alessandro to do the separate file thing *too*,
-but if that was the only point, there wasn't one.
+You need this as well:
 
-Cheers,
-Rusty.
+From: Rusty Russell <rusty@rustcorp.com.au>
+Subject: lguest: move the lguest tool to the tools directory (fixes)
+
+Fixup complilation breakage from move.
+
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ drivers/lguest/Makefile |    2 +-
+ tools/lguest/lguest.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/lguest/Makefile b/drivers/lguest/Makefile
+--- a/drivers/lguest/Makefile
++++ b/drivers/lguest/Makefile
+@@ -18,7 +18,7 @@ Mastery: PREFIX=M
+ Beer:
+ 	@for f in Preparation Guest Drivers Launcher Host Switcher Mastery; do echo "{==- $$f -==}"; make -s $$f; done; echo "{==-==}"
+ Preparation Preparation! Guest Drivers Launcher Host Switcher Mastery:
+-	@sh ../../Documentation/virtual/lguest/extract $(PREFIX) `find ../../* -name '*.[chS]' -wholename '*lguest*'`
++	@sh ../../tools/lguest/extract $(PREFIX) `find ../../* -name '*.[chS]' -wholename '*lguest*'`
+ Puppy:
+ 	@clear
+ 	@printf "      __  \n (___()'\`;\n /,    /\`\n \\\\\\\"--\\\\\\   \n"
+diff --git a/tools/lguest/lguest.c b/tools/lguest/lguest.c
+--- a/tools/lguest/lguest.c
++++ b/tools/lguest/lguest.c
+@@ -49,7 +49,7 @@
+ #include <linux/virtio_rng.h>
+ #include <linux/virtio_ring.h>
+ #include <asm/bootparam.h>
+-#include "../../../include/linux/lguest_launcher.h"
++#include "../../include/linux/lguest_launcher.h"
+ /*L:110
+  * We can ignore the 43 include files we need for this program, but I do want
+  * to draw attention to the use of kernel-style types.
