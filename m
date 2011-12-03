@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab1LCRhw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 12:37:52 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54216 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab1LCRhu (ORCPT
+	id S1753614Ab1LCRiO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 12:38:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61588 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab1LCRiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 12:37:50 -0500
-Message-ID: <4EDA5E5A.4050804@linux.vnet.ibm.com>
-Date: Sat, 03 Dec 2011 23:07:30 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Sat, 3 Dec 2011 12:38:13 -0500
+Message-ID: <4EDA5E7F.30508@redhat.com>
+Date: Sat, 03 Dec 2011 18:38:07 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Miles Lane <miles.lane@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: 3.2.0-rc4+ (Linus GIT af968e29acd91ebeb4224e899202c46c93171ecd)
- -- Freezing of tasks failed after 20.01 seconds (1 tasks refusing to freeze,
- wq_busy=0):
-References: <CAHFgRy_ae70MZOgY8q3i36NJh42=GK=XP=EA=ktxgXiFzjY49w@mail.gmail.com> <4ED9C7D7.5030300@linux.vnet.ibm.com> <CAHFgRy_o6b9ih=BXysL9Ws6KDcVcOkJ2hnLa9zZJ=m-=zoLmPA@mail.gmail.com> <4EDA51FF.8050904@linux.vnet.ibm.com> <CAHFgRy_H4-aN7X65ivfgVS1iinw58kSR6Hbg2A6kGAxTOrWApg@mail.gmail.com>
-In-Reply-To: <CAHFgRy_H4-aN7X65ivfgVS1iinw58kSR6Hbg2A6kGAxTOrWApg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] virtio-scsi: first version
+References: <1322661299-28855-1-git-send-email-pbonzini@redhat.com>  <1322661299-28855-2-git-send-email-pbonzini@redhat.com> <1322867228.11728.19.camel@pasglop>
+In-Reply-To: <1322867228.11728.19.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 11120307-7014-0000-0000-00000033AE31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2011 10:47 PM, Miles Lane wrote:
+On 12/03/2011 12:07 AM, Benjamin Herrenschmidt wrote:
+> This is typically the one thing you should -really- obtain from the
+> other side. This is the number one reason why we cannot today reliably
+> emulate a SCSI controller in qemu -and- pass-through the SCSI commands
+> to the host /dev/sg or equivalent (only full device emulation is
+> reliable).
+>
+> This is also typically what something like virtio-scsi allows us to fix,
+> so let's fix it. IE. we have the ability to query the "limits" of the
+> real HBA /  transport on the host side and to pass them along to the
+> guest, which enables us to do real pass-through.
 
-> On Sat, Dec 3, 2011 at 11:44 AM, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> On 12/03/2011 09:07 PM, Miles Lane wrote:
->>
->>> Thanks!  The patch worked perfectly.
->>>
->>>         Miles
->>>
->>
->>
->> I had written that patch when I found a possibility of freezing failure when
->> looking at the code. I hadn't really hit the problem myself. (And to test my
->> patch's effectiveness, I had used a synthetic scenario that I had created.)
->>
->> So, since you seem to have hit the problem during normal usage itself and not
->> while doing anything fancy, out of curiosity, what triggered the problem?
-> 
-> I was intentionally checking for problems with reading the contents of
-> the /sys and /proc trees.  So I ran:
-> find /sys -name "[a-z]*" | xargs head
-> and
-> find /proc -name "[q-z]*" | xargs head
-> and then, while the commands were processing files I suspended
-> (unsuccessfully) the laptop.
-> 
-> I have often found bugs in this area, so I periodically run this test.
->  Sometimes it turns up problems in accessing specific information in
-> the data files.  This is the first time I added trying to suspend
-> while the test was running.
-> 
-> Happy coding!
->       Miles
-> 
+You can fix this in QEMU; READ and WRITE commands can be split in 
+multiple parts.  The scsi-block device I added recently does this.
 
+However, it seems like a simple change, so I'll do it.  I'll add 
+max_sectors and cmd_per_lun to the config space.
 
-Great! Thanks for telling how you triggered the problem!
-
-Regards,
-Srivatsa S. Bhat
-
+Paolo
