@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab1LCWvz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 17:51:55 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38738 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab1LCWvx (ORCPT
+	id S1752390Ab1LCW7I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 17:59:08 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:37136 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab1LCW7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 17:51:53 -0500
-Message-ID: <4EDAA785.40503@solonet.org.ua>
-Date: Sun, 04 Dec 2011 00:49:41 +0200
-From: Denis Kuzmenko <linux@solonet.org.ua>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Sat, 3 Dec 2011 17:59:04 -0500
+Message-ID: <4EDAA9B3.3010904@suse.cz>
+Date: Sat, 03 Dec 2011 23:58:59 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111123 Thunderbird/9.0
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] leds: driver for ab5500 high voltage leds
-References: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: Jiri Slaby <jirislaby@gmail.com>, Keith Packard <keithp@keithp.com>,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org
+Subject: Re: g33: GPU hangs
+References: <4ED7735A.1020903@suse.cz> <d08817$2d9rsk@azsmga001.ch.intel.com>
+In-Reply-To: <d08817$2d9rsk@azsmga001.ch.intel.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On 12/02/2011 03:56 PM, Linus Walleij wrote:
-> From: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
+On 12/01/2011 01:47 PM, Chris Wilson wrote:
+> On Thu, 01 Dec 2011 13:30:18 +0100, Jiri Slaby <jslaby@suse.cz> wrote:
+>> Hi,
+>>
+>> both yesterday and today, my GPU hung. Both happened when I opened
+>> google front page in firefox.
+>>
+>> I'm running 3.2.0-rc3-next-20111130. Given it happened twice in the past
+>> 24 hours, it looks like a regression from next-20111124. Or is this a
+>> userspace issue (I might updated some packages)?
+>>
+>> i915_error_state dumps from the two hangs are here:
+>> http://www.fi.muni.cz/~xslaby/sklad/panics/915_error_state_0
+>> http://www.fi.muni.cz/~xslaby/sklad/panics/915_error_state_second
 > 
-> Simple HV LED controller driver for AB5500v1.0 MFD chips
+> Both error states contain the same bug: a fence register in conflict
+> with the command stream. The batch is using the buffer at 0x03d0000 
+> as an untiled 40x40 rgba buffer with pitch 192. However, a fence
+> register is programmed to
+>   fence[3] = 03d00001
+>     valid, x-tiled, pitch: 512, start: 0x03d00000, size: 1048576
 > 
-> Signed-off-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-> Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> Tested-by: Naga Radesh Y <naga.radheshy@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-(snip)
-> diff --git a/drivers/leds/leds-ab5500.c b/drivers/leds/leds-ab5500.c
-(snip)
-> +/*
-> + * Driver for HVLED in ST-Ericsson AB5500 analog baseband controller
-> + *
-> + * This chip can drive upto 3 leds, of upto 40mA of led sink current.
+> Also note that buffer is also not listed as currently active, so
+> presumably we reused the buffer as tiled (and so reprogrammed the
+> fence registered) before the GPU retired the batch. That sounds eerily
+> similar to this bug:
 
-Can't get these are High Voltage or High Current LEDs?
-If Voltage why haven't you wrote about supplied voltage but wrote about
-max. current?
+Hi, it seems like it's fixed by the patch. Thanks.
+
+> From 2b76187d2f5fc2352e391914b1828f91f93bb356 Mon Sep 17 00:00:00 2001
+> From: Chris Wilson <chris@chris-wilson.co.uk>
+> Date: Tue, 29 Nov 2011 15:12:16 +0000
+> Subject: [PATCH] drm/i915: Only clear the GPU domains upon a successful
+>  finish
 
 -- 
-Best regards, Denis Kuzmenko.
+js
+suse labs
