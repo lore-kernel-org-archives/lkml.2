@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab1LDSHc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 13:07:32 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55637 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab1LDSHa (ORCPT
+	id S1755017Ab1LDSYT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 13:24:19 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:52560 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753247Ab1LDSYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 13:07:30 -0500
-Message-ID: <4EDBB6C2.9050303@linux.vnet.ibm.com>
-Date: Sun, 04 Dec 2011 23:36:58 +0530
-From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
+	Sun, 4 Dec 2011 13:24:17 -0500
+Message-ID: <1323023039.3256.7.camel@lappy>
+Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
+ descriptors
+From: Sasha Levin <levinsasha928@gmail.com>
 To: Avi Kivity <avi@redhat.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Xen <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM hypervisor
- to support pv-ticketlocks
-References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com> <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com> <4ED760F1.6080804@redhat.com> <4ED7DA85.5080504@linux.vnet.ibm.com>
-In-Reply-To: <4ED7DA85.5080504@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        markmc@redhat.com
+Date: Sun, 04 Dec 2011 20:23:59 +0200
+In-Reply-To: <1323020374.3256.5.camel@lappy>
+References: <4ED4F30F.8000603@redhat.com> <1322669511.3985.8.camel@lappy>
+	 <87wrahrp0u.fsf@rustcorp.com.au> <20111201075847.GA5479@redhat.com>
+	 <1322726977.3259.3.camel@lappy> <20111201102640.GB8822@redhat.com>
+	 <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy>
+	 <4EDB5EF0.2010909@redhat.com> <1323000831.4205.4.camel@lappy>
+	 <20111204162221.GB22501@redhat.com> <1323020088.3256.3.camel@lappy>
+	 <4EDBAFC5.2010405@redhat.com> <1323020374.3256.5.camel@lappy>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
 Content-Transfer-Encoding: 7bit
-x-cbid: 11120408-7014-0000-0000-0000003499CD
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2011 01:20 AM, Raghavendra K T wrote:
->> Have you tested it on AMD machines? There are some differences in the
->> hypercall infrastructure there.
->
-> Yes. 'll test on AMD machine and update on that.
->
+On Sun, 2011-12-04 at 19:39 +0200, Sasha Levin wrote:
+> On Sun, 2011-12-04 at 19:37 +0200, Avi Kivity wrote:
+> > On 12/04/2011 07:34 PM, Sasha Levin wrote:
+> > > > 
+> > > > I'm confused. didn't you see a bigger benefit for guest->host by
+> > > > switching indirect off?
+> > >
+> > > The 5% improvement is over the 'regular' indirect on, not over indirect
+> > > off. Sorry for the confusion there.
+> > >
+> > > I suggested this change regardless of the outcome of indirect descriptor
+> > > threshold discussion, since it would help anyways.
+> > 
+> > For net, this makes sense.  For block, it reduces the effective queue
+> > depth, so it's not a trivial change.  It probably makes sense there too,
+> > though.
+> 
+> It doesn't have to be limited at that number, anything above that can go
+> through the regular kmalloc() path.
 
-I tested the code on 64 bit Dual-Core AMD Opteron machine, and it is 
-working.
+Something like the following patch:
 
-- Raghu
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index c7a2c20..3166ca0 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -82,6 +82,7 @@ struct vring_virtqueue
+ 
+ 	/* Host supports indirect buffers */
+ 	bool indirect;
++	struct kmem_cache *indirect_cache;
+ 
+ 	/* Host publishes avail event idx */
+ 	bool event;
+@@ -110,6 +111,9 @@ struct vring_virtqueue
+ 
+ #define to_vvq(_vq) container_of(_vq, struct vring_virtqueue, vq)
+ 
++static unsigned int ind_alloc_thresh = 0;
++module_param(ind_alloc_thresh, uint, S_IRUGO);
++
+ /* Set up an indirect table of descriptors and add it to the queue. */
+ static int vring_add_indirect(struct vring_virtqueue *vq,
+ 			      struct scatterlist sg[],
+@@ -121,7 +125,10 @@ static int vring_add_indirect(struct vring_virtqueue *vq,
+ 	unsigned head;
+ 	int i;
+ 
+-	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
++	if ((out + in) <= ind_alloc_thresh)
++		desc = kmem_cache_alloc(vq->indirect_cache, gfp);
++	else
++		desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
+ 	if (!desc)
+ 		return -ENOMEM;
+ 
+@@ -479,6 +486,9 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
+ 	vq->broken = false;
+ 	vq->last_used_idx = 0;
+ 	vq->num_added = 0;
++	if (ind_alloc_thresh)
++		vq->indirect_cache = KMEM_CACHE(vring_desc[ind_alloc_thresh], 0);
+ 	list_add_tail(&vq->vq.list, &vdev->vqs);
+ #ifdef DEBUG
+ 	vq->in_use = false;
+
+-- 
+
+Sasha.
 
