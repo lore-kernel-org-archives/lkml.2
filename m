@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab1LDAl0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 19:41:26 -0500
-Received: from ulysses.noc.ntua.gr ([147.102.222.230]:50233 "EHLO
-	ulysses.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab1LDAlX (ORCPT
+	id S1752945Ab1LDBCG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 20:02:06 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:59647 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab1LDBCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 19:41:23 -0500
-X-Greylist: delayed 995 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Dec 2011 19:41:22 EST
-From: psomas@gentoo.org
-To: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        JBottomley@parallels.com, matthew@wil.cx, Martin.vGagern@gmx.net
-Subject: [PATCH] scsi/sym53c8xx_2: Fix NULL pointer dereference in slave_destroy
-Date: Sun,  4 Dec 2011 02:23:54 +0200
-Message-Id: <1322958234-9749-1-git-send-email-psomas@gentoo.org>
-X-Mailer: git-send-email 1.7.3.4
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (ulysses.noc.ntua.gr [147.102.222.230]); Sun, 04 Dec 2011 02:23:56 +0200 (EET)
+	Sat, 3 Dec 2011 20:02:04 -0500
+Date: Sun, 4 Dec 2011 02:02:00 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: Dave Airlie <airlied@gmail.com>, Christoph Lameter <cl@linux.com>,
+        "Alex, Shi" <alex.shi@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Pekka Enberg <penberg@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Matt Mackall <mpm@selenic.com>, tj@kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111204010200.GA1530@x4.trippels.de>
+References: <1321884966.10470.2.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20111121153621.GA1678@x4.trippels.de>
+ <20111123160353.GA1673@x4.trippels.de>
+ <alpine.DEB.2.00.1111231004490.17317@router.home>
+ <20111124085040.GA1677@x4.trippels.de>
+ <20111202230412.GB12057@homer.localdomain>
+ <20111203092845.GA1520@x4.trippels.de>
+ <CAPM=9tyjZc9waC_ZBygW9zh+Zq-Wb1X5Y6yfsCCMPYwpFVWOOg@mail.gmail.com>
+ <20111203122900.GA1617@x4.trippels.de>
+ <CAH3drwZDOpPuQ_G=LwTiNsR5BNyJTNr+VJU74E6nS5AbKyQH0A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH3drwZDOpPuQ_G=LwTiNsR5BNyJTNr+VJU74E6nS5AbKyQH0A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stratos Psomadakis <psomas@gentoo.org>
+On 2011.12.03 at 14:31 -0500, Jerome Glisse wrote:
+> On Sat, Dec 3, 2011 at 7:29 AM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
+> > On 2011.12.03 at 12:20 +0000, Dave Airlie wrote:
+> >> >> > > > > FIX idr_layer_cache: Marking all objects used
+> >> >> > > >
+> >> >> > > > Yesterday I couldn't reproduce the issue at all. But today I've hit
+> >> >> > > > exactly the same spot again. (CCing the drm list)
+> >>
+> >> If I had to guess it looks like 0 is getting written back to some
+> >> random page by the GPU maybe, it could be that the GPU is in some half
+> >> setup state at boot or on a reboot does it happen from a cold boot or
+> >> just warm boot or kexec?
+> >
+> > Only happened with kexec thus far. Cold boot seems to be fine.
+> >
+> > --
+> > Markus
+> 
+> Can you add radeon.no_wb=1 to your kexec kernel paramater an see if
+> you can reproduce.
 
-sym53c8xx_slave_destroy unconditionally assumes that sym53c8xx_slave_alloc has
-succesesfully allocated a sym_lcb. This can lead to a NULL pointer dereference
-(exposed by commit 4e6c82b).
+No, I cannot reproduce the issue with radeon.no_wb=1. (I write this
+after 700 successful kexec iterations...)
 
-Signed-off-by: Stratos Psomadakis <psomas@gentoo.org>
-Cc: stable@vger.kernel.org
----
-
- drivers/scsi/sym53c8xx_2/sym_glue.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/scsi/sym53c8xx_2/sym_glue.c b/drivers/scsi/sym53c8xx_2/sym_glue.c
-index b4543f5..76432f8 100644
---- a/drivers/scsi/sym53c8xx_2/sym_glue.c
-+++ b/drivers/scsi/sym53c8xx_2/sym_glue.c
-@@ -839,6 +839,10 @@ static void sym53c8xx_slave_destroy(struct scsi_device *sdev)
- 	struct sym_lcb *lp = sym_lp(tp, sdev->lun);
- 	unsigned long flags;
- 
-+	/* if slave_alloc returned before allocating a sym_lcb, return */
-+	if (!lp)
-+		return;
-+
- 	spin_lock_irqsave(np->s.host->host_lock, flags);
- 
- 	if (lp->busy_itlq || lp->busy_itl) {
 -- 
-1.7.8.rc1
+Markus
