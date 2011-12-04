@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab1LDIjJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 03:39:09 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52841 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab1LDIjH convert rfc822-to-8bit (ORCPT
+	id S1752500Ab1LDIus (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 03:50:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54822 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab1LDIup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 03:39:07 -0500
+	Sun, 4 Dec 2011 03:50:45 -0500
+Date: Sun, 4 Dec 2011 00:50:38 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Rakesh Iyer <riyer@nvidia.com>
+Cc: "rydberg@euromail.se" <rydberg@euromail.se>,
+        Stephen Warren <swarren@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v1] Input: tegra-kbc - report wakeup key for some
+ platforms.
+Message-ID: <20111204085038.GC14593@core.coreip.homeip.net>
+References: <1322685811-14060-1-git-send-email-riyer@nvidia.com>
+ <20111130212022.GB3108@core.coreip.homeip.net>
+ <1FC56210173BB445BD77F608D6FB8D034F3D1BB4BD@HQMAIL03.nvidia.com>
+ <20111201072649.GE16816@core.coreip.homeip.net>
+ <1FC56210173BB445BD77F608D6FB8D034F3D1BB4C9@HQMAIL03.nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20111005065617.GA6824@kroah.com>
-References: <20111004232403.10364.22050.stgit@ponder>
-	<20111005065617.GA6824@kroah.com>
-Date: Sun, 4 Dec 2011 09:39:05 +0100
-X-Google-Sender-Auth: Di5_ECRMk1W2_iDLIHnrrs128sw
-Message-ID: <CAMuHMdWP+a0jXVBKzJ_J-Rtxdv=CFacDPz91fu=ThwSU_5dOeg@mail.gmail.com>
-Subject: Re: [RFC] drivercore: Add helper macro for platform_driver boilerplate
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1FC56210173BB445BD77F608D6FB8D034F3D1BB4C9@HQMAIL03.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 5, 2011 at 08:56, Greg KH <greg@kroah.com> wrote:
-> On Tue, Oct 04, 2011 at 05:26:55PM -0600, Grant Likely wrote:
->> For simple modules that contain a single platform_driver without any
->> additional setup code then ends up being a block of duplicated
->> boilerplate.  This patch adds a new macro, module_platform_driver(),
->> which replaces the module_init()/module_exit() registrations with
->> template functions.
->>
->> This patch also converts all the relevant spi drivers to use the new
->> macro.  There are a lot of drivers in the tree that are using this
->> pattern and could be converted.
->>
->> It also fixes up some incorrect section annotations where I found
->> them.
->>
->> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->> ---
->>
->> I think this is useful, and I like the diffstat that it produces.
->> What does everyone else think of this approach?  I can do versions for
->> i2c_drivers and spi_drivers too.
->>
->> This is *not* tested very much.  I'm circulating mostly for review for
->> now.
->
-> The idea looks sane to me, I like the diffstat it ends up creating, nice
-> job.
+Hi Rakesh,
 
-I guess the macro can be extended (or wrapped around another one) to include
-the bus type, so it applies to all bus types?
+On Thu, Dec 01, 2011 at 01:09:59PM -0800, Rakesh Iyer wrote:
+> Hello Dmitry.
+> 
+> Sorry for the wrap issue, my Outlook does not seem to obey the settings.
+> 
+> I wanted to explain the tegra system resume path implementation so I can justify 
+> why I am doing this complicated fix and why I feel it will guarantee the resume 
+> is due to keypress.
+> 
+> The tegra wake resume code is registered as a syscore ops.
+> When the system is resumed due to a wake event, the suspend_enter (after wakeup) 
+> routine will invoke the tegra syscoreops_resume method and that routine will propagate 
+> the wake event to the individual ISR's through genirq.
+> If kbc was wake source, kbc_isr will be invoked in this execution path.
+> 
+> If system is resumed due to other reason, the tegra_syscoreops_resume code will not 
+> find the event.
 
-It's a pity some use <bus>_register_driver(), while others use
-<bus>_driver_register(),
-so this needs some refactoring for unification.
+Consider the following sequence:
 
-Gr{oetje,eeting}s,
+1. Something other than keyboard generates wakeup event
+2. It's IRQ fires up and gets serviced
+3. System starts resuming devices
+4. User presses a key on the keypad while it is still suspended _and_
+   registered as a wakeup source
+5. Keypad's ISR runs as well and you decide that KEY_POWER should be
+   reported even though keypad wasn't the real reason the system
+   woke up.
 
-                        Geert
+Is this scenario not possible?
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thanks.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Dmitry
