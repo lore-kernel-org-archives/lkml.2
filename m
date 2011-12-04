@@ -1,75 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab1LDJhf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 04:37:35 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:52694 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752289Ab1LDJhb (ORCPT
+	id S1752669Ab1LDJp1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 04:45:27 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:52624 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab1LDJpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 04:37:31 -0500
-Message-ID: <4EDB3F2A.4030801@metafoo.de>
-Date: Sun, 04 Dec 2011 10:36:42 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] drivercore: Add helper macro for platform_driver boilerplate
-References: <20111004232403.10364.22050.stgit@ponder>	<20111005065617.GA6824@kroah.com> <CAMuHMdWP+a0jXVBKzJ_J-Rtxdv=CFacDPz91fu=ThwSU_5dOeg@mail.gmail.com>
-In-Reply-To: <CAMuHMdWP+a0jXVBKzJ_J-Rtxdv=CFacDPz91fu=ThwSU_5dOeg@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 4 Dec 2011 04:45:23 -0500
+X-Auth-Info: 1D2N8NAUrT15bUU0OZGjiAOC0vrgF5ZBtblOXINPCI0=
+From: Heiko Schocher <hs@denx.de>
+Cc: Heiko Schocher <hs@denx.de>, Wolfgang Denk <wd@denx.de>,
+        Vitaly Bordug <vbordug@ru.mvista.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers, char: add U-Boot bootcount driver
+Date: Sun,  4 Dec 2011 10:45:21 +0100
+Message-Id: <1322991921-21096-1-git-send-email-hs@denx.de>
+X-Mailer: git-send-email 1.7.6.4
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2011 09:39 AM, Geert Uytterhoeven wrote:
-> On Wed, Oct 5, 2011 at 08:56, Greg KH <greg@kroah.com> wrote:
->> On Tue, Oct 04, 2011 at 05:26:55PM -0600, Grant Likely wrote:
->>> For simple modules that contain a single platform_driver without any
->>> additional setup code then ends up being a block of duplicated
->>> boilerplate.  This patch adds a new macro, module_platform_driver(),
->>> which replaces the module_init()/module_exit() registrations with
->>> template functions.
->>>
->>> This patch also converts all the relevant spi drivers to use the new
->>> macro.  There are a lot of drivers in the tree that are using this
->>> pattern and could be converted.
->>>
->>> It also fixes up some incorrect section annotations where I found
->>> them.
->>>
->>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->>> ---
->>>
->>> I think this is useful, and I like the diffstat that it produces.
->>> What does everyone else think of this approach?  I can do versions for
->>> i2c_drivers and spi_drivers too.
->>>
->>> This is *not* tested very much.  I'm circulating mostly for review for
->>> now.
->>
->> The idea looks sane to me, I like the diffstat it ends up creating, nice
->> job.
-> 
-> I guess the macro can be extended (or wrapped around another one) to include
-> the bus type, so it applies to all bus types?
-> 
-> It's a pity some use <bus>_register_driver(), while others use
-> <bus>_driver_register(),
-> so this needs some refactoring for unification.
->
+This driver implements the Linux kernel half of the boot count feature -
+the boot counter can only be reset after it is clear that the
+application has been started and is running correctly, which usually
+can only be determined by the application code itself. Thus the reset
+of the boot counter must be done by application code, which thus needs
+an appropriate driver.
 
-I've recently posted a patch series which extends the macro to take the bus's
-register/unregister function names so it can be used to build macros similar to
-module_platform_driver. [1] I used the register/unregister function names
-instead of the bus type, exactly because there is no common naming convention
-for these. So you still need to define the macro for a new bus type, but it
-should be a two-liner.
+Required feature by the Carrier Grade Linux Requirements Definition;
+see for example document "Carrier Grade Linux Requirements Definition
+Overview V3.0" at
 
-- Lars
+http://www.linuxfoundation.org/collaborate/workgroups/cgl/requirements#SMM.6.0_Boot_Cycle_Detection
 
-[1] https://lkml.org/lkml/2011/11/16/77
+        Description: OSDL CGL specifies that carrier grade Linux
+        shall provide support for detecting a repeating reboot cycle
+	due to recurring failures. This detection should happen in
+	user space before system services are started.
+
+This driver provides read/write access to the U-Boot bootcounter
+through PROC FS and/or sysFS file.
+
+The bootcountregister gets configured via DTS.
+for example on the enbw_cmc board:
+
+bootcount@0x23060 {
+                  compatible = "uboot,bootcount";
+                  reg = <0x23060 0x20>;
+                 };
+
+original post from:
+http://old.nabble.com/-POWERPC--add-U-Boot-bootcount-driver.-td26804029.html
+
+Signed-off-by: Heiko Schocher <hs@denx.de>
+Cc: Wolfgang Denk <wd@denx.de>
+Cc: Vitaly Bordug <vbordug@ru.mvista.com>
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+---
+ .../devicetree/bindings/char/bootcount.txt         |   13 ++
+ drivers/char/Kconfig                               |    7 +
+ drivers/char/Makefile                              |    1 +
+ drivers/char/bootcount.c                           |  210 ++++++++++++++++++++
+ 4 files changed, 231 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/char/bootcount.txt
+ create mode 100644 drivers/char/bootcount.c
+
+diff --git a/Documentation/devicetree/bindings/char/bootcount.txt b/Documentation/devicetree/bindings/char/bootcount.txt
+new file mode 100644
+index 0000000..079a7da
+--- /dev/null
++++ b/Documentation/devicetree/bindings/char/bootcount.txt
+@@ -0,0 +1,13 @@
++Bootcount driver
++
++Required properties:
++
++  - compatible : should be "uboot,bootcount"
++  - reg: the address of the bootcounter
++
++Example:
++
++bootcount@1c23000 {
++	compatible = "uboot,bootcount";
++	reg = <0x23060 0x20>;
++};
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 4364303..9c5ccab 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -577,6 +577,13 @@ config UV_MMTIMER
+ 	  The uv_mmtimer device allows direct userspace access to the
+ 	  UV system timer.
+ 
++config BOOTCOUNT
++	tristate "U-Boot Bootcount driver"
++	depends on OF
++	help
++	  The U-Boot Bootcount driver allows to access the
++	  bootcounter through procFS or sysFS files.
++
+ source "drivers/char/tpm/Kconfig"
+ 
+ config TELCLOCK
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index 32762ba..a91e18e 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -49,6 +49,7 @@ obj-$(CONFIG_PC8736x_GPIO)	+= pc8736x_gpio.o
+ obj-$(CONFIG_NSC_GPIO)		+= nsc_gpio.o
+ obj-$(CONFIG_GPIO_TB0219)	+= tb0219.o
+ obj-$(CONFIG_TELCLOCK)		+= tlclk.o
++obj-$(CONFIG_BOOTCOUNT)		+= bootcount.o
+ 
+ obj-$(CONFIG_MWAVE)		+= mwave/
+ obj-$(CONFIG_AGP)		+= agp/
+diff --git a/drivers/char/bootcount.c b/drivers/char/bootcount.c
+new file mode 100644
+index 0000000..0ee457f
+--- /dev/null
++++ b/drivers/char/bootcount.c
+@@ -0,0 +1,210 @@
++/*
++ * This driver gives access(read/write) to the bootcounter used by u-boot.
++ * Access is supported via procFS and sysFS.
++ *
++ * Copyright 2008 DENX Software Engineering GmbH
++ * Author: Heiko Schocher <hs@denx.de>
++ * Based on work from: Steffen Rumler  (Steffen.Rumler@siemens.com)
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/capability.h>
++#include <linux/device.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/mm.h>
++#include <linux/mman.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_device.h>
++#include <linux/of_platform.h>
++#include <linux/ptrace.h>
++#include <linux/uaccess.h>
++
++#ifndef CONFIG_PROC_FS
++#error "PROC FS support must be switched-on"
++#endif
++#include <linux/proc_fs.h>
++
++#define	UBOOT_BOOTCOUNT_MAGIC_OFFSET	0x04	/* offset of magic number */
++#define	UBOOT_BOOTCOUNT_MAGIC		0xB001C041 /* magic number value */
++
++#define	UBOOT_BOOTCOUNT_PROC_ENTRY	"driver/bootcount"
++
++/*
++ * This macro frees the machine specific function from bounds checking and
++ * this like that...
++ */
++#define PRINT_PROC(fmt, args...) \
++	do { \
++		*len += sprintf(buffer + *len, fmt, ##args); \
++		if (*begin + *len > offset + size) \
++			return 0; \
++		if (*begin + *len < offset) { \
++			*begin += *len; \
++			*len = 0; \
++		} \
++	} while (0)
++
++void __iomem *mem;
++/*
++ * read U-Boot bootcounter
++ */
++static int
++read_bootcounter_info(char *buffer, int *len, off_t * begin, off_t offset,
++		       int size)
++{
++	unsigned long magic;
++	unsigned long counter;
++
++
++	magic = be32_to_cpu(readl(mem + UBOOT_BOOTCOUNT_MAGIC_OFFSET));
++	counter = be32_to_cpu(readl(mem));
++
++	if (magic == UBOOT_BOOTCOUNT_MAGIC) {
++		PRINT_PROC("%lu\n", counter);
++	} else {
++		PRINT_PROC("bad magic: 0x%lu != 0x%lu\n", magic,
++			    (unsigned long)UBOOT_BOOTCOUNT_MAGIC);
++	}
++
++	return 1;
++}
++
++/*
++ * read U-Boot bootcounter (wrapper)
++ */
++static int
++read_bootcounter(char *buffer, char **start, off_t offset, int size,
++		  int *eof, void *arg)
++{
++	int len = 0;
++	off_t begin = 0;
++
++
++	*eof = read_bootcounter_info(buffer, &len, &begin, offset, size);
++
++	if (offset >= begin + len)
++		return 0;
++
++	*start = buffer + (offset - begin);
++	return size < begin + len - offset ? size : begin + len - offset;
++}
++
++/*
++ * write new value to U-Boot bootcounter
++ */
++static int
++write_bootcounter(struct file *file, const char *buffer, unsigned long count,
++		   void *data)
++{
++	unsigned long magic;
++
++	magic = be32_to_cpu(readl(mem + UBOOT_BOOTCOUNT_MAGIC_OFFSET));
++	if (magic == UBOOT_BOOTCOUNT_MAGIC)
++		writel(cpu_to_be32(simple_strtol(buffer, NULL, 10)), mem);
++	else
++		return -EINVAL;
++
++	return count;
++}
++
++/* helper for the sysFS */
++static int show_str_bootcount(struct device *device,
++				struct device_attribute *attr,
++				char *buf)
++{
++	int ret = 0;
++	off_t begin = 0;
++
++	read_bootcounter_info(buf, &ret, &begin, 0, 20);
++	return ret;
++}
++static int store_str_bootcount(struct device *dev,
++			struct device_attribute *attr,
++			const char *buf,
++			size_t count)
++{
++	write_bootcounter(NULL, buf, count, NULL);
++	return count;
++}
++static DEVICE_ATTR(bootcount, S_IWUSR | S_IRUGO, show_str_bootcount,
++		store_str_bootcount);
++
++static int __devinit bootcount_probe(struct platform_device *ofdev)
++{
++	struct device_node *np = of_node_get(ofdev->dev.of_node);
++	struct proc_dir_entry *bootcount;
++
++	mem = of_iomap(np, 0);
++	if (mem == NULL)
++		dev_err(&ofdev->dev, "%s couldnt map register.\n", __func__);
++
++	/* init ProcFS */
++	bootcount = create_proc_entry(UBOOT_BOOTCOUNT_PROC_ENTRY, 0600, NULL);
++	if (bootcount == NULL) {
++		dev_err(&ofdev->dev, "\n%s (%d): cannot create /proc/%s\n",
++			__FILE__, __LINE__, UBOOT_BOOTCOUNT_PROC_ENTRY);
++	} else {
++
++		bootcount->read_proc = read_bootcounter;
++		bootcount->write_proc = write_bootcounter;
++		dev_info(&ofdev->dev, "created \"/proc/%s\"\n",
++			UBOOT_BOOTCOUNT_PROC_ENTRY);
++	}
++
++	if (device_create_file(&ofdev->dev, &dev_attr_bootcount))
++		dev_warn(&ofdev->dev, "%s couldnt register sysFS entry.\n",
++			__func__);
++
++	return 0;
++}
++
++static int __devexit bootcount_remove(struct platform_device *ofdev)
++{
++	BUG();
++	return 0;
++}
++
++static const struct of_device_id __devinitconst bootcount_match[] = {
++	{
++		.compatible = "uboot,bootcount",
++	},
++	{},
++};
++MODULE_DEVICE_TABLE(of, bootcount_match);
++
++static struct platform_driver bootcount_driver = {
++	.driver = {
++		.name = "bootcount",
++		.of_match_table = bootcount_match,
++		.owner = THIS_MODULE,
++	},
++	.probe = bootcount_probe,
++	.remove = bootcount_remove,
++};
++
++
++static int __init uboot_bootcount_init(void)
++{
++	return platform_driver_register(&bootcount_driver);
++}
++
++static void __exit uboot_bootcount_cleanup(void)
++{
++	if (mem != NULL)
++		iounmap(mem);
++	remove_proc_entry(UBOOT_BOOTCOUNT_PROC_ENTRY, NULL);
++}
++
++module_init(uboot_bootcount_init);
++module_exit(uboot_bootcount_cleanup);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Steffen Rumler <steffen.rumler@siemens.com>");
++MODULE_DESCRIPTION("Provide (read/write) access to the U-Boot bootcounter via PROC FS");
+-- 
+1.7.6.4
+
