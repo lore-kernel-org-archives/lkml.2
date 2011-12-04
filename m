@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab1LDPRI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 10:17:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31449 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754087Ab1LDPRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 10:17:05 -0500
-Message-ID: <4EDB8EEB.4070309@redhat.com>
-Date: Sun, 04 Dec 2011 17:16:59 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1754450Ab1LDPcY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 10:32:24 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39851 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232Ab1LDPcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 10:32:20 -0500
+Message-ID: <4EDB9276.6070302@linux.vnet.ibm.com>
+Date: Sun, 04 Dec 2011 21:02:06 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
- descriptors
-References: <1322669511.3985.8.camel@lappy> <87wrahrp0u.fsf@rustcorp.com.au> <20111201075847.GA5479@redhat.com> <1322726977.3259.3.camel@lappy> <20111201102640.GB8822@redhat.com> <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy> <4EDB5EF0.2010909@redhat.com> <20111204120132.GB18758@redhat.com> <4EDB624A.3030403@redhat.com> <20111204151148.GA21851@redhat.com>
-In-Reply-To: <20111204151148.GA21851@redhat.com>
+To: Patrik Kullman <patrik.kullman@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        michal@ellpspace.math.ualberta.ca, Oliver Neukum <oneukum@suse.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: xhci_hcd: Runtime PM causes port to inactivate
+References: <CAGPN=9SQraacGpNJTtsA4NUk8Re1neJaDt42u8HFw8Hg-+n5BQ@mail.gmail.com>
+In-Reply-To: <CAGPN=9SQraacGpNJTtsA4NUk8Re1neJaDt42u8HFw8Hg-+n5BQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 11120405-9264-0000-0000-000000549B5D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2011 05:11 PM, Michael S. Tsirkin wrote:
-> > There's also the used ring, but that's a
-> > mistake if you have out of order completion.  We should have used copying.
->
-> Seems unrelated... unless you want used to be written into
-> descriptor ring itself?
+There is a very similar discussion going on at:
+http://thread.gmane.org/gmane.linux.kernel/1222803
 
-The avail/used rings are in addition to the regular ring, no?  If you
-copy descriptors, then it goes away.
+Cc'ing all the relevant people and mailing lists.
 
-> But, I don't really know why does virtio ring insist on
-> making the 3 buffers (avail/used/descriptor)
-> physically contigious. Rusty?
+Regards,
+Srivatsa S. Bhat
 
-Let's drop them instead.
+On 12/04/2011 04:47 PM, Patrik Kullman wrote:
 
->
-> > 16kB worth of descriptors is 1024 entries.  With 4kB buffers, that's 4MB
-> > worth of data, or 4 ms at 10GbE line speed.  With 1500 byte buffers it's
-> > just 1.5 ms.  In any case I think it's sufficient.
->
-> Right. So I think that without indirect, we waste about 3 entries
-> per packet for virtio header and transport etc headers.
+> Issuing
+> 
+> echo auto > /sys/bus/pci/devices/0000:03:00.0/power/control
+> 
+> on my Asus Zenbook UX31E with a
+> 
+> 03:00.0 USB Controller: Fresco Logic Device 1009 (rev 02)
+> 
+> causes its USB3-port to become mostly disabled.
+> 
+> It does have a "Charger+" feature that allows it to charge cellphones
+> etc even when turned off, and this feature works when power control is
+> in "auto" mode.
+> 
+> In all other aspects, the port is turned off. It doesn't react to
+> devices being inserted.
+> 
+> This does not feel like the desired behavior.
+> 
+> Also, suspend does not work without unbinding the xhci_hcd module, not
+> sure if that is related.
+> Computer will not suspend/resume unless the following script is used
+> in /etc/pm/sleep.d:
+> https://help.ubuntu.com/community/AsusZenbook#Suspend.2C_Hibernate.2C_Shut-down_and_Reboot
+> 
+> This behavior has not changed between 3.0 and 3.2-rc4+ that I've tried today.
 
-That does suck.  Are there issues in increasing the ring size?  Or
-making it discontiguous?
-
-Can you take a peek at how Xen manages its rings?  They have the same
-problems we do.
-
--- 
-error compiling committee.c: too many arguments to function
 
