@@ -1,112 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889Ab1LDALq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 19:11:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50346 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab1LDALo (ORCPT
+	id S1752945Ab1LDAOJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 19:14:09 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48684 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1LDAOH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 19:11:44 -0500
-Message-ID: <4EDABAB5.10104@gentoo.org>
-Date: Sun, 04 Dec 2011 02:11:33 +0200
-From: Stratos Psomadakis <psomas@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Sat, 3 Dec 2011 19:14:07 -0500
 MIME-Version: 1.0
-To: Steffen Maier <maier@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org, gregkh@suse.de,
-        linux-scsi@vger.kernel.org, JBottomley@parallels.com, matthew@wil.cx,
-        Martin.vGagern@gmx.net, kernel@gentoo.org
-Subject: Re: [SCSI] NULL pointer dereference in sym53c8xx (bisected)
-References: <4ED8EE1C.4090404@gentoo.org> <4EDA8FA9.8020004@linux.vnet.ibm.com>
-In-Reply-To: <4EDA8FA9.8020004@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigC9393B44AA621F503019698C"
+In-Reply-To: <aff8302dd6c3eb047c39d3a2d1fd2382@mail.eetvelt.be>
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
+	<4ED6C5B8.8040803@linuxtv.org>
+	<4ED75F53.30709@redhat.com>
+	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+	<4EDA4AB4.90303@linuxtv.org>
+	<CAA7C2qjfWW8=kePZDO4nYR913RyuP-t+u8P9LV4mDh9bANr3=Q@mail.gmail.com>
+	<aff8302dd6c3eb047c39d3a2d1fd2382@mail.eetvelt.be>
+Date: Sat, 3 Dec 2011 16:14:06 -0800
+Message-ID: <CAA7C2qgz1GYhVwXwiO5dt09+Mv0719tfCBmK7ud07RZ2VDNxTw@mail.gmail.com>
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+From: VDR User <user.vdr@gmail.com>
+To: Walter Van Eetvelt <walter@van.eetvelt.be>
+Cc: Andreas Oberritter <obi@linuxtv.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        HoP <jpetrous@gmail.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigC9393B44AA621F503019698C
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 12/03/2011 11:07 PM, Steffen Maier wrote:
-> On 12/02/2011 04:26 PM, Stratos Psomadakis wrote:
->> After upstream commit 4e6c82b3614a18740ef63109d58743a359266daf ([SCSI]=
-
->> fix WARNING: at drivers/scsi/scsi_lib.c:1704), which is also included =
-in
->> 3.0-stable and 3.1-stable kernels, the kernel fails to boot (NULL
->> pointer dereference in sym53c8xx_slave_destroy).
+On Sat, Dec 3, 2011 at 3:30 PM, Walter Van Eetvelt
+<walter@van.eetvelt.be> wrote:
+>> So you could finally use VDR as a server/client setup using vtuner,
+>> right? With full OSD, timer, etc? Yes, I'm aware that streamdev
+>> exists. It was horrible when I tried it last (a long time ago) and I
+>> understand it's gotten better. But it's not a suitable replacement for
+>> a real server/client setup. It sounds like using vtuner, this would
+>> finally be possible and since Klaus has no intention of ever
+>> modernizing VDR into server/client (that I'm aware of), it's also the
+>> only suitable option as well.
 >>
->> Bug report at the Gentoo Bugzilla (reported and bisected by Martin von=
-
->> Gagern). [1]  (stack trace [2])
->>
->> I think that the problem is that (after commit 4e6c82b)
->> __scsi_remove_device() is called if slave_alloc() in scsi_alloc_sdev()=
-
->> fails. But __scsi_remove_device() calls slave_destroy(), which (I thin=
-k)
->> doesn't make much sense (ie to call slave_destroy() when slave_alloc()=
-
->> fails).
->>
->> For sym53c8xx, this results in a NULL pointer dereference (struct
->> sym_lcb pointer) in slave_destroy().
->>
->> [1] https://bugs.gentoo.org/show_bug.cgi?id=3D392567
->> [2] https://392567.bugs.gentoo.org/attachment.cgi?id=3D294381
+>> Or am I wrong about anything?  If not, I know several users who would
+>> like to use this, myself included.
 >
-> To me this looks like the same thing we encountered in the zfcp LLD:
-> http://www.spinics.net/lists/linux-scsi/msg55575.html
-> James explained the pairing of slave_alloc and slave_destroy even if
-> slave_alloc returned early in which case slave_destroy needs to cope
-> with that:
-> http://www.spinics.net/lists/linux-scsi/msg55449.html
+> This is the question on how you provide (live)tv content to multiple users
+> and devices.
+> And I think this goes beyond the simple "second PC in the house" where you
+> want to watch TV or recordings.  How can you watch streams from your DVB
+> device on your small screen Mobile phone/tablet?  Or stream over the
+> internet and watch your last night recording when commuting in the train?
+> Some commercial solutions are already available for some scenario's.  Also
+> free software solutions support for some scenario's, but I think still too
+> limited.
 >
-Indeed.
+> With that in mind, for me the future is for a client server combination
+> that can do proper live TV and recording streaming.
+> And technically, a virtual driver is not bringing better user experience
+> in the long term I think.  On the contrary, some users would use the
+> vtunerc to fill in some of their needs.  This could bring developers to
+> work less on client/server application supporting a broader range of use
+> cases.
 
-I'll follow-up with a patch similar to the one you sent for zfcp. I
-think that returning if sym_lcb is NULL should be ok.
-
-> HTH
-> Steffen
->
-> Linux on System z Development
->
-> IBM Deutschland Research & Development GmbH
-> Vorsitzender des Aufsichtsrats: Martin Jetter
-> Gesch=C3=A4ftsf=C3=BChrung: Dirk Wittkopp
-> Sitz der Gesellschaft: B=C3=B6blingen
-> Registergericht: Amtsgericht Stuttgart, HRB 243294
->
-> --=20
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
---=20
-Stratos Psomadakis
-<psomas@gentoo.org>
-
-
-
---------------enigC9393B44AA621F503019698C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk7aurkACgkQid1lVeNDMmCn+wCfYmLKZy5SprP+b/46eAXRUXdr
-aCIAn11jIZRgBxizRjErCFSGDS8LM8e1
-=MjfB
------END PGP SIGNATURE-----
-
---------------enigC9393B44AA621F503019698C--
+While I agree with your more broad view of the issue, I specifically
+talked about VDR.  AFAIK Klaus has no intention of adding true
+server/client support to VDR, so for VDR users, this sounds like it
+could be a working solution without the strict limitations of
+streamdev.
