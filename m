@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab1LDT0M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 14:26:12 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:54508 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754315Ab1LDT0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 14:26:10 -0500
-Message-ID: <4EDBC93D.2080201@free.fr>
-Date: Sun, 04 Dec 2011 20:25:49 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S1754980Ab1LDTfv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 14:35:51 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:32972 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab1LDTfu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 14:35:50 -0500
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: akpm@linux-foundation.org, serge.hallyn@canonical.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1][v2] Add reboot_pid_ns to handle the reboot syscall
-References: <1322956280-13831-1-git-send-email-daniel.lezcano@free.fr> <1322956280-13831-2-git-send-email-daniel.lezcano@free.fr> <20111204154543.GA23805@redhat.com>
-In-Reply-To: <20111204154543.GA23805@redhat.com>
+In-Reply-To: <Pine.LNX.4.44.1112041459310.4682-100000@hubble.stokkie.net>
+References: <Pine.LNX.4.44.1112041459310.4682-100000@hubble.stokkie.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 4 Dec 2011 11:35:22 -0800
+X-Google-Sender-Auth: 7yaCcXI7WA9XwuMIPCj_dC6uouE
+Message-ID: <CA+55aFyYxvTFGmO3Z-h3LOYJC3i90g6Epe37McpBZP=gUbrGjQ@mail.gmail.com>
+Subject: Re: restrictions inside GCC 4.6.x and libc6-2.13 (x86_64)
+To: "Robert M. Stockmann" <stock@stokkie.net>
+Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Alan Cox <alan@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2011 04:45 PM, Oleg Nesterov wrote:
-> On 12/04, Daniel Lezcano wrote:
->> @@ -32,6 +32,8 @@ struct pid_namespace {
->>  #endif
->>  	gid_t pid_gid;
->>  	int hide_pid;
->> +	int reboot;
->> +	spinlock_t reboot_lock;
->>  };
-> Well. I was thinking about the serialization too, but this
-> ->reboot_lock asks for v3 imho ;)
+Sounds like you have compiled it with -D_FORTIFY_SOURCE=1 (which may
+well be the default on Ubuntu these days), and it found a real bug.
+
+You need to check *which* snprintf is overflowing the buffer (should
+be easy enough with gdb), and see where that happens.
+
+Or you could try to disable fortify, and live with the bug that
+apparently seldom causes problems in practice.
+
+You can do it with -D_FORTIFY_SOURCE=0. I don't recommend it, but if
+the program is doing something odd/bad on purpose, or if you are not
+willing to try to debug it, it should give you a working setup. Or as
+working as it ever was.
+
+You should also report this to the right people. Which is *not* the
+kernel people. Talk to the libspf guys. Because it's almost certainly
+a real bug in their code.
+
+                    Linus
+
+
+On Sun, Dec 4, 2011 at 6:42 AM, Robert M. Stockmann <stock@stokkie.net> wrote:
 >
-> First of all, do we really care? force_sig(SIGKILL, child_reaper)
-> can't race with itself, it does nothing if init is already killed.
+> Hi,
 >
-> So why it is important to protect pid_ns->reboot? Yes, it is possible
-> to change it again if two callers do sys_reboot() "at the same time".
-> But in this case we can't predict which caller wins anyway, so why
-> should we worry?
+> As i wanted to port some old source code [1] to the latest
+> ubuntu 11.10 x86_64 distribution i ran across a strange
+> observation :
 >
-> IOW. Say, we have the 2 tasks doing HALT and RESTART in parallel.
-> It is possible that HALT sets ->reboot and kills init first, then
-> RESTART changes ->reboot and the second force_sig() does nothing.
-> In this case we can simply pretend that RESTART wins and the dying
-> init kills HALT before it calls sys_reboot().
-
-In the case of racy access, your argument makes sense but it is also to
-prevent multiple calls to 'reboot'. In the init_pid_ns, when a shutdown
-is on the way, the lock will prevent another task to invoke a machine
-restart.  But anyway, we can get ride of this lock and the
-serialization, it is a nit we can fix later if that makes sense with the
-couple of lines you specified below.
-
-> In any case. Even if you want to serialize, instead of adding the
-> new lock reboot_pid_ns() can simply do:
+> [acer30:root]:(/usr/lib/x86_64-linux-gnu)# spfqtool -i 192.168.2.5 -s stock@stokkie.net -h stokkie.net
+> *** buffer overflow detected ***: spfqtool terminated
+> ======= Backtrace: =========
+> /lib/x86_64-linux-gnu/libc.so.6(__fortify_fail+0x37)[0x7fb98f9537f7]
+> /lib/x86_64-linux-gnu/libc.so.6(+0xf7710)[0x7fb98f952710]
+> /lib/x86_64-linux-gnu/libc.so.6(+0xf6dfb)[0x7fb98f951dfb]
+> /lib/x86_64-linux-gnu/libc.so.6(__snprintf_chk+0x78)[0x7fb98f951cd8]
+> /usr/lib/libspf-1.0.so.0(SPF_init+0x277)[0x7fb98fbfc8e7]
+> spfqtool[0x400afb]
+> /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xed)[0x7fb98f87c30d]
+> spfqtool[0x400e1d]
 >
-> 	if (cmpxchg(&pid_ns->reboot, 0, reboot) != 0)
-> 		return -EBUSY;
+> [ ... ]"
 >
-> this looks much simpler to me.
-
-Yes, definitively :)
-
-Thanks
-  -- Daniel
-
-
-
+> This is also observed on ubuntu 11.04 x86_64 ..
+> When searching on google for this with 'spfqtool' omitted  :
+>
+> *** buffer overflow detected ***:  terminated
+> http://www.google.com/search?hl=en&safe=off&q=***+buffer+overflow+detected+***%3A++terminated&oq=***+buffer+overflow+detected+***%3A++terminated&aq=f&aqi=g-v1g-b9&aql=&gs_sm=e&gs_upl=5641l6824l0l8707l9l9l0l0l0l0l111l878l4.5l9l0
+>
+> i get about About 820,000 results (0.08 seconds), which reach from the
+> year 2009 upto 2011.  I really wonder what is the trouble here, as such
+> old source, which has run many CPU cycles for the last 8 years, now
+> suddenly has become buggy and prone to buffer overflows ...
+>
+> Any suggestions on how to migrate 'old code' to the new Linux
+> platforms ?
+>
+> Best Regards,
+>
+> Robert
+> [1] libspf (www.libspf.org)
+>    http://crashrecovery.org/SPF/RPMS/spf/src/
+>    http://crashrecovery.org/SPF/RPMS/spf/src/libspf-1.0.0-RC6-pre10.tar.bz2
+> --
+> Robert M. Stockmann - RHCE
+> Network Engineer - UNIX/Linux Specialist
+> crashrecovery.org  stock@stokkie.net
+>
