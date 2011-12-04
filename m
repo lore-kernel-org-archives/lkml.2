@@ -1,80 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab1LDDPX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 3 Dec 2011 22:15:23 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53361 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753025Ab1LDDPV (ORCPT
+	id S1753428Ab1LDDg7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 3 Dec 2011 22:36:59 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34709 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab1LDDgz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 3 Dec 2011 22:15:21 -0500
-Message-ID: <4EDAE5C5.30101@lwfinger.net>
-Date: Sat, 03 Dec 2011 21:15:17 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Sat, 3 Dec 2011 22:36:55 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <borislav.petkov@amd.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.2-rc2 freezes on boot for AMD K6 - bisected to commit bcb80e53877c2045d9e52f4a71372c3fe6501f6f
-References: <4ED5B70F.606@lwfinger.net> <4ED5C640.8030102@linux.vnet.ibm.com> <4ED5D6C5.5050704@lwfinger.net> <4EDA89F2.9070107@lwfinger.net> <CA+55aFwWVeAGT2p3tohRLh7VL8f4ztGwAHZxBmosEAGKJfL+Qg@mail.gmail.com>
-In-Reply-To: <CA+55aFwWVeAGT2p3tohRLh7VL8f4ztGwAHZxBmosEAGKJfL+Qg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111130140754.6662.qmail@science.horizon.com>
+References: <20111130140754.6662.qmail@science.horizon.com>
+Date: Sun, 4 Dec 2011 11:36:53 +0800
+Message-ID: <CAJd=RBDUyH9BygNQghnjNPr8tf0jCLY2c8scfu_sKZ5goFfPqg@mail.gmail.com>
+Subject: Re: v3.2-rc2: kernel BUG at mm/migrate.c:578
+From: Hillf Danton <dhillf@gmail.com>
+To: George Spelvin <linux@horizon.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2011 05:07 PM, Linus Torvalds wrote:
-> On Sat, Dec 3, 2011 at 12:43 PM, Larry Finger<Larry.Finger@lwfinger.net>  wrote:
->
-> Ugh. I hate that patch.
->
-> It's completely stupid. If "rdmsr_safe()" doesn't work at that point
-> in the boot, then it's pointless to call it.
->
-> So this change is pure and utter crap:
->
->    -	rdmsr_safe(MSR_AMD64_PATCH_LEVEL,&c->microcode,&dummy);
->    +	if (c->x86>= 0xf)
->    +		rdmsr_safe(MSR_AMD64_PATCH_LEVEL,&c->microcode,&dummy);
->
-> because it is misleading as hell: that rdmsr isn't *safe* at all, so
-> why are we calling "rdmsr_safe()"?
->
-> It's wrong.
->
-> The right patch would either just remove the "safe" part (and just say
-> that the register has to be supported if c->x86>= 0xf), but quite
-> honestly, I don't see why we do that thing in early_init_amd() AT ALL.
-> Afaik, the microcode version field isn't really *needed* by the
-> kernelin the first place, much less is it needed by the *early* boot,
-> so why isn't this in 'init_amd()' a bit later when the "safe" version
-> actually *works*?
->
-> IOW, I think the patch should be something like the attached (TOTALLY
-> UNTESTED) patch. Larry, does this work for you? It just moves the
-> rdmsr_safe() to the later function.
->
-> Borislav?
->
->> I just updated mainline to 3.2-rc4, and that patch is not included. Please
->> check with Ingo to see why it was not available. It is a real show stopper
->> for old AMD CPUs.
->
-> Ingo seems to have fallen off the earth for the last two weeks.
-> There's *one* email form him about 12 hours ago, before that the last
-> one I see is from early November.
->
-> Ingo, everything ok?
->
->                     Linus
+Hello George
 
-Linus,
+On Wed, Nov 30, 2011 at 10:07 PM, George Spelvin <linux@horizon.com> wrote:
+> I just noticed the last one, but the preceding warnings were close enough I figured they might be relevant.
+>
+> Kernel is stock 3.2.0-rc2.
+>
+> Prcessor is 1st gen Core i3, 4G RAM, 64-bit kernel.  Userspace is 32-bit Debian/unstable.
+[...]
+>
+> [1118868.292556] ------------[ cut here ]------------
+> [1118868.292589] kernel BUG at mm/migrate.c:578!
+> [1118868.292612] invalid opcode: 0000 [#1] SMP
+> [1118868.292640] CPU 2
+> [1118868.292652] Modules linked in: battery nfsd exportfs nfs lockd auth_rpcgss nfs_acl sunrpc fuse loop ftdi_sio usbserial r8169
+> [1118868.292746]
+> [1118868.292758] Pid: 3387, comm: firefox-bin Tainted: G        W    3.2.0-rc2 #40 Gigabyte Technology Co., Ltd. H55M-UD2H/H55M-UD2H
+> [1118868.292818] RIP: 0010:[<ffffffff8109ece2>]  [<ffffffff8109ece2>] move_to_new_page+0x21/0x1b8
+> [1118868.292868] RSP: 0000:ffff880105c25a38  EFLAGS: 00010246
+> [1118868.292895] RAX: 0000000000000000 RBX: ffffea00000dd940 RCX: 0000000000000001
+> [1118868.292929] RDX: 0000000000000001 RSI: ffffea00000dd940 RDI: ffffea0001c763c0
+> [1118868.292964] RBP: ffffea0001c763c0 R08: ffffea00000de280 R09: 000000000000000a
+> [1118868.292999] R10: ffffea0001a08100 R11: ffffea0001a08100 R12: 0000000000000000
+> [1118868.293033] R13: 0000000000000001 R14: 0000000000000001 R15: ffff880105c25be8
+> [1118868.293068] FS:  0000000000000000(0000) GS:ffff880117d00000(0063) knlGS:00000000f742f6e0
+> [1118868.293106] CS:  0010 DS: 002b ES: 002b CR0: 0000000080050033
+> [1118868.293134] CR2: 000000006c000000 CR3: 00000001116a4000 CR4: 00000000000006e0
+> [1118868.293169] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [1118868.293203] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [1118868.293237] Process firefox-bin (pid: 3387, threadinfo ffff880105c24000, task ffff880110bb0ca0)
+> [1118868.293278] Stack:
+> [1118868.293291]  ffff880117d0d870 ffffea00000dd940 0000000000000003 0000000000000000
+> [1118868.293334]  0000000000000001 0000000000000001 ffffea00000dd940 0000000000000003
+> [1118868.293377]  0000000000000000 0000000000000001 0000000000000001 ffffffff8109f145
+> [1118868.293420] Call Trace:
+> [1118868.293436]  [<ffffffff8109f145>] ? migrate_pages+0x1e3/0x335
+> [1118868.293466]  [<ffffffff81099ef3>] ? pfn_valid.part.3+0x32/0x32
+> [1118868.293496]  [<ffffffff8109a5b7>] ? compact_zone+0x3f1/0x5bf
+> [1118868.293526]  [<ffffffff8100738f>] ? read_tsc+0x5/0x14
+> [1118868.293552]  [<ffffffff8109a8a6>] ? try_to_compact_pages+0x121/0x17e
+> [1118868.293585]  [<ffffffff81077f6b>] ? __alloc_pages_direct_compact+0xaa/0x161
+> [1118868.293619]  [<ffffffff8107868f>] ? __alloc_pages_nodemask+0x66d/0x6cc
+> [1118868.293653]  [<ffffffff8108ff77>] ? anon_vma_prepare+0x1e/0x126
+> [1118868.293683]  [<ffffffff810a1b5a>] ? do_huge_pmd_anonymous_page+0xa4/0x227
+> [1118868.293718]  [<ffffffff8101b13e>] ? do_page_fault+0x288/0x2ce
+> [1118868.293749]  [<ffffffff8108cef4>] ? mmap_region+0x353/0x44a
+> [1118868.293780]  [<ffffffff81333def>] ? page_fault+0x1f/0x30
+> [1118868.293806] Code: 44 24 08 48 83 c4 18 5b 5d c3 41 56 41 88 ce 41 55 41 89 d5 41 54 55 48 89 fd 53 48 89 f3 48 83 ec 30 e8 03 f8 ff ff 85 c0 75 02 <0f> 0b 48 8b 43 10 48 89 45 10 48 8b 43 08 48 89 45 08 48 8b 03
+> [1118868.294066] RIP  [<ffffffff8109ece2>] move_to_new_page+0x21/0x1b8
+> [1118868.294099]  RSP <ffff880105c25a38>
+> [1118868.358440] ---[ end trace ceac60930a99a4ce ]---
+> --
 
-With your patch, my K8 box boots fine running 3.2-rc4. If you wish, you may add 
-a "Tested-by: Larry Finger <Larry.Finger@lwfinger.net>.
+The following diff is prepared for spotting/catching the triggered bug,
+would you please take another try with it included?
 
-Thanks for the explanation, and the patch,
+Thanks
 
-Larry
+Hillf
+---
+
+--- a/mm/compaction.c	Thu Nov 24 20:23:28 2011
++++ b/mm/compaction.c	Sun Dec  4 11:31:03 2011
+@@ -322,6 +322,19 @@ static isolate_migrate_t isolate_migrate
+ 		if (PageBuddy(page))
+ 			continue;
+
++		if (!PageLRU(page))
++			continue;
++
++		/*
++		 * PageLRU is set, and lru_lock excludes isolation,
++		 * splitting and collapsing (collapsing has already
++		 * happened if PageLRU is set).
++		 */
++		if (PageTransHuge(page)) {
++			low_pfn += (1 << compound_order(page)) - 1;
++			continue;
++		}
++
+ 		/*
+ 		 * For async migration, also only scan in MOVABLE blocks. Async
+ 		 * migration is optimistic to see if the minimum amount of work
+@@ -333,19 +346,6 @@ static isolate_migrate_t isolate_migrate
+ 			low_pfn += pageblock_nr_pages;
+ 			low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
+ 			last_pageblock_nr = pageblock_nr;
+-			continue;
+-		}
+-
+-		if (!PageLRU(page))
+-			continue;
+-
+-		/*
+-		 * PageLRU is set, and lru_lock excludes isolation,
+-		 * splitting and collapsing (collapsing has already
+-		 * happened if PageLRU is set).
+-		 */
+-		if (PageTransHuge(page)) {
+-			low_pfn += (1 << compound_order(page)) - 1;
+ 			continue;
+ 		}
