@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754214Ab1LDPKV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 10:10:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42520 "EHLO mx1.redhat.com"
+	id S1754236Ab1LDPN4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 10:13:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40405 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754000Ab1LDPKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 10:10:18 -0500
-Date: Sun, 4 Dec 2011 17:11:49 +0200
+	id S1753939Ab1LDPNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 10:13:52 -0500
+Date: Sun, 4 Dec 2011 17:15:30 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
         markmc@redhat.com
 Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
  descriptors
-Message-ID: <20111204151148.GA21851@redhat.com>
-References: <1322669511.3985.8.camel@lappy>
+Message-ID: <20111204151530.GB21851@redhat.com>
+References: <20111129145451.GD30966@redhat.com>
+ <4ED4F30F.8000603@redhat.com>
+ <1322669511.3985.8.camel@lappy>
  <87wrahrp0u.fsf@rustcorp.com.au>
  <20111201075847.GA5479@redhat.com>
  <1322726977.3259.3.camel@lappy>
  <20111201102640.GB8822@redhat.com>
  <87zkfbre9x.fsf@rustcorp.com.au>
  <1322913028.3782.4.camel@lappy>
- <4EDB5EF0.2010909@redhat.com>
- <20111204120132.GB18758@redhat.com>
- <4EDB624A.3030403@redhat.com>
+ <20111204110637.GN15464@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EDB624A.3030403@redhat.com>
+In-Reply-To: <20111204110637.GN15464@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 04, 2011 at 02:06:34PM +0200, Avi Kivity wrote:
-> On 12/04/2011 02:01 PM, Michael S. Tsirkin wrote:
+On Sun, Dec 04, 2011 at 01:06:37PM +0200, Michael S. Tsirkin wrote:
+> On Sat, Dec 03, 2011 at 01:50:28PM +0200, Sasha Levin wrote:
+> > On Fri, 2011-12-02 at 11:16 +1030, Rusty Russell wrote:
+> > > On Thu, 1 Dec 2011 12:26:42 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > On Thu, Dec 01, 2011 at 10:09:37AM +0200, Sasha Levin wrote:
+> > > > > On Thu, 2011-12-01 at 09:58 +0200, Michael S. Tsirkin wrote:
+> > > > > > We'll presumably need some logic to increment is back,
+> > > > > > to account for random workload changes.
+> > > > > > Something like slow start?
+> > > > > 
+> > > > > We can increment it each time the queue was less than 10% full, it
+> > > > > should act like slow start, no?
+> > > > 
+> > > > No, we really shouldn't get an empty ring as long as things behave
+> > > > well. What I meant is something like:
 > > > 
-> > > How much better?
+> > > I was thinking of the network output case, but you're right.  We need to
+> > > distinguish between usually full (eg. virtio-net input) and usually
+> > > empty (eg. virtio-net output).
 > > > 
-> > > I think that if indirects benefit networking, then we're doing something
-> > > wrong.  What's going on?  Does the ring get filled too early?  If so we
-> > > should expand it.
-> >
-> > The ring is physically contigious.
-> > With 256 entries and 64 bytes each, that's already 16K.
+> > > The signal for "we to pack more into the ring" is different.  We could
+> > > use some hacky heuristic like "out == 0" but I'd rather make it explicit
+> > > when we set up the virtqueue.
+> > > 
+> > > Our other alternative, moving the logic to the driver, is worse.
+> > > 
+> > > As to fading the effect over time, that's harder.  We have to deplete
+> > > the ring quite a few times before it turns into always-indirect.  We
+> > > could back off every time the ring is totally idle, but that may hurt
+> > > bursty traffic.  Let's try simple first?
+> > 
+> > I tried to take a different approach, and tried putting the indirect
+> > descriptors in a kmem_cache as Michael suggested. The benchmarks showed
+> > that this way virtio-net actually worked faster with indirect on even in
+> > a single stream.
+> > 
+> > Maybe we can do that instead of playing with threshold for now.
+> > 
+> > The question here, how much wasted space we can afford? since indirect
+> > descriptors would have to be the same size we'd have a bunch of them
+> > wasted in the cache. Ofcourse we can make that configurable, but how
+> > much is ok by default?
 > 
-> A descriptor is just 16 bytes.
+> I think it's a good idea to make that per-device.
+> For network at least, each skb already has overhead of
+> around 1/2 K, so using up to 1/2K more seems acceptable.
+> But even if we went up to MAX_SKB_FRAGS+2, it would be
+> only 1K per ring entry,
 
-Right. Not sure where did I get 64.
+I got this wrong - descriptor is 16 bytes, so MAX_SKB_FRAGS+2
+descriptors would be less than 300 bytes overhead per packet.
+That's not a lot.
 
-> There's also the used ring, but that's a
-> mistake if you have out of order completion.  We should have used copying.
+> so for a ring of 256 entries, we end up with
+> 256K max waste. That's not that terrible.
+> 
+> But I'd say let's do some benchmarking to figure out
+> the point where the gains are becoming very small.
 
-Seems unrelated... unless you want used to be written into
-descriptor ring itself?
-But, I don't really know why does virtio ring insist on
-making the 3 buffers (avail/used/descriptor)
-physically contigious. Rusty?
 
-> 16kB worth of descriptors is 1024 entries.  With 4kB buffers, that's 4MB
-> worth of data, or 4 ms at 10GbE line speed.  With 1500 byte buffers it's
-> just 1.5 ms.  In any case I think it's sufficient.
-
-Right. So I think that without indirect, we waste about 3 entries
-per packet for virtio header and transport etc headers.
-
-> -- 
-> error compiling committee.c: too many arguments to function
+> > -- 
+> > 
+> > Sasha.
