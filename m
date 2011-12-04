@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab1LDIyN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 03:54:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63801 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109Ab1LDIyM (ORCPT
+	id S1752642Ab1LDJhf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 04:37:35 -0500
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:52694 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752289Ab1LDJhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 03:54:12 -0500
-Date: Sun, 4 Dec 2011 00:54:05 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Clark, Joel" <joel.clark@intel.com>
-Subject: Re: [PATCH 2/2] Input: tsc2007 - Add a z1_low_threshhold platform
- data parameter
-Message-ID: <20111204085405.GD14593@core.coreip.homeip.net>
-References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
- <1322554378-348-2-git-send-email-feng.tang@intel.com>
- <20111129092310.GB21758@core.coreip.homeip.net>
- <20111130103418.4514b630@feng-i7>
- <20111201054726.GC16816@core.coreip.homeip.net>
- <20111201141948.13162071@feng-i7>
- <20111201084524.GB31610@core.coreip.homeip.net>
- <20111201170455.2e8ebcfc@feng-i7>
+	Sun, 4 Dec 2011 04:37:31 -0500
+Message-ID: <4EDB3F2A.4030801@metafoo.de>
+Date: Sun, 04 Dec 2011 10:36:42 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201170455.2e8ebcfc@feng-i7>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Greg KH <greg@kroah.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] drivercore: Add helper macro for platform_driver boilerplate
+References: <20111004232403.10364.22050.stgit@ponder>	<20111005065617.GA6824@kroah.com> <CAMuHMdWP+a0jXVBKzJ_J-Rtxdv=CFacDPz91fu=ThwSU_5dOeg@mail.gmail.com>
+In-Reply-To: <CAMuHMdWP+a0jXVBKzJ_J-Rtxdv=CFacDPz91fu=ThwSU_5dOeg@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 05:04:55PM +0800, Feng Tang wrote:
-> Hi Dmitry,
+On 12/04/2011 09:39 AM, Geert Uytterhoeven wrote:
+> On Wed, Oct 5, 2011 at 08:56, Greg KH <greg@kroah.com> wrote:
+>> On Tue, Oct 04, 2011 at 05:26:55PM -0600, Grant Likely wrote:
+>>> For simple modules that contain a single platform_driver without any
+>>> additional setup code then ends up being a block of duplicated
+>>> boilerplate.  This patch adds a new macro, module_platform_driver(),
+>>> which replaces the module_init()/module_exit() registrations with
+>>> template functions.
+>>>
+>>> This patch also converts all the relevant spi drivers to use the new
+>>> macro.  There are a lot of drivers in the tree that are using this
+>>> pattern and could be converted.
+>>>
+>>> It also fixes up some incorrect section annotations where I found
+>>> them.
+>>>
+>>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>>> ---
+>>>
+>>> I think this is useful, and I like the diffstat that it produces.
+>>> What does everyone else think of this approach?  I can do versions for
+>>> i2c_drivers and spi_drivers too.
+>>>
+>>> This is *not* tested very much.  I'm circulating mostly for review for
+>>> now.
+>>
+>> The idea looks sane to me, I like the diffstat it ends up creating, nice
+>> job.
 > 
+> I guess the macro can be extended (or wrapped around another one) to include
+> the bus type, so it applies to all bus types?
 > 
-> On Thu, 1 Dec 2011 16:45:24 +0800
-> Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> 
-> 
-> > > > 
-> > > > Even if we add the pressure threshold would not that noise cause
-> > > > endless stream of interrupts?
-> > > 
-> > > No, there is no endless interrupts for tsc2007. Without the z1
-> > > threshold, the while circle in tsc2007_soft_irq will run endlessly
-> > > as the noise data will be seen as a valid data:
-> > > 
-> > > 		rt = tsc2007_calculate_pressure(ts, &tc);
-> > > 		if (rt == 0 && !ts->get_pendown_state) {
-> > > 			/*
-> > > 			 * If pressure reported is 0 and we don't
-> > > have
-> > > 			 * callback to check pendown state, we have
-> > > to
-> > > 			 * assume that pen was lifted up.
-> > > 			 */
-> > > 			break;
-> > > 		}
-> > > 
-> > > With the z1 threshold check, the rt will be 0 for noise data, and
-> > > the code flow broke out.
-> > 
-> > What I meant is with the threshold check we'll break out of the ISR
-> > but why won't IRQ be raised again?
-> 
-> The IRQ will be fired again after we exist the tsc2007_soft_irq in my
-> test, as I re-enable the irq before existing the code.
-> 
-> > 
-> > > 
-> > > > 
-> > > > Also, what kind of z2 is reported with low z1? And do you
-> > > > implement get_pendown_state()?
-> > > 
-> > > z2 seems normal as some data between 3000-4000. We don't have a
-> > > get_pendown_state().
-> > 
-> > OK, there is max_rt platform parameter. I think we should employ it
-> > instead and break out if we get several incorrect samples in a row.
-> > Too bad you do not have a dedicate method.
-> > 
-> No, the max_rt won't help here, if the rt > max_rt, it won't break the
-> while loop, but just issue a warning message
-> 
-> 		if (rt <= ts->max_rt) {
-> 			.......
-> 
-> 		} else {
-> 			/*
-> 			 * Sample found inconsistent by debouncing or pressure is
-> 			 * beyond the maximum. Don't report it to user space,
-> 			 * repeat at least once more the measurement.
-> 			 */
-> 			dev_dbg(&ts->client->dev, "ignored pressure %d\n", rt);
-> 		}
+> It's a pity some use <bus>_register_driver(), while others use
+> <bus>_driver_register(),
+> so this needs some refactoring for unification.
+>
 
-What I meant that we need to ajust the logic to _exit_ the loop if we
-receive several samples with rt > max_rt instead of adding a new
-parameter.
+I've recently posted a patch series which extends the macro to take the bus's
+register/unregister function names so it can be used to build macros similar to
+module_platform_driver. [1] I used the register/unregister function names
+instead of the bus type, exactly because there is no common naming convention
+for these. So you still need to define the macro for a new bus type, but it
+should be a two-liner.
 
-Thanks.
+- Lars
 
--- 
-Dmitry
+[1] https://lkml.org/lkml/2011/11/16/77
