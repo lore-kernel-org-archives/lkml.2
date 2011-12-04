@@ -1,110 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab1LDMsk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 07:48:40 -0500
-Received: from smtprelay02.ispgateway.de ([80.67.31.36]:37990 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab1LDMsj (ORCPT
+	id S1753793Ab1LDM7h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 07:59:37 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42323 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab1LDM7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 07:48:39 -0500
-Message-ID: <4EDB6C10.10102@ladisch.de>
-Date: Sun, 04 Dec 2011 13:48:16 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Sun, 4 Dec 2011 07:59:33 -0500
+Date: Sun, 4 Dec 2011 13:59:28 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Heiko Schocher <hs@denx.de>
+Cc: linux-watchdog@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Wolfgang Denk <wd@denx.de>,
+        Stefan Roese <sr@denx.de>
+Subject: Re: [PATCH] RFC, watchdog: add generic wdt driver API
+Message-ID: <20111204125928.GB5788@pengutronix.de>
+References: <1322992423-21683-1-git-send-email-hs@denx.de>
 MIME-Version: 1.0
-To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
-CC: "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
-        "Nguyen, Dong" <Dong.Nguyen@amd.com>, linux-kernel@vger.kernel.org
-Subject: Re: Unhandled IRQs on AMD E-450
-References: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com>	<20111130154445.GA27198@gere.osrc.amd.com>	<1E8B869C0C6913418421A406C094DF7C0205358F@sshaexmb1.amd.com> <CAPRPZsAL=xUCjTKaSgq117zppvZS0S7fHB0Ebk-JqXvV1vTPCQ@mail.gmail.com>
-In-Reply-To: <CAPRPZsAL=xUCjTKaSgq117zppvZS0S7fHB0Ebk-JqXvV1vTPCQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/NkBOFFp2J2Af1nK"
+Content-Disposition: inline
+In-Reply-To: <1322992423-21683-1-git-send-email-hs@denx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 10.1.0.3
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeroen Van den Keybus wrote:
-> [...]
-> But to no avail. Both IRQ19 and IRQ16 keep becoming lost after a while.
 
-You previously said that unloading e1000 made things better.  Did this
-affect both IRQs 16 and 19?
+--/NkBOFFp2J2Af1nK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Can you check if this problem (on either 16 or 19) happens when you are
-not using the e1000 port (i.e., unplugged)?
+On Sun, Dec 04, 2011 at 10:53:43AM +0100, Heiko Schocher wrote:
+> This driver implements a character device with major number 10 and minor
+> number 130.  It is a software abstraction of the hardware watchdog
+> with two different APIs.  While the driver periodically triggers the
+> hardware watchdog, the software can setup independent timeout periods.
+>=20
+> "REGULAR API"
+> provides a facility to setup a watchdog behaviour shared by all
+> processes using the driver.  This interface uses read, write and
+> ioctl calls.
+>=20
+> "CHAIN API"
+> can be used to register configurable "watchdog chains" from
+> kernel and/or user space. This interface uses ioctl calls only.
+>=20
+> more info about this two APIs are found in
+> Documentation/watchdog/wd-api.txt
+>=20
+> Different hardware layers can attached to this driver. As this
+> is an RFC add in this patch also, as an example for an hardware
+> layer, support for the arm davinci internal WDT.
+>=20
+> Signed-off-by: Heiko Schocher <hs@denx.de>
+> Cc: linux-watchdog@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: Wolfgang Denk <wd@denx.de>
+> Cc: Stefan Roese <sr@denx.de>
+>=20
+> ---
+> This patch is a port from Linux 2.4 and thought as an RFC, so comments
+> are greately appreciated. First question is, has this watchdog driver
+> API a chance to go in mainline? If so, what is the direction to
+> go to push it ...
 
-> I'm adding a full /proc/interrupts and lspci -vv output at the bottom,
-> all from the 3.0.0 Ubuntu kernel. Feel free to mention any bad guys
-> you recognize in this log.
-
-The /proc/interrupts doesn't show e1000, but lspci does.  ...?
-
-Does the problem occur without fglrx?
-
-To get the AHCI interrupt away from IRQ 19, try the patch below.
-(But please don't show that ugly hack to any AMD guy. :)
-
-> Is there any way of obtaining more output such as IO-APIC register
-> states to verify that it is indeed a stuck IRQ input line and not an
-> unsuccesful EOI ack ?
-
-In theory, lspci's "Status: ... INTx+" shows an active interrupt line.
-
+I don't see this flying. We finally have a watchdog framework in the kernel
+which covers the long existing API used by existing drivers. If I understoo=
+d it
+right, this additional API needs new drivers for all the watchdogs? Also, I
+didn't fully get what you are missing from the combination of the current A=
+PI
+and additional userspace-handling? (check [1] for one example, not really
+covering your use case but showing a potential way maybe) Didn't look much =
+at
+the code, but glimpsing says it needs some cleanups regarding comments and
+excessive debug output.
 
 Regards,
-Clemens
 
+   Wolfram
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2906,6 +2906,48 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65f8, quirk_intel_mc_errata);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65f9, quirk_intel_mc_errata);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65fa, quirk_intel_mc_errata);
+[1] http://lists.freedesktop.org/archives/systemd-devel/2011-November/00380=
+2.html
 
-+#if defined(CONFIG_PCI_MSI) && \
-+	(defined(CONFIG_SATA_AHCI) || defined(CONFIG_SATA_AHCI_MODULE))
-+static void __init sb7x0_ahci_msi_enable(struct pci_dev *dev)
-+{
-+	u8 rev, ptr;
-+	int where;
-+	u32 misc_control;
-+
-+	pci_bus_read_config_byte(dev->bus, PCI_DEVFN(0x14, 0),
-+				 PCI_REVISION_ID, &rev);
-+	if (rev < 0x3c) /* A14 */
-+		return;
-+
-+	pci_read_config_byte(dev, 0x34, &ptr);
-+	if (ptr == 0x70) {
-+		where = 0x34;
-+	} else {
-+		pci_read_config_byte(dev, 0x61, &ptr);
-+		if (ptr == 0x70)
-+			where = 0x61;
-+		else
-+			return;
-+	}
-+
-+	pci_read_config_byte(dev, 0x51, &ptr);
-+	if (ptr != 0x70)
-+		return;
-+
-+	pci_read_config_dword(dev, 0x40, &misc_control);
-+	misc_control |= 1;
-+	pci_write_config_dword(dev, 0x40, misc_control);
-+
-+	pci_write_config_byte(dev, where, 0x50);
-+
-+	misc_control &= ~1;
-+	pci_write_config_dword(dev, 0x40, misc_control);
-+
-+	dev_dbg(&dev->dev, "AHCI: enabled MSI\n");
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, 0x4391, sb7x0_ahci_msi_enable);
-+#endif
-+
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
- {
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--/NkBOFFp2J2Af1nK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7bbrAACgkQD27XaX1/VRvlqgCfYk6kRdyi0oQ1vpqDeyZahXcb
+PuQAn1esGX8zXO9bOJLHneIG5Q7uEJlQ
+=A9NP
+-----END PGP SIGNATURE-----
+
+--/NkBOFFp2J2Af1nK--
