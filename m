@@ -1,139 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab1LDV1S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 16:27:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56279 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab1LDV1R (ORCPT
+	id S1754742Ab1LDV2D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 16:28:03 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58070 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752390Ab1LDV2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 16:27:17 -0500
-From: John Johansen <john.johansen@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, viro@ZenIV.linux.org.uk
-Subject: [PATCH] Remove use of mnt_ns->root and fix a couple of bugs in d_namespace_path
-Date: Sun,  4 Dec 2011 13:27:00 -0800
-Message-Id: <1323034020-28780-1-git-send-email-john.johansen@canonical.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sun, 4 Dec 2011 16:28:01 -0500
+X-Sasl-enc: Lh9+rU/y0riO2eU7lksokDeeRBvCH0gt5U2LHTY6b5sF 1323034080
+Date: Sun, 4 Dec 2011 19:27:57 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: akpm@linux-foundation.org, serge.hallyn@canonical.com, oleg@redhat.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1][V3] Handle reboot in a child pid namespace
+Message-ID: <20111204212756.GB16362@khazad-dum.debian.net>
+References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the unnecassary use of mnt_ns->root from path lookups, and replace
-it with passing stuct path { NULL, NULL } to __d_path.  As part of this
-remove the disconnect case CHROOT_NSCONNECT which is ununsed.
+On Sun, 04 Dec 2011, Daniel Lezcano wrote:
+>  * V3
+>    - removed lock and serialization of pid_ns_reboot
+>  * V2
+>    - added a lock for the pid namespace to prevent racy call
+>      to the 'reboot' syscall
+>    - Moved 'reboot' command assigned in zap_pid_ns_processes
+>      instead of wait_task_zombie
+>    - added tasklist lock around force_sig
+>    - added do_exit in pid_ns_reboot
+>    - used task_active_pid_ns instead of declaring a new variable in sys_reboot
+>    - moved code up before POWER_OFF changed to HALT in sys_reboot
 
-Fix the sysctl check to use path.dentry, instead of the unsafe tmp.dentry
+Daniel, can you address Miquel's concern?  Is it a valid concern, or
+not?  I assume CAP_REBOOT functionality is still in place inside the
+container, so it really does look like userspace would need to know
+whether it should drop CAP_REBOOT or not, in order to automatically use
+the new feature.
 
-Adjust the return code for disconnected from -ESTALE to -EACCES as AppArmor
-is denying access.
-
-Signed-off-by: John Johansen <john.johansen@canonical.com>
----
- security/apparmor/file.c |    2 +-
- security/apparmor/path.c |   57 +++++++++++++++++++--------------------------
- 2 files changed, 25 insertions(+), 34 deletions(-)
-
-diff --git a/security/apparmor/file.c b/security/apparmor/file.c
-index 7312db7..8d7806e 100644
---- a/security/apparmor/file.c
-+++ b/security/apparmor/file.c
-@@ -289,7 +289,7 @@ int aa_path_perm(int op, struct aa_profile *profile, struct path *path,
- 			perms.allow = request;
- 		} else if (error == -ENOENT)
- 			info = "Failed name lookup - deleted entry";
--		else if (error == -ESTALE)
-+		else if (error == -EACCES)
- 			info = "Failed name lookup - disconnected path";
- 		else if (error == -ENAMETOOLONG)
- 			info = "Failed name lookup - name too long";
-diff --git a/security/apparmor/path.c b/security/apparmor/path.c
-index 36cc0cc..670d40d 100644
---- a/security/apparmor/path.c
-+++ b/security/apparmor/path.c
-@@ -57,22 +57,17 @@ static int prepend(char **buffer, int buflen, const char *str, int namelen)
- static int d_namespace_path(struct path *path, char *buf, int buflen,
- 			    char **name, int flags)
- {
--	struct path root, tmp;
-+	struct path root, tmp = { };
- 	char *res;
--	int connected, error = 0;
-+	int error = 0;
-+
-+	get_fs_root(current->fs, &root);
- 
- 	/* Get the root we want to resolve too, released below */
--	if (flags & PATH_CHROOT_REL) {
-+	if (flags & PATH_CHROOT_REL)
- 		/* resolve paths relative to chroot */
--		get_fs_root(current->fs, &root);
--	} else {
--		/* resolve paths relative to namespace */
--		root.mnt = current->nsproxy->mnt_ns->root;
--		root.dentry = root.mnt->mnt_root;
--		path_get(&root);
--	}
-+		tmp = root;
- 
--	tmp = root;
- 	res = __d_path(path, &tmp, buf, buflen);
- 
- 	*name = res;
-@@ -97,10 +92,17 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
- 			goto out;
- 	}
- 
--	/* Determine if the path is connected to the expected root */
--	connected = tmp.dentry == root.dentry && tmp.mnt == root.mnt;
-+	/* is the path a sysctl? */
-+	if (path->dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
-+	    strncmp(*name, "/sys/", 5) == 0) {
-+		/* TODO: convert over to using a per namespace
-+		 * control instead of hard coded /proc
-+		 */
-+		error = prepend(name, *name - buf, "/proc", 5);
-+	}
- 
--	/* If the path is not connected,
-+	/* Determine if the path is connected to the expected root
-+	 * If the path is not connected,
- 	 * check if it is a sysctl and handle specially else remove any
- 	 * leading / that __d_path may have returned.
- 	 * Unless
-@@ -111,25 +113,14 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
- 	 *     of chroot) and specifically directed to connect paths to
- 	 *     namespace root.
- 	 */
--	if (!connected) {
--		/* is the disconnect path a sysctl? */
--		if (tmp.dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
--		    strncmp(*name, "/sys/", 5) == 0) {
--			/* TODO: convert over to using a per namespace
--			 * control instead of hard coded /proc
--			 */
--			error = prepend(name, *name - buf, "/proc", 5);
--		} else if (!(flags & PATH_CONNECT_PATH) &&
--			   !(((flags & CHROOT_NSCONNECT) == CHROOT_NSCONNECT) &&
--			     (tmp.mnt == current->nsproxy->mnt_ns->root &&
--			      tmp.dentry == tmp.mnt->mnt_root))) {
--			/* disconnected path, don't return pathname starting
--			 * with '/'
--			 */
--			error = -ESTALE;
--			if (*res == '/')
--				*name = res + 1;
--		}
-+	if ((tmp.dentry == root.dentry && tmp.mnt == root.mnt) &&
-+	    !(flags & PATH_CONNECT_PATH)) {
-+		/* disconnected path, don't return pathname starting
-+		 * with '/'
-+		 */
-+		error = -EACCES;
-+		if (*res == '/')
-+			*name = res + 1;
- 	}
- 
- out:
 -- 
-1.7.5.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
