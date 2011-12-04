@@ -1,125 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab1LDVoD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 16:44:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43419 "EHLO mx2.suse.de"
+	id S1755777Ab1LDV4w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 16:56:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43718 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754980Ab1LDVoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 16:44:00 -0500
-Date: Mon, 5 Dec 2011 08:43:42 +1100
+	id S1755031Ab1LDV4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 16:56:51 -0500
+Date: Mon, 5 Dec 2011 08:56:32 +1100
 From: NeilBrown <neilb@suse.de>
-To: NeilBrown <neilb@suse.de>
-Cc: Igor Grinberg <grinberg@compulab.co.il>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] MFD: TWL: add power off functionality
-Message-ID: <20111205084342.43776420@notabene.brown>
-In-Reply-To: <20111204215859.695b31aa@notabene.brown>
-References: <1321177790-5886-1-git-send-email-grinberg@compulab.co.il>
-	<4ED205F9.3070908@compulab.co.il>
-	<20111203123516.5ebb057b@notabene.brown>
-	<4EDB43DC.2050000@compulab.co.il>
-	<20111204215859.695b31aa@notabene.brown>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg KH <greg@kroah.com>, Peter Chen <peter.chen@freescale.com>,
+        gregkh@suse.de, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        stern@rowland.harvard.edu, hzpeterchen@gmail.com,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH 1/1] driver core: disable device's runtime pm during
+ shutdown
+Message-ID: <20111205085632.5976fe96@notabene.brown>
+In-Reply-To: <201111160016.09174.rjw@sisk.pl>
+References: <1321231380-11631-1-git-send-email-peter.chen@freescale.com>
+	<201111142327.37524.rjw@sisk.pl>
+	<20111115005951.GB26360@kroah.com>
+	<201111160016.09174.rjw@sisk.pl>
 X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/riZ0cjETXiQ5pNZCCc2Vhb="; protocol="application/pgp-signature"
+ boundary="Sig_/3AlLKqqpRm91cThetDg_AFz"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/riZ0cjETXiQ5pNZCCc2Vhb=
+--Sig_/3AlLKqqpRm91cThetDg_AFz
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, 4 Dec 2011 21:58:59 +1100 NeilBrown <neilb@suse.de> wrote:
+On Wed, 16 Nov 2011 00:16:08 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> On Sun, 04 Dec 2011 11:56:44 +0200 Igor Grinberg <grinberg@compulab.co.il>
-> wrote:
->=20
-> > Hi Neil,
+> On Tuesday, November 15, 2011, Greg KH wrote:
+> > On Mon, Nov 14, 2011 at 11:27:37PM +0100, Rafael J. Wysocki wrote:
+> > > On Monday, November 14, 2011, Peter Chen wrote:
+> > > > There may be an issue when the user issue "reboot/shutdown" command=
+, then
+> > > > the device has shut down its hardware, after that, this runtime-pm =
+featured
+> > > > device's driver will probably be scheduled to do its suspend routin=
+e,
+> > > > and at its suspend routine, it may access hardware, but the device =
+has
+> > > > already shutdown physically, then the system hang may be occurred.
+> > > >=20
+> > > > I ran out this issue using an auto-suspend supported USB devices, l=
+ike
+> > > > 3G modem, keyboard. The usb runtime suspend routine may be scheduled
+> > > > after the usb controller has been shut down, and the usb runtime su=
+spend
+> > > > routine will try to suspend its roothub(controller), it will access
+> > > > register, then the system hang occurs as the controller is shutdown.
+> > > > Signed-off-by: Peter Chen <peter.chen@freescale.com>
+> > >=20
+> > > Greg, do you want me to take this one?
 > >=20
-> > On 12/03/11 03:35, NeilBrown wrote:
-> > > On Sun, 27 Nov 2011 11:42:17 +0200 Igor Grinberg <grinberg@compulab.c=
-o.il>
-> > > wrote:
-> > >=20
-> > >> ping!
-> > >=20
-> > > pong ...
-> > >=20
-> > >=20
-> > > Hi,
-> > >  I've been trying this patch out on my GTA04 with 3.2-rc4 and it does=
-n't
-> > >  work :-(
-> >=20
-> > Probably, v3.2-rc4 is not the best to try things out...
-> > This patch is based on v3.1, can you try v3.1, so at least we can
-> > check the that the patch itself has no problems?
-> > Also, CC'ing linux-omap.
+> > Please do:
+> > 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 >=20
-> I think I'll be able to give 3.1 a try - I'll let you know.
+> Done, thanks!
 >=20
 
-Yes, works fine with 3.1
+Hi,
+ this patches causes a problem for me.
 
+Specifically it makes it impossible to power-down a device which uses twl40=
+30
+for power control on an omap3 processor.
 
-I've managed to find the problem.
+To perform the shutdown we need to send a command over the i2c bus.
+The relevant bus is called omap_i2c.1 and this is normally in suspend mode.
+When a request is sent, omap_i2c_xfer uses pm_runtime_get_sync to wake it u=
+p,
+performs the transfer, then calls pm_runtime_put to let it go back to sleep.
 
-commit af8db1508f2c9f3b6e633e2d2d906c6557c617f9
-Author: Peter Chen <peter.chen@freescale.com>
-Date:   Tue Nov 15 21:52:29 2011 +0100
+So it is asleep when the new pm_runtime_disable() call is made, so it stays
+asleep, omap_i2c_xfer cannot wake it, the transfer doesn't happen and the
+system doesn't get powered off.
 
-    PM / driver core: disable device's runtime PM during shutdown
-=20
-....
+So here is a device that should *not* have pm disabled at shutdown.
 
-@@ -1742,6 +1743,8 @@ void device_shutdown(void)
-                 */
-                list_del_init(&dev->kobj.entry);
-                spin_unlock(&devices_kset->list_lock);
-+               /* Disable all device's runtime power management */
-+               pm_runtime_disable(dev);
-=20
-                if (dev->bus && dev->bus->shutdown) {
-                        dev_dbg(dev, "shutdown\n");
+So I feel this fix is a little too heavy-handed.
+I don't fully understand the problem scenario described above but it seems =
+to
+me that if the auto-suspend timer can fire after the hardware has been shut
+down, then maybe the hardware-shutdown should be disabling that timer.  May=
+be?
 
+Suggestions?
 
-
-Removing this call allows power-off to work.
-
-It seems that omap_i2c.1 is normally in runtime suspend.
-omap_i2c_xfer wakes it up, performs the xfer, then puts it back to sleep.
-
-So this pm_runtime_disable is called while the device is asleep, so it stays
-asleep.  omap_i2c_xfer cannot wake it up and so cannot xfer anything.
-
-I'll start a new thread including the people responsible for that patch.
-
-Thanks for your time,
+Thanks,
 NeilBrown
 
---Sig_/riZ0cjETXiQ5pNZCCc2Vhb=
+--Sig_/3AlLKqqpRm91cThetDg_AFz
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIVAwUBTtvpkznsnt1WYoG5AQKGVQ//Yich3zDkql18C0cKp2bwcTzgDcwaicqH
-vMQevZdVyrDBVrkoOW5oiV1eZuXzW5tqrk/aMh5GHq6vx9hBjoNrIc6fO3CD8mif
-viZJxxJgeWA+GQU+b8en56l18Xg80mQDIPKe+87bV4DvZA3MdRNi7vSoJ/q3/FHM
-vY2odwjE5ylKZB69buDBQCircElHaW5rOR7iS6Mjy1RNB7JLYUH0uUsTuo0UEKa8
-QvqWSHeI65LCaIhiI5BpJ3mBvz7BgMdFGRL/cIJ+ylRXAEqmqpAcTS0tP55Ttw8t
-97d9eps4tpWF9qlnxvVU11tuFM9j1oSHjAknNJ08748Kb/Ot9913zvOEmzE3Nym7
-m3QNXNTW7B8NuJ5tz28M7SfFbMBIgNA07cMdYpbH4vXe8jzoSzRQu3Tue5uOVWuC
-SLr7HqZNfKtcvZw4f++D7uGAqLs/Knt6FUFJZi7lIF2DgPRpc2N7IcxIEBASfGya
-w6YoYpprEWEI0fo9bE4P8rWuybeK434nJgqINNJa/SiJgRt65MJ4Gt+cqcBGbrz9
-FvdpAQN3uslh6QC5GJbwioek0qKKEQ9VSlU1ffinAVzYJFZPYzZyvrO97QD49odt
-c32RrNsrZo+VJatCLArmVtabykCoAveSgRWWuDLCJhdJ2SedA2sq4u0L9InX+T8M
-2AikQy2avnY=
-=T40c
+iQIVAwUBTtvskDnsnt1WYoG5AQIzew//RbE0XmcA2KfdNr9HdMlULob/MnJA5J4Z
+gODvdQEnBPEibH6qXGuW7SMPAx5if0xOoddpDlmQujx6OZ6o3J5iKwehFFrX+Ei+
+9pQr7SlKqTFYzuOFejXkNbGfs378rMIkEkcNBt9Jw0taDva7VgRgBZ5N/ivcz69i
+lSykq0DsFH8aH1iNAt4VP0l45aMXfpCtQCrXV4bRPTLrnSEHQyzQFM2uKcxbhbUb
+3+mNk5OwjsuCfc++Jh0AaiLrIb8yFZRKwEs6C4mWgebh5YaiNDTOJln2znvdvwp0
+JDsBNKMx4hzyxCH4Q/kaOKyx8/3whqhfcOYYe6OwVVY/HUS4haf2xEKTuUnvtZxm
+sidhymYeHkvi9ls0pepLrURbBpxIgcHx9QZzK+mOf9Se5rG34Jwu0iM1QPvMKlir
+f6dL6Vxpqok9PF2puED5xZGTLHFNGnjgxixiweeeVt/XF8wWd+5pGSH/E/IR/8rZ
+vy0tzA5w9Lhl6HKeehIXuZcnUscJFR6vQsPjxcbJaPTgKTiLE/iR5TiuPQiW5jkJ
+NIz2HGCrYTG1ZbxsYh5G43l3YoZ+G08yxtU0VWs4+PHW9BcwiGSQ7GPALU01ZLAP
+yYLKg9tbG28cw1D5b6dX5yRYrdhbHId4SjMfedDXcVn6CQ+TglytKc9TdWkulzMm
+3wxmCZNQNTk=
+=fiNd
 -----END PGP SIGNATURE-----
 
---Sig_/riZ0cjETXiQ5pNZCCc2Vhb=--
+--Sig_/3AlLKqqpRm91cThetDg_AFz--
