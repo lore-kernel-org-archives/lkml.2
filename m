@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab1LDONd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 09:13:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44552 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab1LDONa (ORCPT
+	id S1754002Ab1LDOTs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 09:19:48 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48333 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533Ab1LDOTq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 09:13:30 -0500
-Subject: Re: [PATCH] mtd: convert drivers/mtd/* to use
- module_platform_driver()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Manuel Lauss <manuel.lauss@googlemail.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jiandong Zheng <jdzheng@broadcom.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Jamie Iles <jamie@jamieiles.com>, Olof Johansson <olof@lixom.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Vimal Singh <vimal.newwork@gmail.com>,
-        Andres Salomon <dilinger@queued.net>, Sukumar Ghorai <s-ghorai@ti.com>,
-        linux-mtd@lists.infradead.org
-Date: Sun, 04 Dec 2011 16:14:27 +0200
-In-Reply-To: <CAOLZvyHmW7joMRbj7OPzmgWVdLr2U0p1P17FdroVmS6skecpAg@mail.gmail.com>
-References: <1322397903.2799.5.camel@phoenix>
-	 <1322727444.2332.12.camel@koala>
-	 <CAOLZvyHmW7joMRbj7OPzmgWVdLr2U0p1P17FdroVmS6skecpAg@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-KnGhNHB4AIcYJbqAvyXr"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1323008077.9400.58.camel@sauron.fi.intel.com>
-Mime-Version: 1.0
+	Sun, 4 Dec 2011 09:19:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111121104313.63c7f796@cyeoh-System-Product-Name>
+References: <20110719003537.16b189ae@lilo>
+	<CAMuHMdWAhn7M8o0qY4pz3W1tyyKEcNY_YQL_6JuAPCcjL5vS1A@mail.gmail.com>
+	<20111121104313.63c7f796@cyeoh-System-Product-Name>
+Date: Sun, 4 Dec 2011 15:19:44 +0100
+X-Google-Sender-Auth: cNSokUdl2WxymHBKM3f21ahm7o0
+Message-ID: <CAMuHMdXfWoHx4GA3L8T6-6PFw9fdCVbooayR3La2Woe-0V2koA@mail.gmail.com>
+Subject: Re: Cross Memory Attach v3
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-man@vger.kernel.org,
+        linux-arch@vger.kernel.org, "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        Debian m68k <debian-68k@lists.debian.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Christopher,
 
---=-KnGhNHB4AIcYJbqAvyXr
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 21, 2011 at 01:13, Christopher Yeoh <cyeoh@au1.ibm.com> wrote:
+> On Sun, 20 Nov 2011 11:16:17 +0100
+> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> On Mon, Jul 18, 2011 at 17:05, Christopher Yeoh <cyeoh@au1.ibm.com>
+>> wrote:
+>> > For arch maintainers there are some simple tests to be able to
+>> > quickly verify that the syscalls are working correctly here:
+>>
+>> I'm wiring up these new syscalls on m68k.
+>>
+>> On m68k (ARAnyM), the first and third test succeed. The second one
+>> fails, though:
+>>
+>> # Setting up target with num iovecs 10, test buffer size 100000
+>> Target process is setup
+>> Run the following to test:
+>> ./t_process_vm_readv_iovec 1574 10 0x800030b0 89 0x80003110 38302
+>> 0x8000c6b8 22423 0x80011e58 18864 0x80016810 583 0x80016a60 8054
+>> 0x800189e0 3417 0x80019740 368 0x800198b8 897 0x80019c40 7003
+>>
+>> and in the other window:
+>>
+>> # ./t_process_vm_readv_iovec 1574 10 0x800030b0 89 0x80003110 38302
+>> 0x8000c6b8 22423 0x80011e58 18864 0x80016810 583 0x80016a60 8054
+>> 0x800189e0 3417 0x80019740 368 0x800198b8 897 0x80019c40 7003
+>> copy_from_process failed: Invalid argument
+>
+> That should say process_vm_readv instead of copy_from_process. The
+> error message is fixed in the just updated test.
+>
+>> error code: 29
+>> #
+>>
+>> Any suggestions?
+>
+> Given that the first and third tests succeed, I think the problem is
+> with the iovec parameters. The -EINVAL is most likely coming from
+> rw_copy_check_uvector. Any chance that something bad is
+> happening to lvec/liovcnt or rvec/riovcnt in the wireup?
+>
+> The iovecs are checked in process_vm_rw before the core of the
+> process_vm_readv/writev code is called so should be easy to confirm if
+> this is the problem.
+>
+> The other couple of places where it could possibly come from is that
+> for some reason the flags parameter ends up being non zero or when
+> looking up the task the mm is NULL. But given that the first and second
+> tests succeed I think its unlikely that either of these is the cause.
 
-On Thu, 2011-12-01 at 09:21 +0100, Manuel Lauss wrote:
-> On Thu, Dec 1, 2011 at 9:17 AM, Artem Bityutskiy <dedekind1@gmail.com> wr=
-ote:
-> > On Sun, 2011-11-27 at 20:45 +0800, Axel Lin wrote:
-> >> This patch converts the drivers in drivers/mtd/* to use the
-> >> module_platform_driver() macro which makes the code smaller and a bit
-> >> simpler.
-> >
-> > Pushed to l2-mtd-2.6.git, thanks. However, I got rejects in the
-> > drivers/mtd/nand/au1550nd.c file, so this part was ignored. Please, tak=
-e
-> > a look at this and send an incremental change. Thanks!
->=20
-> Axel's patch is against a bigger change to au1550nd.c (which introduced t=
-he
-> platform driver in the first place) available in linux-next.
+It turned out the flags parameter was non-zero, due to syscall() only supporting
+up to 5 parameters in the glibc I was using for testing.
 
-Then au1550nd.c bits should go in via the MIPS tree as well.
+I checked the eglibc sources (2.11.1-0ubuntu7.8), and it's still not
+fixed there,
+although I could find a fix for a similar issue in klibc
+(http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=334917).
 
---=20
-Best Regards,
-Artem Bityutskiy
+When forcing flags to zero, it works ;-)
+So sorry for bothering you.
 
---=-KnGhNHB4AIcYJbqAvyXr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Gr{oetje,eeting}s,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+                        Geert
 
-iQIcBAABAgAGBQJO24BDAAoJECmIfjd9wqK0lT8P/3Q+/McGZOQYgXP6IO2uKQ9K
-rTaXE+XaV7rExRoYsLc01je1ys/5blMOA00o7Cofy5VzIIzjEneCdY1m70nU94fr
-zpaoCaoaNr5JvvE841HHRb0raIqCfdxofr4XJujNUmIqw+2RGh4tLcECqiYQQ3aH
-EjMY/6l9qvVMxR6zV6vhTDsChkbv/va5Sp7IP+OXUrnrGQG96k/qBoBmD1RG5N0n
-5Vyo5LFT0qka2gs97mMUAPJkNdZhkXxgDvC/tjUwFryOrL7s5xY42AtVu6upifZM
-gmdzI2u1N+TImaUtbxG4fd6MQrrvl3KXLFedvRBLctO59cjZpIyZkeF9gEzIZQKg
-R2abkcVrJKU3jKAKooc2ofz7g2fDCO/NxEccJVjGcmNABCG/Kbarb2tx1RB9w8jW
-eaYJQs3G4C0fMYHG3rI6vyxKB1bIQ3P4D6tLDpjFPrRYXChnpQZZzhdyXtWXvLJh
-xJC1mLGSbilf14b4FK3bi5WGx//REALgAej5nsjaRqtG8Ml1Nkhl3Z8yz79NZNXc
-UbddWCw2p5oTV2A91SPdjyWVFUf4i4DJbmPfy9kiGhfDsF2pjTKvqf3l2+jcErYG
-LHHb+wZ05b60peQV3YpObRXA8kxUkJd1qwrEfQGo1eUiOT1BvaCC0J8YeG+4qOGM
-1sbL89inflm2XvNMD1fM
-=u2f9
------END PGP SIGNATURE-----
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
---=-KnGhNHB4AIcYJbqAvyXr--
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
