@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab1LDPcY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 10:32:24 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39851 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab1LDPcU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 10:32:20 -0500
-Message-ID: <4EDB9276.6070302@linux.vnet.ibm.com>
-Date: Sun, 04 Dec 2011 21:02:06 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1754501Ab1LDPuw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 10:50:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10885 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754300Ab1LDPuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 10:50:51 -0500
+Date: Sun, 4 Dec 2011 16:45:43 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: akpm@linux-foundation.org, serge.hallyn@canonical.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1][v2] Add reboot_pid_ns to handle the reboot syscall
+Message-ID: <20111204154543.GA23805@redhat.com>
+References: <1322956280-13831-1-git-send-email-daniel.lezcano@free.fr> <1322956280-13831-2-git-send-email-daniel.lezcano@free.fr>
 MIME-Version: 1.0
-To: Patrik Kullman <patrik.kullman@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        michal@ellpspace.math.ualberta.ca, Oliver Neukum <oneukum@suse.de>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: xhci_hcd: Runtime PM causes port to inactivate
-References: <CAGPN=9SQraacGpNJTtsA4NUk8Re1neJaDt42u8HFw8Hg-+n5BQ@mail.gmail.com>
-In-Reply-To: <CAGPN=9SQraacGpNJTtsA4NUk8Re1neJaDt42u8HFw8Hg-+n5BQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120405-9264-0000-0000-000000549B5D
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322956280-13831-2-git-send-email-daniel.lezcano@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a very similar discussion going on at:
-http://thread.gmane.org/gmane.linux.kernel/1222803
+On 12/04, Daniel Lezcano wrote:
+>
+> @@ -32,6 +32,8 @@ struct pid_namespace {
+>  #endif
+>  	gid_t pid_gid;
+>  	int hide_pid;
+> +	int reboot;
+> +	spinlock_t reboot_lock;
+>  };
 
-Cc'ing all the relevant people and mailing lists.
+Well. I was thinking about the serialization too, but this
+->reboot_lock asks for v3 imho ;)
 
-Regards,
-Srivatsa S. Bhat
+First of all, do we really care? force_sig(SIGKILL, child_reaper)
+can't race with itself, it does nothing if init is already killed.
 
-On 12/04/2011 04:47 PM, Patrik Kullman wrote:
+So why it is important to protect pid_ns->reboot? Yes, it is possible
+to change it again if two callers do sys_reboot() "at the same time".
+But in this case we can't predict which caller wins anyway, so why
+should we worry?
 
-> Issuing
-> 
-> echo auto > /sys/bus/pci/devices/0000:03:00.0/power/control
-> 
-> on my Asus Zenbook UX31E with a
-> 
-> 03:00.0 USB Controller: Fresco Logic Device 1009 (rev 02)
-> 
-> causes its USB3-port to become mostly disabled.
-> 
-> It does have a "Charger+" feature that allows it to charge cellphones
-> etc even when turned off, and this feature works when power control is
-> in "auto" mode.
-> 
-> In all other aspects, the port is turned off. It doesn't react to
-> devices being inserted.
-> 
-> This does not feel like the desired behavior.
-> 
-> Also, suspend does not work without unbinding the xhci_hcd module, not
-> sure if that is related.
-> Computer will not suspend/resume unless the following script is used
-> in /etc/pm/sleep.d:
-> https://help.ubuntu.com/community/AsusZenbook#Suspend.2C_Hibernate.2C_Shut-down_and_Reboot
-> 
-> This behavior has not changed between 3.0 and 3.2-rc4+ that I've tried today.
+IOW. Say, we have the 2 tasks doing HALT and RESTART in parallel.
+It is possible that HALT sets ->reboot and kills init first, then
+RESTART changes ->reboot and the second force_sig() does nothing.
+In this case we can simply pretend that RESTART wins and the dying
+init kills HALT before it calls sys_reboot().
 
+In any case. Even if you want to serialize, instead of adding the
+new lock reboot_pid_ns() can simply do:
+
+	if (cmpxchg(&pid_ns->reboot, 0, reboot) != 0)
+		return -EBUSY;
+
+this looks much simpler to me.
+
+Oleg.
 
