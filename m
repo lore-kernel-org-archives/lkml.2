@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab1LDLiJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 06:38:09 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:26752
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752586Ab1LDLiF (ORCPT
+	id S1753962Ab1LDLiZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 06:38:25 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:28272
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753722Ab1LDLiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 06:38:05 -0500
+	Sun, 4 Dec 2011 06:38:09 -0500
 X-SpamScore: 7
-X-BigFish: VS7(zzc8kzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hb79i62h)
-X-Spam-TCS-SCL: 1:0
+X-BigFish: VS7(zzc8kzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hb79i61h)
+X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 From: Dong Aisheng <b29396@freescale.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
         <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
         <kernel@pengutronix.de>
-Subject: [RFC PATCH 1/3] pinctrl: imx: add pinmux imx core driver
-Date: Sun, 4 Dec 2011 19:49:42 +0800
-Message-ID: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+Subject: [RFC PATCH 3/3] pinctrl: imx: add pinmux-imx6q support
+Date: Sun, 4 Dec 2011 19:49:44 +0800
+Message-ID: <1322999384-7886-3-git-send-email-b29396@freescale.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -27,61 +29,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
-This patch series shows the basic idea of driver design. There're still
-some TODOes like adding more pinmux functions and gpio support.
-The patch is here for request for comments on the driver design
-and other might exist issues.
-
-Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+Signed-off-by: Dong Aisheng <b29396@freescale.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: Sascha Hauer <s.hauer@pengutronix.de>
 Cc: Shawn Guo <shanw.guo@freescale.com>
 ---
- drivers/pinctrl/Kconfig           |    6 +
- drivers/pinctrl/Makefile          |    2 +
- drivers/pinctrl/pinmux-imx-core.c |  284 +++++++++++++++++++++++++++++++++++++
- drivers/pinctrl/pinmux-imx-core.h |   83 +++++++++++
- 4 files changed, 375 insertions(+), 0 deletions(-)
+ drivers/pinctrl/pinmux-imx6q.c |  464 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 464 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index ef56644..214d072 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -40,4 +40,10 @@ config PINMUX_U300
- 	help
- 	  Say Y here to enable the U300 pinmux driver
- 
-+config PINMUX_IMX
-+	bool "IMX pinmux driver"
-+	depends on ARCH_MXC
-+	select PINMUX
-+	help
-+	  Say Y here to enable the IMX pinmux driver
- endif
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index bdc548a..764657b 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -4,5 +4,7 @@ ccflags-$(CONFIG_DEBUG_PINMUX)	+= -DDEBUG
- 
- obj-$(CONFIG_PINCTRL)		+= core.o
- obj-$(CONFIG_PINMUX)		+= pinmux.o
-+obj-$(CONFIG_PINMUX_IMX)	+= pinmux-imx-core.o \
-+				   pinmux-imx53.o pinmux-imx6q.o
- obj-$(CONFIG_PINMUX_SIRF)	+= pinmux-sirf.o
- obj-$(CONFIG_PINMUX_U300)	+= pinmux-u300.o
-diff --git a/drivers/pinctrl/pinmux-imx-core.c b/drivers/pinctrl/pinmux-imx-core.c
+diff --git a/drivers/pinctrl/pinmux-imx6q.c b/drivers/pinctrl/pinmux-imx6q.c
 new file mode 100644
-index 0000000..1e60932
+index 0000000..5641199
 --- /dev/null
-+++ b/drivers/pinctrl/pinmux-imx-core.c
-@@ -0,0 +1,284 @@
++++ b/drivers/pinctrl/pinmux-imx6q.c
+@@ -0,0 +1,464 @@
 +/*
-+ * Core driver for the imx pin controller
++ * imx6q pinmux driver based on imx pinmux core
 + *
 + * Copyright (C) 2011 Freescale Semiconductor, Inc.
-+ * Copyright (C) 2011 Linaro Ltd.
++ * Copyright (C) 2011 Linaro, Inc.
 + *
 + * Author: Dong Aisheng <dong.aisheng@linaro.org>
 + *
@@ -92,8 +58,6 @@ index 0000000..1e60932
 + */
 +
 +#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
 +#include <linux/io.h>
 +#include <linux/err.h>
 +#include <linux/pinctrl/pinctrl.h>
@@ -101,355 +65,448 @@ index 0000000..1e60932
 +
 +#include "pinmux-imx-core.h"
 +
-+#define DRIVER_NAME "pinmux-imx"
++#define MX6Q_IOMUXC_MUX_OFSSET	0x4c
++#define MX6Q_IOMUXC_MAXPIN	(25*25)
 +
-+/**
-+ * @dev: a pointer back to containing device
-+ * @virtbase: the offset to the controller in virtual memory
-+ */
-+struct imx_pmx {
-+	struct device *dev;
-+	struct pinctrl_dev *pctl;
-+	void __iomem *virtbase;
-+	struct imx_pinctrl_info *info;
++enum imx_mx6q_pads {
++	MX6Q_SD2_DAT1 = 0,
++	MX6Q_SD2_DAT2 = 1,
++	MX6Q_SD2_DAT0 = 2,
++	MX6Q_RGMII_TXC = 3,
++	MX6Q_RGMII_TD0 = 4,
++	MX6Q_RGMII_TD1 = 5,
++	MX6Q_RGMII_TD2 = 6,
++	MX6Q_RGMII_TD3 = 7,
++	MX6Q_RGMII_RX_CTL = 8,
++	MX6Q_RGMII_RD0 = 9,
++	MX6Q_RGMII_TX_CTL = 10,
++	MX6Q_RGMII_RD1 = 11,
++	MX6Q_RGMII_RD2 = 12,
++	MX6Q_RGMII_RD3 = 13,
++	MX6Q_RGMII_RXC = 14,
++	MX6Q_EIM_A25 = 15,
++	MX6Q_EIM_EB2 = 16,
++	MX6Q_EIM_D16 = 17,
++	MX6Q_EIM_D17 = 18,
++	MX6Q_EIM_D18 = 19,
++	MX6Q_EIM_D19 = 20,
++	MX6Q_EIM_D20 = 21,
++	MX6Q_EIM_D21 = 22,
++	MX6Q_EIM_D22 = 23,
++	MX6Q_EIM_D23 = 24,
++	MX6Q_EIM_EB3 = 25,
++	MX6Q_EIM_D24 = 26,
++	MX6Q_EIM_D25 = 27,
++	MX6Q_EIM_D26 = 28,
++	MX6Q_EIM_D27 = 29,
++	MX6Q_EIM_D28 = 30,
++	MX6Q_EIM_D29 = 31,
++	MX6Q_EIM_D30 = 32,
++	MX6Q_EIM_D31 = 33,
++	MX6Q_EIM_A24 = 34,
++	MX6Q_EIM_A23 = 35,
++	MX6Q_EIM_A22 = 36,
++	MX6Q_EIM_A21 = 37,
++	MX6Q_EIM_A20 = 38,
++	MX6Q_EIM_A19 = 39,
++	MX6Q_EIM_A18 = 40,
++	MX6Q_EIM_A17 = 41,
++	MX6Q_EIM_A16 = 42,
++	MX6Q_EIM_CS0 = 43,
++	MX6Q_EIM_CS1 = 44,
++	MX6Q_EIM_OE = 45,
++	MX6Q_EIM_RW = 46,
++	MX6Q_EIM_LBA = 47,
++	MX6Q_EIM_EB0 = 48,
++	MX6Q_EIM_EB1 = 49,
++	MX6Q_EIM_DA0 = 50,
++	MX6Q_EIM_DA1 = 51,
++	MX6Q_EIM_DA2 = 52,
++	MX6Q_EIM_DA3 = 53,
++	MX6Q_EIM_DA4 = 54,
++	MX6Q_EIM_DA5 = 55,
++	MX6Q_EIM_DA6 = 56,
++	MX6Q_EIM_DA7 = 57,
++	MX6Q_EIM_DA8 = 58,
++	MX6Q_EIM_DA9 = 59,
++	MX6Q_EIM_DA10 = 60,
++	MX6Q_EIM_DA11 = 61,
++	MX6Q_EIM_DA12 = 62,
++	MX6Q_EIM_DA13 = 63,
++	MX6Q_EIM_DA14 = 64,
++	MX6Q_EIM_DA15 = 65,
++	MX6Q_EIM_WAIT = 66,
++	MX6Q_EIM_BCLK = 67,
++	MX6Q_DI0_DISP_CLK = 68,
++	MX6Q_DI0_PIN15 = 69,
++	MX6Q_DI0_PIN2 = 70,
++	MX6Q_DI0_PIN3 = 71,
++	MX6Q_DI0_PIN4 = 72,
++	MX6Q_DISP0_DAT0 = 73,
++	MX6Q_DISP0_DAT1 = 74,
++	MX6Q_DISP0_DAT2 = 75,
++	MX6Q_DISP0_DAT3 = 76,
++	MX6Q_DISP0_DAT4 = 77,
++	MX6Q_DISP0_DAT5 = 78,
++	MX6Q_DISP0_DAT6 = 79,
++	MX6Q_DISP0_DAT7 = 80,
++	MX6Q_DISP0_DAT8 = 81,
++	MX6Q_DISP0_DAT9 = 82,
++	MX6Q_DISP0_DAT10 = 83,
++	MX6Q_DISP0_DAT11 = 84,
++	MX6Q_DISP0_DAT12 = 85,
++	MX6Q_DISP0_DAT13 = 86,
++	MX6Q_DISP0_DAT14 = 87,
++	MX6Q_DISP0_DAT15 = 88,
++	MX6Q_DISP0_DAT16 = 89,
++	MX6Q_DISP0_DAT17 = 90,
++	MX6Q_DISP0_DAT18 = 91,
++	MX6Q_DISP0_DAT19 = 92,
++	MX6Q_DISP0_DAT20 = 93,
++	MX6Q_DISP0_DAT21 = 94,
++	MX6Q_DISP0_DAT22 = 95,
++	MX6Q_DISP0_DAT23 = 96,
++	MX6Q_ENET_MDIO = 97,
++	MX6Q_ENET_REF_CLK = 98,
++	MX6Q_ENET_RX_ER = 99,
++	MX6Q_ENET_CRS_DV = 100,
++	MX6Q_ENET_RXD1 = 101,
++	MX6Q_ENET_RXD0 = 102,
++	MX6Q_ENET_TX_EN = 103,
++	MX6Q_ENET_TXD1 = 104,
++	MX6Q_ENET_TXD0 = 105,
++	MX6Q_ENET_MDC = 106,
++	MX6Q_KEY_COL0 = 107,
++	MX6Q_KEY_ROW0 = 108,
++	MX6Q_KEY_COL1 = 109,
++	MX6Q_KEY_ROW1 = 110,
++	MX6Q_KEY_COL2 = 111,
++	MX6Q_KEY_ROW2 = 112,
++	MX6Q_KEY_COL3 = 113,
++	MX6Q_KEY_ROW3 = 114,
++	MX6Q_KEY_COL4 = 115,
++	MX6Q_KEY_ROW4 = 116,
++	MX6Q_GPIO_0 = 117,
++	MX6Q_GPIO_1 = 118,
++	MX6Q_GPIO_9 = 119,
++	MX6Q_GPIO_3 = 120,
++	MX6Q_GPIO_6 = 121,
++	MX6Q_GPIO_2 = 122,
++	MX6Q_GPIO_4 = 123,
++	MX6Q_GPIO_5 = 124,
++	MX6Q_GPIO_7 = 125,
++	MX6Q_GPIO_8 = 126,
++	MX6Q_GPIO_16 = 127,
++	MX6Q_GPIO_17 = 128,
++	MX6Q_GPIO_18 = 129,
++	MX6Q_GPIO_19 = 130,
++	MX6Q_CSI0_PIXCLK = 131,
++	MX6Q_CSI0_MCLK = 132,
++	MX6Q_CSI0_DATA_EN = 133,
++	MX6Q_CSI0_VSYNC = 134,
++	MX6Q_CSI0_DAT4 = 135,
++	MX6Q_CSI0_DAT5 = 136,
++	MX6Q_CSI0_DAT6 = 137,
++	MX6Q_CSI0_DAT7 = 138,
++	MX6Q_CSI0_DAT8 = 139,
++	MX6Q_CSI0_DAT9 = 140,
++	MX6Q_CSI0_DAT10 = 141,
++	MX6Q_CSI0_DAT11 = 142,
++	MX6Q_CSI0_DAT12 = 143,
++	MX6Q_CSI0_DAT13 = 144,
++	MX6Q_CSI0_DAT14 = 145,
++	MX6Q_CSI0_DAT15 = 146,
++	MX6Q_CSI0_DAT16 = 147,
++	MX6Q_CSI0_DAT17 = 148,
++	MX6Q_CSI0_DAT18 = 149,
++	MX6Q_CSI0_DAT19 = 150,
++	MX6Q_SD3_DAT7 = 151,
++	MX6Q_SD3_DAT6 = 152,
++	MX6Q_SD3_DAT5 = 153,
++	MX6Q_SD3_DAT4 = 154,
++	MX6Q_SD3_CMD = 155,
++	MX6Q_SD3_CLK = 156,
++	MX6Q_SD3_DAT0 = 157,
++	MX6Q_SD3_DAT1 = 158,
++	MX6Q_SD3_DAT2 = 159,
++	MX6Q_SD3_DAT3 = 160,
++	MX6Q_SD3_RST = 161,
++	MX6Q_NANDF_CLE = 162,
++	MX6Q_NANDF_ALE = 163,
++	MX6Q_NANDF_WP_B = 164,
++	MX6Q_NANDF_RB0 = 165,
++	MX6Q_NANDF_CS0 = 166,
++	MX6Q_NANDF_CS1 = 167,
++	MX6Q_NANDF_CS2 = 168,
++	MX6Q_NANDF_CS3 = 169,
++	MX6Q_SD4_CMD = 170,
++	MX6Q_SD4_CLK = 171,
++	MX6Q_NANDF_D0 = 172,
++	MX6Q_NANDF_D1 = 173,
++	MX6Q_NANDF_D2 = 174,
++	MX6Q_NANDF_D3 = 175,
++	MX6Q_NANDF_D4 = 176,
++	MX6Q_NANDF_D5 = 177,
++	MX6Q_NANDF_D6 = 178,
++	MX6Q_NANDF_D7 = 179,
++	MX6Q_SD4_DAT0 = 180,
++	MX6Q_SD4_DAT1 = 181,
++	MX6Q_SD4_DAT2 = 182,
++	MX6Q_SD4_DAT3 = 183,
++	MX6Q_SD4_DAT4 = 184,
++	MX6Q_SD4_DAT5 = 185,
++	MX6Q_SD4_DAT6 = 186,
++	MX6Q_SD4_DAT7 = 187,
++	MX6Q_SD1_DAT1 = 188,
++	MX6Q_SD1_DAT0 = 189,
++	MX6Q_SD1_DAT3 = 190,
++	MX6Q_SD1_CMD = 191,
++	MX6Q_SD1_DAT2 = 192,
++	MX6Q_SD1_CLK = 193,
++	MX6Q_SD2_CLK = 194,
++	MX6Q_SD2_CMD = 195,
++	MX6Q_SD2_DAT3 = 196
 +};
 +
-+#define IMX_PINCTRL_REG_SIZE 4
-+#define IMX_PINCTRL_MAX_FUNC 7
-+
-+extern struct imx_pinctrl_info mx53_pinctrl_info;
-+extern struct imx_pinctrl_info mx6q_pinctrl_info;
-+
-+static struct platform_device_id imx_pinctrl_devtype[] = {
-+	{
-+		.name = "sdhci-pinctrl-imx53",
-+		.driver_data = (kernel_ulong_t)&mx53_pinctrl_info,
-+	}, {
-+		.name = "sdhci-pinctrl-imx6q",
-+		.driver_data = (kernel_ulong_t)&mx6q_pinctrl_info,
-+	},
++/* Pad names for the pinmux subsystem */
++static const struct pinctrl_pin_desc mx6q_pads[] = {
++	IMX_PINCTRL_PIN(MX6Q_SD2_DAT1),
++	IMX_PINCTRL_PIN(MX6Q_SD2_DAT2),
++	IMX_PINCTRL_PIN(MX6Q_SD2_DAT0),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_TXC),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_TD0),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_TD1),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_TD2),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_TD3),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_RX_CTL),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_RD0),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_TX_CTL),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_RD1),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_RD2),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_RD3),
++	IMX_PINCTRL_PIN(MX6Q_RGMII_RXC),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A25),
++	IMX_PINCTRL_PIN(MX6Q_EIM_EB2),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D16),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D17),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D18),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D19),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D20),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D21),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D22),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D23),
++	IMX_PINCTRL_PIN(MX6Q_EIM_EB3),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D24),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D25),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D26),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D27),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D28),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D29),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D30),
++	IMX_PINCTRL_PIN(MX6Q_EIM_D31),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A24),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A23),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A22),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A21),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A20),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A19),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A18),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A17),
++	IMX_PINCTRL_PIN(MX6Q_EIM_A16),
++	IMX_PINCTRL_PIN(MX6Q_EIM_CS0),
++	IMX_PINCTRL_PIN(MX6Q_EIM_CS1),
++	IMX_PINCTRL_PIN(MX6Q_EIM_OE),
++	IMX_PINCTRL_PIN(MX6Q_EIM_RW),
++	IMX_PINCTRL_PIN(MX6Q_EIM_LBA),
++	IMX_PINCTRL_PIN(MX6Q_EIM_EB0),
++	IMX_PINCTRL_PIN(MX6Q_EIM_EB1),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA0),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA1),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA2),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA3),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA4),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA5),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA6),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA7),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA8),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA9),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA10),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA11),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA12),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA13),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA14),
++	IMX_PINCTRL_PIN(MX6Q_EIM_DA15),
++	IMX_PINCTRL_PIN(MX6Q_EIM_WAIT),
++	IMX_PINCTRL_PIN(MX6Q_EIM_BCLK),
++	IMX_PINCTRL_PIN(MX6Q_DI0_DISP_CLK),
++	IMX_PINCTRL_PIN(MX6Q_DI0_PIN15),
++	IMX_PINCTRL_PIN(MX6Q_DI0_PIN2),
++	IMX_PINCTRL_PIN(MX6Q_DI0_PIN3),
++	IMX_PINCTRL_PIN(MX6Q_DI0_PIN4),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT0),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT1),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT2),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT3),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT4),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT5),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT6),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT7),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT8),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT9),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT10),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT11),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT12),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT13),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT14),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT15),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT16),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT17),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT18),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT19),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT20),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT21),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT22),
++	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT23),
++	IMX_PINCTRL_PIN(MX6Q_ENET_MDIO),
++	IMX_PINCTRL_PIN(MX6Q_ENET_REF_CLK),
++	IMX_PINCTRL_PIN(MX6Q_ENET_RX_ER),
++	IMX_PINCTRL_PIN(MX6Q_ENET_CRS_DV),
++	IMX_PINCTRL_PIN(MX6Q_ENET_RXD1),
++	IMX_PINCTRL_PIN(MX6Q_ENET_RXD0),
++	IMX_PINCTRL_PIN(MX6Q_ENET_TX_EN),
++	IMX_PINCTRL_PIN(MX6Q_ENET_TXD1),
++	IMX_PINCTRL_PIN(MX6Q_ENET_TXD0),
++	IMX_PINCTRL_PIN(MX6Q_ENET_MDC),
++	IMX_PINCTRL_PIN(MX6Q_KEY_COL0),
++	IMX_PINCTRL_PIN(MX6Q_KEY_ROW0),
++	IMX_PINCTRL_PIN(MX6Q_KEY_COL1),
++	IMX_PINCTRL_PIN(MX6Q_KEY_ROW1),
++	IMX_PINCTRL_PIN(MX6Q_KEY_COL2),
++	IMX_PINCTRL_PIN(MX6Q_KEY_ROW2),
++	IMX_PINCTRL_PIN(MX6Q_KEY_COL3),
++	IMX_PINCTRL_PIN(MX6Q_KEY_ROW3),
++	IMX_PINCTRL_PIN(MX6Q_KEY_COL4),
++	IMX_PINCTRL_PIN(MX6Q_KEY_ROW4),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_0),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_1),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_9),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_3),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_6),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_2),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_4),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_5),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_7),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_8),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_16),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_17),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_18),
++	IMX_PINCTRL_PIN(MX6Q_GPIO_19),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_PIXCLK),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_MCLK),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DATA_EN),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_VSYNC),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT4),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT5),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT6),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT7),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT8),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT9),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT10),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT11),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT12),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT13),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT14),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT15),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT16),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT17),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT18),
++	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT19),
++	IMX_PINCTRL_PIN(MX6Q_SD3_DAT7),
++	IMX_PINCTRL_PIN(MX6Q_SD3_DAT6),
++	IMX_PINCTRL_PIN(MX6Q_SD3_DAT5),
++	IMX_PINCTRL_PIN(MX6Q_SD3_DAT4),
++	IMX_PINCTRL_PIN(MX6Q_SD3_CMD),
++	IMX_PINCTRL_PIN(MX6Q_SD3_CLK),
++	IMX_PINCTRL_PIN(MX6Q_SD3_DAT0),
++	IMX_PINCTRL_PIN(MX6Q_SD3_DAT1),
++	IMX_PINCTRL_PIN(MX6Q_SD3_DAT2),
++	IMX_PINCTRL_PIN(MX6Q_SD3_DAT3),
++	IMX_PINCTRL_PIN(MX6Q_SD3_RST),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_CLE),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_ALE),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_WP_B),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_RB0),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_CS0),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_CS1),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_CS2),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_CS3),
++	IMX_PINCTRL_PIN(MX6Q_SD4_CMD),
++	IMX_PINCTRL_PIN(MX6Q_SD4_CLK),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_D0),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_D1),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_D2),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_D3),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_D4),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_D5),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_D6),
++	IMX_PINCTRL_PIN(MX6Q_NANDF_D7),
++	IMX_PINCTRL_PIN(MX6Q_SD4_DAT0),
++	IMX_PINCTRL_PIN(MX6Q_SD4_DAT1),
++	IMX_PINCTRL_PIN(MX6Q_SD4_DAT2),
++	IMX_PINCTRL_PIN(MX6Q_SD4_DAT3),
++	IMX_PINCTRL_PIN(MX6Q_SD4_DAT4),
++	IMX_PINCTRL_PIN(MX6Q_SD4_DAT5),
++	IMX_PINCTRL_PIN(MX6Q_SD4_DAT6),
++	IMX_PINCTRL_PIN(MX6Q_SD4_DAT7),
++	IMX_PINCTRL_PIN(MX6Q_SD1_DAT1),
++	IMX_PINCTRL_PIN(MX6Q_SD1_DAT0),
++	IMX_PINCTRL_PIN(MX6Q_SD1_DAT3),
++	IMX_PINCTRL_PIN(MX6Q_SD1_CMD),
++	IMX_PINCTRL_PIN(MX6Q_SD1_DAT2),
++	IMX_PINCTRL_PIN(MX6Q_SD1_CLK),
++	IMX_PINCTRL_PIN(MX6Q_SD2_CLK),
++	IMX_PINCTRL_PIN(MX6Q_SD2_CMD),
++	IMX_PINCTRL_PIN(MX6Q_SD2_DAT3),
 +};
 +
-+static int imx_list_groups(struct pinctrl_dev *pctldev, unsigned selector)
-+{
-+	struct imx_pmx *ipmx = pinctrl_dev_get_drvdata(pctldev);
-+	struct imx_pinctrl_info *info = ipmx->info;
-+
-+	if (selector >= info->ngroups)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static const char *imx_get_group_name(struct pinctrl_dev *pctldev,
-+				       unsigned selector)
-+{
-+	struct imx_pmx *ipmx = pinctrl_dev_get_drvdata(pctldev);
-+	struct imx_pinctrl_info *info = ipmx->info;
-+
-+	if (selector >= info->ngroups)
-+		return NULL;
-+
-+	return info->groups[selector].name;
-+}
-+
-+static int imx_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
-+			       const unsigned **pins,
-+			       unsigned *num_pins)
-+{
-+	struct imx_pmx *ipmx = pinctrl_dev_get_drvdata(pctldev);
-+	struct imx_pinctrl_info *info = ipmx->info;
-+
-+	if (selector >= info->ngroups)
-+		return -EINVAL;
-+
-+	*pins = info->groups[selector].pins;
-+	*num_pins = info->groups[selector].num_pins;
-+
-+	return 0;
-+}
-+
-+static void imx_pin_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *s,
-+		   unsigned offset)
-+{
-+	seq_printf(s, " " DRIVER_NAME);
-+}
-+
-+static struct pinctrl_ops imx_pctrl_ops = {
-+	.list_groups = imx_list_groups,
-+	.get_group_name = imx_get_group_name,
-+	.get_group_pins = imx_get_group_pins,
-+	.pin_dbg_show = imx_pin_dbg_show,
-+};
-+
-+static int imx_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
-+			   unsigned group)
-+{
-+	struct imx_pmx *ipmx = pinctrl_dev_get_drvdata(pctldev);
-+	struct imx_pinctrl_info *info = ipmx->info;
-+	const unsigned *pins, *mux;
-+	unsigned int num_pins, num_mux;
-+	u32 regval, offset;
-+	int i;
-+
-+	/*
-+	 * Configure the mux mode for each pin in the group for a specific
-+	 * function.
-+	 */
-+	pins = info->groups[group].pins;
-+	num_pins = info->groups[group].num_pins;
-+	mux = info->groups[group].mux_mode;
-+	num_mux = info->groups[group].num_mux;
-+
-+	dev_dbg(ipmx->dev, "function %s group %s\n",
-+		info->functions[selector].name, info->groups[group].name);
-+
-+	if (num_pins != num_mux) {
-+		dev_err(ipmx->dev, "num_mux is not equal to num_pins\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < num_pins; i++) {
-+		if (mux[i] > IMX_PINCTRL_MAX_FUNC)
-+			dev_err(ipmx->dev, "exceeds the maximum mux mode(0x7)\n");
-+		offset = info->mux_offset + pins[i] * IMX_PINCTRL_REG_SIZE;
-+		regval = readl(ipmx->virtbase + offset);
-+		regval &= ~IMX_PINCTRL_MAX_FUNC;
-+		writel(mux[i] | regval, ipmx->virtbase + offset);
-+		dev_dbg(ipmx->dev, "write: offset 0x%x val 0x%x\n",
-+			offset, regval);
-+	}
-+
-+	return 0;
-+}
-+
-+static int imx_pmx_list_funcs(struct pinctrl_dev *pctldev, unsigned selector)
-+{
-+	struct imx_pmx *ipmx = pinctrl_dev_get_drvdata(pctldev);
-+	struct imx_pinctrl_info *info = ipmx->info;
-+
-+	if (selector >= info->nfunctions)
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static const char *imx_pmx_get_func_name(struct pinctrl_dev *pctldev,
-+					  unsigned selector)
-+{
-+	struct imx_pmx *ipmx = pinctrl_dev_get_drvdata(pctldev);
-+	struct imx_pinctrl_info *info = ipmx->info;
-+
-+	return info->functions[selector].name;
-+}
-+
-+static int imx_pmx_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
-+			       const char * const **groups,
-+			       unsigned * const num_groups)
-+{
-+	struct imx_pmx *ipmx = pinctrl_dev_get_drvdata(pctldev);
-+	struct imx_pinctrl_info *info = ipmx->info;
-+
-+	*groups = info->functions[selector].groups;
-+	*num_groups = info->functions[selector].num_groups;
-+
-+	return 0;
-+}
-+
-+static struct pinmux_ops imx_pmx_ops = {
-+	.list_functions = imx_pmx_list_funcs,
-+	.get_function_name = imx_pmx_get_func_name,
-+	.get_function_groups = imx_pmx_get_groups,
-+	.enable = imx_pmx_enable,
-+};
-+
-+static struct pinctrl_desc imx_pmx_desc = {
-+	.name = DRIVER_NAME,
-+	.pctlops = &imx_pctrl_ops,
-+	.pmxops = &imx_pmx_ops,
-+	.owner = THIS_MODULE,
-+};
-+
-+static inline void imx_pmx_desc_init(struct pinctrl_desc *pmx_desc,
-+				const struct imx_pinctrl_info *info)
-+{
-+	pmx_desc->pins = info->pins;
-+	pmx_desc->npins = info->npins;
-+	pmx_desc->maxpin = info->maxpin;
-+}
-+
-+static int __init imx_pmx_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct imx_pmx *ipmx;
-+	struct resource *res;
-+	struct imx_pinctrl_info *info;
-+	resource_size_t res_size;
-+
-+	info = (struct imx_pinctrl_info *)pdev->id_entry->driver_data;
-+	if (!info || !info->pins || !info->groups || !info->functions
-+		|| (info->maxpin > info->npins)) {
-+		dev_err(&pdev->dev, "wrong pinctrl info\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Create state holders etc for this driver */
-+	ipmx = devm_kzalloc(&pdev->dev, sizeof(*ipmx), GFP_KERNEL);
-+	if (!ipmx)
-+		return -ENOMEM;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENOENT;
-+
-+	res_size = resource_size(res);
-+	if (!devm_request_mem_region(dev, res->start, res_size, res->name))
-+		return -EBUSY;
-+
-+	ipmx->virtbase = devm_ioremap_nocache(dev, res->start, res_size);
-+	if (!ipmx->virtbase)
-+		return -EBUSY;
-+
-+	imx_pmx_desc_init(&imx_pmx_desc, info);
-+
-+	ipmx->pctl = pinctrl_register(&imx_pmx_desc, &pdev->dev, ipmx);
-+	if (!ipmx->pctl) {
-+		dev_err(&pdev->dev, "could not register IMX pinmux driver\n");
-+		return -EINVAL;
-+	}
-+
-+	ipmx->info = info;
-+	ipmx->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, ipmx);
-+
-+	dev_info(&pdev->dev, "initialized IMX pinmux driver\n");
-+
-+	return 0;
-+}
-+
-+static int __exit imx_pmx_remove(struct platform_device *pdev)
-+{
-+	struct imx_pmx *ipmx = platform_get_drvdata(pdev);
-+
-+	pinctrl_unregister(ipmx->pctl);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver imx_pmx_driver = {
-+	.driver = {
-+		.name = DRIVER_NAME,
-+		.owner = THIS_MODULE,
-+	},
-+	.id_table = imx_pinctrl_devtype,
-+	.remove = __exit_p(imx_pmx_remove),
-+};
-+
-+static int __init imx_pmx_init(void)
-+{
-+	return platform_driver_probe(&imx_pmx_driver, imx_pmx_probe);
-+}
-+arch_initcall(imx_pmx_init);
-+
-+static void __exit imx_pmx_exit(void)
-+{
-+	platform_driver_unregister(&imx_pmx_driver);
-+}
-+module_exit(imx_pmx_exit);
-+
-+MODULE_AUTHOR("Dong Aisheng <dong.aisheng@linaro.org>");
-+MODULE_DESCRIPTION("IMX Pin Control Driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/pinctrl/pinmux-imx-core.h b/drivers/pinctrl/pinmux-imx-core.h
-new file mode 100644
-index 0000000..8ccc0c6
---- /dev/null
-+++ b/drivers/pinctrl/pinmux-imx-core.h
-@@ -0,0 +1,83 @@
 +/*
-+ * IMX pinmux core definitions
-+ *
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc.
-+ * Copyright (C) 2011 Linaro Ltd.
-+ *
-+ * Author: Dong Aisheng <dong.aisheng@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * The x_mux array contains pin mux mode value for each pins defined
++ * in x_pins array for a specific function
 + */
 +
-+#ifndef __DRIVERS_PINCTRL_PINMUX_IMX_H
-+#define __DRIVERS_PINCTRL_PINMUX_IMX_H
++/* mx6q pin groups and mux mode */
++static const unsigned mx6q_uart4_pins[] = { MX6Q_KEY_COL0, MX6Q_KEY_ROW0};
++static const unsigned mx6q_uart4_mux[] = { 4, 4 };
++static const unsigned mx6q_sd4_pins[] = { MX6Q_SD4_CLK, MX6Q_SD4_CMD,
++	MX6Q_SD4_DAT0, MX6Q_SD4_DAT1, MX6Q_SD4_DAT2, MX6Q_SD4_DAT3,
++	MX6Q_SD4_DAT4, MX6Q_SD4_DAT5, MX6Q_SD4_DAT6, MX6Q_SD4_DAT7};
++static const unsigned mx6q_sd4_mux[] = { 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 };
 +
-+/* Supported Pinctrl type */
-+enum imx_pinctrl_type {
-+	MX53_PINCTRL,
-+	MX6Q_PINCTRL,
++static const struct imx_pin_group mx6q_pin_groups[] = {
++	IMX_PIN_GROUP("uart4grp", mx6q_uart4_pins, mx6q_uart4_mux),
++	IMX_PIN_GROUP("sd4grp", mx6q_sd4_pins, mx6q_sd4_mux),
 +};
 +
-+/**
-+ * struct imx_pin_group - describes an IMX pin group
-+ * @name: the name of this specific pin group
-+ * @pins: an array of discrete physical pins used in this group, taken
-+ *	from the driver-local pin enumeration space
-+ * @num_pins: the number of pins in this group array, i.e. the number of
-+ *	elements in .pins so we can iterate over that array
-+ * @mux_mode: the mux mode for each pins in this group. The size of this
-+ *	array is the same as pins.
-+ */
-+struct imx_pin_group {
-+	const char *name;
-+	const unsigned int *pins;
-+	const unsigned num_pins;
-+	const unsigned int *mux_mode;
-+	const unsigned num_mux;
++/* mx6q funcs and groups */
++static const char * const uart4grps[] = { "uart4grp" };
++static const char * const sd4grps[] = { "sd4grp" };
++
++static const struct imx_pmx_func mx6q_pmx_functions[] = {
++	IMX_PMX_FUNC("uart4", uart4grps),
++	IMX_PMX_FUNC("sd4", sd4grps),
 +};
 +
-+/**
-+ * struct imx_pmx_func - describes IMX pinmux functions
-+ * @name: the name of this specific function
-+ * @groups: corresponding pin groups
-+ */
-+struct imx_pmx_func {
-+	const char *name;
-+	const char * const *groups;
-+	const unsigned num_groups;
++const struct imx_pinctrl_info mx6q_pinctrl_info = {
++	.type = MX6Q_PINCTRL,
++	.pins = mx6q_pads,
++	.npins = ARRAY_SIZE(mx6q_pads),
++	.maxpin = MX6Q_IOMUXC_MAXPIN,
++	.groups = mx6q_pin_groups,
++	.ngroups = ARRAY_SIZE(mx6q_pin_groups),
++	.functions = mx6q_pmx_functions,
++	.nfunctions = ARRAY_SIZE(mx6q_pmx_functions),
++	.mux_offset = MX6Q_IOMUXC_MUX_OFSSET,
 +};
-+
-+struct imx_pinctrl_info {
-+	u32 type;
-+	const struct pinctrl_pin_desc *pins;
-+	unsigned int npins;
-+	unsigned int maxpin;
-+	const struct imx_pin_group *groups;
-+	unsigned int ngroups;
-+	const struct imx_pmx_func *functions;
-+	unsigned int nfunctions;
-+	u32 mux_offset;
-+};
-+
-+#define IMX_PINCTRL_PIN(pin) PINCTRL_PIN(pin, #pin)
-+
-+#define IMX_PIN_GROUP(n, p, m)  \
-+	{			\
-+		.name = n,	\
-+		.pins = p,	\
-+		.num_pins = ARRAY_SIZE(p),	\
-+		.mux_mode = m,	\
-+		.num_mux = ARRAY_SIZE(m),	\
-+	}
-+
-+#define IMX_PMX_FUNC(n, g)  \
-+	{			\
-+		.name = n,	\
-+		.groups = g,	\
-+		.num_groups = ARRAY_SIZE(g),	\
-+	}
-+
-+#endif /* __DRIVERS_PINCTRL_PINMUX_IMX_H */
 -- 
 1.7.0.4
 
