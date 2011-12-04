@@ -1,112 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab1LDLrw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 06:47:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56913 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368Ab1LDLrt (ORCPT
+	id S1753812Ab1LDLuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 06:50:12 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:49787
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753262Ab1LDLuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 06:47:49 -0500
-Date: Sun, 4 Dec 2011 12:47:41 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Heiko Schocher <hs@denx.de>
-Cc: Wolfgang Denk <wd@denx.de>, Vitaly Bordug <vbordug@ru.mvista.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] drivers, char: add U-Boot bootcount driver
-Message-ID: <20111204114741.GA5788@pengutronix.de>
-References: <1322991921-21096-1-git-send-email-hs@denx.de>
+	Sun, 4 Dec 2011 06:50:08 -0500
+X-SpamScore: -17
+X-BigFish: VPS-17(zz9371K542M1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h93fh)
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "sameo@openedhand.com" <sameo@openedhand.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+Subject: RE: [PATCH 01/11] MFD: DA9052 MFD core module v8
+Thread-Topic: [PATCH 01/11] MFD: DA9052 MFD core module v8
+Thread-Index: AQHMsPskQLUp8qw0vkG1lzNupT16P5XLkHlQ
+Date: Sun, 4 Dec 2011 11:50:02 +0000
+Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED1F9CFD44@KCHJEXMB01.kpit.com>
+References: <1321607994.10344.20.camel@dhruva>
+ <20111124120541.GG8470@opensource.wolfsonmicro.com>
+ <C3AE124F08223B42BC95AEB82F0F6CED1F9CFD03@KCHJEXMB01.kpit.com>
+ <20111202140304.GT8245@opensource.wolfsonmicro.com>
+In-Reply-To: <20111202140304.GT8245@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [1.22.22.104]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
-Content-Disposition: inline
-In-Reply-To: <1322991921-21096-1-git-send-email-hs@denx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 10.1.0.3
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pB4BoUUV001560
 
 
---qMm9M+Fa2AknHoGS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: Friday, December 02, 2011 7:33 PM
+> To: Ashish Jangam
+> Cc: arnd@arndb.de; sameo@openedhand.com; linux-kernel@vger.kernel.org;
+> Dajun; linaro-dev@lists.linaro.org
+> Subject: Re: [PATCH 01/11] MFD: DA9052 MFD core module v8
+> 
+> On Fri, Dec 02, 2011 at 01:57:49PM +0000, Ashish Jangam wrote:
+> > > On Fri, Nov 18, 2011 at 02:49:54PM +0530, Ashish Jangam wrote:
+> 
+> > > > + * Interrupt controller support for Dilaog DA9052 PMICs.
+> 
+> > > This looks very much like it could be replaced with regmap-irq.  The
+> > > code would be slightly less efficient due to the support for sparse
+> > > interrupt registers but it'd be less code.
+> 
+> > regmap-irq has a opaque struct regmap_irq_chip_data which has a member
+> > irq_base and this is required for non-primary irqs registration
+> > and also the clean-up function regmap_del_irq_chip() requires it.
+> > So as of now I will keep the current irq implementation as it is.
+> 
+> I'm not sure how this is relevant to my above comment?  The struct is of
+> course opaque since it is only used by the implementation.
+No issues on that but it has got irq_base as its member which gets initialize in the
+function regmap_add_irq_chip() and since this member value is not available
+to the user how can the mfd dependent modules like touch, battery etc can register
+for interrupt because during irq registration we add irq_base to the irq nmber for
+e.g. irq_base + battery_irq  
 
-On Sun, Dec 04, 2011 at 10:45:21AM +0100, Heiko Schocher wrote:
-> This driver implements the Linux kernel half of the boot count feature -
-> the boot counter can only be reset after it is clear that the
-> application has been started and is running correctly, which usually
-> can only be determined by the application code itself. Thus the reset
-> of the boot counter must be done by application code, which thus needs
-> an appropriate driver.
 
-An appropriate mechanism, not necessarily a driver, see below.
 
-> Required feature by the Carrier Grade Linux Requirements Definition;
-> see for example document "Carrier Grade Linux Requirements Definition
-> Overview V3.0" at
->=20
-> http://www.linuxfoundation.org/collaborate/workgroups/cgl/requirements#SM=
-M.6.0_Boot_Cycle_Detection
->=20
->       Description: OSDL CGL specifies that carrier grade Linux
->       shall provide support for detecting a repeating reboot cycle
-> 	due to recurring failures. This detection should happen in
-> 	user space before system services are started.
-
-So, technically, a flag would be enough, not necessarily a counter? Althoug=
-h a
-counter probably has more advantages...
-
-> This driver provides read/write access to the U-Boot bootcounter
-> through PROC FS and/or sysFS file.
-
-Why ProcFS? Why ProcFS and/or SysFS? Which has priority? Why not /dev?
-
-> The bootcountregister gets configured via DTS.
-> for example on the enbw_cmc board:
->=20
-> bootcount@0x23060 {
->                   compatible =3D "uboot,bootcount";
-
-No. I assume you are not the vendor of what is at 0x23060, the actual devic=
-e.
-Only the device must be encoded in the compatible-entry which then implies =
-the
-bootcount functionality. Also, keep in mind that your solution should be
-generic for bootloaders.
-
->                   reg =3D <0x23060 0x20>;
-
-I assume that non-volatile memory would qualify as a boot-counter, so those
-could be tied to I2C busses etc? reg would not fit then.
-
-I do wonder if it makes more sense to add such functionality to the
-watchdog-core to save the additional device (CCed). Needs a second thought,
-though...
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---qMm9M+Fa2AknHoGS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7bXd0ACgkQD27XaX1/VRtikACfUVsugIOq9HGDOCZJnqSKyFnL
-tJMAoJgohhT9H7MwsdkZxL9YbjNGR8K0
-=z91i
------END PGP SIGNATURE-----
-
---qMm9M+Fa2AknHoGS--
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
