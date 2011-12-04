@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab1LDXml (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 18:42:41 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63546 "EHLO
+	id S1756025Ab1LDXmq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 18:42:46 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63560 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab1LDXmi (ORCPT
+	with ESMTP id S1755964Ab1LDXmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 18:42:38 -0500
+	Sun, 4 Dec 2011 18:42:43 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: alan@linux.intel.com, gregkh@suse.de, scottwood@freescale.com,
         galak@kernel.crashing.org
 Cc: linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/6] serial: export the key functions for an 8250 IRQ handler
-Date: Sun,  4 Dec 2011 18:42:20 -0500
-Message-Id: <1323042143-25330-4-git-send-email-paul.gortmaker@windriver.com>
+Subject: [PATCH 4/6] serial: make 8250 timeout use the specified IRQ handler
+Date: Sun,  4 Dec 2011 18:42:21 -0500
+Message-Id: <1323042143-25330-5-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1323042143-25330-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1322783258-20443-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,154 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For drivers that need to construct their own IRQ handler, the
-three components are seen in the current handle_port -- i.e.
-Rx, Tx and modem_status.
+The current 8250 timeout code duplicates the code path in
+serial8250_default_handle_irq and then serial8250_handle_irq
+i.e. reading iir, check for IIR_NO_INT, and then calling
+serial8250_handle_port.
 
-Make these exported symbols so that "almost" 8250 UARTs can
-construct their own IRQ handler with these shared components,
-while working around their own unique errata issues.
+So the immediate thought is to replace the duplicated code
+with a call to serial8250_default_handle_irq.
 
-The function names are given a serial8250 prefix, since they
-are now entering the global namespace.
+But this highlights a problem.  We let 8250 driver variants
+use their own IRQ handler via specifying their own custom
+->handle_irq, but in the event of a timeout, we ignore their
+handler and implicitly run serial8250_default_handle_irq instead.
+
+So, go through the struct to get ->handle_irq and call that,
+which for most will still be serial8250_default_handle_irq.
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/tty/serial/8250.c   |   29 +++++++++++++++--------------
- include/linux/serial_8250.h |    4 ++++
- 2 files changed, 19 insertions(+), 14 deletions(-)
+ drivers/tty/serial/8250.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index a20d7eb..91afe7a 100644
+index 91afe7a..9e7780d 100644
 --- a/drivers/tty/serial/8250.c
 +++ b/drivers/tty/serial/8250.c
-@@ -1300,8 +1300,6 @@ static void serial8250_stop_tx(struct uart_port *port)
- 	}
- }
- 
--static void transmit_chars(struct uart_8250_port *up);
--
- static void serial8250_start_tx(struct uart_port *port)
+@@ -1738,11 +1738,8 @@ static void serial_unlink_irq_chain(struct uart_8250_port *up)
+ static void serial8250_timeout(unsigned long data)
  {
- 	struct uart_8250_port *up =
-@@ -1318,7 +1316,7 @@ static void serial8250_start_tx(struct uart_port *port)
- 			if ((up->port.type == PORT_RM9000) ?
- 				(lsr & UART_LSR_THRE) :
- 				(lsr & UART_LSR_TEMT))
--				transmit_chars(up);
-+				serial8250_tx_chars(up);
- 		}
- 	}
+ 	struct uart_8250_port *up = (struct uart_8250_port *)data;
+-	unsigned int iir;
  
-@@ -1376,12 +1374,12 @@ static void clear_rx_fifo(struct uart_8250_port *up)
+-	iir = serial_in(up, UART_IIR);
+-	if (!(iir & UART_IIR_NO_INT))
+-		serial8250_handle_port(up);
++	up->port.handle_irq(&up->port);
+ 	mod_timer(&up->timer, jiffies + uart_poll_timeout(&up->port));
  }
  
- /*
-- * receive_chars: processes according to the passed in LSR
-+ * serial8250_rx_chars: processes according to the passed in LSR
-  * value, and returns the remaining LSR bits not handled
-  * by this Rx routine.
-  */
--static unsigned char
--receive_chars(struct uart_8250_port *up, unsigned char lsr)
-+unsigned char
-+serial8250_rx_chars(struct uart_8250_port *up, unsigned char lsr)
- {
- 	struct tty_struct *tty = up->port.state->port.tty;
- 	unsigned char ch;
-@@ -1462,8 +1460,9 @@ ignore_char:
- 	spin_lock(&up->port.lock);
- 	return lsr;
- }
-+EXPORT_SYMBOL_GPL(serial8250_rx_chars);
- 
--static void transmit_chars(struct uart_8250_port *up)
-+void serial8250_tx_chars(struct uart_8250_port *up)
- {
- 	struct circ_buf *xmit = &up->port.state->xmit;
- 	int count;
-@@ -1500,8 +1499,9 @@ static void transmit_chars(struct uart_8250_port *up)
- 	if (uart_circ_empty(xmit))
- 		__stop_tx(up);
- }
-+EXPORT_SYMBOL_GPL(serial8250_tx_chars);
- 
--static unsigned int check_modem_status(struct uart_8250_port *up)
-+unsigned int serial8250_modem_status(struct uart_8250_port *up)
- {
- 	unsigned int status = serial_in(up, UART_MSR);
- 
-@@ -1523,6 +1523,7 @@ static unsigned int check_modem_status(struct uart_8250_port *up)
- 
- 	return status;
- }
-+EXPORT_SYMBOL_GPL(serial8250_modem_status);
- 
- /*
-  * This handles the interrupt from one port.
-@@ -1539,10 +1540,10 @@ static void serial8250_handle_port(struct uart_8250_port *up)
- 	DEBUG_INTR("status = %x...", status);
- 
- 	if (status & (UART_LSR_DR | UART_LSR_BI))
--		status = receive_chars(up, status);
--	check_modem_status(up);
-+		status = serial8250_rx_chars(up, status);
-+	serial8250_modem_status(up);
- 	if (status & UART_LSR_THRE)
--		transmit_chars(up);
-+		serial8250_tx_chars(up);
- 
- 	spin_unlock_irqrestore(&up->port.lock, flags);
- }
-@@ -1780,7 +1781,7 @@ static void serial8250_backup_timeout(unsigned long data)
- 	}
- 
- 	if (!(iir & UART_IIR_NO_INT))
--		transmit_chars(up);
-+		serial8250_tx_chars(up);
- 
- 	if (is_real_interrupt(up->port.irq))
- 		serial_out(up, UART_IER, ier);
-@@ -1814,7 +1815,7 @@ static unsigned int serial8250_get_mctrl(struct uart_port *port)
- 	unsigned int status;
- 	unsigned int ret;
- 
--	status = check_modem_status(up);
-+	status = serial8250_modem_status(up);
- 
- 	ret = 0;
- 	if (status & UART_MSR_DCD)
-@@ -2861,7 +2862,7 @@ serial8250_console_write(struct console *co, const char *s, unsigned int count)
- 	 *	while processing with interrupts off.
- 	 */
- 	if (up->msr_saved_flags)
--		check_modem_status(up);
-+		serial8250_modem_status(up);
- 
- 	if (locked)
- 		spin_unlock(&up->port.lock);
-diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
-index 1f05bbe..b44034e 100644
---- a/include/linux/serial_8250.h
-+++ b/include/linux/serial_8250.h
-@@ -66,6 +66,7 @@ enum {
-  * dependent on the 8250 driver.
-  */
- struct uart_port;
-+struct uart_8250_port;
- 
- int serial8250_register_port(struct uart_port *);
- void serial8250_unregister_port(int line);
-@@ -82,6 +83,9 @@ extern void serial8250_do_set_termios(struct uart_port *port,
- extern void serial8250_do_pm(struct uart_port *port, unsigned int state,
- 			     unsigned int oldstate);
- int serial8250_handle_irq(struct uart_port *port, unsigned int iir);
-+unsigned char serial8250_rx_chars(struct uart_8250_port *up, unsigned char lsr);
-+void serial8250_tx_chars(struct uart_8250_port *up);
-+unsigned int serial8250_modem_status(struct uart_8250_port *up);
- 
- extern void serial8250_set_isa_configurator(void (*v)
- 					(int port, struct uart_port *up,
 -- 
 1.7.7
 
