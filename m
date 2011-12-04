@@ -1,89 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab1LDMOU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 07:14:20 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49316 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab1LDMOR (ORCPT
+	id S1753768Ab1LDMsk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 07:48:40 -0500
+Received: from smtprelay02.ispgateway.de ([80.67.31.36]:37990 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab1LDMsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 07:14:17 -0500
-Message-ID: <1323000831.4205.4.camel@lappy>
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
- descriptors
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Date: Sun, 04 Dec 2011 14:13:51 +0200
-In-Reply-To: <4EDB5EF0.2010909@redhat.com>
-References: <20111129125622.GB19157@redhat.com>
-	  <1322573688.4395.11.camel@lappy> <20111129135406.GB30966@redhat.com>
-	  <1322576464.7003.6.camel@lappy> <20111129145451.GD30966@redhat.com>
-	  <4ED4F30F.8000603@redhat.com> <1322669511.3985.8.camel@lappy>
-	  <87wrahrp0u.fsf@rustcorp.com.au> <20111201075847.GA5479@redhat.com>
-	  <1322726977.3259.3.camel@lappy> <20111201102640.GB8822@redhat.com>
-	  <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy>
-	 <4EDB5EF0.2010909@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
+	Sun, 4 Dec 2011 07:48:39 -0500
+Message-ID: <4EDB6C10.10102@ladisch.de>
+Date: Sun, 04 Dec 2011 13:48:16 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+CC: "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
+        "Nguyen, Dong" <Dong.Nguyen@amd.com>, linux-kernel@vger.kernel.org
+Subject: Re: Unhandled IRQs on AMD E-450
+References: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com>	<20111130154445.GA27198@gere.osrc.amd.com>	<1E8B869C0C6913418421A406C094DF7C0205358F@sshaexmb1.amd.com> <CAPRPZsAL=xUCjTKaSgq117zppvZS0S7fHB0Ebk-JqXvV1vTPCQ@mail.gmail.com>
+In-Reply-To: <CAPRPZsAL=xUCjTKaSgq117zppvZS0S7fHB0Ebk-JqXvV1vTPCQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Df-Sender: bGludXgta2VybmVsQGNsLmRvbWFpbmZhY3Rvcnkta3VuZGUuZGU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-12-04 at 13:52 +0200, Avi Kivity wrote:
-> On 12/03/2011 01:50 PM, Sasha Levin wrote:
-> > On Fri, 2011-12-02 at 11:16 +1030, Rusty Russell wrote:
-> > > On Thu, 1 Dec 2011 12:26:42 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > On Thu, Dec 01, 2011 at 10:09:37AM +0200, Sasha Levin wrote:
-> > > > > On Thu, 2011-12-01 at 09:58 +0200, Michael S. Tsirkin wrote:
-> > > > > > We'll presumably need some logic to increment is back,
-> > > > > > to account for random workload changes.
-> > > > > > Something like slow start?
-> > > > > 
-> > > > > We can increment it each time the queue was less than 10% full, it
-> > > > > should act like slow start, no?
-> > > > 
-> > > > No, we really shouldn't get an empty ring as long as things behave
-> > > > well. What I meant is something like:
-> > > 
-> > > I was thinking of the network output case, but you're right.  We need to
-> > > distinguish between usually full (eg. virtio-net input) and usually
-> > > empty (eg. virtio-net output).
-> > > 
-> > > The signal for "we to pack more into the ring" is different.  We could
-> > > use some hacky heuristic like "out == 0" but I'd rather make it explicit
-> > > when we set up the virtqueue.
-> > > 
-> > > Our other alternative, moving the logic to the driver, is worse.
-> > > 
-> > > As to fading the effect over time, that's harder.  We have to deplete
-> > > the ring quite a few times before it turns into always-indirect.  We
-> > > could back off every time the ring is totally idle, but that may hurt
-> > > bursty traffic.  Let's try simple first?
-> >
-> > I tried to take a different approach, and tried putting the indirect
-> > descriptors in a kmem_cache as Michael suggested. The benchmarks showed
-> > that this way virtio-net actually worked faster with indirect on even in
-> > a single stream.
-> 
-> How much better?
+Jeroen Van den Keybus wrote:
+> [...]
+> But to no avail. Both IRQ19 and IRQ16 keep becoming lost after a while.
 
-host->guest was same with both indirect on and off, and guest->host went
-up by 5% with indirect on.
+You previously said that unloading e1000 made things better.  Did this
+affect both IRQs 16 and 19?
 
-This was just a simple 1 TCP stream test.
+Can you check if this problem (on either 16 or 19) happens when you are
+not using the e1000 port (i.e., unplugged)?
 
-> 
-> I think that if indirects benefit networking, then we're doing something
-> wrong.  What's going on?  Does the ring get filled too early?  If so we
-> should expand it.
-> 
+> I'm adding a full /proc/interrupts and lspci -vv output at the bottom,
+> all from the 3.0.0 Ubuntu kernel. Feel free to mention any bad guys
+> you recognize in this log.
 
--- 
+The /proc/interrupts doesn't show e1000, but lspci does.  ...?
 
-Sasha.
+Does the problem occur without fglrx?
 
+To get the AHCI interrupt away from IRQ 19, try the patch below.
+(But please don't show that ugly hack to any AMD guy. :)
+
+> Is there any way of obtaining more output such as IO-APIC register
+> states to verify that it is indeed a stuck IRQ input line and not an
+> unsuccesful EOI ack ?
+
+In theory, lspci's "Status: ... INTx+" shows an active interrupt line.
+
+
+Regards,
+Clemens
+
+
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2906,6 +2906,48 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65f8, quirk_intel_mc_errata);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65f9, quirk_intel_mc_errata);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65fa, quirk_intel_mc_errata);
+
++#if defined(CONFIG_PCI_MSI) && \
++	(defined(CONFIG_SATA_AHCI) || defined(CONFIG_SATA_AHCI_MODULE))
++static void __init sb7x0_ahci_msi_enable(struct pci_dev *dev)
++{
++	u8 rev, ptr;
++	int where;
++	u32 misc_control;
++
++	pci_bus_read_config_byte(dev->bus, PCI_DEVFN(0x14, 0),
++				 PCI_REVISION_ID, &rev);
++	if (rev < 0x3c) /* A14 */
++		return;
++
++	pci_read_config_byte(dev, 0x34, &ptr);
++	if (ptr == 0x70) {
++		where = 0x34;
++	} else {
++		pci_read_config_byte(dev, 0x61, &ptr);
++		if (ptr == 0x70)
++			where = 0x61;
++		else
++			return;
++	}
++
++	pci_read_config_byte(dev, 0x51, &ptr);
++	if (ptr != 0x70)
++		return;
++
++	pci_read_config_dword(dev, 0x40, &misc_control);
++	misc_control |= 1;
++	pci_write_config_dword(dev, 0x40, misc_control);
++
++	pci_write_config_byte(dev, where, 0x50);
++
++	misc_control &= ~1;
++	pci_write_config_dword(dev, 0x40, misc_control);
++
++	dev_dbg(&dev->dev, "AHCI: enabled MSI\n");
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, 0x4391, sb7x0_ahci_msi_enable);
++#endif
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
