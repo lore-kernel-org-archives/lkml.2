@@ -1,513 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab1LDLiZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 06:38:25 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:28272
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753722Ab1LDLiJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 06:38:09 -0500
-X-SpamScore: 7
-X-BigFish: VS7(zzc8kzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hb79i61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng <b29396@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
-        <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
-        <kernel@pengutronix.de>
-Subject: [RFC PATCH 3/3] pinctrl: imx: add pinmux-imx6q support
-Date: Sun, 4 Dec 2011 19:49:44 +0800
-Message-ID: <1322999384-7886-3-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1322999384-7886-1-git-send-email-b29396@freescale.com>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+	id S1754045Ab1LDLic (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 06:38:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39215 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753722Ab1LDLi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 06:38:28 -0500
+Date: Sun, 4 Dec 2011 13:06:39 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        markmc@redhat.com
+Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
+ descriptors
+Message-ID: <20111204110637.GN15464@redhat.com>
+References: <1322576464.7003.6.camel@lappy>
+ <20111129145451.GD30966@redhat.com>
+ <4ED4F30F.8000603@redhat.com>
+ <1322669511.3985.8.camel@lappy>
+ <87wrahrp0u.fsf@rustcorp.com.au>
+ <20111201075847.GA5479@redhat.com>
+ <1322726977.3259.3.camel@lappy>
+ <20111201102640.GB8822@redhat.com>
+ <87zkfbre9x.fsf@rustcorp.com.au>
+ <1322913028.3782.4.camel@lappy>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322913028.3782.4.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dong Aisheng <b29396@freescale.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Shawn Guo <shanw.guo@freescale.com>
----
- drivers/pinctrl/pinmux-imx6q.c |  464 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 464 insertions(+), 0 deletions(-)
+On Sat, Dec 03, 2011 at 01:50:28PM +0200, Sasha Levin wrote:
+> On Fri, 2011-12-02 at 11:16 +1030, Rusty Russell wrote:
+> > On Thu, 1 Dec 2011 12:26:42 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > On Thu, Dec 01, 2011 at 10:09:37AM +0200, Sasha Levin wrote:
+> > > > On Thu, 2011-12-01 at 09:58 +0200, Michael S. Tsirkin wrote:
+> > > > > We'll presumably need some logic to increment is back,
+> > > > > to account for random workload changes.
+> > > > > Something like slow start?
+> > > > 
+> > > > We can increment it each time the queue was less than 10% full, it
+> > > > should act like slow start, no?
+> > > 
+> > > No, we really shouldn't get an empty ring as long as things behave
+> > > well. What I meant is something like:
+> > 
+> > I was thinking of the network output case, but you're right.  We need to
+> > distinguish between usually full (eg. virtio-net input) and usually
+> > empty (eg. virtio-net output).
+> > 
+> > The signal for "we to pack more into the ring" is different.  We could
+> > use some hacky heuristic like "out == 0" but I'd rather make it explicit
+> > when we set up the virtqueue.
+> > 
+> > Our other alternative, moving the logic to the driver, is worse.
+> > 
+> > As to fading the effect over time, that's harder.  We have to deplete
+> > the ring quite a few times before it turns into always-indirect.  We
+> > could back off every time the ring is totally idle, but that may hurt
+> > bursty traffic.  Let's try simple first?
+> 
+> I tried to take a different approach, and tried putting the indirect
+> descriptors in a kmem_cache as Michael suggested. The benchmarks showed
+> that this way virtio-net actually worked faster with indirect on even in
+> a single stream.
+> 
+> Maybe we can do that instead of playing with threshold for now.
+> 
+> The question here, how much wasted space we can afford? since indirect
+> descriptors would have to be the same size we'd have a bunch of them
+> wasted in the cache. Ofcourse we can make that configurable, but how
+> much is ok by default?
 
-diff --git a/drivers/pinctrl/pinmux-imx6q.c b/drivers/pinctrl/pinmux-imx6q.c
-new file mode 100644
-index 0000000..5641199
---- /dev/null
-+++ b/drivers/pinctrl/pinmux-imx6q.c
-@@ -0,0 +1,464 @@
-+/*
-+ * imx6q pinmux driver based on imx pinmux core
-+ *
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc.
-+ * Copyright (C) 2011 Linaro, Inc.
-+ *
-+ * Author: Dong Aisheng <dong.aisheng@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+
-+#include "pinmux-imx-core.h"
-+
-+#define MX6Q_IOMUXC_MUX_OFSSET	0x4c
-+#define MX6Q_IOMUXC_MAXPIN	(25*25)
-+
-+enum imx_mx6q_pads {
-+	MX6Q_SD2_DAT1 = 0,
-+	MX6Q_SD2_DAT2 = 1,
-+	MX6Q_SD2_DAT0 = 2,
-+	MX6Q_RGMII_TXC = 3,
-+	MX6Q_RGMII_TD0 = 4,
-+	MX6Q_RGMII_TD1 = 5,
-+	MX6Q_RGMII_TD2 = 6,
-+	MX6Q_RGMII_TD3 = 7,
-+	MX6Q_RGMII_RX_CTL = 8,
-+	MX6Q_RGMII_RD0 = 9,
-+	MX6Q_RGMII_TX_CTL = 10,
-+	MX6Q_RGMII_RD1 = 11,
-+	MX6Q_RGMII_RD2 = 12,
-+	MX6Q_RGMII_RD3 = 13,
-+	MX6Q_RGMII_RXC = 14,
-+	MX6Q_EIM_A25 = 15,
-+	MX6Q_EIM_EB2 = 16,
-+	MX6Q_EIM_D16 = 17,
-+	MX6Q_EIM_D17 = 18,
-+	MX6Q_EIM_D18 = 19,
-+	MX6Q_EIM_D19 = 20,
-+	MX6Q_EIM_D20 = 21,
-+	MX6Q_EIM_D21 = 22,
-+	MX6Q_EIM_D22 = 23,
-+	MX6Q_EIM_D23 = 24,
-+	MX6Q_EIM_EB3 = 25,
-+	MX6Q_EIM_D24 = 26,
-+	MX6Q_EIM_D25 = 27,
-+	MX6Q_EIM_D26 = 28,
-+	MX6Q_EIM_D27 = 29,
-+	MX6Q_EIM_D28 = 30,
-+	MX6Q_EIM_D29 = 31,
-+	MX6Q_EIM_D30 = 32,
-+	MX6Q_EIM_D31 = 33,
-+	MX6Q_EIM_A24 = 34,
-+	MX6Q_EIM_A23 = 35,
-+	MX6Q_EIM_A22 = 36,
-+	MX6Q_EIM_A21 = 37,
-+	MX6Q_EIM_A20 = 38,
-+	MX6Q_EIM_A19 = 39,
-+	MX6Q_EIM_A18 = 40,
-+	MX6Q_EIM_A17 = 41,
-+	MX6Q_EIM_A16 = 42,
-+	MX6Q_EIM_CS0 = 43,
-+	MX6Q_EIM_CS1 = 44,
-+	MX6Q_EIM_OE = 45,
-+	MX6Q_EIM_RW = 46,
-+	MX6Q_EIM_LBA = 47,
-+	MX6Q_EIM_EB0 = 48,
-+	MX6Q_EIM_EB1 = 49,
-+	MX6Q_EIM_DA0 = 50,
-+	MX6Q_EIM_DA1 = 51,
-+	MX6Q_EIM_DA2 = 52,
-+	MX6Q_EIM_DA3 = 53,
-+	MX6Q_EIM_DA4 = 54,
-+	MX6Q_EIM_DA5 = 55,
-+	MX6Q_EIM_DA6 = 56,
-+	MX6Q_EIM_DA7 = 57,
-+	MX6Q_EIM_DA8 = 58,
-+	MX6Q_EIM_DA9 = 59,
-+	MX6Q_EIM_DA10 = 60,
-+	MX6Q_EIM_DA11 = 61,
-+	MX6Q_EIM_DA12 = 62,
-+	MX6Q_EIM_DA13 = 63,
-+	MX6Q_EIM_DA14 = 64,
-+	MX6Q_EIM_DA15 = 65,
-+	MX6Q_EIM_WAIT = 66,
-+	MX6Q_EIM_BCLK = 67,
-+	MX6Q_DI0_DISP_CLK = 68,
-+	MX6Q_DI0_PIN15 = 69,
-+	MX6Q_DI0_PIN2 = 70,
-+	MX6Q_DI0_PIN3 = 71,
-+	MX6Q_DI0_PIN4 = 72,
-+	MX6Q_DISP0_DAT0 = 73,
-+	MX6Q_DISP0_DAT1 = 74,
-+	MX6Q_DISP0_DAT2 = 75,
-+	MX6Q_DISP0_DAT3 = 76,
-+	MX6Q_DISP0_DAT4 = 77,
-+	MX6Q_DISP0_DAT5 = 78,
-+	MX6Q_DISP0_DAT6 = 79,
-+	MX6Q_DISP0_DAT7 = 80,
-+	MX6Q_DISP0_DAT8 = 81,
-+	MX6Q_DISP0_DAT9 = 82,
-+	MX6Q_DISP0_DAT10 = 83,
-+	MX6Q_DISP0_DAT11 = 84,
-+	MX6Q_DISP0_DAT12 = 85,
-+	MX6Q_DISP0_DAT13 = 86,
-+	MX6Q_DISP0_DAT14 = 87,
-+	MX6Q_DISP0_DAT15 = 88,
-+	MX6Q_DISP0_DAT16 = 89,
-+	MX6Q_DISP0_DAT17 = 90,
-+	MX6Q_DISP0_DAT18 = 91,
-+	MX6Q_DISP0_DAT19 = 92,
-+	MX6Q_DISP0_DAT20 = 93,
-+	MX6Q_DISP0_DAT21 = 94,
-+	MX6Q_DISP0_DAT22 = 95,
-+	MX6Q_DISP0_DAT23 = 96,
-+	MX6Q_ENET_MDIO = 97,
-+	MX6Q_ENET_REF_CLK = 98,
-+	MX6Q_ENET_RX_ER = 99,
-+	MX6Q_ENET_CRS_DV = 100,
-+	MX6Q_ENET_RXD1 = 101,
-+	MX6Q_ENET_RXD0 = 102,
-+	MX6Q_ENET_TX_EN = 103,
-+	MX6Q_ENET_TXD1 = 104,
-+	MX6Q_ENET_TXD0 = 105,
-+	MX6Q_ENET_MDC = 106,
-+	MX6Q_KEY_COL0 = 107,
-+	MX6Q_KEY_ROW0 = 108,
-+	MX6Q_KEY_COL1 = 109,
-+	MX6Q_KEY_ROW1 = 110,
-+	MX6Q_KEY_COL2 = 111,
-+	MX6Q_KEY_ROW2 = 112,
-+	MX6Q_KEY_COL3 = 113,
-+	MX6Q_KEY_ROW3 = 114,
-+	MX6Q_KEY_COL4 = 115,
-+	MX6Q_KEY_ROW4 = 116,
-+	MX6Q_GPIO_0 = 117,
-+	MX6Q_GPIO_1 = 118,
-+	MX6Q_GPIO_9 = 119,
-+	MX6Q_GPIO_3 = 120,
-+	MX6Q_GPIO_6 = 121,
-+	MX6Q_GPIO_2 = 122,
-+	MX6Q_GPIO_4 = 123,
-+	MX6Q_GPIO_5 = 124,
-+	MX6Q_GPIO_7 = 125,
-+	MX6Q_GPIO_8 = 126,
-+	MX6Q_GPIO_16 = 127,
-+	MX6Q_GPIO_17 = 128,
-+	MX6Q_GPIO_18 = 129,
-+	MX6Q_GPIO_19 = 130,
-+	MX6Q_CSI0_PIXCLK = 131,
-+	MX6Q_CSI0_MCLK = 132,
-+	MX6Q_CSI0_DATA_EN = 133,
-+	MX6Q_CSI0_VSYNC = 134,
-+	MX6Q_CSI0_DAT4 = 135,
-+	MX6Q_CSI0_DAT5 = 136,
-+	MX6Q_CSI0_DAT6 = 137,
-+	MX6Q_CSI0_DAT7 = 138,
-+	MX6Q_CSI0_DAT8 = 139,
-+	MX6Q_CSI0_DAT9 = 140,
-+	MX6Q_CSI0_DAT10 = 141,
-+	MX6Q_CSI0_DAT11 = 142,
-+	MX6Q_CSI0_DAT12 = 143,
-+	MX6Q_CSI0_DAT13 = 144,
-+	MX6Q_CSI0_DAT14 = 145,
-+	MX6Q_CSI0_DAT15 = 146,
-+	MX6Q_CSI0_DAT16 = 147,
-+	MX6Q_CSI0_DAT17 = 148,
-+	MX6Q_CSI0_DAT18 = 149,
-+	MX6Q_CSI0_DAT19 = 150,
-+	MX6Q_SD3_DAT7 = 151,
-+	MX6Q_SD3_DAT6 = 152,
-+	MX6Q_SD3_DAT5 = 153,
-+	MX6Q_SD3_DAT4 = 154,
-+	MX6Q_SD3_CMD = 155,
-+	MX6Q_SD3_CLK = 156,
-+	MX6Q_SD3_DAT0 = 157,
-+	MX6Q_SD3_DAT1 = 158,
-+	MX6Q_SD3_DAT2 = 159,
-+	MX6Q_SD3_DAT3 = 160,
-+	MX6Q_SD3_RST = 161,
-+	MX6Q_NANDF_CLE = 162,
-+	MX6Q_NANDF_ALE = 163,
-+	MX6Q_NANDF_WP_B = 164,
-+	MX6Q_NANDF_RB0 = 165,
-+	MX6Q_NANDF_CS0 = 166,
-+	MX6Q_NANDF_CS1 = 167,
-+	MX6Q_NANDF_CS2 = 168,
-+	MX6Q_NANDF_CS3 = 169,
-+	MX6Q_SD4_CMD = 170,
-+	MX6Q_SD4_CLK = 171,
-+	MX6Q_NANDF_D0 = 172,
-+	MX6Q_NANDF_D1 = 173,
-+	MX6Q_NANDF_D2 = 174,
-+	MX6Q_NANDF_D3 = 175,
-+	MX6Q_NANDF_D4 = 176,
-+	MX6Q_NANDF_D5 = 177,
-+	MX6Q_NANDF_D6 = 178,
-+	MX6Q_NANDF_D7 = 179,
-+	MX6Q_SD4_DAT0 = 180,
-+	MX6Q_SD4_DAT1 = 181,
-+	MX6Q_SD4_DAT2 = 182,
-+	MX6Q_SD4_DAT3 = 183,
-+	MX6Q_SD4_DAT4 = 184,
-+	MX6Q_SD4_DAT5 = 185,
-+	MX6Q_SD4_DAT6 = 186,
-+	MX6Q_SD4_DAT7 = 187,
-+	MX6Q_SD1_DAT1 = 188,
-+	MX6Q_SD1_DAT0 = 189,
-+	MX6Q_SD1_DAT3 = 190,
-+	MX6Q_SD1_CMD = 191,
-+	MX6Q_SD1_DAT2 = 192,
-+	MX6Q_SD1_CLK = 193,
-+	MX6Q_SD2_CLK = 194,
-+	MX6Q_SD2_CMD = 195,
-+	MX6Q_SD2_DAT3 = 196
-+};
-+
-+/* Pad names for the pinmux subsystem */
-+static const struct pinctrl_pin_desc mx6q_pads[] = {
-+	IMX_PINCTRL_PIN(MX6Q_SD2_DAT1),
-+	IMX_PINCTRL_PIN(MX6Q_SD2_DAT2),
-+	IMX_PINCTRL_PIN(MX6Q_SD2_DAT0),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_TXC),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_TD0),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_TD1),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_TD2),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_TD3),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_RX_CTL),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_RD0),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_TX_CTL),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_RD1),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_RD2),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_RD3),
-+	IMX_PINCTRL_PIN(MX6Q_RGMII_RXC),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A25),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_EB2),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D16),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D17),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D18),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D19),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D20),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D21),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D22),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D23),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_EB3),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D24),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D25),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D26),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D27),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D28),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D29),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D30),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_D31),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A24),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A23),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A22),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A21),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A20),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A19),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A18),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A17),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_A16),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_CS0),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_CS1),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_OE),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_RW),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_LBA),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_EB0),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_EB1),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA0),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA1),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA2),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA3),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA4),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA5),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA6),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA7),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA8),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA9),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA10),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA11),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA12),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA13),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA14),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_DA15),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_WAIT),
-+	IMX_PINCTRL_PIN(MX6Q_EIM_BCLK),
-+	IMX_PINCTRL_PIN(MX6Q_DI0_DISP_CLK),
-+	IMX_PINCTRL_PIN(MX6Q_DI0_PIN15),
-+	IMX_PINCTRL_PIN(MX6Q_DI0_PIN2),
-+	IMX_PINCTRL_PIN(MX6Q_DI0_PIN3),
-+	IMX_PINCTRL_PIN(MX6Q_DI0_PIN4),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT0),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT1),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT2),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT3),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT4),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT5),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT6),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT7),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT8),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT9),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT10),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT11),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT12),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT13),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT14),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT15),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT16),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT17),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT18),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT19),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT20),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT21),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT22),
-+	IMX_PINCTRL_PIN(MX6Q_DISP0_DAT23),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_MDIO),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_REF_CLK),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_RX_ER),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_CRS_DV),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_RXD1),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_RXD0),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_TX_EN),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_TXD1),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_TXD0),
-+	IMX_PINCTRL_PIN(MX6Q_ENET_MDC),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_COL0),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_ROW0),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_COL1),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_ROW1),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_COL2),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_ROW2),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_COL3),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_ROW3),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_COL4),
-+	IMX_PINCTRL_PIN(MX6Q_KEY_ROW4),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_0),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_1),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_9),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_3),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_6),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_2),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_4),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_5),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_7),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_8),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_16),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_17),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_18),
-+	IMX_PINCTRL_PIN(MX6Q_GPIO_19),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_PIXCLK),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_MCLK),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DATA_EN),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_VSYNC),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT4),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT5),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT6),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT7),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT8),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT9),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT10),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT11),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT12),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT13),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT14),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT15),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT16),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT17),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT18),
-+	IMX_PINCTRL_PIN(MX6Q_CSI0_DAT19),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_DAT7),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_DAT6),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_DAT5),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_DAT4),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_CMD),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_CLK),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_DAT0),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_DAT1),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_DAT2),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_DAT3),
-+	IMX_PINCTRL_PIN(MX6Q_SD3_RST),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_CLE),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_ALE),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_WP_B),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_RB0),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_CS0),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_CS1),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_CS2),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_CS3),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_CMD),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_CLK),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_D0),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_D1),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_D2),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_D3),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_D4),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_D5),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_D6),
-+	IMX_PINCTRL_PIN(MX6Q_NANDF_D7),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_DAT0),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_DAT1),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_DAT2),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_DAT3),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_DAT4),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_DAT5),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_DAT6),
-+	IMX_PINCTRL_PIN(MX6Q_SD4_DAT7),
-+	IMX_PINCTRL_PIN(MX6Q_SD1_DAT1),
-+	IMX_PINCTRL_PIN(MX6Q_SD1_DAT0),
-+	IMX_PINCTRL_PIN(MX6Q_SD1_DAT3),
-+	IMX_PINCTRL_PIN(MX6Q_SD1_CMD),
-+	IMX_PINCTRL_PIN(MX6Q_SD1_DAT2),
-+	IMX_PINCTRL_PIN(MX6Q_SD1_CLK),
-+	IMX_PINCTRL_PIN(MX6Q_SD2_CLK),
-+	IMX_PINCTRL_PIN(MX6Q_SD2_CMD),
-+	IMX_PINCTRL_PIN(MX6Q_SD2_DAT3),
-+};
-+
-+/*
-+ * The x_mux array contains pin mux mode value for each pins defined
-+ * in x_pins array for a specific function
-+ */
-+
-+/* mx6q pin groups and mux mode */
-+static const unsigned mx6q_uart4_pins[] = { MX6Q_KEY_COL0, MX6Q_KEY_ROW0};
-+static const unsigned mx6q_uart4_mux[] = { 4, 4 };
-+static const unsigned mx6q_sd4_pins[] = { MX6Q_SD4_CLK, MX6Q_SD4_CMD,
-+	MX6Q_SD4_DAT0, MX6Q_SD4_DAT1, MX6Q_SD4_DAT2, MX6Q_SD4_DAT3,
-+	MX6Q_SD4_DAT4, MX6Q_SD4_DAT5, MX6Q_SD4_DAT6, MX6Q_SD4_DAT7};
-+static const unsigned mx6q_sd4_mux[] = { 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 };
-+
-+static const struct imx_pin_group mx6q_pin_groups[] = {
-+	IMX_PIN_GROUP("uart4grp", mx6q_uart4_pins, mx6q_uart4_mux),
-+	IMX_PIN_GROUP("sd4grp", mx6q_sd4_pins, mx6q_sd4_mux),
-+};
-+
-+/* mx6q funcs and groups */
-+static const char * const uart4grps[] = { "uart4grp" };
-+static const char * const sd4grps[] = { "sd4grp" };
-+
-+static const struct imx_pmx_func mx6q_pmx_functions[] = {
-+	IMX_PMX_FUNC("uart4", uart4grps),
-+	IMX_PMX_FUNC("sd4", sd4grps),
-+};
-+
-+const struct imx_pinctrl_info mx6q_pinctrl_info = {
-+	.type = MX6Q_PINCTRL,
-+	.pins = mx6q_pads,
-+	.npins = ARRAY_SIZE(mx6q_pads),
-+	.maxpin = MX6Q_IOMUXC_MAXPIN,
-+	.groups = mx6q_pin_groups,
-+	.ngroups = ARRAY_SIZE(mx6q_pin_groups),
-+	.functions = mx6q_pmx_functions,
-+	.nfunctions = ARRAY_SIZE(mx6q_pmx_functions),
-+	.mux_offset = MX6Q_IOMUXC_MUX_OFSSET,
-+};
--- 
-1.7.0.4
+I think it's a good idea to make that per-device.
+For network at least, each skb already has overhead of
+around 1/2 K, so using up to 1/2K more seems acceptable.
+But even if we went up to MAX_SKB_FRAGS+2, it would be
+only 1K per ring entry, so for a ring of 256 entries, we end up with
+256K max waste. That's not that terrible.
+
+But I'd say let's do some benchmarking to figure out
+the point where the gains are becoming very small.
 
 
+
+> -- 
+> 
+> Sasha.
