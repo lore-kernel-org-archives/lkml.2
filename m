@@ -1,26 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab1LDTBZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 14:01:25 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:50536 "EHLO
+	id S1755834Ab1LDTBq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 14:01:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42201 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab1LDTA2 (ORCPT
+	with ESMTP id S1755434Ab1LDTAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 14:00:28 -0500
-X-Authority-Analysis: v=2.0 cv=QqvcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=we7fiOToE94A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=WUI-r05spyQwVWTg6V8A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=VVrvlI9E9_nQKi9V8YAA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Sun, 4 Dec 2011 14:00:25 -0500
+X-Authority-Analysis: v=2.0 cv=bdLpoZzB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=rhF4Le1eEFYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=LuxQ-7HEAAAA:8 a=PuvxfXWCAAAA:8 a=pwlSjyV6AAAA:8 a=CjxXgO3LAAAA:8 a=37rDS-QxAAAA:8 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=-tqMmDk9ICWpGX07DfgA:9 a=8x_8ht5-I51uKuksZsgA:7 a=QEXdDO2ut3YA:10 a=LI9Vle30uBYA:10 a=Bm8BtE0CId0A:10 a=o70cNcPx40UA:10 a=_1CdXZwv0MQA:10 a=rC2wZJ5BpNYA:10 a=6uQODOVjHeUA:10 a=UTB_XpHje0EA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=7x0lFU54lrwn2jxov1UA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111204190025.799552511@goodmis.org>
+Message-Id: <20111204190021.812654254@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Sun, 04 Dec 2011 13:54:55 -0500
+Date: Sun, 04 Dec 2011 13:54:53 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH 11/11] Linux v3.0.12-rt30-rc2
+        John Kacur <jkacur@redhat.com>, stable@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hans Schillstrom <hans@schillstrom.com>,
+        Christoph Lameter <cl@gentwo.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH 09/11] slab, lockdep: Fix silly bug
 References: <20111204185444.411298317@goodmis.org>
-Content-Disposition: inline; filename=0011-Linux-v3.0.12-rt30-rc2.patch
+Content-Disposition: inline; filename=0009-slab-lockdep-Fix-silly-bug.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,19 +36,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
+Commit 30765b92 ("slab, lockdep: Annotate the locks before using
+them") moves the init_lock_keys() call from after g_cpucache_up =3D
+FULL, to before it. And overlooks the fact that init_node_lock_keys()
+tests for it and ignores everything !FULL.
+
+Introduce a LATE stage and change the lockdep test to be <LATE.
+
+Cc: stable@kernel.org
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hans Schillstrom <hans@schillstrom.com>
+Cc: Christoph Lameter <cl@gentwo.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: linux-mm@kvack.org
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/n/tip-gadqbdfxorhia1w5ewmoiodd@git.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- localversion-rt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/slab.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/localversion-rt b/localversion-rt
-index 90290c6..6eae1e4 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt29
-+-rt30-rc2
+diff --git a/mm/slab.c b/mm/slab.c
+index 015cd76..433b9a2 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -594,6 +594,7 @@ static enum {
+ 	PARTIAL_AC,
+ 	PARTIAL_L3,
+ 	EARLY,
++	LATE,
+ 	FULL
+ } g_cpucache_up;
+=20
+@@ -670,7 +671,7 @@ static void init_node_lock_keys(int q)
+ {
+ 	struct cache_sizes *s =3D malloc_sizes;
+=20
+-	if (g_cpucache_up !=3D FULL)
++	if (g_cpucache_up < LATE)
+ 		return;
+=20
+ 	for (s =3D malloc_sizes; s->cs_size !=3D ULONG_MAX; s++) {
+@@ -1725,6 +1726,8 @@ void __init kmem_cache_init_late(void)
+ {
+ 	struct kmem_cache *cachep;
+=20
++	g_cpucache_up =3D LATE;
++
+ 	/* Annotate slab for lockdep -- annotate the malloc caches */
+ 	init_lock_keys();
+=20
 --=20
 1.7.7.1
 
@@ -55,19 +103,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO28NKAAoJEIy3vGnGbaoAnlsP/1nURgA8TkN5cpX399/xbZmO
-roFF1pCfVQv8lVca60m01rEl7RNiUWPipJKqbwtQGN5IRFW22sUFayCf3XUrb42g
-iROu2EXhHkTBcKBQRof+5QO+X4DWhLC3dKgqxMM45M8lKQJYOAoh0Bpzc1fMbxaJ
-4GW5Nfg1JUMFwndeFmxw75XqqKz4nQmuuYmEnFeMkIaLIbg0JwUQUmZ3fOH72GHf
-CIBhd+0ezw/YBpI7OHousgm0652La751SkRfEZTdGKPrEptXDQ4BIEeHyTt6xUGJ
-XSmx7ubUP2FQ9ogxLIDbWeGcybHixKgrUMRe4ju1SFE7GiDayO3RbMh1uF3Rjg5v
-a0e+LLsTNFWkpg9HqdaX9ZSpVR+la7tF+ZLcgT1ctj7cveIy9u6XlZpVTDWyop3F
-IGWj5Eto4sceDt9z/aWVyknkYCTTmnE8KVMCYja1ARzQpea1oBppsMvCW/H5TzZ2
-I3SBSTrlQeeTQlBws4C0INj4x/jVmwADPmNoZRe+HZfIK2eK1byNxv8yteXR80iw
-RuioJPQnZHSWOE6h37xQI7m9DYGEafwSTF57kqrxII17kqxvH4udoMsVFwnPmTWV
-r4X+ii9bz9/Lrp7ty040hIBxvqvpu+Yq521wewVr6w7uUwCeg0mLB1bp32AjasTC
-Jjgk2AUIG+oXyTRy30zJ
-=5+5q
+iQIcBAABAgAGBQJO28NGAAoJEIy3vGnGbaoANzwQALOUi9UkALY1D28YBcIlR5sK
+MqZqVvFaQglf0wMSxehfvvwopXqb1il8+tZMFcuLHk3wZ0fnwUQbjmvSmw4fDq19
+uIhCzqLjZpmFW+OrwofQ9dV9NvYJdP2TiXY3y0RIvmJDweYoz4AssafyV7XRurCP
+yHvAzlMR0n4ZpLyNrnesytch+yWYVE+OEbQLswQZJ79THEgntBMOkNiJ1CMiNXFD
+Cpv9ip4dd+KrvhKoX8dPOyfpH88C2wN6qW3HcPs+JP04WRDx4hmtHB1o/BVdx0pa
+YJALTkGsYRdM569v3TrVABdy8+R+DG4Qja2GjCZ0jRliDsiwvtRlEvZojTWxhWc+
+Td1qqb+c/HTBtQ/EdR8QOZecVQ/kIsLDEQiiYn1kZisgh4lm4Bhsrx1T1YNx4/Zm
+POxB1vKBvsO0aBWNrB0ZFj5kMuVQJVz1s0JTHJg65k6g9h9A9e+iovSGfw8ByWeu
+wthClWgb0DU9id62RoMmvTrVjcwEiZRrbogScIatZTGhdnAt6cuB78czvgsZi0qg
+W82Fx/p4UhfrG1J00Wxj6dLwRE8UzOcwahHVaQdpkGEUqWCVq7wPIspxidhWOmwy
+ehg9sxSIknv9DiAxQMBX9klkz+4t4lelJc+yTpt3dGnHNQP6lu6171qUm6ro8dXR
+cOfSkCbsKOsFktaCVmnd
+=Rjgy
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
