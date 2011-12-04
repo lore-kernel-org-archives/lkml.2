@@ -1,94 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab1LDTfv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 14:35:51 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:32972 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab1LDTfu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 14:35:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44.1112041459310.4682-100000@hubble.stokkie.net>
-References: <Pine.LNX.4.44.1112041459310.4682-100000@hubble.stokkie.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 4 Dec 2011 11:35:22 -0800
-X-Google-Sender-Auth: 7yaCcXI7WA9XwuMIPCj_dC6uouE
-Message-ID: <CA+55aFyYxvTFGmO3Z-h3LOYJC3i90g6Epe37McpBZP=gUbrGjQ@mail.gmail.com>
-Subject: Re: restrictions inside GCC 4.6.x and libc6-2.13 (x86_64)
-To: "Robert M. Stockmann" <stock@stokkie.net>
-Cc: linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755097Ab1LDTvD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 14:51:03 -0500
+Received: from ist.fellig.org ([84.200.228.103]:59881 "EHLO v0.fellig.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754335Ab1LDTvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 14:51:01 -0500
+Subject: Re: [Linux-decnet-user] Proposed removal of DECnet support
+	(was:Re: [BUG] 3.2-rc2:BUG kmalloc-8: Redzone overwritten)
+From: Philipp Schafft <lion@lion.leolix.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: mike.gair@tatasteel.com, Chrissie Caulfield <ccaulfie@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Linux-DECnet user <linux-decnet-user@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Matt Mackall <mpm@selenic.com>,
+        netdev <netdev@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        RoarAudio <roaraudio@lists.keep-cool.org>
+In-Reply-To: <1322664737.2755.17.camel@menhir>
+References: <OF7785CDCC.246C1F8F-ON80257958.004A9A89-80257958.004C103D@LocalDomain>
+	 <1322664737.2755.17.camel@menhir>
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=-GFnK3uTMHa0v/8p0EJDa"
+Organization: PH2
+Date: Sun, 04 Dec 2011 20:50:52 +0100
+Mime-Version: 1.0
+X-Mailer: Evolution 2.6.3 
+Message-Id: <20111204195055.A36077AD9C@priderock.keep-cool.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sounds like you have compiled it with -D_FORTIFY_SOURCE=1 (which may
-well be the default on Ubuntu these days), and it found a real bug.
 
-You need to check *which* snprintf is overflowing the buffer (should
-be easy enough with gdb), and see where that happens.
+--=-GFnK3uTMHa0v/8p0EJDa
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
-Or you could try to disable fortify, and live with the bug that
-apparently seldom causes problems in practice.
+reflum,
 
-You can do it with -D_FORTIFY_SOURCE=0. I don't recommend it, but if
-the program is doing something odd/bad on purpose, or if you are not
-willing to try to debug it, it should give you a working setup. Or as
-working as it ever was.
+On Wed, 2011-11-30 at 14:52 +0000, Steven Whitehouse wrote:
+> On Wed, 2011-11-30 at 13:52 +0000, mike.gair@tatasteel.com wrote:
+> > In theory i'd be interested in maintaining it,
+> > but i'm not sure what amount of work is involved,
+> > have no experience of kernel, or where to start.
+> >=20
+> > Any ideas?
+> >=20
+> >=20
+> So the issue is basically that due to there being nobody currently
+> maintaining the DECnet stack, it puts a burden on the core network
+> maintainers when they make cross-protocol changes, as they have to
+> figure out what impact the changes are likely to have on the DECnet
+> stack. So its an extra barrier to making cross-protocol code changes.
+>=20
+> If there was an active maintainer who could be a source of knowledge
+> (and the odd patch to help out making those changes) then this issue
+> would largely go away.
 
-You should also report this to the right people. Which is *not* the
-kernel people. Talk to the libspf guys. Because it's almost certainly
-a real bug in their code.
-
-                    Linus
+*nods*
 
 
-On Sun, Dec 4, 2011 at 6:42 AM, Robert M. Stockmann <stock@stokkie.net> wrote:
->
-> Hi,
->
-> As i wanted to port some old source code [1] to the latest
-> ubuntu 11.10 x86_64 distribution i ran across a strange
-> observation :
->
-> [acer30:root]:(/usr/lib/x86_64-linux-gnu)# spfqtool -i 192.168.2.5 -s stock@stokkie.net -h stokkie.net
-> *** buffer overflow detected ***: spfqtool terminated
-> ======= Backtrace: =========
-> /lib/x86_64-linux-gnu/libc.so.6(__fortify_fail+0x37)[0x7fb98f9537f7]
-> /lib/x86_64-linux-gnu/libc.so.6(+0xf7710)[0x7fb98f952710]
-> /lib/x86_64-linux-gnu/libc.so.6(+0xf6dfb)[0x7fb98f951dfb]
-> /lib/x86_64-linux-gnu/libc.so.6(__snprintf_chk+0x78)[0x7fb98f951cd8]
-> /usr/lib/libspf-1.0.so.0(SPF_init+0x277)[0x7fb98fbfc8e7]
-> spfqtool[0x400afb]
-> /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xed)[0x7fb98f87c30d]
-> spfqtool[0x400e1d]
->
-> [ ... ]"
->
-> This is also observed on ubuntu 11.04 x86_64 ..
-> When searching on google for this with 'spfqtool' omitted  :
->
-> *** buffer overflow detected ***:  terminated
-> http://www.google.com/search?hl=en&safe=off&q=***+buffer+overflow+detected+***%3A++terminated&oq=***+buffer+overflow+detected+***%3A++terminated&aq=f&aqi=g-v1g-b9&aql=&gs_sm=e&gs_upl=5641l6824l0l8707l9l9l0l0l0l0l111l878l4.5l9l0
->
-> i get about About 820,000 results (0.08 seconds), which reach from the
-> year 2009 upto 2011.  I really wonder what is the trouble here, as such
-> old source, which has run many CPU cycles for the last 8 years, now
-> suddenly has become buggy and prone to buffer overflows ...
->
-> Any suggestions on how to migrate 'old code' to the new Linux
-> platforms ?
->
-> Best Regards,
->
-> Robert
-> [1] libspf (www.libspf.org)
->    http://crashrecovery.org/SPF/RPMS/spf/src/
->    http://crashrecovery.org/SPF/RPMS/spf/src/libspf-1.0.0-RC6-pre10.tar.bz2
-> --
-> Robert M. Stockmann - RHCE
-> Network Engineer - UNIX/Linux Specialist
-> crashrecovery.org  stock@stokkie.net
->
+> The most important duty of the maintainer is just to watch whats going
+> on in the core networking development and to contribute the DECnet part
+> of that. So it would be most likely be more a reviewing of patches and
+> providing advice role, than one of writing patches (though it could be
+> that too) and ensuring that the code continues to function correctly by
+> testing it from time to time.
+>=20
+> The ideal maintainer would have an in-depth knowledge of the core Linux
+> networking stack (socket layer, dst and neigh code), the DECnet specs
+> and have a good knowledge of C.=20
+
+I guess I would fit mostly but I have no idea of the kernel internal
+stuff. Also I'm a bit short on time.
+
+
+> Bearing in mind the low patch volume (almost zero, except for core
+> stuff), it would probably be one of the subsystems with the least amount
+> of work to do in maintaining it. So in some ways, a good intro for a new
+> maintainer.
+
+Jup. This is very true. I hope we will find a new maintainer because of
+exactly this point. Maybe somebody like Mike Gair.
+
+
+> I do try and keep an eye on what get submitted to the DECnet code and
+> I'll continue to do that while it is still in the kernel. However, it is
+> now quite a long time since I last did any substantial work in the
+> networking area and things have moved on a fair bit in the mean time. I
+> don't have a lot of time to review DECnet patches these days and no way
+> to actually test any contributions against a real DECnet implementation.
+
+I'm glad you are still interested. I'm always happy when I see mails
+from you at the DECnet for Linux list.
+
+
+> So I'll provide what help I can to anybody who wants to take the role
+> on, within those limitations. I'm also happy to answer questions about
+> why things were done in a particular way, for example.
+>=20
+> It is good to know that people are still using the Linux DECnet code
+> too. It has lived far beyond the time when I'd envisioned it still being
+> useful :-)
+
+There are still some people interested in it. Btw. on Debian popcon
+counts 5356 users.
+
+--=20
+Philipp.
+ (Rah of PH2)
+
+--=-GFnK3uTMHa0v/8p0EJDa
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Comment: Because it's your freedom
+
+iQEVAwUATtvPG2CSpmW8W5B8AQKLoAf/VswhaTbBgm0aKx4GIrnAJA+M5q5miQzu
+HLZZ4ipepSIJbKLU3bdqvjtibQrnTYyXjov2oCLzKaizKvAKKd8blJR0CEu+dShv
+xjBQiqFWfDSAARR7a3ypsyOLQ9WqG2IZdUB0FhJ0CHyjiZuHF3aJV+8/x+IZvJi7
+VicP5trlrMupFQz3q74rnLmvsgCPDUmD+6mbZsYcJoAXa7V2xKMbv5245VuCaGVt
+bO38Zs29XWfg51s5ULeB8CZkTlNi8h9ORxDNEF9F49KuSJygtC9jqAY353cfqZF6
+fHrhL12/nFc5+aMAACFvuujDjX0luXyzQsAGDDogenWeNU03spVq3A==
+=GcNW
+-----END PGP SIGNATURE-----
+
+--=-GFnK3uTMHa0v/8p0EJDa--
