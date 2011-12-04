@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab1LDQrR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 11:47:17 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45625 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab1LDQrN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 11:47:13 -0500
-From: Hubert Feurstein <h.feurstein@gmail.com>
-To: zbr@ioremap.net, jeff.dagenais@gmail.com
-Cc: linux-kernel@vger.kernel.org, Hubert Feurstein <h.feurstein@gmail.com>
-Subject: [PATCH v2] w1: add fast search for single slave bus
-Date: Sun,  4 Dec 2011 17:46:50 +0100
-Message-Id: <1323017210-14666-1-git-send-email-h.feurstein@gmail.com>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <258EF057-8FF6-4432-A9E5-77F87607C45F@gmail.com>
-References: <258EF057-8FF6-4432-A9E5-77F87607C45F@gmail.com>
+	id S1753158Ab1LDQxe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 11:53:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44497 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751508Ab1LDQxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 11:53:31 -0500
+Message-ID: <4EDBA585.2090807@redhat.com>
+Date: Sun, 04 Dec 2011 18:53:25 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm@vger.kernel.org, Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Subject: Re: [PATCH] KVM: Veirfy memory slot only for readability
+References: <1322768576-9242-1-git-send-email-levinsasha928@gmail.com>  <4ED826CA.5030502@oss.ntt.co.jp> <4ED84314.5070107@oss.ntt.co.jp> <1322804776.3619.3.camel@lappy>
+In-Reply-To: <1322804776.3619.3.camel@lappy>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables a much more efficient way of device searching. It uses the
-1-wire read-rom operation which allows the direct reading of the slave
-address. BUT this works only with exactly one slave on the bus.
+On 12/02/2011 07:46 AM, Sasha Levin wrote:
+> > Do you want to create read only memory slots for kvm tool?
+>
+> What KVM tool currently does is copy the kernel into guest memory and
+> run it from there. An idea raised recently was instead of copying it we
+> should mmap it into the memory to reduce footprint.
+>
+> This is why I'm looking into adding a read only memory slot. The KVM
+> code doesn't have to know it's read only.
 
-Signed-off-by: Hubert Feurstein <h.feurstein@gmail.com>
----
- v2: remove config option
+The kernel will patch itself very early.  You need to use MAP_PRIVATE
+(and thus have a read/write area).  It will be interesting to see what
+fraction of the memory is modified.
 
- drivers/w1/w1.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Note that mapping will remove benefits like huge page support, and that
+you can get page sharing by using ksm.  Still, it's interesting to see
+where this goes.
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index c374978..9761950 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -892,6 +892,16 @@ void w1_search(struct w1_master *dev, u8 search_type, w1_slave_found_callback cb
- 			break;
- 		}
- 
-+		/* Do fast search on single slave bus */
-+		if (dev->max_slave_count == 1) {
-+			w1_write_8(dev, W1_READ_ROM);
-+
-+			if (w1_read_block(dev, (u8 *)&rn, 8) == 8 && rn)
-+				cb(dev, rn);
-+
-+			break;
-+		}
-+
- 		/* Start the search */
- 		w1_write_8(dev, search_type);
- 		for (i = 0; i < 64; ++i) {
 -- 
-1.7.7.4
+error compiling committee.c: too many arguments to function
 
