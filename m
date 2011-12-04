@@ -1,104 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1LDNV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 08:21:27 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35248 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab1LDNVZ convert rfc822-to-8bit (ORCPT
+	id S1753880Ab1LDNge (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 08:36:34 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41961 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753143Ab1LDNgd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 08:21:25 -0500
+	Sun, 4 Dec 2011 08:36:33 -0500
 MIME-Version: 1.0
-In-Reply-To: <1321615040-13257-2-git-send-email-rnayak@ti.com>
-References: <1321615040-13257-1-git-send-email-rnayak@ti.com>
-	<1321615040-13257-2-git-send-email-rnayak@ti.com>
-Date: Sun, 4 Dec 2011 18:51:23 +0530
-Message-ID: <CAJuYYwRO+AS=WmQfNAe8L6Gi5Dm4VsCuVqk3X5Nb8uUYAdLnJQ@mail.gmail.com>
-Subject: Re: [PATCH v5 1/4] regulator: helper routine to extract regulator_init_data
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        robherring2@gmail.com, linaro-dev@lists.linaro.org, patches@linaro.org,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, olof@lixom.net,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <4EDB6C10.10102@ladisch.de>
+References: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com>
+	<20111130154445.GA27198@gere.osrc.amd.com>
+	<1E8B869C0C6913418421A406C094DF7C0205358F@sshaexmb1.amd.com>
+	<CAPRPZsAL=xUCjTKaSgq117zppvZS0S7fHB0Ebk-JqXvV1vTPCQ@mail.gmail.com>
+	<4EDB6C10.10102@ladisch.de>
+Date: Sun, 4 Dec 2011 14:36:32 +0100
+Message-ID: <CAPRPZsAc8wr_2KsRi3LnGi4ic-CzrFLbRvQfkrXckH--vaLkVQ@mail.gmail.com>
+Subject: Re: Unhandled IRQs on AMD E-450
+From: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
+        "Nguyen, Dong" <Dong.Nguyen@amd.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 November 2011 16:47, Rajendra Nayak <rnayak@ti.com> wrote:
-> The helper routine is meant to be used by the regulator drivers
-> to extract the regulator_init_data structure from the data
-> that is passed from device tree.
-> 'consumer_supplies' which is part of regulator_init_data is not extracted
-> as the regulator consumer mappings are passed through DT differently,
-> implemented in subsequent patches.
-> Similarly the regulator<-->parent/supply mapping is handled in
-> subsequent patches.
->
-> Also add documentation for regulator bindings to be used to pass
-> regulator_init_data struct information from device tree.
->
-> Some of the regulator properties which are linux and board specific,
-> are left out since its not clear if they can
-> be in someway embedded into the kernel or passed in from DT.
-> They will be revisited later.
->
-> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-> ---
->  .../devicetree/bindings/regulator/regulator.txt    |   54 +++++++++++++
->  drivers/regulator/Makefile                         |    1 +
->  drivers/regulator/of_regulator.c                   |   81 ++++++++++++++++++++
->  include/linux/regulator/of_regulator.h             |   20 +++++
->  4 files changed, 156 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/regulator/regulator.txt
->  create mode 100644 drivers/regulator/of_regulator.c
->  create mode 100644 include/linux/regulator/of_regulator.h
->
-> diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-> new file mode 100644
-> index 0000000..82bef20
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-> @@ -0,0 +1,54 @@
-> +Voltage/Current Regulators
-> +
-> +Optional properties:
-> +- regulator-name: A string used as a descriptive name for regulator outputs
-> +- regulator-min-microvolt: smallest voltage consumers may set
-> +- regulator-max-microvolt: largest voltage consumers may set
-> +- regulator-microvolt-offset: Offset applied to voltages to compensate for voltage drops
-> +- regulator-min-microamp: smallest current consumers may set
-> +- regulator-max-microamp: largest current consumers may set
-> +- regulator-always-on: boolean, regulator should never be disabled
-> +- regulator-boot-on: bootloader/firmware enabled regulator
-> +- <name>-supply: phandle to the parent supply/regulator node
+> You previously said that unloading e1000 made things better.  Did this
+> affect both IRQs 16 and 19?
 
-For regulators that are not turned on by bootloader, and which require
-'apply_uV' constraint, is there any alternative for turning on the
-regulator when using dt?
+No, this only affects IRQ 19. IRQ 16 usually dies within 15min..2hrs.
 
-Or, how about adding a additional check as below.
+> Can you check if this problem (on either 16 or 19) happens when you are
+> not using the e1000 port (i.e., unplugged)?
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 5baa196..25a6781 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -816,8 +816,9 @@ static int machine_constraints_voltage(struct
-regulator_dev *rdev,
- 	int ret;
+The problem occurs with the e1000 idle (unplugged) and under heavy
+usage (plugged). Time to failure is also in the same order of
+magnitude (i.e. 1..30 minutes). As of now, I never had IRQ 19 disabled
+with the e1000 removed. The e1000 delivered with Ubuntu isn't
+particularly recent (7.3.21-k8-NAPI). Before I suspected a kernel
+problem, I already tried the 8.0.35 compiled from source obtained from
+Intel. Exactly the same result: IRQ 19 gets banned.
 
- 	/* do we need to apply the constraint voltage */
--	if (rdev->constraints->apply_uV &&
--	    rdev->constraints->min_uV == rdev->constraints->max_uV) {
-+	if ((rdev->constraints->apply_uV &&
-+	    rdev->constraints->min_uV == rdev->constraints->max_uV) ||
-+		(!rdev->constraints->boot_on && rdev->constraints->always_on)) {
- 		ret = _regulator_do_set_voltage(rdev,
- 						rdev->constraints->min_uV,
- 						rdev->constraints->max_uV);
+> The /proc/interrupts doesn't show e1000, but lspci does.  ...?
+
+You are right. I took that lspci after removing e1000, sorry for the
+confusion. Please see the new /proc/interrupts:below.
+
+> Does the problem occur without fglrx?
+
+Good question. I'll try that immediately. Stand by.
+
+> To get the AHCI interrupt away from IRQ 19, try the patch below.
+> (But please don't show that ugly hack to any AMD guy. :)
+
+I'll try that next too.
+
+>> Is there any way of obtaining more output such as IO-APIC register
+>> states to verify that it is indeed a stuck IRQ input line and not an
+>> unsuccesful EOI ack ?
+
+> In theory, lspci's "Status: ... INTx+" shows an active interrupt line.
+
+Ok. In that case (taking the lspci from a failed system) no (listed)
+device has INTx+.
+
 
 Thanks,
-Thomas.
+
+
+J.
+
+
+$ cat /proc/interrupts (with e1000 (eth1) still loaded - this dump is
+after IRQ 19 is killed)
+
+           CPU0       CPU1
+  0:         45         26   IO-APIC-edge      timer
+  1:          1          1   IO-APIC-edge      i8042
+  5:          0          0   IO-APIC-edge      parport0
+  7:          1          0   IO-APIC-edge
+  8:          1          0   IO-APIC-edge      rtc0
+  9:          0          0   IO-APIC-fasteoi   acpi
+ 12:          1          3   IO-APIC-edge      i8042
+ 16:        121        559   IO-APIC-fasteoi   firewire_ohci, hda_intel
+ 17:          3        110   IO-APIC-fasteoi   ehci_hcd:usb1,
+ehci_hcd:usb2, ehci_hcd:usb3
+ 18:          0          4   IO-APIC-fasteoi   ohci_hcd:usb4,
+ohci_hcd:usb5, ohci_hcd:usb6, ohci_hcd:usb7
+ 19:     198169      11097   IO-APIC-fasteoi   ahci, eth1
+ 40:       3601         71   PCI-MSI-edge      eth0
+ 41:          0          0   PCI-MSI-edge      xhci_hcd
+ 42:          0          0   PCI-MSI-edge      xhci_hcd
+ 43:          0          0   PCI-MSI-edge      xhci_hcd
+ 44:          4        298   PCI-MSI-edge      hda_intel
+ 45:          0          3   PCI-MSI-edge      fglrx[0]@PCI:0:1:0
+NMI:          0          0   Non-maskable interrupts
+LOC:     231521     231457   Local timer interrupts
+SPU:          0          0   Spurious interrupts
+PMI:          0          0   Performance monitoring interrupts
+IWI:          0          0   IRQ work interrupts
+RES:      37942      34198   Rescheduling interrupts
+CAL:        256        225   Function call interrupts
+TLB:        309        243   TLB shootdowns
+TRM:          0          0   Thermal event interrupts
+THR:          0          0   Threshold APIC interrupts
+MCE:          0          0   Machine check exceptions
+MCP:         26         26   Machine check polls
+ERR:          1
+MIS:          0
