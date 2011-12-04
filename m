@@ -1,563 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab1LDLiW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 06:38:22 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:57776
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753488Ab1LDLiJ (ORCPT
+	id S1753784Ab1LDLrw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 06:47:52 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56913 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab1LDLrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 06:38:09 -0500
-X-SpamScore: 11
-X-BigFish: VS11(zzb922lc8kzz1202h1082kzz8275bh8275dhz2dh2a8h668h839hb79i61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng <b29396@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
-        <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
-        <kernel@pengutronix.de>
-Subject: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
-Date: Sun, 4 Dec 2011 19:49:43 +0800
-Message-ID: <1322999384-7886-2-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1322999384-7886-1-git-send-email-b29396@freescale.com>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+	Sun, 4 Dec 2011 06:47:49 -0500
+Date: Sun, 4 Dec 2011 12:47:41 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Heiko Schocher <hs@denx.de>
+Cc: Wolfgang Denk <wd@denx.de>, Vitaly Bordug <vbordug@ru.mvista.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] drivers, char: add U-Boot bootcount driver
+Message-ID: <20111204114741.GA5788@pengutronix.de>
+References: <1322991921-21096-1-git-send-email-hs@denx.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
+Content-Disposition: inline
+In-Reply-To: <1322991921-21096-1-git-send-email-hs@denx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 10.1.0.3
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dong Aisheng <b29396@freescale.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Shawn Guo <shanw.guo@freescale.com>
----
- drivers/pinctrl/pinmux-imx53.c |  514 ++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 514 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pinctrl/pinmux-imx53.c b/drivers/pinctrl/pinmux-imx53.c
-new file mode 100644
-index 0000000..126e2a8
---- /dev/null
-+++ b/drivers/pinctrl/pinmux-imx53.c
-@@ -0,0 +1,514 @@
-+/*
-+ * imx53 pinmux driver based on imx pinmux core
-+ *
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc.
-+ * Copyright (C) 2011 Linaro, Inc.
-+ *
-+ * Author: Dong Aisheng <dong.aisheng@linaro.org>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/err.h>
-+#include <linux/pinctrl/pinctrl.h>
-+#include <linux/pinctrl/pinmux.h>
-+
-+#include "pinmux-imx-core.h"
-+
-+#define MX53_IOMUXC_MUX_OFFSET 0x20
-+#define MX53_IOMUXC_MAXPIN	(23*23)
-+
-+enum imx_mx53_pads {
-+	MX53_GPIO_19 = 0,
-+	MX53_KEY_COL0 = 1,
-+	MX53_KEY_ROW0 = 2,
-+	MX53_KEY_COL1 = 3,
-+	MX53_KEY_ROW1 = 4,
-+	MX53_KEY_COL2 = 5,
-+	MX53_KEY_ROW2 = 6,
-+	MX53_KEY_COL3 = 7,
-+	MX53_KEY_ROW3 = 8,
-+	MX53_KEY_COL4 = 9,
-+	MX53_KEY_ROW4 = 10,
-+	MX53_DI0_DISP_CLK = 11,
-+	MX53_DI0_PIN15 = 12,
-+	MX53_DI0_PIN2 = 13,
-+	MX53_DI0_PIN3 = 14,
-+	MX53_DI0_PIN4 = 15,
-+	MX53_DISP0_DAT0 = 16,
-+	MX53_DISP0_DAT1 = 17,
-+	MX53_DISP0_DAT2 = 18,
-+	MX53_DISP0_DAT3 = 19,
-+	MX53_DISP0_DAT4 = 20,
-+	MX53_DISP0_DAT5 = 21,
-+	MX53_DISP0_DAT6 = 22,
-+	MX53_DISP0_DAT7 = 23,
-+	MX53_DISP0_DAT8 = 24,
-+	MX53_DISP0_DAT9 = 25,
-+	MX53_DISP0_DAT10 = 26,
-+	MX53_DISP0_DAT11 = 27,
-+	MX53_DISP0_DAT12 = 28,
-+	MX53_DISP0_DAT13 = 29,
-+	MX53_DISP0_DAT14 = 30,
-+	MX53_DISP0_DAT15 = 31,
-+	MX53_DISP0_DAT16 = 32,
-+	MX53_DISP0_DAT17 = 33,
-+	MX53_DISP0_DAT18 = 34,
-+	MX53_DISP0_DAT19 = 35,
-+	MX53_DISP0_DAT20 = 36,
-+	MX53_DISP0_DAT21 = 37,
-+	MX53_DISP0_DAT22 = 38,
-+	MX53_DISP0_DAT23 = 39,
-+	MX53_CSI0_PIXCLK = 40,
-+	MX53_CSI0_MCLK = 41,
-+	MX53_CSI0_DATA_EN = 42,
-+	MX53_CSI0_VSYNC = 43,
-+	MX53_CSI0_DAT4 = 44,
-+	MX53_CSI0_DAT5 = 45,
-+	MX53_CSI0_DAT6 = 46,
-+	MX53_CSI0_DAT7 = 47,
-+	MX53_CSI0_DAT8 = 48,
-+	MX53_CSI0_DAT9 = 49,
-+	MX53_CSI0_DAT10 = 50,
-+	MX53_CSI0_DAT11 = 51,
-+	MX53_CSI0_DAT12 = 52,
-+	MX53_CSI0_DAT13 = 53,
-+	MX53_CSI0_DAT14 = 54,
-+	MX53_CSI0_DAT15 = 55,
-+	MX53_CSI0_DAT16 = 56,
-+	MX53_CSI0_DAT17 = 57,
-+	MX53_CSI0_DAT18 = 58,
-+	MX53_CSI0_DAT19 = 59,
-+	MX53_EIM_A25 = 60,
-+	MX53_EIM_EB2 = 61,
-+	MX53_EIM_D16 = 62,
-+	MX53_EIM_D17 = 63,
-+	MX53_EIM_D18 = 64,
-+	MX53_EIM_D19 = 65,
-+	MX53_EIM_D20 = 66,
-+	MX53_EIM_D21 = 67,
-+	MX53_EIM_D22 = 68,
-+	MX53_EIM_D23 = 69,
-+	MX53_EIM_EB3 = 70,
-+	MX53_EIM_D24 = 71,
-+	MX53_EIM_D25 = 72,
-+	MX53_EIM_D26 = 73,
-+	MX53_EIM_D27 = 74,
-+	MX53_EIM_D28 = 75,
-+	MX53_EIM_D29 = 76,
-+	MX53_EIM_D30 = 77,
-+	MX53_EIM_D31 = 78,
-+	MX53_EIM_A24 = 79,
-+	MX53_EIM_A23 = 80,
-+	MX53_EIM_A22 = 81,
-+	MX53_EIM_A21 = 82,
-+	MX53_EIM_A20 = 83,
-+	MX53_EIM_A19 = 84,
-+	MX53_EIM_A18 = 85,
-+	MX53_EIM_A17 = 86,
-+	MX53_EIM_A16 = 87,
-+	MX53_EIM_CS0 = 88,
-+	MX53_EIM_CS1 = 89,
-+	MX53_EIM_OE = 90,
-+	MX53_EIM_RW = 91,
-+	MX53_EIM_LBA = 92,
-+	MX53_EIM_EB0 = 93,
-+	MX53_EIM_EB1 = 94,
-+	MX53_EIM_DA0 = 95,
-+	MX53_EIM_DA1 = 96,
-+	MX53_EIM_DA2 = 97,
-+	MX53_EIM_DA3 = 98,
-+	MX53_EIM_DA4 = 99,
-+	MX53_EIM_DA5 = 100,
-+	MX53_EIM_DA6 = 101,
-+	MX53_EIM_DA7 = 102,
-+	MX53_EIM_DA8 = 103,
-+	MX53_EIM_DA9 = 104,
-+	MX53_EIM_DA10 = 105,
-+	MX53_EIM_DA11 = 106,
-+	MX53_EIM_DA12 = 107,
-+	MX53_EIM_DA13 = 108,
-+	MX53_EIM_DA14 = 109,
-+	MX53_EIM_DA15 = 110,
-+	MX53_NANDF_WE_B = 111,
-+	MX53_NANDF_RE_B = 112,
-+	MX53_EIM_WAIT = 113,
-+	MX53_EIM_BCLK = 114,
-+	MX53_LVDS1_TX3_P = 115,
-+	MX53_LVDS1_TX2_P = 116,
-+	MX53_LVDS1_CLK_P = 117,
-+	MX53_LVDS1_TX1_P = 118,
-+	MX53_LVDS1_TX0_P = 119,
-+	MX53_LVDS0_TX3_P = 120,
-+	MX53_LVDS0_CLK_P = 121,
-+	MX53_LVDS0_TX2_P = 122,
-+	MX53_LVDS0_TX1_P = 123,
-+	MX53_LVDS0_TX0_P = 124,
-+	MX53_GPIO_10 = 125,
-+	MX53_GPIO_11 = 126,
-+	MX53_GPIO_12 = 127,
-+	MX53_GPIO_13 = 128,
-+	MX53_GPIO_14 = 129,
-+	MX53_NANDF_CLE = 130,
-+	MX53_NANDF_ALE = 131,
-+	MX53_NANDF_WP_B = 132,
-+	MX53_NANDF_RB0 = 133,
-+	MX53_NANDF_CS0 = 134,
-+	MX53_NANDF_CS1 = 135,
-+	MX53_NANDF_CS2 = 136,
-+	MX53_NANDF_CS3 = 137,
-+	MX53_FEC_MDIO = 138,
-+	MX53_FEC_REF_CLK = 139,
-+	MX53_FEC_RX_ER = 140,
-+	MX53_FEC_CRS_DV = 141,
-+	MX53_FEC_RXD1 = 142,
-+	MX53_FEC_RXD0 = 143,
-+	MX53_FEC_TX_EN = 144,
-+	MX53_FEC_TXD1 = 145,
-+	MX53_FEC_TXD0 = 146,
-+	MX53_FEC_MDC = 147,
-+	MX53_PATA_DIOW = 148,
-+	MX53_PATA_DMACK = 149,
-+	MX53_PATA_DMARQ = 150,
-+	MX53_PATA_BUFFER_EN = 151,
-+	MX53_PATA_INTRQ = 152,
-+	MX53_PATA_DIOR = 153,
-+	MX53_PATA_RESET_B = 154,
-+	MX53_PATA_IORDY = 155,
-+	MX53_PATA_DA_0 = 156,
-+	MX53_PATA_DA_1 = 157,
-+	MX53_PATA_DA_2 = 158,
-+	MX53_PATA_CS_0 = 159,
-+	MX53_PATA_CS_1 = 160,
-+	MX53_PATA_DATA0 = 161,
-+	MX53_PATA_DATA1 = 162,
-+	MX53_PATA_DATA2 = 163,
-+	MX53_PATA_DATA3 = 164,
-+	MX53_PATA_DATA4 = 165,
-+	MX53_PATA_DATA5 = 166,
-+	MX53_PATA_DATA6 = 167,
-+	MX53_PATA_DATA7 = 168,
-+	MX53_PATA_DATA8 = 169,
-+	MX53_PATA_DATA9 = 170,
-+	MX53_PATA_DATA10 = 171,
-+	MX53_PATA_DATA11 = 172,
-+	MX53_PATA_DATA12 = 173,
-+	MX53_PATA_DATA13 = 174,
-+	MX53_PATA_DATA14 = 175,
-+	MX53_PATA_DATA15 = 176,
-+	MX53_SD1_DATA0 = 177,
-+	MX53_SD1_DATA1 = 178,
-+	MX53_SD1_CMD = 179,
-+	MX53_SD1_DATA2 = 180,
-+	MX53_SD1_CLK = 181,
-+	MX53_SD1_DATA3 = 182,
-+	MX53_SD2_CLK = 183,
-+	MX53_SD2_CMD = 184,
-+	MX53_SD2_DATA3 = 185,
-+	MX53_SD2_DATA2 = 186,
-+	MX53_SD2_DATA1 = 187,
-+	MX53_SD2_DATA0 = 188,
-+	MX53_GPIO_0 = 189,
-+	MX53_GPIO_1 = 190,
-+	MX53_GPIO_9 = 191,
-+	MX53_GPIO_3 = 192,
-+	MX53_GPIO_6 = 193,
-+	MX53_GPIO_2 = 194,
-+	MX53_GPIO_4 = 195,
-+	MX53_GPIO_5 = 196,
-+	MX53_GPIO_7 = 197,
-+	MX53_GPIO_8 = 198,
-+	MX53_GPIO_16 = 199,
-+	MX53_GPIO_17 = 200,
-+	MX53_GPIO_18 = 201,
-+};
-+
-+/* Pad names for the pinmux subsystem */
-+static const struct pinctrl_pin_desc mx53_pads[] = {
-+	IMX_PINCTRL_PIN(MX53_GPIO_19),
-+	IMX_PINCTRL_PIN(MX53_KEY_COL0),
-+	IMX_PINCTRL_PIN(MX53_KEY_ROW0),
-+	IMX_PINCTRL_PIN(MX53_KEY_COL1),
-+	IMX_PINCTRL_PIN(MX53_KEY_ROW1),
-+	IMX_PINCTRL_PIN(MX53_KEY_COL2),
-+	IMX_PINCTRL_PIN(MX53_KEY_ROW2),
-+	IMX_PINCTRL_PIN(MX53_KEY_COL3),
-+	IMX_PINCTRL_PIN(MX53_KEY_ROW3),
-+	IMX_PINCTRL_PIN(MX53_KEY_COL4),
-+	IMX_PINCTRL_PIN(MX53_KEY_ROW4),
-+	IMX_PINCTRL_PIN(MX53_DI0_DISP_CLK),
-+	IMX_PINCTRL_PIN(MX53_DI0_PIN15),
-+	IMX_PINCTRL_PIN(MX53_DI0_PIN2),
-+	IMX_PINCTRL_PIN(MX53_DI0_PIN3),
-+	IMX_PINCTRL_PIN(MX53_DI0_PIN4),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT0),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT1),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT2),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT3),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT4),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT5),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT6),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT7),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT8),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT9),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT10),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT11),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT12),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT13),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT14),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT15),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT16),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT17),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT18),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT19),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT20),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT21),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT22),
-+	IMX_PINCTRL_PIN(MX53_DISP0_DAT23),
-+	IMX_PINCTRL_PIN(MX53_CSI0_PIXCLK),
-+	IMX_PINCTRL_PIN(MX53_CSI0_MCLK),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DATA_EN),
-+	IMX_PINCTRL_PIN(MX53_CSI0_VSYNC),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT4),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT5),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT6),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT7),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT8),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT9),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT10),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT11),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT12),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT13),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT14),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT15),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT16),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT17),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT18),
-+	IMX_PINCTRL_PIN(MX53_CSI0_DAT19),
-+	IMX_PINCTRL_PIN(MX53_EIM_A25),
-+	IMX_PINCTRL_PIN(MX53_EIM_EB2),
-+	IMX_PINCTRL_PIN(MX53_EIM_D16),
-+	IMX_PINCTRL_PIN(MX53_EIM_D17),
-+	IMX_PINCTRL_PIN(MX53_EIM_D18),
-+	IMX_PINCTRL_PIN(MX53_EIM_D19),
-+	IMX_PINCTRL_PIN(MX53_EIM_D20),
-+	IMX_PINCTRL_PIN(MX53_EIM_D21),
-+	IMX_PINCTRL_PIN(MX53_EIM_D22),
-+	IMX_PINCTRL_PIN(MX53_EIM_D23),
-+	IMX_PINCTRL_PIN(MX53_EIM_EB3),
-+	IMX_PINCTRL_PIN(MX53_EIM_D24),
-+	IMX_PINCTRL_PIN(MX53_EIM_D25),
-+	IMX_PINCTRL_PIN(MX53_EIM_D26),
-+	IMX_PINCTRL_PIN(MX53_EIM_D27),
-+	IMX_PINCTRL_PIN(MX53_EIM_D28),
-+	IMX_PINCTRL_PIN(MX53_EIM_D29),
-+	IMX_PINCTRL_PIN(MX53_EIM_D30),
-+	IMX_PINCTRL_PIN(MX53_EIM_D31),
-+	IMX_PINCTRL_PIN(MX53_EIM_A24),
-+	IMX_PINCTRL_PIN(MX53_EIM_A23),
-+	IMX_PINCTRL_PIN(MX53_EIM_A22),
-+	IMX_PINCTRL_PIN(MX53_EIM_A21),
-+	IMX_PINCTRL_PIN(MX53_EIM_A20),
-+	IMX_PINCTRL_PIN(MX53_EIM_A19),
-+	IMX_PINCTRL_PIN(MX53_EIM_A18),
-+	IMX_PINCTRL_PIN(MX53_EIM_A17),
-+	IMX_PINCTRL_PIN(MX53_EIM_A16),
-+	IMX_PINCTRL_PIN(MX53_EIM_CS0),
-+	IMX_PINCTRL_PIN(MX53_EIM_CS1),
-+	IMX_PINCTRL_PIN(MX53_EIM_OE),
-+	IMX_PINCTRL_PIN(MX53_EIM_RW),
-+	IMX_PINCTRL_PIN(MX53_EIM_LBA),
-+	IMX_PINCTRL_PIN(MX53_EIM_EB0),
-+	IMX_PINCTRL_PIN(MX53_EIM_EB1),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA0),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA1),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA2),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA3),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA4),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA5),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA6),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA7),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA8),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA9),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA10),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA11),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA12),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA13),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA14),
-+	IMX_PINCTRL_PIN(MX53_EIM_DA15),
-+	IMX_PINCTRL_PIN(MX53_NANDF_WE_B),
-+	IMX_PINCTRL_PIN(MX53_NANDF_RE_B),
-+	IMX_PINCTRL_PIN(MX53_EIM_WAIT),
-+	IMX_PINCTRL_PIN(MX53_EIM_BCLK),
-+	IMX_PINCTRL_PIN(MX53_LVDS1_TX3_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS1_TX2_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS1_CLK_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS1_TX1_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS1_TX0_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS0_TX3_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS0_CLK_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS0_TX2_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS0_TX1_P),
-+	IMX_PINCTRL_PIN(MX53_LVDS0_TX0_P),
-+	IMX_PINCTRL_PIN(MX53_GPIO_10),
-+	IMX_PINCTRL_PIN(MX53_GPIO_11),
-+	IMX_PINCTRL_PIN(MX53_GPIO_12),
-+	IMX_PINCTRL_PIN(MX53_GPIO_13),
-+	IMX_PINCTRL_PIN(MX53_GPIO_14),
-+	IMX_PINCTRL_PIN(MX53_NANDF_CLE),
-+	IMX_PINCTRL_PIN(MX53_NANDF_ALE),
-+	IMX_PINCTRL_PIN(MX53_NANDF_WP_B),
-+	IMX_PINCTRL_PIN(MX53_NANDF_RB0),
-+	IMX_PINCTRL_PIN(MX53_NANDF_CS0),
-+	IMX_PINCTRL_PIN(MX53_NANDF_CS1),
-+	IMX_PINCTRL_PIN(MX53_NANDF_CS2),
-+	IMX_PINCTRL_PIN(MX53_NANDF_CS3),
-+	IMX_PINCTRL_PIN(MX53_FEC_MDIO),
-+	IMX_PINCTRL_PIN(MX53_FEC_REF_CLK),
-+	IMX_PINCTRL_PIN(MX53_FEC_RX_ER),
-+	IMX_PINCTRL_PIN(MX53_FEC_CRS_DV),
-+	IMX_PINCTRL_PIN(MX53_FEC_RXD1),
-+	IMX_PINCTRL_PIN(MX53_FEC_RXD0),
-+	IMX_PINCTRL_PIN(MX53_FEC_TX_EN),
-+	IMX_PINCTRL_PIN(MX53_FEC_TXD1),
-+	IMX_PINCTRL_PIN(MX53_FEC_TXD0),
-+	IMX_PINCTRL_PIN(MX53_FEC_MDC),
-+	IMX_PINCTRL_PIN(MX53_PATA_DIOW),
-+	IMX_PINCTRL_PIN(MX53_PATA_DMACK),
-+	IMX_PINCTRL_PIN(MX53_PATA_DMARQ),
-+	IMX_PINCTRL_PIN(MX53_PATA_BUFFER_EN),
-+	IMX_PINCTRL_PIN(MX53_PATA_INTRQ),
-+	IMX_PINCTRL_PIN(MX53_PATA_DIOR),
-+	IMX_PINCTRL_PIN(MX53_PATA_RESET_B),
-+	IMX_PINCTRL_PIN(MX53_PATA_IORDY),
-+	IMX_PINCTRL_PIN(MX53_PATA_DA_0),
-+	IMX_PINCTRL_PIN(MX53_PATA_DA_1),
-+	IMX_PINCTRL_PIN(MX53_PATA_DA_2),
-+	IMX_PINCTRL_PIN(MX53_PATA_CS_0),
-+	IMX_PINCTRL_PIN(MX53_PATA_CS_1),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA0),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA1),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA2),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA3),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA4),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA5),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA6),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA7),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA8),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA9),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA10),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA11),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA12),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA13),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA14),
-+	IMX_PINCTRL_PIN(MX53_PATA_DATA15),
-+	IMX_PINCTRL_PIN(MX53_SD1_DATA0),
-+	IMX_PINCTRL_PIN(MX53_SD1_DATA1),
-+	IMX_PINCTRL_PIN(MX53_SD1_CMD),
-+	IMX_PINCTRL_PIN(MX53_SD1_DATA2),
-+	IMX_PINCTRL_PIN(MX53_SD1_CLK),
-+	IMX_PINCTRL_PIN(MX53_SD1_DATA3),
-+	IMX_PINCTRL_PIN(MX53_SD2_CLK),
-+	IMX_PINCTRL_PIN(MX53_SD2_CMD),
-+	IMX_PINCTRL_PIN(MX53_SD2_DATA3),
-+	IMX_PINCTRL_PIN(MX53_SD2_DATA2),
-+	IMX_PINCTRL_PIN(MX53_SD2_DATA1),
-+	IMX_PINCTRL_PIN(MX53_SD2_DATA0),
-+	IMX_PINCTRL_PIN(MX53_GPIO_0),
-+	IMX_PINCTRL_PIN(MX53_GPIO_1),
-+	IMX_PINCTRL_PIN(MX53_GPIO_9),
-+	IMX_PINCTRL_PIN(MX53_GPIO_3),
-+	IMX_PINCTRL_PIN(MX53_GPIO_6),
-+	IMX_PINCTRL_PIN(MX53_GPIO_2),
-+	IMX_PINCTRL_PIN(MX53_GPIO_4),
-+	IMX_PINCTRL_PIN(MX53_GPIO_5),
-+	IMX_PINCTRL_PIN(MX53_GPIO_7),
-+	IMX_PINCTRL_PIN(MX53_GPIO_8),
-+	IMX_PINCTRL_PIN(MX53_GPIO_16),
-+	IMX_PINCTRL_PIN(MX53_GPIO_17),
-+	IMX_PINCTRL_PIN(MX53_GPIO_18),
-+};
-+
-+/* mx53 pin groups and mux mode */
-+static const unsigned mx53_fec_pins[] = {
-+	MX53_FEC_MDC,
-+	MX53_FEC_MDIO,
-+	MX53_FEC_REF_CLK,
-+	MX53_FEC_RX_ER,
-+	MX53_FEC_CRS_DV,
-+	MX53_FEC_RXD1,
-+	MX53_FEC_RXD0,
-+	MX53_FEC_TX_EN,
-+	MX53_FEC_TXD1,
-+	MX53_FEC_TXD0,
-+};
-+static const unsigned mx53_fec_mux[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-+
-+static const unsigned mx53_sd1_pins[] = {
-+	MX53_SD1_CMD,
-+	MX53_SD1_CLK,
-+	MX53_SD1_DATA0,
-+	MX53_SD1_DATA1,
-+	MX53_SD1_DATA2,
-+	MX53_SD1_DATA3,
-+
-+};
-+static const unsigned mx53_sd1_mux[] = { 0, 0, 0, 0, 0, 0 };
-+
-+static const unsigned mx53_sd3_pins[] = {
-+	MX53_PATA_DATA8,
-+	MX53_PATA_DATA9,
-+	MX53_PATA_DATA10,
-+	MX53_PATA_DATA11,
-+	MX53_PATA_DATA0,
-+	MX53_PATA_DATA1,
-+	MX53_PATA_DATA2,
-+	MX53_PATA_DATA3,
-+	MX53_PATA_IORDY,
-+	MX53_PATA_RESET_B,
-+
-+};
-+static const unsigned mx53_sd3_mux[] = { 4, 4, 4, 4, 4, 4, 4, 4, 2, 2 };
-+
-+static const unsigned mx53_uart1_pins[] = {
-+	MX53_CSI0_DAT10,
-+	MX53_CSI0_DAT11,
-+};
-+static const unsigned mx53_uart1_mux[] = { 2, 2 };
-+
-+static const struct imx_pin_group mx53_pin_groups[] = {
-+	IMX_PIN_GROUP("fecgrp", mx53_fec_pins, mx53_fec_mux),
-+	IMX_PIN_GROUP("sd1grp", mx53_sd1_pins, mx53_sd1_mux),
-+	IMX_PIN_GROUP("sd3grp", mx53_sd3_pins, mx53_sd3_mux),
-+	IMX_PIN_GROUP("uart1grp", mx53_uart1_pins, mx53_uart1_mux),
-+};
-+
-+/* mx53 funcs and groups */
-+static const char * const fecgrps[] = { "fecgrp" };
-+static const char * const sd1grps[] = { "sd1grp" };
-+static const char * const sd3grps[] = { "sd3grp" };
-+static const char * const uart1grps[] = { "uart1grp" };
-+
-+static const struct imx_pmx_func mx53_pmx_functions[] = {
-+	IMX_PMX_FUNC("fec", fecgrps),
-+	IMX_PMX_FUNC("sd1", sd1grps),
-+	IMX_PMX_FUNC("sd3", sd3grps),
-+	IMX_PMX_FUNC("uart1", uart1grps),
-+};
-+
-+const struct imx_pinctrl_info mx53_pinctrl_info = {
-+	.type = MX53_PINCTRL,
-+	.pins = mx53_pads,
-+	.npins = ARRAY_SIZE(mx53_pads),
-+	.maxpin = MX53_IOMUXC_MAXPIN,
-+	.groups = mx53_pin_groups,
-+	.ngroups = ARRAY_SIZE(mx53_pin_groups),
-+	.functions = mx53_pmx_functions,
-+	.nfunctions = ARRAY_SIZE(mx53_pmx_functions),
-+	.mux_offset = MX53_IOMUXC_MUX_OFFSET,
-+};
--- 
-1.7.0.4
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Sun, Dec 04, 2011 at 10:45:21AM +0100, Heiko Schocher wrote:
+> This driver implements the Linux kernel half of the boot count feature -
+> the boot counter can only be reset after it is clear that the
+> application has been started and is running correctly, which usually
+> can only be determined by the application code itself. Thus the reset
+> of the boot counter must be done by application code, which thus needs
+> an appropriate driver.
 
+An appropriate mechanism, not necessarily a driver, see below.
+
+> Required feature by the Carrier Grade Linux Requirements Definition;
+> see for example document "Carrier Grade Linux Requirements Definition
+> Overview V3.0" at
+>=20
+> http://www.linuxfoundation.org/collaborate/workgroups/cgl/requirements#SM=
+M.6.0_Boot_Cycle_Detection
+>=20
+>       Description: OSDL CGL specifies that carrier grade Linux
+>       shall provide support for detecting a repeating reboot cycle
+> 	due to recurring failures. This detection should happen in
+> 	user space before system services are started.
+
+So, technically, a flag would be enough, not necessarily a counter? Althoug=
+h a
+counter probably has more advantages...
+
+> This driver provides read/write access to the U-Boot bootcounter
+> through PROC FS and/or sysFS file.
+
+Why ProcFS? Why ProcFS and/or SysFS? Which has priority? Why not /dev?
+
+> The bootcountregister gets configured via DTS.
+> for example on the enbw_cmc board:
+>=20
+> bootcount@0x23060 {
+>                   compatible =3D "uboot,bootcount";
+
+No. I assume you are not the vendor of what is at 0x23060, the actual devic=
+e.
+Only the device must be encoded in the compatible-entry which then implies =
+the
+bootcount functionality. Also, keep in mind that your solution should be
+generic for bootloaders.
+
+>                   reg =3D <0x23060 0x20>;
+
+I assume that non-volatile memory would qualify as a boot-counter, so those
+could be tied to I2C busses etc? reg would not fit then.
+
+I do wonder if it makes more sense to add such functionality to the
+watchdog-core to save the additional device (CCed). Needs a second thought,
+though...
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7bXd0ACgkQD27XaX1/VRtikACfUVsugIOq9HGDOCZJnqSKyFnL
+tJMAoJgohhT9H7MwsdkZxL9YbjNGR8K0
+=z91i
+-----END PGP SIGNATURE-----
+
+--qMm9M+Fa2AknHoGS--
