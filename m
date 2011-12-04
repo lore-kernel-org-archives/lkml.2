@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab1LDRjx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 12:39:53 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42662 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab1LDRjw (ORCPT
+	id S1754939Ab1LDSHc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 13:07:32 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55637 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab1LDSHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 12:39:52 -0500
-Message-ID: <1323020374.3256.5.camel@lappy>
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
- descriptors
-From: Sasha Levin <levinsasha928@gmail.com>
+	Sun, 4 Dec 2011 13:07:30 -0500
+Message-ID: <4EDBB6C2.9050303@linux.vnet.ibm.com>
+Date: Sun, 04 Dec 2011 23:36:58 +0530
+From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Date: Sun, 04 Dec 2011 19:39:34 +0200
-In-Reply-To: <4EDBAFC5.2010405@redhat.com>
-References: <4ED4F30F.8000603@redhat.com> <1322669511.3985.8.camel@lappy>
-	  <87wrahrp0u.fsf@rustcorp.com.au> <20111201075847.GA5479@redhat.com>
-	  <1322726977.3259.3.camel@lappy> <20111201102640.GB8822@redhat.com>
-	  <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy>
-	  <4EDB5EF0.2010909@redhat.com> <1323000831.4205.4.camel@lappy>
-	  <20111204162221.GB22501@redhat.com> <1323020088.3256.3.camel@lappy>
-	 <4EDBAFC5.2010405@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Xen <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM hypervisor
+ to support pv-ticketlocks
+References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com> <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com> <4ED760F1.6080804@redhat.com> <4ED7DA85.5080504@linux.vnet.ibm.com>
+In-Reply-To: <4ED7DA85.5080504@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 11120408-7014-0000-0000-0000003499CD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-12-04 at 19:37 +0200, Avi Kivity wrote:
-> On 12/04/2011 07:34 PM, Sasha Levin wrote:
-> > > 
-> > > I'm confused. didn't you see a bigger benefit for guest->host by
-> > > switching indirect off?
-> >
-> > The 5% improvement is over the 'regular' indirect on, not over indirect
-> > off. Sorry for the confusion there.
-> >
-> > I suggested this change regardless of the outcome of indirect descriptor
-> > threshold discussion, since it would help anyways.
-> 
-> For net, this makes sense.  For block, it reduces the effective queue
-> depth, so it's not a trivial change.  It probably makes sense there too,
-> though.
+On 12/02/2011 01:20 AM, Raghavendra K T wrote:
+>> Have you tested it on AMD machines? There are some differences in the
+>> hypercall infrastructure there.
+>
+> Yes. 'll test on AMD machine and update on that.
+>
 
-It doesn't have to be limited at that number, anything above that can go
-through the regular kmalloc() path.
+I tested the code on 64 bit Dual-Core AMD Opteron machine, and it is 
+working.
 
--- 
-
-Sasha.
+- Raghu
 
