@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab1LDTyR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 14:54:17 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:41052 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754915Ab1LDTyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 14:54:16 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: Suspend and resume on ASUS Laptops
-Date: Sun, 4 Dec 2011 20:57:10 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc3+; KDE/4.6.0; x86_64; ; )
-Cc: Michal Jaegermann <michal@ellpspace.math.ualberta.ca>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Oliver Neukum <oneukum@suse.de>, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <Pine.LNX.4.44L0.1112041128580.32730-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1112041128580.32730-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112042057.11175.rjw@sisk.pl>
+	id S1755299Ab1LDTzE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 14:55:04 -0500
+Received: from ist.fellig.org ([84.200.228.103]:46757 "EHLO v0.fellig.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754774Ab1LDTzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 14:55:01 -0500
+Subject: Re: [Linux-decnet-user] Proposed removal of DECnet support
+	(was:Re: [BUG] 3.2-rc2:BUG kmalloc-8: Redzone overwritten)
+From: Philipp Schafft <lion@lion.leolix.org>
+To: mike.gair@tatasteel.com
+Cc: Steven Whitehouse <swhiteho@redhat.com>,
+        Chrissie Caulfield <ccaulfie@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Linux-DECnet user <linux-decnet-user@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Matt Mackall <mpm@selenic.com>,
+        netdev <netdev@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        RoarAudio <roaraudio@lists.keep-cool.org>
+In-Reply-To: <OF6A1EB29A.D9A6FBAC-ON8025795A.00311C05-8025795A.0032A610@LocalDomain>
+References: <OF6A1EB29A.D9A6FBAC-ON8025795A.00311C05-8025795A.0032A610@LocalDomain>
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=-6gyiy/Yf0KLaz6yRmUEU"
+Organization: PH2
+Date: Sun, 04 Dec 2011 20:54:56 +0100
+Mime-Version: 1.0
+X-Mailer: Evolution 2.6.3 
+Message-Id: <20111204195458.65F1C7AD9C@priderock.keep-cool.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 04, 2011, Alan Stern wrote:
-> On Sat, 3 Dec 2011, Michal Jaegermann wrote:
-> 
-> > On Sat, Dec 03, 2011 at 10:19:27AM -0500, Alan Stern wrote:
-> > > On Fri, 2 Dec 2011, Michal Jaegermann wrote:
-> > > > 
-> > > > On my ASUS K52Jc these controllers are also reported "disabled".  This
-> > > 
-> > > What exactly do you mean by that?
-> > 
-> > I mean that you asked Steven about a content of
-> > /sys/bus/pci/devices/0000\:00\:1[ad].0/power/wakeup
-> > On my ASUS K52Jc these ids also happen to belong to ehci_hcd devices
-> > (both "Intel Corporation 5 Series/3400 Series Chipset USB2 Enhanced Host
-> > Controller") and both 'wakeup' files show "disabled" too.
-> 
-> Oh, sorry -- I didn't realize you meant the power/wakeup file contained 
-> "disabled".  It sounded like you were saying that the controllers were 
-> somehow disabled.
-> 
-> > With that above I have to do all these manipulations with unbinding
-> > and binding drivers and removing inserting modules or a laptop will hang
-> > after a suspend.  Now with a recent kernel I need additionally put
-> > wireless driver modules on a "special handling" list or I will loose
-> > such connection (no hang here, just a dead driver).
-> > 
-> > All of this looks like pretty consistent, from what one can find on the
-> > net, across various models of ASUS laptops.
-> 
-> Yes, apparently ASUS's recent chipsets or firmware has a problem with
-> suspend and resume.  On the other hand, I'm writing this on an ASUS
-> UL20A laptop, which suspends and resumes with no difficulty.
 
-I wonder, though, who figured out what quirk to use before suspend on those
-particular machines and on what basis (some information from the vendor or
-what?).
+--=-6gyiy/Yf0KLaz6yRmUEU
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Rafael
+reflum,
+
+On Fri, 2011-12-02 at 09:14 +0000, mike.gair@tatasteel.com wrote:
+> I suspect I'm not up to the job,
+>=20
+> - definitely not got an in-depth knowledge of the core Linux
+> networking stack
+> or the DECnet specs,
+> Have limited, but growing experience of C, (mainly work in coral66)
+
+I'm willing to offer you help with C and the protocol stuff. I'm the
+current most active developer of the userland part.
+
+
+> But I'll have a look at code/documentation
+> & see if I understand any of it.=20
+
+Ok. If you are still interested let me know if I can help you with the
+above. Maybe Steven can give you some pointers for the kernel stuff.
+
+>=20
+--=20
+Philipp.
+ (Rah of PH2)
+
+--=-6gyiy/Yf0KLaz6yRmUEU
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Comment: Because it's your freedom
+
+iQEVAwUATtvQD2CSpmW8W5B8AQKRWggAgW/ZdtN0m1kcTGTb9agioN8aBibc2xbi
+5LOxT4IYWWoTWi+U1gEYu6a3eMCMGD3q78dEmLSXJUy0QLpU8dhfDSjGrBVDyfzF
+AjFYBZyRxtOgcuESCltl4GFihCM/rJTuuyJ4rXVlAH4DWc7O7u3EvqdBgo3LS6cm
+LA+8d/5UxQMeEQV6obqz7soCWg+B+sEekFkHOGxTqOOdKt30+8N2Cp/r8rm2wrPY
+7Cl75M2YOtrXTTUU3BUas1tWuYIRanyI6UMZJUeQEfEvdMn7cI2pE/gAlyiN43Jv
+XcCal2lbDw4P61rodIz6bJ1oun2zXnnTmNzlreouVh8ZOxX7lUaSLw==
+=VQjb
+-----END PGP SIGNATURE-----
+
+--=-6gyiy/Yf0KLaz6yRmUEU--
