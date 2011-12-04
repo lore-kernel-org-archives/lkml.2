@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab1LDQyr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 11:54:47 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:53444 "HELO
+	id S1754768Ab1LDQ7e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 11:59:34 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:39864 "HELO
 	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751508Ab1LDQyp (ORCPT
+	with SMTP id S1753081Ab1LDQ7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 11:54:45 -0500
-Date: Sun, 4 Dec 2011 11:54:43 -0500 (EST)
+	Sun, 4 Dec 2011 11:59:33 -0500
+Date: Sun, 4 Dec 2011 11:59:32 -0500 (EST)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@netrider.rowland.org
-To: Michal Jaegermann <michal@ellpspace.math.ualberta.ca>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: Suspend and resume on ASUS Laptops
-In-Reply-To: <20111203202330.GA21011@ellpspace.math.ualberta.ca>
-Message-ID: <Pine.LNX.4.44L0.1112041128580.32730-100000@netrider.rowland.org>
+To: Clemens Ladisch <clemens@ladisch.de>
+cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: fix number of mapped SG DMA entries
+In-Reply-To: <4EDAA59B.6080900@ladisch.de>
+Message-ID: <Pine.LNX.4.44L0.1112041157370.32730-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Dec 2011, Michal Jaegermann wrote:
+On Sat, 3 Dec 2011, Clemens Ladisch wrote:
 
-> On Sat, Dec 03, 2011 at 10:19:27AM -0500, Alan Stern wrote:
-> > On Fri, 2 Dec 2011, Michal Jaegermann wrote:
-> > > 
-> > > On my ASUS K52Jc these controllers are also reported "disabled".  This
-> > 
-> > What exactly do you mean by that?
+> Add a new field num_mapped_sgs to struct urb so that we have a place to
+> store the number of mapped entries and can also retain the original
+> value of entries in num_sgs.  Previously, usb_hcd_map_urb_for_dma()
+> would overwrite this with the number of mapped entries, which would
+> break dma_unmap_sg() because it requires the original number of entries.
 > 
-> I mean that you asked Steven about a content of
-> /sys/bus/pci/devices/0000\:00\:1[ad].0/power/wakeup
-> On my ASUS K52Jc these ids also happen to belong to ehci_hcd devices
-> (both "Intel Corporation 5 Series/3400 Series Chipset USB2 Enhanced Host
-> Controller") and both 'wakeup' files show "disabled" too.
+> This fixes warnings like the following when using USB storage devices:
+>  ------------[ cut here ]------------
+>  WARNING: at lib/dma-debug.c:902 check_unmap+0x4e4/0x695()
+>  ehci_hcd 0000:00:12.2: DMA-API: device driver frees DMA sg list with different entry count [map count=4] [unmap count=1]
 
-Oh, sorry -- I didn't realize you meant the power/wakeup file contained 
-"disabled".  It sounded like you were saying that the controllers were 
-somehow disabled.
-
-> With that above I have to do all these manipulations with unbinding
-> and binding drivers and removing inserting modules or a laptop will hang
-> after a suspend.  Now with a recent kernel I need additionally put
-> wireless driver modules on a "special handling" list or I will loose
-> such connection (no hang here, just a dead driver).
-> 
-> All of this looks like pretty consistent, from what one can find on the
-> net, across various models of ASUS laptops.
-
-Yes, apparently ASUS's recent chipsets or firmware has a problem with
-suspend and resume.  On the other hand, I'm writing this on an ASUS
-UL20A laptop, which suspends and resumes with no difficulty.
+Interesting.  Do you have any idea why this warning didn't show up 
+earlier?  Is there perhaps a Kconfig option I ought to be using?
 
 Alan Stern
 
