@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab1LDRIR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 12:08:17 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:39481 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab1LDRIN (ORCPT
+	id S1754875Ab1LDRIo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 12:08:44 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:34508 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752861Ab1LDRIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 12:08:13 -0500
-X-Auth-Info: 30SWfQyWpoZ9eBt8KUgUfIFDpWFIfVio46pUNquq5QI=
-To: Wolfram Sang <w.sang@pengutronix.de>
-cc: Heiko Schocher <hs@denx.de>, linux-watchdog@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Stefan Roese <sr@denx.de>
-From: Wolfgang Denk <wd@denx.de>
-Subject: Re: [PATCH] RFC, watchdog: add generic wdt driver API
+	Sun, 4 Dec 2011 12:08:42 -0500
+Date: Sun, 4 Dec 2011 12:08:41 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Namjae Jeon <linkinjeon@gmail.com>
+cc: akpm@linux-foundation.org, <linux-kernel@vger.kernel.org>,
+        Ashish Sangwan <ashishsangwan2@gmail.com>
+Subject: Re: [PATCH] nls: add surrogate pair support in nls utf8.
+In-Reply-To: <1322997454-22955-1-git-send-email-linkinjeon@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1112041201371.32730-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8bit
-In-reply-to: <20111204125928.GB5788@pengutronix.de>
-References: <1322992423-21683-1-git-send-email-hs@denx.de> <20111204125928.GB5788@pengutronix.de>
-Comments: In-reply-to Wolfram Sang <w.sang@pengutronix.de>
-   message dated "Sun, 04 Dec 2011 13:59:28 +0100."
-Date: Sun, 04 Dec 2011 18:08:10 +0100
-Message-Id: <20111204170810.8370625EA22@gemini.denx.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Wolfram,
+On Sun, 4 Dec 2011, Namjae Jeon wrote:
 
-In message <20111204125928.GB5788@pengutronix.de> you wrote:
-> 
-> > This patch is a port from Linux 2.4 and thought as an RFC, so comments
-> > are greately appreciated. First question is, has this watchdog driver
-> > API a chance to go in mainline? If so, what is the direction to
-> > go to push it ...
-> 
-> I don't see this flying. We finally have a watchdog framework in the kernel
-> which covers the long existing API used by existing drivers. If I understood it
-> right, this additional API needs new drivers for all the watchdogs? Also, I
-> didn't fully get what you are missing from the combination of the current API
-> and additional userspace-handling? (check [1] for one example, not really
+> It allows surrogate pair in nls utf8.
 
-Watchdog support is somethign that usually comes into play for
-security-critical devices.  Doing this stuff in user space may or may
-not be sufficient; for example, we've seen requirements where all
-related code must be running from ROM (including all other kernel
-code).
+That's a pretty brief description.
 
-Also, the implementation submitted by Heiko allows for easy watchdog
-control for kernel tasks.  I don;t see a good way to do this through
-user space.
+> --- a/fs/nls/nls_utf8.c
+> +++ b/fs/nls/nls_utf8.c
+> @@ -30,13 +30,24 @@ static int char2uni(const unsigned char *rawstring, int boundlen, wchar_t *uni)
+>  {
+>  	int n;
+>  	unicode_t u;
+> +	u16 *op;
+>  
+> +	op = uni;
+>  	n = utf8_to_utf32(rawstring, boundlen, &u);
+> -	if (n < 0 || u > MAX_WCHAR_T) {
+> +	if (n < 0 || u > UNICODE_MAX) {
+>  		*uni = 0x003f;	/* ? */
+>  		return -EINVAL;
+>  	}
+> -	*uni = (wchar_t) u;
+> +
+> +	if (u >= PLANE_SIZE) {
+> +		u -= PLANE_SIZE;
+> +		*op++ = (wchar_t) (SURROGATE_PAIR |
+> +		((u >> 10) & SURROGATE_BITS));
+> +		*op++ = (wchar_t) (SURROGATE_PAIR |
+> +		SURROGATE_LOW | (u & SURROGATE_BITS));
+> +		} else
+> +			*op++ = (wchar_t) u;
+> +
+>  	return n;
+>  }
 
-But as Heikow wrote; this is a RFC patch, and the main purpose is to
-try to find out if it has a chance to go into mainline - several
-earlier attempts (which go back as far as 2002 - see for example [1],
-[2]) all failed with similar arguments like yours: "It's too complex,
-we already have watchdog support, nobody needs this". Funny enough
-that we have a number of customers who consider the existing wdt
-support unsufficient for their use cases.  We've been using it on all
-kinds on PPC systems, and now on ARM as well.
+Firstly, have you checked whether the callers of this function expect 
+to receive back more than one 16-bit value?  Maybe you will overrun 
+their buffers by doing this.
 
-We will not fight for inclusion of this driver, we just wat to know if
-it's worth investing efforts to get it accepted or if this is a lost
-case.
+Secondly, you shouldn't have to make all these changes.  Just call 
+utf8s_to_utf16s(); then all you have to worry about is changing an 
+invalid character to a '?'.
 
-[1] http://osdir.com/ml/linux.ports.ppc.embedded/2003-12/msg00188.html
-[2] http://thread.gmane.org/gmane.linux.kernel/884598
+Alan Stern
 
-Best regards,
-
-Wolfgang Denk
-
--- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr.5, D-82194 Groebenzell, Germany
-Phone: (+49)-8142-66989-10 Fax: (+49)-8142-66989-80 Email: wd@denx.de
-Gewöhnlich glaubt der Mensch,  wenn er nur Worte hört,  es müsse sich
-dabei doch auch was denken lassen.                 -- Goethe, Faust I
