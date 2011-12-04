@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab1LDLw0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 06:52:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751560Ab1LDLwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 06:52:23 -0500
-Message-ID: <4EDB5EF0.2010909@redhat.com>
-Date: Sun, 04 Dec 2011 13:52:16 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753288Ab1LDLxl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 06:53:41 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:32811 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560Ab1LDLxi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 06:53:38 -0500
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect
- descriptors
-References: <20111129125622.GB19157@redhat.com>  <1322573688.4395.11.camel@lappy> <20111129135406.GB30966@redhat.com>  <1322576464.7003.6.camel@lappy> <20111129145451.GD30966@redhat.com>  <4ED4F30F.8000603@redhat.com> <1322669511.3985.8.camel@lappy>  <87wrahrp0u.fsf@rustcorp.com.au> <20111201075847.GA5479@redhat.com>  <1322726977.3259.3.camel@lappy> <20111201102640.GB8822@redhat.com>  <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy>
-In-Reply-To: <1322913028.3782.4.camel@lappy>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4ED91871.4050904@siemens.com>
+References: <4ED212A1.3060300@redhat.com>
+	<1322807192-14147-1-git-send-email-kernelfans@gmail.com>
+	<4ED91871.4050904@siemens.com>
+Date: Sun, 4 Dec 2011 19:53:37 +0800
+Message-ID: <CAFgQCTvDQ9E5cGVxRP3ZPv8=TmhFqVOdMbcdcSMC8ctR3S+m6A@mail.gmail.com>
+Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
+From: Liu ping fan <kernelfans@gmail.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        aliguori@us.ibm.com, gleb@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2011 01:50 PM, Sasha Levin wrote:
-> On Fri, 2011-12-02 at 11:16 +1030, Rusty Russell wrote:
-> > On Thu, 1 Dec 2011 12:26:42 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > On Thu, Dec 01, 2011 at 10:09:37AM +0200, Sasha Levin wrote:
-> > > > On Thu, 2011-12-01 at 09:58 +0200, Michael S. Tsirkin wrote:
-> > > > > We'll presumably need some logic to increment is back,
-> > > > > to account for random workload changes.
-> > > > > Something like slow start?
-> > > > 
-> > > > We can increment it each time the queue was less than 10% full, it
-> > > > should act like slow start, no?
-> > > 
-> > > No, we really shouldn't get an empty ring as long as things behave
-> > > well. What I meant is something like:
-> > 
-> > I was thinking of the network output case, but you're right.  We need to
-> > distinguish between usually full (eg. virtio-net input) and usually
-> > empty (eg. virtio-net output).
-> > 
-> > The signal for "we to pack more into the ring" is different.  We could
-> > use some hacky heuristic like "out == 0" but I'd rather make it explicit
-> > when we set up the virtqueue.
-> > 
-> > Our other alternative, moving the logic to the driver, is worse.
-> > 
-> > As to fading the effect over time, that's harder.  We have to deplete
-> > the ring quite a few times before it turns into always-indirect.  We
-> > could back off every time the ring is totally idle, but that may hurt
-> > bursty traffic.  Let's try simple first?
+On Sat, Dec 3, 2011 at 2:26 AM, Jan Kiszka <jan.kiszka@siemens.com> wrote:
+> On 2011-12-02 07:26, Liu Ping Fan wrote:
+>> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>>
+>> Currently, vcpu can be destructed only when kvm instance destroyed.
+>> Change this to vcpu's destruction taken when its refcnt is zero,
+>> and then vcpu MUST and CAN be destroyed before kvm's destroy.
 >
-> I tried to take a different approach, and tried putting the indirect
-> descriptors in a kmem_cache as Michael suggested. The benchmarks showed
-> that this way virtio-net actually worked faster with indirect on even in
-> a single stream.
+> I'm lacking the big picture yet (would be good to have in the change log
+> - at least I'm too lazy to read the code):
+>
+> What increments the refcnt, what decrements it again? IOW, how does user
+> space controls the life-cycle of a vcpu after your changes?
+>
+In local APIC mode, delivering IPI to target APIC, target's refcnt is
+incremented, and decremented when finished. At other times, using RCU to
+protect the vcpu's reference from its destruction.
 
-How much better?
+If kvm_vcpu is not needed by guest, user space can close the
+kvm_vcpu's file
+descriptors, and then,if the kvm_vcpu has crossed the period of local
+APCI mode's reference,it will be destroyed.
 
-I think that if indirects benefit networking, then we're doing something
-wrong.  What's going on?  Does the ring get filled too early?  If so we
-should expand it.
+Regards,
+ping fan
 
--- 
-error compiling committee.c: too many arguments to function
-
+> Thanks,
+> Jan
+>
+> --
+> Siemens AG, Corporate Technology, CT T DE IT 1
+> Corporate Competence Center Embedded Linux
