@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab1LDXJn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 18:09:43 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:33552 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754742Ab1LDXJm (ORCPT
+	id S1755734Ab1LDXWZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 18:22:25 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37057 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754615Ab1LDXWX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 18:09:42 -0500
-Date: Mon, 5 Dec 2011 10:09:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cong Wang <amwang@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Please add my tree to linux-next
-Message-Id: <20111205100930.1bedc458a5e78b85c563465d@canb.auug.org.au>
-In-Reply-To: <4ED8529E.5070608@redhat.com>
-References: <4ED8529E.5070608@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Dec_2011_10_09_30_+1100_iMzhljuTxY.RTSod"
+	Sun, 4 Dec 2011 18:22:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAA7C2qjfWW8=kePZDO4nYR913RyuP-t+u8P9LV4mDh9bANr3=Q@mail.gmail.com>
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
+	<4ED6C5B8.8040803@linuxtv.org>
+	<4ED75F53.30709@redhat.com>
+	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+	<4EDA4AB4.90303@linuxtv.org>
+	<CAA7C2qjfWW8=kePZDO4nYR913RyuP-t+u8P9LV4mDh9bANr3=Q@mail.gmail.com>
+Date: Mon, 5 Dec 2011 00:22:22 +0100
+Message-ID: <CAJbz7-15mzUNV7ZLSkAOg1Vb8briysitsR7xK94G+3-KT=ZXbA@mail.gmail.com>
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+From: HoP <jpetrous@gmail.com>
+To: VDR User <user.vdr@gmail.com>
+Cc: Andreas Oberritter <obi@linuxtv.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Dec_2011_10_09_30_+1100_iMzhljuTxY.RTSod
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi.
 
-Hi,
-
-On Fri, 02 Dec 2011 12:22:54 +0800 Cong Wang <amwang@redhat.com> wrote:
+2011/12/3 VDR User <user.vdr@gmail.com>:
+> On Sat, Dec 3, 2011 at 8:13 AM, Andreas Oberritter <obi@linuxtv.org> wrote:
+>> You could certainly build a library to reach a different goal. The goal
+>> of vtuner is to access remote tuners with any existing program
+>> implementing the DVB API.
 >
-> As Andrew Morton suggested, please add my tree which contains all
-> of my patches for kmap_atomic() [1] to linux-next. Some of the
-> individual patches already got ACK from subsystem maintainers.
-> The tree is hosted on github:
->=20
->      git://github.com/congwang/linux.git #kmap_atomic
+> So you could finally use VDR as a server/client setup using vtuner,
+> right? With full OSD, timer, etc? Yes, I'm aware that streamdev
+> exists. It was horrible when I tried it last (a long time ago) and I
+> understand it's gotten better. But it's not a suitable replacement for
+> a real server/client setup. It sounds like using vtuner, this would
+> finally be possible and since Klaus has no intention of ever
+> modernizing VDR into server/client (that I'm aware of), it's also the
+> only suitable option as well.
+>
+> Or am I wrong about anything?  If not, I know several users who would
+> like to use this, myself included.
 
-I have added this tree to linux-next today.
+Well, initial report was made on vdr-portal because of our hardware announce,
+but you can be sure the same is true if server is build on any linux hardware.
+Here is some note:
+http://www.vdr-portal.de/board18-vdr-hardware/board84-allgemein/106610-das-neue-netzwerk-client-der-f%C3%BCr-vdr-verwenden-k%C3%B6nnen/?highlight=vtuner
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+Additional info you can find (or ask) on our forum:
+http://forum.nessiedvb.org/forum/viewforum.php?f=11
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+Please note, that compilation of vtunerc kernel driver (or loopback, or pigback
+or whatever name the code should be used) is simple - no need for any
+kernel real patching is required. Code can be compiled outside of the
+kernel tree
+(of course kernel headers are still needed).
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+Some useful hints regarding userland application daemons you
+can find in our wiki:
+http://wiki.nessiedvb.org/wiki/doku.php?id=vtuner_mode
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+When you get vtunerc and vtunerd applications connected, try
+simple command line tuning (szap/tzap or czap) to check
+if it works correctly. Only if you get zapping working switch
+to vdr.
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Mon__5_Dec_2011_10_09_30_+1100_iMzhljuTxY.RTSod
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO2/2qAAoJEECxmPOUX5FE3CkQAI7+qhXFubBAltrOyfNzwi3x
-zjhgcQJXO2eHqGLxpSeToM3rrslZxre+Ue5TUy2uRxpOeE/cayWETFD2jB/UJ4e+
-ZUP49ZolaHsWrBey0uGkx+n6ByKGABoHv3zrGMgRpuhaaG4LuFuZaUmTxaxITm2T
-jCCkpxmdMJ7P4LEB5mpEfLsBCFaaGBNBVsG+vq/+NcU5Z15BRyhxgkWJq+/+bzC2
-aAhsQ1+2pkqqvPdWVBzLQ/X6MFf7vxo6HU+gbGj+CijKaB0WdmuuR0lMmPVLYFSz
-jrt0ewUIn4AmFnoUmu5XMQcbYVX8nBu4b4Uzn10B4nFsnA5ptjDbcqb2+qHvjMtg
-L5XLBkn4KUUYT5CLvnEjyZb2zjgHBOaEkwj4nZJfShe84Lcpjn0j9YqVHhDqC8fu
-8MW6mtmIxZ5ruzCF1DODRLQ8oPVsPw4oqkFlu801WY3Isy9ogD8JLf9lhx1eFkOg
-dtb8fuwUmivENINhK+zlOxnx8iONp6L241cqd0Qq2txaQj3M7+n6iDhH02GbN9wT
-0ka39YTHm2b9u8HTJYQWPbdvtlCG2geR8AXSYH8nALn3M8WkpWev51+gd4SETiCd
-G8QmTtTh9JwefktdgLF9T7M2uiESfUfRM01ssq8pEJbBNmzKyZoCAoJ5in7ZMhpf
-hKyRnd7iyVH/4z/AgyuI
-=5+vd
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_Dec_2011_10_09_30_+1100_iMzhljuTxY.RTSod--
+Honza
