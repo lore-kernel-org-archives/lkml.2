@@ -1,184 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734Ab1LDXi6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 18:38:58 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:43623 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755097Ab1LDXi4 (ORCPT
+	id S1755958Ab1LDXml (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 18:42:41 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63546 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755370Ab1LDXmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 18:38:56 -0500
-Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jmorris@namei.org
-Date: Sun, 04 Dec 2011 18:36:02 -0500
-In-Reply-To: <4ECA6595.7010406@polito.it>
-References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
-	 <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>
-	 <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>
-	 <1321564518.21708.63.camel@falcor> <4EC63302.4040006@polito.it>
-	 <1321637471.2158.44.camel@falcor> <4ECA6595.7010406@polito.it>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323041763.2061.22.camel@falcor>
-Mime-Version: 1.0
-x-cbid: 11120423-2398-0000-0000-0000027F1132
+	Sun, 4 Dec 2011 18:42:38 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: alan@linux.intel.com, gregkh@suse.de, scottwood@freescale.com,
+        galak@kernel.crashing.org
+Cc: linux-serial@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/6] serial: export the key functions for an 8250 IRQ handler
+Date: Sun,  4 Dec 2011 18:42:20 -0500
+Message-Id: <1323042143-25330-4-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1323042143-25330-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1322783258-20443-1-git-send-email-paul.gortmaker@windriver.com>
+ <1323042143-25330-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-21 at 15:52 +0100, Roberto Sassu wrote:
-> On 11/18/2011 06:31 PM, Mimi Zohar wrote:
-> > On Fri, 2011-11-18 at 11:27 +0100, Roberto Sassu wrote:
-> >> On 11/17/2011 10:15 PM, Mimi Zohar wrote:
-> >>> On Thu, 2011-11-17 at 11:57 +0100, Roberto Sassu wrote:
-> >>>> On 11/16/2011 07:52 PM, Rajiv Andrade wrote:
-> >>>>>
-> >>>>> Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
-> >>>>>
-> >>>>> On 16-11-2011 12:37, Roberto Sassu wrote:
-> >>>>>> On 11/16/2011 02:38 PM, Mimi Zohar wrote:
-> >>>>>>> On Wed, 2011-11-16 at 11:10 +0100, Roberto Sassu wrote:
-> >>>>>>>> The ima_add_digest_entry() function has been split in order to avoid
-> >>>>>>>> adding an entry in the measurements list for which the PCR extend
-> >>>>>>>> operation subsequently fails. Required memory is allocated earlier
-> >>>>>>>> in the
-> >>>>>>>> new function ima_prepare_template_entry() and the template entry is
-> >>>>>>>> added
-> >>>>>>>> after ima_pcr_extend().
-> >>>>>>>>
-> >>>>>>>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
-> >>>>>>>
-> >>>>>>
-> >>>>>> Hi Mimi
-> >>>>>>
-> >>>>>> i don't know if this condition can happen, but suppose that
-> >>>>>> for whatever reason the PCR extend fails. In this case, since
-> >>>>>> the PCR is not extended, the measurements list can be modified,
-> >>>>>> by removing the non-measured entry, without this fact being
-> >>>>>> detected by the verifier. So, probably we can avoid to display
-> >>>>>> the entry.
-> >>>>>>
-> >>>>>>
-> >>>>> Hi Roberto,
-> >>>>>
-> >>>>> IMA's trustworthiness is built on the assumption that the TPM underneath
-> >>>>> can
-> >>>>> be trusted. If that can't be, the eventlog alone doesn't provide us any
-> >>>>> security.
-> >>>>> It's the TPM device driver's job though to workaround any HW bug so that
-> >>>>> in the
-> >>>>> end all its stakeholders have their commands processed successfully, as
-> >>>>> we've
-> >>>>> pursued in some changes here:
-> >>>>>
-> >>>>
-> >>>> Hi Rajiv
-> >>>>
-> >>>> thanks for your comments.
-> >>>>
-> >>>> I absolutely agree that we have to trust the TPM for the correct
-> >>>> execution of IMA.
-> >>>>
-> >>>> I think the principle that has been used to build IMA (according
-> >>>> to the TGC specifications) is that we can trust the eventlog
-> >>>> as long as the measurement infrastructure is reliable or it is
-> >>>> possible to detect a threat from previous measurements.
-> >>>>
-> >>>> For this reason, a system call is never executed before the
-> >>>> inode measurement is inserted in the eventlog and the PCR
-> >>>> is extended. Since these operations must be considered as
-> >>>> atomic, their execution is protected by a mutex, that is
-> >>>> released only after all tasks have been performed. This
-> >>>> ensures that we begin with a measured kernel and we can
-> >>>> reliably measure all further interactions. This also explains,
-> >>>> in my view, why delaying the PCR extend operation may lead
-> >>>> to security risks.
-> >>>>
-> >>>> About my patch, i did not move out the protected region any
-> >>>> of the above described operations. Instead, i'm preventing
-> >>>> measurements for which the PCR extend failed to be added to
-> >>>> the measurements list, because in any case it is impossible
-> >>>> for a verifier to detect their removal from the list.
-> >>>>
-> >>>> As i mentioned in the previous mail, one solution to overcome
-> >>>> this issue is to deny, on the platform running IMA, the execution
-> >>>> of those system calls for which the measurement process ended
-> >>>> with an error.
-> >>>>
-> >>>> Regards
-> >>>>
-> >>>> Roberto Sassu
-> >>>
-> >>> True, if the TPM failed to extend the PCR, a malicious user would be
-> >>> able to remove the measurement from the measurement list without it
-> >>> being detected.  However, according to the TPM specs, the PCR extend
-> >>> operation is always suppose to succeed, even in the case when the TPM is
-> >>> not enabled.
-> >>>
-> >>
-> >> Hi Mimi
-> >>
-> >> i don't know if this can happen, but, since the TPM always returns
-> >> a result in its response, there may be particular conditions under
-> >> which the PCR extend fails.
-> >>
-> >> After quickly looking at the code in 'drivers/char/tpm.c' there are
-> >> some additional cases where the operation may fail. For instance,
-> >> an operation may have been cancelled or it may have just reached the
-> >> defined time limit.
-> >>
-> >>
-> >>> More importantly we need to be able to detect when the PCR has not been
-> >>> extended appropriately in order to address it.  Otherwise we're just
-> >>> covering it up.
-> >>>
-> >>
-> >> Probably i did not understand this point, but do the return code of
-> >> tpm_pcr_extend() is not sufficient to determine if the operation was
-> >> completed successfully?
-> >>
-> >> Roberto Sassu
-> >
-> > Your concern, that if the PCR extend fails, the PCR value will not match
-> > the measurement list, is a valid concern. I'm not disagreeing with you
-> > on this point.  At the same time, the IMA measurement policy defines
-> > which files to include in the measurement list.  This policy is
-> > independent of the TPM, whether it is enabled or not, or even if the TPM
-> > is failing for some reason.  IMA goes into TPM by-pass mode and
-> > maintains the measurement list on systems without a TPM.
-> >
-> 
-> Hi Mimi
-> 
-> i think that if at some point IMA goes in TPM by-pass mode, this allows
-> an attacker to hide malicious programs if they are measured after the
-> switch.
-> 
-> So, i agree that an IMA user wants the complete measurements list for
-> the corresponding policy, but i think it is also necessary to give
-> verifiers the proof that the list contains exactly all events occurred
-> in the platform to be attested, not only those for which the
-> measurement process ended successfully.
+For drivers that need to construct their own IRQ handler, the
+three components are seen in the current handle_port -- i.e.
+Rx, Tx and modem_status.
 
-Ok, so we agree that the IMA measurement list must include all
-measurements based on policy and that either the verifier needs to be
-able to detect TPM failure to extend the PCR with a measurement, or
-that, as you suggest, the read/execute request itself is denied.
+Make these exported symbols so that "almost" 8250 UARTs can
+construct their own IRQ handler with these shared components,
+while working around their own unique errata issues.
 
-Unlike IMA-appraisal, which enforces file integrity, base IMA does not
-interfere with the running system and should not deny read/execute
-requests.
+The function names are given a serial8250 prefix, since they
+are now entering the global namespace.
 
-To validate the PCR against the measurement list, the verifier requests
-a PCR quote and the measurement list. In the case of a peristent TPM
-failure, the verifier won't be able to get a PCR quote.  For the
-intermittent TPM failure case, in addition to going into TPM by-pass
-mode, we could also prevent the TPM from quoting the IMA PCR.  This
-would require some minor changes to the TPM device driver.
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/tty/serial/8250.c   |   29 +++++++++++++++--------------
+ include/linux/serial_8250.h |    4 ++++
+ 2 files changed, 19 insertions(+), 14 deletions(-)
 
-Mimi
+diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
+index a20d7eb..91afe7a 100644
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -1300,8 +1300,6 @@ static void serial8250_stop_tx(struct uart_port *port)
+ 	}
+ }
+ 
+-static void transmit_chars(struct uart_8250_port *up);
+-
+ static void serial8250_start_tx(struct uart_port *port)
+ {
+ 	struct uart_8250_port *up =
+@@ -1318,7 +1316,7 @@ static void serial8250_start_tx(struct uart_port *port)
+ 			if ((up->port.type == PORT_RM9000) ?
+ 				(lsr & UART_LSR_THRE) :
+ 				(lsr & UART_LSR_TEMT))
+-				transmit_chars(up);
++				serial8250_tx_chars(up);
+ 		}
+ 	}
+ 
+@@ -1376,12 +1374,12 @@ static void clear_rx_fifo(struct uart_8250_port *up)
+ }
+ 
+ /*
+- * receive_chars: processes according to the passed in LSR
++ * serial8250_rx_chars: processes according to the passed in LSR
+  * value, and returns the remaining LSR bits not handled
+  * by this Rx routine.
+  */
+-static unsigned char
+-receive_chars(struct uart_8250_port *up, unsigned char lsr)
++unsigned char
++serial8250_rx_chars(struct uart_8250_port *up, unsigned char lsr)
+ {
+ 	struct tty_struct *tty = up->port.state->port.tty;
+ 	unsigned char ch;
+@@ -1462,8 +1460,9 @@ ignore_char:
+ 	spin_lock(&up->port.lock);
+ 	return lsr;
+ }
++EXPORT_SYMBOL_GPL(serial8250_rx_chars);
+ 
+-static void transmit_chars(struct uart_8250_port *up)
++void serial8250_tx_chars(struct uart_8250_port *up)
+ {
+ 	struct circ_buf *xmit = &up->port.state->xmit;
+ 	int count;
+@@ -1500,8 +1499,9 @@ static void transmit_chars(struct uart_8250_port *up)
+ 	if (uart_circ_empty(xmit))
+ 		__stop_tx(up);
+ }
++EXPORT_SYMBOL_GPL(serial8250_tx_chars);
+ 
+-static unsigned int check_modem_status(struct uart_8250_port *up)
++unsigned int serial8250_modem_status(struct uart_8250_port *up)
+ {
+ 	unsigned int status = serial_in(up, UART_MSR);
+ 
+@@ -1523,6 +1523,7 @@ static unsigned int check_modem_status(struct uart_8250_port *up)
+ 
+ 	return status;
+ }
++EXPORT_SYMBOL_GPL(serial8250_modem_status);
+ 
+ /*
+  * This handles the interrupt from one port.
+@@ -1539,10 +1540,10 @@ static void serial8250_handle_port(struct uart_8250_port *up)
+ 	DEBUG_INTR("status = %x...", status);
+ 
+ 	if (status & (UART_LSR_DR | UART_LSR_BI))
+-		status = receive_chars(up, status);
+-	check_modem_status(up);
++		status = serial8250_rx_chars(up, status);
++	serial8250_modem_status(up);
+ 	if (status & UART_LSR_THRE)
+-		transmit_chars(up);
++		serial8250_tx_chars(up);
+ 
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
+ }
+@@ -1780,7 +1781,7 @@ static void serial8250_backup_timeout(unsigned long data)
+ 	}
+ 
+ 	if (!(iir & UART_IIR_NO_INT))
+-		transmit_chars(up);
++		serial8250_tx_chars(up);
+ 
+ 	if (is_real_interrupt(up->port.irq))
+ 		serial_out(up, UART_IER, ier);
+@@ -1814,7 +1815,7 @@ static unsigned int serial8250_get_mctrl(struct uart_port *port)
+ 	unsigned int status;
+ 	unsigned int ret;
+ 
+-	status = check_modem_status(up);
++	status = serial8250_modem_status(up);
+ 
+ 	ret = 0;
+ 	if (status & UART_MSR_DCD)
+@@ -2861,7 +2862,7 @@ serial8250_console_write(struct console *co, const char *s, unsigned int count)
+ 	 *	while processing with interrupts off.
+ 	 */
+ 	if (up->msr_saved_flags)
+-		check_modem_status(up);
++		serial8250_modem_status(up);
+ 
+ 	if (locked)
+ 		spin_unlock(&up->port.lock);
+diff --git a/include/linux/serial_8250.h b/include/linux/serial_8250.h
+index 1f05bbe..b44034e 100644
+--- a/include/linux/serial_8250.h
++++ b/include/linux/serial_8250.h
+@@ -66,6 +66,7 @@ enum {
+  * dependent on the 8250 driver.
+  */
+ struct uart_port;
++struct uart_8250_port;
+ 
+ int serial8250_register_port(struct uart_port *);
+ void serial8250_unregister_port(int line);
+@@ -82,6 +83,9 @@ extern void serial8250_do_set_termios(struct uart_port *port,
+ extern void serial8250_do_pm(struct uart_port *port, unsigned int state,
+ 			     unsigned int oldstate);
+ int serial8250_handle_irq(struct uart_port *port, unsigned int iir);
++unsigned char serial8250_rx_chars(struct uart_8250_port *up, unsigned char lsr);
++void serial8250_tx_chars(struct uart_8250_port *up);
++unsigned int serial8250_modem_status(struct uart_8250_port *up);
+ 
+ extern void serial8250_set_isa_configurator(void (*v)
+ 					(int port, struct uart_port *up,
+-- 
+1.7.7
 
