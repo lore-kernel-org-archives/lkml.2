@@ -1,36 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab1LDGFt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 01:05:49 -0500
-Received: from gherkin.frus.com ([192.158.254.49]:37350 "EHLO gherkin.frus.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250Ab1LDGFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 01:05:48 -0500
-Date: Sun, 4 Dec 2011 00:05:44 -0600
-From: Bob Tracy <rct@gherkin.frus.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.2-rc2 freezes on boot for AMD K6 - bisected to commit bcb80e53877c2045d9e52f4a71372c3fe6501f6f
-Message-ID: <20111204060544.GA1881@gherkin.frus.com>
-References: <4ED5B70F.606@lwfinger.net> <4ED5C640.8030102@linux.vnet.ibm.com> <4ED5D6C5.5050704@lwfinger.net> <4EDA89F2.9070107@lwfinger.net> <CA+55aFwWVeAGT2p3tohRLh7VL8f4ztGwAHZxBmosEAGKJfL+Qg@mail.gmail.com>
+	id S1752021Ab1LDHMx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 02:12:53 -0500
+Received: from mga06.intel.com ([134.134.136.21]:44945 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751774Ab1LDHMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 02:12:51 -0500
+Subject: Re: [PATCH 2/3] workqueue: defer work to a draining queue
+From: Dan Williams <dan.j.williams@intel.com>
+To: tj@kernel.org
+Cc: JBottomley@parallels.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Date: Sat, 03 Dec 2011 23:12:47 -0800
+In-Reply-To: <20111202235655.24470.24712.stgit@localhost6.localdomain6>
+References: <20111202235319.24470.65483.stgit@localhost6.localdomain6>
+	 <20111202235655.24470.24712.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1322982769.30484.12.camel@ultramagnus.opencreations.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwWVeAGT2p3tohRLh7VL8f4ztGwAHZxBmosEAGKJfL+Qg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 03, 2011 at 03:07:56PM -0800, Linus Torvalds wrote:
-> (...)
-> IOW, I think the patch should be something like the attached (TOTALLY
-> UNTESTED) patch. Larry, does this work for you? It just moves the
-> rdmsr_safe() to the later function.
+On Fri, 2011-12-02 at 15:56 -0800, Dan Williams wrote:
+> commit 9c5a2ba7 "workqueue: separate out drain_workqueue() from
+> destroy_workqueue()" provided drain_workqueue() for users like libsas to
+> use for flushing events.
 
-Works for me as well: AMD K6-III/450.
+Any reason to allow drain requests to stack?  If draining is under a
+mutex then we don't break workqueue semantics (at least with respect to
+draining), all chained work is flushed and all unchained work is
+registered in the queue.  But it still leaves deferred work invisible to
+flush_workqueue().  drain_workqueue() users would need to be careful not
+to mix 'flush' and 'drain'.
 
---Bob
+Untested incremental changes to implement above:
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 363a4ef..24563d6 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -236,12 +236,12 @@ struct workqueue_struct {
+ 	struct wq_flusher	*first_flusher;	/* F: first flusher */
+ 	struct list_head	flusher_queue;	/* F: flush waiters */
+ 	struct list_head	flusher_overflow; /* F: flush overflow list */
++	struct mutex		drain_mutex;	/* 1 drainer at a time */
+ 	struct list_head	drain_defer;	/* W: unchained work to defer */
+ 
+ 	mayday_mask_t		mayday_mask;	/* cpus requesting rescue */
+ 	struct worker		*rescuer;	/* I: rescue worker */
+ 
+-	int			nr_drainers;	/* W: drain in progress */
+ 	int			saved_max_active; /* W: saved cwq max_active */
+ 	const char		*name;		/* I: workqueue name */
+ #ifdef CONFIG_LOCKDEP
+@@ -2427,14 +2427,10 @@ static int __drain_workqueue(struct workqueue_struct *wq, int flags)
+ 	unsigned int cpu;
+ 	int ret = 0;
+ 
+-	/*
+-	 * __queue_work() needs to test whether there are drainers, is much
+-	 * hotter than drain_workqueue() and already looks at @wq->flags.
+-	 * Use WQ_DRAINING so that queue doesn't have to check nr_drainers.
+-	 */
++	mutex_lock(&wq->drain_mutex);
++
+ 	spin_lock_irq(&workqueue_lock);
+-	if (!wq->nr_drainers++)
+-		wq->flags |= WQ_DRAINING | flags;
++	wq->flags |= WQ_DRAINING | flags;
+ 	spin_unlock_irq(&workqueue_lock);
+ reflush:
+ 	flush_workqueue(wq);
+@@ -2458,24 +2454,26 @@ reflush:
+ 	}
+ 
+ 	spin_lock_irq(&workqueue_lock);
+-	if (!--wq->nr_drainers) {
+-		wq->flags &= ~(WQ_DRAINING | WQ_NO_DEFER);
+-		list_splice_init(&wq->drain_defer, &drain_defer);
+-		ret = !list_empty(&drain_defer);
+-	}
++	wq->flags &= ~(WQ_DRAINING | WQ_NO_DEFER);
++	list_splice_init(&wq->drain_defer, &drain_defer);
++	ret = !list_empty(&drain_defer);
+ 	spin_unlock_irq(&workqueue_lock);
+ 
+-	/* requeue work on this queue provided it was not being destroyed */
++	/* submit deferred work provided wq was not being destroyed */
+ 	list_for_each_entry_safe(work, w, &drain_defer, entry) {
+ 		list_del_init(&work->entry);
+ 		queue_work(wq, work);
+ 	}
+ 
++	mutex_unlock(&wq->drain_mutex);
++
+ 	return ret;
+ }
+ 
+ int drain_workqueue(struct workqueue_struct *wq)
+ {
++	if (WARN_ON_ONCE(wq->flags & WQ_NO_DEFER))
++		return 0; /* lost drain vs destroy race */
+ 	return __drain_workqueue(wq, 0);
+ }
+ EXPORT_SYMBOL_GPL(drain_workqueue);
+@@ -3032,6 +3030,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
+ 	wq->flags = flags;
+ 	wq->saved_max_active = max_active;
+ 	mutex_init(&wq->flush_mutex);
++	mutex_init(&wq->drain_mutex);
+ 	atomic_set(&wq->nr_cwqs_to_flush, 0);
+ 	INIT_LIST_HEAD(&wq->flusher_queue);
+ 	INIT_LIST_HEAD(&wq->flusher_overflow);
+
+
