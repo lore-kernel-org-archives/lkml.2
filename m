@@ -1,127 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab1LENSa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 08:18:30 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53915 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756198Ab1LENS3 (ORCPT
+	id S932263Ab1LENSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 08:18:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57379 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756434Ab1LENSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 08:18:29 -0500
-Date: Mon, 5 Dec 2011 14:18:25 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Len Brown <len.brown@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH] x86/mcheck/therm_throt.c: Don't log power limit and
- package level thermal throttle event in mce log
-Message-ID: <20111205131825.GA31275@gere.osrc.amd.com>
-References: <1321305082-31310-1-git-send-email-fenghua.yu@intel.com>
+	Mon, 5 Dec 2011 08:18:40 -0500
+Date: Mon, 5 Dec 2011 05:18:20 -0800
+From: tip-bot for Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Message-ID: <tip-37fe6a42b3433b79a159ceb06a94cd1ef00e279d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rdunlap@xenotime.net, tglx@linutronix.de, mingo@elte.hu,
+        mitsuo.hayasaka.hu@hitachi.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, rdunlap@xenotime.net,
+        mitsuo.hayasaka.hu@hitachi.com, mingo@elte.hu
+In-Reply-To: <20111129060829.11076.51733.stgit@ltc219.sdl.hitachi.co.jp>
+References: <20111129060829.11076.51733.stgit@ltc219.sdl.hitachi.co.jp>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86: Check stack overflow in detail
+Git-Commit-ID: 37fe6a42b3433b79a159ceb06a94cd1ef00e279d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1321305082-31310-1-git-send-email-fenghua.yu@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 05:18:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This looks like a sane improvement, Tony I'm assuming you're handling this?
+Commit-ID:  37fe6a42b3433b79a159ceb06a94cd1ef00e279d
+Gitweb:     http://git.kernel.org/tip/37fe6a42b3433b79a159ceb06a94cd1ef00e279d
+Author:     Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+AuthorDate: Tue, 29 Nov 2011 15:08:29 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 5 Dec 2011 11:37:45 +0100
 
-On Mon, Nov 14, 2011 at 01:11:22PM -0800, Fenghua Yu wrote:
-> From: Fenghua Yu <fenghua.yu@intel.com>
-> 
-> Because of BIOS issues, some platforms report mce errors after power limit and
-> thermal throttle events. Customers are concerned about the mce errors. Although
-> BIOS need to fix the issues eventually, the events should not be viewed as mce
-> errors in the first place.
-> 
-> This patch doesn't log power limit and package level thermal throttle events
-> in mce log. When the events happen, only count them in respective counters in
-> sysfs.
-> 
-> For legacy reason, core level thermal throttle is still logged in mce log and
-> counted in counter in sysfs.
-> 
-> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/therm_throt.c |   29 +++++++----------------------
->  1 files changed, 7 insertions(+), 22 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> index 787e06c..ce04b58 100644
-> --- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> +++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-> @@ -323,17 +323,6 @@ device_initcall(thermal_throttle_init_device);
->  
->  #endif /* CONFIG_SYSFS */
->  
-> -/*
-> - * Set up the most two significant bit to notify mce log that this thermal
-> - * event type.
-> - * This is a temp solution. May be changed in the future with mce log
-> - * infrasture.
-> - */
-> -#define CORE_THROTTLED		(0)
-> -#define CORE_POWER_LIMIT	((__u64)1 << 62)
-> -#define PACKAGE_THROTTLED	((__u64)2 << 62)
-> -#define PACKAGE_POWER_LIMIT	((__u64)3 << 62)
-> -
->  static void notify_thresholds(__u64 msr_val)
->  {
->  	/* check whether the interrupt handler is defined;
-> @@ -363,27 +352,23 @@ static void intel_thermal_interrupt(void)
->  	if (therm_throt_process(msr_val & THERM_STATUS_PROCHOT,
->  				THERMAL_THROTTLING_EVENT,
->  				CORE_LEVEL) != 0)
-> -		mce_log_therm_throt_event(CORE_THROTTLED | msr_val);
-> +		mce_log_therm_throt_event(msr_val);
->  
->  	if (this_cpu_has(X86_FEATURE_PLN))
-> -		if (therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
-> +		therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
->  					POWER_LIMIT_EVENT,
-> -					CORE_LEVEL) != 0)
-> -			mce_log_therm_throt_event(CORE_POWER_LIMIT | msr_val);
-> +					CORE_LEVEL);
->  
->  	if (this_cpu_has(X86_FEATURE_PTS)) {
->  		rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
-> -		if (therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
-> +		therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
->  					THERMAL_THROTTLING_EVENT,
-> -					PACKAGE_LEVEL) != 0)
-> -			mce_log_therm_throt_event(PACKAGE_THROTTLED | msr_val);
-> +					PACKAGE_LEVEL);
->  		if (this_cpu_has(X86_FEATURE_PLN))
-> -			if (therm_throt_process(msr_val &
-> +			therm_throt_process(msr_val &
->  					PACKAGE_THERM_STATUS_POWER_LIMIT,
->  					POWER_LIMIT_EVENT,
-> -					PACKAGE_LEVEL) != 0)
-> -				mce_log_therm_throt_event(PACKAGE_POWER_LIMIT
-> -							  | msr_val);
-> +					PACKAGE_LEVEL);
->  	}
->  }
->  
-> -- 
-> 1.6.0.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+x86: Check stack overflow in detail
 
--- 
-Regards/Gruss,
-Boris.
+Currently, only kernel stack is checked for the overflow, which
+is not sufficient for systems that need a high reliability. To
+enhance it, it is required to check the IRQ and exception
+stacks, as well.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+This patch checks all the stack types and will cause messages of
+stacks in detail when free stack space drops below a certain
+limit except user stack.
+
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: yrl.pp-manager.tt@hitachi.com
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Link: http://lkml.kernel.org/r/20111129060829.11076.51733.stgit@ltc219.sdl.hitachi.co.jp
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+---
+ arch/x86/Kconfig.debug   |    7 +++++--
+ arch/x86/kernel/irq_64.c |   29 +++++++++++++++++++++++------
+ 2 files changed, 28 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index bf56e17..4caec12 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -63,8 +63,11 @@ config DEBUG_STACKOVERFLOW
+ 	bool "Check for stack overflows"
+ 	depends on DEBUG_KERNEL
+ 	---help---
+-	  This option will cause messages to be printed if free stack space
+-	  drops below a certain limit.
++	  Say Y here if you want to check the overflows of kernel, IRQ
++	  and exception stacks. This option will cause messages of the
++	  stacks in detail when free stack space drops below a certain
++	  limit.
++	  If in doubt, say "N".
+ 
+ config X86_PTDUMP
+ 	bool "Export kernel pagetable layout to userspace via debugfs"
+diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
+index 69bca46..928a7e9 100644
+--- a/arch/x86/kernel/irq_64.c
++++ b/arch/x86/kernel/irq_64.c
+@@ -36,18 +36,35 @@ EXPORT_PER_CPU_SYMBOL(irq_regs);
+ static inline void stack_overflow_check(struct pt_regs *regs)
+ {
+ #ifdef CONFIG_DEBUG_STACKOVERFLOW
++	struct orig_ist *oist;
++	u64 irq_stack_top, irq_stack_bottom;
++	u64 estack_top, estack_bottom;
+ 	u64 curbase = (u64)task_stack_page(current);
+ 
+ 	if (user_mode_vm(regs))
+ 		return;
+ 
+-	WARN_ONCE(regs->sp >= curbase &&
+-		  regs->sp <= curbase + THREAD_SIZE &&
+-		  regs->sp <  curbase + sizeof(struct thread_info) +
+-					sizeof(struct pt_regs) + 128,
++	if (regs->sp >= curbase &&
++	    regs->sp <= curbase + THREAD_SIZE &&
++	    regs->sp >= curbase + sizeof(struct thread_info) +
++				  sizeof(struct pt_regs) + 128)
++		return;
++
++	irq_stack_top = (u64)__get_cpu_var(irq_stack_union.irq_stack);
++	irq_stack_bottom = (u64)__get_cpu_var(irq_stack_ptr);
++	if (regs->sp >= irq_stack_top && regs->sp <= irq_stack_bottom)
++		return;
++
++	oist = &__get_cpu_var(orig_ist);
++	estack_top = (u64)oist->ist[0] - EXCEPTION_STKSZ;
++	estack_bottom = (u64)oist->ist[N_EXCEPTION_STACKS - 1];
++	if (regs->sp >= estack_top && regs->sp <= estack_bottom)
++		return;
+ 
+-		  "do_IRQ: %s near stack overflow (cur:%Lx,sp:%lx)\n",
+-			current->comm, curbase, regs->sp);
++	WARN_ONCE(1, "do_IRQ(): %s has overflown the kernel stack (cur:%Lx,sp:%lx,irq stk top-bottom:%Lx-%Lx,exception stk top-bottom:%Lx-%Lx)\n",
++		current->comm, curbase, regs->sp,
++		irq_stack_top, irq_stack_bottom,
++		estack_top, estack_bottom);
+ #endif
+ }
+ 
