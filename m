@@ -1,77 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab1LEImI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 03:42:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753303Ab1LEImG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 03:42:06 -0500
-Date: Mon, 5 Dec 2011 10:41:59 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Liu ping fan <kernelfans@gmail.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>, avi@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aliguori@us.ibm.com
-Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
-Message-ID: <20111205084159.GD12507@redhat.com>
-References: <4ED212A1.3060300@redhat.com>
- <1322807192-14147-1-git-send-email-kernelfans@gmail.com>
- <4ED91871.4050904@siemens.com>
- <CAFgQCTvDQ9E5cGVxRP3ZPv8=TmhFqVOdMbcdcSMC8ctR3S+m6A@mail.gmail.com>
- <20111204121000.GC12507@redhat.com>
- <CAFgQCTu32fTfV2ZwTy+S4RxD4mr_pq8dddQnttLnSGvYsmh+HQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFgQCTu32fTfV2ZwTy+S4RxD4mr_pq8dddQnttLnSGvYsmh+HQ@mail.gmail.com>
+	id S1753842Ab1LEIrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 03:47:06 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:12634 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab1LEIrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 03:47:04 -0500
+X-AuditID: cbfee61b-b7c4cae000003c38-a6-4edc8507fa94
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: rpurdie@rpsys.net
+Cc: ben-linux@fluff.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, patches@linaro.org
+Subject: [PATCH] backlight: add regulator support for platform_lcd driver
+Date: Mon, 05 Dec 2011 14:18:41 +0530
+Message-id: <1323074921-29291-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 01:39:37PM +0800, Liu ping fan wrote:
-> On Sun, Dec 4, 2011 at 8:10 PM, Gleb Natapov <gleb@redhat.com> wrote:
-> > On Sun, Dec 04, 2011 at 07:53:37PM +0800, Liu ping fan wrote:
-> >> On Sat, Dec 3, 2011 at 2:26 AM, Jan Kiszka <jan.kiszka@siemens.com> wrote:
-> >> > On 2011-12-02 07:26, Liu Ping Fan wrote:
-> >> >> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
-> >> >>
-> >> >> Currently, vcpu can be destructed only when kvm instance destroyed.
-> >> >> Change this to vcpu's destruction taken when its refcnt is zero,
-> >> >> and then vcpu MUST and CAN be destroyed before kvm's destroy.
-> >> >
-> >> > I'm lacking the big picture yet (would be good to have in the change log
-> >> > - at least I'm too lazy to read the code):
-> >> >
-> >> > What increments the refcnt, what decrements it again? IOW, how does user
-> >> > space controls the life-cycle of a vcpu after your changes?
-> >> >
-> >> In local APIC mode, delivering IPI to target APIC, target's refcnt is
-> >> incremented, and decremented when finished. At other times, using RCU to
-> > Why is this needed?
-> >
-> Suppose the following scene:
-> 
-> #define kvm_for_each_vcpu(idx, vcpup, kvm) \
->         for (idx = 0; \
->              idx < atomic_read(&kvm->online_vcpus) && \
->              (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
->              idx++)
-> 
-> ------------------------------------------------------------------------------------------>
-> Here kvm_vcpu's destruction is called
->               vcpup->vcpu_id ...  //oops!
-> 
-> 
-And this is exactly how your code looks. i.e you do not increment
-reference count in most of the loops, you only increment it twice
-(in pic_unlock() and kvm_irq_delivery_to_apic()) because you are using
-vcpu outside of rcu_read_lock() protected section and I do not see why
-not just extend protected section to include kvm_vcpu_kick(). As far as
-I can see this function does not sleep.
+The power source to the lcd panel or the lcd interface such as lvds
+transmitters could be controlled by a regulator supply. Add support
+for enabling/disabling the regulator when switching power to lcd.
 
-What should protect vcpu from disappearing in your example above is RCU
-itself if you are using it right. But since I do not see any calls to
-rcu_assign_pointer()/rcu_dereference() I doubt you are using it right
-actually.
+Two new elements 'min_uV' and 'max_uV' in the platform data are added
+to allow platform code to specifiy the desired output voltage from the
+regulator.
 
---
-			Gleb.
+Cc: Ben Dooks <ben-linux@fluff.org>
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+---
+ drivers/video/backlight/platform_lcd.c |   29 +++++++++++++++++++++++++++++
+ include/video/platform_lcd.h           |    7 +++++++
+ 2 files changed, 36 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
+index 302330a..ffa8108 100644
+--- a/drivers/video/backlight/platform_lcd.c
++++ b/drivers/video/backlight/platform_lcd.c
+@@ -17,6 +17,8 @@
+ #include <linux/backlight.h>
+ #include <linux/lcd.h>
+ #include <linux/slab.h>
++#include <linux/regulator/consumer.h>
++#include <linux/regulator/machine.h>
+ 
+ #include <video/platform_lcd.h>
+ 
+@@ -44,11 +46,38 @@ static int platform_lcd_get_power(struct lcd_device *lcd)
+ static int platform_lcd_set_power(struct lcd_device *lcd, int power)
+ {
+ 	struct platform_lcd *plcd = to_our_lcd(lcd);
++	struct regulator *lcd_regulator;
+ 	int lcd_power = 1;
+ 
+ 	if (power == FB_BLANK_POWERDOWN || plcd->suspended)
+ 		lcd_power = 0;
+ 
++	/*
++	 * If power to lcd and/or lcd interface is controlled using a regulator,
++	 * enable or disable the regulator based in the power setting.
++	 */
++	lcd_regulator = regulator_get(plcd->us, "vcc_lcd");
++	if (IS_ERR(lcd_regulator)) {
++		dev_info(plcd->us, "could not get regulator\n");
++		goto set_power;
++	}
++
++	if (lcd_power) {
++		if (plcd->pdata->min_uV || plcd->pdata->max_uV)
++			if (regulator_set_voltage(lcd_regulator,
++				plcd->pdata->min_uV, plcd->pdata->max_uV))
++				dev_info(plcd->us,
++					"regulator voltage set failed\n");
++
++		if (regulator_enable(lcd_regulator))
++			dev_info(plcd->us, "failed to enable regulator\n");
++	} else {
++		regulator_disable(lcd_regulator);
++	}
++
++	regulator_put(lcd_regulator);
++
++set_power:
+ 	plcd->pdata->set_power(plcd->pdata, lcd_power);
+ 	plcd->power = power;
+ 
+diff --git a/include/video/platform_lcd.h b/include/video/platform_lcd.h
+index ad3bdfe..acd5d21 100644
+--- a/include/video/platform_lcd.h
++++ b/include/video/platform_lcd.h
+@@ -14,8 +14,15 @@
+ struct plat_lcd_data;
+ struct fb_info;
+ 
++/**
++ * struct plat_lcd_data - platform data for platform_lcd driver.
++ * @min_uV: Minimum required voltage output from the regulator.
++ * @max_uV: Maximum acceptable voltage output from the regulator.
++ */
+ struct plat_lcd_data {
+ 	void	(*set_power)(struct plat_lcd_data *, unsigned int power);
+ 	int	(*match_fb)(struct plat_lcd_data *, struct fb_info *);
++	int	min_uV;
++	int	max_uV;
+ };
+ 
+-- 
+1.6.6.rc2
+
