@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab1LEPsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:48:24 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47289 "EHLO mx3.mail.elte.hu"
+	id S932469Ab1LEPtg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:49:36 -0500
+Received: from mga03.intel.com ([143.182.124.21]:59023 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932421Ab1LEPsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:48:23 -0500
-Date: Mon, 5 Dec 2011 16:46:44 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL 0/4] perf test improvements
-Message-ID: <20111205154644.GE28866@elte.hu>
-References: <1322842769-7232-1-git-send-email-acme@infradead.org>
- <4ED902C0.5020300@gmail.com>
- <20111202182214.GA4544@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111202182214.GA4544@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S932420Ab1LEPtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 10:49:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,299,1320652800"; 
+   d="scan'208";a="82348556"
+Subject: Re: linux-next: manual merge of the net-next tree with the  tree
+From: wwguy <wey-yi.w.guy@intel.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Berg, Johannes" <johannes.berg@intel.com>
+In-Reply-To: <20111205145320.GA2531@tuxdriver.com>
+References: <20111205123428.47213da24624d85aa84711f3@canb.auug.org.au>
+	 <20111205153416.e1dd01e5368ce7c016d99a59@canb.auug.org.au>
+	 <20111205145320.GA2531@tuxdriver.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Dec 2011 07:42:56 -0800
+Message-ID: <1323099776.5536.0.camel@wwguy-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-
-> Em Fri, Dec 02, 2011 at 09:54:24AM -0700, David Ahern escreveu:
+On Mon, 2011-12-05 at 06:53 -0800, John W. Linville wrote:
+> On Mon, Dec 05, 2011 at 03:34:16PM +1100, Stephen Rothwell wrote:
+> > On Mon, 5 Dec 2011 12:34:28 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > >
+> > > Today's linux-next merge of the net-next tree got a conflict in
+> > > drivers/net/wireless/iwlwifi/iwl-agn.c between commits from the
 > > 
+> > wireless (sorry)
 > > 
-> > On 12/02/2011 09:19 AM, Arnaldo Carvalho de Melo wrote:
-> > > Hi Ingo,
+> > > tree and commit 7335613ae27a ("iwlwifi: move all mac80211 related
+> > > functions to one place") from the net-next tree.
 > > > 
-> > >         Please consider pulling from:
-> > > 
-> > > git://github.com/acmel/linux.git perf/core
-> > > 
-> > > 	Now there are 29 outstanding changesets on this branch.
-> > 
-> > What about the 2 commits on your urgent branch? I don't recall seeing a
-> > response that those were picked up, and they are not in Linus' branch.
+> > > I just used the net-next version (which may require some fixes).
 > 
-> Waiting for Ingo on those. If they don't get picked by 
-> tomorrow I'll ask Linus directly.
+> Yeah, I'll try to get that straightened-out over the next day or two.
+> 
+John, anything I can help?
 
-It should now all be in -tip, will send it to Linus today or 
-tomorrow.
+Thanks
+Wey
+ 
 
-Thanks,
 
-	Ingo
