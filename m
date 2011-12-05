@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755210Ab1LEE1p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 23:27:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56821 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830Ab1LEE1n (ORCPT
+	id S1755113Ab1LEEea (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 23:34:30 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:34981 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754802Ab1LEEe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 23:27:43 -0500
-Date: Sun, 4 Dec 2011 20:27:36 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: riyer <riyer@nvidia.com>
-Cc: "rydberg@euromail.se" <rydberg@euromail.se>,
-        Stephen Warren <swarren@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v1] Input: tegra-kbc - report wakeup key for some
- platforms.
-Message-ID: <20111205042736.GA23733@core.coreip.homeip.net>
-References: <1322685811-14060-1-git-send-email-riyer@nvidia.com>
- <20111130212022.GB3108@core.coreip.homeip.net>
- <1FC56210173BB445BD77F608D6FB8D034F3D1BB4BD@HQMAIL03.nvidia.com>
- <20111201072649.GE16816@core.coreip.homeip.net>
- <1FC56210173BB445BD77F608D6FB8D034F3D1BB4C9@HQMAIL03.nvidia.com>
- <20111204085038.GC14593@core.coreip.homeip.net>
- <1323047897.3056.14.camel@riyer-dt2.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323047897.3056.14.camel@riyer-dt2.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 4 Dec 2011 23:34:28 -0500
+Date: Mon, 5 Dec 2011 15:34:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: linux-next: manual merge of the net-next tree with the  tree
+Message-Id: <20111205153416.e1dd01e5368ce7c016d99a59@canb.auug.org.au>
+In-Reply-To: <20111205123428.47213da24624d85aa84711f3@canb.auug.org.au>
+References: <20111205123428.47213da24624d85aa84711f3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_Dec_2011_15_34_16_+1100_/ssrxf6Sk90=A5NQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 04, 2011 at 05:18:17PM -0800, riyer wrote:
-> Hello Dmitry.
-> Please find replies inline.
-> 
-> On Sun, 2011-12-04 at 00:50 -0800, Dmitry Torokhov wrote:
-> > Hi Rakesh,
-> > 
-> > On Thu, Dec 01, 2011 at 01:09:59PM -0800, Rakesh Iyer wrote:
-> > > Hello Dmitry.
-> > > 
-> > > Sorry for the wrap issue, my Outlook does not seem to obey the settings.
-> > > 
-> > > I wanted to explain the tegra system resume path implementation so I can justify 
-> > > why I am doing this complicated fix and why I feel it will guarantee the resume 
-> > > is due to keypress.
-> > > 
-> > > The tegra wake resume code is registered as a syscore ops.
-> > > When the system is resumed due to a wake event, the suspend_enter (after wakeup) 
-> > > routine will invoke the tegra syscoreops_resume method and that routine will propagate 
-> > > the wake event to the individual ISR's through genirq.
-> > > If kbc was wake source, kbc_isr will be invoked in this execution path.
-> > > 
-> > > If system is resumed due to other reason, the tegra_syscoreops_resume code will not 
-> > > find the event.
-> > 
-> > Consider the following sequence:
-> > 
-> > 1. Something other than keyboard generates wakeup event
-> > 2. It's IRQ fires up and gets serviced
-> At this point syscoreops_resume has finished all its wakeup processing.
-> 
-> > 3. System starts resuming devices
-> > 4. User presses a key on the keypad while it is still suspended _and_
-> >    registered as a wakeup source
-> This will have no impact on the system and keypad ISR will not be
-> invoked.
-> > 5. Keypad's ISR runs as well and you decide that KEY_POWER should be
-> >    reported even though keypad wasn't the real reason the system
-> >    woke up.
-> The interrupt line we use to detect wakeup processing is the keypress
-> interrupt which is disabled and will never cause the ISR invocation from
-> a device interrupt(i.e. the PIC).
-> 
-> In other words KBC isr gets invoked for 2 reasons
-> a) FIFO interrupt is generated, which will not happen as long as
-> scanning logic is disabled until kbc_resume executes.
-> b) The syscoreops_resume codepath calls into the ISR after finding KBC
-> was a wakesource. If this happens it will happen only when the kernel
-> resumes from its suspend code path.
+--Signature=_Mon__5_Dec_2011_15_34_16_+1100_/ssrxf6Sk90=A5NQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is this code already in mainline or still somewhere else?
+On Mon, 5 Dec 2011 12:34:28 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/wireless/iwlwifi/iwl-agn.c between commits from the
 
-> > 
-> > Is this scenario not possible?
-> > 
-> > Thanks.
-> > 
-> With that being the case do you think the fix makes sense?
+wireless (sorry)
 
-OK, yes. I do not think it is that important if we occasionally report
-KEY_POWER even if KBC was not a true wakeup source but that's fine.
+> tree and commit 7335613ae27a ("iwlwifi: move all mac80211 related
+> functions to one place") from the net-next tree.
+>=20
+> I just used the net-next version (which may require some fixes).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks.
+--Signature=_Mon__5_Dec_2011_15_34_16_+1100_/ssrxf6Sk90=A5NQ
+Content-Type: application/pgp-signature
 
--- 
-Dmitry
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO3EnIAAoJEECxmPOUX5FEjYEQAJHa2ESHSmXpnrfwmJqEco0O
+pk2qM80T3xYeQfNIG15c+/iqJy1vLELesLpIckODM38/8FpQjBtd4orDB13VvCkQ
+kAlXDTm6JHA5YG9DQI6FkpckkfQaUQ42uzr1NAUcGOLTGSZdbEkZoLqtnt2HAorc
+ppVz+EbL8/WK5SevtwVP2qbspq/GFnIPw8129Dnpz1gBr/TKslGYz0obDTxm3B3e
+eMyz+jjkF8vg6dKJ674zpdzHek5v1tPaLmfl8azgY8k6V5yfpyEsr5bin7XjrzD+
+d9zQJpGU/mFx4gF2hnsmDW7zCM/cJD0hSelnWMRdlO4TYO0T2WA0WI5KuHXlUPmj
+f+HJmBZQlkFkpC5PAUxfY/BqlXbFnKR+0PyqJ4k9s29I+hwjouV/dYjw57PRfkEr
+j8MoofE5/FSQzpfYllj2SwNauK5HU+pS+87oFZXecz/wU83uT2T8mHSpn/bM7j6g
+lhdexl2fwNh50y8v+8mfB7Vp9ZkveVvMkQGpdxQyiTs/tvdLsmBCzB6hiLe5gaIz
+6unsmljaQt7J7h6RqZcsDMaNnuTKP3K1u733aYyWXaYVixdEtqenutssOyYJedys
+evDLa0IftEZPuwJWlOJdT7x52mst0duRRpn/Rxz3PDKLn1nx49777AZxSoys/zTM
+JR8n3yB+ynTgDE8SkmbC
+=Tpql
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_Dec_2011_15_34_16_+1100_/ssrxf6Sk90=A5NQ--
