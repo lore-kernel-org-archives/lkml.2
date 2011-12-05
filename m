@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab1LERXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:23:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13126 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755322Ab1LERXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:23:10 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: [RFCv2] ftrace, perf: Adding support to use function trace
-Date: Mon,  5 Dec 2011 18:22:46 +0100
-Message-Id: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
-References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+	id S932617Ab1LER0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:26:06 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54882 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932547Ab1LER0B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 12:26:01 -0500
+Message-ID: <4EDCFE9F.9050605@linux.vnet.ibm.com>
+Date: Mon, 05 Dec 2011 22:55:51 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 1/3] PM / Sleep: Make [un]lock_system_sleep() generic
+References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com> <20111205171443.GB627@google.com>
+In-Reply-To: <20111205171443.GB627@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120507-7014-0000-0000-000000366C5A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-here's another version of perf support for function trace
-with filter. The changeset is working and hopefully is not
-introducing more bugs.. ;) still testing though..
+On 12/05/2011 10:44 PM, Tejun Heo wrote:
 
-It's still marked RFC since I'm not sure there's better way to go
-with patches 2 and 10. Also not sure if the condition fixed by
-patch 7 was not intentional. The rest is fixed/updated version
-of the v1 changes.
+> Hello,
+> 
+> On Mon, Dec 05, 2011 at 01:32:38AM +0530, Srivatsa S. Bhat wrote:
+>> +static inline void lock_system_sleep(void)
+>> +{
+>> +	/* simplified freezer_do_not_count() */
+>> +	current->flags |= PF_FREEZER_SKIP;
+>> +	mutex_lock(&pm_mutex);
+>> +}
+>> +
+>> +static inline void unlock_system_sleep(void)
+>> +{
+>> +	mutex_unlock(&pm_mutex);
+>> +	/* simplified freezer_count() */
+>> +	current->flags &= ~PF_FREEZER_SKIP;
+>> +}
+> 
+> BTW, don't we want try_to_freeze() there?  What's the reason for not
+> using freezer_count()?
+> 
 
-attached patches:
- 01/10 ftrace: Fix possible NULL dereferencing in __ftrace_hash_rec_update
- 02/10 ftrace: Change mcount call replacement logic
- 03/10 ftrace: Add enable/disable ftrace_ops control interface
- 04/10 ftrace, perf: Add open/close tracepoint perf registration actions
- 05/10 ftrace, perf: Add add/del tracepoint perf registration actions
- 06/10 ftrace, perf: Add support to use function tracepoint in perf
- 07/10 ftrace: Change filter/notrace set functions to return exit code
- 08/10 ftrace, perf: Distinguish ftrace function event field type
- 09/10 ftrace, perf: Add filter support for function trace event
- 10/10 ftrace, graph: Add global_ops filter callback for graph tracing
 
-v2 changes:
- 01/10 - keeping the old fix instead of adding hash_has_contents func
-         I'll send separating patchset for this
- 02/10 - using different way to avoid the issue (3/9 in v1)
- 03/10 - using the way proposed by Steven for controling ftrace_ops
-         (4/9 in v1)
- 06/10 - added check ensuring the ftrace:function event could be used by
-         root only (7/9 in v1)
- 08/10 - added more description (8/9 in v1)
- 09/10 - changed '&&' operator to '||' which seems more suitable
-         in this case (9/9 in v1)
+I wanted these APIs to be generic, not restricted to work only for userspace
+processes. Both freezer_do_not_count() and freezer_count() are effective only
+when current->mm is non-NULL (ie., only for userspace ones).
+I think I have documented this in the patch which added these things to the
+2 APIs. See commit 6a76b7a in linux-pm/linux-next.
 
-thanks for comments,
-jirka
----
- include/linux/ftrace.h             |   18 +++-
- include/linux/ftrace_event.h       |    9 +-
- include/linux/perf_event.h         |    3 +
- kernel/trace/ftrace.c              |  202 +++++++++++++++++++++++++++++------
- kernel/trace/trace.h               |   11 ++-
- kernel/trace/trace_event_perf.c    |  212 +++++++++++++++++++++++++++++-------
- kernel/trace/trace_events.c        |   12 ++-
- kernel/trace/trace_events_filter.c |  116 ++++++++++++++++++-
- kernel/trace/trace_export.c        |   53 ++++++++-
- kernel/trace/trace_kprobe.c        |    8 +-
- kernel/trace/trace_syscalls.c      |   18 +++-
- 11 files changed, 562 insertions(+), 100 deletions(-)
+As for try_to_freeze(), we can surely add that. I think I missed it while
+open-coding the relevant part of freezer_count(). I'll send it as a separate
+patch. Thank you very much.
+
+Regards,
+Srivatsa S. Bhat
+
