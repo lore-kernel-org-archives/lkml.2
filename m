@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab1LEQeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 11:34:12 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37061 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932499Ab1LEQeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 11:34:11 -0500
-Date: Mon, 5 Dec 2011 17:31:48 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
-        tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, lethal@linux-sh.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@redhat.com, jonas@southpole.se, lennox.wu@gmail.com
-Subject: Re: [PATCHSET tip:x86/memblock] memblock: Kill early_node_map[],
- take 2
-Message-ID: <20111205163148.GA25909@elte.hu>
-References: <1322508685-32532-1-git-send-email-tj@kernel.org>
+	id S932526Ab1LEQkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 11:40:23 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:42486 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932465Ab1LEQkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 11:40:21 -0500
+Date: Mon, 5 Dec 2011 11:40:15 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>,
+        Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 10/22] ext4: Verify and calculate checksums for extent
+ tree blocks
+Message-ID: <20111205164015.GD32031@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"Darrick J. Wong" <djwong@us.ibm.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	Sunil Mushran <sunil.mushran@oracle.com>,
+	Martin K Petersen <martin.petersen@oracle.com>,
+	Greg Freemyer <greg.freemyer@gmail.com>,
+	Amir Goldstein <amir73il@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+	Joel Becker <jlbec@evilplan.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com>
+ <20111128232725.19194.12626.stgit@elm3c44.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322508685-32532-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <20111128232725.19194.12626.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 28, 2011 at 03:27:25PM -0800, Darrick J. Wong wrote:
+>  /*
+> + * This is the extent tail on-disk structure.
+> + * All other extent structures are 12 bytes long.  It turns out that
+> + * block_size % 12 >= 4 for all valid block sizes (1k, 2k, 4k).
 
-* Tejun Heo <tj@kernel.org> wrote:
+More generally, block_size % 12 is >= 4 for all powers of 2 greater
+than 12 bytes.  I'd probably remove (1k, 2k, 4k) because that might
+scare people who might say, "hey!  I'm using a 16k block size on my
+HPC system running on a Power or Itanium box --- am I going to be OK?".
+Valid block sizes go up to the page size of the hardware in question...
 
-> Hello,
-> 
-> This patchset was posted quite a while ago but got lost during the
-> korg disturbance and I forgot about it too.  Thankfully, benh pinged
-> me about testing this patchset yesterday, so here's the refreshed
-> version.
-
-A bit scary - you should get it into linux-next i suspect - if 
-that works out then we could then put it into tip:core/memblock 
-if there are no objections from anyone.
-
-It's not really an x86 tree and most of the changes are 
-affecting non-x86 architectures, right?
-
-Thanks,
-
-	Ingo
+      	    	     	       	    	    - Ted
