@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab1LEK5h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 05:57:37 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37764 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755825Ab1LEK5f (ORCPT
+	id S1756122Ab1LELDr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 06:03:47 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43324 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755836Ab1LELDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 05:57:35 -0500
-Date: Mon, 5 Dec 2011 10:57:33 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Rajendra Nayak <rnayak@ti.com>, grant.likely@secretlab.ca,
-        robherring2@gmail.com, linaro-dev@lists.linaro.org, patches@linaro.org,
-        tony@atomide.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, olof@lixom.net,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 1/4] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111205105733.GE11150@opensource.wolfsonmicro.com>
-References: <1321615040-13257-1-git-send-email-rnayak@ti.com>
- <1321615040-13257-2-git-send-email-rnayak@ti.com>
- <CAJuYYwRO+AS=WmQfNAe8L6Gi5Dm4VsCuVqk3X5Nb8uUYAdLnJQ@mail.gmail.com>
- <20111204155433.GA16287@opensource.wolfsonmicro.com>
- <CAJuYYwQ-9wCu-+q0S2YYeFYemq74ULdZ-EwPGLWKHA4+0VZcsA@mail.gmail.com>
- <20111205103447.GC11150@opensource.wolfsonmicro.com>
- <CAJuYYwSRW-=XufvHS1miO2xNANwQMZqPbt=VyPEonywnAsvVUQ@mail.gmail.com>
+	Mon, 5 Dec 2011 06:03:46 -0500
+Date: Mon, 5 Dec 2011 12:03:36 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Oliver Neukum <oneukum@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: Suspend and resume on ASUS Laptops
+Message-ID: <20111205110336.GA13546@elf.ucw.cz>
+References: <1322847694.30977.45.camel@frodo>
+ <Pine.LNX.4.44L0.1112021655580.1452-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJuYYwSRW-=XufvHS1miO2xNANwQMZqPbt=VyPEonywnAsvVUQ@mail.gmail.com>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1112021655580.1452-100000@iolanthe.rowland.org>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 04:14:40PM +0530, Thomas Abraham wrote:
-> On 5 December 2011 16:04, Mark Brown
+On Fri 2011-12-02 16:57:06, Alan Stern wrote:
+> On Fri, 2 Dec 2011, Steven Rostedt wrote:
+> 
+> > On Fri, 2011-12-02 at 11:23 -0500, Alan Stern wrote:
+> > 
+> > > Take a look at the two files
+> > > 
+> > > 	/sys/bus/pci/devices/0000:00:1[ad].0/power/wakeup
+> > > 
+> > > If they contain the word "enabled", write "disabled" to them.  See 
+> > > Documentation/ABI/testing/sysfs-devices-power.
+> > 
+> > The files do exist, but they are already set to "disabled".
+> 
+> Bummer.  This sounds like something for the ACPI/BIOS people to work 
+> on...
 
-> > With the regulator device tree bindings if the regulator is configured
-> > to run a single voltage the bindings will set apply_uV unconditionally
-> > so there's no need for a separate constraint.
-
-> Sorry if I have missed this, but I could not find 'apply_uV' being set
-> as you described in the v5 of the regulator-dt patchset.
-
-Yes, looks like Rajendra missed that - just fixed it.
+Is "USB legacy emulation" enabled in the BIOS? That caused problems
+before...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
