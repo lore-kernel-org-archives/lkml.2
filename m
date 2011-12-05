@@ -1,111 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab1LERb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:31:57 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54666 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932554Ab1LERby convert rfc822-to-8bit (ORCPT
+	id S932704Ab1LERel (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:34:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58638 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932546Ab1LERej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:31:54 -0500
+	Mon, 5 Dec 2011 12:34:39 -0500
+Date: Mon, 5 Dec 2011 09:34:22 -0800
+From: tip-bot for Tejun Heo <tj@kernel.org>
+Message-ID: <tip-d3d9acf646679c1981032b0985b386d12fccc60c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        fweisbec@gmail.com, eric.dumazet@gmail.com, rostedt@goodmis.org,
+        tj@kernel.org, tglx@linutronix.de, jolsa@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        tj@kernel.org, tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <20111123164949.GA29639@google.com>
+References: <20111123164949.GA29639@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] trace_events_filter: Use rcu_assign_pointer() when setting ftrace_event_call->filter
+Git-Commit-ID: d3d9acf646679c1981032b0985b386d12fccc60c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
-References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
-	<1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
-Date: Mon, 5 Dec 2011 19:31:52 +0200
-Message-ID: <CAMP44s3Szzm9iXxghXfNCBjKyUw-nRrG1aEeweKnRCidaxmxEA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: linux-main <linux-kernel@vger.kernel.org>,
-        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Heikki Krogerus <heikki.krogerus@nokia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:34:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Should probably have CC'ed linux-omap.
+Commit-ID:  d3d9acf646679c1981032b0985b386d12fccc60c
+Gitweb:     http://git.kernel.org/tip/d3d9acf646679c1981032b0985b386d12fccc60c
+Author:     Tejun Heo <tj@kernel.org>
+AuthorDate: Wed, 23 Nov 2011 08:49:49 -0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Thu, 1 Dec 2011 22:16:47 -0500
 
-On Mon, Dec 5, 2011 at 7:23 PM, Felipe Contreras
-<felipe.contreras@nokia.com> wrote:
-> From: Felipe Contreras <felipe.contreras@gmail.com>
->
-> This reverts commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2.
->
-> This seems to break USB networking stuff.
->
-> Cc: Kalle Jokiniemi <kalle.jokiniemi@nokia.com>
-> Cc: Heikki Krogerus <heikki.krogerus@nokia.com>
-> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> ---
->  arch/arm/mach-omap2/board-rx51-peripherals.c |   27 +------------------------
->  1 files changed, 2 insertions(+), 25 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-> index ba1aa07..9f8e4d2 100644
-> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-> @@ -23,7 +23,6 @@
->  #include <linux/gpio.h>
->  #include <linux/gpio_keys.h>
->  #include <linux/mmc/host.h>
-> -#include <linux/power/isp1704_charger.h>
->
->  #include <plat/mcspi.h>
->  #include <plat/board.h>
-> @@ -56,8 +55,6 @@
->  #define RX51_FMTX_IRQ                  53
->  #define RX51_LP5523_CHIP_EN_GPIO       41
->
-> -#define RX51_USB_TRANSCEIVER_RST_GPIO  67
-> -
->  /* list all spi devices here */
->  enum {
->        RX51_SPI_WL1251,
-> @@ -174,30 +171,10 @@ static struct spi_board_info rx51_peripherals_spi_board_info[] __initdata = {
->        },
->  };
->
-> -static void rx51_charger_set_power(bool on)
-> -{
-> -       gpio_set_value(RX51_USB_TRANSCEIVER_RST_GPIO, on);
-> -}
-> -
-> -static struct isp1704_charger_data rx51_charger_data = {
-> -       .set_power      = rx51_charger_set_power,
-> -};
-> -
->  static struct platform_device rx51_charger_device = {
-> -       .name   = "isp1704_charger",
-> -       .dev    = {
-> -               .platform_data = &rx51_charger_data,
-> -       },
-> +       .name = "isp1704_charger",
->  };
->
-> -static void __init rx51_charger_init(void)
-> -{
-> -       WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
-> -               GPIOF_OUT_INIT_LOW, "isp1704_reset"));
-> -
-> -       platform_device_register(&rx51_charger_device);
-> -}
-> -
->  #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
->
->  #define RX51_GPIO_CAMERA_LENS_COVER    110
-> @@ -1102,6 +1079,6 @@ void __init rx51_peripherals_init(void)
->        if (partition)
->                omap2_hsmmc_init(mmc);
->
-> -       rx51_charger_init();
-> +       platform_device_register(&rx51_charger_device);
->  }
+trace_events_filter: Use rcu_assign_pointer() when setting ftrace_event_call->filter
 
--- 
-Felipe Contreras
+ftrace_event_call->filter is sched RCU protected but didn't use
+rcu_assign_pointer().  Use it.
+
+TODO: Add proper __rcu annotation to call->filter and all its users.
+
+-v2: Use RCU_INIT_POINTER() for %NULL clearing as suggested by Eric.
+
+Link: http://lkml.kernel.org/r/20111123164949.GA29639@google.com
+
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: stable@kernel.org # (2.6.39+)
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_events_filter.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 816d3d0..d6e7926 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -1686,7 +1686,7 @@ static int replace_system_preds(struct event_subsystem *system,
+ 		 * replace the filter for the call.
+ 		 */
+ 		filter = call->filter;
+-		call->filter = filter_item->filter;
++		rcu_assign_pointer(call->filter, filter_item->filter);
+ 		filter_item->filter = filter;
+ 
+ 		fail = false;
+@@ -1741,7 +1741,7 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
+ 		filter = call->filter;
+ 		if (!filter)
+ 			goto out_unlock;
+-		call->filter = NULL;
++		RCU_INIT_POINTER(call->filter, NULL);
+ 		/* Make sure the filter is not being used */
+ 		synchronize_sched();
+ 		__free_filter(filter);
+@@ -1782,7 +1782,7 @@ out:
+ 	 * string
+ 	 */
+ 	tmp = call->filter;
+-	call->filter = filter;
++	rcu_assign_pointer(call->filter, filter);
+ 	if (tmp) {
+ 		/* Make sure the call is done with the filter */
+ 		synchronize_sched();
