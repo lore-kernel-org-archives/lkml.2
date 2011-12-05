@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab1LDXy1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 18:54:27 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62699 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab1LDXyZ convert rfc822-to-8bit (ORCPT
+	id S1755941Ab1LEAB5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 19:01:57 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:39525 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755370Ab1LEAB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 18:54:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAGoCfizCxC=W9RM+UhVkTf3Y0RnO2aASBU610vXutmu+aEjtBw@mail.gmail.com>
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
-	<4ED6C5B8.8040803@linuxtv.org>
-	<4ED75F53.30709@redhat.com>
-	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
-	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
-	<4EDA4AB4.90303@linuxtv.org>
-	<CAA7C2qjfWW8=kePZDO4nYR913RyuP-t+u8P9LV4mDh9bANr3=Q@mail.gmail.com>
-	<20111203174247.0bbab100@lxorguk.ukuu.org.uk>
-	<CAGoCfizCxC=W9RM+UhVkTf3Y0RnO2aASBU610vXutmu+aEjtBw@mail.gmail.com>
-Date: Mon, 5 Dec 2011 00:54:24 +0100
-Message-ID: <CAJbz7-1OR61MQQr=kRGM+jVk8V5aWBrqbO7ca=kgOWJAahykDA@mail.gmail.com>
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
- because of worrying about possible misusage?
-From: HoP <jpetrous@gmail.com>
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, VDR User <user.vdr@gmail.com>,
-        Andreas Oberritter <obi@linuxtv.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 4 Dec 2011 19:01:56 -0500
+Date: Mon, 5 Dec 2011 11:01:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jamie Iles <jamie@jamieiles.com>, Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the s5p tree with the arm tree
+Message-Id: <20111205110141.90c553323cf5d29fd2c3eeae@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_Dec_2011_11_01_41_+1100_UnhDfWmtUkD_C9i_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devin,
+--Signature=_Mon__5_Dec_2011_11_01_41_+1100_UnhDfWmtUkD_C9i_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I perfectly remember your opinion regarding vtuner.
+Hi Kukjin,
 
-2011/12/3 Devin Heitmueller <dheitmueller@kernellabs.com>:
-> On Sat, Dec 3, 2011 at 12:42 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> On Sat, 3 Dec 2011 09:21:23 -0800
->> VDR User <user.vdr@gmail.com> wrote:
->>
->>> On Sat, Dec 3, 2011 at 8:13 AM, Andreas Oberritter <obi@linuxtv.org> wrote:
->>> > You could certainly build a library to reach a different goal. The goal
->>> > of vtuner is to access remote tuners with any existing program
->>> > implementing the DVB API.
->>>
->>> So you could finally use VDR as a server/client setup using vtuner,
->>> right? With full OSD, timer, etc? Yes, I'm aware that streamdev
->>> exists. It was horrible when I tried it last (a long time ago) and I
->>> understand it's gotten better. But it's not a suitable replacement for
->>> a real server/client setup. It sounds like using vtuner, this would
->>> finally be possible and since Klaus has no intention of ever
->>> modernizing VDR into server/client (that I'm aware of), it's also the
->>> only suitable option as well.
->>
->> I would expect it to still suck. One of the problems you have with trying
->> to pretend things are not networked is that you fake asynchronous events
->> synchronously, you can't properly cover error cases and as a result you
->> get things like ioctls that hang for two minutes or fail in bogus and
->> bizarre ways. If you loop via userspace you've also got to deal with
->> deadlocks and all sorts of horrible cornercases like the user space
->> daemon dying.
->>
->> There is a reason properly working client/server code looks different -
->> it's not a trivial transformation and faking it kernel side won't be any
->> better than faking it in user space - it may well even be a worse fake.
->>
->> Alan
->
-> This whole notion of creating fake kernel devices to represent
-> networked tuners feels like a hack.  If applications want to access
-> networked tuners, adding support for RTP/RTSP or incorporating
-> libhdhomerun (LGPL) is a fairly straightforward exercise.  In fact,
-> many applications already have incorporated support for one of these
-> two approaches.  The fact that app maintainers have been
-> unwilling/uninterested to do such doesn't feel like it should be an
-> excuse for hacking this functionality into the kernel.
+Today's linux-next merge of the s5p tree got a conflict in
+arch/arm/mach-s3c64xx/mach-crag6410.c between commit 774b51f8f826 ("ARM:
+s3c64xx: convert to MULTI_IRQ_HANDLER") from the arm tree and commit
+8504a3cb5cbc ("ARM: S3C64XX: Configure WM1250 EV1 GPIOs on Cragganmore")
+from the s5p tree.
 
-Still the same nonsense - why I should add 10x or even 100 times more
-code to achieve not the same but may be 80-90% same result?
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The idea is hell simple = allow to use those remote tuners by
-100% of dvb api compliant applications. Not 80%, but 100%.
+diff --cc arch/arm/mach-s3c64xx/mach-crag6410.c
+index 988ac2e,b2381c1..0000000
+--- a/arch/arm/mach-s3c64xx/mach-crag6410.c
++++ b/arch/arm/mach-s3c64xx/mach-crag6410.c
+@@@ -37,7 -37,8 +37,9 @@@
+  #include <linux/mfd/wm831x/irq.h>
+  #include <linux/mfd/wm831x/gpio.h>
+ =20
++ #include <sound/wm1250-ev1.h>
++=20
+ +#include <asm/hardware/vic.h>
+  #include <asm/mach/arch.h>
+  #include <asm/mach-types.h>
+ =20
 
-Honza
+--Signature=_Mon__5_Dec_2011_11_01_41_+1100_UnhDfWmtUkD_C9i_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO3AnlAAoJEECxmPOUX5FE4DgQAKl8W6ie7IRWu9iYC/SXpbzJ
+rBPH/Zz36LCJUbpiRSxa5mlgBgSuZDHEjp0gsDXa0oybho+227R3Lp+qkmG8lK2O
+XH1feX9WYtQJJ4nsfVwV7wke8av61s1ESnNLyQulxdg8kI4fxfOWPOCW1x7ECx/N
+ifDmCH9WfjnR5qSNQN8cdKkpvoaSIk0lBRkeQdBa/4g6RnvQuhACDDnpnmKGCppI
+G9C04XqA4e6P/+QhDCr2Fi3zgC5BO395WWtz0blPrxUw/bjlBBxx4we5za9E8CZ5
+rj/IyjehSVlPnn4v9gIuWXJVv2uBSVgnFZOVLv90G1MW029vEgdzT1hlzNEmYKFm
+ty5mDmBawuL9leTB6CEhOBhDVfiE42iqTNkWgSgUgsKkXoiEX/aXMs50dVbhm5Ri
+8qyclyETm8l6Zip/aBOWginXHAGjHy3Fu27WGC49Bg8KduoEWnxGbjJjcHi7h2kV
+H2+Zn34XcZWQYc7hRcYQIXo96XsFjnNA0VaqzuAVdkmcMzTGNm8Sw/EmU2iG6cdC
+TvMrRsKv+4f5WFZ8mpHaQxmfv1jtGub+e1wuTi/W0PHa6lE64ViZR++P/ZTVMRN2
+S80EbIg0ndP8/bkox3jxXoGmvIiBiY6CwHDaZIFha1oQunMOwoScxe+mcpdZDcWj
+XDyFWeU49emmooyil4il
+=GpjR
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__5_Dec_2011_11_01_41_+1100_UnhDfWmtUkD_C9i_--
