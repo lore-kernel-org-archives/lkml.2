@@ -1,72 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932550Ab1LEUrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:47:37 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35697 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128Ab1LEUre (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:47:34 -0500
-Message-ID: <4EDD2DE1.1050606@gmail.com>
-Date: Mon, 05 Dec 2011 14:47:29 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S932607Ab1LEUrr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:47:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55782 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932128Ab1LEUrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 15:47:46 -0500
+Date: Mon, 5 Dec 2011 21:42:38 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: akpm@linux-foundation.org, serge.hallyn@canonical.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1][V3] Add reboot_pid_ns to handle the reboot syscall
+Message-ID: <20111205204238.GA7422@redhat.com>
+References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr> <1323030290-22216-2-git-send-email-daniel.lezcano@free.fr>
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
-        linux-ide@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-next@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-References: <20111110162859.GA7088@oksana.dev.rtsoft.ru> <20111202192618.GC3037@localhost.localdomain> <CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com> <1322867573.11728.22.camel@pasglop> <20111205161157.GA27550@localhost.localdomain> <alpine.LFD.2.02.1112051236350.2357@xanadu.home> <20111205180253.GB29812@localhost.localdomain> <alpine.LFD.2.02.1112051310150.2357@xanadu.home> <4EDD1897.4030208@gmail.com> <20111205202125.GA32592@oksana.dev.rtsoft.ru>
-In-Reply-To: <20111205202125.GA32592@oksana.dev.rtsoft.ru>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323030290-22216-2-git-send-email-daniel.lezcano@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2011 02:21 PM, Anton Vorontsov wrote:
-> On Mon, Dec 05, 2011 at 01:16:39PM -0600, Rob Herring wrote:
-> [...]
->> At least for DT enabled platforms, we could force "no irq" to be 0 in
->> the DT irq code. Searching the dts files, I found 2 occurrences of IRQ0.
-> 
-> Please note that there are HW IRQ numbers and "Virtual" IRQ numbers.
-> dev->irq and thus the thing that we pass into request_irq() is a
-> virtual IRQ thing, a "cookie".
-> 
-> While in device tree you see real HW IRQ numbers.
-> 
-> Legal VIRQ is always > 0, while HW IRQ could be >= 0.
+On 12/04, Daniel Lezcano wrote:
+>
+> This patch propose to store the reboot value in the 16 upper bits of the
+> exit code from the processes belonging to a pid namespace which has
+> rebooted. When the reboot syscall is called and we are not in the initial
+> pid namespace, we kill the pid namespace.
+>
+> By this way the parent process of the child pid namespace to know if
+> it rebooted or not and take the right decision.
+>
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> ---
+>  include/linux/pid_namespace.h |    8 +++++++-
+>  kernel/pid_namespace.c        |   33 +++++++++++++++++++++++++++++++++
+>  kernel/sys.c                  |    3 +++
+>  3 files changed, 43 insertions(+), 1 deletions(-)
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+
+> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+> index e7cf666..3279596 100644
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -32,6 +32,7 @@ struct pid_namespace {
+>  #endif
+>  	gid_t pid_gid;
+>  	int hide_pid;
+> +	int reboot;
+>  };
+>  
+>  extern struct pid_namespace init_pid_ns;
+> @@ -47,6 +48,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
+>  extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
+>  extern void free_pid_ns(struct kref *kref);
+>  extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
+> +extern int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd);
+>  
+>  static inline void put_pid_ns(struct pid_namespace *ns)
+>  {
+> @@ -74,11 +76,15 @@ static inline void put_pid_ns(struct pid_namespace *ns)
+>  {
+>  }
+>  
+> -
+>  static inline void zap_pid_ns_processes(struct pid_namespace *ns)
+>  {
+>  	BUG();
+>  }
+> +
+> +static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
+> +{
+> +	BUG();
+> +}
+>  #endif /* CONFIG_PID_NS */
+>  
+>  extern struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index a896839..c7a85ea 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/acct.h>
+>  #include <linux/slab.h>
+>  #include <linux/proc_fs.h>
+> +#include <linux/reboot.h>
+>  
+>  #define BITS_PER_PAGE		(PAGE_SIZE*8)
+>  
+> @@ -187,6 +188,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+>  		rc = sys_wait4(-1, NULL, __WALL, NULL);
+>  	} while (rc != -ECHILD);
+>  
+> +	if (pid_ns->reboot)
+> +		current->signal->group_exit_code = pid_ns->reboot;
+> +
+>  	acct_exit_ns(pid_ns);
+>  	return;
+>  }
+> @@ -221,6 +225,35 @@ static struct ctl_table pid_ns_ctl_table[] = {
+>  
+>  static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
+>  
+> +int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
+> +{
+> +	switch(cmd) {
+> +	case LINUX_REBOOT_CMD_RESTART2:
+> +	case LINUX_REBOOT_CMD_RESTART:
+> +		pid_ns->reboot = SYSTEM_RESTART << 16;
+> +		break;
+> +
+> +	case LINUX_REBOOT_CMD_HALT:
+> +		pid_ns->reboot = SYSTEM_HALT << 16;
+> +		break;
+> +
+> +	case LINUX_REBOOT_CMD_POWER_OFF:
+> +		pid_ns->reboot = SYSTEM_POWER_OFF << 16;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	read_lock(&tasklist_lock);
+> +	force_sig(SIGKILL, pid_ns->child_reaper);
+> +	read_unlock(&tasklist_lock);
+> +
+> +	do_exit(0);
+> +
+> +	/* Not reached */
+> +	return 0;
+> +}
+> +
+>  static __init int pid_namespaces_init(void)
+>  {
+>  	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index ddf8155..31acf63 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -444,6 +444,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  	                magic2 != LINUX_REBOOT_MAGIC2C))
+>  		return -EINVAL;
+>  
+> +	if (task_active_pid_ns(current) != &init_pid_ns)
+> +		return reboot_pid_ns(task_active_pid_ns(current), cmd);
+> +
+>  	/* Instead of trying to make the power_off code look like
+>  	 * halt when pm_power_off is not set do it the easy way.
+>  	 */
+> -- 
+> 1.7.5.4
 > 
 
-If this was all true, then there would be no discussion.
-
-This is what we are working towards, but irq_chips all over the arm tree
-do not support any translation or have base fixed at compile time. Only
-a few have been converted. And some ARM platforms may never get
-converted to DT.
-
->> Prima2 has timer on IRQ0, and VersatileAB has watchdog on IRQ0. Prima2
->> should be fine currently as it doesn't use the of_irq_* functions to get
->> the timer irq, but that is an issue as it skips any translation.
->> VersatileAB should be okay with the VIC irqdomain support.
-> 
-> It shouldn't be an issue to use of_irq_*() functions for these IRQs.
-> of_irq_*() will remap HW IRQ 0 to some other VIRQ. If it does not do
-> this currently, then it's a bug and should be fixed.
-
-I think that's what I'm saying. It's either a bug or incomplete DT
-conversion for the platform. Either way, those should get fixed first.
-
-Rob
