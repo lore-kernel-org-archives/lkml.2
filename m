@@ -1,105 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932669Ab1LERYZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:24:25 -0500
-Received: from smtp.nokia.com ([147.243.1.47]:29502 "EHLO mgw-sa01.nokia.com"
+	id S932597Ab1LERXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:23:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55643 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932599Ab1LERYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:24:22 -0500
-From: Felipe Contreras <felipe.contreras@nokia.com>
-To: linux-main <linux-kernel@vger.kernel.org>
-Cc: Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Heikki Krogerus <heikki.krogerus@nokia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
-Date: Mon,  5 Dec 2011 19:23:40 +0200
-Message-Id: <1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
-X-Mailer: git-send-email 1.7.8.rc3.17.gf56ef1
-In-Reply-To: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
-References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
-X-Nokia-AV: Clean
+	id S932580Ab1LERXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 12:23:18 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCHv2 05/10] ftrace, perf: Add add/del tracepoint perf registration actions
+Date: Mon,  5 Dec 2011 18:22:51 +0100
+Message-Id: <1323105776-26961-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+ <1323105776-26961-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felipe Contreras <felipe.contreras@gmail.com>
+Adding TRACE_REG_PERF_ADD and TRACE_REG_PERF_DEL to handle
+perf event schedule in/out actions.
 
-This reverts commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2.
+The add action is invoked for when the perf event is scheduled in,
+while the del action is invoked when the event is scheduled out.
 
-This seems to break USB networking stuff.
-
-Cc: Kalle Jokiniemi <kalle.jokiniemi@nokia.com>
-Cc: Heikki Krogerus <heikki.krogerus@nokia.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/arm/mach-omap2/board-rx51-peripherals.c |   27 +------------------------
- 1 files changed, 2 insertions(+), 25 deletions(-)
+ include/linux/ftrace_event.h    |    2 ++
+ kernel/trace/trace_event_perf.c |    4 +++-
+ kernel/trace/trace_events.c     |    2 ++
+ kernel/trace/trace_kprobe.c     |    2 ++
+ kernel/trace/trace_syscalls.c   |    4 ++++
+ 5 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index ba1aa07..9f8e4d2 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -23,7 +23,6 @@
- #include <linux/gpio.h>
- #include <linux/gpio_keys.h>
- #include <linux/mmc/host.h>
--#include <linux/power/isp1704_charger.h>
- 
- #include <plat/mcspi.h>
- #include <plat/board.h>
-@@ -56,8 +55,6 @@
- #define RX51_FMTX_IRQ			53
- #define RX51_LP5523_CHIP_EN_GPIO	41
- 
--#define RX51_USB_TRANSCEIVER_RST_GPIO	67
--
- /* list all spi devices here */
- enum {
- 	RX51_SPI_WL1251,
-@@ -174,30 +171,10 @@ static struct spi_board_info rx51_peripherals_spi_board_info[] __initdata = {
- 	},
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 195e360..2bf677c 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -148,6 +148,8 @@ enum trace_reg {
+ 	TRACE_REG_PERF_UNREGISTER,
+ 	TRACE_REG_PERF_OPEN,
+ 	TRACE_REG_PERF_CLOSE,
++	TRACE_REG_PERF_ADD,
++	TRACE_REG_PERF_DEL,
  };
  
--static void rx51_charger_set_power(bool on)
--{
--	gpio_set_value(RX51_USB_TRANSCEIVER_RST_GPIO, on);
--}
--
--static struct isp1704_charger_data rx51_charger_data = {
--	.set_power	= rx51_charger_set_power,
--};
--
- static struct platform_device rx51_charger_device = {
--	.name	= "isp1704_charger",
--	.dev	= {
--		.platform_data = &rx51_charger_data,
--	},
-+	.name = "isp1704_charger",
- };
+ struct ftrace_event_call;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 0cfcc37..d72af0b 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -211,12 +211,14 @@ int perf_trace_add(struct perf_event *p_event, int flags)
+ 	list = this_cpu_ptr(pcpu_list);
+ 	hlist_add_head_rcu(&p_event->hlist_entry, list);
  
--static void __init rx51_charger_init(void)
--{
--	WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
--		GPIOF_OUT_INIT_LOW, "isp1704_reset"));
--
--	platform_device_register(&rx51_charger_device);
--}
--
- #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
- 
- #define RX51_GPIO_CAMERA_LENS_COVER	110
-@@ -1102,6 +1079,6 @@ void __init rx51_peripherals_init(void)
- 	if (partition)
- 		omap2_hsmmc_init(mmc);
- 
--	rx51_charger_init();
-+	platform_device_register(&rx51_charger_device);
+-	return 0;
++	return tp_event->class->reg(tp_event, TRACE_REG_PERF_ADD, p_event);
  }
  
+ void perf_trace_del(struct perf_event *p_event, int flags)
+ {
++	struct ftrace_event_call *tp_event = p_event->tp_event;
+ 	hlist_del_rcu(&p_event->hlist_entry);
++	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
+ }
+ 
+ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5138fea..079a93a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -173,6 +173,8 @@ int ftrace_event_reg(struct ftrace_event_call *call,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 5667f89..580a05e 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1912,6 +1912,8 @@ int kprobe_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 6916b0d..dbdd804 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -666,6 +666,8 @@ static int syscall_enter_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+@@ -690,6 +692,8 @@ static int syscall_exit_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
 -- 
-1.7.8.rc3.17.gf56ef1
+1.7.1
 
