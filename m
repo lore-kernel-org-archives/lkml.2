@@ -1,107 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720Ab1LEWtB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 17:49:01 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:33295 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751455Ab1LEWtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 17:49:00 -0500
-X-Greylist: delayed 848 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Dec 2011 17:49:00 EST
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>
-Subject: [PATCH] rapidio/tsi721: switch to dma_zalloc_coherent
-Date: Mon,  5 Dec 2011 17:33:45 -0500
-Message-Id: <1323124425-24808-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.6
+	id S1756393Ab1LEWtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 17:49:10 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50242 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756127Ab1LEWtG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 17:49:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <af9ea8649257cedcdcc531ce918fa4fba5b4e4a7.1299679848.git.aliaksei.katovich@nokia.com>
+References: <cover.1299679848.git.aliaksei.katovich@nokia.com>
+	<af9ea8649257cedcdcc531ce918fa4fba5b4e4a7.1299679848.git.aliaksei.katovich@nokia.com>
+Date: Tue, 6 Dec 2011 00:49:04 +0200
+Message-ID: <CAMP44s1ddZnd0REBt9dQ8FWZ0a5K=bPJikNAVRP=9Zj8NAQn+A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mfd: bq2415x charger driver
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: aliaksei.katovich@nokia.com
+Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaces pair dma_alloc_coherent()+memset() with new dma_zalloc_coherent()
-added by Andrew Morton for kernel version 3.2
+On Wed, Mar 9, 2011 at 4:48 PM,  <aliaksei.katovich@nokia.com> wrote:
+> From: Aliaksei Katovich <aliaksei.katovich@nokia.com>
+>
+> Added driver to support TI bq24153/6 one-cell Li-Ion chargers.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
----
- drivers/rapidio/devices/tsi721.c |   17 ++++-------------
- 1 files changed, 4 insertions(+), 13 deletions(-)
+I tried this driver and it didn't do anything. Some regulators are
+registered, and I guess the right values are loaded, but that's all.
 
-diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
-index 5225930..514c28c 100644
---- a/drivers/rapidio/devices/tsi721.c
-+++ b/drivers/rapidio/devices/tsi721.c
-@@ -851,14 +851,12 @@ static int tsi721_doorbell_init(struct tsi721_device *priv)
- 	INIT_WORK(&priv->idb_work, tsi721_db_dpc);
- 
- 	/* Allocate buffer for inbound doorbells queue */
--	priv->idb_base = dma_alloc_coherent(&priv->pdev->dev,
-+	priv->idb_base = dma_zalloc_coherent(&priv->pdev->dev,
- 				IDB_QSIZE * TSI721_IDB_ENTRY_SIZE,
- 				&priv->idb_dma, GFP_KERNEL);
- 	if (!priv->idb_base)
- 		return -ENOMEM;
- 
--	memset(priv->idb_base, 0, IDB_QSIZE * TSI721_IDB_ENTRY_SIZE);
--
- 	dev_dbg(&priv->pdev->dev, "Allocated IDB buffer @ %p (phys = %llx)\n",
- 		priv->idb_base, (unsigned long long)priv->idb_dma);
- 
-@@ -904,7 +902,7 @@ static int tsi721_bdma_ch_init(struct tsi721_device *priv, int chnum)
- 	 */
- 
- 	/* Allocate space for DMA descriptors */
--	bd_ptr = dma_alloc_coherent(&priv->pdev->dev,
-+	bd_ptr = dma_zalloc_coherent(&priv->pdev->dev,
- 					bd_num * sizeof(struct tsi721_dma_desc),
- 					&bd_phys, GFP_KERNEL);
- 	if (!bd_ptr)
-@@ -913,8 +911,6 @@ static int tsi721_bdma_ch_init(struct tsi721_device *priv, int chnum)
- 	priv->bdma[chnum].bd_phys = bd_phys;
- 	priv->bdma[chnum].bd_base = bd_ptr;
- 
--	memset(bd_ptr, 0, bd_num * sizeof(struct tsi721_dma_desc));
--
- 	dev_dbg(&priv->pdev->dev, "DMA descriptors @ %p (phys = %llx)\n",
- 		bd_ptr, (unsigned long long)bd_phys);
- 
-@@ -922,7 +918,7 @@ static int tsi721_bdma_ch_init(struct tsi721_device *priv, int chnum)
- 	sts_size = (bd_num >= TSI721_DMA_MINSTSSZ) ?
- 					bd_num : TSI721_DMA_MINSTSSZ;
- 	sts_size = roundup_pow_of_two(sts_size);
--	sts_ptr = dma_alloc_coherent(&priv->pdev->dev,
-+	sts_ptr = dma_zalloc_coherent(&priv->pdev->dev,
- 				     sts_size * sizeof(struct tsi721_dma_sts),
- 				     &sts_phys, GFP_KERNEL);
- 	if (!sts_ptr) {
-@@ -938,8 +934,6 @@ static int tsi721_bdma_ch_init(struct tsi721_device *priv, int chnum)
- 	priv->bdma[chnum].sts_base = sts_ptr;
- 	priv->bdma[chnum].sts_size = sts_size;
- 
--	memset(sts_ptr, 0, sts_size);
--
- 	dev_dbg(&priv->pdev->dev,
- 		"desc status FIFO @ %p (phys = %llx) size=0x%x\n",
- 		sts_ptr, (unsigned long long)sts_phys, sts_size);
-@@ -1400,7 +1394,7 @@ static int tsi721_open_outb_mbox(struct rio_mport *mport, void *dev_id,
- 
- 	/* Outbound message descriptor status FIFO allocation */
- 	priv->omsg_ring[mbox].sts_size = roundup_pow_of_two(entries + 1);
--	priv->omsg_ring[mbox].sts_base = dma_alloc_coherent(&priv->pdev->dev,
-+	priv->omsg_ring[mbox].sts_base = dma_zalloc_coherent(&priv->pdev->dev,
- 			priv->omsg_ring[mbox].sts_size *
- 						sizeof(struct tsi721_dma_sts),
- 			&priv->omsg_ring[mbox].sts_phys, GFP_KERNEL);
-@@ -1412,9 +1406,6 @@ static int tsi721_open_outb_mbox(struct rio_mport *mport, void *dev_id,
- 		goto out_desc;
- 	}
- 
--	memset(priv->omsg_ring[mbox].sts_base, 0,
--		entries * sizeof(struct tsi721_dma_sts));
--
- 	/*
- 	 * Configure Outbound Messaging Engine
- 	 */
+It doesn't get configured in any way, and I don't see the code for the
+timer reset, without which the charging will stop right away (if it
+had managed to start).
+
+> +static inline int bq2415x_enable_otg(bool flag)
+> +{
+> +       int res;
+> +
+> +       res = bq2415x_i2c_read(bq2415x_cli, BQ2415X_BAT_CTL);
+> +       if (unlikely(res < 0))
+> +               return res;
+> +
+> +       if (flag)
+> +               res |= BQ2415X_OTG_EN;
+> +       else
+> +               res &= ~BQ2415X_OTG_EN;
+> +
+> +       return bq2415x_i2c_write(bq2415x_cli, BQ2415X_STS_CTL, res);
+
+Wrong registry? BQ2415X_BAT_CTL.
+
+> +}
+> +
+> +static inline int bq2415x_otg_high(bool flag)
+> +{
+> +       int res;
+> +
+> +       res = bq2415x_i2c_read(bq2415x_cli, BQ2415X_BAT_CTL);
+> +       if (unlikely(res < 0))
+> +               return res;
+> +
+> +       if (flag)
+> +               res |= BQ2415X_OTG_PL;
+> +       else
+> +               res &= ~BQ2415X_OTG_PL;
+> +
+> +       return bq2415x_i2c_write(bq2415x_cli, BQ2415X_STS_CTL, res);
+
+Ditto.
+
+> +/**
+> + * bq2415x_exec - execute charger specific command
+> + *
+> + * Returns result of command execution upon success or negative otherwise
+> + */
+> +int bq2415x_exec(enum bq2415x_cmd cmd)
+
+Who is supposed to call this? Why didn't you provide some examples?
+
+> +static int
+> +bq2415x_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV)
+> +{
+> +       int i, res;
+> +       struct bq2415x_regulator *r = rdev_get_drvdata(rdev);
+> +
+> +       i = bq2415x_vmap_index(max_uV, r->init.constraints.min_uV);
+> +       if (i >= r->desc.n_voltages)
+> +               return -EINVAL;
+> +
+> +       res = bq2415x_i2c_read(r->cli, r->reg);
+> +       if (res < 0)
+> +               return res;
+
+The bit mask should be cleared beforehand, no? Otherwise the on bits
+will remain that way.
+
+> +       res |= bq2415x_vmap_calc(i, r->msk_summ, r->msk_mult);
+> +       return bq2415x_i2c_write(r->cli, r->reg, res);
+> +}
+
+...
+
+> +static int
+> +bq2415x_set_current_limit(struct regulator_dev *rdev, int min_uA, int max_uA)
+> +{
+> +       int res;
+> +       struct bq2415x_regulator *r = rdev_get_drvdata(rdev);
+> +
+> +       res = bq2415x_i2c_read(r->cli, r->reg);
+> +       if (res < 0)
+> +               return res;
+> +
+> +       if (BQ2415X_IIN_LIMIT_100 <= min_uA && max_uA < BQ2415X_IIN_LIMIT_500)
+> +               res &= ~BQ2415X_IIN_LIMIT_UNLIM_MASK;
+
+I think these bits should always be cleared.
+
+> +       else if (BQ2415X_IIN_LIMIT_500 <= min_uA &&
+> +                       max_uA < BQ2415X_IIN_LIMIT_800)
+> +               res |= BQ2415X_IIN_LIMIT_500_MASK;
+> +       else if (BQ2415X_IIN_LIMIT_800 <= min_uA &&
+> +                       max_uA < BQ2415X_IIN_LIMIT_UNLIM)
+> +               res |= BQ2415X_IIN_LIMIT_800_MASK;
+> +       else if (BQ2415X_IIN_LIMIT_UNLIM <= min_uA)
+> +               res |= BQ2415X_IIN_LIMIT_UNLIM_MASK;
+> +       else
+> +               return -EINVAL;
+> +
+> +       return bq2415x_i2c_write(r->cli, r->reg, res);
+> +}
+
+> +/* regulator initialization */
+
+...
+
+> +static struct bq2415x_regulator bq2415x_regulator[] = {
+
+I don't understand what these regulators are supposed to be doing, and
+how other drivers are supposed to hook on them. Again, no examples.
+
+Moreover, for example V_OREG is supposed to control the voltage from
+3.5v to 4.4v, but you set the range from 20mv to 1260mv which is only
+the additional voltage (and it starters from 0).
+
+> +static void __init bq2415x_add_consumers(struct bq2415x_regulator *r,
+> +                                        struct regulator_init_data *init)
+
+I don't understand the purpose of this code at all.
+
+> diff --git a/include/linux/mfd/bq2415x.h b/include/linux/mfd/bq2415x.h
+
+There's no need for exporting a lot of this stuff.
+
 -- 
-1.7.6
-
+Felipe Contreras
