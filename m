@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab1LER0G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:26:06 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54882 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932547Ab1LER0B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:26:01 -0500
-Message-ID: <4EDCFE9F.9050605@linux.vnet.ibm.com>
-Date: Mon, 05 Dec 2011 22:55:51 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com,
-        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 1/3] PM / Sleep: Make [un]lock_system_sleep() generic
-References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com> <20111205171443.GB627@google.com>
-In-Reply-To: <20111205171443.GB627@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120507-7014-0000-0000-000000366C5A
+	id S1756433Ab1LERXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:23:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61836 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755425Ab1LERXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 12:23:10 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCHv2 01/10] ftrace: Fix possible NULL dereferencing in __ftrace_hash_rec_update
+Date: Mon,  5 Dec 2011 18:22:47 +0100
+Message-Id: <1323105776-26961-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+ <1323105776-26961-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2011 10:44 PM, Tejun Heo wrote:
+We need to check the existence of the other_hash before
+we touch its count variable.
 
-> Hello,
-> 
-> On Mon, Dec 05, 2011 at 01:32:38AM +0530, Srivatsa S. Bhat wrote:
->> +static inline void lock_system_sleep(void)
->> +{
->> +	/* simplified freezer_do_not_count() */
->> +	current->flags |= PF_FREEZER_SKIP;
->> +	mutex_lock(&pm_mutex);
->> +}
->> +
->> +static inline void unlock_system_sleep(void)
->> +{
->> +	mutex_unlock(&pm_mutex);
->> +	/* simplified freezer_count() */
->> +	current->flags &= ~PF_FREEZER_SKIP;
->> +}
-> 
-> BTW, don't we want try_to_freeze() there?  What's the reason for not
-> using freezer_count()?
-> 
+This issue is hit only when non global ftrace_ops is used.
+The global ftrace_ops is initialized with empty hashes.
 
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ kernel/trace/ftrace.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I wanted these APIs to be generic, not restricted to work only for userspace
-processes. Both freezer_do_not_count() and freezer_count() are effective only
-when current->mm is non-NULL (ie., only for userspace ones).
-I think I have documented this in the patch which added these things to the
-2 APIs. See commit 6a76b7a in linux-pm/linux-next.
-
-As for try_to_freeze(), we can surely add that. I think I missed it while
-open-coding the relevant part of freezer_count(). I'll send it as a separate
-patch. Thank you very much.
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index b1e8943..c6d0293 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1372,7 +1372,8 @@ static void __ftrace_hash_rec_update(struct ftrace_ops *ops,
+ 			if (filter_hash && in_hash && !in_other_hash)
+ 				match = 1;
+ 			else if (!filter_hash && in_hash &&
+-				 (in_other_hash || !other_hash->count))
++				 (in_other_hash ||
++				  !other_hash || !other_hash->count))
+ 				match = 1;
+ 		}
+ 		if (!match)
+-- 
+1.7.1
 
