@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358Ab1LETfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:35:32 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36637 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753842Ab1LETfb (ORCPT
+	id S932458Ab1LETha (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:37:30 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53211 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755586Ab1LETh2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:35:31 -0500
-Date: Mon, 5 Dec 2011 11:38:03 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai.lu@oracle.com>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Only call pci_stop_bus_device() one time for
- children devices during removing
-Message-ID: <20111205113803.37cc5d4c@jbarnes-desktop>
-In-Reply-To: <4ECC7F6D.6090802@oracle.com>
-References: <4ECC7F6D.6090802@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/zOu9lkd8t/.46BhH4gW1vum"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Mon, 5 Dec 2011 14:37:28 -0500
+MIME-Version: 1.0
+X-Originating-IP: [67.207.136.126]
+In-Reply-To: <20111206060654.0e8bebe0@notabene.brown>
+References: <20111205125416.6093ecd8@notabene.brown> <CAK=Wgbb-6eV6aDxTdi3qFLZmu0cHSZvHRUpUEr3YQ=4tO5sCPw@mail.gmail.com>
+ <20111206060654.0e8bebe0@notabene.brown>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 5 Dec 2011 21:37:07 +0200
+Message-ID: <CAK=WgbbqgAYZ8uurf+xVyCxfZxoHcLdytxzdUNtoP9VNYPd57A@mail.gmail.com>
+Subject: Re: [PATCH] mmc/sdio: don't allow interface to runtime-suspend until
+ probe is finished.
+To: NeilBrown <neilb@suse.de>
+Cc: linux-mmc@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Daniel Drake <dsd@laptop.org>, Joe Woodward <jw@terrafix.co.uk>,
+        Chris Ball <cjb@laptop.org>, Bing Zhao <bzhao@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/zOu9lkd8t/.46BhH4gW1vum
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 5, 2011 at 9:06 PM, NeilBrown <neilb@suse.de> wrote:
+> Challenge accepted.
 
-On Tue, 22 Nov 2011 21:06:53 -0800
-Yinghai Lu <yinghai.lu@oracle.com> wrote:
+cool :)
 
->=20
-> During debugging pcie hotplug with SRIOV with pcie switch, found
-> pci_stop_bus_device() are called several times for some children devices.
->=20
-> Current pci_remove_bus_device() will call pci_stop_bus_device() at first.
-> and then use remove_behind_bridge() to call pci_stop_bus_device() for chi=
-ldren
-> devices. But pci_stop_bus_device() already include depth first to stop ch=
-ildren.
-> So We can remove unnecessary calling in pci_remove_behind_bridge() for ch=
-ildren.
->=20
-> The patch change original pci_remove_bus_device() to __pci_remove_bus_dev=
-ice(), and
-> it only do remove work, and new pci_remove_bus_device will call
-> pci_stop_bus_device() one time, and then call __pci_remove_bus_device().
->=20
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Even if I don't find a better solution, this seems backwards.  Sure the
+> default should be that PM is enabled, but individual board can request no
+> PM on MMC interfaces where it is a problem.
 
-applied to linux-next, thanks.
+I somewhat tend to pick a white listing approach, so we don't keep on
+inflicting further pain on random sdio users (at least until we learn
+more about the issues at hand), but I wouldn't object black listing.
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+> The chip has a requirement that the reset line is held down during power-on,
+> and raised shortly after (I don't know exactly how short).  So if you just
+> remove power and give it back, the chip doesn't come up properly.
 
---Sig_/zOu9lkd8t/.46BhH4gW1vum
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Well, not according to Bing Zhao from Marvell:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+http://www.mail-archive.com/linux-mmc@vger.kernel.org/msg08257.html
 
-iQIcBAEBAgAGBQJO3R2bAAoJEIEoDkX4Qk9hBz0P/RTnsxsrktzh/K+siypJwG6l
-ZSHaWzCNoGhBfzuJqJbN2FAsOu4fFjiDCkcXLFtT21/v5tpE/VwJQzArmYTrhnLf
-IHZ83hWZoDIkbTHzNw0CyljUU7Ejijn9fwJfotngAKzH2s/UjG3CnaTQVVdQ0IL0
-jwu8UHxkv9ezWBh2JQ4RvHNG0gFwK2kc+MCNBtJGhUaE9APsIrQihe4XV1vRht69
-61duC4sf0466fcRBD0ECCGhk4E4jH1EYVKvJvx1gpE9S13nnj3KsZlw0bZ9iuyCn
-GsQATRfA215XtYS+KjPjmVLsFxGbPE2ZBvyHMQsHiYOvReTvB/rHN3H2BlDRvgxP
-4vMA7S8zY2grln2e6OePfu1RJwGfT+2MgWNyJFUQghy0ePllQm2e37iHbtQmLvgo
-1fB6fs41pJs2Vt4LHJXAXh+T/KNAPkWsj/E0hW0nArkOrxpJIBR5LYNNnJ6DTiBn
-UeIOVank9RiGzgQglkMaUDrqP7OM8oo7wMYpPCdAhAenrno+jz+jP8v91+Vr/Y6t
-hWgq/fm2ZSmXUXE4gDeaxzIucRmNhGqX/U2yzvsxDlohod+4m6qQ5Z/WAEkKzLDY
-GBvUUHz8u9mSLp91qSzZDob1VwQRB1GqrZZ4JT/eo+9n80ZooYhe8gYCmgXoPxzO
-IFpxIfgi+WgANW2o7jsO
-=tZ0v
------END PGP SIGNATURE-----
+Though I agree that if we do find this reset line helping (and get it
+to work cleanly with the help of some regulator code), the solution
+might be much more robust.
 
---Sig_/zOu9lkd8t/.46BhH4gW1vum--
+> "It *should be* perfectly fine ..." :-)
+
+heh, yeah :)
+
+> We just have to make sure the bug powers up the card properly.
+> Maybe I need to create a virtual regulator that powers on the real regulator,
+> then raises the reset line.  I wonder how hard that is.
+
+Btw did you try toggling the reset line manually and see if it really helps ?
+
+> I'll spend some more time on this and get back to you - probably next week.
+
+Very cool, thanks a lot.
+
+Ohad.
