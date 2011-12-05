@@ -1,203 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932742Ab1LEU5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:57:35 -0500
-Received: from lvps80-90-199-152.vps.webfusion.co.uk ([80.90.199.152]:56364
-	"EHLO lvps80-90-199-152.vps.webfusion.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932422Ab1LEU5X (ORCPT
+	id S932609Ab1LEU6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:58:42 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39563 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab1LEU6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:57:23 -0500
-Date: Mon, 5 Dec 2011 21:56:47 +0100
-From: Baptiste Jonglez <baptiste@jonglez.org>
-To: intel-gfx@lists.freedesktop.org
-Cc: joeyli <jlee@suse.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [BUG] i915/intel-acpi.c: failed to get supported _DSM functions
- (was: [Dual-LVDS Acer Iconia laptop] i915/DRM issue: one screen stays off)
-Message-ID: <20111205205647.GA1757@archminux>
-Mail-Followup-To: intel-gfx@lists.freedesktop.org, joeyli <jlee@suse.com>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org
-References: <20111204160728.GA27292@archminux>
- <1323054041.6046.79.camel@linux-s257.site>
+	Mon, 5 Dec 2011 15:58:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1323054041.6046.79.camel@linux-s257.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1426302.asOzFeeJzz@wuerfel>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+	<201112051718.48324.arnd@arndb.de>
+	<CAKMK7uE-ZJ-VQRWy+zJJWsvr9nARWuf-4nupXhTJ0CLqC88CEw@mail.gmail.com>
+	<1426302.asOzFeeJzz@wuerfel>
+Date: Mon, 5 Dec 2011 21:58:39 +0100
+X-Google-Sender-Auth: dLfB1qeKcmNjja1i-MnuGQjj4lA
+Message-ID: <CAKMK7uG2U2gn-LW7Cozumfza8XngvQSWR7-S-Qiok5NA=94V=w@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Daniel Vetter <daniel@ffwll.ch>,
+        t.stanislaws@samsung.com, linux@arm.linux.org.uk,
+        Sumit Semwal <sumit.semwal@ti.com>, jesse.barker@linaro.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org, rob@ti.com,
+        m.szyprowski@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC-ing intel-gfx@lists.freedesktop.org (see below)
+On Mon, Dec 05, 2011 at 08:29:49PM +0100, Arnd Bergmann wrote:
+> On Monday 05 December 2011 19:55:44 Daniel Vetter wrote:
+> > > The only way to solve this that I can think of right now is to
+> > > mandate that the mappings are all coherent (i.e. noncachable
+> > > on noncoherent architectures like ARM). If you do that, you no
+> > > longer need the sync_sg_for_* calls.
+> >
+> > Woops, totally missed the addition of these. Can somebody explain to used
+> > to rather coherent x86 what we need these for and the code-flow would look
+> > like in a typical example. I was kinda assuming that devices would bracket
+> > their use of a buffer with the attachment_map/unmap calls and any cache
+> > coherency magic that might be needed would be somewhat transparent to
+> > users of the interface?
+>
+> I'll describe how the respective functions work in the streaming mapping
+> API (dma_map_*): You start out with a buffer that is owned by the CPU,
+> i.e. the kernel can access it freely. When you call dma_map_sg or similar,
+> a noncoherent device reading the buffer requires the cache to be flushed
+> in order to see the data that was written by the CPU into the cache.
+>
+> After dma_map_sg, the device can perform both read and write accesses
+> (depending on the flag to the map call), but the CPU is no longer allowed
+> to read (which would allocate a cache line that may become invalid but
+> remain marked as clean) or write (which would create a dirty cache line
+> without writing it back) that buffer.
+>
+> Once the device is done, the driver calls dma_unmap_* and the buffer is
+> again owned by the CPU. The device can no longer access it (in fact
+> the address may be no longer be backed if there is an iommu) and the CPU
+> can again read and write the buffer. On ARMv6 and higher, possibly some
+> other architectures, dma_unmap_* also needs to invalidate the cache
+> for the buffer, because due to speculative prefetching, there may also
+> be a new clean cache line with stale data from an earlier version of
+> the buffer.
+>
+> Since map/unmap is an expensive operation, the interface was extended
+> to pass back the ownership to the CPU and back to the device while leaving
+> the buffer mapped. dma_sync_sg_for_cpu invalidates the cache in the same
+> way as dma_unmap_sg, so the CPU can access the buffer, and
+> dma_sync_sg_for_device hands it back to the device by performing the
+> same cache flush that dma_map_sg would do.
+>
+> You could for example do this if you want video input with a
+> cacheable buffer, or in an rdma scenario with a buffer accessed
+> by a remote machine.
+>
+> In case of software iommu (swiotlb, dmabounce), the map and sync
+> functions don't do cache management but instead copy data between
+> a buffer accessed by hardware and a different buffer accessed
+> by the user.
 
-On Mon, Dec 05, 2011 at 11:00:41AM +0800, joeyli wrote:
-> Add Cc. to platform-driver-x86 and linux-acpi
-> 
-> Hi Baptiste
-> 
-> 於 日，2011-12-04 於 17:07 +0100，Baptiste Jonglez 提到：
-> > Hi,
-> > 
-> > I've got a lot of troubles with a dual-LVDS Acer laptop (it doesn't
-> > have a keyboard, but two displays with touchscreens)
-> > 
-> > The Intel GPU is integrated into the Core i5-480M CPU: it's a bit
-> > older than Sandybridge, as it seems to be based on the Arrandale
-> > micro-architecture.
-> > 
-> > In the BIOS, both displays work fine; but as soon as the kernel boots
-> > up, the second display (i.e. the one where you usually find a
-> > keyboard) is turned off. The main display works as expected.
-> > 
-> > xrandr reports two LVDS displays: LVDS1, which is connected, and
-> > LVDS2, which is marked as "disconnected". No matter what I tried, I
-> > can't bring that second display up.
-> > 
-> > During the boot, just after the drm is set up, the following message
-> > shows up:
-> > 
-> >   [drm:intel_dsm_pci_probe] *ERROR* failed to get supported _DSM functions
-> > 
-> > (attached is the relevant part of dmesg [1])
-> > 
-> > 
-> 
-> Have no idea for this _DSM error, need help from drm and acpi experts.
+Thanks a lot for this excellent overview. I think at least for the first
+version of dmabuf we should drop the sync_* interfaces and simply require
+users to bracket their usage of the buffer from the attached device by
+map/unmap. A dma_buf provider is always free to cache the mapping and
+simply call sync_sg_for of the streaming dma api.
 
-It definitely looks like an ACPI issue.
-That function is defined in `drivers/gpu/drm/i915/intel_acpi.c'.
-The whole file was added more than a year ago by commit 723bfd707a97
-(see the relevant thread on intel-gfx@ [1]) to "add _DSM support".
-One of the first comment is about "Calpella", which is exactly the
-platform of my laptop (as shown by lshw)
+If it later turns out that we want to be able to cache the sg list also on
+the use-site in the driver (e.g. map it into some hw sg list) we can
+always add that functionality later. I just fear that sync ops among N
+devices is a bit ill-defined and we already have a plethora of ill-defined
+issues at hand. Also the proposed api doesn't quite fit into what's
+already there, I think an s/device/dma_buf_attachment/ would be more
+consistent - otherwise the dmabuf provider might need to walk the list of
+attachements to get at the right one for the device.
 
-However, I honestly don't know what is wrong with that code...
-Is there anything I can provide to sort things out?
+> > The map call gets the dma_data_direction parameter, so it should be able
+> > to do the right thing. And because we keep the attachement around, any
+> > caching of mappings should be possible, too.
+> >
+> > Yours, Daniel
+> >
+> > PS: Slightly related, because it will make the coherency nightmare worse,
+> > afaict: Can we kill mmap support?
+>
+> The mmap support is required (and only make sense) for consistent mappings,
+> not for streaming mappings. The provider must ensure that if you map
+> something uncacheable into the kernel in order to provide consistency,
+> any mapping into user space must also be uncacheable. A driver
+> that wants to have the buffer mapped to user space as many do should
+> not need to know whether it is required to do cacheable or uncacheable
+> mapping because of some other driver, and it should not need to worry
+> about how to set up uncached mappings in user space.
 
-> > I then tried booting with "video=LVDS-2:e". The same message shows up
-> > while booting, with these two following:
-> > 
-> >   [drm:drm_crtc_helper_set_config] *ERROR* failed to set mode on [CRTC:4]
-> >   fbcon_init: detected unhandled fb_set_par error, error code -22
-> > 
-> > (attached is the relevant part of dmesg [2])
-> > 
-> > With that kernel command line forcing LVDS2, the
-> > "drm_crtc_helper_set_config" error shows up each time I switch tty;
-> > additionally, X does not want to start anymore (spewing out the
-> > aforementioned error multiple times before giving up)
-> > 
-> > 
-> > I'm currently using the latest 3.2 kernel from linus' tree
-> > (af968e29acd91ebeb4224e899202c46c93171ecd), but the behavior was
-> > similar with a vanilla 3.1.2.
-> > 
-> > 
-> > Other notes about this issue:
-> > 
-> >  - with an Ubuntu 2.6.35 kernel, the second display is on but
-> >    flickering (with the picture distorted like an old analog TV...).
-> >    The main display is working fine, as always.
+Either I've always missed it or no one ever described it that consisely,
+but now I see the use-case for mmap: Simpler drivers (i.e. not gpus) might
+need to expose a userspace mapping and only the provider knows how to do
+that in a coherent fashion. I want this in the docs (if it's not there yet
+...).
 
-I just bumped on bug report #29821 on freedesktop.org [2] which dates
-the "flicker" bug around 2.6.35. I guess the ubuntu kernel doesn't
-have the fix (and actually, the fix might be responsible for the lack
-of output on the second display with later kernels.)
+But even with that use-case in mind I still have some gripes with the
+current mmap interfaces as proposed:
+- This use-case explains why the dmabuf provider needs to expose an mmap
+  function. It doesn't explain why we need to expose that to userspace
+  (instead of faking whatever mmap the importing driver already exposes).
+  Imo the userspace-facing part of dmabuf should be about buffer sharing
+  and not about how to access that buffer, so I'm still missing the reason
+  for that.
+- We need some way to tell the provider to sync all completed dma
+  operations for userspace mmap access. sync_for_cpu would serve that use.
+  But given that we strive for zero-copy I think the kernel shouldn't
+  ever need to access the contents of a dmabuf and it would therefore make
+  more sense to call it sync_for_mmap.
+- And the ugly one: Assuming you want this to be coherent for (almost)
+  unchanged users of exisiting subsystem and want this to integrate
+  seamlessly with gpu driver management, we also need a
+  finish_mmap_access. We _can_ fake this by shooting down userspace ptes
+  (if the provider knows about all of them, and it should thanks to the
+  mmap interface) and we do that trick on i915 (for certain cases). But
+  this is generally slow and painful and does not integrate well with
+  other gpu memory management paradigms, where userspace is required to
+  explicit bracket access.
 
-I'll try with an older kernel to see what it does.
-
-> >  - with an Archlinux 2.6.37.5 kernel, the behavior is the same as with
-> >    3.2, the main display is ok and the second one is off.
-> > 
-> >  - I did succeed, only once and out of pure luck, to get the second
-> >    screen to work with the 3.1.2 kernel. I haven't been able to
-> >    reproduce that... I had booted with "video=LVDS-2:e" and let the
-> >    laptop running ; pressing a key a few hours later turned back
-> >    *both* displays on (the main display had been turned off by DPMS,
-> >    and the second, well, was off from the start, as always)
-> >    While not very helpful, it shows that it's definitely possible.
-> > 
-> 
-> What does Windows platform's behavior? Does there have any physical key
-> that can turn on/off the second LVDS on Windows?
-
-Actually, the first thing I did was wiping Windows out :)
->From what I've seen, both screens seem to work out-of-the-box on
-Windows.
-
-There are only two physical keys:
- - power-on button
- - "keyboard"-labeled button, which seems to do nothing
-   hardware-related; it triggers an event caught up by acer_wmi.
-   I think all it does is telling the OS: "hey, pull up the software
-   virtual keyboard on the second display".
-
-> >  - there are a some unhandled WMI events logged from the acer-wmi
-> >    module [3] when closing the lid, opening it, and most importantly,
-> >    when the (main) screen is turned on or off by DPMS.
-> > 
-> 
-> I will look at your dsdt and log from acer-wmi then try to improve
-> acer-wmi.
-
-Thanks a lot!
-
-> > What do you think? I haven't really succeeded in nailing the source of
-> > the issue down, but here are a few possibilities I'm thinking of:
-> > 
-> >  - the driver is not aware it can drive two LVDS displays (not very
-> >    likely, and it has worked once, see above)
-> > 
-> >  - there is some kind of switch that is able to turn the second screen
-> >    on or off (I'm thinking of something like rfkill). If so, it looks
-> >    like something non-standard and undocumented. This would explain
-> >    the WMI events (see the last note above)
-> > 
-> 
-> What's the behavior of Windows?
-
-I meant an internal switch that would be controlled by GPIO or
-such. It doesn't seem very likely though...
-
-> >  - buggy ACPI implementation. I tried to extract then recompile the
-> >    DSDT [4], and iasl spews out 17 errors and 12 warnings. Also worth
-> >    noticing is that line in dmesg:
-> > "pci0000:00: ACPI _OSC request failed (AE_ERROR), returned control mask: 0x1d"
-> > 
-> > 
-> > The Archlinux userland is:
-> >  - libdrm 2.4.27
-> >  - xorg-server 1.11.2
-> >  - intel-dri 7.11.1
-> >  - xf86-video-intel 2.17.0
-> > 
-> > 
-> > Please let me know if there are any other details I should provide.
-> > Regards,
-> > Baptiste
-> > 
-> > Attachments:
-> > [1] dmesg-DSM-functions.log - drm errors when booting normally
-> > [2] dmesg-video-lvds2.log - drm errors when forcing LVDS2 on the cmdline
-> > [3] acer_wmi.log - WMI events that land in dmesg
-> > [4] dsdt - /sys/firmware/acpi/tables/DSDT
-> 
-> Please also attached on dmidecode log.
-
-See [3] for dmidecode, I've also provided the dsdt [4] again.
-Here is also everything related to ACPI in dmesg [5].
-
-> Thank's a lot!
-> Joey Lee
-
-Let me know if there's anything else I can provide,
-Baptiste
-
-[1] http://lists.freedesktop.org/archives/intel-gfx/2010-October/008339.html
-[2] https://bugs.freedesktop.org/show_bug.cgi?id=29821
-[3] http://zorun.tonbnc.fr/lkml/dmidecode
-[4] http://zorun.tonbnc.fr/lkml/dsdt
-[5] http://zorn.tonbnc.fr/lkml/dmesg-acpi.log
+Yours, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
