@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab1LEMBM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 07:01:12 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37253 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932103Ab1LEMBJ (ORCPT
+	id S1756262Ab1LEMFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 07:05:46 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:46735 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756194Ab1LEMFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 07:01:09 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Return an error on failed wm831x register writes
-Date: Mon,  5 Dec 2011 12:01:07 +0000
-Message-Id: <1323086467-1222-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	Mon, 5 Dec 2011 07:05:44 -0500
+X-AuditID: b753bd60-9aa63ba00000359c-66-4edcb3960564
+X-AuditID: b753bd60-9aa63ba00000359c-66-4edcb3960564
+Subject: [PATCH 0/6]x86: decoder bugfixes/updates
+To: Ingo Molnar <mingo@elte.hu>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Date: Mon, 05 Dec 2011 21:05:20 +0900
+Message-ID: <20111205120520.15475.82983.stgit@cloud>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got dropped in the regmap conversion.
+Hi Ingo,
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Here are the patches of bugfixes and updates for x86
+instruction decoder. Since it seems that previous
+patches are not merged yet, I included thoes and
+updated for the latest tip tree.
+
+This series fixes below bugs;
+
+<Important>
+ - Doesn't build decoder selftest tool (test_get_len).
+ - Fails to decode some grouped AVX instructions.
+
+<Minor>
+ - insn_sanity may dump message twice on same instruction
+ - insn_sanity outputs information message on stderr.
+
+And updates x86 instruction maps for AVX2 according to
+Intel(R) 64 and IA-32 Architectures Software Developer's
+Manual Vol.2 (#325383-040US, October 2011) and Intel(R)
+Advanced Vector Extensions Programming Reference
+(#319433-011,JUNE 2011).
+
+Thank you,
+
 ---
- drivers/mfd/wm831x-core.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 3b76189..f5e54fa 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -559,6 +559,8 @@ static int wm831x_write(struct wm831x *wm831x, unsigned short reg,
- 		dev_vdbg(wm831x->dev, "Write %04x to R%d(0x%x)\n",
- 			 buf[i], reg + i, reg + i);
- 		ret = regmap_write(wm831x->regmap, reg + i, buf[i]);
-+		if (ret != 0)
-+			return ret;
- 	}
- 
- 	return 0;
+Masami Hiramatsu (6):
+      [RESEND][BUGFIX] x86/tools: Fix Makefile to build all test tools
+      [RESEND][BUGFIX] x86: Fix instruction decoder to handle grouped AVX instructions
+      [RESEND][BUGFIX] x86/tools: Fix instruction decoder message output
+      [RESEND][BUGFIX] x86/tools: Fix insn_sanity message outputs
+      x86: Update instruction decoder to support new AVX formats
+      x86/tools: Add decoded instruction dump mode
+
+
+ arch/x86/lib/inat.c                  |    9 -
+ arch/x86/lib/insn.c                  |    4 
+ arch/x86/lib/x86-opcode-map.txt      |  606 +++++++++++++++++++---------------
+ arch/x86/tools/Makefile              |    3 
+ arch/x86/tools/gen-insn-attr-x86.awk |   21 +
+ arch/x86/tools/insn_sanity.c         |   16 -
+ 6 files changed, 365 insertions(+), 294 deletions(-)
+
 -- 
-1.7.7.3
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
