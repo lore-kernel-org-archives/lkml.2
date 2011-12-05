@@ -1,55 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab1LEOhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 09:37:35 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:65159 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932215Ab1LEOhe (ORCPT
+	id S932355Ab1LEOmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 09:42:03 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:28240 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932268Ab1LEOmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 09:37:34 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ming Lei <ming.lei@canonical.com>
-Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
-Date: Mon, 5 Dec 2011 14:37:27 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
-References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com> <42689146.OPtqLboC2m@wuerfel> <CACVXFVO5Bu8vTfLN_WFsEkHW6JhQFmWPmEyNnrvTsDhoF-WVeA@mail.gmail.com>
-In-Reply-To: <CACVXFVO5Bu8vTfLN_WFsEkHW6JhQFmWPmEyNnrvTsDhoF-WVeA@mail.gmail.com>
+	Mon, 5 Dec 2011 09:42:01 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAPrX3E4Y9geI/2dsb2JhbAAMOIUFqCwBAQEBAyMEUQEQCw4MAgUWCwICCQMCAQIBRQYBDAEHAQGrU5FQgTCIW4EWBIgtnmU
+X-IronPort-AV: E=Sophos;i="4.71,299,1320642000"; 
+   d="scan'208";a="150924639"
+Message-ID: <4EDCD828.2090904@teksavvy.com>
+Date: Mon, 05 Dec 2011 09:41:44 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
+References: <4EA89972.5060101@teksavvy.com>  <20111026.194045.2019668159403582571.davem@davemloft.net>  <4EA8B283.3010105@teksavvy.com>  <20111026.221719.2216112919297458522.davem@davemloft.net>  <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>  <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>  <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>  <4EBAB643.8020603@teksavvy.com> <1320859911.2781.1.camel@bwh-desktop>  <4EBABAFD.6050604@teksavvy.com> <1320860895.2781.6.camel@bwh-desktop>
+In-Reply-To: <1320860895.2781.6.camel@bwh-desktop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112051437.27538.arnd@arndb.de>
-X-Provags-ID: V02:K0:EyMmfB1wFAf1DsWO9+7eJp9XlQCgW1cPKxnekfKnZ3m
- kXoZz27I/TLFCxL40zrUe8T0kVghiT43aE23QtUnqdzELTuBwh
- D04AzLipld8pabHbfvFCXBz6TBTiMQ4X9QoHKa+KqGcE++zEjN
- 5kobtFR8QgivHIkECjOGGNluHekoZKiKKn4t/vq2PLCavVrtjg
- r1EbBZBwrk0mb0LXLTX9dy8+gFBTa3MFUHMBlfjWSRGdKy5pxl
- mW/ldjEsAr6EfUuqvDO/pT9NsBYputBC4eYHMMk/5Zrsjopnlj
- NXy65eJ0SD1LDjXflFC/nps/TqamJHSJ7NLkuLS8toqBwESVFW
- K3q9YyTJZPpDQknYIqrY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 04 December 2011, Ming Lei wrote:
-> >
-> > This data structure is not 32/64 bit safe: running a 64 bit kernel with 32 bit
-> > user space will see an incompatible layout.
-> 
-> I agree that this is not 32/64 bit safe, but I understand lib32 can handle
-> this correctly, otherwise many 32bit applications can't run on current
-> 64bit kernel
-> since many kernel structures used by user space contained pointer,
-> such as struct v4l2_buffer, struct v4l2_ext_controls in v4l2 ABI.
+David / Ben / anyone..
 
-The other ones you mentioned are handled in the kernel in
-drivers/media/video/v4l2-compat-ioctl32.c. For new ioctl commands,
-it's better to define the data structure in a compatible way
-so you do not need a wrapper like that.
+I'm trying to puzzle out the rx/tx checksum feature flags,
+and there does seem to be a lot of variance among drivers
+as to how these are used.
 
-	Arnd
+The ASIX chips have hardware support for IP and TCP checksumming
+for both IPv4 and IPv6.  So I'm thinking this code (below) is the
+most appropriate method for use in asix.c:
+
+------------------------------- asix.h -----------------------------------
+...
+#define AX_RXCOE_IPCE                   0x0001
+#define AX_RXCOE_IPVE                   0x0002
+#define AX_RXCOE_V6VE                   0x0004
+#define AX_RXCOE_TCPE                   0x0008
+#define AX_RXCOE_UDPE                   0x0010
+#define AX_RXCOE_ICMP                   0x0020
+#define AX_RXCOE_IGMP                   0x0040
+#define AX_RXCOE_ICV6                   0x0080
+#define AX_RXCOE_TCPV6                  0x0100
+#define AX_RXCOE_UDPV6                  0x0200
+#define AX_RXCOE_ICMV6                  0x0400
+#define AX_RXCOE_IGMV6                  0x0800
+#define AX_RXCOE_ICV6V6                 0x1000
+#define AX_RXCOE_FOPC                   0x8000
+#define AX_RXCOE_DEF_CSUM               (AX_RXCOE_IPCE  | AX_RXCOE_IPVE  | \
+                                         AX_RXCOE_V6VE  | AX_RXCOE_TCPE  | \
+                                         AX_RXCOE_UDPE  | AX_RXCOE_ICV6  | \
+                                         AX_RXCOE_TCPV6 | AX_RXCOE_UDPV6)
+
+#define AX_RXCOE_64TE                   0x0100
+#define AX_RXCOE_PPPOE                  0x0200
+#define AX_RXCOE_RPCE                   0x8000
+
+#define AX_TXCOE_IP                     0x0001
+#define AX_TXCOE_TCP                    0x0002
+#define AX_TXCOE_UDP                    0x0004
+#define AX_TXCOE_ICMP                   0x0008
+#define AX_TXCOE_IGMP                   0x0010
+#define AX_TXCOE_ICV6                   0x0020
+#define AX_TXCOE_TCPV6                  0x0100
+#define AX_TXCOE_UDPV6                  0x0200
+#define AX_TXCOE_ICMV6                  0x0400
+#define AX_TXCOE_IGMV6                  0x0800
+#define AX_TXCOE_ICV6V6                 0x1000
+#define AX_TXCOE_DEF_CSUM               (AX_TXCOE_TCP   | AX_TXCOE_UDP | \
+                                         AX_TXCOE_TCPV6 | AX_TXCOE_UDPV6)
+...
+------------------------------- asix.c -----------------------------------
+
+static int ax88772b_set_features(struct net_device *netdev, u32 features)
+{
+        struct usbnet *dev = netdev_priv(netdev);
+        u16 tx_csum = (features & NETIF_F_HW_CSUM) ? AX_TXCOE_DEF_CSUM : 0;
+        u16 rx_csum = (features & NETIF_F_RXCSUM ) ? AX_RXCOE_DEF_CSUM : 0;
+
+        ax8817x_write_cmd(dev, AX_CMD_WRITE_TXCOE_CTL, tx_csum, 0, 0, NULL);
+        ax8817x_write_cmd(dev, AX_CMD_WRITE_RXCOE_CTL, rx_csum, 0, 0, NULL);
+        return 0;
+}
+...
+
+static int ax88772b_bind(struct usbnet *dev, struct usb_interface *intf)
+{
+...
+        /* register support for hardware checksums */
+        dev->net->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+
+        /* enable hardware checksums */
+        dev->net->features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+        ax88772b_set_features(dev->net, dev->net->features);
+...
+}
+-------------------------------snip-----------------------------------
+
+Does this look correct -- any improvements/fixes to suggest?
+I am still trying to find out about all of the other possible hardware bits,
+but the AX_TXCOE_DEF_CSUM and AX_RXCOE_DEF_CSUM patterns are the ones
+that Asix themselves were using in the vendor driver.
+
+Thanks.
