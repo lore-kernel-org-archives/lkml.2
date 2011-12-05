@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932338Ab1LEN1T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 08:27:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57525 "EHLO
+	id S932335Ab1LEN3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 08:29:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57566 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932224Ab1LEN1R (ORCPT
+	with ESMTP id S932250Ab1LEN3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 08:27:17 -0500
-Date: Mon, 5 Dec 2011 05:24:45 -0800
-From: tip-bot for Andy Lutomirski <luto@amacapital.net>
-Message-ID: <tip-2e57ae0515124af45dd889bfbd4840fd40fcc07d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, bunk@stusta.de, luto@amacapital.net,
-        richard.weinberger@gmail.com, tglx@linutronix.de, hpa@linux.intel.com,
+	Mon, 5 Dec 2011 08:29:37 -0500
+Date: Mon, 5 Dec 2011 05:29:22 -0800
+From: tip-bot for Maurice Ma <maurice.ma@intel.com>
+Message-ID: <tip-e9a9eca517d4cd94e816538efc400257e34bc63e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, rui.zhang@intel.com, matt.fleming@intel.com,
+        maurice.ma@intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, rui.zhang@intel.com,
+        matt.fleming@intel.com, maurice.ma@intel.com, tglx@linutronix.de,
         mingo@elte.hu
-Reply-To: luto@amacapital.net, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, richard.weinberger@gmail.com,
-        bunk@stusta.de, torvalds@linux-foundation.org, tglx@linutronix.de,
-        hpa@linux.intel.com, mingo@elte.hu
-In-Reply-To: <93154af3b2b6d208906ae02d80d92cf60c6fa94f.1320712291.git.luto@amacapital.net>
-References: <93154af3b2b6d208906ae02d80d92cf60c6fa94f.1320712291.git.luto@amacapital.net>
+In-Reply-To: <1318330333-4617-1-git-send-email-matt@console-pimps.org>
+References: <1318330333-4617-1-git-send-email-matt@console-pimps.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86: Default to vsyscall=emulate
-Git-Commit-ID: 2e57ae0515124af45dd889bfbd4840fd40fcc07d
+Subject: [tip:x86/asm] x86, efi: Convert efi_phys_get_time() args to physical addresses
+Git-Commit-ID: e9a9eca517d4cd94e816538efc400257e34bc63e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 05:24:51 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 05:29:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2e57ae0515124af45dd889bfbd4840fd40fcc07d
-Gitweb:     http://git.kernel.org/tip/2e57ae0515124af45dd889bfbd4840fd40fcc07d
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Mon, 7 Nov 2011 16:33:41 -0800
+Commit-ID:  e9a9eca517d4cd94e816538efc400257e34bc63e
+Gitweb:     http://git.kernel.org/tip/e9a9eca517d4cd94e816538efc400257e34bc63e
+Author:     Maurice Ma <maurice.ma@intel.com>
+AuthorDate: Tue, 11 Oct 2011 11:52:13 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Dec 2011 12:17:29 +0100
+CommitDate: Mon, 5 Dec 2011 12:45:14 +0100
 
-x86: Default to vsyscall=emulate
+x86, efi: Convert efi_phys_get_time() args to physical addresses
 
-This essentially reverts:
+Because callers of efi_phys_get_time() pass virtual stack
+addresses as arguments, we need to find their corresponding
+physical addresses and when calling GetTime() in physical mode.
 
-  2b666859ec32: x86: Default to vsyscall=native for now
+Without this patch the following line is printed on boot,
 
-The ABI breakage should now be fixed by:
+	"Oops: efitime: can't read time!"
 
- commit 48c4206f5b02f28c4c78a1f5b491d3772fb64fb9
- Author: Andy Lutomirski <luto@mit.edu>
- Date:   Thu Oct 20 08:48:19 2011 -0700
-
-    x86-64: Set siginfo and context on vsyscall emulation faults
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Adrian Bunk <bunk@stusta.de>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/93154af3b2b6d208906ae02d80d92cf60c6fa94f.1320712291.git.luto@amacapital.net
+Signed-off-by: Maurice Ma <maurice.ma@intel.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Matthew Garrett <mjg@redhat.com>
+Link: http://lkml.kernel.org/r/1318330333-4617-1-git-send-email-matt@console-pimps.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- Documentation/kernel-parameters.txt |    7 +++----
- arch/x86/kernel/vsyscall_64.c       |    2 +-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ arch/x86/platform/efi/efi.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a0c5c5f..ce7fc8b 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2750,11 +2750,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			functions are at fixed addresses, they make nice
- 			targets for exploits that can control RIP.
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 37718f0..d2376eb 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -238,7 +238,8 @@ static efi_status_t __init phys_efi_get_time(efi_time_t *tm,
  
--			emulate     Vsyscalls turn into traps and are emulated
--			            reasonably safely.
-+			emulate     [default] Vsyscalls turn into traps and are
-+			            emulated reasonably safely.
- 
--			native      [default] Vsyscalls are native syscall
--			            instructions.
-+			native      Vsyscalls are native syscall instructions.
- 			            This is a little bit faster than trapping
- 			            and makes a few dynamic recompilers work
- 			            better than they would in emulation mode.
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 8084bec..b07ba93 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -57,7 +57,7 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- 	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
- };
- 
--static enum { EMULATE, NATIVE, NONE } vsyscall_mode = NATIVE;
-+static enum { EMULATE, NATIVE, NONE } vsyscall_mode = EMULATE;
- 
- static int __init vsyscall_setup(char *str)
- {
+ 	spin_lock_irqsave(&rtc_lock, flags);
+ 	efi_call_phys_prelog();
+-	status = efi_call_phys2(efi_phys.get_time, tm, tc);
++	status = efi_call_phys2(efi_phys.get_time, virt_to_phys(tm),
++				virt_to_phys(tc));
+ 	efi_call_phys_epilog();
+ 	spin_unlock_irqrestore(&rtc_lock, flags);
+ 	return status;
