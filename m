@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab1LEKf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 05:35:58 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55633 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755657Ab1LEKf4 (ORCPT
+	id S1756025Ab1LEKgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 05:36:20 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44639 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755982Ab1LEKgS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 05:35:56 -0500
+	Mon, 5 Dec 2011 05:36:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1112051106070.4911@dhcp-27-109.brq.redhat.com>
-References: <20111201070052.GA29708@july>
-	<alpine.LFD.2.00.1112051106070.4911@dhcp-27-109.brq.redhat.com>
-Date: Mon, 5 Dec 2011 19:35:55 +0900
-X-Google-Sender-Auth: FOxhvgsn3hwsO3IPcEa2qnExehg
-Message-ID: <CAH9JG2WrrO105AeSwoZ9DCt3dyvqYuoefVZZJhx1YgHAFrTpCA@mail.gmail.com>
-Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
-From: Kyungmin Park <kmpark@infradead.org>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: tytso@mit.edu, tm@tao.ma, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CAH9JG2XJ4TCEaN1rMRjMZNRn5Wx6jcTRC_DmyN4Qyf2zztWSsg@mail.gmail.com>
+References: <1323074921-29291-1-git-send-email-thomas.abraham@linaro.org>
+	<CAH9JG2XJ4TCEaN1rMRjMZNRn5Wx6jcTRC_DmyN4Qyf2zztWSsg@mail.gmail.com>
+Date: Mon, 5 Dec 2011 16:06:17 +0530
+Message-ID: <CAJuYYwTT2jbbquZM=ZwK=Gh39ss=iG0WDCc3TYjzHLEgfeC1gA@mail.gmail.com>
+Subject: Re: [PATCH] backlight: add regulator support for platform_lcd driver
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: rpurdie@rpsys.net, ben-linux@fluff.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rajendra Nayak <rnayak@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/5/11, Lukas Czerner <lczerner@redhat.com> wrote:
-> On Thu, 1 Dec 2011, Kyungmin Park wrote:
->
->> From: Kyungmin Park <kyungmin.park@samsung.com>
->>
->> Now trim information doesn't stored at disk so every boot time. it's
->> cleared.
->> and do the trim all disk groups.
->> But assume that it's already trimmed at previous time so don't need to
->> trim it again. So set the intial state as trimmed.
->
-> Hi,
->
-> I am sorry, but from the code and comments I have seen, I do not think
-> it does make sense to change that behaviour. I agree that discarding the
-> whole file system after the mount might not be necessarily needed, but
-> on the other hand, you can never assume that the blocks were already
-> trimmed, since it most likely will not be true.
->
-> I think that the bigger problem is "running fitrim at boot time" which
-> does not make sense to me, because you'll be perfectly fine leaving this
-> up to the cron (or something similar). Also when you're booting you need
-> to be done ASAP so why to bother with other unnecessary operations ?
+Dear Mr. Park,
 
-Okay please ignore the boot time, but still first trim operation needs
-to be considered.
-Unlike the pc world, the phone is turned off/on frequently. at that
-time it trims all block again.
-I know it's not hurt the flash life time, but want to avoid to useless
-trim operation on flash.
+On 5 December 2011 15:40, Kyungmin Park <kmpark@infradead.org> wrote:
+[...]
 
-Yes, the best solution is that trim information is also stored at disk.
-Can you confirm the idea? store the trim information at bg_flags at
-struct ext4_block_desc?
+>> +     /*
+>> +      * If power to lcd and/or lcd interface is controlled using a regulator,
+>> +      * enable or disable the regulator based in the power setting.
+>> +      */
+>> +     lcd_regulator = regulator_get(plcd->us, "vcc_lcd");
+>> +     if (IS_ERR(lcd_regulator)) {
+>> +             dev_info(plcd->us, "could not get regulator\n");
+>> +             goto set_power;
+>> +     }
+>
+> Recent regulator discussion. it should be failed instead fall through
+> gracefully.
 
-Thank you,
-Kyungmin Park
->
-> The funniest thing about this patch is (no offense, really) that you've
-> solved the problem of "fitrim slowing down the boot process" by changing
-> kernel logic to assume something which will most likely be false, instead
-> of just *not* doing boot time fitrim at the first place, because this is
-> exactly what will happen with this patch.
->
-> Thanks!
-> -Lukas
->
->>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
->> index e2d8be8..97ef342 100644
->> --- a/fs/ext4/mballoc.c
->> +++ b/fs/ext4/mballoc.c
->> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
->> ext4_group_t group)
->>  		goto err;
->>  	}
->>  	mark_page_accessed(page);
+Ok. But in this case, there could be boards that do not use a
+regulator for the lcd/display interface. Is it mandatory for fail if
+regulator is not found. Sorry, I have not read through the regulator
+discussion.
+
 >> +
->> +	/*
->> +	 * TRIM information is not stored at disk so set the initial
->> +	 * state as trimmed. Since previous time it's already trimmed all
->> +	 */
->> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
->>  err:
->>  	ext4_mb_put_buddy_page_lock(&e4b);
->>  	return ret;
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+>> +     if (lcd_power) {
+>> +             if (plcd->pdata->min_uV || plcd->pdata->max_uV)
+>> +                     if (regulator_set_voltage(lcd_regulator,
+>> +                             plcd->pdata->min_uV, plcd->pdata->max_uV))
+>> +                             dev_info(plcd->us,
+>> +                                     "regulator voltage set failed\n");
+> Are there case to change the voltage? Doesn't it easy to set the
+> voltage at board file? I mean don't need to setup at drivers?
+
+The constraint 'apply_uV' cannot be expressed with a device tree. So
+there has be a mechanism to set the required output voltage for a
+regulator.
+
+In case of platform-lcd driver, the power source should be turned off
+to the lcd/interfaces until the display controller driver is enabled.
+Powering on the lcd/interfaces at boot time by default would not be
+ideal.
+
+Thanks for your review and comments.
+
+Regards,
+Thomas.
+
 >
-> --
->
+> Thank you,
+> Kyungmin Park
+
+[...]
