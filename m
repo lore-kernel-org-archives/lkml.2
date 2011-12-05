@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab1LENXt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 08:23:49 -0500
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:6056
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932202Ab1LENXr (ORCPT
+	id S932300Ab1LENZs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 08:25:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57492 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932224Ab1LENZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 08:23:47 -0500
-X-SpamScore: -16
-X-BigFish: VPS-16(zz9371K1432N98dK4015Lzz1202hzz8275bhz2dh668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVQFVH-02-A5E-02
-X-M-MSG: 
-Date: Mon, 5 Dec 2011 14:23:40 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        "acme@redhat.com" <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "dsahern@gmail.com" <dsahern@gmail.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v8)
-Message-ID: <20111205132340.GH15738@erda.amd.com>
-References: <20110930134040.GA5575@quad>
- <20111129182231.GZ15738@erda.amd.com>
- <CABPqkBTR3tEGh7LymuS_JJR5SuCZfjTxZP-6qNxmZtBf0Zt9bg@mail.gmail.com>
- <20111130150829.GA15738@erda.amd.com>
- <20111130164946.GA27163@infradead.org>
- <20111201150151.GA15110@somewhere.redhat.com>
- <20111201151520.GB15738@erda.amd.com>
- <CABPqkBQwQ1gzQEfAehiLRXrO196vovNeRjS9taiM7dfk7U9egQ@mail.gmail.com>
+	Mon, 5 Dec 2011 08:25:47 -0500
+Date: Mon, 5 Dec 2011 05:25:32 -0800
+From: "tip-bot for Rafael J. Wysocki" <rjw@sisk.pl>
+Message-ID: <tip-6be30bb7d7504ec687a65c9bbdae8d1d2f8eaa19@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, rjw@sisk.pl, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, rjw@sisk.pl, mingo@elte.hu
+In-Reply-To: <201111160019.51303.rjw@sisk.pl>
+References: <201111160019.51303.rjw@sisk.pl>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/reboot: Blacklist Dell OptiPlex 990 known to require PCI reboot
+Git-Commit-ID: 6be30bb7d7504ec687a65c9bbdae8d1d2f8eaa19
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CABPqkBQwQ1gzQEfAehiLRXrO196vovNeRjS9taiM7dfk7U9egQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 05:25:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.12.11 09:53:10, Stephane Eranian wrote:
-> On Thu, Dec 1, 2011 at 7:15 AM, Robert Richter <robert.richter@amd.com> wrote:
-> > I am asking this because I want to change code in a way that treats
-> > all features the same, that is just to disable the feature bit on
-> > failure and then continue anyway.
-> >
-> You need to make sure that disabling the bit is enough to still get a consistent
-> file, i.e., want to undo the effect of writing the feature to the
-> file. In the case
-> of the meta-data features I added that was easy simply lseek() back to
-> the position
-> before the call. Would that be the case with TRACE_INFO?
+Commit-ID:  6be30bb7d7504ec687a65c9bbdae8d1d2f8eaa19
+Gitweb:     http://git.kernel.org/tip/6be30bb7d7504ec687a65c9bbdae8d1d2f8eaa19
+Author:     Rafael J. Wysocki <rjw@sisk.pl>
+AuthorDate: Wed, 16 Nov 2011 00:19:51 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 5 Dec 2011 12:20:43 +0100
 
-It should be. All features can be parsed independently. Offset and
-size of a feature's data block is stored in struct perf_file_section
-right after the data block of perf.data (see perf_session__write_
-header()). Thus, if a feature does not exist then other features can
-be processed anyway.
+x86/reboot: Blacklist Dell OptiPlex 990 known to require PCI reboot
 
-Thanks,
+Dell OptiPlex 990 is known to require PCI reboot, so add it to
+the reboot blacklist in pci_reboot_dmi_table[].
 
--Robert
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Link: http://lkml.kernel.org/r/201111160019.51303.rjw@sisk.pl
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/reboot.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index e334be1..4463d2f 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -443,6 +443,14 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on the OptiPlex 990. */
++		.callback = set_pci_reboot,
++		.ident = "Dell OptiPlex 990",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 990"),
++		},
++	},
+ 	{ }
+ };
+ 
