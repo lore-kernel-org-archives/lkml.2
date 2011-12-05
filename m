@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab1LESaA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 13:30:00 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19390 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600Ab1LES37 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 13:29:59 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6551"; a="143851948"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: "David S . Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH] net: Silence seq_scale() unused warning
-Date: Mon,  5 Dec 2011 10:29:56 -0800
-Message-Id: <1323109796-31084-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.8
+	id S1756614Ab1LESaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 13:30:15 -0500
+Received: from lo.gmane.org ([80.91.229.12]:52999 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755600Ab1LESaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 13:30:11 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Matthew Maurer <maurer@ugcs.caltech.edu>
+Subject: Re: [PATCH v5 4/9] x86-64: Remove kernel.vsyscall64 sysctl
+Date: Mon, 5 Dec 2011 18:27:09 +0000 (UTC)
+Message-ID: <loom.20111205T192515-288@post.gmane.org>
+References: <cover.1307292171.git.luto@mit.edu> <973ae803fe76f712da4b2740e66dccf452d3b1e4.1307292171.git.luto@mit.edu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 128.237.247.56 (Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20100101 Firefox/8.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a CONFIG_NET=y build
+Andy Lutomirski <luto <at> MIT.EDU> writes:
 
-net/core/secure_seq.c:22: warning: 'seq_scale' defined but not
-used
+> 
+> It's unnecessary overhead in code that's supposed to be highly
+> optimized.  Removing it allows us to remove one of the two syscall
+> instructions in the vsyscall page.
+> 
+> The only sensible use for it is for UML users, and it doesn't fully
+> address inconsistent vsyscall results on UML.  The real fix for UML
+> is to stop using vsyscalls entirely.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+UML is not the only use case for this. Anybody who wants to be able to
+trace _all_ system calls (for debugging, ptrace-based sandboxing, or a
+number of other purposes) needs this.
 
-I don't know how realistic this configuration is, but here it goes.
+We either need this back, or need another way to make it possible to
+trace these system calls.
 
- net/core/secure_seq.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Apologies for the late reply, I didn't notice this change until it got
+into my distribution's kernel.
 
-diff --git a/net/core/secure_seq.c b/net/core/secure_seq.c
-index 025233d..db12233 100644
---- a/net/core/secure_seq.c
-+++ b/net/core/secure_seq.c
-@@ -19,6 +19,7 @@ static int __init net_secret_init(void)
- }
- late_initcall(net_secret_init);
- 
-+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE) || defined(CONFIG_INET)
- static u32 seq_scale(u32 seq)
- {
- 	/*
-@@ -33,6 +34,7 @@ static u32 seq_scale(u32 seq)
- 	 */
- 	return seq + (ktime_to_ns(ktime_get_real()) >> 6);
- }
-+#endif
- 
- #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
- __u32 secure_tcpv6_sequence_number(const __be32 *saddr, const __be32 *daddr,
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+--Matthew Maurer
 
