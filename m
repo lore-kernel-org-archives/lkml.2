@@ -1,356 +1,454 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab1LEUO3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:14:29 -0500
-Received: from 9.mo4.mail-out.ovh.net ([46.105.40.176]:43413 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756295Ab1LEUO2 (ORCPT
+	id S932526Ab1LEUQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:16:57 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:40995 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147Ab1LEUQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:14:28 -0500
-X-Greylist: delayed 4199 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Dec 2011 15:14:27 EST
-Date: Mon, 05 Dec 2011 17:00:23 +0100
-From: Marc Vertes <marc.vertes@sigfox.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.4 (mo4.mail-out.ovh.net)
-Subject: [PATCH V2] watchdog: new driver for VIA chipsets
-Message-ID: <4edcea97.DkJEuLQJGuzahhwo%marc.vertes@sigfox.com>
-User-Agent: Heirloom mailx 12.4 7/29/08
+	Mon, 5 Dec 2011 15:16:55 -0500
+Date: Mon, 5 Dec 2011 15:20:57 -0500
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Dave Airlie <airlied@gmail.com>, Christoph Lameter <cl@linux.com>,
+        "Alex, Shi" <alex.shi@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Matt Mackall <mpm@selenic.com>, tj@kernel.org,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+Message-ID: <20111205202057.GD4342@homer.localdomain>
+References: <20111203092845.GA1520@x4.trippels.de>
+ <CAPM=9tyjZc9waC_ZBygW9zh+Zq-Wb1X5Y6yfsCCMPYwpFVWOOg@mail.gmail.com>
+ <20111203122900.GA1617@x4.trippels.de>
+ <CAH3drwZDOpPuQ_G=LwTiNsR5BNyJTNr+VJU74E6nS5AbKyQH0A@mail.gmail.com>
+ <20111204010200.GA1530@x4.trippels.de>
+ <20111205171046.GA4342@homer.localdomain>
+ <20111205181549.GA1612@x4.trippels.de>
+ <20111205191116.GB4342@homer.localdomain>
+ <20111205192701.GA1531@x4.trippels.de>
+ <CAOJsxLGCrNZnxZ70vpRGZ35GMK4MPDc4r6S=KTngQuL0eED94w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 16904261201505470232
-X-Ovh-Remote: 92.103.90.130 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedruddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffvuffkfgggtgfgsehtjeertddtredvnecuhfhrohhmpeforghrtgcugggvrhhtvghsuceomhgrrhgtrdhvvghrthgvshesshhighhfohigrdgtohhmqeenucffohhmrghinhepuggvvhdrihhnfhhone
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedruddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffvuffkfgggtgfgsehtjeertddtredvnecuhfhrohhmpeforghrtgcugggvrhhtvghsuceomhgrrhgtrdhvvghrthgvshesshhighhfohigrdgtohhmqeenucffohhmrghinhepuggvvhdrihhnfhhone
+Content-Type: multipart/mixed; boundary="TYecfFk8j8mZq+dy"
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLGCrNZnxZ70vpRGZ35GMK4MPDc4r6S=KTngQuL0eED94w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New driver for the hardware watchdog timer on VIA chipsets.
-This driver uses the new watchdog framework.
-PnP must be enabled in BIOS to get full control of watchdog registers.
-The timer code has been added by Wim Van Sebroeck.
-Tested on a Artigo A1100, VX855 chipset.
 
-Signed-off-by: Marc Vertes <marc.vertes@sigfox.com>
+--TYecfFk8j8mZq+dy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Dec 05, 2011 at 10:10:34PM +0200, Pekka Enberg wrote:
+> On Mon, Dec 5, 2011 at 9:27 PM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
+> >> > Yes the patch finally fixes the issue for me (tested with 120 kexec
+> >> > iterations).
+> >> > Thanks Jerome!
+> >>
+> >> Can you do a kick run on the modified patch ?
+> >
+> > This one is also OK after ~60 iterations.
+> 
+> Jerome, could you please include a reference to this LKML thread for
+> context and attribution for Markus for reporting and following up to
+> get the issue fixed in the changelog?
+> 
+>                               Pekka
+
+Attached updated patch, only changelog is different. Thanks Markus for
+testing this.
+
+Cheers,
+Jerome
+
+--TYecfFk8j8mZq+dy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-drm-radeon-disable-possible-GPU-writeback-early-v3.patch"
+
+>From cccfa6f93faa6b556fd72e318606a01e333e67d3 Mon Sep 17 00:00:00 2001
+From: Jerome Glisse <jglisse@redhat.com>
+Date: Mon, 5 Dec 2011 12:02:17 -0500
+Subject: [PATCH] drm/radeon: disable possible GPU writeback early v3
+
+Given how kexec works we need to disable any kind of GPU writeback
+early in GPU initialization just in case some are still active from
+previous setup. This patch is done to fix the issue described in
+the lkml thread :
+
+WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
+
+https://lkml.org/lkml/2011/12/5/466
+
+Thanks to Markus Trippelsdorf for testing this.
+
+v2 follow previous sanity work done on earlier radeon, also write
+reg uncondionaly and disable irq too.
+v3 update change log
+
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+Tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
 ---
- Kconfig   |   13 +++
- Makefile  |    1 
- via_wdt.c |  266 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 280 insertions(+)
+ drivers/gpu/drm/radeon/evergreen.c   |    2 ++
+ drivers/gpu/drm/radeon/ni.c          |   18 ++++++++++++++++++
+ drivers/gpu/drm/radeon/nid.h         |   19 +++++++++++++++++++
+ drivers/gpu/drm/radeon/r100.c        |   20 ++++++--------------
+ drivers/gpu/drm/radeon/r520.c        |    2 +-
+ drivers/gpu/drm/radeon/r600.c        |   16 ++++++++++++++++
+ drivers/gpu/drm/radeon/radeon_asic.h |    2 ++
+ drivers/gpu/drm/radeon/rs600.c       |   20 +++++++++++++++++++-
+ drivers/gpu/drm/radeon/rs600d.h      |   21 +++++++++++++++++++++
+ drivers/gpu/drm/radeon/rs690.c       |    2 +-
+ drivers/gpu/drm/radeon/rv515.c       |    2 +-
+ drivers/gpu/drm/radeon/rv770.c       |   16 ++++++++++++++++
+ drivers/gpu/drm/radeon/rv770d.h      |   20 ++++++++++++++++++++
+ 13 files changed, 142 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 79fd606..877b107 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -772,6 +772,19 @@ config SMSC37B787_WDT
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index 1934728..6109579 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -3249,6 +3249,8 @@ int evergreen_init(struct radeon_device *rdev)
+ {
+ 	int r;
  
- 	  Most people will say N.
++	/* restore some register to sane defaults */
++	rv770_restore_sanity(rdev);
+ 	/* This don't do much */
+ 	r = radeon_gem_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
+index c15fc8b..f5d7054 100644
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1566,6 +1566,22 @@ int cayman_suspend(struct radeon_device *rdev)
+ 	return 0;
+ }
  
-+config VIA_WDT
-+	tristate "VIA Watchdog Timer"
-+	depends on X86
-+	select WATCHDOG_CORE
-+	---help---
-+	This is the driver for the hardware watchdog timer on VIA
-+	southbridge chipset CX700, VX800/VX820 or VX855/VX875.
-+
-+	To compile this driver as a module, choose M here; the module
-+	will be called via_wdt.
-+
-+	Most people will say N.
-+
- config W83627HF_WDT
- 	tristate "W83627HF/W83627DHG Watchdog Timer"
- 	depends on X86
-diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-index fe893e9..e8f479a 100644
---- a/drivers/watchdog/Makefile
-+++ b/drivers/watchdog/Makefile
-@@ -99,6 +99,7 @@ obj-$(CONFIG_SBC7240_WDT) += sbc7240_wdt.o
- obj-$(CONFIG_CPU5_WDT) += cpu5wdt.o
- obj-$(CONFIG_SMSC_SCH311X_WDT) += sch311x_wdt.o
- obj-$(CONFIG_SMSC37B787_WDT) += smsc37b787_wdt.o
-+obj-$(CONFIG_VIA_WDT) += via_wdt.o
- obj-$(CONFIG_W83627HF_WDT) += w83627hf_wdt.o
- obj-$(CONFIG_W83697HF_WDT) += w83697hf_wdt.o
- obj-$(CONFIG_W83697UG_WDT) += w83697ug_wdt.o
-diff --git a/drivers/watchdog/via_wdt.c b/drivers/watchdog/via_wdt.c
-new file mode 100644
-index 0000000..3bc4399
---- /dev/null
-+++ b/drivers/watchdog/via_wdt.c
-@@ -0,0 +1,266 @@
 +/*
-+ * VIA Chipset Watchdog Driver
-+ *
-+ * Copyright (C) 2011 Sigfox
-+ * License terms: GNU General Public License (GPL) version 2
-+ * Author: Marc Vertes <marc.vertes@sigfox.com>
-+ * Based on a preliminary version from Harald Welte <HaraldWelte@viatech.com>
-+ * Timer code by Wim Van Sebroeck <wim@iguana.be>
-+ *
-+ * Caveat: PnP must be enabled in BIOS to allow full access to watchdog
-+ * control registers. If not, the watchdog must be configured in BIOS manually.
++ * Due to how kexec works, it can leave the hw fully initialised when it
++ * boots the new kernel.
 + */
-+#include <linux/device.h>
-+#include <linux/io.h>
-+#include <linux/jiffies.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/timer.h>
-+#include <linux/watchdog.h>
++static void cayman_restore_sanity(struct radeon_device *rdev)
++{
++	/* stop possible GPU activities */
++	WREG32(IH_RB_CNTL, 0);
++	WREG32(IH_CNTL, 0);
++	WREG32(CP_ME_CNTL, CP_ME_HALT | CP_PFP_HALT);
++	WREG32(SCRATCH_UMSK, 0);
++	WREG32(CP_RB0_CNTL, RB_NO_UPDATE);
++	WREG32(CP_RB1_CNTL, RB_NO_UPDATE);
++	WREG32(CP_RB2_CNTL, RB_NO_UPDATE);
++}
 +
-+/* Configuration registers relative to the pci device */
-+#define VIA_WDT_MMIO_BASE	0xe8	/* MMIO region base address */
-+#define VIA_WDT_CONF		0xec	/* watchdog enable state */
+ /* Plan is to move initialization in that function and use
+  * helper function so that radeon_device_init pretty much
+  * do nothing more than calling asic specific function. This
+@@ -1577,6 +1593,8 @@ int cayman_init(struct radeon_device *rdev)
+ 	struct radeon_ring *ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
+ 	int r;
+ 
++	/* restore some register to sane defaults */
++	cayman_restore_sanity(rdev);
+ 	/* This don't do much */
+ 	r = radeon_gem_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/nid.h b/drivers/gpu/drm/radeon/nid.h
+index 4640334..3aa33c6 100644
+--- a/drivers/gpu/drm/radeon/nid.h
++++ b/drivers/gpu/drm/radeon/nid.h
+@@ -162,6 +162,25 @@
+ #define HDP_MISC_CNTL					0x2F4C
+ #define 	HDP_FLUSH_INVALIDATE_CACHE			(1 << 0)
+ 
++#define IH_RB_CNTL                                        0x3e00
++#       define IH_RB_ENABLE                               (1 << 0)
++#       define IH_IB_SIZE(x)                              ((x) << 1) /* log2 */
++#       define IH_RB_FULL_DRAIN_ENABLE                    (1 << 6)
++#       define IH_WPTR_WRITEBACK_ENABLE                   (1 << 8)
++#       define IH_WPTR_WRITEBACK_TIMER(x)                 ((x) << 9) /* log2 */
++#       define IH_WPTR_OVERFLOW_ENABLE                    (1 << 16)
++#       define IH_WPTR_OVERFLOW_CLEAR                     (1 << 31)
++#define IH_CNTL                                           0x3e18
++#       define ENABLE_INTR                                (1 << 0)
++#       define IH_MC_SWAP(x)                              ((x) << 1)
++#       define IH_MC_SWAP_NONE                            0
++#       define IH_MC_SWAP_16BIT                           1
++#       define IH_MC_SWAP_32BIT                           2
++#       define IH_MC_SWAP_64BIT                           3
++#       define RPTR_REARM                                 (1 << 4)
++#       define MC_WRREQ_CREDIT(x)                         ((x) << 15)
++#       define MC_WR_CLEAN_CNT(x)                         ((x) << 20)
 +
-+/* Relevant bits for the VIA_WDT_CONF register */
-+#define VIA_WDT_CONF_ENABLE	0x01	/* 1: enable watchdog */
-+#define VIA_WDT_CONF_MMIO	0x02	/* 1: enable watchdog MMIO */
+ #define	CC_SYS_RB_BACKEND_DISABLE			0x3F88
+ #define	GC_USER_SYS_RB_BACKEND_DISABLE			0x3F8C
+ #define	CGTS_SYS_TCC_DISABLE				0x3F90
+diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
+index 657040b..d58531f 100644
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -3990,20 +3990,12 @@ void r100_fini(struct radeon_device *rdev)
+  */
+ void r100_restore_sanity(struct radeon_device *rdev)
+ {
+-	u32 tmp;
+-
+-	tmp = RREG32(RADEON_CP_CSQ_CNTL);
+-	if (tmp) {
+-		WREG32(RADEON_CP_CSQ_CNTL, 0);
+-	}
+-	tmp = RREG32(RADEON_CP_RB_CNTL);
+-	if (tmp) {
+-		WREG32(RADEON_CP_RB_CNTL, 0);
+-	}
+-	tmp = RREG32(RADEON_SCRATCH_UMSK);
+-	if (tmp) {
+-		WREG32(RADEON_SCRATCH_UMSK, 0);
+-	}
++	/* stop possible GPU activities */
++	WREG32(RADEON_CP_CSQ_MODE, 0);
++	WREG32(RADEON_CP_CSQ_CNTL, 0);
++	WREG32(R_000770_SCRATCH_UMSK, 0);
++	WREG32(RADEON_CP_RB_CNTL, RADEON_RB_NO_UPDATE);
++	WREG32(RADEON_GEN_INT_CNTL, 0);
+ }
+ 
+ int r100_init(struct radeon_device *rdev)
+diff --git a/drivers/gpu/drm/radeon/r520.c b/drivers/gpu/drm/radeon/r520.c
+index 4ae1615..71a984b 100644
+--- a/drivers/gpu/drm/radeon/r520.c
++++ b/drivers/gpu/drm/radeon/r520.c
+@@ -249,7 +249,7 @@ int r520_init(struct radeon_device *rdev)
+ 	/* Initialize surface registers */
+ 	radeon_surface_init(rdev);
+ 	/* restore some register to sane defaults */
+-	r100_restore_sanity(rdev);
++	rs600_restore_sanity(rdev);
+ 	/* TODO: disable VGA need to use VGA request */
+ 	/* BIOS*/
+ 	if (!radeon_get_bios(rdev)) {
+diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+index 951566f..ec437d5 100644
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2556,6 +2556,20 @@ int r600_suspend(struct radeon_device *rdev)
+ 	return 0;
+ }
+ 
++/*
++ * Due to how kexec works, it can leave the hw fully initialised when it
++ * boots the new kernel.
++ */
++static void r600_restore_sanity(struct radeon_device *rdev)
++{
++	/* stop possible GPU activities */
++	WREG32(IH_RB_CNTL, 0);
++	WREG32(IH_CNTL, 0);
++	WREG32(R_0086D8_CP_ME_CNTL, S_0086D8_CP_ME_HALT(1));
++	WREG32(SCRATCH_UMSK, 0);
++	WREG32(CP_RB_CNTL, RB_NO_UPDATE);
++}
++
+ /* Plan is to move initialization in that function and use
+  * helper function so that radeon_device_init pretty much
+  * do nothing more than calling asic specific function. This
+@@ -2566,6 +2580,8 @@ int r600_init(struct radeon_device *rdev)
+ {
+ 	int r;
+ 
++	/* restore some register to sane defaults */
++	r600_restore_sanity(rdev);
+ 	if (r600_debugfs_mc_info_init(rdev)) {
+ 		DRM_ERROR("Failed to register debugfs file for mc !\n");
+ 	}
+diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
+index 6304aef..6b664b0 100644
+--- a/drivers/gpu/drm/radeon/radeon_asic.h
++++ b/drivers/gpu/drm/radeon/radeon_asic.h
+@@ -215,6 +215,7 @@ extern int rs600_init(struct radeon_device *rdev);
+ extern void rs600_fini(struct radeon_device *rdev);
+ extern int rs600_suspend(struct radeon_device *rdev);
+ extern int rs600_resume(struct radeon_device *rdev);
++void rs600_restore_sanity(struct radeon_device *rdev);
+ int rs600_irq_set(struct radeon_device *rdev);
+ int rs600_irq_process(struct radeon_device *rdev);
+ void rs600_irq_disable(struct radeon_device *rdev);
+@@ -388,6 +389,7 @@ u32 rv770_page_flip(struct radeon_device *rdev, int crtc, u64 crtc_base);
+ void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc);
+ void r700_cp_stop(struct radeon_device *rdev);
+ void r700_cp_fini(struct radeon_device *rdev);
++void rv770_restore_sanity(struct radeon_device *rdev);
+ 
+ /*
+  * evergreen
+diff --git a/drivers/gpu/drm/radeon/rs600.c b/drivers/gpu/drm/radeon/rs600.c
+index ca6d5b6..fc3c707 100644
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -935,6 +935,24 @@ void rs600_fini(struct radeon_device *rdev)
+ 	rdev->bios = NULL;
+ }
+ 
 +
 +/*
-+ * The MMIO region contains the watchog control register and the
-+ * hardware timer counter.
++ * Due to how kexec works, it can leave the hw fully initialised when it
++ * boots the new kernel.
 + */
-+#define VIA_WDT_MMIO_LEN	8	/* MMIO region length in bytes */
-+#define VIA_WDT_CTL		0	/* MMIO addr+0: state/control reg. */
-+#define VIA_WDT_COUNT		4	/* MMIO addr+4: timer counter reg. */
-+
-+/* Bits for the VIA_WDT_CTL register */
-+#define VIA_WDT_RUNNING		0x01	/* 0: stop, 1: running */
-+#define VIA_WDT_FIRED		0x02	/* 1: restarted by expired watchdog */
-+#define VIA_WDT_PWROFF		0x04	/* 0: reset, 1: poweroff */
-+#define VIA_WDT_DISABLED	0x08	/* 1: timer is disabled */
-+#define VIA_WDT_TRIGGER		0x80	/* 1: start a new countdown */
-+
-+/* Hardware heartbeat in seconds */
-+#define WDT_HW_HEARTBEAT 1
-+
-+/* Timer heartbeat (500ms) */
-+#define WDT_HEARTBEAT	(HZ/2)	/* should be <= ((WDT_HW_HEARTBEAT*HZ)/2) */
-+
-+/* User space timeout in seconds */
-+#define WDT_TIMEOUT_MAX	1023	/* approx. 17 min. */
-+#define WDT_TIMEOUT	60
-+static int timeout = WDT_TIMEOUT;
-+module_param(timeout, int, 0);
-+MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds, between 1 and 1023 "
-+	"(default = " __MODULE_STRING(WDT_TIMEOUT) ")");
-+
-+static int nowayout = WATCHDOG_NOWAYOUT;
-+module_param(nowayout, int, 0);
-+MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
-+	"(default = " __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
-+
-+static struct watchdog_device wdt_dev;
-+static struct resource wdt_res;
-+static void __iomem *wdt_mem;
-+static unsigned int mmio;
-+static void wdt_timer_tick(unsigned long data);
-+static DEFINE_TIMER(timer, wdt_timer_tick, 0, 0);
-+					/* The timer that pings the watchdog */
-+static unsigned long next_heartbeat;	/* the next_heartbeat for the timer */
-+
-+static inline void wdt_reset(void)
++void rs600_restore_sanity(struct radeon_device *rdev)
 +{
-+	unsigned int ctl = readl(wdt_mem);
-+
-+	writel(ctl | VIA_WDT_TRIGGER, wdt_mem);
++	/* stop possible GPU activities */
++	WREG32(R_000740_CP_CSQ_CNTL, 0);
++	WREG32(R_000744_CP_CSQ_MODE, 0);
++	WREG32(R_000770_SCRATCH_UMSK, 0);
++	WREG32(R_000704_CP_RB_CNTL, S_000704_RB_NO_UPDATE(1));
++	WREG32(R_000040_GEN_INT_CNTL, 0);
++	WREG32(R_006540_DxMODE_INT_MASK, 0);
++	WREG32(R_007D08_DC_HOT_PLUG_DETECT1_INT_CONTROL, 0);
++	WREG32(R_007D18_DC_HOT_PLUG_DETECT2_INT_CONTROL, 0);
 +}
 +
+ int rs600_init(struct radeon_device *rdev)
+ {
+ 	int r;
+@@ -946,7 +964,7 @@ int rs600_init(struct radeon_device *rdev)
+ 	/* Initialize surface registers */
+ 	radeon_surface_init(rdev);
+ 	/* restore some register to sane defaults */
+-	r100_restore_sanity(rdev);
++	rs600_restore_sanity(rdev);
+ 	/* BIOS */
+ 	if (!radeon_get_bios(rdev)) {
+ 		if (ASIC_IS_AVIVO(rdev))
+diff --git a/drivers/gpu/drm/radeon/rs600d.h b/drivers/gpu/drm/radeon/rs600d.h
+index a27c13a..54d96e6 100644
+--- a/drivers/gpu/drm/radeon/rs600d.h
++++ b/drivers/gpu/drm/radeon/rs600d.h
+@@ -668,4 +668,25 @@
+ #define   PM_ASSERT_RESET                              (1 << 20)
+ #define   PM_PWRDN_PPLL                                (1 << 24)
+ 
++#define R_000704_CP_RB_CNTL                          0x000704
++#define   S_000704_RB_NO_UPDATE(x)                     (((x) & 0x1) << 27)
++#define R_000740_CP_CSQ_CNTL                         0x000740
++#define   S_000740_CSQ_CNT_PRIMARY(x)                  (((x) & 0xFF) << 0)
++#define   G_000740_CSQ_CNT_PRIMARY(x)                  (((x) >> 0) & 0xFF)
++#define   C_000740_CSQ_CNT_PRIMARY                     0xFFFFFF00
++#define   S_000740_CSQ_CNT_INDIRECT(x)                 (((x) & 0xFF) << 8)
++#define   G_000740_CSQ_CNT_INDIRECT(x)                 (((x) >> 8) & 0xFF)
++#define   C_000740_CSQ_CNT_INDIRECT                    0xFFFF00FF
++#define   S_000740_CSQ_MODE(x)                         (((x) & 0xF) << 28)
++#define   G_000740_CSQ_MODE(x)                         (((x) >> 28) & 0xF)
++#define   C_000740_CSQ_MODE                            0x0FFFFFFF
++#define R_000744_CP_CSQ_MODE                         0x000744
++#define R_000770_SCRATCH_UMSK                        0x000770
++#define   S_000770_SCRATCH_UMSK(x)                     (((x) & 0x3F) << 0)
++#define   G_000770_SCRATCH_UMSK(x)                     (((x) >> 0) & 0x3F)
++#define   C_000770_SCRATCH_UMSK                        0xFFFFFFC0
++#define   S_000770_SCRATCH_SWAP(x)                     (((x) & 0x3) << 16)
++#define   G_000770_SCRATCH_SWAP(x)                     (((x) >> 16) & 0x3)
++#define   C_000770_SCRATCH_SWAP                        0xFFFCFFFF
++
+ #endif
+diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
+index 4f24a0f..8a3b1f4 100644
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -718,7 +718,7 @@ int rs690_init(struct radeon_device *rdev)
+ 	/* Initialize surface registers */
+ 	radeon_surface_init(rdev);
+ 	/* restore some register to sane defaults */
+-	r100_restore_sanity(rdev);
++	rs600_restore_sanity(rdev);
+ 	/* TODO: disable VGA need to use VGA request */
+ 	/* BIOS*/
+ 	if (!radeon_get_bios(rdev)) {
+diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
+index 880637f..c9ced40 100644
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -488,7 +488,7 @@ int rv515_init(struct radeon_device *rdev)
+ 	radeon_surface_init(rdev);
+ 	/* TODO: disable VGA need to use VGA request */
+ 	/* restore some register to sane defaults */
+-	r100_restore_sanity(rdev);
++	rs600_restore_sanity(rdev);
+ 	/* BIOS*/
+ 	if (!radeon_get_bios(rdev)) {
+ 		if (ASIC_IS_AVIVO(rdev))
+diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
+index a1668b6..3d0397d 100644
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -1167,6 +1167,20 @@ int rv770_suspend(struct radeon_device *rdev)
+ 	return 0;
+ }
+ 
 +/*
-+ * Timer tick: the timer will make sure that the watchdog timer hardware
-+ * is being reset in time. The conditions to do this are:
-+ *  1) the watchog timer has been started and /dev/watchdog is open
-+ *     and there is still time left before userspace should send the
-+ *     next heartbeat/ping. (note: the internal heartbeat is much smaller
-+ *     then the external/userspace heartbeat).
-+ *  2) the watchdog timer has been stopped by userspace.
++ * Due to how kexec works, it can leave the hw fully initialised when it
++ * boots the new kernel.
 + */
-+static void wdt_timer_tick(unsigned long data)
++void rv770_restore_sanity(struct radeon_device *rdev)
 +{
-+	if (time_before(jiffies, next_heartbeat) ||
-+	   (!test_bit(WDOG_ACTIVE, &wdt_dev.status))) {
-+		wdt_reset();
-+		mod_timer(&timer, jiffies + WDT_HEARTBEAT);
-+	} else
-+		pr_crit("I will reboot your machine !\n");
++	/* stop possible GPU activities */
++	WREG32(IH_RB_CNTL, 0);
++	WREG32(IH_CNTL, 0);
++	WREG32(CP_ME_CNTL, CP_ME_HALT | CP_PFP_HALT);
++	WREG32(SCRATCH_UMSK, 0);
++	WREG32(CP_RB_CNTL, RB_NO_UPDATE);
 +}
 +
-+static int wdt_ping(struct watchdog_device *wdd)
-+{
-+	/* calculate when the next userspace timeout will be */
-+	next_heartbeat = jiffies + timeout * HZ;
-+	return 0;
-+}
+ /* Plan is to move initialization in that function and use
+  * helper function so that radeon_device_init pretty much
+  * do nothing more than calling asic specific function. This
+@@ -1177,6 +1191,8 @@ int rv770_init(struct radeon_device *rdev)
+ {
+ 	int r;
+ 
++	/* restore some register to sane defaults */
++	rv770_restore_sanity(rdev);
+ 	/* This don't do much */
+ 	r = radeon_gem_init(rdev);
+ 	if (r)
+diff --git a/drivers/gpu/drm/radeon/rv770d.h b/drivers/gpu/drm/radeon/rv770d.h
+index 79fa588..03bed2d 100644
+--- a/drivers/gpu/drm/radeon/rv770d.h
++++ b/drivers/gpu/drm/radeon/rv770d.h
+@@ -38,6 +38,26 @@
+ #define R7XX_MAX_PIPES             8
+ #define R7XX_MAX_PIPES_MASK        0xff
+ 
 +
-+static int wdt_start(struct watchdog_device *wdd)
-+{
-+	unsigned int ctl = readl(wdt_mem);
++#define IH_RB_CNTL                                        0x3e00
++#       define IH_RB_ENABLE                               (1 << 0)
++#       define IH_IB_SIZE(x)                              ((x) << 1) /* log2 */
++#       define IH_RB_FULL_DRAIN_ENABLE                    (1 << 6)
++#       define IH_WPTR_WRITEBACK_ENABLE                   (1 << 8)
++#       define IH_WPTR_WRITEBACK_TIMER(x)                 ((x) << 9) /* log2 */
++#       define IH_WPTR_OVERFLOW_ENABLE                    (1 << 16)
++#       define IH_WPTR_OVERFLOW_CLEAR                     (1 << 31)
++#define IH_CNTL                                           0x3e18
++#       define ENABLE_INTR                                (1 << 0)
++#       define IH_MC_SWAP(x)                              ((x) << 1)
++#       define IH_MC_SWAP_NONE                            0
++#       define IH_MC_SWAP_16BIT                           1
++#       define IH_MC_SWAP_32BIT                           2
++#       define IH_MC_SWAP_64BIT                           3
++#       define RPTR_REARM                                 (1 << 4)
++#       define MC_WRREQ_CREDIT(x)                         ((x) << 15)
++#       define MC_WR_CLEAN_CNT(x)                         ((x) << 20)
 +
-+	writel(timeout, wdt_mem + VIA_WDT_COUNT);
-+	writel(ctl | VIA_WDT_RUNNING | VIA_WDT_TRIGGER, wdt_mem);
-+	wdt_ping(wdd);
-+	mod_timer(&timer, jiffies + WDT_HEARTBEAT);
-+	return 0;
-+}
-+
-+static int wdt_stop(struct watchdog_device *wdd)
-+{
-+	unsigned int ctl = readl(wdt_mem);
-+
-+	writel(ctl & ~VIA_WDT_RUNNING, wdt_mem);
-+	return 0;
-+}
-+
-+static int wdt_set_timeout(struct watchdog_device *wdd,
-+			   unsigned int new_timeout)
-+{
-+	if (new_timeout < 1 || new_timeout > WDT_TIMEOUT_MAX)
-+		return -EINVAL;
-+	writel(new_timeout, wdt_mem + VIA_WDT_COUNT);
-+	timeout = new_timeout;
-+	return 0;
-+}
-+
-+static const struct watchdog_info wdt_info = {
-+	.identity =	"VIA watchdog",
-+	.options =	WDIOF_CARDRESET |
-+			WDIOF_SETTIMEOUT |
-+			WDIOF_MAGICCLOSE |
-+			WDIOF_KEEPALIVEPING,
-+};
-+
-+static const struct watchdog_ops wdt_ops = {
-+	.owner =	THIS_MODULE,
-+	.start =	wdt_start,
-+	.stop =		wdt_stop,
-+	.ping =		wdt_ping,
-+	.set_timeout =	wdt_set_timeout,
-+};
-+
-+static struct watchdog_device wdt_dev = {
-+	.info =		&wdt_info,
-+	.ops =		&wdt_ops,
-+};
-+
-+static int __devinit wdt_probe(struct pci_dev *pdev,
-+			       const struct pci_device_id *ent)
-+{
-+	unsigned char conf;
-+	int ret = -ENODEV;
-+
-+	if (pci_enable_device(pdev)) {
-+		dev_err(&pdev->dev, "cannot enable PCI device\n");
-+		return -ENODEV;
-+	}
-+
-+	/*
-+	 * Allocate a MMIO region which contains watchdog control register
-+	 * and counter, then configure the watchdog to use this region.
-+	 * This is possible only if PnP is properly enabled in BIOS.
-+	 * If not, the watchdog must be configured in BIOS manually.
-+	 */
-+	if (allocate_resource(&iomem_resource, &wdt_res, VIA_WDT_MMIO_LEN,
-+			      0xf0000000, 0xffffff00, 0xff, NULL, NULL)) {
-+		dev_err(&pdev->dev, "MMIO allocation failed\n");
-+		goto err_out_disable_device;
-+	}
-+
-+	pci_write_config_dword(pdev, VIA_WDT_MMIO_BASE, wdt_res.start);
-+	pci_read_config_byte(pdev, VIA_WDT_CONF, &conf);
-+	conf |= VIA_WDT_CONF_ENABLE | VIA_WDT_CONF_MMIO;
-+	pci_write_config_byte(pdev, VIA_WDT_CONF, conf);
-+
-+	pci_read_config_dword(pdev, VIA_WDT_MMIO_BASE, &mmio);
-+	if (mmio) {
-+		dev_info(&pdev->dev, "VIA Chipset watchdog MMIO: %x\n", mmio);
-+	} else {
-+		dev_err(&pdev->dev, "MMIO setting failed. Check BIOS.\n");
-+		goto err_out_resource;
-+	}
-+
-+	if (!request_mem_region(mmio, VIA_WDT_MMIO_LEN, "via_wdt")) {
-+		dev_err(&pdev->dev, "MMIO region busy\n");
-+		goto err_out_resource;
-+	}
-+
-+	wdt_mem = ioremap(mmio, VIA_WDT_MMIO_LEN);
-+	if (wdt_mem == NULL) {
-+		dev_err(&pdev->dev, "cannot remap VIA wdt MMIO registers\n");
-+		goto err_out_release;
-+	}
-+
-+	wdt_dev.timeout = timeout;
-+	watchdog_set_nowayout(&wdt_dev, nowayout);
-+	if (readl(wdt_mem) & VIA_WDT_FIRED)
-+		wdt_dev.bootstatus |= WDIOF_CARDRESET;
-+
-+	ret = watchdog_register_device(&wdt_dev);
-+	if (ret)
-+		goto err_out_iounmap;
-+
-+	/* start triggering, in case of watchdog already enabled by BIOS */
-+	mod_timer(&timer, jiffies + WDT_HEARTBEAT);
-+	return 0;
-+
-+err_out_iounmap:
-+	iounmap(wdt_mem);
-+err_out_release:
-+	release_mem_region(mmio, VIA_WDT_MMIO_LEN);
-+err_out_resource:
-+	release_resource(&wdt_res);
-+err_out_disable_device:
-+	pci_disable_device(pdev);
-+	return ret;
-+}
-+
-+static void __devexit wdt_remove(struct pci_dev *pdev)
-+{
-+	watchdog_unregister_device(&wdt_dev);
-+	del_timer(&timer);
-+	iounmap(wdt_mem);
-+	release_mem_region(mmio, VIA_WDT_MMIO_LEN);
-+	release_resource(&wdt_res);
-+	pci_disable_device(pdev);
-+}
-+
-+DEFINE_PCI_DEVICE_TABLE(wdt_pci_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_CX700) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VX800) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VX855) },
-+	{ 0 }
-+};
-+
-+static struct pci_driver wdt_driver = {
-+	.name		= "via_wdt",
-+	.id_table	= wdt_pci_table,
-+	.probe		= wdt_probe,
-+	.remove		= __devexit_p(wdt_remove),
-+};
-+
-+static int __init wdt_init(void)
-+{
-+	if (timeout < 1 || timeout > WDT_TIMEOUT_MAX)
-+		timeout = WDT_TIMEOUT;
-+	return pci_register_driver(&wdt_driver);
-+}
-+
-+static void __exit wdt_exit(void)
-+{
-+	pci_unregister_driver(&wdt_driver);
-+}
-+
-+module_init(wdt_init);
-+module_exit(wdt_exit);
-+
-+MODULE_AUTHOR("Marc Vertes");
-+MODULE_DESCRIPTION("Driver for watchdog timer on VIA chipset");
+ /* Registers */
+ #define	CB_COLOR0_BASE					0x28040
+ #define	CB_COLOR1_BASE					0x28044
+-- 
+1.7.7.1
+
+
+--TYecfFk8j8mZq+dy--
