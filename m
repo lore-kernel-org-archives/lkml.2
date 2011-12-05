@@ -1,111 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab1LEFnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 00:43:16 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51831 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018Ab1LEFnP convert rfc822-to-8bit (ORCPT
+	id S1751675Ab1LEFwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 00:52:55 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12452 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab1LEFwx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 00:43:15 -0500
-MIME-Version: 1.0
-In-Reply-To: <201112011215.21146.trenn@suse.de>
-References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
- <1322683014-13285-20-git-send-email-jim.cromie@gmail.com> <201112011215.21146.trenn@suse.de>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Sun, 4 Dec 2011 22:42:42 -0700
-Message-ID: <CAJfuBxzF7ScsQrrh4PYo5p0VQ1h=1EYTyanoVkRmwcwWRFimkw@mail.gmail.com>
-Subject: Re: [PATCH 19/25] pnp: if CONFIG_DYNAMIC_DEBUG, use pnp.ddebug
- instead of pnp.debug
-To: Thomas Renninger <trenn@suse.de>
-Cc: jbaron@redhat.com, greg@kroah.com, joe@perches.com,
-        bart.vanassche@gmail.com, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 Dec 2011 00:52:53 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sun, 04 Dec 2011 21:52:49 -0800
+From: Rakesh Iyer <riyer@nvidia.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "rydberg@euromail.se" <rydberg@euromail.se>,
+        Stephen Warren <swarren@nvidia.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Sun, 4 Dec 2011 21:52:47 -0800
+Subject: RE: [PATCH v1] Input: tegra-kbc - report wakeup key for some
+ platforms.
+Thread-Topic: [PATCH v1] Input: tegra-kbc - report wakeup key for some
+ platforms.
+Thread-Index: AcyzBjvqVeMUZhJ4Q1eUMM9GJnc7oAACv1h4
+Message-ID: <1FC56210173BB445BD77F608D6FB8D034F3D2587A7@HQMAIL03.nvidia.com>
+References: <1322685811-14060-1-git-send-email-riyer@nvidia.com>
+ <20111130212022.GB3108@core.coreip.homeip.net>
+ <1FC56210173BB445BD77F608D6FB8D034F3D1BB4BD@HQMAIL03.nvidia.com>
+ <20111201072649.GE16816@core.coreip.homeip.net>
+ <1FC56210173BB445BD77F608D6FB8D034F3D1BB4C9@HQMAIL03.nvidia.com>
+ <20111204085038.GC14593@core.coreip.homeip.net>
+ <1323047897.3056.14.camel@riyer-dt2.nvidia.com>,<20111205042736.GA23733@core.coreip.homeip.net>
+In-Reply-To: <20111205042736.GA23733@core.coreip.homeip.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/1 Thomas Renninger <trenn@suse.de>:
-> On Wednesday 30 November 2011 20:56:48 jim.cromie@gmail.com wrote:
->> From: Jim Cromie <jim.cromie@gmail.com>
->>
->> resubmit of https://lkml.org/lkml/2010/9/15/398
->>
->> This allows usage of generic pnp.ddebug debug parameter instead of
->> pnp.debug PNP specific parameter.
 
-> It depends on what you compile in which pnp debug parameter one has to use
-> and both are doing more or less the same?
+________________________________________
+From: Dmitry Torokhov [dmitry.torokhov@gmail.com]
+Sent: Sunday, December 04, 2011 8:27 PM
+To: Rakesh Iyer
+Cc: rydberg@euromail.se; Stephen Warren; Laxman Dewangan; linux-kernel@vger.kernel.org; linux-input@vger.kernel.org; linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v1] Input: tegra-kbc - report wakeup key for some platforms.
+
+On Sun, Dec 04, 2011 at 05:18:17PM -0800, riyer wrote:
+> Hello Dmitry.
+> Please find replies inline.
 >
-> We could add two pnp parameters in !defined(CONFIG_DYNAMIC_DEBUG) case:
->  - deprecate pnp.debug by a message:
->    "pnp.debug deprecated, use pnp.ddebug" instead
-
-Just to be clear, this patch (yours) does this deprecation.
-
->  - pnp.ddebug doing what pnp.debug is doing currently
-
-FWIW, the patch after this changes the name .ddebug to .dyndbg.
-
-Why is this better than just fixing kernel-parameters to
-advise using dyndbg directly, and skipping the indirection ?
-
-With the newer unknown-parameter approach that Jason, Rusty recommended
-(now done), it is possible for a module to implement its own .dyndbg option
-handler (using __setup only, not with nicer module_param_named() macro,
-at least with patch 25 included), but that doesnt seem wise:
-
-modname.dyndbg is a fake option,
-it doesnt show up in /sys/module/pnp/parameters/debug.
-Adding pnp.dyndbg using __setup would add the sys file, giving an
-entirely different interface than the one implemented in
-/dbg/dynamic_debug/control.
-Explaining this special case sounds difficult to do clearly, a sign of trouble.
-
-
-
-> The only misleading would be that pnp.ddebug has nothing to do with
-> dynamic debug if not compiled in, but user would have one parameter
-> to rely on.
+> On Sun, 2011-12-04 at 00:50 -0800, Dmitry Torokhov wrote:
+> > Hi Rakesh,
+> >
+> > On Thu, Dec 01, 2011 at 01:09:59PM -0800, Rakesh Iyer wrote:
+> > > Hello Dmitry.
+> > >
+> > > Sorry for the wrap issue, my Outlook does not seem to obey the settings.
+> > >
+> > > I wanted to explain the tegra system resume path implementation so I can justify
+> > > why I am doing this complicated fix and why I feel it will guarantee the resume
+> > > is due to keypress.
+> > >
+> > > The tegra wake resume code is registered as a syscore ops.
+> > > When the system is resumed due to a wake event, the suspend_enter (after wakeup)
+> > > routine will invoke the tegra syscoreops_resume method and that routine will propagate
+> > > the wake event to the individual ISR's through genirq.
+> > > If kbc was wake source, kbc_isr will be invoked in this execution path.
+> > >
+> > > If system is resumed due to other reason, the tegra_syscoreops_resume code will not
+> > > find the event.
+> >
+> > Consider the following sequence:
+> >
+> > 1. Something other than keyboard generates wakeup event
+> > 2. It's IRQ fires up and gets serviced
+> At this point syscoreops_resume has finished all its wakeup processing.
 >
-> In Documentation/kernel-parameters:
->        pnp.debug       [PNP]
->                        Enable PNP debug messages.  This depends on the
->                        CONFIG_PNP_DEBUG_MESSAGES option.
+> > 3. System starts resuming devices
+> > 4. User presses a key on the keypad while it is still suspended _and_
+> >    registered as a wakeup source
+> This will have no impact on the system and keypad ISR will not be
+> invoked.
+> > 5. Keypad's ISR runs as well and you decide that KEY_POWER should be
+> >    reported even though keypad wasn't the real reason the system
+> >    woke up.
+> The interrupt line we use to detect wakeup processing is the keypress
+> interrupt which is disabled and will never cause the ISR invocation from
+> a device interrupt(i.e. the PIC).
 >
-> Would be wrong in defined(CONFIG_DYNAMIC_DEBUG) case with your patch,
-> but would always work with:
->        pnp.ddebug
-> with my above suggestions.
+> In other words KBC isr gets invoked for 2 reasons
+> a) FIFO interrupt is generated, which will not happen as long as
+> scanning logic is disabled until kbc_resume executes.
+> b) The syscoreops_resume codepath calls into the ISR after finding KBC
+> was a wakesource. If this happens it will happen only when the kernel
+> resumes from its suspend code path.
 
-how about a something like this ?
+>> Is this code already in mainline or still somewhere else?
+ 
+I think this code has not made it to mainline yet. 
+Its in the Android and ChromeOs kernel trees.
 
+> >
+> > Is this scenario not possible?
+> >
+> > Thanks.
+> >
+> With that being the case do you think the fix makes sense?
 
-	pnp.debug=1	[PNP]
-			Enable PNP debug messages (depends on the
-			CONFIG_PNP_DEBUG_MESSAGES option and
-                       !CONFIG_DYNAMIC_DEBUG).   If
-CONFIG_DYNAMIC_DEBUG use pnp.dyndbg instead.  ...
+>> OK, yes. I do not think it is that important if we occasionally report
+>> KEY_POWER even if KBC was not a true wakeup source but that's fine.
 
-This approach doesnt add any new failures;
-if ! CONFIG_DYNAMIC_DEBUG,
-     pnp.dyndbg will fail/warn just like any.dyndbg would
-else
-     pnp.debug will warn, yndbg will fail/warn just like any.dyndbg
+>>Thanks.
 
->
-> It's not a big deal and not a perfect solution, just looks a bit confusing
-> to have 2 different parameters for the same thing.
+>>--
+>> Dmitry
 
-I think this is covered adequately by a doc update, and less confusing than
-different behavior/usage of 1 parameter under 2 different configs.
+So can I assume this patch is accepted?
 
->
-> Bjorn should have a look and acknowledge or sign the pnp parts off.
->
->    Thomas
->
-
-thanks
-Jim
+Thanks and Regards
+Rakesh
