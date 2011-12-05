@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab1LEXqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 18:46:50 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:51576 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481Ab1LEXqr (ORCPT
+	id S932758Ab1LEXtK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 18:49:10 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58397 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932619Ab1LEXtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 18:46:47 -0500
-Date: Mon, 05 Dec 2011 18:45:38 -0500 (EST)
-Message-Id: <20111205.184538.809640991246086089.davem@davemloft.net>
-To: romieu@fr.zoreil.com
-Cc: booster@wolke7.net, hayeswang@realtek.com, jrnieder@gmail.com,
-        eric.dumazet@gmail.com, netdev@vger.kernel.org, nic_swsd@realtek.com,
-        linux-kernel@vger.kernel.org, armin.kazmi@tu-dortmund.de
-Subject: Re: [PATCH 1/2] r8169: Rx FIFO overflow fixes.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111205063045.GA3103@electric-eye.fr.zoreil.com>
-References: <4ED7E6AB.6050308@wolke7.net>
-	<20111201222612.GA27998@electric-eye.fr.zoreil.com>
-	<20111205063045.GA3103@electric-eye.fr.zoreil.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 05 Dec 2011 15:45:41 -0800 (PST)
+	Mon, 5 Dec 2011 18:49:09 -0500
+Date: Mon, 5 Dec 2011 23:48:49 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
+        tglx@linutronix.de, linus.walleij@stericsson.com,
+        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, aul@pwsan.com, grant.likely@secretlab.ca,
+        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org, Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
+Message-ID: <20111205234849.GA14547@n2100.arm.linux.org.uk>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1112051342430.6289@utopia.booyaka.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1112051342430.6289@utopia.booyaka.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Francois Romieu <romieu@fr.zoreil.com>
-Date: Mon, 5 Dec 2011 07:30:45 +0100
+On Mon, Dec 05, 2011 at 02:15:56PM -0700, Paul Walmsley wrote:
+> The types associated with clock rates in the clock interface 
+> (include/linux/clk.h) are inconsistent, and we should fix this. 
 
-> Realtek has specified that the post 8168c gigabit chips and the post
-> 8105e fast ethernet chips recover automatically from a Rx FIFO overflow.
-> The driver does not need to clear the RxFIFOOver bit of IntrStatus and
-> it should rather avoid messing it.
-> 
-> The implementation deserves some explanation:
-> 1. events outside of the intr_event bit mask are now ignored. It enforces
->    a no-processing policy for the events that either should not be there
->    or should be ignored.
-> 
-> 2. RxFIFOOver was already ignored in rtl_cfg_infos[RTL_CFG_1] for the
->    whole 8168 line of chips with two exceptions:
->    - RTL_GIGA_MAC_VER_22 since b5ba6d12bdac21bc0620a5089e0f24e362645efd
->      ("use RxFIFO overflow workaround for 8168c chipset.").
->      This one should now be correctly handled.
->    - RTL_GIGA_MAC_VER_11 (8168b) which requires a different Rx FIFO
->      overflow processing.
-> 
->    Though it does not conform to Realtek suggestion above, the updated
->    driver includes no change for RTL_GIGA_MAC_VER_12 and RTL_GIGA_MAC_VER_17.
->    Both are 8168b. RTL_GIGA_MAC_VER_12 is common and a bit old so I'd rather
->    wait for experimental evidence that the change suggested by Realtek really
->    helps or does not hurt in unexpected ways.
-> 
->    Removed case statements in rtl8169_interrupt are only 8168 relevant.
-> 
-> 3. RxFIFOOver is masked for post 8105e 810x chips, namely the sole 8105e
->    (RTL_GIGA_MAC_VER_30) itself.
-> 
-> Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-> Cc: hayeswang <hayeswang@realtek.com>
+Rubbish.  They're different with good reason.  Rates are primerily
+unsigned quantities - and should be treated as such.
 
-Applied.
+The exception is clk_round_rate() which returns the rate, but also
+_may_ return an error.  Therefore, its return type has to be signed.
+
+> We could fix the immediate problem by changing the prototype of 
+> clk_round_rate() to pass the rounded rate back to the caller via a pointer 
+> in one of the arguments, and return an error code (if any) via the return 
+> value:
+> 
+> int clk_round_rate(struct clk *clk, unsigned long rate, unsigned long 
+>                    *rounded_rate);
+
+Yes that might have been a better solution.
+
+> But I'd propose that we instead increase the size of struct clk.rate to be 
+> s64:
+> 
+> s64 clk_round_rate(struct clk *clk, s64 desired_rate);
+> int clk_set_rate(struct clk *clk, s64 rate);
+> s64 clk_get_rate(struct clk *clk);
+> 
+> struct clk {
+> ...
+>      s64 rate;
+> ...
+> };
+> 
+> That way the clock framework can accommodate current clock rates, as well 
+> as any conceivable future clock rate.  (Some production CPUs are already 
+> running at clock rates greater than 4 GiHZ[1].  RF devices with 4 GiHz+ 
+> clock rates are also common, such as 802.11a devices running in the 5.8 
+> GHz band, and drivers for those may eventually wish to use the clock 
+> framework.)
+
+Yuck.  You are aware that 64-bit math on 32-bit CPUs sucks?  So burdening
+_everything_ with 64-bit rate quantities is absurd.  As for making then
+64-bit signed quantities, that's asking for horrid code from gcc for the
+majority of cases.
