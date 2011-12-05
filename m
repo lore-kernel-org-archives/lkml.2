@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756470Ab1LERwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:52:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58881 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab1LERwl (ORCPT
+	id S1756486Ab1LER4d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:56:33 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:59440 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755201Ab1LER4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:52:41 -0500
-Date: Mon, 5 Dec 2011 09:52:17 -0800
-From: tip-bot for Ludwig Nussel <ludwig.nussel@suse.de>
-Message-ID: <tip-9af0c7a6fa860698d080481f24a342ba74b68982@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, ludwig.nussel@suse.de, harvey.harrison@gmail.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, ludwig.nussel@suse.de, harvey.harrison@gmail.com,
-        mingo@elte.hu
-In-Reply-To: <201111152246.pAFMklOB028527@wpaz5.hot.corp.google.com>
-References: <201111152246.pAFMklOB028527@wpaz5.hot.corp.google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86: Fix mmap random address range
-Git-Commit-ID: 9af0c7a6fa860698d080481f24a342ba74b68982
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Mon, 5 Dec 2011 12:56:32 -0500
+Message-ID: <4EDD05C6.8080809@linux.vnet.ibm.com>
+Date: Mon, 05 Dec 2011 23:26:22 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:52:23 -0800 (PST)
+To: Tejun Heo <tj@kernel.org>
+CC: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 3/3] PM / Docs: Recommend the use of [un]lock_system_sleep()
+ over mutex_[un]lock(&pm_mutex)
+References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com> <20111204200332.25620.53610.stgit@srivatsabhat.in.ibm.com> <20111205171508.GC627@google.com> <4EDD019E.9010009@linux.vnet.ibm.com> <20111205174349.GG627@google.com>
+In-Reply-To: <20111205174349.GG627@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120517-8256-0000-0000-00000063B328
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9af0c7a6fa860698d080481f24a342ba74b68982
-Gitweb:     http://git.kernel.org/tip/9af0c7a6fa860698d080481f24a342ba74b68982
-Author:     Ludwig Nussel <ludwig.nussel@suse.de>
-AuthorDate: Tue, 15 Nov 2011 14:46:46 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Dec 2011 17:07:23 +0100
+On 12/05/2011 11:13 PM, Tejun Heo wrote:
 
-x86: Fix mmap random address range
+> Hello,
+> 
+> On Mon, Dec 05, 2011 at 11:08:38PM +0530, Srivatsa S. Bhat wrote:
+>> Sorry, I didn't get what you meant here. Are you talking about what
+>> needs to be added/changed in the documentation or, are you referring
+>> to the code itself and are saying that we must make these APIs
+>> internal to the PM alone?
+> 
+> Ooh, sorry about not being clear.  I meant pm_mutex itself.  There's
+> no reason to expose that outside of pm, right?  And in the
+> documentation, we can just require use of the APIs instead of pm_mutex
+> itself.
+> 
 
-On x86_32 casting the unsigned int result of get_random_int() to
-long may result in a negative value.  On x86_32 the range of
-mmap_rnd() therefore was -255 to 255.  The 32bit mode on x86_64
-used 0 to 255 as intended.
 
-The bug was introduced by 675a081 ("x86: unify mmap_{32|64}.c")
-in January 2008.
+Yes, that sounds good. No need for giving unnecessary choices :-)
+But I had worded the documentation that way with the intention of
+explaining why calling mutex_lock() over pm_mutex can be disastrous (which
+I mentioned in the commit message as one of the goals of the patch).
+I didn't mean it to give the user 2 choices and say please use
+[un]lock_system_sleep() preferably.
 
-Signed-off-by: Ludwig Nussel <ludwig.nussel@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: harvey.harrison@gmail.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/201111152246.pAFMklOB028527@wpaz5.hot.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/mm/mmap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Although, we have to notice that unless somebody is acquainted with
+these APIs, the first instinct would probably be to directly use
+mutex_lock(), until they look up the documentation (hopefully).
+So, IMHO, it would do good to keep the explanation in the docs as
+it is, in this patch. What do you think?
 
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index 4b5ba85..845df68 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -75,9 +75,9 @@ static unsigned long mmap_rnd(void)
- 	*/
- 	if (current->flags & PF_RANDOMIZE) {
- 		if (mmap_is_ia32())
--			rnd = (long)get_random_int() % (1<<8);
-+			rnd = get_random_int() % (1<<8);
- 		else
--			rnd = (long)(get_random_int() % (1<<28));
-+			rnd = get_random_int() % (1<<28);
- 	}
- 	return rnd << PAGE_SHIFT;
- }
+Regards,
+Srivatsa S. Bhat
+
