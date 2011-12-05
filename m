@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab1LELhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 06:37:31 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:64617 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab1LELh0 (ORCPT
+	id S932101Ab1LELhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 06:37:41 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46631 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932082Ab1LELhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 06:37:26 -0500
-Message-ID: <4EDCACCB.4010608@atmel.com>
-Date: Mon, 05 Dec 2011 12:36:43 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, jamie@jamieiles.com
-CC: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        netdev@vger.kernel.org, plagnioj@jcrosoft.com,
-        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] net/macb: add DT support
-References: <1322846050-4543-1-git-send-email-nicolas.ferre@atmel.com> <1322847782-22650-1-git-send-email-nicolas.ferre@atmel.com> <20111202.125832.1208514279272697863.davem@davemloft.net>
-In-Reply-To: <20111202.125832.1208514279272697863.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 5 Dec 2011 06:37:40 -0500
+Date: Mon, 5 Dec 2011 11:38:40 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, <linux-serial@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: Re: [PATCH 2/2] serial: bfin-uart: remove redundant CTS check for
+ hardware CTS control.
+Message-ID: <20111205113840.02e42ffa@lxorguk.ukuu.org.uk>
+In-Reply-To: <1323079991-4855-2-git-send-email-sonic.adi@gmail.com>
+References: <1323079991-4855-1-git-send-email-sonic.adi@gmail.com>
+	<1323079991-4855-2-git-send-email-sonic.adi@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2011 06:58 PM, David Miller :
-> From: Nicolas Ferre<nicolas.ferre@atmel.com>
-> Date: Fri,  2 Dec 2011 18:43:02 +0100
->
->> From: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
->>
->> Allow the device tree to provide the mac address and the phy mode.
->>
->> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
->> [nicolas.ferre@atmel.com: change "compatible" node property, doc and DT hwaddr]
->> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
->> Cc: Jamie Iles<jamie@jamieiles.com>
->> ---
->> v2: modify macb_get_hwaddr_dt() parameter
->
-> You'll have to respin these two macb patches, as they don't apply properly
-> to the net-next tree which is where they should be targetted.
+On Mon, 5 Dec 2011 18:13:11 +0800
+Sonic Zhang <sonic.adi@gmail.com> wrote:
 
-David,
+> From: Sonic Zhang <sonic.zhang@analog.com>
+> 
+> Blackfin hardware CTS control generate interrupt for both CTS on and off.
+> 
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 
-In fact, the patches are designed to be added on top of Jamie's rework 
-of the macb driver that is now in Arnd's "arm-soc" git tree (for-next 
-branch). You discussed with him here:
+Both
 
-http://www.spinics.net/lists/arm-kernel/msg118717.html
-
-Should I go this path also or wait for this material to be merged and 
-update on net-next at this time (after 3.3 merge window...)?
-
-Best regards,
--- 
-Nicolas Ferre
+Acked-by: Alan Cox <alan@linux.intel.com>
