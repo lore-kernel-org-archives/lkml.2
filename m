@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab1LEJ2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:28:19 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37553 "EHLO mx2.mail.elte.hu"
+	id S1755084Ab1LEJa7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:30:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26860 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753842Ab1LEJ2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:28:17 -0500
-Date: Mon, 5 Dec 2011 10:26:12 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>
-Subject: Re: [GIT PULL] x86, microcode fixes for 3.2
-Message-ID: <20111205092612.GB29641@elte.hu>
-References: <20111128204311.GA2814@aftab>
- <20111202194658.GF15204@aftab>
+	id S1753601Ab1LEJa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:30:57 -0500
+Message-ID: <4EDC8F4B.7040308@redhat.com>
+Date: Mon, 05 Dec 2011 11:30:51 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111202194658.GF15204@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Liu ping fan <kernelfans@gmail.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        gleb@redhat.com, jan.kiszka@web.de
+Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
+References: <4ED212A1.3060300@redhat.com> <1322807192-14147-1-git-send-email-kernelfans@gmail.com> <4EDB4A0D.1000609@redhat.com> <CAFgQCTujv7Ez23GySc4Bds8x9Pv8Ny59EohpN22de9wicztWrw@mail.gmail.com>
+In-Reply-To: <CAFgQCTujv7Ez23GySc4Bds8x9Pv8Ny59EohpN22de9wicztWrw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/05/2011 07:29 AM, Liu ping fan wrote:
+> like this,
+> #define kvm_for_each_vcpu(idx, cnt, vcpup, kvm) \
+> 	for (idx = 0, cnt = 0, vcpup = kvm_get_vcpu(kvm, idx); \
+> 	     cnt < atomic_read(&kvm->online_vcpus) && \
+> 	     idx < KVM_MAX_VCPUS; \
+> 	     idx++, (vcpup == NULL)?:cnt++, vcpup = kvm_get_vcpu(kvm, idx)) \
+> 	     if (vcpup == NULL) \
+> 	          continue; \
+> 	     else
+>
+>
+> A little ugly, but have not thought a better way out :-)
+>
 
-* Borislav Petkov <bp@amd64.org> wrote:
+#define kvm_for_each_vcpu(vcpu, it) for (vcpu = kvm_fev_init(&it); vcpu;
+vcpu = kvm_fev_next(&it, vcpu))
 
-> On Mon, Nov 28, 2011 at 09:43:11PM +0100, Borislav Petkov wrote:
-> > Hi Ingo,
-> > 
-> > please pull the following two fixes for the microcode machinery.
-> > 
-> > Thanks.
-> > 
-> > The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
-> > 
-> >   Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
-> > 
-> > are available in the git repository at:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git ucode
-> > 
-> > Borislav Petkov (1):
-> >       x86, microcode, AMD: Restrict microcode reporting
-> > 
-> > Srivatsa S. Bhat (1):
-> >       x86, microcode: Fix the failure path of microcode update driver init code
-> 
-> Since you haven't pulled yet, I've updated this one with the better
-> version below, branch above has been updated too:
-> 
-> --
-> From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-> Date: Mon, 7 Nov 2011 18:05:32 +0530
-> Subject: [PATCH] x86, microcode: Fix the failure path of microcode update
->  driver init code
-> 
-> The microcode update driver's initialization code does not handle
-> failures correctly. This patch fixes this issue.
-> 
-> Signed-off-by: Jan Beulich <JBeulich@suse.com>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Link: http://lkml.kernel.org/r/20111107123530.12164.31227.stgit@srivatsabhat.in.ibm.com
-> Link: http://lkml.kernel.org/r/4ED8E2270200007800065120@nat28.tlf.novell.com
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
+Though that doesn't give a good place for rcu_read_unlock().
 
-Mind respinning this once more against latest -git? There's a 
-new conflict due to:
 
-  8e8da023f5af: x86: Fix boot failures on older AMD CPU's
 
-Thanks,
+-- 
+error compiling committee.c: too many arguments to function
 
-	Ingo
