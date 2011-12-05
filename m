@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab1LEJ6v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:58:51 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51695 "EHLO mx3.mail.elte.hu"
+	id S1755519Ab1LEJ7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:59:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11044 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754222Ab1LEJ6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:58:50 -0500
-Date: Mon, 5 Dec 2011 10:56:39 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [GIT PULL] More cleanups for atomic memory operations/spinlocks
-Message-ID: <20111205095639.GC9614@elte.hu>
-References: <4EB9D48F.5010201@goop.org>
+	id S1755435Ab1LEJ7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:59:03 -0500
+Message-ID: <4EDC95E0.20503@redhat.com>
+Date: Mon, 05 Dec 2011 11:58:56 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB9D48F.5010201@goop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Gleb Natapov <gleb@redhat.com>
+CC: Liu ping fan <kernelfans@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aliguori@us.ibm.com, jan.kiszka@web.de
+Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
+References: <4ED212A1.3060300@redhat.com> <1322807192-14147-1-git-send-email-kernelfans@gmail.com> <4EDB4A0D.1000609@redhat.com> <CAFgQCTujv7Ez23GySc4Bds8x9Pv8Ny59EohpN22de9wicztWrw@mail.gmail.com> <4EDC8F4B.7040308@redhat.com> <20111205094240.GE12507@redhat.com>
+In-Reply-To: <20111205094240.GE12507@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/05/2011 11:42 AM, Gleb Natapov wrote:
+> On Mon, Dec 05, 2011 at 11:30:51AM +0200, Avi Kivity wrote:
+> > On 12/05/2011 07:29 AM, Liu ping fan wrote:
+> > > like this,
+> > > #define kvm_for_each_vcpu(idx, cnt, vcpup, kvm) \
+> > > 	for (idx = 0, cnt = 0, vcpup = kvm_get_vcpu(kvm, idx); \
+> > > 	     cnt < atomic_read(&kvm->online_vcpus) && \
+> > > 	     idx < KVM_MAX_VCPUS; \
+> > > 	     idx++, (vcpup == NULL)?:cnt++, vcpup = kvm_get_vcpu(kvm, idx)) \
+> > > 	     if (vcpup == NULL) \
+> > > 	          continue; \
+> > > 	     else
+> > >
+> > >
+> > > A little ugly, but have not thought a better way out :-)
+> > >
+> > 
+> > #define kvm_for_each_vcpu(vcpu, it) for (vcpu = kvm_fev_init(&it); vcpu;
+> > vcpu = kvm_fev_next(&it, vcpu))
+> > 
+> > Though that doesn't give a good place for rcu_read_unlock().
+> > 
+> > 
+> Why not use rculist to store vcpus and use list_for_each_entry_rcu()?
 
-* Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+We can, but that's a bigger change.
 
-> I forgot to push these for the just-closed merge window, but they're
-> fine for the next one.  Could you find them a home in tip.git?
-> 
-> Thanks,
->     J
-> 
-> The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
-> 
->   Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/ticketlock-cleanup
-> 
-> Jeremy Fitzhardinge (2):
->       x86/cmpxchg: add a locked add() helper
->       x86: consolidate xchg and xadd macros
-> 
->  arch/x86/include/asm/cmpxchg.h  |  140 +++++++++++++++++++-------------------
->  arch/x86/include/asm/spinlock.h |   15 +----
->  2 files changed, 71 insertions(+), 84 deletions(-)
+-- 
+error compiling committee.c: too many arguments to function
 
-Pulled it into x86/asm for testing, thanks Jeremy.
-
-Peter, any objections?
-
-Thanks,
-
-	Ingo
