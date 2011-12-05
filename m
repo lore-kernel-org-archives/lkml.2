@@ -1,175 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab1LESfg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 13:35:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47163 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600Ab1LESff (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 13:35:35 -0500
-Message-ID: <4EDD0EEF.605@canonical.com>
-Date: Mon, 05 Dec 2011 12:35:27 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: akpm@linux-foundation.org, oleg@redhat.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1][V3] Add reboot_pid_ns to handle the reboot syscall
-References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr> <1323030290-22216-2-git-send-email-daniel.lezcano@free.fr>
-In-Reply-To: <1323030290-22216-2-git-send-email-daniel.lezcano@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756627Ab1LESgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 13:36:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49754 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756446Ab1LESgN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 13:36:13 -0500
+Date: Tue, 6 Dec 2011 05:35:58 +1100
+From: NeilBrown <neilb@suse.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Ming Lei <tom.leiming@gmail.com>, Chen Peter-B29397 <B29397@freescale.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <greg@kroah.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH 1/1] driver core: disable device's runtime pm during
+ shutdown
+Message-ID: <20111206053558.5430d7f1@notabene.brown>
+In-Reply-To: <Pine.LNX.4.44L0.1112051100150.5138-100000@iolanthe.rowland.org>
+References: <CACVXFVOc45HL_qPHvNcGrkcQ7XWxBoLHikrYd1ZrRMYkiw5=ag@mail.gmail.com>
+	<Pine.LNX.4.44L0.1112051100150.5138-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/g.jBTcONQeth3uYdN8ooD_b"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2011 02:24 PM, Daniel Lezcano wrote:
-> In the case of a child pid namespace, rebooting the system does not
-> really makes sense. When the pid namespace is used in conjunction
-> with the other namespaces in order to create a linux container, the
-> reboot syscall leads to some problems.
->
-> A container can reboot the host. That can be fixed by dropping
-> the sys_reboot capability but we are unable to correctly to poweroff/
-> halt/reboot a container and the container stays stuck at the shutdown
-> time with the container's init process waiting indefinitively.
->
-> After several attempts, no solution from userspace was found to reliabily
-> handle the shutdown from a container.
->
-> This patch propose to store the reboot value in the 16 upper bits of the
-> exit code from the processes belonging to a pid namespace which has
-> rebooted. When the reboot syscall is called and we are not in the initial
-> pid namespace, we kill the pid namespace.
->
-> By this way the parent process of the child pid namespace to know if
-> it rebooted or not and take the right decision.
->
-> Signed-off-by: Daniel Lezcano<daniel.lezcano@free.fr>
+--Sig_/g.jBTcONQeth3uYdN8ooD_b
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
+On Mon, 5 Dec 2011 11:02:38 -0500 (EST) Alan Stern
+<stern@rowland.harvard.edu> wrote:
 
-Tested it with reboot(2), worked as expected.
+> On Mon, 5 Dec 2011, Ming Lei wrote:
+>=20
+> > Sorry, the above is line wrapped badly, see the below:
+> >=20
+> > diff --git a/drivers/base/core.c b/drivers/base/core.c
+> > index d8b3d89..96b266c 100644
+> > --- a/drivers/base/core.c
+> > +++ b/drivers/base/core.c
+> > @@ -1743,8 +1743,9 @@ void device_shutdown(void)
+> >  		 */
+> >  		list_del_init(&dev->kobj.entry);
+> >  		spin_unlock(&devices_kset->list_lock);
+> > -		/* Disable all device's runtime power management */
+> > -		pm_runtime_disable(dev);
+> > +
+> > +		/* put device into active state and forbit runtime pm */
+> > +		pm_runtime_forbid(dev);
+> >=20
+> >  		if (dev->bus && dev->bus->shutdown) {
+> >  			dev_dbg(dev, "shutdown\n");
+>=20
+> We don't want to put devices into the active state when it's not=20
+> necessary.  A better approach would be:
+>=20
+> 		/* Don't allow any more runtime suspends */
+> 		pm_runtime_get_noresume(dev);
+> 		pm_runtime_barrier(dev);
+>=20
+> Alan Stern
 
-thanks,
--serge
+That sounds like a reasonable approach if we really need to do something at
+this level.  But is this the only place that ->shutdown methods are called
+from?  If they are called from elsewhere, would those places need the
+same pm_runtime protection?
 
-> Acked-by: Serge Hallyn<serge.hallyn@canonical.com>
-> ---
->   include/linux/pid_namespace.h |    8 +++++++-
->   kernel/pid_namespace.c        |   33 +++++++++++++++++++++++++++++++++
->   kernel/sys.c                  |    3 +++
->   3 files changed, 43 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-> index e7cf666..3279596 100644
-> --- a/include/linux/pid_namespace.h
-> +++ b/include/linux/pid_namespace.h
-> @@ -32,6 +32,7 @@ struct pid_namespace {
->   #endif
->   	gid_t pid_gid;
->   	int hide_pid;
-> +	int reboot;
->   };
->
->   extern struct pid_namespace init_pid_ns;
-> @@ -47,6 +48,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
->   extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
->   extern void free_pid_ns(struct kref *kref);
->   extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
-> +extern int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd);
->
->   static inline void put_pid_ns(struct pid_namespace *ns)
->   {
-> @@ -74,11 +76,15 @@ static inline void put_pid_ns(struct pid_namespace *ns)
->   {
->   }
->
-> -
->   static inline void zap_pid_ns_processes(struct pid_namespace *ns)
->   {
->   	BUG();
->   }
-> +
-> +static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> +{
-> +	BUG();
-> +}
->   #endif /* CONFIG_PID_NS */
->
->   extern struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
-> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> index a896839..c7a85ea 100644
-> --- a/kernel/pid_namespace.c
-> +++ b/kernel/pid_namespace.c
-> @@ -15,6 +15,7 @@
->   #include<linux/acct.h>
->   #include<linux/slab.h>
->   #include<linux/proc_fs.h>
-> +#include<linux/reboot.h>
->
->   #define BITS_PER_PAGE		(PAGE_SIZE*8)
->
-> @@ -187,6 +188,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
->   		rc = sys_wait4(-1, NULL, __WALL, NULL);
->   	} while (rc != -ECHILD);
->
-> +	if (pid_ns->reboot)
-> +		current->signal->group_exit_code = pid_ns->reboot;
-> +
->   	acct_exit_ns(pid_ns);
->   	return;
->   }
-> @@ -221,6 +225,35 @@ static struct ctl_table pid_ns_ctl_table[] = {
->
->   static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
->
-> +int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> +{
-> +	switch(cmd) {
-> +	case LINUX_REBOOT_CMD_RESTART2:
-> +	case LINUX_REBOOT_CMD_RESTART:
-> +		pid_ns->reboot = SYSTEM_RESTART<<  16;
-> +		break;
-> +
-> +	case LINUX_REBOOT_CMD_HALT:
-> +		pid_ns->reboot = SYSTEM_HALT<<  16;
-> +		break;
-> +
-> +	case LINUX_REBOOT_CMD_POWER_OFF:
-> +		pid_ns->reboot = SYSTEM_POWER_OFF<<  16;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	read_lock(&tasklist_lock);
-> +	force_sig(SIGKILL, pid_ns->child_reaper);
-> +	read_unlock(&tasklist_lock);
-> +
-> +	do_exit(0);
-> +
-> +	/* Not reached */
-> +	return 0;
-> +}
-> +
->   static __init int pid_namespaces_init(void)
->   {
->   	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index ddf8155..31acf63 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -444,6 +444,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->   	                magic2 != LINUX_REBOOT_MAGIC2C))
->   		return -EINVAL;
->
-> +	if (task_active_pid_ns(current) !=&init_pid_ns)
-> +		return reboot_pid_ns(task_active_pid_ns(current), cmd);
-> +
->   	/* Instead of trying to make the power_off code look like
->   	 * halt when pm_power_off is not set do it the easy way.
->   	 */
+BTW I was wrong when I said that only calling pm_runtime_disable if there w=
+as
+a ->shutdown function would not work for me. i.e. the following patch does
+solve my particular issue (though I'm not sure it is "right").
+I was getting confused by the two different devices: the i2c device and the
+platform device.
+The i2c device has a ->shutdown which does nothing, but doesn't need to wake
+up.
+The platform device is the one which needs to wake up, but it doesn't have a
+->shutdown function is this patch causes it not have pm_runtime disabled.
 
+Thanks,
+NeilBrown
+
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index d8b3d89..b9aa5d2 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1743,13 +1743,13 @@ void device_shutdown(void)
+ 		 */
+ 		list_del_init(&dev->kobj.entry);
+ 		spin_unlock(&devices_kset->list_lock);
+-		/* Disable all device's runtime power management */
+-		pm_runtime_disable(dev);
+=20
+ 		if (dev->bus && dev->bus->shutdown) {
++			pm_runtime_disable(dev);
+ 			dev_dbg(dev, "shutdown\n");
+ 			dev->bus->shutdown(dev);
+ 		} else if (dev->driver && dev->driver->shutdown) {
++			pm_runtime_disable(dev);
+ 			dev_dbg(dev, "shutdown\n");
+ 			dev->driver->shutdown(dev);
+ 		}
+
+--Sig_/g.jBTcONQeth3uYdN8ooD_b
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTt0PDjnsnt1WYoG5AQI/ng/+JAmHr6qq8Lj5qCvdIHixZZJhfZMDpFHh
+s59w6FjcE/PkYHmrXdzpJUfdNcCJ8YjE4g1x80eixFhyyGiEdW49pyV5JtE6Z9Ry
+N+V0SjrQ24XdU5MQ1+WdwQjZibN4llYXDebTPulmRzghG07AAx1f5MoWPCmcespO
+u/06whQpUyUVhUgeLiXUGEOfVCmusyHtOTl7xdz1imVnIuWENJ4Oecnxt8Fz4zCz
++H2l2jHuChKv0JoDlRkiixbKHOJfkP3pJtW+By63U1IJLxEgzmPCtvIMooQ1VGU7
+uXa6eSUyCcUFiVau2rb4q1FD4Eg2PJ7RFQdWIe158XqyB7ybq3vWiQshOc6s+PeW
++PE5HlfB3Y9FATMP+c7fN8wsS/ymVhJYqYPVR6opm5v5ymyw03+iyZUhzY0DMeI+
+lhRaEm6yqDugBdnuKm4XYyvIYyrJqtTi0sGNBeujjlKHeD1c4i9h+Tk/nc8lJ+Lv
+qD2ieSfj1NOPs0CnpJ2UPVy/8os6sT74wXtwgQML3xPmM9w6F2wDEFwlbeHMWdSC
+eT8rfV2vHq6LwrzEUm6bS9qi206aSbiMIH+siPQm+/9pfEEYpM+VuRB4+mB5nho3
+0Ce03DpgHjNlxrwdu3YWa/UKujZ0Pz3EfzfA1aQG4wy7uv8BpgUSg9k3ErV0bsAr
+hIymBI5yZ00=
+=Klq3
+-----END PGP SIGNATURE-----
+
+--Sig_/g.jBTcONQeth3uYdN8ooD_b--
