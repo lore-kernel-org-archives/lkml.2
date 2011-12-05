@@ -1,140 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab1LELpO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 06:45:14 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37653 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932091Ab1LELpM (ORCPT
+	id S1756211Ab1LELsp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 06:48:45 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47019 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756115Ab1LELsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 06:45:12 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] mfd: Initialise WM8994 register cache after reading chip ID registers
-Date: Mon,  5 Dec 2011 11:45:00 +0000
-Message-Id: <1323085500-27462-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323085500-27462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1323085500-27462-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Mon, 5 Dec 2011 06:48:43 -0500
+Date: Mon, 5 Dec 2011 11:48:38 +0000
+From: Jamie Iles <jamie@jamieiles.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, robherring2@gmail.com,
+        devicetree-discuss@lists.ozlabs.org, netdev@vger.kernel.org,
+        plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/macb: add DT support
+Message-ID: <20111205114838.GC21006@totoro>
+References: <20111202153832.GA4998@totoro>
+ <1322846050-4543-1-git-send-email-nicolas.ferre@atmel.com>
+ <20111202172854.GB4998@totoro>
+ <4ED910B6.7080000@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4ED910B6.7080000@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The different devices handled by the WM8994 can be distinguished using
-their ID registers so we don't need to rely on the user having registered
-the device correctly. Instead do the initial regmap setup with a minimal
-configuration only supporting physical I/O and then configure the cache
-once we have identified the device.
+On Fri, Dec 02, 2011 at 06:53:58PM +0100, Nicolas Ferre wrote:
+> On 12/02/2011 06:28 PM, Jamie Iles :
+[...]
+> >diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> >index 103c6e6..89060e6 100644
+> >--- a/drivers/net/ethernet/cadence/macb.c
+> >+++ b/drivers/net/ethernet/cadence/macb.c
+> >@@ -1247,6 +1247,8 @@ static const struct of_device_id macb_dt_ids[] = {
+> >  	{ .compatible = "cdns,at32ap7000-macb" },
+> >  	{ .compatible = "cdns,at91sam9260-macb" },
+> >  	{ .compatible = "cdns,macb" },
+> >+	{ .compatible = "cdns,pc302-gem" },
+> >+	{ .compatible = "cdns,gem" },
+> >  	{ /* sentinel */ }
+> >  };
+> 
+> BTW, I think we may also modify the MII/RMII selection code for
+> adding gigabit selection... but maybe you already have the patches?
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+No, I don't have access to a version of the GEM with gigabit support.  
+The platforms I was working on used it as a 10/100 controller, but had 
+to use the GEM to get hardware timestamping support.
 
-This depends on all the other 8994 regmap stuff - I'll add it to the
-relevant branches.
-
- drivers/mfd/wm8994-core.c   |   41 ++++++++++++++++++++++++-----------------
- drivers/mfd/wm8994-regmap.c |    5 +++++
- drivers/mfd/wm8994.h        |    1 +
- 3 files changed, 30 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 4549999..d1c73f8 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -349,6 +349,7 @@ static int wm8994_ldo_in_use(struct wm8994_pdata *pdata, int ldo)
- static int wm8994_device_init(struct wm8994 *wm8994, int irq)
- {
- 	struct wm8994_pdata *pdata = wm8994->dev->platform_data;
-+	struct regmap_config *regmap_config;
- 	const char *devname;
- 	int ret, i;
- 	int pulls = 0;
-@@ -487,6 +488,28 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
- 	dev_info(wm8994->dev, "%s revision %c\n", devname,
- 		 'A' + wm8994->revision);
- 
-+	switch (wm8994->type) {
-+	case WM1811:
-+		regmap_config = &wm1811_regmap_config;
-+		break;
-+	case WM8994:
-+		regmap_config = &wm8994_regmap_config;
-+		break;
-+	case WM8958:
-+		regmap_config = &wm8958_regmap_config;
-+		break;
-+	default:
-+		dev_err(wm8994->dev, "Unknown device type %d\n", wm8994->type);
-+		return -EINVAL;
-+	}
-+
-+	ret = regmap_reinit_cache(wm8994->regmap, regmap_config);
-+	if (ret != 0) {
-+		dev_err(wm8994->dev, "Failed to reinit register cache: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
- 	if (pdata) {
- 		wm8994->irq_base = pdata->irq_base;
- 		wm8994->gpio_base = pdata->gpio_base;
-@@ -578,7 +601,6 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
- 	struct wm8994 *wm8994;
--	struct regmap_config *regmap_config;
- 	int ret;
- 
- 	wm8994 = devm_kzalloc(&i2c->dev, sizeof(struct wm8994), GFP_KERNEL);
-@@ -590,22 +612,7 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
- 	wm8994->irq = i2c->irq;
- 	wm8994->type = id->driver_data;
- 
--	switch (wm8994->type) {
--	case WM1811:
--		regmap_config = &wm1811_regmap_config;
--		break;
--	case WM8994:
--		regmap_config = &wm8994_regmap_config;
--		break;
--	case WM8958:
--		regmap_config = &wm8958_regmap_config;
--		break;
--	default:
--		dev_err(wm8994->dev, "Unknown device type %d\n", wm8994->type);
--		return -EINVAL;
--	}
--
--	wm8994->regmap = regmap_init_i2c(i2c, regmap_config);
-+	wm8994->regmap = regmap_init_i2c(i2c, &wm8994_base_regmap_config);
- 	if (IS_ERR(wm8994->regmap)) {
- 		ret = PTR_ERR(wm8994->regmap);
- 		dev_err(wm8994->dev, "Failed to allocate register map: %d\n",
-diff --git a/drivers/mfd/wm8994-regmap.c b/drivers/mfd/wm8994-regmap.c
-index 2fdefa124..c598ae6 100644
---- a/drivers/mfd/wm8994-regmap.c
-+++ b/drivers/mfd/wm8994-regmap.c
-@@ -1231,3 +1231,8 @@ struct regmap_config wm8958_regmap_config = {
- 	.volatile_reg = wm8958_volatile_register,
- 	.readable_reg = wm8958_readable_register,
- };
-+
-+struct regmap_config wm8994_base_regmap_config = {
-+	.reg_bits = 16,
-+	.val_bits = 16,
-+};
-diff --git a/drivers/mfd/wm8994.h b/drivers/mfd/wm8994.h
-index bf2bdc1..6f39a84 100644
---- a/drivers/mfd/wm8994.h
-+++ b/drivers/mfd/wm8994.h
-@@ -20,5 +20,6 @@
- extern struct regmap_config wm1811_regmap_config;
- extern struct regmap_config wm8994_regmap_config;
- extern struct regmap_config wm8958_regmap_config;
-+extern struct regmap_config wm8994_base_regmap_config;
- 
- #endif
--- 
-1.7.7.3
-
+Jamie
