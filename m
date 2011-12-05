@@ -1,114 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab1LEGhk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 01:37:40 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:44757 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab1LEGhh (ORCPT
+	id S1752144Ab1LEGqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 01:46:32 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:21377
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751287Ab1LEGqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 01:37:37 -0500
-Date: Mon, 5 Dec 2011 07:30:52 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: booster@wolke7.net
-Cc: hayeswang <hayeswang@realtek.com>,
-        "'Jonathan Nieder'" <jrnieder@gmail.com>,
-        "'Eric Dumazet'" <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        "'nic_swsd'" <nic_swsd@realtek.com>, linux-kernel@vger.kernel.org,
-        "'Armin Kazmi'" <armin.kazmi@tu-dortmund.de>
-Subject: [PATCH 2/2] r8169: fix Rx index race between FIFO overflow recovery and NAPI handler.
-Message-ID: <20111205063052.GB3103@electric-eye.fr.zoreil.com>
-References: <1322280423.10212.3.camel@edumazet-laptop> <20111127092808.GE21635@elie.hsd1.il.comcast.net> <4ED2A573.1020807@wolke7.net> <20111127231147.GA1784@electric-eye.fr.zoreil.com> <D95C09DB1A7E493E89FE5A0B3879CEB0@realtek.com.tw> <20111129105440.GA2410@electric-eye.fr.zoreil.com> <4ED538EC.4010509@wolke7.net> <20111201102000.GA14013@electric-eye.fr.zoreil.com> <4ED7E6AB.6050308@wolke7.net> <20111201222612.GA27998@electric-eye.fr.zoreil.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201222612.GA27998@electric-eye.fr.zoreil.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Mon, 5 Dec 2011 01:46:31 -0500
+X-SpamScore: -11
+X-BigFish: VPS-11(zz9371K542M1432N98dKzz1202h10d2nzz8275dhz2dh2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: Re: [PATCH 01/11] MFD: DA9052/53 MFD core module v8
+From: ashishj3 <ashish.jangam@kpitcummins.com>
+Reply-To: <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <sameo@openedhand.com>, <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>, <linaro-dev@lists.linaro.org>,
+        <arnd@arndb.de>, <eric.miao@linaro.org>, <sameo@linux.intel.com>
+In-Reply-To: <1320152142.4892.4.camel@L-0761.kpit.com>
+References: <1320152142.4892.4.camel@L-0761.kpit.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 5 Dec 2011 12:16:24 +0530
+Message-ID: <1323067584.1652.10.camel@L-0761.kpit.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.22]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 92fc43b4159b518f5baae57301f26d770b0834c9, rtl8169_tx_timeout ends up
-resetting Rx and Tx indexes and thus racing with the NAPI handler via
--> rtl8169_hw_reset
-   -> rtl_hw_reset
-      -> rtl8169_init_ring_indexes
 
-What about returning to the original state ?
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie"@opensource.wolfsonmicro.com]
+> Sent: Sunday, December 04, Dec 04, 
+	"2011 9:29 PM
+> To: Ashish Jangam
+> Cc: arnd"@arndb.de; sameo@openedhand.com; linux-kernel@vger.kernel.org;
+> Dajun; linaro-dev@lists.linaro.org
+> Subject: Re: [PATCH 01/11] MFD: DA9052 MFD core module v8
+> 
+> On Sun, Dec 04, 2011 at 11:50:02AM +0000, Ashish Jangam wrote:
+> You should fix your mailer to word wrap at less than 80 columns, I've
+> reflowed your text for legibility.
+> 
+> > > > regmap-irq has a opaque struct regmap_irq_chip_data which has a
+> member
+> > > > irq_base and this is required for non-primary irqs registration
+> > > > and also the clean-up function regmap_del_irq_chip() requires it.
+> > > > So as of now I will keep the current irq implementation as it is.
+> 
+> > > I'm not sure how this is relevant to my above comment? The struct is
+> of
+> > > course opaque since it is only used by the implementation.
+> 
+> > No issues on that but it has got irq_base as its member which gets
+> > initialize in the function regmap_add_irq_chip() and since this member
+> > value is not available to the user how can the mfd dependent modules
+> > like touch, battery etc can register for interrupt because during irq
+> > registration we add irq_base to the irq nmber for e.g. irq_base +
+> > battery_irq
+> 
+> There's several straightforward solutions to that - for example, we can
+> add an accessor to retrieve the information, we can use resources to
+> pass the interrupt ranges to the MFD children or we can have the core
+> remember the interrupt base it's passing on to the children.
+> 
+> Whichever one we choose we can certainly solve the problem without
+> replicating the entire interrupt controller implementation.
 
-rtl_hw_reset is only used by rtl8169_hw_reset and rtl8169_init_one.
-
-The latter does not need rtl8169_init_ring_indexes because the indexes
-still contain their original values from the newly allocated network
-device private data area (i.e. 0).
-
-rtl8169_hw_reset is used by:
-1. rtl8169_down
-   Helper for rtl8169_close. rtl8169_open explicitely inits the indexes
-   anyway.
-2. rtl8169_pcierr_interrupt
-   Indexes are set by rtl8169_reinit_task.
-3. rtl8169_interrupt
-   rtl8169_hw_reset is needed when the device goes down. See 1.
-4. rtl_shutdown
-   System shutdown handler. Indexes are irrelevant.
-5. rtl8169_reset_task
-   Indexes must be set before rtl_hw_start is called.
-6. rtl8169_tx_timeout
-   Indexes should not be set. This is the job of rtl8169_reset_task anyway.
-
-The removal of rtl8169_hw_reset in rtl8169_tx_timeout and its move in
-rtl8169_reset_task do not change the analysis.
-
-Signed-off-by: Francois Romieu <romieu@fr.zoreil.com>
-Cc: hayeswang <hayeswang@realtek.com>
----
- drivers/net/ethernet/realtek/r8169.c |   11 +++--------
- 1 files changed, 3 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 7a1e3a6..67bf078 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3935,8 +3935,6 @@ static void rtl_hw_reset(struct rtl8169_private *tp)
- 			break;
- 		udelay(100);
- 	}
--
--	rtl8169_init_ring_indexes(tp);
- }
- 
- static int __devinit
-@@ -5395,14 +5393,16 @@ static void rtl8169_reset_task(struct work_struct *work)
- 	if (!netif_running(dev))
- 		goto out_unlock;
- 
-+	rtl8169_hw_reset(tp);
-+
- 	rtl8169_wait_for_quiescence(dev);
- 
- 	for (i = 0; i < NUM_RX_DESC; i++)
- 		rtl8169_mark_to_asic(tp->RxDescArray + i, rx_buf_sz);
- 
- 	rtl8169_tx_clear(tp);
-+	rtl8169_init_ring_indexes(tp);
- 
--	rtl8169_hw_reset(tp);
- 	rtl_hw_start(dev);
- 	netif_wake_queue(dev);
- 	rtl8169_check_link_status(dev, tp, tp->mmio_addr);
-@@ -5413,11 +5413,6 @@ out_unlock:
- 
- static void rtl8169_tx_timeout(struct net_device *dev)
+Adding an accessor looks good since the existing mainlined MFD children
+will not require any or less modification in their code. Below is the quick
+patch for your review. Let me know your views on it since if its ok I will
+go ahead and make appropriate modification in the DA9052 MFD code.
+----
+ drivers/base/regmap/regmap-irq.c |   18 ++++++++----------
+ include/linux/regmap.h           |    3 +--
+ 2 files changed, 9 insertions(+), 12 deletions(-)
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index 6b8a74c..e386b20 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -164,7 +164,6 @@ static irqreturn_t regmap_irq_thread(int irq, void *d)
+  * irq:       The IRQ the device uses to signal interrupts
+  * irq_flags: The IRQF_ flags to use for the primary interrupt.
+  * chip:      Configuration for the interrupt controller.
+- * data:      Runtime data structure for the controller, allocated on success
+  *
+  * Returns 0 on success or an errno on failure.
+  *
+@@ -173,18 +172,17 @@ static irqreturn_t regmap_irq_thread(int irq, void *d)
+  * register values used by the IRQ controller over suspend and resume.
+  */
+ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+-			int irq_base, struct regmap_irq_chip *chip,
+-			struct regmap_irq_chip_data **data)
++			int *irq_base, struct regmap_irq_chip *chip)
  {
--	struct rtl8169_private *tp = netdev_priv(dev);
--
--	rtl8169_hw_reset(tp);
--
--	/* Let's wait a bit while any (async) irq lands on */
- 	rtl8169_schedule_work(dev, rtl8169_reset_task);
- }
+ 	struct regmap_irq_chip_data *d;
+ 	int cur_irq, i;
+ 	int ret = -ENOMEM;
  
--- 
-1.7.6.4
+-	irq_base = irq_alloc_descs(irq_base, 0, chip->num_irqs, 0);
+-	if (irq_base < 0) {
++	*irq_base = irq_alloc_descs(*irq_base, 0, chip->num_irqs, 0);
++	if (*irq_base < 0) {
+ 		dev_warn(map->dev, "Failed to allocate IRQs: %d\n",
+-			 irq_base);
+-		return irq_base;
++			 *irq_base);
++		return *irq_base;
+ 	}
+ 
+ 	d = kzalloc(sizeof(*d), GFP_KERNEL);
+@@ -213,7 +211,7 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 
+ 	d->map = map;
+ 	d->chip = chip;
+-	d->irq_base = irq_base;
++	d->irq_base = *irq_base;
+ 	mutex_init(&d->lock);
+ 
+ 	for (i = 0; i < chip->num_irqs; i++)
+@@ -232,8 +230,8 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+ 	}
+ 
+ 	/* Register them with genirq */
+-	for (cur_irq = irq_base;
+-	     cur_irq < chip->num_irqs + irq_base;
++	for (cur_irq = d->irq_base;
++	     cur_irq < chip->num_irqs + d->irq_base;
+ 	     cur_irq++) {
+ 		irq_set_chip_data(cur_irq, d);
+ 		irq_set_chip_and_handler(cur_irq, &regmap_irq_chip,
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index a83e4a0..21920b2 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -190,8 +190,7 @@ struct regmap_irq_chip {
+ struct regmap_irq_chip_data;
+ 
+ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+-			int irq_base, struct regmap_irq_chip *chip,
+-			struct regmap_irq_chip_data **data);
++			int *irq_base, struct regmap_irq_chip *chip);
+ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *data);
+ 
+ #endif
+
 
