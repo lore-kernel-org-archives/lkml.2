@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab1LENjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 08:39:33 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:24783
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932362Ab1LENfK (ORCPT
+	id S932404Ab1LENj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 08:39:27 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:53292
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932363Ab1LENfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Dec 2011 08:35:10 -0500
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h61h)
 X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,
-X-WSS-ID: 0LVQGEF-01-IPR-02
+X-WSS-ID: 0LVQGEE-01-IPN-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 12/22] iommu/amd: Implement functions to manage GCR3 table
-Date: Mon, 5 Dec 2011 14:34:27 +0100
-Message-ID: <1323092077-25501-13-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 11/22] iommu/amd: Implement IOMMUv2 TLB flushing routines
+Date: Mon, 5 Dec 2011 14:34:26 +0100
+Message-ID: <1323092077-25501-12-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
 References: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
@@ -30,191 +29,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds functions necessary to set and clear the
-GCR3 values associated with a particular PASID in an IOMMUv2
+The functions added with this patch allow to manage the
+IOMMU and the device TLBs for all devices in an IOMMUv2
 domain.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/amd_iommu.c       |  130 +++++++++++++++++++++++++++++++++++++++
- drivers/iommu/amd_iommu_proto.h |    4 +
+ drivers/iommu/amd_iommu.c       |  136 +++++++++++++++++++++++++++++++++++++++
+ drivers/iommu/amd_iommu_proto.h |    3 +
  drivers/iommu/amd_iommu_types.h |    1 +
- 3 files changed, 135 insertions(+), 0 deletions(-)
+ 3 files changed, 140 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index bd18a04..faf566c 100644
+index eaa1af2..bd18a04 100644
 --- a/drivers/iommu/amd_iommu.c
 +++ b/drivers/iommu/amd_iommu.c
-@@ -1637,8 +1637,45 @@ static void free_pagetable(struct protection_domain *domain)
- 	domain->pt_root = NULL;
+@@ -698,6 +698,44 @@ static void build_inv_iotlb_pages(struct iommu_cmd *cmd, u16 devid, int qdep,
+ 		cmd->data[2] |= CMD_INV_IOMMU_PAGES_SIZE_MASK;
  }
  
-+static void free_gcr3_tbl_level1(u64 *tbl)
++static void build_inv_iommu_pasid(struct iommu_cmd *cmd, u16 domid, int pasid,
++				  u64 address, bool size)
 +{
-+	u64 *ptr;
-+	int i;
++	memset(cmd, 0, sizeof(*cmd));
 +
-+	for (i = 0; i < 512; ++i) {
-+		if (!(tbl[i] & GCR3_VALID))
-+			continue;
++	address &= ~(0xfffULL);
 +
-+		ptr = __va(tbl[i] & PAGE_MASK);
-+
-+		free_page((unsigned long)ptr);
-+	}
++	cmd->data[0]  = pasid & PASID_MASK;
++	cmd->data[1]  = domid;
++	cmd->data[2]  = lower_32_bits(address);
++	cmd->data[3]  = upper_32_bits(address);
++	cmd->data[2] |= CMD_INV_IOMMU_PAGES_PDE_MASK;
++	cmd->data[2] |= CMD_INV_IOMMU_PAGES_GN_MASK;
++	if (size)
++		cmd->data[2] |= CMD_INV_IOMMU_PAGES_SIZE_MASK;
++	CMD_SET_TYPE(cmd, CMD_INV_IOMMU_PAGES);
 +}
 +
-+static void free_gcr3_tbl_level2(u64 *tbl)
++static void build_inv_iotlb_pasid(struct iommu_cmd *cmd, u16 devid, int pasid,
++				  int qdep, u64 address, bool size)
 +{
-+	u64 *ptr;
-+	int i;
++	memset(cmd, 0, sizeof(*cmd));
 +
-+	for (i = 0; i < 512; ++i) {
-+		if (!(tbl[i] & GCR3_VALID))
-+			continue;
++	address &= ~(0xfffULL);
 +
-+		ptr = __va(tbl[i] & PAGE_MASK);
-+
-+		free_gcr3_tbl_level1(ptr);
-+	}
++	cmd->data[0]  = devid;
++	cmd->data[0] |= (pasid & 0xff) << 16;
++	cmd->data[0] |= (qdep  & 0xff) << 24;
++	cmd->data[1]  = devid;
++	cmd->data[1] |= ((pasid >> 8) & 0xfff) << 16;
++	cmd->data[2]  = lower_32_bits(address);
++	cmd->data[2] |= CMD_INV_IOMMU_PAGES_GN_MASK;
++	cmd->data[3]  = upper_32_bits(address);
++	if (size)
++		cmd->data[2] |= CMD_INV_IOMMU_PAGES_SIZE_MASK;
++	CMD_SET_TYPE(cmd, CMD_INV_IOTLB_PAGES);
 +}
 +
- static void free_gcr3_table(struct protection_domain *domain)
+ static void build_inv_all(struct iommu_cmd *cmd)
  {
-+	if (domain->glx == 2)
-+		free_gcr3_tbl_level2(domain->gcr3_tbl);
-+	else if (domain->glx == 1)
-+		free_gcr3_tbl_level1(domain->gcr3_tbl);
-+	else if (domain->glx != 0)
-+		BUG();
+ 	memset(cmd, 0, sizeof(*cmd));
+@@ -3146,3 +3184,101 @@ out:
+ 	return ret;
+ }
+ EXPORT_SYMBOL(amd_iommu_domain_enable_v2);
 +
- 	free_page((unsigned long)domain->gcr3_tbl);
- }
- 
-@@ -3282,3 +3319,96 @@ int amd_iommu_flush_tlb(struct iommu_domain *dom, int pasid)
- }
- EXPORT_SYMBOL(amd_iommu_flush_tlb);
- 
-+static u64 *__get_gcr3_pte(u64 *root, int level, int pasid, bool alloc)
++static int __flush_pasid(struct protection_domain *domain, int pasid,
++			 u64 address, bool size)
 +{
-+	int index;
-+	u64 *pte;
++	struct iommu_dev_data *dev_data;
++	struct iommu_cmd cmd;
++	int i, ret;
 +
-+	while (true) {
++	if (!(domain->flags & PD_IOMMUV2_MASK))
++		return -EINVAL;
 +
-+		index = (pasid >> (9 * level)) & 0x1ff;
-+		pte   = &root[index];
++	build_inv_iommu_pasid(&cmd, domain->id, pasid, address, size);
 +
-+		if (level == 0)
-+			break;
++	/*
++	 * IOMMU TLB needs to be flushed before Device TLB to
++	 * prevent device TLB refill from IOMMU TLB
++	 */
++	for (i = 0; i < amd_iommus_present; ++i) {
++		if (domain->dev_iommu[i] == 0)
++			continue;
 +
-+		if (!(*pte & GCR3_VALID)) {
-+			if (!alloc)
-+				return NULL;
-+
-+			root = (void *)get_zeroed_page(GFP_ATOMIC);
-+			if (root == NULL)
-+				return NULL;
-+
-+			*pte = __pa(root) | GCR3_VALID;
-+		}
-+
-+		root = __va(*pte & PAGE_MASK);
-+
-+		level -= 1;
++		ret = iommu_queue_command(amd_iommus[i], &cmd);
++		if (ret != 0)
++			goto out;
 +	}
 +
-+	return pte;
++	/* Wait until IOMMU TLB flushes are complete */
++	domain_flush_complete(domain);
++
++	/* Now flush device TLBs */
++	list_for_each_entry(dev_data, &domain->dev_list, list) {
++		struct amd_iommu *iommu;
++		int qdep;
++
++		BUG_ON(!dev_data->ats.enabled);
++
++		qdep  = dev_data->ats.qdep;
++		iommu = amd_iommu_rlookup_table[dev_data->devid];
++
++		build_inv_iotlb_pasid(&cmd, dev_data->devid, pasid,
++				      qdep, address, size);
++
++		ret = iommu_queue_command(iommu, &cmd);
++		if (ret != 0)
++			goto out;
++	}
++
++	/* Wait until all device TLBs are flushed */
++	domain_flush_complete(domain);
++
++	ret = 0;
++
++out:
++
++	return ret;
 +}
 +
-+static int __set_gcr3(struct protection_domain *domain, int pasid,
-+		      unsigned long cr3)
++static int __amd_iommu_flush_page(struct protection_domain *domain, int pasid,
++				  u64 address)
 +{
-+	u64 *pte;
-+
-+	if (domain->mode != PAGE_MODE_NONE)
-+		return -EINVAL;
-+
-+	pte = __get_gcr3_pte(domain->gcr3_tbl, domain->glx, pasid, true);
-+	if (pte == NULL)
-+		return -ENOMEM;
-+
-+	*pte = (cr3 & PAGE_MASK) | GCR3_VALID;
-+
-+	return __amd_iommu_flush_tlb(domain, pasid);
++	return __flush_pasid(domain, pasid, address, false);
 +}
 +
-+static int __clear_gcr3(struct protection_domain *domain, int pasid)
-+{
-+	u64 *pte;
-+
-+	if (domain->mode != PAGE_MODE_NONE)
-+		return -EINVAL;
-+
-+	pte = __get_gcr3_pte(domain->gcr3_tbl, domain->glx, pasid, false);
-+	if (pte == NULL)
-+		return 0;
-+
-+	*pte = 0;
-+
-+	return __amd_iommu_flush_tlb(domain, pasid);
-+}
-+
-+int amd_iommu_domain_set_gcr3(struct iommu_domain *dom, int pasid,
-+			      unsigned long cr3)
++int amd_iommu_flush_page(struct iommu_domain *dom, int pasid,
++			 u64 address)
 +{
 +	struct protection_domain *domain = dom->priv;
 +	unsigned long flags;
 +	int ret;
 +
 +	spin_lock_irqsave(&domain->lock, flags);
-+	ret = __set_gcr3(domain, pasid, cr3);
++	ret = __amd_iommu_flush_page(domain, pasid, address);
 +	spin_unlock_irqrestore(&domain->lock, flags);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL(amd_iommu_domain_set_gcr3);
++EXPORT_SYMBOL(amd_iommu_flush_page);
 +
-+int amd_iommu_domain_clear_gcr3(struct iommu_domain *dom, int pasid)
++static int __amd_iommu_flush_tlb(struct protection_domain *domain, int pasid)
++{
++	return __flush_pasid(domain, pasid, CMD_INV_IOMMU_ALL_PAGES_ADDRESS,
++			     true);
++}
++
++int amd_iommu_flush_tlb(struct iommu_domain *dom, int pasid)
 +{
 +	struct protection_domain *domain = dom->priv;
 +	unsigned long flags;
 +	int ret;
 +
 +	spin_lock_irqsave(&domain->lock, flags);
-+	ret = __clear_gcr3(domain, pasid);
++	ret = __amd_iommu_flush_tlb(domain, pasid);
 +	spin_unlock_irqrestore(&domain->lock, flags);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL(amd_iommu_domain_clear_gcr3);
++EXPORT_SYMBOL(amd_iommu_flush_tlb);
++
 diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
-index a92dc61..a951a70 100644
+index d207b1d..a92dc61 100644
 --- a/drivers/iommu/amd_iommu_proto.h
 +++ b/drivers/iommu/amd_iommu_proto.h
-@@ -43,6 +43,10 @@ extern int amd_iommu_domain_enable_v2(struct iommu_domain *dom, int pasids);
- extern int amd_iommu_flush_page(struct iommu_domain *dom, int pasid,
- 				u64 address);
- extern int amd_iommu_flush_tlb(struct iommu_domain *dom, int pasid);
-+extern int amd_iommu_domain_set_gcr3(struct iommu_domain *dom, int pasid,
-+				     unsigned long cr3);
-+extern int amd_iommu_domain_clear_gcr3(struct iommu_domain *dom, int pasid);
-+
+@@ -40,6 +40,9 @@ extern int amd_iommu_register_ppr_notifier(struct notifier_block *nb);
+ extern int amd_iommu_unregister_ppr_notifier(struct notifier_block *nb);
+ extern void amd_iommu_domain_direct_map(struct iommu_domain *dom);
+ extern int amd_iommu_domain_enable_v2(struct iommu_domain *dom, int pasids);
++extern int amd_iommu_flush_page(struct iommu_domain *dom, int pasid,
++				u64 address);
++extern int amd_iommu_flush_tlb(struct iommu_domain *dom, int pasid);
  
  #ifndef CONFIG_AMD_IOMMU_STATS
  
 diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index 64a7642..68937a4 100644
+index 905eca5..64a7642 100644
 --- a/drivers/iommu/amd_iommu_types.h
 +++ b/drivers/iommu/amd_iommu_types.h
-@@ -279,6 +279,7 @@
- #define DTE_GCR3_SHIFT_B	16
- #define DTE_GCR3_SHIFT_C	43
+@@ -148,6 +148,7 @@
+ #define CMD_COMPL_WAIT_INT_MASK		0x02
+ #define CMD_INV_IOMMU_PAGES_SIZE_MASK	0x01
+ #define CMD_INV_IOMMU_PAGES_PDE_MASK	0x02
++#define CMD_INV_IOMMU_PAGES_GN_MASK	0x04
  
-+#define GCR3_VALID		0x01ULL
+ #define CMD_INV_IOMMU_ALL_PAGES_ADDRESS	0x7fffffffffffffffULL
  
- #define IOMMU_PAGE_MASK (((1ULL << 52) - 1) & ~0xfffULL)
- #define IOMMU_IO_PAGE_MASK	(~(0xfffULL))
 -- 
 1.7.5.4
 
