@@ -1,113 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab1LELWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 06:22:13 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35052 "EHLO mx3.mail.elte.hu"
+	id S1756108Ab1LEL3F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 06:29:05 -0500
+Received: from mga02.intel.com ([134.134.136.20]:21296 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755912Ab1LELWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 06:22:12 -0500
-Date: Mon, 5 Dec 2011 12:20:05 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Chubb <peter.chubb@nicta.com.au>
-Cc: Vasily Khoruzhick <anarsoul@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        stable@kernel.org,
-        =?utf-8?B?VXJvxaE=?= Vampl <mobile.leecher@gmail.com>
-Subject: Re: [PATCH RESEND] Fix reboot regression on Acer Aspire One AOA110
-Message-ID: <20111205112005.GD3143@elte.hu>
-References: <1320240899-16889-1-git-send-email-anarsoul@gmail.com>
- <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
+	id S1755912Ab1LEL3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 06:29:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="83502600"
+Message-ID: <4EDCAAFB.4060209@intel.com>
+Date: Mon, 05 Dec 2011 13:28:59 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Takashi Iwai <tiwai@suse.de>, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: sdhci-pci: simplify error handling
+References: <1322897285.3884.1.camel@phoenix>
+In-Reply-To: <1322897285.3884.1.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/12/11 09:28, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-* Peter Chubb <peter.chubb@nicta.com.au> wrote:
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
 
-> >>>>> "Vasily" == Vasily Khoruzhick <anarsoul@gmail.com> writes:
+> ---
+>  drivers/mmc/host/sdhci-pci.c |   38 ++++++++++++++++++--------------------
+>  1 files changed, 18 insertions(+), 20 deletions(-)
 > 
-> Vasily> From: Uroš Vampl <mobile.leecher@gmail.com> Starting with
-> Vasily> kernel 3.0, my Acer Aspire One AOA110 hangs on reboot. Doing
-> Vasily> an internet search, I found that in git commit
-> Vasily> b49c78d4827be8d7e67e5b94adac6b30a4a9ad14 the machine was made
-> Vasily> to reboot with the bios method, but it does not work on most
-> Vasily> (all?) AOA110s.
-> 
-> That change was made in July to fix the broken ACPI reboot method.  It
-> certainly works on my AOA110.  What BIOS do you have installed?
-> (although looking at what's been published, I can't see any booting
-> problems mentioned in the BIOS changelogs).
-> 
-> Vasily> This patch introduces new quirks section for machines that
-> Vasily> only reboot with the kbd method and put the Aspire One into
-> Vasily> it.
-> 
-> You don't need yet another table, just change the callback.
-> 
-> 
-> Try this:
-> 
-> Index: linux-2.6/arch/x86/kernel/reboot.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/reboot.c	2011-10-31 14:35:50.105623537 +1100
-> +++ linux-2.6/arch/x86/kernel/reboot.c	2011-11-03 11:54:12.487901547 +1100
-> @@ -124,7 +124,7 @@
->   */
+> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> index 6878a94..d2e77fb 100644
+> --- a/drivers/mmc/host/sdhci-pci.c
+> +++ b/drivers/mmc/host/sdhci-pci.c
+> @@ -1012,11 +1012,8 @@ static int sdhci_pci_suspend(struct device *dev)
 >  
->  /*
-> - * Some machines require the "reboot=b"  commandline option,
-> + * Some machines require the "reboot=b" or "reboot=k"  commandline options,
->   * this quirk makes that automatic.
->   */
->  static int __init set_bios_reboot(const struct dmi_system_id *d)
-> @@ -136,6 +136,15 @@
+>  		ret = sdhci_suspend_host(slot->host);
+>  
+> -		if (ret) {
+> -			for (i--; i >= 0; i--)
+> -				sdhci_resume_host(chip->slots[i]->host);
+> -			return ret;
+> -		}
+> +		if (ret)
+> +			goto err_pci_suspend;
+>  
+>  		slot_pm_flags = slot->host->mmc->pm_flags;
+>  		if (slot_pm_flags & MMC_PM_WAKE_SDIO_IRQ)
+> @@ -1027,11 +1024,8 @@ static int sdhci_pci_suspend(struct device *dev)
+>  
+>  	if (chip->fixes && chip->fixes->suspend) {
+>  		ret = chip->fixes->suspend(chip);
+> -		if (ret) {
+> -			for (i = chip->num_slots - 1; i >= 0; i--)
+> -				sdhci_resume_host(chip->slots[i]->host);
+> -			return ret;
+> -		}
+> +		if (ret)
+> +			goto err_pci_suspend;
+>  	}
+>  
+>  	pci_save_state(pdev);
+> @@ -1048,6 +1042,11 @@ static int sdhci_pci_suspend(struct device *dev)
+>  	}
+>  
 >  	return 0;
+> +
+> +err_pci_suspend:
+> +	while (--i >= 0)
+> +		sdhci_resume_host(chip->slots[i]->host);
+> +	return ret;
 >  }
 >  
-> +static int __init set_kbd_reboot(const struct dmi_system_id *d)
-> +{
-> +	if (reboot_type != BOOT_KBD) {
-> +		reboot_type = BOOT_KBD;
-> +		printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboots.\n", d->ident);
-> +	}
-> +	return 0;
-> +}
+>  static int sdhci_pci_resume(struct device *dev)
+> @@ -1113,23 +1112,22 @@ static int sdhci_pci_runtime_suspend(struct device *dev)
+>  
+>  		ret = sdhci_runtime_suspend_host(slot->host);
+>  
+> -		if (ret) {
+> -			for (i--; i >= 0; i--)
+> -				sdhci_runtime_resume_host(chip->slots[i]->host);
+> -			return ret;
+> -		}
+> +		if (ret)
+> +			goto err_pci_runtime_suspend;
+>  	}
+>  
+>  	if (chip->fixes && chip->fixes->suspend) {
+>  		ret = chip->fixes->suspend(chip);
+> -		if (ret) {
+> -			for (i = chip->num_slots - 1; i >= 0; i--)
+> -				sdhci_runtime_resume_host(chip->slots[i]->host);
+> -			return ret;
+> -		}
+> +		if (ret)
+> +			goto err_pci_runtime_suspend;
+>  	}
+>  
+>  	return 0;
 > +
->  static struct dmi_system_id __initdata reboot_dmi_table[] = {
->  	{	/* Handle problems with rebooting on Dell E520's */
->  		.callback = set_bios_reboot,
-> @@ -295,7 +304,7 @@
->  		},
->  	},
->  	{ /* Handle reboot issue on Acer Aspire one */
-> -		.callback = set_bios_reboot,
-> +		.callback = set_kbd_reboot,
->  		.ident = "Acer Aspire One A110",
->  		.matches = {
->  			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+> +err_pci_runtime_suspend:
+> +	while (--i >= 0)
+> +		sdhci_runtime_resume_host(chip->slots[i]->host);
+> +	return ret;
+>  }
+>  
+>  static int sdhci_pci_runtime_resume(struct device *dev)
 
-Looks like this patch worked fine for everyone affected?
-
-If yes then please resend it with a Signed-off-by, and with the 
-proper Reported-by and Tested-by tags.
-
-Thanks,
-
-	Ingo
