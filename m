@@ -1,134 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1LEIwe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 03:52:34 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:38289 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752602Ab1LEIwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 03:52:33 -0500
-Date: Mon, 5 Dec 2011 10:52:28 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: rpurdie@rpsys.net, ben-linux@fluff.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Subject: Re: [PATCH] backlight: add regulator support for platform_lcd driver
-Message-ID: <20111205085228.GF9900@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1323074921-29291-1-git-send-email-thomas.abraham@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LZFKeWUZP29EKQNE"
-Content-Disposition: inline
-In-Reply-To: <1323074921-29291-1-git-send-email-thomas.abraham@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754146Ab1LEIxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 03:53:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33670 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752959Ab1LEIxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 03:53:10 -0500
+Date: Mon, 5 Dec 2011 19:52:54 +1100
+From: NeilBrown <neilb@suse.de>
+To: Chen Peter-B29397 <B29397@freescale.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH 1/1] driver core: disable device's runtime pm during
+ shutdown
+Message-ID: <20111205195254.2d2f21a1@notabene.brown>
+In-Reply-To: <35AB98346D25394A9354ED89C4D7658722905B@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1321231380-11631-1-git-send-email-peter.chen@freescale.com>
+	<201111142327.37524.rjw@sisk.pl>
+	<20111115005951.GB26360@kroah.com>
+	<201111160016.09174.rjw@sisk.pl>
+	<20111205085632.5976fe96@notabene.brown>
+	<CACVXFVNkapRDJ8QkgmJCh+n1c2+7cHBiLf1ef22Nfdd8YrPpGg@mail.gmail.com>
+	<20111205155338.1bd658b9@notabene.brown>
+	<35AB98346D25394A9354ED89C4D76587228F32@039-SN1MPN1-002.039d.mgd.msft.net>
+	<20111205190827.68b179f4@notabene.brown>
+	<35AB98346D25394A9354ED89C4D7658722905B@039-SN1MPN1-002.039d.mgd.msft.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/dHNQ4OJU0=TW5LsxCMTtn9l"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---LZFKeWUZP29EKQNE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--Sig_/dHNQ4OJU0=TW5LsxCMTtn9l
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Mon, 5 Dec 2011 08:32:27 +0000 Chen Peter-B29397 <B29397@freescale.com>
+wrote:
 
-On Mon, Dec 05, 2011 at 02:18:41PM +0530, Thomas Abraham wrote:
-> The power source to the lcd panel or the lcd interface such as lvds
-> transmitters could be controlled by a regulator supply. Add support
-> for enabling/disabling the regulator when switching power to lcd.
+> =20
+> > > > stays
+> > > > > > asleep, omap_i2c_xfer cannot wake it, the transfer doesn't happ=
+en
+> > and
+> > > > the
+> > > > > > system doesn't get powered off.
+> > > > > >
+> > > > > > So here is a device that should *not* have pm disabled at
+> > shutdown.
+> > > > > >
+> > > > > > So I feel this fix is a little too heavy-handed.
+> > > > >
+> > > > > Maybe the device's runtime PM should not be disabled if
+> > > > > there is no ->shutdown defined in its driver, how about the blew?
+> > > >
+> > > > Thanks, but that won't actually help.
+> > > >
+> > > > dev->bus->shutdown is i2c_device_shutdown so there is a shutdown
+> > method.
+> > > > However i2c_device_shutdown just finds the driver can calls
+> > > > driver->shutdown(), and that is the 'shutdown' that is NULL.
+> > > >
+> > > Then, i2c should be registered before than twl4030 as a platform devi=
+ce,
+> > since
+> > > twl4030 is an i2c device. Just let i2c shut down later than twl4030's.
+> >=20
+> > It almost certainly is, but that is totally irrelevant.
+> >=20
+> > The problem has nothing to do with ordering and nothing much to do with
+> > ->shutdown() being called.
+> >=20
+> > The problem is simply that pm_runtime_disable() is being called on all
+> > devices, and that stops devices that are asleep from waking up.
+> >=20
+> Please correct me if I am wrong
+> 1. This change only affects when the user issues "reboot" or "shutdown"
+
+well "halt -p" or "poweroff", but yes.
+
+> 2. The pm_runtime_disable(dev) is only be called before this "dev" is
+> coming to shutdown
+
+Yes, but the important point is that is being called before pm_power_off is
+called.
+
+> 3. If i2c bus/driver->shutdown is not called, its runtime pm is still ena=
+bled.
+
+I think you mean "disabled" ??
+
+Yes, but I don't see how that is relevant.
+
+> 4. You may issue i2c xfer after i2c bus/driver->shutdown is called. =20
+
+Yes, but again I cannot see the relevance.
+
+NeilBrown
+
+
 >=20
-> Two new elements 'min_uV' and 'max_uV' in the platform data are added
-> to allow platform code to specifiy the desired output voltage from the
-> regulator.
+> > I think the intention of putting that call in was to stop devices that
+> > are
+> > awake from going to sleep, and maybe that is justified.  But stopping
+> > devices
+> > that are asleep from waking up isn't.
+> >=20
+> > NeilBrown
+> >=20
+> >=20
+> > >
+> > > > Thanks,
+> > > > NeilBrown
+> > > >
+> > > >
+> > > >
 >=20
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> ---
->  drivers/video/backlight/platform_lcd.c |   29 ++++++++++++++++++++++++++=
-+++
->  include/video/platform_lcd.h           |    7 +++++++
->  2 files changed, 36 insertions(+), 0 deletions(-)
 >=20
-> diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backl=
-ight/platform_lcd.c
-> index 302330a..ffa8108 100644
-> --- a/drivers/video/backlight/platform_lcd.c
-> +++ b/drivers/video/backlight/platform_lcd.c
-> @@ -17,6 +17,8 @@
->  #include <linux/backlight.h>
->  #include <linux/lcd.h>
->  #include <linux/slab.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/regulator/machine.h>
-> =20
->  #include <video/platform_lcd.h>
-> =20
-> @@ -44,11 +46,38 @@ static int platform_lcd_get_power(struct lcd_device *=
-lcd)
->  static int platform_lcd_set_power(struct lcd_device *lcd, int power)
->  {
->  	struct platform_lcd *plcd =3D to_our_lcd(lcd);
-> +	struct regulator *lcd_regulator;
->  	int lcd_power =3D 1;
-> =20
->  	if (power =3D=3D FB_BLANK_POWERDOWN || plcd->suspended)
->  		lcd_power =3D 0;
-> =20
-> +	/*
-> +	 * If power to lcd and/or lcd interface is controlled using a regulator,
-> +	 * enable or disable the regulator based in the power setting.
-> +	 */
-> +	lcd_regulator =3D regulator_get(plcd->us, "vcc_lcd");
-> +	if (IS_ERR(lcd_regulator)) {
-> +		dev_info(plcd->us, "could not get regulator\n");
-> +		goto set_power;
-> +	}
-> +
-> +	if (lcd_power) {
-> +		if (plcd->pdata->min_uV || plcd->pdata->max_uV)
-> +			if (regulator_set_voltage(lcd_regulator,
-> +				plcd->pdata->min_uV, plcd->pdata->max_uV))
-> +				dev_info(plcd->us,
-> +					"regulator voltage set failed\n");
-> +
-> +		if (regulator_enable(lcd_regulator))
-> +			dev_info(plcd->us, "failed to enable regulator\n");
-> +	} else {
-> +		regulator_disable(lcd_regulator);
-> +	}
-> +
-> +	regulator_put(lcd_regulator);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I wonder why you ->get() and ->put() everytime here. Wouldn't it be
-enough to ->get() on probe() and ->put() on remove() ??
 
---=20
-balbi
-
---LZFKeWUZP29EKQNE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Sig_/dHNQ4OJU0=TW5LsxCMTtn9l
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAEBAgAGBQJO3IZMAAoJEIaOsuA1yqREGU4QAKCY3AIwHk59wSShGzUeGRHZ
-g/IZQD1yqPi1v9mww5nynP/PnHIJbF1RJKLS9t7sQJnD6ZkUDTSKFKPucsoP92ID
-SKKRAOFrHrOjC0eEvWIwaOK+veDOZdaXYEdrH9qL0+qrpjURpcXO9wmHMFteFlt3
-dKHt/aOPjxp95NK7TMNGIFBBcUeJOH0Yk+fjGvPoHUJurLXA2bmr3fRLapztNBMh
-y+AXH18DKiSmF5cK24++9gFfKGOJe/5p1kd+KaML00h7cRhvU7Lvv0haJlWnBGaH
-9hzF9s/gvlBPNJoI5TyIZ9mZbwZNVkfc8Oqz1DQ5Srz9WIXfHTjUXwxb/f1TGs4C
-F061hKnpfh4K+t18oF4ZoNRA7HmtKpgac14eUGLj1jKWOrUmieBr/hgL0/c7HH15
-clm8YQubDBY3qdM8nyjtzbMu05L8vDIUqAVf2Dw/eAj6RG54G4kNKjL67NRF52Vm
-uUZ4uBJnlGQiWJIVxW8VpfBZOq39S1QPAvA4OKzPvZAfr5sV/oVb9BxVS+tKcSqI
-HHEZsABbsGf3ZLNNFHlMld1WqfC8Uqul9mAG8Y9vPJGp0U5nP2chUi7hBWKNYkOl
-OqzmE4XET02tWyA5fEmCBzh45iPNu36xvzmsWvgqWfX5t9xiLKim81Bxfy5DCuys
-zHW9mLxbQ8JC0Dp+Cptd
-=argN
+iQIVAwUBTtyGZjnsnt1WYoG5AQK1dBAAo4Vxguwr8JcuJmVUffEgh31ucESgUipp
+feIdblVZyTyf72YVgUxxUwdtVulEcmNcdxS37r5ygq2fQqAkSYlqS4o4vcIb8kYE
+2cFWPcPDIKhHHwEks+O7YDSF1l98ZeVLfLaoHe20Mwj7SS2og9+l+pT/rL0RQQYm
+EnZlBCsl8ngcd54b2G5uK8fXOBbLDBo3UAYoS1Rzk9YF78qAC+bAr3ihK3rdzHpR
+QDpMzy9OyKEwzwUeI8R4LGeJRm9eeByasfndSrwtb+git+zwKbSSFBeFNGx7iD5o
+UwYDN5Ks4zCvh1iIUKa3KbjCdlTZitzjOHBt1UJ2xEVFtzwLyVWMkZr5Oxb3iwu+
+ZpGz3zHQ3AjdOmjgUksDDZBzS7ZTS7fwbAZD3N8jmSgIBqREc5gQteggBOtWMRob
+Jgin6S7aJrcU2zk6rt8jO09l9bzLHz8ULd51RkyjVBDTG1IvxZtbD5ziiqh42EWd
+C3NYaxcL+tVZCJEuSgg1FcCODK15owxiKZPEatoQg1vwdCWHyoLB9AfmW0o8IgjB
+WijC9MH6UvEfzkkMCmWjeBxE0Bi8lYTgdTnttYdrW4KF82k8RReto7pBAh2CZpMM
+znJ4enT+rYg7EJtzGDg/PES8slbMLX9zWhLz+jHlzL5BRkrGdyhcjNk5XlXUaBsp
++LKI0vPmQfw=
+=qxCI
 -----END PGP SIGNATURE-----
 
---LZFKeWUZP29EKQNE--
+--Sig_/dHNQ4OJU0=TW5LsxCMTtn9l--
