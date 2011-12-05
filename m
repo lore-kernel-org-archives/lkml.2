@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab1LEUt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:49:56 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:39437 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932198Ab1LEUtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:49:55 -0500
-Message-ID: <4EDD2E5C.1050107@free.fr>
-Date: Mon, 05 Dec 2011 21:49:32 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: oleg@redhat.com
-CC: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: Re: [PATCH 0/1][V3] Handle reboot in a child pid namespace
-References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr>	<20111204212756.GB16362@khazad-dum.debian.net> <4EDBFD67.1040009@free.fr>
-In-Reply-To: <4EDBFD67.1040009@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932555Ab1LEUw7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:52:59 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47764 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932366Ab1LEUw5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 15:52:57 -0500
+Date: Mon, 5 Dec 2011 20:53:44 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
+        linux-ide@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-next@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Jonas Bonn <jonas@southpole.se>,
+        Michal Simek <monstr@monstr.eu>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
+Message-ID: <20111205205344.3c0c0894@lxorguk.ukuu.org.uk>
+In-Reply-To: <4EDD2DE1.1050606@gmail.com>
+References: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
+	<20111202192618.GC3037@localhost.localdomain>
+	<CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com>
+	<1322867573.11728.22.camel@pasglop>
+	<20111205161157.GA27550@localhost.localdomain>
+	<alpine.LFD.2.02.1112051236350.2357@xanadu.home>
+	<20111205180253.GB29812@localhost.localdomain>
+	<alpine.LFD.2.02.1112051310150.2357@xanadu.home>
+	<4EDD1897.4030208@gmail.com>
+	<20111205202125.GA32592@oksana.dev.rtsoft.ru>
+	<4EDD2DE1.1050606@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2011 12:08 AM, Daniel Lezcano wrote:
-> On 12/04/2011 10:27 PM, Henrique de Moraes Holschuh wrote:
->> On Sun, 04 Dec 2011, Daniel Lezcano wrote:
->>>  * V3
->>>    - removed lock and serialization of pid_ns_reboot
->>>  * V2
->>>    - added a lock for the pid namespace to prevent racy call
->>>      to the 'reboot' syscall
->>>    - Moved 'reboot' command assigned in zap_pid_ns_processes
->>>      instead of wait_task_zombie
->>>    - added tasklist lock around force_sig
->>>    - added do_exit in pid_ns_reboot
->>>    - used task_active_pid_ns instead of declaring a new variable in sys_reboot
->>>    - moved code up before POWER_OFF changed to HALT in sys_reboot
+On Mon, 05 Dec 2011 14:47:29 -0600
+Rob Herring <robherring2@gmail.com> wrote:
 
-Oleg ? Are you fine with this patch ?
+> On 12/05/2011 02:21 PM, Anton Vorontsov wrote:
+> > On Mon, Dec 05, 2011 at 01:16:39PM -0600, Rob Herring wrote:
+> > [...]
+> >> At least for DT enabled platforms, we could force "no irq" to be 0 in
+> >> the DT irq code. Searching the dts files, I found 2 occurrences of IRQ0.
+> > 
+> > Please note that there are HW IRQ numbers and "Virtual" IRQ numbers.
+> > dev->irq and thus the thing that we pass into request_irq() is a
+> > virtual IRQ thing, a "cookie".
+> > 
+> > While in device tree you see real HW IRQ numbers.
+> > 
+> > Legal VIRQ is always > 0, while HW IRQ could be >= 0.
+> > 
+> 
+> If this was all true, then there would be no discussion.
+
+Or more to the point. If the ARM people concerned had listened in 2005,
+2006 or 2008 there would be no discussion.
+
+> This is what we are working towards, but irq_chips all over the arm tree
+> do not support any translation or have base fixed at compile time. Only
+> a few have been converted. And some ARM platforms may never get
+> converted to DT.
+
+You've had six years. Let them break, it'll motivate any users to fix
+them.
+
+Alan
