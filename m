@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932448Ab1LEPrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:47:24 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:26553
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932421Ab1LEPrX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:47:23 -0500
-X-SpamScore: -17
-X-BigFish: VPS-17(zz98dK4015Lzz1202hzz15d4Rz2dhb2ch668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVQMIS-01-1FF-02
-X-M-MSG: 
-Date: Mon, 5 Dec 2011 16:47:15 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: KyongHo Cho <pullip.cho@samsung.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>
-Subject: Re: [PATCH v7 0/2] iommu/exynos: Add IOMMU/System MMU driver for
- Samsung Exynos
-Message-ID: <20111205154715.GE25178@amd.com>
-References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com>
+	id S932454Ab1LEPsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:48:24 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47289 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932421Ab1LEPsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 10:48:23 -0500
+Date: Mon, 5 Dec 2011 16:46:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL 0/4] perf test improvements
+Message-ID: <20111205154644.GE28866@elte.hu>
+References: <1322842769-7232-1-git-send-email-acme@infradead.org>
+ <4ED902C0.5020300@gmail.com>
+ <20111202182214.GA4544@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com>
+In-Reply-To: <20111202182214.GA4544@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 18, 2011 at 06:47:28PM +0900, KyongHo Cho wrote:
-> Patch Summary:
-> [PATCH v7 1/2] ARM: EXYNOS: Change System MMU platform device definitions
-> [PATCH v7 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
 
-Okay, I merged it into arm/exynos, but it is not pushed yet. Actually
-there were conflicts while merging, which I resolved. What I failed
-to find is a config for Exynos that actually builds for upstream Linux.
-Probably I havn't tried hard enough to find one... Can you provide a
-kernel config that I can use for my testing and that builds a current
-3.2-rc4 kernel for Exynos?
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Em Fri, Dec 02, 2011 at 09:54:24AM -0700, David Ahern escreveu:
+> > 
+> > 
+> > On 12/02/2011 09:19 AM, Arnaldo Carvalho de Melo wrote:
+> > > Hi Ingo,
+> > > 
+> > >         Please consider pulling from:
+> > > 
+> > > git://github.com/acmel/linux.git perf/core
+> > > 
+> > > 	Now there are 29 outstanding changesets on this branch.
+> > 
+> > What about the 2 commits on your urgent branch? I don't recall seeing a
+> > response that those were picked up, and they are not in Linus' branch.
+> 
+> Waiting for Ingo on those. If they don't get picked by 
+> tomorrow I'll ask Linus directly.
+
+It should now all be in -tip, will send it to Linus today or 
+tomorrow.
 
 Thanks,
 
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+	Ingo
