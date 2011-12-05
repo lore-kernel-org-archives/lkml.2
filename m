@@ -1,74 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab1LEPTG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:19:06 -0500
-Received: from exchange.solarflare.com ([216.237.3.220]:10137 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932381Ab1LEPTE (ORCPT
+	id S932409Ab1LEP1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:27:19 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44260 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932314Ab1LEP1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:19:04 -0500
-Message-ID: <1323098335.7454.214.camel@deadeye>
-Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Mark Lord <kernel@teksavvy.com>
-CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 5 Dec 2011 15:18:55 +0000
-In-Reply-To: <4EDCD828.2090904@teksavvy.com>
-References: <4EA89972.5060101@teksavvy.com>
-	  <20111026.194045.2019668159403582571.davem@davemloft.net>
-	  <4EA8B283.3010105@teksavvy.com>
-	  <20111026.221719.2216112919297458522.davem@davemloft.net>
-	  <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>
-	  <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>
-	  <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>
-	  <4EBAB643.8020603@teksavvy.com> <1320859911.2781.1.camel@bwh-desktop>
-	  <4EBABAFD.6050604@teksavvy.com> <1320860895.2781.6.camel@bwh-desktop>
-	 <4EDCD828.2090904@teksavvy.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Dec 2011 10:27:18 -0500
+Date: Mon, 5 Dec 2011 15:27:15 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: ashishj3 <ashish.jangam@kpitcummins.com>
+Cc: sameo@openedhand.com, linux-kernel@vger.kernel.org,
+        Dajun <dajun.chen@diasemi.com>, linaro-dev@lists.linaro.org,
+        arnd@arndb.de, eric.miao@linaro.org, sameo@linux.intel.com
+Subject: Re: [PATCH 01/11] MFD: DA9052/53 MFD core module v8
+Message-ID: <20111205152715.GT11150@opensource.wolfsonmicro.com>
+References: <1320152142.4892.4.camel@L-0761.kpit.com>
+ <1323067584.1652.10.camel@L-0761.kpit.com>
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18560.004
-X-TM-AS-Result: No--3.825600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323067584.1652.10.camel@L-0761.kpit.com>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-05 at 09:41 -0500, Mark Lord wrote:
-[...]
-> static int ax88772b_bind(struct usbnet *dev, struct usb_interface *intf)
-> {
-> ...
->         /* register support for hardware checksums */
->         dev->net->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
-> 
->         /* enable hardware checksums */
->         dev->net->features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
->         ax88772b_set_features(dev->net, dev->net->features);
-> ...
-> }
-> -------------------------------snip-----------------------------------
-> 
-> Does this look correct -- any improvements/fixes to suggest?
-[...]
+On Mon, Dec 05, 2011 at 12:16:24PM +0530, ashishj3 wrote:
 
-NETIF_F_HW_CSUM means the hardware implements generic IP-style
-checksumming: the stack specifies the offset at which to start
-checksumming and the offset at which to store the checksum, and the
-hardware does not attempt to parse the headers.
+> --- a/drivers/base/regmap/regmap-irq.c
+> +++ b/drivers/base/regmap/regmap-irq.c
+> @@ -164,7 +164,6 @@ static irqreturn_t regmap_irq_thread(int irq, void *d)
+>   * irq:       The IRQ the device uses to signal interrupts
+>   * irq_flags: The IRQF_ flags to use for the primary interrupt.
+>   * chip:      Configuration for the interrupt controller.
+> - * data:      Runtime data structure for the controller, allocated on success
 
-If this hardware recognises specific protocols and works out the offsets
-itself, then you must claim NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM instead.
+Uh, that's not good...
 
-Ben.
+> -	irq_base = irq_alloc_descs(irq_base, 0, chip->num_irqs, 0);
+> -	if (irq_base < 0) {
+> +	*irq_base = irq_alloc_descs(*irq_base, 0, chip->num_irqs, 0);
+> +	if (*irq_base < 0) {
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+This isn't adding an accessory, this is passing irq_base by reference.
+Seems like a lot of pointers, really.  I'll send a patch.
