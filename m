@@ -1,124 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab1LETvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:51:41 -0500
-Received: from mail-yw0-f74.google.com ([209.85.213.74]:35046 "EHLO
-	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325Ab1LETvj (ORCPT
+	id S932497Ab1LETzt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:55:49 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58183 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755113Ab1LETzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:51:39 -0500
-From: Vincent Palatin <vpalatin@chromium.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Olof Johansson <olofj@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>, Ming Lei <tom.leiming@gmail.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Vincent Palatin <vpalatin@chromium.org>
-Subject: [PATCH] PM / Runtime: make PCI traces quieter
-Date: Mon,  5 Dec 2011 11:51:18 -0800
-Message-Id: <1323114678-28750-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20111205111906.7cae2946@jbarnes-desktop>
-References: <20111205111906.7cae2946@jbarnes-desktop>
-X-System-Of-Record: true
+	Mon, 5 Dec 2011 14:55:47 -0500
+MIME-Version: 1.0
+Date: Mon, 5 Dec 2011 11:55:45 -0800
+Message-ID: <CAK3+h2zaZ3J4F4_rx6LGM0f_iY7ao8rU9nCt3EpZXDRGrqm3hQ@mail.gmail.com>
+Subject: Seeking Linux watchdog design advice to trouble shoot mystory silent
+ reboot issue
+From: Vincent Li <vincent.mc.li@gmail.com>
+To: linux-watchdog@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the runtime PM is activated on PCI, if a device switches state frequently
-(e.g. an EHCI controller with autosuspending USB devices connected)
-the PCI configuration traces might be very verbose in the kernel log.
-Let's guard those traces with DEBUG condition.
+Hi,
 
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
----
- arch/x86/pci/i386.c     |    2 +-
- drivers/acpi/pci_irq.c  |   10 +++++-----
- drivers/pci/pci.c       |    5 ++---
- drivers/pci/setup-res.c |    6 +++---
- 4 files changed, 11 insertions(+), 12 deletions(-)
+we have  a complex system with a large number of processes running
+simutanously. If any of the processes gets into a faulty state and
+hangs or consumes more than its fair share of the system resources,
+the other processes may not get a chance to run, and the whole system
+can hang, interrupting the system functionality and user traffic.
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 794b092..e215a9b 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -270,7 +270,7 @@ void pcibios_set_master(struct pci_dev *dev)
- 		lat = pcibios_max_latency;
- 	else
- 		return;
--	dev_printk(KERN_DEBUG, &dev->dev, "setting latency timer to %d\n", lat);
-+	dev_dbg(&dev->dev, "setting latency timer to %d\n", lat);
- 	pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
- }
- 
-diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
-index 7f9eba9..0eefa12 100644
---- a/drivers/acpi/pci_irq.c
-+++ b/drivers/acpi/pci_irq.c
-@@ -487,10 +487,10 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
- 	else
- 		link_desc[0] = '\0';
- 
--	dev_info(&dev->dev, "PCI INT %c%s -> GSI %u (%s, %s) -> IRQ %d\n",
--		 pin_name(pin), link_desc, gsi,
--		 (triggering == ACPI_LEVEL_SENSITIVE) ? "level" : "edge",
--		 (polarity == ACPI_ACTIVE_LOW) ? "low" : "high", dev->irq);
-+	dev_dbg(&dev->dev, "PCI INT %c%s -> GSI %u (%s, %s) -> IRQ %d\n",
-+		pin_name(pin), link_desc, gsi,
-+		(triggering == ACPI_LEVEL_SENSITIVE) ? "level" : "edge",
-+		(polarity == ACPI_ACTIVE_LOW) ? "low" : "high", dev->irq);
- 
- 	return 0;
- }
-@@ -524,6 +524,6 @@ void acpi_pci_irq_disable(struct pci_dev *dev)
- 	 * (e.g. PCI_UNDEFINED_IRQ).
- 	 */
- 
--	dev_info(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
-+	dev_dbg(&dev->dev, "PCI INT %c disabled\n", pin_name(pin));
- 	acpi_unregister_gsi(gsi);
- }
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 6f45a73..8119757 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -964,7 +964,7 @@ void pci_restore_state(struct pci_dev *dev)
- 	for (i = 15; i >= 0; i--) {
- 		pci_read_config_dword(dev, i * 4, &val);
- 		if (val != dev->saved_config_space[i]) {
--			dev_printk(KERN_DEBUG, &dev->dev, "restoring config "
-+			dev_dbg(&dev->dev, "restoring config "
- 				"space at offset %#x (was %#x, writing %#x)\n",
- 				i, val, (int)dev->saved_config_space[i]);
- 			pci_write_config_dword(dev,i * 4,
-@@ -1529,8 +1529,7 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
- 	}
- 
- out:
--	dev_printk(KERN_DEBUG, &dev->dev, "PME# %s\n",
--			enable ? "enabled" : "disabled");
-+	dev_dbg(&dev->dev, "PME# %s\n", enable ? "enabled" : "disabled");
- }
- 
- /**
-diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-index 5717509b..b66bfdb 100644
---- a/drivers/pci/setup-res.c
-+++ b/drivers/pci/setup-res.c
-@@ -85,9 +85,9 @@ void pci_update_resource(struct pci_dev *dev, int resno)
- 		}
- 	}
- 	res->flags &= ~IORESOURCE_UNSET;
--	dev_info(&dev->dev, "BAR %d: set to %pR (PCI address [%#llx-%#llx])\n",
--		 resno, res, (unsigned long long)region.start,
--		 (unsigned long long)region.end);
-+	dev_dbg(&dev->dev, "BAR %d: set to %pR (PCI address [%#llx-%#llx])\n",
-+		resno, res, (unsigned long long)region.start,
-+		(unsigned long long)region.end);
- }
- 
- int pci_claim_resource(struct pci_dev *dev, int resource)
--- 
-1.7.3.1
+In order to prevent the system from hanging, We uses a host watchdog
+mechanism to make sure the system can detect and get out of a hanging
+state with a host reboot. This feature is implemented with the
+hardware watchdog counter. The counter is initialized to a fixed
+number, and counts down automatically unless it is reset by a special
+user space software process, say watchdog. When watchdog gets a chance
+to run, it touches the hardware watchdog counter. If the system gets
+too busy, and the watchdog process does not get a chance to run before
+the hardware watchdog counter reaches 0, the host is rebooted in an
+attempt to recover from the hanging system.
 
+Recently, there have been a number of cases in which the  units
+silently rebooted without much information logged in the system log.
+In most silent reboot cases, the unit was rebooted because of a host
+hardware watchdog reboot, and because of the nature of the host
+watchdog reboots, not much information about the current states of the
+system is preseved or logged before the hardware reboot takes effect.
+After the reboot, it is hard to analyze the real cause of the system
+being hang.
+
+we have been thinking moving the user space watchdog process to kernel
+and invoke some kernel  function like dump_stack to show the hanging
+process stack trace before hardware reset. we have tried
+drivers/watchdog/softdog.c as prove of this idea, but  we are unable
+to get the hanging process stack trace. we also tried to use kdump in
+kernel, but we are unable to run kdump  in  kernel for some other
+technical reason.
+
+CPU and memory control group features are not considered at this stage
+because it is too invasive to change in our custom kernel.
+
+could you share  your experience on this kind of issue, we really
+would like to be able to find out which faulty process caused the CPU
+to deschedue user space watchdog process and dump the stack trace of
+that faulty process.
+
+Thank you in advance!
+
+Vincent
