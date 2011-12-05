@@ -1,102 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932685Ab1LEUzO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:55:14 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:36987 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932641Ab1LEUzK (ORCPT
+	id S932738Ab1LEU4n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:56:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53793 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab1LEUzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:55:10 -0500
-Date: Mon, 5 Dec 2011 15:55:09 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: NeilBrown <neilb@suse.de>
-cc: Ming Lei <tom.leiming@gmail.com>, Chen Peter-B29397 <B29397@freescale.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <greg@kroah.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
-        Igor Grinberg <grinberg@compulab.co.il>
-Subject: Re: [PATCH 1/1] driver core: disable device's runtime pm during
- shutdown
-In-Reply-To: <20111206053558.5430d7f1@notabene.brown>
-Message-ID: <Pine.LNX.4.44L0.1112051544350.5138-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 5 Dec 2011 15:55:12 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>
+Cc: linux-doc@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: [PATCH 5/5 resend] Documentation: Correct s_umount state for freeze_fs/unfreeze_fs
+Date: Mon,  5 Dec 2011 12:54:49 -0800
+Message-Id: <1323118489-16326-6-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1323118489-16326-1-git-send-email-kamal@canonical.com>
+References: <1323118489-16326-1-git-send-email-kamal@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Dec 2011, NeilBrown wrote:
+From: Valerie Aurora <val@vaaconsulting.com>
 
-> > We don't want to put devices into the active state when it's not 
-> > necessary.  A better approach would be:
-> > 
-> > 		/* Don't allow any more runtime suspends */
-> > 		pm_runtime_get_noresume(dev);
-> > 		pm_runtime_barrier(dev);
-> > 
-> > Alan Stern
-> 
-> That sounds like a reasonable approach if we really need to do something at
-> this level.  But is this the only place that ->shutdown methods are called
-> from?  If they are called from elsewhere, would those places need the
-> same pm_runtime protection?
+freeze_fs/unfreeze_fs ops are called with s_umount held for write, not read.
 
-I don't know if shutdown methods are called from anywhere else, but 
-they shouldn't be.  The kerneldoc for struct bus_type plainly says:
+BugLink: https://bugs.launchpad.net/bugs/897421
+Signed-off-by: Valerie Aurora <val@vaaconsulting.com>
+Cc: Kamal Mostafa <kamal@canonical.com>
+Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ Documentation/filesystems/Locking |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-* @shutdown:	Called at shut-down time to quiesce the device.
-
-> BTW I was wrong when I said that only calling pm_runtime_disable if there was
-> a ->shutdown function would not work for me. i.e. the following patch does
-> solve my particular issue (though I'm not sure it is "right").
-> I was getting confused by the two different devices: the i2c device and the
-> platform device.
-> The i2c device has a ->shutdown which does nothing, but doesn't need to wake
-> up.
-> The platform device is the one which needs to wake up, but it doesn't have a
-> ->shutdown function is this patch causes it not have pm_runtime disabled.
-> 
-> Thanks,
-> NeilBrown
-> 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index d8b3d89..b9aa5d2 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -1743,13 +1743,13 @@ void device_shutdown(void)
->  		 */
->  		list_del_init(&dev->kobj.entry);
->  		spin_unlock(&devices_kset->list_lock);
-> -		/* Disable all device's runtime power management */
-> -		pm_runtime_disable(dev);
->  
->  		if (dev->bus && dev->bus->shutdown) {
-> +			pm_runtime_disable(dev);
->  			dev_dbg(dev, "shutdown\n");
->  			dev->bus->shutdown(dev);
->  		} else if (dev->driver && dev->driver->shutdown) {
-> +			pm_runtime_disable(dev);
->  			dev_dbg(dev, "shutdown\n");
->  			dev->driver->shutdown(dev);
->  		}
-
-Still, it's quite conceivable that a shutdown routine might want to 
-resume a device that had been runtime-suspended.  Disabling runtime PM 
-for that device would prevent the routine from doing its work.
-
-The original problem the $SUBJECT patch was meant to solve was that a
-runtime-PM suspend method was called after the shutdown routine had
-run.  Doing a runtime_pm_get_noresume() ought to solve this.
-
-There still remains the possibility of a runtime resume method being
-called after the shutdown routine.  So far nobody has complained about
-that happening except you -- and your complaint was that it didn't
-work, not that it shouldn't happen.  But if necessary, individual
-drivers could add pm_runtime_disable() calls to their shutdown
-routines.
-
-Alan Stern
+diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+index d819ba1..7e46a94 100644
+--- a/Documentation/filesystems/Locking
++++ b/Documentation/filesystems/Locking
+@@ -134,8 +134,8 @@ evict_inode:
+ put_super:		write
+ write_super:		read
+ sync_fs:		read
+-freeze_fs:		read
+-unfreeze_fs:		read
++freeze_fs:		write
++unfreeze_fs:		write
+ statfs:			maybe(read)	(see below)
+ remount_fs:		write
+ umount_begin:		no
+-- 
+1.7.5.4
 
