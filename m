@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab1LEHUD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 02:20:03 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:51044
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751661Ab1LEHUA (ORCPT
+	id S1752848Ab1LEHUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 02:20:13 -0500
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:39524 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752482Ab1LEHUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 02:20:00 -0500
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-FB-SS: 0,
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, <linux-serial@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH] serial: bfin-uart: Request CTS GPIO PIN when the serial device starts up.
-Date: Mon, 5 Dec 2011 15:12:50 +0800
-Message-ID: <1323069170-5881-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 5 Dec 2011 02:20:08 -0500
+Message-ID: <4EDC709B.1050709@ti.com>
+Date: Mon, 05 Dec 2011 12:49:55 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Thomas Abraham <thomas.abraham@linaro.org>
+CC: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
+        robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
+        linux-kernel@vger.kernel.org, shawn.guo@freescale.com,
+        linaro-dev@lists.linaro.org, olof@lixom.net,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Zeng Zhaoming <b32542@freescale.com>,
+        Dan Carpenter <error27@gmail.com>
+Subject: Re: [PATCH v5 3/4] regulator: pass additional of_node to regulator_register()
+References: <1321615040-13257-1-git-send-email-rnayak@ti.com>	<1321615040-13257-4-git-send-email-rnayak@ti.com> <CAJuYYwRa=AGZ+Chuj+v49EHE+bOuoCWxhmDUO35BoZK2g97FQg@mail.gmail.com>
+In-Reply-To: <CAJuYYwRa=AGZ+Chuj+v49EHE+bOuoCWxhmDUO35BoZK2g97FQg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+>
+> Documentation/power/regulator/regulator.txt would also require an
+> update the reflect the change in api.
 
-Serial device may be probed earlier before GPIOLIB is initialized. Requesting and
-configuring CTS GPIO PIN fails in that early stage. Do it when the serial device
-really starts up.
+Thanks Thomas, I just sent a patch to fix this up.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- drivers/tty/serial/bfin_uart.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
+regards,
+Rajendra
 
-diff --git a/drivers/tty/serial/bfin_uart.c b/drivers/tty/serial/bfin_uart.c
-index c7e592d..61af5ae 100644
---- a/drivers/tty/serial/bfin_uart.c
-+++ b/drivers/tty/serial/bfin_uart.c
-@@ -739,8 +739,13 @@ static int bfin_serial_startup(struct uart_port *port)
- 			pr_info("Unable to attach BlackFin UART CTS interrupt. So, disable it.\n");
- 		}
- 	}
--	if (uart->rts_pin >= 0)
--		gpio_direction_output(uart->rts_pin, 0);
-+	if (uart->rts_pin >= 0) {
-+		if (gpio_request(uart->rts_pin, DRIVER_NAME)) {
-+			pr_info("fail to request RTS PIN at GPIO_%d\n", uart->rts_pin);
-+			uart->rts_pin = -1;
-+		} else
-+			gpio_direction_output(uart->rts_pin, 0);
-+	}
- #endif
- #ifdef CONFIG_SERIAL_BFIN_HARD_CTSRTS
- 	if (uart->cts_pin >= 0 && request_irq(uart->status_irq,
-@@ -792,6 +797,8 @@ static void bfin_serial_shutdown(struct uart_port *port)
- #ifdef CONFIG_SERIAL_BFIN_CTSRTS
- 	if (uart->cts_pin >= 0)
- 		free_irq(gpio_to_irq(uart->cts_pin), uart);
-+	if (uart->rts_pin >= 0)
-+		gpio_free(uart->rts_pin);
- #endif
- #ifdef CONFIG_SERIAL_BFIN_HARD_CTSRTS
- 	if (uart->cts_pin >= 0)
-@@ -1378,10 +1385,6 @@ static int bfin_serial_probe(struct platform_device *pdev)
- 			uart->rts_pin = -1;
- 		else
- 			uart->rts_pin = res->start;
--# if defined(CONFIG_SERIAL_BFIN_CTSRTS)
--		if (uart->rts_pin >= 0)
--			gpio_request(uart->rts_pin, DRIVER_NAME);
--# endif
- #endif
- 	}
- 
-@@ -1421,10 +1424,6 @@ static int __devexit bfin_serial_remove(struct platform_device *pdev)
- 
- 	if (uart) {
- 		uart_remove_one_port(&bfin_serial_reg, &uart->port);
--#ifdef CONFIG_SERIAL_BFIN_CTSRTS
--		if (uart->rts_pin >= 0)
--			gpio_free(uart->rts_pin);
--#endif
- 		iounmap(uart->port.membase);
- 		peripheral_free_list(
- 			(unsigned short *)pdev->dev.platform_data);
--- 
-1.7.0.4
-
+>
+> Thanks,
+> Thomas.
+>
+> [...]
 
