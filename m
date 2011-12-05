@@ -1,129 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab1LEJTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:19:16 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:44769 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab1LEJTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:19:14 -0500
-Message-ID: <4EDC8C6D.2070001@parallels.com>
-Date: Mon, 5 Dec 2011 07:18:37 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1754890Ab1LEJTj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:19:39 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55051 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555Ab1LEJTh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:19:37 -0500
+Date: Mon, 5 Dec 2011 17:19:24 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
+ involving interrupt disabling
+Message-ID: <20111205091924.GA28117@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20111203183417.GA18914@linux.vnet.ibm.com>
+ <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v7 10/10] Disable task moving when using kernel memory
- accounting
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com> <1322611021-1730-11-git-send-email-glommer@parallels.com> <20111130112210.1d979512.kamezawa.hiroyu@jp.fujitsu.com> <4ED914EC.6020500@parallels.com> <20111205111835.b1432603.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111205111835.b1432603.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2011 12:18 AM, KAMEZAWA Hiroyuki wrote:
-> On Fri, 2 Dec 2011 16:11:56 -0200
-> Glauber Costa<glommer@parallels.com>  wrote:
->
->> On 11/30/2011 12:22 AM, KAMEZAWA Hiroyuki wrote:
->>> On Tue, 29 Nov 2011 21:57:01 -0200
->>> Glauber Costa<glommer@parallels.com>   wrote:
->>>
->>>> Since this code is still experimental, we are leaving the exact
->>>> details of how to move tasks between cgroups when kernel memory
->>>> accounting is used as future work.
->>>>
->>>> For now, we simply disallow movement if there are any pending
->>>> accounted memory.
->>>>
->>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
->>>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
->>>> ---
->>>>    mm/memcontrol.c |   23 ++++++++++++++++++++++-
->>>>    1 files changed, 22 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>>> index a31a278..dd9a6d9 100644
->>>> --- a/mm/memcontrol.c
->>>> +++ b/mm/memcontrol.c
->>>> @@ -5453,10 +5453,19 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
->>>>    {
->>>>    	int ret = 0;
->>>>    	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
->>>> +	struct mem_cgroup *from = mem_cgroup_from_task(p);
->>>> +
->>>> +#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)&&   defined(CONFIG_INET)
->>>> +	if (from != memcg&&   !mem_cgroup_is_root(from)&&
->>>> +	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
->>>> +		printk(KERN_WARNING "Can't move tasks between cgroups: "
->>>> +			"Kernel memory held.\n");
->>>> +		return 1;
->>>> +	}
->>>> +#endif
->>>
->>> I wonder....reading all codes again, this is incorrect check.
->>>
->>> Hm, let me cralify. IIUC, in old code, "prevent moving" is because you hold
->>> reference count of cgroup, which can cause trouble at rmdir() as leaking refcnt.
->> right.
->>
->>> BTW, because socket is a shared resource between cgroup, changes in mm->owner
->>> may cause task cgroup moving implicitly. So, if you allow leak of resource
->>> here, I guess... you can take mem_cgroup_get() refcnt which is memcg-local and
->>> allow rmdir(). Then, this limitation may disappear.
->>
->> Sorry, I didn't fully understand. Can you clarify further?
->> If the task is implicitly moved, it will end up calling can_attach as
->> well, right?
->>
-> I'm sorry that my explanation is bad.
->
-> You can take memory cgroup itself's reference count by mem_cgroup_put/get.
-> By getting this, memory cgroup object will continue to exist even after
-> its struct cgroup* is freed by rmdir().
->
-> So, assume you do mem_cgroup_get()/put at socket attaching/detatching.
->
-> 0) A task has a tcp socekts in memcg0.
->
-> task(memcg0)
->   +- socket0 -->  memcg0,usage=4096
->
-> 1) move this task to memcg1
->
-> task(memcg1)
->   +- socket0 -->  memcg0,usage=4096
->
-> 2) The task create a new socket.
->
-> task(memcg1)
->   +- socekt0 -->  memcg0,usage=4096
->   +- socket1 -->  memcg1,usage=xxxx
->
-> Here, the task will hold 4096bytes of usage in memcg0 implicitly.
->
-> 3) an admin removes memcg0
-> task(memcg1)
->   +- socket0 -->memcg0, usage=4096<-----(*)
->   +- socket1 -->memcg1, usage=xxxx
->
-> (*) is invisible to users....but this will not be very big problem.
->
-Hi Kame,
+On Sat, Dec 03, 2011 at 10:34:42AM -0800, Paul E. McKenney wrote:
+> From: Yong Zhang <yong.zhang0@gmail.com>
+> 
+> RCU-lockdep will issue warnings given the following use pattern:
+> 
+> 	rcu_read_lock();
+> 	local_irq_disable();
+> 	rcu_read_unlock();
+> 	local_irq_enable();
+> 
+> However, this use pattern is legal except for the scheduler's runqueue
+> and priority-inheritance locks (and any other locks that the scheduler
+> might use during priority-inheritance operations).
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutree_plugin.h |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index 8cd9efe..2020e8a 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -401,8 +401,11 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+>  
+>  #ifdef CONFIG_RCU_BOOST
+>  		/* Unboost if we were boosted. */
+> -		if (rbmp)
+> +		if (rbmp) {
+> +			local_irq_save(flags);
+>  			rt_mutex_unlock(rbmp);
+> +			local_irq_restore(flags);
+> +		}
+>  #endif /* #ifdef CONFIG_RCU_BOOST */
+>  
+>  		/*
+> @@ -1233,9 +1236,10 @@ static int rcu_boost(struct rcu_node *rnp)
+>  	lockdep_set_class_and_name(&mtx.wait_lock, &rcu_boost_class,
+>  				   "rcu_boost_mutex");
+>  	t->rcu_boost_mutex = &mtx;
+> -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> +	raw_spin_unlock(&rnp->lock); /* rrupts remain disabled. */
+>  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+>  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
 
-Thanks for the explanation.
+We permit rt_mutex_unlock() to be call with irq disabled,
+but rt_mutex_lock() is still not allowed. So this usage
+is not legal now.
 
-Hummm, Do you think that by doing it, we get rid of the need of moving 
-sockets to another memcg when the task is moved? So in my original 
-patchset, if you recall, I wanted to keep a socket forever in the same 
-cgroup. I didn't, because then rmdir would be blocked.
+Sounds we should hold this patch on until a more suitable
+way is found.
 
-By using this memcg reference trick, both can be achieved. What do you 
-think ?
+Thanks,
+Yong
+
+> +	local_irq_restore(flags);
+>  
+>  	return rnp->exp_tasks != NULL || rnp->boost_tasks != NULL;
+>  }
+> -- 
+> 1.7.3.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Only stand for myself
