@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab1LEKPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 05:15:09 -0500
-Received: from ist.fellig.org ([84.200.228.103]:50293 "EHLO v0.fellig.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755444Ab1LEKPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 05:15:07 -0500
-Subject: Re: [Linux-decnet-user] Proposed removal of DECnet support
-	(was:Re: [BUG] 3.2-rc2:BUG kmalloc-8: Redzone overwritten)
-From: Philipp Schafft <lion@lion.leolix.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, mike.gair@tatasteel.com,
-        Chrissie Caulfield <ccaulfie@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Linux-DECnet user <linux-decnet-user@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Matt Mackall <mpm@selenic.com>,
-        netdev <netdev@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        RoarAudio <roaraudio@lists.keep-cool.org>
-In-Reply-To: <1323048232.7454.161.camel@deadeye>
-References: <OF7785CDCC.246C1F8F-ON80257958.004A9A89-80257958.004C103D@LocalDomain>
-	 <1322664737.2755.17.camel@menhir>
-	 <20111204195055.A36077AD9C@priderock.keep-cool.org>
-	 <1323048232.7454.161.camel@deadeye>
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=-4m5XleMXEcnGSo0Wc4LW"
-Organization: PH2
-Date: Mon, 05 Dec 2011 11:14:58 +0100
-Mime-Version: 1.0
-X-Mailer: Evolution 2.6.3 
-Message-Id: <20111205101503.1DE687AD9C@priderock.keep-cool.org>
+	id S1755611Ab1LEKRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 05:17:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755391Ab1LEKRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 05:17:45 -0500
+Date: Mon, 5 Dec 2011 11:17:35 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Kyungmin Park <kmpark@infradead.org>
+cc: tytso@mit.edu, tm@tao.ma, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
+In-Reply-To: <20111201070052.GA29708@july>
+Message-ID: <alpine.LFD.2.00.1112051106070.4911@dhcp-27-109.brq.redhat.com>
+References: <20111201070052.GA29708@july>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 1 Dec 2011, Kyungmin Park wrote:
 
---=-4m5XleMXEcnGSo0Wc4LW
-Content-Type: text/plain
-Content-Transfer-Encoding: quoted-printable
+> From: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> Now trim information doesn't stored at disk so every boot time. it's cleared.
+> and do the trim all disk groups.
+> But assume that it's already trimmed at previous time so don't need to trim it again. So set the intial state as trimmed.
 
-reflum,
+Hi,
 
-On Mon, 2011-12-05 at 01:23 +0000, Ben Hutchings wrote:
-> On Sun, 2011-12-04 at 20:50 +0100, Philipp Schafft wrote:
-> > On Wed, 2011-11-30 at 14:52 +0000, Steven Whitehouse wrote:
-> [...]
-> > > It is good to know that people are still using the Linux DECnet code
-> > > too. It has lived far beyond the time when I'd envisioned it still be=
-ing
-> > > useful :-)
-> >=20
-> > There are still some people interested in it. Btw. on Debian popcon
-> > counts 5356 users.
->=20
-> This is grossly misleading.  Here's the historical graph showing <100
-> installations of libdnet until early 2011:
-> http://qa.debian.org/popcon-graph.php?packages=3Dlibdnet
+I am sorry, but from the code and comments I have seen, I do not think
+it does make sense to change that behaviour. I agree that discarding the
+whole file system after the mount might not be necessarily needed, but
+on the other hand, you can never assume that the blocks were already
+trimmed, since it most likely will not be true.
 
-Maybe my statement was missleading. popcon shows 5356 installs. This
-includes real users and non-real users. Both groups *may* be affected by
-droping the kernel module (in diffrent ways).
+I think that the bigger problem is "running fitrim at boot time" which
+does not make sense to me, because you'll be perfectly fine leaving this
+up to the cron (or something similar). Also when you're booting you need
+to be done ASAP so why to bother with other unnecessary operations ?
 
+The funniest thing about this patch is (no offense, really) that you've
+solved the problem of "fitrim slowing down the boot process" by changing
+kernel logic to assume something which will most likely be false, instead
+of just *not* doing boot time fitrim at the first place, because this is
+exactly what will happen with this patch.
 
-> For some reason (a joke?) roaraudio has DECnet
-> support and its packages depend on libdnet.
+Thanks!
+-Lukas
 
-Maybe just because it is usefull for the RoarAudio project.
+> 
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+> index e2d8be8..97ef342 100644
+> --- a/fs/ext4/mballoc.c
+> +++ b/fs/ext4/mballoc.c
+> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb, ext4_group_t group)
+>  		goto err;
+>  	}
+>  	mark_page_accessed(page);
+> +
+> +	/*
+> +	 * TRIM information is not stored at disk so set the initial
+> +	 * state as trimmed. Since previous time it's already trimmed all
+> +	 */
+> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
+>  err:
+>  	ext4_mb_put_buddy_page_lock(&e4b);
+>  	return ret;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Anyway, don't take the number too important. It was just a minor note.
-
---=20
-Philipp.
- (Rah of PH2)
-
---=-4m5XleMXEcnGSo0Wc4LW
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Comment: Because it's your freedom
-
-iQEVAwUATtyZomCSpmW8W5B8AQJbVgf9H9bZV2nL4Rai9Umjezw58apQQVEDJtoE
-IH2Kn4GJ0ZCJgr23rtuf98e000wLcIIOJ052Ugydla/4vBp1aJF3vqd4y1ydPpnL
-OF2hLDdECHmOWwVXI3ZOfnOEzhToROjvaspr0DjAC0EhopZm5jnnTpGPk5DTex0p
-vW0lx/EmE6S966aROZHCjxIMBbVQM79I8ted9x5cWiFnf0N0AopLAMfXDfVDkBCn
-X04FYzqv8kuAIocLKMp1HelzmN9IHa8EuJ45K4+9Rl8gAd7RaAfNWZi6iIakmjgj
-KjVil1ME21LNcjhQnLMy4mOcqGBbDkASCefcuycWVpBJalvRbsaJ5g==
-=3tG3
------END PGP SIGNATURE-----
-
---=-4m5XleMXEcnGSo0Wc4LW--
+-- 
