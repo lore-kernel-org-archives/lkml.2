@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab1LEPA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:00:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28883 "EHLO mx1.redhat.com"
+	id S932372Ab1LEPIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:08:52 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38028 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268Ab1LEPAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:00:21 -0500
-Date: Mon, 5 Dec 2011 16:00:22 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH repost] mm,x86: remove debug_pagealloc_enabled
-Message-ID: <20111205150019.GA5434@redhat.com>
-References: <1322582711-14571-1-git-send-email-sgruszka@redhat.com>
- <20111205110656.GA22259@elte.hu>
+	id S932246Ab1LEPIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 10:08:51 -0500
+Message-ID: <4EDCDE54.3030300@linux.vnet.ibm.com>
+Date: Mon, 05 Dec 2011 09:08:04 -0600
+From: Mike wolf <mjw@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="FCuugMFkClbJLl1L"
-Content-Disposition: inline
-In-Reply-To: <20111205110656.GA22259@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Do not include throttled time as steal time
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120515-7182-0000-0000-000000565BEF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When the linux kernel is running as the guest OS and is configured
+for bandwidth control and steal time reporting, it can be confusing
+to users to see the throttled time show up in the steal time stats.
+The user will think they are not getting the cpu resources they have
+been configured.
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Mike Wolf <mjw@linux.vnet.ibm.com>
+---
+  kernel/sched_fair.c  |    4 ++--
+  kernel/sched_stats.h |    7 ++++++-
+  2 files changed, 8 insertions(+), 3 deletions(-)
 
-On Mon, Dec 05, 2011 at 12:06:56PM +0100, Ingo Molnar wrote:
-> 
-> * Stanislaw Gruszka <sgruszka@redhat.com> wrote:
-> 
-> > When (no)bootmem finish operation, it pass pages to buddy allocator.
-> > Since debug_pagealloc_enabled is not set, we will do not protect pages,
-> > what is not what we want with CONFIG_DEBUG_PAGEALLOC=y.
-> > 
-> > To fix remove debug_pagealloc_enabled. That variable was introduced by
-> > commit 12d6f21e "x86: do not PSE on CONFIG_DEBUG_PAGEALLOC=y" to get
-> > more CPA (change page attribude) code testing. But currently we have
-> > CONFIG_CPA_DEBUG, which test CPA.
-> > 
-> > Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-> > Acked-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  arch/x86/mm/pageattr.c |    6 ------
-> >  include/linux/mm.h     |   10 ----------
-> >  init/main.c            |    5 -----
-> >  mm/debug-pagealloc.c   |    3 ---
-> >  4 files changed, 0 insertions(+), 24 deletions(-)
-> 
-> I'm getting this boot crash with the patch applied:
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 5c9e679..a837e4e 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -707,7 +707,7 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct 
+sched_entity *se)
 
-I'm sorry for breaking the boot. I tried to reproduce problem on my
-laptop, but failed. I plan to test patch with your config on some other
-machines.
+  #ifdef CONFIG_FAIR_GROUP_SCHED
+  /* we need this in update_cfs_load and load-balance functions below */
+-static inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
++inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
+  # ifdef CONFIG_SMP
+  static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
+                          int global_update)
+@@ -1420,7 +1420,7 @@ static inline int cfs_rq_throttled(struct cfs_rq 
+*cfs_rq)
+  }
 
-On the meantime can you test attached incremental patch and see if it
-workaround the crash? I suspect memblock reuse pages that it passed
-already to buddy allocator.
+  /* check whether cfs_rq, or any parent, is throttled */
+-static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
++inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
+  {
+      return cfs_rq->throttle_count;
+  }
+diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
+index 87f9e36..e30ff26 100644
+--- a/kernel/sched_stats.h
++++ b/kernel/sched_stats.h
+@@ -213,14 +213,19 @@ static inline void sched_info_queued(struct 
+task_struct *t)
+   * sched_info_queued() to mark that it has now again started waiting on
+   * the runqueue.
+   */
++extern inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
+  static inline void sched_info_depart(struct task_struct *t)
+  {
++    struct task_group *tg = task_group(t);
++    struct cfs_rq *cfs_rq;
+      unsigned long long delta = task_rq(t)->clock -
+                      t->sched_info.last_arrival;
 
-Thanks
-Stanislaw
++    cfs_rq = tg->cfs_rq[smp_processor_id()];
+      rq_sched_info_depart(task_rq(t), delta);
 
---FCuugMFkClbJLl1L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="init_highmem_pages_first.patch"
-
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 29f7c6d..0d0ddcb 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -760,6 +760,9 @@ void __init mem_init(void)
- #ifdef CONFIG_FLATMEM
- 	BUG_ON(!mem_map);
- #endif
+-    if (t->state == TASK_RUNNING)
 +
-+	set_highmem_pages_init();
-+
- 	/* this will put all low memory onto the freelists */
- 	totalram_pages += free_all_bootmem();
- 
-@@ -771,8 +774,6 @@ void __init mem_init(void)
- 		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
- 			reservedpages++;
- 
--	set_highmem_pages_init();
--
- 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
- 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
- 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
++    if (t->state == TASK_RUNNING && !throttled_hierarchy(cfs_rq))
+          sched_info_queued(t);
+  }
 
---FCuugMFkClbJLl1L--
