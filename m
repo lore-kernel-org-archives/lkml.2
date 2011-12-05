@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab1LEF2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 00:28:31 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40899 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab1LEF2a convert rfc822-to-8bit (ORCPT
+	id S1751342Ab1LEF3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 00:29:19 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51137 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab1LEF3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 00:28:30 -0500
+	Mon, 5 Dec 2011 00:29:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111202153401.GX8245@opensource.wolfsonmicro.com>
-References: <1322819115-15808-1-git-send-email-tomoya.rohm@gmail.com>
-	<20111202153401.GX8245@opensource.wolfsonmicro.com>
-Date: Mon, 5 Dec 2011 14:28:29 +0900
-Message-ID: <CANKRQngGHLD0Bam6sxCGPSkGutjkagbJMvGPTgkduXR6xmMw_Q@mail.gmail.com>
-Subject: Re: [PATCH v2] soc/lapis: add machine driver
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4EDB4A0D.1000609@redhat.com>
+References: <4ED212A1.3060300@redhat.com>
+	<1322807192-14147-1-git-send-email-kernelfans@gmail.com>
+	<4EDB4A0D.1000609@redhat.com>
+Date: Mon, 5 Dec 2011 13:29:17 +0800
+Message-ID: <CAFgQCTujv7Ez23GySc4Bds8x9Pv8Ny59EohpN22de9wicztWrw@mail.gmail.com>
+Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
+From: Liu ping fan <kernelfans@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, aliguori@us.ibm.com,
+        gleb@redhat.com, jan.kiszka@web.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pB55TVP3004222
 
-Hi Mark,
-
-First of all, let me confirm my understanding for machine driver.
-According to "machine.txt", I created this machine driver referring
-corgi.c/spitz.c.
-However, corgi.c/spitz.c. don't look obeying your saying.
-
-e.g.
-2011/12/3 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->> +     snd_soc_dapm_add_routes(dapm, ml7213_routes, ARRAY_SIZE(ml7213_routes));
+On Sun, Dec 4, 2011 at 6:23 PM, Avi Kivity <avi@redhat.com> wrote:
+> On 12/02/2011 08:26 AM, Liu Ping Fan wrote:
+>> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>>
+>> Currently, vcpu can be destructed only when kvm instance destroyed.
+>> Change this to vcpu's destruction taken when its refcnt is zero,
+>> and then vcpu MUST and CAN be destroyed before kvm's destroy.
+>>
+>>
+>> @@ -315,9 +315,17 @@ static void pit_do_work(struct work_struct *work)
+>> Â  Â  Â  Â  Â  Â  Â  Â * LVT0 to NMI delivery. Other PIC interrupts are just sent to
+>> Â  Â  Â  Â  Â  Â  Â  Â * VCPU0, and only if its LVT0 is in EXTINT mode.
+>> Â  Â  Â  Â  Â  Â  Â  Â */
+>> - Â  Â  Â  Â  Â  Â  if (kvm->arch.vapics_in_nmi_mode > 0)
+>> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  kvm_for_each_vcpu(i, vcpu, kvm)
+>> + Â  Â  Â  Â  Â  Â  if (kvm->arch.vapics_in_nmi_mode > 0) {
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  rcu_read_lock();
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  kvm_for_each_vcpu(i, cnt, vcpu, kvm) {
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  vcpu = kvm_get_vcpu(kvm, i);
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if (vcpu == NULL)
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  continue;
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  cnt++;
+>> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  kvm_apic_nmi_wd_deliver(vcpu);
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  }
+>> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  rcu_read_unlock();
+>> + Â  Â  Â  Â  Â  Â  }
+>> Â  Â  Â  }
+>> Â }
 >
-> Use table based init for these.
+> This pattern keeps repeating, please fold it into kvm_for_each_vcpu().
 >
-I  couldn't see any table based init processing at corgi.c/spitz.c.
+What about folding
+kvm_for_each_vcpu(i, cnt, vcpu, kvm) {
+Â  Â  Â  Â  Â  Â  Â  vcpu = kvm_get_vcpu(kvm, i);
+Â  Â  Â  Â  Â  Â  Â  if (vcpu == NULL)
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  continue;
+Â  Â  Â  Â  Â  Â  Â  cnt++;
 
->
->> +     switch (params_rate(params)) {
->> +     case 16000:
->> +     case 32000:
->> +     case 48000:
->> +             clk = 12288800;
->> +             break;
->
-> You may as well just set the CODEC clock rate once on init() and let the
-> CODEC driver worry about what it can do with the clock it's got, if the
-> values aren't going to change there's no need to set them every time.
->
+like this,
+#define kvm_for_each_vcpu(idx, cnt, vcpup, kvm) \
+	for (idx = 0, cnt = 0, vcpup = kvm_get_vcpu(kvm, idx); \
+	     cnt < atomic_read(&kvm->online_vcpus) && \
+	     idx < KVM_MAX_VCPUS; \
+	     idx++, (vcpup == NULL)?:cnt++, vcpup = kvm_get_vcpu(kvm, idx)) \
+	     if (vcpup == NULL) \
+	          continue; \
+	     else
 
-corgi.c/spitz.c look coded like above.
 
-So, I'm confused.
-Is this procedure true ?
-
+A little ugly, but have not thought a better way out :-)
 
 Thanks,
-
-tomoya
+ping fan
+> --
+> error compiling committee.c: too many arguments to function
+>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
