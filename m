@@ -1,52 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab1LEVwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 16:52:22 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48055 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932372Ab1LEVwU (ORCPT
+	id S932688Ab1LEVzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 16:55:06 -0500
+Received: from www.linutronix.de ([62.245.132.108]:57586 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932372Ab1LEVzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 16:52:20 -0500
-Date: Mon, 5 Dec 2011 21:54:05 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andreas Oberritter <obi@linuxtv.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
- because of worrying about possible misusage?
-Message-ID: <20111205215405.6ab53357@lxorguk.ukuu.org.uk>
-In-Reply-To: <4EDD3583.30405@linuxtv.org>
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
-	<4ED6C5B8.8040803@linuxtv.org>
-	<4ED75F53.30709@redhat.com>
-	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
-	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
-	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
-	<4EDC9B17.2080701@gmail.com>
-	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-	<4EDD01BA.40208@redhat.com>
-	<4EDD2C82.7040804@linuxtv.org>
-	<20111205205554.2caeb496@lxorguk.ukuu.org.uk>
-	<4EDD3583.30405@linuxtv.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Dec 2011 16:55:03 -0500
+Date: Mon, 5 Dec 2011 22:55:01 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ido Yariv <ido@wizery.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] genirq: Flush the irq thread on synchronization
+In-Reply-To: <alpine.LFD.2.02.1112022345300.2735@ionos>
+Message-ID: <alpine.LFD.2.02.1112052248010.2735@ionos>
+References: <1322843052-7166-1-git-send-email-ido@wizery.com> <alpine.LFD.2.02.1112022345300.2735@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How can usbip work if networking and usb are so different and what's so
-> different between vtunerc and usbip, that made it possible to put usbip
-> into drivers/staging?
+On Sat, 3 Dec 2011, Thomas Gleixner wrote:
+> On Fri, 2 Dec 2011, Ido Yariv wrote:
+> 
+> > The current implementation does not always flush the threaded handler
+> > when disabling the irq. In case the irq handler was called, but the
+> > threaded handler hasn't started running yet, the interrupt will be
+> > flagged as pending, and the handler will not run. This implementation
+> > has some issues:
+> > 
+> > First, if the interrupt is a wake source and flagged as pending, the
+> > system will not be able to suspend.
+> > 
+> > Second, when quickly disabling and re-enabling the irq, the threaded
+> > handler might continue to run after the irq is re-enabled without the
+> > irq handler being called first. This might be an unexpected behavior.
+> 
+> I'd wish people would stop calling disable/enable_irq() in loops and
+> circles for no reason.
+> 
+> > In addition, it might be counter-intuitive that the threaded handler
+> > will not be called even though the irq handler was called and returned
+> > IRQ_WAKE_THREAD.
+> > 
+> > Fix this by always waiting for the threaded handler to complete in
+> > synchronize_irq().
+> 
+> I can see your problem, but this might lead to threads_active leaks
+> under certain conditions. desc->threads_active was only meant to deal
+> with shared interrupts.
+> 
+> We explicitely allow a design where the primary handler can leave the
+> device interrupt enabled and allow further interrupts to occur while
+> the handler is running. We only have a single bit to note that the
+> thread should run, but your wakeup would up the threads_active count
+> in that scenario several times w/o a counterpart which decrements it.
+> 
+> The solution for this is to keep the current threads_active semantics
+> and make the wait function different. Instead of waiting for
+> threads_active to become 0 it should wait for threads_active == 0 and
+> the IRQTF_RUNTHREAD for all actions to be cleared. To avoid looping
+> over the actions, we can take a similar approach as we take with the
+> desc->threads_oneshot bitfield.
 
-Where usbip seems to have remained for a long time without actually being
-made useful or correct enough to progress. Meanwhile most remote USB
-device access is at a higher level and works beautifully (eg remote USB
-printing).
+Does the following (untested) patch solve your issues?
 
-Case proven I think rather than the reverse
+Thanks,
 
-Alan
+	tglx
+
+Index: tip/kernel/irq/manage.c
+===================================================================
+--- tip.orig/kernel/irq/manage.c
++++ tip/kernel/irq/manage.c
+@@ -28,6 +28,18 @@ static int __init setup_forced_irqthread
+ early_param("threadirqs", setup_forced_irqthreads);
+ #endif
+ 
++static bool irq_threads_stopped(struct irq_desc *desc)
++{
++	unsigned long flags;
++	bool res;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	res = !atomic_read(&desc->threads_active) &&
++		!desc->threads_oneshot;
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++	return res;
++}
++
+ /**
+  *	synchronize_irq - wait for pending IRQ handlers (on other CPUs)
+  *	@irq: interrupt number to wait for
+@@ -68,7 +80,7 @@ void synchronize_irq(unsigned int irq)
+ 	 * We made sure that no hardirq handler is running. Now verify
+ 	 * that no threaded handlers are active.
+ 	 */
+-	wait_event(desc->wait_for_threads, !atomic_read(&desc->threads_active));
++	wait_event(desc->wait_for_threads, irq_threads_stopped(desc));
+ }
+ EXPORT_SYMBOL(synchronize_irq);
+ 
+@@ -639,13 +651,11 @@ static int irq_wait_for_interrupt(struct
+ /*
+  * Oneshot interrupts keep the irq line masked until the threaded
+  * handler finished. unmask if the interrupt has not been disabled and
+- * is marked MASKED.
++ * is marked MASKED. We also track that way that all threads are done.
+  */
+ static void irq_finalize_oneshot(struct irq_desc *desc,
+ 				 struct irqaction *action, bool force)
+ {
+-	if (!(desc->istate & IRQS_ONESHOT))
+-		return;
+ again:
+ 	chip_bus_lock(desc);
+ 	raw_spin_lock_irq(&desc->lock);
+@@ -681,6 +691,9 @@ again:
+ 
+ 	desc->threads_oneshot &= ~action->thread_mask;
+ 
++	if (!(desc->istate & IRQS_ONESHOT))
++		goto out_unlock;
++
+ 	if (!desc->threads_oneshot && !irqd_irq_disabled(&desc->irq_data) &&
+ 	    irqd_irq_masked(&desc->irq_data))
+ 		unmask_irq(desc);
+@@ -780,30 +793,15 @@ static int irq_thread(void *data)
+ 	current->irqaction = action;
+ 
+ 	while (!irq_wait_for_interrupt(action)) {
++		irqreturn_t action_ret;
+ 
+ 		irq_thread_check_affinity(desc, action);
+ 
+ 		atomic_inc(&desc->threads_active);
+ 
+-		raw_spin_lock_irq(&desc->lock);
+-		if (unlikely(irqd_irq_disabled(&desc->irq_data))) {
+-			/*
+-			 * CHECKME: We might need a dedicated
+-			 * IRQ_THREAD_PENDING flag here, which
+-			 * retriggers the thread in check_irq_resend()
+-			 * but AFAICT IRQS_PENDING should be fine as it
+-			 * retriggers the interrupt itself --- tglx
+-			 */
+-			desc->istate |= IRQS_PENDING;
+-			raw_spin_unlock_irq(&desc->lock);
+-		} else {
+-			irqreturn_t action_ret;
+-
+-			raw_spin_unlock_irq(&desc->lock);
+-			action_ret = handler_fn(desc, action);
+-			if (!noirqdebug)
+-				note_interrupt(action->irq, desc, action_ret);
+-		}
++		action_ret = handler_fn(desc, action);
++		if (!noirqdebug)
++			note_interrupt(action->irq, desc, action_ret);
+ 
+ 		wake = atomic_dec_and_test(&desc->threads_active);
+ 
+@@ -993,7 +991,7 @@ __setup_irq(unsigned int irq, struct irq
+ 	 * Setup the thread mask for this irqaction. Unlikely to have
+ 	 * 32 resp 64 irqs sharing one line, but who knows.
+ 	 */
+-	if (new->flags & IRQF_ONESHOT && thread_mask == ~0UL) {
++	if (thread_mask == ~0UL) {
+ 		ret = -EBUSY;
+ 		goto out_mask;
+ 	}
