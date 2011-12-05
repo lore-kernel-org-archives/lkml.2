@@ -1,178 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1LEJE7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:04:59 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62627 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752238Ab1LEJE5 convert rfc822-to-8bit (ORCPT
+	id S1754342Ab1LEJFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:05:22 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41720 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab1LEJFT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:04:57 -0500
+	Mon, 5 Dec 2011 04:05:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <1323075548.20963.7.camel@phoenix>
-References: <1323075548.20963.7.camel@phoenix>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Mon, 5 Dec 2011 17:04:35 +0800
-Message-ID: <CAMPhdO8F8QLjfeJReXSHgJNg+iaJ+CQ9i50ozsqAOiPWxhfwNA@mail.gmail.com>
-Subject: Re: [PATCH] pcmcia: pxa: replace IRQ_GPIO() with gpio_to_irq()
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
-        Ian Molton <spyro@f2s.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CACVXFVOgdmCzDbpygVXXj6pX_Pdbu+aAVk8p=7_P6SHyfMHNwQ@mail.gmail.com>
+References: <1321231380-11631-1-git-send-email-peter.chen@freescale.com>
+	<201111142327.37524.rjw@sisk.pl>
+	<20111115005951.GB26360@kroah.com>
+	<201111160016.09174.rjw@sisk.pl>
+	<20111205085632.5976fe96@notabene.brown>
+	<CACVXFVNkapRDJ8QkgmJCh+n1c2+7cHBiLf1ef22Nfdd8YrPpGg@mail.gmail.com>
+	<35AB98346D25394A9354ED89C4D76587228EA3@039-SN1MPN1-002.039d.mgd.msft.net>
+	<CACVXFVNd7ZnCjvRVX9wJbNNs_6apE-+14w-kxkgc5FAw4K-mAQ@mail.gmail.com>
+	<CACVXFVOgdmCzDbpygVXXj6pX_Pdbu+aAVk8p=7_P6SHyfMHNwQ@mail.gmail.com>
+Date: Mon, 5 Dec 2011 17:05:18 +0800
+Message-ID: <CACVXFVOc45HL_qPHvNcGrkcQ7XWxBoLHikrYd1ZrRMYkiw5=ag@mail.gmail.com>
+Subject: Re: [PATCH 1/1] driver core: disable device's runtime pm during shutdown
+From: Ming Lei <tom.leiming@gmail.com>
+To: Chen Peter-B29397 <B29397@freescale.com>
+Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 5, 2011 at 4:59 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> Since commit 6384fd "ARM: pxa: rename IRQ_GPIO to PXA_GPIO_TO_IRQ",
-> I got buid errors due to implicit declaration of function 'IRQ_GPIO'.
->
-> Use common gpio_to_irq() to replace machine dependant macro IRQ_GPIO().
->
-> Cc: Marek Vasut <marek.vasut@gmail.com>
-> Cc: Ian Molton <spyro@f2s.com>
-> Cc: Jonathan Cameron <jic23@cam.ac.uk>
-> Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi,
 
-Looks fine to me.
+On Mon, Dec 5, 2011 at 5:01 PM, Ming Lei <tom.leiming@gmail.com> wrote:
 
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
+>>>
+>>>
+>>>> >  this patches causes a problem for me.
+>>>> >
+>>>> > Specifically it makes it impossible to power-down a device which uses
+>>>> twl4030
+>>>> > for power control on an omap3 processor.
+>>>> >
+>>>> > To perform the shutdown we need to send a command over the i2c bus.
+>>>> > The relevant bus is called omap_i2c.1 and this is normally in suspend
+>>>> mode.
+>>>> > When a request is sent, omap_i2c_xfer uses pm_runtime_get_sync to wake
+>>>> it up,
+>>>> > performs the transfer, then calls pm_runtime_put to let it go back to
+>>>> sleep.
+>>>> >
+>>>> > So it is asleep when the new pm_runtime_disable() call is made, so it
+>>>> stays
+>>>> > asleep, omap_i2c_xfer cannot wake it, the transfer doesn't happen and
+>>>> the
+>>>> > system doesn't get powered off.
+>>>> >
+>>>> > So here is a device that should *not* have pm disabled at shutdown.
+>>>> >
+>>>> > So I feel this fix is a little too heavy-handed.
+>>>>
+>>>> Maybe the device's runtime PM should not be disabled if
+>>>> there is no ->shutdown defined in its driver, how about the blew?
+>>>>
+>>>> diff --git a/drivers/base/core.c b/drivers/base/core.c
+>>>> index d8b3d89..ca30659 100644
+>>>> --- a/drivers/base/core.c
+>>>> +++ b/drivers/base/core.c
+>>>> @@ -1743,14 +1743,16 @@ void device_shutdown(void)
+>>>>                */
+>>>>               list_del_init(&dev->kobj.entry);
+>>>>               spin_unlock(&devices_kset->list_lock);
+>>>> -             /* Disable all device's runtime power management */
+>>>> -             pm_runtime_disable(dev);
+>>>>
+>>>> +             /* Disable the device's runtime power management if
+>>>> +              * it is to be shutdown*/
+>>>>               if (dev->bus && dev->bus->shutdown) {
+>>>>                       dev_dbg(dev, "shutdown\n");
+>>>> +                     pm_runtime_disable(dev);
+>>>>                       dev->bus->shutdown(dev);
+>>>>               } else if (dev->driver && dev->driver->shutdown) {
+>>>>                       dev_dbg(dev, "shutdown\n");
+>>>> +                     pm_runtime_disable(dev);
+>>>>                       dev->driver->shutdown(dev);
+>>>>               }
+>>>>               put_device(dev);
+>>>>
+>>>>
+>>> Yes, it is the solution for Neil's case, but I am not sure for all.
+>>> Is it possible to resume driver's itself at driver's shutdown?
+>>
+>> Looks like this way is still not good. Maybe we should put all
+>> device into active state first, then set its runtime pm as disabled.
+>
+> Below patch should a simple fix on the issue, but it may prolong
+> shutdown/reboot time.
+>
+>
+> diff --git a/drivers/base/core.c b/drivers/base/core.cindex
+> d8b3d89..96b266c 100644--- a/drivers/base/core.c+++
+> b/drivers/base/core.c@@ -1743,8 +1743,9 @@ void device_shutdown(void)
+>                 */             list_del_init(&dev->kobj.entry);
+>                spin_unlock(&devices_kset->list_lock);-         /* Disable all device's
+> runtime power management */-            pm_runtime_disable(dev);++              /* put
+> device into active state and forbid runtime pm
+> */+             pm_runtime_forbid(dev);                 if (dev->bus && dev->bus->shutdown) {
+>                        dev_dbg(dev, "shutdown\n");
+,
+Sorry, the above is line wrapped badly, see the below:
 
-> ---
-> I got the build error on linux-next,
-> this patch is against linux-next 20111205.
->
-> Axel
-> Â drivers/pcmcia/pxa2xx_e740.c Â  Â  Â | Â  11 +++++++----
-> Â drivers/pcmcia/pxa2xx_palmld.c Â  Â | Â  Â 2 +-
-> Â drivers/pcmcia/pxa2xx_palmtc.c Â  Â | Â  Â 2 +-
-> Â drivers/pcmcia/pxa2xx_stargate2.c | Â  Â 6 ++++--
-> Â drivers/pcmcia/pxa2xx_vpac270.c Â  | Â  Â 4 ++--
-> Â 5 files changed, 15 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/pcmcia/pxa2xx_e740.c b/drivers/pcmcia/pxa2xx_e740.c
-> index 8bfbd4d..17cd2ce 100644
-> --- a/drivers/pcmcia/pxa2xx_e740.c
-> +++ b/drivers/pcmcia/pxa2xx_e740.c
-> @@ -26,20 +26,23 @@
-> Â static struct pcmcia_irqs cd_irqs[] = {
-> Â  Â  Â  Â {
-> Â  Â  Â  Â  Â  Â  Â  Â .sock = 0,
-> - Â  Â  Â  Â  Â  Â  Â  .irq Â = IRQ_GPIO(GPIO_E740_PCMCIA_CD0),
-> Â  Â  Â  Â  Â  Â  Â  Â .str Â = "CF card detect"
-> Â  Â  Â  Â },
-> Â  Â  Â  Â {
-> Â  Â  Â  Â  Â  Â  Â  Â .sock = 1,
-> - Â  Â  Â  Â  Â  Â  Â  .irq Â = IRQ_GPIO(GPIO_E740_PCMCIA_CD1),
-> Â  Â  Â  Â  Â  Â  Â  Â .str Â = "Wifi switch"
-> Â  Â  Â  Â },
-> Â };
->
-> Â static int e740_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
-> Â {
-> - Â  Â  Â  skt->socket.pci_irq = skt->nr == 0 ? IRQ_GPIO(GPIO_E740_PCMCIA_RDY0) :
-> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  IRQ_GPIO(GPIO_E740_PCMCIA_RDY1);
-> + Â  Â  Â  if (skt->nr == 0)
-> + Â  Â  Â  Â  Â  Â  Â  skt->socket.pci_irq = gpio_to_irq(GPIO_E740_PCMCIA_RDY0);
-> + Â  Â  Â  else
-> + Â  Â  Â  Â  Â  Â  Â  skt->socket.pci_irq = gpio_to_irq(GPIO_E740_PCMCIA_RDY1);
-> +
-> + Â  Â  Â  cd_irqs[0].irq = gpio_to_irq(GPIO_E740_PCMCIA_CD0);
-> + Â  Â  Â  cd_irqs[1].irq = gpio_to_irq(GPIO_E740_PCMCIA_CD1);
->
-> Â  Â  Â  Â return soc_pcmcia_request_irqs(skt, &cd_irqs[skt->nr], 1);
-> Â }
-> diff --git a/drivers/pcmcia/pxa2xx_palmld.c b/drivers/pcmcia/pxa2xx_palmld.c
-> index d589ad1..6a8e011 100644
-> --- a/drivers/pcmcia/pxa2xx_palmld.c
-> +++ b/drivers/pcmcia/pxa2xx_palmld.c
-> @@ -33,7 +33,7 @@ static int palmld_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
-> Â  Â  Â  Â ret = gpio_request_array(palmld_pcmcia_gpios,
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ARRAY_SIZE(palmld_pcmcia_gpios));
->
-> - Â  Â  Â  skt->socket.pci_irq = IRQ_GPIO(GPIO_NR_PALMLD_PCMCIA_READY);
-> + Â  Â  Â  skt->socket.pci_irq = gpio_to_irq(GPIO_NR_PALMLD_PCMCIA_READY);
->
-> Â  Â  Â  Â return ret;
-> Â }
-> diff --git a/drivers/pcmcia/pxa2xx_palmtc.c b/drivers/pcmcia/pxa2xx_palmtc.c
-> index 9c6a04b..9e38de7 100644
-> --- a/drivers/pcmcia/pxa2xx_palmtc.c
-> +++ b/drivers/pcmcia/pxa2xx_palmtc.c
-> @@ -37,7 +37,7 @@ static int palmtc_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
-> Â  Â  Â  Â ret = gpio_request_array(palmtc_pcmcia_gpios,
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ARRAY_SIZE(palmtc_pcmcia_gpios));
->
-> - Â  Â  Â  skt->socket.pci_irq = IRQ_GPIO(GPIO_NR_PALMTC_PCMCIA_READY);
-> + Â  Â  Â  skt->socket.pci_irq = gpio_to_irq(GPIO_NR_PALMTC_PCMCIA_READY);
->
-> Â  Â  Â  Â return ret;
-> Â }
-> diff --git a/drivers/pcmcia/pxa2xx_stargate2.c b/drivers/pcmcia/pxa2xx_stargate2.c
-> index 9396222..6c2366b 100644
-> --- a/drivers/pcmcia/pxa2xx_stargate2.c
-> +++ b/drivers/pcmcia/pxa2xx_stargate2.c
-> @@ -34,7 +34,7 @@
-> Â #define SG2_S0_GPIO_READY Â  Â  Â 81
->
-> Â static struct pcmcia_irqs irqs[] = {
-> - Â  Â  Â  { 0, IRQ_GPIO(SG2_S0_GPIO_DETECT), "PCMCIA0 CD" },
-> + Â  Â  Â  {.sock = 0, .str = "PCMCIA0 CD" },
-> Â };
->
-> Â static struct gpio sg2_pcmcia_gpios[] = {
-> @@ -44,7 +44,9 @@ static struct gpio sg2_pcmcia_gpios[] = {
->
-> Â static int sg2_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
-> Â {
-> - Â  Â  Â  skt->socket.pci_irq = IRQ_GPIO(SG2_S0_GPIO_READY);
-> + Â  Â  Â  skt->socket.pci_irq = gpio_to_irq(SG2_S0_GPIO_READY);
-> + Â  Â  Â  irqs[0].irq = gpio_to_irq(SG2_S0_GPIO_DETECT);
-> +
-> Â  Â  Â  Â return soc_pcmcia_request_irqs(skt, irqs, ARRAY_SIZE(irqs));
-> Â }
->
-> diff --git a/drivers/pcmcia/pxa2xx_vpac270.c b/drivers/pcmcia/pxa2xx_vpac270.c
-> index 66ab92c..61b17d2 100644
-> --- a/drivers/pcmcia/pxa2xx_vpac270.c
-> +++ b/drivers/pcmcia/pxa2xx_vpac270.c
-> @@ -38,12 +38,10 @@ static struct gpio vpac270_cf_gpios[] = {
-> Â static struct pcmcia_irqs cd_irqs[] = {
-> Â  Â  Â  Â {
-> Â  Â  Â  Â  Â  Â  Â  Â .sock = 0,
-> - Â  Â  Â  Â  Â  Â  Â  .irq Â = IRQ_GPIO(GPIO84_VPAC270_PCMCIA_CD),
-> Â  Â  Â  Â  Â  Â  Â  Â .str Â = "PCMCIA CD"
-> Â  Â  Â  Â },
-> Â  Â  Â  Â {
-> Â  Â  Â  Â  Â  Â  Â  Â .sock = 1,
-> - Â  Â  Â  Â  Â  Â  Â  .irq Â = IRQ_GPIO(GPIO17_VPAC270_CF_CD),
-> Â  Â  Â  Â  Â  Â  Â  Â .str Â = "CF CD"
-> Â  Â  Â  Â },
-> Â };
-> @@ -57,6 +55,7 @@ static int vpac270_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ARRAY_SIZE(vpac270_pcmcia_gpios));
->
-> Â  Â  Â  Â  Â  Â  Â  Â skt->socket.pci_irq = gpio_to_irq(GPIO35_VPAC270_PCMCIA_RDY);
-> + Â  Â  Â  Â  Â  Â  Â  cd_irqs[0].irq = gpio_to_irq(GPIO84_VPAC270_PCMCIA_CD);
->
-> Â  Â  Â  Â  Â  Â  Â  Â if (!ret)
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ret = soc_pcmcia_request_irqs(skt, &cd_irqs[0], 1);
-> @@ -65,6 +64,7 @@ static int vpac270_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ARRAY_SIZE(vpac270_cf_gpios));
->
-> Â  Â  Â  Â  Â  Â  Â  Â skt->socket.pci_irq = gpio_to_irq(GPIO12_VPAC270_CF_RDY);
-> + Â  Â  Â  Â  Â  Â  Â  cd_irqs[1].irq = gpio_to_irq(GPIO17_VPAC270_CF_CD);
->
-> Â  Â  Â  Â  Â  Â  Â  Â if (!ret)
-> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â ret = soc_pcmcia_request_irqs(skt, &cd_irqs[1], 1);
-> --
-> 1.7.5.4
->
->
->
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index d8b3d89..96b266c 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1743,8 +1743,9 @@ void device_shutdown(void)
+ 		 */
+ 		list_del_init(&dev->kobj.entry);
+ 		spin_unlock(&devices_kset->list_lock);
+-		/* Disable all device's runtime power management */
+-		pm_runtime_disable(dev);
++
++		/* put device into active state and forbit runtime pm */
++		pm_runtime_forbid(dev);
+
+ 		if (dev->bus && dev->bus->shutdown) {
+ 			dev_dbg(dev, "shutdown\n");
+
+
+thanks,
+-- 
+Ming Lei
