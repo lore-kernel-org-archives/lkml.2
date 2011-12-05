@@ -1,115 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932728Ab1LERjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:39:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29386 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932512Ab1LERjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:39:23 -0500
-Message-ID: <4EDD01BA.40208@redhat.com>
-Date: Mon, 05 Dec 2011 15:39:06 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S932680Ab1LERkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:40:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58724 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932512Ab1LERkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 12:40:01 -0500
+Date: Mon, 5 Dec 2011 09:39:44 -0800
+From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Message-ID: <tip-bd399063976c6c7a09beb4730ed1d93cadbcc739@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        JBeulich@suse.com, srivatsa.bhat@linux.vnet.ibm.com,
+        tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        JBeulich@suse.com, tglx@linutronix.de,
+        srivatsa.bhat@linux.vnet.ibm.com, borislav.petkov@amd.com
+In-Reply-To: <4ED8E2270200007800065120@nat28.tlf.novell.com>
+References: <20111107123530.12164.31227.stgit@srivatsabhat.in.ibm.com>
+	<4ED8E2270200007800065120@nat28.tlf.novell.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, microcode: Fix the failure path of microcode update driver init code
+Git-Commit-ID: bd399063976c6c7a09beb4730ed1d93cadbcc739
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: HoP <jpetrous@gmail.com>
-CC: Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk> <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com> <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-In-Reply-To: <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:39:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05-12-2011 12:28, HoP wrote:
+Commit-ID:  bd399063976c6c7a09beb4730ed1d93cadbcc739
+Gitweb:     http://git.kernel.org/tip/bd399063976c6c7a09beb4730ed1d93cadbcc739
+Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+AuthorDate: Mon, 7 Nov 2011 18:05:32 +0530
+Committer:  Borislav Petkov <borislav.petkov@amd.com>
+CommitDate: Mon, 5 Dec 2011 14:21:01 +0100
 
->> And here is a new hack.
->
-> I'm really tired from all those "hack, crap, pigback ..." wordings.
->
-> What exactly vtuner aproach does so hackish (other then exposing
-> DVB internals, what is every time made if virtualization support is developing)?
->
-> The code itself no need to patch any line of vanilla kernel source, it even
-> doesn't change any processing of the rest of kernel, it is very simple
-> driver/code/whatever.
->
-> I can understand that some developers don't like to get dvb-core opened,
-> I don't agree with them, but I don't really need to fight with them.
-> Its theirs opinion.
-> But even I try to see what is so hackish in vtuner implementation, I don't catch
-> anything. Simplicity? I thought that simplicity is a big advanatge (simple code,
-> easy to analyze). What else?
+x86, microcode: Fix the failure path of microcode update driver init code
 
-You solution is called a hack becaus it is used to fool applications to think that a
-remote device is actually a local device. Being it at kernelspace or at userspace
-(with CUSE, LD_PRELOADER of whatever other solution) doesn't change this fact.
+The microcode update driver's initialization code does not handle
+failures correctly. This patch fixes this issue.
 
-As applications know nothing about it, they'll still use timeouts and other coding logic
-that fits well for a locally-accessible device, but that won't fit well for a remote
-connection. You should remind that, by remote, this could mean a cross-ethernet
-connection dedicated to it or a 20,000 Km far away machine, using satellite links.
+Signed-off-by: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20111107123530.12164.31227.stgit@srivatsabhat.in.ibm.com
+Link: http://lkml.kernel.org/r/4ED8E2270200007800065120@nat28.tlf.novell.com
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/microcode_core.c |   28 +++++++++++++++++++---------
+ 1 files changed, 19 insertions(+), 9 deletions(-)
 
-When you put someone via the network, issues like latency,  package drops, IP
-congestion, QoS issues, cryptography, tunneling, etc should be taken into account
-by the application, in order to properly address the network issues.
-
-Those network-specific issues affect applications badly, if they're not prepared to
-handle with that, and if the used protocol is not adequate. It is not for a reason that
-there are lots of different protocols designed for streaming broadcast, and a lot of
-money is spent on improving it.
-
-Can you warrant that 100% of DVB applications you claimed to support will work well
-if a high latency network with a few satellite links is used, even if it has enough
-bandwidth)? If you think so, a typical satellite latency is 240 ms per link, in
-the best case [1]. A round trip takes twice this time.
-
-So, a 10 GB connection with just one satellite link would mean about 480 ms of round trip.
-I doubt that scan or w_scan would support it. Even if it supports, that would mean that,
-for each ioctl that would be sent to the remote server, the error code would take 480 ms
-to return. Try to calculate how many time w_scan would work with that. The calculus is easy:
-see how many ioctl's are called by each frequency and multiply by the number of frequencies
-that it would be seek. You should then add the delay introduced over streaming the data
-from the demux, using the same calculus. This is the additional time over a local w_scan.
-
-A grouch calculus with scandvb: to tune into a single DVB-C frequency, it used 45 ioctls.
-Each taking 480 ms round trip would mean an extra delay of 21.6 seconds. There are 155
-possible frequencies here. So, imagining that scan could deal with 21.6 seconds of delay
-for each channel (with it doesn't), the extra delay added by it is 1 hour (45 * 0.48 * 155).
-
-On the other hand, a solution like the one described by Florian would introduce a delay of
-480 ms for the entire scan to happen, as only one data packet would be needed to send a
-scan request, and one one stream of packets traveling at 10GB/s would bring the answer
-back.
-
-Note: even links without satellite may suffer high delays. The delay introduced by an USB
-modem for a 3G data connection is probably high enough to cause applications like w_scan
-to fail.
-
-Your approach for sure works on your network scenario, but it is a very sensitive to network
-issues, as applications have no idea about the network connection, and would do the wrong
-thing when a network error occurs.
-
-What I'm saying you is that the proper way to address it is to create a library that would
-abstract the DVB operations (scan, tuning, filtering, ...) into a way that it could
-be called either locally or remotely. Then, work with userspace developers to support it.
-
-As I said before, all network-based audio/video stream solutions work this way. They don't
-try to hide themselves by emulating a local device, as this don't work in a general case.
-
-If you succeed to create a clean, properly written DVB library that would work fine for
-remote devices, I'm sure you will be able to convince most application maintainers to use it.
-
-Regards,
-Mauro
-
-[1] http://www.satsig.net/latency.htm
-
->
-> Honza
-
+diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
+index f2d2a66..9d46f5e 100644
+--- a/arch/x86/kernel/microcode_core.c
++++ b/arch/x86/kernel/microcode_core.c
+@@ -256,7 +256,7 @@ static int __init microcode_dev_init(void)
+ 	return 0;
+ }
+ 
+-static void microcode_dev_exit(void)
++static void __exit microcode_dev_exit(void)
+ {
+ 	misc_deregister(&microcode_dev);
+ }
+@@ -519,10 +519,8 @@ static int __init microcode_init(void)
+ 
+ 	microcode_pdev = platform_device_register_simple("microcode", -1,
+ 							 NULL, 0);
+-	if (IS_ERR(microcode_pdev)) {
+-		microcode_dev_exit();
++	if (IS_ERR(microcode_pdev))
+ 		return PTR_ERR(microcode_pdev);
+-	}
+ 
+ 	get_online_cpus();
+ 	mutex_lock(&microcode_mutex);
+@@ -532,14 +530,12 @@ static int __init microcode_init(void)
+ 	mutex_unlock(&microcode_mutex);
+ 	put_online_cpus();
+ 
+-	if (error) {
+-		platform_device_unregister(microcode_pdev);
+-		return error;
+-	}
++	if (error)
++		goto out_pdev;
+ 
+ 	error = microcode_dev_init();
+ 	if (error)
+-		return error;
++		goto out_sysdev_driver;
+ 
+ 	register_syscore_ops(&mc_syscore_ops);
+ 	register_hotcpu_notifier(&mc_cpu_notifier);
+@@ -548,6 +544,20 @@ static int __init microcode_init(void)
+ 		" <tigran@aivazian.fsnet.co.uk>, Peter Oruba\n");
+ 
+ 	return 0;
++
++out_sysdev_driver:
++	get_online_cpus();
++	mutex_lock(&microcode_mutex);
++
++	sysdev_driver_unregister(&cpu_sysdev_class, &mc_sysdev_driver);
++
++	mutex_unlock(&microcode_mutex);
++	put_online_cpus();
++
++out_pdev:
++	platform_device_unregister(microcode_pdev);
++	return error;
++
+ }
+ module_init(microcode_init);
+ 
