@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932619Ab1LEVEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 16:04:24 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46456 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab1LEVEW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 16:04:22 -0500
-Date: Mon, 5 Dec 2011 13:04:05 -0800
-From: Tejun Heo <tj@kernel.org>
-To: sfr@canb.auug.org.au
-Cc: mingo@elte.hu, yinghai@kernel.org, hpa@zytor.com, tony.luck@intel.com,
-        ralf@linux-mips.org, schwidefsky@de.ibm.com, liqin.chen@sunplusct.com,
-        lethal@linux-sh.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mingo@redhat.com, jonas@southpole.se,
-        lennox.wu@gmail.com, benh@kernel.crashing.org
-Subject: linux-next: inclusion request for temporary memblock testing branch
-Message-ID: <20111205210405.GK627@google.com>
+	id S1756389Ab1LEVFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 16:05:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58861 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754004Ab1LEVFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 16:05:46 -0500
+Date: Mon, 5 Dec 2011 13:01:27 -0800
+From: Greg KH <gregkh@suse.de>
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+Cc: linux-kernel@vger.kernel.org, sgruszka@redhat.com, IvDoorn@gmail.com,
+        linville@tuxdriver.com, stable@vger.kernel.org
+Subject: Re: Patch "rt2x00: handle spurious pci interrupts" has been added to
+ the 3.1-stable tree
+Message-ID: <20111205210127.GA26148@suse.de>
+References: <13228684632156@kroah.org>
+ <201112030352.07030.s.L-H@gmx.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201112030352.07030.s.L-H@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Stephen.
+On Sat, Dec 03, 2011 at 03:52:05AM +0100, Stefan Lippers-Hollmann wrote:
+> Hi
+> 
+> On Saturday 03 December 2011, gregkh@suse.de wrote:
+> > 
+> > This is a note to let you know that I've just added the patch titled
+> > 
+> >     rt2x00: handle spurious pci interrupts
+> > 
+> > to the 3.1-stable tree which can be found at:
+> >     http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+> > 
+> > The filename of the patch is:
+> >      rt2x00-handle-spurious-pci-interrupts.patch
+> > and it can be found in the queue-3.1 subdirectory.
+> > 
+> > If you, or anyone else, feels it should not be added to the stable tree,
+> > please let <stable@vger.kernel.org> know about it.
+> > 
+> > 
+> > From 23085d5796561625db4143a671f1de081f66ef08 Mon Sep 17 00:00:00 2001
+> > From: Stanislaw Gruszka <sgruszka@redhat.com>
+> > Date: Wed, 16 Nov 2011 13:58:42 +0100
+> > Subject: rt2x00: handle spurious pci interrupts
+> [...]
+> 
+> This patch has been reverted again, due to 
+> http://patchwork.ozlabs.org/patch/127153/
+> (this also applies to the 2.6.32 backport)
 
-Can you please include the following branch into linux-next?
+Thanks for letting me know, I've now reverted it from all stable trees
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock-kill-early_node_map
-
-This eventually will go through tip/ but Ingo wants it to be tested a
-bit before proceeding.
-
-  http://thread.gmane.org/gmane.linux.kernel.cross-arch/11566/focus=1224459
-
-Pulling it into linux-next creates conflicts in three files -
-arch/arm/mm/init.c, arch/mips/Kconfig, arch/score/Kconfig.  All
-conflicts are trivial.  Both parties try to add something and
-combination of the two work fine.  The following branch contains
-merged branch for reference.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock-kill-early_node_map-next
-
-allno/modconfig on x86 compile tested.  My randomish test kernel seems
-to work fine too.  I tested building on different archs on good part
-of the archs on first posting but my cross build setup is sorta
-screwed now and couldn't get much done this time but there hasn't been
-any substantial change since the first posting.  I'm planning on
-getting the cross build env back up soonish once moving is complete.
-
-Thank you.
-
--- 
-tejun
+greg k-h
