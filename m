@@ -1,152 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609Ab1LEU6m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:58:42 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39563 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202Ab1LEU6k (ORCPT
+	id S932643Ab1LEVAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 16:00:37 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:54289 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932431Ab1LEVAg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:58:40 -0500
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <1426302.asOzFeeJzz@wuerfel>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
-	<201112051718.48324.arnd@arndb.de>
-	<CAKMK7uE-ZJ-VQRWy+zJJWsvr9nARWuf-4nupXhTJ0CLqC88CEw@mail.gmail.com>
-	<1426302.asOzFeeJzz@wuerfel>
-Date: Mon, 5 Dec 2011 21:58:39 +0100
-X-Google-Sender-Auth: dLfB1qeKcmNjja1i-MnuGQjj4lA
-Message-ID: <CAKMK7uG2U2gn-LW7Cozumfza8XngvQSWR7-S-Qiok5NA=94V=w@mail.gmail.com>
-Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Daniel Vetter <daniel@ffwll.ch>,
-        t.stanislaws@samsung.com, linux@arm.linux.org.uk,
-        Sumit Semwal <sumit.semwal@ti.com>, jesse.barker@linaro.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org, rob@ti.com,
-        m.szyprowski@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>,
-        linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 Dec 2011 16:00:36 -0500
+Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jmorris@namei.org
+Date: Mon, 05 Dec 2011 15:57:08 -0500
+In-Reply-To: <4EDCCD7D.7010406@polito.it>
+References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
+	 <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>
+	 <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>
+	 <1321564518.21708.63.camel@falcor> <4EC63302.4040006@polito.it>
+	 <1321637471.2158.44.camel@falcor> <4ECA6595.7010406@polito.it>
+	 <1323041763.2061.22.camel@falcor> <4EDC9726.1040801@polito.it>
+	 <1323090236.2061.63.camel@falcor> <4EDCCD7D.7010406@polito.it>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323118629.2061.117.camel@falcor>
+Mime-Version: 1.0
+x-cbid: 11120520-5518-0000-0000-000000D182F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 08:29:49PM +0100, Arnd Bergmann wrote:
-> On Monday 05 December 2011 19:55:44 Daniel Vetter wrote:
-> > > The only way to solve this that I can think of right now is to
-> > > mandate that the mappings are all coherent (i.e. noncachable
-> > > on noncoherent architectures like ARM). If you do that, you no
-> > > longer need the sync_sg_for_* calls.
+On Mon, 2011-12-05 at 14:56 +0100, Roberto Sassu wrote:
+> On 12/05/2011 02:03 PM, Mimi Zohar wrote:
+> > On Mon, 2011-12-05 at 11:04 +0100, Roberto Sassu wrote:
 > >
-> > Woops, totally missed the addition of these. Can somebody explain to used
-> > to rather coherent x86 what we need these for and the code-flow would look
-> > like in a typical example. I was kinda assuming that devices would bracket
-> > their use of a buffer with the attachment_map/unmap calls and any cache
-> > coherency magic that might be needed would be somewhat transparent to
-> > users of the interface?
->
-> I'll describe how the respective functions work in the streaming mapping
-> API (dma_map_*): You start out with a buffer that is owned by the CPU,
-> i.e. the kernel can access it freely. When you call dma_map_sg or similar,
-> a noncoherent device reading the buffer requires the cache to be flushed
-> in order to see the data that was written by the CPU into the cache.
->
-> After dma_map_sg, the device can perform both read and write accesses
-> (depending on the flag to the map call), but the CPU is no longer allowed
-> to read (which would allocate a cache line that may become invalid but
-> remain marked as clean) or write (which would create a dirty cache line
-> without writing it back) that buffer.
->
-> Once the device is done, the driver calls dma_unmap_* and the buffer is
-> again owned by the CPU. The device can no longer access it (in fact
-> the address may be no longer be backed if there is an iommu) and the CPU
-> can again read and write the buffer. On ARMv6 and higher, possibly some
-> other architectures, dma_unmap_* also needs to invalidate the cache
-> for the buffer, because due to speculative prefetching, there may also
-> be a new clean cache line with stale data from an earlier version of
-> the buffer.
->
-> Since map/unmap is an expensive operation, the interface was extended
-> to pass back the ownership to the CPU and back to the device while leaving
-> the buffer mapped. dma_sync_sg_for_cpu invalidates the cache in the same
-> way as dma_unmap_sg, so the CPU can access the buffer, and
-> dma_sync_sg_for_device hands it back to the device by performing the
-> same cache flush that dma_map_sg would do.
->
-> You could for example do this if you want video input with a
-> cacheable buffer, or in an rdma scenario with a buffer accessed
-> by a remote machine.
->
-> In case of software iommu (swiotlb, dmabounce), the map and sync
-> functions don't do cache management but instead copy data between
-> a buffer accessed by hardware and a different buffer accessed
-> by the user.
-
-Thanks a lot for this excellent overview. I think at least for the first
-version of dmabuf we should drop the sync_* interfaces and simply require
-users to bracket their usage of the buffer from the attached device by
-map/unmap. A dma_buf provider is always free to cache the mapping and
-simply call sync_sg_for of the streaming dma api.
-
-If it later turns out that we want to be able to cache the sg list also on
-the use-site in the driver (e.g. map it into some hw sg list) we can
-always add that functionality later. I just fear that sync ops among N
-devices is a bit ill-defined and we already have a plethora of ill-defined
-issues at hand. Also the proposed api doesn't quite fit into what's
-already there, I think an s/device/dma_buf_attachment/ would be more
-consistent - otherwise the dmabuf provider might need to walk the list of
-attachements to get at the right one for the device.
-
-> > The map call gets the dma_data_direction parameter, so it should be able
-> > to do the right thing. And because we keep the attachement around, any
-> > caching of mappings should be possible, too.
+> >> Hi Mimi
+> >>
+> >> i think moving this logic to the TPM driver (or in general, delaying
+> >> the action after the list mutex is unlocked) is not safe, because in
+> >> this way you are relying on the kernel trustworthiness to protect
+> >> itself and IMA against unmeasured potential attacks. So, the verifier
+> >> is unable to detect a kernel tampering that removed the limitation
+> >> on the TPM Quote operation.
+> >>
+> >> What i'm proposing in the patch:
+> >>
+> >> https://lkml.org/lkml/2011/11/21/202
+> >>
+> >> is in fact a new extension, which is triggered by a new kernel
+> >> parameter, so that the behaviour of the base IMA is not modified.
 > >
-> > Yours, Daniel
+> > How/why the TPM fails is important.  If the TPM fails because of an
+> > intermittent problem, then your solution of denying read/execute could
+> > work, but what would happen if it was persistent?  Would you be able to
+> > quiesce the system?
 > >
-> > PS: Slightly related, because it will make the coherency nightmare worse,
-> > afaict: Can we kill mmap support?
->
-> The mmap support is required (and only make sense) for consistent mappings,
-> not for streaming mappings. The provider must ensure that if you map
-> something uncacheable into the kernel in order to provide consistency,
-> any mapping into user space must also be uncacheable. A driver
-> that wants to have the buffer mapped to user space as many do should
-> not need to know whether it is required to do cacheable or uncacheable
-> mapping because of some other driver, and it should not need to worry
-> about how to set up uncached mappings in user space.
+> > As there is no way of differentiating a persistent from intermittent
+> > failure, both need to be addressed in the same manor.  For persistent
+> > TPM failure, we can not access the TPM to modify the PCR.  So what
+> > options do we have left?  My suggestion, though not optimal, prevents
+> > the IMA PCR from being quoted.
+> >
+> 
+> Hi Mimi
+> 
+> the solution you are proposing is reasonable as the default
+> behaviour, because not all IMA users need the high confidence
+> in the measurements, as ensured by denying the execution of
+> system calls.
+> 
+> However, during the IMA initialization the TPM is tested
+> by issuing a PCR read (the test procedure may be extended
+> to better detect existing errors in advance). So, this means
+> that a TPM failure when the system is already powered on is
+> very unlikely and may cause serious issues as it could happen
+> if other devices are involved.
+> 
+> For this reason, also my extension seems helpful especially
+> in the situations where all events need to be measured properly.
+> In this case, IMA users are aware that a TPM failure could hang
+> their systems, because they need to manually insert the required
+> kernel parameter.
 
-Either I've always missed it or no one ever described it that consisely,
-but now I see the use-case for mmap: Simpler drivers (i.e. not gpus) might
-need to expose a userspace mapping and only the provider knows how to do
-that in a coherent fashion. I want this in the docs (if it's not there yet
-...).
+As you said a TPM failure is very unlikely, what type of attack are you
+trying to defend against, that could possibly warrant causing the system
+to hang?
 
-But even with that use-case in mind I still have some gripes with the
-current mmap interfaces as proposed:
-- This use-case explains why the dmabuf provider needs to expose an mmap
-  function. It doesn't explain why we need to expose that to userspace
-  (instead of faking whatever mmap the importing driver already exposes).
-  Imo the userspace-facing part of dmabuf should be about buffer sharing
-  and not about how to access that buffer, so I'm still missing the reason
-  for that.
-- We need some way to tell the provider to sync all completed dma
-  operations for userspace mmap access. sync_for_cpu would serve that use.
-  But given that we strive for zero-copy I think the kernel shouldn't
-  ever need to access the contents of a dmabuf and it would therefore make
-  more sense to call it sync_for_mmap.
-- And the ugly one: Assuming you want this to be coherent for (almost)
-  unchanged users of exisiting subsystem and want this to integrate
-  seamlessly with gpu driver management, we also need a
-  finish_mmap_access. We _can_ fake this by shooting down userspace ptes
-  (if the provider knows about all of them, and it should thanks to the
-  mmap interface) and we do that trick on i915 (for certain cases). But
-  this is generally slow and painful and does not integrate well with
-  other gpu memory management paradigms, where userspace is required to
-  explicit bracket access.
+Mimi
 
-Yours, Daniel
--- 
-Daniel Vetter
-Mail: daniel@ffwll.ch
-Mobile: +41 (0)79 365 57 48
