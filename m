@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab1LEBUu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 20:20:50 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25501 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755734Ab1LEBUs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 20:20:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="83361801"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH v5 1/6] ata: make ata port as parent device of scsi host
-Date: Mon,  5 Dec 2011 09:20:23 +0800
-Message-Id: <1323048028-10421-2-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1323048028-10421-1-git-send-email-ming.m.lin@intel.com>
-References: <1323048028-10421-1-git-send-email-ming.m.lin@intel.com>
+	id S1756160Ab1LEBYi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 20:24:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34799 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755958Ab1LEBYh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 20:24:37 -0500
+Message-ID: <1323048232.7454.161.camel@deadeye>
+Subject: Re: [Linux-decnet-user] Proposed removal of DECnet support (was:Re:
+ [BUG] 3.2-rc2:BUG kmalloc-8: Redzone overwritten)
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Philipp Schafft <lion@lion.leolix.org>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, mike.gair@tatasteel.com,
+        Chrissie Caulfield <ccaulfie@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Linux-DECnet user <linux-decnet-user@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Matt Mackall <mpm@selenic.com>,
+        netdev <netdev@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        RoarAudio <roaraudio@lists.keep-cool.org>
+Date: Mon, 05 Dec 2011 01:23:52 +0000
+In-Reply-To: <20111204195055.A36077AD9C@priderock.keep-cool.org>
+References: <OF7785CDCC.246C1F8F-ON80257958.004A9A89-80257958.004C103D@LocalDomain>
+	 <1322664737.2755.17.camel@menhir>
+	 <20111204195055.A36077AD9C@priderock.keep-cool.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-rIZv2lxU9UN8BoTIhMpY"
+X-Mailer: Evolution 3.0.3-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the device tree of ata port and scsi host looks as below,
 
-        /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
-        |-- ata1                                (ata port)
-        |-- host0                               (scsi host)
-           |-- target0:0:0                      (scsi target)
-               |-- 0:0:0:0                      (disk)
+--=-rIZv2lxU9UN8BoTIhMpY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-This patch makes ata port as parent device of scsi host, then it becomes
+On Sun, 2011-12-04 at 20:50 +0100, Philipp Schafft wrote:
+> reflum,
+>=20
+> On Wed, 2011-11-30 at 14:52 +0000, Steven Whitehouse wrote:
+[...]
+> > It is good to know that people are still using the Linux DECnet code
+> > too. It has lived far beyond the time when I'd envisioned it still bein=
+g
+> > useful :-)
+>=20
+> There are still some people interested in it. Btw. on Debian popcon
+> counts 5356 users.
 
-        /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
-        |-- ata1                                (ata port)
-            |-- host0                           (scsi host)
-                |-- target0:0:0                 (scsi target)
-                    |-- 0:0:0:0                 (disk)
+This is grossly misleading.  Here's the historical graph showing <100
+installations of libdnet until early 2011:
+http://qa.debian.org/popcon-graph.php?packages=3Dlibdnet
 
-With this change, the ata port runtime PM is easier.
-For example, the ata port runtime suspend will happen as,
+The increase in 2011 is not a sudden resurgence of interest; it comes
+from roaraudio[1] users.  For some reason (a joke?) roaraudio has DECnet
+support and its packages depend on libdnet.  You can see that the above
+graph is precisely correlated with this:
+http://qa.debian.org/popcon-graph.php?packages=3Dlibroar1
 
-disk suspend --> scsi target suspend --> scsi host suspend --> ata port
-suspend.
+(And so far as I can work out, libroar1 is mostly being installed as a
+dependency of an unofficial package of Xine.)
 
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/ata/libata-scsi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The only reason I know this is because there was a sudden spate of bug
+reports on the kernel due to people getting dnet-common installed as a
+recommendation of libdnet and then having their Ethernet MAC addresses
+reconfigured for DECnet.
 
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 2a5412e..7ae1e77 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3398,7 +3398,7 @@ int ata_scsi_add_hosts(struct ata_host *host, struct scsi_host_template *sht)
- 		 */
- 		shost->max_host_blocked = 1;
- 
--		rc = scsi_add_host(ap->scsi_host, ap->host->dev);
-+		rc = scsi_add_host(ap->scsi_host, &ap->tdev);
- 		if (rc)
- 			goto err_add;
- 	}
--- 
-1.7.2.5
+[1] Yet another audio mixing daemon
 
+Ben.
+
+--=20
+Ben Hutchings
+Absolutum obsoletum. (If it works, it's out of date.) - Stafford Beer
+
+--=-rIZv2lxU9UN8BoTIhMpY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATtwdKOe/yOyVhhEJAQpOsQ//WOlBFMMy7cINXPzERExzfEr4s9IPGTck
+uxNv6JFcqPXfq0E9kBToR6GQx/RgPG568/RIunHZbZ7GWUm62ORez2LlJhW5wLlv
+o+kZEcTN3aC5+C7ubWAlbKAboMC0UPQp2CGm0lq6wKjk340BWM8wkiX5OkSjoMGs
+Wkdn+XXU6dmfwWE+p4D3hD5Gp7G3jZ6EGb+uVs7Sijk3uF8CHVwMxkXBvzjhttyW
+1rLW8/NOCTZFdL03xF8SZGI6jnfXYp8Y3iHVpeySh6IgoGQjGpydvjzwpsW7U+um
+ZFA28NaO5LF/lrp7y2IaX1jOBowiKZB0FqybcSOYMeZoKPEf+F0SWs2dNsXSpPZG
+B6aJl4EvFJxGenQ5Dd2S5zvnx3zsKapD8aGNbzTsFTwldbP2TIIEs/T7xJlYGYHc
+tAR2LuhMVrhAwAO1yT1ZDnDw/GfvXEx8pUyqfYeqlvNJeNA67H4I7UzryzVzRbm2
+r1lc9YeT97eLWel+dVLg0oTBUuEZTkxK+ioAKMRf13t/0RjHEbPi2doEeSCvtJ/y
+T6SIKWAmiRLHit6igR8C+ofjHjQ275+ueqA8mOAZj64w1GUVOuc3NB3R5CNFLO4K
+3QMwtmSaSWo6hRfdcBsU1/eCu3PNLHEToH6HjZPkkYm1GxzxnN2puYjzeGP6yY5J
+ZRMsDe/FEss=
+=D2v5
+-----END PGP SIGNATURE-----
+
+--=-rIZv2lxU9UN8BoTIhMpY--
