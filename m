@@ -1,112 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab1LEOmD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 09:42:03 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:28240 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932268Ab1LEOmB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 09:42:01 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAPrX3E4Y9geI/2dsb2JhbAAMOIUFqCwBAQEBAyMEUQEQCw4MAgUWCwICCQMCAQIBRQYBDAEHAQGrU5FQgTCIW4EWBIgtnmU
-X-IronPort-AV: E=Sophos;i="4.71,299,1320642000"; 
-   d="scan'208";a="150924639"
-Message-ID: <4EDCD828.2090904@teksavvy.com>
-Date: Mon, 05 Dec 2011 09:41:44 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S932360Ab1LEOrt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 09:47:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59661 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932266Ab1LEOrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 09:47:48 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Jim Cromie <jim.cromie@gmail.com>
+Subject: Re: [PATCH 19/25] pnp: if CONFIG_DYNAMIC_DEBUG, use pnp.ddebug instead of pnp.debug
+Date: Mon, 5 Dec 2011 15:47:42 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.7-desktop; KDE/4.6.0; x86_64; ; )
+Cc: jbaron@redhat.com, greg@kroah.com, joe@perches.com,
+        bart.vanassche@gmail.com, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com
+References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com> <201112011215.21146.trenn@suse.de> <CAJfuBxzF7ScsQrrh4PYo5p0VQ1h=1EYTyanoVkRmwcwWRFimkw@mail.gmail.com>
+In-Reply-To: <CAJfuBxzF7ScsQrrh4PYo5p0VQ1h=1EYTyanoVkRmwcwWRFimkw@mail.gmail.com>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
-References: <4EA89972.5060101@teksavvy.com>  <20111026.194045.2019668159403582571.davem@davemloft.net>  <4EA8B283.3010105@teksavvy.com>  <20111026.221719.2216112919297458522.davem@davemloft.net>  <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>  <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>  <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>  <4EBAB643.8020603@teksavvy.com> <1320859911.2781.1.camel@bwh-desktop>  <4EBABAFD.6050604@teksavvy.com> <1320860895.2781.6.camel@bwh-desktop>
-In-Reply-To: <1320860895.2781.6.camel@bwh-desktop>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201112051547.43298.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David / Ben / anyone..
+On Monday, December 05, 2011 06:42:42 AM Jim Cromie wrote:
+> 2011/12/1 Thomas Renninger <trenn@suse.de>:
+> > On Wednesday 30 November 2011 20:56:48 jim.cromie@gmail.com wrote:
+> >> From: Jim Cromie <jim.cromie@gmail.com>
+> >>
+> >> resubmit of https://lkml.org/lkml/2010/9/15/398
+> >>
+> >> This allows usage of generic pnp.ddebug debug parameter instead of
+> >> pnp.debug PNP specific parameter.
+> 
+> > It depends on what you compile in which pnp debug parameter one has to use
+> > and both are doing more or less the same?
+> >
+> > We could add two pnp parameters in !defined(CONFIG_DYNAMIC_DEBUG) case:
+> >  - deprecate pnp.debug by a message:
+> >    "pnp.debug deprecated, use pnp.ddebug" instead
+> 
+> Just to be clear, this patch (yours) does this deprecation.
+> 
+> >  - pnp.ddebug doing what pnp.debug is doing currently
+> 
+> FWIW, the patch after this changes the name .ddebug to .dyndbg.
+> 
+> Why is this better than just fixing kernel-parameters to
+> advise using dyndbg directly, and skipping the indirection ?
+With this patch you'd have pnp.debug and pnp.dyndbg essentially doing
+the same (from what I can see),
+but you'd either have to use the one or the other, depending
+on what is compiled in.
 
-I'm trying to puzzle out the rx/tx checksum feature flags,
-and there does seem to be a lot of variance among drivers
-as to how these are used.
+It's not a big deal, but imo it would be nice to have one pnp debug
+option which would always work.
 
-The ASIX chips have hardware support for IP and TCP checksumming
-for both IPv4 and IPv6.  So I'm thinking this code (below) is the
-most appropriate method for use in asix.c:
+This could look like this (not even compile tested):
 
-------------------------------- asix.h -----------------------------------
-...
-#define AX_RXCOE_IPCE                   0x0001
-#define AX_RXCOE_IPVE                   0x0002
-#define AX_RXCOE_V6VE                   0x0004
-#define AX_RXCOE_TCPE                   0x0008
-#define AX_RXCOE_UDPE                   0x0010
-#define AX_RXCOE_ICMP                   0x0020
-#define AX_RXCOE_IGMP                   0x0040
-#define AX_RXCOE_ICV6                   0x0080
-#define AX_RXCOE_TCPV6                  0x0100
-#define AX_RXCOE_UDPV6                  0x0200
-#define AX_RXCOE_ICMV6                  0x0400
-#define AX_RXCOE_IGMV6                  0x0800
-#define AX_RXCOE_ICV6V6                 0x1000
-#define AX_RXCOE_FOPC                   0x8000
-#define AX_RXCOE_DEF_CSUM               (AX_RXCOE_IPCE  | AX_RXCOE_IPVE  | \
-                                         AX_RXCOE_V6VE  | AX_RXCOE_TCPE  | \
-                                         AX_RXCOE_UDPE  | AX_RXCOE_ICV6  | \
-                                         AX_RXCOE_TCPV6 | AX_RXCOE_UDPV6)
-
-#define AX_RXCOE_64TE                   0x0100
-#define AX_RXCOE_PPPOE                  0x0200
-#define AX_RXCOE_RPCE                   0x8000
-
-#define AX_TXCOE_IP                     0x0001
-#define AX_TXCOE_TCP                    0x0002
-#define AX_TXCOE_UDP                    0x0004
-#define AX_TXCOE_ICMP                   0x0008
-#define AX_TXCOE_IGMP                   0x0010
-#define AX_TXCOE_ICV6                   0x0020
-#define AX_TXCOE_TCPV6                  0x0100
-#define AX_TXCOE_UDPV6                  0x0200
-#define AX_TXCOE_ICMV6                  0x0400
-#define AX_TXCOE_IGMV6                  0x0800
-#define AX_TXCOE_ICV6V6                 0x1000
-#define AX_TXCOE_DEF_CSUM               (AX_TXCOE_TCP   | AX_TXCOE_UDP | \
-                                         AX_TXCOE_TCPV6 | AX_TXCOE_UDPV6)
-...
-------------------------------- asix.c -----------------------------------
-
-static int ax88772b_set_features(struct net_device *netdev, u32 features)
+#if !defined(CONFIG_DYNAMIC_DEBUG)
+static int __init pnp_debug_setup(char *__unused)
 {
-        struct usbnet *dev = netdev_priv(netdev);
-        u16 tx_csum = (features & NETIF_F_HW_CSUM) ? AX_TXCOE_DEF_CSUM : 0;
-        u16 rx_csum = (features & NETIF_F_RXCSUM ) ? AX_RXCOE_DEF_CSUM : 0;
-
-        ax8817x_write_cmd(dev, AX_CMD_WRITE_TXCOE_CTL, tx_csum, 0, 0, NULL);
-        ax8817x_write_cmd(dev, AX_CMD_WRITE_RXCOE_CTL, rx_csum, 0, 0, NULL);
-        return 0;
+     pnp_debug = 1;
 }
-...
+__setup("pnp.dyndbg", pnp_debug_setup);
 
-static int ax88772b_bind(struct usbnet *dev, struct usb_interface *intf)
+static int __init pnp_old_debug_setup(char *__unused)
 {
-...
-        /* register support for hardware checksums */
-        dev->net->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
-
-        /* enable hardware checksums */
-        dev->net->features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
-        ax88772b_set_features(dev->net, dev->net->features);
-...
+     printk(KERN_INFO "pnp.debug is deprecated, use pnp.dyndbg instead\n");
 }
--------------------------------snip-----------------------------------
+__setup("pnp.debug", pnp_old_debug_setup);
+#endif
 
-Does this look correct -- any improvements/fixes to suggest?
-I am still trying to find out about all of the other possible hardware bits,
-but the AX_TXCOE_DEF_CSUM and AX_RXCOE_DEF_CSUM patterns are the ones
-that Asix themselves were using in the vendor driver.
 
-Thanks.
+As said, not a big deal. Maybe nicer, not sure.
+
+    Thomas
