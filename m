@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab1LEBST (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 20:18:19 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7772 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755896Ab1LEBSR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 20:18:17 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 04 Dec 2011 17:18:17 -0800
-Subject: Re: [PATCH v1] Input: tegra-kbc - report wakeup key for some
-	platforms.
-From: riyer <riyer@nvidia.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "rydberg@euromail.se" <rydberg@euromail.se>,
-        Stephen Warren <swarren@nvidia.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-In-Reply-To: <20111204085038.GC14593@core.coreip.homeip.net>
-References: <1322685811-14060-1-git-send-email-riyer@nvidia.com>
-	 <20111130212022.GB3108@core.coreip.homeip.net>
-	 <1FC56210173BB445BD77F608D6FB8D034F3D1BB4BD@HQMAIL03.nvidia.com>
-	 <20111201072649.GE16816@core.coreip.homeip.net>
-	 <1FC56210173BB445BD77F608D6FB8D034F3D1BB4C9@HQMAIL03.nvidia.com>
-	 <20111204085038.GC14593@core.coreip.homeip.net>
-Content-Type: text/plain
-Date: Sun, 4 Dec 2011 17:18:17 -0800
-Message-ID: <1323047897.3056.14.camel@riyer-dt2.nvidia.com>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.22.2 
-Content-Transfer-Encoding: 7bit
+	id S1756134Ab1LEBUs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 20:20:48 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25501 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755734Ab1LEBUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 20:20:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="83361791"
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH v5 0/6] ata port runtime power management support
+Date: Mon,  5 Dec 2011 09:20:22 +0800
+Message-Id: <1323048028-10421-1-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dmitry.
-Please find replies inline.
+Hi Jeff,
 
-On Sun, 2011-12-04 at 00:50 -0800, Dmitry Torokhov wrote:
-> Hi Rakesh,
-> 
-> On Thu, Dec 01, 2011 at 01:09:59PM -0800, Rakesh Iyer wrote:
-> > Hello Dmitry.
-> > 
-> > Sorry for the wrap issue, my Outlook does not seem to obey the settings.
-> > 
-> > I wanted to explain the tegra system resume path implementation so I can justify 
-> > why I am doing this complicated fix and why I feel it will guarantee the resume 
-> > is due to keypress.
-> > 
-> > The tegra wake resume code is registered as a syscore ops.
-> > When the system is resumed due to a wake event, the suspend_enter (after wakeup) 
-> > routine will invoke the tegra syscoreops_resume method and that routine will propagate 
-> > the wake event to the individual ISR's through genirq.
-> > If kbc was wake source, kbc_isr will be invoked in this execution path.
-> > 
-> > If system is resumed due to other reason, the tegra_syscoreops_resume code will not 
-> > find the event.
-> 
-> Consider the following sequence:
-> 
-> 1. Something other than keyboard generates wakeup event
-> 2. It's IRQ fires up and gets serviced
-At this point syscoreops_resume has finished all its wakeup processing.
+This is the v5 patches to add ata port runtime pm support.
+Applied on top of v3.2-rc4.
 
-> 3. System starts resuming devices
-> 4. User presses a key on the keypad while it is still suspended _and_
->    registered as a wakeup source
-This will have no impact on the system and keypad ISR will not be
-invoked.
-> 5. Keypad's ISR runs as well and you decide that KEY_POWER should be
->    reported even though keypad wasn't the real reason the system
->    woke up.
-The interrupt line we use to detect wakeup processing is the keypress
-interrupt which is disabled and will never cause the ISR invocation from
-a device interrupt(i.e. the PIC).
+Patch 1 was acked by Tejun Heo.
+Patch 2, 3, 4 were signed/acked by Alan Stern.
 
-In other words KBC isr gets invoked for 2 reasons
-a) FIFO interrupt is generated, which will not happen as long as
-scanning logic is disabled until kbc_resume executes.
-b) The syscoreops_resume codepath calls into the ISR after finding KBC
-was a wakesource. If this happens it will happen only when the kernel
-resumes from its suspend code path.
-> 
-> Is this scenario not possible?
-> 
-> Thanks.
-> 
-With that being the case do you think the fix makes sense?
+Could you consider merging these patches?
 
-Regards
-Rakesh
+Chanes in v5(no functional change):
+- add SCSI patches acks by Alan Stern
+- rebase to v3.2-rc4
 
+Changes in v4:
+- check SCSI device runtime PM status in system PM (Alan Stern, Tejun Heo)
+
+Changes in v3:
+- runtime resume scsi device before system suspend (Alan Stern)
+- check runtime status in sd_shutdown
+
+v1:
+https://lkml.org/lkml/2011/11/2/23
+
+v2:
+https://lkml.org/lkml/2011/11/10/71
+Acked-by: Tejun Heo <tj@kernel.org>
+Kay Sievers reviewed sysfs change
+
+v3:
+https://lkml.org/lkml/2011/11/23/37
+
+v4:
+https://lkml.org/lkml/2011/11/27/275
+
+Lin Ming (6):
+   ata: make ata port as parent device of scsi host
+   [SCSI] add flag to skip the runtime PM calls on the host
+   [SCSI] check runtime PM status in system PM
+   [SCSI] sd: check runtime PM status in sd_shutdown
+   ata: add ata port system PM callbacks
+   ata: add ata port runtime PM callbacks
+
+ drivers/ata/libata-core.c      |  154 ++++++++++++++++++++++------------------
+ drivers/ata/libata-scsi.c      |    3 +-
+ drivers/ata/libata-transport.c |    5 ++
+ drivers/ata/libata.h           |    1 +
+ drivers/scsi/scsi_error.c      |    5 +-
+ drivers/scsi/scsi_pm.c         |   16 ++++-
+ drivers/scsi/sd.c              |    5 ++
+ include/scsi/scsi_host.h       |    3 +
+ 8 files changed, 118 insertions(+), 74 deletions(-)
+
+Thanks for any comment,
+Lin Ming
