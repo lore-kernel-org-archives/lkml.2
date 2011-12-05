@@ -1,150 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab1LEFe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 00:34:57 -0500
-Received: from mga03.intel.com ([143.182.124.21]:50523 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab1LEFez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 00:34:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,297,1320652800"; 
-   d="scan'208";a="43867172"
-Date: Mon, 5 Dec 2011 13:35:41 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Clark, Joel" <joel.clark@intel.com>
-Subject: Re: [PATCH 2/2] Input: tsc2007 - Add a z1_low_threshhold platform
- data parameter
-Message-ID: <20111205133541.74b72788@feng-i7>
-In-Reply-To: <20111204085405.GD14593@core.coreip.homeip.net>
-References: <1322554378-348-1-git-send-email-feng.tang@intel.com>
-	<1322554378-348-2-git-send-email-feng.tang@intel.com>
-	<20111129092310.GB21758@core.coreip.homeip.net>
-	<20111130103418.4514b630@feng-i7>
-	<20111201054726.GC16816@core.coreip.homeip.net>
-	<20111201141948.13162071@feng-i7>
-	<20111201084524.GB31610@core.coreip.homeip.net>
-	<20111201170455.2e8ebcfc@feng-i7>
-	<20111204085405.GD14593@core.coreip.homeip.net>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+	id S1751442Ab1LEFjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 00:39:39 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49379 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab1LEFji convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 00:39:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111204121000.GC12507@redhat.com>
+References: <4ED212A1.3060300@redhat.com>
+	<1322807192-14147-1-git-send-email-kernelfans@gmail.com>
+	<4ED91871.4050904@siemens.com>
+	<CAFgQCTvDQ9E5cGVxRP3ZPv8=TmhFqVOdMbcdcSMC8ctR3S+m6A@mail.gmail.com>
+	<20111204121000.GC12507@redhat.com>
+Date: Mon, 5 Dec 2011 13:39:37 +0800
+Message-ID: <CAFgQCTu32fTfV2ZwTy+S4RxD4mr_pq8dddQnttLnSGvYsmh+HQ@mail.gmail.com>
+Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
+From: Liu ping fan <kernelfans@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, avi@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aliguori@us.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Sun, Dec 4, 2011 at 8:10 PM, Gleb Natapov <gleb@redhat.com> wrote:
+> On Sun, Dec 04, 2011 at 07:53:37PM +0800, Liu ping fan wrote:
+>> On Sat, Dec 3, 2011 at 2:26 AM, Jan Kiszka <jan.kiszka@siemens.com> wrote:
+>> > On 2011-12-02 07:26, Liu Ping Fan wrote:
+>> >> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>> >>
+>> >> Currently, vcpu can be destructed only when kvm instance destroyed.
+>> >> Change this to vcpu's destruction taken when its refcnt is zero,
+>> >> and then vcpu MUST and CAN be destroyed before kvm's destroy.
+>> >
+>> > I'm lacking the big picture yet (would be good to have in the change log
+>> > - at least I'm too lazy to read the code):
+>> >
+>> > What increments the refcnt, what decrements it again? IOW, how does user
+>> > space controls the life-cycle of a vcpu after your changes?
+>> >
+>> In local APIC mode, delivering IPI to target APIC, target's refcnt is
+>> incremented, and decremented when finished. At other times, using RCU to
+> Why is this needed?
+>
+Suppose the following scene:
 
-On Sun, 4 Dec 2011 16:54:05 +0800
-Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+#define kvm_for_each_vcpu(idx, vcpup, kvm) \
+        for (idx = 0; \
+             idx < atomic_read(&kvm->online_vcpus) && \
+             (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
+             idx++)
 
-> On Thu, Dec 01, 2011 at 05:04:55PM +0800, Feng Tang wrote:
-> > Hi Dmitry,
-> > 
-> > 
-> > On Thu, 1 Dec 2011 16:45:24 +0800
-> > Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> > 
-> > 
-> > > > > 
-> > > > > Even if we add the pressure threshold would not that noise
-> > > > > cause endless stream of interrupts?
-> > > > 
-> > > > No, there is no endless interrupts for tsc2007. Without the z1
-> > > > threshold, the while circle in tsc2007_soft_irq will run
-> > > > endlessly as the noise data will be seen as a valid data:
-> > > > 
-> > > > 		rt = tsc2007_calculate_pressure(ts, &tc);
-> > > > 		if (rt == 0 && !ts->get_pendown_state) {
-> > > > 			/*
-> > > > 			 * If pressure reported is 0 and we
-> > > > don't have
-> > > > 			 * callback to check pendown state, we
-> > > > have to
-> > > > 			 * assume that pen was lifted up.
-> > > > 			 */
-> > > > 			break;
-> > > > 		}
-> > > > 
-> > > > With the z1 threshold check, the rt will be 0 for noise data,
-> > > > and the code flow broke out.
-> > > 
-> > > What I meant is with the threshold check we'll break out of the
-> > > ISR but why won't IRQ be raised again?
-> > 
-> > The IRQ will be fired again after we exist the tsc2007_soft_irq in
-> > my test, as I re-enable the irq before existing the code.
-> > 
-> > > 
-> > > > 
-> > > > > 
-> > > > > Also, what kind of z2 is reported with low z1? And do you
-> > > > > implement get_pendown_state()?
-> > > > 
-> > > > z2 seems normal as some data between 3000-4000. We don't have a
-> > > > get_pendown_state().
-> > > 
-> > > OK, there is max_rt platform parameter. I think we should employ
-> > > it instead and break out if we get several incorrect samples in a
-> > > row. Too bad you do not have a dedicate method.
-> > > 
-> > No, the max_rt won't help here, if the rt > max_rt, it won't break
-> > the while loop, but just issue a warning message
-> > 
-> > 		if (rt <= ts->max_rt) {
-> > 			.......
-> > 
-> > 		} else {
-> > 			/*
-> > 			 * Sample found inconsistent by debouncing
-> > or pressure is
-> > 			 * beyond the maximum. Don't report it to
-> > user space,
-> > 			 * repeat at least once more the
-> > measurement. */
-> > 			dev_dbg(&ts->client->dev, "ignored pressure
-> > %d\n", rt); }
-> 
-> What I meant that we need to ajust the logic to _exit_ the loop if we
-> receive several samples with rt > max_rt instead of adding a new
-> parameter.
-
-Yes, I did try a similar way to set a retry limit which also works
-basically, code is like this
-
-@@ -169,6 +169,7 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
-        struct tsc2007 *ts = handle;
-        struct input_dev *input = ts->input;
-        struct ts_event tc;
-+       u32 max_retry = 2;
-        u32 rt;
- 
-        while (!ts->stopped && tsc2007_is_pen_down(ts)) {
-@@ -206,6 +207,8 @@ static irqreturn_t tsc2007_soft_irq(int irq, void *handle)
-                         * repeat at least once more the measurement.
-                         */
-                        dev_dbg(&ts->client->dev, "ignored pressure %d\n", rt);
-+                       if (!--max_retry)
-+                               break;
-                }
+------------------------------------------------------------------------------------------>
+Here kvm_vcpu's destruction is called
+              vcpup->vcpu_id ...  //oops!
 
 
-But I still have some concerns:
-1. How many retries should we try? the tsc2007_read_values() will take about 70 ms
-on our platform, plus the "poll_period", one retry will take about 100ms.
-2. I checked the noise data, its z1 value is always in a range from 9 to 13, while
-the real data's z1 is always bigger than 300. So I think there is a very clear gap
-to tell the noise data from valid data by z1 value.
+Regards,
+ping fan
 
-How do you think about it?
 
-Thanks,
-Feng
 
-> 
-> Thanks.
-> 
+>> protect the vcpu's reference from its destruction.
+>>
+>> If kvm_vcpu is not needed by guest, user space can close the
+>> kvm_vcpu's file
+>> descriptors, and then,if the kvm_vcpu has crossed the period of local
+>> APCI mode's reference,it will be destroyed.
+>>
+>> Regards,
+>> ping fan
+>>
+>> > Thanks,
+>> > Jan
+>> >
+>> > --
+>> > Siemens AG, Corporate Technology, CT T DE IT 1
+>> > Corporate Competence Center Embedded Linux
+>
+> --
+>                        Gleb.
