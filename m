@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab1LEWab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 17:30:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39859 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932486Ab1LEWaa convert rfc822-to-8bit (ORCPT
+	id S932668Ab1LEWdi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 17:33:38 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63168 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932486Ab1LEWdh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 17:30:30 -0500
-Message-ID: <1323124180.32012.45.camel@twins>
-Subject: Re: [PATCH 07/12] perf_events: add LBR software filter support for
- Intel X86 (v2)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
-        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
-        ravitillo@lbl.gov, will.deacon@arm.com, paulus@samba.org,
-        benh@kernel.crashing.org, rth@twiddle.net, ralf@linux-mips.org,
-        davem@davemloft.net, lethal@linux-sh.org
-Date: Mon, 05 Dec 2011 23:29:40 +0100
-In-Reply-To: <1318595833-29984-8-git-send-email-eranian@google.com>
-References: <1318595833-29984-1-git-send-email-eranian@google.com>
-	 <1318595833-29984-8-git-send-email-eranian@google.com>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 5 Dec 2011 17:33:37 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CAF6AEGto-+oSqguuWyPunUbtE65GpNiXh21srQzrChiBQMb1Nw@mail.gmail.com>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+	<1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
+	<201112051718.48324.arnd@arndb.de>
+	<CAF6AEGvyWV0DM2fjBbh-TNHiMmiLF4EQDJ6Uu0=NkopM6SXS6g@mail.gmail.com>
+	<CAKMK7uHw3OpMAtVib=e=s_us9Tx9TebzehGg59d4-g9dUXr+pQ@mail.gmail.com>
+	<CAF6AEGto-+oSqguuWyPunUbtE65GpNiXh21srQzrChiBQMb1Nw@mail.gmail.com>
+Date: Mon, 5 Dec 2011 23:33:36 +0100
+X-Google-Sender-Auth: p-M0LCn9muT_oGMuGfV9QigZl8w
+Message-ID: <CAKMK7uFpQfAkoEqAJc8hX6k_kOsXR=u5O=fgyaNfaDM89cciSw@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Rob Clark <rob@ti.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, t.stanislaws@samsung.com,
+        linux@arm.linux.org.uk, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        m.szyprowski@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-14 at 14:37 +0200, Stephane Eranian wrote:
-> 
-> This patch adds an internal sofware filter to complement
-> the (optional) LBR hardware filter.
-> 
-> The software filter is necessary:
-> - as a substitute when there is no HW LBR filter (e.g., Atom, Core)
-> - to complement HW LBR filter in case of errata (e.g., Nehalem/Westmere)
-> - to provide finer grain filtering (e.g., all processors)
-> 
-> Sometimes, the LBR HW filter cannot distinguish between two types
-> of branches. For instance, to capture syscall as CALLS, it is necessary
-> to enable the LBR_FAR filter which will also capture JMP instructions.
-> Thus, a second pass is necessary to filter those out, this is what the
-> SW filter can do.
-> 
-> The SW filter is built on top of the internal x86 disassembler. It
-> is a best effort filter especially for user level code. It is subject
-> to the availability of the text page of the program.
-> 
-> The SW filter is enabled on all Intel X86 processors. It is bypassed
-> when the user is capturing all branches at all priv levels.
+On Mon, Dec 05, 2011 at 04:11:46PM -0600, Rob Clark wrote:
+> On Mon, Dec 5, 2011 at 3:23 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Mon, Dec 05, 2011 at 02:46:47PM -0600, Rob Clark wrote:
+> >> I sort of preferred having the DMABUF shim because that lets you pass
+> >> a buffer around userspace without the receiving code knowing about a
+> >> device specific API.  But the problem I eventually came around to: if
+> >> your GL stack (or some other userspace component) is batching up
+> >> commands before submission to kernel, the buffers you need to wait for
+> >> completion might not even be submitted yet.  So from kernel
+> >> perspective they are "ready" for cpu access.  Even though in fact they
+> >> are not in a consistent state from rendering perspective.  I don't
+> >> really know a sane way to deal with that.  Maybe the approach instead
+> >> should be a userspace level API (in libkms/libdrm?) to provide
+> >> abstraction for userspace access to buffers rather than dealing with
+> >> this at the kernel level.
+> >
+> > Well, there's a reason GL has an explicit flush and extensions for sync
+> > objects. It's to support such scenarios where the driver batches up gpu
+> > commands before actually submitting them.
+>
+> Hmm.. what about other non-GL APIs..  maybe vaapi/vdpau or similar?
+> (Or something that I haven't thought of.)
 
-This patch is very seriously whitespace challenged. 
+They generally all have a concept of when they've actually commited the
+rendering to an X pixmap or egl image. Usually it's rather implicit, e.g.
+the driver will submit any outstanding batches before returning from any
+calls.
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
