@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab1LERl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:41:56 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46984 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755017Ab1LERlw (ORCPT
+	id S932730Ab1LERmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:42:10 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:54571 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab1LERlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Dec 2011 12:41:52 -0500
-Date: Mon, 5 Dec 2011 17:43:39 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: Re: GMA500 support
-Message-ID: <20111205174339.4d7965d5@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAMeQTsbJ+w08OxuTokc6TDmsy2MoD2gZr73xg-c8KT7cpxiOcw@mail.gmail.com>
-References: <20111121182910.GA2856@Boggieman>
-	<20111123112847.57c20f8f@lxorguk.ukuu.org.uk>
-	<CAMeQTsb64v_9NQKU1xtBQdEPcnjxDAQZ8HBuMJBsD6_m117SRQ@mail.gmail.com>
-	<20111124162014.GA2750@Boggieman>
-	<20111202172323.34f75234@lxorguk.ukuu.org.uk>
-	<CAMeQTsbJ+w08OxuTokc6TDmsy2MoD2gZr73xg-c8KT7cpxiOcw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Message-ID: <4EDD0254.10408@linux.vnet.ibm.com>
+Date: Mon, 05 Dec 2011 23:11:40 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 1/3] PM / Sleep: Make [un]lock_system_sleep() generic
+References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com> <20111205171443.GB627@google.com> <4EDCFE9F.9050605@linux.vnet.ibm.com> <20111205173057.GE627@google.com>
+In-Reply-To: <20111205173057.GE627@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 11120517-5816-0000-0000-0000005259E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >From what I've seen on my Asus 1201HA, the mode the framebuffer code gets is
-> the biggest common mode of both displays. Since we get garbage outside the
-> scan-out buffer on the LVDS output I assume that the common mode doesn't find
-> it's way to LVDS mode setting (or maybe it just ignores it).
+On 12/05/2011 11:00 PM, Tejun Heo wrote:
 
-It seems to be getting the wrong mode. I've not had much time to dig
-further into this yet.
+> (cc'ing Oleg)
+> 
+> On Mon, Dec 05, 2011 at 10:55:51PM +0530, Srivatsa S. Bhat wrote:
+>> I wanted these APIs to be generic, not restricted to work only for userspace
+>> processes. Both freezer_do_not_count() and freezer_count() are effective only
+>> when current->mm is non-NULL (ie., only for userspace ones).
+>> I think I have documented this in the patch which added these things to the
+>> 2 APIs. See commit 6a76b7a in linux-pm/linux-next.
+> 
+> I see.  Oleg was curious about the ->mm condition too and IIRC there's
+> no reason for that restriction.  Maybe removing that in another patch
+> and using the count functions is better?
+> 
+
+
+Oh well, then yes, that sounds like a better idea. Will send patches for
+that. Thank you.
+
+Regards,
+Srivatsa S. Bhat
 
