@@ -1,99 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab1LEOTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 09:19:39 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42943 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab1LEOTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 09:19:38 -0500
-Date: Mon, 5 Dec 2011 15:17:49 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Greg KH <greg@kroah.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        devel@driverdev.osuosl.org, lttng-dev@lists.lttng.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
-Message-ID: <20111205141749.GC28866@elte.hu>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
- <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com>
- <1322776568.4699.52.camel@twins>
- <20111201221404.GC3365@kroah.com>
- <1322780830.4699.62.camel@twins>
- <20111201231751.GA4961@kroah.com>
+	id S932290Ab1LEOVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 09:21:44 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53574 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176Ab1LEOVn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 09:21:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111201231751.GA4961@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-Originating-IP: [67.207.136.126]
+In-Reply-To: <20111115103926.GA5627@amd.com>
+References: <1316948337-7924-1-git-send-email-ohad@wizery.com> <20111115103926.GA5627@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 5 Dec 2011 16:21:21 +0200
+Message-ID: <CAK=WgbY18K00DRcmP56+UJrmMu5h_O=GaO+i_GzbC5SzCvrnRA@mail.gmail.com>
+Subject: Re: [RFC 0/5] OMAP groundwork for IOMMU-based DMA API
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Joerg,
 
-* Greg KH <greg@kroah.com> wrote:
+On Tue, Nov 15, 2011 at 12:39 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
+> On Sun, Sep 25, 2011 at 06:58:52AM -0400, Ohad Ben-Cohen wrote:
+>> Ohad Ben-Cohen (5):
+>>   ARM: dev_archdata: add private iommu extension
+>>   ARM: OMAP: omap_device: add a method to set iommu private archdata
+>>   ARM: OMAP: iommu: declare a private iommu binding struct
+>>   ARM: OMAP3: bind omap3isp_device to its iommu device
+>>   iommu/omap: eliminate the public omap_find_iommu_device() method
+>
+> It doesn't apply cleanly, can you please rebase the code, collect the
+> Acked-by's and resend?
 
-> On Fri, Dec 02, 2011 at 12:07:10AM +0100, Peter Zijlstra wrote:
-> > On Thu, 2011-12-01 at 14:14 -0800, Greg KH wrote:
-> > > greg k-h
-> > 
-> > Greg, why are you merging this crap anyway? Aren't there enough tracer
-> > thingies around already?
-> 
-> I don't know, is there?
-> 
-> There's some reason the distros, and users, still use lttng, 
-> so I'm guessing that it fits the needs of quite a few people.
+I have collected Tony's and Laurent's Acked-by's and amended them to
+the commit logs.
 
-Same goes for a whole lot of other crap that distros are 
-carrying. Would we want to merge a different CPU scheduler or 
-the 4g:4g patch or a completely new networking stack into 
-drivers/staging/? I don't think so.
+I have also made sure it applies cleanly to a recent 3.2, and tested
+it with OMAP4/remoteproc. I couldn't test it with omap3isp though,
+because I'm gated by (what looks like a) 3.2 omap3isp regression (see
+http://www.spinics.net/lists/linux-omap/msg60510.html). I did test it
+of course with omap3isp and 3.1, so I don't expect any omap3isp/iommu
+issues with these patches. Anyway, when the omap3isp issue will be
+resolved I'll make sure there isn't any iommu regression.
 
-I.e. putting LTTNG into drivers/staging/ will not really solve 
-anything - and in may in fact delay any sane technical 
-resolution:
+Please pull, thanks a lot!
 
-There's a difference between a driver that has to go into 
-drivers/staging/ because nobody cares enough [and the driver 
-isnt high quality enough yet], and a core kernel feature that we 
-DO care about and which HAS BEEN REJECTED IN ITS FORM.
+The following changes since commit cfcfc9eca2bcbd26a8e206baeb005b055dbf8e37:
 
-> That's why I'm merging it, if that the in-kernel stuff 
-> obsoletes lttng, great, let me, and the distros know.
+  Linux 3.2-rc2 (2011-11-15 15:02:59 -0200)
 
-I'm NAK-ing the LTTNG driver really, as it's a workaround for a 
-core kernel NAK.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/linux.git for-joerg
 
-Mathieu, please work with the tracing folks who DO care about 
-this stuff. It's not like there's a lack of interest in this 
-area, nor is there a lack of willingness to take patches. What 
-there is a lack of is your willingness to actually work on 
-getting something unified, integrated to users...
+Ohad Ben-Cohen (3):
+      ARM: OMAP: iommu: declare a private iommu binding struct
+      ARM: OMAP3: bind omap3isp_device to its iommu device
+      iommu/omap: eliminate the public omap_find_iommu_device() method
 
-LTTNG has been going on for how many years? I havent seen many 
-steps towards actually *merging* its functionality - you insist 
-on doing your own random thing, which is different in random 
-ways. Yes, some of those random ways may in fact be better than 
-what we have upstream - would you be interested in filtering 
-those out and pushing them upstream? I certainly would like to 
-see that happen.
-
-We want to pick the best features, and throw away current 
-upstream code in favor of superior out of tree code - this 
-concept of letting crap sit alongside each other when people do 
-care i cannot agree with.
-
-Thanks,
-
-	Ingo
+ arch/arm/mach-omap2/devices.c           |    7 ++++
+ arch/arm/plat-omap/include/plat/iommu.h |   31 +++++++++++++++--
+ arch/arm/plat-omap/include/plat/iovmm.h |   12 +++---
+ drivers/iommu/omap-iommu.c              |   58 ++++++++++++++-----------------
+ drivers/iommu/omap-iovmm.c              |   31 +++++++++++------
+ drivers/media/video/omap3isp/isp.c      |   30 +++-------------
+ drivers/media/video/omap3isp/isp.h      |    2 -
+ drivers/media/video/omap3isp/ispccdc.c  |   18 +++++-----
+ drivers/media/video/omap3isp/ispstat.c  |    8 ++--
+ drivers/media/video/omap3isp/ispvideo.c |    4 +-
+ 10 files changed, 107 insertions(+), 94 deletions(-)
