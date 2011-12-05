@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932758Ab1LEXtK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 18:49:10 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58397 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932619Ab1LEXtJ (ORCPT
+	id S932765Ab1LEXyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 18:54:43 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:60817 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932719Ab1LEXym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 18:49:09 -0500
-Date: Mon, 5 Dec 2011 23:48:49 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
-        tglx@linutronix.de, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, aul@pwsan.com, grant.likely@secretlab.ca,
-        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
-        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
-Message-ID: <20111205234849.GA14547@n2100.arm.linux.org.uk>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1112051342430.6289@utopia.booyaka.com>
+	Mon, 5 Dec 2011 18:54:42 -0500
+Date: Mon, 5 Dec 2011 15:54:34 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 07/22] ext4: Create bitmap checksum helper functions
+Message-ID: <20111205235434.GG7137@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com> <20111128232703.19194.55084.stgit@elm3c44.beaverton.ibm.com> <20111205163329.GC32031@thunk.org> <20111205203141.GF7137@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1112051342430.6289@utopia.booyaka.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20111205203141.GF7137@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11120523-6148-0000-0000-000001C2CA1B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 02:15:56PM -0700, Paul Walmsley wrote:
-> The types associated with clock rates in the clock interface 
-> (include/linux/clk.h) are inconsistent, and we should fix this. 
-
-Rubbish.  They're different with good reason.  Rates are primerily
-unsigned quantities - and should be treated as such.
-
-The exception is clk_round_rate() which returns the rate, but also
-_may_ return an error.  Therefore, its return type has to be signed.
-
-> We could fix the immediate problem by changing the prototype of 
-> clk_round_rate() to pass the rounded rate back to the caller via a pointer 
-> in one of the arguments, and return an error code (if any) via the return 
-> value:
+On Mon, Dec 05, 2011 at 12:31:41PM -0800, Darrick J. Wong wrote:
+> On Mon, Dec 05, 2011 at 11:33:29AM -0500, Ted Ts'o wrote:
+> > On Mon, Nov 28, 2011 at 03:27:03PM -0800, Darrick J. Wong wrote:
+> > > +static __u32 ext4_bitmap_csum(struct super_block *sb, ext4_group_t group,
+> > > +			      struct buffer_head *bh, int sz)
+> > > +{
+> > > +	__u32 csum;
+> > > +	struct ext4_sb_info *sbi = EXT4_SB(sb);
+> > > +
+> > > +	group = cpu_to_le32(group);
+> > > +	csum = ext4_chksum(sbi, sbi->s_uuid_csum, (__u8 *)&group,
+> > > +			   sizeof(group));
+> > > +	csum = ext4_chksum(sbi, csum, (__u8 *)bh->b_data, sz);
+> > > +
+> > > +	return csum;
+> > > +}
+> > 
+> > Note: it's strictly speaking not necessary to mix in the group and
+> > s_csum_seed here.  It's useful for the inode table blocks (ITB's)
+> > because the checksum for a particular ITB is located *in* the ITB
+> > itself.  So if an ITB gets written to the wrong place, and in
+> > particular, on top of another ITB, we want to be able to know which
+> > cloned copy was written to the wrong place on disk.
+> > 
+> > But in the case of the inode and block allocation bitmaps, the
+> > checksums are stored in the block group descriptors; so if the bitmap
+> > is written to the wrong place (and on top of another bitmap), the
+> > checksum will fail to verify, independent of whether we've mixed in
+> > the fs-specific csum seed and the group number.
+> >
+> > So I'd suggest dropping this, which will shave a few cycles off of the
+> > checksum calculation, and it will also simplify the code since we
+> > won't need this particular function.
 > 
-> int clk_round_rate(struct clk *clk, unsigned long rate, unsigned long 
->                    *rounded_rate);
+> Ok, I can get rid of the function, but I'll keep using sbi->s_uuid_csum as the
+> crc32c seed since it's basically free.
 
-Yes that might have been a better solution.
+On second thought, I purged it out of the kernel and e2fsprogs.  The bitmap
+checksum calculations seed with ~0 now.
 
-> But I'd propose that we instead increase the size of struct clk.rate to be 
-> s64:
+--D
 > 
-> s64 clk_round_rate(struct clk *clk, s64 desired_rate);
-> int clk_set_rate(struct clk *clk, s64 rate);
-> s64 clk_get_rate(struct clk *clk);
+> --D
+> > 
+> > 						- Ted
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
 > 
-> struct clk {
-> ...
->      s64 rate;
-> ...
-> };
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> That way the clock framework can accommodate current clock rates, as well 
-> as any conceivable future clock rate.  (Some production CPUs are already 
-> running at clock rates greater than 4 GiHZ[1].  RF devices with 4 GiHz+ 
-> clock rates are also common, such as 802.11a devices running in the 5.8 
-> GHz band, and drivers for those may eventually wish to use the clock 
-> framework.)
 
-Yuck.  You are aware that 64-bit math on 32-bit CPUs sucks?  So burdening
-_everything_ with 64-bit rate quantities is absurd.  As for making then
-64-bit signed quantities, that's asking for horrid code from gcc for the
-majority of cases.
