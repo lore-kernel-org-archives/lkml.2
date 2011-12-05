@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab1LEMpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 07:45:01 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56683 "EHLO
+	id S932174Ab1LEMps (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 07:45:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56703 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab1LEMo7 (ORCPT
+	with ESMTP id S1754727Ab1LEMpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 07:44:59 -0500
-Date: Mon, 5 Dec 2011 04:43:56 -0800
+	Mon, 5 Dec 2011 07:45:46 -0500
+Date: Mon, 5 Dec 2011 04:44:43 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-qpujjkw7u0bf0tr4wt55cr9y@git.kernel.org>
+Message-ID: <tip-ug9jvtjrsqbluuhqqxpvg30f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
         efault@gmx.de, fweisbec@gmail.com, dsahern@gmail.com,
@@ -19,30 +19,40 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, fweisbec@gmail.com, dsahern@gmail.com,
         tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Eliminate duplicate code and use PATH_MAX consistently
-Git-Commit-ID: c168fbfb93a1c4044287858c6784f0bd1f6cfe33
+Subject: [tip:perf/core] perf tools: Simplify debugfs mountpoint handling code
+Git-Commit-ID: ebf294bf4f147aff29df5a16bfb0f8ebca15feaa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 04:44:02 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 04:44:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c168fbfb93a1c4044287858c6784f0bd1f6cfe33
-Gitweb:     http://git.kernel.org/tip/c168fbfb93a1c4044287858c6784f0bd1f6cfe33
+Commit-ID:  ebf294bf4f147aff29df5a16bfb0f8ebca15feaa
+Gitweb:     http://git.kernel.org/tip/ebf294bf4f147aff29df5a16bfb0f8ebca15feaa
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Wed, 16 Nov 2011 12:55:59 -0200
+AuthorDate: Wed, 16 Nov 2011 14:03:07 -0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 28 Nov 2011 10:11:04 -0200
+CommitDate: Mon, 28 Nov 2011 10:11:28 -0200
 
-perf tools: Eliminate duplicate code and use PATH_MAX consistently
+perf tools: Simplify debugfs mountpoint handling code
 
-No need for multiple definitions for STR() and die(), also use SuSv2's
-PATH_MAX instead of adding MAX_PATH.
+We don't need to have two PATH_MAX char sized arrays holding it, just
+one in util/debugfs.c will do.
+
+Also rename debugfs_path to tracing_events_path, as it is not the path
+to debugfs, that is debugfs_mountpoint. Both are now accessible.
+
+This will allow accessing this code in the perf python binding without
+having to drag in perf.c and util/parse-events.c.
+
+The defaults for these variables are the canonical "/sys/kernel/debug"
+and "/sys/kernel/debug/tracing/events/", removing the need for simple
+tools to call debugfs_mount(NULL).
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -50,234 +60,338 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-qpujjkw7u0bf0tr4wt55cr9y@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-ug9jvtjrsqbluuhqqxpvg30f@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-probe.c         |    1 -
- tools/perf/util/cgroup.c           |   15 +++++++--------
- tools/perf/util/debugfs.c          |   12 ++++++------
- tools/perf/util/debugfs.h          |   29 +++++++++--------------------
- tools/perf/util/probe-finder.h     |    1 -
- tools/perf/util/trace-event-info.c |   28 ++--------------------------
- 6 files changed, 24 insertions(+), 62 deletions(-)
+ tools/perf/builtin-test.c      |    3 ++-
+ tools/perf/perf.c              |   33 ++++-----------------------------
+ tools/perf/util/debugfs.c      |   25 ++++++++++++++++++++-----
+ tools/perf/util/debugfs.h      |    4 ++++
+ tools/perf/util/parse-events.c |   28 +++++++++++++---------------
+ tools/perf/util/parse-events.h |    1 -
+ 6 files changed, 43 insertions(+), 51 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 710ae3d..59d43ab 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -46,7 +46,6 @@
+diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+index 831d1ba..77d68bf 100644
+--- a/tools/perf/builtin-test.c
++++ b/tools/perf/builtin-test.c
+@@ -7,6 +7,7 @@
  
- #define DEFAULT_VAR_FILTER "!__k???tab_* & !__crc_*"
- #define DEFAULT_FUNC_FILTER "!_*"
--#define MAX_PATH_LEN 256
+ #include "util/cache.h"
+ #include "util/debug.h"
++#include "util/debugfs.h"
+ #include "util/evlist.h"
+ #include "util/parse-options.h"
+ #include "util/parse-events.h"
+@@ -247,7 +248,7 @@ static int trace_event__id(const char *evname)
  
- /* Session management structure */
- static struct {
-diff --git a/tools/perf/util/cgroup.c b/tools/perf/util/cgroup.c
-index 96bee5c..dbe2f16 100644
---- a/tools/perf/util/cgroup.c
-+++ b/tools/perf/util/cgroup.c
-@@ -3,7 +3,6 @@
- #include "parse-options.h"
- #include "evsel.h"
- #include "cgroup.h"
--#include "debugfs.h" /* MAX_PATH, STR() */
- #include "evlist.h"
- 
- int nr_cgroups;
-@@ -12,7 +11,7 @@ static int
- cgroupfs_find_mountpoint(char *buf, size_t maxlen)
- {
- 	FILE *fp;
--	char mountpoint[MAX_PATH+1], tokens[MAX_PATH+1], type[MAX_PATH+1];
-+	char mountpoint[PATH_MAX + 1], tokens[PATH_MAX + 1], type[PATH_MAX + 1];
- 	char *token, *saved_ptr = NULL;
- 	int found = 0;
- 
-@@ -25,8 +24,8 @@ cgroupfs_find_mountpoint(char *buf, size_t maxlen)
- 	 * and inspect every cgroupfs mount point to find one that has
- 	 * perf_event subsystem
- 	 */
--	while (fscanf(fp, "%*s %"STR(MAX_PATH)"s %"STR(MAX_PATH)"s %"
--				STR(MAX_PATH)"s %*d %*d\n",
-+	while (fscanf(fp, "%*s %"STR(PATH_MAX)"s %"STR(PATH_MAX)"s %"
-+				STR(PATH_MAX)"s %*d %*d\n",
- 				mountpoint, type, tokens) == 3) {
- 
- 		if (!strcmp(type, "cgroup")) {
-@@ -57,15 +56,15 @@ cgroupfs_find_mountpoint(char *buf, size_t maxlen)
- 
- static int open_cgroup(char *name)
- {
--	char path[MAX_PATH+1];
--	char mnt[MAX_PATH+1];
-+	char path[PATH_MAX + 1];
-+	char mnt[PATH_MAX + 1];
- 	int fd;
- 
- 
--	if (cgroupfs_find_mountpoint(mnt, MAX_PATH+1))
-+	if (cgroupfs_find_mountpoint(mnt, PATH_MAX + 1))
+ 	if (asprintf(&filename,
+ 		     "%s/syscalls/%s/id",
+-		     debugfs_path, evname) < 0)
++		     tracing_events_path, evname) < 0)
  		return -1;
  
--	snprintf(path, MAX_PATH, "%s/%s", mnt, name);
-+	snprintf(path, PATH_MAX, "%s/%s", mnt, name);
+ 	fd = open(filename, O_RDONLY);
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 73d0cac..2b2e225 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -29,8 +29,6 @@ struct pager_config {
+ 	int val;
+ };
  
- 	fd = open(path, O_RDONLY);
- 	if (fd == -1)
+-static char debugfs_mntpt[MAXPATHLEN];
+-
+ static int pager_command_config(const char *var, const char *value, void *data)
+ {
+ 	struct pager_config *c = data;
+@@ -81,15 +79,6 @@ static void commit_pager_choice(void)
+ 	}
+ }
+ 
+-static void set_debugfs_path(void)
+-{
+-	char *path;
+-
+-	path = getenv(PERF_DEBUGFS_ENVIRONMENT);
+-	snprintf(debugfs_path, MAXPATHLEN, "%s/%s", path ?: debugfs_mntpt,
+-		 "tracing/events");
+-}
+-
+ static int handle_options(const char ***argv, int *argc, int *envchanged)
+ {
+ 	int handled = 0;
+@@ -161,15 +150,14 @@ static int handle_options(const char ***argv, int *argc, int *envchanged)
+ 				fprintf(stderr, "No directory given for --debugfs-dir.\n");
+ 				usage(perf_usage_string);
+ 			}
+-			strncpy(debugfs_mntpt, (*argv)[1], MAXPATHLEN);
+-			debugfs_mntpt[MAXPATHLEN - 1] = '\0';
++			debugfs_set_path((*argv)[1]);
+ 			if (envchanged)
+ 				*envchanged = 1;
+ 			(*argv)++;
+ 			(*argc)--;
+ 		} else if (!prefixcmp(cmd, CMD_DEBUGFS_DIR)) {
+-			strncpy(debugfs_mntpt, cmd + strlen(CMD_DEBUGFS_DIR), MAXPATHLEN);
+-			debugfs_mntpt[MAXPATHLEN - 1] = '\0';
++			debugfs_set_path(cmd + strlen(CMD_DEBUGFS_DIR));
++			fprintf(stderr, "dir: %s\n", debugfs_mountpoint);
+ 			if (envchanged)
+ 				*envchanged = 1;
+ 		} else {
+@@ -281,7 +269,6 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
+ 	if (use_pager == -1 && p->option & USE_PAGER)
+ 		use_pager = 1;
+ 	commit_pager_choice();
+-	set_debugfs_path();
+ 
+ 	status = p->fn(argc, argv, prefix);
+ 	exit_browser(status);
+@@ -416,17 +403,6 @@ static int run_argv(int *argcp, const char ***argv)
+ 	return done_alias;
+ }
+ 
+-/* mini /proc/mounts parser: searching for "^blah /mount/point debugfs" */
+-static void get_debugfs_mntpt(void)
+-{
+-	const char *path = debugfs_mount(NULL);
+-
+-	if (path)
+-		strncpy(debugfs_mntpt, path, sizeof(debugfs_mntpt));
+-	else
+-		debugfs_mntpt[0] = '\0';
+-}
+-
+ static void pthread__block_sigwinch(void)
+ {
+ 	sigset_t set;
+@@ -453,7 +429,7 @@ int main(int argc, const char **argv)
+ 	if (!cmd)
+ 		cmd = "perf-help";
+ 	/* get debugfs mount point from /proc/mounts */
+-	get_debugfs_mntpt();
++	debugfs_mount(NULL);
+ 	/*
+ 	 * "perf-xxxx" is the same as "perf xxxx", but we obviously:
+ 	 *
+@@ -476,7 +452,6 @@ int main(int argc, const char **argv)
+ 	argc--;
+ 	handle_options(&argv, &argc, NULL);
+ 	commit_pager_choice();
+-	set_debugfs_path();
+ 	set_buildid_dir();
+ 
+ 	if (argc > 0) {
 diff --git a/tools/perf/util/debugfs.c b/tools/perf/util/debugfs.c
-index a88fefc..680be34 100644
+index 680be34..ffc35e7 100644
 --- a/tools/perf/util/debugfs.c
 +++ b/tools/perf/util/debugfs.c
-@@ -2,8 +2,10 @@
+@@ -2,10 +2,12 @@
  #include "debugfs.h"
  #include "cache.h"
  
-+#include <sys/mount.h>
-+
++#include <linux/kernel.h>
+ #include <sys/mount.h>
+ 
  static int debugfs_premounted;
--static char debugfs_mountpoint[MAX_PATH+1];
-+static char debugfs_mountpoint[PATH_MAX + 1];
+-static char debugfs_mountpoint[PATH_MAX + 1];
++char debugfs_mountpoint[PATH_MAX + 1] = "/sys/kernel/debug";
++char tracing_events_path[PATH_MAX + 1] = "/sys/kernel/debug/tracing/events";
  
  static const char *debugfs_known_mountpoints[] = {
  	"/sys/kernel/debug/",
-@@ -64,9 +66,7 @@ const char *debugfs_find_mountpoint(void)
+@@ -64,7 +66,7 @@ const char *debugfs_find_mountpoint(void)
+ 	/* give up and parse /proc/mounts */
+ 	fp = fopen("/proc/mounts", "r");
  	if (fp == NULL)
- 		die("Can't open /proc/mounts for read");
+-		die("Can't open /proc/mounts for read");
++		return NULL;
  
--	while (fscanf(fp, "%*s %"
--		      STR(MAX_PATH)
--		      "s %99s %*s %*d %*d\n",
-+	while (fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
+ 	while (fscanf(fp, "%*s %" STR(PATH_MAX) "s %99s %*s %*d %*d\n",
  		      debugfs_mountpoint, type) == 2) {
- 		if (strcmp(type, "debugfs") == 0)
- 			break;
-@@ -158,7 +158,7 @@ int debugfs_umount(void)
+@@ -106,6 +108,12 @@ int debugfs_valid_entry(const char *path)
+ 	return 0;
+ }
  
- int debugfs_write(const char *entry, const char *value)
- {
--	char path[MAX_PATH+1];
-+	char path[PATH_MAX + 1];
- 	int ret, count;
- 	int fd;
++static void debugfs_set_tracing_events_path(const char *mountpoint)
++{
++	snprintf(tracing_events_path, sizeof(tracing_events_path), "%s/%s",
++		 mountpoint, "tracing/events");
++}
++
+ /* mount the debugfs somewhere if it's not mounted */
  
-@@ -203,7 +203,7 @@ int debugfs_write(const char *entry, const char *value)
-  */
- int debugfs_read(const char *entry, char *buffer, size_t size)
- {
--	char path[MAX_PATH+1];
-+	char path[PATH_MAX + 1];
- 	int ret;
- 	int fd;
+ char *debugfs_mount(const char *mountpoint)
+@@ -113,7 +121,7 @@ char *debugfs_mount(const char *mountpoint)
+ 	/* see if it's already mounted */
+ 	if (debugfs_find_mountpoint()) {
+ 		debugfs_premounted = 1;
+-		return debugfs_mountpoint;
++		goto out;
+ 	}
  
+ 	/* if not mounted and no argument */
+@@ -129,12 +137,19 @@ char *debugfs_mount(const char *mountpoint)
+ 		return NULL;
+ 
+ 	/* save the mountpoint */
+-	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
+ 	debugfs_found = 1;
+-
++	strncpy(debugfs_mountpoint, mountpoint, sizeof(debugfs_mountpoint));
++out:
++	debugfs_set_tracing_events_path(debugfs_mountpoint);
+ 	return debugfs_mountpoint;
+ }
+ 
++void debugfs_set_path(const char *mountpoint)
++{
++	snprintf(debugfs_mountpoint, sizeof(debugfs_mountpoint), "%s", mountpoint);
++	debugfs_set_tracing_events_path(mountpoint);
++}
++
+ /* umount the debugfs */
+ 
+ int debugfs_umount(void)
 diff --git a/tools/perf/util/debugfs.h b/tools/perf/util/debugfs.h
-index 83a0287..8cd3fa0 100644
+index 8cd3fa0..4a878f7 100644
 --- a/tools/perf/util/debugfs.h
 +++ b/tools/perf/util/debugfs.h
-@@ -1,25 +1,14 @@
- #ifndef __DEBUGFS_H__
- #define __DEBUGFS_H__
+@@ -6,9 +6,13 @@ int debugfs_valid_mountpoint(const char *debugfs);
+ int debugfs_valid_entry(const char *path);
+ char *debugfs_mount(const char *mountpoint);
+ int debugfs_umount(void);
++void debugfs_set_path(const char *mountpoint);
+ int debugfs_write(const char *entry, const char *value);
+ int debugfs_read(const char *entry, char *buffer, size_t size);
+ void debugfs_force_cleanup(void);
+ int debugfs_make_path(const char *element, char *buffer, int size);
  
--#include <sys/mount.h>
--
--#ifndef MAX_PATH
--# define MAX_PATH 256
--#endif
--
--#ifndef STR
--# define _STR(x) #x
--# define STR(x) _STR(x)
--#endif
--
--extern const char *debugfs_find_mountpoint(void);
--extern int debugfs_valid_mountpoint(const char *debugfs);
--extern int debugfs_valid_entry(const char *path);
--extern char *debugfs_mount(const char *mountpoint);
--extern int debugfs_umount(void);
--extern int debugfs_write(const char *entry, const char *value);
--extern int debugfs_read(const char *entry, char *buffer, size_t size);
--extern void debugfs_force_cleanup(void);
--extern int debugfs_make_path(const char *element, char *buffer, int size);
-+const char *debugfs_find_mountpoint(void);
-+int debugfs_valid_mountpoint(const char *debugfs);
-+int debugfs_valid_entry(const char *path);
-+char *debugfs_mount(const char *mountpoint);
-+int debugfs_umount(void);
-+int debugfs_write(const char *entry, const char *value);
-+int debugfs_read(const char *entry, char *buffer, size_t size);
-+void debugfs_force_cleanup(void);
-+int debugfs_make_path(const char *element, char *buffer, int size);
- 
++extern char debugfs_mountpoint[];
++extern char tracing_events_path[];
++
  #endif /* __DEBUGFS_H__ */
-diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-index 1132c8f..17e94d0 100644
---- a/tools/perf/util/probe-finder.h
-+++ b/tools/perf/util/probe-finder.h
-@@ -5,7 +5,6 @@
- #include "util.h"
- #include "probe-event.h"
- 
--#define MAX_PATH_LEN		 256
- #define MAX_PROBE_BUFFER	1024
- #define MAX_PROBES		 128
- 
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index d2655f0..ac6830d 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -18,7 +18,8 @@
-  *
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  */
--#define _GNU_SOURCE
-+#include <ctype.h>
-+#include "util.h"
- #include <dirent.h>
- #include <mntent.h>
- #include <stdio.h>
-@@ -31,7 +32,6 @@
- #include <pthread.h>
- #include <fcntl.h>
- #include <unistd.h>
--#include <ctype.h>
- #include <errno.h>
- #include <stdbool.h>
- #include <linux/list.h>
-@@ -44,10 +44,6 @@
- 
- #define VERSION "0.5"
- 
--#define _STR(x) #x
--#define STR(x) _STR(x)
--#define MAX_PATH 256
--
- #define TRACE_CTRL	"tracing_on"
- #define TRACE		"trace"
- #define AVAILABLE	"available_tracers"
-@@ -73,26 +69,6 @@ struct events {
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 928918b..586ab3f 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -25,8 +25,6 @@ enum event_result {
+ 	EVT_HANDLED_ALL
  };
  
+-char debugfs_path[MAXPATHLEN];
+-
+ #define CHW(x) .type = PERF_TYPE_HARDWARE, .config = PERF_COUNT_HW_##x
+ #define CSW(x) .type = PERF_TYPE_SOFTWARE, .config = PERF_COUNT_SW_##x
  
--
--static void die(const char *fmt, ...)
--{
--	va_list ap;
--	int ret = errno;
--
--	if (errno)
--		perror("perf");
--	else
--		ret = -1;
--
--	va_start(ap, fmt);
--	fprintf(stderr, "  ");
--	vfprintf(stderr, fmt, ap);
--	va_end(ap);
--
--	fprintf(stderr, "\n");
--	exit(ret);
--}
--
- void *malloc_or_die(unsigned int size)
- {
- 	void *data;
+@@ -140,7 +138,7 @@ static int tp_event_has_id(struct dirent *sys_dir, struct dirent *evt_dir)
+ 	char evt_path[MAXPATHLEN];
+ 	int fd;
+ 
+-	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
++	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", tracing_events_path,
+ 			sys_dir->d_name, evt_dir->d_name);
+ 	fd = open(evt_path, O_RDONLY);
+ 	if (fd < 0)
+@@ -171,16 +169,16 @@ struct tracepoint_path *tracepoint_id_to_path(u64 config)
+ 	char evt_path[MAXPATHLEN];
+ 	char dir_path[MAXPATHLEN];
+ 
+-	if (debugfs_valid_mountpoint(debugfs_path))
++	if (debugfs_valid_mountpoint(tracing_events_path))
+ 		return NULL;
+ 
+-	sys_dir = opendir(debugfs_path);
++	sys_dir = opendir(tracing_events_path);
+ 	if (!sys_dir)
+ 		return NULL;
+ 
+ 	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
+ 
+-		snprintf(dir_path, MAXPATHLEN, "%s/%s", debugfs_path,
++		snprintf(dir_path, MAXPATHLEN, "%s/%s", tracing_events_path,
+ 			 sys_dirent.d_name);
+ 		evt_dir = opendir(dir_path);
+ 		if (!evt_dir)
+@@ -447,7 +445,7 @@ parse_single_tracepoint_event(char *sys_name,
+ 	u64 id;
+ 	int fd;
+ 
+-	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
++	snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", tracing_events_path,
+ 		 sys_name, evt_name);
+ 
+ 	fd = open(evt_path, O_RDONLY);
+@@ -485,7 +483,7 @@ parse_multiple_tracepoint_event(struct perf_evlist *evlist, char *sys_name,
+ 	struct dirent *evt_ent;
+ 	DIR *evt_dir;
+ 
+-	snprintf(evt_path, MAXPATHLEN, "%s/%s", debugfs_path, sys_name);
++	snprintf(evt_path, MAXPATHLEN, "%s/%s", tracing_events_path, sys_name);
+ 	evt_dir = opendir(evt_path);
+ 
+ 	if (!evt_dir) {
+@@ -528,7 +526,7 @@ parse_tracepoint_event(struct perf_evlist *evlist, const char **strp,
+ 	char sys_name[MAX_EVENT_LENGTH];
+ 	unsigned int sys_length, evt_length;
+ 
+-	if (debugfs_valid_mountpoint(debugfs_path))
++	if (debugfs_valid_mountpoint(tracing_events_path))
+ 		return 0;
+ 
+ 	evt_name = strchr(*strp, ':');
+@@ -920,10 +918,10 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob)
+ 	char evt_path[MAXPATHLEN];
+ 	char dir_path[MAXPATHLEN];
+ 
+-	if (debugfs_valid_mountpoint(debugfs_path))
++	if (debugfs_valid_mountpoint(tracing_events_path))
+ 		return;
+ 
+-	sys_dir = opendir(debugfs_path);
++	sys_dir = opendir(tracing_events_path);
+ 	if (!sys_dir)
+ 		return;
+ 
+@@ -932,7 +930,7 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob)
+ 		    !strglobmatch(sys_dirent.d_name, subsys_glob))
+ 			continue;
+ 
+-		snprintf(dir_path, MAXPATHLEN, "%s/%s", debugfs_path,
++		snprintf(dir_path, MAXPATHLEN, "%s/%s", tracing_events_path,
+ 			 sys_dirent.d_name);
+ 		evt_dir = opendir(dir_path);
+ 		if (!evt_dir)
+@@ -964,16 +962,16 @@ int is_valid_tracepoint(const char *event_string)
+ 	char evt_path[MAXPATHLEN];
+ 	char dir_path[MAXPATHLEN];
+ 
+-	if (debugfs_valid_mountpoint(debugfs_path))
++	if (debugfs_valid_mountpoint(tracing_events_path))
+ 		return 0;
+ 
+-	sys_dir = opendir(debugfs_path);
++	sys_dir = opendir(tracing_events_path);
+ 	if (!sys_dir)
+ 		return 0;
+ 
+ 	for_each_subsystem(sys_dir, sys_dirent, sys_next) {
+ 
+-		snprintf(dir_path, MAXPATHLEN, "%s/%s", debugfs_path,
++		snprintf(dir_path, MAXPATHLEN, "%s/%s", tracing_events_path,
+ 			 sys_dirent.d_name);
+ 		evt_dir = opendir(dir_path);
+ 		if (!evt_dir)
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 2f8e375..7e0cbe7 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -39,7 +39,6 @@ void print_tracepoint_events(const char *subsys_glob, const char *event_glob);
+ int print_hwcache_events(const char *event_glob);
+ extern int is_valid_tracepoint(const char *event_string);
+ 
+-extern char debugfs_path[];
+ extern int valid_debugfs_mount(const char *debugfs);
+ 
+ #endif /* __PERF_PARSE_EVENTS_H */
