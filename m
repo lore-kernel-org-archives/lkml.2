@@ -1,115 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab1LETQV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:16:21 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47065 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191Ab1LETQU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:16:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <201112051547.43298.trenn@suse.de>
-References: <1322683014-13285-1-git-send-email-jim.cromie@gmail.com>
- <201112011215.21146.trenn@suse.de> <CAJfuBxzF7ScsQrrh4PYo5p0VQ1h=1EYTyanoVkRmwcwWRFimkw@mail.gmail.com>
- <201112051547.43298.trenn@suse.de>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Mon, 5 Dec 2011 12:15:48 -0700
-Message-ID: <CAJfuBxzqCboEOdP5EtY1XwOffn8AtGEzhtHFBvA5cpT4YSL=nw@mail.gmail.com>
-Subject: Re: [PATCH 19/25] pnp: if CONFIG_DYNAMIC_DEBUG, use pnp.ddebug
- instead of pnp.debug
-To: Thomas Renninger <trenn@suse.de>
-Cc: jbaron@redhat.com, greg@kroah.com, joe@perches.com,
-        bart.vanassche@gmail.com, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932360Ab1LETQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:16:32 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:52767 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932177Ab1LETQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 14:16:31 -0500
+Subject: Re: [PATCH] ima: fix memory leak and invalid memory reference bugs
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srajiv@linux.vnet.ibm.com, jmorris@namei.org
+Date: Mon, 05 Dec 2011 14:10:33 -0500
+In-Reply-To: <1323099519-8922-1-git-send-email-roberto.sassu@polito.it>
+References: <1323099519-8922-1-git-send-email-roberto.sassu@polito.it>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323112233.2061.95.camel@falcor>
+Mime-Version: 1.0
+x-cbid: 11120519-5112-0000-0000-000002C26A9A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 5, 2011 at 7:47 AM, Thomas Renninger <trenn@suse.de> wrote:
-> On Monday, December 05, 2011 06:42:42 AM Jim Cromie wrote:
->> 2011/12/1 Thomas Renninger <trenn@suse.de>:
->> > On Wednesday 30 November 2011 20:56:48 jim.cromie@gmail.com wrote:
->> >> From: Jim Cromie <jim.cromie@gmail.com>
->> >>
->> >> resubmit of https://lkml.org/lkml/2010/9/15/398
->> >>
->> >> This allows usage of generic pnp.ddebug debug parameter instead of
->> >> pnp.debug PNP specific parameter.
->>
->> > It depends on what you compile in which pnp debug parameter one has to use
->> > and both are doing more or less the same?
->> >
->> > We could add two pnp parameters in !defined(CONFIG_DYNAMIC_DEBUG) case:
->> >  - deprecate pnp.debug by a message:
->> >    "pnp.debug deprecated, use pnp.ddebug" instead
->>
->> Just to be clear, this patch (yours) does this deprecation.
->>
->> >  - pnp.ddebug doing what pnp.debug is doing currently
->>
->> FWIW, the patch after this changes the name .ddebug to .dyndbg.
->>
->> Why is this better than just fixing kernel-parameters to
->> advise using dyndbg directly, and skipping the indirection ?
-> With this patch you'd have pnp.debug and pnp.dyndbg essentially doing
-> the same (from what I can see),
-> but you'd either have to use the one or the other, depending
-> on what is compiled in.
->
-> It's not a big deal, but imo it would be nice to have one pnp debug
-> option which would always work.
->
-> This could look like this (not even compile tested):
->
-> #if !defined(CONFIG_DYNAMIC_DEBUG)
-> static int __init pnp_debug_setup(char *__unused)
-> {
->     pnp_debug = 1;
-> }
-> __setup("pnp.dyndbg", pnp_debug_setup);
->
-> static int __init pnp_old_debug_setup(char *__unused)
-> {
->     printk(KERN_INFO "pnp.debug is deprecated, use pnp.dyndbg instead\n");
-> }
-> __setup("pnp.debug", pnp_old_debug_setup);
-> #endif
->
->
-> As said, not a big deal. Maybe nicer, not sure.
+On Mon, 2011-12-05 at 16:38 +0100, Roberto Sassu wrote:
+> This patch frees the memory of measurements entries that have already
+> been inserted in the measurements list and prevent the release when the
+> PCR extend operation failed.
+> 
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 
-I agree with this size assessment :-)
+Thanks for the updated patch. I still need to test it, but it looks
+good.  The patch description should probably include an explanation of
+how a duplicate measurement is being added.  Something like:
 
-However, you trimmed my argument against your approach;
+When a new measurement is added to the measurement list, this info is
+cached in the iint for performance.  When the inode is flushed from
+cache, the associated iint is flushed as well.  Subsequent access to the
+inode will cause it to be re-measured and will attempt to unnecessarily
+add it to the measurement list.
 
-$modname.dyndbg is generally fake, __setup("pnp.dyndbg"...) is not.
-This makes a completely different control interface for 2 kinds of builds.
+This patch fixes a memory leak, by freeing the memory of the unnecessary
+duplicate measurement, and also fixes an invalid memory reference, by
+preventing the freeing of a new valid measurement entry, when the PCR
+extend operation fails.
 
-echo $setting > /sys/modules/pnp/parameters/dyndbg
-vs
-echo "module pnp +/-p" > /dbg/dynamic/control
+thanks,
 
-its certainly possible to translate $setting into
-ddebug_exec_query( (setting ? "+p" : "-p"), "pnp");
-but this still leaves the issue of the different interface,
-hidden below the skin-deep appearance of a single parameter.
-It also doesnt address what this means:
-echo "-pmf" > /sys/modules/pnp/parameters/dyndbg
-I think its a rabbit-hole of special cases, which we shouldnt go down.
+Mimi
 
-Summarizing, I think the choices are:
+> ---
+>  security/integrity/ima/ima_api.c   |    4 ++--
+>  security/integrity/ima/ima_queue.c |   10 ++++++----
+>  2 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+> index 0d50df0..88a2788 100644
+> --- a/security/integrity/ima/ima_api.c
+> +++ b/security/integrity/ima/ima_api.c
+> @@ -178,8 +178,8 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+>  	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
+> 
+>  	result = ima_store_template(entry, violation, inode);
+> -	if (!result)
+> +	if (!result || result == -EEXIST)
+>  		iint->flags |= IMA_MEASURED;
+> -	else
+> +	if (result < 0)
+>  		kfree(entry);
+>  }
+> diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
+> index 8e28f04..0fe41b81 100644
+> --- a/security/integrity/ima/ima_queue.c
+> +++ b/security/integrity/ima/ima_queue.c
+> @@ -94,7 +94,8 @@ static int ima_pcr_extend(const u8 *hash)
+> 
+>  	result = tpm_pcr_extend(TPM_ANY_NUM, CONFIG_IMA_MEASURE_PCR_IDX, hash);
+>  	if (result != 0)
+> -		pr_err("IMA: Error Communicating to TPM chip\n");
+> +		pr_err("IMA: Error Communicating to TPM chip, result: %d\n",
+> +		       result);
+>  	return result;
+>  }
+> 
+> @@ -107,13 +108,14 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+>  	u8 digest[IMA_DIGEST_SIZE];
+>  	const char *audit_cause = "hash_added";
+>  	int audit_info = 1;
+> -	int result = 0;
+> +	int result = 0, tpmresult = 0;
+> 
+>  	mutex_lock(&ima_extend_list_mutex);
+>  	if (!violation) {
+>  		memcpy(digest, entry->digest, sizeof digest);
+>  		if (ima_lookup_digest_entry(digest)) {
+>  			audit_cause = "hash_exists";
+> +			result = -EEXIST;
+>  			goto out;
+>  		}
+>  	}
+> @@ -128,8 +130,8 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+>  	if (violation)		/* invalidate pcr */
+>  		memset(digest, 0xff, sizeof digest);
+> 
+> -	result = ima_pcr_extend(digest);
+> -	if (result != 0) {
+> +	tpmresult = ima_pcr_extend(digest);
+> +	if (tpmresult != 0) {
+>  		audit_cause = "TPM error";
+>  		audit_info = 0;
+>  	}
 
-1- 2 different module-options for yes/no CONFIG_DYNAMIC_DEBUG builds
-2- 1 module-option with 2 different interfaces
-3- deeper but still imperfect translations of 1 to other.
 
-Ive coded 1, and will submit it shortly,
-but am willing to reconsider, or to just follow marching orders.
-
->
->    Thomas
-
-thanks
-Jim
