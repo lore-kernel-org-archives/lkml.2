@@ -1,239 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab1LEKDS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 05:03:18 -0500
-Received: from mga01.intel.com ([192.55.52.88]:16987 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754355Ab1LEKDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 05:03:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,298,1320652800"; 
-   d="scan'208";a="92363385"
-Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <alpine.DEB.2.00.1112021401200.13405@router.home>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
-	 <1322825802.2607.10.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1112021401200.13405@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Dec 2011 18:01:16 +0800
-Message-ID: <1323079276.16790.746.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1755511Ab1LEKFP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 05:05:15 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:63400 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355Ab1LEKFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 05:05:11 -0500
+Message-ID: <4EDC9726.1040801@polito.it>
+Date: Mon, 05 Dec 2011 11:04:22 +0100
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jmorris@namei.org
+Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
+References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>  <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>  <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>  <1321564518.21708.63.camel@falcor> <4EC63302.4040006@polito.it>  <1321637471.2158.44.camel@falcor> <4ECA6595.7010406@polito.it> <1323041763.2061.22.camel@falcor>
+In-Reply-To: <1323041763.2061.22.camel@falcor>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-12-03 at 04:02 +0800, Christoph Lameter wrote:
-> On Fri, 2 Dec 2011, Eric Dumazet wrote:
-> 
-> > netperf (loopback or ethernet) is a known stress test for slub, and your
-> > patch removes code that might hurt netperf, but benefit real workload.
-> >
-> > Have you tried instead this far less intrusive solution ?
-> >
-> > if (tail == DEACTIVATE_TO_TAIL ||
-> >     page->inuse > page->objects / 4)
-> >          list_add_tail(&page->lru, &n->partial);
-> > else
-> >          list_add(&page->lru, &n->partial);
-> 
-> One could also move this logic to reside outside of the call to
-> add_partial(). This is called mostly from __slab_free() so the logic could
-> be put in there.
-> 
+On 12/05/2011 12:36 AM, Mimi Zohar wrote:
+> On Mon, 2011-11-21 at 15:52 +0100, Roberto Sassu wrote:
+>> On 11/18/2011 06:31 PM, Mimi Zohar wrote:
+>>> On Fri, 2011-11-18 at 11:27 +0100, Roberto Sassu wrote:
+>>>> On 11/17/2011 10:15 PM, Mimi Zohar wrote:
+>>>>> On Thu, 2011-11-17 at 11:57 +0100, Roberto Sassu wrote:
+>>>>>> On 11/16/2011 07:52 PM, Rajiv Andrade wrote:
+>>>>>>>
+>>>>>>> Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
+>>>>>>>
+>>>>>>> On 16-11-2011 12:37, Roberto Sassu wrote:
+>>>>>>>> On 11/16/2011 02:38 PM, Mimi Zohar wrote:
+>>>>>>>>> On Wed, 2011-11-16 at 11:10 +0100, Roberto Sassu wrote:
+>>>>>>>>>> The ima_add_digest_entry() function has been split in order to avoid
+>>>>>>>>>> adding an entry in the measurements list for which the PCR extend
+>>>>>>>>>> operation subsequently fails. Required memory is allocated earlier
+>>>>>>>>>> in the
+>>>>>>>>>> new function ima_prepare_template_entry() and the template entry is
+>>>>>>>>>> added
+>>>>>>>>>> after ima_pcr_extend().
+>>>>>>>>>>
+>>>>>>>>>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
+>>>>>>>>>
+>>>>>>>>
+>>>>>>>> Hi Mimi
+>>>>>>>>
+>>>>>>>> i don't know if this condition can happen, but suppose that
+>>>>>>>> for whatever reason the PCR extend fails. In this case, since
+>>>>>>>> the PCR is not extended, the measurements list can be modified,
+>>>>>>>> by removing the non-measured entry, without this fact being
+>>>>>>>> detected by the verifier. So, probably we can avoid to display
+>>>>>>>> the entry.
+>>>>>>>>
+>>>>>>>>
+>>>>>>> Hi Roberto,
+>>>>>>>
+>>>>>>> IMA's trustworthiness is built on the assumption that the TPM underneath
+>>>>>>> can
+>>>>>>> be trusted. If that can't be, the eventlog alone doesn't provide us any
+>>>>>>> security.
+>>>>>>> It's the TPM device driver's job though to workaround any HW bug so that
+>>>>>>> in the
+>>>>>>> end all its stakeholders have their commands processed successfully, as
+>>>>>>> we've
+>>>>>>> pursued in some changes here:
+>>>>>>>
+>>>>>>
+>>>>>> Hi Rajiv
+>>>>>>
+>>>>>> thanks for your comments.
+>>>>>>
+>>>>>> I absolutely agree that we have to trust the TPM for the correct
+>>>>>> execution of IMA.
+>>>>>>
+>>>>>> I think the principle that has been used to build IMA (according
+>>>>>> to the TGC specifications) is that we can trust the eventlog
+>>>>>> as long as the measurement infrastructure is reliable or it is
+>>>>>> possible to detect a threat from previous measurements.
+>>>>>>
+>>>>>> For this reason, a system call is never executed before the
+>>>>>> inode measurement is inserted in the eventlog and the PCR
+>>>>>> is extended. Since these operations must be considered as
+>>>>>> atomic, their execution is protected by a mutex, that is
+>>>>>> released only after all tasks have been performed. This
+>>>>>> ensures that we begin with a measured kernel and we can
+>>>>>> reliably measure all further interactions. This also explains,
+>>>>>> in my view, why delaying the PCR extend operation may lead
+>>>>>> to security risks.
+>>>>>>
+>>>>>> About my patch, i did not move out the protected region any
+>>>>>> of the above described operations. Instead, i'm preventing
+>>>>>> measurements for which the PCR extend failed to be added to
+>>>>>> the measurements list, because in any case it is impossible
+>>>>>> for a verifier to detect their removal from the list.
+>>>>>>
+>>>>>> As i mentioned in the previous mail, one solution to overcome
+>>>>>> this issue is to deny, on the platform running IMA, the execution
+>>>>>> of those system calls for which the measurement process ended
+>>>>>> with an error.
+>>>>>>
+>>>>>> Regards
+>>>>>>
+>>>>>> Roberto Sassu
+>>>>>
+>>>>> True, if the TPM failed to extend the PCR, a malicious user would be
+>>>>> able to remove the measurement from the measurement list without it
+>>>>> being detected.  However, according to the TPM specs, the PCR extend
+>>>>> operation is always suppose to succeed, even in the case when the TPM is
+>>>>> not enabled.
+>>>>>
+>>>>
+>>>> Hi Mimi
+>>>>
+>>>> i don't know if this can happen, but, since the TPM always returns
+>>>> a result in its response, there may be particular conditions under
+>>>> which the PCR extend fails.
+>>>>
+>>>> After quickly looking at the code in 'drivers/char/tpm.c' there are
+>>>> some additional cases where the operation may fail. For instance,
+>>>> an operation may have been cancelled or it may have just reached the
+>>>> defined time limit.
+>>>>
+>>>>
+>>>>> More importantly we need to be able to detect when the PCR has not been
+>>>>> extended appropriately in order to address it.  Otherwise we're just
+>>>>> covering it up.
+>>>>>
+>>>>
+>>>> Probably i did not understand this point, but do the return code of
+>>>> tpm_pcr_extend() is not sufficient to determine if the operation was
+>>>> completed successfully?
+>>>>
+>>>> Roberto Sassu
+>>>
+>>> Your concern, that if the PCR extend fails, the PCR value will not match
+>>> the measurement list, is a valid concern. I'm not disagreeing with you
+>>> on this point.  At the same time, the IMA measurement policy defines
+>>> which files to include in the measurement list.  This policy is
+>>> independent of the TPM, whether it is enabled or not, or even if the TPM
+>>> is failing for some reason.  IMA goes into TPM by-pass mode and
+>>> maintains the measurement list on systems without a TPM.
+>>>
+>>
+>> Hi Mimi
+>>
+>> i think that if at some point IMA goes in TPM by-pass mode, this allows
+>> an attacker to hide malicious programs if they are measured after the
+>> switch.
+>>
+>> So, i agree that an IMA user wants the complete measurements list for
+>> the corresponding policy, but i think it is also necessary to give
+>> verifiers the proof that the list contains exactly all events occurred
+>> in the platform to be attested, not only those for which the
+>> measurement process ended successfully.
+>
+> Ok, so we agree that the IMA measurement list must include all
+> measurements based on policy and that either the verifier needs to be
+> able to detect TPM failure to extend the PCR with a measurement, or
+> that, as you suggest, the read/execute request itself is denied.
+>
+> Unlike IMA-appraisal, which enforces file integrity, base IMA does not
+> interfere with the running system and should not deny read/execute
+> requests.
+>
+> To validate the PCR against the measurement list, the verifier requests
+> a PCR quote and the measurement list. In the case of a peristent TPM
+> failure, the verifier won't be able to get a PCR quote.  For the
+> intermittent TPM failure case, in addition to going into TPM by-pass
+> mode, we could also prevent the TPM from quoting the IMA PCR.  This
+> would require some minor changes to the TPM device driver.
+>
 
-After pcp adding, add_partial just be used in put_cpu_partial ->
-unfreeze_partial without debug setting. If we need to do change, guess
-it's better in this function. 
+Hi Mimi
 
-BTW
-I collection some data with my PCP statistics patch. I will be very glad
-if you like it. 
+i think moving this logic to the TPM driver (or in general, delaying
+the action after the list mutex is unlocked) is not safe, because in
+this way you are relying on the kernel trustworthiness to protect
+itself and IMA against unmeasured potential attacks. So, the verifier
+is unable to detect a kernel tampering that removed the limitation
+on the TPM Quote operation.
 
-[alexs@lkp-ne04 ~]$ sudo grep . /sys/kernel/slab/kmalloc-256/*
+What i'm proposing in the patch:
 
-/sys/kernel/slab/kmalloc-256/alloc_from_partial:4955645 
-/sys/kernel/slab/kmalloc-256/alloc_from_pcp:6753981 
-...
-/sys/kernel/slab/kmalloc-256/pcp_from_free:11743977 
-/sys/kernel/slab/kmalloc-256/pcp_from_node:5948883 
-...
-/sys/kernel/slab/kmalloc-256/unfreeze_pcp:834262 
+https://lkml.org/lkml/2011/11/21/202
 
+is in fact a new extension, which is triggered by a new kernel
+parameter, so that the behaviour of the base IMA is not modified.
 
---------------
+Instead, regardless of this patch, we should fix the memory leaks and
+the memory reference errors as it has been proposed in the patch 2/2 of 
+this set.
 
->From aa754e20b81cb9f5ab63800a084858d25c18db31 Mon Sep 17 00:00:00 2001
-From: Alex shi <alex.shi@intel.com>
-Date: Tue, 6 Dec 2011 01:49:16 +0800
-Subject: [PATCH] slub: per cpu partial statistics collection
-
-PCP statistics were not collected in detail now. Add and change some variables
-for this.
-
-changed:
-cpu_partial_alloc --> alloc_from_pcp,
-cpu_partial_free  --> pcp_from_free, /* pcp refilled from slab free */
-
-added:
-pcp_from_node, /* pcp refilled from node partial */
-unfreeze_pcp,  /* unfreeze pcp */
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- include/linux/slub_def.h |    8 +++++---
- mm/slub.c                |   22 ++++++++++++++--------
- tools/slub/slabinfo.c    |   12 ++++++------
- 3 files changed, 25 insertions(+), 17 deletions(-)
-
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index a32bcfd..1c2669b 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -21,7 +21,7 @@ enum stat_item {
- 	FREE_FROZEN,		/* Freeing to frozen slab */
- 	FREE_ADD_PARTIAL,	/* Freeing moves slab to partial list */
- 	FREE_REMOVE_PARTIAL,	/* Freeing removes last object */
--	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from partial list */
-+	ALLOC_FROM_PARTIAL,	/* Cpu slab acquired from node partial list */
- 	ALLOC_SLAB,		/* Cpu slab acquired from page allocator */
- 	ALLOC_REFILL,		/* Refill cpu slab from slab freelist */
- 	ALLOC_NODE_MISMATCH,	/* Switching cpu slab */
-@@ -36,8 +36,10 @@ enum stat_item {
- 	ORDER_FALLBACK,		/* Number of times fallback was necessary */
- 	CMPXCHG_DOUBLE_CPU_FAIL,/* Failure of this_cpu_cmpxchg_double */
- 	CMPXCHG_DOUBLE_FAIL,	/* Number of times that cmpxchg double did not match */
--	CPU_PARTIAL_ALLOC,	/* Used cpu partial on alloc */
--	CPU_PARTIAL_FREE,	/* USed cpu partial on free */
-+	ALLOC_FROM_PCP,		/* Used cpu partial on alloc */
-+	PCP_FROM_FREE,		/* Fill cpu partial from free */
-+	PCP_FROM_NODE,		/* Fill cpu partial from node partial */
-+	UNFREEZE_PCP,		/* Unfreeze per cpu partial */
- 	NR_SLUB_STAT_ITEMS };
- 
- struct kmem_cache_cpu {
-diff --git a/mm/slub.c b/mm/slub.c
-index ed3334d..5843846 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1558,6 +1558,7 @@ static void *get_partial_node(struct kmem_cache *s,
- 		} else {
- 			page->freelist = t;
- 			available = put_cpu_partial(s, page, 0);
-+			stat(s, PCP_FROM_NODE);
- 		}
- 		if (kmem_cache_debug(s) || available > s->cpu_partial / 2)
- 			break;
-@@ -1968,6 +1969,7 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 				local_irq_restore(flags);
- 				pobjects = 0;
- 				pages = 0;
-+				stat(s, UNFREEZE_PCP);
- 			}
- 		}
- 
-@@ -1979,7 +1981,6 @@ int put_cpu_partial(struct kmem_cache *s, struct page *page, int drain)
- 		page->next = oldpage;
- 
- 	} while (irqsafe_cpu_cmpxchg(s->cpu_slab->partial, oldpage, page) != oldpage);
--	stat(s, CPU_PARTIAL_FREE);
- 	return pobjects;
- }
- 
-@@ -2212,7 +2213,7 @@ new_slab:
- 		c->page = c->partial;
- 		c->partial = c->page->next;
- 		c->node = page_to_nid(c->page);
--		stat(s, CPU_PARTIAL_ALLOC);
-+		stat(s, ALLOC_FROM_PCP);
- 		c->freelist = NULL;
- 		goto redo;
- 	}
-@@ -2448,9 +2449,10 @@ static void __slab_free(struct kmem_cache *s, struct page *page,
- 		 * If we just froze the page then put it onto the
- 		 * per cpu partial list.
- 		 */
--		if (new.frozen && !was_frozen)
-+		if (new.frozen && !was_frozen) {
- 			put_cpu_partial(s, page, 1);
--
-+			stat(s, PCP_FROM_FREE);
-+		}
- 		/*
- 		 * The list lock was not taken therefore no list
- 		 * activity can be necessary.
-@@ -5032,8 +5034,10 @@ STAT_ATTR(DEACTIVATE_BYPASS, deactivate_bypass);
- STAT_ATTR(ORDER_FALLBACK, order_fallback);
- STAT_ATTR(CMPXCHG_DOUBLE_CPU_FAIL, cmpxchg_double_cpu_fail);
- STAT_ATTR(CMPXCHG_DOUBLE_FAIL, cmpxchg_double_fail);
--STAT_ATTR(CPU_PARTIAL_ALLOC, cpu_partial_alloc);
--STAT_ATTR(CPU_PARTIAL_FREE, cpu_partial_free);
-+STAT_ATTR(ALLOC_FROM_PCP, alloc_from_pcp);
-+STAT_ATTR(PCP_FROM_FREE, pcp_from_free);
-+STAT_ATTR(PCP_FROM_NODE, pcp_from_node);
-+STAT_ATTR(UNFREEZE_PCP, unfreeze_pcp);
- #endif
- 
- static struct attribute *slab_attrs[] = {
-@@ -5097,8 +5101,10 @@ static struct attribute *slab_attrs[] = {
- 	&order_fallback_attr.attr,
- 	&cmpxchg_double_fail_attr.attr,
- 	&cmpxchg_double_cpu_fail_attr.attr,
--	&cpu_partial_alloc_attr.attr,
--	&cpu_partial_free_attr.attr,
-+	&alloc_from_pcp_attr.attr,
-+	&pcp_from_free_attr.attr,
-+	&pcp_from_node_attr.attr,
-+	&unfreeze_pcp_attr.attr,
- #endif
- #ifdef CONFIG_FAILSLAB
- 	&failslab_attr.attr,
-diff --git a/tools/slub/slabinfo.c b/tools/slub/slabinfo.c
-index 164cbcf..d8f67f0 100644
---- a/tools/slub/slabinfo.c
-+++ b/tools/slub/slabinfo.c
-@@ -42,7 +42,7 @@ struct slabinfo {
- 	unsigned long deactivate_remote_frees, order_fallback;
- 	unsigned long cmpxchg_double_cpu_fail, cmpxchg_double_fail;
- 	unsigned long alloc_node_mismatch, deactivate_bypass;
--	unsigned long cpu_partial_alloc, cpu_partial_free;
-+	unsigned long alloc_from_pcp, pcp_from_free;
- 	int numa[MAX_NODES];
- 	int numa_partial[MAX_NODES];
- } slabinfo[MAX_SLABS];
-@@ -457,9 +457,9 @@ static void slab_stats(struct slabinfo *s)
- 		s->free_remove_partial * 100 / total_free);
- 
- 	printf("Cpu partial list     %8lu %8lu %3lu %3lu\n",
--		s->cpu_partial_alloc, s->cpu_partial_free,
--		s->cpu_partial_alloc * 100 / total_alloc,
--		s->cpu_partial_free * 100 / total_free);
-+		s->alloc_from_pcp, s->pcp_from_free,
-+		s->alloc_from_pcp * 100 / total_alloc,
-+		s->pcp_from_free * 100 / total_free);
- 
- 	printf("RemoteObj/SlabFrozen %8lu %8lu %3lu %3lu\n",
- 		s->deactivate_remote_frees, s->free_frozen,
-@@ -1215,8 +1215,8 @@ static void read_slab_dir(void)
- 			slab->order_fallback = get_obj("order_fallback");
- 			slab->cmpxchg_double_cpu_fail = get_obj("cmpxchg_double_cpu_fail");
- 			slab->cmpxchg_double_fail = get_obj("cmpxchg_double_fail");
--			slab->cpu_partial_alloc = get_obj("cpu_partial_alloc");
--			slab->cpu_partial_free = get_obj("cpu_partial_free");
-+			slab->alloc_from_pcp = get_obj("alloc_from_pcp");
-+			slab->pcp_from_free = get_obj("pcp_from_free");
- 			slab->alloc_node_mismatch = get_obj("alloc_node_mismatch");
- 			slab->deactivate_bypass = get_obj("deactivate_bypass");
- 			chdir("..");
--- 
-1.7.0.1
+Roberto Sassu
 
 
+> Mimi
+>
 
