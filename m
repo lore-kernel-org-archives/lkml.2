@@ -1,140 +1,592 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932604Ab1LER7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:59:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58977 "EHLO
+	id S1756493Ab1LER7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:59:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58990 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171Ab1LER7H (ORCPT
+	with ESMTP id S1755171Ab1LER7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:59:07 -0500
-Date: Mon, 5 Dec 2011 09:58:39 -0800
-From: tip-bot for Daniel J Blueman <daniel@numascale-asia.com>
-Message-ID: <tip-64be4c1c2428e148de6081af235e2418e6a66dda@git.kernel.org>
+	Mon, 5 Dec 2011 12:59:51 -0500
+Date: Mon, 5 Dec 2011 09:59:28 -0800
+From: tip-bot for Steffen Persvold <sp@numascale.com>
+Message-ID: <tip-44b111b519160e33fdc41eadb39af86a24707edf@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         sp@numascale.com, jbarnes@virtuousgeek.org, tglx@linutronix.de,
         daniel@numascale-asia.com, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         sp@numascale.com, jbarnes@virtuousgeek.org, tglx@linutronix.de,
         daniel@numascale-asia.com, mingo@elte.hu
-In-Reply-To: <1323073238-32686-2-git-send-email-daniel@numascale-asia.com>
-References: <1323073238-32686-2-git-send-email-daniel@numascale-asia.com>
+In-Reply-To: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com>
+References: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86: Add x86_init platform override to fix up NUMA core numbering
-Git-Commit-ID: 64be4c1c2428e148de6081af235e2418e6a66dda
+Subject: [tip:x86/apic] x86: Add NumaChip support
+Git-Commit-ID: 44b111b519160e33fdc41eadb39af86a24707edf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:58:44 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:59:34 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  64be4c1c2428e148de6081af235e2418e6a66dda
-Gitweb:     http://git.kernel.org/tip/64be4c1c2428e148de6081af235e2418e6a66dda
-Author:     Daniel J Blueman <daniel@numascale-asia.com>
-AuthorDate: Mon, 5 Dec 2011 16:20:37 +0800
+Commit-ID:  44b111b519160e33fdc41eadb39af86a24707edf
+Gitweb:     http://git.kernel.org/tip/44b111b519160e33fdc41eadb39af86a24707edf
+Author:     Steffen Persvold <sp@numascale.com>
+AuthorDate: Tue, 6 Dec 2011 00:07:26 +0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Dec 2011 17:17:21 +0100
+CommitDate: Mon, 5 Dec 2011 17:17:24 +0100
 
-x86: Add x86_init platform override to fix up NUMA core numbering
+x86: Add NumaChip support
 
-Add an x86_init vector for handling inconsistent core numbering.
-This is useful for multi-fabric platforms, such as Numascale
-NumaConnect.
+Adds support for Numascale NumaChip large-SMP systems. It is
+needed to enable the booting of more than ~168 cores.
 
 v2:
- - use struct x86_cpuinit_ops
- - provide default fall-back function to warn
+ - [Steffen] enumerate only accessible northbridges
+ - [Daniel] rediffed and validated against 3.1-rc10
 
+v3:
+ - [Daniel] use x86_init core numbering override
+ - [Daniel] cleanups as per feedback
+
+v4:
+ - [Daniel] use updated x86_cpuinit override
+
+v5:
+ - drop disabling interrupts locally, as ISR write is atomic; drop delay
+ - added read-mostly annotations where appropriate
+ - require CONFIG_SMP, so drop conditional path
+
+Workload tested on 96 cores/16 sockets.
+
+Signed-off-by: Steffen Persvold <sp@numascale.com>
 Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Steffen Persvold <sp@numascale.com>
 Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Link: http://lkml.kernel.org/r/1323073238-32686-2-git-send-email-daniel@numascale-asia.com
+Link: http://lkml.kernel.org/r/1323101246-2400-1-git-send-email-daniel@numascale-asia.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/x86_init.h |    3 +++
- arch/x86/kernel/cpu/amd.c       |    7 +++++++
- arch/x86/kernel/cpu/common.c    |    9 +++++++++
- arch/x86/kernel/x86_init.c      |    1 +
- 4 files changed, 20 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig                             |   13 ++
+ arch/x86/include/asm/numachip/numachip_csr.h |  167 +++++++++++++++
+ arch/x86/kernel/apic/Makefile                |    1 +
+ arch/x86/kernel/apic/apic_numachip.c         |  294 ++++++++++++++++++++++++++
+ 4 files changed, 475 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index 1971e65..1ac860a 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -7,6 +7,7 @@
- struct mpc_bus;
- struct mpc_cpu;
- struct mpc_table;
-+struct cpuinfo_x86;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index cb9a104..7b9eaa1 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -343,6 +343,7 @@ config X86_EXTENDED_PLATFORM
  
- /**
-  * struct x86_init_mpparse - platform specific mpparse ops
-@@ -147,6 +148,7 @@ struct x86_init_ops {
-  */
- struct x86_cpuinit_ops {
- 	void (*setup_percpu_clockev)(void);
-+	void (*fixup_cpu_id)(struct cpuinfo_x86 *c, int node);
- };
+ 	  If you enable this option then you'll be able to select support
+ 	  for the following (non-PC) 64 bit x86 platforms:
++		Numascale NumaChip
+ 		ScaleMP vSMP
+ 		SGI Ultraviolet
  
- /**
-@@ -186,5 +188,6 @@ extern struct x86_msi_ops x86_msi;
+@@ -351,6 +352,18 @@ config X86_EXTENDED_PLATFORM
+ endif
+ # This is an alphabetically sorted list of 64 bit extended platforms
+ # Please maintain the alphabetic order if and when there are additions
++config X86_NUMACHIP
++	bool "Numascale NumaChip"
++	depends on X86_64
++	depends on X86_EXTENDED_PLATFORM
++	depends on NUMA
++	depends on SMP
++	depends on X86_X2APIC
++	depends on !EDAC_AMD64
++	---help---
++	  Adds support for Numascale NumaChip large-SMP systems. Needed to
++	  enable more than ~168 cores.
++	  If you don't have one of these, you should say N here.
  
- extern void x86_init_noop(void);
- extern void x86_init_uint_noop(unsigned int unused);
-+extern void x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node);
- 
- #endif
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 0bab2b1..ef21bdc 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -353,6 +353,13 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
- 	if (node == NUMA_NO_NODE)
- 		node = per_cpu(cpu_llc_id, cpu);
- 
-+	/*
-+	 * If core numbers are inconsistent, it's likely a multi-fabric platform,
-+	 * so invoke platform-specific handler
-+	 */
-+	if (c->phys_proc_id != node)
-+		x86_cpuinit.fixup_cpu_id(c, node);
-+
- 	if (!node_online(node)) {
- 		/*
- 		 * Two possibilities here:
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index aa003b1..ad4da45 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1141,6 +1141,15 @@ static void dbg_restore_debug_regs(void)
- #endif /* ! CONFIG_KGDB */
- 
- /*
-+ * Prints an error where the NUMA and configured core-number mismatch and the
-+ * platform didn't override this to fix it up
+ config X86_VSMP
+ 	bool "ScaleMP vSMP"
+diff --git a/arch/x86/include/asm/numachip/numachip_csr.h b/arch/x86/include/asm/numachip/numachip_csr.h
+new file mode 100644
+index 0000000..660f843
+--- /dev/null
++++ b/arch/x86/include/asm/numachip/numachip_csr.h
+@@ -0,0 +1,167 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Numascale NumaConnect-Specific Header file
++ *
++ * Copyright (C) 2011 Numascale AS. All rights reserved.
++ *
++ * Send feedback to <support@numascale.com>
++ *
 + */
-+void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
-+{
-+	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
-+}
++
++#ifndef _ASM_X86_NUMACHIP_NUMACHIP_CSR_H
++#define _ASM_X86_NUMACHIP_NUMACHIP_CSR_H
++
++#include <linux/numa.h>
++#include <linux/percpu.h>
++#include <linux/io.h>
++#include <linux/swab.h>
++#include <asm/types.h>
++#include <asm/processor.h>
++
++#define CSR_NODE_SHIFT		16
++#define CSR_NODE_BITS(p)	(((unsigned long)(p)) << CSR_NODE_SHIFT)
++#define CSR_NODE_MASK		0x0fff		/* 4K nodes */
++
++/* 32K CSR space, b15 indicates geo/non-geo */
++#define CSR_OFFSET_MASK	0x7fffUL
++
++/* Global CSR space covers all 4K possible nodes with 64K CSR space per node */
++#define NUMACHIP_GCSR_BASE	0x3fff00000000ULL
++#define NUMACHIP_GCSR_LIM	0x3fff0fffffffULL
++#define NUMACHIP_GCSR_SIZE	(NUMACHIP_GCSR_LIM - NUMACHIP_GCSR_BASE + 1)
 +
 +/*
-  * cpu_init() initializes state that is per-CPU. Some data is already
-  * initialized (naturally) in the bootstrap process, such as the GDT
-  * and IDT. We reload them nevertheless, this function acts as a
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index c1d6cd5..91f83e2 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -92,6 +92,7 @@ struct x86_init_ops x86_init __initdata = {
++ * Local CSR space starts in global CSR space with "nodeid" = 0xfff0, however
++ * when using the direct mapping on x86_64, both start and size needs to be
++ * aligned with PMD_SIZE which is 2M
++ */
++#define NUMACHIP_LCSR_BASE	0x3ffffe000000ULL
++#define NUMACHIP_LCSR_LIM	0x3fffffffffffULL
++#define NUMACHIP_LCSR_SIZE	(NUMACHIP_LCSR_LIM - NUMACHIP_LCSR_BASE + 1)
++
++static inline void *gcsr_address(int node, unsigned long offset)
++{
++	return __va(NUMACHIP_GCSR_BASE | (1UL << 15) |
++		CSR_NODE_BITS(node & CSR_NODE_MASK) | (offset & CSR_OFFSET_MASK));
++}
++
++static inline void *lcsr_address(unsigned long offset)
++{
++	return __va(NUMACHIP_LCSR_BASE | (1UL << 15) |
++		CSR_NODE_BITS(0xfff0) | (offset & CSR_OFFSET_MASK));
++}
++
++static inline unsigned int read_gcsr(int node, unsigned long offset)
++{
++	return swab32(readl(gcsr_address(node, offset)));
++}
++
++static inline void write_gcsr(int node, unsigned long offset, unsigned int val)
++{
++	writel(swab32(val), gcsr_address(node, offset));
++}
++
++static inline unsigned int read_lcsr(unsigned long offset)
++{
++	return swab32(readl(lcsr_address(offset)));
++}
++
++static inline void write_lcsr(unsigned long offset, unsigned int val)
++{
++	writel(swab32(val), lcsr_address(offset));
++}
++
++/* ========================================================================= */
++/*                   CSR_G0_STATE_CLEAR                                      */
++/* ========================================================================= */
++
++#define CSR_G0_STATE_CLEAR (0x000 + (0 << 12))
++union numachip_csr_g0_state_clear {
++	unsigned int v;
++	struct numachip_csr_g0_state_clear_s {
++		unsigned int _state:2;
++		unsigned int _rsvd_2_6:5;
++		unsigned int _lost:1;
++		unsigned int _rsvd_8_31:24;
++	} s;
++};
++
++/* ========================================================================= */
++/*                   CSR_G0_NODE_IDS                                         */
++/* ========================================================================= */
++
++#define CSR_G0_NODE_IDS (0x008 + (0 << 12))
++union numachip_csr_g0_node_ids {
++	unsigned int v;
++	struct numachip_csr_g0_node_ids_s {
++		unsigned int _initialid:16;
++		unsigned int _nodeid:12;
++		unsigned int _rsvd_28_31:4;
++	} s;
++};
++
++/* ========================================================================= */
++/*                   CSR_G3_EXT_IRQ_GEN                                      */
++/* ========================================================================= */
++
++#define CSR_G3_EXT_IRQ_GEN (0x030 + (3 << 12))
++union numachip_csr_g3_ext_irq_gen {
++	unsigned int v;
++	struct numachip_csr_g3_ext_irq_gen_s {
++		unsigned int _vector:8;
++		unsigned int _msgtype:3;
++		unsigned int _index:5;
++		unsigned int _destination_apic_id:16;
++	} s;
++};
++
++/* ========================================================================= */
++/*                   CSR_G3_EXT_IRQ_STATUS                                   */
++/* ========================================================================= */
++
++#define CSR_G3_EXT_IRQ_STATUS (0x034 + (3 << 12))
++union numachip_csr_g3_ext_irq_status {
++	unsigned int v;
++	struct numachip_csr_g3_ext_irq_status_s {
++		unsigned int _result:32;
++	} s;
++};
++
++/* ========================================================================= */
++/*                   CSR_G3_EXT_IRQ_DEST                                     */
++/* ========================================================================= */
++
++#define CSR_G3_EXT_IRQ_DEST (0x038 + (3 << 12))
++union numachip_csr_g3_ext_irq_dest {
++	unsigned int v;
++	struct numachip_csr_g3_ext_irq_dest_s {
++		unsigned int _irq:8;
++		unsigned int _rsvd_8_31:24;
++	} s;
++};
++
++/* ========================================================================= */
++/*                   CSR_G3_NC_ATT_MAP_SELECT                                */
++/* ========================================================================= */
++
++#define CSR_G3_NC_ATT_MAP_SELECT (0x7fc + (3 << 12))
++union numachip_csr_g3_nc_att_map_select {
++	unsigned int v;
++	struct numachip_csr_g3_nc_att_map_select_s {
++		unsigned int _upper_address_bits:4;
++		unsigned int _select_ram:4;
++		unsigned int _rsvd_8_31:24;
++	} s;
++};
++
++/* ========================================================================= */
++/*                   CSR_G3_NC_ATT_MAP_SELECT_0-255                          */
++/* ========================================================================= */
++
++#define CSR_G3_NC_ATT_MAP_SELECT_0 (0x800 + (3 << 12))
++
++#endif /* _ASM_X86_NUMACHIP_NUMACHIP_CSR_H */
++
+diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
+index 767fd04..0ae0323 100644
+--- a/arch/x86/kernel/apic/Makefile
++++ b/arch/x86/kernel/apic/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_SMP)		+= ipi.o
  
- struct x86_cpuinit_ops x86_cpuinit __cpuinitdata = {
- 	.setup_percpu_clockev		= setup_secondary_APIC_clock,
-+	.fixup_cpu_id			= x86_default_fixup_cpu_id,
- };
- 
- static void default_nmi_init(void) { };
+ ifeq ($(CONFIG_X86_64),y)
+ # APIC probe will depend on the listing order here
++obj-$(CONFIG_X86_NUMACHIP)	+= apic_numachip.o
+ obj-$(CONFIG_X86_UV)		+= x2apic_uv_x.o
+ obj-$(CONFIG_X86_X2APIC)	+= x2apic_phys.o
+ obj-$(CONFIG_X86_X2APIC)	+= x2apic_cluster.o
+diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+new file mode 100644
+index 0000000..09d3d8c
+--- /dev/null
++++ b/arch/x86/kernel/apic/apic_numachip.c
+@@ -0,0 +1,294 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Numascale NumaConnect-Specific APIC Code
++ *
++ * Copyright (C) 2011 Numascale AS. All rights reserved.
++ *
++ * Send feedback to <support@numascale.com>
++ *
++ */
++
++#include <linux/errno.h>
++#include <linux/threads.h>
++#include <linux/cpumask.h>
++#include <linux/string.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/ctype.h>
++#include <linux/init.h>
++#include <linux/hardirq.h>
++#include <linux/delay.h>
++
++#include <asm/numachip/numachip_csr.h>
++#include <asm/smp.h>
++#include <asm/apic.h>
++#include <asm/ipi.h>
++#include <asm/apic_flat_64.h>
++
++static int numachip_system __read_mostly;
++
++static struct apic apic_numachip __read_mostly;
++
++static unsigned int get_apic_id(unsigned long x)
++{
++	unsigned long value;
++	unsigned int id;
++
++	rdmsrl(MSR_FAM10H_NODE_ID, value);
++	id = ((x >> 24) & 0xffU) | ((value << 2) & 0x3f00U);
++
++	return id;
++}
++
++static unsigned long set_apic_id(unsigned int id)
++{
++	unsigned long x;
++
++	x = ((id & 0xffU) << 24);
++	return x;
++}
++
++static unsigned int read_xapic_id(void)
++{
++	return get_apic_id(apic_read(APIC_ID));
++}
++
++static int numachip_apic_id_registered(void)
++{
++	return physid_isset(read_xapic_id(), phys_cpu_present_map);
++}
++
++static int numachip_phys_pkg_id(int initial_apic_id, int index_msb)
++{
++	return initial_apic_id >> index_msb;
++}
++
++static const struct cpumask *numachip_target_cpus(void)
++{
++	return cpu_online_mask;
++}
++
++static void numachip_vector_allocation_domain(int cpu, struct cpumask *retmask)
++{
++	cpumask_clear(retmask);
++	cpumask_set_cpu(cpu, retmask);
++}
++
++static int __cpuinit numachip_wakeup_secondary(int phys_apicid, unsigned long start_rip)
++{
++	union numachip_csr_g3_ext_irq_gen int_gen;
++
++	int_gen.s._destination_apic_id = phys_apicid;
++	int_gen.s._vector = 0;
++	int_gen.s._msgtype = APIC_DM_INIT >> 8;
++	int_gen.s._index = 0;
++
++	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
++
++	int_gen.s._msgtype = APIC_DM_STARTUP >> 8;
++	int_gen.s._vector = start_rip >> 12;
++
++	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
++
++	atomic_set(&init_deasserted, 1);
++	return 0;
++}
++
++static void numachip_send_IPI_one(int cpu, int vector)
++{
++	union numachip_csr_g3_ext_irq_gen int_gen;
++	int apicid = per_cpu(x86_cpu_to_apicid, cpu);
++
++	int_gen.s._destination_apic_id = apicid;
++	int_gen.s._vector = vector;
++	int_gen.s._msgtype = (vector == NMI_VECTOR ? APIC_DM_NMI : APIC_DM_FIXED) >> 8;
++	int_gen.s._index = 0;
++
++	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
++}
++
++static void numachip_send_IPI_mask(const struct cpumask *mask, int vector)
++{
++	unsigned int cpu;
++
++	for_each_cpu(cpu, mask)
++		numachip_send_IPI_one(cpu, vector);
++}
++
++static void numachip_send_IPI_mask_allbutself(const struct cpumask *mask,
++						int vector)
++{
++	unsigned int this_cpu = smp_processor_id();
++	unsigned int cpu;
++
++	for_each_cpu(cpu, mask) {
++		if (cpu != this_cpu)
++			numachip_send_IPI_one(cpu, vector);
++	}
++}
++
++static void numachip_send_IPI_allbutself(int vector)
++{
++	unsigned int this_cpu = smp_processor_id();
++	unsigned int cpu;
++
++	for_each_online_cpu(cpu) {
++		if (cpu != this_cpu)
++			numachip_send_IPI_one(cpu, vector);
++	}
++}
++
++static void numachip_send_IPI_all(int vector)
++{
++	numachip_send_IPI_mask(cpu_online_mask, vector);
++}
++
++static void numachip_send_IPI_self(int vector)
++{
++	__default_send_IPI_shortcut(APIC_DEST_SELF, vector, APIC_DEST_PHYSICAL);
++}
++
++static unsigned int numachip_cpu_mask_to_apicid(const struct cpumask *cpumask)
++{
++	int cpu;
++
++	/*
++	 * We're using fixed IRQ delivery, can only return one phys APIC ID.
++	 * May as well be the first.
++	 */
++	cpu = cpumask_first(cpumask);
++	if (likely((unsigned)cpu < nr_cpu_ids))
++		return per_cpu(x86_cpu_to_apicid, cpu);
++
++	return BAD_APICID;
++}
++
++static unsigned int
++numachip_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
++				const struct cpumask *andmask)
++{
++	int cpu;
++
++	/*
++	 * We're using fixed IRQ delivery, can only return one phys APIC ID.
++	 * May as well be the first.
++	 */
++	for_each_cpu_and(cpu, cpumask, andmask) {
++		if (cpumask_test_cpu(cpu, cpu_online_mask))
++			break;
++	}
++	return per_cpu(x86_cpu_to_apicid, cpu);
++}
++
++static int __init numachip_probe(void)
++{
++	return apic == &apic_numachip;
++}
++
++static void __init map_csrs(void)
++{
++	printk(KERN_INFO "NumaChip: Mapping local CSR space (%016llx - %016llx)\n",
++		NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_BASE + NUMACHIP_LCSR_SIZE - 1);
++	init_extra_mapping_uc(NUMACHIP_LCSR_BASE, NUMACHIP_LCSR_SIZE);
++
++	printk(KERN_INFO "NumaChip: Mapping global CSR space (%016llx - %016llx)\n",
++		NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_BASE + NUMACHIP_GCSR_SIZE - 1);
++	init_extra_mapping_uc(NUMACHIP_GCSR_BASE, NUMACHIP_GCSR_SIZE);
++}
++
++static void fixup_cpu_id(struct cpuinfo_x86 *c, int node)
++{
++	c->phys_proc_id = node;
++	per_cpu(cpu_llc_id, smp_processor_id()) = node;
++}
++
++static int __init numachip_system_init(void)
++{
++	unsigned int val;
++
++	if (!numachip_system)
++		return 0;
++
++	x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
++
++	map_csrs();
++
++	val = read_lcsr(CSR_G0_NODE_IDS);
++	printk(KERN_INFO "NumaChip: Local NodeID = %08x\n", val);
++
++	return 0;
++}
++early_initcall(numachip_system_init);
++
++static int numachip_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
++{
++	if (!strncmp(oem_id, "NUMASC", 6)) {
++		numachip_system = 1;
++		return 1;
++	}
++
++	return 0;
++}
++
++static struct apic apic_numachip __refconst = {
++
++	.name				= "NumaConnect system",
++	.probe				= numachip_probe,
++	.acpi_madt_oem_check		= numachip_acpi_madt_oem_check,
++	.apic_id_registered		= numachip_apic_id_registered,
++
++	.irq_delivery_mode		= dest_Fixed,
++	.irq_dest_mode			= 0, /* physical */
++
++	.target_cpus			= numachip_target_cpus,
++	.disable_esr			= 0,
++	.dest_logical			= 0,
++	.check_apicid_used		= NULL,
++	.check_apicid_present		= NULL,
++
++	.vector_allocation_domain	= numachip_vector_allocation_domain,
++	.init_apic_ldr			= flat_init_apic_ldr,
++
++	.ioapic_phys_id_map		= NULL,
++	.setup_apic_routing		= NULL,
++	.multi_timer_check		= NULL,
++	.cpu_present_to_apicid		= default_cpu_present_to_apicid,
++	.apicid_to_cpu_present		= NULL,
++	.setup_portio_remap		= NULL,
++	.check_phys_apicid_present	= default_check_phys_apicid_present,
++	.enable_apic_mode		= NULL,
++	.phys_pkg_id			= numachip_phys_pkg_id,
++	.mps_oem_check			= NULL,
++
++	.get_apic_id			= get_apic_id,
++	.set_apic_id			= set_apic_id,
++	.apic_id_mask			= 0xffU << 24,
++
++	.cpu_mask_to_apicid		= numachip_cpu_mask_to_apicid,
++	.cpu_mask_to_apicid_and		= numachip_cpu_mask_to_apicid_and,
++
++	.send_IPI_mask			= numachip_send_IPI_mask,
++	.send_IPI_mask_allbutself	= numachip_send_IPI_mask_allbutself,
++	.send_IPI_allbutself		= numachip_send_IPI_allbutself,
++	.send_IPI_all			= numachip_send_IPI_all,
++	.send_IPI_self			= numachip_send_IPI_self,
++
++	.wakeup_secondary_cpu		= numachip_wakeup_secondary,
++	.trampoline_phys_low		= DEFAULT_TRAMPOLINE_PHYS_LOW,
++	.trampoline_phys_high		= DEFAULT_TRAMPOLINE_PHYS_HIGH,
++	.wait_for_init_deassert		= NULL,
++	.smp_callin_clear_local_apic	= NULL,
++	.inquire_remote_apic		= NULL, /* REMRD not supported */
++
++	.read				= native_apic_mem_read,
++	.write				= native_apic_mem_write,
++	.icr_read			= native_apic_icr_read,
++	.icr_write			= native_apic_icr_write,
++	.wait_icr_idle			= native_apic_wait_icr_idle,
++	.safe_wait_icr_idle		= native_safe_apic_wait_icr_idle,
++};
++apic_driver(apic_numachip);
++
