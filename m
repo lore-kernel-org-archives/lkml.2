@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab1LEXDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 18:03:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64097 "EHLO
+	id S932819Ab1LEXFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 18:05:05 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45255 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932708Ab1LEXCy (ORCPT
+	with ESMTP id S932706Ab1LEXDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 18:02:54 -0500
-X-Authority-Analysis: v=2.0 cv=QqvcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=-h0nSB7bA9MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=WTJdmG3rAAAA:8 a=QyXUC8HyAAAA:8 a=EujyWprOPbVT4QmRI6oA:9 a=hMXUejMU2wBl2SxLJHMA:7 a=QEXdDO2ut3YA:10 a=nsF78Xlgl7EA:10 a=dGJ0OcVc7YAA:10 a=MPXSTX9tEJccXzyw4DIA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 5 Dec 2011 18:03:05 -0500
+X-Authority-Analysis: v=2.0 cv=dOUkaZlb c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=UIn42OTlQHsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=ph9qUFhQvZVhXCd9vxkA:9 a=kGFfUk9mnI2VJ1Ynbb0A:7 a=QEXdDO2ut3YA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=G7vUbxx_U2aS9xtU:21 a=jmdY7YoaUyku0SrR:21 a=D2--tZy4025ROv5F5_cA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111205230252.092820216@goodmis.org>
+Message-Id: <20111205230301.996518286@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 05 Dec 2011 18:00:49 -0500
+Date: Mon, 05 Dec 2011 18:00:54 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Roland Dreier <roland@purestorage.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [PATCH RT 03/12 rc3] intel-iommu: Fix AB-BA lockdep report
+        John Kacur <jkacur@redhat.com>, stable-rt@vger.kernel.org
+Subject: [PATCH RT 08/12 rc3] acpi: Make gbl_[hardware|gpe]_lock raw
 References: <20111205230046.736851081@goodmis.org>
-Content-Disposition: inline; filename=0003-intel-iommu-Fix-AB-BA-lockdep-report.patch
+Content-Disposition: inline; filename=0008-acpi-Make-gbl_-hardware-gpe-_lock-raw.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,167 +30,442 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Roland Dreier <roland@purestorage.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-When unbinding a device so that I could pass it through to a KVM VM, I
-got the lockdep report below.  It looks like a legitimate lock
-ordering problem:
+These locks are taken in the guts of the idle code and cannot be
+converted to "sleeping" spinlocks on RT
 
- - domain_context_mapping_one() takes iommu->lock and calls
-   iommu_support_dev_iotlb(), which takes device_domain_lock (inside
-   iommu->lock).
-
- - domain_remove_one_dev_info() starts by taking device_domain_lock
-   then takes iommu->lock inside it (near the end of the function).
-
-So this is the classic AB-BA deadlock.  It looks like a safe fix is to
-simply release device_domain_lock a bit earlier, since as far as I can
-tell, it doesn't protect any of the stuff accessed at the end of
-domain_remove_one_dev_info() anyway.
-
-BTW, the use of device_domain_lock looks a bit unsafe to me... it's
-at least not obvious to me why we aren't vulnerable to the race below:
-
-  iommu_support_dev_iotlb()
-                                          domain_remove_dev_info()
-
-  lock device_domain_lock
-    find info
-  unlock device_domain_lock
-
-                                          lock device_domain_lock
-                                            find same info
-                                          unlock device_domain_lock
-
-                                          free_devinfo_mem(info)
-
-  do stuff with info after it's free
-
-However I don't understand the locking here well enough to know if
-this is a real problem, let alone what the best fix is.
-
-Anyway here's the full lockdep output that prompted all of this:
-
-     =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D
-     [ INFO: possible circular locking dependency detected ]
-     2.6.39.1+ #1
-     -------------------------------------------------------
-     bash/13954 is trying to acquire lock:
-      (&(&iommu->lock)->rlock){......}, at: [<ffffffff812f6421>] domain_rem=
-ove_one_dev_info+0x121/0x230
-
-     but task is already holding lock:
-      (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_=
-one_dev_info+0x208/0x230
-
-     which lock already depends on the new lock.
-
-     the existing dependency chain (in reverse order) is:
-
-     -> #1 (device_domain_lock){-.-...}:
-            [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-            [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-            [<ffffffff812f8350>] domain_context_mapping_one+0x600/0x750
-            [<ffffffff812f84df>] domain_context_mapping+0x3f/0x120
-            [<ffffffff812f9175>] iommu_prepare_identity_map+0x1c5/0x1e0
-            [<ffffffff81ccf1ca>] intel_iommu_init+0x88e/0xb5e
-            [<ffffffff81cab204>] pci_iommu_init+0x16/0x41
-            [<ffffffff81002165>] do_one_initcall+0x45/0x190
-            [<ffffffff81ca3d3f>] kernel_init+0xe3/0x168
-            [<ffffffff8157ac24>] kernel_thread_helper+0x4/0x10
-
-     -> #0 (&(&iommu->lock)->rlock){......}:
-            [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
-            [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-            [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-            [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-            [<ffffffff812f8b42>] device_notifier+0x72/0x90
-            [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
-            [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
-            [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
-            [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
-            [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
-            [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
-            [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
-            [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
-            [<ffffffff8117569e>] vfs_write+0xce/0x190
-            [<ffffffff811759e4>] sys_write+0x54/0xa0
-            [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
-
-     other info that might help us debug this:
-
-     6 locks held by bash/13954:
-      #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811e4464>] sysfs_write_f=
-ile+0x44/0x170
-      #1:  (s_active#3){++++.+}, at: [<ffffffff811e44ed>] sysfs_write_file+=
-0xcd/0x170
-      #2:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81372edb>] dri=
-ver_unbind+0x9b/0xc0
-      #3:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81373cc7>] dev=
-ice_release_driver+0x27/0x50
-      #4:  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at: [<ffffffff8108974f>=
-] __blocking_notifier_call_chain+0x5f/0xb0
-      #5:  (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_re=
-move_one_dev_info+0x208/0x230
-
-     stack backtrace:
-     Pid: 13954, comm: bash Not tainted 2.6.39.1+ #1
-     Call Trace:
-      [<ffffffff810993a7>] print_circular_bug+0xf7/0x100
-      [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
-      [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
-      [<ffffffff8109d57d>] ? trace_hardirqs_on_caller+0x13d/0x180
-      [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
-      [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
-      [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
-      [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
-      [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
-      [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
-      [<ffffffff812f8b42>] device_notifier+0x72/0x90
-      [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
-      [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
-      [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
-      [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
-      [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
-      [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
-      [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
-      [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
-      [<ffffffff8117569e>] vfs_write+0xce/0x190
-      [<ffffffff811759e4>] sys_write+0x54/0xa0
-      [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/pci/intel-iommu.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/acpica/acglobal.h  |    4 ++--
+ drivers/acpi/acpica/evgpe.c     |    4 ++--
+ drivers/acpi/acpica/evgpeblk.c  |    8 ++++----
+ drivers/acpi/acpica/evgpeutil.c |   12 ++++++------
+ drivers/acpi/acpica/evxface.c   |   10 +++++-----
+ drivers/acpi/acpica/evxfgpe.c   |   24 ++++++++++++------------
+ drivers/acpi/acpica/hwregs.c    |    4 ++--
+ drivers/acpi/acpica/hwxface.c   |    4 ++--
+ drivers/acpi/acpica/utmutex.c   |   21 +++------------------
+ 9 files changed, 38 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 8c2564d..bc05a51 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -3569,6 +3569,8 @@ static void domain_remove_one_dev_info(struct dmar_do=
-main *domain,
- 			found =3D 1;
- 	}
+diff --git a/drivers/acpi/acpica/acglobal.h b/drivers/acpi/acpica/acglobal.h
+index 73863d8..6c169a2 100644
+--- a/drivers/acpi/acpica/acglobal.h
++++ b/drivers/acpi/acpica/acglobal.h
+@@ -229,8 +229,8 @@ ACPI_EXTERN u8 acpi_gbl_global_lock_pending;
+  * Spinlocks are used for interfaces that can be possibly called at
+  * interrupt level
+  */
+-ACPI_EXTERN acpi_spinlock acpi_gbl_gpe_lock;	/* For GPE data structs and r=
+egisters */
+-ACPI_EXTERN acpi_spinlock acpi_gbl_hardware_lock;	/* For ACPI H/W except G=
+PE registers */
++extern raw_spinlock_t acpi_gbl_gpe_lock;	/* For GPE data structs and regis=
+ters */
++extern raw_spinlock_t acpi_gbl_hardware_lock;	/* For ACPI H/W except GPE r=
+egisters */
 =20
-+	spin_unlock_irqrestore(&device_domain_lock, flags);
-+
- 	if (found =3D=3D 0) {
- 		unsigned long tmp_flags;
- 		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
-@@ -3585,8 +3587,6 @@ static void domain_remove_one_dev_info(struct dmar_do=
-main *domain,
- 			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
- 		}
- 	}
--
--	spin_unlock_irqrestore(&device_domain_lock, flags);
+ /*************************************************************************=
+****
+  *
+diff --git a/drivers/acpi/acpica/evgpe.c b/drivers/acpi/acpica/evgpe.c
+index 65c79ad..36e7e10 100644
+--- a/drivers/acpi/acpica/evgpe.c
++++ b/drivers/acpi/acpica/evgpe.c
+@@ -357,7 +357,7 @@ u32 acpi_ev_gpe_detect(struct acpi_gpe_xrupt_info * gpe=
+_xrupt_list)
+ 	 * Note: Not necessary to obtain the hardware lock, since the GPE
+ 	 * registers are owned by the gpe_lock.
+ 	 */
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Examine all GPE blocks attached to this interrupt level */
+=20
+@@ -440,7 +440,7 @@ u32 acpi_ev_gpe_detect(struct acpi_gpe_xrupt_info * gpe=
+_xrupt_list)
+=20
+       unlock_and_exit:
+=20
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	return (int_status);
  }
 =20
- static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
+diff --git a/drivers/acpi/acpica/evgpeblk.c b/drivers/acpi/acpica/evgpeblk.c
+index ca2c41a..60c47b9 100644
+--- a/drivers/acpi/acpica/evgpeblk.c
++++ b/drivers/acpi/acpica/evgpeblk.c
+@@ -95,7 +95,7 @@ acpi_ev_install_gpe_block(struct acpi_gpe_block_info *gpe=
+_block,
+=20
+ 	/* Install the new block at the end of the list with lock */
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+ 	if (gpe_xrupt_block->gpe_block_list_head) {
+ 		next_gpe_block =3D gpe_xrupt_block->gpe_block_list_head;
+ 		while (next_gpe_block->next) {
+@@ -109,7 +109,7 @@ acpi_ev_install_gpe_block(struct acpi_gpe_block_info *g=
+pe_block,
+ 	}
+=20
+ 	gpe_block->xrupt_block =3D gpe_xrupt_block;
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+=20
+       unlock_and_exit:
+ 	status =3D acpi_ut_release_mutex(ACPI_MTX_EVENTS);
+@@ -156,7 +156,7 @@ acpi_status acpi_ev_delete_gpe_block(struct acpi_gpe_bl=
+ock_info *gpe_block)
+ 	} else {
+ 		/* Remove the block on this interrupt with lock */
+=20
+-		flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++		raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+ 		if (gpe_block->previous) {
+ 			gpe_block->previous->next =3D gpe_block->next;
+ 		} else {
+@@ -167,7 +167,7 @@ acpi_status acpi_ev_delete_gpe_block(struct acpi_gpe_bl=
+ock_info *gpe_block)
+ 		if (gpe_block->next) {
+ 			gpe_block->next->previous =3D gpe_block->previous;
+ 		}
+-		acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++		raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	}
+=20
+ 	acpi_current_gpe_count -=3D gpe_block->gpe_count;
+diff --git a/drivers/acpi/acpica/evgpeutil.c b/drivers/acpi/acpica/evgpeuti=
+l.c
+index 80a81d0..895b68ab 100644
+--- a/drivers/acpi/acpica/evgpeutil.c
++++ b/drivers/acpi/acpica/evgpeutil.c
+@@ -70,7 +70,7 @@ acpi_ev_walk_gpe_list(acpi_gpe_callback gpe_walk_callback=
+, void *context)
+=20
+ 	ACPI_FUNCTION_TRACE(ev_walk_gpe_list);
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Walk the interrupt level descriptor list */
+=20
+@@ -101,7 +101,7 @@ acpi_ev_walk_gpe_list(acpi_gpe_callback gpe_walk_callba=
+ck, void *context)
+ 	}
+=20
+       unlock_and_exit:
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	return_ACPI_STATUS(status);
+ }
+=20
+@@ -237,7 +237,7 @@ struct acpi_gpe_xrupt_info *acpi_ev_get_gpe_xrupt_block=
+(u32 interrupt_number)
+=20
+ 	/* Install new interrupt descriptor with spin lock */
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+ 	if (acpi_gbl_gpe_xrupt_list_head) {
+ 		next_gpe_xrupt =3D acpi_gbl_gpe_xrupt_list_head;
+ 		while (next_gpe_xrupt->next) {
+@@ -249,7 +249,7 @@ struct acpi_gpe_xrupt_info *acpi_ev_get_gpe_xrupt_block=
+(u32 interrupt_number)
+ 	} else {
+ 		acpi_gbl_gpe_xrupt_list_head =3D gpe_xrupt;
+ 	}
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Install new interrupt handler if not SCI_INT */
+=20
+@@ -306,7 +306,7 @@ acpi_status acpi_ev_delete_gpe_xrupt(struct acpi_gpe_xr=
+upt_info *gpe_xrupt)
+=20
+ 	/* Unlink the interrupt block with lock */
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+ 	if (gpe_xrupt->previous) {
+ 		gpe_xrupt->previous->next =3D gpe_xrupt->next;
+ 	} else {
+@@ -318,7 +318,7 @@ acpi_status acpi_ev_delete_gpe_xrupt(struct acpi_gpe_xr=
+upt_info *gpe_xrupt)
+ 	if (gpe_xrupt->next) {
+ 		gpe_xrupt->next->previous =3D gpe_xrupt->previous;
+ 	}
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Free the block */
+=20
+diff --git a/drivers/acpi/acpica/evxface.c b/drivers/acpi/acpica/evxface.c
+index e114140..e849c10 100644
+--- a/drivers/acpi/acpica/evxface.c
++++ b/drivers/acpi/acpica/evxface.c
+@@ -750,7 +750,7 @@ acpi_install_gpe_handler(acpi_handle gpe_device,
+ 		goto unlock_and_exit;
+ 	}
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Ensure that we have a valid GPE number */
+=20
+@@ -798,14 +798,14 @@ acpi_install_gpe_handler(acpi_handle gpe_device,
+ 	    ~(ACPI_GPE_XRUPT_TYPE_MASK | ACPI_GPE_DISPATCH_MASK);
+ 	gpe_event_info->flags |=3D (u8) (type | ACPI_GPE_DISPATCH_HANDLER);
+=20
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+=20
+ unlock_and_exit:
+ 	(void)acpi_ut_release_mutex(ACPI_MTX_EVENTS);
+ 	return_ACPI_STATUS(status);
+=20
+ free_and_exit:
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	ACPI_FREE(handler);
+ 	goto unlock_and_exit;
+ }
+@@ -852,7 +852,7 @@ acpi_remove_gpe_handler(acpi_handle gpe_device,
+ 		return_ACPI_STATUS(status);
+ 	}
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Ensure that we have a valid GPE number */
+=20
+@@ -903,7 +903,7 @@ acpi_remove_gpe_handler(acpi_handle gpe_device,
+ 	ACPI_FREE(handler);
+=20
+ unlock_and_exit:
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+=20
+ 	(void)acpi_ut_release_mutex(ACPI_MTX_EVENTS);
+ 	return_ACPI_STATUS(status);
+diff --git a/drivers/acpi/acpica/evxfgpe.c b/drivers/acpi/acpica/evxfgpe.c
+index 52aaff3..ce07ebb 100644
+--- a/drivers/acpi/acpica/evxfgpe.c
++++ b/drivers/acpi/acpica/evxfgpe.c
+@@ -121,7 +121,7 @@ acpi_status acpi_enable_gpe(acpi_handle gpe_device, u32=
+ gpe_number)
+=20
+ 	ACPI_FUNCTION_TRACE(acpi_enable_gpe);
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Ensure that we have a valid GPE number */
+=20
+@@ -130,7 +130,7 @@ acpi_status acpi_enable_gpe(acpi_handle gpe_device, u32=
+ gpe_number)
+ 		status =3D acpi_ev_add_gpe_reference(gpe_event_info);
+ 	}
+=20
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	return_ACPI_STATUS(status);
+ }
+ ACPI_EXPORT_SYMBOL(acpi_enable_gpe)
+@@ -158,7 +158,7 @@ acpi_status acpi_disable_gpe(acpi_handle gpe_device, u3=
+2 gpe_number)
+=20
+ 	ACPI_FUNCTION_TRACE(acpi_disable_gpe);
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Ensure that we have a valid GPE number */
+=20
+@@ -167,7 +167,7 @@ acpi_status acpi_disable_gpe(acpi_handle gpe_device, u3=
+2 gpe_number)
+ 		status =3D acpi_ev_remove_gpe_reference(gpe_event_info) ;
+ 	}
+=20
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	return_ACPI_STATUS(status);
+ }
+ ACPI_EXPORT_SYMBOL(acpi_disable_gpe)
+@@ -214,7 +214,7 @@ acpi_setup_gpe_for_wake(acpi_handle wake_device,
+ 		return_ACPI_STATUS(AE_BAD_PARAMETER);
+ 	}
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Ensure that we have a valid GPE number */
+=20
+@@ -270,7 +270,7 @@ acpi_setup_gpe_for_wake(acpi_handle wake_device,
+ 	status =3D AE_OK;
+=20
+  unlock_and_exit:
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	return_ACPI_STATUS(status);
+ }
+ ACPI_EXPORT_SYMBOL(acpi_setup_gpe_for_wake)
+@@ -300,7 +300,7 @@ acpi_status acpi_set_gpe_wake_mask(acpi_handle gpe_devi=
+ce, u32 gpe_number, u8 ac
+=20
+ 	ACPI_FUNCTION_TRACE(acpi_set_gpe_wake_mask);
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/*
+ 	 * Ensure that we have a valid GPE number and that this GPE is in
+@@ -346,7 +346,7 @@ acpi_status acpi_set_gpe_wake_mask(acpi_handle gpe_devi=
+ce, u32 gpe_number, u8 ac
+ 	}
+=20
+ unlock_and_exit:
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	return_ACPI_STATUS(status);
+ }
+=20
+@@ -372,7 +372,7 @@ acpi_status acpi_clear_gpe(acpi_handle gpe_device, u32 =
+gpe_number)
+=20
+ 	ACPI_FUNCTION_TRACE(acpi_clear_gpe);
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Ensure that we have a valid GPE number */
+=20
+@@ -385,7 +385,7 @@ acpi_status acpi_clear_gpe(acpi_handle gpe_device, u32 =
+gpe_number)
+ 	status =3D acpi_hw_clear_gpe(gpe_event_info);
+=20
+       unlock_and_exit:
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	return_ACPI_STATUS(status);
+ }
+=20
+@@ -415,7 +415,7 @@ acpi_get_gpe_status(acpi_handle gpe_device,
+=20
+ 	ACPI_FUNCTION_TRACE(acpi_get_gpe_status);
+=20
+-	flags =3D acpi_os_acquire_lock(acpi_gbl_gpe_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_gpe_lock, flags);
+=20
+ 	/* Ensure that we have a valid GPE number */
+=20
+@@ -433,7 +433,7 @@ acpi_get_gpe_status(acpi_handle gpe_device,
+ 		*event_status |=3D ACPI_EVENT_FLAG_HANDLE;
+=20
+       unlock_and_exit:
+-	acpi_os_release_lock(acpi_gbl_gpe_lock, flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_gpe_lock, flags);
+ 	return_ACPI_STATUS(status);
+ }
+=20
+diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
+index 55accb7..4772930 100644
+--- a/drivers/acpi/acpica/hwregs.c
++++ b/drivers/acpi/acpica/hwregs.c
+@@ -263,7 +263,7 @@ acpi_status acpi_hw_clear_acpi_status(void)
+ 			  ACPI_BITMASK_ALL_FIXED_STATUS,
+ 			  ACPI_FORMAT_UINT64(acpi_gbl_xpm1a_status.address)));
+=20
+-	lock_flags =3D acpi_os_acquire_lock(acpi_gbl_hardware_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_hardware_lock, lock_flags);
+=20
+ 	/* Clear the fixed events in PM1 A/B */
+=20
+@@ -278,7 +278,7 @@ acpi_status acpi_hw_clear_acpi_status(void)
+ 	status =3D acpi_ev_walk_gpe_list(acpi_hw_clear_gpe_block, NULL);
+=20
+       unlock_and_exit:
+-	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_hardware_lock, lock_flags);
+ 	return_ACPI_STATUS(status);
+ }
+=20
+diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
+index f75f81a..76159ba 100644
+--- a/drivers/acpi/acpica/hwxface.c
++++ b/drivers/acpi/acpica/hwxface.c
+@@ -386,7 +386,7 @@ acpi_status acpi_write_bit_register(u32 register_id, u3=
+2 value)
+ 		return_ACPI_STATUS(AE_BAD_PARAMETER);
+ 	}
+=20
+-	lock_flags =3D acpi_os_acquire_lock(acpi_gbl_hardware_lock);
++	raw_spin_lock_irqsave(&acpi_gbl_hardware_lock, lock_flags);
+=20
+ 	/*
+ 	 * At this point, we know that the parent register is one of the
+@@ -447,7 +447,7 @@ acpi_status acpi_write_bit_register(u32 register_id, u3=
+2 value)
+=20
+ unlock_and_exit:
+=20
+-	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
++	raw_spin_unlock_irqrestore(&acpi_gbl_hardware_lock, lock_flags);
+ 	return_ACPI_STATUS(status);
+ }
+=20
+diff --git a/drivers/acpi/acpica/utmutex.c b/drivers/acpi/acpica/utmutex.c
+index 7d797e2..420eecf 100644
+--- a/drivers/acpi/acpica/utmutex.c
++++ b/drivers/acpi/acpica/utmutex.c
+@@ -52,6 +52,9 @@ static acpi_status acpi_ut_create_mutex(acpi_mutex_handle=
+ mutex_id);
+=20
+ static void acpi_ut_delete_mutex(acpi_mutex_handle mutex_id);
+=20
++DEFINE_RAW_SPINLOCK(acpi_gbl_gpe_lock);
++DEFINE_RAW_SPINLOCK(acpi_gbl_hardware_lock);
++
+ /*************************************************************************=
+******
+  *
+  * FUNCTION:    acpi_ut_mutex_initialize
+@@ -81,18 +84,6 @@ acpi_status acpi_ut_mutex_initialize(void)
+ 		}
+ 	}
+=20
+-	/* Create the spinlocks for use at interrupt level */
+-
+-	status =3D acpi_os_create_lock (&acpi_gbl_gpe_lock);
+-	if (ACPI_FAILURE (status)) {
+-		return_ACPI_STATUS (status);
+-	}
+-
+-	status =3D acpi_os_create_lock (&acpi_gbl_hardware_lock);
+-	if (ACPI_FAILURE (status)) {
+-		return_ACPI_STATUS (status);
+-	}
+-
+ 	/* Mutex for _OSI support */
+ 	status =3D acpi_os_create_mutex(&acpi_gbl_osi_mutex);
+ 	if (ACPI_FAILURE(status)) {
+@@ -132,13 +123,7 @@ void acpi_ut_mutex_terminate(void)
+=20
+ 	acpi_os_delete_mutex(acpi_gbl_osi_mutex);
+=20
+-	/* Delete the spinlocks */
+-
+-	acpi_os_delete_lock(acpi_gbl_gpe_lock);
+-	acpi_os_delete_lock(acpi_gbl_hardware_lock);
+-
+ 	/* Delete the reader/writer lock */
+-
+ 	acpi_ut_delete_rw_lock(&acpi_gbl_namespace_rw_lock);
+ 	return_VOID;
+ }
 --=20
 1.7.7.1
 
@@ -204,19 +478,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO3U2cAAoJEIy3vGnGbaoAblwQAIY665ywhxaW6bnLtYbqvDmq
-F8wesCSB0+BfkVYiVf7Sm3tER22fx2QaMl7fiqphJFoB6EfKIIXuxGJnbzvUiCLC
-cZcAJLPY+Efr+eLxxFFUFTUCWbXuDtJxmk4iy+YwjIPRT5/eAMXqyhBA1YvUVtw7
-DchvLmAPVURVQAkZrPfKHeC81zc1nln3+Dht38ujQRguFqVkGbzbNcsjacWGsyE8
-NVEf4eYym751t/6rsGTEIsS3ehZer53Ei0i+eezLfKLam315F5zR4GXaZ+6Dj6aN
-2gOapV29xsDL2aw0c/ZE5FosrLsXHhaCT3jjI92qAp0Ytz9wArfTDY0RrBL0Yc4D
-urHmJLah2eLBo1Gg2mLrx26mP8/6ANz3Y+B3ose9/dn+dXDts0QGsfgjvLFsBMkd
-6VelNSxp6efQvj/DisGqDQPUg8rHaN58Y/AhyHbG9Pzne5LNJVl22/DiNtIJYpeA
-39vUGyJhkf9bo2jgVtqXw1c1W3lAkM9nzjTd8wSjbk7jlOlfXY+sVHM4q2OCNgda
-fty9Z+0KShbzPlXyMjwVAqoWODzskDBj38wJCyB9TStAo39XLrSZesidwYCAxfeA
-URivWBKk6oJrxfA6aZJbeEa+gdpP/4O+aq5gEFBjVu09LnEpcJaZoTZWEpmSZeXT
-kwlIbCZ5fMZkFZ/24UbU
-=ukc9
+iQIcBAABAgAGBQJO3U2mAAoJEIy3vGnGbaoAs40P/0maqaUgXxIiNnUvBgtAHXfu
+HeBjGPgwE1SNhWOWWB+1PqWOy7cFYKHkumDQgdFDggJXuWcRKgbM1MDgX42NDqxX
+zzXE1bb9zHn88Dn0u6a2MANZso2D+Jc/5TcfsE03guOgXDye8wQ1EI6bw6uOveR0
+GXwFiP+retzNR+QjRoiFmfK4Kf3gEk1NrTTxwGmcWuI/cFJ+pJufSUQCZl5zzMXy
+QHrHH2n2emG97cP1Qu+FyllsQV9ScnkY2wVT7lKl570nH76kWWXvmJIY3qbHfODX
+kWGPZrhou349YJPbzaf5qNFhWj7tshuGKIrbX9DrNQRmP/KgBd2Vf4uI5Nv5UhXB
+CZhgZ2iZkXeH0L2uD53oE2eYoE64RTt8nHN3n77IMBzIJ7FEBuVQ+vCBKyauzYRI
+9SL8T0ZDF9V8CNlSvmPd9sNJ/Jv9qqHvBjeqxHimnROkbwoeWdS2bTIt2xLSwPdw
+FDHiNOfF2jEl4iOg8g7M7bFp2VcyuapOkO15ttx84AsyMhakzYTz+kHd1MO15fwJ
+IfYcYMFO2VAqOhb4u6fOYuZ2DJZ6XiELMEkr0ChhxjXbPHDB6JQufeheeBoct3V0
+t0MPg7Wxp7vb+DK5ipXWEpm5hs1rQAbjqO+QZQZ9k7Mpb1ljhDuYJl01fiFO5cvU
+FIrSa/P79pGlgackMrEA
+=TovU
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
