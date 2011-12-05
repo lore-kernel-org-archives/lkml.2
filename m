@@ -1,28 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791Ab1LEXDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 18:03:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:65277 "EHLO
+	id S932804Ab1LEXEo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 18:04:44 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44213 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713Ab1LEXC4 (ORCPT
+	with ESMTP id S932776Ab1LEXDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 18:02:56 -0500
-X-Authority-Analysis: v=2.0 cv=bdLpoZzB c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=Qozl3FzM8m8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=zd2uoN0lAAAA:8 a=yKafnHZ5yalax2nsnYMA:9 a=xYFKbO9I-7DiXM_RbAMA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=wu_e27o_rKQA:10 a=FfnWCOJOBSEYAZuhwJ4A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 5 Dec 2011 18:03:07 -0500
+X-Authority-Analysis: v=2.0 cv=Xd0LPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=T5PD5_YhWd8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=LuxQ-7HEAAAA:8 a=PuvxfXWCAAAA:8 a=pwlSjyV6AAAA:8 a=CjxXgO3LAAAA:8 a=37rDS-QxAAAA:8 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=-tqMmDk9ICWpGX07DfgA:9 a=8x_8ht5-I51uKuksZsgA:7 a=QEXdDO2ut3YA:10 a=LI9Vle30uBYA:10 a=Bm8BtE0CId0A:10 a=o70cNcPx40UA:10 a=_1CdXZwv0MQA:10 a=rC2wZJ5BpNYA:10 a=6uQODOVjHeUA:10 a=UTB_XpHje0EA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=5EbIWr0yzBYrA5ZIeMcA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111205230253.775775868@goodmis.org>
+Message-Id: <20111205230303.833140083@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 05 Dec 2011 18:00:50 -0500
+Date: Mon, 05 Dec 2011 18:00:55 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [PATCH RT 04/12 rc3] KVM: Sanitize cpuid
+        John Kacur <jkacur@redhat.com>, stable@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hans Schillstrom <hans@schillstrom.com>,
+        Christoph Lameter <cl@gentwo.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH RT 09/12 rc3] slab, lockdep: Fix silly bug
 References: <20111205230046.736851081@goodmis.org>
-Content-Disposition: inline; filename=0004-KVM-Sanitize-cpuid.patch
+Content-Disposition: inline; filename=0009-slab-lockdep-Fix-silly-bug.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,102 +36,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Avi Kivity <avi@redhat.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Instead of blacklisting known-unsupported cpuid leaves, whitelist known-
-supported leaves.  This is more conservative and prevents us from reporting
-features we don't support.  Also whitelist a few more leaves while at it.
+Commit 30765b92 ("slab, lockdep: Annotate the locks before using
+them") moves the init_lock_keys() call from after g_cpucache_up =3D
+FULL, to before it. And overlooks the fact that init_node_lock_keys()
+tests for it and ignores everything !FULL.
 
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Acked-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Introduce a LATE stage and change the lockdep test to be <LATE.
+
+Cc: stable@kernel.org
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hans Schillstrom <hans@schillstrom.com>
+Cc: Christoph Lameter <cl@gentwo.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Matt Mackall <mpm@selenic.com>
+Cc: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: linux-mm@kvack.org
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/n/tip-gadqbdfxorhia1w5ewmoiodd@git.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/kvm/x86.c |   37 +++++++++++++++++++++++++++++++++++--
- 1 files changed, 35 insertions(+), 2 deletions(-)
+ mm/slab.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 545c61b..f168c61 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2283,6 +2283,13 @@ static void do_cpuid_1_ent(struct kvm_cpuid_entry2 *=
-entry, u32 function,
- 	entry->flags =3D 0;
- }
+diff --git a/mm/slab.c b/mm/slab.c
+index 015cd76..433b9a2 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -594,6 +594,7 @@ static enum {
+ 	PARTIAL_AC,
+ 	PARTIAL_L3,
+ 	EARLY,
++	LATE,
+ 	FULL
+ } g_cpucache_up;
 =20
-+static bool supported_xcr0_bit(unsigned bit)
-+{
-+	u64 mask =3D ((u64)1 << bit);
+@@ -670,7 +671,7 @@ static void init_node_lock_keys(int q)
+ {
+ 	struct cache_sizes *s =3D malloc_sizes;
+=20
+-	if (g_cpucache_up !=3D FULL)
++	if (g_cpucache_up < LATE)
+ 		return;
+=20
+ 	for (s =3D malloc_sizes; s->cs_size !=3D ULONG_MAX; s++) {
+@@ -1725,6 +1726,8 @@ void __init kmem_cache_init_late(void)
+ {
+ 	struct kmem_cache *cachep;
+=20
++	g_cpucache_up =3D LATE;
 +
-+	return mask & (XSTATE_FP | XSTATE_SSE | XSTATE_YMM) & host_xcr0;
-+}
-+
- #define F(x) bit(X86_FEATURE_##x)
-=20
- static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
-@@ -2393,6 +2400,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *ent=
-ry, u32 function,
- 		}
- 		break;
- 	}
-+	case 9:
-+		break;
- 	case 0xb: {
- 		int i, level_type;
-=20
-@@ -2414,7 +2423,7 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *ent=
-ry, u32 function,
-=20
- 		entry->flags |=3D KVM_CPUID_FLAG_SIGNIFCANT_INDEX;
- 		for (i =3D 1; *nent < maxnent && i < 64; ++i) {
--			if (entry[i].eax =3D=3D 0)
-+			if (entry[i].eax =3D=3D 0 || !supported_xcr0_bit(i))
- 				continue;
- 			do_cpuid_1_ent(&entry[i], function, i);
- 			entry[i].flags |=3D
-@@ -2451,6 +2460,24 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *en=
-try, u32 function,
- 		entry->ecx &=3D kvm_supported_word6_x86_features;
- 		cpuid_mask(&entry->ecx, 6);
- 		break;
-+	case 0x80000008: {
-+		unsigned g_phys_as =3D (entry->eax >> 16) & 0xff;
-+		unsigned virt_as =3D max((entry->eax >> 8) & 0xff, 48U);
-+		unsigned phys_as =3D entry->eax & 0xff;
-+
-+		if (!g_phys_as)
-+			g_phys_as =3D phys_as;
-+		entry->eax =3D g_phys_as | (virt_as << 8);
-+		entry->ebx =3D entry->edx =3D 0;
-+		break;
-+	}
-+	case 0x80000019:
-+		entry->ecx =3D entry->edx =3D 0;
-+		break;
-+	case 0x8000001a:
-+		break;
-+	case 0x8000001d:
-+		break;
- 	/*Add support for Centaur's CPUID instruction*/
- 	case 0xC0000000:
- 		/*Just support up to 0xC0000004 now*/
-@@ -2460,10 +2487,16 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *e=
-ntry, u32 function,
- 		entry->edx &=3D kvm_supported_word5_x86_features;
- 		cpuid_mask(&entry->edx, 5);
- 		break;
-+	case 3: /* Processor serial number */
-+	case 5: /* MONITOR/MWAIT */
-+	case 6: /* Thermal management */
-+	case 0xA: /* Architectural Performance Monitoring */
-+	case 0x80000007: /* Advanced power management */
- 	case 0xC0000002:
- 	case 0xC0000003:
- 	case 0xC0000004:
--		/*Now nothing to do, reserved for the future*/
-+	default:
-+		entry->eax =3D entry->ebx =3D entry->ecx =3D entry->edx =3D 0;
- 		break;
- 	}
+ 	/* Annotate slab for lockdep -- annotate the malloc caches */
+ 	init_lock_keys();
 =20
 --=20
 1.7.7.1
@@ -141,19 +103,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO3U2dAAoJEIy3vGnGbaoA2HAP/2iIV4p/cqVO/cs241/U+K80
-klV7b1NTNd0p6Hk20sEA/GbUlVDxSTZIq0RDrADKCqPaTY7XFKO/dgQe8b1B9tZ+
-7+z+xu1fuabNWz+jZLRu5oi0SLUne8PLlI5dq+ySU733Wwr0B2vtfOyRabj4GMEZ
-eA2sgXGz0T4KvDpAJ3OZlTfbjboDaiqsiFadQjD/u2sn6z+82oUQ16Gcn6d2Y291
-YaXPSwb4katLGNCOa/94VKV5RTIhANHHaR+z0mAMYBpszglUFImFLDRz0OsbDdDU
-8zRDDFusc6cOlgtLryQmWgnTS5SuEKslDwhalQNG2a+xBUdjHEC8m058ezzHOyME
-byCO7WAKFf/etTULwYgCTimFJnCfL/CRCTrhpvyLGpVFO2UHgr349MwtGvPxhvA8
-Dx+pqzs4PCnG9EbFo8v0stiTIv9OU3jLOZf2WNwQ7rOhnkX/V/UfW7kQc0LWMTDM
-OzjCpi0/f/eF759JkGrN0mUOxVEXCTMK9zXYai7Y3sW1cH3HJacMrfnPGnmdtXGy
-r50Lp+P61UMfpHW/V+FGp9DqFaTYhCRaIqOyJEIsFI6Wm+Q/itpxoipJXYwh2Vqq
-kWbzoy6Q1i6MxMuBxQFz1RmwYq/hQCZl7d/uDN8TOJYbud8Qfyx5ujhteHPv2ciR
-Dv8RkY8gIxy1wGFYWsNe
-=ZSgf
+iQIcBAABAgAGBQJO3U2oAAoJEIy3vGnGbaoAEFYP/1BvpfHZ9O9irTl1k36AAWM7
+v8ZpZ8sxClYd25BDIfwA4gTaT3RKrJjsi2HZcd/lGYWRaZmktTR4YMZCgDdrLcYl
+oqVx6oelp54rb6pDgm6ydbpf8cqHBHzY+e5feud8tvZyZglILknha1Gfv2QMSs1/
+GpGs19ypQRI+oWGp68b4R2znn+b5qubewmRXsmnNAb6iZGiYD3yf3Zsh3iV3HTY0
+3q2S4zFx/1LhhcEyuD7NLKHrhrfp6jYCZhRLnzIZNbxHMagvywQ161TGtNpaK6bx
+h7AthQ3xXzUbJhPj7A5bLPuXxu2SsfbjFicp491liYr/nLUoQkbKKqedpGbQCiMR
+6aLwPmD2PCPne4gdzxzE2YdLpsPdelN6jEVamhfS1QfOarLZpe5O6XThiMWiAR7A
+VSh+HJhZw/1kvA3lkTKKEx0XfDL8mqkmGAlANNA7EwsyifGBjbZ3x4oJ2cjjVJ7e
+ZSQtSHi8j23SwsZ0Cqz0suHBdV0dY1+wd0hBdbdnLloyeMIgU3/j3gth9L37bIsB
+PWyQxG4r/eL8Oim7XiUI0qax1NgabxtazLg6Lp+DtsW0gH0XF2qBd/2e/VywVWa5
+XExM+9K7aeL7xeKdxC4LWaXemyZD8OiGpN/b4PxelxO3Qm90WMf81Igz0CuiYhEO
+p3ogUs4dsSj2nTkCUv6M
+=vK3a
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
