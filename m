@@ -1,158 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab1LERTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:19:09 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:56576 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755455Ab1LERTH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:19:07 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sumit Semwal <sumit.semwal@ti.com>
-Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
-Date: Mon, 5 Dec 2011 17:18:48 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
-        linux@arm.linux.org.uk, jesse.barker@linaro.org,
-        m.szyprowski@samsung.com, rob@ti.com, daniel@ffwll.ch,
-        t.stanislaws@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
-In-Reply-To: <1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112051718.48324.arnd@arndb.de>
-X-Provags-ID: V02:K0:yLLjK5j5AU99w0lRC+yjKsRIyMUYBHIpBJTXAMhsvlD
- 5qn7W+e0E91za6Hb6QW+ueaveRqOd/ATU20lq7RC0wQdXkqeVY
- i0eHQkGlsmq0XpWsMwEsO4o5YDSq5PjSe8DYZgyS1DoaN1+B0q
- dEfdNuWVErqu5ouKFRxKr1HHeLyVFWkxFyRm0SquiOmiOFzmyY
- F1uciEzIUyS8tl0e/32QRCKG5t+p9DOr18ERpl6m46a3JPTRBO
- 6uK8TnslmGVZd7ggm3Hgm67/ZRVo4aGZfkpUytquHRhNsszrdK
- 8OoLG0s9Aoun24uKvo3Z0TB1j+B5blWM+ENEhdCTL2bjI/T568
- U4gEyNW1jhDCLSUrcd8A=
+	id S932562Ab1LERXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:23:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7679 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756465Ab1LERXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 12:23:14 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCHv2 03/10] ftrace: Add enable/disable ftrace_ops control interface
+Date: Mon,  5 Dec 2011 18:22:49 +0100
+Message-Id: <1323105776-26961-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1323105776-26961-1-git-send-email-jolsa@redhat.com>
+References: <1322417074-5834-1-git-send-email-jolsa@redhat.com>
+ <1323105776-26961-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 02 December 2011, Sumit Semwal wrote:
-> This is the first step in defining a dma buffer sharing mechanism.
+Adding a way to temporarily enable/disable ftrace_ops. The change
+follows the same way as 'global' ftrace_ops are done.
 
-This looks very nice, but there are a few things I don't understand yet
-and a bunch of trivial comments I have about things I spotted.
+Introducing 2 global ftrace_ops - control_ops and ftrace_control_list
+which take over all ftrace_ops registered with FTRACE_OPS_FL_CONTROL
+flag. In addition new per cpu flag called 'disabled' is also added to
+ftrace_ops to provide the control information for each cpu.
 
-Do you have prototype exporter and consumer drivers that you can post
-for clarification?
+When ftrace_ops with FTRACE_OPS_FL_CONTROL is registered, it is
+set as disabled for all cpus.
 
-In the patch 2, you have a section about migration that mentions that
-it is possible to export a buffer that can be migrated after it
-is already mapped into one user driver. How does that work when
-the physical addresses are mapped into a consumer device already?
+The ftrace_control_list contains all the registered 'control' ftrace_ops.
+The control_ops provides function which iterates ftrace_control_list
+and does the check for 'disabled' flag on current cpu.
 
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index 21cf46f..07d8095 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -174,4 +174,14 @@ config SYS_HYPERVISOR
->  
->  source "drivers/base/regmap/Kconfig"
->  
-> +config DMA_SHARED_BUFFER
-> +	bool "Buffer framework to be shared between drivers"
-> +	default n
-> +	depends on ANON_INODES
+Adding 2 inline functions enable_ftrace_function/disable_ftrace_function,
+which enable/disable the ftrace_ops for current cpu.
 
-I would make this 'select ANON_INODES', like the other users of this
-feature.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ include/linux/ftrace.h |   14 ++++++
+ kernel/trace/ftrace.c  |  115 +++++++++++++++++++++++++++++++++++++++++++-----
+ kernel/trace/trace.h   |    2 +
+ 3 files changed, 120 insertions(+), 11 deletions(-)
 
-> +	return dmabuf;
-> +}
-> +EXPORT_SYMBOL(dma_buf_export);
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 26eafce..b223944 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -35,12 +35,14 @@ enum {
+ 	FTRACE_OPS_FL_ENABLED		= 1 << 0,
+ 	FTRACE_OPS_FL_GLOBAL		= 1 << 1,
+ 	FTRACE_OPS_FL_DYNAMIC		= 1 << 2,
++	FTRACE_OPS_FL_CONTROL		= 1 << 3,
+ };
+ 
+ struct ftrace_ops {
+ 	ftrace_func_t			func;
+ 	struct ftrace_ops		*next;
+ 	unsigned long			flags;
++	void __percpu			*disabled;
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 	struct ftrace_hash		*notrace_hash;
+ 	struct ftrace_hash		*filter_hash;
+@@ -97,6 +99,18 @@ int register_ftrace_function(struct ftrace_ops *ops);
+ int unregister_ftrace_function(struct ftrace_ops *ops);
+ void clear_ftrace_function(void);
+ 
++static inline void enable_ftrace_function(struct ftrace_ops *ops)
++{
++	atomic_t *disabled = this_cpu_ptr(ops->disabled);
++	atomic_dec(disabled);
++}
++
++static inline void disable_ftrace_function(struct ftrace_ops *ops)
++{
++	atomic_t *disabled = this_cpu_ptr(ops->disabled);
++	atomic_inc(disabled);
++}
++
+ extern void ftrace_stub(unsigned long a0, unsigned long a1);
+ 
+ #else /* !CONFIG_FUNCTION_TRACER */
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index b79ab33..c2fa233 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -87,12 +87,14 @@ static struct ftrace_ops ftrace_list_end __read_mostly = {
+ };
+ 
+ static struct ftrace_ops *ftrace_global_list __read_mostly = &ftrace_list_end;
++static struct ftrace_ops *ftrace_control_list __read_mostly = &ftrace_list_end;
+ static struct ftrace_ops *ftrace_ops_list __read_mostly = &ftrace_list_end;
+ ftrace_func_t ftrace_trace_function __read_mostly = ftrace_stub;
+ static ftrace_func_t __ftrace_trace_function_delay __read_mostly = ftrace_stub;
+ ftrace_func_t __ftrace_trace_function __read_mostly = ftrace_stub;
+ ftrace_func_t ftrace_pid_function __read_mostly = ftrace_stub;
+ static struct ftrace_ops global_ops;
++static struct ftrace_ops control_ops;
+ 
+ static void
+ ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip);
+@@ -166,6 +168,38 @@ static void ftrace_test_stop_func(unsigned long ip, unsigned long parent_ip)
+ }
+ #endif
+ 
++static void control_ops_disable_all(struct ftrace_ops *ops)
++{
++	int cpu;
++
++	for_each_possible_cpu(cpu)
++		atomic_set(per_cpu_ptr(ops->disabled, cpu), 1);
++}
++
++static int control_ops_alloc(struct ftrace_ops *ops)
++{
++	atomic_t *disabled;
++
++	disabled = alloc_percpu(atomic_t);
++	if (!disabled)
++		return -ENOMEM;
++
++	ops->disabled = disabled;
++	control_ops_disable_all(ops);
++	return 0;
++}
++
++static void control_ops_free(struct ftrace_ops *ops)
++{
++	free_percpu(ops->disabled);
++}
++
++static int control_ops_is_disabled(struct ftrace_ops *ops)
++{
++	atomic_t *disabled = this_cpu_ptr(ops->disabled);
++	return atomic_read(disabled);
++}
++
+ static void update_global_ops(void)
+ {
+ 	ftrace_func_t func;
+@@ -221,7 +255,7 @@ static void update_ftrace_function(void)
+ #endif
+ }
+ 
+-static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
++static void __add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
+ {
+ 	ops->next = *list;
+ 	/*
+@@ -233,7 +267,7 @@ static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
+ 	rcu_assign_pointer(*list, ops);
+ }
+ 
+-static int remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
++static int __remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
+ {
+ 	struct ftrace_ops **p;
+ 
+@@ -257,6 +291,26 @@ static int remove_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
+ 	return 0;
+ }
+ 
++static void add_ftrace_ops(struct ftrace_ops **list,
++			   struct ftrace_ops *main_ops,
++			   struct ftrace_ops *ops)
++{
++	int first = *list == &ftrace_list_end;
++	__add_ftrace_ops(list, ops);
++	if (first)
++		__add_ftrace_ops(&ftrace_ops_list, main_ops);
++}
++
++static int remove_ftrace_ops(struct ftrace_ops **list,
++			      struct ftrace_ops *main_ops,
++			      struct ftrace_ops *ops)
++{
++	int ret = __remove_ftrace_ops(list, ops);
++	if (!ret && *list == &ftrace_list_end)
++		ret = __remove_ftrace_ops(&ftrace_ops_list, main_ops);
++	return ret;
++}
++
+ static int __register_ftrace_function(struct ftrace_ops *ops)
+ {
+ 	if (ftrace_disabled)
+@@ -268,17 +322,23 @@ static int __register_ftrace_function(struct ftrace_ops *ops)
+ 	if (WARN_ON(ops->flags & FTRACE_OPS_FL_ENABLED))
+ 		return -EBUSY;
+ 
++#define FL_GLOBAL_CONTROL (FTRACE_OPS_FL_GLOBAL | FTRACE_OPS_FL_CONTROL)
++	if ((ops->flags & FL_GLOBAL_CONTROL) == FL_GLOBAL_CONTROL)
++		return -EINVAL;
++#undef FL_GLOBAL_CONTROL
++
+ 	if (!core_kernel_data((unsigned long)ops))
+ 		ops->flags |= FTRACE_OPS_FL_DYNAMIC;
+ 
+ 	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
+-		int first = ftrace_global_list == &ftrace_list_end;
+-		add_ftrace_ops(&ftrace_global_list, ops);
++		add_ftrace_ops(&ftrace_global_list, &global_ops, ops);
+ 		ops->flags |= FTRACE_OPS_FL_ENABLED;
+-		if (first)
+-			add_ftrace_ops(&ftrace_ops_list, &global_ops);
++	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
++		if (control_ops_alloc(ops))
++			return -ENOMEM;
++		add_ftrace_ops(&ftrace_control_list, &control_ops, ops);
+ 	} else
+-		add_ftrace_ops(&ftrace_ops_list, ops);
++		__add_ftrace_ops(&ftrace_ops_list, ops);
+ 
+ 	if (ftrace_enabled)
+ 		update_ftrace_function();
+@@ -300,13 +360,16 @@ static int __unregister_ftrace_function(struct ftrace_ops *ops)
+ 		return -EINVAL;
+ 
+ 	if (ops->flags & FTRACE_OPS_FL_GLOBAL) {
+-		ret = remove_ftrace_ops(&ftrace_global_list, ops);
+-		if (!ret && ftrace_global_list == &ftrace_list_end)
+-			ret = remove_ftrace_ops(&ftrace_ops_list, &global_ops);
++		ret = remove_ftrace_ops(&ftrace_global_list, &global_ops, ops);
+ 		if (!ret)
+ 			ops->flags &= ~FTRACE_OPS_FL_ENABLED;
++	} else if (ops->flags & FTRACE_OPS_FL_CONTROL) {
++		ret = remove_ftrace_ops(&ftrace_control_list,
++					&control_ops, ops);
++		if (!ret)
++			control_ops_free(ops);
+ 	} else
+-		ret = remove_ftrace_ops(&ftrace_ops_list, ops);
++		ret = __remove_ftrace_ops(&ftrace_ops_list, ops);
+ 
+ 	if (ret < 0)
+ 		return ret;
+@@ -3562,6 +3625,36 @@ ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+ 
+ static void
++ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip)
++{
++	struct ftrace_ops *op;
++
++	if (unlikely(trace_recursion_test(TRACE_CONTROL_BIT)))
++		return;
++
++	/*
++	 * Some of the ops may be dynamically allocated,
++	 * they must be freed after a synchronize_sched().
++	 */
++	preempt_disable_notrace();
++	trace_recursion_set(TRACE_CONTROL_BIT);
++	op = rcu_dereference_raw(ftrace_control_list);
++	while (op != &ftrace_list_end) {
++		if (!control_ops_is_disabled(op) &&
++		    ftrace_ops_test(op, ip))
++			op->func(ip, parent_ip);
++
++		op = rcu_dereference_raw(op->next);
++	};
++	preempt_enable_notrace();
++	trace_recursion_clear(TRACE_CONTROL_BIT);
++}
++
++static struct ftrace_ops control_ops = {
++	.func = ftrace_ops_control_func,
++};
++
++static void
+ ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip)
+ {
+ 	struct ftrace_ops *op;
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index f8ec229..da05926 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -288,6 +288,8 @@ struct tracer {
+ /* for function tracing recursion */
+ #define TRACE_INTERNAL_BIT		(1<<11)
+ #define TRACE_GLOBAL_BIT		(1<<12)
++#define TRACE_CONTROL_BIT		(1<<13)
++
+ /*
+  * Abuse of the trace_recursion.
+  * As we need a way to maintain state if we are tracing the function
+-- 
+1.7.1
 
-I agree with Konrad, this should definitely be EXPORT_SYMBOL_GPL,
-because it's really a low-level function that I would expect
-to get used by in-kernel subsystems providing the feature to
-users and having back-end drivers, but it's not the kind of thing
-we want out-of-tree drivers to mess with.
-
-> +/**
-> + * dma_buf_fd - returns a file descriptor for the given dma_buf
-> + * @dmabuf:	[in]	pointer to dma_buf for which fd is required.
-> + *
-> + * On success, returns an associated 'fd'. Else, returns error.
-> + */
-> +int dma_buf_fd(struct dma_buf *dmabuf)
-> +{
-> +	int error, fd;
-> +
-> +	if (!dmabuf->file)
-> +		return -EINVAL;
-> +
-> +	error = get_unused_fd_flags(0);
-
-Why not simply get_unused_fd()?
-
-> +/**
-> + * dma_buf_attach - Add the device to dma_buf's attachments list; optionally,
-> + * calls attach() of dma_buf_ops to allow device-specific attach functionality
-> + * @dmabuf:	[in]	buffer to attach device to.
-> + * @dev:	[in]	device to be attached.
-> + *
-> + * Returns struct dma_buf_attachment * for this attachment; may return NULL.
-> + *
-
-Or may return a negative error code. It's better to be consistent here:
-either always return NULL on error, or change the allocation error to
-ERR_PTR(-ENOMEM).
-
-> + */
-> +struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
-> +						struct device *dev)
-> +{
-> +	struct dma_buf_attachment *attach;
-> +	int ret;
-> +
-> +	BUG_ON(!dmabuf || !dev);
-> +
-> +	attach = kzalloc(sizeof(struct dma_buf_attachment), GFP_KERNEL);
-> +	if (attach == NULL)
-> +		goto err_alloc;
-> +
-> +	mutex_lock(&dmabuf->lock);
-> +
-> +	attach->dev = dev;
-> +	attach->dmabuf = dmabuf;
-> +	if (dmabuf->ops->attach) {
-> +		ret = dmabuf->ops->attach(dmabuf, dev, attach);
-> +		if (!ret)
-> +			goto err_attach;
-
-You probably mean "if (ret)" here instead of "if (!ret)", right?
-
-> +	/* allow allocator to take care of cache ops */
-> +	void (*sync_sg_for_cpu) (struct dma_buf *, struct device *);
-> +	void (*sync_sg_for_device)(struct dma_buf *, struct device *);
-
-I don't see how this works with multiple consumers: For the streaming
-DMA mapping, there must be exactly one owner, either the device or
-the CPU. Obviously, this rule needs to be extended when you get to
-multiple devices and multiple device drivers, plus possibly user
-mappings. Simply assigning the buffer to "the device" from one
-driver does not block other drivers from touching the buffer, and
-assigning it to "the cpu" does not stop other hardware that the
-code calling sync_sg_for_cpu is not aware of.
-
-The only way to solve this that I can think of right now is to
-mandate that the mappings are all coherent (i.e. noncachable
-on noncoherent architectures like ARM). If you do that, you no
-longer need the sync_sg_for_* calls.
-
-> +#ifdef CONFIG_DMA_SHARED_BUFFER
-
-Do you have a use case for making the interface compile-time disabled?
-I had assumed that any code using it would make no sense if it's not
-available so you don't actually need this.
-
-	Arnd
