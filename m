@@ -1,142 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab1LEEAF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 23:00:05 -0500
-Received: from victor.provo.novell.com ([137.65.250.26]:43944 "EHLO
-	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab1LEEAD (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Sun, 4 Dec 2011 23:00:03 -0500
-Subject: Re: [PATCH 1/2] acer-wmi: Message logging neatening
-From: joeyli <jlee@suse.com>
-To: Joe Perches <joe@perches.com>
-Cc: Joey Lee <jlee@novell.com>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <9be2717594eec36bdcc072a90d81b044500270e4.1322593277.git.joe@perches.com>
-References: <9be2717594eec36bdcc072a90d81b044500270e4.1322593277.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Dec 2011 11:57:28 +0800
-Message-ID: <1323057448.6046.81.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1755008Ab1LEEZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 23:25:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50742 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754721Ab1LEEZ1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 23:25:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <4ED8C029.7000004@ru.mvista.com>
+References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com>
+	<1322817178-8931-3-git-send-email-ming.lei@canonical.com>
+	<4ED8C029.7000004@ru.mvista.com>
+Date: Mon, 5 Dec 2011 12:25:24 +0800
+Message-ID: <CACVXFVOUaodnMKV8_E7E__Zqt8c8Qt0+omgABj9cHbwyiQGoxA@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 2/7] omap4: build fdif omap device from hwmod
+From: Ming Lei <ming.lei@canonical.com>
+To: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe, 
+Hi,
 
-æ–¼ äºŒï¼Œ2011-11-29 æ–¼ 11:04 -0800ï¼ŒJoe Perches æåˆ°ï¼š
-> Use pr_warn not pr_warning.
-> Coalesce formats.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/platform/x86/acer-wmi.c |   29 ++++++++++++++---------------
->  1 files changed, 14 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-> index b848277..ea48346 100644
-> --- a/drivers/platform/x86/acer-wmi.c
-> +++ b/drivers/platform/x86/acer-wmi.c
-> @@ -978,7 +978,7 @@ static acpi_status wmid3_set_device_status(u32 value, u16 device)
->  		return AE_ERROR;
->  	}
->  	if (obj->buffer.length != 8) {
-> -		pr_warning("Unknown buffer length %d\n", obj->buffer.length);
-> +		pr_warn("Unknown buffer length %d\n", obj->buffer.length);
->  		kfree(obj);
->  		return AE_ERROR;
->  	}
-> @@ -987,8 +987,8 @@ static acpi_status wmid3_set_device_status(u32 value, u16 device)
->  	kfree(obj);
->  
->  	if (return_value.error_code || return_value.ec_return_value) {
-> -		pr_warning("Get Current Device Status failed: "
-> -			"0x%x - 0x%x\n", return_value.error_code,
-> +		pr_warn("Get Current Device Status failed: 0x%x - 0x%x\n",
-> +			return_value.error_code,
->  			return_value.ec_return_value);
->  		return status;
->  	}
-> @@ -1011,7 +1011,7 @@ static acpi_status wmid3_set_device_status(u32 value, u16 device)
->  		return AE_ERROR;
->  	}
->  	if (obj->buffer.length != 4) {
-> -		pr_warning("Unknown buffer length %d\n", obj->buffer.length);
-> +		pr_warn("Unknown buffer length %d\n", obj->buffer.length);
->  		kfree(obj);
->  		return AE_ERROR;
->  	}
-> @@ -1020,8 +1020,8 @@ static acpi_status wmid3_set_device_status(u32 value, u16 device)
->  	kfree(obj);
->  
->  	if (return_value.error_code || return_value.ec_return_value)
-> -		pr_warning("Set Device Status failed: "
-> -			"0x%x - 0x%x\n", return_value.error_code,
-> +		pr_warn("Set Device Status failed: 0x%x - 0x%x\n",
-> +			return_value.error_code,
->  			return_value.ec_return_value);
->  
->  	return status;
-> @@ -1460,8 +1460,8 @@ static ssize_t show_bool_threeg(struct device *dev,
->  	u32 result; \
->  	acpi_status status;
->  
-> -	pr_info("This threeg sysfs will be removed in 2012"
-> -		" - used by: %s\n", current->comm);
-> +	pr_info("This threeg sysfs will be removed in 2012 - used by: %s\n",
-> +		current->comm);
->  	status = get_u32(&result, ACER_CAP_THREEG);
->  	if (ACPI_SUCCESS(status))
->  		return sprintf(buf, "%u\n", result);
-> @@ -1473,8 +1473,8 @@ static ssize_t set_bool_threeg(struct device *dev,
->  {
->  	u32 tmp = simple_strtoul(buf, NULL, 10);
->  	acpi_status status = set_u32(tmp, ACER_CAP_THREEG);
-> -	pr_info("This threeg sysfs will be removed in 2012"
-> -		" - used by: %s\n", current->comm);
-> +	pr_info("This threeg sysfs will be removed in 2012 - used by: %s\n",
-> +		current->comm);
->  	if (ACPI_FAILURE(status))
->  		return -EINVAL;
->  	return count;
-> @@ -1485,8 +1485,8 @@ static DEVICE_ATTR(threeg, S_IRUGO | S_IWUSR, show_bool_threeg,
->  static ssize_t show_interface(struct device *dev, struct device_attribute *attr,
->  	char *buf)
->  {
-> -	pr_info("This interface sysfs will be removed in 2012"
-> -		" - used by: %s\n", current->comm);
-> +	pr_info("This interface sysfs will be removed in 2012 - used by: %s\n",
-> +		current->comm);
->  	switch (interface->type) {
->  	case ACER_AMW0:
->  		return sprintf(buf, "AMW0\n");
-> @@ -1954,8 +1954,7 @@ static int __init acer_wmi_init(void)
->  
->  	if (acpi_video_backlight_support()) {
->  		interface->capability &= ~ACER_CAP_BRIGHTNESS;
-> -		pr_info("Brightness must be controlled by "
-> -		       "generic video driver\n");
-> +		pr_info("Brightness must be controlled by generic video driver\n");
->  	}
->  
->  	if (wmi_has_guid(WMID_GUID3)) {
-> @@ -1980,7 +1979,7 @@ static int __init acer_wmi_init(void)
->  
->  	err = platform_driver_register(&acer_platform_driver);
->  	if (err) {
-> -		pr_err("Unable to register platform driver.\n");
-> +		pr_err("Unable to register platform driver\n");
->  		goto error_platform_register;
->  	}
->  
+On Fri, Dec 2, 2011 at 8:10 PM, Sergei Shtylyov <sshtylyov@ru.mvista.com> wrote:
+> Hello.
+>
+>
+> On 02-12-2011 13:12, Ming Lei wrote:
+>
+>> Signed-off-by: Ming Lei<ming.lei@canonical.com>
+>> ---
+>>  arch/arm/mach-omap2/devices.c |   33 +++++++++++++++++++++++++++++++++
+>>  1 files changed, 33 insertions(+), 0 deletions(-)
+>
+>
+>> diff --git a/arch/arm/mach-omap2/devices.c b/arch/arm/mach-omap2/devices.c
+>> index 1166bdc..a392af5 100644
+>> --- a/arch/arm/mach-omap2/devices.c
+>> +++ b/arch/arm/mach-omap2/devices.c
+>> @@ -728,6 +728,38 @@ void __init omap242x_init_mmc(struct
+>> omap_mmc_platform_data **mmc_data)
+>>
+>>  #endif
+>>
+>> +static struct platform_device* __init omap4_init_fdif(void)
+>
+>
+>   Shouldn't there be space before *? checkpatch.pl is silent about it?
+> ALso, I'd have placed '__init' after 'static'...
 
-Patch good to me.
+Yes, you are right, will do do it in next version.
 
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+>
+>> +{
+>> +       int id = -1;
+>> +       struct platform_device *pd;
+>> +       struct omap_hwmod *oh;
+>> +       const char *dev_name = "fdif";
+>
+>
+>   Why you need this variable at all?
 
+Will remove some of them.
 
-Thanks
-Joey Lee
-
+thanks,
+--
+Ming Lei
