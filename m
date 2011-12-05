@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab1LEQMj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 11:12:39 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50443 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932447Ab1LEQMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 11:12:38 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: ashish.jangam@kpitcummins.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Add irq_base accessor to regmap_irq
-Date: Mon,  5 Dec 2011 16:10:48 +0000
-Message-Id: <1323101448-4125-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S932493Ab1LEQOp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 11:14:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38282 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932447Ab1LEQOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 11:14:44 -0500
+Date: Mon, 5 Dec 2011 17:14:43 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Wang Sheng-Hui <shhuiw@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Question about __zone_watermark_ok: why there is a "+ 1" in
+ computing free_pages?
+Message-ID: <20111205161443.GA20663@tiehlicka.suse.cz>
+References: <CAKXJSOHu+sQ1NeMsRvFyp2GYoB6g+50boUu=-QvbxxjcqgOAVA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKXJSOHu+sQ1NeMsRvFyp2GYoB6g+50boUu=-QvbxxjcqgOAVA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allows devices to discover their own interrupt without having to remember
-it themselves.
+On Fri 25-11-11 09:21:35, Wang Sheng-Hui wrote:
+> In line 1459, we have "free_pages -= (1 << order) + 1;".
+> Suppose allocating one 0-order page, here we'll get
+>     free_pages -= 1 + 1
+> I wonder why there is a "+ 1"?
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Good spot. Check the patch bellow.
 ---
- drivers/base/regmap/regmap-irq.c |   13 +++++++++++++
- include/linux/regmap.h           |    1 +
- 2 files changed, 14 insertions(+), 0 deletions(-)
+>From 38a1cf351b111e8791d2db538c8b0b912f5df8b8 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 5 Dec 2011 17:04:23 +0100
+Subject: [PATCH] mm: fix off-by-two in __zone_watermark_ok
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 6b8a74c..428836f 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -287,3 +287,16 @@ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *d)
- 	kfree(d);
- }
- EXPORT_SYMBOL_GPL(regmap_del_irq_chip);
-+
-+/**
-+ * regmap_irq_chip_get_base(): Retrieve interrupt base for a regmap IRQ chip
-+ *
-+ * Useful for drivers to request their own IRQs.
-+ *
-+ * @data: regmap_irq controller to operate on.
-+ */
-+int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data)
-+{
-+	return data->irq_base;
-+}
-+EXPORT_SYMBOL_GPL(regmap_irq_chip_get_base);
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index cfce3a3..eb93921 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -195,5 +195,6 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 			int irq_base, struct regmap_irq_chip *chip,
- 			struct regmap_irq_chip_data **data);
- void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *data);
-+int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data);
+88f5acf8 [mm: page allocator: adjust the per-cpu counter threshold when
+memory is low] changed the form how free_pages is calculated but it
+forgot that we used to do free_pages - ((1 << order) - 1) so we ended up
+with off-by-two when calculating free_pages.
+
+Spotted-by: Wang Sheng-Hui <shhuiw@gmail.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/page_alloc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9dd443d..8a2f1b6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1457,7 +1457,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+ 	long min = mark;
+ 	int o;
  
- #endif
+-	free_pages -= (1 << order) + 1;
++	free_pages -= (1 << order) - 1;
+ 	if (alloc_flags & ALLOC_HIGH)
+ 		min -= min / 2;
+ 	if (alloc_flags & ALLOC_HARDER)
 -- 
 1.7.7.3
 
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
