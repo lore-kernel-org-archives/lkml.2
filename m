@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab1LENfT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 08:35:19 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:3759
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932361Ab1LENfJ (ORCPT
+	id S932502Ab1LENhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 08:37:19 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:42016
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932311Ab1LENfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 08:35:09 -0500
+	Mon, 5 Dec 2011 08:35:18 -0500
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVQGED-02-AUL-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVQGEJ-01-IPZ-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 10/22] iommu/amd: Add support for IOMMUv2 domain mode
-Date: Mon, 5 Dec 2011 14:34:25 +0100
-Message-ID: <1323092077-25501-11-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 19/22] iommu/amd: Add routines to bind/unbind a pasid
+Date: Mon, 5 Dec 2011 14:34:34 +0100
+Message-ID: <1323092077-25501-20-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
 References: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
@@ -28,350 +29,404 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for protection domains that
-implement two-level paging for devices.
+This patch adds routines to bind a specific process
+address-space to a given PASID.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/Kconfig           |    4 +-
- drivers/iommu/amd_iommu.c       |  144 +++++++++++++++++++++++++++++++++++++-
- drivers/iommu/amd_iommu_init.c  |    9 +++
- drivers/iommu/amd_iommu_proto.h |    1 +
- drivers/iommu/amd_iommu_types.h |   27 +++++++
- 5 files changed, 180 insertions(+), 5 deletions(-)
+ drivers/iommu/amd_iommu_v2.c |  301 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/amd-iommu.h    |   26 ++++
+ 2 files changed, 327 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 5414253b..220dfc2 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -34,7 +34,9 @@ config AMD_IOMMU
- 	bool "AMD IOMMU support"
- 	select SWIOTLB
- 	select PCI_MSI
--	select PCI_IOV
-+	select PCI_ATS
-+	select PCI_PRI
-+	select PCI_PASID
- 	select IOMMU_API
- 	depends on X86_64 && PCI && ACPI
- 	---help---
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index f0b289f..eaa1af2 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -63,6 +63,7 @@ static struct protection_domain *pt_domain;
- static struct iommu_ops amd_iommu_ops;
+diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
+index e0ec952..f54b991 100644
+--- a/drivers/iommu/amd_iommu_v2.c
++++ b/drivers/iommu/amd_iommu_v2.c
+@@ -19,6 +19,7 @@
+ #include <linux/amd-iommu.h>
+ #include <linux/mm_types.h>
+ #include <linux/module.h>
++#include <linux/sched.h>
+ #include <linux/iommu.h>
+ #include <linux/pci.h>
+ #include <linux/gfp.h>
+@@ -63,6 +64,9 @@ static spinlock_t state_lock;
+ static LIST_HEAD(pasid_state_list);
+ static DEFINE_SPINLOCK(ps_lock);
  
- static ATOMIC_NOTIFIER_HEAD(ppr_notifier);
-+int amd_iommu_max_glx_val = -1;
++static void free_pasid_states(struct device_state *dev_state);
++static void unbind_pasid(struct device_state *dev_state, int pasid);
++
+ static u16 device_id(struct pci_dev *pdev)
+ {
+ 	u16 devid;
+@@ -89,8 +93,16 @@ static struct device_state *get_device_state(u16 devid)
  
- /*
-  * general struct to manage commands send to an IOMMU
-@@ -1598,6 +1599,11 @@ static void free_pagetable(struct protection_domain *domain)
- 	domain->pt_root = NULL;
+ static void free_device_state(struct device_state *dev_state)
+ {
++	/*
++	 * First detach device from domain - No more PRI requests will arrive
++	 * from that device after it is unbound from the IOMMUv2 domain.
++	 */
+ 	iommu_detach_device(dev_state->domain, &dev_state->pdev->dev);
++
++	/* Everything is down now, free the IOMMUv2 domain */
+ 	iommu_domain_free(dev_state->domain);
++
++	/* Finally get rid of the device-state */
+ 	kfree(dev_state);
  }
  
-+static void free_gcr3_table(struct protection_domain *domain)
+@@ -100,6 +112,292 @@ static void put_device_state(struct device_state *dev_state)
+ 		free_device_state(dev_state);
+ }
+ 
++static void link_pasid_state(struct pasid_state *pasid_state)
 +{
-+	free_page((unsigned long)domain->gcr3_tbl);
++	spin_lock(&ps_lock);
++	list_add_tail(&pasid_state->list, &pasid_state_list);
++	spin_unlock(&ps_lock);
 +}
 +
- /*
-  * Free a domain, only used if something went wrong in the
-  * allocation path and we need to free an already allocated page table
-@@ -1699,6 +1705,32 @@ static void set_dte_entry(u16 devid, struct protection_domain *domain, bool ats)
- 	if (ats)
- 		flags |= DTE_FLAG_IOTLB;
- 
-+	if (domain->flags & PD_IOMMUV2_MASK) {
-+		u64 gcr3 = __pa(domain->gcr3_tbl);
-+		u64 glx  = domain->glx;
-+		u64 tmp;
++static void __unlink_pasid_state(struct pasid_state *pasid_state)
++{
++	list_del(&pasid_state->list);
++}
 +
-+		pte_root |= DTE_FLAG_GV;
-+		pte_root |= (glx & DTE_GLX_MASK) << DTE_GLX_SHIFT;
++static void unlink_pasid_state(struct pasid_state *pasid_state)
++{
++	spin_lock(&ps_lock);
++	__unlink_pasid_state(pasid_state);
++	spin_unlock(&ps_lock);
++}
 +
-+		/* First mask out possible old values for GCR3 table */
-+		tmp = DTE_GCR3_VAL_B(~0ULL) << DTE_GCR3_SHIFT_B;
-+		flags    &= ~tmp;
++/* Must be called under dev_state->lock */
++static struct pasid_state **__get_pasid_state_ptr(struct device_state *dev_state,
++						  int pasid, bool alloc)
++{
++	struct pasid_state **root, **ptr;
++	int level, index;
 +
-+		tmp = DTE_GCR3_VAL_C(~0ULL) << DTE_GCR3_SHIFT_C;
-+		flags    &= ~tmp;
++	level = dev_state->pasid_levels;
++	root  = dev_state->states;
 +
-+		/* Encode GCR3 table into DTE */
-+		tmp = DTE_GCR3_VAL_A(gcr3) << DTE_GCR3_SHIFT_A;
-+		pte_root |= tmp;
++	while (true) {
 +
-+		tmp = DTE_GCR3_VAL_B(gcr3) << DTE_GCR3_SHIFT_B;
-+		flags    |= tmp;
++		index = (pasid >> (9 * level)) & 0x1ff;
++		ptr   = &root[index];
 +
-+		tmp = DTE_GCR3_VAL_C(gcr3) << DTE_GCR3_SHIFT_C;
-+		flags    |= tmp;
++		if (level == 0)
++			break;
++
++		if (*ptr == NULL) {
++			if (!alloc)
++				return NULL;
++
++			*ptr = (void *)get_zeroed_page(GFP_ATOMIC);
++			if (*ptr == NULL)
++				return NULL;
++		}
++
++		root   = (struct pasid_state **)*ptr;
++		level -= 1;
 +	}
 +
- 	flags &= ~(0xffffUL);
- 	flags |= domain->id;
- 
-@@ -1803,6 +1835,46 @@ out_unlock:
- 	return ret;
- }
- 
-+
-+static void pdev_iommuv2_disable(struct pci_dev *pdev)
-+{
-+	pci_disable_ats(pdev);
-+	pci_disable_pri(pdev);
-+	pci_disable_pasid(pdev);
++	return ptr;
 +}
 +
-+static int pdev_iommuv2_enable(struct pci_dev *pdev)
++static int set_pasid_state(struct device_state *dev_state,
++			   struct pasid_state *pasid_state,
++			   int pasid)
 +{
++	struct pasid_state **ptr;
++	unsigned long flags;
 +	int ret;
 +
-+	/* Only allow access to user-accessible pages */
-+	ret = pci_enable_pasid(pdev, 0);
-+	if (ret)
-+		goto out_err;
-+
-+	/* First reset the PRI state of the device */
-+	ret = pci_reset_pri(pdev);
-+	if (ret)
-+		goto out_err;
-+
-+	/* FIXME: Hardcode number of outstanding requests for now */
-+	ret = pci_enable_pri(pdev, 32);
-+	if (ret)
-+		goto out_err;
-+
-+	ret = pci_enable_ats(pdev, PAGE_SHIFT);
-+	if (ret)
-+		goto out_err;
-+
-+	return 0;
-+
-+out_err:
-+	pci_disable_pri(pdev);
-+	pci_disable_pasid(pdev);
-+
-+	return ret;
-+}
-+
- /*
-  * If a device is not yet associated with a domain, this function does
-  * assigns it visible for the hardware
-@@ -1817,7 +1889,17 @@ static int attach_device(struct device *dev,
- 
- 	dev_data = get_dev_data(dev);
- 
--	if (amd_iommu_iotlb_sup && pci_enable_ats(pdev, PAGE_SHIFT) == 0) {
-+	if (domain->flags & PD_IOMMUV2_MASK) {
-+		if (!dev_data->iommu_v2 || !dev_data->passthrough)
-+			return -EINVAL;
-+
-+		if (pdev_iommuv2_enable(pdev) != 0)
-+			return -EINVAL;
-+
-+		dev_data->ats.enabled = true;
-+		dev_data->ats.qdep    = pci_ats_queue_depth(pdev);
-+	} else if (amd_iommu_iotlb_sup &&
-+		   pci_enable_ats(pdev, PAGE_SHIFT) == 0) {
- 		dev_data->ats.enabled = true;
- 		dev_data->ats.qdep    = pci_ats_queue_depth(pdev);
- 	}
-@@ -1877,20 +1959,24 @@ static void __detach_device(struct iommu_dev_data *dev_data)
-  */
- static void detach_device(struct device *dev)
- {
-+	struct protection_domain *domain;
- 	struct iommu_dev_data *dev_data;
- 	unsigned long flags;
- 
- 	dev_data = get_dev_data(dev);
-+	domain   = dev_data->domain;
- 
- 	/* lock device table */
- 	write_lock_irqsave(&amd_iommu_devtable_lock, flags);
- 	__detach_device(dev_data);
- 	write_unlock_irqrestore(&amd_iommu_devtable_lock, flags);
- 
--	if (dev_data->ats.enabled) {
-+	if (domain->flags & PD_IOMMUV2_MASK)
-+		pdev_iommuv2_disable(to_pci_dev(dev));
-+	else if (dev_data->ats.enabled)
- 		pci_disable_ats(to_pci_dev(dev));
--		dev_data->ats.enabled = false;
--	}
-+
-+	dev_data->ats.enabled = false;
- }
- 
- /*
-@@ -2788,6 +2874,9 @@ static void amd_iommu_domain_destroy(struct iommu_domain *dom)
- 	if (domain->mode != PAGE_MODE_NONE)
- 		free_pagetable(domain);
- 
-+	if (domain->flags & PD_IOMMUV2_MASK)
-+		free_gcr3_table(domain);
-+
- 	protection_domain_free(domain);
- 
- 	dom->priv = NULL;
-@@ -3010,3 +3099,50 @@ void amd_iommu_domain_direct_map(struct iommu_domain *dom)
- 	spin_unlock_irqrestore(&domain->lock, flags);
- }
- EXPORT_SYMBOL(amd_iommu_domain_direct_map);
-+
-+int amd_iommu_domain_enable_v2(struct iommu_domain *dom, int pasids)
-+{
-+	struct protection_domain *domain = dom->priv;
-+	unsigned long flags;
-+	int levels, ret;
-+
-+	if (pasids <= 0 || pasids & ~PASID_MASK)
-+		return -EINVAL;
-+
-+	/* Number of GCR3 table levels required */
-+	for (levels = -1; pasids != 0; pasids >>= 9)
-+		levels += 1;
-+
-+	if (levels > amd_iommu_max_glx_val)
-+		return -EINVAL;
-+
-+	spin_lock_irqsave(&domain->lock, flags);
-+
-+	/*
-+	 * Save us all sanity checks whether devices already in the
-+	 * domain support IOMMUv2. Just force that the domain has no
-+	 * devices attached when it is switched into IOMMUv2 mode.
-+	 */
-+	ret = -EBUSY;
-+	if (domain->dev_cnt > 0 || domain->flags & PD_IOMMUV2_MASK)
-+		goto out;
++	spin_lock_irqsave(&dev_state->lock, flags);
++	ptr = __get_pasid_state_ptr(dev_state, pasid, true);
 +
 +	ret = -ENOMEM;
-+	domain->gcr3_tbl = (void *)get_zeroed_page(GFP_ATOMIC);
-+	if (domain->gcr3_tbl == NULL)
-+		goto out;
++	if (ptr == NULL)
++		goto out_unlock;
 +
-+	domain->glx      = levels;
-+	domain->flags   |= PD_IOMMUV2_MASK;
-+	domain->updated  = true;
++	ret = -ENOMEM;
++	if (*ptr != NULL)
++		goto out_unlock;
 +
-+	update_domain(domain);
++	*ptr = pasid_state;
 +
 +	ret = 0;
 +
-+out:
-+	spin_unlock_irqrestore(&domain->lock, flags);
++out_unlock:
++	spin_unlock_irqrestore(&dev_state->lock, flags);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL(amd_iommu_domain_enable_v2);
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index 7c3fd57..c7a5d7e 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -755,6 +755,7 @@ static void __init init_iommu_from_pci(struct amd_iommu *iommu)
- 	iommu->features = ((u64)high << 32) | low;
- 
- 	if (iommu_feature(iommu, FEATURE_GT)) {
-+		int glxval;
- 		u32 pasids;
- 		u64 shift;
- 
-@@ -763,6 +764,14 @@ static void __init init_iommu_from_pci(struct amd_iommu *iommu)
- 		pasids  = (1 << shift);
- 
- 		amd_iommu_max_pasids = min(amd_iommu_max_pasids, pasids);
 +
-+		glxval   = iommu->features & FEATURE_GLXVAL_MASK;
-+		glxval >>= FEATURE_GLXVAL_SHIFT;
++static void clear_pasid_state(struct device_state *dev_state, int pasid)
++{
++	struct pasid_state **ptr;
++	unsigned long flags;
 +
-+		if (amd_iommu_max_glx_val == -1)
-+			amd_iommu_max_glx_val = glxval;
-+		else
-+			amd_iommu_max_glx_val = min(amd_iommu_max_glx_val, glxval);
- 	}
- 
- 	if (iommu_feature(iommu, FEATURE_GT) &&
-diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
-index 2c4554e..d207b1d 100644
---- a/drivers/iommu/amd_iommu_proto.h
-+++ b/drivers/iommu/amd_iommu_proto.h
-@@ -39,6 +39,7 @@ extern bool amd_iommu_v2_supported(void);
- extern int amd_iommu_register_ppr_notifier(struct notifier_block *nb);
- extern int amd_iommu_unregister_ppr_notifier(struct notifier_block *nb);
- extern void amd_iommu_domain_direct_map(struct iommu_domain *dom);
-+extern int amd_iommu_domain_enable_v2(struct iommu_domain *dom, int pasids);
- 
- #ifndef CONFIG_AMD_IOMMU_STATS
- 
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index f626722..905eca5 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -93,6 +93,11 @@
- #define FEATURE_PASID_SHIFT	32
- #define FEATURE_PASID_MASK	(0x1fULL << FEATURE_PASID_SHIFT)
- 
-+#define FEATURE_GLXVAL_SHIFT	14
-+#define FEATURE_GLXVAL_MASK	(0x03ULL << FEATURE_GLXVAL_SHIFT)
++	spin_lock_irqsave(&dev_state->lock, flags);
++	ptr = __get_pasid_state_ptr(dev_state, pasid, true);
 +
-+#define PASID_MASK		0x000fffff
++	if (ptr == NULL)
++		goto out_unlock;
 +
- /* MMIO status bits */
- #define MMIO_STATUS_COM_WAIT_INT_MASK	(1 << 2)
- #define MMIO_STATUS_PPR_INT_MASK	(1 << 6)
-@@ -257,6 +262,22 @@
- #define IOMMU_PTE_IW (1ULL << 62)
++	*ptr = NULL;
++
++out_unlock:
++	spin_unlock_irqrestore(&dev_state->lock, flags);
++}
++
++static struct pasid_state *get_pasid_state(struct device_state *dev_state,
++					   int pasid)
++{
++	struct pasid_state **ptr, *ret = NULL;
++	unsigned long flags;
++
++	spin_lock_irqsave(&dev_state->lock, flags);
++	ptr = __get_pasid_state_ptr(dev_state, pasid, false);
++
++	if (ptr == NULL)
++		goto out_unlock;
++
++	ret = *ptr;
++	if (ret)
++		atomic_inc(&ret->count);
++
++out_unlock:
++	spin_unlock_irqrestore(&dev_state->lock, flags);
++
++	return ret;
++}
++
++static void free_pasid_state(struct pasid_state *pasid_state)
++{
++	kfree(pasid_state);
++}
++
++static void put_pasid_state(struct pasid_state *pasid_state)
++{
++	if (atomic_dec_and_test(&pasid_state->count)) {
++		put_device_state(pasid_state->device_state);
++		free_pasid_state(pasid_state);
++	}
++}
++
++static void unbind_pasid(struct device_state *dev_state, int pasid)
++{
++	struct pasid_state *pasid_state;
++
++	pasid_state = get_pasid_state(dev_state, pasid);
++	if (pasid_state == NULL)
++		return;
++
++	unlink_pasid_state(pasid_state);
++
++	amd_iommu_domain_clear_gcr3(dev_state->domain, pasid);
++	clear_pasid_state(dev_state, pasid);
++
++	put_pasid_state(pasid_state); /* Reference taken in this function */
++	put_pasid_state(pasid_state); /* Reference taken in bind() function */
++}
++
++static void free_pasid_states_level1(struct pasid_state **tbl)
++{
++	int i;
++
++	for (i = 0; i < 512; ++i) {
++		if (tbl[i] == NULL)
++			continue;
++
++		free_page((unsigned long)tbl[i]);
++	}
++}
++
++static void free_pasid_states_level2(struct pasid_state **tbl)
++{
++	struct pasid_state **ptr;
++	int i;
++
++	for (i = 0; i < 512; ++i) {
++		if (tbl[i] == NULL)
++			continue;
++
++		ptr = (struct pasid_state **)tbl[i];
++		free_pasid_states_level1(ptr);
++	}
++}
++
++static void free_pasid_states(struct device_state *dev_state)
++{
++	struct pasid_state *pasid_state;
++	int i;
++
++	for (i = 0; i < dev_state->max_pasids; ++i) {
++		pasid_state = get_pasid_state(dev_state, i);
++		if (pasid_state == NULL)
++			continue;
++
++		unbind_pasid(dev_state, i);
++		put_pasid_state(pasid_state);
++	}
++
++	if (dev_state->pasid_levels == 2)
++		free_pasid_states_level2(dev_state->states);
++	else if (dev_state->pasid_levels == 1)
++		free_pasid_states_level1(dev_state->states);
++	else if (dev_state->pasid_levels != 0)
++		BUG();
++
++	free_page((unsigned long)dev_state->states);
++}
++
++int amd_iommu_bind_pasid(struct pci_dev *pdev, int pasid,
++			 struct task_struct *task)
++{
++	struct pasid_state *pasid_state;
++	struct device_state *dev_state;
++	u16 devid;
++	int ret;
++
++	might_sleep();
++
++	if (!amd_iommu_v2_supported())
++		return -ENODEV;
++
++	devid     = device_id(pdev);
++	dev_state = get_device_state(devid);
++
++	if (dev_state == NULL)
++		return -EINVAL;
++
++	ret = -EINVAL;
++	if (pasid < 0 || pasid >= dev_state->max_pasids)
++		goto out;
++
++	ret = -ENOMEM;
++	pasid_state = kzalloc(sizeof(*pasid_state), GFP_KERNEL);
++	if (pasid_state == NULL)
++		goto out;
++
++	atomic_set(&pasid_state->count, 1);
++	pasid_state->task         = task;
++	pasid_state->mm           = task->mm;
++	pasid_state->device_state = dev_state;
++	pasid_state->pasid        = pasid;
++
++	ret = set_pasid_state(dev_state, pasid_state, pasid);
++	if (ret)
++		goto out_free;
++
++	ret = amd_iommu_domain_set_gcr3(dev_state->domain, pasid,
++					__pa(pasid_state->mm->pgd));
++	if (ret)
++		goto out_clear_state;
++
++	link_pasid_state(pasid_state);
++
++	return 0;
++
++out_clear_state:
++	clear_pasid_state(dev_state, pasid);
++
++out_free:
++	put_pasid_state(pasid_state);
++
++out:
++	put_device_state(dev_state);
++
++	return ret;
++}
++EXPORT_SYMBOL(amd_iommu_bind_pasid);
++
++void amd_iommu_unbind_pasid(struct pci_dev *pdev, int pasid)
++{
++	struct device_state *dev_state;
++	u16 devid;
++
++	might_sleep();
++
++	if (!amd_iommu_v2_supported())
++		return;
++
++	devid = device_id(pdev);
++	dev_state = get_device_state(devid);
++	if (dev_state == NULL)
++		return;
++
++	if (pasid < 0 || pasid >= dev_state->max_pasids)
++		goto out;
++
++	unbind_pasid(dev_state, pasid);
++
++out:
++	put_device_state(dev_state);
++}
++EXPORT_SYMBOL(amd_iommu_unbind_pasid);
++
+ int amd_iommu_init_device(struct pci_dev *pdev, int pasids)
+ {
+ 	struct device_state *dev_state;
+@@ -202,6 +500,9 @@ void amd_iommu_free_device(struct pci_dev *pdev)
  
- #define DTE_FLAG_IOTLB	(0x01UL << 32)
-+#define DTE_FLAG_GV	(0x01ULL << 55)
-+#define DTE_GLX_SHIFT	(56)
-+#define DTE_GLX_MASK	(3)
-+
-+#define DTE_GCR3_VAL_A(x)	(((x) >> 12) & 0x00007ULL)
-+#define DTE_GCR3_VAL_B(x)	(((x) >> 15) & 0x0ffffULL)
-+#define DTE_GCR3_VAL_C(x)	(((x) >> 31) & 0xfffffULL)
-+
-+#define DTE_GCR3_INDEX_A	0
-+#define DTE_GCR3_INDEX_B	1
-+#define DTE_GCR3_INDEX_C	1
-+
-+#define DTE_GCR3_SHIFT_A	58
-+#define DTE_GCR3_SHIFT_B	16
-+#define DTE_GCR3_SHIFT_C	43
-+
+ 	spin_unlock_irqrestore(&state_lock, flags);
  
- #define IOMMU_PAGE_MASK (((1ULL << 52) - 1) & ~0xfffULL)
- #define IOMMU_IO_PAGE_MASK	(~(0xfffULL))
-@@ -284,6 +305,7 @@
- 					      domain for an IOMMU */
- #define PD_PASSTHROUGH_MASK	(1UL << 2) /* domain has no page
- 					      translation */
-+#define PD_IOMMUV2_MASK		(1UL << 3) /* domain has gcr3 table */
- 
- extern bool amd_iommu_dump;
- #define DUMP_printk(format, arg...)					\
-@@ -345,6 +367,8 @@ struct protection_domain {
- 	u16 id;			/* the domain id written to the device table */
- 	int mode;		/* paging mode (0-6 levels) */
- 	u64 *pt_root;		/* page table root pointer */
-+	int glx;		/* Number of levels for GCR3 table */
-+	u64 *gcr3_tbl;		/* Guest CR3 table */
- 	unsigned long flags;	/* flags to find out type of domain */
- 	bool updated;		/* complete domain flush required */
- 	unsigned dev_cnt;	/* devices assigned to this domain */
-@@ -612,6 +636,9 @@ extern bool amd_iommu_v2_present;
- 
- extern bool amd_iommu_force_isolation;
- 
-+/* Max levels of glxval supported */
-+extern int amd_iommu_max_glx_val;
++	/* Get rid of any remaining pasid states */
++	free_pasid_states(dev_state);
 +
- /* takes bus and device/function and returns the device id
-  * FIXME: should that be in generic PCI code? */
- static inline u16 calc_devid(u8 bus, u8 devfn)
+ 	put_device_state(dev_state);
+ }
+ EXPORT_SYMBOL(amd_iommu_free_device);
+diff --git a/include/linux/amd-iommu.h b/include/linux/amd-iommu.h
+index e8c7a2e..23e21e1 100644
+--- a/include/linux/amd-iommu.h
++++ b/include/linux/amd-iommu.h
+@@ -24,9 +24,13 @@
+ 
+ #ifdef CONFIG_AMD_IOMMU
+ 
++struct task_struct;
+ struct pci_dev;
+ 
+ extern int amd_iommu_detect(void);
++extern int amd_iommu_bind_pasid(struct pci_dev *pdev, int pasid,
++				struct task_struct *task);
++extern void amd_iommu_unbind_pasid(struct pci_dev *pdev, int pasid);
+ 
+ 
+ /**
+@@ -65,6 +69,28 @@ extern int amd_iommu_init_device(struct pci_dev *pdev, int pasids);
+  */
+ extern void amd_iommu_free_device(struct pci_dev *pdev);
+ 
++/**
++ * amd_iommu_bind_pasid() - Bind a given task to a PASID on a device
++ * @pdev: The PCI device to bind the task to
++ * @pasid: The PASID on the device the task should be bound to
++ * @task: the task to bind
++ *
++ * The function returns 0 on success or a negative value on error.
++ */
++extern int amd_iommu_bind_pasid(struct pci_dev *pdev, int pasid,
++				struct task_struct *task);
++
++/**
++ * amd_iommu_unbind_pasid() - Unbind a PASID from its task on
++ *			      a device
++ * @pdev: The device of the PASID
++ * @pasid: The PASID to unbind
++ *
++ * When this function returns the device is no longer using the PASID
++ * and the PASID is no longer bound to its task.
++ */
++extern void amd_iommu_unbind_pasid(struct pci_dev *pdev, int pasid);
++
+ #else
+ 
+ static inline int amd_iommu_detect(void) { return -ENODEV; }
 -- 
 1.7.5.4
 
