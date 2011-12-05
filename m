@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab1LERoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:44:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42786 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab1LERoG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756515Ab1LERoG (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 5 Dec 2011 12:44:06 -0500
-Date: Mon, 5 Dec 2011 09:43:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com,
-        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 3/3] PM / Docs: Recommend the use of
- [un]lock_system_sleep() over mutex_[un]lock(&pm_mutex)
-Message-ID: <20111205174349.GG627@google.com>
-References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com>
- <20111204200332.25620.53610.stgit@srivatsabhat.in.ibm.com>
- <20111205171508.GC627@google.com>
- <4EDD019E.9010009@linux.vnet.ibm.com>
+Received: from terminus.zytor.com ([198.137.202.10]:58774 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756443Ab1LERnv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 12:43:51 -0500
+Date: Mon, 5 Dec 2011 09:43:32 -0800
+From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Message-ID: <tip-e70825fc51e149366ab5659bd36beb73aad187a0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20111205120550.15475.70149.stgit@cloud>
+References: <20111205120550.15475.70149.stgit@cloud>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] x86/tools: Fix insn_sanity message outputs
+Git-Commit-ID: e70825fc51e149366ab5659bd36beb73aad187a0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4EDD019E.9010009@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:43:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Commit-ID:  e70825fc51e149366ab5659bd36beb73aad187a0
+Gitweb:     http://git.kernel.org/tip/e70825fc51e149366ab5659bd36beb73aad187a0
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Mon, 5 Dec 2011 21:05:50 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 5 Dec 2011 14:53:19 +0100
 
-On Mon, Dec 05, 2011 at 11:08:38PM +0530, Srivatsa S. Bhat wrote:
-> Sorry, I didn't get what you meant here. Are you talking about what
-> needs to be added/changed in the documentation or, are you referring
-> to the code itself and are saying that we must make these APIs
-> internal to the PM alone?
+x86/tools: Fix insn_sanity message outputs
 
-Ooh, sorry about not being clear.  I meant pm_mutex itself.  There's
-no reason to expose that outside of pm, right?  And in the
-documentation, we can just require use of the APIs instead of pm_mutex
-itself.
+Fix x86 instruction decoder test to dump all error messages
+to stderr and others to stdout.
 
-Thank you.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: yrl.pp-manager.tt@hitachi.com
+Link: http://lkml.kernel.org/r/20111205120550.15475.70149.stgit@cloud
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/tools/insn_sanity.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
--- 
-tejun
+diff --git a/arch/x86/tools/insn_sanity.c b/arch/x86/tools/insn_sanity.c
+index 2025603..b6720d6 100644
+--- a/arch/x86/tools/insn_sanity.c
++++ b/arch/x86/tools/insn_sanity.c
+@@ -102,7 +102,7 @@ static void dump_stream(FILE *fp, const char *msg, unsigned long nr_iter,
+ 
+ 	fprintf(fp, "%s:\n", msg);
+ 
+-	dump_insn(stderr, insn);
++	dump_insn(fp, insn);
+ 
+ 	fprintf(fp, "You can reproduce this with below command(s);\n");
+ 
+@@ -260,7 +260,7 @@ int main(int argc, char **argv)
+ 		if (insn.next_byte <= insn.kaddr ||
+ 		    insn.kaddr + MAX_INSN_SIZE < insn.next_byte) {
+ 			/* Access out-of-range memory */
+-			dump_stream(stdout, "Error: Found an access violation", i, insn_buf, &insn);
++			dump_stream(stderr, "Error: Found an access violation", i, insn_buf, &insn);
+ 			errors++;
+ 		} else if (verbose && !insn_complete(&insn))
+ 			dump_stream(stdout, "Info: Found an undecodable input", i, insn_buf, &insn);
