@@ -1,103 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932739Ab1LEV7l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 16:59:41 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47586 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932372Ab1LEV7j (ORCPT
+	id S932754Ab1LEWEr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 17:04:47 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:65450 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932588Ab1LEWEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 16:59:39 -0500
-Date: Tue, 6 Dec 2011 08:59:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, yinghai@kernel.org, hpa@zytor.com, tony.luck@intel.com,
-        ralf@linux-mips.org, schwidefsky@de.ibm.com, liqin.chen@sunplusct.com,
-        lethal@linux-sh.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, mingo@redhat.com, jonas@southpole.se,
-        lennox.wu@gmail.com, benh@kernel.crashing.org
-Subject: Re: linux-next: inclusion request for temporary memblock testing
- branch
-Message-Id: <20111206085919.c9bf7e6a196774f6860d3699@canb.auug.org.au>
-In-Reply-To: <20111205210405.GK627@google.com>
-References: <20111205210405.GK627@google.com>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__6_Dec_2011_08_59_19_+1100_3./VYubN1Bu1=/pA"
+	Mon, 5 Dec 2011 17:04:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Daniel Vetter <daniel@ffwll.ch>, t.stanislaws@samsung.com,
+        linux@arm.linux.org.uk, Sumit Semwal <sumit.semwal@ti.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        jesse.barker@linaro.org, rob@ti.com, linux-media@vger.kernel.org,
+        Sumit Semwal <sumit.semwal@linaro.org>, m.szyprowski@samsung.com
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+Date: Mon, 05 Dec 2011 23:04:09 +0100
+Message-ID: <1438420.NYDLGGgKNc@wuerfel>
+User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <CAKMK7uG2U2gn-LW7Cozumfza8XngvQSWR7-S-Qiok5NA=94V=w@mail.gmail.com>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <1426302.asOzFeeJzz@wuerfel> <CAKMK7uG2U2gn-LW7Cozumfza8XngvQSWR7-S-Qiok5NA=94V=w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:z2Ym+YVeaLZBELvJXPhblpHmsOj6t0nxlguXF3umhnC
+ BxCjBXZtoYQradGPMWaP2uuAfzLDdNfviYEy7wyB0fhahdOpro
+ yxbUr/iZhJOUr7UEGMVx60MhPPuHjDkRzHoc0oS/Lm3w//Bwhc
+ drhhJI+bMMdRaEn4r9Thq5w+bu4f5O8J8LIDLDhnNk7xJc3SGy
+ VjbWaeqsrghYGOZHqpdKiEwEDnoX03bv0gLPkrHzoJbXxjfMey
+ WnX0NCUhbJ8hpQyBD5wcJsT6nP+eVXLF2188RmnrQZS+M/1etH
+ LOB+AIAARS1qB8CsOi/3QbiqFJxia3pOOrPcyo0fGOsk5p7xtP
+ QbCmfXzVt5htnW6PCeZ8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Dec_2011_08_59_19_+1100_3./VYubN1Bu1=/pA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Monday 05 December 2011 21:58:39 Daniel Vetter wrote:
+> On Mon, Dec 05, 2011 at 08:29:49PM +0100, Arnd Bergmann wrote:
+> > ...
+> 
+> Thanks a lot for this excellent overview. I think at least for the first
+> version of dmabuf we should drop the sync_* interfaces and simply require
+> users to bracket their usage of the buffer from the attached device by
+> map/unmap. A dma_buf provider is always free to cache the mapping and
+> simply call sync_sg_for of the streaming dma api.
 
-Hi Tejun,
+I think we still have the same problem if we allow multiple drivers
+to access a noncoherent buffer using map/unmap:
 
-On Mon, 5 Dec 2011 13:04:05 -0800 Tejun Heo <tj@kernel.org> wrote:
->
-> Can you please include the following branch into linux-next?
->=20
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock-kill=
--early_node_map
+	driver A				driver B
 
-OK, I have added that from today.
+1.	read/write				
+2.						read/write
+3.	map()					
+4.						read/write
+5.	dma
+6.						map()
+7.	dma
+8.						dma
+9.	unmap()
+10.						dma
+11.	read/write
+12.						unmap()						
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+In step 4, the buffer is owned by device A, but accessed by driver B, which
+is a bug. In step 11, the buffer is owned by device B but accessed by driver
+A, which is the same bug on the other side. In steps 7 and 8, the buffer
+is owned by both device A and B, which is currently undefined but would
+be ok if both devices are on the same coherency domain. Whether that point
+is meaningful depends on what the devices actually do. It would be ok
+if both are only reading, but not if they write into the same location
+concurrently.
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+As I mentioned originally, the problem could be completely avoided if
+we only allow consistent (e.g. uncached) mappings or buffers that
+are not mapped into the kernel virtual address space at all.
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+Alternatively, a clearer model would be to require each access to
+nonconsistent buffers to be exclusive: a map() operation would have
+to block until the current mapper (if any) has done an unmap(), and
+any access from the CPU would also have to call a dma_buf_ops pointer
+to serialize the CPU accesses with any device accesses. User
+mappings of the buffer can be easily blocked during a DMA access
+by unmapping the buffer from user space at map() time and blocking the
+vm_ops->fault() operation until the unmap().
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
+> If it later turns out that we want to be able to cache the sg list also on
+> the use-site in the driver (e.g. map it into some hw sg list) we can
+> always add that functionality later. I just fear that sync ops among N
+> devices is a bit ill-defined and we already have a plethora of ill-defined
+> issues at hand. Also the proposed api doesn't quite fit into what's
+> already there, I think an s/device/dma_buf_attachment/ would be more
+> consistent - otherwise the dmabuf provider might need to walk the list of
+> attachements to get at the right one for the device.
 
---Signature=_Tue__6_Dec_2011_08_59_19_+1100_3./VYubN1Bu1=/pA
-Content-Type: application/pgp-signature
+Right, at last for the start, let's mandate just map/unmap and not provide
+sync. I do wonder however whether we should implement consistent (possibly
+uncached) or streaming (cacheable, but always owned by either the device
+or the CPU, not both) buffers, or who gets to make the decision which
+one is used if both are implemented.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> > > The map call gets the dma_data_direction parameter, so it should be able
+> > > to do the right thing. And because we keep the attachement around, any
+> > > caching of mappings should be possible, too.
+> > >
+> > > Yours, Daniel
+> > >
+> > > PS: Slightly related, because it will make the coherency nightmare worse,
+> > > afaict: Can we kill mmap support?
+> >
+> > The mmap support is required (and only make sense) for consistent mappings,
+> > not for streaming mappings. The provider must ensure that if you map
+> > something uncacheable into the kernel in order to provide consistency,
+> > any mapping into user space must also be uncacheable. A driver
+> > that wants to have the buffer mapped to user space as many do should
+> > not need to know whether it is required to do cacheable or uncacheable
+> > mapping because of some other driver, and it should not need to worry
+> > about how to set up uncached mappings in user space.
+> 
+> Either I've always missed it or no one ever described it that consisely,
+> but now I see the use-case for mmap: Simpler drivers (i.e. not gpus) might
+> need to expose a userspace mapping and only the provider knows how to do
+> that in a coherent fashion. I want this in the docs (if it's not there yet
+> ...).
 
-iQIcBAEBCAAGBQJO3T63AAoJEECxmPOUX5FE3tAP/i3wQ+YE+tkTBXGilbWF1iNo
-F+X35xbzuT9/ScMTd6qBUTS0H76P8cxAHzm6OEBDEgw43rGWm/Nqlk0E9/fZCHEB
-9+iKEeFG9usuaKg0wHm4Q64AvF8FuoMHDro8/0zpA8oXnvA+Qu7v1/fJUh/itxA2
-mWpeWF9EV3mWim12nic3M3gzhcrj8yezhyWJTEbNa/nMsXHuQ0H1kFLW3VWJDvgj
-SWmSSz13x0E44B66vmlYaHSL8tQB6xSk8K0fqt5tn70sB5wM7HYAHBlRPz2x7RXX
-nxUjxMv95m00EBnDK2T4+EBxhHti79rQbOIHzlrDPBoZvdgLY5Q/rZqVaAdkWL77
-YMGNGKtq1b1Zytqy0k6w58/LuXoaX/SFMnvu/vIHZcLVwQ+0IhM9LffYT+2qMzBQ
-Nj5nHVgFmjozdUXf/rjjWDUK+fB6b+v80ul6C2Zwsl1IDRWfPC9a+zS7IX/3ACJ0
-eFiQ47iQmmuETXvEqoIk3U4PMEBTzdIga2IF9WG50XfLaCFiltw1Sm+OUGTtzoRH
-ls3ZtOGIx+ire4Noa0Xt/l6Xm+rGIPiCpGT03dx7iZl0DJgu8FobrJE3OtBvcbfz
-xmtqbqASQKOLNCbatoo1HTLzZuIDtYKWBubtlC7bzdvkRjbQL+KnX+x80V4uzady
-pGPuAym5abcDfHgLTCjn
-=xgpa
------END PGP SIGNATURE-----
+It's currently implemented in the ARM/PowerPC-specific dma_mmap_coherent
+function and documented (hardly) in arch/arm/include/asm/dma-mapping.h.
 
---Signature=_Tue__6_Dec_2011_08_59_19_+1100_3./VYubN1Bu1=/pA--
+We should make clear in that this is actually an extension of the
+regular dma mapping api that first needs to be made generic.
+
+> But even with that use-case in mind I still have some gripes with the
+> current mmap interfaces as proposed:
+> - This use-case explains why the dmabuf provider needs to expose an mmap
+>   function. It doesn't explain why we need to expose that to userspace
+>   (instead of faking whatever mmap the importing driver already exposes).
+>   Imo the userspace-facing part of dmabuf should be about buffer sharing
+>   and not about how to access that buffer, so I'm still missing the reason
+>   for that.
+
+AFAICT, the only reason for providing an mmap operation in the dma_buf
+file descriptor is "because we can". It may in fact be better to leave
+that part out and have the discussion whether this is actually a good
+thing to do after the dma_buf core code has been merged upstream.
+
+> - We need some way to tell the provider to sync all completed dma
+>   operations for userspace mmap access. sync_for_cpu would serve that use.
+>   But given that we strive for zero-copy I think the kernel shouldn't
+>   ever need to access the contents of a dmabuf and it would therefore make
+>   more sense to call it sync_for_mmap.
+
+As I mentioned, the kernel can easily block out the user map by
+transparently unmapping the buffer. I've done that in spufs for
+context-switching an SPU: during the save and restore phase of the
+SPU local memory to system memory, the page tables entries for
+all user mappings are removed and then faulted back in after the
+context switch. We can do the same during a DMA on a noncoherent
+buffer.
+
+> - And the ugly one: Assuming you want this to be coherent for (almost)
+>   unchanged users of exisiting subsystem and want this to integrate
+>   seamlessly with gpu driver management, we also need a
+>   finish_mmap_access. We _can_ fake this by shooting down userspace ptes
+>   (if the provider knows about all of them, and it should thanks to the
+>   mmap interface) and we do that trick on i915 (for certain cases). But
+>   this is generally slow and painful and does not integrate well with
+>   other gpu memory management paradigms, where userspace is required to
+>   explicit bracket access.
+
+Yes, good point.
+
+	Arnd
