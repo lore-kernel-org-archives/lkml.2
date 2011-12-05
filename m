@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab1LEHne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 02:43:34 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:50301 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752098Ab1LEHnd (ORCPT
+	id S1752482Ab1LEHrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 02:47:23 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58013 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab1LEHrW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 02:43:33 -0500
-Date: Mon, 5 Dec 2011 08:43:05 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Heiko Schocher <hs@denx.de>, Wolfgang Denk <wd@denx.de>,
-        Vitaly Bordug <vbordug@ru.mvista.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] drivers, char: add U-Boot bootcount driver
-Message-ID: <20111205074305.GA7806@avionic-0098.mockup.avionic-design.de>
-References: <1322991921-21096-1-git-send-email-hs@denx.de>
- <20111204114741.GA5788@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
-Content-Disposition: inline
-In-Reply-To: <20111204114741.GA5788@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:asnlBT70ZhSu9zt5wMhF9HWrwtB4DQnOYSQtyHOfR9k
- CyN3+Hs2YGdEgyrkXSBnT48Spklri2QpU1UPtlyue/5R+B8KmK
- 0ImjH3b89D+vWcJUt0je/KDeV/O6kkS9a/Ukw0qpXAlBWW2VEq
- F32Ad5HrIgDCB6qIpAXTGSk82dGO2TRd5Ao+VnDAHVMJPvHkHe
- YPFDLUJJch79NzZ3QHkyKHxp7nWgUPFHGq6nE04YBSkzDoXorG
- ZpFZVvVQXQkRjuJTknOoK3VyfgdJM99cLxXHIJ/dAoahGW5M42
- /pXMZ5FvpahvnKwy11YxSzcmVj7XaGRBClTyEAkUgjSc13SyT5
- +3OujcUn5/oMY6OBUTxxY8SU2tzk3dFc6XTuwYPjrVNDpHFqYp
- mNnDWkWZSU5Wbpt0/6wfHmKTzasEISE3Gg6ItVgpq82AejhhkM
- JbMoD
+	Mon, 5 Dec 2011 02:47:22 -0500
+Message-ID: <1323071228.20963.1.camel@phoenix>
+Subject: [PATCH] spi/imx: simplify error handling to free gpios
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net
+Date: Mon, 05 Dec 2011 15:47:08 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Simplify the error handling by moving the code to free gpios in one place.
 
---EVF5PPMfhYS0aIcm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/spi/spi-imx.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
 
-* Wolfram Sang wrote:
-> On Sun, Dec 04, 2011 at 10:45:21AM +0100, Heiko Schocher wrote:
-[...]
-> >                   reg =3D <0x23060 0x20>;
->=20
-> I assume that non-volatile memory would qualify as a boot-counter, so tho=
-se
-> could be tied to I2C busses etc? reg would not fit then.
+diff --git a/drivers/spi/spi-imx.c b/drivers/spi/spi-imx.c
+index c6e697f..31054e3 100644
+--- a/drivers/spi/spi-imx.c
++++ b/drivers/spi/spi-imx.c
+@@ -793,13 +793,8 @@ static int __devinit spi_imx_probe(struct platform_device *pdev)
+ 
+ 		ret = gpio_request(spi_imx->chipselect[i], DRIVER_NAME);
+ 		if (ret) {
+-			while (i > 0) {
+-				i--;
+-				if (spi_imx->chipselect[i] >= 0)
+-					gpio_free(spi_imx->chipselect[i]);
+-			}
+ 			dev_err(&pdev->dev, "can't get cs gpios\n");
+-			goto out_master_put;
++			goto out_gpio_free;
+ 		}
+ 	}
+ 
+@@ -881,10 +876,10 @@ out_iounmap:
+ out_release_mem:
+ 	release_mem_region(res->start, resource_size(res));
+ out_gpio_free:
+-	for (i = 0; i < master->num_chipselect; i++)
++	while (--i >= 0) {
+ 		if (spi_imx->chipselect[i] >= 0)
+ 			gpio_free(spi_imx->chipselect[i]);
+-out_master_put:
++	}
+ 	spi_master_put(master);
+ 	kfree(master);
+ 	platform_set_drvdata(pdev, NULL);
+-- 
+1.7.5.4
 
-This is not really on-topic, but in the device-tree the "reg" property is
-used to encode an I2C device's slave address.
 
-Thierry
 
---EVF5PPMfhYS0aIcm
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7cdgkACgkQZ+BJyKLjJp+5QwCfeX4ZaVA2ok1ZGKMt/jDI2X6E
-fGMAoK5wU19BDYES7zSJ7/iBMfzg6VXD
-=FRhB
------END PGP SIGNATURE-----
-
---EVF5PPMfhYS0aIcm--
