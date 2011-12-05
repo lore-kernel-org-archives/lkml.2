@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab1LERlc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:41:32 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58741 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932535Ab1LERla (ORCPT
+	id S932813Ab1LERlk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:41:40 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38791 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932535Ab1LERlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:41:30 -0500
-Date: Mon, 5 Dec 2011 09:41:15 -0800
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-1056c3e916f12cdd8042ab27dfccbb3a9e871df0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20111205120533.15475.62047.stgit@cloud>
-References: <20111205120533.15475.62047.stgit@cloud>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86/tools: Fix Makefile to build all test tools
-Git-Commit-ID: 1056c3e916f12cdd8042ab27dfccbb3a9e871df0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Mon, 5 Dec 2011 12:41:37 -0500
+Date: Mon, 5 Dec 2011 09:41:26 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Woody Suwalski <terraluna977@gmail.com>, Jeff Layton <jlayton@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Belisko Marek <marek.belisko@gmail.com>, linux-cifs@vger.kernel.org,
+        Network Development <netdev@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, davem@davemloft.net
+Subject: Re: CIFS mount: 3.2.0-rc3 suspend crash
+Message-ID: <20111205174126.GF627@google.com>
+References: <4ED56C12.1040708@gmail.com>
+ <4ED5C047.6040500@linux.vnet.ibm.com>
+ <20111130062502.68d9db59@tlielax.poochiereds.net>
+ <4ED81077.2080305@gmail.com>
+ <4ED8C940.20509@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:41:21 -0800 (PST)
+In-Reply-To: <4ED8C940.20509@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1056c3e916f12cdd8042ab27dfccbb3a9e871df0
-Gitweb:     http://git.kernel.org/tip/1056c3e916f12cdd8042ab27dfccbb3a9e871df0
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Mon, 5 Dec 2011 21:05:33 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Dec 2011 14:53:13 +0100
+Hello, Srivatsa.
 
-x86/tools: Fix Makefile to build all test tools
+On Fri, Dec 02, 2011 at 06:19:04PM +0530, Srivatsa S. Bhat wrote:
+> So how about solving this problem more fundamentally, such as defining a
+> freezable wrapper over kernel_recvmsg like:
+> 
+> #define kernel_recvmsg_freezable(sock, msg, vec, num, size, flags)      \
+> ({                                                                      \
+>         kernel_recvmsg(sock, msg, vec, num, size, flags)                \
+> 	try_to_freeze();                                                \
+> })
+> 
+> and using it instead of kernel_recvmsg(), throughout the kernel?
+> 
+> But kernel_recvmsg is an exported symbol. So if we are very very unwilling
+> to change the kernel ABI, we could probably think about adding try_to_freeze()
+> inside kernel_recvmsg itself,like this (but see below about my thoughts about
+> which one is better):
 
-Fix arch/x86/tools/Makefile to compile both test tools
-correctly. This bug leads build error.
+I don't necessarily object to introducing the wrapper but I don't
+really think we should be doing s//g over the source tree without
+understanding where it's actually necessary.  For kernel threads and
+user threads out of the signal delivery path, try_to_freeze() is an
+exceptional event which introduces behavior which can be difficult to
+reproduce track down and spreading it without actually knowing what
+the surrounding code is doing doesn't sound like a good idea to me.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20111205120533.15475.62047.stgit@cloud
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/tools/Makefile |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Thank you.
 
-diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
-index 3255c3d..d511aa9 100644
---- a/arch/x86/tools/Makefile
-+++ b/arch/x86/tools/Makefile
-@@ -25,8 +25,7 @@ posttest: $(obj)/test_get_len vmlinux $(obj)/insn_sanity
- 	$(call cmd,posttest)
- 	$(call cmd,sanitytest)
- 
--hostprogs-y	:= test_get_len
--hostprogs-y	:= insn_sanity
-+hostprogs-y	+= test_get_len insn_sanity
- 
- # -I needed for generated C source and C source which in the kernel tree.
- HOSTCFLAGS_test_get_len.o := -Wall -I$(objtree)/arch/x86/lib/ -I$(srctree)/arch/x86/include/ -I$(srctree)/arch/x86/lib/ -I$(srctree)/include/
+-- 
+tejun
