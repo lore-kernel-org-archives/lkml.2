@@ -1,184 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab1LEH4F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 02:56:05 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48471 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab1LEH4E convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 02:56:04 -0500
-MIME-Version: 1.0
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Date: Mon, 5 Dec 2011 09:55:31 +0200
-Message-ID: <CAPLs8y9omncDbLE_KNoKOLLbfwHjWYUJX_i7cC4bLiJsyPbtZQ@mail.gmail.com>
-Subject: v6: faster tree-based sysctl implementation
-To: "Eric W . Biederman" <ebiederm@xmission.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: netdev@vger.kernel.org, Octavian Purdila <tavi@cs.pub.ro>,
-        "David S . Miller" <davem@davemloft.net>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Damien Millescamps <damien.millescamps@6wind.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753625Ab1LEIIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 03:08:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59420 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753057Ab1LEIIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 03:08:49 -0500
+Date: Mon, 5 Dec 2011 19:08:27 +1100
+From: NeilBrown <neilb@suse.de>
+To: Chen Peter-B29397 <B29397@freescale.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH 1/1] driver core: disable device's runtime pm during
+ shutdown
+Message-ID: <20111205190827.68b179f4@notabene.brown>
+In-Reply-To: <35AB98346D25394A9354ED89C4D76587228F32@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1321231380-11631-1-git-send-email-peter.chen@freescale.com>
+	<201111142327.37524.rjw@sisk.pl>
+	<20111115005951.GB26360@kroah.com>
+	<201111160016.09174.rjw@sisk.pl>
+	<20111205085632.5976fe96@notabene.brown>
+	<CACVXFVNkapRDJ8QkgmJCh+n1c2+7cHBiLf1ef22Nfdd8YrPpGg@mail.gmail.com>
+	<20111205155338.1bd658b9@notabene.brown>
+	<35AB98346D25394A9354ED89C4D76587228F32@039-SN1MPN1-002.039d.mgd.msft.net>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/toPXK9FzAclaK6CkpF5LrVq"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is version 6 of a patch series that introduces a faster/leaner
-sysctl internal implementation.
-git://github.com/luciang/linux-2.6-new-sysctl.git  v6-new-sysctl-alg
-A subset of patches that add the minimal set of patches with the new
-algorithm is here:
- git://github.com/luciang/linux-2.6-new-sysctl.git  v6-new-sysctl-alg-slim
+--Sig_/toPXK9FzAclaK6CkpF5LrVq
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, 5 Dec 2011 05:53:27 +0000 Chen Peter-B29397 <B29397@freescale.com>
+wrote:
+
+>=20
+> =20
+> > > > So it is asleep when the new pm_runtime_disable() call is made, so =
+it
+> > stays
+> > > > asleep, omap_i2c_xfer cannot wake it, the transfer doesn't happen a=
+nd
+> > the
+> > > > system doesn't get powered off.
+> > > >
+> > > > So here is a device that should *not* have pm disabled at shutdown.
+> > > >
+> > > > So I feel this fix is a little too heavy-handed.
+> > >
+> > > Maybe the device's runtime PM should not be disabled if
+> > > there is no ->shutdown defined in its driver, how about the blew?
+> >=20
+> > Thanks, but that won't actually help.
+> >=20
+> > dev->bus->shutdown is i2c_device_shutdown so there is a shutdown method.
+> > However i2c_device_shutdown just finds the driver can calls
+> > driver->shutdown(), and that is the 'shutdown' that is NULL.
+> >=20
+> Then, i2c should be registered before than twl4030 as a platform device, =
+since
+> twl4030 is an i2c device. Just let i2c shut down later than twl4030's.=20
+
+It almost certainly is, but that is totally irrelevant.
+
+The problem has nothing to do with ordering and nothing much to do with
+->shutdown() being called.
+
+The problem is simply that pm_runtime_disable() is being called on all
+devices, and that stops devices that are asleep from waking up.
+
+I think the intention of putting that call in was to stop devices that are
+awake from going to sleep, and maybe that is justified.  But stopping devic=
+es
+that are asleep from waking up isn't.
+
+NeilBrown
 
 
-= Stats =
-
-$ time modprobe dummy numdummies=N
-
-Without this patch series :(
-- ipv4 only
-  -  N=1000  time= 0m 07s
-  -  N=2000  time= 0m 38s
-  -  N=4000  time= 4m 01s
-- ipv4 and ipv6
-  -  N=1000  time= 0m 35s
-  -  N=2000  time= 3m 09s
-  -  N=4000  time=14m 27s
-
-With this patch series :)
-- ipv4 only
-  -  N=1000  time= 0m  0.31s
-  -  N=2000  time= 0m  1.23s
-  -  N=4000  time= 0m  5.14s
-  -  N=8000  time= 0m 20.20s
-- ipv4 and ipv6
-  -  N=1000  time= 0m  0.70s
-  -  N=2000  time= 0m  1.93s
-  -  N=4000  time= 0m  7.03s
-  -  N=8000  time= 0m 40.89s
+>=20
+> > Thanks,
+> > NeilBrown
+> >=20
+> >=20
+> >=20
 
 
+--Sig_/toPXK9FzAclaK6CkpF5LrVq
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-= Changes =
-since v5:
- - https://lkml.org/lkml/2011/6/2/332 - nothing much because of lack
-of review. Echo, echo, echo ... :)
- - minor tweaks
- - rebased on 3.2-rc4
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
+iQIVAwUBTtx8ADnsnt1WYoG5AQIAxw//ZU1X1om6HaF6zy/D2mwrCbdH2ozECKh/
+XC8ytgaxWqMrxFMjbhyVOuQkwosq28ySN7BXlHnMXXvrQ/iEm9MQ8gVIjrjUdOt7
+S2nxKEglafobBNR7sXCi7JPyCu5D48Uq4lInvLzZ8U3N0W94ByK66GqGpGf5GwAY
+RBo7S/U3vz79r6QsGDC9h+7H/nmk8gHm9wsmxpavVfReSsYZYxoF+Be74wY6cOub
+RnYsaSt1O6KGjK4BxH9oKd4sHXXajsTO64zmgOIPNs3yqY3HvEHhi/G30BjKdc+5
+VS7LZuGjIRsYmJRNZvSSQs2MV5NdSyDL482A6jecstVUi91RRP9rNkygj2xO+b2R
+nRsHTMvW/BEacHOqWD2vr/RMG8pT4KxDmCd5poW6Wb3IQ5lA4xAASFx8e5D6vGV+
+HjVtaSaBQQtZF3TxZtclAtC5ZpEloBWOqPmx7vx9NqFZjD4RC+paau4Ugp2e3FgM
+59Ue/4yEEBSBrV0yvK8hhr/w0tNosSlLUyicuVlqo1kQSsrjS5g3nQJBN+QrhyoG
+fL/jM8kIXEc0Luh8xJQvnPTK6/5NedD0vtqzflv3C7H3ct+WbGXRiEvIlElgrnwD
+gECscqjD0FEi4lywQdcjWMW7Uesx+/7yn689CLbenC30ydjEC4y3H4b3brG6oPa4
+kZ9/Th2QCHU=
+=WAIQ
+-----END PGP SIGNATURE-----
 
-since v4: - http://thread.gmane.org/gmane.linux.network/196495/focus=1144143
-- rebased on 3.0-rc1 - added a new patch manually register
-kernel/usermodehelper which   was added in 3.0-rc1 - minor changes to
-the "sysctl: simplify find_in_table" patch
-
-since v3: - http://thread.gmane.org/gmane.linux.network/196495/ -
-removed a bad patch that shrinked a counter from int to u8
-
-since v2: - http://thread.gmane.org/gmane.linux.kernel/1137032/focus=3D194748
-- added a compatibility layer to support old registering complex
-sysctl trees. This layer will be deleted once all users of the   old
-are changed. - subdirectories and netns correspondent dirs are now
-held in rbtrees - split of from the patches that make changes in the
-rest of the tree - rebased on top of 2.6.39
-
-since v1: - http://thread.gmane.org/gmane.linux.kernel/1133667 -
-rebased on top of 2.6.39-rc6 - split the patch that adds the new
-algorithm and data structures. - fixed a few bugs lingering in the old
-code - shrinked a reference counter - added a new reference counter to
-maintain ownership information - added method to register an empty
-sysctl dir and converted some users - added checks enforcing the rule
-that a non-netns specific directory may   not be registered after a
-netns specific one has already been registered. - added cookie
-support: register a piece of data with the header to be   used to make
-simple conversions on the ctl_table.
-
-
-= Summary =
-
-Part 1: introduce compatibility layer:
-  sysctl: introduce temporary sysctl wrappers
-  sysctl: register only tables of sysctl files
-
-Part 2: minimal changes to sysctl users:
-  sysctl: call sysctl_init before the first sysctl registration
-  sysctl: no-child: manually register kernel/random
-  sysctl: no-child: manually register kernel/usermodehelper
-  sysctl: no-child: manually register kernel/keys
-  sysctl: no-child: manually register fs/inotify
-  sysctl: no-child: manually register fs/epoll
-  sysctl: no-child: manually register root tables
-
-Part 3: cleanups simplifying the new algorithm:
-  sysctl: faster reimplementation of sysctl_check_table
-  sysctl: remove useless ctl_table->parent field
-  sysctl: simplify find_in_table
-  sysctl: sysctl_head_grab defaults to root header on NULL
-  sysctl: delete useless grab_header function
-  sysctl: rename ->used to ->ctl_use_refs
-  sysctl: rename sysctl_head_grab/finish to sysctl_use_header/unuse
-  sysctl: rename sysctl_head_next to sysctl_use_next_header
-  sysctl: split ->count into ctl_procfs_refs and ctl_header_refs
-  sysctl: rename sysctl_head_get/put to sysctl_proc_inode_get/put
-  sysctl: rename (un)use_table to __sysctl_(un)use_header
-  sysctl: simplify ->permissions hook
-  sysctl: move removal from list out of start_unregistering
-  sysctl: introduce ctl_table_group and ctl_table_group_ops
-
-
-
-Part 4: new algorithm/data structures:
-  sysctl: faster tree-based sysctl implementation
-
-
-
-Part 5: checks/warns requested during review:
-  sysctl: add duplicate entry and sanity ctl_table checks
-  sysctl: alloc ctl_table_header with kmem_cache
-  sysctl: check netns-specific registration order respected
-  sysctl: warn if registration/unregistration order is not respected
-  sysctl: always perform sysctl checks
-  sysctl: reorder members of ctl_table_header (cleanup)
-  sysctl: add ctl_type member
-
-Part 6: further performance optimisations:
-  sysctl: replace subdirectory list with rbtree
-  sysctl: replace netns corresp list with rbtree
-  sysctl: union-ize some ctl_table_header fields
-
-Part 7: Eric requested ability to register an empty dir:
-  sysctl: add register_sysctl_dir: register an empty sysctl directory
-
-Part 8: unrequested feature I'd like to piggy back :)
-  sysctl: add ctl_cookie and ctl_cookie_handler
-  sysctl: add cookie to __register_sysctl_paths
-  sysctl: add register_net_sysctl_table_net_cookie
-
- drivers/char/random.c            |   27 +-
- fs/eventpoll.c                   |   22 +-
- fs/notify/inotify/inotify_user.c |   22 +-
- fs/proc/inode.c                  |    2 +-
- fs/proc/proc_sysctl.c            |  236 +++++---
- include/linux/inotify.h          |    2 -
- include/linux/key.h              |    3 -
- include/linux/kmod.h             |    3 -
- include/linux/poll.h             |    2 -
- include/linux/sysctl.h           |  221 +++++---
- include/net/net_namespace.h      |    4 +-
- init/main.c                      |    1 +
- kernel/Makefile                  |    5 +-
- kernel/kmod.c                    |   14 +-
- kernel/sysctl.c                  | 1170 ++++++++++++++++++++++++++++----------
- kernel/sysctl_check.c            |  316 +++++++----
- lib/Kconfig.debug                |    8 -
- net/sysctl_net.c                 |   86 ++--
- security/keys/key.c              |    7 +
- security/keys/sysctl.c           |   18 +-
- 20 files changed, 1500 insertions(+), 669 deletions(-)
-
--- 
-1.7.5.4
--- 
- .
-..: Lucian
+--Sig_/toPXK9FzAclaK6CkpF5LrVq--
