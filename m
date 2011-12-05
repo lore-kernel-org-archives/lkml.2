@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab1LEHcH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 02:32:07 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42552 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab1LEHcG (ORCPT
+	id S1752589Ab1LEHne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 02:43:34 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:50301 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098Ab1LEHnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 02:32:06 -0500
-Date: Mon, 5 Dec 2011 08:31:53 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>
-Subject: Re: [PTP] Implement clock_getres() function correctly
-Message-ID: <20111205073153.GA1460@cherladcori01>
-References: <alpine.LFD.2.02.1112041801000.2735@ionos>
- <alpine.LFD.2.02.1112041806550.2735@ionos>
+	Mon, 5 Dec 2011 02:43:33 -0500
+Date: Mon, 5 Dec 2011 08:43:05 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Heiko Schocher <hs@denx.de>, Wolfgang Denk <wd@denx.de>,
+        Vitaly Bordug <vbordug@ru.mvista.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] drivers, char: add U-Boot bootcount driver
+Message-ID: <20111205074305.GA7806@avionic-0098.mockup.avionic-design.de>
+References: <1322991921-21096-1-git-send-email-hs@denx.de>
+ <20111204114741.GA5788@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1112041806550.2735@ionos>
+In-Reply-To: <20111204114741.GA5788@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:asnlBT70ZhSu9zt5wMhF9HWrwtB4DQnOYSQtyHOfR9k
+ CyN3+Hs2YGdEgyrkXSBnT48Spklri2QpU1UPtlyue/5R+B8KmK
+ 0ImjH3b89D+vWcJUt0je/KDeV/O6kkS9a/Ukw0qpXAlBWW2VEq
+ F32Ad5HrIgDCB6qIpAXTGSk82dGO2TRd5Ao+VnDAHVMJPvHkHe
+ YPFDLUJJch79NzZ3QHkyKHxp7nWgUPFHGq6nE04YBSkzDoXorG
+ ZpFZVvVQXQkRjuJTknOoK3VyfgdJM99cLxXHIJ/dAoahGW5M42
+ /pXMZ5FvpahvnKwy11YxSzcmVj7XaGRBClTyEAkUgjSc13SyT5
+ +3OujcUn5/oMY6OBUTxxY8SU2tzk3dFc6XTuwYPjrVNDpHFqYp
+ mNnDWkWZSU5Wbpt0/6wfHmKTzasEISE3Gg6ItVgpq82AejhhkM
+ JbMoD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 04, 2011 at 06:07:43PM +0100, Thomas Gleixner wrote:
-> On Sun, 4 Dec 2011, Thomas Gleixner wrote:
-> 
-> > clock_getres() needs to put the resolution into the provided timespec
-> > and return 0 in case of success.
-> > 
-> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: stable@vger.kernel.org
-> 
-> Gah, wrong version.
 
-Thanks for spotting that weird left over (from the old posix-timer.c
-code).
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Richard Cochran <richardcochran@gmail.com>
+* Wolfram Sang wrote:
+> On Sun, Dec 04, 2011 at 10:45:21AM +0100, Heiko Schocher wrote:
+[...]
+> >                   reg =3D <0x23060 0x20>;
+>=20
+> I assume that non-volatile memory would qualify as a boot-counter, so tho=
+se
+> could be tied to I2C busses etc? reg would not fit then.
 
-BTW, my email address has changed. Did you see my patch for
-MAINTAINERS a few weeks back? It would help when finding the current
-email address.
+This is not really on-topic, but in the device-tree the "reg" property is
+used to encode an I2C device's slave address.
 
-Thanks,
-Richard
+Thierry
 
- 
-> diff --git a/drivers/ptp/ptp_clock.c b/drivers/ptp/ptp_clock.c
-> index cf3f999..6b0c02a 100644
-> --- a/drivers/ptp/ptp_clock.c
-> +++ b/drivers/ptp/ptp_clock.c
-> @@ -101,7 +101,10 @@ static s32 scaled_ppm_to_ppb(long ppm)
->  
->  static int ptp_clock_getres(struct posix_clock *pc, struct timespec *tp)
->  {
-> -	return 1; /* always round timer functions to one nanosecond */
-> +	/* Resolution is one nanosecond */
-> +	tp->tv_sec = 0;
-> +	tp->tv_nsec = 1;
-> +	return 0;
->  }
->  
->  static int ptp_clock_settime(struct posix_clock *pc, const struct timespec *tp)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+--EVF5PPMfhYS0aIcm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7cdgkACgkQZ+BJyKLjJp+5QwCfeX4ZaVA2ok1ZGKMt/jDI2X6E
+fGMAoK5wU19BDYES7zSJ7/iBMfzg6VXD
+=FRhB
+-----END PGP SIGNATURE-----
+
+--EVF5PPMfhYS0aIcm--
