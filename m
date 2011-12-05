@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab1LEMwb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 07:52:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56865 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932109Ab1LEMwa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 07:52:30 -0500
-Date: Mon, 5 Dec 2011 04:51:34 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-j7st3oyiotvfxqde2nc41kxb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-        efault@gmx.de, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, fweisbec@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui progress: Fix divide by zero
-Git-Commit-ID: 18b552350515188a732db6ccdb81e9cefb8b58c9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S932189Ab1LEMwo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 07:52:44 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42035 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932109Ab1LEMwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 07:52:43 -0500
+Date: Mon, 5 Dec 2011 13:51:07 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Marc Leeman <marc.leeman@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org
+Subject: Re: [PATCH]: expose FORCE_MAX_ZONEORDER on x86
+Message-ID: <20111205125107.GH3143@elte.hu>
+References: <CAH+fs=-WkbLgB-wsNEPS_OnvqwK9eChMCrMOudjtg7bu2ZtqHg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 04:51:40 -0800 (PST)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAH+fs=-WkbLgB-wsNEPS_OnvqwK9eChMCrMOudjtg7bu2ZtqHg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  18b552350515188a732db6ccdb81e9cefb8b58c9
-Gitweb:     http://git.kernel.org/tip/18b552350515188a732db6ccdb81e9cefb8b58c9
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 11 Nov 2011 22:08:07 -0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 28 Nov 2011 10:36:57 -0200
 
-perf ui progress: Fix divide by zero
+* Marc Leeman <marc.leeman@gmail.com> wrote:
 
-Happens in a perf.data file where one of the events had no samples.
+> Larger blocks of memory can be required for e.g. higher resolutions on
+> some capture card drivers; this patch just enables an already
+> available configuration option on x86 (it was already exposed on other
+> architectures).
+> 
+> The default is set to 11, as in
+> ./include/linux/mmzone.h
+> 
+> [barco@nmgserver001 linux-3.0]$ find . -name Kconfig | xargs grep
+> FORCE_MAX_ZONEORDER
+> ./arch/ia64/Kconfig:config FORCE_MAX_ZONEORDER
+> ./arch/cris/Kconfig:config FORCE_MAX_ZONEORDER
+> ./arch/arm/Kconfig:config FORCE_MAX_ZONEORDER
+> ./arch/s390/Kconfig:config FORCE_MAX_ZONEORDER
+> ./arch/mips/Kconfig:config FORCE_MAX_ZONEORDER
+> ./arch/sh/mm/Kconfig:config FORCE_MAX_ZONEORDER
+> ./arch/blackfin/Kconfig:config FORCE_MAX_ZONEORDER
+> ./arch/powerpc/Kconfig:config FORCE_MAX_ZONEORDER
+> 
+> 
+> 
+> -- 
+> br, marc
+> 
+> The best approach for you requires two steps. The first step is
+> reading the Manual.
+>     Wolfgang Denk - u-boot mailing list
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-j7st3oyiotvfxqde2nc41kxb@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/progress.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+> From 8ad64edbf92ac8e0253677bd3f9ad376ce3be7d1 Mon Sep 17 00:00:00 2001
+> From: Marc Leeman <marc.leeman@gmail.com>
+> Date: Wed, 26 Oct 2011 10:35:24 +0200
+> Subject: [PATCH] KConfig x86: enable FORCE_MAX_ZONEORDER
 
-diff --git a/tools/perf/util/ui/progress.c b/tools/perf/util/ui/progress.c
-index 295e366..13aa64e 100644
---- a/tools/perf/util/ui/progress.c
-+++ b/tools/perf/util/ui/progress.c
-@@ -14,6 +14,9 @@ void ui_progress__update(u64 curr, u64 total, const char *title)
- 	if (use_browser <= 0)
- 		return;
- 
-+	if (total == 0)
-+		return;
-+
- 	ui__refresh_dimensions(true);
- 	pthread_mutex_lock(&ui__lock);
- 	y = SLtt_Screen_Rows / 2 - 2;
+I guess we could do this - but you forgot to sign off on your 
+patch.
+
+Thanks,
+
+	Ingo
