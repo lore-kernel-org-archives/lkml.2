@@ -1,50 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408Ab1LETRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:17:32 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46600 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191Ab1LETRa convert rfc822-to-8bit (ORCPT
+	id S932317Ab1LETSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:18:33 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45678 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab1LETSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:17:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111206060654.0e8bebe0@notabene.brown>
-References: <20111205125416.6093ecd8@notabene.brown>
-	<CAK=Wgbb-6eV6aDxTdi3qFLZmu0cHSZvHRUpUEr3YQ=4tO5sCPw@mail.gmail.com>
-	<20111206060654.0e8bebe0@notabene.brown>
-Date: Mon, 5 Dec 2011 13:17:29 -0600
-X-Google-Sender-Auth: hP_Uke5maR-EYdXxFSpaV8vdY8g
-Message-ID: <CAMLZHHRPvTSMAte_MO2VA-0B8_x=iPiY5L1T=pEBqn+zp62Arw@mail.gmail.com>
-Subject: Re: [PATCH] mmc/sdio: don't allow interface to runtime-suspend until
- probe is finished.
-From: Daniel Drake <dsd@laptop.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-mmc@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Joe Woodward <jw@terrafix.co.uk>,
-        Chris Ball <cjb@laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Dec 2011 14:18:32 -0500
+Date: Mon, 5 Dec 2011 22:22:02 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [regression] WARNING: at drivers/block/floppy.c:2929
+ do_fd_request+0xb7/0xb9() in 3.2.0-rc2 and 3
+Message-ID: <20111205222202.3ede37f3@sf.home>
+In-Reply-To: <20111205183236.GI627@google.com>
+References: <20111125103420.GO4581@charite.de>
+	<20111205202114.6457443b@sf.home>
+	<20111205183236.GI627@google.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/5=QcO40_NyNZDP4erBCK5V7"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 5, 2011 at 1:06 PM, NeilBrown <neilb@suse.de> wrote:
-> The chip has a requirement that the reset line is held down during power-on,
-> and raised shortly after (I don't know exactly how short).  So if you just
-> remove power and give it back, the chip doesn't come up properly.
+--Sig_/5=QcO40_NyNZDP4erBCK5V7
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-In another thread, Marvell confirmed that performing a SDIO reset is
-sufficient, no reset line tweaking is needed in the face of a reset.
+On Mon, 5 Dec 2011 10:32:36 -0800
+Tejun Heo <tj@kernel.org> wrote:
 
-However, I would certainly advise playing with this reset line at the
-point of failure - you could confirm if it is or isn't being tweaked
-at this particular point, and if its not, you could try adjusting the
-code to manipulate this line at this point to see if it helps at all.
+> On Mon, Dec 05, 2011 at 08:21:14PM +0300, Sergei Trofimovich wrote:
+> > Same here on 3.2.0-rc4-00077-g5983fe2
+> >=20
+> > 'swapper' cmd looks suspicious.
+> > [ CCing someone who is familar with block layer, sorry in advance ]
+> >=20
+> > [    3.792015] floppy0: no floppy controllers found
+> > [    3.792274] ------------[ cut here ]------------
+> > [    3.792434] WARNING: at drivers/block/floppy.c:2929 do_fd_request+0x=
+bf/0xd0()
+> > [    3.792587] Hardware name: To Be Filled By O.E.M.
+> > [    3.792738] VFS: do_fd_request called on non-open device
+> > [    3.792889] Modules linked in:
+> > [    3.793008] Pid: 1, comm: swapper Not tainted 3.2.0-rc4-00077-g5983f=
+e2 #2
+> > [    3.793008] Call Trace:
+> > [    3.793008]  [<ffffffff81039a6a>] warn_slowpath_common+0x7a/0xb0
+> > [    3.793008]  [<ffffffff81039b41>] warn_slowpath_fmt+0x41/0x50
+> > [    3.793008]  [<ffffffff813d657f>] do_fd_request+0xbf/0xd0
+> > [    3.793008]  [<ffffffff81322b95>] blk_drain_queue+0x65/0x80
+> > [    3.793008]  [<ffffffff81322c93>] blk_cleanup_queue+0xe3/0x1a0
+> > [    3.793008]  [<ffffffff818a809d>] floppy_init+0xdeb/0xe28
+> > [    3.793008]  [<ffffffff818a72b2>] ? daring+0x6b/0x6b
+> > [    3.793008]  [<ffffffff810002af>] do_one_initcall+0x3f/0x170
+> > [    3.793008]  [<ffffffff81884b34>] kernel_init+0x9d/0x11e
+> > [    3.793008]  [<ffffffff810317c2>] ? schedule_tail+0x22/0xa0
+> > [    3.793008]  [<ffffffff815dbb14>] kernel_thread_helper+0x4/0x10
+> > [    3.793008]  [<ffffffff81884a97>] ? start_kernel+0x2be/0x2be
+> > [    3.793008]  [<ffffffff815dbb10>] ? gs_change+0xb/0xb
+> > [    3.793008] ---[ end trace c5807061655fec8c ]---
+>=20
+> Does the following patch make the warning go away?
 
-Another area of experimentation is detailed here:
-http://article.gmane.org/gmane.linux.kernel.mmc/11475
-especially if you can confirm that mmc_send_if_cond is the source of
-the failure.
+It does. Thank you!
+Tried to boot only once with patch though (is bug deterministic?)
 
-Thanks,
-Daniel
+> Thanks.
+>=20
+>  block/blk-core.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index ea70e6c..653cc22 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -366,7 +366,8 @@ void blk_drain_queue(struct request_queue *q, bool dr=
+ain_all)
+>  		if (drain_all)
+>  			blk_throtl_drain(q);
+> =20
+> -		__blk_run_queue(q);
+> +		if (!list_empty(&q->queue_head))
+> +			__blk_run_queue(q);
+> =20
+>  		if (drain_all)
+>  			nr_rqs =3D q->rq.count[0] + q->rq.count[1];
+
+--=20
+
+  Sergei
+
+--Sig_/5=QcO40_NyNZDP4erBCK5V7
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEARECAAYFAk7dGeMACgkQcaHudmEf86pqoQCeLuvynSjM25m78GtNTXFqXz4d
+pZsAn1+9ZBL0mnJV0HFPQVKd7rt0fM8j
+=1Jpw
+-----END PGP SIGNATURE-----
+
+--Sig_/5=QcO40_NyNZDP4erBCK5V7--
