@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932687Ab1LEWsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 17:48:09 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10044 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab1LEWsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 17:48:07 -0500
-Date: Mon, 5 Dec 2011 23:48:05 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Greg KH <greg@kroah.com>
-cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>
-Subject: Re: [PATCH] [staging] iio, adc: Do not leak memory in
- ad7280_event_handler()
-In-Reply-To: <20111127004325.GA21259@kroah.com>
-Message-ID: <alpine.LNX.2.00.1112052347440.7382@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1111062246580.5763@swampdragon.chaosbits.net> <20111127004325.GA21259@kroah.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932720Ab1LEWtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 17:49:01 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:33295 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751455Ab1LEWtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 17:49:00 -0500
+X-Greylist: delayed 848 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Dec 2011 17:49:00 EST
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>
+Subject: [PATCH] rapidio/tsi721: switch to dma_zalloc_coherent
+Date: Mon,  5 Dec 2011 17:33:45 -0500
+Message-Id: <1323124425-24808-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 26 Nov 2011, Greg KH wrote:
+Replaces pair dma_alloc_coherent()+memset() with new dma_zalloc_coherent()
+added by Andrew Morton for kernel version 3.2
 
-> On Sun, Nov 06, 2011 at 10:49:22PM +0100, Jesper Juhl wrote:
-> > If ad7280_read_all_channels() returns <0 then we'll leak the memory
-> > allocated to 'channels' when we return and that variable goes out of
-> > scope.
-> > This patch fixes the leak.
-> 
-> This patch no longer applies to my tree, can you redo it against the
-> next linux-next release and resend it?
-> 
-> thanks,
-> 
-> greg k-h
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+---
+ drivers/rapidio/devices/tsi721.c |   17 ++++-------------
+ 1 files changed, 4 insertions(+), 13 deletions(-)
 
-Sure. I'll take a look at it this weekend.
-
-
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index 5225930..514c28c 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -851,14 +851,12 @@ static int tsi721_doorbell_init(struct tsi721_device *priv)
+ 	INIT_WORK(&priv->idb_work, tsi721_db_dpc);
+ 
+ 	/* Allocate buffer for inbound doorbells queue */
+-	priv->idb_base = dma_alloc_coherent(&priv->pdev->dev,
++	priv->idb_base = dma_zalloc_coherent(&priv->pdev->dev,
+ 				IDB_QSIZE * TSI721_IDB_ENTRY_SIZE,
+ 				&priv->idb_dma, GFP_KERNEL);
+ 	if (!priv->idb_base)
+ 		return -ENOMEM;
+ 
+-	memset(priv->idb_base, 0, IDB_QSIZE * TSI721_IDB_ENTRY_SIZE);
+-
+ 	dev_dbg(&priv->pdev->dev, "Allocated IDB buffer @ %p (phys = %llx)\n",
+ 		priv->idb_base, (unsigned long long)priv->idb_dma);
+ 
+@@ -904,7 +902,7 @@ static int tsi721_bdma_ch_init(struct tsi721_device *priv, int chnum)
+ 	 */
+ 
+ 	/* Allocate space for DMA descriptors */
+-	bd_ptr = dma_alloc_coherent(&priv->pdev->dev,
++	bd_ptr = dma_zalloc_coherent(&priv->pdev->dev,
+ 					bd_num * sizeof(struct tsi721_dma_desc),
+ 					&bd_phys, GFP_KERNEL);
+ 	if (!bd_ptr)
+@@ -913,8 +911,6 @@ static int tsi721_bdma_ch_init(struct tsi721_device *priv, int chnum)
+ 	priv->bdma[chnum].bd_phys = bd_phys;
+ 	priv->bdma[chnum].bd_base = bd_ptr;
+ 
+-	memset(bd_ptr, 0, bd_num * sizeof(struct tsi721_dma_desc));
+-
+ 	dev_dbg(&priv->pdev->dev, "DMA descriptors @ %p (phys = %llx)\n",
+ 		bd_ptr, (unsigned long long)bd_phys);
+ 
+@@ -922,7 +918,7 @@ static int tsi721_bdma_ch_init(struct tsi721_device *priv, int chnum)
+ 	sts_size = (bd_num >= TSI721_DMA_MINSTSSZ) ?
+ 					bd_num : TSI721_DMA_MINSTSSZ;
+ 	sts_size = roundup_pow_of_two(sts_size);
+-	sts_ptr = dma_alloc_coherent(&priv->pdev->dev,
++	sts_ptr = dma_zalloc_coherent(&priv->pdev->dev,
+ 				     sts_size * sizeof(struct tsi721_dma_sts),
+ 				     &sts_phys, GFP_KERNEL);
+ 	if (!sts_ptr) {
+@@ -938,8 +934,6 @@ static int tsi721_bdma_ch_init(struct tsi721_device *priv, int chnum)
+ 	priv->bdma[chnum].sts_base = sts_ptr;
+ 	priv->bdma[chnum].sts_size = sts_size;
+ 
+-	memset(sts_ptr, 0, sts_size);
+-
+ 	dev_dbg(&priv->pdev->dev,
+ 		"desc status FIFO @ %p (phys = %llx) size=0x%x\n",
+ 		sts_ptr, (unsigned long long)sts_phys, sts_size);
+@@ -1400,7 +1394,7 @@ static int tsi721_open_outb_mbox(struct rio_mport *mport, void *dev_id,
+ 
+ 	/* Outbound message descriptor status FIFO allocation */
+ 	priv->omsg_ring[mbox].sts_size = roundup_pow_of_two(entries + 1);
+-	priv->omsg_ring[mbox].sts_base = dma_alloc_coherent(&priv->pdev->dev,
++	priv->omsg_ring[mbox].sts_base = dma_zalloc_coherent(&priv->pdev->dev,
+ 			priv->omsg_ring[mbox].sts_size *
+ 						sizeof(struct tsi721_dma_sts),
+ 			&priv->omsg_ring[mbox].sts_phys, GFP_KERNEL);
+@@ -1412,9 +1406,6 @@ static int tsi721_open_outb_mbox(struct rio_mport *mport, void *dev_id,
+ 		goto out_desc;
+ 	}
+ 
+-	memset(priv->omsg_ring[mbox].sts_base, 0,
+-		entries * sizeof(struct tsi721_dma_sts));
+-
+ 	/*
+ 	 * Configure Outbound Messaging Engine
+ 	 */
 -- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.6
 
