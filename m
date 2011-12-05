@@ -1,67 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab1LEC60 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 21:58:26 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:36311 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753625Ab1LEC6Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 21:58:25 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX193m3l7BbZ3KwoPvnNWXkYFB+sM5XefvtlAhN+/Gr
-	W/CWgnq9dBw5kV
-Subject: Re: [PATCH 00/11] [ANNOUNCE] 3.0.12-rt30-rc2
-From: Mike Galbraith <efault@gmx.de>
-To: Tim Sander <tim01@vlsi.informatik.tu-darmstadt.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-In-Reply-To: <201112042113.37047.tim01@vlsi.informatik.tu-darmstadt.de>
-References: <20111204185444.411298317@goodmis.org>
-	 <201112042113.37047.tim01@vlsi.informatik.tu-darmstadt.de>
+	id S1754050Ab1LEDER (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 22:04:17 -0500
+Received: from victor.provo.novell.com ([137.65.250.26]:59666 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753622Ab1LEDEP (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Sun, 4 Dec 2011 22:04:15 -0500
+Subject: Re: [Dual-LVDS Acer Iconia laptop] i915/DRM issue: one screen
+ stays off [3.2-rc4+]
+From: joeyli <jlee@suse.com>
+To: Baptiste Jonglez <baptiste@jonglez.org>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org
+In-Reply-To: <20111204160728.GA27292@archminux>
+References: <20111204160728.GA27292@archminux>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Dec 2011 03:58:19 +0100
-Message-ID: <1323053899.5151.7.camel@marge.simson.net>
+Date: Mon, 05 Dec 2011 11:00:41 +0800
+Message-ID: <1323054041.6046.79.camel@linux-s257.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-12-04 at 21:13 +0100, Tim Sander wrote:
-> Hi Steven
-> > This is the RT stable review cycle of patch 3.0.12-rt30-rc2.
-> > 
-> > Please scream at me if I messed something up. Please test the patches too.
-> Ok, this is a nearly blind shot, but i was expieriencing strange idle time 
-> behaviour with this Ingo Molnar patch. The idle time was never incremented as 
-> read from /proc/stat for several minutes. The system itself was behaving fine
-> and had definetly not 100% load which was also verified with top.
+Add Cc. to platform-driver-x86 and linux-acpi
+
+Hi Baptiste
+
+於 日，2011-12-04 於 17:07 +0100，Baptiste Jonglez 提到：
+> Hi,
 > 
-> I hadn't had the time to investigate further and my tests where with an ealier 
-> release with the Ingo Molnar Tasklet patch on top.
+> I've got a lot of troubles with a dual-LVDS Acer laptop (it doesn't
+> have a keyboard, but two displays with touchscreens)
+> 
+> The Intel GPU is integrated into the Core i5-480M CPU: it's a bit
+> older than Sandybridge, as it seems to be based on the Arrandale
+> micro-architecture.
+> 
+> In the BIOS, both displays work fine; but as soon as the kernel boots
+> up, the second display (i.e. the one where you usually find a
+> keyboard) is turned off. The main display works as expected.
+> 
+> xrandr reports two LVDS displays: LVDS1, which is connected, and
+> LVDS2, which is marked as "disconnected". No matter what I tried, I
+> can't bring that second display up.
+> 
+> During the boot, just after the drm is set up, the following message
+> shows up:
+> 
+>   [drm:intel_dsm_pci_probe] *ERROR* failed to get supported _DSM functions
+> 
+> (attached is the relevant part of dmesg [1])
+> 
+> 
 
-Must be either config related, or something got fixed meanwhile.
-rt30-rc1..
+Have no idea for this _DSM error, need help from drm and acpi experts.
 
-marge:~ # while sleep 1; do  grep cpu /proc/stat|grep -v cpu[0-3]; done
-cpu  33066 90 10762 519426 36625 0 597 0 0 0
-cpu  33110 90 10792 519643 36723 0 601 0 0 0
-cpu  33149 91 10819 519869 36817 0 604 0 0 0
-cpu  33189 91 10849 520099 36906 0 609 0 0 0
-cpu  33231 92 10879 520329 36994 0 614 0 0 0
-cpu  33273 92 10906 520561 37083 0 619 0 0 0
-cpu  33312 93 10935 520789 37176 0 624 0 0 0
-cpu  33356 93 10963 521017 37264 0 628 0 0 0
-cpu  33394 94 10991 521250 37352 0 632 0 0 0
-cpu  33435 95 11016 521478 37445 0 634 0 0 0
-cpu  33480 96 11040 521700 37539 0 638 0 0 0
-cpu  33517 96 11068 521911 37650 0 643 0 0 0
-cpu  33551 97 11096 522113 37776 0 647 0 0 0
-^C
-marge:~ # 
+> 
+> I then tried booting with "video=LVDS-2:e". The same message shows up
+> while booting, with these two following:
+> 
+>   [drm:drm_crtc_helper_set_config] *ERROR* failed to set mode on [CRTC:4]
+>   fbcon_init: detected unhandled fb_set_par error, error code -22
+> 
+> (attached is the relevant part of dmesg [2])
+> 
+> With that kernel command line forcing LVDS2, the
+> "drm_crtc_helper_set_config" error shows up each time I switch tty;
+> additionally, X does not want to start anymore (spewing out the
+> aforementioned error multiple times before giving up)
+> 
+> 
+> I'm currently using the latest 3.2 kernel from linus' tree
+> (af968e29acd91ebeb4224e899202c46c93171ecd), but the behavior was
+> similar with a vanilla 3.1.2.
+> 
+> 
+> Other notes about this issue:
+> 
+>  - with an Ubuntu 2.6.35 kernel, the second display is on but
+>    flickering (with the picture distorted like an old analog TV...).
+>    The main display is working fine, as always.
+> 
+>  - with an Archlinux 2.6.37.5 kernel, the behavior is the same as with
+>    3.2, the main display is ok and the second one is off.
+> 
+>  - I did succeed, only once and out of pure luck, to get the second
+>    screen to work with the 3.1.2 kernel. I haven't been able to
+>    reproduce that... I had booted with "video=LVDS-2:e" and let the
+>    laptop running ; pressing a key a few hours later turned back
+>    *both* displays on (the main display had been turned off by DPMS,
+>    and the second, well, was off from the start, as always)
+>    While not very helpful, it shows that it's definitely possible.
+> 
 
+What does Windows platform's behavior? Does there have any physical key
+that can turn on/off the second LVDS on Windows?
+
+>  - there are a some unhandled WMI events logged from the acer-wmi
+>    module [3] when closing the lid, opening it, and most importantly,
+>    when the (main) screen is turned on or off by DPMS.
+> 
+
+I will look at your dsdt and log from acer-wmi then try to improve
+acer-wmi.
+
+> 
+> 
+> What do you think? I haven't really succeeded in nailing the source of
+> the issue down, but here are a few possibilities I'm thinking of:
+> 
+>  - the driver is not aware it can drive two LVDS displays (not very
+>    likely, and it has worked once, see above)
+> 
+>  - there is some kind of switch that is able to turn the second screen
+>    on or off (I'm thinking of something like rfkill). If so, it looks
+>    like something non-standard and undocumented. This would explain
+>    the WMI events (see the last note above)
+> 
+
+What's the behavior of Windows?
+
+>  - buggy ACPI implementation. I tried to extract then recompile the
+>    DSDT [4], and iasl spews out 17 errors and 12 warnings. Also worth
+>    noticing is that line in dmesg:
+> "pci0000:00: ACPI _OSC request failed (AE_ERROR), returned control mask: 0x1d"
+> 
+> 
+> The Archlinux userland is:
+>  - libdrm 2.4.27
+>  - xorg-server 1.11.2
+>  - intel-dri 7.11.1
+>  - xf86-video-intel 2.17.0
+> 
+> 
+> Please let me know if there are any other details I should provide.
+> Regards,
+> Baptiste
+> 
+> Attachments:
+> [1] dmesg-DSM-functions.log - drm errors when booting normally
+> [2] dmesg-video-lvds2.log - drm errors when forcing LVDS2 on the cmdline
+> [3] acer_wmi.log - WMI events that land in dmesg
+> [4] dsdt - /sys/firmware/acpi/tables/DSDT
+
+Please also attached on dmidecode log.
+
+
+Thank's a lot!
+Joey Lee
 
