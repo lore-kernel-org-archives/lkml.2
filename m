@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab1LEPIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:08:52 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38028 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932246Ab1LEPIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:08:51 -0500
-Message-ID: <4EDCDE54.3030300@linux.vnet.ibm.com>
-Date: Mon, 05 Dec 2011 09:08:04 -0600
-From: Mike wolf <mjw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S932383Ab1LEPKY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:10:24 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45805 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932246Ab1LEPKX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 10:10:23 -0500
+Date: Mon, 5 Dec 2011 16:10:16 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jan Beulich <JBeulich@suse.com>
+Subject: Re: [GIT PULL] x86, microcode fixes for 3.2
+Message-ID: <20111205151016.GC7834@aftab>
+References: <20111128204311.GA2814@aftab>
+ <20111202194658.GF15204@aftab>
+ <20111205092612.GB29641@elte.hu>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Do not include throttled time as steal time
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120515-7182-0000-0000-000000565BEF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111205092612.GB29641@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the linux kernel is running as the guest OS and is configured
-for bandwidth control and steal time reporting, it can be confusing
-to users to see the throttled time show up in the steal time stats.
-The user will think they are not getting the cpu resources they have
-been configured.
+On Mon, Dec 05, 2011 at 10:26:12AM +0100, Ingo Molnar wrote:
+> Mind respinning this once more against latest -git? There's a 
+> new conflict due to:
+> 
+>   8e8da023f5af: x86: Fix boot failures on older AMD CPU's
 
-Signed-off-by: Mike Wolf <mjw@linux.vnet.ibm.com>
+Branch is updated, it also contains the following patch:
+
+--
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Mon, 5 Dec 2011 14:28:37 +0100
+Subject: [PATCH] x86: Document rdmsr_safe restrictions
+
+Recently, I got bitten by using rdmsr_safe too early in the boot
+process. Document its shortcomings for future reference.
+
+Link: http://lkml.kernel.org/r/4ED5B70F.606@lwfinger.net
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
-  kernel/sched_fair.c  |    4 ++--
-  kernel/sched_stats.h |    7 ++++++-
-  2 files changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/msr.h |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5c9e679..a837e4e 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -707,7 +707,7 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct 
-sched_entity *se)
+diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
+index 084ef95..95203d4 100644
+--- a/arch/x86/include/asm/msr.h
++++ b/arch/x86/include/asm/msr.h
+@@ -169,7 +169,14 @@ static inline int wrmsr_safe(unsigned msr, unsigned low, unsigned high)
+ 	return native_write_msr_safe(msr, low, high);
+ }
+ 
+-/* rdmsr with exception handling */
++/*
++ * rdmsr with exception handling.
++ *
++ * Please note that the exception handling works only after we've
++ * switched to the "smart" #GP handler in trap_init() which knows about
++ * exception tables - using this macro earlier than that causes machine
++ * hangs on boxes which do not implement the @msr in the first argument.
++ */
+ #define rdmsr_safe(msr, p1, p2)					\
+ ({								\
+ 	int __err;						\
+-- 
+1.7.8.rc0
 
-  #ifdef CONFIG_FAIR_GROUP_SCHED
-  /* we need this in update_cfs_load and load-balance functions below */
--static inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
-+inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
-  # ifdef CONFIG_SMP
-  static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
-                          int global_update)
-@@ -1420,7 +1420,7 @@ static inline int cfs_rq_throttled(struct cfs_rq 
-*cfs_rq)
-  }
+Thanks.
 
-  /* check whether cfs_rq, or any parent, is throttled */
--static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-+inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-  {
-      return cfs_rq->throttle_count;
-  }
-diff --git a/kernel/sched_stats.h b/kernel/sched_stats.h
-index 87f9e36..e30ff26 100644
---- a/kernel/sched_stats.h
-+++ b/kernel/sched_stats.h
-@@ -213,14 +213,19 @@ static inline void sched_info_queued(struct 
-task_struct *t)
-   * sched_info_queued() to mark that it has now again started waiting on
-   * the runqueue.
-   */
-+extern inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
-  static inline void sched_info_depart(struct task_struct *t)
-  {
-+    struct task_group *tg = task_group(t);
-+    struct cfs_rq *cfs_rq;
-      unsigned long long delta = task_rq(t)->clock -
-                      t->sched_info.last_arrival;
+-- 
+Regards/Gruss,
+Boris.
 
-+    cfs_rq = tg->cfs_rq[smp_processor_id()];
-      rq_sched_info_depart(task_rq(t), delta);
-
--    if (t->state == TASK_RUNNING)
-+
-+    if (t->state == TASK_RUNNING && !throttled_hierarchy(cfs_rq))
-          sched_info_queued(t);
-  }
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
