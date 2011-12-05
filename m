@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab1LERMS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:12:18 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50260 "EHLO
+	id S932568Ab1LEROw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:14:52 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:65050 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932523Ab1LERMQ (ORCPT
+	with ESMTP id S932523Ab1LEROu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:12:16 -0500
-Date: Mon, 5 Dec 2011 09:12:09 -0800
+	Mon, 5 Dec 2011 12:14:50 -0500
+Date: Mon, 5 Dec 2011 09:14:43 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: benh@kernel.crashing.org, yinghai@kernel.org, hpa@zytor.com,
-        tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, lethal@linux-sh.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        mingo@redhat.com, jonas@southpole.se, lennox.wu@gmail.com,
-        sfr@canb.auug.org.au
-Subject: Re: [PATCHSET tip:x86/memblock] memblock: Kill early_node_map[],
- take 2
-Message-ID: <20111205171209.GA627@google.com>
-References: <1322508685-32532-1-git-send-email-tj@kernel.org>
- <20111205163148.GA25909@elte.hu>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 1/3] PM / Sleep: Make [un]lock_system_sleep() generic
+Message-ID: <20111205171443.GB627@google.com>
+References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111205163148.GA25909@elte.hu>
+In-Reply-To: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Stephen, hi!)
+Hello,
 
-On Mon, Dec 05, 2011 at 05:31:48PM +0100, Ingo Molnar wrote:
-> * Tejun Heo <tj@kernel.org> wrote:
-> 
-> > Hello,
-> > 
-> > This patchset was posted quite a while ago but got lost during the
-> > korg disturbance and I forgot about it too.  Thankfully, benh pinged
-> > me about testing this patchset yesterday, so here's the refreshed
-> > version.
-> 
-> A bit scary - you should get it into linux-next i suspect - if 
-> that works out then we could then put it into tip:core/memblock 
-> if there are no objections from anyone.
-> 
-> It's not really an x86 tree and most of the changes are 
-> affecting non-x86 architectures, right?
+On Mon, Dec 05, 2011 at 01:32:38AM +0530, Srivatsa S. Bhat wrote:
+> +static inline void lock_system_sleep(void)
+> +{
+> +	/* simplified freezer_do_not_count() */
+> +	current->flags |= PF_FREEZER_SKIP;
+> +	mutex_lock(&pm_mutex);
+> +}
+> +
+> +static inline void unlock_system_sleep(void)
+> +{
+> +	mutex_unlock(&pm_mutex);
+> +	/* simplified freezer_count() */
+> +	current->flags &= ~PF_FREEZER_SKIP;
+> +}
 
-Hmmm... this was part of the memblock updates going through
-x86/memblock and unless we're gonna setup a separate tree for memblock
-(I don't think that would be necessary at this point) I think it would
-be better to route this x86/memblock eventually.  That said, setting
-up temp linux-next branch for now sounds fine to me.  hpa, what do you
-think?
+BTW, don't we want try_to_freeze() there?  What's the reason for not
+using freezer_count()?
 
 Thanks.
 
