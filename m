@@ -1,131 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab1LEJM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:12:26 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:47980 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752814Ab1LEJMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:12:24 -0500
-Date: Mon, 5 Dec 2011 10:10:22 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Steffen Persvold <sp@numascale.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 3/3] v4: Add support for Numascale's NumaChip
-Message-ID: <20111205091022.GA29006@elte.hu>
-References: <4ED9199A.3060108@numascale-asia.com>
- <1323073238-32686-1-git-send-email-daniel@numascale-asia.com>
- <1323073238-32686-3-git-send-email-daniel@numascale-asia.com>
+	id S1754751Ab1LEJMh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:12:37 -0500
+Received: from relay.medianet-world.de ([213.157.0.172]:65530 "HELO
+	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754519Ab1LEJMd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:12:33 -0500
+thread-index: AcyzLgQKVMaGnL26SR+iGaGZkzN3kg==
+Thread-Topic: [PATCH 00/11] [ANNOUNCE] 3.0.12-rt30-rc2
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: "Thomas Gleixner" <tglx@linutronix.de>
+Subject: Re: [PATCH 00/11] [ANNOUNCE] 3.0.12-rt30-rc2
+Date: Mon, 5 Dec 2011 10:11:59 +0100
+User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
+Cc: "Tim Sander" <tim01@vlsi.informatik.tu-darmstadt.de>,
+        "Steven Rostedt" <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>,
+        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
+References: <20111204185444.411298317@goodmis.org> <201112042113.37047.tim01@vlsi.informatik.tu-darmstadt.de> <alpine.LFD.2.02.1112042145440.2735@ionos>
+In-Reply-To: <alpine.LFD.2.02.1112042145440.2735@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323073238-32686-3-git-send-email-daniel@numascale-asia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/Plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201112051011.59858.tim.sander@hbm.com>
+X-OriginalArrivalTime: 05 Dec 2011 09:12:30.0303 (UTC) FILETIME=[03F30EF0:01CCB32E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi 
+> Did some other time accounting increase instead ?
+Yes, the other time seemed to be increasing normally.
 
-* Daniel J Blueman <daniel@numascale-asia.com> wrote:
+I should also point out, that this phenomen was not always happening, but only 
+sometimes and then again disapeared without any known reason.
 
-> From: Steffen Persvold <sp@numascale.com>
-> 
-> v2:
->  - [Steffen] enumerate only accessible northbridges
->  - [Daniel] rediffed and validated against 3.1-rc10
->  
-> v3:
->  - [Daniel] use x86_init core numbering override
->  - [Daniel] cleanups as per feedback
-> 
-> v4:
->  - [Daniel] use updated x86_cpuinit override
->  
-> Signed-off-by: Steffen Persvold <sp@numascale.com>
-> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
-> ---
->  arch/x86/Kconfig                             |   12 +
->  arch/x86/include/asm/numachip/numachip_csr.h |  167 ++++++++++++++
->  arch/x86/kernel/apic/Makefile                |    1 +
->  arch/x86/kernel/apic/apic_numachip.c         |  312 ++++++++++++++++++++++++++
->  4 files changed, 492 insertions(+), 0 deletions(-)
->  create mode 100644 arch/x86/include/asm/numachip/numachip_csr.h
->  create mode 100644 arch/x86/kernel/apic/apic_numachip.c
+Best regards 
+Tim
 
-The patches are now structured mostly right and look clean.
+Please ignore:
 
-Other small details i noticed:
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
 
-> +static int numachip_system;
-> +
-> +static struct apic apic_numachip;
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
 
-Those want to be __read_mostly - this also makes them more NUMA 
-friendly .
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
 
-> +static int __cpuinit numachip_wakeup_secondary(int phys_apicid, unsigned long start_rip)
-> +{
-> +#ifdef CONFIG_SMP
-> +	union numachip_csr_g3_ext_irq_gen int_gen;
-> +	unsigned long flags;
-> +
-> +	int_gen.s._destination_apic_id = phys_apicid;
-> +	int_gen.s._vector = 0;
-> +	int_gen.s._msgtype = APIC_DM_INIT >> 8;
-> +	int_gen.s._index = 0;
-> +
-> +	local_irq_save(flags);
-> +	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
-> +	local_irq_restore(flags);
-> +
-> +	mdelay(10);
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
 
-Exactly why does it have to sleep 10 milliseconds here? Please 
-document it.
-
-> +
-> +	int_gen.s._msgtype = APIC_DM_STARTUP >> 8;
-> +	int_gen.s._vector = start_rip >> 12;
-> +
-> +	local_irq_save(flags);
-> +	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
-> +	local_irq_restore(flags);
-> +
-> +	atomic_set(&init_deasserted, 1);
-> +#endif
-> +	return 0;
-
-You could do a 'depends on SMP' and stop uglifying the code with 
-!SMP considerations. Unless a single-core installation with a UP 
-kernel is possible and desired.
-
-> +static void numachip_send_IPI_allbutself(int vector)
-> +{
-> +	unsigned int this_cpu = smp_processor_id();
-> +	unsigned int cpu;
-> +	unsigned long flags;
-> +
-> +	local_irq_save(flags);
-> +	for_each_online_cpu(cpu) {
-> +		if (cpu != this_cpu)
-> +			numachip_send_IPI_one(cpu, vector);
-> +	}
-> +	local_irq_restore(flags);
-> +}
-
-This seems preempt unsafe: you take smp_processor_id() before 
-disabling hardirqs.
-
-Thanks,
-
-	Ingo
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
