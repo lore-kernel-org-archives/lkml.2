@@ -1,112 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab1LEI4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 03:56:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33794 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab1LEI4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 03:56:37 -0500
-Date: Mon, 5 Dec 2011 09:56:35 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: pomac@vapor.com, linux-kernel@vger.kernel.org, rjw@sisk.pl,
-        tino.keitel@tikei.de
-Subject: Re: Re: [PATCH] proc: Do not overflow get_{idle,iowait}_time for
- nohz (was: Re: Re: [REGRESSION] [Linux 3.2] top/htop and all other CPU
- usage)
-Message-ID: <20111205085635.GB20044@tiehlicka.suse.cz>
-References: <20111128222803.GA4925@pomac.netswarm.net>
- <20111129075242.GB2675@tiehlicka.suse.cz>
- <2146795727.780801.1322566727488.JavaMail.mail@webmail05>
- <20111202133515.GB21070@tiehlicka.suse.cz>
- <20111202164917.GA6139@tiehlicka.suse.cz>
- <20111202175932.GA3894@tiehlicka.suse.cz>
- <594802130.20617.1322856734286.JavaMail.mail@webmail10>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <594802130.20617.1322856734286.JavaMail.mail@webmail10>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754222Ab1LEI7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 03:59:18 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46841 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750847Ab1LEI7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 03:59:17 -0500
+Message-ID: <1323075548.20963.7.camel@phoenix>
+Subject: [PATCH] pcmcia: pxa: replace IRQ_GPIO() with gpio_to_irq()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Marek Vasut <marek.vasut@gmail.com>, Ian Molton <spyro@f2s.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org
+Date: Mon, 05 Dec 2011 16:59:08 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 02-12-11 20:12:14, Artem S. Tashkinov wrote:
-> On Dec 2, 2011, Michal Hocko wrote: 
-> 
-> > And the one with a more cleaned up changelog. No functional changes
-> > ---
-> > From 107887016b91de59194a93c751d040b05d5e37fe Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <>
-> > Date: Fri, 2 Dec 2011 16:17:03 +0100
-> > Subject: [PATCH] proc: Do not overflow get_{idle,iowait}_time for nohz
-> > 
-> > Since a25cac51 [proc: Consider NO_HZ when printing idle and iowait times]
-> > we are reporting idle/io_wait time also while a CPU is tickless. We rely
-> > on get_{idle,iowait}_time functions to retrieve proper data.
-> > 
-> > These functions, however, use usecs_to_cputime to translate micro
-> > seconds time to cputime64_t. This is just an alias to usecs_to_jiffies
-> > which reduces the data type from u64 to unsigned int and also checks
-> > whether the given parameter overflows jiffies_to_usecs(MAX_JIFFY_OFFSET)
-> > and returns MAX_JIFFY_OFFSET in that case.
-> > 
-> > When do we overflow depends on CONFIG_HZ but especially for
-> > CONFIG_HZ_300 it is quite low (1431649781) so we are getting
-> > MAX_JIFFY_OFFSET for >3000s! until we overflow unsigned int.
-> > Just for reference CONFIG_100 has an overflow window around 20s,
-> > CONFIG_250 ~8s and CONFIG_1000 ~2s.
-> > 
-> > This results in a bug when people saw [h]top going mad reporting 100%
-> > CPU usage even though there was basically no CPU load. The reason was
-> > simply that /proc/stat stopped reporting idle/io_wait changes (and
-> > reported MAX_JIFFY_OFFSET) and so the only change happening was for
-> > user system time.
-> > 
-> > Let's use nsecs_to_jiffies64 instead which doesn't reduce the precision
-> > to 32b type and it is much more appropriate for cumulative time values
-> > (unlike usecs_to_jiffies which intended for timeout calculations).
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  fs/proc/stat.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-> > index 42b274d..2a30d67 100644
-> > --- a/fs/proc/stat.c
-> > +++ b/fs/proc/stat.c
-> > @@ -32,7 +32,7 @@ static cputime64_t get_idle_time(int cpu)
-> >  		idle = kstat_cpu(cpu).cpustat.idle;
-> >  		idle = cputime64_add(idle, arch_idle_time(cpu));
-> >  	} else
-> > -		idle = usecs_to_cputime(idle_time);
-> > +		idle = nsecs_to_jiffies64(1000 * idle_time);
-> >  
-> >  	return idle;
-> >  }
-> > @@ -46,7 +46,7 @@ static cputime64_t get_iowait_time(int cpu)
-> >  		/* !NO_HZ so we can rely on cpustat.iowait */
-> >  		iowait = kstat_cpu(cpu).cpustat.iowait;
-> >  	else
-> > -		iowait = usecs_to_cputime(iowait_time);
-> > +		iowait = nsecs_to_jiffies64(1000 * iowait_time);
-> >  
-> >  	return iowait;
-> >  }
-> > -- 
-> > 1.7.7.3
-> 
-> Thank you, this patch has fixed the issue for me.
-> 
-> Tested-by: Artem S. Tashkinov <t.artem@mailcity.com>
+Since commit 6384fd "ARM: pxa: rename IRQ_GPIO to PXA_GPIO_TO_IRQ",
+I got buid errors due to implicit declaration of function 'IRQ_GPIO'.
 
-Thanks for retesting!
+Use common gpio_to_irq() to replace machine dependant macro IRQ_GPIO().
 
+Cc: Marek Vasut <marek.vasut@gmail.com>
+Cc: Ian Molton <spyro@f2s.com>
+Cc: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+I got the build error on linux-next,
+this patch is against linux-next 20111205.
+
+Axel
+ drivers/pcmcia/pxa2xx_e740.c      |   11 +++++++----
+ drivers/pcmcia/pxa2xx_palmld.c    |    2 +-
+ drivers/pcmcia/pxa2xx_palmtc.c    |    2 +-
+ drivers/pcmcia/pxa2xx_stargate2.c |    6 ++++--
+ drivers/pcmcia/pxa2xx_vpac270.c   |    4 ++--
+ 5 files changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/pcmcia/pxa2xx_e740.c b/drivers/pcmcia/pxa2xx_e740.c
+index 8bfbd4d..17cd2ce 100644
+--- a/drivers/pcmcia/pxa2xx_e740.c
++++ b/drivers/pcmcia/pxa2xx_e740.c
+@@ -26,20 +26,23 @@
+ static struct pcmcia_irqs cd_irqs[] = {
+ 	{
+ 		.sock = 0,
+-		.irq  = IRQ_GPIO(GPIO_E740_PCMCIA_CD0),
+ 		.str  = "CF card detect"
+ 	},
+ 	{
+ 		.sock = 1,
+-		.irq  = IRQ_GPIO(GPIO_E740_PCMCIA_CD1),
+ 		.str  = "Wifi switch"
+ 	},
+ };
+ 
+ static int e740_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
+ {
+-	skt->socket.pci_irq = skt->nr == 0 ? IRQ_GPIO(GPIO_E740_PCMCIA_RDY0) :
+-				IRQ_GPIO(GPIO_E740_PCMCIA_RDY1);
++	if (skt->nr == 0)
++		skt->socket.pci_irq = gpio_to_irq(GPIO_E740_PCMCIA_RDY0);
++	else
++		skt->socket.pci_irq = gpio_to_irq(GPIO_E740_PCMCIA_RDY1);
++
++	cd_irqs[0].irq = gpio_to_irq(GPIO_E740_PCMCIA_CD0);
++	cd_irqs[1].irq = gpio_to_irq(GPIO_E740_PCMCIA_CD1);
+ 
+ 	return soc_pcmcia_request_irqs(skt, &cd_irqs[skt->nr], 1);
+ }
+diff --git a/drivers/pcmcia/pxa2xx_palmld.c b/drivers/pcmcia/pxa2xx_palmld.c
+index d589ad1..6a8e011 100644
+--- a/drivers/pcmcia/pxa2xx_palmld.c
++++ b/drivers/pcmcia/pxa2xx_palmld.c
+@@ -33,7 +33,7 @@ static int palmld_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
+ 	ret = gpio_request_array(palmld_pcmcia_gpios,
+ 				ARRAY_SIZE(palmld_pcmcia_gpios));
+ 
+-	skt->socket.pci_irq = IRQ_GPIO(GPIO_NR_PALMLD_PCMCIA_READY);
++	skt->socket.pci_irq = gpio_to_irq(GPIO_NR_PALMLD_PCMCIA_READY);
+ 
+ 	return ret;
+ }
+diff --git a/drivers/pcmcia/pxa2xx_palmtc.c b/drivers/pcmcia/pxa2xx_palmtc.c
+index 9c6a04b..9e38de7 100644
+--- a/drivers/pcmcia/pxa2xx_palmtc.c
++++ b/drivers/pcmcia/pxa2xx_palmtc.c
+@@ -37,7 +37,7 @@ static int palmtc_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
+ 	ret = gpio_request_array(palmtc_pcmcia_gpios,
+ 				ARRAY_SIZE(palmtc_pcmcia_gpios));
+ 
+-	skt->socket.pci_irq = IRQ_GPIO(GPIO_NR_PALMTC_PCMCIA_READY);
++	skt->socket.pci_irq = gpio_to_irq(GPIO_NR_PALMTC_PCMCIA_READY);
+ 
+ 	return ret;
+ }
+diff --git a/drivers/pcmcia/pxa2xx_stargate2.c b/drivers/pcmcia/pxa2xx_stargate2.c
+index 9396222..6c2366b 100644
+--- a/drivers/pcmcia/pxa2xx_stargate2.c
++++ b/drivers/pcmcia/pxa2xx_stargate2.c
+@@ -34,7 +34,7 @@
+ #define SG2_S0_GPIO_READY	81
+ 
+ static struct pcmcia_irqs irqs[] = {
+-	{ 0, IRQ_GPIO(SG2_S0_GPIO_DETECT), "PCMCIA0 CD" },
++	{.sock = 0, .str = "PCMCIA0 CD" },
+ };
+ 
+ static struct gpio sg2_pcmcia_gpios[] = {
+@@ -44,7 +44,9 @@ static struct gpio sg2_pcmcia_gpios[] = {
+ 
+ static int sg2_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
+ {
+-	skt->socket.pci_irq = IRQ_GPIO(SG2_S0_GPIO_READY);
++	skt->socket.pci_irq = gpio_to_irq(SG2_S0_GPIO_READY);
++	irqs[0].irq = gpio_to_irq(SG2_S0_GPIO_DETECT);
++
+ 	return soc_pcmcia_request_irqs(skt, irqs, ARRAY_SIZE(irqs));
+ }
+ 
+diff --git a/drivers/pcmcia/pxa2xx_vpac270.c b/drivers/pcmcia/pxa2xx_vpac270.c
+index 66ab92c..61b17d2 100644
+--- a/drivers/pcmcia/pxa2xx_vpac270.c
++++ b/drivers/pcmcia/pxa2xx_vpac270.c
+@@ -38,12 +38,10 @@ static struct gpio vpac270_cf_gpios[] = {
+ static struct pcmcia_irqs cd_irqs[] = {
+ 	{
+ 		.sock = 0,
+-		.irq  = IRQ_GPIO(GPIO84_VPAC270_PCMCIA_CD),
+ 		.str  = "PCMCIA CD"
+ 	},
+ 	{
+ 		.sock = 1,
+-		.irq  = IRQ_GPIO(GPIO17_VPAC270_CF_CD),
+ 		.str  = "CF CD"
+ 	},
+ };
+@@ -57,6 +55,7 @@ static int vpac270_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
+ 				ARRAY_SIZE(vpac270_pcmcia_gpios));
+ 
+ 		skt->socket.pci_irq = gpio_to_irq(GPIO35_VPAC270_PCMCIA_RDY);
++		cd_irqs[0].irq = gpio_to_irq(GPIO84_VPAC270_PCMCIA_CD);
+ 
+ 		if (!ret)
+ 			ret = soc_pcmcia_request_irqs(skt, &cd_irqs[0], 1);
+@@ -65,6 +64,7 @@ static int vpac270_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
+ 				ARRAY_SIZE(vpac270_cf_gpios));
+ 
+ 		skt->socket.pci_irq = gpio_to_irq(GPIO12_VPAC270_CF_RDY);
++		cd_irqs[1].irq = gpio_to_irq(GPIO17_VPAC270_CF_CD);
+ 
+ 		if (!ret)
+ 			ret = soc_pcmcia_request_irqs(skt, &cd_irqs[1], 1);
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.5.4
+
+
+
