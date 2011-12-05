@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab1LEVQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 16:16:33 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:34475 "EHLO smtp3-g21.free.fr"
+	id S932568Ab1LEVR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 16:17:57 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:37767 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932226Ab1LEVQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 16:16:32 -0500
-Message-ID: <4EDD349B.2030806@free.fr>
-Date: Mon, 05 Dec 2011 22:16:11 +0100
+	id S932226Ab1LEVR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 16:17:56 -0500
+Message-ID: <4EDD34EE.90704@free.fr>
+Date: Mon, 05 Dec 2011 22:17:34 +0100
 From: Daniel Lezcano <daniel.lezcano@free.fr>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: akpm@linux-foundation.org, serge.hallyn@canonical.com,
+To: akpm@linux-foundation.org
+CC: Oleg Nesterov <oleg@redhat.com>, serge.hallyn@canonical.com,
         containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
         linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 1/1][V3] Add reboot_pid_ns to handle the reboot syscall
@@ -43,7 +43,7 @@ On 12/05/2011 09:42 PM, Oleg Nesterov wrote:
 >>  3 files changed, 43 insertions(+), 1 deletions(-)
 > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Looks like our emails crossed by the wire :)
-Thanks again Oleg for your comments and your help.
+Andrew, do you think it's possible to take this patch upstream ?
 
+Thanks
   -- Daniel
