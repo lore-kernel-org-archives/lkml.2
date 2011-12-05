@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab1LEJxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:53:24 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59319 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754435Ab1LEJxV (ORCPT
+	id S1755388Ab1LEJzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:55:48 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38274 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab1LEJzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:53:21 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [PATCH] pcmcia: pxa: replace IRQ_GPIO() with gpio_to_irq()
-Date: Mon, 5 Dec 2011 10:53:17 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Ian Molton <spyro@f2s.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org
-References: <1323075548.20963.7.camel@phoenix> <CAMPhdO8F8QLjfeJReXSHgJNg+iaJ+CQ9i50ozsqAOiPWxhfwNA@mail.gmail.com>
-In-Reply-To: <CAMPhdO8F8QLjfeJReXSHgJNg+iaJ+CQ9i50ozsqAOiPWxhfwNA@mail.gmail.com>
+	Mon, 5 Dec 2011 04:55:47 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112051053.17618.marek.vasut@gmail.com>
+In-Reply-To: <4ED8F566.4050005@redhat.com>
+References: <20111201070052.GA29708@july>
+	<4ED7FA81.9090802@redhat.com>
+	<CAH9JG2WYsybK6aTo3+S58JM568S_YG7YqhP2jfrQ4pQ12GA5UQ@mail.gmail.com>
+	<4ED8F566.4050005@redhat.com>
+Date: Mon, 5 Dec 2011 18:55:46 +0900
+X-Google-Sender-Auth: lFjjE4fJO9z-LO4bOuKz5aQpHZ8
+Message-ID: <CAH9JG2VFHy2iaEfiEFKL0JfvuRgMUUHrZ7j5b59gDEVMPc9n_A@mail.gmail.com>
+Subject: Re: [PATCH] Set the initial TRIM information as TRIMMED
+From: Kyungmin Park <kmpark@infradead.org>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu, tm@tao.ma,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Dec 5, 2011 at 4:59 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> > Since commit 6384fd "ARM: pxa: rename IRQ_GPIO to PXA_GPIO_TO_IRQ",
-> > I got buid errors due to implicit declaration of function 'IRQ_GPIO'.
-> > 
-> > Use common gpio_to_irq() to replace machine dependant macro IRQ_GPIO().
-> > 
-> > Cc: Marek Vasut <marek.vasut@gmail.com>
-> > Cc: Ian Molton <spyro@f2s.com>
-> > Cc: Jonathan Cameron <jic23@cam.ac.uk>
-> > Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-> > Cc: Eric Miao <eric.y.miao@gmail.com>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> 
-> Looks fine to me.
-> 
-> Acked-by: Eric Miao <eric.y.miao@gmail.com>
+On 12/3/11, Eric Sandeen <sandeen@redhat.com> wrote:
+> On 12/1/11 6:01 PM, Kyungmin Park wrote:
+>> On 12/2/11, Eric Sandeen <sandeen@redhat.com> wrote:
+>>> On 12/1/11 1:00 AM, Kyungmin Park wrote:
+>>>> From: Kyungmin Park <kyungmin.park@samsung.com>
+>>>>
+>>>> Now trim information doesn't stored at disk so every boot time. it's
+>>>> cleared.
+>>>> and do the trim all disk groups.
+>>>> But assume that it's already trimmed at previous time so don't need to
+>>>> trim it again. So set the intial state as trimmed.
+>>>>
+>>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>> ---
+>>>> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+>>>> index e2d8be8..97ef342 100644
+>>>> --- a/fs/ext4/mballoc.c
+>>>> +++ b/fs/ext4/mballoc.c
+>>>> @@ -1098,6 +1098,12 @@ int ext4_mb_init_group(struct super_block *sb,
+>>>> ext4_group_t group)
+>>>>  		goto err;
+>>>>  	}
+>>>>  	mark_page_accessed(page);
+>>>> +
+>>>> +	/*
+>>>> +	 * TRIM information is not stored at disk so set the initial
+>>>> +	 * state as trimmed. Since previous time it's already trimmed all
+>>>> +	 */
+>>>> +	EXT4_MB_GRP_SET_TRIMMED(this_grp);
+>>>
+>> Hi,
+>>
+>>> Hm, so if there were freed but un-trimmed blocks at this point, we will
+>>> never trim them until we free _another_ block in the group, right?  That
+>>> might be a reasonable tradeoff, but it is somewhat surprising behavior.
+>>>
+>>> i.e. say we do:
+>>>
+>>> mount /mnt
+>>> rm -rf /mnt/very_big_file
+>>> umount /mnt
+>>>
+>>> mount /mnt
+>>> fitrim /mnt
+>> another word, you can run fitrim after rm -rf
+>> yes, it's trade-off.
+>>
+>> In my case, phone scenario, no umount system and data partition. it's
+>> burden to trim at boot time. it has still slower boot time.
+>> some daemon or program run fitrm at filesystem. it consumes time and
+>> hurt other boot processes.
+>>>
+>>> then we won't trim anything at all, right, despite there being many
+>>> new free blocks?  Which would be rather unexpected.
+>>>
+>>> If we don't store the trimmed state on disk, I think we should
+>>> probably stick with the slower first-time trim, and the more obvious
+>>> behavior (all free blocks are always trimmed whenever a trim
+>>> command is issued).
+>>
+>> Umm how do you think, introduce the trim force command for this?
+>
+> Alternately, can we use a bit in bg_flags to keep a better view of this
+> state on disk, if this is critical?
 
-I did a quick skim over the patch:
+BTW, bg_flags in struct ext4_group_desc is same as ext4_group_info's bb_state?
 
-Acked-by: Marek Vasut <marek.vasut@gmail.com>
+Thank you,
+Kyungmin Park
+>
+> -Eric
+>
+>> Thank you,
+>> Kyungmin Park
+>
+>
