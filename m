@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab1LETpt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:45:49 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52246 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932170Ab1LETps (ORCPT
+	id S932486Ab1LETqd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:46:33 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:14598
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932285Ab1LETqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:45:48 -0500
-Date: Mon, 5 Dec 2011 19:45:46 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        MyungJoo Ham <myungjoo.ham@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>,
-        Johan PALSSON <johan.palsson@stericsson.com>,
-        Daniel WILLERUD <daniel.willerud@stericsson.com>
-Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
-Message-ID: <20111205194545.GH7467@opensource.wolfsonmicro.com>
-References: <20111130135847.68a6e4c6@notabene.brown>
- <CAJ0PZbRpoz+uK4QUAO4RG5bhsSpNvm5U-ROtbduXhnFTLMZ1VQ@mail.gmail.com>
- <20111201095633.700e2923@notabene.brown>
- <20111130231740.GA25340@opensource.wolfsonmicro.com>
- <20111130232529.GB3220@core.coreip.homeip.net>
- <20111201162144.187ecca3@notabene.brown>
- <20111201113449.GD2915@opensource.wolfsonmicro.com>
- <20111205140413.0d2c5382@notabene.brown>
- <20111205120608.GI11150@opensource.wolfsonmicro.com>
- <20111206063834.3f66b3e0@notabene.brown>
+	Mon, 5 Dec 2011 14:46:32 -0500
+X-SpamScore: -18
+X-BigFish: VS-18(zzbb2dK9371K936eK1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Message-ID: <4EDD1F90.300@freescale.com>
+Date: Mon, 5 Dec 2011 13:46:24 -0600
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206063834.3f66b3e0@notabene.brown>
-X-Cookie: Make a wish, it might come true.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <dedekind1@gmail.com>
+CC: <shuo.liu@freescale.com>, <Artem.Bityutskiy@nokia.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mtd@lists.infradead.org>, <akpm@linux-foundation.org>,
+        <dwmw2@infradead.org>
+Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
+ large-page Nand chip
+References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com> <1322973098-2528-3-git-send-email-shuo.liu@freescale.com> <1323067628.2316.29.camel@koala>
+In-Reply-To: <1323067628.2316.29.camel@koala>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 06:38:34AM +1100, NeilBrown wrote:
-
-> Ahh..
-> So to try to restate the requirements:
-
->  A "cable-port" can detect when a "cable" in inserted (or removed) and can
->  determine the "cable-type" which comprises:
->    - a "cable-name" which is an arbitrary label interpreted in the context of
->      the particular port
->    - 1 or more "cable-function" flags which indicate what functions the 
->      cable support.  A given port has a fixed set of "cable-functions" and 
->      for any given cable it will report true/false (present/absent, on/off)
->      for each cable-function.
+On 12/05/2011 12:47 AM, Artem Bityutskiy wrote:
+> On Sun, 2011-12-04 at 12:31 +0800, shuo.liu@freescale.com wrote:
+>> +		/*
+>> +		 * Freescale FCM controller has a 2K size limitation of buffer
+>> +		 * RAM, so elbc_fcm_ctrl->buffer have to be used if writesize
+>> +		 * of chip is greater than 2048.
+>> +		 * We malloc a large enough buffer (maximum page size is 16K).
+>> +		 */
+>> +		elbc_fcm_ctrl->buffer = kmalloc(1024 * 16 + 1024, GFP_KERNEL);
+>> +		if (!elbc_fcm_ctrl->buffer) {
+>> +			dev_err(dev, "failed to allocate memory\n");
+>> +			mutex_unlock(&fsl_elbc_nand_mutex);
+>> +			ret = -ENOMEM;
+>> +			goto err;
+>> +		}
 > 
->  This full "cable-type" needs to be presented to user-space, and individual
->  cable-functions may need to be communicated to specific drivers to trigger a
->  'probe' function.
+> Sorry for returning to this again and agian - I do not have time to dig
+> suggest you the right solutions on the one hand, you do not provide me a
+> good answer on the other hand (or I forgot?).
+> 
+> 16KiB pages do not even exist I believe.
 
-Yes, that seems broadly sane for me.
+Googling turns up some hints of it, but nothing concrete such as a
+datasheet.  We can assume 8K max for now and adjust it later, as the
+need becomes clear.
 
-> Questions:
->   1/ Do we need to communicate anything to drivers apart from "cable-detect"?
->      i.e. are they quite cable of probing and identifying, or do they need to
->      be told what to look for?
+> And you kmalloc 33KiB or RAM
 
-Perhaps.
+17KiB, or 9KiB if we forget about 16K-page NAND.
 
->   2/ Does it hurt to simply wake up all drivers that might be listening on
->      the cable or do we need individual wake-ups (notifiers) for each
->      cable-function?
+> although in most cases you need only 5KiB. I think this is wrong -
+> what is the very strong reason of wasting RAM you have?
+> 
+> Why you cannot allocate exactly the required amount of RAM after
+> 'nand_scan_ident()' finishes and you know the page size?
 
-I suspect not.
+Because this is a controller resource, shared by multiple NAND chips
+that may be different page sizes (even if not, it's adding another point
+of synchronization required between initialization of different chips).
+ I don't think it's worth the gymnastics to save a few KiB.
 
->   3/ Does anything in the kernel care about the cable-name, or is that only
->      interesting to user-space?
+-Scott
 
-I suspect not.
-
-Other people may have other opinions, though.
