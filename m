@@ -1,62 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276Ab1LEOH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 09:07:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55717 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932215Ab1LEOH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 09:07:57 -0500
-Date: Mon, 5 Dec 2011 14:07:51 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, Namhyung Kim <namhyung@gmail.com>,
-        Luciano Chavez <lnx1138@linux.vnet.ibm.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm: vmalloc: Check for page allocation failure before vmlist
- insertion
-Message-ID: <20111205140750.GB5070@suse.de>
+	id S932302Ab1LEOJa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 09:09:30 -0500
+Received: from cpanel23.proisp.no ([88.87.44.74]:51714 "EHLO
+	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215Ab1LEOJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 09:09:29 -0500
+X-Greylist: delayed 15612 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Dec 2011 09:09:29 EST
+Message-ID: <4EDC938D.6000304@numascale.com>
+Date: Mon, 05 Dec 2011 10:49:01 +0100
+From: Steffen Persvold <sp@numascale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Daniel J Blueman <daniel@numascale-asia.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/3] v4: Add support for Numascale's NumaChip
+References: <4ED9199A.3060108@numascale-asia.com> <1323073238-32686-1-git-send-email-daniel@numascale-asia.com> <1323073238-32686-3-git-send-email-daniel@numascale-asia.com> <20111205091022.GA29006@elte.hu>
+In-Reply-To: <20111205091022.GA29006@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit [f5252e00: mm: avoid null pointer access in vm_struct via
-/proc/vmallocinfo] adds newly allocated vm_structs to the vmlist
-after it is fully initialised. Unfortunately, it did not check that
-__vmalloc_area_node() successfully populated the area. In the event
-of allocation failure, the vmalloc area is freed but the pointer to
-freed memory is inserted into the vmlist leading to a a crash later
-in get_vmalloc_info().
+On 12/5/2011 10:10, Ingo Molnar wrote:
+[]
+>
+> The patches are now structured mostly right and look clean.
 
-This patch adds a check for ____vmalloc_area_node() failure within
-__vmalloc_node_range. It does not use "goto fail" as in the previous
-error path as a warning was already displayed by __vmalloc_area_node()
-before it called vfree in its failure path.
+Thanks for the review!
 
-Credit goes to Luciano Chavez for doing all the real work of
-identifying exactly where the problem was.
+>
+> Other small details i noticed:
+>
+>> +static int numachip_system;
+>> +
+>> +static struct apic apic_numachip;
+>
+> Those want to be __read_mostly - this also makes them more NUMA
+> friendly .
 
-If accepted, this should be considered a -stable candidate.
+Ok, makes sense.
 
-Reported-and-tested-by: Luciano Chavez <lnx1138@linux.vnet.ibm.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/vmalloc.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+>
+>> +static int __cpuinit numachip_wakeup_secondary(int phys_apicid, unsigned long start_rip)
+>> +{
+>> +#ifdef CONFIG_SMP
+>> +	union numachip_csr_g3_ext_irq_gen int_gen;
+>> +	unsigned long flags;
+>> +
+>> +	int_gen.s._destination_apic_id = phys_apicid;
+>> +	int_gen.s._vector = 0;
+>> +	int_gen.s._msgtype = APIC_DM_INIT>>  8;
+>> +	int_gen.s._index = 0;
+>> +
+>> +	local_irq_save(flags);
+>> +	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
+>> +	local_irq_restore(flags);
+>> +
+>> +	mdelay(10);
+>
+> Exactly why does it have to sleep 10 milliseconds here? Please
+> document it.
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 3231bf3..1d8b32f 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1633,6 +1633,8 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
- 		goto fail;
- 
- 	addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
-+	if (!addr)
-+		return NULL;
- 
- 	/*
- 	 * In this function, newly allocated vm_struct is not added
+It doesn't. I'm not quite sure why it was left in there.. We will remove 
+it. Thanks for catching it.
+
+>
+>> +
+>> +	int_gen.s._msgtype = APIC_DM_STARTUP>>  8;
+>> +	int_gen.s._vector = start_rip>>  12;
+>> +
+>> +	local_irq_save(flags);
+>> +	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
+>> +	local_irq_restore(flags);
+>> +
+>> +	atomic_set(&init_deasserted, 1);
+>> +#endif
+>> +	return 0;
+>
+> You could do a 'depends on SMP' and stop uglifying the code with
+> !SMP considerations. Unless a single-core installation with a UP
+> kernel is possible and desired.
+
+Agreed.
+
+>
+>> +static void numachip_send_IPI_allbutself(int vector)
+>> +{
+>> +	unsigned int this_cpu = smp_processor_id();
+>> +	unsigned int cpu;
+>> +	unsigned long flags;
+>> +
+>> +	local_irq_save(flags);
+>> +	for_each_online_cpu(cpu) {
+>> +		if (cpu != this_cpu)
+>> +			numachip_send_IPI_one(cpu, vector);
+>> +	}
+>> +	local_irq_restore(flags);
+>> +}
+>
+> This seems preempt unsafe: you take smp_processor_id() before
+> disabling hardirqs.
+
+Hmm, yes. Again some debug stuff laying around, local_irq_save/restore 
+isn't really needed there I think.
+
+We will redo this last patch and re-send after testing. Thanks!
+
+Kind regards,
+-- 
+Steffen Persvold, Chief Architect NumaChip
+Numascale AS - www.numascale.com
+Tel: +47 92 49 25 54 Skype: spersvold
