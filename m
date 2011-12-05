@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab1LENj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 08:39:27 -0500
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:53292
-	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932363Ab1LENfK (ORCPT
+	id S932446Ab1LENkM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 08:40:12 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:38321
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932347Ab1LENfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 08:35:10 -0500
+	Mon, 5 Dec 2011 08:35:09 -0500
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVQGEE-01-IPN-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LVQGEC-02-AUJ-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
 CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 11/22] iommu/amd: Implement IOMMUv2 TLB flushing routines
-Date: Mon, 5 Dec 2011 14:34:26 +0100
-Message-ID: <1323092077-25501-12-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 15/22] iommu/amd: Add device errata handling
+Date: Mon, 5 Dec 2011 14:34:30 +0100
+Message-ID: <1323092077-25501-16-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
 References: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
@@ -29,194 +30,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functions added with this patch allow to manage the
-IOMMU and the device TLBs for all devices in an IOMMUv2
-domain.
+Add infrastructure for errata-handling and handle two known
+erratas in the IOMMUv2 code.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/amd_iommu.c       |  136 +++++++++++++++++++++++++++++++++++++++
- drivers/iommu/amd_iommu_proto.h |    3 +
+ drivers/iommu/amd_iommu.c       |   57 ++++++++++++++++++++++++++++++++++++--
  drivers/iommu/amd_iommu_types.h |    1 +
- 3 files changed, 140 insertions(+), 0 deletions(-)
+ include/linux/amd-iommu.h       |   18 ++++++++++++
+ 3 files changed, 73 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index eaa1af2..bd18a04 100644
+index dd66211..7bd1565 100644
 --- a/drivers/iommu/amd_iommu.c
 +++ b/drivers/iommu/amd_iommu.c
-@@ -698,6 +698,44 @@ static void build_inv_iotlb_pages(struct iommu_cmd *cmd, u16 devid, int qdep,
- 		cmd->data[2] |= CMD_INV_IOMMU_PAGES_SIZE_MASK;
+@@ -172,6 +172,15 @@ static bool pci_iommuv2_capable(struct pci_dev *pdev)
+ 	return true;
  }
  
-+static void build_inv_iommu_pasid(struct iommu_cmd *cmd, u16 domid, int pasid,
-+				  u64 address, bool size)
-+{
-+	memset(cmd, 0, sizeof(*cmd));
-+
-+	address &= ~(0xfffULL);
-+
-+	cmd->data[0]  = pasid & PASID_MASK;
-+	cmd->data[1]  = domid;
-+	cmd->data[2]  = lower_32_bits(address);
-+	cmd->data[3]  = upper_32_bits(address);
-+	cmd->data[2] |= CMD_INV_IOMMU_PAGES_PDE_MASK;
-+	cmd->data[2] |= CMD_INV_IOMMU_PAGES_GN_MASK;
-+	if (size)
-+		cmd->data[2] |= CMD_INV_IOMMU_PAGES_SIZE_MASK;
-+	CMD_SET_TYPE(cmd, CMD_INV_IOMMU_PAGES);
-+}
-+
-+static void build_inv_iotlb_pasid(struct iommu_cmd *cmd, u16 devid, int pasid,
-+				  int qdep, u64 address, bool size)
-+{
-+	memset(cmd, 0, sizeof(*cmd));
-+
-+	address &= ~(0xfffULL);
-+
-+	cmd->data[0]  = devid;
-+	cmd->data[0] |= (pasid & 0xff) << 16;
-+	cmd->data[0] |= (qdep  & 0xff) << 24;
-+	cmd->data[1]  = devid;
-+	cmd->data[1] |= ((pasid >> 8) & 0xfff) << 16;
-+	cmd->data[2]  = lower_32_bits(address);
-+	cmd->data[2] |= CMD_INV_IOMMU_PAGES_GN_MASK;
-+	cmd->data[3]  = upper_32_bits(address);
-+	if (size)
-+		cmd->data[2] |= CMD_INV_IOMMU_PAGES_SIZE_MASK;
-+	CMD_SET_TYPE(cmd, CMD_INV_IOTLB_PAGES);
-+}
-+
- static void build_inv_all(struct iommu_cmd *cmd)
- {
- 	memset(cmd, 0, sizeof(*cmd));
-@@ -3146,3 +3184,101 @@ out:
- 	return ret;
- }
- EXPORT_SYMBOL(amd_iommu_domain_enable_v2);
-+
-+static int __flush_pasid(struct protection_domain *domain, int pasid,
-+			 u64 address, bool size)
++static bool pdev_pri_erratum(struct pci_dev *pdev, u32 erratum)
 +{
 +	struct iommu_dev_data *dev_data;
-+	struct iommu_cmd cmd;
-+	int i, ret;
 +
-+	if (!(domain->flags & PD_IOMMUV2_MASK))
++	dev_data = get_dev_data(&pdev->dev);
++
++	return dev_data->errata & (1 << erratum) ? true : false;
++}
++
+ /*
+  * In this function the list of preallocated protection domains is traversed to
+  * find the domain for a specific device
+@@ -1934,9 +1943,33 @@ static void pdev_iommuv2_disable(struct pci_dev *pdev)
+ 	pci_disable_pasid(pdev);
+ }
+ 
++/* FIXME: Change generic reset-function to do the same */
++static int pri_reset_while_enabled(struct pci_dev *pdev)
++{
++	u16 control;
++	int pos;
++
++	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
++	if (!pos)
 +		return -EINVAL;
 +
-+	build_inv_iommu_pasid(&cmd, domain->id, pasid, address, size);
++	pci_read_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, &control);
++	control |= PCI_PRI_RESET;
++	pci_write_config_word(pdev, pos + PCI_PRI_CONTROL_OFF, control);
 +
-+	/*
-+	 * IOMMU TLB needs to be flushed before Device TLB to
-+	 * prevent device TLB refill from IOMMU TLB
-+	 */
-+	for (i = 0; i < amd_iommus_present; ++i) {
-+		if (domain->dev_iommu[i] == 0)
-+			continue;
++	return 0;
++}
 +
-+		ret = iommu_queue_command(amd_iommus[i], &cmd);
-+		if (ret != 0)
-+			goto out;
+ static int pdev_iommuv2_enable(struct pci_dev *pdev)
+ {
+-	int ret;
++	bool reset_enable;
++	int reqs, ret;
++
++	/* FIXME: Hardcode number of outstanding requests for now */
++	reqs = 32;
++	if (pdev_pri_erratum(pdev, AMD_PRI_DEV_ERRATUM_LIMIT_REQ_ONE))
++		reqs = 1;
++	reset_enable = pdev_pri_erratum(pdev, AMD_PRI_DEV_ERRATUM_ENABLE_RESET);
+ 
+ 	/* Only allow access to user-accessible pages */
+ 	ret = pci_enable_pasid(pdev, 0);
+@@ -1948,11 +1981,17 @@ static int pdev_iommuv2_enable(struct pci_dev *pdev)
+ 	if (ret)
+ 		goto out_err;
+ 
+-	/* FIXME: Hardcode number of outstanding requests for now */
+-	ret = pci_enable_pri(pdev, 32);
++	/* Enable PRI */
++	ret = pci_enable_pri(pdev, reqs);
+ 	if (ret)
+ 		goto out_err;
+ 
++	if (reset_enable) {
++		ret = pri_reset_while_enabled(pdev);
++		if (ret)
++			goto out_err;
 +	}
 +
-+	/* Wait until IOMMU TLB flushes are complete */
-+	domain_flush_complete(domain);
+ 	ret = pci_enable_ats(pdev, PAGE_SHIFT);
+ 	if (ret)
+ 		goto out_err;
+@@ -3481,3 +3520,15 @@ struct iommu_domain *amd_iommu_get_v2_domain(struct pci_dev *pdev)
+ 	return domain->iommu_domain;
+ }
+ EXPORT_SYMBOL(amd_iommu_get_v2_domain);
 +
-+	/* Now flush device TLBs */
-+	list_for_each_entry(dev_data, &domain->dev_list, list) {
-+		struct amd_iommu *iommu;
-+		int qdep;
-+
-+		BUG_ON(!dev_data->ats.enabled);
-+
-+		qdep  = dev_data->ats.qdep;
-+		iommu = amd_iommu_rlookup_table[dev_data->devid];
-+
-+		build_inv_iotlb_pasid(&cmd, dev_data->devid, pasid,
-+				      qdep, address, size);
-+
-+		ret = iommu_queue_command(iommu, &cmd);
-+		if (ret != 0)
-+			goto out;
-+	}
-+
-+	/* Wait until all device TLBs are flushed */
-+	domain_flush_complete(domain);
-+
-+	ret = 0;
-+
-+out:
-+
-+	return ret;
-+}
-+
-+static int __amd_iommu_flush_page(struct protection_domain *domain, int pasid,
-+				  u64 address)
++void amd_iommu_enable_device_erratum(struct pci_dev *pdev, u32 erratum)
 +{
-+	return __flush_pasid(domain, pasid, address, false);
++	struct iommu_dev_data *dev_data;
++
++	if (!amd_iommu_v2_supported())
++		return;
++
++	dev_data = get_dev_data(&pdev->dev);
++	dev_data->errata |= (1 << erratum);
 +}
-+
-+int amd_iommu_flush_page(struct iommu_domain *dom, int pasid,
-+			 u64 address)
-+{
-+	struct protection_domain *domain = dom->priv;
-+	unsigned long flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&domain->lock, flags);
-+	ret = __amd_iommu_flush_page(domain, pasid, address);
-+	spin_unlock_irqrestore(&domain->lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(amd_iommu_flush_page);
-+
-+static int __amd_iommu_flush_tlb(struct protection_domain *domain, int pasid)
-+{
-+	return __flush_pasid(domain, pasid, CMD_INV_IOMMU_ALL_PAGES_ADDRESS,
-+			     true);
-+}
-+
-+int amd_iommu_flush_tlb(struct iommu_domain *dom, int pasid)
-+{
-+	struct protection_domain *domain = dom->priv;
-+	unsigned long flags;
-+	int ret;
-+
-+	spin_lock_irqsave(&domain->lock, flags);
-+	ret = __amd_iommu_flush_tlb(domain, pasid);
-+	spin_unlock_irqrestore(&domain->lock, flags);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(amd_iommu_flush_tlb);
-+
-diff --git a/drivers/iommu/amd_iommu_proto.h b/drivers/iommu/amd_iommu_proto.h
-index d207b1d..a92dc61 100644
---- a/drivers/iommu/amd_iommu_proto.h
-+++ b/drivers/iommu/amd_iommu_proto.h
-@@ -40,6 +40,9 @@ extern int amd_iommu_register_ppr_notifier(struct notifier_block *nb);
- extern int amd_iommu_unregister_ppr_notifier(struct notifier_block *nb);
- extern void amd_iommu_domain_direct_map(struct iommu_domain *dom);
- extern int amd_iommu_domain_enable_v2(struct iommu_domain *dom, int pasids);
-+extern int amd_iommu_flush_page(struct iommu_domain *dom, int pasid,
-+				u64 address);
-+extern int amd_iommu_flush_tlb(struct iommu_domain *dom, int pasid);
- 
- #ifndef CONFIG_AMD_IOMMU_STATS
- 
++EXPORT_SYMBOL(amd_iommu_enable_device_erratum);
 diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index 905eca5..64a7642 100644
+index 2ba7b9a..90d149c 100644
 --- a/drivers/iommu/amd_iommu_types.h
 +++ b/drivers/iommu/amd_iommu_types.h
-@@ -148,6 +148,7 @@
- #define CMD_COMPL_WAIT_INT_MASK		0x02
- #define CMD_INV_IOMMU_PAGES_SIZE_MASK	0x01
- #define CMD_INV_IOMMU_PAGES_PDE_MASK	0x02
-+#define CMD_INV_IOMMU_PAGES_GN_MASK	0x04
+@@ -405,6 +405,7 @@ struct iommu_dev_data {
+ 	} ats;				  /* ATS state */
+ 	bool pri_tlp;			  /* PASID TLB required for
+ 					     PPR completions */
++	u32 errata;			  /* Bitmap for errata to apply */
+ };
  
- #define CMD_INV_IOMMU_ALL_PAGES_ADDRESS	0x7fffffffffffffffULL
+ /*
+diff --git a/include/linux/amd-iommu.h b/include/linux/amd-iommu.h
+index a6863a2..4152c30 100644
+--- a/include/linux/amd-iommu.h
++++ b/include/linux/amd-iommu.h
+@@ -26,6 +26,24 @@
  
+ extern int amd_iommu_detect(void);
+ 
++
++/**
++ * amd_iommu_enable_device_erratum() - Enable erratum workaround for device
++ *				       in the IOMMUv2 driver
++ * @pdev: The PCI device the workaround is necessary for
++ * @erratum: The erratum workaround to enable
++ *
++ * Possible values for the erratum number are for now:
++ * - AMD_PRI_DEV_ERRATUM_ENABLE_RESET - Reset PRI capability when PRI
++ *					is enabled
++ * - AMD_PRI_DEV_ERRATUM_LIMIT_REQ_ONE - Limit number of outstanding PRI
++ *					 requests to one
++ */
++#define AMD_PRI_DEV_ERRATUM_ENABLE_RESET		0
++#define AMD_PRI_DEV_ERRATUM_LIMIT_REQ_ONE		1
++
++extern void amd_iommu_enable_device_erratum(struct pci_dev *pdev, u32 erratum);
++
+ #else
+ 
+ static inline int amd_iommu_detect(void) { return -ENODEV; }
 -- 
 1.7.5.4
 
