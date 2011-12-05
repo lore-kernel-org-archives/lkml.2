@@ -1,135 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755589Ab1LEKKH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 05:10:07 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38233 "EHLO
+	id S1755566Ab1LEKMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 05:12:07 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45995 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362Ab1LEKKE (ORCPT
+	with ESMTP id S1754320Ab1LEKME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 05:10:04 -0500
+	Mon, 5 Dec 2011 05:12:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <1323074921-29291-1-git-send-email-thomas.abraham@linaro.org>
-References: <1323074921-29291-1-git-send-email-thomas.abraham@linaro.org>
-Date: Mon, 5 Dec 2011 19:10:03 +0900
-X-Google-Sender-Auth: PmrtqrD1YrrEIN1_MS1coN0qAvY
-Message-ID: <CAH9JG2XJ4TCEaN1rMRjMZNRn5Wx6jcTRC_DmyN4Qyf2zztWSsg@mail.gmail.com>
-Subject: Re: [PATCH] backlight: add regulator support for platform_lcd driver
+In-Reply-To: <alpine.LFD.2.00.1112051051250.4911@dhcp-27-109.brq.redhat.com>
+References: <20111202060424.GA26155@july>
+	<alpine.LFD.2.00.1112051051250.4911@dhcp-27-109.brq.redhat.com>
+Date: Mon, 5 Dec 2011 19:12:03 +0900
+X-Google-Sender-Auth: G877d-vqOA-fplXiz_7b8CVR5ns
+Message-ID: <CAH9JG2X4dTiWgvksgSvS5qAJviJ3Ndgqwp+pv6tMqc9J95_5Xw@mail.gmail.com>
+Subject: Re: [RFC PATCH] ext4: auto batched discard support at kernel thread
 From: Kyungmin Park <kmpark@infradead.org>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: rpurdie@rpsys.net, ben-linux@fluff.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: tytso@mit.edu, tm@tao.ma, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/5/11, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> The power source to the lcd panel or the lcd interface such as lvds
-> transmitters could be controlled by a regulator supply. Add support
-> for enabling/disabling the regulator when switching power to lcd.
+On 12/5/11, Lukas Czerner <lczerner@redhat.com> wrote:
+> On Fri, 2 Dec 2011, Kyungmin Park wrote:
 >
-> Two new elements 'min_uV' and 'max_uV' in the platform data are added
-> to allow platform code to specifiy the desired output voltage from the
-> regulator.
+>> Hi,
+>>
+>> It's proof of concept to run kernel thread for batched discard.
+>>
+>> Now it can run fitrim at user level. but it's not clear which deamon run
+>> this activity.
+>> In case of android platform, the launcher is candidate
+>> but user can change the default launcher then it can't use the fitrim any
+>> more.
 >
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> ---
->  drivers/video/backlight/platform_lcd.c |   29 +++++++++++++++++++++++++++++
->  include/video/platform_lcd.h           |    7 +++++++
->  2 files changed, 36 insertions(+), 0 deletions(-)
+> I do not thing this logic belongs to the kernel. You would be perfectly
+> fine just with cron lob (or launcher) running fitrim regularly and it is
+> so much easier than pushing this functionality to the kernel side. Not
+> talking about the fact that cron (and others) gives you *much* more
+> flexibility in running fitrim on regular basis and I do not think you
+> want to reimplement cron within the kernel.
 >
-> diff --git a/drivers/video/backlight/platform_lcd.c
-> b/drivers/video/backlight/platform_lcd.c
-> index 302330a..ffa8108 100644
-> --- a/drivers/video/backlight/platform_lcd.c
-> +++ b/drivers/video/backlight/platform_lcd.c
-> @@ -17,6 +17,8 @@
->  #include <linux/backlight.h>
->  #include <linux/lcd.h>
->  #include <linux/slab.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/regulator/machine.h>
+> Also it seems to me that the problem you're trying to solve should be
+> rather solved on the Android (launcher) side.
 >
->  #include <video/platform_lcd.h>
->
-> @@ -44,11 +46,38 @@ static int platform_lcd_get_power(struct lcd_device
-> *lcd)
->  static int platform_lcd_set_power(struct lcd_device *lcd, int power)
->  {
->  	struct platform_lcd *plcd = to_our_lcd(lcd);
-> +	struct regulator *lcd_regulator;
->  	int lcd_power = 1;
->
->  	if (power == FB_BLANK_POWERDOWN || plcd->suspended)
->  		lcd_power = 0;
->
-> +	/*
-> +	 * If power to lcd and/or lcd interface is controlled using a regulator,
-> +	 * enable or disable the regulator based in the power setting.
-> +	 */
-> +	lcd_regulator = regulator_get(plcd->us, "vcc_lcd");
-> +	if (IS_ERR(lcd_regulator)) {
-> +		dev_info(plcd->us, "could not get regulator\n");
-> +		goto set_power;
-> +	}
+> I am against this functionality, sorry.
+No problem, It will be support at user space as original design. e.g.,
+system settings
 
-Recent regulator discussion. it should be failed instead fall through
-gracefully.
-> +
-> +	if (lcd_power) {
-> +		if (plcd->pdata->min_uV || plcd->pdata->max_uV)
-> +			if (regulator_set_voltage(lcd_regulator,
-> +				plcd->pdata->min_uV, plcd->pdata->max_uV))
-> +				dev_info(plcd->us,
-> +					"regulator voltage set failed\n");
-Are there case to change the voltage? Doesn't it easy to set the
-voltage at board file? I mean don't need to setup at drivers?
+Thank you for all comments.
 
-Thank you,
+BR,
 Kyungmin Park
-> +
-> +		if (regulator_enable(lcd_regulator))
-> +			dev_info(plcd->us, "failed to enable regulator\n");
-> +	} else {
-> +		regulator_disable(lcd_regulator);
-> +	}
-> +
-> +	regulator_put(lcd_regulator);
-> +
-> +set_power:
->  	plcd->pdata->set_power(plcd->pdata, lcd_power);
->  	plcd->power = power;
 >
-> diff --git a/include/video/platform_lcd.h b/include/video/platform_lcd.h
-> index ad3bdfe..acd5d21 100644
-> --- a/include/video/platform_lcd.h
-> +++ b/include/video/platform_lcd.h
-> @@ -14,8 +14,15 @@
->  struct plat_lcd_data;
->  struct fb_info;
+> Thanks!
+> -Lukas
 >
-> +/**
-> + * struct plat_lcd_data - platform data for platform_lcd driver.
-> + * @min_uV: Minimum required voltage output from the regulator.
-> + * @max_uV: Maximum acceptable voltage output from the regulator.
-> + */
->  struct plat_lcd_data {
->  	void	(*set_power)(struct plat_lcd_data *, unsigned int power);
->  	int	(*match_fb)(struct plat_lcd_data *, struct fb_info *);
-> +	int	min_uV;
-> +	int	max_uV;
->  };
+>>
+>> To address this issue. no dependency with platform. run the fitrim at
+>> kernel.
+>> Basically don't bother the user it runs at 2 clock. Please note that if
+>> it's clean state, it doesn't take much time.
+>>
+>> Please give opinions and comments.
+>>
+>> Thank you,
+>> Kyungmin Park
+>> ---
+>> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+>> index 5b0e26a..2cad9b3 100644
+>> --- a/fs/ext4/ext4.h
+>> +++ b/fs/ext4/ext4.h
+>> @@ -942,6 +942,7 @@ struct ext4_inode_info {
+>>
+>>  #define EXT4_MOUNT2_EXPLICIT_DELALLOC	0x00000001 /* User explicitly
+>>  						      specified delalloc */
+>> +#define EXT4_MOUNT2_AUTO_DISCARD	0x00000002 /* Auto batched discard */
+>>
+>>  #define clear_opt(sb, opt)		EXT4_SB(sb)->s_mount_opt &= \
+>>  						~EXT4_MOUNT_##opt
+>> @@ -1249,6 +1250,10 @@ struct ext4_sb_info {
+>>
+>>  	/* record the last minlen when FITRIM is called. */
+>>  	atomic_t s_last_trim_minblks;
+>> +
+>> +	/* timer for periodic auto batched discard */
+>> +	struct timer_list s_auto_discard;
+>> +	struct task_struct *s_auto_discard_thread;
+>>  };
+>>
+>>  static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
+>> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+>> index 3858767..a2e9920 100644
+>> --- a/fs/ext4/super.c
+>> +++ b/fs/ext4/super.c
+>> @@ -818,6 +818,10 @@ static void ext4_put_super(struct super_block *sb)
+>>  			ext4_abort(sb, "Couldn't clean up the journal");
+>>  	}
+>>
+>> +	if (test_opt2(sb, AUTO_DISCARD)) {
+>> +		kthread_stop(sbi->s_auto_discard_thread);
+>> +		del_timer(&sbi->s_auto_discard);
+>> +	}
+>>  	del_timer(&sbi->s_err_report);
+>>  	ext4_release_system_zone(sb);
+>>  	ext4_mb_release(sb);
+>> @@ -1144,6 +1148,9 @@ static int ext4_show_options(struct seq_file *seq,
+>> struct vfsmount *vfs)
+>>  	if (test_opt(sb, DISCARD) && !(def_mount_opts & EXT4_DEFM_DISCARD))
+>>  		seq_puts(seq, ",discard");
+>>
+>> +	if (test_opt2(sb, AUTO_DISCARD))
+>> +		seq_puts(seq, ",auto_batched_discard");
+>> +
+>>  	if (test_opt(sb, NOLOAD))
+>>  		seq_puts(seq, ",norecovery");
+>>
+>> @@ -1333,7 +1340,7 @@ enum {
+>>  	Opt_nomblk_io_submit, Opt_block_validity, Opt_noblock_validity,
+>>  	Opt_inode_readahead_blks, Opt_journal_ioprio,
+>>  	Opt_dioread_nolock, Opt_dioread_lock,
+>> -	Opt_discard, Opt_nodiscard,
+>> +	Opt_discard, Opt_nodiscard, Opt_auto_discard,
+>>  	Opt_init_inode_table, Opt_noinit_inode_table,
+>>  };
+>>
+>> @@ -1407,6 +1414,7 @@ static const match_table_t tokens = {
+>>  	{Opt_dioread_lock, "dioread_lock"},
+>>  	{Opt_discard, "discard"},
+>>  	{Opt_nodiscard, "nodiscard"},
+>> +	{Opt_auto_discard, "auto_batched_discard"},
+>>  	{Opt_init_inode_table, "init_itable=%u"},
+>>  	{Opt_init_inode_table, "init_itable"},
+>>  	{Opt_noinit_inode_table, "noinit_itable"},
+>> @@ -1886,6 +1894,9 @@ set_qf_format:
+>>  		case Opt_nodiscard:
+>>  			clear_opt(sb, DISCARD);
+>>  			break;
+>> +		case Opt_auto_discard:
+>> +			set_opt2(sb, AUTO_DISCARD);
+>> +			break;
+>>  		case Opt_dioread_nolock:
+>>  			set_opt(sb, DIOREAD_NOLOCK);
+>>  			break;
+>> @@ -2763,6 +2774,71 @@ static void print_daily_error_info(unsigned long
+>> arg)
+>>  	mod_timer(&sbi->s_err_report, jiffies + 24*60*60*HZ);  /* Once a day */
+>>  }
+>>
+>> +/*
+>> + * This function is called once a day to make a trim the device
+>> + */
+>> +static int ext4_auto_batched_discard_thread(void *data)
+>> +{
+>> +	struct super_block *sb = data;
+>> +	struct ext4_sb_info *sbi = EXT4_SB(sb);
+>> +	struct fstrim_range range;
+>> +	struct timeval now;
+>> +	struct tm tm;
+>> +	long next;
+>> +	int ret;
+>> +
+>> +	set_freezable();
+>> +
+>> +	for (;;) {
+>> +		if (kthread_should_stop())
+>> +			break;
+>> +
+>> +		if (try_to_freeze())
+>> +			continue;
+>> +
+>> +		range.start = 0;
+>> +		range.len = ~(__u64)0;
+>> +		range.minlen = SZ_1M;
+>> +
+>> +		ret = ext4_trim_fs(sb, &range);
+>> +		if (ret < 0)
+>> +			ext4_msg(sb, KERN_NOTICE, "error count: %u", ret);
+>> +		else
+>> +			ext4_msg(sb, KERN_NOTICE, "trimmed size %llu",
+>> +					range.len);
+>> +
+>> +		do_gettimeofday(&now);
+>> +		time_to_tm((time_t) now.tv_sec, 0, &tm);
+>> +
+>> +		/* Run the every day at 2 clock */
+>> +		/* XXX need to consider the timezone? */
+>> +		next = 2 - tm.tm_hour;
+>> +		if (next <= 0)
+>> +			next += 24;
+>> +		next *= 60*60*HZ;
+>> +
+>> +		/* Re-arm the timer for next trim */
+>> +		mod_timer(&sbi->s_auto_discard, jiffies + next);
+>> +
+>> +		set_current_state(TASK_INTERRUPTIBLE);
+>> +		schedule();
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void ext4_auto_batched_discard(unsigned long arg)
+>> +{
+>> +	struct super_block *sb = (struct super_block *) arg;
+>> +	struct ext4_sb_info *sbi = EXT4_SB(sb);
+>> +
+>> +	/*
+>> +	 * The ext4_trim_fs can't run at timer context
+>> +	 * So use the created kthread.
+>> +	 */
+>> +	wake_up_process(sbi->s_auto_discard_thread);
+>> +}
+>> +
+>>  /* Find next suitable group and run ext4_init_inode_table */
+>>  static int ext4_run_li_request(struct ext4_li_request *elr)
+>>  {
+>> @@ -3576,6 +3652,21 @@ static int ext4_fill_super(struct super_block *sb,
+>> void *data, int silent)
+>>  	sbi->s_err_report.function = print_daily_error_info;
+>>  	sbi->s_err_report.data = (unsigned long) sb;
+>>
+>> +	if (test_opt2(sb, AUTO_DISCARD)) {
+>> +		init_timer(&sbi->s_auto_discard);
+>> +		sbi->s_auto_discard.function = ext4_auto_batched_discard;
+>> +		sbi->s_auto_discard.data = (unsigned long) sb;
+>> +		sbi->s_auto_discard_thread =
+>> +			kthread_create(ext4_auto_batched_discard_thread, sb,
+>> +				"ext4-batched-discard");
+>> +		if (IS_ERR(sbi->s_auto_discard_thread)) {
+>> +			err = PTR_ERR(sbi->s_auto_discard_thread);
+>> +			goto failed_mount2;
+>> +		}
+>> +		/* One hour is enough to know the time */
+>> +		mod_timer(&sbi->s_auto_discard, jiffies + 1*60*60*HZ);
+>> +	}
+>> +
+>>  	err = percpu_counter_init(&sbi->s_freeclusters_counter,
+>>  			ext4_count_free_clusters(sb));
+>>  	if (!err) {
+>> @@ -3848,6 +3939,10 @@ failed_mount_wq:
+>>  		sbi->s_journal = NULL;
+>>  	}
+>>  failed_mount3:
+>> +	if (test_opt2(sb, AUTO_DISCARD)) {
+>> +		kthread_stop(sbi->s_auto_discard_thread);
+>> +		del_timer(&sbi->s_auto_discard);
+>> +	}
+>>  	del_timer(&sbi->s_err_report);
+>>  	if (sbi->s_flex_groups)
+>>  		ext4_kvfree(sbi->s_flex_groups);
+>> @@ -4546,6 +4641,22 @@ static int ext4_remount(struct super_block *sb, int
+>> *flags, char *data)
+>>  	if (sbi->s_journal == NULL)
+>>  		ext4_commit_super(sb, 1);
+>>
+>> +	if (test_opt2(sb, AUTO_DISCARD) && !sbi->s_auto_discard_thread) {
+>> +		init_timer(&sbi->s_auto_discard);
+>> +		sbi->s_auto_discard.function = ext4_auto_batched_discard;
+>> +		sbi->s_auto_discard.data = (unsigned long) sb;
+>> +		sbi->s_auto_discard_thread =
+>> +			kthread_create(ext4_auto_batched_discard_thread, sb,
+>> +				"ext4-batched-discard");
+>> +		if (IS_ERR(sbi->s_auto_discard_thread)) {
+>> +			err = PTR_ERR(sbi->s_auto_discard_thread);
+>> +			goto restore_opts;
+>> +		}
+>> +
+>> +		/* One hour is enough to know the time */
+>> +		mod_timer(&sbi->s_auto_discard, jiffies + 1*60*60*HZ);
+>> +	}
+>> +
+>>  #ifdef CONFIG_QUOTA
+>>  	/* Release old quota file names */
+>>  	for (i = 0; i < MAXQUOTAS; i++)
+>>
 >
 > --
-> 1.6.6.rc2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
