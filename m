@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab1LEKGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 05:06:48 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:53988 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755321Ab1LEKGr (ORCPT
+	id S1755600Ab1LEKHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 05:07:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49130 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab1LEKHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 05:06:47 -0500
-Date: Mon, 5 Dec 2011 02:06:46 -0800 (PST)
-From: Jakob Bornecrantz <jakob@vmware.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <855788278.405280.1323079606487.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <1322600880.1534.299.camel@localhost.localdomain>
-Subject: Re: [PATCH] vmwgfx: Use kcalloc instead of kzalloc to allocate
- array
+	Mon, 5 Dec 2011 05:07:03 -0500
+Date: Mon, 5 Dec 2011 18:03:46 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
+ involving interrupt disabling
+Message-ID: <20111205100346.GA28750@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20111203183417.GA18914@linux.vnet.ibm.com>
+ <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1323078096.32012.14.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.60.13]
-X-Mailer: Zimbra 7.1.3_GA_3374 (ZimbraWebClient - GC15 (Mac)/7.1.3_GA_3346)
+Content-Disposition: inline
+In-Reply-To: <1323078096.32012.14.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Jakob Bornecrantz <jakob@vmware.com>
+On Mon, Dec 05, 2011 at 10:41:36AM +0100, Peter Zijlstra wrote:
+> On Sat, 2011-12-03 at 10:34 -0800, Paul E. McKenney wrote:
+> > From: Yong Zhang <yong.zhang0@gmail.com>
+> > 
+> > RCU-lockdep will issue warnings given the following use pattern:
+> > 
+> > 	rcu_read_lock();
+> > 	local_irq_disable();
+> > 	rcu_read_unlock();
+> > 	local_irq_enable();
+> > 
+> > However, this use pattern is legal except for the scheduler's runqueue
+> > and priority-inheritance locks (and any other locks that the scheduler
+> > might use during priority-inheritance operations).
+> 
+> So what does this patch do? Make it not complain when you do the above?
 
------ Original Message -----
-> The advantage of kcalloc is, that will prevent integer overflows
-> which could result from the multiplication of number of elements
-> and size and it is also a bit nicer to read.
-> 
-> The semantic patch that makes this change is available
-> in https://lkml.org/lkml/2011/11/25/107
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> ---
-> 
-> diff -u -p a/drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c
-> b/drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c
-> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c 2011-11-13
-> 11:07:24.343455126 +0100
-> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c 2011-11-28
-> 19:50:07.413502824 +0100
-> @@ -140,7 +140,7 @@ int vmw_present_ioctl(struct drm_device
->  		goto out_clips;
->  	}
->  
-> -	clips = kzalloc(num_clips * sizeof(*clips), GFP_KERNEL);
-> +	clips = kcalloc(num_clips, sizeof(*clips), GFP_KERNEL);
->  	if (clips == NULL) {
->  		DRM_ERROR("Failed to allocate clip rect list.\n");
->  		ret = -ENOMEM;
-> @@ -232,7 +232,7 @@ int vmw_present_readback_ioctl(struct dr
->  		goto out_clips;
->  	}
->  
-> -	clips = kzalloc(num_clips * sizeof(*clips), GFP_KERNEL);
-> +	clips = kcalloc(num_clips, sizeof(*clips), GFP_KERNEL);
->  	if (clips == NULL) {
->  		DRM_ERROR("Failed to allocate clip rect list.\n");
->  		ret = -ENOMEM;
+It suppose to not complain but it bring other complain :(
+
+> How often does this pattern actually happen?
+
+IIRC, we have just one which is cured by commit [a841796: signal: align
+__lock_task_sighand() irq disabling and RCU]
+
+> Can't be that often
+> otherwise we'd have had more complaints, no?
+
+Yeah,
+
+So that also means we don't dedicated lock_class_key for mtx.wait_lock.
+
+Thanks,
+Yong
