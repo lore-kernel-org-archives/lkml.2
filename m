@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab1LEJMh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:12:37 -0500
-Received: from relay.medianet-world.de ([213.157.0.172]:65530 "HELO
-	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754519Ab1LEJMd convert rfc822-to-8bit (ORCPT
+	id S1754583Ab1LEJOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:14:17 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42079 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814Ab1LEJOP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:12:33 -0500
-thread-index: AcyzLgQKVMaGnL26SR+iGaGZkzN3kg==
-Thread-Topic: [PATCH 00/11] [ANNOUNCE] 3.0.12-rt30-rc2
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-From: "Tim Sander" <tim.sander@hbm.com>
-Organization: Hottinger Baldwin Messtechnik
-To: "Thomas Gleixner" <tglx@linutronix.de>
-Subject: Re: [PATCH 00/11] [ANNOUNCE] 3.0.12-rt30-rc2
-Date: Mon, 5 Dec 2011 10:11:59 +0100
-User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
-Cc: "Tim Sander" <tim01@vlsi.informatik.tu-darmstadt.de>,
-        "Steven Rostedt" <rostedt@goodmis.org>, <linux-kernel@vger.kernel.org>,
-        "linux-rt-users" <linux-rt-users@vger.kernel.org>,
-        "Carsten Emde" <C.Emde@osadl.org>, "John Kacur" <jkacur@redhat.com>
-References: <20111204185444.411298317@goodmis.org> <201112042113.37047.tim01@vlsi.informatik.tu-darmstadt.de> <alpine.LFD.2.02.1112042145440.2735@ionos>
-In-Reply-To: <alpine.LFD.2.02.1112042145440.2735@ionos>
+	Mon, 5 Dec 2011 04:14:15 -0500
 MIME-Version: 1.0
-Content-Type: text/Plain;
-	charset="iso-8859-1"
+In-Reply-To: <20111205085228.GF9900@legolas.emea.dhcp.ti.com>
+References: <1323074921-29291-1-git-send-email-thomas.abraham@linaro.org>
+	<20111205085228.GF9900@legolas.emea.dhcp.ti.com>
+Date: Mon, 5 Dec 2011 14:44:14 +0530
+Message-ID: <CAJuYYwTJOfCGUObv4+GakO8BN3N10=T6pH7MdCAiqtBrVGz1_Q@mail.gmail.com>
+Subject: Re: [PATCH] backlight: add regulator support for platform_lcd driver
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: balbi@ti.com
+Cc: rpurdie@rpsys.net, ben-linux@fluff.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-ID: <201112051011.59858.tim.sander@hbm.com>
-X-OriginalArrivalTime: 05 Dec 2011 09:12:30.0303 (UTC) FILETIME=[03F30EF0:01CCB32E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi 
-> Did some other time accounting increase instead ?
-Yes, the other time seemed to be increasing normally.
+Hi Felipe,
 
-I should also point out, that this phenomen was not always happening, but only 
-sometimes and then again disapeared without any known reason.
+On 5 December 2011 14:22, Felipe Balbi <balbi@ti.com> wrote:
 
-Best regards 
-Tim
+[...]
 
-Please ignore:
+>> +     if (lcd_power) {
+>> +             if (plcd->pdata->min_uV || plcd->pdata->max_uV)
+>> +                     if (regulator_set_voltage(lcd_regulator,
+>> +                             plcd->pdata->min_uV, plcd->pdata->max_uV))
+>> +                             dev_info(plcd->us,
+>> +                                     "regulator voltage set failed\n");
+>> +
+>> +             if (regulator_enable(lcd_regulator))
+>> +                     dev_info(plcd->us, "failed to enable regulator\n");
+>> +     } else {
+>> +             regulator_disable(lcd_regulator);
+>> +     }
+>> +
+>> +     regulator_put(lcd_regulator);
+>
+> I wonder why you ->get() and ->put() everytime here. Wouldn't it be
+> enough to ->get() on probe() and ->put() on remove() ??
 
-Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+Thanks for the suggestion. It would be simpler if done in probe. I
+will redo this patch.
 
-Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
-Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+Regards,
+Thomas.
 
-Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
-Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
-
-The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
-
-Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
+>
+> --
+> balbi
+>
