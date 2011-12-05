@@ -1,197 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480Ab1LEUls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:41:48 -0500
-Received: from ffm.saftware.de ([83.141.3.46]:56091 "EHLO ffm.saftware.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932121Ab1LEUlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:41:47 -0500
-Message-ID: <4EDD2C82.7040804@linuxtv.org>
-Date: Mon, 05 Dec 2011 21:41:38 +0100
-From: Andreas Oberritter <obi@linuxtv.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S932521Ab1LEUqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:46:50 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53982 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932128Ab1LEUqt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 15:46:49 -0500
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: HoP <jpetrous@gmail.com>, Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk> <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com> <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com>
-In-Reply-To: <4EDD01BA.40208@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201112051718.48324.arnd@arndb.de>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+	<1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
+	<201112051718.48324.arnd@arndb.de>
+Date: Mon, 5 Dec 2011 14:46:47 -0600
+X-Google-Sender-Auth: gvfqyfrIXRdmUZ04WWny-OfZru8
+Message-ID: <CAF6AEGvyWV0DM2fjBbh-TNHiMmiLF4EQDJ6Uu0=NkopM6SXS6g@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+From: Rob Clark <rob@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk,
+        jesse.barker@linaro.org, m.szyprowski@samsung.com, daniel@ffwll.ch,
+        t.stanislaws@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.12.2011 18:39, Mauro Carvalho Chehab wrote:
-> On 05-12-2011 12:28, HoP wrote:
-> 
->>> And here is a new hack.
+On Mon, Dec 5, 2011 at 11:18 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 02 December 2011, Sumit Semwal wrote:
+>> This is the first step in defining a dma buffer sharing mechanism.
+>
+> This looks very nice, but there are a few things I don't understand yet
+> and a bunch of trivial comments I have about things I spotted.
+>
+> Do you have prototype exporter and consumer drivers that you can post
+> for clarification?
+
+There is some dummy drivers based on an earlier version.  And airlied
+has a prime (multi-gpu) prototype:
+
+http://cgit.freedesktop.org/~airlied/linux/log/?h=drm-prime-dmabuf
+
+I've got a nearly working camera+display prototype:
+
+https://github.com/robclark/kernel-omap4/commits/dmabuf
+
+> In the patch 2, you have a section about migration that mentions that
+> it is possible to export a buffer that can be migrated after it
+> is already mapped into one user driver. How does that work when
+> the physical addresses are mapped into a consumer device already?
+
+I think you can do physical migration if you are attached, but
+probably not if you are mapped.
+
+>> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+>> index 21cf46f..07d8095 100644
+>> --- a/drivers/base/Kconfig
+>> +++ b/drivers/base/Kconfig
+>> @@ -174,4 +174,14 @@ config SYS_HYPERVISOR
 >>
->> I'm really tired from all those "hack, crap, pigback ..." wordings.
+>>  source "drivers/base/regmap/Kconfig"
 >>
->> What exactly vtuner aproach does so hackish (other then exposing
->> DVB internals, what is every time made if virtualization support is
->> developing)?
->>
->> The code itself no need to patch any line of vanilla kernel source, it
->> even
->> doesn't change any processing of the rest of kernel, it is very simple
->> driver/code/whatever.
->>
->> I can understand that some developers don't like to get dvb-core opened,
->> I don't agree with them, but I don't really need to fight with them.
->> Its theirs opinion.
->> But even I try to see what is so hackish in vtuner implementation, I
->> don't catch
->> anything. Simplicity? I thought that simplicity is a big advanatge
->> (simple code,
->> easy to analyze). What else?
-> 
-> You solution is called a hack becaus it is used to fool applications to
-> think that a
-> remote device is actually a local device. Being it at kernelspace or at
-> userspace
-> (with CUSE, LD_PRELOADER of whatever other solution) doesn't change this
-> fact.
-> 
-> As applications know nothing about it, they'll still use timeouts and
-> other coding logic
-> that fits well for a locally-accessible device, but that won't fit well
-> for a remote
-> connection.
+>> +config DMA_SHARED_BUFFER
+>> +     bool "Buffer framework to be shared between drivers"
+>> +     default n
+>> +     depends on ANON_INODES
+>
+> I would make this 'select ANON_INODES', like the other users of this
+> feature.
+>
+>> +     return dmabuf;
+>> +}
+>> +EXPORT_SYMBOL(dma_buf_export);
+>
+> I agree with Konrad, this should definitely be EXPORT_SYMBOL_GPL,
+> because it's really a low-level function that I would expect
+> to get used by in-kernel subsystems providing the feature to
+> users and having back-end drivers, but it's not the kind of thing
+> we want out-of-tree drivers to mess with.
+>
+>> +/**
+>> + * dma_buf_fd - returns a file descriptor for the given dma_buf
+>> + * @dmabuf:  [in]    pointer to dma_buf for which fd is required.
+>> + *
+>> + * On success, returns an associated 'fd'. Else, returns error.
+>> + */
+>> +int dma_buf_fd(struct dma_buf *dmabuf)
+>> +{
+>> +     int error, fd;
+>> +
+>> +     if (!dmabuf->file)
+>> +             return -EINVAL;
+>> +
+>> +     error = get_unused_fd_flags(0);
+>
+> Why not simply get_unused_fd()?
+>
+>> +/**
+>> + * dma_buf_attach - Add the device to dma_buf's attachments list; optionally,
+>> + * calls attach() of dma_buf_ops to allow device-specific attach functionality
+>> + * @dmabuf:  [in]    buffer to attach device to.
+>> + * @dev:     [in]    device to be attached.
+>> + *
+>> + * Returns struct dma_buf_attachment * for this attachment; may return NULL.
+>> + *
+>
+> Or may return a negative error code. It's better to be consistent here:
+> either always return NULL on error, or change the allocation error to
+> ERR_PTR(-ENOMEM).
+>
+>> + */
+>> +struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+>> +                                             struct device *dev)
+>> +{
+>> +     struct dma_buf_attachment *attach;
+>> +     int ret;
+>> +
+>> +     BUG_ON(!dmabuf || !dev);
+>> +
+>> +     attach = kzalloc(sizeof(struct dma_buf_attachment), GFP_KERNEL);
+>> +     if (attach == NULL)
+>> +             goto err_alloc;
+>> +
+>> +     mutex_lock(&dmabuf->lock);
+>> +
+>> +     attach->dev = dev;
+>> +     attach->dmabuf = dmabuf;
+>> +     if (dmabuf->ops->attach) {
+>> +             ret = dmabuf->ops->attach(dmabuf, dev, attach);
+>> +             if (!ret)
+>> +                     goto err_attach;
+>
+> You probably mean "if (ret)" here instead of "if (!ret)", right?
+>
+>> +     /* allow allocator to take care of cache ops */
+>> +     void (*sync_sg_for_cpu) (struct dma_buf *, struct device *);
+>> +     void (*sync_sg_for_device)(struct dma_buf *, struct device *);
+>
+> I don't see how this works with multiple consumers: For the streaming
+> DMA mapping, there must be exactly one owner, either the device or
+> the CPU. Obviously, this rule needs to be extended when you get to
+> multiple devices and multiple device drivers, plus possibly user
+> mappings. Simply assigning the buffer to "the device" from one
+> driver does not block other drivers from touching the buffer, and
+> assigning it to "the cpu" does not stop other hardware that the
+> code calling sync_sg_for_cpu is not aware of.
+>
+> The only way to solve this that I can think of right now is to
+> mandate that the mappings are all coherent (i.e. noncachable
+> on noncoherent architectures like ARM). If you do that, you no
+> longer need the sync_sg_for_* calls.
 
-See (*) below.
+My original thinking was that you either need DMABUF_CPU_{PREP,FINI}
+ioctls and corresponding dmabuf ops, which userspace is required to
+call before / after CPU access.  Or just remove mmap() and do the
+mmap() via allocating device and use that device's equivalent
+DRM_XYZ_GEM_CPU_{PREP,FINI} or DRM_XYZ_GEM_SET_DOMAIN ioctls.  That
+would give you a way to (a) synchronize with gpu/asynchronous
+pipeline, (b) synchronize w/ multiple hw devices vs cpu accessing
+buffer (ie. wait all devices have dma_buf_unmap_attachment'd).  And
+that gives you a convenient place to do cache operations on
+noncoherent architecture.
 
-> You should remind that, by remote, this could mean a
-> cross-ethernet
-> connection dedicated to it or a 20,000 Km far away machine, using
-> satellite links.
-> 
-> When you put someone via the network, issues like latency,  package
-> drops, IP
-> congestion, QoS issues, cryptography, tunneling, etc should be taken
-> into account
-> by the application, in order to properly address the network issues.
+I sort of preferred having the DMABUF shim because that lets you pass
+a buffer around userspace without the receiving code knowing about a
+device specific API.  But the problem I eventually came around to: if
+your GL stack (or some other userspace component) is batching up
+commands before submission to kernel, the buffers you need to wait for
+completion might not even be submitted yet.  So from kernel
+perspective they are "ready" for cpu access.  Even though in fact they
+are not in a consistent state from rendering perspective.  I don't
+really know a sane way to deal with that.  Maybe the approach instead
+should be a userspace level API (in libkms/libdrm?) to provide
+abstraction for userspace access to buffers rather than dealing with
+this at the kernel level.
 
-Are you serious? Lower networking layers should be transparent to the
-upper layers. You don't implement VPN or say TCP in all of your
-applications, do you? These are just some more made-up arguments which
-don't have anything to do with the use cases I explained earlier.
+BR,
+-R
 
-> Those network-specific issues affect applications badly, if they're not
-> prepared to
-> handle with that, and if the used protocol is not adequate. It is not
-> for a reason that
-> there are lots of different protocols designed for streaming broadcast,
-> and a lot of
-> money is spent on improving it.
-
-(*) DVB isn't local either. It's using broadcast media after all. It's
-designed to cope with packet loss and includes relative decoding and
-presentation time stamps in its media payloads. Although DVB specifies
-some minimal repetition rates for repeatedly sent data, real life
-applications need to handle much lower repetition rates anyway (i.e.
-higher timeouts), in order to cope with individual settings of
-broadcasters trying to save some bandwidth in their multiplexes. Real
-life applications also need to handle high timeouts due to possible
-packet loss, especially in satellite and terrestrial networks.
-
-However, the TS transport between the client and server components may
-very well use one of the protocols you're referring to, yes.
-
-> Can you warrant that 100% of DVB applications you claimed to support
-> will work well
-> if a high latency network with a few satellite links is used, even if it
-> has enough
-> bandwidth)? If you think so, a typical satellite latency is 240 ms per
-> link, in
-> the best case [1]. A round trip takes twice this time.
-> 
-> So, a 10 GB connection with just one satellite link would mean about 480
-> ms of round trip.
-
-Again, are you serious? Virtually all users I expect will use their
-local network and you're using a satellite link as an example to explain
-why you think it's going to suck for everybody? I don't know anybody
-who's voluntarily using a satellite link for his internet connection.
-Roundtrip time in my LAN is about 0.25 ms, which is 1/1920th of your
-"typical" example.
-
-I also don't understand how your 10 GB (sic!) of bandwidth come into
-play, if only few MBit/s are required to transfer a DVB video service
-(or few KBit/s for audio or data). You're suggesting high bandwidth
-usage to uninformed readers, where maybe only few bytes are to be
-transferred.
-
-You're suggesting that this project is still a theory, but it's already
-there and it's already in use by many people, who are happy with it. So
-latency can't be such a big problem as you're trying to point out.
-
-Regarding increased latency for ioctls: The Linux DVB API doesn't
-specifiy any time frames within which ioctls must return. Most ioctls
-are known to block, the few others handle non-blocking mode. Adding some
-ms delay for the network transfer really is no problem at all.
-
-Regarding the asynchronous nature of networking: USB transfers are
-asynchronous too, but USB tuners work well using in-kernel drivers. The
-usbip even combines both asynchronous worlds. Oh wait, usbip already
-resides in staging. How come?
-
-[stripped off-topic latency calculations for satellite IP networks]
-
-> On the other hand, a solution like the one described by Florian would
-> introduce a delay of
-> 480 ms for the entire scan to happen, as only one data packet would be
-> needed to send a
-> scan request, and one one stream of packets traveling at 10GB/s would
-> bring the answer
-> back.
-
-What you didn't take into account: Whatever you'll try to do
-interactively over a satellite link (or even over most 3G connections),
-it sucks. Florian's solution won't be an exemption, no matter how it's
-implemented.
-
-Have you ever tried SSH over a satellite link? It sucks. Does SSH suck
-because of that? Rather not.
-
-> Note: even links without satellite may suffer high delays. The delay
-> introduced by an USB
-> modem for a 3G data connection is probably high enough to cause
-> applications like w_scan
-> to fail.
-> 
-> Your approach for sure works on your network scenario, but it is a very
-> sensitive to network
-> issues, as applications have no idea about the network connection, and
-> would do the wrong
-> thing when a network error occurs.
-
-There's no difference between network errors in this case and USB
-errors/disconnects in the case of USB tuners.
-
-> What I'm saying you is that the proper way to address it is to create a
-> library that would
-> abstract the DVB operations (scan, tuning, filtering, ...) into a way
-> that it could
-> be called either locally or remotely. Then, work with userspace
-> developers to support it.
-> 
-> As I said before, all network-based audio/video stream solutions work
-> this way. They don't
-> try to hide themselves by emulating a local device, as this don't work
-> in a general case.
-> 
-> If you succeed to create a clean, properly written DVB library that
-> would work fine for
-> remote devices, I'm sure you will be able to convince most application
-> maintainers to use it.
-
-Unfortunately, you still wouldn't have solved the issue vtunerc is
-trying to solve, if you built such a library and included it in szap et al.
-
-Regards,
-Andreas
+>> +#ifdef CONFIG_DMA_SHARED_BUFFER
+>
+> Do you have a use case for making the interface compile-time disabled?
+> I had assumed that any code using it would make no sense if it's not
+> available so you don't actually need this.
+>
+>        Arnd
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
