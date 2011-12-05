@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab1LEPAS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:00:18 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39312 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932268Ab1LEPAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:00:17 -0500
-Date: Mon, 5 Dec 2011 09:53:21 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: Re: linux-next: manual merge of the net-next tree with the  tree
-Message-ID: <20111205145320.GA2531@tuxdriver.com>
-References: <20111205123428.47213da24624d85aa84711f3@canb.auug.org.au>
- <20111205153416.e1dd01e5368ce7c016d99a59@canb.auug.org.au>
+	id S932393Ab1LEPA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:00:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28883 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932268Ab1LEPAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 10:00:21 -0500
+Date: Mon, 5 Dec 2011 16:00:22 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH repost] mm,x86: remove debug_pagealloc_enabled
+Message-ID: <20111205150019.GA5434@redhat.com>
+References: <1322582711-14571-1-git-send-email-sgruszka@redhat.com>
+ <20111205110656.GA22259@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="FCuugMFkClbJLl1L"
 Content-Disposition: inline
-In-Reply-To: <20111205153416.e1dd01e5368ce7c016d99a59@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111205110656.GA22259@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 03:34:16PM +1100, Stephen Rothwell wrote:
-> On Mon, 5 Dec 2011 12:34:28 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > Today's linux-next merge of the net-next tree got a conflict in
-> > drivers/net/wireless/iwlwifi/iwl-agn.c between commits from the
+
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Dec 05, 2011 at 12:06:56PM +0100, Ingo Molnar wrote:
 > 
-> wireless (sorry)
+> * Stanislaw Gruszka <sgruszka@redhat.com> wrote:
 > 
-> > tree and commit 7335613ae27a ("iwlwifi: move all mac80211 related
-> > functions to one place") from the net-next tree.
+> > When (no)bootmem finish operation, it pass pages to buddy allocator.
+> > Since debug_pagealloc_enabled is not set, we will do not protect pages,
+> > what is not what we want with CONFIG_DEBUG_PAGEALLOC=y.
 > > 
-> > I just used the net-next version (which may require some fixes).
+> > To fix remove debug_pagealloc_enabled. That variable was introduced by
+> > commit 12d6f21e "x86: do not PSE on CONFIG_DEBUG_PAGEALLOC=y" to get
+> > more CPA (change page attribude) code testing. But currently we have
+> > CONFIG_CPA_DEBUG, which test CPA.
+> > 
+> > Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> > Acked-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  arch/x86/mm/pageattr.c |    6 ------
+> >  include/linux/mm.h     |   10 ----------
+> >  init/main.c            |    5 -----
+> >  mm/debug-pagealloc.c   |    3 ---
+> >  4 files changed, 0 insertions(+), 24 deletions(-)
+> 
+> I'm getting this boot crash with the patch applied:
 
-Yeah, I'll try to get that straightened-out over the next day or two.
+I'm sorry for breaking the boot. I tried to reproduce problem on my
+laptop, but failed. I plan to test patch with your config on some other
+machines.
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+On the meantime can you test attached incremental patch and see if it
+workaround the crash? I suspect memblock reuse pages that it passed
+already to buddy allocator.
+
+Thanks
+Stanislaw
+
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="init_highmem_pages_first.patch"
+
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 29f7c6d..0d0ddcb 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -760,6 +760,9 @@ void __init mem_init(void)
+ #ifdef CONFIG_FLATMEM
+ 	BUG_ON(!mem_map);
+ #endif
++
++	set_highmem_pages_init();
++
+ 	/* this will put all low memory onto the freelists */
+ 	totalram_pages += free_all_bootmem();
+ 
+@@ -771,8 +774,6 @@ void __init mem_init(void)
+ 		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
+ 			reservedpages++;
+ 
+-	set_highmem_pages_init();
+-
+ 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+ 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+ 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+
+--FCuugMFkClbJLl1L--
