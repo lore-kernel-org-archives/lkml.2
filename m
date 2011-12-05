@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab1LEBYi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 20:24:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34799 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755958Ab1LEBYh (ORCPT
+	id S1752916Ab1LEBet (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 20:34:49 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:43936 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab1LEBes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 20:24:37 -0500
-Message-ID: <1323048232.7454.161.camel@deadeye>
-Subject: Re: [Linux-decnet-user] Proposed removal of DECnet support (was:Re:
- [BUG] 3.2-rc2:BUG kmalloc-8: Redzone overwritten)
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Philipp Schafft <lion@lion.leolix.org>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, mike.gair@tatasteel.com,
-        Chrissie Caulfield <ccaulfie@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Linux-DECnet user <linux-decnet-user@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Matt Mackall <mpm@selenic.com>,
-        netdev <netdev@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        RoarAudio <roaraudio@lists.keep-cool.org>
-Date: Mon, 05 Dec 2011 01:23:52 +0000
-In-Reply-To: <20111204195055.A36077AD9C@priderock.keep-cool.org>
-References: <OF7785CDCC.246C1F8F-ON80257958.004A9A89-80257958.004C103D@LocalDomain>
-	 <1322664737.2755.17.camel@menhir>
-	 <20111204195055.A36077AD9C@priderock.keep-cool.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-rIZv2lxU9UN8BoTIhMpY"
-X-Mailer: Evolution 3.0.3-2 
+	Sun, 4 Dec 2011 20:34:48 -0500
+Date: Mon, 5 Dec 2011 12:34:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: linux-next: manual merge of the net-next tree with the  tree
+Message-Id: <20111205123428.47213da24624d85aa84711f3@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_Dec_2011_12_34_28_+1100_ncL=u0oM=6_Q0Cd1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-rIZv2lxU9UN8BoTIhMpY
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Mon__5_Dec_2011_12_34_28_+1100_ncL=u0oM=6_Q0Cd1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, 2011-12-04 at 20:50 +0100, Philipp Schafft wrote:
-> reflum,
->=20
-> On Wed, 2011-11-30 at 14:52 +0000, Steven Whitehouse wrote:
-[...]
-> > It is good to know that people are still using the Linux DECnet code
-> > too. It has lived far beyond the time when I'd envisioned it still bein=
-g
-> > useful :-)
->=20
-> There are still some people interested in it. Btw. on Debian popcon
-> counts 5356 users.
+Hi all,
 
-This is grossly misleading.  Here's the historical graph showing <100
-installations of libdnet until early 2011:
-http://qa.debian.org/popcon-graph.php?packages=3Dlibdnet
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/wireless/iwlwifi/iwl-agn.c between commits from the
+tree and commit 7335613ae27a ("iwlwifi: move all mac80211 related
+functions to one place") from the net-next tree.
 
-The increase in 2011 is not a sudden resurgence of interest; it comes
-from roaraudio[1] users.  For some reason (a joke?) roaraudio has DECnet
-support and its packages depend on libdnet.  You can see that the above
-graph is precisely correlated with this:
-http://qa.debian.org/popcon-graph.php?packages=3Dlibroar1
-
-(And so far as I can work out, libroar1 is mostly being installed as a
-dependency of an unofficial package of Xine.)
-
-The only reason I know this is because there was a sudden spate of bug
-reports on the kernel due to people getting dnet-common installed as a
-recommendation of libdnet and then having their Ethernet MAC addresses
-reconfigured for DECnet.
-
-[1] Yet another audio mixing daemon
-
-Ben.
+I just used the net-next version (which may require some fixes).
 
 --=20
-Ben Hutchings
-Absolutum obsoletum. (If it works, it's out of date.) - Stafford Beer
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
---=-rIZv2lxU9UN8BoTIhMpY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--Signature=_Mon__5_Dec_2011_12_34_28_+1100_ncL=u0oM=6_Q0Cd1
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIVAwUATtwdKOe/yOyVhhEJAQpOsQ//WOlBFMMy7cINXPzERExzfEr4s9IPGTck
-uxNv6JFcqPXfq0E9kBToR6GQx/RgPG568/RIunHZbZ7GWUm62ORez2LlJhW5wLlv
-o+kZEcTN3aC5+C7ubWAlbKAboMC0UPQp2CGm0lq6wKjk340BWM8wkiX5OkSjoMGs
-Wkdn+XXU6dmfwWE+p4D3hD5Gp7G3jZ6EGb+uVs7Sijk3uF8CHVwMxkXBvzjhttyW
-1rLW8/NOCTZFdL03xF8SZGI6jnfXYp8Y3iHVpeySh6IgoGQjGpydvjzwpsW7U+um
-ZFA28NaO5LF/lrp7y2IaX1jOBowiKZB0FqybcSOYMeZoKPEf+F0SWs2dNsXSpPZG
-B6aJl4EvFJxGenQ5Dd2S5zvnx3zsKapD8aGNbzTsFTwldbP2TIIEs/T7xJlYGYHc
-tAR2LuhMVrhAwAO1yT1ZDnDw/GfvXEx8pUyqfYeqlvNJeNA67H4I7UzryzVzRbm2
-r1lc9YeT97eLWel+dVLg0oTBUuEZTkxK+ioAKMRf13t/0RjHEbPi2doEeSCvtJ/y
-T6SIKWAmiRLHit6igR8C+ofjHjQ275+ueqA8mOAZj64w1GUVOuc3NB3R5CNFLO4K
-3QMwtmSaSWo6hRfdcBsU1/eCu3PNLHEToH6HjZPkkYm1GxzxnN2puYjzeGP6yY5J
-ZRMsDe/FEss=
-=D2v5
+iQIcBAEBCAAGBQJO3B+kAAoJEECxmPOUX5FEBBEP/22HNpjAxOb5Vt6tCcMoqeXS
+ZNHzv3D5Wgx/DcihPcyxnN9nQIqu/h3AwQStPYw//5dcEUBL/8p5JNZ/hzUZhasT
+nRxad4c472ox/4Y9qSf5CRw60tkynDfho1d8uKyBu4Rvhu7AWzemEXn7La9fnOAA
+ceqCmNLW0hLbGDWlNIGUW36vUA3G/R0lVJ/sYJd5SyF6vBfSSEdwGw1FcnmbZeCN
+pQiAUfrJjB3stnFRk7OZ1cDwLqqVnN4TnM4wDKVL79bt6Ofd/Up8W4Rq/0s6Y9ka
+91NDQgMPLSu319evvqXXc02buDPSOjtH8/oXWO/XtY0HL6SNWgSueYvtot+gnGNq
+3+QNoHSNp7hzPmLe9VnFly+BZYzFEnIvmf7Dh8gLS1uLx6QyrQgNnhZ519hasqmE
+yVOie4VQYkiBoMf5Izbj0eijsa+UNAlLplTS0cFO21vM01SnYZEaLTnqj7Zh78mX
+0LateKKbdxG2Q+xRbW8QpwGAM5530rOYd5hMUKD5Sd52fkFpP54E4xw97r8J5L9k
+JY1+3imjcFYloC4sTpVIYNEWrx5eJdgJ21QSa4BO6Z2zrB/dTGXXy2y2yeCy+XeG
+UplvWfThDHw0gD/3GUwTL568FlQBtiQAWz23qDpRYds5R7EPY829jVmrU4cN2qkG
+iY/a6Cx77eC8M9t3aKYm
+=Tc7x
 -----END PGP SIGNATURE-----
 
---=-rIZv2lxU9UN8BoTIhMpY--
+--Signature=_Mon__5_Dec_2011_12_34_28_+1100_ncL=u0oM=6_Q0Cd1--
