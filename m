@@ -1,104 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab1LEJTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:19:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55051 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555Ab1LEJTh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:19:37 -0500
-Date: Mon, 5 Dec 2011 17:19:24 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
- involving interrupt disabling
-Message-ID: <20111205091924.GA28117@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
- <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754506Ab1LEJYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:24:46 -0500
+Received: from mga14.intel.com ([143.182.124.37]:12277 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752516Ab1LEJYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:24:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,298,1320652800"; 
+   d="scan'208";a="82247025"
+Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <alpine.DEB.2.00.1112020842280.10975@router.home>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com>
+	 <alpine.DEB.2.00.1112020842280.10975@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Dec 2011 17:22:45 +0800
+Message-ID: <1323076965.16790.670.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 03, 2011 at 10:34:42AM -0800, Paul E. McKenney wrote:
-> From: Yong Zhang <yong.zhang0@gmail.com>
+On Fri, 2011-12-02 at 22:43 +0800, Christoph Lameter wrote:
+> On Fri, 2 Dec 2011, Alex Shi wrote:
 > 
-> RCU-lockdep will issue warnings given the following use pattern:
+> > From: Alex Shi <alexs@intel.com>
+> >
+> > Times performance regression were due to slub add to node partial head
+> > or tail. That inspired me to do tunning on the node partial adding, to
+> > set a criteria for head or tail position selection when do partial
+> > adding.
+> > My experiment show, when used objects is less than 1/4 total objects
+> > of slub performance will get about 1.5% improvement on netperf loopback
+> > testing with 2048 clients, wherever on our 4 or 2 sockets platforms,
+> > includes sandbridge or core2.
 > 
-> 	rcu_read_lock();
-> 	local_irq_disable();
-> 	rcu_read_unlock();
-> 	local_irq_enable();
-> 
-> However, this use pattern is legal except for the scheduler's runqueue
-> and priority-inheritance locks (and any other locks that the scheduler
-> might use during priority-inheritance operations).
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/rcutree_plugin.h |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index 8cd9efe..2020e8a 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -401,8 +401,11 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
->  
->  #ifdef CONFIG_RCU_BOOST
->  		/* Unboost if we were boosted. */
-> -		if (rbmp)
-> +		if (rbmp) {
-> +			local_irq_save(flags);
->  			rt_mutex_unlock(rbmp);
-> +			local_irq_restore(flags);
-> +		}
->  #endif /* #ifdef CONFIG_RCU_BOOST */
->  
->  		/*
-> @@ -1233,9 +1236,10 @@ static int rcu_boost(struct rcu_node *rnp)
->  	lockdep_set_class_and_name(&mtx.wait_lock, &rcu_boost_class,
->  				   "rcu_boost_mutex");
->  	t->rcu_boost_mutex = &mtx;
-> -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> +	raw_spin_unlock(&rnp->lock); /* rrupts remain disabled. */
->  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
->  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+> The number of free objects in a slab may have nothing to do with cache
+> hotness of all objects in the slab. You can only be sure that one object
+> (the one that was freed) is cache hot. Netperf may use them in sequence
+> and therefore you are likely to get series of frees on the same slab
+> page. How are other benchmarks affected by this change?
 
-We permit rt_mutex_unlock() to be call with irq disabled,
-but rt_mutex_lock() is still not allowed. So this usage
-is not legal now.
+Previous testing depends on 3.2-rc1, that show hackbench performance has
+no clear change, and netperf get some benefit. But seems after
+irqsafe_cpu_cmpxchg patch, the result has some change. I am collecting
+these results. 
 
-Sounds we should hold this patch on until a more suitable
-way is found.
+As to the cache hot benefit, my understanding is that if the same object
+was reused, it contents will be refilled from memory anyway. but it will
+save a CPU cache line replace action. 
 
-Thanks,
-Yong
+But think through the lock contention on node->list_lock, like
+explanation of commit 130655ef0979. more free objects will reduce the
+contentions of this lock. It is some tricks to do balance of them. :( 
 
-> +	local_irq_restore(flags);
->  
->  	return rnp->exp_tasks != NULL || rnp->boost_tasks != NULL;
->  }
-> -- 
-> 1.7.3.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-Only stand for myself
+
