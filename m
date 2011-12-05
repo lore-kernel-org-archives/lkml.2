@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab1LEU4n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:56:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53793 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab1LEUzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:55:12 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>
-Cc: linux-doc@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: [PATCH 5/5 resend] Documentation: Correct s_umount state for freeze_fs/unfreeze_fs
-Date: Mon,  5 Dec 2011 12:54:49 -0800
-Message-Id: <1323118489-16326-6-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1323118489-16326-1-git-send-email-kamal@canonical.com>
-References: <1323118489-16326-1-git-send-email-kamal@canonical.com>
+	id S932751Ab1LEU4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:56:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33202 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932644Ab1LEU4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 15:56:53 -0500
+Date: Mon, 5 Dec 2011 21:51:37 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: Re: [PATCH 0/1][V3] Handle reboot in a child pid namespace
+Message-ID: <20111205205137.GA7916@redhat.com>
+References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr> <20111204212756.GB16362@khazad-dum.debian.net> <4EDBFD67.1040009@free.fr> <4EDD2E5C.1050107@free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EDD2E5C.1050107@free.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Valerie Aurora <val@vaaconsulting.com>
+On 12/05, Daniel Lezcano wrote:
+>
+> On 12/05/2011 12:08 AM, Daniel Lezcano wrote:
+> > On 12/04/2011 10:27 PM, Henrique de Moraes Holschuh wrote:
+> >> On Sun, 04 Dec 2011, Daniel Lezcano wrote:
+> >>>  * V3
+> >>>    - removed lock and serialization of pid_ns_reboot
+> >>>  * V2
+> >>>    - added a lock for the pid namespace to prevent racy call
+> >>>      to the 'reboot' syscall
+> >>>    - Moved 'reboot' command assigned in zap_pid_ns_processes
+> >>>      instead of wait_task_zombie
+> >>>    - added tasklist lock around force_sig
+> >>>    - added do_exit in pid_ns_reboot
+> >>>    - used task_active_pid_ns instead of declaring a new variable in sys_reboot
+> >>>    - moved code up before POWER_OFF changed to HALT in sys_reboot
+>
+> Oleg ? Are you fine with this patch ?
 
-freeze_fs/unfreeze_fs ops are called with s_umount held for write, not read.
+I already sent my reviwed-by ;)
 
-BugLink: https://bugs.launchpad.net/bugs/897421
-Signed-off-by: Valerie Aurora <val@vaaconsulting.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
-Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- Documentation/filesystems/Locking |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index d819ba1..7e46a94 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -134,8 +134,8 @@ evict_inode:
- put_super:		write
- write_super:		read
- sync_fs:		read
--freeze_fs:		read
--unfreeze_fs:		read
-+freeze_fs:		write
-+unfreeze_fs:		write
- statfs:			maybe(read)	(see below)
- remount_fs:		write
- umount_begin:		no
--- 
-1.7.5.4
+Oleg.
 
