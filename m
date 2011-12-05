@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab1LETqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:46:33 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:14598
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932285Ab1LETqc (ORCPT
+	id S1756322Ab1LETtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:49:08 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:49634 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755113Ab1LETtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:46:32 -0500
-X-SpamScore: -18
-X-BigFish: VS-18(zzbb2dK9371K936eK1432N98dKzz1202hzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4EDD1F90.300@freescale.com>
-Date: Mon, 5 Dec 2011 13:46:24 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Mon, 5 Dec 2011 14:49:05 -0500
+Date: Mon, 5 Dec 2011 14:49:01 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Dave Martin <dave.martin@linaro.org>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
+        Pawel Moll <pawel.moll@arm.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
+In-Reply-To: <20111205192605.GD29812@localhost.localdomain>
+Message-ID: <alpine.LFD.2.02.1112051443190.2357@xanadu.home>
+References: <20111110162859.GA7088@oksana.dev.rtsoft.ru> <20111202192618.GC3037@localhost.localdomain> <CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com> <1322867573.11728.22.camel@pasglop> <20111205161157.GA27550@localhost.localdomain>
+ <alpine.LFD.2.02.1112051236350.2357@xanadu.home> <20111205180253.GB29812@localhost.localdomain> <alpine.LFD.2.02.1112051310150.2357@xanadu.home> <20111205192605.GD29812@localhost.localdomain>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: <dedekind1@gmail.com>
-CC: <shuo.liu@freescale.com>, <Artem.Bityutskiy@nokia.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mtd@lists.infradead.org>, <akpm@linux-foundation.org>,
-        <dwmw2@infradead.org>
-Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com> <1322973098-2528-3-git-send-email-shuo.liu@freescale.com> <1323067628.2316.29.camel@koala>
-In-Reply-To: <1323067628.2316.29.camel@koala>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2011 12:47 AM, Artem Bityutskiy wrote:
-> On Sun, 2011-12-04 at 12:31 +0800, shuo.liu@freescale.com wrote:
->> +		/*
->> +		 * Freescale FCM controller has a 2K size limitation of buffer
->> +		 * RAM, so elbc_fcm_ctrl->buffer have to be used if writesize
->> +		 * of chip is greater than 2048.
->> +		 * We malloc a large enough buffer (maximum page size is 16K).
->> +		 */
->> +		elbc_fcm_ctrl->buffer = kmalloc(1024 * 16 + 1024, GFP_KERNEL);
->> +		if (!elbc_fcm_ctrl->buffer) {
->> +			dev_err(dev, "failed to allocate memory\n");
->> +			mutex_unlock(&fsl_elbc_nand_mutex);
->> +			ret = -ENOMEM;
->> +			goto err;
->> +		}
+On Mon, 5 Dec 2011, Dave Martin wrote:
+
+> On Mon, Dec 05, 2011 at 01:18:30PM -0500, Nicolas Pitre wrote:
+> > On Mon, 5 Dec 2011, Dave Martin wrote:
+> > 
+> > > On Mon, Dec 05, 2011 at 12:40:16PM -0500, Nicolas Pitre wrote:
+> > > > On Mon, 5 Dec 2011, Dave Martin wrote:
+> > > > > On Sat, Dec 03, 2011 at 10:12:53AM +1100, Benjamin Herrenschmidt wrote:
+> > > > > > On Fri, 2011-12-02 at 11:28 -0800, Linus Torvalds wrote:
+> > > > > > > Don't *change* NO_IRQ to zero (that whole #define is broken - leave it
+> > > > > > > around as a marker of brokenness), just start removing it from all the
+> > > > > > > ARM drivers that use the OF infrastructure. Which is presumably not
+> > > > > > > all that many yet.
+> > > > > > > 
+> > > > > > > So whenever you find breakage, the fix now is to just remove NO_IRQ
+> > > > > > > tests, and replace them with "!irq".
+> > > > > > 
+> > > > > 
+> > > > > Russell, do you know whether it would make sense to set a timeline for 
+> > > > > removing NO_IRQ from ARM platforms and migrating to 0 for the no-interrupt
+> > > > > case?  I'm assuming that this mainly involves migrating existing hard-wired
+> > > > > code that deals with interrupt numbers to use irq domains.
+> > > > 
+> > > > How many drivers do use IRQ #0 to start with?  We might discover that in 
+> > > > practice there is only a very few cases where this is an issue if 0 
+> > > > would mean no IRQ.
+> > > 
+> > > The total number of files referring to NO_IRQ is not that huge:
+> > > 
+> > > arch/arm/	188 matches in 39 files
+> > > drivers/	174 matches in 84 files
+> > > 
+> > > Unfortunately, NO_IRQ is often not spelled "NO_IRQ".  It looks like the assumption
+> > > "irq < 0 === no irq" may be quite a lot more widespread than "NO_IRQ === no irq".
+> > > Since there's no specific thing we can grep for (and simply due to volume)
+> > > finding all such instances may be quite a bit harder.
+> > [...]
+> > 
+> > ARgh.
+> > 
+> > My point was about current actual usage of the IRQ numbered 0 which 
+> > probably prompted the introduction of NO_IRQ in the first place.  What I 
+> > was saying is that the number of occurrences where IRQ #0 is currently 
+> > used into drivers that would get confused if 0 would mean no IRQ is 
+> > probably quite small.
 > 
-> Sorry for returning to this again and agian - I do not have time to dig
-> suggest you the right solutions on the one hand, you do not provide me a
-> good answer on the other hand (or I forgot?).
+> Ah, I misunderstood -- that's a separate issue, but also an important one.
+> I guess this applies to a fair number of older boards.  One way of fixing
+> this would be to migrate those boards to use irq domains -- but those boards
+> may be sporadically maintained.
+>  
+> > But as you illustrated, there is a large number of drivers that already 
+> > assume no IRQ is < 0, even if they don't use any IRQ #0 themselves.  
+> > That is a much bigger problem to fix.
 > 
-> 16KiB pages do not even exist I believe.
+> My concern is that as soon as we start to change this in significant
+> volume, a _lot_ of stuff is going to break.  Everywhere that an irq value
+> is passed from one piece of code to another, there is a potential
+> interface mismatch -- there seems to be no single place where we can
+> apply a conversion and fix everything.
 
-Googling turns up some hints of it, but nothing concrete such as a
-datasheet.  We can assume 8K max for now and adjust it later, as the
-need becomes clear.
+No need to convert everything.
 
-> And you kmalloc 33KiB or RAM
+First move is to make irq=0 meaning no IRQ.  That means making things 
+like:
 
-17KiB, or 9KiB if we forget about 16K-page NAND.
+	if (irq < 0)
+	if (irq >= 0)
 
-> although in most cases you need only 5KiB. I think this is wrong -
-> what is the very strong reason of wasting RAM you have?
-> 
-> Why you cannot allocate exactly the required amount of RAM after
-> 'nand_scan_ident()' finishes and you know the page size?
+into
 
-Because this is a controller resource, shared by multiple NAND chips
-that may be different page sizes (even if not, it's adding another point
-of synchronization required between initialization of different chips).
- I don't think it's worth the gymnastics to save a few KiB.
+	if (irq <= 0)
+	if (irq > 0)
 
--Scott
+And replace NO_IRQ with 0.
 
+That change shouldn't break anything, except those drivers which are 1) 
+being passed an actual IRQ #0 and 2) testing for no IRQ.  I suspect that 
+those conditions aren't very common together.
+
+
+Nicolas
