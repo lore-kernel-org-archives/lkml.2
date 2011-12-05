@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab1LEGMU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 01:12:20 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:39917 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab1LEGMT (ORCPT
+	id S1752337Ab1LEGUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 01:20:44 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37029 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab1LEGUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 01:12:19 -0500
-Date: Mon, 5 Dec 2011 17:12:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cong Wang <amwang@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Please add my tree to linux-next
-Message-Id: <20111205171207.3b3bc1ad6d99ad7d7c9c0792@canb.auug.org.au>
-In-Reply-To: <4EDC594D.5040008@redhat.com>
-References: <4ED8529E.5070608@redhat.com>
-	<20111205100930.1bedc458a5e78b85c563465d@canb.auug.org.au>
-	<4EDC594D.5040008@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Dec_2011_17_12_07_+1100_DTY43Ukl0qONS9No"
+	Mon, 5 Dec 2011 01:20:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAA7C2qgDOgqZqkXE+E=H1yTrA0Uc4r-31y40BVa2=BxOaJY6Kw@mail.gmail.com>
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
+	<4ED6C5B8.8040803@linuxtv.org>
+	<4ED75F53.30709@redhat.com>
+	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+	<4EDA4AB4.90303@linuxtv.org>
+	<CAA7C2qjfWW8=kePZDO4nYR913RyuP-t+u8P9LV4mDh9bANr3=Q@mail.gmail.com>
+	<CAJbz7-15mzUNV7ZLSkAOg1Vb8briysitsR7xK94G+3-KT=ZXbA@mail.gmail.com>
+	<CAA7C2qgDOgqZqkXE+E=H1yTrA0Uc4r-31y40BVa2=BxOaJY6Kw@mail.gmail.com>
+Date: Mon, 5 Dec 2011 07:20:42 +0100
+Message-ID: <CAJbz7-1JLc0yq=9NUTNiP5zcG7vyC9ao_seU8rudCwXi3YoGdQ@mail.gmail.com>
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+From: HoP <jpetrous@gmail.com>
+To: VDR User <user.vdr@gmail.com>
+Cc: Andreas Oberritter <obi@linuxtv.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Dec_2011_17_12_07_+1100_DTY43Ukl0qONS9No
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-On Mon, 05 Dec 2011 13:40:29 +0800 Cong Wang <amwang@redhat.com> wrote:
+>> Well, initial report was made on vdr-portal because of our hardware announce,
+>> but you can be sure the same is true if server is build on any linux hardware.
+>> Here is some note:
+>> http://www.vdr-portal.de/board18-vdr-hardware/board84-allgemein/106610-das-neue-netzwerk-client-der-f%C3%BCr-vdr-verwenden-k%C3%B6nnen/?highlight=vtuner
+>>
+>> Additional info you can find (or ask) on our forum:
+>> http://forum.nessiedvb.org/forum/viewforum.php?f=11
+>>
+>> Please note, that compilation of vtunerc kernel driver (or loopback, or pigback
+>> or whatever name the code should be used) is simple - no need for any
+>> kernel real patching is required. Code can be compiled outside of the
+>> kernel tree
+>> (of course kernel headers are still needed).
+>>
+>> Some useful hints regarding userland application daemons you
+>> can find in our wiki:
+>> http://wiki.nessiedvb.org/wiki/doku.php?id=vtuner_mode
+>>
+>> When you get vtunerc and vtunerd applications connected, try
+>> simple command line tuning (szap/tzap or czap) to check
+>> if it works correctly. Only if you get zapping working switch
+>> to vdr.
 >
-> >       * submitted under GPL v2 (or later) and include the Contributor's
-> > 	Signed-off-by,
->=20
-> When I sent the patches out, they all have my Signed-off-by, but not in t=
-he
-> commit logs in my tree. Is this a problem?
+> Thanks for the info and links. I do know many guys who would be
+> interested in this if it can provide good server/client ability with
+> VDR. However, a large number of us only speak english so places like
+> vdr-portal aren't much use a lot of the time. If you have english
+> forums somewhere, that link would be far more useful I think.
 
-Yes, you must have a signed-off-by line for each person who handles the
-patches (in this case just you, since you are also the author).
-Linus (in theory) would not merge your tree if you asked him to if it
-lacked signed-off-by lines (and I will have to drop it if they are not
-added - this will mean rebasing your tree, of course).
+No problem. Simply ignore first URL. All others are english :-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I would recommend start from how-it-works-diagram:
+http://code.google.com/p/vtuner/wiki/BigPicture
 
---Signature=_Mon__5_Dec_2011_17_12_07_+1100_DTY43Ukl0qONS9No
-Content-Type: application/pgp-signature
+and then have a look  at wiki. where you can some
+step-by-step info.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Anyway, don't hesitate to ask any question in our forum
+or write me directly.
 
-iQIcBAEBCAAGBQJO3GC3AAoJEECxmPOUX5FEWQIP+gNqoQHg7YQu9txs4FaYLaxB
-pgON4KUZ/z8pRFbrYEPLu1jSJrZs6gxDKwbGNEUHupkzZs9cFb3cAsW5Wn3eg7He
-k2AkDjnUkKGxxkH8RvmdXdbmOqtCDqRd0oupXVMvYXYbDJPQxoM3G15g9r54NIRJ
-3NQCALtLzva3hORKumz7lfvvmgQkMOBU4KUrPeSZqvzBu3+SLaXfLt2gPR11vsyq
-9/zu9TK4HOyz5n9XkgSy1+REVPFDB10X/03g2foOfY7zBSXgiVQ4BdfFzCRKWqt+
-l/P4tPJ1EOywYtYqQ3onD7QbTRgwYvnBfp+QL7dLRAHPZ1Yrfqt+GJcbWC8z/tuF
-Ng5vuAuhvhZ1271AIhGr9WyaAtDHMbyVmyp6hgUakov6X78Al0fh7HQue/7PG6Af
-lmHb6g88nBPedLif4QdoPTgE1/ycHeRrrLoWuChIMzx3eKx+P1CiIbCSlHBEsicL
-/R1iZMvef6sPRCz23XQxgvYQtQE2tA2dssM83P1jykkO6h06/alJqpecHBofrfJG
-ahjt4RTvHSuEsEg9SN4Lqxauh0WuhI6hXTW/ES/VBPt1LvHKTeZhmIVZyTgBy0vo
-YmjXAgt70AujrBl1HuM7ZGno4zv3z0WKHkAFWCSqPmh46Vw70kcR0fFYJ5203+v9
-XBnwIOua1wseLPo6Ngzp
-=wLX9
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_Dec_2011_17_12_07_+1100_DTY43Ukl0qONS9No--
+Honza
