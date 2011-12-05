@@ -1,142 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab1LER3x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:29:53 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58127 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546Ab1LER3i (ORCPT
+	id S932689Ab1LERaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:30:15 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:60778 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932546Ab1LERaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:29:38 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: [PATCH 2/2] virtio-scsi: add error handling
-Date: Mon,  5 Dec 2011 18:29:19 +0100
-Message-Id: <1323106159-6562-3-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.7.1
-In-Reply-To: <1323106159-6562-1-git-send-email-pbonzini@redhat.com>
-References: <1323106159-6562-1-git-send-email-pbonzini@redhat.com>
+	Mon, 5 Dec 2011 12:30:12 -0500
+Date: Mon, 5 Dec 2011 12:19:39 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2011-12-05
+Message-ID: <20111205171938.GD2531@tuxdriver.com>
+References: <20111205163032.GC2531@tuxdriver.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
+Content-Disposition: inline
+In-Reply-To: <20111205163032.GC2531@tuxdriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds basic error handling to the virtio-scsi
-HBA device.  Task management functions are sent synchronously
-via the control virtqueue.
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
-	v1->v2: use scmd_printk
+--1yeeQ81UyVL57Vl7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- drivers/scsi/virtio_scsi.c |   75 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 74 insertions(+), 1 deletions(-)
+Forgot the signature...I'll sign this one, just in case! :-)
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index cf8732f..35ab0ef 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -36,6 +36,7 @@ static void dbg(const char *fmt, ...)
- /* Command queue element */
- struct virtio_scsi_cmd {
- 	struct scsi_cmnd *sc;
-+	struct completion *comp;
- 	union {
- 		struct virtio_scsi_cmd_req       cmd;
- 		struct virtio_scsi_ctrl_tmf_req  tmf;
-@@ -172,11 +173,12 @@ static void virtscsi_req_done(struct virtqueue *vq)
- 	virtscsi_vq_done(vq, virtscsi_complete_cmd);
- };
- 
--/* These are still stubs.  */
- static void virtscsi_complete_free(void *buf)
- {
- 	struct virtio_scsi_cmd *cmd = buf;
- 
-+	if (cmd->comp)
-+		complete_all(cmd->comp);
- 	kmem_cache_free(virtscsi_cmd_cache, cmd);
- }
- 
-@@ -306,12 +308,77 @@ out:
- 	return ret;
- }
- 
-+static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
-+{
-+	DECLARE_COMPLETION_ONSTACK(comp);
-+	int ret;
-+
-+	cmd->comp = &comp;
-+	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd);
-+	if (ret < 0)
-+		return FAILED;
-+
-+	wait_for_completion(&comp);
-+	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
-+	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
-+		return FAILED;
-+
-+	return SUCCESS;
-+}
-+
-+static int virtscsi_device_reset(struct scsi_cmnd *sc)
-+{
-+	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
-+	struct virtio_scsi_cmd *cmd;
-+
-+	sdev_printk(KERN_INFO, sc->device, "device reset\n");
-+	cmd = kmem_cache_zalloc(virtscsi_cmd_cache, GFP_ATOMIC);
-+	if (!cmd)
-+		return FAILED;
-+
-+	cmd->sc = sc;
-+	cmd->req.tmf = (struct virtio_scsi_ctrl_tmf_req){
-+		.type = VIRTIO_SCSI_T_TMF,
-+		.subtype = VIRTIO_SCSI_T_TMF_LOGICAL_UNIT_RESET,
-+		.lun[0] = 1,
-+		.lun[1] = sc->device->id,
-+		.lun[2] = (sc->device->lun >> 8) | 0x40,
-+		.lun[3] = sc->device->lun & 0xff,
-+	};
-+	return virtscsi_tmf(vscsi, cmd);
-+}
-+
-+static int virtscsi_abort(struct scsi_cmnd *sc)
-+{
-+	struct virtio_scsi *vscsi = shost_priv(sc->device->host);
-+	struct virtio_scsi_cmd *cmd;
-+
-+	scmd_printk(KERN_INFO, sc, "abort\n");
-+	cmd = kmem_cache_zalloc(virtscsi_cmd_cache, GFP_ATOMIC);
-+	if (!cmd)
-+		return FAILED;
-+
-+	cmd->sc = sc;
-+	cmd->req.tmf = (struct virtio_scsi_ctrl_tmf_req){
-+		.type = VIRTIO_SCSI_T_TMF,
-+		.subtype = VIRTIO_SCSI_T_TMF_ABORT_TASK,
-+		.lun[0] = 1,
-+		.lun[1] = sc->device->id,
-+		.lun[2] = (sc->device->lun >> 8) | 0x40,
-+		.lun[3] = sc->device->lun & 0xff,
-+		.tag = (__u64)sc,
-+	};
-+	return virtscsi_tmf(vscsi, cmd);
-+}
-+
- static struct scsi_host_template virtscsi_host_template = {
- 	.module = THIS_MODULE,
- 	.name = "Virtio SCSI HBA",
- 	.proc_name = "virtio_scsi",
- 	.queuecommand = virtscsi_queuecommand,
- 	.this_id = -1,
-+	.eh_abort_handler               = virtscsi_abort,
-+	.eh_device_reset_handler        = virtscsi_device_reset,
- 
- 	.can_queue = 1024,
- 	.dma_boundary = UINT_MAX,
--- 
-1.7.7.1
+John
 
+On Mon, Dec 05, 2011 at 11:30:32AM -0500, John W. Linville wrote:
+> commit cbec0627ef1adf7afa448e8bbae3146ce910212a
+>=20
+> Dave,
+>=20
+> This batch of fixes is intended for 3.2.
+>=20
+> Included is an iwlwifi fix to correctly set some flags related to packet
+> encryption, a couple of cfg80211 regulatory fixes (including one that
+> patches a hole created by the earlier "cfg80211: fix regulatory NULL
+> dereference"), a mac80211 fix to avoid sending probe requests with no
+> supported rates included, an iwlwifi fix to prevent reconfiguring HT40
+> after an association (prevents an assert in the firmware), and another
+> iwlwifi fix that customizes the watchdog timer enablement based on the
+> device type.
+>=20
+> Also included is a reversion of a patch that was causing the iwlegacy
+> driver to throw WARNINGs.
+>=20
+> Please let me know if there are problems!
+>=20
+> John
+>=20
+> ---
+>=20
+> The following changes since commit f61759e6b831a55b89e584b198c3da325e2bc3=
+79:
+>=20
+>   ipv4: make sure RTO_ONLINK is saved in routing cache (2011-12-03 01:32:=
+23 -0500)
+>=20
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for=
+-davem
+>=20
+> Johannes Berg (1):
+>       iwlagn: fix HW crypto for TX-only keys
+>=20
+> John W. Linville (2):
+>       Revert "mac80211: clear sta.drv_priv on reconfiguration"
+>       Merge branch 'master' of git://git.kernel.org/.../linville/wireless=
+ into for-davem
+>=20
+> Luis R. Rodriguez (2):
+>       cfg80211: fix race on init and driver registration
+>       cfg80211: amend regulatory NULL dereference fix
+>=20
+> Simon Wunderlich (1):
+>       mac80211: fill rate filter for internal scan requests
+>=20
+> Wey-Yi Guy (2):
+>       iwlwifi: do not re-configure HT40 after associated
+>       iwlwifi: change the default behavior of watchdog timer
+>=20
+>  drivers/net/wireless/iwlwifi/iwl-1000.c     |    1 +
+>  drivers/net/wireless/iwlwifi/iwl-5000.c     |    1 +
+>  drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |   36 ++++++++++++-------
+>  drivers/net/wireless/iwlwifi/iwl-agn-sta.c  |    5 ---
+>  drivers/net/wireless/iwlwifi/iwl-agn.c      |   34 +++++++++---------
+>  drivers/net/wireless/iwlwifi/iwl-agn.h      |    2 +
+>  drivers/net/wireless/iwlwifi/iwl-core.c     |   22 +++++++++---
+>  drivers/net/wireless/iwlwifi/iwl-core.h     |    2 +
+>  drivers/net/wireless/iwlwifi/iwl-shared.h   |    4 +-
+>  net/mac80211/main.c                         |    6 +++
+>  net/mac80211/util.c                         |    1 -
+>  net/wireless/reg.c                          |   49 +++++++++++++++++----=
+------
+>  12 files changed, 102 insertions(+), 61 deletions(-)
+
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
+
+--1yeeQ81UyVL57Vl7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO3P0qAAoJEJctW/TcYTgGv1EP/2OP9nSnOM6jBvI4Fn20LhEu
+i+JiUintd1GjaKTxLUw7DFqopk5l6JsSZnATiKwv9+3dy/wyb6aJ5re0lwVidRX/
+jPbkwxZJBh/uAjkkOPDSzD150KO4CwerrPm5BqW3pXzI4mGd6kg2exaOtfwWVC9s
+A/kf9QiyTWm6c3sFnocsItkUUDIlraA3c8n5pRH7nLGB95fmA1bMVHimRRWa/qrj
+JBmjq0B5sSnMJzjbjA7Pyfo8tj5vPFBoXNKLjG+iX5O/Hz5j9XmSyYhZGYEtQhWs
+CceLEFaCXzYT8JbVaDtLdSKGgm+JbDSH/6pe67q7Kp/mnbh3fmjcqsn0tOmpZ4qG
+Q34aUMkb+beKlJTELstYSidBXkJSJRht7vb9A9wG+v0//giD5uAClJS64ZFZLrcZ
+eDbrxQ8RkcBQdaDX/myW+R0ZVnDdc5vcdl9+mwILW1fguJsD+6obNNqKu/PXldXg
+z/YaTaZQfXNDTsRR2C6qdExUcBIAwS35baV8WT/GRsgtwO+qiCjjLNURhvN5K4TM
+/qNbf+od8O0Lm2V56QvQmQbZsToSIYHli8lTFz0yiHEcoy77+MTfWkc2Rk0ivLWR
+lb2gg0brlu5b1cMe8tG8C1y9z5dyEKI5MVZGspKIkjEIQl0lxgBA4CFu5wceGmdu
+RpuCqydwFHgXbtGukOAq
+=DPJD
+-----END PGP SIGNATURE-----
+
+--1yeeQ81UyVL57Vl7--
