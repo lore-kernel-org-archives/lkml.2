@@ -1,43 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab1LEUw7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:52:59 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47764 "EHLO
+	id S932575Ab1LEUyJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:54:09 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47772 "EHLO
 	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932366Ab1LEUw5 (ORCPT
+	by vger.kernel.org with ESMTP id S932366Ab1LEUyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:52:57 -0500
-Date: Mon, 5 Dec 2011 20:53:44 +0000
+	Mon, 5 Dec 2011 15:54:07 -0500
+Date: Mon, 5 Dec 2011 20:55:54 +0000
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
-        linux-ide@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-next@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Jonas Bonn <jonas@southpole.se>,
-        Michal Simek <monstr@monstr.eu>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-Message-ID: <20111205205344.3c0c0894@lxorguk.ukuu.org.uk>
-In-Reply-To: <4EDD2DE1.1050606@gmail.com>
-References: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
-	<20111202192618.GC3037@localhost.localdomain>
-	<CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com>
-	<1322867573.11728.22.camel@pasglop>
-	<20111205161157.GA27550@localhost.localdomain>
-	<alpine.LFD.2.02.1112051236350.2357@xanadu.home>
-	<20111205180253.GB29812@localhost.localdomain>
-	<alpine.LFD.2.02.1112051310150.2357@xanadu.home>
-	<4EDD1897.4030208@gmail.com>
-	<20111205202125.GA32592@oksana.dev.rtsoft.ru>
-	<4EDD2DE1.1050606@gmail.com>
+To: Andreas Oberritter <obi@linuxtv.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+Message-ID: <20111205205554.2caeb496@lxorguk.ukuu.org.uk>
+In-Reply-To: <4EDD2C82.7040804@linuxtv.org>
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
+	<4ED6C5B8.8040803@linuxtv.org>
+	<4ED75F53.30709@redhat.com>
+	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
+	<4EDC9B17.2080701@gmail.com>
+	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
+	<4EDD01BA.40208@redhat.com>
+	<4EDD2C82.7040804@linuxtv.org>
 X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
 Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
@@ -47,35 +36,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 Dec 2011 14:47:29 -0600
-Rob Herring <robherring2@gmail.com> wrote:
+The USB case is quite different because your latency is very tightly
+bounded, your dead device state is rigidly defined, and your loss of
+device is accurately and immediately signalled.
 
-> On 12/05/2011 02:21 PM, Anton Vorontsov wrote:
-> > On Mon, Dec 05, 2011 at 01:16:39PM -0600, Rob Herring wrote:
-> > [...]
-> >> At least for DT enabled platforms, we could force "no irq" to be 0 in
-> >> the DT irq code. Searching the dts files, I found 2 occurrences of IRQ0.
-> > 
-> > Please note that there are HW IRQ numbers and "Virtual" IRQ numbers.
-> > dev->irq and thus the thing that we pass into request_irq() is a
-> > virtual IRQ thing, a "cookie".
-> > 
-> > While in device tree you see real HW IRQ numbers.
-> > 
-> > Legal VIRQ is always > 0, while HW IRQ could be >= 0.
-> > 
-> 
-> If this was all true, then there would be no discussion.
-
-Or more to the point. If the ARM people concerned had listened in 2005,
-2006 or 2008 there would be no discussion.
-
-> This is what we are working towards, but irq_chips all over the arm tree
-> do not support any translation or have base fixed at compile time. Only
-> a few have been converted. And some ARM platforms may never get
-> converted to DT.
-
-You've had six years. Let them break, it'll motivate any users to fix
-them.
+Quite different.
 
 Alan
+
+
