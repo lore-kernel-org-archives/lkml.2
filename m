@@ -1,198 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab1LEHvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 02:51:24 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40722 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752393Ab1LEHvX (ORCPT
+	id S1753216Ab1LEH4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 02:56:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48471 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab1LEH4E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 02:51:23 -0500
-Date: Mon, 5 Dec 2011 08:51:19 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Dong Aisheng <dongas86@gmail.com>
-Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        shawn.guo@freescale.com, kernel@pengutronix.de
-Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
-Message-ID: <20111205075119.GT27267@pengutronix.de>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
- <1322999384-7886-2-git-send-email-b29396@freescale.com>
- <20111204161123.GS27267@pengutronix.de>
- <CAA+hA=RM77XORR-cUrFSW_rfn=KG9B1gr-Ny0jcDsU1_NiTT7A@mail.gmail.com>
+	Mon, 5 Dec 2011 02:56:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAA+hA=RM77XORR-cUrFSW_rfn=KG9B1gr-Ny0jcDsU1_NiTT7A@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:21:19 up 22 days, 15:08, 11 users,  load average: 0.02, 0.03,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Date: Mon, 5 Dec 2011 09:55:31 +0200
+Message-ID: <CAPLs8y9omncDbLE_KNoKOLLbfwHjWYUJX_i7cC4bLiJsyPbtZQ@mail.gmail.com>
+Subject: v6: faster tree-based sysctl implementation
+To: "Eric W . Biederman" <ebiederm@xmission.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: netdev@vger.kernel.org, Octavian Purdila <tavi@cs.pub.ro>,
+        "David S . Miller" <davem@davemloft.net>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Damien Millescamps <damien.millescamps@6wind.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 10:43:02AM +0800, Dong Aisheng wrote:
-> Hi Sascha,
-> 
-> 2011/12/5 Sascha Hauer <s.hauer@pengutronix.de>:
-> > On Sun, Dec 04, 2011 at 07:49:43PM +0800, Dong Aisheng wrote:
-> >> Signed-off-by: Dong Aisheng <b29396@freescale.com>
-> >> Cc: Linus Walleij <linus.walleij@linaro.org>
-> >> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> >> Cc: Shawn Guo <shanw.guo@freescale.com>
-> >> ---
-> >>  drivers/pinctrl/pinmux-imx53.c |  514 ++++++++++++++++++++++++++++++++++++++++
-> >>  1 files changed, 514 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/pinctrl/pinmux-imx53.c b/drivers/pinctrl/pinmux-imx53.c
-> >> +
-> >> +/* mx53 pin groups and mux mode */
-> >> +static const unsigned mx53_fec_pins[] = {
-> >> +     MX53_FEC_MDC,
-> >> +     MX53_FEC_MDIO,
-> >> +     MX53_FEC_REF_CLK,
-> >> +     MX53_FEC_RX_ER,
-> >> +     MX53_FEC_CRS_DV,
-> >> +     MX53_FEC_RXD1,
-> >> +     MX53_FEC_RXD0,
-> >> +     MX53_FEC_TX_EN,
-> >> +     MX53_FEC_TXD1,
-> >> +     MX53_FEC_TXD0,
-> >> +};
-> >> +static const unsigned mx53_fec_mux[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-> >
-> > The FEC_MDC could be routed to PAD_KEY_ROW2 or to PAD_FEC_MDC. Also
-> > FEC_MDIO could be routed to either PAD_FEC_MDIO or to PAD_KEY_COL2.
-> > For other fec pins also different options might exist. How does this
-> > fit into this group scheme?
-> >
-> Thanks for the review.
-> Here it's only one group for fec function.
-> If i understood right, for current pinmux desgin, pins are arranged in
-> groups per specifc functions.
-> For the case FEC_MDC could be routed to KEY_ROW2, we need define a KEY group
-> for key function.
-> 
-> Currently, i only added one group for one function with the reference
-> of MX53 LOCO pinmux defines.
-> And it's a big work which is in the TODO list that for me to manually
-> add all possible functions and pin groups.
-> So I send out the patch first to see if any design issue for the FSL
-> iomux specialist.
-> 
-> >> +
-> >> +static const unsigned mx53_sd1_pins[] = {
-> >> +     MX53_SD1_CMD,
-> >> +     MX53_SD1_CLK,
-> >> +     MX53_SD1_DATA0,
-> >> +     MX53_SD1_DATA1,
-> >> +     MX53_SD1_DATA2,
-> >> +     MX53_SD1_DATA3,
-> >> +
-> >> +};
-> >> +static const unsigned mx53_sd1_mux[] = { 0, 0, 0, 0, 0, 0 };
-> >> +
-> >> +static const unsigned mx53_sd3_pins[] = {
-> >> +     MX53_PATA_DATA8,
-> >> +     MX53_PATA_DATA9,
-> >> +     MX53_PATA_DATA10,
-> >> +     MX53_PATA_DATA11,
-> >> +     MX53_PATA_DATA0,
-> >> +     MX53_PATA_DATA1,
-> >> +     MX53_PATA_DATA2,
-> >> +     MX53_PATA_DATA3,
-> >> +     MX53_PATA_IORDY,
-> >> +     MX53_PATA_RESET_B,
-> >> +
-> >> +};
-> >> +static const unsigned mx53_sd3_mux[] = { 4, 4, 4, 4, 4, 4, 4, 4, 2, 2 };
-> >> +
-> >> +static const unsigned mx53_uart1_pins[] = {
-> >> +     MX53_CSI0_DAT10,
-> >> +     MX53_CSI0_DAT11,
-> >> +};
-> >> +static const unsigned mx53_uart1_mux[] = { 2, 2 };
-> >
-> > For uart1 indeed only one routing possibility exists, but look at uart2:
-> >
-> > uart2 txd -> PAD_EIM_D26
-> >          -> PAD_PATA_DMARQ
-> >          -> PAD_GPIO_7
-> >
-> > uart2 rxd -> PAD_EIM_D27
-> >          -> PAD_PATA_BUFFER_EN
-> >          -> PAD_GPIO_8
-> >
-> > So this at least means that you should not name the array above
-> > mx53_uart1_mux, but something like mx53_uart1_option1,
-> > mx53_uart1_option2 and so on.
-> >
-> Yes, acked on this.
-> I may take this name option.
+This is version 6 of a patch series that introduces a faster/leaner
+sysctl internal implementation.
+git://github.com/luciang/linux-2.6-new-sysctl.git Â v6-new-sysctl-alg
+A subset of patches that add the minimal set of patches with the new
+algorithm is here:
+ git://github.com/luciang/linux-2.6-new-sysctl.git  v6-new-sysctl-alg-slim
 
-BTW the name _option1 was only meant as an example. mx53_uart2_eim,
-mx53_uart2_pata might make more sense.
 
-> 
-> > Then it's probably possible to use mixtures of different options
-> > for the uart.
-> How mixture?
-> Can you describe more or give an example?
+= Stats =
 
-For example a board might have uart2 txd -> PAD_EIM_D26 and uart2 rxd ->
-PAD_PATA_BUFFER_EN. I don't know if this is done somewhere, but it's
-technically possible.
+$ time modprobe dummy numdummies=N
 
-> 
-> > I don't think that this grouping of pads to their functions makes
-> > sense. On i.MX every pad is muxed independently and not in groups.
-> > Which pins belong to which function is board specific and not SoC
-> > specific.
-> >
-> Yes, i noted this.
-> As i said above, pins seem to be arranged in groups per functions not
-> per pins itself.
-> So our to do is define all possible pin function and group for board to use.
-> But obviously, it's a big work. Especially for your UART2 work, it
-> might be a headache since many possible combination of pins.
-> I still not find the good idea.
-> My current plan is to define all (might be frequently) used functoin
-> and groups for the exist upstreamed board like 53 Loco and etc, is
-> that ok?
+Without this patch series :(
+- ipv4 only
+  -  N=1000  time= 0m 07s
+  -  N=2000  time= 0m 38s
+  -  N=4000  time= 4m 01s
+- ipv4 and ipv6
+  -  N=1000  time= 0m 35s
+  -  N=2000  time= 3m 09s
+  -  N=4000  time=14m 27s
 
-As said, I don't think that it's a good idea to group pins together on a
-per SoC base. I rather think that if we want to go for groups of pins
-belonging to a device, the board has to define those groups, not the
-SoC.
-If you really want to go for SoC specific Pins groups I don't
-necessarily want to see 'everything for LOCO', I rather want to see
-'everything for uart2', including RTS/CTS, modem control pins (if
-applicable) and an example of using those pins as gpio. Another
-interesting thing is the IPU. While a UART might have three groups
-(rxd+txd, rts+cts, dtr+dcd+dsr) the IPU groups are not so easy to
-identify. We have pins for two displays, each of them might be 8bit,
-15bit, 18bit or 24bit. There are different sync signals for each
-display, some of them maybe unused on certain setups. The unused pins
-shouldn't be in the groups as you could use them as gpios instead.
-By putting the iomux pins in SoC specific groups you try to press the
-hardware into a software design for which it is not designed for. It
-will always be easy to find a case which is not covered by any of
-the predefined groups.
+With this patch series :)
+- ipv4 only
+  -  N=1000  time= 0m  0.31s
+  -  N=2000  time= 0m  1.23s
+  -  N=4000  time= 0m  5.14s
+  -  N=8000  time= 0m 20.20s
+- ipv4 and ipv6
+  -  N=1000  time= 0m  0.70s
+  -  N=2000  time= 0m  1.93s
+  -  N=4000  time= 0m  7.03s
+  -  N=8000  time= 0m 40.89s
 
-Sascha
 
+
+= Changes =
+since v5:
+ - https://lkml.org/lkml/2011/6/2/332 - nothing much because of lack
+of review. Echo, echo, echo ... :)
+ - minor tweaks
+ - rebased on 3.2-rc4
+
+
+since v4: -Â http://thread.gmane.org/gmane.linux.network/196495/focus=1144143
+- rebased on 3.0-rc1 - added a new patch manually register
+kernel/usermodehelper whichÂ   was added in 3.0-rc1 - minor changes to
+the "sysctl: simplify find_in_table" patch
+
+since v3:Â - http://thread.gmane.org/gmane.linux.network/196495/ -
+removed a bad patch that shrinked a counter from int to u8
+
+since v2:Â - http://thread.gmane.org/gmane.linux.kernel/1137032/focus=3D194748
+- added a compatibility layer to support old registering complex
+sysctl trees. This layer will be deleted once all users of theÂ   old
+are changed. - subdirectories and netns correspondent dirs are now
+held in rbtrees - split of from the patches that make changes in the
+rest of the tree - rebased on top of 2.6.39
+
+since v1: -Â http://thread.gmane.org/gmane.linux.kernel/1133667 -
+rebased on top of 2.6.39-rc6 - split the patch that adds the new
+algorithm and data structures. - fixed a few bugs lingering in the old
+code - shrinked a reference counter - added a new reference counter to
+maintain ownership information - added method to register an empty
+sysctl dir and converted some users - added checks enforcing the rule
+that a non-netns specific directory mayÂ   not be registered after a
+netns specific one has already been registered. - added cookie
+support: register a piece of data with the header to beÂ   used to make
+simple conversions on the ctl_table.
+
+
+= Summary =
+
+Part 1: introduce compatibility layer:
+  sysctl: introduce temporary sysctl wrappers
+  sysctl: register only tables of sysctl files
+
+Part 2: minimal changes to sysctl users:
+  sysctl: call sysctl_init before the first sysctl registration
+  sysctl: no-child: manually register kernel/random
+  sysctl: no-child: manually register kernel/usermodehelper
+  sysctl: no-child: manually register kernel/keys
+  sysctl: no-child: manually register fs/inotify
+  sysctl: no-child: manually register fs/epoll
+  sysctl: no-child: manually register root tables
+
+Part 3: cleanups simplifying the new algorithm:
+  sysctl: faster reimplementation of sysctl_check_table
+  sysctl: remove useless ctl_table->parent field
+  sysctl: simplify find_in_table
+  sysctl: sysctl_head_grab defaults to root header on NULL
+  sysctl: delete useless grab_header function
+  sysctl: rename ->used to ->ctl_use_refs
+  sysctl: rename sysctl_head_grab/finish to sysctl_use_header/unuse
+  sysctl: rename sysctl_head_next to sysctl_use_next_header
+  sysctl: split ->count into ctl_procfs_refs and ctl_header_refs
+  sysctl: rename sysctl_head_get/put to sysctl_proc_inode_get/put
+  sysctl: rename (un)use_table to __sysctl_(un)use_header
+  sysctl: simplify ->permissions hook
+  sysctl: move removal from list out of start_unregistering
+  sysctl: introduce ctl_table_group and ctl_table_group_ops
+
+
+
+Part 4: new algorithm/data structures:
+  sysctl: faster tree-based sysctl implementation
+
+
+
+Part 5: checks/warns requested during review:
+  sysctl: add duplicate entry and sanity ctl_table checks
+  sysctl: alloc ctl_table_header with kmem_cache
+  sysctl: check netns-specific registration order respected
+  sysctl: warn if registration/unregistration order is not respected
+  sysctl: always perform sysctl checks
+  sysctl: reorder members of ctl_table_header (cleanup)
+  sysctl: add ctl_type member
+
+Part 6: further performance optimisations:
+  sysctl: replace subdirectory list with rbtree
+  sysctl: replace netns corresp list with rbtree
+  sysctl: union-ize some ctl_table_header fields
+
+Part 7: Eric requested ability to register an empty dir:
+  sysctl: add register_sysctl_dir: register an empty sysctl directory
+
+Part 8: unrequested feature I'd like to piggy back :)
+  sysctl: add ctl_cookie and ctl_cookie_handler
+  sysctl: add cookie to __register_sysctl_paths
+  sysctl: add register_net_sysctl_table_net_cookie
+
+ drivers/char/random.c            |   27 +-
+ fs/eventpoll.c                   |   22 +-
+ fs/notify/inotify/inotify_user.c |   22 +-
+ fs/proc/inode.c                  |    2 +-
+ fs/proc/proc_sysctl.c            |  236 +++++---
+ include/linux/inotify.h          |    2 -
+ include/linux/key.h              |    3 -
+ include/linux/kmod.h             |    3 -
+ include/linux/poll.h             |    2 -
+ include/linux/sysctl.h           |  221 +++++---
+ include/net/net_namespace.h      |    4 +-
+ init/main.c                      |    1 +
+ kernel/Makefile                  |    5 +-
+ kernel/kmod.c                    |   14 +-
+ kernel/sysctl.c                  | 1170 ++++++++++++++++++++++++++++----------
+ kernel/sysctl_check.c            |  316 +++++++----
+ lib/Kconfig.debug                |    8 -
+ net/sysctl_net.c                 |   86 ++--
+ security/keys/key.c              |    7 +
+ security/keys/sysctl.c           |   18 +-
+ 20 files changed, 1500 insertions(+), 669 deletions(-)
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.5.4
+-- 
+Â .
+..: Lucian
