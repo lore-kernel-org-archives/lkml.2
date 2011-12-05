@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab1LECuS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 21:50:18 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37706 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752916Ab1LECuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 21:50:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,296,1320652800"; 
-   d="scan'208";a="98556010"
-Subject: Re: [PATCH v2 1/2] dma/ep93xx_dma: fix initialization of M2M
- control register
-From: Vinod Koul <vinod.koul@intel.com>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        hsweeten@visionengravers.com, rmallon@gmail.com,
-        Rafal Prylowski <prylowski@metasoft.pl>
-In-Reply-To: <1bb25192ca6c0dc6f3631a3f937120d560e4e643.1322304185.git.mika.westerberg@iki.fi>
-References: <1bb25192ca6c0dc6f3631a3f937120d560e4e643.1322304185.git.mika.westerberg@iki.fi>
+	id S1753979Ab1LEC60 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 21:58:26 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:36311 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753625Ab1LEC6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 21:58:25 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX193m3l7BbZ3KwoPvnNWXkYFB+sM5XefvtlAhN+/Gr
+	W/CWgnq9dBw5kV
+Subject: Re: [PATCH 00/11] [ANNOUNCE] 3.0.12-rt30-rc2
+From: Mike Galbraith <efault@gmx.de>
+To: Tim Sander <tim01@vlsi.informatik.tu-darmstadt.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+In-Reply-To: <201112042113.37047.tim01@vlsi.informatik.tu-darmstadt.de>
+References: <20111204185444.411298317@goodmis.org>
+	 <201112042113.37047.tim01@vlsi.informatik.tu-darmstadt.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Dec 2011 08:18:29 +0530
-Message-ID: <1323053309.30390.44.camel@vkoul-udesk3>
+Date: Mon, 05 Dec 2011 03:58:19 +0100
+Message-ID: <1323053899.5151.7.camel@marge.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-11-26 at 12:54 +0200, Mika Westerberg wrote:
-> From: Rafal Prylowski <prylowski@metasoft.pl>
+On Sun, 2011-12-04 at 21:13 +0100, Tim Sander wrote:
+> Hi Steven
+> > This is the RT stable review cycle of patch 3.0.12-rt30-rc2.
+> > 
+> > Please scream at me if I messed something up. Please test the patches too.
+> Ok, this is a nearly blind shot, but i was expieriencing strange idle time 
+> behaviour with this Ingo Molnar patch. The idle time was never incremented as 
+> read from /proc/stat for several minutes. The system itself was behaving fine
+> and had definetly not 100% load which was also verified with top.
 > 
-> Setting the flags in case of IDE didn't have any effect since the control
-> register is overwritten few lines below. So move these to be after the control
-> register is initialized.
-> 
-> Signed-off-by: Rafal Prylowski <prylowski@metasoft.pl>
-> Signed-off-by: Mika Westerberg <mika.westerberg@iki.fi>
-> Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Applied both, Thanks
+> I hadn't had the time to investigate further and my tests where with an ealier 
+> release with the Ingo Molnar Tasklet patch on top.
 
-I got a trivial merge conflict on both patches as I think these patches
-were of made on top of dma_slave_direction changes we did sometime back.
+Must be either config related, or something got fixed meanwhile.
+rt30-rc1..
 
-So please do check if merges were right...
+marge:~ # while sleep 1; do  grep cpu /proc/stat|grep -v cpu[0-3]; done
+cpu  33066 90 10762 519426 36625 0 597 0 0 0
+cpu  33110 90 10792 519643 36723 0 601 0 0 0
+cpu  33149 91 10819 519869 36817 0 604 0 0 0
+cpu  33189 91 10849 520099 36906 0 609 0 0 0
+cpu  33231 92 10879 520329 36994 0 614 0 0 0
+cpu  33273 92 10906 520561 37083 0 619 0 0 0
+cpu  33312 93 10935 520789 37176 0 624 0 0 0
+cpu  33356 93 10963 521017 37264 0 628 0 0 0
+cpu  33394 94 10991 521250 37352 0 632 0 0 0
+cpu  33435 95 11016 521478 37445 0 634 0 0 0
+cpu  33480 96 11040 521700 37539 0 638 0 0 0
+cpu  33517 96 11068 521911 37650 0 643 0 0 0
+cpu  33551 97 11096 522113 37776 0 647 0 0 0
+^C
+marge:~ # 
 
-
--- 
-~Vinod
 
