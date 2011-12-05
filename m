@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab1LERkl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:40:41 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:58868 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932512Ab1LERkj (ORCPT
+	id S932801Ab1LERkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:40:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58732 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932763Ab1LERkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:40:39 -0500
-Message-ID: <4EDD0FED.7060301@xenotime.net>
-Date: Mon, 05 Dec 2011 10:39:41 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 5 Dec 2011 12:40:41 -0500
+Date: Mon, 5 Dec 2011 09:40:30 -0800
+From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+Message-ID: <tip-ce37defc0f6673f5ca2c92ed5cfcaf290ae7dd16@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, borislav.petkov@amd.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, borislav.petkov@amd.com
+In-Reply-To: <4ED5B70F.606@lwfinger.net>
+References: <4ED5B70F.606@lwfinger.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Document rdmsr_safe restrictions
+Git-Commit-ID: ce37defc0f6673f5ca2c92ed5cfcaf290ae7dd16
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        x86 maintainers <x86@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: linux-next: Tree for Sept 28 (mrst)
-References: <20110928200404.6ed0d6c34161d233be8994fd@canb.auug.org.au> <4E839B94.9040305@xenotime.net>
-In-Reply-To: <4E839B94.9040305@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:40:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/28/2011 03:11 PM, Randy Dunlap wrote:
-> On 09/28/11 03:04, Stephen Rothwell wrote:
->> Hi all,
-> 
-> 
-> When CONFIG_X86_INTEL_MID=y but CONFIG_X86_MRST is not enabled
-> (this is on an i386/X86_32 build):
-> 
-> rtc.c:(.init.text+0x6234): undefined reference to `__mrst_cpu_chip'
-> 
-> Full randconfig file is attached.
+Commit-ID:  ce37defc0f6673f5ca2c92ed5cfcaf290ae7dd16
+Gitweb:     http://git.kernel.org/tip/ce37defc0f6673f5ca2c92ed5cfcaf290ae7dd16
+Author:     Borislav Petkov <borislav.petkov@amd.com>
+AuthorDate: Mon, 5 Dec 2011 14:28:37 +0100
+Committer:  Borislav Petkov <borislav.petkov@amd.com>
+CommitDate: Mon, 5 Dec 2011 14:28:37 +0100
 
-Hm, it's now 20111205 and this build error is still around.
-Is there any hope for getting it fixed?
+x86: Document rdmsr_safe restrictions
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Recently, I got bitten by using rdmsr_safe too early in the boot
+process. Document its shortcomings for future reference.
+
+Link: http://lkml.kernel.org/r/4ED5B70F.606@lwfinger.net
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/include/asm/msr.h |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/include/asm/msr.h b/arch/x86/include/asm/msr.h
+index 084ef95..95203d4 100644
+--- a/arch/x86/include/asm/msr.h
++++ b/arch/x86/include/asm/msr.h
+@@ -169,7 +169,14 @@ static inline int wrmsr_safe(unsigned msr, unsigned low, unsigned high)
+ 	return native_write_msr_safe(msr, low, high);
+ }
+ 
+-/* rdmsr with exception handling */
++/*
++ * rdmsr with exception handling.
++ *
++ * Please note that the exception handling works only after we've
++ * switched to the "smart" #GP handler in trap_init() which knows about
++ * exception tables - using this macro earlier than that causes machine
++ * hangs on boxes which do not implement the @msr in the first argument.
++ */
+ #define rdmsr_safe(msr, p1, p2)					\
+ ({								\
+ 	int __err;						\
