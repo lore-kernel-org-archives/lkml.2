@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab1LEUyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:54:09 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47772 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932366Ab1LEUyH (ORCPT
+	id S932632Ab1LEUzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:55:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53741 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab1LEUzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:54:07 -0500
-Date: Mon, 5 Dec 2011 20:55:54 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andreas Oberritter <obi@linuxtv.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
- because of worrying about possible misusage?
-Message-ID: <20111205205554.2caeb496@lxorguk.ukuu.org.uk>
-In-Reply-To: <4EDD2C82.7040804@linuxtv.org>
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
-	<4ED6C5B8.8040803@linuxtv.org>
-	<4ED75F53.30709@redhat.com>
-	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
-	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
-	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
-	<4EDC9B17.2080701@gmail.com>
-	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-	<4EDD01BA.40208@redhat.com>
-	<4EDD2C82.7040804@linuxtv.org>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Dec 2011 15:55:03 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>
+Cc: linux-doc@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: [PATCH 0/5 resend] fix s_umount thaw/write and journal deadlock
+Date: Mon,  5 Dec 2011 12:54:44 -0800
+Message-Id: <1323118489-16326-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The USB case is quite different because your latency is very tightly
-bounded, your dead device state is rigidly defined, and your loss of
-device is accurately and immediately signalled.
+[resend: This is an unchanged resend of the patches sent on 2011-11-30,
+ which were apparently not delivered to some recipients.]
 
-Quite different.
+This set of filesystem freeze/thaw deadlock patches is submitted
+on behalf of the authors, Surbhi Palande and Valerie Aurora.  The
+patches fix the bug:
 
-Alan
+BugLink: https://bugs.launchpad.net/bugs/897421
 
+Surbhi Palande (2):
+  Adding support to freeze and unfreeze a journal
+  Thaw the journal when you unfreeze the fs.
+
+Valerie Aurora (3):
+  VFS: Fix s_umount thaw/write deadlock
+  VFS: Rename vfs_check_frozen() to
+  Documentation: Correct s_umount state for
+
+ Documentation/filesystems/Locking |    4 +-
+ fs/btrfs/disk-io.c                |    4 +-
+ fs/btrfs/file.c                   |    2 +-
+ fs/buffer.c                       |    7 +++--
+ fs/drop_caches.c                  |    8 ++++++
+ fs/ext4/inode.c                   |    2 +-
+ fs/ext4/super.c                   |   28 +++++++++------------
+ fs/fs-writeback.c                 |   50 ++++++++++++++++++++++++------------
+ fs/fuse/file.c                    |    2 +-
+ fs/gfs2/file.c                    |    2 +-
+ fs/jbd2/journal.c                 |    1 +
+ fs/jbd2/transaction.c             |   42 +++++++++++++++++++++++++++++++
+ fs/nilfs2/ioctl.c                 |    2 +-
+ fs/nilfs2/segment.c               |    2 +-
+ fs/ntfs/file.c                    |    2 +-
+ fs/ocfs2/file.c                   |    2 +-
+ fs/quota/quota.c                  |   12 ++++++++-
+ fs/super.c                        |   26 +++++++++++++++++++
+ fs/sync.c                         |    9 +++---
+ fs/xfs/xfs_mount.h                |    2 +-
+ include/linux/fs.h                |    8 ++++-
+ include/linux/jbd2.h              |    7 +++++
+ mm/filemap.c                      |    2 +-
+ mm/filemap_xip.c                  |    2 +-
+ 24 files changed, 170 insertions(+), 58 deletions(-)
 
