@@ -1,49 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab1LEVR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 16:17:57 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:37767 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932226Ab1LEVR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 16:17:56 -0500
-Message-ID: <4EDD34EE.90704@free.fr>
-Date: Mon, 05 Dec 2011 22:17:34 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	id S932657Ab1LEVSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 16:18:44 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49489 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932226Ab1LEVSm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 16:18:42 -0500
+Date: Mon, 5 Dec 2011 22:18:38 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        shawn.guo@freescale.com, kernel@pengutronix.de
+Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+Message-ID: <20111205211838.GG27267@pengutronix.de>
+References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+ <1322999384-7886-2-git-send-email-b29396@freescale.com>
+ <CACRpkdaYz+-nZA6atxA+5kvWOO84YeSHQPNiojq_R4zkHUGz3Q@mail.gmail.com>
 MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: Oleg Nesterov <oleg@redhat.com>, serge.hallyn@canonical.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1][V3] Add reboot_pid_ns to handle the reboot syscall
-References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr> <1323030290-22216-2-git-send-email-daniel.lezcano@free.fr> <20111205204238.GA7422@redhat.com>
-In-Reply-To: <20111205204238.GA7422@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdaYz+-nZA6atxA+5kvWOO84YeSHQPNiojq_R4zkHUGz3Q@mail.gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 22:07:42 up 23 days,  4:54, 21 users,  load average: 0.00, 0.01,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2011 09:42 PM, Oleg Nesterov wrote:
-> On 12/04, Daniel Lezcano wrote:
->> This patch propose to store the reboot value in the 16 upper bits of the
->> exit code from the processes belonging to a pid namespace which has
->> rebooted. When the reboot syscall is called and we are not in the initial
->> pid namespace, we kill the pid namespace.
->>
->> By this way the parent process of the child pid namespace to know if
->> it rebooted or not and take the right decision.
->>
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
->> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
->> ---
->>  include/linux/pid_namespace.h |    8 +++++++-
->>  kernel/pid_namespace.c        |   33 +++++++++++++++++++++++++++++++++
->>  kernel/sys.c                  |    3 +++
->>  3 files changed, 43 insertions(+), 1 deletions(-)
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On Mon, Dec 05, 2011 at 05:57:42PM +0100, Linus Walleij wrote:
+> On Sun, Dec 4, 2011 at 12:49 PM, Dong Aisheng <b29396@freescale.com> wrote:
+> 
+> > +enum imx_mx53_pads {
+> > +       MX53_GPIO_19 = 0,
+> > +       MX53_KEY_COL0 = 1,
+> (...)
+> 
+> First I thought it looked a bit strange since you needed enums for all pads
+> but then I realized that your macros use the same enumerator name to
+> name the pad and then it looks sort of clever.
+> 
+> But maybe put in a comment about that here:
+> 
+> > +/* Pad names for the pinmux subsystem */
+> 
+> Like this:
+> 
+> /*
+>  * Pad names for the pinmux subsystem.
+>  * These pad names are constructed from the pin enumerator names
+>  * in the IMX_PINCTRL_PIN() macro.
+>  */
+> 
+> > +static const struct pinctrl_pin_desc mx53_pads[] = {
+> > +       IMX_PINCTRL_PIN(MX53_GPIO_19),
+> > +       IMX_PINCTRL_PIN(MX53_KEY_COL0),
+> (...)
+> 
+> > +/* mx53 pin groups and mux mode */
+> > +static const unsigned mx53_fec_pins[] = {
+> > +       MX53_FEC_MDC,
+> > +       MX53_FEC_MDIO,
+> > +       MX53_FEC_REF_CLK,
+> > +       MX53_FEC_RX_ER,
+> > +       MX53_FEC_CRS_DV,
+> > +       MX53_FEC_RXD1,
+> > +       MX53_FEC_RXD0,
+> > +       MX53_FEC_TX_EN,
+> > +       MX53_FEC_TXD1,
+> > +       MX53_FEC_TXD0,
+> > +};
+> 
+> I understand this.
+> 
+> > +static const unsigned mx53_fec_mux[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+> 
+> But what is this? Just zeroes? Why?
+> Especially with a const so they really cannot be anything
+> else. The same pin (0) can only be enumerated once.
+> 
+> > +static const unsigned mx53_sd1_pins[] = {
+> > +       MX53_SD1_CMD,
+> > +       MX53_SD1_CLK,
+> > +       MX53_SD1_DATA0,
+> > +       MX53_SD1_DATA1,
+> > +       MX53_SD1_DATA2,
+> > +       MX53_SD1_DATA3,
+> > +
+> > +};
+> > +static const unsigned mx53_sd1_mux[] = { 0, 0, 0, 0, 0, 0 };
+> 
+> And here again.
+> 
+> > +static const unsigned mx53_sd3_pins[] = {
+> > +       MX53_PATA_DATA8,
+> > +       MX53_PATA_DATA9,
+> > +       MX53_PATA_DATA10,
+> > +       MX53_PATA_DATA11,
+> > +       MX53_PATA_DATA0,
+> > +       MX53_PATA_DATA1,
+> > +       MX53_PATA_DATA2,
+> > +       MX53_PATA_DATA3,
+> > +       MX53_PATA_IORDY,
+> > +       MX53_PATA_RESET_B,
+> > +
+> > +};
+> > +static const unsigned mx53_sd3_mux[] = { 4, 4, 4, 4, 4, 4, 4, 4, 2, 2 };
+> 
+> This also looks strange. Can you explain what these muxes are?
 
-Andrew, do you think it's possible to take this patch upstream ?
+Freescale has named the pins after their primary function which is quite
+confusing.
 
-Thanks
-  -- Daniel
+The above means:
+
+MX53_PATA_DATA8 -> mux mode 4
+MX53_PATA_DATA9 -> mux mode 4
+...
+
+This brings me to the point that currently we have the pins described as
+
+#define MX53_PAD_<name>__<function>
+
+which means that you don't have to look into the datasheet to get the
+different options for a pin (and don't have a chance to get it wrong).
+I don't really want to lose this.
+
+Sascha
+
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
