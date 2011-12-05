@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab1LEJmr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:42:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61643 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755266Ab1LEJmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:42:44 -0500
-Date: Mon, 5 Dec 2011 11:42:40 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Liu ping fan <kernelfans@gmail.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aliguori@us.ibm.com, jan.kiszka@web.de
-Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
-Message-ID: <20111205094240.GE12507@redhat.com>
-References: <4ED212A1.3060300@redhat.com>
- <1322807192-14147-1-git-send-email-kernelfans@gmail.com>
- <4EDB4A0D.1000609@redhat.com>
- <CAFgQCTujv7Ez23GySc4Bds8x9Pv8Ny59EohpN22de9wicztWrw@mail.gmail.com>
- <4EDC8F4B.7040308@redhat.com>
+	id S1755284Ab1LEJne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:43:34 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:33600 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753869Ab1LEJnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:43:32 -0500
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "sjurbren@gmail.com" <sjurbren@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Mon, 5 Dec 2011 10:43:21 +0100
+Subject: RE: [RFCv2 9/9] caif-xshm: Add CAIF driver for Shared memory for
+ M7400
+Thread-Topic: [RFCv2 9/9] caif-xshm: Add CAIF driver for Shared memory for
+ M7400
+Thread-Index: Acyw6I5woKEpvo0cR2OdsBpEDhiCnQCRuxFQ
+Message-ID: <81C3A93C17462B4BBD7E272753C105791FB0C66166@EXDCVYMBSTM005.EQ1STM.local>
+References: <1322595550-6473-1-git-send-email-sjur.brandeland@stericsson.com>
+	 <1322595550-6473-10-git-send-email-sjur.brandeland@stericsson.com>
+ <1322826606.2313.14.camel@x61.thuisdomein>
+In-Reply-To: <1322826606.2313.14.camel@x61.thuisdomein>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EDC8F4B.7040308@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pB59hi5P005305
 
-On Mon, Dec 05, 2011 at 11:30:51AM +0200, Avi Kivity wrote:
-> On 12/05/2011 07:29 AM, Liu ping fan wrote:
-> > like this,
-> > #define kvm_for_each_vcpu(idx, cnt, vcpup, kvm) \
-> > 	for (idx = 0, cnt = 0, vcpup = kvm_get_vcpu(kvm, idx); \
-> > 	     cnt < atomic_read(&kvm->online_vcpus) && \
-> > 	     idx < KVM_MAX_VCPUS; \
-> > 	     idx++, (vcpup == NULL)?:cnt++, vcpup = kvm_get_vcpu(kvm, idx)) \
-> > 	     if (vcpup == NULL) \
-> > 	          continue; \
-> > 	     else
-> >
-> >
-> > A little ugly, but have not thought a better way out :-)
-> >
-> 
-> #define kvm_for_each_vcpu(vcpu, it) for (vcpu = kvm_fev_init(&it); vcpu;
-> vcpu = kvm_fev_next(&it, vcpu))
-> 
-> Though that doesn't give a good place for rcu_read_unlock().
-> 
-> 
-Why not use rculist to store vcpus and use list_for_each_entry_rcu()?
+Hi Paul,
+ 
+> A few minor comments follow. They're basically identical to some of my
+> comments on v1 of 8/9 ("xshm: Makefile and Kconfig for M7400 Shared
+> Memory Drivers"). I guess I just didn't spot these the first time.
 
---
-			Gleb.
+No worries, I should have fix this all over based on your previous comments anyway.
+
+
+> > +config CAIF_XSHM
+> > +	tristate "CAIF external memory protocol driver"
+> > +	depends on XSHM && CAIF
+> > +	default n
+> > +	---help---
+> > +	Say "yes" if you want to support CAIF over External Shared Memory
+> (XSHM)
+> 
+> "Say Y"?
+> 
+> > +	IPC mechanism (e.g. over Chip to Chip).
+> > +	This will normally be built-in, loadable module is used for
+> testing.
+> 
+> Perhaps something like: "Only say M here if you want to test CAIF over
+> XSHM and need to load and unload its module."?
+
+So I will change drivers/net/caif/Kconfig like this:
+-       Say "yes" if you want to support CAIF over External Shared Memory (XSHM)
+-       IPC mechanism (e.g. over Chip to Chip).
+-       This will normally be built-in, loadable module is used for testing.
++       Say "Y" if you want to support CAIF over External Shared Memory (XSHM)
++       IPC mechanism (e.g. over Chip to Chip). Only say M here if you want to
++       test CAIF over XSHM and need to load and unload its module.
+        If unsure say N.
+
+Thank you for reviewing this Paul.
+
+Regards,
+Sjur
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
