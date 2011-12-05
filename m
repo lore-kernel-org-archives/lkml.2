@@ -1,102 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751108Ab1LEFMc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 00:12:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61027 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab1LEFMb convert rfc822-to-8bit (ORCPT
+	id S1751227Ab1LEF2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 00:28:31 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40899 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998Ab1LEF2a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 00:12:31 -0500
+	Mon, 5 Dec 2011 00:28:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <35AB98346D25394A9354ED89C4D76587228EA3@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1321231380-11631-1-git-send-email-peter.chen@freescale.com>
-	<201111142327.37524.rjw@sisk.pl>
-	<20111115005951.GB26360@kroah.com>
-	<201111160016.09174.rjw@sisk.pl>
-	<20111205085632.5976fe96@notabene.brown>
-	<CACVXFVNkapRDJ8QkgmJCh+n1c2+7cHBiLf1ef22Nfdd8YrPpGg@mail.gmail.com>
-	<35AB98346D25394A9354ED89C4D76587228EA3@039-SN1MPN1-002.039d.mgd.msft.net>
-Date: Mon, 5 Dec 2011 13:12:30 +0800
-Message-ID: <CACVXFVNd7ZnCjvRVX9wJbNNs_6apE-+14w-kxkgc5FAw4K-mAQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] driver core: disable device's runtime pm during shutdown
-From: Ming Lei <tom.leiming@gmail.com>
-To: Chen Peter-B29397 <B29397@freescale.com>
-Cc: NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Greg KH <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
-        Igor Grinberg <grinberg@compulab.co.il>
+In-Reply-To: <20111202153401.GX8245@opensource.wolfsonmicro.com>
+References: <1322819115-15808-1-git-send-email-tomoya.rohm@gmail.com>
+	<20111202153401.GX8245@opensource.wolfsonmicro.com>
+Date: Mon, 5 Dec 2011 14:28:29 +0900
+Message-ID: <CANKRQngGHLD0Bam6sxCGPSkGutjkagbJMvGPTgkduXR6xmMw_Q@mail.gmail.com>
+Subject: Re: [PATCH v2] soc/lapis: add machine driver
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Mark,
 
-On Mon, Dec 5, 2011 at 12:42 PM, Chen Peter-B29397 <B29397@freescale.com> wrote:
+First of all, let me confirm my understanding for machine driver.
+According to "machine.txt", I created this machine driver referring
+corgi.c/spitz.c.
+However, corgi.c/spitz.c. don't look obeying your saying.
+
+e.g.
+2011/12/3 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>> +     snd_soc_dapm_add_routes(dapm, ml7213_routes, ARRAY_SIZE(ml7213_routes));
 >
+> Use table based init for these.
 >
->> >  this patches causes a problem for me.
->> >
->> > Specifically it makes it impossible to power-down a device which uses
->> twl4030
->> > for power control on an omap3 processor.
->> >
->> > To perform the shutdown we need to send a command over the i2c bus.
->> > The relevant bus is called omap_i2c.1 and this is normally in suspend
->> mode.
->> > When a request is sent, omap_i2c_xfer uses pm_runtime_get_sync to wake
->> it up,
->> > performs the transfer, then calls pm_runtime_put to let it go back to
->> sleep.
->> >
->> > So it is asleep when the new pm_runtime_disable() call is made, so it
->> stays
->> > asleep, omap_i2c_xfer cannot wake it, the transfer doesn't happen and
->> the
->> > system doesn't get powered off.
->> >
->> > So here is a device that should *not* have pm disabled at shutdown.
->> >
->> > So I feel this fix is a little too heavy-handed.
->>
->> Maybe the device's runtime PM should not be disabled if
->> there is no ->shutdown defined in its driver, how about the blew?
->>
->> diff --git a/drivers/base/core.c b/drivers/base/core.c
->> index d8b3d89..ca30659 100644
->> --- a/drivers/base/core.c
->> +++ b/drivers/base/core.c
->> @@ -1743,14 +1743,16 @@ void device_shutdown(void)
->>                */
->>               list_del_init(&dev->kobj.entry);
->>               spin_unlock(&devices_kset->list_lock);
->> -             /* Disable all device's runtime power management */
->> -             pm_runtime_disable(dev);
->>
->> +             /* Disable the device's runtime power management if
->> +              * it is to be shutdown*/
->>               if (dev->bus && dev->bus->shutdown) {
->>                       dev_dbg(dev, "shutdown\n");
->> +                     pm_runtime_disable(dev);
->>                       dev->bus->shutdown(dev);
->>               } else if (dev->driver && dev->driver->shutdown) {
->>                       dev_dbg(dev, "shutdown\n");
->> +                     pm_runtime_disable(dev);
->>                       dev->driver->shutdown(dev);
->>               }
->>               put_device(dev);
->>
->>
-> Yes, it is the solution for Neil's case, but I am not sure for all.
-> Is it possible to resume driver's itself at driver's shutdown?
+I  couldn't see any table based init processing at corgi.c/spitz.c.
 
-Looks like this way is still not good. Maybe we should put all
-device into active state first, then set its runtime pm as disabled.
+>
+>> +     switch (params_rate(params)) {
+>> +     case 16000:
+>> +     case 32000:
+>> +     case 48000:
+>> +             clk = 12288800;
+>> +             break;
+>
+> You may as well just set the CODEC clock rate once on init() and let the
+> CODEC driver worry about what it can do with the clock it's got, if the
+> values aren't going to change there's no need to set them every time.
+>
 
-thanks,
--- 
-Ming Lei
+corgi.c/spitz.c look coded like above.
+
+So, I'm confused.
+Is this procedure true ?
+
+
+Thanks,
+
+tomoya
