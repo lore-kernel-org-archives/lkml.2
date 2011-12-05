@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab1LEUVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 15:21:33 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41465 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932204Ab1LEUVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 15:21:31 -0500
-Date: Tue, 6 Dec 2011 00:21:25 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Dave Martin <dave.martin@linaro.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>, devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
-        linux-ide@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-next@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-Message-ID: <20111205202125.GA32592@oksana.dev.rtsoft.ru>
-References: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
- <20111202192618.GC3037@localhost.localdomain>
- <CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com>
- <1322867573.11728.22.camel@pasglop>
- <20111205161157.GA27550@localhost.localdomain>
- <alpine.LFD.2.02.1112051236350.2357@xanadu.home>
- <20111205180253.GB29812@localhost.localdomain>
- <alpine.LFD.2.02.1112051310150.2357@xanadu.home>
- <4EDD1897.4030208@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4EDD1897.4030208@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932529Ab1LEU2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 15:28:05 -0500
+Received: from gate.crashing.org ([63.228.1.57]:38489 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932174Ab1LEU2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 15:28:03 -0500
+Message-ID: <1323116813.660.20.camel@pasglop>
+Subject: Re: [PATCHSET tip:x86/memblock] memblock: Kill early_node_map[],
+ take 2
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Tejun Heo <tj@kernel.org>, yinghai@kernel.org, hpa@zytor.com,
+        tony.luck@intel.com, ralf@linux-mips.org, schwidefsky@de.ibm.com,
+        liqin.chen@sunplusct.com, lethal@linux-sh.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        mingo@redhat.com, jonas@southpole.se, lennox.wu@gmail.com
+Date: Tue, 06 Dec 2011 07:26:53 +1100
+In-Reply-To: <20111205163148.GA25909@elte.hu>
+References: <1322508685-32532-1-git-send-email-tj@kernel.org>
+	 <20111205163148.GA25909@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 01:16:39PM -0600, Rob Herring wrote:
-[...]
-> At least for DT enabled platforms, we could force "no irq" to be 0 in
-> the DT irq code. Searching the dts files, I found 2 occurrences of IRQ0.
+On Mon, 2011-12-05 at 17:31 +0100, Ingo Molnar wrote:
+> * Tejun Heo <tj@kernel.org> wrote:
+> 
+> > Hello,
+> > 
+> > This patchset was posted quite a while ago but got lost during the
+> > korg disturbance and I forgot about it too.  Thankfully, benh pinged
+> > me about testing this patchset yesterday, so here's the refreshed
+> > version.
+> 
+> A bit scary - you should get it into linux-next i suspect - if 
+> that works out then we could then put it into tip:core/memblock 
+> if there are no objections from anyone.
+> 
+> It's not really an x86 tree and most of the changes are 
+> affecting non-x86 architectures, right?
 
-Please note that there are HW IRQ numbers and "Virtual" IRQ numbers.
-dev->irq and thus the thing that we pass into request_irq() is a
-virtual IRQ thing, a "cookie".
+They do look nice tho. I've asked some folks familiar with NUMA stuff
+here at IBM to give them a spin on power, haven't heard back yet.
 
-While in device tree you see real HW IRQ numbers.
+Cheers,
+Ben.
 
-Legal VIRQ is always > 0, while HW IRQ could be >= 0.
-
-> Prima2 has timer on IRQ0, and VersatileAB has watchdog on IRQ0. Prima2
-> should be fine currently as it doesn't use the of_irq_* functions to get
-> the timer irq, but that is an issue as it skips any translation.
-> VersatileAB should be okay with the VIC irqdomain support.
-
-It shouldn't be an issue to use of_irq_*() functions for these IRQs.
-of_irq_*() will remap HW IRQ 0 to some other VIRQ. If it does not do
-this currently, then it's a bug and should be fixed.
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
