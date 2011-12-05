@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab1LECiL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 21:38:11 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:52802 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab1LECiK (ORCPT
+	id S1753655Ab1LECmF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 21:42:05 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:51193 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752644Ab1LECmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 21:38:10 -0500
-Date: Mon, 5 Dec 2011 13:37:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: linux-next: manual merge of the trivial tree with the wireless-next
- tree
-Message-Id: <20111205133757.2b6cd1675543c7da26f663a5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Dec_2011_13_37_57_+1100_i.ZOMeC5xJ/1oPuf"
+	Sun, 4 Dec 2011 21:42:03 -0500
+Date: Sun, 4 Dec 2011 21:42:02 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: NeilBrown <neilb@suse.de>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <greg@kroah.com>,
+        Peter Chen <peter.chen@freescale.com>, <gregkh@suse.de>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        <hzpeterchen@gmail.com>, Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH 1/1] driver core: disable device's runtime pm during
+ shutdown
+In-Reply-To: <20111205085632.5976fe96@notabene.brown>
+Message-ID: <Pine.LNX.4.44L0.1112042133470.7508-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Dec_2011_13_37_57_+1100_i.ZOMeC5xJ/1oPuf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 5 Dec 2011, NeilBrown wrote:
 
-Hi Jiri,
+> Hi,
+>  this patches causes a problem for me.
+> 
+> Specifically it makes it impossible to power-down a device which uses twl4030
+> for power control on an omap3 processor.
+> 
+> To perform the shutdown we need to send a command over the i2c bus.
+> The relevant bus is called omap_i2c.1 and this is normally in suspend mode.
+> When a request is sent, omap_i2c_xfer uses pm_runtime_get_sync to wake it up,
+> performs the transfer, then calls pm_runtime_put to let it go back to sleep.
+> 
+> So it is asleep when the new pm_runtime_disable() call is made, so it stays
+> asleep, omap_i2c_xfer cannot wake it, the transfer doesn't happen and the
+> system doesn't get powered off.
 
-Today's linux-next merge of the trivial tree got a conflict in
-net/mac80211/work.c between commit e76aadc57228 ("mac80211: revert
-on-channel work optimisations") from the wireless-next tree and commit
-42b2aa86c667 ("treewide: Fix typos in various parts of the kernel, and
-fix some comments") from the trivial tree.
+In other words, to perform the system shutdown you need to send a 
+command over the i2c bus after the bus controller's shutdown routine 
+has been called?
 
-The former removed the comment that was fixed in the latter, so I did
-that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> So here is a device that should *not* have pm disabled at shutdown.
 
---Signature=_Mon__5_Dec_2011_13_37_57_+1100_i.ZOMeC5xJ/1oPuf
-Content-Type: application/pgp-signature
+Or maybe it shouldn't be shut down at all.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> So I feel this fix is a little too heavy-handed.
+> I don't fully understand the problem scenario described above but it seems to
+> me that if the auto-suspend timer can fire after the hardware has been shut
+> down, then maybe the hardware-shutdown should be disabling that timer.  Maybe?
 
-iQIcBAEBCAAGBQJO3C6FAAoJEECxmPOUX5FEWy0P/0xr/j4wGjTR7K9+j8XGcJsG
-0kGuAkvzdF2uESyYvbJfZEUPkp3K7DjXditHnCvuMH1aOhnFWfbdMAGlOAwsp8ft
-ZZ1ApLelAfX8D3QOEdueMRUqCTtUb4HIp4dkbXaTJm0YxpF/gQepinWn6EBG/+nI
-/+81hX1wYQzbO/V1vyyYYsaKcOvi5SI2IK5ETTPO+dhZYOyX9DU6OQtYPPBa9j7B
-D/kgcduKtiRUN5HMh/xQzubYysRx8l6f88dPDnFAKn2G3EfWfUrBqLgL3Cm/pDfj
-0fQCMKioCmPhcPdACA5AK4rKM8LOpeFvaD+LBiHxwRgkgqAMQWA0ZUvlE35Fzxzv
-dCyc3Tiv2mMKU2zd7+u7mT1v03a3hJ7Cg92thi/pBRD2Vzd/fmSnLKXzlWIVFpmx
-OEV3WYeD5asqNB2VdjhrYvMDsS2g0QQWmoUnqJTH6yz1jcFrjsDdK2lEGWMtOFHA
-Ha31+2Ivf+VERbeiaqF9A8ubnttfqdpFcnyuQBna06VIIOdmdoVxaIXq95biVd2T
-/9GR436/qd+N5qmpNdQIAa/cffdc9a5jzmSX1a+HwmZk/RODP5+HuC8MR2Umlr6F
-uw2SF9DnClf9lvbEHG47tYTuahXQz3eT7pC6w+dMTel7yS/pcl9WP/yZq2SL0W8D
-AyM5EJsEi+1p6e4PVABK
-=0g/B
------END PGP SIGNATURE-----
+That's not robust.  The timer can be restarted, and there are other 
+ways of initiating runtime PM besides the timer.
 
---Signature=_Mon__5_Dec_2011_13_37_57_+1100_i.ZOMeC5xJ/1oPuf--
+> Suggestions?
+
+Can the shutdown routine for the i2c controller simply call
+pm_runtime_enable()?
+
+Alan Stern
+
