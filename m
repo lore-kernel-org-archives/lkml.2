@@ -1,105 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab1LESDD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 13:03:03 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39103 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932638Ab1LESDA (ORCPT
+	id S932685Ab1LESDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 13:03:44 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59066 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932551Ab1LESDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 13:03:00 -0500
-Date: Mon, 5 Dec 2011 18:02:53 +0000
-From: Dave Martin <dave.martin@linaro.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
-        Pawel Moll <pawel.moll@arm.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-Message-ID: <20111205180253.GB29812@localhost.localdomain>
-References: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
- <20111202192618.GC3037@localhost.localdomain>
- <CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com>
- <1322867573.11728.22.camel@pasglop>
- <20111205161157.GA27550@localhost.localdomain>
- <alpine.LFD.2.02.1112051236350.2357@xanadu.home>
+	Mon, 5 Dec 2011 13:03:43 -0500
+Date: Mon, 5 Dec 2011 10:03:18 -0800
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-28a00184be261e3dc152ba0d664a067bbe235b6a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        johnstul@us.ibm.com, suresh.b.siddha@intel.com,
+        srivatsa.bhat@linux.vnet.ibm.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        johnstul@us.ibm.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        srivatsa.bhat@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <1320446537.15071.14.camel@sbsiddha-desk.sc.intel.com>
+References: <1320446537.15071.14.camel@sbsiddha-desk.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] x86, tsc: Skip TSC synchronization checks for tsc=reliable
+Git-Commit-ID: 28a00184be261e3dc152ba0d664a067bbe235b6a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1112051236350.2357@xanadu.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 10:03:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 12:40:16PM -0500, Nicolas Pitre wrote:
-> On Mon, 5 Dec 2011, Dave Martin wrote:
-> > On Sat, Dec 03, 2011 at 10:12:53AM +1100, Benjamin Herrenschmidt wrote:
-> > > On Fri, 2011-12-02 at 11:28 -0800, Linus Torvalds wrote:
-> > > > Don't *change* NO_IRQ to zero (that whole #define is broken - leave it
-> > > > around as a marker of brokenness), just start removing it from all the
-> > > > ARM drivers that use the OF infrastructure. Which is presumably not
-> > > > all that many yet.
-> > > > 
-> > > > So whenever you find breakage, the fix now is to just remove NO_IRQ
-> > > > tests, and replace them with "!irq".
-> > > 
-> > 
-> > Russell, do you know whether it would make sense to set a timeline for 
-> > removing NO_IRQ from ARM platforms and migrating to 0 for the no-interrupt
-> > case?  I'm assuming that this mainly involves migrating existing hard-wired
-> > code that deals with interrupt numbers to use irq domains.
-> 
-> How many drivers do use IRQ #0 to start with?  We might discover that in 
-> practice there is only a very few cases where this is an issue if 0 
-> would mean no IRQ.
+Commit-ID:  28a00184be261e3dc152ba0d664a067bbe235b6a
+Gitweb:     http://git.kernel.org/tip/28a00184be261e3dc152ba0d664a067bbe235b6a
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Fri, 4 Nov 2011 15:42:17 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 5 Dec 2011 18:00:31 +0100
 
-The total number of files referring to NO_IRQ is not that huge:
+x86, tsc: Skip TSC synchronization checks for tsc=reliable
 
-arch/arm/	188 matches in 39 files
-drivers/	174 matches in 84 files
+tsc=reliable boot parameter is supposed to skip all the TSC
+stablility checks during boot time.
 
-Unfortunately, NO_IRQ is often not spelled "NO_IRQ".  It looks like the assumption
-"irq < 0 === no irq" may be quite a lot more widespread than "NO_IRQ === no irq".
-Since there's no specific thing we can grep for (and simply due to volume)
-finding all such instances may be quite a bit harder.
+On a 8-socket system where we want to run an experiment with the
+"tsc=reliable" boot option, TSC synchronization checks are not
+getting skipped and marking the TSC as not stable.
 
-For example, git grep 'irq.*\(>=\|<[^=]\) *0' gives
+Check for tsc_clocksource_reliable (which is set via
+tsc=reliable or for platforms supporting synthetic TSC_RELIABLE
+feature bit etc) and when set, skip the TSC synchronization
+tests during boot.
 
-drivers/	435 matches in 314 files
-arch/arm/	18 matches in 15 files
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: John Stultz <johnstul@us.ibm.com>
+Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1320446537.15071.14.camel@sbsiddha-desk.sc.intel.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/tsc.h |    2 ++
+ arch/x86/kernel/tsc.c      |    2 +-
+ arch/x86/kernel/tsc_sync.c |    4 ++--
+ 3 files changed, 5 insertions(+), 3 deletions(-)
 
-A few examples:
-drivers/input/mouse/pxa930_trkball.c:   if (irq < 0) {
-drivers/input/keyboard/tegra-kbc.c:     if (irq < 0) {
-drivers/crypto/omap-sham.c:     if (dd->irq >= 0)
-
-...etc., etc., although there are probably a fair number of false positives here.
-
-
-whereas git grep 'irq.*\(<\|>\|<=\|>=\|==\|!=\) \+-1' gives
-
-drivers/	68 matches in 28 files
-arch/arm/	18 matches in 15 files
-
-Examples: 
-
-
-...and that's just the code which is C and is also kind enough to put
-irq numbers in variables with names containing "irq".
-
-It also doesn't catch people initialising variables or struct/array
-members to -1, unadorned "-1" arguments to functions and so on... though
-those are likely to appear in mostly the same files matching the above
-expressions, it won't be an exact 1:1 correspondence.
-
-
-Cheers
----Dave
+diff --git a/arch/x86/include/asm/tsc.h b/arch/x86/include/asm/tsc.h
+index 83e2efd..15d9915 100644
+--- a/arch/x86/include/asm/tsc.h
++++ b/arch/x86/include/asm/tsc.h
+@@ -51,6 +51,8 @@ extern int unsynchronized_tsc(void);
+ extern int check_tsc_unstable(void);
+ extern unsigned long native_calibrate_tsc(void);
+ 
++extern int tsc_clocksource_reliable;
++
+ /*
+  * Boot-time check whether the TSCs are synchronized across
+  * all CPUs/cores:
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index db48336..eee4651 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -35,7 +35,7 @@ static int __read_mostly tsc_unstable;
+    erroneous rdtsc usage on !cpu_has_tsc processors */
+ static int __read_mostly tsc_disabled = -1;
+ 
+-static int tsc_clocksource_reliable;
++int tsc_clocksource_reliable;
+ /*
+  * Scheduler clock - returns current time in nanosec units.
+  */
+diff --git a/arch/x86/kernel/tsc_sync.c b/arch/x86/kernel/tsc_sync.c
+index 0aa5fed8..9eba29b 100644
+--- a/arch/x86/kernel/tsc_sync.c
++++ b/arch/x86/kernel/tsc_sync.c
+@@ -113,7 +113,7 @@ void __cpuinit check_tsc_sync_source(int cpu)
+ 	if (unsynchronized_tsc())
+ 		return;
+ 
+-	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE)) {
++	if (tsc_clocksource_reliable) {
+ 		if (cpu == (nr_cpu_ids-1) || system_state != SYSTEM_BOOTING)
+ 			pr_info(
+ 			"Skipped synchronization checks as TSC is reliable.\n");
+@@ -172,7 +172,7 @@ void __cpuinit check_tsc_sync_target(void)
+ {
+ 	int cpus = 2;
+ 
+-	if (unsynchronized_tsc() || boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
++	if (unsynchronized_tsc() || tsc_clocksource_reliable)
+ 		return;
+ 
+ 	/*
