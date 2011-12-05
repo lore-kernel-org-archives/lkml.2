@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab1LEJmh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:42:37 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56338 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754420Ab1LEJmg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:42:36 -0500
-Message-ID: <1323078096.32012.14.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
- involving interrupt disabling
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, Yong Zhang <yong.zhang0@gmail.com>
-Date: Mon, 05 Dec 2011 10:41:36 +0100
-In-Reply-To: <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
-	 <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1755425Ab1LEJmr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:42:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61643 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755266Ab1LEJmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:42:44 -0500
+Date: Mon, 5 Dec 2011 11:42:40 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Liu ping fan <kernelfans@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aliguori@us.ibm.com, jan.kiszka@web.de
+Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
+Message-ID: <20111205094240.GE12507@redhat.com>
+References: <4ED212A1.3060300@redhat.com>
+ <1322807192-14147-1-git-send-email-kernelfans@gmail.com>
+ <4EDB4A0D.1000609@redhat.com>
+ <CAFgQCTujv7Ez23GySc4Bds8x9Pv8Ny59EohpN22de9wicztWrw@mail.gmail.com>
+ <4EDC8F4B.7040308@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EDC8F4B.7040308@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-12-03 at 10:34 -0800, Paul E. McKenney wrote:
-> From: Yong Zhang <yong.zhang0@gmail.com>
+On Mon, Dec 05, 2011 at 11:30:51AM +0200, Avi Kivity wrote:
+> On 12/05/2011 07:29 AM, Liu ping fan wrote:
+> > like this,
+> > #define kvm_for_each_vcpu(idx, cnt, vcpup, kvm) \
+> > 	for (idx = 0, cnt = 0, vcpup = kvm_get_vcpu(kvm, idx); \
+> > 	     cnt < atomic_read(&kvm->online_vcpus) && \
+> > 	     idx < KVM_MAX_VCPUS; \
+> > 	     idx++, (vcpup == NULL)?:cnt++, vcpup = kvm_get_vcpu(kvm, idx)) \
+> > 	     if (vcpup == NULL) \
+> > 	          continue; \
+> > 	     else
+> >
+> >
+> > A little ugly, but have not thought a better way out :-)
+> >
 > 
-> RCU-lockdep will issue warnings given the following use pattern:
+> #define kvm_for_each_vcpu(vcpu, it) for (vcpu = kvm_fev_init(&it); vcpu;
+> vcpu = kvm_fev_next(&it, vcpu))
 > 
-> 	rcu_read_lock();
-> 	local_irq_disable();
-> 	rcu_read_unlock();
-> 	local_irq_enable();
+> Though that doesn't give a good place for rcu_read_unlock().
 > 
-> However, this use pattern is legal except for the scheduler's runqueue
-> and priority-inheritance locks (and any other locks that the scheduler
-> might use during priority-inheritance operations).
+> 
+Why not use rculist to store vcpus and use list_for_each_entry_rcu()?
 
-So what does this patch do? Make it not complain when you do the above?
-How often does this pattern actually happen? Can't be that often
-otherwise we'd have had more complaints, no?
-
-
+--
+			Gleb.
