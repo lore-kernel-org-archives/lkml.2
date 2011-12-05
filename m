@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab1LERiY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:38:24 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:41063 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932650Ab1LERiN (ORCPT
+	id S932791Ab1LERiu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:38:50 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:54378 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932530Ab1LERis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:38:13 -0500
-Message-ID: <4EDD0F60.5050201@xenotime.net>
-Date: Mon, 05 Dec 2011 10:37:20 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 5 Dec 2011 12:38:48 -0500
+Message-ID: <4EDD019E.9010009@linux.vnet.ibm.com>
+Date: Mon, 05 Dec 2011 23:08:38 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Mark Einon <mark.einon@gmail.com>, Greg KH <gregkh@suse.de>
-Subject: Re: linux-next: Tree for Dec 5 (staging/et131x)
-References: <20111205154444.bf59a93a6b03cb4985850d82@canb.auug.org.au>
-In-Reply-To: <20111205154444.bf59a93a6b03cb4985850d82@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+CC: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 3/3] PM / Docs: Recommend the use of [un]lock_system_sleep()
+ over mutex_[un]lock(&pm_mutex)
+References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com> <20111204200332.25620.53610.stgit@srivatsabhat.in.ibm.com> <20111205171508.GC627@google.com>
+In-Reply-To: <20111205171508.GC627@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+x-cbid: 11120517-8878-0000-0000-0000007780B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2011 08:44 PM, Stephen Rothwell wrote:
-> Hi all,
+On 12/05/2011 10:45 PM, Tejun Heo wrote:
+
+> Hello,
 > 
-> Changes since 20111202:
+> On Mon, Dec 05, 2011 at 01:33:42AM +0530, Srivatsa S. Bhat wrote:
+>> Update the documentation to explain the perils of directly using
+>> mutex_[un]lock(&pm_mutex) and recommend the usage of the safe
+>> APIs [un]lock_system_sleep() instead.
+> 
+> Maybe just make it pm internal?
+> 
 
 
-on i386 (X86_32) builds:
+Sorry, I didn't get what you meant here. Are you talking about what
+needs to be added/changed in the documentation or, are you referring
+to the code itself and are saying that we must make these APIs
+internal to the PM alone?
 
-drivers/staging/et131x/et131x.c:2483:8: warning: right shift count >= width of type
-drivers/staging/et131x/et131x.c:2531:8: warning: right shift count >= width of type
+If it is the latter, please note that memory hotplug is one of the
+outside-of-PM user of these APIs, and hence we really can't make
+these APIs internal to the PM alone without substantially needing to
+change the memory hotplug code to mutually exclude itself from PM
+somehow without using these APIs.
+And moreover, since these APIs avoid task freezing failures when
+some out-of-PM user like memory hotplug code uses them, I don't see
+much benefit by making them internal to the PM. IOW, I don't see
+much use left of them, if we do that.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+IMHO, we should leave these APIs as they are, until we have a better
+solution for out-of-PM users to mutex themselves from PM. (For one,
+currently it is not always possible to hook onto PM notifiers to
+achieve that, in which case these APIs will come in handy, and these
+aren't that ugly anyway, so no harm using them when necessary.)
+
+Regards,
+Srivatsa S. Bhat
+
