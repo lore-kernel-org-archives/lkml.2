@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab1LESbP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 13:31:15 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42410 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755600Ab1LESbN convert rfc822-to-8bit (ORCPT
+	id S1756605Ab1LESc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 13:32:26 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39167 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756463Ab1LEScZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 13:31:13 -0500
+	Mon, 5 Dec 2011 13:32:25 -0500
+Date: Mon, 5 Dec 2011 18:32:23 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH v2] soc/lapis: add machine driver
+Message-ID: <20111205183223.GB7467@opensource.wolfsonmicro.com>
+References: <1322819115-15808-1-git-send-email-tomoya.rohm@gmail.com>
+ <20111202153401.GX8245@opensource.wolfsonmicro.com>
+ <CANKRQniyjT_2Ko=EYmffu3_NzDJQTMm9nY6rUp-DQ70e6AVQpA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4EDD08D0.9030401@linux.vnet.ibm.com>
-References: <4ED56C12.1040708@gmail.com>
-	<4ED5C047.6040500@linux.vnet.ibm.com>
-	<20111130062502.68d9db59@tlielax.poochiereds.net>
-	<4ED81077.2080305@gmail.com>
-	<4ED8C940.20509@linux.vnet.ibm.com>
-	<20111205174126.GF627@google.com>
-	<4EDD08D0.9030401@linux.vnet.ibm.com>
-Date: Mon, 5 Dec 2011 12:31:12 -0600
-Message-ID: <CAH2r5mv25_3dsoPSZAxF=nrZ_jrZsLxBYrqYpmEaN6pMvd7biQ@mail.gmail.com>
-Subject: Re: CIFS mount: 3.2.0-rc3 suspend crash
-From: Steve French <smfrench@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, Woody Suwalski <terraluna977@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Belisko Marek <marek.belisko@gmail.com>, linux-cifs@vger.kernel.org,
-        Network Development <netdev@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, davem@davemloft.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANKRQniyjT_2Ko=EYmffu3_NzDJQTMm9nY6rUp-DQ70e6AVQpA@mail.gmail.com>
+X-Cookie: Make a wish, it might come true.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 5, 2011 at 12:09 PM, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 12/05/2011 11:11 PM, Tejun Heo wrote:
->
->> Hello, Srivatsa.
->>
->> On Fri, Dec 02, 2011 at 06:19:04PM +0530, Srivatsa S. Bhat wrote:
->>> So how about solving this problem more fundamentally, such as defining a
->>> freezable wrapper over kernel_recvmsg like:
->>>
->>> #define kernel_recvmsg_freezable(sock, msg, vec, num, size, flags)      \
->>> ({                                                                      \
->>>         kernel_recvmsg(sock, msg, vec, num, size, flags)                \
->>>      try_to_freeze();                                                \
->>> })
->>>
->>> and using it instead of kernel_recvmsg(), throughout the kernel?
->>>
->>> But kernel_recvmsg is an exported symbol. So if we are very very unwilling
->>> to change the kernel ABI, we could probably think about adding try_to_freeze()
->>> inside kernel_recvmsg itself,like this (but see below about my thoughts about
->>> which one is better):
->>
->> I don't necessarily object to introducing the wrapper but I don't
->> really think we should be doing s//g over the source tree without
->> understanding where it's actually necessary.  For kernel threads and
->> user threads out of the signal delivery path, try_to_freeze() is an
->> exceptional event which introduces behavior which can be difficult to
->> reproduce track down and spreading it without actually knowing what
->> the surrounding code is doing doesn't sound like a good idea to me.
->>
->
->
-> Yeah, I agree. But I remember seeing almost _exactly_ the same code
-> as CIFS loop in some other place. I'll see if I can track it down and
-> also understand if it might cause problems. If I find it to be worth it
-> to use the same solution as above, I'll try adding the wrapper and using
-> it there. Else, better to keep it as it is, as you mentioned. Thank you.
+On Mon, Dec 05, 2011 at 06:33:03PM +0900, Tomoya MORINAGA wrote:
+> 2011/12/3 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
-Agreed ...
+> >> +     {I2C_BOARD_INFO("ioh_i2c-5", CODEC_DEV_ADDR + 0)},
 
+> > This looks completely wrong.  I'd not expect to see any I2C_BOARD_INFO
+> > usage at all in a machine driver (that should be done by whatever
+> > enumerates the system as a whole)
 
--- 
-Thanks,
+> Do you mean machine driver must not use I2C_BOARD_INFO ? Is this true ?
+> Grepping I2C_BOARD_INFO at sound/soc,  the following drivers use
+> I2C_BOARD_INFO.
+> pxa/raumfeld.c: I2C_BOARD_INFO("max9485", 0x63),
+> pxa/magician.c:         I2C_BOARD_INFO("uda1380", 0x18),
+> s6000/s6105-ipcam.c:    { I2C_BOARD_INFO("tlv320aic33", 0x18), }
 
-Steve
+You'll note that this is *really* rare; there are vastly more machine
+drivers that don't do this.  If there's some specific reason then
+there's nothing technical stopping this happening but it's very unusual.
+
+> >> +     ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
+> >> +                             SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
+> >> +     if (ret < 0)
+> >> +             return ret;
+
+> > Use the dai_fmt field in the dai_link to set this.
+
+> Sorry, I can't understand your saying.
+> Let me know in more detail.
+
+I'm not sure what more to say...  Have you looked at that field and how
+it is both implemented and used in other drivers, or at the commit logs
+for relevant changes?  What do you find unclear?
+
+> > Should have MODULE_ALIAS too.
+
+> Do you mean machine driver should have MODULE_ALIAS ?
+> Grepping  MODULE_ALIAS at sound/soc, it seems MODULE_ALIAS is used in
+> platform driver only like below.
+> pxa/pxa2xx-i2s.c:MODULE_ALIAS("platform:pxa2xx-i2s");
+
+I don't think you're looking at a current kernel...
+
+> Does machine driver need like "MODULE_ALIAS("machine:ml7213CRB")" ?
+
+No, it should match the name of the platform driver you created.  The
+platform: refers to the bus type.
