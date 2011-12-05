@@ -1,194 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab1LEASh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 19:18:37 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:41329 "EHLO ogre.sisk.pl"
+	id S1756016Ab1LEAWe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 19:22:34 -0500
+Received: from ozlabs.org ([203.10.76.45]:57530 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755859Ab1LEASg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 19:18:36 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [Update][PATCH] PM / sh7372: Make domain stay_on bit only affect system suspend
-Date: Mon, 5 Dec 2011 01:21:31 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-References: <201112042308.14255.rjw@sisk.pl> <201112050117.05214.rjw@sisk.pl>
-In-Reply-To: <201112050117.05214.rjw@sisk.pl>
+	id S1755350Ab1LEAWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 4 Dec 2011 19:22:33 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Avi Kivity <avi@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        markmc@redhat.com
+Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect descriptors
+In-Reply-To: <4EDB8EEB.4070309@redhat.com>
+References: <1322669511.3985.8.camel@lappy> <87wrahrp0u.fsf@rustcorp.com.au> <20111201075847.GA5479@redhat.com> <1322726977.3259.3.camel@lappy> <20111201102640.GB8822@redhat.com> <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy> <4EDB5EF0.2010909@redhat.com> <20111204120132.GB18758@redhat.com> <4EDB624A.3030403@redhat.com> <20111204151148.GA21851@redhat.com> <4EDB8EEB.4070309@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 05 Dec 2011 10:40:01 +1030
+Message-ID: <87bornri92.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112050121.31492.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Sun, 04 Dec 2011 17:16:59 +0200, Avi Kivity <avi@redhat.com> wrote:
+> On 12/04/2011 05:11 PM, Michael S. Tsirkin wrote:
+> > > There's also the used ring, but that's a
+> > > mistake if you have out of order completion.  We should have used copying.
+> >
+> > Seems unrelated... unless you want used to be written into
+> > descriptor ring itself?
+> 
+> The avail/used rings are in addition to the regular ring, no?  If you
+> copy descriptors, then it goes away.
 
-SH7372 uses two independent mechanisms for ensuring that power
-domains will never be turned off: the stay_on flag and the "always
-on" domain governor.  However, the "always on" governor is only taken
-into accout by runtime PM code paths, while the stay_on flag affects
-all attempts to turn the given domain off.  This is a problem for
-domains that only need to stay in the "power on" state during system
-sleep, but may be turned off by runtime PM if specific conditions are
-satisfied.
+There were two ideas which drove the current design:
 
-For this reason, make SH7372 register a PM notifier that will enable
-the checking of the domain stay_on flag on during system suspend and
-disable it during system resume.  This way, the stay_on flag will
-only affect system sleep states, while the "always on" governor will
-only affect runtime PM.
+1) The Van-Jacobson style "no two writers to same cacheline makes rings
+   fast" idea.  Empirically, this doesn't show any winnage.
+2) Allowing a generic inter-guest copy mechanism, so we could have
+   genuinely untrusted driver domains.  Yet noone ever did this so it's
+   hardly a killer feature :(
 
-In addition to that, make sure that all domains which should be in
-the "power on" state during system sleep are turned on beforehand, by
-executing pm_genpd_poweron() for all of them.
+So if we're going to revisit and drop those requirements, I'd say:
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- arch/arm/mach-shmobile/pm-sh7372.c |   34 +++++++++++++++++++++++++++++++---
- drivers/base/power/domain.c        |   28 ++++++++++++++++++++--------
- include/linux/pm_domain.h          |    4 ++++
- 3 files changed, 55 insertions(+), 11 deletions(-)
+1) Shared device/driver rings like Xen.  Xen uses device-specific ring
+   contents, I'd be tempted to stick to our pre-headers, and a 'u64
+   addr; u64 len_and_flags; u64 cookie;' generic style.  Then use
+   the same ring for responses.  That's a slight space-win, since
+   we're 24 bytes vs 26 bytes now.
 
-Index: linux/arch/arm/mach-shmobile/pm-sh7372.c
-===================================================================
---- linux.orig/arch/arm/mach-shmobile/pm-sh7372.c
-+++ linux/arch/arm/mach-shmobile/pm-sh7372.c
-@@ -77,6 +77,8 @@
- 
- #ifdef CONFIG_PM
- 
-+static bool system_pm_transition;
-+
- static int pd_power_down(struct generic_pm_domain *genpd)
- {
- 	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
-@@ -85,8 +87,8 @@ static int pd_power_down(struct generic_
- 	if (sh7372_pd->suspend)
- 		sh7372_pd->suspend();
- 
--	if (sh7372_pd->stay_on)
--		return 0;
-+	if (system_pm_transition && sh7372_pd->stay_on)
-+		return -EBUSY;
- 
- 	if (__raw_readl(PSTR) & mask) {
- 		unsigned int retry_count;
-@@ -113,7 +115,7 @@ static int __pd_power_up(struct sh7372_p
- 	unsigned int retry_count;
- 	int ret = 0;
- 
--	if (sh7372_pd->stay_on)
-+	if (sh7372_pd->genpd.status != GPD_STATE_POWER_OFF)
- 		goto out;
- 
- 	if (__raw_readl(PSTR) & mask)
-@@ -506,9 +508,35 @@ static int sh7372_enter_suspend(suspend_
- 	return 0;
- }
- 
-+static void sh7372_pm_power_on_for_suspend(struct generic_pm_domain *genpd)
-+{
-+	struct sh7372_pm_domain *sh7372_pd = to_sh7372_pd(genpd);
-+
-+	if (sh7372_pd->stay_on)
-+		pm_genpd_poweron(genpd);
-+}
-+
-+static int sh7372_pm_notifier_fn(struct notifier_block *notifier,
-+				 unsigned long pm_event, void *unused)
-+{
-+	switch (pm_event) {
-+	case PM_SUSPEND_PREPARE:
-+		system_pm_transition = true;
-+		pm_genpd_for_each_domain(sh7372_pm_power_on_for_suspend);
-+		break;
-+	case PM_POST_SUSPEND:
-+		system_pm_transition = false;
-+		pm_genpd_poweroff_unused();
-+		break;
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
- static void sh7372_suspend_init(void)
- {
- 	shmobile_suspend_ops.enter = sh7372_enter_suspend;
-+	pm_notifier(sh7372_pm_notifier_fn, 0);
- }
- #else
- static void sh7372_suspend_init(void) {}
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -243,6 +243,25 @@ int pm_genpd_poweron(struct generic_pm_d
- 	return ret;
- }
- 
-+/**
-+ * pm_genpd_for_each_domain - Execute function for each generic PM domain.
-+ * @fun: Function to execute.
-+ */
-+void pm_genpd_for_each_domain(void (*fun)(struct generic_pm_domain *))
-+{
-+	struct generic_pm_domain *genpd;
-+
-+	if (!fun)
-+		return;
-+
-+	mutex_lock(&gpd_list_lock);
-+
-+	list_for_each_entry(genpd, &gpd_list, gpd_list_node)
-+		fun(genpd);
-+
-+	mutex_unlock(&gpd_list_lock);
-+}
-+
- #endif /* CONFIG_PM */
- 
- #ifdef CONFIG_PM_RUNTIME
-@@ -598,14 +617,7 @@ static int pm_genpd_runtime_resume(struc
-  */
- void pm_genpd_poweroff_unused(void)
- {
--	struct generic_pm_domain *genpd;
--
--	mutex_lock(&gpd_list_lock);
--
--	list_for_each_entry(genpd, &gpd_list, gpd_list_node)
--		genpd_queue_power_off_work(genpd);
--
--	mutex_unlock(&gpd_list_lock);
-+	pm_genpd_for_each_domain(genpd_queue_power_off_work);
- }
- 
- #else
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -137,6 +137,7 @@ extern void pm_genpd_init(struct generic
- 			  struct dev_power_governor *gov, bool is_off);
- 
- extern int pm_genpd_poweron(struct generic_pm_domain *genpd);
-+extern void pm_genpd_for_each_domain(void (*fun)(struct generic_pm_domain *));
- 
- extern bool default_stop_ok(struct device *dev);
- 
-@@ -189,6 +190,9 @@ static inline int pm_genpd_poweron(struc
- {
- 	return -ENOSYS;
- }
-+static inline void pm_genpd_for_each_domain(void (*fun)(struct generic_pm_domain *))
-+{
-+}
- static inline bool default_stop_ok(struct device *dev)
- {
- 	return false;
+2) Stick with physically-contiguous rings, but use them of size (2^n)-1.
+   Makes the indexing harder, but that -1 lets us stash the indices in
+   the first entry and makes the ring a nice 2^n size.
 
+> > > 16kB worth of descriptors is 1024 entries.  With 4kB buffers, that's 4MB
+> > > worth of data, or 4 ms at 10GbE line speed.  With 1500 byte buffers it's
+> > > just 1.5 ms.  In any case I think it's sufficient.
+> >
+> > Right. So I think that without indirect, we waste about 3 entries
+> > per packet for virtio header and transport etc headers.
+> 
+> That does suck.  Are there issues in increasing the ring size?  Or
+> making it discontiguous?
+
+Because the qemu implementation is broken.  We can often put the virtio
+header at the head of the packet.  In practice, the qemu implementation
+insists the header be a single descriptor.
+
+(At least, it used to, perhaps it has now been fixed.  We need a
+VIRTIO_NET_F_I_NOW_CONFORM_TO_THE_DAMN_SPEC_SORRY_I_SUCK bit).
+
+We currently use small rings: the guest can't negotiate so qemu has to
+offer a lowest-common-denominator value.  The new virtio-pci layout
+fixes this, and lets the guest set the ring size.
+
+> Can you take a peek at how Xen manages its rings?  They have the same
+> problems we do.
+
+Yes, I made some mistakes, but I did steal from them in the first
+place...
+
+Cheers,
+Rusty.
