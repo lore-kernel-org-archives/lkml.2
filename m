@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932497Ab1LETzt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:55:49 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58183 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755113Ab1LETzr (ORCPT
+	id S932509Ab1LET5Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:57:24 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:42072 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932355Ab1LET5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:55:47 -0500
-MIME-Version: 1.0
-Date: Mon, 5 Dec 2011 11:55:45 -0800
-Message-ID: <CAK3+h2zaZ3J4F4_rx6LGM0f_iY7ao8rU9nCt3EpZXDRGrqm3hQ@mail.gmail.com>
-Subject: Seeking Linux watchdog design advice to trouble shoot mystory silent
- reboot issue
-From: Vincent Li <vincent.mc.li@gmail.com>
-To: linux-watchdog@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 Dec 2011 14:57:22 -0500
+Date: Mon, 5 Dec 2011 11:59:56 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Vincent Palatin <vpalatin@chromium.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Olof Johansson <olofj@chromium.org>,
+        Sameer Nanda <snanda@chromium.org>, Ming Lei <tom.leiming@gmail.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] PM / Runtime: make PCI traces quieter
+Message-ID: <20111205115956.4d6920c1@jbarnes-desktop>
+In-Reply-To: <1323114678-28750-1-git-send-email-vpalatin@chromium.org>
+References: <20111205111906.7cae2946@jbarnes-desktop>
+	<1323114678-28750-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/2K/cIJSy0XHTb8XDIh+fBIz"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/2K/cIJSy0XHTb8XDIh+fBIz
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-we have  a complex system with a large number of processes running
-simutanously. If any of the processes gets into a faulty state and
-hangs or consumes more than its fair share of the system resources,
-the other processes may not get a chance to run, and the whole system
-can hang, interrupting the system functionality and user traffic.
+On Mon,  5 Dec 2011 11:51:18 -0800
+Vincent Palatin <vpalatin@chromium.org> wrote:
 
-In order to prevent the system from hanging, We uses a host watchdog
-mechanism to make sure the system can detect and get out of a hanging
-state with a host reboot. This feature is implemented with the
-hardware watchdog counter. The counter is initialized to a fixed
-number, and counts down automatically unless it is reset by a special
-user space software process, say watchdog. When watchdog gets a chance
-to run, it touches the hardware watchdog counter. If the system gets
-too busy, and the watchdog process does not get a chance to run before
-the hardware watchdog counter reaches 0, the host is rebooted in an
-attempt to recover from the hanging system.
+> When the runtime PM is activated on PCI, if a device switches state frequ=
+ently
+> (e.g. an EHCI controller with autosuspending USB devices connected)
+> the PCI configuration traces might be very verbose in the kernel log.
+> Let's guard those traces with DEBUG condition.
+>=20
+> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+> ---
 
-Recently, there have been a number of cases in which the  units
-silently rebooted without much information logged in the system log.
-In most silent reboot cases, the unit was rebooted because of a host
-hardware watchdog reboot, and because of the nature of the host
-watchdog reboots, not much information about the current states of the
-system is preseved or logged before the hardware reboot takes effect.
-After the reboot, it is hard to analyze the real cause of the system
-being hang.
+Applied to linux-next, thanks.  The latency timer message is gone now
+though, so it didn't need to be fixed. :)
 
-we have been thinking moving the user space watchdog process to kernel
-and invoke some kernel  function like dump_stack to show the hanging
-process stack trace before hardware reset. we have tried
-drivers/watchdog/softdog.c as prove of this idea, but  we are unable
-to get the hanging process stack trace. we also tried to use kdump in
-kernel, but we are unable to run kdump  in  kernel for some other
-technical reason.
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-CPU and memory control group features are not considered at this stage
-because it is too invasive to change in our custom kernel.
+--Sig_/2K/cIJSy0XHTb8XDIh+fBIz
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-could you share  your experience on this kind of issue, we really
-would like to be able to find out which faulty process caused the CPU
-to deschedue user space watchdog process and dump the stack trace of
-that faulty process.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Thank you in advance!
+iQIcBAEBAgAGBQJO3SK8AAoJEIEoDkX4Qk9hqXQP/1hFmk77cVsQoKl0+ZQEb+c5
+/2VGuYFHRu2bC4NUncU/RBLQyokSQs6ECxfxjfiX1PKF1BHqJ5jnKZUYwjG1B8OO
+l7Ms+4DYyyVAFIkgsDFNFHoAsiUPU6K38m45LLboL1Xmifj51J8MbcWVh2MT2zff
+RoDxVTVUlR5piLqG9KmfGNse1rSJHsDrLHCMw44H9anepDCpQxbLx9Rk3QFF9Zio
+pi3Jsqn6ajC6YUS6m4GQLGSsC0ToN7koEViRa67HS6oMpa7jRWOVFv52si1Q/Tt/
+lnuszj+CBCLRm+jjEvddIDjoyjxGDhAPOyCdJdWysGWnrAsJ2yKpqZmZp7smvUi1
+3AObvNzyrnyT5fj5WlKY0hsQDA9Hh7ObBdWFmpQ1iT4Sm5DL0ZBAsWvc44PBVC2b
++J6XjFnH4RuXVBDXKVnvO6iXvKCZESU0vb334TINhaEjWwxCVXEznO1bD+j0FiA4
+dMVVZhQyomYK1dvIDxYbnsr1nDtbwyZbphxgLwvH5EPjcmKlTTIFkEL3C1h0RvJd
+KOIfFSYvcUih2I/AHOMXKn0/uiFPfdigVvCauPF5ZdPKIpNQcPz5H8bLJsp4drje
+27fS5QmWDf81cW1TyUpQKREnqYDZOSybAyCSMr7Zz+9c7+DJuRTvwKrx9VuDdcc/
+ptrzhx2iEeQ23FifVfAk
+=Gu2M
+-----END PGP SIGNATURE-----
 
-Vincent
+--Sig_/2K/cIJSy0XHTb8XDIh+fBIz--
