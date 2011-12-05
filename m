@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab1LETaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:30:13 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:58410 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932229Ab1LETaL (ORCPT
+	id S932358Ab1LETfc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:35:32 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:36637 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753842Ab1LETfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:30:11 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Daniel Vetter <daniel@ffwll.ch>, t.stanislaws@samsung.com,
-        linux@arm.linux.org.uk, Sumit Semwal <sumit.semwal@ti.com>,
-        jesse.barker@linaro.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, rob@ti.com, m.szyprowski@samsung.com,
-        Sumit Semwal <sumit.semwal@linaro.org>, linux-media@vger.kernel.org
-Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
-Date: Mon, 05 Dec 2011 20:29:49 +0100
-Message-ID: <1426302.asOzFeeJzz@wuerfel>
-User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <CAKMK7uE-ZJ-VQRWy+zJJWsvr9nARWuf-4nupXhTJ0CLqC88CEw@mail.gmail.com>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <201112051718.48324.arnd@arndb.de> <CAKMK7uE-ZJ-VQRWy+zJJWsvr9nARWuf-4nupXhTJ0CLqC88CEw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:7tYvPR/KSsE7P4sLZxE1UyZEbbZwoELmnmGAyzsz7sp
- nyWgidU8gD5y4DuC0vXD3lcLbZK5M/BhNIGw9iQ4t8UTVsCx0Z
- J1wYnBSFKhlsR9r9iDm7EfUmawg6bCOcACdZFNozbZW7bYM1YT
- aEhkSxkxS3ajxUqeCPcrAjOSHp5aF9fTYMozfcTcrtgawcY5Dy
- XP/pL06ohZcSRVWH6uk/PGYk4XAEBzGssLuY2X8MD3p3R6X1KO
- yYDmppftJyqeI9dpHYIU7+BirEVh9fTRQUPbXfrpzYUiCN5fq8
- YCQ8Sp9OaEMDz0dd5jo3zK8g4lskfmPH+esPkg/jbuDnaMR3et
- RrmDRk9x84FrjeIF4le8=
+	Mon, 5 Dec 2011 14:35:31 -0500
+Date: Mon, 5 Dec 2011 11:38:03 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Only call pci_stop_bus_device() one time for
+ children devices during removing
+Message-ID: <20111205113803.37cc5d4c@jbarnes-desktop>
+In-Reply-To: <4ECC7F6D.6090802@oracle.com>
+References: <4ECC7F6D.6090802@oracle.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/zOu9lkd8t/.46BhH4gW1vum"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 December 2011 19:55:44 Daniel Vetter wrote:
-> > The only way to solve this that I can think of right now is to
-> > mandate that the mappings are all coherent (i.e. noncachable
-> > on noncoherent architectures like ARM). If you do that, you no
-> > longer need the sync_sg_for_* calls.
-> 
-> Woops, totally missed the addition of these. Can somebody explain to used
-> to rather coherent x86 what we need these for and the code-flow would look
-> like in a typical example. I was kinda assuming that devices would bracket
-> their use of a buffer with the attachment_map/unmap calls and any cache
-> coherency magic that might be needed would be somewhat transparent to
-> users of the interface?
+--Sig_/zOu9lkd8t/.46BhH4gW1vum
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I'll describe how the respective functions work in the streaming mapping
-API (dma_map_*): You start out with a buffer that is owned by the CPU,
-i.e. the kernel can access it freely. When you call dma_map_sg or similar,
-a noncoherent device reading the buffer requires the cache to be flushed
-in order to see the data that was written by the CPU into the cache.
+On Tue, 22 Nov 2011 21:06:53 -0800
+Yinghai Lu <yinghai.lu@oracle.com> wrote:
 
-After dma_map_sg, the device can perform both read and write accesses
-(depending on the flag to the map call), but the CPU is no longer allowed
-to read (which would allocate a cache line that may become invalid but
-remain marked as clean) or write (which would create a dirty cache line
-without writing it back) that buffer.
+>=20
+> During debugging pcie hotplug with SRIOV with pcie switch, found
+> pci_stop_bus_device() are called several times for some children devices.
+>=20
+> Current pci_remove_bus_device() will call pci_stop_bus_device() at first.
+> and then use remove_behind_bridge() to call pci_stop_bus_device() for chi=
+ldren
+> devices. But pci_stop_bus_device() already include depth first to stop ch=
+ildren.
+> So We can remove unnecessary calling in pci_remove_behind_bridge() for ch=
+ildren.
+>=20
+> The patch change original pci_remove_bus_device() to __pci_remove_bus_dev=
+ice(), and
+> it only do remove work, and new pci_remove_bus_device will call
+> pci_stop_bus_device() one time, and then call __pci_remove_bus_device().
+>=20
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Once the device is done, the driver calls dma_unmap_* and the buffer is
-again owned by the CPU. The device can no longer access it (in fact
-the address may be no longer be backed if there is an iommu) and the CPU
-can again read and write the buffer. On ARMv6 and higher, possibly some
-other architectures, dma_unmap_* also needs to invalidate the cache
-for the buffer, because due to speculative prefetching, there may also
-be a new clean cache line with stale data from an earlier version of
-the buffer.
+applied to linux-next, thanks.
 
-Since map/unmap is an expensive operation, the interface was extended
-to pass back the ownership to the CPU and back to the device while leaving
-the buffer mapped. dma_sync_sg_for_cpu invalidates the cache in the same
-way as dma_unmap_sg, so the CPU can access the buffer, and
-dma_sync_sg_for_device hands it back to the device by performing the
-same cache flush that dma_map_sg would do.
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-You could for example do this if you want video input with a
-cacheable buffer, or in an rdma scenario with a buffer accessed
-by a remote machine.
+--Sig_/zOu9lkd8t/.46BhH4gW1vum
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-In case of software iommu (swiotlb, dmabounce), the map and sync
-functions don't do cache management but instead copy data between
-a buffer accessed by hardware and a different buffer accessed
-by the user.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-> The map call gets the dma_data_direction parameter, so it should be able
-> to do the right thing. And because we keep the attachement around, any
-> caching of mappings should be possible, too.
-> 
-> Yours, Daniel
-> 
-> PS: Slightly related, because it will make the coherency nightmare worse,
-> afaict: Can we kill mmap support?
+iQIcBAEBAgAGBQJO3R2bAAoJEIEoDkX4Qk9hBz0P/RTnsxsrktzh/K+siypJwG6l
+ZSHaWzCNoGhBfzuJqJbN2FAsOu4fFjiDCkcXLFtT21/v5tpE/VwJQzArmYTrhnLf
+IHZ83hWZoDIkbTHzNw0CyljUU7Ejijn9fwJfotngAKzH2s/UjG3CnaTQVVdQ0IL0
+jwu8UHxkv9ezWBh2JQ4RvHNG0gFwK2kc+MCNBtJGhUaE9APsIrQihe4XV1vRht69
+61duC4sf0466fcRBD0ECCGhk4E4jH1EYVKvJvx1gpE9S13nnj3KsZlw0bZ9iuyCn
+GsQATRfA215XtYS+KjPjmVLsFxGbPE2ZBvyHMQsHiYOvReTvB/rHN3H2BlDRvgxP
+4vMA7S8zY2grln2e6OePfu1RJwGfT+2MgWNyJFUQghy0ePllQm2e37iHbtQmLvgo
+1fB6fs41pJs2Vt4LHJXAXh+T/KNAPkWsj/E0hW0nArkOrxpJIBR5LYNNnJ6DTiBn
+UeIOVank9RiGzgQglkMaUDrqP7OM8oo7wMYpPCdAhAenrno+jz+jP8v91+Vr/Y6t
+hWgq/fm2ZSmXUXE4gDeaxzIucRmNhGqX/U2yzvsxDlohod+4m6qQ5Z/WAEkKzLDY
+GBvUUHz8u9mSLp91qSzZDob1VwQRB1GqrZZ4JT/eo+9n80ZooYhe8gYCmgXoPxzO
+IFpxIfgi+WgANW2o7jsO
+=tZ0v
+-----END PGP SIGNATURE-----
 
-The mmap support is required (and only make sense) for consistent mappings,
-not for streaming mappings. The provider must ensure that if you map
-something uncacheable into the kernel in order to provide consistency,
-any mapping into user space must also be uncacheable. A driver
-that wants to have the buffer mapped to user space as many do should
-not need to know whether it is required to do cacheable or uncacheable
-mapping because of some other driver, and it should not need to worry
-about how to set up uncached mappings in user space.
-
-	Arnd
+--Sig_/zOu9lkd8t/.46BhH4gW1vum--
