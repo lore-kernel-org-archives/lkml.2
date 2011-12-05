@@ -1,32 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804Ab1LEXEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 18:04:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44213 "EHLO
+	id S932772Ab1LEXDG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 18:03:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64097 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932776Ab1LEXDH (ORCPT
+	with ESMTP id S932708Ab1LEXCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 18:03:07 -0500
-X-Authority-Analysis: v=2.0 cv=Xd0LPfF5 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=T5PD5_YhWd8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=LuxQ-7HEAAAA:8 a=PuvxfXWCAAAA:8 a=pwlSjyV6AAAA:8 a=CjxXgO3LAAAA:8 a=37rDS-QxAAAA:8 a=1XWaLZrsAAAA:8 a=meVymXHHAAAA:8 a=-tqMmDk9ICWpGX07DfgA:9 a=8x_8ht5-I51uKuksZsgA:7 a=QEXdDO2ut3YA:10 a=LI9Vle30uBYA:10 a=Bm8BtE0CId0A:10 a=o70cNcPx40UA:10 a=_1CdXZwv0MQA:10 a=rC2wZJ5BpNYA:10 a=6uQODOVjHeUA:10 a=UTB_XpHje0EA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=5EbIWr0yzBYrA5ZIeMcA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Mon, 5 Dec 2011 18:02:54 -0500
+X-Authority-Analysis: v=2.0 cv=QqvcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=vhdKIqpQuCYA:10 a=-h0nSB7bA9MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=WTJdmG3rAAAA:8 a=QyXUC8HyAAAA:8 a=EujyWprOPbVT4QmRI6oA:9 a=hMXUejMU2wBl2SxLJHMA:7 a=QEXdDO2ut3YA:10 a=nsF78Xlgl7EA:10 a=dGJ0OcVc7YAA:10 a=MPXSTX9tEJccXzyw4DIA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111205230303.833140083@goodmis.org>
+Message-Id: <20111205230252.092820216@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Mon, 05 Dec 2011 18:00:55 -0500
+Date: Mon, 05 Dec 2011 18:00:49 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, stable@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hans Schillstrom <hans@schillstrom.com>,
-        Christoph Lameter <cl@gentwo.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH RT 09/12 rc3] slab, lockdep: Fix silly bug
+        John Kacur <jkacur@redhat.com>, Roland Dreier <roland@purestorage.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [PATCH RT 03/12 rc3] intel-iommu: Fix AB-BA lockdep report
 References: <20111205230046.736851081@goodmis.org>
-Content-Disposition: inline; filename=0009-slab-lockdep-Fix-silly-bug.patch
+Content-Disposition: inline; filename=0003-intel-iommu-Fix-AB-BA-lockdep-report.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,61 +31,167 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Roland Dreier <roland@purestorage.com>
 
-Commit 30765b92 ("slab, lockdep: Annotate the locks before using
-them") moves the init_lock_keys() call from after g_cpucache_up =3D
-FULL, to before it. And overlooks the fact that init_node_lock_keys()
-tests for it and ignores everything !FULL.
+When unbinding a device so that I could pass it through to a KVM VM, I
+got the lockdep report below.  It looks like a legitimate lock
+ordering problem:
 
-Introduce a LATE stage and change the lockdep test to be <LATE.
+ - domain_context_mapping_one() takes iommu->lock and calls
+   iommu_support_dev_iotlb(), which takes device_domain_lock (inside
+   iommu->lock).
 
-Cc: stable@kernel.org
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hans Schillstrom <hans@schillstrom.com>
-Cc: Christoph Lameter <cl@gentwo.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: linux-mm@kvack.org
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/n/tip-gadqbdfxorhia1w5ewmoiodd@git.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+ - domain_remove_one_dev_info() starts by taking device_domain_lock
+   then takes iommu->lock inside it (near the end of the function).
+
+So this is the classic AB-BA deadlock.  It looks like a safe fix is to
+simply release device_domain_lock a bit earlier, since as far as I can
+tell, it doesn't protect any of the stuff accessed at the end of
+domain_remove_one_dev_info() anyway.
+
+BTW, the use of device_domain_lock looks a bit unsafe to me... it's
+at least not obvious to me why we aren't vulnerable to the race below:
+
+  iommu_support_dev_iotlb()
+                                          domain_remove_dev_info()
+
+  lock device_domain_lock
+    find info
+  unlock device_domain_lock
+
+                                          lock device_domain_lock
+                                            find same info
+                                          unlock device_domain_lock
+
+                                          free_devinfo_mem(info)
+
+  do stuff with info after it's free
+
+However I don't understand the locking here well enough to know if
+this is a real problem, let alone what the best fix is.
+
+Anyway here's the full lockdep output that prompted all of this:
+
+     =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D
+     [ INFO: possible circular locking dependency detected ]
+     2.6.39.1+ #1
+     -------------------------------------------------------
+     bash/13954 is trying to acquire lock:
+      (&(&iommu->lock)->rlock){......}, at: [<ffffffff812f6421>] domain_rem=
+ove_one_dev_info+0x121/0x230
+
+     but task is already holding lock:
+      (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_remove_=
+one_dev_info+0x208/0x230
+
+     which lock already depends on the new lock.
+
+     the existing dependency chain (in reverse order) is:
+
+     -> #1 (device_domain_lock){-.-...}:
+            [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
+            [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
+            [<ffffffff812f8350>] domain_context_mapping_one+0x600/0x750
+            [<ffffffff812f84df>] domain_context_mapping+0x3f/0x120
+            [<ffffffff812f9175>] iommu_prepare_identity_map+0x1c5/0x1e0
+            [<ffffffff81ccf1ca>] intel_iommu_init+0x88e/0xb5e
+            [<ffffffff81cab204>] pci_iommu_init+0x16/0x41
+            [<ffffffff81002165>] do_one_initcall+0x45/0x190
+            [<ffffffff81ca3d3f>] kernel_init+0xe3/0x168
+            [<ffffffff8157ac24>] kernel_thread_helper+0x4/0x10
+
+     -> #0 (&(&iommu->lock)->rlock){......}:
+            [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
+            [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
+            [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
+            [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
+            [<ffffffff812f8b42>] device_notifier+0x72/0x90
+            [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
+            [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
+            [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
+            [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
+            [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
+            [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
+            [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
+            [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
+            [<ffffffff8117569e>] vfs_write+0xce/0x190
+            [<ffffffff811759e4>] sys_write+0x54/0xa0
+            [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
+
+     other info that might help us debug this:
+
+     6 locks held by bash/13954:
+      #0:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811e4464>] sysfs_write_f=
+ile+0x44/0x170
+      #1:  (s_active#3){++++.+}, at: [<ffffffff811e44ed>] sysfs_write_file+=
+0xcd/0x170
+      #2:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81372edb>] dri=
+ver_unbind+0x9b/0xc0
+      #3:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81373cc7>] dev=
+ice_release_driver+0x27/0x50
+      #4:  (&(&priv->bus_notifier)->rwsem){.+.+.+}, at: [<ffffffff8108974f>=
+] __blocking_notifier_call_chain+0x5f/0xb0
+      #5:  (device_domain_lock){-.-...}, at: [<ffffffff812f6508>] domain_re=
+move_one_dev_info+0x208/0x230
+
+     stack backtrace:
+     Pid: 13954, comm: bash Not tainted 2.6.39.1+ #1
+     Call Trace:
+      [<ffffffff810993a7>] print_circular_bug+0xf7/0x100
+      [<ffffffff8109bf3e>] __lock_acquire+0x195e/0x1e10
+      [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
+      [<ffffffff8109d57d>] ? trace_hardirqs_on_caller+0x13d/0x180
+      [<ffffffff8109ca9d>] lock_acquire+0x9d/0x130
+      [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
+      [<ffffffff81571475>] _raw_spin_lock_irqsave+0x55/0xa0
+      [<ffffffff812f6421>] ? domain_remove_one_dev_info+0x121/0x230
+      [<ffffffff810972bd>] ? trace_hardirqs_off+0xd/0x10
+      [<ffffffff812f6421>] domain_remove_one_dev_info+0x121/0x230
+      [<ffffffff812f8b42>] device_notifier+0x72/0x90
+      [<ffffffff8157555c>] notifier_call_chain+0x8c/0xc0
+      [<ffffffff81089768>] __blocking_notifier_call_chain+0x78/0xb0
+      [<ffffffff810897b6>] blocking_notifier_call_chain+0x16/0x20
+      [<ffffffff81373a5c>] __device_release_driver+0xbc/0xe0
+      [<ffffffff81373ccf>] device_release_driver+0x2f/0x50
+      [<ffffffff81372ee3>] driver_unbind+0xa3/0xc0
+      [<ffffffff813724ac>] drv_attr_store+0x2c/0x30
+      [<ffffffff811e4506>] sysfs_write_file+0xe6/0x170
+      [<ffffffff8117569e>] vfs_write+0xce/0x190
+      [<ffffffff811759e4>] sys_write+0x54/0xa0
+      [<ffffffff81579a82>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 ---
- mm/slab.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ drivers/pci/intel-iommu.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 015cd76..433b9a2 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -594,6 +594,7 @@ static enum {
- 	PARTIAL_AC,
- 	PARTIAL_L3,
- 	EARLY,
-+	LATE,
- 	FULL
- } g_cpucache_up;
+diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+index 8c2564d..bc05a51 100644
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -3569,6 +3569,8 @@ static void domain_remove_one_dev_info(struct dmar_do=
+main *domain,
+ 			found =3D 1;
+ 	}
 =20
-@@ -670,7 +671,7 @@ static void init_node_lock_keys(int q)
- {
- 	struct cache_sizes *s =3D malloc_sizes;
-=20
--	if (g_cpucache_up !=3D FULL)
-+	if (g_cpucache_up < LATE)
- 		return;
-=20
- 	for (s =3D malloc_sizes; s->cs_size !=3D ULONG_MAX; s++) {
-@@ -1725,6 +1726,8 @@ void __init kmem_cache_init_late(void)
- {
- 	struct kmem_cache *cachep;
-=20
-+	g_cpucache_up =3D LATE;
++	spin_unlock_irqrestore(&device_domain_lock, flags);
 +
- 	/* Annotate slab for lockdep -- annotate the malloc caches */
- 	init_lock_keys();
+ 	if (found =3D=3D 0) {
+ 		unsigned long tmp_flags;
+ 		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
+@@ -3585,8 +3587,6 @@ static void domain_remove_one_dev_info(struct dmar_do=
+main *domain,
+ 			spin_unlock_irqrestore(&iommu->lock, tmp_flags);
+ 		}
+ 	}
+-
+-	spin_unlock_irqrestore(&device_domain_lock, flags);
+ }
 =20
+ static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
 --=20
 1.7.7.1
 
@@ -103,19 +204,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJO3U2oAAoJEIy3vGnGbaoAEFYP/1BvpfHZ9O9irTl1k36AAWM7
-v8ZpZ8sxClYd25BDIfwA4gTaT3RKrJjsi2HZcd/lGYWRaZmktTR4YMZCgDdrLcYl
-oqVx6oelp54rb6pDgm6ydbpf8cqHBHzY+e5feud8tvZyZglILknha1Gfv2QMSs1/
-GpGs19ypQRI+oWGp68b4R2znn+b5qubewmRXsmnNAb6iZGiYD3yf3Zsh3iV3HTY0
-3q2S4zFx/1LhhcEyuD7NLKHrhrfp6jYCZhRLnzIZNbxHMagvywQ161TGtNpaK6bx
-h7AthQ3xXzUbJhPj7A5bLPuXxu2SsfbjFicp491liYr/nLUoQkbKKqedpGbQCiMR
-6aLwPmD2PCPne4gdzxzE2YdLpsPdelN6jEVamhfS1QfOarLZpe5O6XThiMWiAR7A
-VSh+HJhZw/1kvA3lkTKKEx0XfDL8mqkmGAlANNA7EwsyifGBjbZ3x4oJ2cjjVJ7e
-ZSQtSHi8j23SwsZ0Cqz0suHBdV0dY1+wd0hBdbdnLloyeMIgU3/j3gth9L37bIsB
-PWyQxG4r/eL8Oim7XiUI0qax1NgabxtazLg6Lp+DtsW0gH0XF2qBd/2e/VywVWa5
-XExM+9K7aeL7xeKdxC4LWaXemyZD8OiGpN/b4PxelxO3Qm90WMf81Igz0CuiYhEO
-p3ogUs4dsSj2nTkCUv6M
-=vK3a
+iQIcBAABAgAGBQJO3U2cAAoJEIy3vGnGbaoAblwQAIY665ywhxaW6bnLtYbqvDmq
+F8wesCSB0+BfkVYiVf7Sm3tER22fx2QaMl7fiqphJFoB6EfKIIXuxGJnbzvUiCLC
+cZcAJLPY+Efr+eLxxFFUFTUCWbXuDtJxmk4iy+YwjIPRT5/eAMXqyhBA1YvUVtw7
+DchvLmAPVURVQAkZrPfKHeC81zc1nln3+Dht38ujQRguFqVkGbzbNcsjacWGsyE8
+NVEf4eYym751t/6rsGTEIsS3ehZer53Ei0i+eezLfKLam315F5zR4GXaZ+6Dj6aN
+2gOapV29xsDL2aw0c/ZE5FosrLsXHhaCT3jjI92qAp0Ytz9wArfTDY0RrBL0Yc4D
+urHmJLah2eLBo1Gg2mLrx26mP8/6ANz3Y+B3ose9/dn+dXDts0QGsfgjvLFsBMkd
+6VelNSxp6efQvj/DisGqDQPUg8rHaN58Y/AhyHbG9Pzne5LNJVl22/DiNtIJYpeA
+39vUGyJhkf9bo2jgVtqXw1c1W3lAkM9nzjTd8wSjbk7jlOlfXY+sVHM4q2OCNgda
+fty9Z+0KShbzPlXyMjwVAqoWODzskDBj38wJCyB9TStAo39XLrSZesidwYCAxfeA
+URivWBKk6oJrxfA6aZJbeEa+gdpP/4O+aq5gEFBjVu09LnEpcJaZoTZWEpmSZeXT
+kwlIbCZ5fMZkFZ/24UbU
+=ukc9
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
