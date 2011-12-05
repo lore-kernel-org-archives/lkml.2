@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab1LEQs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 11:48:59 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:56065 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932491Ab1LEQs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 11:48:58 -0500
-Date: Mon, 5 Dec 2011 08:45:05 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
- involving interrupt disabling
-Message-ID: <20111205164505.GB2326@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
- <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111205091924.GA28117@zhy>
+	id S932529Ab1LEQwh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 11:52:37 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56325 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038Ab1LEQwg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 11:52:36 -0500
+Message-ID: <4EDCF6CF.6020902@linutronix.de>
+Date: Mon, 05 Dec 2011 17:52:31 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111205091924.GA28117@zhy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11120516-1976-0000-0000-00000843352D
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Shimrit Malichi <smalichi@codeaurora.org>,
+        Tatyana Brokhman <tlinder@codeaurora.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        target-devel@vger.kernel.org
+Subject: Re: [RFC] UASP on target
+References: <Pine.LNX.4.44L0.1112051109040.5138-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1112051109040.5138-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 05:19:24PM +0800, Yong Zhang wrote:
-> On Sat, Dec 03, 2011 at 10:34:42AM -0800, Paul E. McKenney wrote:
-> > From: Yong Zhang <yong.zhang0@gmail.com>
-> > 
-> > RCU-lockdep will issue warnings given the following use pattern:
-> > 
-> > 	rcu_read_lock();
-> > 	local_irq_disable();
-> > 	rcu_read_unlock();
-> > 	local_irq_enable();
-> > 
-> > However, this use pattern is legal except for the scheduler's runqueue
-> > and priority-inheritance locks (and any other locks that the scheduler
-> > might use during priority-inheritance operations).
-> > 
-> > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcutree_plugin.h |    8 ++++++--
-> >  1 files changed, 6 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > index 8cd9efe..2020e8a 100644
-> > --- a/kernel/rcutree_plugin.h
-> > +++ b/kernel/rcutree_plugin.h
-> > @@ -401,8 +401,11 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
-> >  
-> >  #ifdef CONFIG_RCU_BOOST
-> >  		/* Unboost if we were boosted. */
-> > -		if (rbmp)
-> > +		if (rbmp) {
-> > +			local_irq_save(flags);
-> >  			rt_mutex_unlock(rbmp);
-> > +			local_irq_restore(flags);
-> > +		}
-> >  #endif /* #ifdef CONFIG_RCU_BOOST */
-> >  
-> >  		/*
-> > @@ -1233,9 +1236,10 @@ static int rcu_boost(struct rcu_node *rnp)
-> >  	lockdep_set_class_and_name(&mtx.wait_lock, &rcu_boost_class,
-> >  				   "rcu_boost_mutex");
-> >  	t->rcu_boost_mutex = &mtx;
-> > -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > +	raw_spin_unlock(&rnp->lock); /* rrupts remain disabled. */
-> >  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
-> >  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
-> 
-> We permit rt_mutex_unlock() to be call with irq disabled,
-> but rt_mutex_lock() is still not allowed. So this usage
-> is not legal now.
+On 12/05/2011 05:10 PM, Alan Stern wrote:
 
-Even after commit #5342e269b has been applied?  The purpose of that
-commit was to allow rt_mutex_lock() to be called with irqs disabled.
+> Evidently you were able to find enough information about the target
+> framework to write a driver using it.  Can you tell us where this
+> information is?  It hasn't been easy to locate.
 
-So, what am I missing?
+Hehe. Well, I've been told that the target framework has everything one
+needs to get it done so I've been digging in the code. First I tried to
+come up with an easy setup where I can use it. _This_ was already hard
+to get done for someone who is not familiar with scsi. Once I had all
+pieces together I wrote this [0].With this information I know more or
+less how that thing works or should work.
+So at this point I understood that I need to comeup with somethin like
+tcm_loop or tcm_vhost. Looking at the host side of the uas driver it is
+using SAS as the protocol and nothing special if you ignore "struct iu"
+for a moment.
+Then I found the python script in Documentation/target which creates you 
+a skeleton driver. So I used this and started hacking. First I took
+the usb descriptors and looked what happens after I connected the
+dummy_hcd driver/gadget. I received a usb command message. So now I try 
+to wire it up in target. I look at the loopback/vhost_scsi for some
+inspiration. Other than that I have no additional information....
 
-						Thanx, Paul
+[0] http://article.gmane.org/gmane.linux.scsi.target.devel/654
 
-> Sounds we should hold this patch on until a more suitable
-> way is found.
-> 
-> Thanks,
-> Yong
-> 
-> > +	local_irq_restore(flags);
-> >  
-> >  	return rnp->exp_tasks != NULL || rnp->boost_tasks != NULL;
-> >  }
-> > -- 
-> > 1.7.3.2
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Only stand for myself
-> 
+> Alan Stern
 
+Sebastian
