@@ -1,68 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600Ab1LEKHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 05:07:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49130 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab1LEKHD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 05:07:03 -0500
-Date: Mon, 5 Dec 2011 18:03:46 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
- involving interrupt disabling
-Message-ID: <20111205100346.GA28750@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
- <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <1323078096.32012.14.camel@twins>
+	id S1755575Ab1LEKJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 05:09:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754971Ab1LEKJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 05:09:04 -0500
+Message-ID: <4EDC9836.2000508@redhat.com>
+Date: Mon, 05 Dec 2011 11:08:54 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1323078096.32012.14.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] virtio-scsi: first version
+References: <1322661299-28855-1-git-send-email-pbonzini@redhat.com>  <1322661299-28855-2-git-send-email-pbonzini@redhat.com>  <1322867228.11728.19.camel@pasglop> <4EDA5E7F.30508@redhat.com> <1322950969.11728.24.camel@pasglop>
+In-Reply-To: <1322950969.11728.24.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 10:41:36AM +0100, Peter Zijlstra wrote:
-> On Sat, 2011-12-03 at 10:34 -0800, Paul E. McKenney wrote:
-> > From: Yong Zhang <yong.zhang0@gmail.com>
-> > 
-> > RCU-lockdep will issue warnings given the following use pattern:
-> > 
-> > 	rcu_read_lock();
-> > 	local_irq_disable();
-> > 	rcu_read_unlock();
-> > 	local_irq_enable();
-> > 
-> > However, this use pattern is legal except for the scheduler's runqueue
-> > and priority-inheritance locks (and any other locks that the scheduler
-> > might use during priority-inheritance operations).
-> 
-> So what does this patch do? Make it not complain when you do the above?
+On 12/03/2011 11:22 PM, Benjamin Herrenschmidt wrote:
+>> >  You can fix this in QEMU; READ and WRITE commands can be split in
+>> >  multiple parts.  The scsi-block device I added recently does this.
+> You can split -some- commands... it's clumsy and not always legit, you
+> don't always know all commands (what about vendor commands such as
+> firmware updates etc...)
 
-It suppose to not complain but it bring other complain :(
+For the record, firmware updates won't run under virt unless you make 
+qemu runs with CAP_SYS_RAWIO.
 
-> How often does this pattern actually happen?
-
-IIRC, we have just one which is cured by commit [a841796: signal: align
-__lock_task_sighand() irq disabling and RCU]
-
-> Can't be that often
-> otherwise we'd have had more complaints, no?
-
-Yeah,
-
-So that also means we don't dedicated lock_class_key for mtx.wait_lock.
-
-Thanks,
-Yong
+Paolo
