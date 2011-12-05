@@ -1,48 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab1LEP4l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:56:41 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43002 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932374Ab1LEP4h (ORCPT
+	id S932464Ab1LEP6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:58:35 -0500
+Received: from 4.mo1.mail-out.ovh.net ([46.105.76.26]:45713 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932411Ab1LEP6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:56:37 -0500
-Date: Mon, 5 Dec 2011 15:56:35 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/2] gpiolib: introduce gpio_set_pullup
-Message-ID: <20111205155634.GW11150@opensource.wolfsonmicro.com>
-References: <1322230120-14120-1-git-send-email-plagnioj@jcrosoft.com>
- <20111125153409.GA4975@sirena.org.uk>
- <4ED2045E.7010206@compulab.co.il>
- <20111129023708.GN15008@game.jcrosoft.org>
- <74CDBE0F657A3D45AFBB94109FB122FF174FDAFAC8@HQMAIL01.nvidia.com>
- <20111205154011.GE9192@game.jcrosoft.org>
+	Mon, 5 Dec 2011 10:58:33 -0500
+X-Greylist: delayed 1737 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Dec 2011 10:58:32 EST
+Date: Mon, 5 Dec 2011 16:53:59 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: rtc-linux@googlegroups.com
+Cc: a.zummo@towertech.it, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, ralf@linux-mips.org,
+        keguang.zhang@gmail.com, wuzhangjin@gmail.com, r0bertz@gentoo.org,
+        zhao zhang <zhzhl555@gmail.com>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [rtc-linux] [PATCH] MIPS: Add RTC support for loongson1B
+Message-ID: <20111205155359.GF9192@game.jcrosoft.org>
+References: <1322729078-6141-1-git-send-email-zhzhl555@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111205154011.GE9192@game.jcrosoft.org>
-X-Cookie: Is this really happening?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1322729078-6141-1-git-send-email-zhzhl555@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 16856128980892036017
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedruddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredvnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepne
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedruddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredvnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepne
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 04:40:11PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 08:51 Tue 29 Nov     , Stephen Warren wrote:
+On 16:44 Thu 01 Dec     , zhzhl555@gmail.com wrote:
+> From: zhao zhang <zhzhl555@gmail.com>
+> 
+> V2: use new module_platform_driver macro.
+> thanks for Wolfram's advice.
+> 
+> This patch adds RTC support(TOY counter0) for loongson1B.
+> Signed-off-by: zhao zhang <zhzhl555@gmail.com>
+> ---
+>  drivers/rtc/Kconfig    |   10 ++
+>  drivers/rtc/Makefile   |    1 +
+>  drivers/rtc/rtc-ls1x.c |  214 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 225 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/rtc/rtc-ls1x.c
+> 
+> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+> index 5a538fc..6f8c2d7 100644
+> --- a/drivers/rtc/Kconfig
+> +++ b/drivers/rtc/Kconfig
+> @@ -1070,4 +1070,14 @@ config RTC_DRV_PUV3
+>  	  This drive can also be built as a module. If so, the module
+>  	  will be called rtc-puv3.
+>  
+> +config RTC_DRV_LOONGSON1
+> +	tristate "loongson1 RTC support"
+> +	depends on MACH_LOONGSON1
+> +	help
+> +	  This is a driver for the loongson1 on-chip Counter0 (Time-Of-Year
+> +	  counter) to be used as a RTC.
+> +
+> +	  This driver can also be built as a module. If so, the module
+> +	  will be called rtc-ls1x.
+> +
+>  endif # RTC_CLASS
+> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+> index 6e69823..48153fe 100644
+> --- a/drivers/rtc/Makefile
+> +++ b/drivers/rtc/Makefile
+> @@ -109,3 +109,4 @@ obj-$(CONFIG_RTC_DRV_VT8500)	+= rtc-vt8500.o
+>  obj-$(CONFIG_RTC_DRV_WM831X)	+= rtc-wm831x.o
+>  obj-$(CONFIG_RTC_DRV_WM8350)	+= rtc-wm8350.o
+>  obj-$(CONFIG_RTC_DRV_X1205)	+= rtc-x1205.o
+> +obj-$(CONFIG_RTC_DRV_LOONGSON1)	+= rtc-ls1x.o
+keep it ordered
 
-> > I believe the pinctrl subsystem should be applicable to any chip, be it
-> > the main SoC/CPU in the system, or any other chip. We don't currently
-> > have any non-SoC drivers, but that's just because nobody has written them
-> > yet; there's no technical reason they couldn't exist.
 
-> sorry pinmux for gpio specific management i's overkill
+you have no alarm, irq on this hardware?
 
-If it's a GPIO-only device then probaby but lots of devices have a
-fairly large range of signals that can be brought out on the pins (often
-even more than a typical SoC actually).
+Best Regards,
+J.
