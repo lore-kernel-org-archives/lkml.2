@@ -1,62 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab1LEJOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:14:17 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42079 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814Ab1LEJOP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:14:15 -0500
+	id S1754643Ab1LEJTQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:19:16 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:44769 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752516Ab1LEJTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:19:14 -0500
+Message-ID: <4EDC8C6D.2070001@parallels.com>
+Date: Mon, 5 Dec 2011 07:18:37 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <20111205085228.GF9900@legolas.emea.dhcp.ti.com>
-References: <1323074921-29291-1-git-send-email-thomas.abraham@linaro.org>
-	<20111205085228.GF9900@legolas.emea.dhcp.ti.com>
-Date: Mon, 5 Dec 2011 14:44:14 +0530
-Message-ID: <CAJuYYwTJOfCGUObv4+GakO8BN3N10=T6pH7MdCAiqtBrVGz1_Q@mail.gmail.com>
-Subject: Re: [PATCH] backlight: add regulator support for platform_lcd driver
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: balbi@ti.com
-Cc: rpurdie@rpsys.net, ben-linux@fluff.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
+        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v7 10/10] Disable task moving when using kernel memory
+ accounting
+References: <1322611021-1730-1-git-send-email-glommer@parallels.com> <1322611021-1730-11-git-send-email-glommer@parallels.com> <20111130112210.1d979512.kamezawa.hiroyu@jp.fujitsu.com> <4ED914EC.6020500@parallels.com> <20111205111835.b1432603.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111205111835.b1432603.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
-
-On 5 December 2011 14:22, Felipe Balbi <balbi@ti.com> wrote:
-
-[...]
-
->> +     if (lcd_power) {
->> +             if (plcd->pdata->min_uV || plcd->pdata->max_uV)
->> +                     if (regulator_set_voltage(lcd_regulator,
->> +                             plcd->pdata->min_uV, plcd->pdata->max_uV))
->> +                             dev_info(plcd->us,
->> +                                     "regulator voltage set failed\n");
->> +
->> +             if (regulator_enable(lcd_regulator))
->> +                     dev_info(plcd->us, "failed to enable regulator\n");
->> +     } else {
->> +             regulator_disable(lcd_regulator);
->> +     }
->> +
->> +     regulator_put(lcd_regulator);
+On 12/05/2011 12:18 AM, KAMEZAWA Hiroyuki wrote:
+> On Fri, 2 Dec 2011 16:11:56 -0200
+> Glauber Costa<glommer@parallels.com>  wrote:
 >
-> I wonder why you ->get() and ->put() everytime here. Wouldn't it be
-> enough to ->get() on probe() and ->put() on remove() ??
-
-Thanks for the suggestion. It would be simpler if done in probe. I
-will redo this patch.
-
-Regards,
-Thomas.
-
+>> On 11/30/2011 12:22 AM, KAMEZAWA Hiroyuki wrote:
+>>> On Tue, 29 Nov 2011 21:57:01 -0200
+>>> Glauber Costa<glommer@parallels.com>   wrote:
+>>>
+>>>> Since this code is still experimental, we are leaving the exact
+>>>> details of how to move tasks between cgroups when kernel memory
+>>>> accounting is used as future work.
+>>>>
+>>>> For now, we simply disallow movement if there are any pending
+>>>> accounted memory.
+>>>>
+>>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+>>>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
+>>>> ---
+>>>>    mm/memcontrol.c |   23 ++++++++++++++++++++++-
+>>>>    1 files changed, 22 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>>>> index a31a278..dd9a6d9 100644
+>>>> --- a/mm/memcontrol.c
+>>>> +++ b/mm/memcontrol.c
+>>>> @@ -5453,10 +5453,19 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
+>>>>    {
+>>>>    	int ret = 0;
+>>>>    	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
+>>>> +	struct mem_cgroup *from = mem_cgroup_from_task(p);
+>>>> +
+>>>> +#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)&&   defined(CONFIG_INET)
+>>>> +	if (from != memcg&&   !mem_cgroup_is_root(from)&&
+>>>> +	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
+>>>> +		printk(KERN_WARNING "Can't move tasks between cgroups: "
+>>>> +			"Kernel memory held.\n");
+>>>> +		return 1;
+>>>> +	}
+>>>> +#endif
+>>>
+>>> I wonder....reading all codes again, this is incorrect check.
+>>>
+>>> Hm, let me cralify. IIUC, in old code, "prevent moving" is because you hold
+>>> reference count of cgroup, which can cause trouble at rmdir() as leaking refcnt.
+>> right.
+>>
+>>> BTW, because socket is a shared resource between cgroup, changes in mm->owner
+>>> may cause task cgroup moving implicitly. So, if you allow leak of resource
+>>> here, I guess... you can take mem_cgroup_get() refcnt which is memcg-local and
+>>> allow rmdir(). Then, this limitation may disappear.
+>>
+>> Sorry, I didn't fully understand. Can you clarify further?
+>> If the task is implicitly moved, it will end up calling can_attach as
+>> well, right?
+>>
+> I'm sorry that my explanation is bad.
 >
-> --
-> balbi
+> You can take memory cgroup itself's reference count by mem_cgroup_put/get.
+> By getting this, memory cgroup object will continue to exist even after
+> its struct cgroup* is freed by rmdir().
 >
+> So, assume you do mem_cgroup_get()/put at socket attaching/detatching.
+>
+> 0) A task has a tcp socekts in memcg0.
+>
+> task(memcg0)
+>   +- socket0 -->  memcg0,usage=4096
+>
+> 1) move this task to memcg1
+>
+> task(memcg1)
+>   +- socket0 -->  memcg0,usage=4096
+>
+> 2) The task create a new socket.
+>
+> task(memcg1)
+>   +- socekt0 -->  memcg0,usage=4096
+>   +- socket1 -->  memcg1,usage=xxxx
+>
+> Here, the task will hold 4096bytes of usage in memcg0 implicitly.
+>
+> 3) an admin removes memcg0
+> task(memcg1)
+>   +- socket0 -->memcg0, usage=4096<-----(*)
+>   +- socket1 -->memcg1, usage=xxxx
+>
+> (*) is invisible to users....but this will not be very big problem.
+>
+Hi Kame,
+
+Thanks for the explanation.
+
+Hummm, Do you think that by doing it, we get rid of the need of moving 
+sockets to another memcg when the task is moved? So in my original 
+patchset, if you recall, I wanted to keep a socket forever in the same 
+cgroup. I didn't, because then rmdir would be blocked.
+
+By using this memcg reference trick, both can be achieved. What do you 
+think ?
