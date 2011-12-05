@@ -1,143 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab1LECTy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 21:19:54 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57047 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469Ab1LECTw (ORCPT
+	id S1753632Ab1LECiL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 21:38:11 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:52802 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab1LECiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 21:19:52 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 5 Dec 2011 11:18:35 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v7 10/10] Disable task moving when using kernel memory
- accounting
-Message-Id: <20111205111835.b1432603.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4ED914EC.6020500@parallels.com>
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
-	<1322611021-1730-11-git-send-email-glommer@parallels.com>
-	<20111130112210.1d979512.kamezawa.hiroyu@jp.fujitsu.com>
-	<4ED914EC.6020500@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Sun, 4 Dec 2011 21:38:10 -0500
+Date: Mon, 5 Dec 2011 13:37:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: linux-next: manual merge of the trivial tree with the wireless-next
+ tree
+Message-Id: <20111205133757.2b6cd1675543c7da26f663a5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__5_Dec_2011_13_37_57_+1100_i.ZOMeC5xJ/1oPuf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Dec 2011 16:11:56 -0200
-Glauber Costa <glommer@parallels.com> wrote:
+--Signature=_Mon__5_Dec_2011_13_37_57_+1100_i.ZOMeC5xJ/1oPuf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 11/30/2011 12:22 AM, KAMEZAWA Hiroyuki wrote:
-> > On Tue, 29 Nov 2011 21:57:01 -0200
-> > Glauber Costa<glommer@parallels.com>  wrote:
-> >
-> >> Since this code is still experimental, we are leaving the exact
-> >> details of how to move tasks between cgroups when kernel memory
-> >> accounting is used as future work.
-> >>
-> >> For now, we simply disallow movement if there are any pending
-> >> accounted memory.
-> >>
-> >> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
-> >> ---
-> >>   mm/memcontrol.c |   23 ++++++++++++++++++++++-
-> >>   1 files changed, 22 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> >> index a31a278..dd9a6d9 100644
-> >> --- a/mm/memcontrol.c
-> >> +++ b/mm/memcontrol.c
-> >> @@ -5453,10 +5453,19 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
-> >>   {
-> >>   	int ret = 0;
-> >>   	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
-> >> +	struct mem_cgroup *from = mem_cgroup_from_task(p);
-> >> +
-> >> +#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)&&  defined(CONFIG_INET)
-> >> +	if (from != memcg&&  !mem_cgroup_is_root(from)&&
-> >> +	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
-> >> +		printk(KERN_WARNING "Can't move tasks between cgroups: "
-> >> +			"Kernel memory held.\n");
-> >> +		return 1;
-> >> +	}
-> >> +#endif
-> >
-> > I wonder....reading all codes again, this is incorrect check.
-> >
-> > Hm, let me cralify. IIUC, in old code, "prevent moving" is because you hold
-> > reference count of cgroup, which can cause trouble at rmdir() as leaking refcnt.
-> right.
-> 
-> > BTW, because socket is a shared resource between cgroup, changes in mm->owner
-> > may cause task cgroup moving implicitly. So, if you allow leak of resource
-> > here, I guess... you can take mem_cgroup_get() refcnt which is memcg-local and
-> > allow rmdir(). Then, this limitation may disappear.
-> 
-> Sorry, I didn't fully understand. Can you clarify further?
-> If the task is implicitly moved, it will end up calling can_attach as 
-> well, right?
-> 
-I'm sorry that my explanation is bad.
+Hi Jiri,
 
-You can take memory cgroup itself's reference count by mem_cgroup_put/get.
-By getting this, memory cgroup object will continue to exist even after
-its struct cgroup* is freed by rmdir().
+Today's linux-next merge of the trivial tree got a conflict in
+net/mac80211/work.c between commit e76aadc57228 ("mac80211: revert
+on-channel work optimisations") from the wireless-next tree and commit
+42b2aa86c667 ("treewide: Fix typos in various parts of the kernel, and
+fix some comments") from the trivial tree.
 
-So, assume you do mem_cgroup_get()/put at socket attaching/detatching.
+The former removed the comment that was fixed in the latter, so I did
+that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-0) A task has a tcp socekts in memcg0.
+--Signature=_Mon__5_Dec_2011_13_37_57_+1100_i.ZOMeC5xJ/1oPuf
+Content-Type: application/pgp-signature
 
-task(memcg0)
- +- socket0 --> memcg0,usage=4096
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-1) move this task to memcg1
+iQIcBAEBCAAGBQJO3C6FAAoJEECxmPOUX5FEWy0P/0xr/j4wGjTR7K9+j8XGcJsG
+0kGuAkvzdF2uESyYvbJfZEUPkp3K7DjXditHnCvuMH1aOhnFWfbdMAGlOAwsp8ft
+ZZ1ApLelAfX8D3QOEdueMRUqCTtUb4HIp4dkbXaTJm0YxpF/gQepinWn6EBG/+nI
+/+81hX1wYQzbO/V1vyyYYsaKcOvi5SI2IK5ETTPO+dhZYOyX9DU6OQtYPPBa9j7B
+D/kgcduKtiRUN5HMh/xQzubYysRx8l6f88dPDnFAKn2G3EfWfUrBqLgL3Cm/pDfj
+0fQCMKioCmPhcPdACA5AK4rKM8LOpeFvaD+LBiHxwRgkgqAMQWA0ZUvlE35Fzxzv
+dCyc3Tiv2mMKU2zd7+u7mT1v03a3hJ7Cg92thi/pBRD2Vzd/fmSnLKXzlWIVFpmx
+OEV3WYeD5asqNB2VdjhrYvMDsS2g0QQWmoUnqJTH6yz1jcFrjsDdK2lEGWMtOFHA
+Ha31+2Ivf+VERbeiaqF9A8ubnttfqdpFcnyuQBna06VIIOdmdoVxaIXq95biVd2T
+/9GR436/qd+N5qmpNdQIAa/cffdc9a5jzmSX1a+HwmZk/RODP5+HuC8MR2Umlr6F
+uw2SF9DnClf9lvbEHG47tYTuahXQz3eT7pC6w+dMTel7yS/pcl9WP/yZq2SL0W8D
+AyM5EJsEi+1p6e4PVABK
+=0g/B
+-----END PGP SIGNATURE-----
 
-task(memcg1)
- +- socket0 --> memcg0,usage=4096
-
-2) The task create a new socket.
-
-task(memcg1)
- +- socekt0 --> memcg0,usage=4096 
- +- socket1 --> memcg1,usage=xxxx
-
-Here, the task will hold 4096bytes of usage in memcg0 implicitly.
-
-3) an admin removes memcg0
-task(memcg1)
- +- socket0 -->memcg0, usage=4096 <-----(*)
- +- socket1 -->memcg1, usage=xxxx
-
-(*) is invisible to users....but this will not be very big problem.
-
-Thanks,
--Kame
-
-
-
-
-
-
-
-
-
-
-
-Thanks,
--Kame
-
-
-
-
-
-
+--Signature=_Mon__5_Dec_2011_13_37_57_+1100_i.ZOMeC5xJ/1oPuf--
