@@ -1,466 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab1LETHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:07:16 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58956 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755772Ab1LETHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:07:14 -0500
-Date: Mon, 5 Dec 2011 14:11:16 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Dave Airlie <airlied@gmail.com>, Christoph Lameter <cl@linux.com>,
-        "Alex, Shi" <alex.shi@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Matt Mackall <mpm@selenic.com>, tj@kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: Re: WARNING: at mm/slub.c:3357, kernel BUG at mm/slub.c:3413
-Message-ID: <20111205191116.GB4342@homer.localdomain>
-References: <alpine.DEB.2.00.1111231004490.17317@router.home>
- <20111124085040.GA1677@x4.trippels.de>
- <20111202230412.GB12057@homer.localdomain>
- <20111203092845.GA1520@x4.trippels.de>
- <CAPM=9tyjZc9waC_ZBygW9zh+Zq-Wb1X5Y6yfsCCMPYwpFVWOOg@mail.gmail.com>
- <20111203122900.GA1617@x4.trippels.de>
- <CAH3drwZDOpPuQ_G=LwTiNsR5BNyJTNr+VJU74E6nS5AbKyQH0A@mail.gmail.com>
- <20111204010200.GA1530@x4.trippels.de>
- <20111205171046.GA4342@homer.localdomain>
- <20111205181549.GA1612@x4.trippels.de>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="b5gNqxB1S1yM7hjW"
-Content-Disposition: inline
-In-Reply-To: <20111205181549.GA1612@x4.trippels.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932262Ab1LETHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:07:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52194 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932069Ab1LETHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 14:07:38 -0500
+Date: Tue, 6 Dec 2011 06:06:54 +1100
+From: NeilBrown <neilb@suse.de>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-mmc@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Daniel Drake <dsd@laptop.org>, Joe Woodward <jw@terrafix.co.uk>,
+        Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH] mmc/sdio: don't allow interface to runtime-suspend
+ until probe is finished.
+Message-ID: <20111206060654.0e8bebe0@notabene.brown>
+In-Reply-To: <CAK=Wgbb-6eV6aDxTdi3qFLZmu0cHSZvHRUpUEr3YQ=4tO5sCPw@mail.gmail.com>
+References: <20111205125416.6093ecd8@notabene.brown>
+	<CAK=Wgbb-6eV6aDxTdi3qFLZmu0cHSZvHRUpUEr3YQ=4tO5sCPw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/AlrUhHGvZ.0DUp/WfjnurBT"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/AlrUhHGvZ.0DUp/WfjnurBT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
---b5gNqxB1S1yM7hjW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, 5 Dec 2011 12:25:42 +0200 Ohad Ben-Cohen <ohad@wizery.com> wrote:
 
-On Mon, Dec 05, 2011 at 07:15:49PM +0100, Markus Trippelsdorf wrote:
-> On 2011.12.05 at 12:10 -0500, Jerome Glisse wrote:
-> > On Sun, Dec 04, 2011 at 02:02:00AM +0100, Markus Trippelsdorf wrote:
-> > > On 2011.12.03 at 14:31 -0500, Jerome Glisse wrote:
-> > > > On Sat, Dec 3, 2011 at 7:29 AM, Markus Trippelsdorf
-> > > > <markus@trippelsdorf.de> wrote:
-> > > > > On 2011.12.03 at 12:20 +0000, Dave Airlie wrote:
-> > > > >> >> > > > > FIX idr_layer_cache: Marking all objects used
-> > > > >> >> > > >
-> > > > >> >> > > > Yesterday I couldn't reproduce the issue at all. But today I've hit
-> > > > >> >> > > > exactly the same spot again. (CCing the drm list)
-> > > > >>
-> > > > >> If I had to guess it looks like 0 is getting written back to some
-> > > > >> random page by the GPU maybe, it could be that the GPU is in some half
-> > > > >> setup state at boot or on a reboot does it happen from a cold boot or
-> > > > >> just warm boot or kexec?
-> > > > >
-> > > > > Only happened with kexec thus far. Cold boot seems to be fine.
-> > > > >
-> > > > 
-> > > > Can you add radeon.no_wb=1 to your kexec kernel paramater an see if
-> > > > you can reproduce.
-> > > 
-> > > No, I cannot reproduce the issue with radeon.no_wb=1. (I write this
-> > > after 700 successful kexec iterations...)
-> > > 
-> > 
-> > Can you try if attached patch fix the issue when you don't pass the
-> > radeon.no_wb=1 option ?
-> 
-> Yes the patch finally fixes the issue for me (tested with 120 kexec
-> iterations).
-> Thanks Jerome!
-> 
-> -- 
-> Markus
+> Hi Neil,
+>=20
+> On Mon, Dec 5, 2011 at 3:54 AM, NeilBrown <neilb@suse.de> wrote:
+> > =A0I've been chasing down a problem with the SDIO-attached wifi card in=
+ the
+> > =A0GTA04 (www.gta04.org).
+>=20
+> 8686, right ?
 
-Can you do a kick run on the modified patch ?
+yep, that's the one!
 
-I believe this patch could go to stable too as it's low
-impact from my pov.
+>=20
+> > =A0The problem seems very similar to that described in
+> >
+> > =A0 =A0http://www.mail-archive.com/linux-mmc@vger.kernel.org/msg04289.h=
+tml
+>=20
+> Don't go that far back, Joe just reported this exact problem in :
+>=20
+> http://comments.gmane.org/gmane.linux.kernel.mmc/11231
 
-Cheers,
-Jerome
+Indeed.
 
---b5gNqxB1S1yM7hjW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-drm-radeon-disable-possible-GPU-writeback-early-v2.patch"
+>=20
+> > commit 08da834a24312157f512224691ad1fddd11c1073
+> > Author: Daniel Drake <dsd@laptop.org>
+> > Date: =A0 Wed Jul 20 17:39:22 2011 +0100
+> >
+> > =A0 =A0mmc: enable runtime PM by default
+> >
+> >
+> > and if I revert that commit so that runtime PM is not enabled the probl=
+em
+> > goes away.
+>=20
+> And this is most likely what we're going to do, unless someone with
+> the 8686 can further look into the problem.
 
->From cccfa6f93faa6b556fd72e318606a01e333e67d3 Mon Sep 17 00:00:00 2001
-From: Jerome Glisse <jglisse@redhat.com>
-Date: Mon, 5 Dec 2011 12:02:17 -0500
-Subject: [PATCH] drm/radeon: disable possible GPU writeback early v2
+Challenge accepted.
 
-Given how kexec works we need to disable any kind of GPU writeback
-early in GPU initialization just in case some are still active from
-previous setup.
+Even if I don't find a better solution, this seems backwards.  Sure the
+default should be that PM is enabled, but individual board can request no
+PM on MMC interfaces where it is a problem.
 
-v2 follow previous sanity work done on earlier radeon, also write
-reg uncondionaly and disable irq too.
+>=20
+> > (The wifi chip is a libertas_sdio supported chip connected to an mmc
+> > interface on an omap3, and has a separate regulator for power supply, p=
+lus a
+> > GPIO pin for reset, just like in the email thread. =A0The problem is
+> > exemplified by:
+> > [ =A0 64.643981] libertas_sdio: probe of mmc1:0001:1 failed with error =
+-16
+> > ).
+>=20
+> Yes, the same issue that Joe is seeing.
+>=20
+> > I finally managed to track down exactly what was happening - runtime PM=
+ was
+> > putting the interface to sleep before the SDIO functions were probed so
+> > initialising them failed.
+>=20
+> Yeah, but the question is why it fails.
 
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
----
- drivers/gpu/drm/radeon/evergreen.c   |    2 ++
- drivers/gpu/drm/radeon/ni.c          |   18 ++++++++++++++++++
- drivers/gpu/drm/radeon/nid.h         |   19 +++++++++++++++++++
- drivers/gpu/drm/radeon/r100.c        |   20 ++++++--------------
- drivers/gpu/drm/radeon/r520.c        |    2 +-
- drivers/gpu/drm/radeon/r600.c        |   16 ++++++++++++++++
- drivers/gpu/drm/radeon/radeon_asic.h |    2 ++
- drivers/gpu/drm/radeon/rs600.c       |   20 +++++++++++++++++++-
- drivers/gpu/drm/radeon/rs600d.h      |   21 +++++++++++++++++++++
- drivers/gpu/drm/radeon/rs690.c       |    2 +-
- drivers/gpu/drm/radeon/rv515.c       |    2 +-
- drivers/gpu/drm/radeon/rv770.c       |   16 ++++++++++++++++
- drivers/gpu/drm/radeon/rv770d.h      |   20 ++++++++++++++++++++
- 13 files changed, 142 insertions(+), 18 deletions(-)
+The chip has a requirement that the reset line is held down during power-on,
+and raised shortly after (I don't know exactly how short).  So if you just
+remove power and give it back, the chip doesn't come up properly.
 
-diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
-index 1934728..6109579 100644
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -3249,6 +3249,8 @@ int evergreen_init(struct radeon_device *rdev)
- {
- 	int r;
- 
-+	/* restore some register to sane defaults */
-+	rv770_restore_sanity(rdev);
- 	/* This don't do much */
- 	r = radeon_gem_init(rdev);
- 	if (r)
-diff --git a/drivers/gpu/drm/radeon/ni.c b/drivers/gpu/drm/radeon/ni.c
-index c15fc8b..f5d7054 100644
---- a/drivers/gpu/drm/radeon/ni.c
-+++ b/drivers/gpu/drm/radeon/ni.c
-@@ -1566,6 +1566,22 @@ int cayman_suspend(struct radeon_device *rdev)
- 	return 0;
- }
- 
-+/*
-+ * Due to how kexec works, it can leave the hw fully initialised when it
-+ * boots the new kernel.
-+ */
-+static void cayman_restore_sanity(struct radeon_device *rdev)
-+{
-+	/* stop possible GPU activities */
-+	WREG32(IH_RB_CNTL, 0);
-+	WREG32(IH_CNTL, 0);
-+	WREG32(CP_ME_CNTL, CP_ME_HALT | CP_PFP_HALT);
-+	WREG32(SCRATCH_UMSK, 0);
-+	WREG32(CP_RB0_CNTL, RB_NO_UPDATE);
-+	WREG32(CP_RB1_CNTL, RB_NO_UPDATE);
-+	WREG32(CP_RB2_CNTL, RB_NO_UPDATE);
-+}
-+
- /* Plan is to move initialization in that function and use
-  * helper function so that radeon_device_init pretty much
-  * do nothing more than calling asic specific function. This
-@@ -1577,6 +1593,8 @@ int cayman_init(struct radeon_device *rdev)
- 	struct radeon_ring *ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
- 	int r;
- 
-+	/* restore some register to sane defaults */
-+	cayman_restore_sanity(rdev);
- 	/* This don't do much */
- 	r = radeon_gem_init(rdev);
- 	if (r)
-diff --git a/drivers/gpu/drm/radeon/nid.h b/drivers/gpu/drm/radeon/nid.h
-index 4640334..3aa33c6 100644
---- a/drivers/gpu/drm/radeon/nid.h
-+++ b/drivers/gpu/drm/radeon/nid.h
-@@ -162,6 +162,25 @@
- #define HDP_MISC_CNTL					0x2F4C
- #define 	HDP_FLUSH_INVALIDATE_CACHE			(1 << 0)
- 
-+#define IH_RB_CNTL                                        0x3e00
-+#       define IH_RB_ENABLE                               (1 << 0)
-+#       define IH_IB_SIZE(x)                              ((x) << 1) /* log2 */
-+#       define IH_RB_FULL_DRAIN_ENABLE                    (1 << 6)
-+#       define IH_WPTR_WRITEBACK_ENABLE                   (1 << 8)
-+#       define IH_WPTR_WRITEBACK_TIMER(x)                 ((x) << 9) /* log2 */
-+#       define IH_WPTR_OVERFLOW_ENABLE                    (1 << 16)
-+#       define IH_WPTR_OVERFLOW_CLEAR                     (1 << 31)
-+#define IH_CNTL                                           0x3e18
-+#       define ENABLE_INTR                                (1 << 0)
-+#       define IH_MC_SWAP(x)                              ((x) << 1)
-+#       define IH_MC_SWAP_NONE                            0
-+#       define IH_MC_SWAP_16BIT                           1
-+#       define IH_MC_SWAP_32BIT                           2
-+#       define IH_MC_SWAP_64BIT                           3
-+#       define RPTR_REARM                                 (1 << 4)
-+#       define MC_WRREQ_CREDIT(x)                         ((x) << 15)
-+#       define MC_WR_CLEAN_CNT(x)                         ((x) << 20)
-+
- #define	CC_SYS_RB_BACKEND_DISABLE			0x3F88
- #define	GC_USER_SYS_RB_BACKEND_DISABLE			0x3F8C
- #define	CGTS_SYS_TCC_DISABLE				0x3F90
-diff --git a/drivers/gpu/drm/radeon/r100.c b/drivers/gpu/drm/radeon/r100.c
-index 657040b..d58531f 100644
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -3990,20 +3990,12 @@ void r100_fini(struct radeon_device *rdev)
-  */
- void r100_restore_sanity(struct radeon_device *rdev)
- {
--	u32 tmp;
--
--	tmp = RREG32(RADEON_CP_CSQ_CNTL);
--	if (tmp) {
--		WREG32(RADEON_CP_CSQ_CNTL, 0);
--	}
--	tmp = RREG32(RADEON_CP_RB_CNTL);
--	if (tmp) {
--		WREG32(RADEON_CP_RB_CNTL, 0);
--	}
--	tmp = RREG32(RADEON_SCRATCH_UMSK);
--	if (tmp) {
--		WREG32(RADEON_SCRATCH_UMSK, 0);
--	}
-+	/* stop possible GPU activities */
-+	WREG32(RADEON_CP_CSQ_MODE, 0);
-+	WREG32(RADEON_CP_CSQ_CNTL, 0);
-+	WREG32(R_000770_SCRATCH_UMSK, 0);
-+	WREG32(RADEON_CP_RB_CNTL, RADEON_RB_NO_UPDATE);
-+	WREG32(RADEON_GEN_INT_CNTL, 0);
- }
- 
- int r100_init(struct radeon_device *rdev)
-diff --git a/drivers/gpu/drm/radeon/r520.c b/drivers/gpu/drm/radeon/r520.c
-index 4ae1615..71a984b 100644
---- a/drivers/gpu/drm/radeon/r520.c
-+++ b/drivers/gpu/drm/radeon/r520.c
-@@ -249,7 +249,7 @@ int r520_init(struct radeon_device *rdev)
- 	/* Initialize surface registers */
- 	radeon_surface_init(rdev);
- 	/* restore some register to sane defaults */
--	r100_restore_sanity(rdev);
-+	rs600_restore_sanity(rdev);
- 	/* TODO: disable VGA need to use VGA request */
- 	/* BIOS*/
- 	if (!radeon_get_bios(rdev)) {
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 951566f..ec437d5 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -2556,6 +2556,20 @@ int r600_suspend(struct radeon_device *rdev)
- 	return 0;
- }
- 
-+/*
-+ * Due to how kexec works, it can leave the hw fully initialised when it
-+ * boots the new kernel.
-+ */
-+static void r600_restore_sanity(struct radeon_device *rdev)
-+{
-+	/* stop possible GPU activities */
-+	WREG32(IH_RB_CNTL, 0);
-+	WREG32(IH_CNTL, 0);
-+	WREG32(R_0086D8_CP_ME_CNTL, S_0086D8_CP_ME_HALT(1));
-+	WREG32(SCRATCH_UMSK, 0);
-+	WREG32(CP_RB_CNTL, RB_NO_UPDATE);
-+}
-+
- /* Plan is to move initialization in that function and use
-  * helper function so that radeon_device_init pretty much
-  * do nothing more than calling asic specific function. This
-@@ -2566,6 +2580,8 @@ int r600_init(struct radeon_device *rdev)
- {
- 	int r;
- 
-+	/* restore some register to sane defaults */
-+	r600_restore_sanity(rdev);
- 	if (r600_debugfs_mc_info_init(rdev)) {
- 		DRM_ERROR("Failed to register debugfs file for mc !\n");
- 	}
-diff --git a/drivers/gpu/drm/radeon/radeon_asic.h b/drivers/gpu/drm/radeon/radeon_asic.h
-index 6304aef..6b664b0 100644
---- a/drivers/gpu/drm/radeon/radeon_asic.h
-+++ b/drivers/gpu/drm/radeon/radeon_asic.h
-@@ -215,6 +215,7 @@ extern int rs600_init(struct radeon_device *rdev);
- extern void rs600_fini(struct radeon_device *rdev);
- extern int rs600_suspend(struct radeon_device *rdev);
- extern int rs600_resume(struct radeon_device *rdev);
-+void rs600_restore_sanity(struct radeon_device *rdev);
- int rs600_irq_set(struct radeon_device *rdev);
- int rs600_irq_process(struct radeon_device *rdev);
- void rs600_irq_disable(struct radeon_device *rdev);
-@@ -388,6 +389,7 @@ u32 rv770_page_flip(struct radeon_device *rdev, int crtc, u64 crtc_base);
- void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc);
- void r700_cp_stop(struct radeon_device *rdev);
- void r700_cp_fini(struct radeon_device *rdev);
-+void rv770_restore_sanity(struct radeon_device *rdev);
- 
- /*
-  * evergreen
-diff --git a/drivers/gpu/drm/radeon/rs600.c b/drivers/gpu/drm/radeon/rs600.c
-index ca6d5b6..fc3c707 100644
---- a/drivers/gpu/drm/radeon/rs600.c
-+++ b/drivers/gpu/drm/radeon/rs600.c
-@@ -935,6 +935,24 @@ void rs600_fini(struct radeon_device *rdev)
- 	rdev->bios = NULL;
- }
- 
-+
-+/*
-+ * Due to how kexec works, it can leave the hw fully initialised when it
-+ * boots the new kernel.
-+ */
-+void rs600_restore_sanity(struct radeon_device *rdev)
-+{
-+	/* stop possible GPU activities */
-+	WREG32(R_000740_CP_CSQ_CNTL, 0);
-+	WREG32(R_000744_CP_CSQ_MODE, 0);
-+	WREG32(R_000770_SCRATCH_UMSK, 0);
-+	WREG32(R_000704_CP_RB_CNTL, S_000704_RB_NO_UPDATE(1));
-+	WREG32(R_000040_GEN_INT_CNTL, 0);
-+	WREG32(R_006540_DxMODE_INT_MASK, 0);
-+	WREG32(R_007D08_DC_HOT_PLUG_DETECT1_INT_CONTROL, 0);
-+	WREG32(R_007D18_DC_HOT_PLUG_DETECT2_INT_CONTROL, 0);
-+}
-+
- int rs600_init(struct radeon_device *rdev)
- {
- 	int r;
-@@ -946,7 +964,7 @@ int rs600_init(struct radeon_device *rdev)
- 	/* Initialize surface registers */
- 	radeon_surface_init(rdev);
- 	/* restore some register to sane defaults */
--	r100_restore_sanity(rdev);
-+	rs600_restore_sanity(rdev);
- 	/* BIOS */
- 	if (!radeon_get_bios(rdev)) {
- 		if (ASIC_IS_AVIVO(rdev))
-diff --git a/drivers/gpu/drm/radeon/rs600d.h b/drivers/gpu/drm/radeon/rs600d.h
-index a27c13a..54d96e6 100644
---- a/drivers/gpu/drm/radeon/rs600d.h
-+++ b/drivers/gpu/drm/radeon/rs600d.h
-@@ -668,4 +668,25 @@
- #define   PM_ASSERT_RESET                              (1 << 20)
- #define   PM_PWRDN_PPLL                                (1 << 24)
- 
-+#define R_000704_CP_RB_CNTL                          0x000704
-+#define   S_000704_RB_NO_UPDATE(x)                     (((x) & 0x1) << 27)
-+#define R_000740_CP_CSQ_CNTL                         0x000740
-+#define   S_000740_CSQ_CNT_PRIMARY(x)                  (((x) & 0xFF) << 0)
-+#define   G_000740_CSQ_CNT_PRIMARY(x)                  (((x) >> 0) & 0xFF)
-+#define   C_000740_CSQ_CNT_PRIMARY                     0xFFFFFF00
-+#define   S_000740_CSQ_CNT_INDIRECT(x)                 (((x) & 0xFF) << 8)
-+#define   G_000740_CSQ_CNT_INDIRECT(x)                 (((x) >> 8) & 0xFF)
-+#define   C_000740_CSQ_CNT_INDIRECT                    0xFFFF00FF
-+#define   S_000740_CSQ_MODE(x)                         (((x) & 0xF) << 28)
-+#define   G_000740_CSQ_MODE(x)                         (((x) >> 28) & 0xF)
-+#define   C_000740_CSQ_MODE                            0x0FFFFFFF
-+#define R_000744_CP_CSQ_MODE                         0x000744
-+#define R_000770_SCRATCH_UMSK                        0x000770
-+#define   S_000770_SCRATCH_UMSK(x)                     (((x) & 0x3F) << 0)
-+#define   G_000770_SCRATCH_UMSK(x)                     (((x) >> 0) & 0x3F)
-+#define   C_000770_SCRATCH_UMSK                        0xFFFFFFC0
-+#define   S_000770_SCRATCH_SWAP(x)                     (((x) & 0x3) << 16)
-+#define   G_000770_SCRATCH_SWAP(x)                     (((x) >> 16) & 0x3)
-+#define   C_000770_SCRATCH_SWAP                        0xFFFCFFFF
-+
- #endif
-diff --git a/drivers/gpu/drm/radeon/rs690.c b/drivers/gpu/drm/radeon/rs690.c
-index 4f24a0f..8a3b1f4 100644
---- a/drivers/gpu/drm/radeon/rs690.c
-+++ b/drivers/gpu/drm/radeon/rs690.c
-@@ -718,7 +718,7 @@ int rs690_init(struct radeon_device *rdev)
- 	/* Initialize surface registers */
- 	radeon_surface_init(rdev);
- 	/* restore some register to sane defaults */
--	r100_restore_sanity(rdev);
-+	rs600_restore_sanity(rdev);
- 	/* TODO: disable VGA need to use VGA request */
- 	/* BIOS*/
- 	if (!radeon_get_bios(rdev)) {
-diff --git a/drivers/gpu/drm/radeon/rv515.c b/drivers/gpu/drm/radeon/rv515.c
-index 880637f..c9ced40 100644
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -488,7 +488,7 @@ int rv515_init(struct radeon_device *rdev)
- 	radeon_surface_init(rdev);
- 	/* TODO: disable VGA need to use VGA request */
- 	/* restore some register to sane defaults */
--	r100_restore_sanity(rdev);
-+	rs600_restore_sanity(rdev);
- 	/* BIOS*/
- 	if (!radeon_get_bios(rdev)) {
- 		if (ASIC_IS_AVIVO(rdev))
-diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
-index a1668b6..3d0397d 100644
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -1167,6 +1167,20 @@ int rv770_suspend(struct radeon_device *rdev)
- 	return 0;
- }
- 
-+/*
-+ * Due to how kexec works, it can leave the hw fully initialised when it
-+ * boots the new kernel.
-+ */
-+void rv770_restore_sanity(struct radeon_device *rdev)
-+{
-+	/* stop possible GPU activities */
-+	WREG32(IH_RB_CNTL, 0);
-+	WREG32(IH_CNTL, 0);
-+	WREG32(CP_ME_CNTL, CP_ME_HALT | CP_PFP_HALT);
-+	WREG32(SCRATCH_UMSK, 0);
-+	WREG32(CP_RB_CNTL, RB_NO_UPDATE);
-+}
-+
- /* Plan is to move initialization in that function and use
-  * helper function so that radeon_device_init pretty much
-  * do nothing more than calling asic specific function. This
-@@ -1177,6 +1191,8 @@ int rv770_init(struct radeon_device *rdev)
- {
- 	int r;
- 
-+	/* restore some register to sane defaults */
-+	rv770_restore_sanity(rdev);
- 	/* This don't do much */
- 	r = radeon_gem_init(rdev);
- 	if (r)
-diff --git a/drivers/gpu/drm/radeon/rv770d.h b/drivers/gpu/drm/radeon/rv770d.h
-index 79fa588..03bed2d 100644
---- a/drivers/gpu/drm/radeon/rv770d.h
-+++ b/drivers/gpu/drm/radeon/rv770d.h
-@@ -38,6 +38,26 @@
- #define R7XX_MAX_PIPES             8
- #define R7XX_MAX_PIPES_MASK        0xff
- 
-+
-+#define IH_RB_CNTL                                        0x3e00
-+#       define IH_RB_ENABLE                               (1 << 0)
-+#       define IH_IB_SIZE(x)                              ((x) << 1) /* log2 */
-+#       define IH_RB_FULL_DRAIN_ENABLE                    (1 << 6)
-+#       define IH_WPTR_WRITEBACK_ENABLE                   (1 << 8)
-+#       define IH_WPTR_WRITEBACK_TIMER(x)                 ((x) << 9) /* log2 */
-+#       define IH_WPTR_OVERFLOW_ENABLE                    (1 << 16)
-+#       define IH_WPTR_OVERFLOW_CLEAR                     (1 << 31)
-+#define IH_CNTL                                           0x3e18
-+#       define ENABLE_INTR                                (1 << 0)
-+#       define IH_MC_SWAP(x)                              ((x) << 1)
-+#       define IH_MC_SWAP_NONE                            0
-+#       define IH_MC_SWAP_16BIT                           1
-+#       define IH_MC_SWAP_32BIT                           2
-+#       define IH_MC_SWAP_64BIT                           3
-+#       define RPTR_REARM                                 (1 << 4)
-+#       define MC_WRREQ_CREDIT(x)                         ((x) << 15)
-+#       define MC_WR_CLEAN_CNT(x)                         ((x) << 20)
-+
- /* Registers */
- #define	CB_COLOR0_BASE					0x28040
- #define	CB_COLOR1_BASE					0x28044
--- 
-1.7.7.1
+>=20
+> It's perfectly fine to power the card down before the functions are
+> probed, because just before they are probed the bus is responsible to
+> power the card up again.
+
+"It *should be* perfectly fine ..." :-)
+
+We just have to make sure the bug powers up the card properly.
+Maybe I need to create a virtual regulator that powers on the real regulato=
+r,
+then raises the reset line.  I wonder how hard that is.
 
 
---b5gNqxB1S1yM7hjW--
+>=20
+> > From: NeilBrown <neilb@suse.de>
+> > Date: Mon, 5 Dec 2011 11:34:47 +1100
+> > Subject: [PATCH] mmc/sdio: don't allow interface to runtime-suspend unt=
+il probe is finished.
+>=20
+> You can't tell when probe is finished. In fact, in can happen very far
+> in the future or even never at all (e.g. when the function driver
+> isn't loaded).
+
+Ahhh... I naively assumed that=20
+
+	/*
+	 * ...then the SDIO functions.
+	 */
+	for (i =3D 0;i < funcs;i++) {
+		err =3D sdio_add_func(host->card->sdio_func[i]);
+		if (err)
+			goto remove_added;
+	}
+
+would add all the functions.  but as you say: the drivers might not be load=
+ed
+yet.
+
+
+>=20
+> > mmc_attach_sdio currently enables runtime power management on
+> > the mmc interface before it completes the probe of functions.
+> > This means that it might be asleep during the probe and the probe
+> > will fail.
+>=20
+> No - the sdio bus powers the card up before probing the drivers. See
+> sdio_bus_probe.
+>=20
+> > In particular, if 'drivers_autoprobe' is enabled on the mmc bus, then
+> > device_attach() will be called by bus_probe_device() from device_add()
+> > and it will pm_runtime_get_noresume()/pm_runtime_put_sync().
+> >
+> > As runtime power management this the device is running
+> > (pm_runtime_set_active() in mmc_attach_sdio()) and rtpm is enabled
+> > (pm_runtime_enable()), the pm_runtime_put_sync() call puts the mmc
+> > interface to sleep,
+>=20
+> This is fine
+>=20
+> > so function probing fails.
+>=20
+> The question is why. Again - sdio_bus_probe should power up the card.
+> For some reason, it (or something else) fails to do so with the 8686
+> on some setups. Other chips might have similar issues, too - we just
+> don't know (all we know is that it works great with the wl12xx, and
+> with the Daniel's 8686 setup).
+>=20
+> > So this patch moves the call to pm_runtime_enable to after all the
+> > calls to sdio_add_func.
+>=20
+> Looks like this will have the undesired side-effect of keeping the
+> chip powered up, even if it doesn't have any driver loaded for it.
+>=20
+> And this doesn't really address the problem: we still don't know why
+> the 8686 fails to power up at this point.
+>=20
+> Can you please tell us where exactly is the first failure coming from
+> ? is this from libertas own probe function ? is this sdio_bus_probe
+> getting an error from calling pm_runtime_get_sync ?
+>=20
+> Thanks,
+> Ohad
+
+I'll spend some more time on this and get back to you - probably next week.
+
+Thanks for the hints and perspective.
+
+NeilBrown
+
+--Sig_/AlrUhHGvZ.0DUp/WfjnurBT
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTt0WTjnsnt1WYoG5AQKPxA/+NO018Dfyb+bQW5Edw9Kz4dzc6zNctzTG
+Gb1r6lBSlhjCU13C5AESXMGI57aDyjSaMvjtADgEFugbBCEnaoE4D1GUWmsODUYy
+Ec8tEsl+RmF8PF/eMOWe4piDZIyPtHUWt84Yl8UX4lQexao4fz3UQLbg9PiYpCl1
+lq+cMgpJZ7k/o9kNX0gz4fdNk2lK6E71L56eIr0NkzHOyctoqip0Ihf6xs2939yV
+asE/kH9g33n6kdDxKhq3Bf12ksnI4a0cXFHpFagxEU8AR3qk1GjEsTmzf1rdpjJH
+0wJS0mMFOzCORFb1bYdPPYFa6XbD2AV+DjLku/oTTf6nFETvt6Hj7R8OInX3yqa7
++1ov+EJGr5ckEhPZouz7Id9bQiZE3SS5kHglu30mcc95g6g+/PW13wx6c847j588
+I8TwjCJbYbLLVc/I/UVItXyS2gjQGrMb6dmuiIHXLKq8Z2y5JXQIBSI6zs+qV+hZ
+WgOaBPkk0hqBogsftGtP2OW3s63XhJfmwCLZ1+XDi1VsOFqTwvy7iS3Xb9DRggx3
+lx11UpYVia1EM51gcVrcIjmpSXiJCJleHqbwUtiwz4sNU5ys2MJ4hNE6c7MjCggc
+j0OHemGOYHpBMVS/zQ/yvXYRMCzUi04gNqgjorqf2sc1fGkPaxf2D42HYB+4oP/Y
+zwYkAdri8sg=
+=9KJb
+-----END PGP SIGNATURE-----
+
+--Sig_/AlrUhHGvZ.0DUp/WfjnurBT--
