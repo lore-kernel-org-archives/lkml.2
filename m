@@ -1,189 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab1LETAa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:00:30 -0500
-Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:38297 "EHLO
-	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755284Ab1LETA3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:00:29 -0500
-From: Daniel Drake <dsd@laptop.org>
-To: akpm@linux-foundation.org
-To: mingo@redhat.com
-To: tglx@linutronix.de
-To: hpa@zytor.com
-To: x86@kernel.org
-Cc: pgf@laptop.org
-Cc: linux-kernel@vger.kernel.org
-Cc: dilinger@queued.net
-Subject: [PATCH v2] x86, olpc: add debugfs interface for EC commands
-Message-Id: <20111205190023.498DE9D401E@zog.reactivated.net>
-Date: Mon,  5 Dec 2011 19:00:23 +0000 (GMT)
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=_YxG3Pwb_ZIA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=kF77FlFh9K5kFNqHXAgA:9 a=Jkzg3gghSntly-iuwmgA:7 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S1756174Ab1LETCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:02:24 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37861 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755284Ab1LETCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 14:02:22 -0500
+Date: Mon, 5 Dec 2011 20:00:39 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] timer fixes
+Message-ID: <20111205190039.GA29271@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a debugfs interface for sending commands to the OLPC Embedded Controller
-(EC) and reading the responses. The EC provides functionality for machine
-identification, battery and AC control, wakeup control, etc.
+Linus,
 
-Having a debugfs interface available is useful for EC development and
-debugging.
+Please pull the latest timers-urgent-for-linus git tree from:
 
-Based on code by Paul Fox.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-Signed-off-by: Paul Fox <pgf@laptop.org>
-Signed-off-by: Daniel Drake <dsd@laptop.org>
----
- Documentation/ABI/testing/debugfs-olpc |   16 ++++++
- arch/x86/platform/olpc/olpc.c          |   86 ++++++++++++++++++++++++++++++++
- 2 files changed, 102 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/debugfs-olpc
+ Thanks,
 
-v2: incorporate feedback from Andrew Morton (thanks!): documentation in
-Documentation/, fixed input checking, more correct command bytes construction
+	Ingo
 
-diff --git a/Documentation/ABI/testing/debugfs-olpc b/Documentation/ABI/testing/debugfs-olpc
-new file mode 100644
-index 0000000..49b9a4e
---- /dev/null
-+++ b/Documentation/ABI/testing/debugfs-olpc
-@@ -0,0 +1,16 @@
-+What:		/sys/kernel/debug/olpc-ec/generic
-+Date:		Dec 2011
-+KernelVersion:	3.3
-+Contact:	devel@lists.laptop.org
-+Description:
-+
-+A generic interface for executing OLPC Embedded Controller commands and
-+reading their responses.
-+
-+To execute a command, write data with the format: CC:N A A A A
-+CC is the (hex) command, N is the count of expected reply bytes, and A A A A
-+are optional (hex) arguments.
-+
-+To read the response (if any), read from the generic node after executing
-+a command. Hex reply bytes will be returned, *whether or not* they came from
-+the immediately previous command.
-diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
-index 7cce722..8260747 100644
---- a/arch/x86/platform/olpc/olpc.c
-+++ b/arch/x86/platform/olpc/olpc.c
-@@ -20,6 +20,7 @@
- #include <linux/platform_device.h>
- #include <linux/of.h>
- #include <linux/syscore_ops.h>
-+#include <linux/debugfs.h>
+------------------>
+Arve Hjønnevåg (1):
+      rtc: Fix some bugs that allowed accumulating time drift in suspend/resume
+
+Rabin Vincent (1):
+      rtc: Disable the alarm in the hardware
+
+Thomas Gleixner (2):
+      tick-broadcast: Stop active broadcast device when replacing it
+      clockevents: Set noop handler in clockevents_exchange_device()
+
+Yang Honggang (Joseph) (1):
+      clocksource: Fix bug with max_deferment margin calculation
+
+
+ drivers/rtc/class.c          |   10 ++++----
+ drivers/rtc/interface.c      |   44 ++++++++++++++++++++++++++++++++---------
+ kernel/time/clockevents.c    |    1 +
+ kernel/time/clocksource.c    |    4 +-
+ kernel/time/tick-broadcast.c |    2 +-
+ 5 files changed, 43 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 01a7df5..b82a155 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -66,7 +66,7 @@ static int rtc_suspend(struct device *dev, pm_message_t mesg)
+ 	 */
+ 	delta = timespec_sub(old_system, old_rtc);
+ 	delta_delta = timespec_sub(delta, old_delta);
+-	if (abs(delta_delta.tv_sec)  >= 2) {
++	if (delta_delta.tv_sec < -2 || delta_delta.tv_sec >= 2) {
+ 		/*
+ 		 * if delta_delta is too large, assume time correction
+ 		 * has occured and set old_delta to the current delta.
+@@ -100,9 +100,8 @@ static int rtc_resume(struct device *dev)
+ 	rtc_tm_to_time(&tm, &new_rtc.tv_sec);
+ 	new_rtc.tv_nsec = 0;
  
- #include <asm/geode.h>
- #include <asm/setup.h>
-@@ -31,6 +32,13 @@ EXPORT_SYMBOL_GPL(olpc_platform_info);
- 
- static DEFINE_SPINLOCK(ec_lock);
- 
-+/* debugfs interface to EC commands */
-+#define EC_MAX_CMD_ARGS (5 + 1)	/* cmd byte + 5 args */
-+#define EC_MAX_CMD_REPLY (8)
-+static struct dentry *ec_debugfs_dir;
-+static unsigned char ec_debugfs_resp[EC_MAX_CMD_REPLY];
-+static unsigned int ec_debugfs_resp_bytes;
-+
- /* EC event mask to be applied during suspend (defining wakeup sources). */
- static u16 ec_wakeup_mask;
- 
-@@ -269,6 +277,83 @@ int olpc_ec_sci_query(u16 *sci_value)
- }
- EXPORT_SYMBOL_GPL(olpc_ec_sci_query);
- 
-+static ssize_t ec_gen_write(struct file *file, const char __user *buf,
-+			    size_t size, loff_t *ppos)
-+{
-+	int i, m;
-+	unsigned char ec_cmd[EC_MAX_CMD_ARGS];
-+	unsigned int ec_cmd_int[EC_MAX_CMD_ARGS];
-+	char cmdbuf[64];
-+	int ec_cmd_bytes;
-+
-+	size = simple_write_to_buffer(cmdbuf, sizeof(cmdbuf), ppos, buf, size);
-+
-+	m = sscanf(cmdbuf, "%x:%u %x %x %x %x %x", &ec_cmd_int[0],
-+		   &ec_debugfs_resp_bytes,
-+		   &ec_cmd_int[1], &ec_cmd_int[2], &ec_cmd_int[3],
-+		   &ec_cmd_int[4], &ec_cmd_int[5]);
-+	if (m < 2 || ec_debugfs_resp_bytes > EC_MAX_CMD_REPLY) {
-+		printk(KERN_DEBUG "olpc-ec: bad ec cmd:  "
-+		       "cmd:response-count [arg1 [arg2 ...]]\n");
-+		return -EINVAL;
-+	}
-+
-+	/* convert scanf'd ints to char */
-+	ec_cmd_bytes = m - 2;
-+	for (i = 0; i <= ec_cmd_bytes; i++)
-+		ec_cmd[i] = ec_cmd_int[i];
-+
-+	printk(KERN_DEBUG "olpc-ec: debugfs cmd 0x%02x with %d args "
-+	       "%02x %02x %02x %02x %02x, want %d returns\n",
-+	       ec_cmd[0], ec_cmd_bytes, ec_cmd[1], ec_cmd[2], ec_cmd[3],
-+	       ec_cmd[4], ec_cmd[5], ec_debugfs_resp_bytes);
-+
-+	olpc_ec_cmd((unsigned char) ec_cmd[0],
-+		(ec_cmd_bytes == 0) ? NULL : &ec_cmd[1],
-+		ec_cmd_bytes, ec_debugfs_resp, ec_debugfs_resp_bytes);
-+
-+	printk(KERN_DEBUG "olpc-ec: response "
-+	       "%02x %02x %02x %02x %02x %02x %02x %02x (%d bytes expected)\n",
-+	       ec_debugfs_resp[0], ec_debugfs_resp[1], ec_debugfs_resp[2],
-+	       ec_debugfs_resp[3], ec_debugfs_resp[4], ec_debugfs_resp[5],
-+	       ec_debugfs_resp[6], ec_debugfs_resp[7], ec_debugfs_resp_bytes);
-+
-+	return size;
-+}
-+
-+static ssize_t ec_gen_read(struct file *file, char __user *buf,
-+			   size_t size, loff_t *ppos)
-+{
-+	unsigned int i, r;
-+	char *rp;
-+	char respbuf[64];
-+
-+	rp = respbuf;
-+	rp += sprintf(rp, "%02x", ec_debugfs_resp[0]);
-+	for (i = 1; i < ec_debugfs_resp_bytes; i++)
-+		rp += sprintf(rp, ", %02x", ec_debugfs_resp[i]);
-+	rp += sprintf(rp, "\n");
-+
-+	r = rp - respbuf;
-+
-+	return simple_read_from_buffer(buf, size, ppos, respbuf, r);
-+}
-+
-+static const struct file_operations ec_debugfs_genops = {
-+	.write	 = ec_gen_write,
-+	.read	 = ec_gen_read,
-+};
-+
-+static void setup_debugfs(void)
-+{
-+	ec_debugfs_dir = debugfs_create_dir("olpc-ec", 0);
-+	if (ec_debugfs_dir == ERR_PTR(-ENODEV))
-+		return;
-+
-+	debugfs_create_file("generic", 0600, ec_debugfs_dir, NULL,
-+			    &ec_debugfs_genops);
-+}
-+
- static int olpc_ec_suspend(void)
- {
- 	return olpc_ec_mask_write(ec_wakeup_mask);
-@@ -372,6 +457,7 @@ static int __init olpc_init(void)
+-	if (new_rtc.tv_sec <= old_rtc.tv_sec) {
+-		if (new_rtc.tv_sec < old_rtc.tv_sec)
+-			pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
++	if (new_rtc.tv_sec < old_rtc.tv_sec) {
++		pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
+ 		return 0;
  	}
  
- 	register_syscore_ops(&olpc_syscore_ops);
-+	setup_debugfs();
+@@ -119,7 +118,8 @@ static int rtc_resume(struct device *dev)
+ 	sleep_time = timespec_sub(sleep_time,
+ 			timespec_sub(new_system, old_system));
  
+-	timekeeping_inject_sleeptime(&sleep_time);
++	if (sleep_time.tv_sec >= 0)
++		timekeeping_inject_sleeptime(&sleep_time);
  	return 0;
  }
--- 
-1.7.7.3
-
+ 
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 3195dbd..e3cf2f5 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -318,6 +318,20 @@ int rtc_read_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ }
+ EXPORT_SYMBOL_GPL(rtc_read_alarm);
+ 
++static int ___rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
++{
++	int err;
++
++	if (!rtc->ops)
++		err = -ENODEV;
++	else if (!rtc->ops->set_alarm)
++		err = -EINVAL;
++	else
++		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
++
++	return err;
++}
++
+ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ {
+ 	struct rtc_time tm;
+@@ -341,14 +355,7 @@ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ 	 * over right here, before we set the alarm.
+ 	 */
+ 
+-	if (!rtc->ops)
+-		err = -ENODEV;
+-	else if (!rtc->ops->set_alarm)
+-		err = -EINVAL;
+-	else
+-		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
+-
+-	return err;
++	return ___rtc_set_alarm(rtc, alarm);
+ }
+ 
+ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+@@ -762,6 +769,20 @@ static int rtc_timer_enqueue(struct rtc_device *rtc, struct rtc_timer *timer)
+ 	return 0;
+ }
+ 
++static void rtc_alarm_disable(struct rtc_device *rtc)
++{
++	struct rtc_wkalrm alarm;
++	struct rtc_time tm;
++
++	__rtc_read_time(rtc, &tm);
++
++	alarm.time = rtc_ktime_to_tm(ktime_add(rtc_tm_to_ktime(tm),
++				     ktime_set(300, 0)));
++	alarm.enabled = 0;
++
++	___rtc_set_alarm(rtc, &alarm);
++}
++
+ /**
+  * rtc_timer_remove - Removes a rtc_timer from the rtc_device timerqueue
+  * @rtc rtc device
+@@ -783,8 +804,10 @@ static void rtc_timer_remove(struct rtc_device *rtc, struct rtc_timer *timer)
+ 		struct rtc_wkalrm alarm;
+ 		int err;
+ 		next = timerqueue_getnext(&rtc->timerqueue);
+-		if (!next)
++		if (!next) {
++			rtc_alarm_disable(rtc);
+ 			return;
++		}
+ 		alarm.time = rtc_ktime_to_tm(next->expires);
+ 		alarm.enabled = 1;
+ 		err = __rtc_set_alarm(rtc, &alarm);
+@@ -846,7 +869,8 @@ again:
+ 		err = __rtc_set_alarm(rtc, &alarm);
+ 		if (err == -ETIME)
+ 			goto again;
+-	}
++	} else
++		rtc_alarm_disable(rtc);
+ 
+ 	mutex_unlock(&rtc->ops_lock);
+ }
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 1ecd6ba..c4eb71c 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -387,6 +387,7 @@ void clockevents_exchange_device(struct clock_event_device *old,
+ 	 * released list and do a notify add later.
+ 	 */
+ 	if (old) {
++		old->event_handler = clockevents_handle_noop;
+ 		clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
+ 		list_del(&old->list);
+ 		list_add(&old->list, &clockevents_released);
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index cfc65e1..da2f760 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -548,7 +548,7 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
+ 	 * note a margin of 12.5% is used because this can be computed with
+ 	 * a shift, versus say 10% which would require division.
+ 	 */
+-	return max_nsecs - (max_nsecs >> 5);
++	return max_nsecs - (max_nsecs >> 3);
+ }
+ 
+ #ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
+@@ -669,7 +669,7 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+ 	 * ~ 0.06ppm granularity for NTP. We apply the same 12.5%
+ 	 * margin as we do in clocksource_max_deferment()
+ 	 */
+-	sec = (cs->mask - (cs->mask >> 5));
++	sec = (cs->mask - (cs->mask >> 3));
+ 	do_div(sec, freq);
+ 	do_div(sec, scale);
+ 	if (!sec)
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index f954282..fd4a7b1 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -71,7 +71,7 @@ int tick_check_broadcast_device(struct clock_event_device *dev)
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return 0;
+ 
+-	clockevents_exchange_device(NULL, dev);
++	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
+ 	tick_broadcast_device.evtdev = dev;
+ 	if (!cpumask_empty(tick_get_broadcast_mask()))
+ 		tick_broadcast_start_periodic(dev);
