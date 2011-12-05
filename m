@@ -1,109 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab1LEJLR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 04:11:17 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:44530 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753876Ab1LEJLO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 04:11:14 -0500
-Date: Mon, 5 Dec 2011 11:11:10 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: balbi@ti.com, Shimrit Malichi <smalichi@codeaurora.org>,
-        Tatyana Brokhman <tlinder@codeaurora.org>,
-        "open list:USB GADGET/PERIPH..." <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>, target-devel@vger.kernel.org
-Subject: Re: [RFC] UASP on target
-Message-ID: <20111205091109.GG9900@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1323028390-12846-1-git-send-email-smalichi@codeaurora.org>
- <20111205082047.GA2423@linutronix.de>
- <20111205082326.GA2734@linutronix.de>
- <20111205083946.GE9900@legolas.emea.dhcp.ti.com>
- <4EDC86F1.2070301@linutronix.de>
+	id S1754491Ab1LEJM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 04:12:26 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:47980 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752814Ab1LEJMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 04:12:24 -0500
+Date: Mon, 5 Dec 2011 10:10:22 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Steffen Persvold <sp@numascale.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: [PATCH 3/3] v4: Add support for Numascale's NumaChip
+Message-ID: <20111205091022.GA29006@elte.hu>
+References: <4ED9199A.3060108@numascale-asia.com>
+ <1323073238-32686-1-git-send-email-daniel@numascale-asia.com>
+ <1323073238-32686-3-git-send-email-daniel@numascale-asia.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2xeD/fx0+7k8I/QN"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EDC86F1.2070301@linutronix.de>
+In-Reply-To: <1323073238-32686-3-git-send-email-daniel@numascale-asia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---2xeD/fx0+7k8I/QN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Daniel J Blueman <daniel@numascale-asia.com> wrote:
 
-On Mon, Dec 05, 2011 at 09:55:13AM +0100, Sebastian Andrzej Siewior wrote:
-> On 12/05/2011 09:39 AM, Felipe Balbi wrote:
-> >Hi,
-> Hi,
->=20
-> >On Mon, Dec 05, 2011 at 09:23:26AM +0100, Sebastian Andrzej Siewior wrot=
-e:
-> >>* Sebastian Andrzej Siewior | 2011-12-05 09:20:47 [+0100]:
-> >>
-> >>>* Shimrit Malichi | 2011-12-04 21:53:09 [+0200]:
-> >>>
-> >>>>This patch implements the infrastructure for the UAS gadget driver.
-> >>>>The UAS gadget driver registers as a second configuration of the MS
-> >>>>gadet driver.
-> >>>hch said to use target framework and you haven't done so. This is what=
- I
-> >>>have so far. It is not yet complete. What I need to do is:
-> >>>- wire up command processing (currently here)
-> >>>- wire up data processing
-> >>>- check it works =3D>  post v1
-> >>>- wire up command tagging =3D>  v2
-> >>>- remove hard codings and fix whatever people complained about.
-> >
-> >This is much better, indeed, but the way it is now, it's only usable by
-> >the gadget framework because you have put the function driver on the
-> >transport layer. I wonder if there wouldn't be a simple way to split the
-> >"SCSI Over USB" part in a more generic way which could be shared between
-> >gadget side UASP and host side UASP drivers ?!? Maybe ?!?
-> >
-> >The drivers/target/uasp_*.c would really be just a transport layer and
-> >gadget/host drivers would make calls to that "library" ? Something like
-> >that ??
->=20
-> There is very little code that is not host specific. For instance
-> uas_alloc_cmd_urb() is something that could be used on both side but
-> the host is boxing the command and I need to unbox it. So I don't see
-> how I could share things except for the defines.
-> Most of the things are usb specific. So UAS gets the commands from the
-> scsi framework, puts the usb layer around it and sends them.
+> From: Steffen Persvold <sp@numascale.com>
+> 
+> v2:
+>  - [Steffen] enumerate only accessible northbridges
+>  - [Daniel] rediffed and validated against 3.1-rc10
+>  
+> v3:
+>  - [Daniel] use x86_init core numbering override
+>  - [Daniel] cleanups as per feedback
+> 
+> v4:
+>  - [Daniel] use updated x86_cpuinit override
+>  
+> Signed-off-by: Steffen Persvold <sp@numascale.com>
+> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+> ---
+>  arch/x86/Kconfig                             |   12 +
+>  arch/x86/include/asm/numachip/numachip_csr.h |  167 ++++++++++++++
+>  arch/x86/kernel/apic/Makefile                |    1 +
+>  arch/x86/kernel/apic/apic_numachip.c         |  312 ++++++++++++++++++++++++++
+>  4 files changed, 492 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/include/asm/numachip/numachip_csr.h
+>  create mode 100644 arch/x86/kernel/apic/apic_numachip.c
 
-k, fair enough ;-) Just thought there'd be a better way to share this
-code with host side implementation. Nevermind then
+The patches are now structured mostly right and look clean.
 
---=20
-balbi
+Other small details i noticed:
 
---2xeD/fx0+7k8I/QN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +static int numachip_system;
+> +
+> +static struct apic apic_numachip;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Those want to be __read_mostly - this also makes them more NUMA 
+friendly .
 
-iQIcBAEBAgAGBQJO3IqtAAoJEIaOsuA1yqRE8qYP/08S7JQLJi9A/4LzQjEFsyw4
-FRru6g/rtV2kBOW54L1cGZ2EiLS0V4Q3mrzpdpi/UdlxFsmwYhMxBtdxqqdQI6cl
-5CCq5MC6wmpNt/bQqAZDjFH4i5tTDcqnoxVT6vxwT/4Y83f0a7gOd0jDGcS0LIJP
-1huds3lU2GezFYeWWrU0ifZlZVeCxcV27VCqp+HX8OMCiN33xcVArEj23vmkhVAO
-Dp5e8MAqdU/oSLkGdvQ8iLn2vBLi1RmCbHdmzRBFLYJL/Cx2zR6DwUbK9jKDWqBH
-910Ef2UxZsN9ZebTyuTz8daXurc5SuSQZEvGcqBme8QabOpgHRYy/aIiRavz3SM1
-jc7+4oci/JyfOxGk3rpDJvTe/XNxRU9BxiSyukjQa43rpUo4yNDXb3FJAY1R+4Tc
-ngC5lG4cX4OrenFyb6sYl+yqVtBfKrm799nw3W45af+U83pmCrhG/fz2koX4X7JK
-mHceOCI8jgMIgpmndcVHZ9X+yBLcNVWTCvJzPRwbpDaWHGRnRuHQWjva0dOAB6UB
-TBgQwAWaabVyxIWsdTHi9jqXiJfTt6TAOiaVmSSxrvFJVFulITVhzI/FtdBVyKMF
-zeCJRNKuCDQkyTuZyf+e7fW8x2AQ6rPzGf03k+sVQeGEaIrs5UHnubF8J/22i8+q
-WTgZWdn6BrOUpZcjLWHi
-=R3uG
------END PGP SIGNATURE-----
+> +static int __cpuinit numachip_wakeup_secondary(int phys_apicid, unsigned long start_rip)
+> +{
+> +#ifdef CONFIG_SMP
+> +	union numachip_csr_g3_ext_irq_gen int_gen;
+> +	unsigned long flags;
+> +
+> +	int_gen.s._destination_apic_id = phys_apicid;
+> +	int_gen.s._vector = 0;
+> +	int_gen.s._msgtype = APIC_DM_INIT >> 8;
+> +	int_gen.s._index = 0;
+> +
+> +	local_irq_save(flags);
+> +	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
+> +	local_irq_restore(flags);
+> +
+> +	mdelay(10);
 
---2xeD/fx0+7k8I/QN--
+Exactly why does it have to sleep 10 milliseconds here? Please 
+document it.
+
+> +
+> +	int_gen.s._msgtype = APIC_DM_STARTUP >> 8;
+> +	int_gen.s._vector = start_rip >> 12;
+> +
+> +	local_irq_save(flags);
+> +	write_lcsr(CSR_G3_EXT_IRQ_GEN, int_gen.v);
+> +	local_irq_restore(flags);
+> +
+> +	atomic_set(&init_deasserted, 1);
+> +#endif
+> +	return 0;
+
+You could do a 'depends on SMP' and stop uglifying the code with 
+!SMP considerations. Unless a single-core installation with a UP 
+kernel is possible and desired.
+
+> +static void numachip_send_IPI_allbutself(int vector)
+> +{
+> +	unsigned int this_cpu = smp_processor_id();
+> +	unsigned int cpu;
+> +	unsigned long flags;
+> +
+> +	local_irq_save(flags);
+> +	for_each_online_cpu(cpu) {
+> +		if (cpu != this_cpu)
+> +			numachip_send_IPI_one(cpu, vector);
+> +	}
+> +	local_irq_restore(flags);
+> +}
+
+This seems preempt unsafe: you take smp_processor_id() before 
+disabling hardirqs.
+
+Thanks,
+
+	Ingo
