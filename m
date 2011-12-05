@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab1LETTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 14:19:14 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:34818 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755586Ab1LETTM (ORCPT
+	id S932422Ab1LETTV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 14:19:21 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52112 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932335Ab1LETTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 14:19:12 -0500
-Message-ID: <4EDD191D.2030409@linux.vnet.ibm.com>
-Date: Tue, 06 Dec 2011 00:48:53 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com,
-        ebiederm@xmission.com, rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 1/3] PM / Sleep: Make [un]lock_system_sleep() generic
-References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com> <20111205171443.GB627@google.com> <4EDCFE9F.9050605@linux.vnet.ibm.com> <20111205173057.GE627@google.com> <4EDD0254.10408@linux.vnet.ibm.com> <4EDD0D35.1020907@linux.vnet.ibm.com> <20111205183502.GA30482@redhat.com>
-In-Reply-To: <20111205183502.GA30482@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 Dec 2011 14:19:18 -0500
+Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Dave Martin <dave.martin@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
+        Pawel Moll <pawel.moll@arm.com>, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20111205184522.316598de@lxorguk.ukuu.org.uk>
+References: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
+	 <20111202192618.GC3037@localhost.localdomain>
+	 <CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com>
+	 <1322867573.11728.22.camel@pasglop>
+	 <20111205161157.GA27550@localhost.localdomain>
+	 <alpine.LFD.2.02.1112051236350.2357@xanadu.home>
+	 <20111205180253.GB29812@localhost.localdomain>
+	 <alpine.LFD.2.02.1112051310150.2357@xanadu.home>
+	 <20111205184522.316598de@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 05 Dec 2011 13:19:14 -0600
+Message-ID: <1323112754.7213.49.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-x-cbid: 11120509-6102-0000-0000-000000565960
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
-
-On 12/06/2011 12:05 AM, Oleg Nesterov wrote:
-
-> On 12/05, Srivatsa S. Bhat wrote:
->>
->> I looked up in git and found that commit ba96a0c by Rafael introduced the
->> count functions, to handle the vfork case. But now, we seem to have more
->> uses than that. So I think we can remove that userspace restriction in the
->> count functions,
+On Mon, 2011-12-05 at 18:45 +0000, Alan Cox wrote:
+> > But as you illustrated, there is a large number of drivers that already 
+> > assume no IRQ is < 0, even if they don't use any IRQ #0 themselves.  
+> > That is a much bigger problem to fix.
 > 
-> Agreed.
+> And a much larger number assuming the reverse is true which are hiding
+> potential bugs on ARM.
 > 
->> and in kernel/fork.c, do something like:
->>
->> if (current->mm)
->> 	freezer_do_not_count();
->> ...
->> if (current->mm)
->> 	freezer_count();
+> Looking at the serial stuff the best checks appear to be looking at
+> "irq", "-1" and NO_IRQ.
 > 
-> see http://marc.info/?l=linux-kernel&m=132033335507261
+> For migration stuff that's doing broken things like
 > 
-> I think this is not needed, we can just remove the ->mm check.
-> CLONE_VFORK is not used by a freezable kthread.
+> 	if (irq < 0)
 > 
+> can be changed to
+> 
+> 	if (irq <= 0)
+> 
+> and that can be done before NO_IRQ itself is nailed on ARM and PA-RISC.
 
+To be honest, we don't care very much.  Parisc interrupts are cascading
+and mostly software assigned (except our EIEM which we keep internal).
+We use a base offset at 16 or 64 (depending on GSC presence or not) so
+IRQs 0-15 aren't legal on parisc either (we frob some of the hard coded
+ISA interrupts on the WAX eisa bus).
 
-Great! Thanks for the pointer. I'll send a patch to remove that check.
+We use NO_IRQ as an IRQ assignment error return and that's about it (and
+that error shouldn't ever really occur).
 
-Regards,
-Srivatsa S. Bhat
+James
+
 
