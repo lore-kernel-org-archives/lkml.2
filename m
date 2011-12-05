@@ -1,36 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192Ab1LELVp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 06:21:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8290 "EHLO mx1.redhat.com"
+	id S1756127Ab1LELWN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 06:22:13 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35052 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756022Ab1LELVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 06:21:42 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1323014582.7454.121.camel@deadeye>
-References: <1323014582.7454.121.camel@deadeye> <20111129234258.13625.21153.stgit@warthog.procyon.org.uk> <20111129234348.13625.33435.stgit@warthog.procyon.org.uk>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.kasatkin@intel.com, zohar@linux.vnet.ibm.com,
-        arjan.van.de.ven@intel.com, alan.cox@intel.com
-Subject: Re: [PATCH 04/16] PGP: Add definitions (RFC 4880) and packet parser [ver #2]
-Date: Mon, 05 Dec 2011 11:21:26 +0000
-Message-ID: <32725.1323084086@redhat.com>
+	id S1755912Ab1LELWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 06:22:12 -0500
+Date: Mon, 5 Dec 2011 12:20:05 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Chubb <peter.chubb@nicta.com.au>
+Cc: Vasily Khoruzhick <anarsoul@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        stable@kernel.org,
+        =?utf-8?B?VXJvxaE=?= Vampl <mobile.leecher@gmail.com>
+Subject: Re: [PATCH RESEND] Fix reboot regression on Acer Aspire One AOA110
+Message-ID: <20111205112005.GD3143@elte.hu>
+References: <1320240899-16889-1-git-send-email-anarsoul@gmail.com>
+ <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings <ben@decadent.org.uk> wrote:
 
-> I'm a little uneasy about these structure definitions.  There have been
-> C ABIs that set the structure alignment to at least 4 by default.  It
-> may be better to play safe by declaring them '__packed'.
+* Peter Chubb <peter.chubb@nicta.com.au> wrote:
 
-Yeah.  I'll add that.
+> >>>>> "Vasily" == Vasily Khoruzhick <anarsoul@gmail.com> writes:
+> 
+> Vasily> From: Uroš Vampl <mobile.leecher@gmail.com> Starting with
+> Vasily> kernel 3.0, my Acer Aspire One AOA110 hangs on reboot. Doing
+> Vasily> an internet search, I found that in git commit
+> Vasily> b49c78d4827be8d7e67e5b94adac6b30a4a9ad14 the machine was made
+> Vasily> to reboot with the bios method, but it does not work on most
+> Vasily> (all?) AOA110s.
+> 
+> That change was made in July to fix the broken ACPI reboot method.  It
+> certainly works on my AOA110.  What BIOS do you have installed?
+> (although looking at what's been published, I can't see any booting
+> problems mentioned in the BIOS changelogs).
+> 
+> Vasily> This patch introduces new quirks section for machines that
+> Vasily> only reboot with the kbd method and put the Aspire One into
+> Vasily> it.
+> 
+> You don't need yet another table, just change the callback.
+> 
+> 
+> Try this:
+> 
+> Index: linux-2.6/arch/x86/kernel/reboot.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/reboot.c	2011-10-31 14:35:50.105623537 +1100
+> +++ linux-2.6/arch/x86/kernel/reboot.c	2011-11-03 11:54:12.487901547 +1100
+> @@ -124,7 +124,7 @@
+>   */
+>  
+>  /*
+> - * Some machines require the "reboot=b"  commandline option,
+> + * Some machines require the "reboot=b" or "reboot=k"  commandline options,
+>   * this quirk makes that automatic.
+>   */
+>  static int __init set_bios_reboot(const struct dmi_system_id *d)
+> @@ -136,6 +136,15 @@
+>  	return 0;
+>  }
+>  
+> +static int __init set_kbd_reboot(const struct dmi_system_id *d)
+> +{
+> +	if (reboot_type != BOOT_KBD) {
+> +		reboot_type = BOOT_KBD;
+> +		printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboots.\n", d->ident);
+> +	}
+> +	return 0;
+> +}
+> +
+>  static struct dmi_system_id __initdata reboot_dmi_table[] = {
+>  	{	/* Handle problems with rebooting on Dell E520's */
+>  		.callback = set_bios_reboot,
+> @@ -295,7 +304,7 @@
+>  		},
+>  	},
+>  	{ /* Handle reboot issue on Acer Aspire one */
+> -		.callback = set_bios_reboot,
+> +		.callback = set_kbd_reboot,
+>  		.ident = "Acer Aspire One A110",
+>  		.matches = {
+>  			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
 
-David
+Looks like this patch worked fine for everyone affected?
+
+If yes then please resend it with a Signed-off-by, and with the 
+proper Reported-by and Tested-by tags.
+
+Thanks,
+
+	Ingo
