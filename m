@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398Ab1LEPPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:15:08 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46828 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932318Ab1LEPPF (ORCPT
+	id S932415Ab1LEPPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:15:36 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:59602 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932349Ab1LEPPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:15:05 -0500
-Date: Mon, 5 Dec 2011 15:16:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: HoP <jpetrous@gmail.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
- because of worrying about possible misusage?
-Message-ID: <20111205151643.0c06eddc@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
-	<4ED6C5B8.8040803@linuxtv.org>
-	<4ED75F53.30709@redhat.com>
-	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
-	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
-	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
-	<4EDC9B17.2080701@gmail.com>
-	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 5 Dec 2011 10:15:34 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] lib/devres.c: allow specifying NO_IOPORT while using PCI
+Date: Mon, 5 Dec 2011 15:14:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-arch@vger.kernel.org, Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Maxin B. John" <maxin.john@gmail.com>, Tejun Heo <tj@kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Al Viro <viro@zeniv.linux.org.uk>
+References: <cover.1322592494.git.mst@redhat.com> <1616727.0BYPKXtoA0@wuerfel> <4ED91D95.6040601@tilera.com>
+In-Reply-To: <4ED91D95.6040601@tilera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201112051514.02360.arnd@arndb.de>
+X-Provags-ID: V02:K0:BBBjtlDyvGW5AubPL6RkmCAt+DJxLClAPYV88UUD9Fd
+ nBBlvJz4qbaU+KNjM9mVfZ7QlBHA6p1F/y/jmXPMCVDr+O1yPP
+ bSMe14TYtX1NawB748b7FLrm6Xih1WwBJN/yv7q7YNTR6pNPh4
+ vx7VD58wPTfcSHWqIAvH2dqe1CUzN9TSVp8C2BfAHBRp1qmAQH
+ WEhl9mDGXsp2RlHYsX7384oeL3vd0LhcZSlWikda4u/NcyjhDS
+ LB1GES0ZrzcKt1CTXWFnWioi5uhwrBKofy60esY+KVCjKyV5s0
+ t+lFbklQh9tCesWZKpiHIzA1TqeNzJBZMOsauYZwG1v/wQG3sP
+ 48VxrSI/6gHDKd4gm+Ks=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You know - I'm a bit confused. Somebody are pointing on double
-> data copying (userspace networked daemon -> kernel -> application)
-> issue and another one warn me to not start network connection
-> from the kernel. But if it works for NFS or CIFS then it should not
-> be so weaky, isn't it?
+On Friday 02 December 2011, Chris Metcalf wrote:
+> The specific issue I saw was calls to pcim_iomap_{regions,table} from
+> drivers/ata/libata-sff.c and drivers/ata/sata_sil24.c; we use the
+> sata_sil24 in one of our platforms (TILEmpower).
 
-And then you want to add multicast, or SSL or some other transport layer,
-and so on. You can do it - but in the case of DVB it's really probably
-not the overall way to go.
+Hmm, so sata_sil24 does not actually use PIO, so we can probably find a
+way to make that work. Why do you have to build libata-sff? Shouldn't
+that only be needed if you actually have an sff-type controller?
 
-> What exactly vtuner aproach does so hackish (other then exposing
-> DVB internals, what is every time made if virtualization support is developing)?
-
-Exposing DVB internals is also not good - it creates an API which locks
-out future trivial changes to that API because it might break your
-stuff. Also you are trying to fake distributed network in the wrong place
-so faking basically synchronous interfaces with undefined network
-behaviour and time lines.
-
-> The code itself no need to patch any line of vanilla kernel source, it even
-> doesn't change any processing of the rest of kernel, it is very simple
-> driver/code/whatever.
-
-That's not a measure of whether something is a good idea, more of the
-cleanness of the core code.
-
-Fix the userspace bits that need fixing, or use ones that don't - in the
-longer term that will be a bigger win by far.
-
-Alan
+	Arnd
