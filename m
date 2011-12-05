@@ -1,106 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408Ab1LEPSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:18:11 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:29210
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932351Ab1LEPSH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:18:07 -0500
-X-SpamScore: -28
-X-BigFish: VPS-28(zz9371K936eK146fK1432N98dKzz1202hzz8275ch15d4R8275bh8275dhz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LVQL61-02-6R5-02
-X-M-MSG: 
-Date: Mon, 5 Dec 2011 16:18:00 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC 0/5] OMAP groundwork for IOMMU-based DMA API
-Message-ID: <20111205151800.GD25178@amd.com>
-References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
- <20111115103926.GA5627@amd.com>
- <CAK=WgbY18K00DRcmP56+UJrmMu5h_O=GaO+i_GzbC5SzCvrnRA@mail.gmail.com>
+	id S932427Ab1LEPSV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:18:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59974 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932381Ab1LEPSJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 10:18:09 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <CAK=WgbY18K00DRcmP56+UJrmMu5h_O=GaO+i_GzbC5SzCvrnRA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
+	<4ED6C5B8.8040803@linuxtv.org>
+	<4ED75F53.30709@redhat.com>
+	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
+	<4EDC9B17.2080701@gmail.com>
+	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
+Date: Mon, 5 Dec 2011 10:18:08 -0500
+X-Google-Sender-Auth: bFzgx8hCK1iWBv9VLdIVsqq5dq4
+Message-ID: <CAOcJUbz-Gy7ncVqBnqZmohZc2OF37HQEJPRu3s-cDbzoKT79bA@mail.gmail.com>
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+From: Michael Krufky <mkrufky@linuxtv.org>
+To: HoP <jpetrous@gmail.com>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 04:21:21PM +0200, Ohad Ben-Cohen wrote:
-> Hi Joerg,
-> 
-> On Tue, Nov 15, 2011 at 12:39 PM, Roedel, Joerg <Joerg.Roedel@amd.com> wrote:
-> > On Sun, Sep 25, 2011 at 06:58:52AM -0400, Ohad Ben-Cohen wrote:
-> >> Ohad Ben-Cohen (5):
-> >>   ARM: dev_archdata: add private iommu extension
-> >>   ARM: OMAP: omap_device: add a method to set iommu private archdata
-> >>   ARM: OMAP: iommu: declare a private iommu binding struct
-> >>   ARM: OMAP3: bind omap3isp_device to its iommu device
-> >>   iommu/omap: eliminate the public omap_find_iommu_device() method
-> >
-> > It doesn't apply cleanly, can you please rebase the code, collect the
-> > Acked-by's and resend?
-> 
-> I have collected Tony's and Laurent's Acked-by's and amended them to
-> the commit logs.
-> 
-> I have also made sure it applies cleanly to a recent 3.2, and tested
-> it with OMAP4/remoteproc. I couldn't test it with omap3isp though,
-> because I'm gated by (what looks like a) 3.2 omap3isp regression (see
-> http://www.spinics.net/lists/linux-omap/msg60510.html). I did test it
-> of course with omap3isp and 3.1, so I don't expect any omap3isp/iommu
-> issues with these patches. Anyway, when the omap3isp issue will be
-> resolved I'll make sure there isn't any iommu regression.
-> 
-> Please pull, thanks a lot!
-> 
-> The following changes since commit cfcfc9eca2bcbd26a8e206baeb005b055dbf8e37:
-> 
->   Linux 3.2-rc2 (2011-11-15 15:02:59 -0200)
-> 
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/ohad/linux.git for-joerg
-> 
-> Ohad Ben-Cohen (3):
->       ARM: OMAP: iommu: declare a private iommu binding struct
->       ARM: OMAP3: bind omap3isp_device to its iommu device
->       iommu/omap: eliminate the public omap_find_iommu_device() method
-> 
->  arch/arm/mach-omap2/devices.c           |    7 ++++
->  arch/arm/plat-omap/include/plat/iommu.h |   31 +++++++++++++++--
->  arch/arm/plat-omap/include/plat/iovmm.h |   12 +++---
->  drivers/iommu/omap-iommu.c              |   58 ++++++++++++++-----------------
->  drivers/iommu/omap-iovmm.c              |   31 +++++++++++------
->  drivers/media/video/omap3isp/isp.c      |   30 +++-------------
->  drivers/media/video/omap3isp/isp.h      |    2 -
->  drivers/media/video/omap3isp/ispccdc.c  |   18 +++++-----
->  drivers/media/video/omap3isp/ispstat.c  |    8 ++--
->  drivers/media/video/omap3isp/ispvideo.c |    4 +-
->  10 files changed, 107 insertions(+), 94 deletions(-)
+On Mon, Dec 5, 2011 at 9:28 AM, HoP <jpetrous@gmail.com> wrote:
+> Hi
+>
+> 2011/12/5 Florian Fainelli <f.fainelli@gmail.com>:
+>> Hello,
+>>
+>>
+>> On 12/03/11 01:37, HoP wrote:
+>>>
+>>> Hi Alan.
+>>>
+>>> 2011/12/3 Alan Cox<alan@lxorguk.ukuu.org.uk>:
+>>>>
+>>>> On Thu, 1 Dec 2011 15:58:41 +0100
+>>>> HoP<jpetrous@gmail.com>  wrote:
+>>>>
+>>>>> Hi,
+>>>>>
+>>>>> let me ask you some details of your interesting idea (how to
+>>>>> achieve the same functionality as with vtunerc driver):
+>>>>>
+>>>>> [...]
+>>>>>
+>>>>>> The driver, as proposed, is not really a driver, as it doesn't support
+>>>>>> any
+>>>>>> hardware. The kernel driver would be used to just copy data from one
+>>>>>> userspace
+>>>>>
+>>>>>
+>>>>> Please stop learning me what can be called driver and what nope.
+>>>>> Your definition is nonsense and I don't want to follow you on it.
+>>>>
+>>>>
+>>>> You can stick your fingers in your ears and shout all you like but given
+>>>> Mauro is the maintainer I'd suggest you work with him rather than making
+>>>> it painful. One of the failures we routinely exclude code from the kernel
+>>>> for is best described as "user interface of contributor"
+>>>
+>>>
+>>> You may be not read all my mails but I really tried to be very positive in
+>>> them.
+>>> I wanted to focus on my Subject, but Mauro has, sometimes, the demand
+>>> to focus on insignificant things (like if the code is driver or not). At
+>>> least
+>>> it is my feeling from all those disscussions with him.
+>>>
+>>>>
+>>>> It's a loopback that adds a performance hit. The right way to do this is
+>>>> in userspace with the userspace infrastructure. At that point you can
+>>>> handle all the corner cases properly, integrate things like service
+>>>> discovery into your model and so on - stuff you'll never get to work that
+>>>> well with kernel loopback hackery.
+>>>>
+>>>>> Can you show me, how then can be reused most important part
+>>>>> of dvb-core subsystem like tuning and demuxing? Or do you want me
+>>>>> to invent wheels and to recode everything in the library? Of course
+>>>>
+>>>>
+>>>> You could certainly build a library from the same code. That might well
+>>>> be a good thing for all kinds of 'soft' DV applications. At that point
+>>>> the discussion to have is the best way to make that code sharable between
+>>>> a userspace library and the kernel and buildable for both.
+>>>>
+>>>>> I can be wrong, I'm no big kernel hacker. So please show me the
+>>>>> way for it. BTW, even if you can find the way, then data copying
+>>>>> from userspace to the kernel and back is also necessery. I really
+>>>>> don't see any advantage of you solution.
+>>>>
+>>>>
+>>>> In a properly built media subsystem you shouldn't need any copies beyond
+>>>> those that naturally occur as part of a processing pass and are therefore
+>>>> free.
+>>>
+>>>
+>>> I may describe project goal, in few sentences: We have small box, running
+>>> embedded linux with 2 satellite tuners on input and ethernet. Nothing
+>>> more.
+>>> We have designed the box for live sat TV/Radio reception, distributing
+>>> them
+>>> down to the network. One of the mode of working is "vtuner", what allows
+>>> reuse those tuners remotely on linux desktop. The kernel part is very
+>>> simple
+>>> code exposing kernel's dvb-core to the userspace. Userspace client/server
+>>> tools do all resource discovery and connection management. It works
+>>> nicely and guys with vdr who is using it are rather satisfied with it.
+>>> So, the main
+>>> goal of vtuner code is to fully virtualize remote DVB adapter. To any
+>>> linux dvb api
+>>> compatible applications and tools. The vtuner kernel code seems to be
+>>> the simplest and straightforward way to achieve it.
+>>
+>>
+>> The company I work for also has something like this. We can attach a DVB
+>> tuner to either the Gateway or the STB we provide and use it indifferently ,
+>> except that we have the following architecture:
+>>
+>> - a DVB daemon controlling the physical DVB tuner and exposing methods for
+>> tuning/scanning/zapping
+>> - a web server and web services for accessing the DVB daemon methods
+>> - a RTSP streamer with associated methods for controlling streaming
+>>
+>> The software running on both devices is the same (one compiled for ARM, the
+>> other for x86).
+>>
+>> I do not see any problem with this solution, people wanting to get the
+>> stream can still get the RTSP stream directly joining the multicast group,
+>> which is fortunately OS agnostic at the same time.
+>
+> Nice. Are your solution open-sourced? If so, can you give me URL?
+>
+>>> I still think the code is very similar to NBD (Network block device) what
+>>> sits
+>>> in the kernel and is using silently. I guess NBD also do data copying
+>>> from/to user space. Is there something what I overlooked?
+>>>
+>>> Can you show me the way (hint please) I can initiate TCP connection
+>>> from within kernel space? If I can do it, then the big disadvantage
+>>> of data passing to and from kernel can be removed.
+>>
+>>
+>> Don't do this in kernel-space (remember the mechanism/policy split).
+>
+> Yes, that can be the issue, I understand that.
+>
+> You know - I'm a bit confused. Somebody are pointing on double
+> data copying (userspace networked daemon -> kernel -> application)
+> issue and another one warn me to not start network connection
+> from the kernel. But if it works for NFS or CIFS then it should not
+> be so weaky, isn't it?
+>
+>>> I must say that the box is primary focused to the DLNA/UpnP world, so
+>>> vtuner feature is something like interesting addon only. But I was myself
+>>> very nice surprised how good it behaves on real installations and that
+>>> was reason I decided to try to get it included in kernel. I see that
+>>> in present there is no willingness for code acceptation, so I will
+>>> continue
+>>> out of the kernel tree.
+>>>
+>>> Anyway, if I can find the way how to start TCP connection from the kernel
+>>> part, I understand it can boost throughput very nicely up.
+>>
+>>
+>> And here is a new hack.
+>
+> I'm really tired from all those "hack, crap, pigback ..." wordings.
+>
+> What exactly vtuner aproach does so hackish (other then exposing
+> DVB internals, what is every time made if virtualization support is developing)?
+>
+> The code itself no need to patch any line of vanilla kernel source, it even
+> doesn't change any processing of the rest of kernel, it is very simple
+> driver/code/whatever.
+>
+> I can understand that some developers don't like to get dvb-core opened,
+> I don't agree with them, but I don't really need to fight with them.
+> Its theirs opinion.
+> But even I try to see what is so hackish in vtuner implementation, I don't catch
+> anything. Simplicity? I thought that simplicity is a big advanatge (simple code,
+> easy to analyze). What else?
 
-Pulled into arm/omap, thanks Ohad.
+Honza,
 
--- 
-AMD Operating System Research Center
+I just want to reiterate my *positive* opinion.  (you already heard my
+negative, I don't need to repeat it) ...  I am very excited to hear
+that you're working on this virtual tuner driver, and I don't care
+what policy says what -- I, personally, want to play with this for my
+own uses.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Let's stop arguing, and just write code!   That's what makes us happy
+- lets be happy :-)
 
+I haven't had a chance yet to look at your full sources, but I
+reiterate how excited I am that this virtual dvb adapter exists now.
+Regardless of whether the community (or I) agrees as to its kernel
+inclusion, nothing stops you from continuing your work, and publishing
+tools that use this virtual adapter.
+
+If, in the end, the community wants this merged into the kernel, then
+the community will have spoken and things will go the way that they
+should.
+
+Meanwhile, you don't need to be included in the vanilla kernel if you
+want to be used.  People have gcc toolchains and they can build the
+module themselves if they want it.
+
+Let's not worry about politics or kernel inclusion -- let's just work
+on our projects.  The work speaks for itself best.
+
+I hope you take these words as positive encouragement, regardless of
+what I think, personally, about merging to the kernel -- that is an
+entirely separate issue.
+
+Best regards,
+
+Michael Krufky
