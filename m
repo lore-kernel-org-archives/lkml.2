@@ -1,132 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab1LERaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:30:15 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60778 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932546Ab1LERaM (ORCPT
+	id S932753Ab1LERbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:31:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43296 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932614Ab1LERbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:30:12 -0500
-Date: Mon, 5 Dec 2011 12:19:39 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2011-12-05
-Message-ID: <20111205171938.GD2531@tuxdriver.com>
-References: <20111205163032.GC2531@tuxdriver.com>
+	Mon, 5 Dec 2011 12:31:04 -0500
+Date: Mon, 5 Dec 2011 09:30:57 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 1/3] PM / Sleep: Make [un]lock_system_sleep() generic
+Message-ID: <20111205173057.GE627@google.com>
+References: <20111204200208.25620.515.stgit@srivatsabhat.in.ibm.com>
+ <20111205171443.GB627@google.com>
+ <4EDCFE9F.9050605@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1yeeQ81UyVL57Vl7"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111205163032.GC2531@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EDCFE9F.9050605@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(cc'ing Oleg)
 
---1yeeQ81UyVL57Vl7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 05, 2011 at 10:55:51PM +0530, Srivatsa S. Bhat wrote:
+> I wanted these APIs to be generic, not restricted to work only for userspace
+> processes. Both freezer_do_not_count() and freezer_count() are effective only
+> when current->mm is non-NULL (ie., only for userspace ones).
+> I think I have documented this in the patch which added these things to the
+> 2 APIs. See commit 6a76b7a in linux-pm/linux-next.
 
-Forgot the signature...I'll sign this one, just in case! :-)
+I see.  Oleg was curious about the ->mm condition too and IIRC there's
+no reason for that restriction.  Maybe removing that in another patch
+and using the count functions is better?
 
-John
+Thanks.
 
-On Mon, Dec 05, 2011 at 11:30:32AM -0500, John W. Linville wrote:
-> commit cbec0627ef1adf7afa448e8bbae3146ce910212a
->=20
-> Dave,
->=20
-> This batch of fixes is intended for 3.2.
->=20
-> Included is an iwlwifi fix to correctly set some flags related to packet
-> encryption, a couple of cfg80211 regulatory fixes (including one that
-> patches a hole created by the earlier "cfg80211: fix regulatory NULL
-> dereference"), a mac80211 fix to avoid sending probe requests with no
-> supported rates included, an iwlwifi fix to prevent reconfiguring HT40
-> after an association (prevents an assert in the firmware), and another
-> iwlwifi fix that customizes the watchdog timer enablement based on the
-> device type.
->=20
-> Also included is a reversion of a patch that was causing the iwlegacy
-> driver to throw WARNINGs.
->=20
-> Please let me know if there are problems!
->=20
-> John
->=20
-> ---
->=20
-> The following changes since commit f61759e6b831a55b89e584b198c3da325e2bc3=
-79:
->=20
->   ipv4: make sure RTO_ONLINK is saved in routing cache (2011-12-03 01:32:=
-23 -0500)
->=20
-> are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for=
--davem
->=20
-> Johannes Berg (1):
->       iwlagn: fix HW crypto for TX-only keys
->=20
-> John W. Linville (2):
->       Revert "mac80211: clear sta.drv_priv on reconfiguration"
->       Merge branch 'master' of git://git.kernel.org/.../linville/wireless=
- into for-davem
->=20
-> Luis R. Rodriguez (2):
->       cfg80211: fix race on init and driver registration
->       cfg80211: amend regulatory NULL dereference fix
->=20
-> Simon Wunderlich (1):
->       mac80211: fill rate filter for internal scan requests
->=20
-> Wey-Yi Guy (2):
->       iwlwifi: do not re-configure HT40 after associated
->       iwlwifi: change the default behavior of watchdog timer
->=20
->  drivers/net/wireless/iwlwifi/iwl-1000.c     |    1 +
->  drivers/net/wireless/iwlwifi/iwl-5000.c     |    1 +
->  drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |   36 ++++++++++++-------
->  drivers/net/wireless/iwlwifi/iwl-agn-sta.c  |    5 ---
->  drivers/net/wireless/iwlwifi/iwl-agn.c      |   34 +++++++++---------
->  drivers/net/wireless/iwlwifi/iwl-agn.h      |    2 +
->  drivers/net/wireless/iwlwifi/iwl-core.c     |   22 +++++++++---
->  drivers/net/wireless/iwlwifi/iwl-core.h     |    2 +
->  drivers/net/wireless/iwlwifi/iwl-shared.h   |    4 +-
->  net/mac80211/main.c                         |    6 +++
->  net/mac80211/util.c                         |    1 -
->  net/wireless/reg.c                          |   49 +++++++++++++++++----=
-------
->  12 files changed, 102 insertions(+), 61 deletions(-)
-
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---1yeeQ81UyVL57Vl7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO3P0qAAoJEJctW/TcYTgGv1EP/2OP9nSnOM6jBvI4Fn20LhEu
-i+JiUintd1GjaKTxLUw7DFqopk5l6JsSZnATiKwv9+3dy/wyb6aJ5re0lwVidRX/
-jPbkwxZJBh/uAjkkOPDSzD150KO4CwerrPm5BqW3pXzI4mGd6kg2exaOtfwWVC9s
-A/kf9QiyTWm6c3sFnocsItkUUDIlraA3c8n5pRH7nLGB95fmA1bMVHimRRWa/qrj
-JBmjq0B5sSnMJzjbjA7Pyfo8tj5vPFBoXNKLjG+iX5O/Hz5j9XmSyYhZGYEtQhWs
-CceLEFaCXzYT8JbVaDtLdSKGgm+JbDSH/6pe67q7Kp/mnbh3fmjcqsn0tOmpZ4qG
-Q34aUMkb+beKlJTELstYSidBXkJSJRht7vb9A9wG+v0//giD5uAClJS64ZFZLrcZ
-eDbrxQ8RkcBQdaDX/myW+R0ZVnDdc5vcdl9+mwILW1fguJsD+6obNNqKu/PXldXg
-z/YaTaZQfXNDTsRR2C6qdExUcBIAwS35baV8WT/GRsgtwO+qiCjjLNURhvN5K4TM
-/qNbf+od8O0Lm2V56QvQmQbZsToSIYHli8lTFz0yiHEcoy77+MTfWkc2Rk0ivLWR
-lb2gg0brlu5b1cMe8tG8C1y9z5dyEKI5MVZGspKIkjEIQl0lxgBA4CFu5wceGmdu
-RpuCqydwFHgXbtGukOAq
-=DPJD
------END PGP SIGNATURE-----
-
---1yeeQ81UyVL57Vl7--
+-- 
+tejun
