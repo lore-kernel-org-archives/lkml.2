@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab1LEBet (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 4 Dec 2011 20:34:49 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:43936 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab1LEBes (ORCPT
+	id S1752363Ab1LEBps (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 4 Dec 2011 20:45:48 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47644 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354Ab1LEBpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 4 Dec 2011 20:34:48 -0500
-Date: Mon, 5 Dec 2011 12:34:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: linux-next: manual merge of the net-next tree with the  tree
-Message-Id: <20111205123428.47213da24624d85aa84711f3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__5_Dec_2011_12_34_28_+1100_ncL=u0oM=6_Q0Cd1"
+	Sun, 4 Dec 2011 20:45:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAJbz7-15mzUNV7ZLSkAOg1Vb8briysitsR7xK94G+3-KT=ZXbA@mail.gmail.com>
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
+	<4ED6C5B8.8040803@linuxtv.org>
+	<4ED75F53.30709@redhat.com>
+	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+	<4EDA4AB4.90303@linuxtv.org>
+	<CAA7C2qjfWW8=kePZDO4nYR913RyuP-t+u8P9LV4mDh9bANr3=Q@mail.gmail.com>
+	<CAJbz7-15mzUNV7ZLSkAOg1Vb8briysitsR7xK94G+3-KT=ZXbA@mail.gmail.com>
+Date: Sun, 4 Dec 2011 17:45:46 -0800
+Message-ID: <CAA7C2qgDOgqZqkXE+E=H1yTrA0Uc4r-31y40BVa2=BxOaJY6Kw@mail.gmail.com>
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+From: VDR User <user.vdr@gmail.com>
+To: HoP <jpetrous@gmail.com>
+Cc: Andreas Oberritter <obi@linuxtv.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__5_Dec_2011_12_34_28_+1100_ncL=u0oM=6_Q0Cd1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Dec 4, 2011 at 3:22 PM, HoP <jpetrous@gmail.com> wrote:
+> Well, initial report was made on vdr-portal because of our hardware announce,
+> but you can be sure the same is true if server is build on any linux hardware.
+> Here is some note:
+> http://www.vdr-portal.de/board18-vdr-hardware/board84-allgemein/106610-das-neue-netzwerk-client-der-f%C3%BCr-vdr-verwenden-k%C3%B6nnen/?highlight=vtuner
+>
+> Additional info you can find (or ask) on our forum:
+> http://forum.nessiedvb.org/forum/viewforum.php?f=11
+>
+> Please note, that compilation of vtunerc kernel driver (or loopback, or pigback
+> or whatever name the code should be used) is simple - no need for any
+> kernel real patching is required. Code can be compiled outside of the
+> kernel tree
+> (of course kernel headers are still needed).
+>
+> Some useful hints regarding userland application daemons you
+> can find in our wiki:
+> http://wiki.nessiedvb.org/wiki/doku.php?id=vtuner_mode
+>
+> When you get vtunerc and vtunerd applications connected, try
+> simple command line tuning (szap/tzap or czap) to check
+> if it works correctly. Only if you get zapping working switch
+> to vdr.
 
-Hi all,
+Thanks for the info and links. I do know many guys who would be
+interested in this if it can provide good server/client ability with
+VDR. However, a large number of us only speak english so places like
+vdr-portal aren't much use a lot of the time. If you have english
+forums somewhere, that link would be far more useful I think.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-agn.c between commits from the
-tree and commit 7335613ae27a ("iwlwifi: move all mac80211 related
-functions to one place") from the net-next tree.
-
-I just used the net-next version (which may require some fixes).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__5_Dec_2011_12_34_28_+1100_ncL=u0oM=6_Q0Cd1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO3B+kAAoJEECxmPOUX5FEBBEP/22HNpjAxOb5Vt6tCcMoqeXS
-ZNHzv3D5Wgx/DcihPcyxnN9nQIqu/h3AwQStPYw//5dcEUBL/8p5JNZ/hzUZhasT
-nRxad4c472ox/4Y9qSf5CRw60tkynDfho1d8uKyBu4Rvhu7AWzemEXn7La9fnOAA
-ceqCmNLW0hLbGDWlNIGUW36vUA3G/R0lVJ/sYJd5SyF6vBfSSEdwGw1FcnmbZeCN
-pQiAUfrJjB3stnFRk7OZ1cDwLqqVnN4TnM4wDKVL79bt6Ofd/Up8W4Rq/0s6Y9ka
-91NDQgMPLSu319evvqXXc02buDPSOjtH8/oXWO/XtY0HL6SNWgSueYvtot+gnGNq
-3+QNoHSNp7hzPmLe9VnFly+BZYzFEnIvmf7Dh8gLS1uLx6QyrQgNnhZ519hasqmE
-yVOie4VQYkiBoMf5Izbj0eijsa+UNAlLplTS0cFO21vM01SnYZEaLTnqj7Zh78mX
-0LateKKbdxG2Q+xRbW8QpwGAM5530rOYd5hMUKD5Sd52fkFpP54E4xw97r8J5L9k
-JY1+3imjcFYloC4sTpVIYNEWrx5eJdgJ21QSa4BO6Z2zrB/dTGXXy2y2yeCy+XeG
-UplvWfThDHw0gD/3GUwTL568FlQBtiQAWz23qDpRYds5R7EPY829jVmrU4cN2qkG
-iY/a6Cx77eC8M9t3aKYm
-=Tc7x
------END PGP SIGNATURE-----
-
---Signature=_Mon__5_Dec_2011_12_34_28_+1100_ncL=u0oM=6_Q0Cd1--
+Thanks
