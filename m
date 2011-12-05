@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab1LEP6f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 10:58:35 -0500
-Received: from 4.mo1.mail-out.ovh.net ([46.105.76.26]:45713 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932411Ab1LEP6d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 10:58:33 -0500
-X-Greylist: delayed 1737 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Dec 2011 10:58:32 EST
-Date: Mon, 5 Dec 2011 16:53:59 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: rtc-linux@googlegroups.com
-Cc: a.zummo@towertech.it, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        keguang.zhang@gmail.com, wuzhangjin@gmail.com, r0bertz@gentoo.org,
-        zhao zhang <zhzhl555@gmail.com>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Re: [rtc-linux] [PATCH] MIPS: Add RTC support for loongson1B
-Message-ID: <20111205155359.GF9192@game.jcrosoft.org>
-References: <1322729078-6141-1-git-send-email-zhzhl555@gmail.com>
+	id S932486Ab1LEP6l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 10:58:41 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37671 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932411Ab1LEP6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 10:58:39 -0500
+Date: Mon, 5 Dec 2011 16:56:47 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stefan Bader <stefan.bader@canonical.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
+        jeremy.fitzhardinge@citrix.com, mingo@redhat.com, stable@kernel.org,
+        tglx@linutronix.de, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: Not really merged? Re: [merged]
+ x86-paravirt-pte-updates-in-kunmap_atomic-need-to-be-synchronous-regardless-of-lazy_mmu-mode.patch
+ removed from -mm tree
+Message-ID: <20111205155647.GG28866@elte.hu>
+References: <201110141951.p9EJpn3A006989@hpaq5.eem.corp.google.com>
+ <20111025182450.GA9843@phenom.dumpdata.com>
+ <20111027155329.0adc1358.akpm@linux-foundation.org>
+ <20111028070838.GG12995@elte.hu>
+ <20111028003935.a75d16b6.akpm@linux-foundation.org>
+ <4ED60D59.6080308@canonical.com>
+ <20111130114128.ad9c79be.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1322729078-6141-1-git-send-email-zhzhl555@gmail.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 16856128980892036017
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedruddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredvnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepne
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedruddvucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredvnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepne
+In-Reply-To: <20111130114128.ad9c79be.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:44 Thu 01 Dec     , zhzhl555@gmail.com wrote:
-> From: zhao zhang <zhzhl555@gmail.com>
-> 
-> V2: use new module_platform_driver macro.
-> thanks for Wolfram's advice.
-> 
-> This patch adds RTC support(TOY counter0) for loongson1B.
-> Signed-off-by: zhao zhang <zhzhl555@gmail.com>
-> ---
->  drivers/rtc/Kconfig    |   10 ++
->  drivers/rtc/Makefile   |    1 +
->  drivers/rtc/rtc-ls1x.c |  214 ++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 225 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/rtc/rtc-ls1x.c
-> 
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index 5a538fc..6f8c2d7 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -1070,4 +1070,14 @@ config RTC_DRV_PUV3
->  	  This drive can also be built as a module. If so, the module
->  	  will be called rtc-puv3.
->  
-> +config RTC_DRV_LOONGSON1
-> +	tristate "loongson1 RTC support"
-> +	depends on MACH_LOONGSON1
-> +	help
-> +	  This is a driver for the loongson1 on-chip Counter0 (Time-Of-Year
-> +	  counter) to be used as a RTC.
-> +
-> +	  This driver can also be built as a module. If so, the module
-> +	  will be called rtc-ls1x.
-> +
->  endif # RTC_CLASS
-> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> index 6e69823..48153fe 100644
-> --- a/drivers/rtc/Makefile
-> +++ b/drivers/rtc/Makefile
-> @@ -109,3 +109,4 @@ obj-$(CONFIG_RTC_DRV_VT8500)	+= rtc-vt8500.o
->  obj-$(CONFIG_RTC_DRV_WM831X)	+= rtc-wm831x.o
->  obj-$(CONFIG_RTC_DRV_WM8350)	+= rtc-wm8350.o
->  obj-$(CONFIG_RTC_DRV_X1205)	+= rtc-x1205.o
-> +obj-$(CONFIG_RTC_DRV_LOONGSON1)	+= rtc-ls1x.o
-keep it ordered
 
+* Andrew Morton <akpm@linux-foundation.org> wrote:
 
-you have no alarm, irq on this hardware?
+> On Wed, 30 Nov 2011 12:02:49 +0100 Stefan Bader <stefan.bader@canonical.com> wrote:
+> 
+> > So, as of today, this seems to be back on the master branch of linux-next (I
+> > guess from Andrew putting it back, but I am never sure with linux-next). But I
+> > am not sure how/when this would go into Linus tree. I assume without any
+> > specific action maybe merge window for 3.3...
+> > We got some positive feedback on it from users running into the problem. So it
+> > seems like a valuable change. From the discusions so far I take that technically
+> > the change did not trigger resistance. For that reason I wanted to ask whether
+> > there is a chance that this looks important enough to be pushed before the next
+> > merge window...
+> 
+> I sent this patch to the x86 maintainers two weeks ago.  It 
+> was ignored, as were the other 11 patches I sent.  Later I 
+> will resend them all.  If they are again ignored I will later 
+> send them yet again, and so on.
 
-Best Regards,
-J.
+they are still sitting in my mbox - working down the backlog 
+now.
+
+Thanks,
+
+	Ingo
