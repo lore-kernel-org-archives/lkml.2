@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932820Ab1LERmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 12:42:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58759 "EHLO
+	id S1756441Ab1LERnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 12:43:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58767 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932693Ab1LERmT (ORCPT
+	with ESMTP id S1753601Ab1LERnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 12:42:19 -0500
-Date: Mon, 5 Dec 2011 09:42:01 -0800
+	Mon, 5 Dec 2011 12:43:15 -0500
+Date: Mon, 5 Dec 2011 09:42:47 -0800
 From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-130b78b2bf16d5d89091db38374faef896360cf9@git.kernel.org>
+Message-ID: <tip-bfbe9015de5c78d1808cd09526b9166b2e6aa440@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20111205120539.15475.91428.stgit@cloud>
-References: <20111205120539.15475.91428.stgit@cloud>
+In-Reply-To: <20111205120545.15475.7928.stgit@cloud>
+References: <20111205120545.15475.7928.stgit@cloud>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86: Fix instruction decoder to handle grouped AVX instructions
-Git-Commit-ID: 130b78b2bf16d5d89091db38374faef896360cf9
+Subject: [tip:perf/core] x86/tools: Fix instruction decoder message output
+Git-Commit-ID: bfbe9015de5c78d1808cd09526b9166b2e6aa440
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:42:07 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 09:42:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  130b78b2bf16d5d89091db38374faef896360cf9
-Gitweb:     http://git.kernel.org/tip/130b78b2bf16d5d89091db38374faef896360cf9
+Commit-ID:  bfbe9015de5c78d1808cd09526b9166b2e6aa440
+Gitweb:     http://git.kernel.org/tip/bfbe9015de5c78d1808cd09526b9166b2e6aa440
 Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Mon, 5 Dec 2011 21:05:39 +0900
+AuthorDate: Mon, 5 Dec 2011 21:05:45 +0900
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Dec 2011 14:53:15 +0100
+CommitDate: Mon, 5 Dec 2011 14:53:17 +0100
 
-x86: Fix instruction decoder to handle grouped AVX instructions
+x86/tools: Fix instruction decoder message output
 
-For reducing memory usage of attribute table, x86 instruction
-decoder puts "Group" attribute only on "no-last-prefix"
-attribute table (same as vex_p == 0 case).
+Fix instruction decoder test (insn_sanity), so that
+it doesn't show both info and error messages twice on
+same instruction. (In that case, show only error message)
 
-Thus, the decoder should look no-last-prefix table first, and
-then only if it is not a group, move on to "with-last-prefix"
-table (vex_p != 0).
-
-However, current implementation, inat_get_avx_attribute()
-looks with-last-prefix directly. So, when decoding
-a grouped AVX instruction, the decoder fails to find correct
-group because there is no "Group" attribute on the table.
-This ends up with the mis-decoding of instructions, as Ingo
-reported in http://thread.gmane.org/gmane.linux.kernel/1214103
-
-This patch fixes it to check no-last-prefix table first
-even if that is an AVX instruction, and get an attribute from
-"with last-prefix" table only if that is not a group.
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: yrl.pp-manager.tt@hitachi.com
-Link: http://lkml.kernel.org/r/20111205120539.15475.91428.stgit@cloud
+Link: http://lkml.kernel.org/r/20111205120545.15475.7928.stgit@cloud
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/lib/inat.c |    9 ++++++++-
- arch/x86/lib/insn.c |    4 +++-
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/tools/insn_sanity.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/lib/inat.c b/arch/x86/lib/inat.c
-index 46fc4ee..88ad5fb 100644
---- a/arch/x86/lib/inat.c
-+++ b/arch/x86/lib/inat.c
-@@ -82,9 +82,16 @@ insn_attr_t inat_get_avx_attribute(insn_byte_t opcode, insn_byte_t vex_m,
- 	const insn_attr_t *table;
- 	if (vex_m > X86_VEX_M_MAX || vex_p > INAT_LSTPFX_MAX)
- 		return 0;
--	table = inat_avx_tables[vex_m][vex_p];
-+	/* At first, this checks the master table */
-+	table = inat_avx_tables[vex_m][0];
- 	if (!table)
- 		return 0;
-+	if (!inat_is_group(table[opcode]) && vex_p) {
-+		/* If this is not a group, get attribute directly */
-+		table = inat_avx_tables[vex_m][vex_p];
-+		if (!table)
-+			return 0;
-+	}
- 	return table[opcode];
- }
+diff --git a/arch/x86/tools/insn_sanity.c b/arch/x86/tools/insn_sanity.c
+index 334d9de..2025603 100644
+--- a/arch/x86/tools/insn_sanity.c
++++ b/arch/x86/tools/insn_sanity.c
+@@ -257,15 +257,14 @@ int main(int argc, char **argv)
+ 		insn_init(&insn, insn_buf, x86_64);
+ 		insn_get_length(&insn);
  
-diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
-index 374562e..5a1f9f3 100644
---- a/arch/x86/lib/insn.c
-+++ b/arch/x86/lib/insn.c
-@@ -202,7 +202,7 @@ void insn_get_opcode(struct insn *insn)
- 		m = insn_vex_m_bits(insn);
- 		p = insn_vex_p_bits(insn);
- 		insn->attr = inat_get_avx_attribute(op, m, p);
--		if (!inat_accept_vex(insn->attr))
-+		if (!inat_accept_vex(insn->attr) && !inat_is_group(insn->attr))
- 			insn->attr = 0;	/* This instruction is bad */
- 		goto end;	/* VEX has only 1 byte for opcode */
- 	}
-@@ -249,6 +249,8 @@ void insn_get_modrm(struct insn *insn)
- 			pfx = insn_last_prefix(insn);
- 			insn->attr = inat_get_group_attribute(mod, pfx,
- 							      insn->attr);
-+			if (insn_is_avx(insn) && !inat_accept_vex(insn->attr))
-+				insn->attr = 0;	/* This is bad */
- 		}
+-		if (verbose && !insn_complete(&insn))
+-			dump_stream(stdout, "Info: Found an undecodable input", i, insn_buf, &insn);
+-
+ 		if (insn.next_byte <= insn.kaddr ||
+ 		    insn.kaddr + MAX_INSN_SIZE < insn.next_byte) {
+ 			/* Access out-of-range memory */
+ 			dump_stream(stdout, "Error: Found an access violation", i, insn_buf, &insn);
+ 			errors++;
+-		}
++		} else if (verbose && !insn_complete(&insn))
++			dump_stream(stdout, "Info: Found an undecodable input", i, insn_buf, &insn);
++
+ 		insns++;
  	}
  
