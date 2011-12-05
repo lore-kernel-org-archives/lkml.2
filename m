@@ -1,117 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325Ab1LENXg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 08:23:36 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57453 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202Ab1LENXd (ORCPT
+	id S932329Ab1LENXt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 08:23:49 -0500
+Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:6056
+	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932202Ab1LENXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 08:23:33 -0500
-Date: Mon, 5 Dec 2011 05:23:13 -0800
-From: tip-bot for Don Zickus <dzickus@redhat.com>
-Message-ID: <tip-bda62633983f9db49ce0b1a9235b3709c1cda5f0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        andi@firstfloor.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, robert.richter@amd.com, tglx@linutronix.de,
-        mingo@elte.hu, dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, robert.richter@amd.com, tglx@linutronix.de,
-        mingo@elte.hu, dzickus@redhat.com
-In-Reply-To: <1318533267-18880-4-git-send-email-dzickus@redhat.com>
-References: <1318533267-18880-4-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/debug] x86, NMI: Add knob to disable using NMI IPIs to stop cpus
-Git-Commit-ID: bda62633983f9db49ce0b1a9235b3709c1cda5f0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Mon, 5 Dec 2011 08:23:47 -0500
+X-SpamScore: -16
+X-BigFish: VPS-16(zz9371K1432N98dK4015Lzz1202hzz8275bhz2dh668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVQFVH-02-A5E-02
+X-M-MSG: 
+Date: Mon, 5 Dec 2011 14:23:40 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        "acme@redhat.com" <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "dsahern@gmail.com" <dsahern@gmail.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [PATCH] perf: make perf.data more self-descriptive (v8)
+Message-ID: <20111205132340.GH15738@erda.amd.com>
+References: <20110930134040.GA5575@quad>
+ <20111129182231.GZ15738@erda.amd.com>
+ <CABPqkBTR3tEGh7LymuS_JJR5SuCZfjTxZP-6qNxmZtBf0Zt9bg@mail.gmail.com>
+ <20111130150829.GA15738@erda.amd.com>
+ <20111130164946.GA27163@infradead.org>
+ <20111201150151.GA15110@somewhere.redhat.com>
+ <20111201151520.GB15738@erda.amd.com>
+ <CABPqkBQwQ1gzQEfAehiLRXrO196vovNeRjS9taiM7dfk7U9egQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 05:23:19 -0800 (PST)
+In-Reply-To: <CABPqkBQwQ1gzQEfAehiLRXrO196vovNeRjS9taiM7dfk7U9egQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bda62633983f9db49ce0b1a9235b3709c1cda5f0
-Gitweb:     http://git.kernel.org/tip/bda62633983f9db49ce0b1a9235b3709c1cda5f0
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Thu, 13 Oct 2011 15:14:27 -0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Dec 2011 12:00:23 +0100
+On 01.12.11 09:53:10, Stephane Eranian wrote:
+> On Thu, Dec 1, 2011 at 7:15 AM, Robert Richter <robert.richter@amd.com> wrote:
+> > I am asking this because I want to change code in a way that treats
+> > all features the same, that is just to disable the feature bit on
+> > failure and then continue anyway.
+> >
+> You need to make sure that disabling the bit is enough to still get a consistent
+> file, i.e., want to undo the effect of writing the feature to the
+> file. In the case
+> of the meta-data features I added that was easy simply lseek() back to
+> the position
+> before the call. Would that be the case with TRACE_INFO?
 
-x86, NMI: Add knob to disable using NMI IPIs to stop cpus
+It should be. All features can be parsed independently. Offset and
+size of a feature's data block is stored in struct perf_file_section
+right after the data block of perf.data (see perf_session__write_
+header()). Thus, if a feature does not exist then other features can
+be processed anyway.
 
-Some machines may exhibit problems using the NMI to stop other
-cpus. This knob just allows one to revert back to the original
-behaviour to help diagnose the problem.
+Thanks,
 
-V2:
-  make function static
+-Robert
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: seiji.aguchi@hds.com
-Cc: vgoyal@redhat.com
-Cc: mjg@redhat.com
-Cc: tony.luck@intel.com
-Cc: gong.chen@intel.com
-Cc: satoru.moriya@hds.com
-Cc: avi@redhat.com
-Cc: Andi Kleen <andi@firstfloor.org>
-Link: http://lkml.kernel.org/r/1318533267-18880-4-git-send-email-dzickus@redhat.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- Documentation/kernel-parameters.txt |    4 ++++
- arch/x86/kernel/smp.c               |   13 +++++++++++++
- 2 files changed, 17 insertions(+), 0 deletions(-)
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a0c5c5f..b4339e5 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1796,6 +1796,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	nomfgpt		[X86-32] Disable Multi-Function General Purpose
- 			Timer usage (for AMD Geode machines).
- 
-+	nonmi_ipi	[X86] Disable using NMI IPIs during panic/reboot to
-+			shutdown the other cpus.  Instead use the REBOOT_VECTOR
-+			irq.
-+
- 	nopat		[X86] Disable PAT (page attribute table extension of
- 			pagetables) support.
- 
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index e72b175..113acda 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -249,6 +249,11 @@ static void native_irq_stop_other_cpus(int wait)
- 	local_irq_restore(flags);
- }
- 
-+static void native_smp_disable_nmi_ipi(void)
-+{
-+	smp_ops.stop_other_cpus = native_irq_stop_other_cpus;
-+}
-+
- /*
-  * Reschedule call back.
-  */
-@@ -280,6 +285,14 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
- 	irq_exit();
- }
- 
-+static int __init nonmi_ipi_setup(char *str)
-+{
-+        native_smp_disable_nmi_ipi();
-+        return 1;
-+}
-+
-+__setup("nonmi_ipi", nonmi_ipi_setup);
-+
- struct smp_ops smp_ops = {
- 	.smp_prepare_boot_cpu	= native_smp_prepare_boot_cpu,
- 	.smp_prepare_cpus	= native_smp_prepare_cpus,
