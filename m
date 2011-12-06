@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab1LFKZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 05:25:24 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41016 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933052Ab1LFKZX (ORCPT
+	id S933215Ab1LFKZf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:25:35 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:36919
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933052Ab1LFKZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 05:25:23 -0500
-Date: Tue, 6 Dec 2011 10:25:19 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: "Austin, Brian" <Brian.Austin@cirrus.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "qi.wang@intel.com" <qi.wang@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yong.y.wang@intel.com" <yong.y.wang@intel.com>,
-        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>,
-        Daniel Mack <zonque@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        "joel.clark@intel.com" <joel.clark@intel.com>
-Subject: Re: [alsa-devel] [PATCH v2] soc/lapis: add machine driver
-Message-ID: <20111206102519.GD28840@opensource.wolfsonmicro.com>
-References: <1322819115-15808-1-git-send-email-tomoya.rohm@gmail.com>
- <20111202153401.GX8245@opensource.wolfsonmicro.com>
- <CANKRQniyjT_2Ko=EYmffu3_NzDJQTMm9nY6rUp-DQ70e6AVQpA@mail.gmail.com>
- <20111205183223.GB7467@opensource.wolfsonmicro.com>
- <CANKRQnhEFvubv0b63z34=_xn4x4q=20enofqPrMsFetj1x7-NQ@mail.gmail.com>
- <057C8CCF-453E-4DC2-8E22-3D260973D35E@cirrus.com>
- <CANKRQniQSUWyaKUcn24ungmAu0ABHhBZ1=YhGz5jAp02X=KTAA@mail.gmail.com>
+	Tue, 6 Dec 2011 05:25:32 -0500
+X-SpamScore: -14
+X-BigFish: VPS-14(zz4015Lzz1202hzz15d4R8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVS2AH-01-B9F-02
+X-M-MSG: 
+Date: Tue, 6 Dec 2011 11:25:27 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: David Brown <davidb@codeaurora.org>
+CC: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arm-msm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] iommu/msm: Fix compile error in mach-msm/devices-iommu.c
+Message-ID: <20111206102527.GI25178@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CANKRQniQSUWyaKUcn24ungmAu0ABHhBZ1=YhGz5jAp02X=KTAA@mail.gmail.com>
-X-Cookie: You are fairminded, just and loving.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 11:37:52AM +0900, Tomoya MORINAGA wrote:
+Hi,
 
-> Thanks.  However, i2c access code is not included in Samsung.
-> Though OMAP includes i2c access code like below,
->   omap/sdp3430.c: twl_i2c_read_u8(TWL4030_MODULE_INTBR, &pin_mux,
->   omap/sdp3430.c: twl_i2c_write_u8(TWL4030_MODULE_INTBR, pin_mux,
-> this code doesn't seem applicable for me.
+I just added a patch to my iommu/fixes branch to fix a compile error
+with IOMMU enabled. If there is another fix for this already somewhere
+please let me know the commit-id so that I can add it to my out-of-tree
+branch. If there is no other fix yet I will push this upstream soon with
+the next round of iommu-fixes.
 
-> Could you show best practice for i2c access of machine driver?
+Thanks,
 
-I2C access by machine drivers is not good practice.  If you must do it
-for some reason use the standard ASoC functions to read and write
-registers.
+	Joerg
+
+>From 96f176a310e447966e45112fe4511b9d9fa0caf4 Mon Sep 17 00:00:00 2001
+From: Joerg Roedel <joerg.roedel@amd.com>
+Date: Tue, 6 Dec 2011 11:17:34 +0100
+Subject: [PATCH] iommu/msm: Fix compile error in mach-msm/devices-iommu.c
+
+Fix compile error due to missing <linux/module.h> include.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/arm/mach-msm/devices-iommu.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-msm/devices-iommu.c b/arch/arm/mach-msm/devices-iommu.c
+index 24030d0..0fb7a17 100644
+--- a/arch/arm/mach-msm/devices-iommu.c
++++ b/arch/arm/mach-msm/devices-iommu.c
+@@ -18,6 +18,7 @@
+ #include <linux/kernel.h>
+ #include <linux/platform_device.h>
+ #include <linux/bootmem.h>
++#include <linux/module.h>
+ #include <mach/irqs.h>
+ #include <mach/iommu.h>
+ 
+-- 
+1.7.5.4
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
