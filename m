@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab1LFX3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 18:29:00 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46067 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab1LFX27 (ORCPT
+	id S1754707Ab1LFX37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 18:29:59 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40225 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392Ab1LFX35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 18:28:59 -0500
-Date: Wed, 7 Dec 2011 01:28:46 +0200
-From: Ido Yariv <ido@wizery.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] genirq: Flush the irq thread on synchronization
-Message-ID: <20111206232824.GA23893@WorkStation>
-References: <1322843052-7166-1-git-send-email-ido@wizery.com>
- <alpine.LFD.2.02.1112022345300.2735@ionos>
- <alpine.LFD.2.02.1112052248010.2735@ionos>
+	Tue, 6 Dec 2011 18:29:57 -0500
+Message-ID: <4EDEA4BB.60807@solonet.org.ua>
+Date: Wed, 07 Dec 2011 01:26:51 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1112052248010.2735@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH resend2] s3c24xx: cpufreq: Fix compilation error when
+ CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
+References: <4EDD720B.5040607@solonet.org.ua> <02ef01ccb40a$9078f2e0$b16ad8a0$%kim@samsung.com>
+In-Reply-To: <02ef01ccb40a$9078f2e0$b16ad8a0$%kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On 12/06/2011 01:31 PM, Kukjin Kim wrote:
+> Denis Kuzmenko wrote:
+>>
+>> Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
+>>
+>> Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+>> ---
+>>
+>> Patch is against 3.2-rc3.
+>> CONFIG_S3C2410_IOTIMING wasn't present in Kconfig but was referenced by
+>> Makefile. Because of this the file s3c2410-iotiming.c was not ever
+>> compiled
+> 
+> Well, there is 'S3C2410_IOTIMING' at arch/arm/plat-s3c24xx/Kconfig and it
+> had dependency of 'CONFIG_CPU_FREQ_S3C24XX'...
+> 
 
-On Mon, Dec 05, 2011 at 10:55:01PM +0100, Thomas Gleixner wrote:
-> Does the following (untested) patch solve your issues?
+Yeah, I've missed that, thank you. I'll make a new version.
 
-I briefly tested this patch and it appears to also solve the issues I
-mentioned.
-
-I think both solutions would work. The only drawbacks I see in using
-this patch over the other one are that this patch involves a bit more
-locking in synchronize_irq() and irq_finalize_oneshot() (for non-oneshot
-irqs), and that the oneshot mechanism is used for non-oneshot threads.
-
-Thanks,
-Ido.
+-- 
+Best regards, Denis Kuzmenko.
