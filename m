@@ -1,169 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933498Ab1LFPAT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 10:00:19 -0500
-Received: from ffm.saftware.de ([83.141.3.46]:34063 "EHLO ffm.saftware.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751310Ab1LFPAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 10:00:18 -0500
-Message-ID: <4EDE2DFE.9060003@linuxtv.org>
-Date: Tue, 06 Dec 2011 16:00:14 +0100
-From: Andreas Oberritter <obi@linuxtv.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: HoP <jpetrous@gmail.com>, Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk> <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com> <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <CAJbz7-1S6K=sDJFcOM8mMxL3t2JS91k+fHLy4gq868_9eUyS9A@mail.gmail.com> <4EDE1733.8060409@redhat.com> <4EDE1D57.90307@linuxtv.org> <4EDE24C6.2020407@redhat.com>
-In-Reply-To: <4EDE24C6.2020407@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S933486Ab1LFPEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 10:04:48 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45144 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933389Ab1LFPEr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 10:04:47 -0500
+Subject: Re: [PATCH 06/10] perf report: Setup browser if stdout is a pipe
+From: Tom Zanussi <tzanussi@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111206132910.GG7059@infradead.org>
+References: <1323167560-2282-1-git-send-email-robert.richter@amd.com>
+	 <1323167560-2282-7-git-send-email-robert.richter@amd.com>
+	 <20111206132910.GG7059@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Dec 2011 09:04:44 -0600
+Message-ID: <1323183884.2059.49.camel@elnicho>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.12.2011 15:20, Mauro Carvalho Chehab wrote:
-> On 06-12-2011 11:49, Andreas Oberritter wrote:
->> On 06.12.2011 14:22, Mauro Carvalho Chehab wrote:
->>> On 05-12-2011 22:07, HoP wrote:
->>>>> I doubt that scan or w_scan would support it. Even if it supports,
->>>>> that
->>>>> would mean that,
->>>>> for each ioctl that would be sent to the remote server, the error
->>>>> code would
->>>>> take 480 ms
->>>>> to return. Try to calculate how many time w_scan would work with
->>>>> that. The
->>>>> calculus is easy:
->>>>> see how many ioctl's are called by each frequency and multiply by the
->>>>> number
->>>>> of frequencies
->>>>> that it would be seek. You should then add the delay introduced over
->>>>> streaming the data
->>>>> from the demux, using the same calculus. This is the additional time
->>>>> over a
->>>>> local w_scan.
->>>>>
->>>>> A grouch calculus with scandvb: to tune into a single DVB-C
->>>>> frequency, it
->>>>> used 45 ioctls.
->>>>> Each taking 480 ms round trip would mean an extra delay of 21.6
->>>>> seconds.
->>>>> There are 155
->>>>> possible frequencies here. So, imagining that scan could deal with
->>>>> 21.6
->>>>> seconds of delay
->>>>> for each channel (with it doesn't), the extra delay added by it is 1
->>>>> hour
->>>>> (45 * 0.48 * 155).
->>>>>
->>>>> On the other hand, a solution like the one described by Florian would
->>>>> introduce a delay of
->>>>> 480 ms for the entire scan to happen, as only one data packet would be
->>>>> needed to send a
->>>>> scan request, and one one stream of packets traveling at 10GB/s would
->>>>> bring
->>>>> the answer
->>>>> back.
->>>>
->>>> Andreas was excited by your imaginations and calculations, but not me.
->>>> Now you again manifested you are not treating me as partner for
->>>> discussion.
->>>> Otherwise you should try to understand how-that-ugly-hack works.
->>>> But you surelly didn't try to do it at all.
->>>>
->>>> How do you find those 45 ioctls for DVB-C tune?
->>>
->>> With strace. See how many ioctl's are called for each tune. Ok, perhaps
->>> scandvb
->>> is badly written, but if your idea is to support 100% of the
->>> applications, you
->>> should be prepared for badly written applications.
->>>
->>> $strace -e ioctl scandvb dvbc-teste
->>> scanning dvbc-teste
->>> using '/dev/dvb/adapter0/frontend0' and '/dev/dvb/adapter0/demux0'
->>> ioctl(3, FE_GET_INFO, 0x60a640)         = 0
->>> initial transponder 573000000 5217000 0 5
->>>>>> tune to: 573000000:INVERSION_AUTO:5217000:FEC_NONE:QAM_256
->>> ioctl(3, FE_SET_FRONTEND, 0x7fff5f7f2cd0) = 0
->>> ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
->>> ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
->>> ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
->>> ioctl(4, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
->>> ioctl(5, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
->>> ioctl(6, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
->>> ioctl(7, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(8, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(9, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(10, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(11, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(12, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(13, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(14, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(15, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(16, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(17, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(18, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(19, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(20, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(21, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(22, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(23, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(24, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
->>> ioctl(4, DMX_STOP, 0x1)                 = 0
->>> ioctl(15, DMX_STOP, 0x1)                = 0
->>> ioctl(11, DMX_STOP, 0x1)                = 0
->>> ioctl(22, DMX_STOP, 0x1)                = 0
->>> ioctl(17, DMX_STOP, 0x1)                = 0
->>> ioctl(16, DMX_STOP, 0x1)                = 0
->>
->> You don't need to wait for write-only operations. Basically all demux
->> ioctls are write-only. Since vtunerc is using dvb-core's software demux
->> *locally*, errors for invalid arguments etc. will be returned as usual.
->>
->> What's left is one call to FE_SET_FRONTEND for each frequency to tune
->> to, and one FE_READ_STATUS for each time the lock status is queried.
->> Note that one may use FE_GET_EVENT instead of FE_READ_STATUS to get
->> notified of status changes asynchronously if desired.
->>
->> Btw.: FE_SET_FRONTEND doesn't block either, because the driver callback
->> is called from a dvb_frontend's *local* kernel thread.
+On Tue, 2011-12-06 at 11:29 -0200, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Dec 06, 2011 at 11:32:36AM +0100, Robert Richter escreveu:
+> > The decision to setup the browser should be made if stdout is pipe,
+> > not stdin.
 > 
-> Still, vtunerc waits for write operations:
+> I can't remember what made that logic be like that...  Here it is:
 > 
-> http://code.google.com/p/vtuner/source/browse/vtunerc_proxyfe.c?repo=linux-driver#285
->
-> No matter if they are read or write, all of them call this function:
+> commit 46656ac7fb3252f8a3db29b18638e0e8067849ba
+> Author: Tom Zanussi <tzanussi@gmail.com>
+> Date:   Thu Apr 1 23:59:17 2010 -0500
 > 
-> http://code.google.com/p/vtuner/source/browse/vtunerc_ctrldev.c?repo=linux-driver#390
+>     perf report: Introduce special handling for pipe input
+>     
+>     Adds special treatment for stdin - if the user specifies '-i -'
+>     to perf report, the intent is that the event stream be written
+>     to stdin rather than from a disk file.
+>     
+>     The actual handling of the '-' filename is done by the session;
+>     this just adds a signal handler to stop reporting, and turns off
+>     interference by the pager.
+>     
+>     Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+>     Acked-by: Thomas Gleixner <tglx@linutronix.de>
+>     Cc: fweisbec@gmail.com
+>     Cc: rostedt@goodmis.org
+>     Cc: k-keiichi@bx.jp.nec.com
+>     Cc: acme@ghostprotocols.net
+>     LKML-Reference: <1270184365-8281-4-git-send-email-tzanussi@gmail.com>
+>     Signed-off-by: Ingo Molnar <mingo@elte.hu>
 > 
-> That has a wait_event inside that function, as everything is directed to
-> the userspace.
+> 
+> I can't understand the comment either, as I think it should've read "the
+> intent is that the event stream be _read from stdin_ rather than from a
+> disk file."
+> 
+> And I don't know what would be the pager interference there.
+> 
+> Tom, could you elaborate on this?
+> 
 
-Please, stop writing such bullshit! Just before the call to wait_event
-there's code to return from the function if waiting has not been requested.
+Hi Arnaldo,
 
-> This is probably the way Florian found to return the errors returned by
-> the ioctls. This driver is synchronous, with simplifies it, at the lack of
-> performance.
+Yeah, I think your comment is correct - the commit has a typo and should
+read 'the intent is that the event stream be read from stdin'.
 
-The fix is easy: set the third parameter to 0. A DVB application doesn't
-need to know whether SET_VOLTAGE etc. succeeded or not, because it won't
-get any feedback from the switch. If tuning fails, it has to retry
-anyway, even if all ioctls returned 0.
+Basically, it's from the standpoint of a pipeline such as 'perf record |
+perf report+scripting engine' where the output of perf record is
+continuously fed into a scripting engine.  The script in then end takes
+complete control of the output and doesn't want to be interfered with by
+a pager.  IIRC that caused a problem with the 'top'-type scripts.
 
-> Ok, the driver could be smarter than that, and some heuristics could be
-> added into it, in order to foresee the likely error code, returning it
-> in advance, and then implementing some asynchronous mechanism that would
-> handle the error later, but that would be complex and may still introduce
-> some bad behaviors.
+Anyway, from the standpoint of 'perf report' in a 'live' pipeline, I
+think the current code is correct - if the input is coming from a pipe,
+the assumption is that it's being passed to a script which will take
+care of all the output details, so turn the pager off...
 
-There's no need to handle errors that don't occur.
+Tom 
 
-Nobody said that the implementation of vtunerc was perfect. I've already
-listed many things that need to be changed in order to even consider it
-for merging.
+> Thanks,
+> 
+> - Arnaldo
+>     
+>  
+> > Signed-off-by: Robert Richter <robert.richter@amd.com>
+> > ---
+> >  tools/perf/builtin-report.c |    9 ++++++---
+> >  1 files changed, 6 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> > index 4d7c834..88ca2d4 100644
+> > --- a/tools/perf/builtin-report.c
+> > +++ b/tools/perf/builtin-report.c
+> > @@ -504,6 +504,8 @@ static const struct option options[] = {
+> >  
+> >  int cmd_report(int argc, const char **argv, const char *prefix __used)
+> >  {
+> > +	struct stat st;
+> > +
+> >  	argc = parse_options(argc, argv, options, report_usage, 0);
+> >  
+> >  	if (use_stdio)
+> > @@ -514,10 +516,11 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+> >  	if (inverted_callchain)
+> >  		callchain_param.order = ORDER_CALLER;
+> >  
+> > -	if (strcmp(input_name, "-") != 0)
+> > -		setup_browser(true);
+> > -	else
+> > +	if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
+> >  		use_browser = 0;
+> > +	else
+> > +		setup_browser(true);
+> > +
+> >  	/*
+> >  	 * Only in the newt browser we are doing integrated annotation,
+> >  	 * so don't allocate extra space that won't be used in the stdio
+> > -- 
+> > 1.7.7
+> > 
+
+
