@@ -1,139 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933116Ab1LFJuN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:50:13 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34889 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933026Ab1LFJuL (ORCPT
+	id S933129Ab1LFJul (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:50:41 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57879 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933026Ab1LFJuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:50:11 -0500
-Date: Tue, 6 Dec 2011 01:49:38 -0800
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-77e81365e0b7d7479fc444a21cea0cd4def70b45@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, efault@gmx.de, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1321556904.15339.25.camel@sbsiddha-desk.sc.intel.com>
-References: <1321556904.15339.25.camel@sbsiddha-desk.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Clean up domain traversal in select_idle_sibling()
-Git-Commit-ID: 77e81365e0b7d7479fc444a21cea0cd4def70b45
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Tue, 6 Dec 2011 04:50:39 -0500
+Date: Tue, 6 Dec 2011 10:49:12 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Josh Wu <josh.wu@atmel.com>
+cc: linux-media@vger.kernel.org, nicolas.ferre@atmel.com,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] [media] V4L: atmel-isi: add clk_prepare()/clk_unprepare()
+ functions
+In-Reply-To: <1322647604-30662-2-git-send-email-josh.wu@atmel.com>
+Message-ID: <Pine.LNX.4.64.1112061045150.10715@axis700.grange>
+References: <1322647604-30662-1-git-send-email-josh.wu@atmel.com>
+ <1322647604-30662-2-git-send-email-josh.wu@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:49:44 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:23oN/fZ8yDpq1vwG2lL/0JawylSFl5AFQTtOdbrF9Bv
+ UElt3OAWaputZUojMBqkBpNdBrWZ7yhish9tU23pDSHmG4kcBQ
+ Jj2jscjYEeq8QLVS5DW3Fb6ggva6sEHvrsQPDwAy/n5P+Y9vOB
+ RN/Myit8f3rAydUp7XnyymzQ2AnIwiQmw+eEaTFjpyxZF2UsL2
+ QGQpXEZ6Tl/RlCkggb2uOto7fElRZ94tGA1v8UjgkpYjNskKSx
+ 2usD7EmVZGukVBy7y4e57zzM8btxvJZrYIJrqR3LKCHJnvBBKE
+ IUxBpkpEKwvD0g+HKSLYEEpNsD3r4iZdHz9TT9LjGovJlL06Bn
+ tFk4BG/YcltZJbBge1Im1vpzhjzhEXlyG0ugtEw47NcexGi2qN
+ vGslDiEf4IYMw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  77e81365e0b7d7479fc444a21cea0cd4def70b45
-Gitweb:     http://git.kernel.org/tip/77e81365e0b7d7479fc444a21cea0cd4def70b45
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Thu, 17 Nov 2011 11:08:23 -0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 08:51:25 +0100
+Hi Josh
 
-sched: Clean up domain traversal in select_idle_sibling()
+Thanks for the patch, but I'll ask you to fix the same thing in it, that 
+I've fixed for you in the first patch in this series:
 
-Instead of going through the scheduler domain hierarchy multiple times
-(for giving priority to an idle core over an idle SMT sibling in a busy
-core), start with the highest scheduler domain with the SD_SHARE_PKG_RESOURCES
-flag and traverse the domain hierarchy down till we find an idle group.
+On Wed, 30 Nov 2011, Josh Wu wrote:
 
-This cleanup also addresses an issue reported by Mike where the recent
-changes returned the busy thread even in the presence of an idle SMT
-sibling in single socket platforms.
+> Signed-off-by: Josh Wu <josh.wu@atmel.com>
+> ---
+>  drivers/media/video/atmel-isi.c |   17 ++++++++++++++++-
+>  1 files changed, 16 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
+> index ea4eef4..5da4381 100644
+> --- a/drivers/media/video/atmel-isi.c
+> +++ b/drivers/media/video/atmel-isi.c
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Tested-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1321556904.15339.25.camel@sbsiddha-desk.sc.intel.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+[snip]
+
+> @@ -978,10 +986,14 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+>  		goto err_clk_get;
+>  	}
+>  
+> +	ret = clk_prepare(isi->mck);
+> +	if (ret)
+> +		goto err_set_mck_rate;
+> +
+>  	/* Set ISI_MCK's frequency, it should be faster than pixel clock */
+>  	ret = clk_set_rate(isi->mck, pdata->mck_hz);
+>  	if (ret < 0)
+> -		goto err_set_mck_rate;
+> +		goto err_unprepare_mck;
+>  
+>  	isi->p_fb_descriptors = dma_alloc_coherent(&pdev->dev,
+>  				sizeof(struct fbd) * MAX_BUFFER_NUM,
+> @@ -1058,11 +1070,14 @@ err_alloc_ctx:
+>  			isi->p_fb_descriptors,
+>  			isi->fb_descriptors_phys);
+>  err_alloc_descriptors:
+> +err_unprepare_mck:
+> +	clk_unprepare(isi->mck);
+>  err_set_mck_rate:
+>  	clk_put(isi->mck);
+>  err_clk_get:
+>  	kfree(isi);
+>  err_alloc_isi:
+> +	clk_unprepare(pclk);
+>  	clk_put(pclk);
+>  
+>  	return ret;
+
+Please, use error label names consistently. As you can see, currently the 
+driver uses the convention
+
+	ret = do_something();
+	if (ret < 0)
+		goto err_do_something;
+
+i.e., the label is called after the operation, that has failed, not after 
+the clean up step, that the control now has to jump to. Please, update 
+your patch to also use this convention.
+
+Thanks
+Guennadi
 ---
- kernel/sched/fair.c  |   38 +++++++++++++++++++++++++-------------
- kernel/sched/sched.h |    2 ++
- 2 files changed, 27 insertions(+), 13 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7c62e2b..96a9ece 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2644,6 +2644,28 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
- 	return idlest;
- }
- 
-+/**
-+ * highest_flag_domain - Return highest sched_domain containing flag.
-+ * @cpu:	The cpu whose highest level of sched domain is to
-+ *		be returned.
-+ * @flag:	The flag to check for the highest sched_domain
-+ *		for the given cpu.
-+ *
-+ * Returns the highest sched_domain of a cpu which contains the given flag.
-+ */
-+static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
-+{
-+	struct sched_domain *sd, *hsd = NULL;
-+
-+	for_each_domain(cpu, sd) {
-+		if (!(sd->flags & flag))
-+			break;
-+		hsd = sd;
-+	}
-+
-+	return hsd;
-+}
-+
- /*
-  * Try and locate an idle CPU in the sched_domain.
-  */
-@@ -2653,7 +2675,7 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	int prev_cpu = task_cpu(p);
- 	struct sched_domain *sd;
- 	struct sched_group *sg;
--	int i, smt = 0;
-+	int i;
- 
- 	/*
- 	 * If the task is going to be woken-up on this cpu and if it is
-@@ -2673,19 +2695,9 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	 * Otherwise, iterate the domains and find an elegible idle cpu.
- 	 */
- 	rcu_read_lock();
--again:
--	for_each_domain(target, sd) {
--		if (!smt && (sd->flags & SD_SHARE_CPUPOWER))
--			continue;
--
--		if (!(sd->flags & SD_SHARE_PKG_RESOURCES)) {
--			if (!smt) {
--				smt = 1;
--				goto again;
--			}
--			break;
--		}
- 
-+	sd = highest_flag_domain(target, SD_SHARE_PKG_RESOURCES);
-+	for_each_lower_domain(sd) {
- 		sg = sd->groups;
- 		do {
- 			if (!cpumask_intersects(sched_group_cpus(sg),
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c2e7802..8715055 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -501,6 +501,8 @@ DECLARE_PER_CPU(struct rq, runqueues);
- #define for_each_domain(cpu, __sd) \
- 	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); __sd; __sd = __sd->parent)
- 
-+#define for_each_lower_domain(sd) for (; sd; sd = sd->child)
-+
- #define cpu_rq(cpu)		(&per_cpu(runqueues, (cpu)))
- #define this_rq()		(&__get_cpu_var(runqueues))
- #define task_rq(p)		cpu_rq(task_cpu(p))
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
