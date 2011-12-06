@@ -1,86 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab1LFAHX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 19:07:23 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33307 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab1LFAHU (ORCPT
+	id S932839Ab1LFAIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 19:08:39 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59989 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab1LFAIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 19:07:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EDD01BA.40208@redhat.com>
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
-	<4ED6C5B8.8040803@linuxtv.org>
-	<4ED75F53.30709@redhat.com>
-	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
-	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
-	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
-	<4EDC9B17.2080701@gmail.com>
-	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-	<4EDD01BA.40208@redhat.com>
-Date: Tue, 6 Dec 2011 01:07:20 +0100
-Message-ID: <CAJbz7-1S6K=sDJFcOM8mMxL3t2JS91k+fHLy4gq868_9eUyS9A@mail.gmail.com>
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
- because of worrying about possible misusage?
-From: HoP <jpetrous@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 5 Dec 2011 19:08:37 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 6 Dec 2011 09:07:26 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
+        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v7 10/10] Disable task moving when using kernel memory
+ accounting
+Message-Id: <20111206090726.21037cb9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4EDC8C6D.2070001@parallels.com>
+References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
+	<1322611021-1730-11-git-send-email-glommer@parallels.com>
+	<20111130112210.1d979512.kamezawa.hiroyu@jp.fujitsu.com>
+	<4ED914EC.6020500@parallels.com>
+	<20111205111835.b1432603.kamezawa.hiroyu@jp.fujitsu.com>
+	<4EDC8C6D.2070001@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I doubt that scan or w_scan would support it. Even if it supports, that
-> would mean that,
-> for each ioctl that would be sent to the remote server, the error code would
-> take 480 ms
-> to return. Try to calculate how many time w_scan would work with that. The
-> calculus is easy:
-> see how many ioctl's are called by each frequency and multiply by the number
-> of frequencies
-> that it would be seek. You should then add the delay introduced over
-> streaming the data
-> from the demux, using the same calculus. This is the additional time over a
-> local w_scan.
->
-> A grouch calculus with scandvb: to tune into a single DVB-C frequency, it
-> used 45 ioctls.
-> Each taking 480 ms round trip would mean an extra delay of 21.6 seconds.
-> There are 155
-> possible frequencies here. So, imagining that scan could deal with 21.6
-> seconds of delay
-> for each channel (with it doesn't), the extra delay added by it is 1 hour
-> (45 * 0.48 * 155).
->
-> On the other hand, a solution like the one described by Florian would
-> introduce a delay of
-> 480 ms for the entire scan to happen, as only one data packet would be
-> needed to send a
-> scan request, and one one stream of packets traveling at 10GB/s would bring
-> the answer
-> back.
+On Mon, 5 Dec 2011 07:18:37 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-Andreas was excited by your imaginations and calculations, but not me.
-Now you again manifested you are not treating me as partner for discussion.
-Otherwise you should try to understand how-that-ugly-hack works.
-But you surelly didn't try to do it at all.
+> On 12/05/2011 12:18 AM, KAMEZAWA Hiroyuki wrote:
+> > On Fri, 2 Dec 2011 16:11:56 -0200
+> > Glauber Costa<glommer@parallels.com>  wrote:
+> >
+> >> On 11/30/2011 12:22 AM, KAMEZAWA Hiroyuki wrote:
+> >>> On Tue, 29 Nov 2011 21:57:01 -0200
+> >>> Glauber Costa<glommer@parallels.com>   wrote:
+> >>>
+> >>>> Since this code is still experimental, we are leaving the exact
+> >>>> details of how to move tasks between cgroups when kernel memory
+> >>>> accounting is used as future work.
+> >>>>
+> >>>> For now, we simply disallow movement if there are any pending
+> >>>> accounted memory.
+> >>>>
+> >>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
+> >>>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
+> >>>> ---
+> >>>>    mm/memcontrol.c |   23 ++++++++++++++++++++++-
+> >>>>    1 files changed, 22 insertions(+), 1 deletions(-)
+> >>>>
+> >>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >>>> index a31a278..dd9a6d9 100644
+> >>>> --- a/mm/memcontrol.c
+> >>>> +++ b/mm/memcontrol.c
+> >>>> @@ -5453,10 +5453,19 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
+> >>>>    {
+> >>>>    	int ret = 0;
+> >>>>    	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
+> >>>> +	struct mem_cgroup *from = mem_cgroup_from_task(p);
+> >>>> +
+> >>>> +#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)&&   defined(CONFIG_INET)
+> >>>> +	if (from != memcg&&   !mem_cgroup_is_root(from)&&
+> >>>> +	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
+> >>>> +		printk(KERN_WARNING "Can't move tasks between cgroups: "
+> >>>> +			"Kernel memory held.\n");
+> >>>> +		return 1;
+> >>>> +	}
+> >>>> +#endif
+> >>>
+> >>> I wonder....reading all codes again, this is incorrect check.
+> >>>
+> >>> Hm, let me cralify. IIUC, in old code, "prevent moving" is because you hold
+> >>> reference count of cgroup, which can cause trouble at rmdir() as leaking refcnt.
+> >> right.
+> >>
+> >>> BTW, because socket is a shared resource between cgroup, changes in mm->owner
+> >>> may cause task cgroup moving implicitly. So, if you allow leak of resource
+> >>> here, I guess... you can take mem_cgroup_get() refcnt which is memcg-local and
+> >>> allow rmdir(). Then, this limitation may disappear.
+> >>
+> >> Sorry, I didn't fully understand. Can you clarify further?
+> >> If the task is implicitly moved, it will end up calling can_attach as
+> >> well, right?
+> >>
+> > I'm sorry that my explanation is bad.
+> >
+> > You can take memory cgroup itself's reference count by mem_cgroup_put/get.
+> > By getting this, memory cgroup object will continue to exist even after
+> > its struct cgroup* is freed by rmdir().
+> >
+> > So, assume you do mem_cgroup_get()/put at socket attaching/detatching.
+> >
+> > 0) A task has a tcp socekts in memcg0.
+> >
+> > task(memcg0)
+> >   +- socket0 -->  memcg0,usage=4096
+> >
+> > 1) move this task to memcg1
+> >
+> > task(memcg1)
+> >   +- socket0 -->  memcg0,usage=4096
+> >
+> > 2) The task create a new socket.
+> >
+> > task(memcg1)
+> >   +- socekt0 -->  memcg0,usage=4096
+> >   +- socket1 -->  memcg1,usage=xxxx
+> >
+> > Here, the task will hold 4096bytes of usage in memcg0 implicitly.
+> >
+> > 3) an admin removes memcg0
+> > task(memcg1)
+> >   +- socket0 -->memcg0, usage=4096<-----(*)
+> >   +- socket1 -->memcg1, usage=xxxx
+> >
+> > (*) is invisible to users....but this will not be very big problem.
+> >
+> Hi Kame,
+> 
+> Thanks for the explanation.
+> 
+> Hummm, Do you think that by doing it, we get rid of the need of moving 
+> sockets to another memcg when the task is moved? So in my original 
+> patchset, if you recall, I wanted to keep a socket forever in the same 
+> cgroup. I didn't, because then rmdir would be blocked.
+> 
+> By using this memcg reference trick, both can be achieved. What do you 
+> think ?
 
-How do you find those 45 ioctls for DVB-C tune? I still see only one ioctl
-FE_SET_FRONTEND or v5+ variant FE_SET_PROPERTY.
+I think so. Using mem_cgroup_put/get is a way. Could you try ?
 
-Sorry, but, for example, szap tunes very close to local variant:
+Thanks,
+-Kame
 
-# time szap -c channels.conf -x Ocko
-reading channels from file 'channels.conf'
-zapping to 15 'ocko':
-sat 0, frequency = 12168 MHz V, symbolrate 27500000, vpid = 0x00a0,
-apid = 0x0050 sid = 0x1451
-using '/dev/dvb/adapter0/frontend0' and '/dev/dvb/adapter0/demux0'
-status 1f | signal d410 | snr d380 | ber 00000000 | unc 00000000 | FE_HAS_LOCK
-0.00user 0.00system 0:01.33elapsed 0%CPU (0avgtext+0avgdata 2000maxresident)k
-0inputs+0outputs (0major+171minor)pagefaults 0swaps
 
-Honza
+
