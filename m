@@ -1,99 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862Ab1LFCSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 21:18:08 -0500
-Received: from comu.ring0.de ([46.4.151.82]:48140 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932811Ab1LFCSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 21:18:06 -0500
-X-Spam-Report: * -2.6 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.1 RDNS_NONE Delivered to trusted network by a host with no rDNS
-	*  0.1 AWL AWL: From: address is in the auto white-list
-Date: Tue, 6 Dec 2011 03:17:49 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
-        Vladimir Zapolskiy <vz@mleia.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH] mfd: add bq2415x charger driver
-Message-ID: <20111206021749.GA7202@earth.universe>
-References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
+	id S932869Ab1LFCex (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 21:34:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:49791 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932850Ab1LFCev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 21:34:51 -0500
+Message-ID: <4EDD7F46.1050907@canonical.com>
+Date: Mon, 05 Dec 2011 18:34:46 -0800
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="5vNYLRcllDrimb99"
-Content-Disposition: inline
-In-Reply-To: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC] __d_path() API change (was Re: [PATCH] Remove use of mnt_ns->root
+ and fix a couple of bugs in d_namespace_path)
+References: <1323034020-28780-1-git-send-email-john.johansen@canonical.com> <20111204221020.GB2203@ZenIV.linux.org.uk> <20111205032711.GC2203@ZenIV.linux.org.uk>
+In-Reply-To: <20111205032711.GC2203@ZenIV.linux.org.uk>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/04/2011 07:27 PM, Al Viro wrote:
+> 	I think I have a saner solution; the root of the problem is that
+> __d_path() API is asking for trouble.  What I'm proposing is:
+> 
+> 	* Give prepend_path() an extra argument for reporting which
+> fatherless thing has it reached if it has missed the root - struct
+> path *bastard.  struct path *root becomes const on that *and* what
+> we put into *bastard is properly grabbed.  We do that only if that
+> pointer is not NULL, of course.  In any case we return 1 if we go
+> out through global_root:
+> 
+> 	* modify the callers accordingly; everything except __d_path()
+> will simply pass NULL as that extra argument and instead of checking
+> if root has been changed, just check if return value was positive.
+> 
+> 	* __d_path() gets the similar extra argument itself; if it's non-NULL
+> and we miss the root, the caller can expect to get (referenced) point where
+> the walk has stopped stored there.  _Maybe_ it ought to fill it with
+> NULL/NULL otherwise; I've just done that in the only such caller before
+> calling __d_path().  If it is NULL *and* root has not been NULL/NULL (i.e.
+> we asked for subtree explicitly and have nowhere to put the stopping point),
+> we return NULL instead of pointer to relative pathname.
+> 
+> 	* seq_path_root() does _NOT_ return -ENAMETOOLONG (it's stupid anyway -
+> the normal seq_file logics will take care of growing the buffer and redoing
+> the call of ->show() just fine).  However, if it gets path not reachable
+> from root, it returns SEQ_SKIP.  The only caller adjusted (i.e. stopped
+> ignoring the return value as it used to do).
+> 
+> 	* unlike seq_path_root(), the caller in tomoyo passes NULL/NULL in
+> *root (it wants absolute path).  It still calls with bastard == NULL, so
+> no references are grabbed.
+> 
+> 	* apparmor d_namespace_path() calls __d_path() passing it a pointer
+> to local struct path to fill.  It's been earlier initialized to NULL/NULL
+> (see above in part about __d_path()), so the check for "has it been outside
+> of chroot jail" is simply bastard.mnt != NULL after the call.  Moreover,
+> in this case it's safe to access vfsmount and dentry; we can do the checks
+> just fine, they won't be freed under us.  One more thing - I've exported
+> uninlined variant of check_mnt() (called our_mnt(), for obvious reasons)
+> and used it here.
+> 
+> Completely untested patch follows:
+> 
+Thanks Al, this looks good, and I have been running this one a test box doing
+regression testing successfully for hours with one small change in the apparmor
+portion of the code which I have included below.
 
---5vNYLRcllDrimb99
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+With the apparmor change you can add
 
-Hi,
+Reviewed-by: John Johansen <john.johansen@canonical.com>
 
-Good to hear somebody is working on this :) I planned to do this
-myself, but didn't find any time for it. Here are some comments
-=66rom me:
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> ---
 
-[...]
+<< snip >>
 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> --- a/security/apparmor/path.c
+> +++ b/security/apparmor/path.c
+> @@ -57,23 +57,16 @@ static int prepend(char **buffer, int buflen, const char *str, int namelen)
+>  static int d_namespace_path(struct path *path, char *buf, int buflen,
+>  			    char **name, int flags)
+>  {
+> -	struct path root, tmp;
+> +	struct path root = {};
+> +	struct path bastard = {};
+>  	char *res;
+> -	int connected, error = 0;
+> +	int error = 0;
+>  
+> -	/* Get the root we want to resolve too, released below */
+> -	if (flags & PATH_CHROOT_REL) {
+> -		/* resolve paths relative to chroot */
+> +	/* resolve paths relative to chroot?*/
+> +	if (flags & PATH_CHROOT_REL)
+>  		get_fs_root(current->fs, &root);
+> -	} else {
+> -		/* resolve paths relative to namespace */
+> -		root.mnt = current->nsproxy->mnt_ns->root;
+> -		root.dentry = root.mnt->mnt_root;
+> -		path_get(&root);
+> -	}
+>  
+> -	tmp = root;
+> -	res = __d_path(path, &tmp, buf, buflen);
+> +	res = __d_path(path, &root, &bastard, buf, buflen);
+>  
+>  	*name = res;
+>  	/* handle error conditions - and still allow a partial path to
+> @@ -97,10 +90,7 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+>  			goto out;
+>  	}
+>  
+> -	/* Determine if the path is connected to the expected root */
+> -	connected = tmp.dentry == root.dentry && tmp.mnt == root.mnt;
+> -
+> -	/* If the path is not connected,
+> +	/* If the path is not connected to the expected root,
+>  	 * check if it is a sysctl and handle specially else remove any
+>  	 * leading / that __d_path may have returned.
+>  	 * Unless
+> @@ -111,9 +101,9 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+>  	 *     of chroot) and specifically directed to connect paths to
+>  	 *     namespace root.
+>  	 */
+> -	if (!connected) {
+> +	if (bastard.mnt) {
+This doesn't quite match the original !connected check.  It is the same for the case of
+flags & PATH_CHROOT_REL (ie. root = current->fs), but for the case where we pass root = { }
+bastard.mnt is always true, while in the old !connected case, it would only be true if
+!our_mnt(bastard).
 
-I would expect the driver in drivers/power. But maybe MFD is
-better, since the chip can also be used to power USB host?
+This isn't entirely covered by the subsequent check
+			   !(((flags & CHROOT_NSCONNECT) == CHROOT_NSCONNECT) &&
+			     our_mnt(bastard.mnt))) {
 
-[...]
+which means apparmor ends up treating the path as disconnected when it shouldn't.
+This can be fixed by changing the check to
 
-> +#define BQ2415X_VOLTAGE_SCALE 20000
+-	if (!connected) {
++	if (bastard.mnt && (root.mnt || !our_mnt(bastard.mnt)) {
 
-If I remember correctly (I read the specs some time ago), this can
-be configured via external resistor. So this is board specific?
+I will send a separate patch to kill
+			   !(((flags & CHROOT_NSCONNECT) == CHROOT_NSCONNECT) &&
+			     our_mnt(bastard.mnt))
 
-[...]
+as its an unused vestige which isn't even possible, and was missed being removed during
+code cleanup.
 
-> +	bq2415x_i2c_write(cli, BQ2415X_CHG_CTL, 0x42);
-> +	bq2415x_set_voltage(cli, 0, 4200000);
-> +	bq2415x_set_current_limit(cli, 1800000, 1800000);
-
-So it always charges with 1.8A? Shouldn't this be dependent on the
-input source (e.g. 500mA from USB)? Also what's if no charger is
-connected at all?
-
-Apart from this I think those values should be exposed to sysfs
-via /sys/class/power_supply.
-
--- Sebastian
-
---5vNYLRcllDrimb99
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO3XtNAAoJENju1/PIO/qaCQQP/jn5Zp92a7kaUss3zOEY3KOw
-aFz2YMwPW0OZtPS7QAKT0T2jGHn7SVbh478V6tA2y8g9lCkh3KMutBhd5FkC5dUk
-g2yKhnvK2R58ZjgqU5jn+4A5fDS3cf0g16Nvvj41MjQIpmA+meXZC8tYtM+7jxSg
-HzfvCJUYXjtfVaLDVvtCOxc/gGt2y2QTE+BUMRmHSh7olVbiaxP+pWoJsvQ9PaMP
-WBQM6CvEusr7AEcNkXHdKUXH7OpvOBaU5RWU/BIPpx5WITkfvSq5YBNKHGWvcpv0
-wrWemnVpQWfMGJsOOLWiITwoCHLMdMEvyPM09H3Z6RbHgKMHxRR9r5YSTAu63YEM
-CJPgVnbvBpdCP1/sJ626gKbTbt2EmzWGJ0vUqynYc/9wE5neDOsvDY/tyP8MMg1g
-l8eN9N9C89aWqoxxHbBa3uaauLJtMvyW7U45/yBk+kGY1SATu9/BwwMSFEBxiZZp
-c8Q8KMDy5s0EULVi5sHaaiHYGbQ4tCsSJo4DBi/Y0X80idDfnBvSpmB7qI+3BxXs
-jdXri1OswbO5rnAbFFSz9IT22JNSoln0VFwuaeTy6FNmlEE1ts+BUUtD/vi2pWWg
-ugZ+MdyN84A1msbLiLJGHsksJvILIogDJlryGpc3o+7mf+/1qe1T2g5fjC85Iuo5
-D0MF9Xyk+gejJhcpq0Ro
-=Wmry
------END PGP SIGNATURE-----
-
---5vNYLRcllDrimb99--
+>  		/* is the disconnect path a sysctl? */
+> -		if (tmp.dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
+> +		if (bastard.dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
+>  		    strncmp(*name, "/sys/", 5) == 0) {
+>  			/* TODO: convert over to using a per namespace
+>  			 * control instead of hard coded /proc
+> @@ -121,8 +111,7 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+>  			error = prepend(name, *name - buf, "/proc", 5);
+>  		} else if (!(flags & PATH_CONNECT_PATH) &&
+>  			   !(((flags & CHROOT_NSCONNECT) == CHROOT_NSCONNECT) &&
+> -			     (tmp.mnt == current->nsproxy->mnt_ns->root &&
+> -			      tmp.dentry == tmp.mnt->mnt_root))) {
+> +			     our_mnt(bastard.mnt))) {
+>  			/* disconnected path, don't return pathname starting
+>  			 * with '/'
+>  			 */
+> @@ -133,7 +122,10 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+>  	}
+>  
+>  out:
+> -	path_put(&root);
+> +	if (bastard.mnt)
+> +		path_put(&bastard);
+> +	if (flags & PATH_CHROOT_REL)
+> +		path_put(&root);
+>  
+>  	return error;
+>  }
