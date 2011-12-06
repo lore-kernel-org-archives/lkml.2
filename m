@@ -1,159 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab1LFSKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 13:10:35 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61971 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab1LFSKd (ORCPT
+	id S1752817Ab1LFSMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:12:06 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:35764 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab1LFSME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 13:10:33 -0500
-Date: Tue, 6 Dec 2011 22:10:26 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Andrew Vagin <avagin@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
-Message-ID: <20111206181026.GO29781@moon>
+	Tue, 6 Dec 2011 13:12:04 -0500
+Message-ID: <4EDE5AE1.2080607@linux.vnet.ibm.com>
+Date: Tue, 06 Dec 2011 23:41:45 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: rjw@sisk.pl, pavel@ucw.cz, len.brown@intel.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH 1/2] PM / Freezer: Remove the "userspace only"	constraint
+ from freezer[_do_not]_count()
+References: <20111206160251.16729.62719.stgit@srivatsabhat.in.ibm.com> <20111206172020.GA709@redhat.com>
+In-Reply-To: <20111206172020.GA709@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120608-7014-0000-0000-000000381327
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no easy way to make a reverse parent->children chain
-from the task status, in turn children->parent provided with "PPid"
-field.
+On 12/06/2011 10:50 PM, Oleg Nesterov wrote:
 
-So instead of walking over all pids in system to figure out what
-children the task have -- we add explicit /proc/<pid>/children entry,
-since kernel already knows this kind of information but it was not
-yet exported.
+> On 12/06, Srivatsa S. Bhat wrote:
+>>
+>> And moreover, even the vfork issue does not need
+>> the above restriction in these functions, since they are anyway called by
+>> userspace processes.
+> 
+> This looks a bit confusing, as if CLONE_VFORK is not used by kthreads.
+> It is actually used, but only by the non-freezeable workqueue threads,
+> so the patch is fine.
+> 
+> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+> 
 
-v2:
- - Kame suggested to use a separated /proc/<pid>/children entry
-   instead of poking /proc/<pid>/status
- - Andew suggested to use rcu facility instead of locking
-   tasklist_lock
- - Tejun pointed that non-seekable seq file might not be
-   enough for tasks with large number of children
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>
+Thank you! I have updated the commit message by omitting the confusing part:
+
+---
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+[PATCH 1/2] PM / Freezer: Remove the "userspace only" constraint from freezer[_do_not]_count()
+
+At present, the functions freezer_count() and freezer_do_not_count()
+impose the restriction that they are effective only for userspace processes.
+However, now, these functions have found more utility than originally
+intended by the commit which introduced it: ba96a0c8 (freezer:
+fix vfork problem). And moreover, even the vfork issue actually does not
+need the above restriction in these functions.
+
+So, modify these functions to make them work even for kernel threads, so
+that they can be used at other places in the kernel, where the userspace
+restriction doesn't apply.
+
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Suggested-by: Tejun Heo <tj@kernel.org>
+Acked-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
-Please review. I hope I didn't miss anything here.
+ include/linux/freezer.h |   28 +++++++++++-----------------
+ 1 files changed, 11 insertions(+), 17 deletions(-)
 
- fs/proc/array.c    |   66 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/proc/base.c     |    1 
- fs/proc/internal.h |    1 
- 3 files changed, 68 insertions(+)
-
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -547,3 +547,69 @@ int proc_pid_statm(struct seq_file *m, s
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index 30f06c2..7bcfe73 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -67,33 +67,27 @@ static inline bool cgroup_freezing(struct task_struct *task)
+  * appropriately in case the child has exited before the freezing of tasks is
+  * complete.  However, we don't want kernel threads to be frozen in unexpected
+  * places, so we allow them to block freeze_processes() instead or to set
+- * PF_NOFREEZE if needed and PF_FREEZER_SKIP is only set for userland vfork
+- * parents.  Fortunately, in the ____call_usermodehelper() case the parent won't
+- * really block freeze_processes(), since ____call_usermodehelper() (the child)
+- * does a little before exec/exit and it can't be frozen before waking up the
+- * parent.
++ * PF_NOFREEZE if needed. Fortunately, in the ____call_usermodehelper() case the
++ * parent won't really block freeze_processes(), since ____call_usermodehelper()
++ * (the child) does a little before exec/exit and it can't be frozen before
++ * waking up the parent.
+  */
  
- 	return 0;
+-/*
+- * If the current task is a user space one, tell the freezer not to count it as
+- * freezable.
+- */
++
++/* Tell the freezer not to count the current task as freezable. */
+ static inline void freezer_do_not_count(void)
+ {
+-	if (current->mm)
+-		current->flags |= PF_FREEZER_SKIP;
++	current->flags |= PF_FREEZER_SKIP;
  }
-+
-+static int children_seq_show(struct seq_file *seq, void *v)
-+{
-+	struct task_struct *task = container_of(v, struct task_struct, sibling);
-+	return seq_printf(seq, " %d", pid_vnr(task_pid(task)));
-+}
-+
-+static void *children_seq_start(struct seq_file *seq, loff_t *pos)
-+{
-+	struct task_struct *task;
-+
-+	rcu_read_lock();
-+	task = seq->private;
-+	if (task)
-+		return seq_list_start(&task->children, *pos);
-+
-+	return NULL;
-+}
-+
-+static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-+{
-+	struct task_struct *task = seq->private;
-+	if (task)
-+		return seq_list_next(v, &task->children, pos);
-+	return NULL;
-+}
-+
-+static void children_seq_stop(struct seq_file *seq, void *v)
-+{
-+	rcu_read_unlock();
-+	seq_printf(seq, "\n");
-+}
-+
-+static const struct seq_operations children_seq_ops = {
-+	.start	= children_seq_start,
-+	.next	= children_seq_next,
-+	.stop	= children_seq_stop,
-+	.show	= children_seq_show,
-+};
-+
-+static int children_seq_open(struct inode *inode, struct file *file)
-+{
-+	int ret = seq_open(file, &children_seq_ops);
-+	if (!ret) {
-+		struct seq_file *m = file->private_data;
-+		m->private = (void *)get_proc_task(inode);
-+	}
-+
-+	return ret;
-+}
-+int children_seq_release(struct inode *inode, struct file *file)
-+{
-+	struct seq_file *m = file->private_data;
-+	if (m->private)
-+		put_task_struct(m->private);
-+
-+	seq_release(inode, file);
-+	return 0;
-+}
-+
-+const struct file_operations proc_pid_children_operations = {
-+	.open    = children_seq_open,
-+	.read    = seq_read,
-+	.llseek  = seq_lseek,
-+	.release = children_seq_release,
-+};
-Index: linux-2.6.git/fs/proc/base.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/base.c
-+++ linux-2.6.git/fs/proc/base.c
-@@ -3204,6 +3204,7 @@ static const struct pid_entry tgid_base_
- 	INF("cmdline",    S_IRUGO, proc_pid_cmdline),
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
-+	REG("children",   S_IRUGO, proc_pid_children_operations),
- 	REG("maps",       S_IRUGO, proc_maps_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps",  S_IRUGO, proc_numa_maps_operations),
-Index: linux-2.6.git/fs/proc/internal.h
-===================================================================
---- linux-2.6.git.orig/fs/proc/internal.h
-+++ linux-2.6.git/fs/proc/internal.h
-@@ -53,6 +53,7 @@ extern int proc_pid_statm(struct seq_fil
- 				struct pid *pid, struct task_struct *task);
- extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
  
-+extern const struct file_operations proc_pid_children_operations;
- extern const struct file_operations proc_maps_operations;
- extern const struct file_operations proc_numa_maps_operations;
- extern const struct file_operations proc_smaps_operations;
+ /*
+- * If the current task is a user space one, tell the freezer to count it as
+- * freezable again and try to freeze it.
++ * Tell the freezer to count the current task as freezable again and try to
++ * freeze it.
+  */
+ static inline void freezer_count(void)
+ {
+-	if (current->mm) {
+-		current->flags &= ~PF_FREEZER_SKIP;
+-		try_to_freeze();
+-	}
++	current->flags &= ~PF_FREEZER_SKIP;
++	try_to_freeze();
+ }
+ 
+ /*
+
+
