@@ -1,94 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1LFRpG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 12:45:06 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59935 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776Ab1LFRpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 12:45:03 -0500
-Date: Tue, 6 Dec 2011 18:43:20 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Nick Bowler <nbowler@elliptictech.com>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, ben@decadent.org.uk,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] lockdep, bug: Exclude
- TAINT_FIRMWARE_WORKAROUND from disabling lockdep
-Message-ID: <20111206174320.GA25031@elte.hu>
-References: <tip-xopopjjens57r0i13qnyh2yo@git.kernel.org>
- <20111206151345.GA22353@elliptictech.com>
- <20111206154206.441e85c6@lxorguk.ukuu.org.uk>
+	id S1752186Ab1LFRpm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 12:45:42 -0500
+Received: from exchange.solarflare.com ([216.237.3.220]:7604 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751701Ab1LFRpl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 12:45:41 -0500
+Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Mark Lord <kernel@teksavvy.com>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <4EDE0E29.9070809@teksavvy.com>
+References: <4EA89972.5060101@teksavvy.com>
+	 <20111026.194045.2019668159403582571.davem@davemloft.net>
+	 <4EA8B283.3010105@teksavvy.com>
+	 <20111026.221719.2216112919297458522.davem@davemloft.net>
+	 <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>
+	 <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>
+	 <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>
+	 <4EBAB643.8020603@teksavvy.com> <1320859911.2781.1.camel@bwh-desktop>
+	 <4EBABAFD.6050604@teksavvy.com> <1320860895.2781.6.camel@bwh-desktop>
+	 <4EDCD828.2090904@teksavvy.com> <1323098335.7454.214.camel@deadeye>
+	 <4EDE0E29.9070809@teksavvy.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Tue, 6 Dec 2011 17:45:37 +0000
+Message-ID: <1323193537.2772.9.camel@bwh-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206154206.441e85c6@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18562.005
+X-TM-AS-Result: No--18.479900-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> On Tue, 6 Dec 2011 10:13:45 -0500
-> Nick Bowler <nbowler@elliptictech.com> wrote:
-> 
-> > On 2011-12-06 01:38 -0800, tip-bot for Peter Zijlstra wrote:
-> > > Commit-ID:  df754e6af2f237a6c020c0daff55a1a609338e31
-> > > Gitweb:     http://git.kernel.org/tip/df754e6af2f237a6c020c0daff55a1a609338e31
-> > > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > AuthorDate: Mon, 14 Nov 2011 13:13:49 +0100
-> > > Committer:  Ingo Molnar <mingo@elte.hu>
-> > > CommitDate: Tue, 6 Dec 2011 08:16:47 +0100
-> > > 
-> > > lockdep, bug: Exclude TAINT_FIRMWARE_WORKAROUND from disabling lockdep
-> > > 
-> > > It's unlikely that TAINT_FIRMWARE_WORKAROUND causes false
-> > > lockdep messages, so do not disable lockdep in that case.
-> > > We still want to keep lockdep disabled in the
-> > > TAINT_OOT_MODULE case:
-> > > 
-> > >   - bin-only modules can cause various instabilities in
-> > >     their and in unrelated kernel code
-> > > 
-> > >   - they are impossible to debug for kernel developers
-> > > 
-> > >   - they also typically do not have the copyright license
-> > >     permission to link to the GPL-ed lockdep code.
+On Tue, 2011-12-06 at 07:44 -0500, Mark Lord wrote:
+> On 11-12-05 10:18 AM, Ben Hutchings wrote:
+> > On Mon, 2011-12-05 at 09:41 -0500, Mark Lord wrote:
+> > [...]
+> >> static int ax88772b_bind(struct usbnet *dev, struct usb_interface *intf)
+> >> {
+> >> ...
+> >>         /* register support for hardware checksums */
+> >>         dev->net->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+> >>
+> >>         /* enable hardware checksums */
+> >>         dev->net->features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+> >>         ax88772b_set_features(dev->net, dev->net->features);
+> >> ...
+> >> }
+> >> -------------------------------snip-----------------------------------
+> >>
+> >> Does this look correct -- any improvements/fixes to suggest?
+> > [...]
 > > 
-> > This is all bogus.  We have a proprietary module taint for the above.
-> > Out of tree does not mean "bin-only", "non-GPL" or anything else like
-> > that.  
+> > NETIF_F_HW_CSUM means the hardware implements generic IP-style
+> > checksumming: the stack specifies the offset at which to start
+> > checksumming and the offset at which to store the checksum, and the
+> > hardware does not attempt to parse the headers.
+> > 
+> > If this hardware recognises specific protocols and works out the offsets
+> > itself, then you must claim NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM instead.
 > 
-> It also stops people developing drivers of their own who are 
-> not building them in the kernel tree currently (eg when I'm 
-> building tests of the GMA500 graphics driver). This is a 
-> ludicrous patch and should be reverted
+> Yeah, the hardware seems to understand quite a few protocol formats.
+> Okay, so I'll claim the protocol-specific flags in net->hw_features.
+> 
+> But what do I use in net->features?
+> The exact same protocol flags,
+> or the generic NETIF_F_HW_CSUM | NETIF_F_RXCSUM ones?
 
-That patch is already upstream, it was done via the module tree:
+You set the flags for features that are actually being implemented!
 
- 2449b8ba0745: module,bug: Add TAINT_OOT_MODULE flag for modules not built in-tree
+But do set NETIF_F_RXCSUM in both places.  The network stack doesn't
+know or care exactly what protocols you can do RX checksum validation
+for, so there is only one flag for this.  Only the TX checksum
+generation features have to be distinguished.
 
-lockdep disabling itself defensively is an effect of that 
-change. The commit you replied to here does not change that 
-aspect in any way.
+> The set_features() function also has to test for flags
+> to know what to do.  Should it test specific protocol flags,
+> or just the generic two ?
 
-My primary worry is to not have lockdep active when there's 
-binary modules in a system - can TAINT_OOT_MODULE be set but 
-TAINT_PROPRIETARY_MODULE not set for non-GPL modules?
+Think it through.
 
-If not, and if TAINT_OOT_MODULE set and TAINT_PROPRIETARY_MODULE 
-cleared guarantees the GPL-ness of the module then i have no 
-problem with keeping lockdep active in that case.
+Ben.
 
-Thanks,
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-	Ingo
