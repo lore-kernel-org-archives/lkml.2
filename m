@@ -1,96 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899Ab1LFGKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 01:10:16 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:40906 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751308Ab1LFGKO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 01:10:14 -0500
-Date: Tue, 6 Dec 2011 09:10:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Marcos Paulo de Souza <marcos.mage@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/2] staging: vt6656: aes_ccmp, baseband, bssdb, card:
- Change BOOL to int
-Message-ID: <20111206061018.GD3374@mwanda>
-References: <1323047566-12650-1-git-send-email-marcos.mage@gmail.com>
- <20111205065517.GC3236@mwanda>
- <alpine.LNX.2.00.1112052237140.2379@cactuar.localhost>
+	id S1753013Ab1LFGM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 01:12:28 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:40855
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752743Ab1LFGM1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 01:12:27 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371K1432N98dKzz1202hzz8275bhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Tue, 6 Dec 2011 14:25:01 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Dong Aisheng <b29396@freescale.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
+        <kernel@pengutronix.de>
+Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+Message-ID: <20111206062500.GA3649@S2100-06.ap.freescale.net>
+References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+ <1322999384-7886-2-git-send-email-b29396@freescale.com>
+ <CACRpkdaYz+-nZA6atxA+5kvWOO84YeSHQPNiojq_R4zkHUGz3Q@mail.gmail.com>
+ <20111205211838.GG27267@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+KJYzRxRHjYqLGl5"
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1112052237140.2379@cactuar.localhost>
+In-Reply-To: <20111205211838.GG27267@pengutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090201.4EDDB1C1.0042,ss=1,re=0.000,fgs=0
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 05, 2011 at 10:18:38PM +0100, Sascha Hauer wrote:
+> On Mon, Dec 05, 2011 at 05:57:42PM +0100, Linus Walleij wrote:
+> > On Sun, Dec 4, 2011 at 12:49 PM, Dong Aisheng <b29396@freescale.com> wrote:
+> > 
+> > > +enum imx_mx53_pads {
+> > > +       MX53_GPIO_19 = 0,
+> > > +       MX53_KEY_COL0 = 1,
+> > (...)
+> > 
+> > First I thought it looked a bit strange since you needed enums for all pads
+> > but then I realized that your macros use the same enumerator name to
+> > name the pad and then it looks sort of clever.
+> > 
+> > But maybe put in a comment about that here:
+> > 
+> > > +/* Pad names for the pinmux subsystem */
+> > 
+> > Like this:
+> > 
+> > /*
+> >  * Pad names for the pinmux subsystem.
+> >  * These pad names are constructed from the pin enumerator names
+> >  * in the IMX_PINCTRL_PIN() macro.
+> >  */
+> > 
+> > > +static const struct pinctrl_pin_desc mx53_pads[] = {
+> > > +       IMX_PINCTRL_PIN(MX53_GPIO_19),
+> > > +       IMX_PINCTRL_PIN(MX53_KEY_COL0),
+> > (...)
+> > 
+> > > +/* mx53 pin groups and mux mode */
+> > > +static const unsigned mx53_fec_pins[] = {
+> > > +       MX53_FEC_MDC,
+> > > +       MX53_FEC_MDIO,
+> > > +       MX53_FEC_REF_CLK,
+> > > +       MX53_FEC_RX_ER,
+> > > +       MX53_FEC_CRS_DV,
+> > > +       MX53_FEC_RXD1,
+> > > +       MX53_FEC_RXD0,
+> > > +       MX53_FEC_TX_EN,
+> > > +       MX53_FEC_TXD1,
+> > > +       MX53_FEC_TXD0,
+> > > +};
+> > 
+> > I understand this.
+> > 
+> > > +static const unsigned mx53_fec_mux[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+> > 
+> > But what is this? Just zeroes? Why?
+> > Especially with a const so they really cannot be anything
+> > else. The same pin (0) can only be enumerated once.
+> > 
+> > > +static const unsigned mx53_sd1_pins[] = {
+> > > +       MX53_SD1_CMD,
+> > > +       MX53_SD1_CLK,
+> > > +       MX53_SD1_DATA0,
+> > > +       MX53_SD1_DATA1,
+> > > +       MX53_SD1_DATA2,
+> > > +       MX53_SD1_DATA3,
+> > > +
+> > > +};
+> > > +static const unsigned mx53_sd1_mux[] = { 0, 0, 0, 0, 0, 0 };
+> > 
+> > And here again.
+> > 
+> > > +static const unsigned mx53_sd3_pins[] = {
+> > > +       MX53_PATA_DATA8,
+> > > +       MX53_PATA_DATA9,
+> > > +       MX53_PATA_DATA10,
+> > > +       MX53_PATA_DATA11,
+> > > +       MX53_PATA_DATA0,
+> > > +       MX53_PATA_DATA1,
+> > > +       MX53_PATA_DATA2,
+> > > +       MX53_PATA_DATA3,
+> > > +       MX53_PATA_IORDY,
+> > > +       MX53_PATA_RESET_B,
+> > > +
+> > > +};
+> > > +static const unsigned mx53_sd3_mux[] = { 4, 4, 4, 4, 4, 4, 4, 4, 2, 2 };
+> > 
+> > This also looks strange. Can you explain what these muxes are?
+> 
+> Freescale has named the pins after their primary function which is quite
+> confusing.
+> 
+> The above means:
+> 
+> MX53_PATA_DATA8 -> mux mode 4
+> MX53_PATA_DATA9 -> mux mode 4
+> ...
+> 
+> This brings me to the point that currently we have the pins described as
+> 
+> #define MX53_PAD_<name>__<function>
+> 
+But that's also the reason why we have so many lengthy iomux-mx*.h on
+imx.  Taking iomux-mx53.h for example, it's a 109K header with 1219
+LOC, but probably only 10% of the definitions will actually be used.
 
---+KJYzRxRHjYqLGl5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> which means that you don't have to look into the datasheet to get the
+> different options for a pin
 
-On Mon, Dec 05, 2011 at 10:41:54PM -0200, Marcos Paulo de Souza wrote:
-> On Mon, 5 Dec 2011, Dan Carpenter wrote:
-> >On Sun, Dec 04, 2011 at 11:12:46PM -0200, Marcos Paulo de Souza wrote:
-> >>This patch change all references of BOOL to int. As asked by the TODO
-> >>file of the driver, we need to remove the ttype.h, and this file do a
-> >>typedef of int to BOOL. We don't need this.
->=20
-> Dan, I'm trying to remove this chunk of code:
->=20
-> drivers/staging/vt6656/ttype.h:
->=20
-> typedef int BOOL;
->=20
-> Are we talinkg about the same BOOL type?
->=20
+Looking at the datasheet when we write code is a pretty natural thing
+to me.
 
-Yes.
+-- 
+Regards,
+Shawn
 
-> >
-> >Why not use bool?  Especially inside structs bool takes up less
-> >space than an int.  Also static analysis tools care about the type.
->=20
-> This typedef is about a int type.
+> (and don't have a chance to get it wrong).
+> I don't really want to lose this.
+> 
 
-Yes.  I know that.  But these things are used like bool not like int
-so bool is the correct thing.
-
-Bool is a different type from int, so you'll have to verify that
-changing it doesn't break anything.  It's a more difficult change
-but it's the right thing to do.
-
-regards,
-dan carpenter
-
-
---+KJYzRxRHjYqLGl5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO3bHJAAoJEOnZkXI/YHqRDw8P/2EUIx4CWYo8tbZXWfs3mO9m
-dqC3YM9BmKoq2kbtNiShMJZWy+NpLR9EiuZgXx7gw9b7Ub2YR9+vqT1+DrhoKM5o
-PXURmLmesVJBa2ANNJuQpSm40rLXOVWIofSXNRpZhKXwRAP3gX04DSRc+PS7Gl1s
-g97osv3OPts1Djji20cnroCkvdzBhaTPVVQ3VWXgVfyJJudD/OKxSr4tCg9L7EY9
-IzKe5xBODxEX7zLDgcFl9tABYkWVRCDOWNeVKXrv3bVfIKPCHGb2vXlajW1VJtVl
-UK7VnCW7XAMmkwVvz39SQBJybNG6D/gvBU/eAVGK8cXlobVR0yd0ta3WPvaYe1Hx
-gMPJdf4TAla/dd00rb1F0aDbkVDJhqkUU5Riy8DVLdetR9JedALpPDa8cehHWxGG
-wV/iUVVIba2zkcn72d2lpfHKTMEkWMz3qa0Cp3uCUXaYSKYbmADkFB1aUQhUEYN5
-SQEzJCqn+XTrsaV7vzVTiJ1HMgaq2po+HpD1B68tKU8tvimcu2yCZDrVnaqKPOwF
-B9tyBLtUxrSDzBtXh/0B3VO8IUuq/Q1LKXyJKVV2V1aLu64MI7dMa1IhG0pE7J+W
-UchtY2rwFFbB27nUjPtYp14MiF+QS1BdHmqoWYPXD7eP26VuFogi9lYt8TMo8chw
-VQa4Y1PTdYn3AQ4hzrYx
-=T3bU
------END PGP SIGNATURE-----
-
---+KJYzRxRHjYqLGl5--
