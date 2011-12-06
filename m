@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab1LFG1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 01:27:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33921 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932826Ab1LFG1s (ORCPT
+	id S932974Ab1LFG2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 01:28:11 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:34967 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932910Ab1LFG2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 01:27:48 -0500
-Date: Mon, 5 Dec 2011 22:27:33 -0800
-From: tip-bot for Gleb Natapov <gleb@redhat.com>
-Message-ID: <tip-bbbf7af4bf8fc69bc751818cf30521080fa47dcb@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, gleb@redhat.com, rostedt@goodmis.org,
-        tglx@linutronix.de, jbaron@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, gleb@redhat.com, rostedt@goodmis.org,
-        tglx@linutronix.de, jbaron@redhat.com
-In-Reply-To: <20111018175551.GH17571@redhat.com>
-References: <20111018175551.GH17571@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] jump_label: jump_label_inc may return before the code is patched
-Git-Commit-ID: bbbf7af4bf8fc69bc751818cf30521080fa47dcb
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Tue, 6 Dec 2011 01:28:09 -0500
+Date: Mon, 5 Dec 2011 23:28:08 -0700 (MST)
+From: Paul Walmsley <paul@pwsan.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
+        tglx@linutronix.de, linus.walleij@stericsson.com,
+        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
+        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org, Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
+In-Reply-To: <alpine.DEB.2.00.1112051706300.6289@utopia.booyaka.com>
+Message-ID: <alpine.DEB.2.00.1112052322120.6289@utopia.booyaka.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1112051342430.6289@utopia.booyaka.com> <20111205234849.GA14547@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.00.1112051706300.6289@utopia.booyaka.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 22:27:40 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bbbf7af4bf8fc69bc751818cf30521080fa47dcb
-Gitweb:     http://git.kernel.org/tip/bbbf7af4bf8fc69bc751818cf30521080fa47dcb
-Author:     Gleb Natapov <gleb@redhat.com>
-AuthorDate: Tue, 18 Oct 2011 19:55:51 +0200
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Mon, 5 Dec 2011 13:28:46 -0500
+On Mon, 5 Dec 2011, Paul Walmsley wrote:
 
-jump_label: jump_label_inc may return before the code is patched
+> For example, here's a trivial implementation for rate recalculation for a 
+> integer divider clock node (that can't be handled with a right shift):
+> 
+> s64 div(struct clk *clk, u32 div) {
+> 	if (clk->flags & CLK_PARENT_RATE_MAX_U32)
+> 		return ((u32)(clk->parent->rate & 0xffffffff)) / div;
+> 
+> 	clk->rate = clk->parent->rate;
+> 	do_div(clk->rate, div);
+> 	return clk->rate;
+> }
 
-If cpu A calls jump_label_inc() just after atomic_add_return() is
-called by cpu B, atomic_inc_not_zero() will return value greater then
-zero and jump_label_inc() will return to a caller before jump_label_update()
-finishes its job on cpu B.
+(removing some useless cruft from the above function, for clarity's sake)
 
-Link: http://lkml.kernel.org/r/20111018175551.GH17571@redhat.com
+s64 div(struct clk *clk, u32 div) {
+	s64 r;
 
-Cc: stable@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Jason Baron <jbaron@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/jump_label.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+	if (clk->flags & CLK_PARENT_RATE_MAX_U32)
+		return ((u32)clk->parent->rate) / div;
 
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index bbdfe2a..66ff710 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -66,8 +66,9 @@ void jump_label_inc(struct jump_label_key *key)
- 		return;
- 
- 	jump_label_lock();
--	if (atomic_add_return(1, &key->enabled) == 1)
-+	if (atomic_read(&key->enabled) == 0)
- 		jump_label_update(key, JUMP_LABEL_ENABLE);
-+	atomic_inc(&key->enabled);
- 	jump_label_unlock();
- }
- 
+	r = clk->parent->rate;
+	do_div(r, div);
+	return r;
+}
+
+00000000 <div>:
+   0:	e92d4010 	push	{r4, lr}
+   4:	e1a04001 	mov	r4, r1
+   8:	e5d03010 	ldrb	r3, [r0, #16]
+   c:	e3130001 	tst	r3, #1
+  10:	1a000005 	bne	2c <div+0x2c>
+
+  14:	e5903000 	ldr	r3, [r0]
+  18:	e1c300d8 	ldrd	r0, [r3, #8]
+  1c:	ebfffffe 	bl	0 <__do_div64>
+  20:	e1a00002 	mov	r0, r2
+  24:	e1a01003 	mov	r1, r3
+  28:	e8bd8010 	pop	{r4, pc}
+
+  2c:	e5900000 	ldr	r0, [r0]
+  30:	e5900008 	ldr	r0, [r0, #8]
+  34:	ebfffffe 	bl	0 <__aeabi_uidiv>
+  38:	e3a01000 	mov	r1, #0
+  3c:	e8bd8010 	pop	{r4, pc}
+
+
+- Paul
