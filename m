@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933452Ab1LFOSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 09:18:40 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55593 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933255Ab1LFOSh (ORCPT
+	id S933445Ab1LFOTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 09:19:33 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56852 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933255Ab1LFOTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 09:18:37 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91 fixes for 3.2-rc4
-Date: Tue, 6 Dec 2011 14:16:01 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-References: <4ED65F6D.4020402@atmel.com>
-In-Reply-To: <4ED65F6D.4020402@atmel.com>
+	Tue, 6 Dec 2011 09:19:32 -0500
+Date: Tue, 6 Dec 2011 14:19:29 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andreas Oberritter <obi@linuxtv.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+Message-ID: <20111206141929.GE17731@opensource.wolfsonmicro.com>
+References: <4ED75F53.30709@redhat.com>
+ <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+ <20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+ <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
+ <4EDC9B17.2080701@gmail.com>
+ <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
+ <4EDD01BA.40208@redhat.com>
+ <4EDD2C82.7040804@linuxtv.org>
+ <20111206112153.GC17194@sirena.org.uk>
+ <4EDE0427.2050307@linuxtv.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112061416.01718.arnd@arndb.de>
-X-Provags-ID: V02:K0:igmO0Y8EXkCJ8EoWGReuJzRmRWr1TnnqWIhTH25X9Hg
- 4nyhiXUKdSAywAVSM4DxxIvyL8CUfvNWNuChLIErWNSIYqHoVy
- Cih/NeRal8a7q5cdtT69BuoXj2KByvEiONQDrqXJDu1OJijBWB
- eEBkN3/yE7cJijgT+KMUrkEGqFpTa8RHEdjdIwofP9nRuVOntC
- aKb1ziKIEPCwczRntdIUb0T15KfVdrqvGUToctVcmadMD9rCxL
- FdeuAER/yN+Zkp9RqPJbbDS8Iq5kUr1FC/XeUblewmek2ZYDer
- hhEeBkm3bDvELGLlYtU4Aa+CLFMC71GGWfUZQY9L+p+qUGWXEf
- f2vEJZoMACLwsmo8UtzM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EDE0427.2050307@linuxtv.org>
+X-Cookie: Don't feed the bats tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 November 2011, Nicolas Ferre wrote:
-> Here are a few fixes for AT91. I have noted 3.2-rc4 in the subject but it
-> is true that it can go in another -rc revision as I have seen your recent
-> pull request to Linus...
-> 
-> The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+On Tue, Dec 06, 2011 at 01:01:43PM +0100, Andreas Oberritter wrote:
+> On 06.12.2011 12:21, Mark Brown wrote:
+> > On Mon, Dec 05, 2011 at 09:41:38PM +0100, Andreas Oberritter wrote:
 
-Pulled into arm-soc/fixes now. Thanks!
+> >> Are you serious? Lower networking layers should be transparent to the
+> >> upper layers. You don't implement VPN or say TCP in all of your
+> >> applications, do you? These are just some more made-up arguments which
+> >> don't have anything to do with the use cases I explained earlier.
 
-	Arnd
+> > For real time applications it does make a big difference - decisions
+> > taken at the application level can greatly impact end application
+> > performance.  For example with VoIP on a LAN you can get great audio
+
+> Can you please explain how this relates to the topic we're discussing?
+
+Your assertatation that applications should ignore the underlying
+transport (which seems to be a big part of what you're saying) isn't
+entirely in line with reality.
