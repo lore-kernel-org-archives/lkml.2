@@ -1,84 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab1LFEE7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 23:04:59 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:49594 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932870Ab1LFEE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 23:04:58 -0500
-Date: Tue, 6 Dec 2011 15:04:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20111206150445.258f8eb2ea76d5dd321112db@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__6_Dec_2011_15_04_45_+1100_am1pLytMnE.MLSqR"
+	id S932956Ab1LFEHS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 23:07:18 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:36086 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932880Ab1LFEHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 23:07:17 -0500
+Message-ID: <4EDD948A.4000506@linux.vnet.ibm.com>
+Date: Mon, 05 Dec 2011 21:05:30 -0700
+From: Allison Henderson <achender@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Yongqiang Yang <xiaoqiangnk@gmail.com>
+CC: Tao Ma <tm@tao.ma>, Hugh Dickins <hughd@google.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
+        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com> <alpine.LSU.2.00.1111201121120.1264@sister.anvils> <20111121165626.GD14568@thunk.org> <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils> <4EDD729E.2060402@linux.vnet.ibm.com> <CAGBYx2YNKEiuRF31CaRiK2ROj_xmVsnL4rcWnoofyziYCkYjpw@mail.gmail.com> <4EDD8D1B.5040803@tao.ma> <CAGBYx2aPjDY_xXqPw4=Urr5nUMQbHxzgwGu9mZ8fCe7mFsrVXw@mail.gmail.com>
+In-Reply-To: <CAGBYx2aPjDY_xXqPw4=Urr5nUMQbHxzgwGu9mZ8fCe7mFsrVXw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120604-6078-0000-0000-00000543E06B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Dec_2011_15_04_45_+1100_am1pLytMnE.MLSqR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/05/2011 08:44 PM, Yongqiang Yang wrote:
+> On Tue, Dec 6, 2011 at 11:33 AM, Tao Ma<tm@tao.ma>  wrote:
+>> On 12/06/2011 11:08 AM, Yongqiang Yang wrote:
+>>> Hi Allison,
+>>>
+>>> I noticed another problem which has nothing to do with punching hole.
+>>>   __block_write_begin does not zero buffers beyond EOF.(I guess you
+>> yes, that is expected.
+>>> tried to zero them in your code, am I right? )  When users mapread
+>>> beyond EOF,  users get non-zero data.  I am not sure zero or non-zero
+>>> data should be, but fsx thinks they should be zero data and reports an
+>>> error.
+>> why users can read the data passing EOF? I am also puzzled. Punching
+>> hole will do this? I don't think it's right.
+> According to code, fiemap_fault handles the case right.   But I met
+> the error - 'non-zero data beyond EOF' reported by fsx.  It is
+> strange.  It seems that uptodate status is set wrong.  Just a guess:-)
+>
+> I am guessing Allison met the problem before and tried to fix it in
+> write path by zeroing buffers beyond EOF.
 
-Hi Andrew,
+Yes I did run into something similar.  I found 2 cases that involved EOF:
+1. A truncate shortens EOF, but only zeroed to the end of the block, but 
+not to the end of the page.  This was corrected by "[PATCH 5/6 v7] ext4: 
+fix fsx truncate failure"
 
-Today's linux-next merge of the akpm tree got a conflict in
-kernel/Makefile between commit 029632fbb7b7 ("sched: Make separate
-sched*.c translation units") from the tip tree and commit f7243fa71a4c
-("brlocks/lglocks: clean up code") from the akpm tree.
+2. A write extends EOF, but does not zero all of the page beyond EOF, 
+and that was what "[PATCH 6/6 v7] ext4: fix partial page writes" was 
+supposed to address.
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I am still digging through tracing output at the moment, so I dont have 
+a very good explanation right now, but I will keep folks posted if I 
+find something.
 
-diff --cc kernel/Makefile
-index 4363a41,d173c0c..0000000
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@@ -9,8 -9,9 +9,8 @@@ obj-y     =3D fork.o exec_domain.o panic.
-  	    rcupdate.o extable.o params.o posix-timers.o \
-  	    kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o mutex.o \
-  	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
- -	    notifier.o ksysfs.o sched_clock.o cred.o \
- -	    async.o range.o
- -obj-y +=3D groups.o lglock.o
- +	    notifier.o ksysfs.o cred.o \
-- 	    async.o range.o groups.o
-++	    async.o range.o groups.o lglock.o
- =20
-  ifdef CONFIG_FUNCTION_TRACER
-  # Do not trace debug files and internal ftrace files
+Allison Henderson
 
---Signature=_Tue__6_Dec_2011_15_04_45_+1100_am1pLytMnE.MLSqR
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+>
+> Yongqiang.
+>>
+>> Thanks
+>> Tao
+>>>
+>>> It I understand the problem right, it happens more often with punch hole.
+>>>
+>>> Yongqiang.
+>>> On Tue, Dec 6, 2011 at 9:40 AM, Allison Henderson
+>>> <achender@linux.vnet.ibm.com>  wrote:
+>>>> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
+>>>>>
+>>>>> On Mon, 21 Nov 2011, Hugh Dickins wrote:
+>>>>>>
+>>>>>> On Mon, 21 Nov 2011, Ted Ts'o wrote:
+>>>>>>>
+>>>>>>> On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
+>>>>>>>>
+>>>>>>>> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
+>>>>>>>> It appears that there's a bug with this patch:
+>>>>>
+>>>>>
+>>>>> This has been outstanding for a month now, and we've heard no progress:
+>>>>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for rc5.
+>>>>>
+>>>>> The problems appear on a 1k-blocksize filesystem under memory pressure:
+>>>>> the hunk in ext4_da_write_end() causes oops, because it's playing with
+>>>>> a page after generic_write_end() dropped our last reference to it; and
+>>>>> backing out the hunk in ext4_da_write_begin() is then found to stop
+>>>>> rare data corruption seen when kbuilding.
+>>>>>
+>>>>> Although I earlier reported that backing out the patch caused an fsx
+>>>>> test to fail earlier, I've since found great variation in how soon it
+>>>>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
+>>>>> I also reported that I had to go back to 2.6.38 for fsx not to fail
+>>>>> under memory pressure: you won't be surprised that that turned out to
+>>>>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
+>>>>>
+>>>>> Thanks,
+>>>>> Hugh
+>>>>>
+>>>>
+>>>>
+>>>> Hi there,
+>>>>
+>>>> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
+>>>> works well when blocksize<  pagesize" ?  I have tried it and it does seem to
+>>>> help, but I am still running into some failures that I am trying to debug,
+>>>> but let please let us know if it helps the issues that you are seeing.  Thx!
+>>>>
+>>>> Allison Henderson
+>>>>
+>>>
+>>>
+>>>
+>>
+>
+>
+>
 
-iQIcBAEBCAAGBQJO3ZRdAAoJEECxmPOUX5FEZkkP/1FgBJKEX1ygKjtJJscASWz7
-M3koNETSgHw/aZYKL/QndAZViC2c+1UZT0+lHCXgbF1ioAe0OvRlRusFFJfZryI3
-cM2NPvixJeRjE5NwfBNfntaUDAktARXCLY0DSAOKvw1F5wbv+5AJAqfqzOl0G6g0
-VJV8YAguFmvn8SsMvyd7CMLaYDlOUD7BEWckKJEBq2mIYi1vP7+5YAm5gnFZrRII
-oLXr4JZdu9jL0kAPF8i8LCSM/rW1bQWMTgXv6+C50CzVdvPFeA76loqi1qz+v+TD
-X24YuT3j1b0Ed/TFbMgzMJbV99rOuYWa+yDHur6ywOzAZGIaSa8ZK2Xq2YYmkFt6
-I5EuwuHX2EUzwihVshHZbf7M3HokBJIzOsxqZs6d8eOk7TVQa7fjdMhIKonWFp+V
-dbLPup6UPqewJFEEs8+5SAf0sD8pP4l4igc1qUoo+dqupBCnU0jtao0BfX2TNS3J
-HzGHVSfcI1Ku6klYXDaCUrxUvK2J2P/xJHiNHgP3LsK2figCnel9BQuFBRVSRTJ4
-QbXSGZy7noYLcxwkKZOtqiykeeEta7BXmnhaWHH5iIZ0ya/Haq05NEIRGViKP2J/
-2AE3fknubTp7qMG/U+rTeZEpA4LNKco35Dc2wvRg6xTuz1VY9b7C6lsm0Z9a+knM
-iqMfWN7Kft2QEXDHp4kO
-=haze
------END PGP SIGNATURE-----
-
---Signature=_Tue__6_Dec_2011_15_04_45_+1100_am1pLytMnE.MLSqR--
