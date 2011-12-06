@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab1LFTVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:21:14 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34553 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab1LFTVM convert rfc822-to-8bit (ORCPT
+	id S1753413Ab1LFTVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:21:15 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56099 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab1LFTVO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:21:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111206104654.GN14542@n2100.arm.linux.org.uk>
-References: <20111202192618.GC3037@localhost.localdomain> <CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com>
- <1322867573.11728.22.camel@pasglop> <20111205161157.GA27550@localhost.localdomain>
- <alpine.LFD.2.02.1112051236350.2357@xanadu.home> <20111205180253.GB29812@localhost.localdomain>
- <alpine.LFD.2.02.1112051310150.2357@xanadu.home> <20111205192605.GD29812@localhost.localdomain>
- <alpine.LFD.2.02.1112051443190.2357@xanadu.home> <20111206093709.GB2274@linaro.org>
- <20111206104654.GN14542@n2100.arm.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Dec 2011 11:20:49 -0800
-X-Google-Sender-Auth: 2ykpcDZBP9WQC89FFIqeLC4JQV8
-Message-ID: <CA+55aFwZBr+3_S9kU-+m8zN8iwOvn2miuuAy-zt7sUjW_+abBg@mail.gmail.com>
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dave Martin <dave.martin@linaro.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
-        Pawel Moll <pawel.moll@arm.com>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Dec 2011 14:21:14 -0500
+Message-ID: <1323199215.32012.87.camel@twins>
+Subject: Re: [PATCH 00/12] perf_events: add support for sampling taken
+ branches (v2)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "acme@redhat.com" <acme@redhat.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "ravitillo@lbl.gov" <ravitillo@lbl.gov>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "rth@twiddle.net" <rth@twiddle.net>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>
+Date: Tue, 06 Dec 2011 20:20:15 +0100
+In-Reply-To: <CABPqkBQq=ra+-O==qT+8DtFZ5T7=M4yJrnPJ_bb+UmUTGGQepQ@mail.gmail.com>
+References: <1318595833-29984-1-git-send-email-eranian@google.com>
+	 <1323124766.32012.49.camel@twins>
+	 <20111206094927.GA25782@mudshark.cambridge.arm.com>
+	 <1323169412.32012.69.camel@twins>
+	 <CABPqkBQq=ra+-O==qT+8DtFZ5T7=M4yJrnPJ_bb+UmUTGGQepQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 2:46 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
->
-> But.. let's make one thing clear: Alan Cox and Linus have been going on
-> about how IRQ0 should not be used.  Let's be crystal clear: even x86
-> uses IRQ0.
+On Tue, 2011-12-06 at 11:14 -0800, Stephane Eranian wrote:
 
-Not for any device driver, though.
+> >> > Other than the few comments given it all looks good. My main worry is
+> >> > the Intel only aspect, I'd really love for there to be another platform
+> >> > that could implement at least part of this.
 
-It's used entirely internally, and it doesn't even use
-"request_irq()". It uses the magic internal "setup_irq()" and never
-*ever* exposes irq0 as anything that a driver can see.
+> There is a hardware branch buffer on all Itanium processors.
+> You can find the description for the McKinley implementation
+>  (Itanium2) branch buffer in section 10.3.9 from:
+> http://download.intel.com/design/Itanium2/manuals/25111003.pdf
 
-That's what matters. You can use irq0 in ARM land all you like, AS
-LONG AS IT'S SOME HIDDEN INTERNAL USE. No drivers. No *nothing* that
-ever uses that absolutely *idiotic* NO_IRQ crap.
 
-In fact, you may be *forced* to use what is "physically" irq0 - it's
-just that you should never expose it as such to drivers. And x86
-doesn't.
+Yeah, I knew Itanic has it, but one its sinking (and doesn't have perf
+support), and two its still Intel ;-)
 
-So Russell, if you think this has anything to do with NO_IRQ, and how
-x86 isn't doing things right, you're wrong. It's just like the
-internal exception thing, or the magical "cascade interrupt", or the
-"x87 exception mapped through the PIC". They are magic hidden
-interrupts that are set up in one place (well, one place *each*), and
-are never exposed anywhere else.
 
-The problem with NO_IRQ is that stupid "we expose our mind-numbingly
-stupid interfaces across the whole kernel".
-
-x86 never did that.  ARM still does. x86 doesn't have to fix anything. ARM does.
-
-                Linus
