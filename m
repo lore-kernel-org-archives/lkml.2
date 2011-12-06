@@ -1,222 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab1LFJxp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:53:45 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34948 "EHLO
+	id S933139Ab1LFJya (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:54:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34959 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932956Ab1LFJxn (ORCPT
+	with ESMTP id S932955Ab1LFJy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:53:43 -0500
-Date: Tue, 6 Dec 2011 01:53:28 -0800
+	Tue, 6 Dec 2011 04:54:28 -0500
+Date: Tue, 6 Dec 2011 01:54:13 -0800
 From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-1c792db7f7957e2e34b9a164f08200e36a25dfd0@git.kernel.org>
+Message-ID: <tip-69e1e811dcc436a6b129dbef273ad9ec22d095ce@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <20111202010832.499438999@sbsiddha-desk.sc.intel.com>
-References: <20111202010832.499438999@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <20111202010832.555984323@sbsiddha-desk.sc.intel.com>
+References: <20111202010832.555984323@sbsiddha-desk.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched, nohz: Introduce nohz_flags in 'struct rq'
-Git-Commit-ID: 1c792db7f7957e2e34b9a164f08200e36a25dfd0
+Subject: [tip:sched/core] sched, nohz: Track nr_busy_cpus in the sched_group_power
+Git-Commit-ID: 69e1e811dcc436a6b129dbef273ad9ec22d095ce
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:53:33 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:54:19 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1c792db7f7957e2e34b9a164f08200e36a25dfd0
-Gitweb:     http://git.kernel.org/tip/1c792db7f7957e2e34b9a164f08200e36a25dfd0
+Commit-ID:  69e1e811dcc436a6b129dbef273ad9ec22d095ce
+Gitweb:     http://git.kernel.org/tip/69e1e811dcc436a6b129dbef273ad9ec22d095ce
 Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Thu, 1 Dec 2011 17:07:32 -0800
+AuthorDate: Thu, 1 Dec 2011 17:07:33 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 09:06:30 +0100
+CommitDate: Tue, 6 Dec 2011 09:06:32 +0100
 
-sched, nohz: Introduce nohz_flags in 'struct rq'
+sched, nohz: Track nr_busy_cpus in the sched_group_power
 
-Introduce nohz_flags in the struct rq, which will track these two flags
-for now.
+Introduce nr_busy_cpus in the struct sched_group_power [Not in sched_group
+because sched groups are duplicated for the SD_OVERLAP scheduler domain]
+and for each cpu that enters and exits idle, this parameter will
+be updated in each scheduler group of the scheduler domain that this cpu
+belongs to.
 
-NOHZ_TICK_STOPPED keeps track of the tick stopped status that gets set when
-the tick is stopped. It will be used to update the nohz idle load balancer data
-structures during the first busy tick after the tick is restarted. At this
-first busy tick after tickless idle, NOHZ_TICK_STOPPED flag will be reset.
-This will minimize the nohz idle load balancer status updates that currently
-happen for every tickless exit, making it more scalable when there
-are many logical cpu's that enter and exit idle often.
-
-NOHZ_BALANCE_KICK will track the need for nohz idle load balance
-on this rq. This will replace the nohz_balance_kick in the rq, which was
-not being updated atomically.
+To avoid the frequent update of this state as the cpu enters
+and exits idle, the update of the stat during idle exit is
+delayed to the first timer tick that happens after the cpu becomes busy.
+This is done using NOHZ_IDLE flag in the struct rq's nohz_flags.
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20111202010832.499438999@sbsiddha-desk.sc.intel.com
+Link: http://lkml.kernel.org/r/20111202010832.555984323@sbsiddha-desk.sc.intel.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched/core.c  |    5 +++--
- kernel/sched/fair.c  |   48 +++++++++++++++++++++++++++---------------------
- kernel/sched/sched.h |   11 ++++++++++-
- 3 files changed, 40 insertions(+), 24 deletions(-)
+ include/linux/sched.h    |    6 ++++++
+ kernel/sched/core.c      |    1 +
+ kernel/sched/fair.c      |   31 +++++++++++++++++++++++++++++++
+ kernel/sched/sched.h     |    1 +
+ kernel/time/tick-sched.c |    9 +++++++++
+ 5 files changed, 48 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8db17b7..295666c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -273,9 +273,11 @@ extern int runqueue_is_locked(int cpu);
+ 
+ #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
+ extern void select_nohz_load_balancer(int stop_tick);
++extern void set_cpu_sd_state_idle(void);
+ extern int get_nohz_timer_target(void);
+ #else
+ static inline void select_nohz_load_balancer(int stop_tick) { }
++static inline void set_cpu_sd_state_idle(void);
+ #endif
+ 
+ /*
+@@ -901,6 +903,10 @@ struct sched_group_power {
+ 	 * single CPU.
+ 	 */
+ 	unsigned int power, power_orig;
++	/*
++	 * Number of busy cpus in this group.
++	 */
++	atomic_t nr_busy_cpus;
+ };
+ 
+ struct sched_group {
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 07f1e99..7f1da77 100644
+index 7f1da77..699ff14 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -575,7 +575,8 @@ void wake_up_idle_cpu(int cpu)
+@@ -6024,6 +6024,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+ 		return;
  
- static inline bool got_nohz_idle_kick(void)
- {
--	return idle_cpu(smp_processor_id()) && this_rq()->nohz_balance_kick;
-+	int cpu = smp_processor_id();
-+	return idle_cpu(cpu) && test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
+ 	update_group_power(sd, cpu);
++	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
  }
  
- #else /* CONFIG_NO_HZ */
-@@ -6840,7 +6841,7 @@ void __init sched_init(void)
- 		rq->avg_idle = 2*sysctl_sched_migration_cost;
- 		rq_attach_root(rq, &def_root_domain);
- #ifdef CONFIG_NO_HZ
--		rq->nohz_balance_kick = 0;
-+		rq->nohz_flags = 0;
- #endif
- #endif
- 		init_rq_hrtick(rq);
+ int __weak arch_sd_sibling_asym_packing(void)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 81ccb81..50c06b0 100644
+index 50c06b0..e050563 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4889,18 +4889,15 @@ static void nohz_balancer_kick(int cpu)
- 			return;
- 	}
- 
--	if (!cpu_rq(ilb_cpu)->nohz_balance_kick) {
--		cpu_rq(ilb_cpu)->nohz_balance_kick = 1;
--
--		smp_mb();
--		/*
--		 * Use smp_send_reschedule() instead of resched_cpu().
--		 * This way we generate a sched IPI on the target cpu which
--		 * is idle. And the softirq performing nohz idle load balance
--		 * will be run before returning from the IPI.
--		 */
--		smp_send_reschedule(ilb_cpu);
--	}
-+	if (test_and_set_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu)))
-+		return;
-+	/*
-+	 * Use smp_send_reschedule() instead of resched_cpu().
-+	 * This way we generate a sched IPI on the target cpu which
-+	 * is idle. And the softirq performing nohz idle load balance
-+	 * will be run before returning from the IPI.
-+	 */
-+	smp_send_reschedule(ilb_cpu);
+@@ -4901,6 +4901,36 @@ static void nohz_balancer_kick(int cpu)
  	return;
  }
  
-@@ -4964,6 +4961,8 @@ void select_nohz_load_balancer(int stop_tick)
- 			}
- 			return;
- 		}
++static inline void set_cpu_sd_state_busy(void)
++{
++	struct sched_domain *sd;
++	int cpu = smp_processor_id();
 +
-+		set_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
- 	} else {
- 		if (!cpumask_test_cpu(cpu, nohz.idle_cpus_mask))
- 			return;
-@@ -5079,8 +5078,9 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
- 	struct rq *rq;
- 	int balance_cpu;
- 
--	if (idle != CPU_IDLE || !this_rq->nohz_balance_kick)
--		return;
-+	if (idle != CPU_IDLE ||
-+	    !test_bit(NOHZ_BALANCE_KICK, nohz_flags(this_cpu)))
-+		goto end;
- 
- 	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
- 		if (balance_cpu == this_cpu)
-@@ -5091,10 +5091,8 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
- 		 * work being done for other cpus. Next load
- 		 * balancing owner will pick it up.
- 		 */
--		if (need_resched()) {
--			this_rq->nohz_balance_kick = 0;
-+		if (need_resched())
- 			break;
--		}
- 
- 		raw_spin_lock_irq(&this_rq->lock);
- 		update_rq_clock(this_rq);
-@@ -5108,7 +5106,8 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
- 			this_rq->next_balance = rq->next_balance;
- 	}
- 	nohz.next_balance = this_rq->next_balance;
--	this_rq->nohz_balance_kick = 0;
-+end:
-+	clear_bit(NOHZ_BALANCE_KICK, nohz_flags(this_cpu));
- }
- 
++	if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
++		return;
++	clear_bit(NOHZ_IDLE, nohz_flags(cpu));
++
++	rcu_read_lock();
++	for_each_domain(cpu, sd)
++		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
++	rcu_read_unlock();
++}
++
++void set_cpu_sd_state_idle(void)
++{
++	struct sched_domain *sd;
++	int cpu = smp_processor_id();
++
++	if (test_bit(NOHZ_IDLE, nohz_flags(cpu)))
++		return;
++	set_bit(NOHZ_IDLE, nohz_flags(cpu));
++
++	rcu_read_lock();
++	for_each_domain(cpu, sd)
++		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
++	rcu_read_unlock();
++}
++
  /*
-@@ -5129,10 +5128,17 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 	int ret;
- 	int first_pick_cpu, second_pick_cpu;
+  * This routine will try to nominate the ilb (idle load balancing)
+  * owner among the cpus whose ticks are stopped. ilb owner will do the idle
+@@ -5135,6 +5165,7 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
+ 	* We may be recently in ticked or tickless idle mode. At the first
+ 	* busy tick after returning from idle, we will update the busy stats.
+ 	*/
++	set_cpu_sd_state_busy();
+ 	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu))))
+ 		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
  
--	if (time_before(now, nohz.next_balance))
-+	if (unlikely(idle_cpu(cpu)))
- 		return 0;
- 
--	if (idle_cpu(cpu))
-+       /*
-+	* We may be recently in ticked or tickless idle mode. At the first
-+	* busy tick after returning from idle, we will update the busy stats.
-+	*/
-+	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu))))
-+		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
-+
-+	if (time_before(now, nohz.next_balance))
- 		return 0;
- 
- 	first_pick_cpu = atomic_read(&nohz.first_pick_cpu);
-@@ -5196,7 +5202,7 @@ void trigger_load_balance(struct rq *rq, int cpu)
- 	    likely(!on_null_domain(cpu)))
- 		raise_softirq(SCHED_SOFTIRQ);
- #ifdef CONFIG_NO_HZ
--	else if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
-+	if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
- 		nohz_balancer_kick(cpu);
- #endif
- }
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 8715055..cf7d026 100644
+index cf7d026..91810f0 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -371,7 +371,7 @@ struct rq {
- 	unsigned long last_load_update_tick;
- #ifdef CONFIG_NO_HZ
- 	u64 nohz_stamp;
--	unsigned char nohz_balance_kick;
-+	unsigned long nohz_flags;
- #endif
- 	int skip_clock_update;
+@@ -1069,6 +1069,7 @@ extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
+ enum rq_nohz_flag_bits {
+ 	NOHZ_TICK_STOPPED,
+ 	NOHZ_BALANCE_KICK,
++	NOHZ_IDLE,
+ };
  
-@@ -1064,3 +1064,12 @@ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
- extern void unthrottle_offline_cfs_rqs(struct rq *rq);
+ #define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 4042064..31cc061 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -297,6 +297,15 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 	ts = &per_cpu(tick_cpu_sched, cpu);
  
- extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
+ 	/*
++ 	 * Update the idle state in the scheduler domain hierarchy
++ 	 * when tick_nohz_stop_sched_tick() is called from the idle loop.
++ 	 * State will be updated to busy during the first busy tick after
++ 	 * exiting idle.
++ 	 */
++	if (inidle)
++		set_cpu_sd_state_idle();
 +
-+#ifdef CONFIG_NO_HZ
-+enum rq_nohz_flag_bits {
-+	NOHZ_TICK_STOPPED,
-+	NOHZ_BALANCE_KICK,
-+};
-+
-+#define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
-+#endif
++	/*
+ 	 * Call to tick_nohz_start_idle stops the last_update_time from being
+ 	 * updated. Thus, it must not be called in the event we are called from
+ 	 * irq_exit() with the prior state different than idle.
