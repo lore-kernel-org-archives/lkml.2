@@ -1,102 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab1LFJ7M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:59:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35045 "EHLO
+	id S933170Ab1LFKAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:00:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35057 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933018Ab1LFJ7K (ORCPT
+	with ESMTP id S933072Ab1LFJ77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:59:10 -0500
-Date: Tue, 6 Dec 2011 01:58:49 -0800
+	Tue, 6 Dec 2011 04:59:59 -0500
+Date: Tue, 6 Dec 2011 01:59:35 -0800
 From: tip-bot for Stanislaw Gruszka <sgruszka@redhat.com>
-Message-ID: <tip-855c743a27bb58a9a521bdc485ef5acfdb69badc@git.kernel.org>
+Message-ID: <tip-54c29c635ae91f5d75ced7bffeaa77ba37ca02bb@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         mgorman@suse.de, tglx@linutronix.de, sgruszka@redhat.com,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         mgorman@suse.de, tglx@linutronix.de, sgruszka@redhat.com,
         mingo@elte.hu
-In-Reply-To: <20111206080833.GB3105@redhat.com>
-References: <20111206080833.GB3105@redhat.com>
+In-Reply-To: <1322582711-14571-1-git-send-email-sgruszka@redhat.com>
+References: <1322582711-14571-1-git-send-email-sgruszka@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86/mm: Initialize high mem before free_all_bootmem()
-Git-Commit-ID: 855c743a27bb58a9a521bdc485ef5acfdb69badc
+Subject: [tip:x86/mm] mm, x86: Remove debug_pagealloc_enabled
+Git-Commit-ID: 54c29c635ae91f5d75ced7bffeaa77ba37ca02bb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:58:55 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:59:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  855c743a27bb58a9a521bdc485ef5acfdb69badc
-Gitweb:     http://git.kernel.org/tip/855c743a27bb58a9a521bdc485ef5acfdb69badc
+Commit-ID:  54c29c635ae91f5d75ced7bffeaa77ba37ca02bb
+Gitweb:     http://git.kernel.org/tip/54c29c635ae91f5d75ced7bffeaa77ba37ca02bb
 Author:     Stanislaw Gruszka <sgruszka@redhat.com>
-AuthorDate: Tue, 6 Dec 2011 09:08:34 +0100
+AuthorDate: Tue, 29 Nov 2011 17:05:11 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 09:23:53 +0100
+CommitDate: Tue, 6 Dec 2011 09:24:07 +0100
 
-x86/mm: Initialize high mem before free_all_bootmem()
+mm, x86: Remove debug_pagealloc_enabled
 
-Patch fixes a boot crash with pagealloc debugging enabled:
+When (no)bootmem finish operation, it pass pages to buddy
+allocator. Since debug_pagealloc_enabled is not set, we will do
+not protect pages, what is not what we want with
+CONFIG_DEBUG_PAGEALLOC=y.
 
-  Initializing HighMem for node 0 (000377fe:0003fff0)
-  BUG: unable to handle kernel paging request at f6fefe80
-  IP: [<c1621ab5>] find_range_array+0x5e/0x69
-  [...]
-  Call Trace:
-   [<c1622064>] __get_free_all_memory_range+0x39/0xb4
-   [<c1620dd0>] add_highpages_with_active_regions+0x18/0x9b
-   [<c1621a2e>] set_highmem_pages_init+0x70/0x90
-   [<c162122b>] mem_init+0x50/0x21b
-   [<c16155bd>] start_kernel+0x1bf/0x31c
-   [<c1615065>] i386_start_kernel+0x65/0x67
+To fix remove debug_pagealloc_enabled. That variable was
+introduced by commit 12d6f21e "x86: do not PSE on
+CONFIG_DEBUG_PAGEALLOC=y" to get more CPA (change page
+attribude) code testing. But currently we have CONFIG_CPA_DEBUG,
+which test CPA.
 
-The crash happens when memblock wants to allocate big area for
-temporary "struct range" array and reuses pages from top of low
-memory, which were already passed to the buddy allocator.
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
 Cc: linux-mm@kvack.org
-Cc: Mel Gorman <mgorman@suse.de>
-Link: http://lkml.kernel.org/r/20111206080833.GB3105@redhat.com
+Link: http://lkml.kernel.org/r/1322582711-14571-1-git-send-email-sgruszka@redhat.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/mm/init_32.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+ arch/x86/mm/pageattr.c |    6 ------
+ include/linux/mm.h     |   10 ----------
+ init/main.c            |    5 -----
+ mm/debug-pagealloc.c   |    3 ---
+ 4 files changed, 0 insertions(+), 24 deletions(-)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 3bebaed..a2fecb1 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -744,6 +744,17 @@ void __init mem_init(void)
- #ifdef CONFIG_FLATMEM
- 	BUG_ON(!mem_map);
- #endif
-+	/*
-+	 * With CONFIG_DEBUG_PAGEALLOC initialization of highmem pages has to
-+	 * be done before free_all_bootmem(). Memblock use free low memory for
-+	 * temporary data (see find_range_array()) and for this purpose can use
-+	 * pages that was already passed to the buddy allocator, hence marked as
-+	 * not accessible in the page tables when compiled with
-+	 * CONFIG_DEBUG_PAGEALLOC. Otherwise order of initialization is not
-+	 * important here.
-+	 */
-+	set_highmem_pages_init();
-+
- 	/* this will put all low memory onto the freelists */
- 	totalram_pages += free_all_bootmem();
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index f9e5267..5031eef 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
+ 	}
  
-@@ -755,8 +766,6 @@ void __init mem_init(void)
- 		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
- 			reservedpages++;
- 
--	set_highmem_pages_init();
+ 	/*
+-	 * If page allocator is not up yet then do not call c_p_a():
+-	 */
+-	if (!debug_pagealloc_enabled)
+-		return;
 -
- 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
- 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
- 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+-	/*
+ 	 * The return value is ignored as the calls cannot fail.
+ 	 * Large pages for identity mappings are not used at boot time
+ 	 * and hence no memory allocations during large page split.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3dc3a8c..0a22db1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1537,23 +1537,13 @@ static inline void vm_stat_account(struct mm_struct *mm,
+ #endif /* CONFIG_PROC_FS */
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+-extern int debug_pagealloc_enabled;
+-
+ extern void kernel_map_pages(struct page *page, int numpages, int enable);
+-
+-static inline void enable_debug_pagealloc(void)
+-{
+-	debug_pagealloc_enabled = 1;
+-}
+ #ifdef CONFIG_HIBERNATION
+ extern bool kernel_page_present(struct page *page);
+ #endif /* CONFIG_HIBERNATION */
+ #else
+ static inline void
+ kernel_map_pages(struct page *page, int numpages, int enable) {}
+-static inline void enable_debug_pagealloc(void)
+-{
+-}
+ #ifdef CONFIG_HIBERNATION
+ static inline bool kernel_page_present(struct page *page) { return true; }
+ #endif /* CONFIG_HIBERNATION */
+diff --git a/init/main.c b/init/main.c
+index 217ed23..99c4ba3 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -282,10 +282,6 @@ static int __init unknown_bootoption(char *param, char *val)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-int __read_mostly debug_pagealloc_enabled = 0;
+-#endif
+-
+ static int __init init_setup(char *str)
+ {
+ 	unsigned int i;
+@@ -597,7 +593,6 @@ asmlinkage void __init start_kernel(void)
+ 	}
+ #endif
+ 	page_cgroup_init();
+-	enable_debug_pagealloc();
+ 	debug_objects_mem_init();
+ 	kmemleak_init();
+ 	setup_per_cpu_pageset();
+diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
+index 7cea557..789ff70 100644
+--- a/mm/debug-pagealloc.c
++++ b/mm/debug-pagealloc.c
+@@ -95,9 +95,6 @@ static void unpoison_pages(struct page *page, int n)
+ 
+ void kernel_map_pages(struct page *page, int numpages, int enable)
+ {
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+ 	if (enable)
+ 		unpoison_pages(page, numpages);
+ 	else
