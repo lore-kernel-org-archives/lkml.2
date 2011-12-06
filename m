@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab1LFMpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 07:45:10 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:20647 "EHLO relay.sw.ru"
+	id S933310Ab1LFMpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 07:45:20 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:39997 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933094Ab1LFMpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 07:45:07 -0500
-Subject: [PATCH 1/2] SUNRPC: register RPC stats /proc entries in passed
+	id S933094Ab1LFMpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 07:45:16 -0500
+Subject: [PATCH 2/2] SUNRPC: register service stats /proc entries in passed
 	network namespace context
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
@@ -14,8 +14,8 @@ Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Tue, 06 Dec 2011 16:42:40 +0300
-Message-ID: <20111206124240.15702.61866.stgit@localhost6.localdomain6>
+Date: Tue, 06 Dec 2011 16:42:49 +0300
+Message-ID: <20111206124249.15702.211.stgit@localhost6.localdomain6>
 In-Reply-To: <20111206123748.15702.93290.stgit@localhost6.localdomain6>
 References: <20111206123748.15702.93290.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,105 +26,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes it possible to create NFS program entry ("/proc/net/rpc/nfs")
+This patch makes it possible to create NFSd program entry ("/proc/net/rpc/nfsd")
 in passed network namespace context instead of hard-coded "init_net".
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/nfs/inode.c               |    6 +++---
+ fs/nfsd/stats.c              |    5 +++--
  include/linux/sunrpc/stats.h |    8 ++++----
- net/sunrpc/stats.c           |   15 ++++++++-------
- 3 files changed, 15 insertions(+), 14 deletions(-)
+ net/sunrpc/stats.c           |    8 ++++----
+ 3 files changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 98b2508..5cad6c5 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -1623,14 +1623,14 @@ static int __init init_nfs_fs(void)
- 		goto out0;
+diff --git a/fs/nfsd/stats.c b/fs/nfsd/stats.c
+index a2e2402..6d4521f 100644
+--- a/fs/nfsd/stats.c
++++ b/fs/nfsd/stats.c
+@@ -25,6 +25,7 @@
+ #include <linux/module.h>
+ #include <linux/sunrpc/stats.h>
+ #include <linux/nfsd/stats.h>
++#include <net/net_namespace.h>
  
- #ifdef CONFIG_PROC_FS
--	rpc_proc_register(&nfs_rpcstat);
-+	rpc_proc_register(&init_net, &nfs_rpcstat);
- #endif
- 	if ((err = register_nfs_fs()) != 0)
- 		goto out;
- 	return 0;
- out:
- #ifdef CONFIG_PROC_FS
--	rpc_proc_unregister("nfs");
-+	rpc_proc_unregister(&init_net, "nfs");
- #endif
- 	nfs_destroy_directcache();
- out0:
-@@ -1669,7 +1669,7 @@ static void __exit exit_nfs_fs(void)
- 	nfs_dns_resolver_destroy();
- 	nfs_idmap_quit();
- #ifdef CONFIG_PROC_FS
--	rpc_proc_unregister("nfs");
-+	rpc_proc_unregister(&init_net, "nfs");
- #endif
- 	nfs_cleanup_cb_ident_idr();
- 	unregister_nfs_fs();
-diff --git a/include/linux/sunrpc/stats.h b/include/linux/sunrpc/stats.h
-index 680471d..f625b57 100644
---- a/include/linux/sunrpc/stats.h
-+++ b/include/linux/sunrpc/stats.h
-@@ -58,8 +58,8 @@ void			rpc_modcount(struct inode *, int);
- #endif
+ #include "nfsd.h"
  
- #ifdef CONFIG_PROC_FS
--struct proc_dir_entry *	rpc_proc_register(struct rpc_stat *);
--void			rpc_proc_unregister(const char *);
-+struct proc_dir_entry *	rpc_proc_register(struct net *,struct rpc_stat *);
-+void			rpc_proc_unregister(struct net *,const char *);
- void			rpc_proc_zero(struct rpc_program *);
- struct proc_dir_entry *	svc_proc_register(struct svc_stat *,
- 					  const struct file_operations *);
-@@ -69,8 +69,8 @@ void			svc_seq_show(struct seq_file *,
- 				     const struct svc_stat *);
- #else
- 
--static inline struct proc_dir_entry *rpc_proc_register(struct rpc_stat *s) { return NULL; }
--static inline void rpc_proc_unregister(const char *p) {}
-+static inline struct proc_dir_entry *rpc_proc_register(struct net *, struct rpc_stat *s) { return NULL; }
-+static inline void rpc_proc_unregisterstruct net *, (const char *p) {}
- static inline void rpc_proc_zero(struct rpc_program *p) {}
- 
- static inline struct proc_dir_entry *svc_proc_register(struct svc_stat *s,
-diff --git a/net/sunrpc/stats.c b/net/sunrpc/stats.c
-index 80df89d..f0f6e7c 100644
---- a/net/sunrpc/stats.c
-+++ b/net/sunrpc/stats.c
-@@ -213,28 +213,29 @@ EXPORT_SYMBOL_GPL(rpc_print_iostats);
-  * Register/unregister RPC proc files
-  */
- static inline struct proc_dir_entry *
--do_register(const char *name, void *data, const struct file_operations *fops)
-+do_register(struct net *net, const char *name, void *data,
-+	    const struct file_operations *fops)
+@@ -94,11 +95,11 @@ static const struct file_operations nfsd_proc_fops = {
+ void
+ nfsd_stat_init(void)
  {
- 	struct sunrpc_net *sn;
- 
- 	dprintk("RPC:       registering /proc/net/rpc/%s\n", name);
--	sn = net_generic(&init_net, sunrpc_net_id);
-+	sn = net_generic(net, sunrpc_net_id);
- 	return proc_create_data(name, 0, sn->proc_net_rpc, fops, data);
+-	svc_proc_register(&nfsd_svcstats, &nfsd_proc_fops);
++	svc_proc_register(&init_net, &nfsd_svcstats, &nfsd_proc_fops);
  }
- 
- struct proc_dir_entry *
--rpc_proc_register(struct rpc_stat *statp)
-+rpc_proc_register(struct net *net, struct rpc_stat *statp)
- {
--	return do_register(statp->program->name, statp, &rpc_proc_fops);
-+	return do_register(net, statp->program->name, statp, &rpc_proc_fops);
- }
- EXPORT_SYMBOL_GPL(rpc_proc_register);
  
  void
--rpc_proc_unregister(const char *name)
-+rpc_proc_unregister(struct net *net, const char *name)
+ nfsd_stat_shutdown(void)
+ {
+-	svc_proc_unregister("nfsd");
++	svc_proc_unregister(&init_net, "nfsd");
+ }
+diff --git a/include/linux/sunrpc/stats.h b/include/linux/sunrpc/stats.h
+index f625b57..4720b12 100644
+--- a/include/linux/sunrpc/stats.h
++++ b/include/linux/sunrpc/stats.h
+@@ -61,9 +61,9 @@ void			rpc_modcount(struct inode *, int);
+ struct proc_dir_entry *	rpc_proc_register(struct net *,struct rpc_stat *);
+ void			rpc_proc_unregister(struct net *,const char *);
+ void			rpc_proc_zero(struct rpc_program *);
+-struct proc_dir_entry *	svc_proc_register(struct svc_stat *,
++struct proc_dir_entry *	svc_proc_register(struct net *, struct svc_stat *,
+ 					  const struct file_operations *);
+-void			svc_proc_unregister(const char *);
++void			svc_proc_unregister(struct net *, const char *);
+ 
+ void			svc_seq_show(struct seq_file *,
+ 				     const struct svc_stat *);
+@@ -73,9 +73,9 @@ static inline struct proc_dir_entry *rpc_proc_register(struct net *, struct rpc_
+ static inline void rpc_proc_unregisterstruct net *, (const char *p) {}
+ static inline void rpc_proc_zero(struct rpc_program *p) {}
+ 
+-static inline struct proc_dir_entry *svc_proc_register(struct svc_stat *s,
++static inline struct proc_dir_entry *svc_proc_register(struct net *net, struct svc_stat *s,
+ 						       const struct file_operations *f) { return NULL; }
+-static inline void svc_proc_unregister(const char *p) {}
++static inline void svc_proc_unregister(struct net *net, const char *p) {}
+ 
+ static inline void svc_seq_show(struct seq_file *seq,
+ 				const struct svc_stat *st) {}
+diff --git a/net/sunrpc/stats.c b/net/sunrpc/stats.c
+index f0f6e7c..3c4f688 100644
+--- a/net/sunrpc/stats.c
++++ b/net/sunrpc/stats.c
+@@ -241,18 +241,18 @@ rpc_proc_unregister(struct net *net, const char *name)
+ EXPORT_SYMBOL_GPL(rpc_proc_unregister);
+ 
+ struct proc_dir_entry *
+-svc_proc_register(struct svc_stat *statp, const struct file_operations *fops)
++svc_proc_register(struct net *net, struct svc_stat *statp, const struct file_operations *fops)
+ {
+-	return do_register(&init_net, statp->program->pg_name, statp, fops);
++	return do_register(net, statp->program->pg_name, statp, fops);
+ }
+ EXPORT_SYMBOL_GPL(svc_proc_register);
+ 
+ void
+-svc_proc_unregister(const char *name)
++svc_proc_unregister(struct net *net, const char *name)
  {
  	struct sunrpc_net *sn;
  
@@ -132,14 +117,5 @@ index 80df89d..f0f6e7c 100644
 +	sn = net_generic(net, sunrpc_net_id);
  	remove_proc_entry(name, sn->proc_net_rpc);
  }
- EXPORT_SYMBOL_GPL(rpc_proc_unregister);
-@@ -242,7 +243,7 @@ EXPORT_SYMBOL_GPL(rpc_proc_unregister);
- struct proc_dir_entry *
- svc_proc_register(struct svc_stat *statp, const struct file_operations *fops)
- {
--	return do_register(statp->program->pg_name, statp, fops);
-+	return do_register(&init_net, statp->program->pg_name, statp, fops);
- }
- EXPORT_SYMBOL_GPL(svc_proc_register);
- 
+ EXPORT_SYMBOL_GPL(svc_proc_unregister);
 
