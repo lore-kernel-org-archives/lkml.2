@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933327Ab1LFLE1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 06:04:27 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43982 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933153Ab1LFLEZ convert rfc822-to-8bit (ORCPT
+	id S933334Ab1LFLEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 06:04:39 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:32833 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933147Ab1LFLEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 06:04:25 -0500
-Message-ID: <1323169412.32012.69.camel@twins>
-Subject: Re: [PATCH 00/12] perf_events: add support for sampling taken
- branches (v2)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Stephane Eranian <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "acme@redhat.com" <acme@redhat.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "ravitillo@lbl.gov" <ravitillo@lbl.gov>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "rth@twiddle.net" <rth@twiddle.net>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>
-Date: Tue, 06 Dec 2011 12:03:32 +0100
-In-Reply-To: <20111206094927.GA25782@mudshark.cambridge.arm.com>
-References: <1318595833-29984-1-git-send-email-eranian@google.com>
-	 <1323124766.32012.49.camel@twins>
-	 <20111206094927.GA25782@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 6 Dec 2011 06:04:38 -0500
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVS43M-02-GJR-02
+X-M-MSG: 
+Date: Tue, 6 Dec 2011 12:04:30 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/10] perf tools: cleanups, fixes, updates
+Message-ID: <20111206110430.GK15738@erda.amd.com>
+References: <1323167560-2282-1-git-send-email-robert.richter@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1323167560-2282-1-git-send-email-robert.richter@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-06 at 09:49 +0000, Will Deacon wrote:
-> On Mon, Dec 05, 2011 at 10:39:26PM +0000, Peter Zijlstra wrote:
-> > On Fri, 2011-10-14 at 14:37 +0200, Stephane Eranian wrote:
-> > > This patchset adds an important and useful new feature to
-> > > perf_events: branch stack sampling. In other words, the
-> > > ability to capture taken branches into each sample.
-> > > 
-> > Other than the few comments given it all looks good. My main worry is
-> > the Intel only aspect, I'd really love for there to be another platform
-> > that could implement at least part of this.
+On 06.12.11 11:32:30, Robert Richter wrote:
+> The patch set contains some cleanups, fixes and updates I found worth
+> to implement during code review. Some patches can be applied
+> independently.
 > 
-> I discussed this with Stephane in Prague and, although it would be lovely to
-> have this on ARM, we simply don't have the hardware to do it. So the nature
-> of series does seem to be x86-centric unless there's way to do a watered
-> down version in software.
+> Patches #1 and #2 are a repost.
+> 
+> Robert Richter (10):
+>   perf script: Fix mem leaks and NULL pointer checks around strdup()s
+>   perf script: Implement option for system-wide profiling
+>   perf tools: Continue processing header on unknown features
+>   perf tools: Fix out-of-bound access to struct perf_session
+>   perf tool: Moving code in some files
+>   perf report: Setup browser if stdout is a pipe
+>   perf report: Accept fifos as input file
+>   perf tool: Unify handling of features when writing feature section
+>   perf tools: Improve macros for struct feature_ops
+>   perf tools: Use for_each_set_bit() to iterate over feature flags
 
-The only way to do this in software would be like
-CONFIG_PROFILE_ALL_BRANCHES and that's horrid (and kernel only).
+I just realized conflicts with latest tip/perf/core. This applies on
+c23205c8488f11cb9ebe7a7b5851a1d8a0171011.
 
-But there's more than Intel & ARM, but it looks like PPC doesn't have
-this either and I suspect MIPS and SPARC don't either, which doesn't
-leave us with much else.
+I can resent a rebased version but would like to wait for review
+first.
 
-So I guess we should just go ahead and merge this and hope more hardware
-grows this feature in a compatible enough manner.
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
