@@ -1,246 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab1LFAQe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 19:16:34 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44163 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab1LFAQc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 19:16:32 -0500
+	id S932852Ab1LFARw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 19:17:52 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:51492 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932738Ab1LFARv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 19:17:51 -0500
+Message-ID: <4EDD5F02.1070001@parallels.com>
+Date: Mon, 5 Dec 2011 22:17:06 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <CAOcJUbz-Gy7ncVqBnqZmohZc2OF37HQEJPRu3s-cDbzoKT79bA@mail.gmail.com>
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
-	<4ED6C5B8.8040803@linuxtv.org>
-	<4ED75F53.30709@redhat.com>
-	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
-	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
-	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
-	<4EDC9B17.2080701@gmail.com>
-	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-	<CAOcJUbz-Gy7ncVqBnqZmohZc2OF37HQEJPRu3s-cDbzoKT79bA@mail.gmail.com>
-Date: Tue, 6 Dec 2011 01:16:31 +0100
-Message-ID: <CAJbz7-3sciDeNB+31pBKZSCcwonw8Yru2tZ9du3OnELS4CwfSQ@mail.gmail.com>
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
- because of worrying about possible misusage?
-From: HoP <jpetrous@gmail.com>
-To: Michael Krufky <mkrufky@linuxtv.org>
-Cc: Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        <cgroups@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>, Linux Containers <containers@lists.osdl.org>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        James Bottomley <JBottomley@parallels.com>
+Subject: Re: How to draw values for /proc/stat
+References: <4EDC8FB1.60407@parallels.com> <20111206090543.e72128b6.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111206090543.e72128b6.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael
+On 12/05/2011 10:05 PM, KAMEZAWA Hiroyuki wrote:
+> On Mon, 5 Dec 2011 07:32:33 -0200
+> Glauber Costa<glommer@parallels.com>  wrote:
+>
+>> Hi,
+>>
+>> Specially Peter and Paul, but all the others:
+>>
+>> As you can see in https://lkml.org/lkml/2011/12/4/178, and in my answer
+>> to that, there is a question - one I've asked before but without that
+>> much of an audience - of whether /proc files read from process living on
+>> cgroups should display global or per-cgroup resources.
+>>
+>> In the past, I was arguing for a knob to control that, but I recently
+>> started to believe that a knob here will only overcomplicate matters:
+>> if you live in a cgroup, you should display only the resources you can
+>> possibly use. Global is for whoever is in the main cgroup.
+>>
+>
+> Hm. I have a suggestion and a concern.
+>
+> (A suggestion)
+>     How about having a mount option for procfs ?
+>     For example,
+> 	mount -t proc .... -o cgroup_virtualized
+>     Then, /proc/stat etc shows per-cgroup information.
+>
+> (A concern)
+>     /proc/stat will be a mixture of virtualized values and not-virtualized values.
+>     1. Don't users need to know whether each value is virtualized or not ?
+>     2. Can we have a way to show "this value is virtualized!" annotation ?
 
-2011/12/5 Michael Krufky <mkrufky@linuxtv.org>:
-> On Mon, Dec 5, 2011 at 9:28 AM, HoP <jpetrous@gmail.com> wrote:
->> Hi
->>
->> 2011/12/5 Florian Fainelli <f.fainelli@gmail.com>:
->>> Hello,
->>>
->>>
->>> On 12/03/11 01:37, HoP wrote:
->>>>
->>>> Hi Alan.
->>>>
->>>> 2011/12/3 Alan Cox<alan@lxorguk.ukuu.org.uk>:
->>>>>
->>>>> On Thu, 1 Dec 2011 15:58:41 +0100
->>>>> HoP<jpetrous@gmail.com>  wrote:
->>>>>
->>>>>> Hi,
->>>>>>
->>>>>> let me ask you some details of your interesting idea (how to
->>>>>> achieve the same functionality as with vtunerc driver):
->>>>>>
->>>>>> [...]
->>>>>>
->>>>>>> The driver, as proposed, is not really a driver, as it doesn't support
->>>>>>> any
->>>>>>> hardware. The kernel driver would be used to just copy data from one
->>>>>>> userspace
->>>>>>
->>>>>>
->>>>>> Please stop learning me what can be called driver and what nope.
->>>>>> Your definition is nonsense and I don't want to follow you on it.
->>>>>
->>>>>
->>>>> You can stick your fingers in your ears and shout all you like but given
->>>>> Mauro is the maintainer I'd suggest you work with him rather than making
->>>>> it painful. One of the failures we routinely exclude code from the kernel
->>>>> for is best described as "user interface of contributor"
->>>>
->>>>
->>>> You may be not read all my mails but I really tried to be very positive in
->>>> them.
->>>> I wanted to focus on my Subject, but Mauro has, sometimes, the demand
->>>> to focus on insignificant things (like if the code is driver or not). At
->>>> least
->>>> it is my feeling from all those disscussions with him.
->>>>
->>>>>
->>>>> It's a loopback that adds a performance hit. The right way to do this is
->>>>> in userspace with the userspace infrastructure. At that point you can
->>>>> handle all the corner cases properly, integrate things like service
->>>>> discovery into your model and so on - stuff you'll never get to work that
->>>>> well with kernel loopback hackery.
->>>>>
->>>>>> Can you show me, how then can be reused most important part
->>>>>> of dvb-core subsystem like tuning and demuxing? Or do you want me
->>>>>> to invent wheels and to recode everything in the library? Of course
->>>>>
->>>>>
->>>>> You could certainly build a library from the same code. That might well
->>>>> be a good thing for all kinds of 'soft' DV applications. At that point
->>>>> the discussion to have is the best way to make that code sharable between
->>>>> a userspace library and the kernel and buildable for both.
->>>>>
->>>>>> I can be wrong, I'm no big kernel hacker. So please show me the
->>>>>> way for it. BTW, even if you can find the way, then data copying
->>>>>> from userspace to the kernel and back is also necessery. I really
->>>>>> don't see any advantage of you solution.
->>>>>
->>>>>
->>>>> In a properly built media subsystem you shouldn't need any copies beyond
->>>>> those that naturally occur as part of a processing pass and are therefore
->>>>> free.
->>>>
->>>>
->>>> I may describe project goal, in few sentences: We have small box, running
->>>> embedded linux with 2 satellite tuners on input and ethernet. Nothing
->>>> more.
->>>> We have designed the box for live sat TV/Radio reception, distributing
->>>> them
->>>> down to the network. One of the mode of working is "vtuner", what allows
->>>> reuse those tuners remotely on linux desktop. The kernel part is very
->>>> simple
->>>> code exposing kernel's dvb-core to the userspace. Userspace client/server
->>>> tools do all resource discovery and connection management. It works
->>>> nicely and guys with vdr who is using it are rather satisfied with it.
->>>> So, the main
->>>> goal of vtuner code is to fully virtualize remote DVB adapter. To any
->>>> linux dvb api
->>>> compatible applications and tools. The vtuner kernel code seems to be
->>>> the simplest and straightforward way to achieve it.
->>>
->>>
->>> The company I work for also has something like this. We can attach a DVB
->>> tuner to either the Gateway or the STB we provide and use it indifferently ,
->>> except that we have the following architecture:
->>>
->>> - a DVB daemon controlling the physical DVB tuner and exposing methods for
->>> tuning/scanning/zapping
->>> - a web server and web services for accessing the DVB daemon methods
->>> - a RTSP streamer with associated methods for controlling streaming
->>>
->>> The software running on both devices is the same (one compiled for ARM, the
->>> other for x86).
->>>
->>> I do not see any problem with this solution, people wanting to get the
->>> stream can still get the RTSP stream directly joining the multicast group,
->>> which is fortunately OS agnostic at the same time.
->>
->> Nice. Are your solution open-sourced? If so, can you give me URL?
->>
->>>> I still think the code is very similar to NBD (Network block device) what
->>>> sits
->>>> in the kernel and is using silently. I guess NBD also do data copying
->>>> from/to user space. Is there something what I overlooked?
->>>>
->>>> Can you show me the way (hint please) I can initiate TCP connection
->>>> from within kernel space? If I can do it, then the big disadvantage
->>>> of data passing to and from kernel can be removed.
->>>
->>>
->>> Don't do this in kernel-space (remember the mechanism/policy split).
->>
->> Yes, that can be the issue, I understand that.
->>
->> You know - I'm a bit confused. Somebody are pointing on double
->> data copying (userspace networked daemon -> kernel -> application)
->> issue and another one warn me to not start network connection
->> from the kernel. But if it works for NFS or CIFS then it should not
->> be so weaky, isn't it?
->>
->>>> I must say that the box is primary focused to the DLNA/UpnP world, so
->>>> vtuner feature is something like interesting addon only. But I was myself
->>>> very nice surprised how good it behaves on real installations and that
->>>> was reason I decided to try to get it included in kernel. I see that
->>>> in present there is no willingness for code acceptation, so I will
->>>> continue
->>>> out of the kernel tree.
->>>>
->>>> Anyway, if I can find the way how to start TCP connection from the kernel
->>>> part, I understand it can boost throughput very nicely up.
->>>
->>>
->>> And here is a new hack.
->>
->> I'm really tired from all those "hack, crap, pigback ..." wordings.
->>
->> What exactly vtuner aproach does so hackish (other then exposing
->> DVB internals, what is every time made if virtualization support is developing)?
->>
->> The code itself no need to patch any line of vanilla kernel source, it even
->> doesn't change any processing of the rest of kernel, it is very simple
->> driver/code/whatever.
->>
->> I can understand that some developers don't like to get dvb-core opened,
->> I don't agree with them, but I don't really need to fight with them.
->> Its theirs opinion.
->> But even I try to see what is so hackish in vtuner implementation, I don't catch
->> anything. Simplicity? I thought that simplicity is a big advanatge (simple code,
->> easy to analyze). What else?
->
-> Honza,
->
-> I just want to reiterate my *positive* opinion.  (you already heard my
-> negative, I don't need to repeat it) ...  I am very excited to hear
-> that you're working on this virtual tuner driver, and I don't care
-> what policy says what -- I, personally, want to play with this for my
-> own uses.
->
-> Let's stop arguing, and just write code!   That's what makes us happy
-> - lets be happy :-)
->
-> I haven't had a chance yet to look at your full sources, but I
-> reiterate how excited I am that this virtual dvb adapter exists now.
-> Regardless of whether the community (or I) agrees as to its kernel
-> inclusion, nothing stops you from continuing your work, and publishing
-> tools that use this virtual adapter.
->
-> If, in the end, the community wants this merged into the kernel, then
-> the community will have spoken and things will go the way that they
-> should.
->
-> Meanwhile, you don't need to be included in the vanilla kernel if you
-> want to be used.  People have gcc toolchains and they can build the
-> module themselves if they want it.
->
-> Let's not worry about politics or kernel inclusion -- let's just work
-> on our projects.  The work speaks for itself best.
->
-> I hope you take these words as positive encouragement, regardless of
-> what I think, personally, about merging to the kernel -- that is an
-> entirely separate issue.
->
+A mount options works for me.
+However, "work" doesn't mean it is really necessary, and that's the real 
+question: is there a real use case for someone resource-constrained to 
+see system-wide values ?
 
-I really appreciate your email.
+What is exactly the expectation here? If you want to see whichever 
+resources you're entitled to, just showing the cgroups version on /proc 
+would be simpler, with less confusion, and do the right thing.
 
-Believe me that Mauro's NACK is not reason for me to stop work on vtuner.
-Fortunatelly the code is very compact and not need for any kernel patching
-so doing out-of-tree development is possible and works very well.
+As for your concerns:
+1) As said above, my point of view is that no, they do not. You only see 
+what you can touch.
+2) I think this defeats the goal of transparency. Users of fully 
+virtualized VMs for instances, have no annotations like that (of course 
+it is possible to hint they are virtualized from many other sources).
+But in the end of the day, a resource is a resource, virtualized or not.
 
-I hope for one day when the code gets accepted somehow. In the meantime
-I'm going to place some notes about development progress time to time here.
-Next time w/o any word regarding code inclusion :-)
+>
+>> Now, it comes two questions:
+>> 1) Do you agree with that, for files like /proc/stat ? I think the most
+>> important part is to be consistent inside the system, regardless of what
+>> is done
+>>
+> I think some kind of care for users are required as I wrote above.
+>
+Please note again that I don't necessarily dislike the idea of a mount 
+option, if we must do something. I just don't see the point.
 
-Regards
+>> 2) Will cpuacct stay? I think if it does, that becomes almost mandatory
+>> (at least the bind mount idea is pretty much over here), because drawing
+>> value for /proc/stat becomes quite complex.
+>> The cpuacct cgroup can provide user, sys, etc values. But we also have:
+>>
+>
+> If virtualized /proc/stat works, I don't think 'account only' cgroup is
+> necessary. It can be obsolete.
+>
+Let's keep in mind that there are more to the story, and I want to be 
+sure to address everyones PoVs here. The impression I've got is that the 
+reasons to keep cpuacct around came mainly from 2 sources:
 
-Honza
+1) Balbir wants statistics that don't interfere with scheduling decisions
+2) Paul thinks we should avoid cluttering cpu cgroup.
+
+Obsoleting cpuacct clearly makes somethings simpler, but can probably 
+defeat some of those goals. So still need to hear about this...
