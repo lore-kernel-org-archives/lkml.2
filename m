@@ -1,109 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab1LFO1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 09:27:45 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:60270 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab1LFO1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 09:27:43 -0500
-Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jmorris@namei.org, Kenneth Goldman <kgoldman@us.ibm.com>
-Date: Tue, 06 Dec 2011 09:24:46 -0500
-In-Reply-To: <4EDDEE15.3090200@polito.it>
-References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
-	 <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>
-	 <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>
-	 <1321564518.21708.63.camel@falcor> <4EC63302.4040006@polito.it>
-	 <1321637471.2158.44.camel@falcor> <4ECA6595.7010406@polito.it>
-	 <1323041763.2061.22.camel@falcor> <4EDC9726.1040801@polito.it>
-	 <1323090236.2061.63.camel@falcor> <4EDCCD7D.7010406@polito.it>
-	 <1323118629.2061.117.camel@falcor> <4EDDEE15.3090200@polito.it>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323181487.2165.35.camel@falcor>
-Mime-Version: 1.0
-x-cbid: 11120614-3534-0000-0000-00000352D074
+	id S933497Ab1LFO2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 09:28:01 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:40438 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007Ab1LFO17 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 09:27:59 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-2
+Date: Tue, 06 Dec 2011 15:27:53 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH v7 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
+In-reply-to: <CAHQjnOM9N8zJmiNnHfrN00jbF8Wk5WwtsBsuPsC2Xv0g_O1tdA@mail.gmail.com>
+To: "'KyongHo Cho'" <pullip.cho@samsung.com>
+Cc: "'Ohad Ben-Cohen'" <ohad@wizery.com>, linux-samsung-soc@vger.kernel.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        iommu@lists.linux-foundation.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Message-id: <009c01ccb423$3d9e95c0$b8dbc140$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Content-transfer-encoding: 8BIT
+Thread-index: Acy0EhROwfkZMrAxRC+AeJBOckqVSAAEIRHQ
+References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com>
+ <1321609650-1329-3-git-send-email-pullip.cho@samsung.com>
+ <007e01ccb40c$ed62bca0$c82835e0$%szyprowski@samsung.com>
+ <CAHQjnOM9N8zJmiNnHfrN00jbF8Wk5WwtsBsuPsC2Xv0g_O1tdA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-06 at 11:27 +0100, Roberto Sassu wrote:
-> On 12/05/2011 09:57 PM, Mimi Zohar wrote:
-> > On Mon, 2011-12-05 at 14:56 +0100, Roberto Sassu wrote:
-> >> On 12/05/2011 02:03 PM, Mimi Zohar wrote:
-> >>> On Mon, 2011-12-05 at 11:04 +0100, Roberto Sassu wrote:
-> >>>
-> >>>> Hi Mimi
-> >>>>
-> >>>> i think moving this logic to the TPM driver (or in general, delaying
-> >>>> the action after the list mutex is unlocked) is not safe, because in
-> >>>> this way you are relying on the kernel trustworthiness to protect
-> >>>> itself and IMA against unmeasured potential attacks. So, the verifier
-> >>>> is unable to detect a kernel tampering that removed the limitation
-> >>>> on the TPM Quote operation.
-> >>>>
-> >>>> What i'm proposing in the patch:
-> >>>>
-> >>>> https://lkml.org/lkml/2011/11/21/202
-> >>>>
-> >>>> is in fact a new extension, which is triggered by a new kernel
-> >>>> parameter, so that the behaviour of the base IMA is not modified.
-> >>>
-> >>> How/why the TPM fails is important.  If the TPM fails because of an
-> >>> intermittent problem, then your solution of denying read/execute could
-> >>> work, but what would happen if it was persistent?  Would you be able to
-> >>> quiesce the system?
-> >>>
-> >>> As there is no way of differentiating a persistent from intermittent
-> >>> failure, both need to be addressed in the same manor.  For persistent
-> >>> TPM failure, we can not access the TPM to modify the PCR.  So what
-> >>> options do we have left?  My suggestion, though not optimal, prevents
-> >>> the IMA PCR from being quoted.
-> >>>
-> >>
-> >> Hi Mimi
-> >>
-> >> the solution you are proposing is reasonable as the default
-> >> behaviour, because not all IMA users need the high confidence
-> >> in the measurements, as ensured by denying the execution of
-> >> system calls.
-> >>
-> >> However, during the IMA initialization the TPM is tested
-> >> by issuing a PCR read (the test procedure may be extended
-> >> to better detect existing errors in advance). So, this means
-> >> that a TPM failure when the system is already powered on is
-> >> very unlikely and may cause serious issues as it could happen
-> >> if other devices are involved.
-> >>
-> >> For this reason, also my extension seems helpful especially
-> >> in the situations where all events need to be measured properly.
-> >> In this case, IMA users are aware that a TPM failure could hang
-> >> their systems, because they need to manually insert the required
-> >> kernel parameter.
+Hello,
+
+On Tuesday, December 06, 2011 1:21 PM KyongHo Cho wrote:
+
+> On Tue, Dec 6, 2011 at 8:48 PM, Marek Szyprowski
+> <m.szyprowski@samsung.com> wrote:
+> > Hello,
 > >
-> > As you said a TPM failure is very unlikely, what type of attack are you
-> > trying to defend against, that could possibly warrant causing the system
-> > to hang?
+> > I'm trying to integrate your SYSMMU driver with my DMA-mapping & IOMMU
+> > API integration patches. I've noticed some issues, please see my comments below.
+> >
+> Thank you!
+> 
+> > On Friday, November 18, 2011 10:48 AM KyongHo Cho wrote:
+> >
+> >> +
+> >> +static int exynos_sysmmu_probe(struct platform_device *pdev)
+> >> +{
+> >> +     struct resource *res, *ioarea;
+> >> +     int ret;
+> >> +     int irq;
+> >> +     struct device *dev;
+> >> +     void *sfr;
+> >> +     struct sysmmu_drvdata *data;
+> >> +     char *emsg;
+> >> +
+> >> +     dev = &pdev->dev;
+> >> +
+> >> +     if (dev_get_platdata(dev) == NULL) {
+> >> +             pr_debug("%s: No System MMU is assigned for %s.%d.\n", __func__,
+> >> +                             pdev->name, pdev->id);
+> >> +             return -ENODEV;
+> >> +     }
+> >> +
+> >> +     data = kzalloc(sizeof(*data), GFP_KERNEL);
+> >> +     if (!data) {
+> >> +             emsg = "Not enough memory";
+> >> +             ret = -ENOMEM;
+> >> +             goto err_alloc;
+> >> +     }
+> >> +
+> >> +     data->owner = dev_get_platdata(dev);
+> >> +
+> >> +     ret = dev_set_drvdata(dev, data);
+> >> +     if (ret) {
+> >> +             emsg = "Unable to set driver data.";
+> >> +             goto err_init;
+> >> +     }
+> >> +
+> >> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >> +     if (!res) {
+> >> +             emsg = "Failed probing system MMU: failed to get resource.";
+> >> +             goto err_init;
+> >> +     }
+> >> +
+> >> +     ioarea = request_mem_region(res->start, resource_size(res),
+> >> +                                                             dev_name(dev));
+> >> +     if (ioarea == NULL) {
+> >> +             emsg = "failed to request memory region.";
+> >> +             ret = -ENOMEM;
+> >> +             goto err_init;
+> >> +     }
+> >> +
+> >> +     sfr = ioremap(res->start, resource_size(res));
+> >> +     if (!sfr) {
+> >> +             emsg = "failed to call ioremap().";
+> >> +             ret = -ENOENT;
+> >> +             goto err_ioremap;
+> >> +     }
+> >> +
+> >> +     irq = platform_get_irq(pdev, 0);
+> >> +     if (irq <= 0) {
+> >> +             emsg = "failed to get irq resource.";
+> >> +             ret = irq;
+> >> +             goto err_irq;
+> >> +     }
+> >> +
+> >> +     ret = request_irq(irq, exynos_sysmmu_irq, 0, dev_name(dev), data);
+> >> +     if (ret) {
+> >> +             emsg = "failed to request irq.";
+> >> +             goto err_irq;
+> >> +     }
+> >> +
+> >> +     data->clk = clk_get(dev, "sysmmu");
+> >> +     if (IS_ERR(data->clk)) {
+> >> +             emsg = "failed to get clock descriptor";
+> >> +             ret = PTR_ERR(data->clk);
+> >> +             goto err_clk;
+> >> +     }
+> >> +
+> >> +     data->dev = dev;
+> >> +     data->sfrbase = sfr;
+> >> +     __set_fault_handler(data, &default_fault_handler);
+> >> +     rwlock_init(&data->lock);
+> >
+> > Here is a serious problem: __set_fault_handler takes data->lock which is initialized after
+> calling
+> > this function.
 > >
 > 
-> I don't know if this can really happen, but an attacker may issue
-> a lot of commands to the TPM, so that the timeout limit is reached
-> when IMA is trying to extend the PCR.
+> Yeah, you're right. Thank you. I didn't notice it.
+> I will fix it.
 > 
-> Roberto Sassu
+> >> +
+> >> +static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
+> >> +                                     short *pgcounter)
+> >> +{
+> >> +     if (lv1ent_fault(sent)) {
+> >> +             unsigned long *pent;
+> >> +
+> >> +             pent = kzalloc(1024, GFP_KERNEL);
+> >
+> > I would use GFP_ATOMIC here. iommu_map() function might be called in atomic context, and
+> > GFP_KERNEL here causes kernel ops/warning.
+> 
+> I wanted to avoid to allocate memory from emergency pool.
+> Do you think that it needs to allocate memory with GFP_ATOMIC flag?
 
-Processing lots of commands isn't an issue, as IMA takes the
-ima_extend_list_mutex to synchronize adding the measurement to the
-measurement list and extending the PCR.  The TPM device driver takes the
-tpm_mutex, in tpm_transmit(), before transmitting the command.
+Otherwise it will very hard to get it integrated with DMA mapping framework. GFP_ATOMIC
+memory is allocated straight from system free lists, which are refilled on the next 
+non-atomic allocation if the watermark level is low enough. 
 
-So the issue remains whether an individual PCR extend can timeout/fail.
-As you previously said, this is highly unlikely.
+It will be best if iommu_map() can be extended with allocation flags argument, so the
+caller can decide if iommu driver can use GFP_ATOMIC or GFP_KERNEL depending on the context. 
 
-Mimi
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
 
