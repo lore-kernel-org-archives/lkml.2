@@ -1,90 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab1LFJcI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:32:08 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48571 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901Ab1LFJcF convert rfc822-to-8bit (ORCPT
+	id S933050Ab1LFJd3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:33:29 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:60731 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932901Ab1LFJdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:32:05 -0500
+	Tue, 6 Dec 2011 04:33:25 -0500
+Message-ID: <4EDDE133.3080903@polito.it>
+Date: Tue, 06 Dec 2011 10:32:35 +0100
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1112060030220.1615@sister.anvils>
-References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
-	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>
-	<20111121165626.GD14568@thunk.org>
-	<alpine.LSU.2.00.1111211331120.1879@sister.anvils>
-	<alpine.LSU.2.00.1112051456580.3938@sister.anvils>
-	<4EDD729E.2060402@linux.vnet.ibm.com>
-	<alpine.LSU.2.00.1112060030220.1615@sister.anvils>
-Date: Tue, 6 Dec 2011 17:32:05 +0800
-Message-ID: <CAGBYx2YA3B5-nLxwdHavmd=794ycrpqnMbvM=VabrdPL2FQ0sw@mail.gmail.com>
-Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Allison Henderson <achender@linux.vnet.ibm.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
-        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srajiv@linux.vnet.ibm.com, jmorris@namei.org
+Subject: Re: [PATCH] ima: fix memory leak and invalid memory reference bugs
+References: <1323099519-8922-1-git-send-email-roberto.sassu@polito.it> <1323112233.2061.95.camel@falcor>
+In-Reply-To: <1323112233.2061.95.camel@falcor>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 4:55 PM, Hugh Dickins <hughd@google.com> wrote:
-> On Mon, 5 Dec 2011, Allison Henderson wrote:
->> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
->> >
->> > This has been outstanding for a month now, and we've heard no progress:
->> > please revert commit 02fac1297eb3 "ext4: fix partial page writes" for rc5.
->> >
->> > The problems appear on a 1k-blocksize filesystem under memory pressure:
->> > the hunk in ext4_da_write_end() causes oops, because it's playing with
->> > a page after generic_write_end() dropped our last reference to it; and
->> > backing out the hunk in ext4_da_write_begin() is then found to stop
->> > rare data corruption seen when kbuilding.
->> >
->> > Although I earlier reported that backing out the patch caused an fsx
->> > test to fail earlier, I've since found great variation in how soon it
->> > fails, and seen it fail just as quickly with 02fac1297eb3 still in.
->> > I also reported that I had to go back to 2.6.38 for fsx not to fail
->> > under memory pressure: you won't be surprised that that turned out to
->> > be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
+On 12/05/2011 08:10 PM, Mimi Zohar wrote:
+> On Mon, 2011-12-05 at 16:38 +0100, Roberto Sassu wrote:
+>> This patch frees the memory of measurements entries that have already
+>> been inserted in the measurements list and prevent the release when the
+>> PCR extend operation failed.
 >>
->> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
->> works well when blocksize < pagesize" ?  I have tried it and it does seem to
->> help, but I am still running into some failures that I am trying to debug,
->> but let please let us know if it helps the issues that you are seeing.  Thx!
+>> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
 >
-> That 1/2, or the 2/2 "ext4: let ext4_discard_partial_buffers handle
-> pages without buffers correctly"?  The latter is mostly a reversion
-> of your 02fac1297eb3, so that's the one I need to fix the oops and
-> rare data corruption.  Perhaps you're suggesting 1/2 for fsx failures
-> under memory pressure?
+> Thanks for the updated patch. I still need to test it, but it looks
+> good.  The patch description should probably include an explanation of
+> how a duplicate measurement is being added.  Something like:
 >
-> I've now tried the fsx test on three machines, with both 1/2 and 2/2
-> applied to 3.2-rc4.  On one machine, with ext2 on loop on tmpfs, the
-> fsx test failed in a couple of minutes with those patches; on another
-> machine, with ext2 on loop on tmpfs, it failed after about 40 minutes
-> with  the patches; on this laptop, with ext2 on SSD, it's just now
-> failed after 35 minutes with the patches.
-ext2?  So files are indirect mapped?  If so, the failure should has
-nothing to do with punching hole, I remember that punch hole is not
-supported for indirect mapped files.
-
-Do you mean fsx failure or the bug you reported earlier due to
-referencing a unlocked page?
-
-Yongqiang.
+> When a new measurement is added to the measurement list, this info is
+> cached in the iint for performance.  When the inode is flushed from
+> cache, the associated iint is flushed as well.  Subsequent access to the
+> inode will cause it to be re-measured and will attempt to unnecessarily
+> add it to the measurement list.
 >
-> That's not to say that Yongqiang's patches aren't good; but I cannot
-> detect whether they make any improvement or not, since lasting for 2 or
-> 40 minutes is typical for fsx under memory pressure with recent kernels.
+> This patch fixes a memory leak, by freeing the memory of the unnecessary
+> duplicate measurement, and also fixes an invalid memory reference, by
+> preventing the freeing of a new valid measurement entry, when the PCR
+> extend operation fails.
 >
-> Hugh
+
+Hi Mimi
+
+do you mean that can i resend this patch as is or should i wait
+until you tested it?
+
+Thanks
+
+Roberto Sassu
 
 
+> thanks,
+>
+> Mimi
+>
+>> ---
+>>   security/integrity/ima/ima_api.c   |    4 ++--
+>>   security/integrity/ima/ima_queue.c |   10 ++++++----
+>>   2 files changed, 8 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/security/integrity/ima/ima_api.c b/security/integrity/ima/ima_api.c
+>> index 0d50df0..88a2788 100644
+>> --- a/security/integrity/ima/ima_api.c
+>> +++ b/security/integrity/ima/ima_api.c
+>> @@ -178,8 +178,8 @@ void ima_store_measurement(struct integrity_iint_cache *iint,
+>>   	strncpy(entry->template.file_name, filename, IMA_EVENT_NAME_LEN_MAX);
+>>
+>>   	result = ima_store_template(entry, violation, inode);
+>> -	if (!result)
+>> +	if (!result || result == -EEXIST)
+>>   		iint->flags |= IMA_MEASURED;
+>> -	else
+>> +	if (result<  0)
+>>   		kfree(entry);
+>>   }
+>> diff --git a/security/integrity/ima/ima_queue.c b/security/integrity/ima/ima_queue.c
+>> index 8e28f04..0fe41b81 100644
+>> --- a/security/integrity/ima/ima_queue.c
+>> +++ b/security/integrity/ima/ima_queue.c
+>> @@ -94,7 +94,8 @@ static int ima_pcr_extend(const u8 *hash)
+>>
+>>   	result = tpm_pcr_extend(TPM_ANY_NUM, CONFIG_IMA_MEASURE_PCR_IDX, hash);
+>>   	if (result != 0)
+>> -		pr_err("IMA: Error Communicating to TPM chip\n");
+>> +		pr_err("IMA: Error Communicating to TPM chip, result: %d\n",
+>> +		       result);
+>>   	return result;
+>>   }
+>>
+>> @@ -107,13 +108,14 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+>>   	u8 digest[IMA_DIGEST_SIZE];
+>>   	const char *audit_cause = "hash_added";
+>>   	int audit_info = 1;
+>> -	int result = 0;
+>> +	int result = 0, tpmresult = 0;
+>>
+>>   	mutex_lock(&ima_extend_list_mutex);
+>>   	if (!violation) {
+>>   		memcpy(digest, entry->digest, sizeof digest);
+>>   		if (ima_lookup_digest_entry(digest)) {
+>>   			audit_cause = "hash_exists";
+>> +			result = -EEXIST;
+>>   			goto out;
+>>   		}
+>>   	}
+>> @@ -128,8 +130,8 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+>>   	if (violation)		/* invalidate pcr */
+>>   		memset(digest, 0xff, sizeof digest);
+>>
+>> -	result = ima_pcr_extend(digest);
+>> -	if (result != 0) {
+>> +	tpmresult = ima_pcr_extend(digest);
+>> +	if (tpmresult != 0) {
+>>   		audit_cause = "TPM error";
+>>   		audit_info = 0;
+>>   	}
+>
+>
 
--- 
-Best Wishes
-Yongqiang Yang
