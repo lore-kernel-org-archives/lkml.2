@@ -1,105 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab1LFXM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 18:12:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42366 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab1LFXM2 (ORCPT
+	id S1755548Ab1LFXQd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 18:16:33 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:53696 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333Ab1LFXQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 18:12:28 -0500
-Message-ID: <4EDEA152.90804@canonical.com>
-Date: Tue, 06 Dec 2011 15:12:18 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Tue, 6 Dec 2011 18:16:32 -0500
+Date: Wed, 7 Dec 2011 03:16:26 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rob Herring <robherring2@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH v3] of/irq: Get rid of NO_IRQ usage
+Message-ID: <20111206231626.GA31683@oksana.dev.rtsoft.ru>
+References: <20111110151852.GA7465@oksana.dev.rtsoft.ru>
+ <20111110152541.GA3207@oksana.dev.rtsoft.ru>
+ <4EDE877A.4080708@gmail.com>
+ <CA+55aFwGFogD4ROCH9m=c2jqB2axvrH-dnKPtA8kxXL9b3CVBw@mail.gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com> <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com> <4EDE94DC.8010106@canonical.com> <20111206224100.GM2203@ZenIV.linux.org.uk>
-In-Reply-To: <20111206224100.GM2203@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwGFogD4ROCH9m=c2jqB2axvrH-dnKPtA8kxXL9b3CVBw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 02:41 PM, Al Viro wrote:
-> On Tue, Dec 06, 2011 at 02:19:08PM -0800, John Johansen wrote:
->> On 12/06/2011 01:07 PM, Linus Torvalds wrote:
->>> On Tue, Dec 6, 2011 at 12:53 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>>>
->>>> The trouble is, might very well stop *NOT* at the global root.  Consider
->>>> a race with umount -l; we have no way to tell "it had been outside of
->>>> chroot jail" from "it had walked up to the place where ->mnt_parent had
->>>> been already reset, sorry, no idea what it was".
->>>
->>> Sure, but you made that case return NULL already as part of the "no
->>> bastard" case, didn't you?
->>>
->>> That part of the patch looked fine.
->>>
->>> It was just the extra convolutions around 'bastard' that seemed to be
->>> over-designed, and made for just a single use that seems very
->>> peripheral anyway.
->>>
->> it is, and the plan is to not need the bastard even.  What apparmor should
->> be doing is lazy labeling the live objects, and anything that is disconnected
->> is evaluated based on the previous labeling.
-> 
-> I still don't understand how you deal with objects seen by processes in
-> different namespaces.  Please, explain lazy labeling in details...
-> 
-Right now we leverage the file->cred, which is very crude, and fails in
-a lot of situations forcing us, to do a revalidation (file and permission
-lookup), and then return an error based on that.  At the moment it can
-thought of more as caching based on the original cred that was used opening
-the file, if the tasks cred matches it gets to avoid the path lookup.
+PPC32/64 defines NO_IRQ to zero, so no problems expected.
+ARM defines NO_IRQ to -1, but OF code relies on IRQ domains support,
+which returns correct ('0') value in 'no irq' case. So everything
+should be fine.
 
-What should be is when a task goes to access an object, it checks the label,
-if it doesn't pass the check, it falls backs to doing a path lookup, if that
-succeeds the label is updated, if it fails access is denied.  And yes this
-does necessitate the labeling being on something that can be updated.
+Other arches might break if some of their OF drivers rely on NO_IRQ
+being not 0. If so, the drivers must be fixed, finally.
 
-I have been working on a better, much longer writeup, but its still needs a
-lot of work.
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
 
-> You do realize that there's no hope whatsoever for prohibiting access
-> to struct file opened in parent's namespace and already written into
-> there, right?
+On Tue, Dec 06, 2011 at 01:25:07PM -0800, Linus Torvalds wrote:
+> On Tue, Dec 6, 2011 at 1:22 PM, Rob Herring <robherring2@gmail.com> wrote:
+> >
+> > This warning code is really ugly. Can we just drop it? In my searching
+> > of in kernel dts files, there's only 1 instance I have found (Versatile
+> > AB watchdog) that would hit this.
 > 
-so with the caveat that I may have misunderstood what you wrote, yes.
+> I do agree. Especially since we never got any input on whether it works or not.
+> 
+> > If not, you don't need to handle irq_create_of_mapping return as that is
+> > already always 0 for no irq or error.
+> 
+> Yeah, I'd like to just remove NO_IRQ from the OF paths. Afaik, it
+> hasn't worked as NO_IRQ before anyway, so even if the rest of the
+> drivers end up continuing using NO_IRQ, the OF-enabled ones on ARM
+> should just stop. There can't be many of those yet.
 
->> This will also remove its
->> use of passing root = { NULL, NULL } to __d_path.
-> 
-> One word: tomoyo...  You are not the only weird one.  They want an absolute
-> pathname and don't care about races with umount.  Whatever it's relative
-> to, the thing just goes ahead and plays with itse^Wthe string it got.  As
-> long as they are not dereferencing pointers to free objects, I Don't Want To
-> Know(tm).
-> 
->> Right now we could drop the bastard parameter and passing root = { NULL, NULL }
-> 
-> OK, please tell me what do you need from __d_path().  Suppose it has missed
-> the supplied root; what do you want to know about the place it had stopped
-> in?  If we don't do extra arguments, we are limited by this:
-> 	* some condition is checked by __d_path(); if it's satisfied,
-> pointer to relative pathname (based hell-knows-where) is returned as
-> usual; we *can't* tell that from normal "reached root, here's your
-> pathname" case.
-> 	* if it isn't satisfied, we return NULL.  No relative pathname
-> to look at, etc.
-> 
-> Unless you are OK with what __d_path(path, root, NULL, buf, buflen) is doing
-> with this patch, we'd need to split it; seq_path_root()/show_mountinfo()
-> requirements leave no wiggling space for case root->mnt != NULL,
-> bastard == NULL.
+Okay, here it goes.
 
-What we want to know is if we missed the supplied root, so that we don't
-mediate off of that path.  And it would be nice to get a partial path for
-the purposes of logging, so that there is some guidance on how to update
-policy.
+ drivers/of/irq.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 791270b..ac6da0d 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -26,11 +26,6 @@
+ #include <linux/string.h>
+ #include <linux/slab.h>
+ 
+-/* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
+-#ifndef NO_IRQ
+-#define NO_IRQ 0
+-#endif
+-
+ /**
+  * irq_of_parse_and_map - Parse and map an interrupt into linux virq space
+  * @device: Device node of the device whose interrupt is to be mapped
+@@ -44,7 +39,7 @@ unsigned int irq_of_parse_and_map(struct device_node *dev, int index)
+ 	struct of_irq oirq;
+ 
+ 	if (of_irq_map_one(dev, index, &oirq))
+-		return NO_IRQ;
++		return 0;
+ 
+ 	return irq_create_of_mapping(oirq.controller, oirq.specifier,
+ 				     oirq.size);
+@@ -345,7 +340,7 @@ int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
+ 
+ 	/* Only dereference the resource if both the
+ 	 * resource and the irq are valid. */
+-	if (r && irq != NO_IRQ) {
++	if (r && irq) {
+ 		r->start = r->end = irq;
+ 		r->flags = IORESOURCE_IRQ;
+ 		r->name = dev->full_name;
+@@ -363,7 +358,7 @@ int of_irq_count(struct device_node *dev)
+ {
+ 	int nr = 0;
+ 
+-	while (of_irq_to_resource(dev, nr, NULL) != NO_IRQ)
++	while (of_irq_to_resource(dev, nr, NULL))
+ 		nr++;
+ 
+ 	return nr;
+@@ -383,7 +378,7 @@ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
+ 	int i;
+ 
+ 	for (i = 0; i < nr_irqs; i++, res++)
+-		if (of_irq_to_resource(dev, i, res) == NO_IRQ)
++		if (!of_irq_to_resource(dev, i, res))
+ 			break;
+ 
+ 	return i;
+-- 
+1.7.5.3
 
