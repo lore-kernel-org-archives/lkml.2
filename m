@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab1LFTuF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:50:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51591 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753888Ab1LFTuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:50:03 -0500
-From: Amit Shah <amit.shah@redhat.com>
-To: Virtualization List <virtualization@lists.linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
-        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v4 10/12] virtio: balloon: ensure thread exists before stopping it
-Date: Wed,  7 Dec 2011 01:18:48 +0530
-Message-Id: <e85c8b64de7619522a565d8c38e5b2c8c8ed1412.1323199985.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1323199985.git.amit.shah@redhat.com>
-References: <cover.1323199985.git.amit.shah@redhat.com>
-In-Reply-To: <cover.1323199985.git.amit.shah@redhat.com>
-References: <cover.1323199985.git.amit.shah@redhat.com>
+	id S1754060Ab1LFTxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:53:06 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7738 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab1LFTxF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 14:53:05 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 06 Dec 2011 11:52:50 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Cong Wang <amwang@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 6 Dec 2011 11:52:36 -0800
+Subject: RE: [PATCH] highmem: Fix ARM build break due to __kmap_atomic rename
+Thread-Topic: [PATCH] highmem: Fix ARM build break due to __kmap_atomic
+ rename
+Thread-Index: Acy0Txtdy+anM5ctT2CvQbzg2diNsQAAWAew
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1750B774A6@HQMAIL01.nvidia.com>
+References: <1323197426-10815-1-git-send-email-swarren@nvidia.com>
+ <alpine.LFD.2.02.1112061440050.2357@xanadu.home>
+In-Reply-To: <alpine.LFD.2.02.1112061440050.2357@xanadu.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vballoon thread could have exited earlier and not re-started.
-Ensure we don't try to stop a non-existent thread.
+Nicolas Pitre wrote at Tuesday, December 06, 2011 12:42 PM:
+> On Tue, 6 Dec 2011, Stephen Warren wrote:
+> > Git commit 37bfbb9 "highmem: kill all __kmap_atomic()" renamed
+> > __kmap_atomic to kmap_atomic. However, arch/arm/include/asm/highmem.h
+> > wasn't updated for that change. This change does so, and fixes the
+> > ARM build break.
+> >
+> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> > ---
+> > This shows up in next-20111206 at least.
+> 
+> Commit 37bfbb9 doesn't show up in anything which is stable yet.  Would
+> be best to ask the original author to fix his branch.
 
-This can happen if the balloon driver goes into S4 state and the thread
-exits (this code lands in the next patch).  If, however, on restore, the
-vqs fail to initialise, the vballoon thread will not be re-created.
-Upon a subsequent module removal in that state, we will end up
-dereferencing an invalid pointer without this patch.
----
- drivers/virtio/virtio_balloon.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Yes, I assumed that Cong would squash this into his/her tree that's in
+linux-next.
 
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 94fd738..22f7c69 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -338,7 +338,9 @@ static void __devexit virtballoon_remove(struct virtio_device *vdev)
- {
- 	struct virtio_balloon *vb = vdev->priv;
- 
--	kthread_stop(vb->thread);
-+	/* Thread may not have started on restore after a suspend */
-+	if (vb->thread)
-+		kthread_stop(vb->thread);
- 
- 	/* There might be pages left in the balloon: free them. */
- 	while (vb->num_pages)
 -- 
-1.7.7.3
+nvpublic
 
