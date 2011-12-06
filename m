@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab1LFFpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 00:45:21 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50277 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956Ab1LFFpU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 00:45:20 -0500
-Date: Tue, 6 Dec 2011 06:43:35 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/6] [GIT PULL][v3.2] tracing: fixes
-Message-ID: <20111206054335.GA1580@elte.hu>
-References: <20111206014110.079874115@goodmis.org>
+	id S1752386Ab1LFFwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 00:52:04 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:62206 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867Ab1LFFwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 00:52:02 -0500
+Message-ID: <4EDDAD46.6020508@cn.fujitsu.com>
+Date: Tue, 06 Dec 2011 13:51:02 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206014110.079874115@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        viro <viro@zeniv.linux.org.uk>, Chris Mason <chris.mason@oracle.com>,
+        Ito <t-itoh@jp.fujitsu.com>, Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH 1/2] vfs: make writeback_in_progress() inline
+References: <4EDDA9B1.5050000@cn.fujitsu.com>
+In-Reply-To: <4EDDA9B1.5050000@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-06 13:51:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-06 13:51:33,
+	Serialize complete at 2011-12-06 13:51:33
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=GB2312
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cc Fengguang
+cc Linux-kernel
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+On tue, 06 Dec 2011 13:35:45 +0800, Miao Xie wrote:
+> writeback_in_progress() is very simple, and we will use writeback_in_progress()
+> in the module, so make it inline.
+> 
+> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+> ---
+>  fs/fs-writeback.c           |   12 ------------
+>  include/linux/backing-dev.h |   12 +++++++++++-
+>  2 files changed, 11 insertions(+), 13 deletions(-)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 04cf3b9..341448c 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -59,18 +59,6 @@ struct wb_writeback_work {
+>   */
+>  int nr_pdflush_threads;
+>  
+> -/**
+> - * writeback_in_progress - determine whether there is writeback in progress
+> - * @bdi: the device's backing_dev_info structure.
+> - *
+> - * Determine whether there is writeback waiting to be handled against a
+> - * backing device.
+> - */
+> -int writeback_in_progress(struct backing_dev_info *bdi)
+> -{
+> -	return test_bit(BDI_writeback_running, &bdi->state);
+> -}
+> -
+>  static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
+>  {
+>  	struct super_block *sb = inode->i_sb;
+> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> index 3b2f9cb..ae4d7c0 100644
+> --- a/include/linux/backing-dev.h
+> +++ b/include/linux/backing-dev.h
+> @@ -258,7 +258,17 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned int max_ratio);
+>  extern struct backing_dev_info default_backing_dev_info;
+>  extern struct backing_dev_info noop_backing_dev_info;
+>  
+> -int writeback_in_progress(struct backing_dev_info *bdi);
+> +/**
+> + * writeback_in_progress - determine whether there is writeback in progress
+> + * @bdi: the device's backing_dev_info structure.
+> + *
+> + * Determine whether there is writeback waiting to be handled against a
+> + * backing device.
+> + */
+> +static inline int writeback_in_progress(struct backing_dev_info *bdi)
+> +{
+> +	return test_bit(BDI_writeback_running, &bdi->state);
+> +}
+>  
+>  static inline int bdi_congested(struct backing_dev_info *bdi, int bdi_bits)
+>  {
 
-> 
-> Ingo,
-> 
-> These are the patches that were also in a tip/perf/core push, but
-> as they are all bug fixes, we should get them into 3.2.
-> 
-> Thanks,
-> 
-> Please pull the latest tip/perf/urgent tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> tip/perf/urgent
-> 
-> Head SHA1: ddf6e0e50723b62ac76ed18eb53e9417c6eefba7
-> 
-> 
-> Gleb Natapov (1):
->       jump_label: jump_label_inc may return before the code is patched
-> 
-> Ilya Dryomov (1):
->       tracing: fix event_subsystem ref counting
-> 
-> Li Zefan (1):
->       tracing: Restore system filter behavior
-> 
-> Steven Rostedt (3):
->       ftrace: Remove force undef config value left for testing
->       perf: Fix parsing of __print_flags() in TP_printk()
->       ftrace: Fix hash record accounting bug
-> 
-> ----
->  include/linux/ftrace_event.h        |    2 ++
->  kernel/jump_label.c                 |    3 ++-
->  kernel/trace/ftrace.c               |    5 +++--
->  kernel/trace/trace_events.c         |    1 -
->  kernel/trace/trace_events_filter.c  |    7 ++++++-
->  tools/perf/util/trace-event-parse.c |    2 ++
->  6 files changed, 15 insertions(+), 5 deletions(-)
-
-Pulled, thanks a lot Steve!
-
-If it's problem-free i'll get it to Linus today-ish. Note that i 
-also merged perf/urgent into perf/core, to neutralize the 
-conflict-creation properties of the cherry-picks.
-
-Thanks,
-
-	Ingo
