@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab1LFX1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 18:27:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49031 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752467Ab1LFX1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 18:27:46 -0500
-Date: Wed, 7 Dec 2011 00:27:41 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: netdev@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: atl1c: WARNING: at net/sched/sch_generic.c:255 dev_watchdog
-Message-ID: <20111206232741.GA5368@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, netdev@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1755354Ab1LFX3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 18:29:00 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46067 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab1LFX27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 18:28:59 -0500
+Date: Wed, 7 Dec 2011 01:28:46 +0200
+From: Ido Yariv <ido@wizery.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] genirq: Flush the irq thread on synchronization
+Message-ID: <20111206232824.GA23893@WorkStation>
+References: <1322843052-7166-1-git-send-email-ido@wizery.com>
+ <alpine.LFD.2.02.1112022345300.2735@ionos>
+ <alpine.LFD.2.02.1112052248010.2735@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1112052248010.2735@ionos>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Thomas,
 
-this seems like a pretty old issue judging by a quick net search. It
-still triggers on latest -rc4 here, below the whole trace. I'm willing
-to test patches :).
+On Mon, Dec 05, 2011 at 10:55:01PM +0100, Thomas Gleixner wrote:
+> Does the following (untested) patch solve your issues?
 
-[14622.820555] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
-[14632.816280] ------------[ cut here ]------------
-[14632.816314] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x237/0x240()
-[14632.816323] Hardware name: 30515QG
-[14632.816332] NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
-[14632.816340] Modules linked in: microcode powernow_k8 mperf cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_userspace binfmt_misc uinput kvm_amd kvm fuse dm_crypt dm_mod ipv6 vfat fat loop snd_hda_codec_conexant snd_hda_codec_hdmi usbhid cdc_ncm usbnet cdc_wdm cdc_acm arc4 snd_hda_intel snd_hda_codec snd_hwdep rtl8192c_common rtlwifi snd_pcm mac80211 thinkpad_acpi snd_seq snd_timer snd_seq_device radeon ohci_hcd ehci_hcd evdev snd atl1c nvram cfg80211 pcspkr k10temp ttm rfkill soundcore snd_page_alloc video processor drm_kms_helper ac thermal button battery thermal_sys [last unloaded: rtl8192ce]
-[14632.816594] Pid: 0, comm: kworker/0:0 Not tainted 3.2.0-rc4+ #32
-[14632.816603] Call Trace:
-[14632.816611]  <IRQ>  [<ffffffff8104537f>] warn_slowpath_common+0x7f/0xc0
-[14632.816640]  [<ffffffff81045476>] warn_slowpath_fmt+0x46/0x50
-[14632.816658]  [<ffffffff81399087>] dev_watchdog+0x237/0x240
-[14632.816673]  [<ffffffff81055845>] run_timer_softirq+0x195/0x4e0
-[14632.816687]  [<ffffffff810557af>] ? run_timer_softirq+0xff/0x4e0
-[14632.816700]  [<ffffffff81398e50>] ? pfifo_fast_init+0xa0/0xa0
-[14632.816716]  [<ffffffff8104c935>] __do_softirq+0xc5/0x290
-[14632.816730]  [<ffffffff81078644>] ? clockevents_program_event+0x74/0x100
-[14632.816746]  [<ffffffff8142692c>] call_softirq+0x1c/0x30
-[14632.816760]  [<ffffffff81003d75>] do_softirq+0x85/0xc0
-[14632.816773]  [<ffffffff8104ce36>] irq_exit+0x96/0xe0
-[14632.816786]  [<ffffffff81426fab>] smp_apic_timer_interrupt+0x6b/0x98
-[14632.816799]  [<ffffffff814260b0>] apic_timer_interrupt+0x70/0x80
-[14632.816807]  <EOI>  [<ffffffff81009f96>] ? native_sched_clock+0x26/0x70
-[14632.816842]  [<ffffffffa005f160>] ? acpi_idle_enter_simple+0xd2/0x114 [processor]
-[14632.816863]  [<ffffffffa005f165>] ? acpi_idle_enter_simple+0xd7/0x114 [processor]
-[14632.816884]  [<ffffffffa005f160>] ? acpi_idle_enter_simple+0xd2/0x114 [processor]
-[14632.816902]  [<ffffffff813591cc>] cpuidle_idle_call+0xcc/0x240
-[14632.816915]  [<ffffffff8100097b>] ? cpu_idle+0xbb/0x130
-[14632.816932]  [<ffffffff8100098f>] cpu_idle+0xcf/0x130
-[14632.816946]  [<ffffffff814152ec>] start_secondary+0x1fc/0x203
-[14632.816958] ---[ end trace 48e9f392fdd335fa ]---
-[14632.842367] atl1c 0000:02:00.0: irq 44 for MSI/MSI-X
-[14632.842649] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
+I briefly tested this patch and it appears to also solve the issues I
+mentioned.
 
-Thanks.
+I think both solutions would work. The only drawbacks I see in using
+this patch over the other one are that this patch involves a bit more
+locking in synchronize_irq() and irq_finalize_oneshot() (for non-oneshot
+irqs), and that the oneshot mechanism is used for non-oneshot threads.
 
--- 
-Regards/Gruss,
-Boris.
+Thanks,
+Ido.
