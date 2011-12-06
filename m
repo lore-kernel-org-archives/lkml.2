@@ -1,190 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab1LFDkq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 22:40:46 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47404 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932871Ab1LFDkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 22:40:45 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 6 Dec 2011 12:39:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Miklos Szeredi <mszeredi@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
-Subject: [BUGFIX][PATCH] add mem_cgroup_replace_page_cache.
-Message-Id: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932927Ab1LFDmR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 22:42:17 -0500
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:11105
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932881Ab1LFDmP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 22:42:15 -0500
+X-SpamScore: -17
+X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: RE: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+Thread-Topic: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+Thread-Index: AQHMsnlB4tyTDOR3uEmPDrmj3tcvppXMPl6AgAGgQACAAE5AcA==
+Date: Tue, 6 Dec 2011 03:42:11 +0000
+Message-ID: <65EE16ACC360FA4D99C96DC085B3F7723457FD@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+	<1322999384-7886-2-git-send-email-b29396@freescale.com>
+	<20111204161123.GS27267@pengutronix.de>
+ <CACRpkdZ0aNj-BsdtD2R-bEWQfMzsOMNbdh6ryVtgwET3Ry7xXA@mail.gmail.com>
+In-Reply-To: <CACRpkdZ0aNj-BsdtD2R-bEWQfMzsOMNbdh6ryVtgwET3Ry7xXA@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.89]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> -----Original Message-----
+> From: Linus Walleij [mailto:linus.walleij@linaro.org]
+> Sent: Tuesday, December 06, 2011 1:01 AM
+> To: Sascha Hauer
+> Cc: Dong Aisheng-B29396; linux-kernel@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linus.walleij@stericsson.com; Guo Shawn-
+> R65073; kernel@pengutronix.de
+> Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+> 
+> On Sun, Dec 4, 2011 at 5:11 PM, Sascha Hauer <s.hauer@pengutronix.de>
+> wrote:
+> 
+> > I don't think that this grouping of pads to their functions makes
+> > sense. On i.MX every pad is muxed independently and not in groups.
+> > Which pins belong to which function is board specific and not SoC
+> > specific.
+> 
+> True, Dong can this be moved to the imx pinctrl platform data and passed
+> in from arch/arm/[plat|mach]-* board files instead?
+> That is probably where it belongs today.
+> 
+Yes, I will do that.
 
-Hm, is this too naive ? better idea is welcome. 
-==
->From 33638351c5cd28af9f47f9ab1c44eeb1f63d9964 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 6 Dec 2011 12:32:32 +0900
-Subject: [PATCH] memcg: add mem_cgroup_replace_page_cache() for fixing LRU issue.
+> I know that this data is in drivers/pinctrl for the U300 and SIRF, but
+> that is because they only have one single board variant.
+> 
+> Yours,
+> Linus Walleij
 
-commit ef6a3c6311 adds a function replace_page_cache_page(). This
-function replaces a page in radix-tree with a new page.
-At doing this, memory cgroup need to fix up the accounting information.
-memcg need to check PCG_USED bit etc.
-
-In some(many?) case, 'newpage' is on LRU before calling replace_page_cache().
-So, memcg's LRU accounting information should be fixed, too.
-
-This patch adds mem_cgroup_replace_page_cache() and removing old hooks.
-In that function, old pages will be unaccounted without touching res_counter
-and new page will be accounted to the memcg (of old page). At overwriting
-pc->mem_cgroup of newpage, take zone->lru_lock and avoid race with
-LRU handling.
-
-Background:
-  replace_page_cache_page() is called by FUSE code in its splice() handling.
-  Here, 'newpage' is replacing oldpage but this newpage is not a newly allocated
-  page and may be on LRU. LRU mis-accounting will be critical for memory cgroup
-  because rmdir() checks the whole LRU is empty and there is no account leak.
-  If a page is on the other LRU than it should be, rmdir() will fail.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h |    6 ++++++
- mm/filemap.c               |   18 ++----------------
- mm/memcontrol.c            |   41 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 49 insertions(+), 16 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 4b70e05..bd3b102 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -123,6 +123,8 @@ struct zone_reclaim_stat*
- mem_cgroup_get_reclaim_stat_from_page(struct page *page);
- extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
- 					struct task_struct *p);
-+extern void mem_cgroup_replace_page_cache(struct page *oldpage,
-+					struct page *newpage);
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
- extern int do_swap_account;
-@@ -382,6 +384,10 @@ static inline
- void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
- {
- }
-+static inline void mem_cgroup_replace_page_cache(struct page *oldpage,
-+				struct page *newpage)
-+{
-+}
- #endif /* CONFIG_CGROUP_MEM_CONT */
- 
- #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
-diff --git a/mm/filemap.c b/mm/filemap.c
-index a7b572b..4642211 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -393,24 +393,11 @@ EXPORT_SYMBOL(filemap_write_and_wait_range);
- int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- {
- 	int error;
--	struct mem_cgroup *memcg = NULL;
- 
- 	VM_BUG_ON(!PageLocked(old));
- 	VM_BUG_ON(!PageLocked(new));
- 	VM_BUG_ON(new->mapping);
- 
--	/*
--	 * This is not page migration, but prepare_migration and
--	 * end_migration does enough work for charge replacement.
--	 *
--	 * In the longer term we probably want a specialized function
--	 * for moving the charge from old to new in a more efficient
--	 * manner.
--	 */
--	error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
--	if (error)
--		return error;
--
- 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (!error) {
- 		struct address_space *mapping = old->mapping;
-@@ -432,13 +419,12 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- 		if (PageSwapBacked(new))
- 			__inc_zone_page_state(new, NR_SHMEM);
- 		spin_unlock_irq(&mapping->tree_lock);
-+		/* mem_cgroup codes must not be called under tree_lock */
-+		mem_cgroup_replace_page_cache(old, new);
- 		radix_tree_preload_end();
- 		if (freepage)
- 			freepage(old);
- 		page_cache_release(old);
--		mem_cgroup_end_migration(memcg, old, new, true);
--	} else {
--		mem_cgroup_end_migration(memcg, old, new, false);
- 	}
- 
- 	return error;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8880a32..a9e92a6 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3306,6 +3306,47 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
- 	cgroup_release_and_wakeup_rmdir(&memcg->css);
- }
- 
-+/*
-+ * At replace page cache, newpage is not under any memcg but it's on
-+ * LRU. So, this function doesn't touch res_counter but handles LRU
-+ * in correct way.
-+ */
-+void mem_cgroup_replace_page_cache(struct page *oldpage,
-+				  struct page *newpage)
-+{
-+	struct mem_cgroup *memcg;
-+	struct page_cgroup *pc;
-+	struct zone *zone;
-+	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-+	unsigned long flags;
-+
-+	pc = lookup_page_cgroup(oldpage);
-+	/* fix accounting on old pages */
-+	lock_page_cgroup(pc);
-+	memcg = pc->mem_cgroup;
-+	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), -1);
-+	ClearPageCgroupUsed(pc);
-+	unlock_page_cgroup(pc);
-+
-+	if (PageSwapBacked(oldpage))
-+		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-+
-+	zone = page_zone(newpage);
-+	pc = lookup_page_cgroup(newpage);
-+	/*
-+	 * Even if newpage->mapping was NULL before starting replacement,
-+	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
-+	 * LRU while we overwrite pc->mem_cgroup.
-+	 */
-+	spin_lock_irqsave(&zone->lru_lock, flags);
-+	if (PageLRU(newpage))
-+		del_page_from_lru_list(zone, newpage, page_lru(newpage));
-+	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type);
-+	if (PageLRU(newpage))
-+		add_page_to_lru_list(zone, newpage, page_lru(newpage));
-+	spin_unlock_irqrestore(&zone->lru_lock, flags);
-+}
-+
- #ifdef CONFIG_DEBUG_VM
- static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
- {
--- 
-1.7.4.1
-
+Regards
+Dong Aisheng
 
