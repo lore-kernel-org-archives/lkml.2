@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab1LFXZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 18:25:01 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:35663 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab1LFXZA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 18:25:00 -0500
-From: Mark Einon <mark.einon@gmail.com>
-To: linux-next@vger.kernel.org
-Cc: romieu@fr.zoreil.com, linux-kernel@vger.kernel.org, rdunlap@xenotime.net,
-        Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH] linux-next:et131x: Revert changes from previous commit
-Date: Tue,  6 Dec 2011 23:23:10 +0000
-Message-Id: <1323213790-22039-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1755131Ab1LFX1s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 18:27:48 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49031 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752467Ab1LFX1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 18:27:46 -0500
+Date: Wed, 7 Dec 2011 00:27:41 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: netdev@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: atl1c: WARNING: at net/sched/sch_generic.c:255 dev_watchdog
+Message-ID: <20111206232741.GA5368@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, netdev@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 834d0ee317b (uintxy_t removal) not all changes were trival text replacements, some converted u64 -> dma_addr_t.
-In some configurations dma_addr_t is a u32, meaning that some bit operations cause build warnings. From Randy Dunlap:
+Hi,
 
-----------------
-on i386 (X86_32) builds:
+this seems like a pretty old issue judging by a quick net search. It
+still triggers on latest -rc4 here, below the whole trace. I'm willing
+to test patches :).
 
-drivers/staging/et131x/et131x.c:2483:8: warning: right shift count >= width of type
-drivers/staging/et131x/et131x.c:2531:8: warning: right shift count >= width of type
-----------------
+[14622.820555] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
+[14632.816280] ------------[ cut here ]------------
+[14632.816314] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x237/0x240()
+[14632.816323] Hardware name: 30515QG
+[14632.816332] NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+[14632.816340] Modules linked in: microcode powernow_k8 mperf cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_userspace binfmt_misc uinput kvm_amd kvm fuse dm_crypt dm_mod ipv6 vfat fat loop snd_hda_codec_conexant snd_hda_codec_hdmi usbhid cdc_ncm usbnet cdc_wdm cdc_acm arc4 snd_hda_intel snd_hda_codec snd_hwdep rtl8192c_common rtlwifi snd_pcm mac80211 thinkpad_acpi snd_seq snd_timer snd_seq_device radeon ohci_hcd ehci_hcd evdev snd atl1c nvram cfg80211 pcspkr k10temp ttm rfkill soundcore snd_page_alloc video processor drm_kms_helper ac thermal button battery thermal_sys [last unloaded: rtl8192ce]
+[14632.816594] Pid: 0, comm: kworker/0:0 Not tainted 3.2.0-rc4+ #32
+[14632.816603] Call Trace:
+[14632.816611]  <IRQ>  [<ffffffff8104537f>] warn_slowpath_common+0x7f/0xc0
+[14632.816640]  [<ffffffff81045476>] warn_slowpath_fmt+0x46/0x50
+[14632.816658]  [<ffffffff81399087>] dev_watchdog+0x237/0x240
+[14632.816673]  [<ffffffff81055845>] run_timer_softirq+0x195/0x4e0
+[14632.816687]  [<ffffffff810557af>] ? run_timer_softirq+0xff/0x4e0
+[14632.816700]  [<ffffffff81398e50>] ? pfifo_fast_init+0xa0/0xa0
+[14632.816716]  [<ffffffff8104c935>] __do_softirq+0xc5/0x290
+[14632.816730]  [<ffffffff81078644>] ? clockevents_program_event+0x74/0x100
+[14632.816746]  [<ffffffff8142692c>] call_softirq+0x1c/0x30
+[14632.816760]  [<ffffffff81003d75>] do_softirq+0x85/0xc0
+[14632.816773]  [<ffffffff8104ce36>] irq_exit+0x96/0xe0
+[14632.816786]  [<ffffffff81426fab>] smp_apic_timer_interrupt+0x6b/0x98
+[14632.816799]  [<ffffffff814260b0>] apic_timer_interrupt+0x70/0x80
+[14632.816807]  <EOI>  [<ffffffff81009f96>] ? native_sched_clock+0x26/0x70
+[14632.816842]  [<ffffffffa005f160>] ? acpi_idle_enter_simple+0xd2/0x114 [processor]
+[14632.816863]  [<ffffffffa005f165>] ? acpi_idle_enter_simple+0xd7/0x114 [processor]
+[14632.816884]  [<ffffffffa005f160>] ? acpi_idle_enter_simple+0xd2/0x114 [processor]
+[14632.816902]  [<ffffffff813591cc>] cpuidle_idle_call+0xcc/0x240
+[14632.816915]  [<ffffffff8100097b>] ? cpu_idle+0xbb/0x130
+[14632.816932]  [<ffffffff8100098f>] cpu_idle+0xcf/0x130
+[14632.816946]  [<ffffffff814152ec>] start_secondary+0x1fc/0x203
+[14632.816958] ---[ end trace 48e9f392fdd335fa ]---
+[14632.842367] atl1c 0000:02:00.0: irq 44 for MSI/MSI-X
+[14632.842649] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
 
-Removed these by reverting dma_addr_t back to u64 types, as well as reverting some other non-trivial changes from the aforementioned commit.
+Thanks.
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- drivers/staging/et131x/et131x.c |   28 +++++++++++++---------------
- 1 files changed, 13 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index 7ae3e53..2c4069f 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -299,8 +299,8 @@ struct fbr_lookup {
- 	dma_addr_t	 ring_physaddr;
- 	void		*mem_virtaddrs[MAX_DESC_PER_RING_RX / FBR_CHUNKS];
- 	dma_addr_t	 mem_physaddrs[MAX_DESC_PER_RING_RX / FBR_CHUNKS];
--	dma_addr_t	 real_physaddr;
--	u32		 offset;
-+	u64		 real_physaddr;
-+	u64		 offset;
- 	u32		 local_full;
- 	u32		 num_entries;
- 	u32		 buffsize;
-@@ -1902,10 +1902,9 @@ static void et131x_config_rx_dma_regs(struct et131x_adapter *adapter)
- 	/* Set the address and parameters of Free buffer ring 1 (and 0 if
- 	 * required) into the 1310's registers
- 	 */
--	writel(((u64) rx_local->fbr[0]->real_physaddr) >> 32,
-+	writel((u32) (rx_local->fbr[0]->real_physaddr >> 32),
- 	       &rx_dma->fbr1_base_hi);
--	writel(((u64) rx_local->fbr[0]->real_physaddr) & DMA_BIT_MASK(32),
--	       &rx_dma->fbr1_base_lo);
-+	writel((u32) rx_local->fbr[0]->real_physaddr, &rx_dma->fbr1_base_lo);
- 	writel(rx_local->fbr[0]->num_entries - 1, &rx_dma->fbr1_num_des);
- 	writel(ET_DMA10_WRAP, &rx_dma->fbr1_full_offset);
- 
-@@ -1927,10 +1926,9 @@ static void et131x_config_rx_dma_regs(struct et131x_adapter *adapter)
- 		fbr_entry++;
- 	}
- 
--	writel(((u64) rx_local->fbr[1]->real_physaddr) >> 32,
-+	writel((u32) (rx_local->fbr[1]->real_physaddr >> 32),
- 	       &rx_dma->fbr0_base_hi);
--	writel(((u64) rx_local->fbr[1]->real_physaddr) & DMA_BIT_MASK(32),
--	       &rx_dma->fbr0_base_lo);
-+	writel((u32) rx_local->fbr[1]->real_physaddr, &rx_dma->fbr0_base_lo);
- 	writel(rx_local->fbr[1]->num_entries - 1, &rx_dma->fbr0_num_des);
- 	writel(ET_DMA10_WRAP, &rx_dma->fbr0_full_offset);
- 
-@@ -2275,10 +2273,10 @@ static inline u32 bump_free_buff_ring(u32 *free_buff_ring, u32 limit)
-  * @mask: correct mask
-  */
- static void et131x_align_allocated_memory(struct et131x_adapter *adapter,
--					  dma_addr_t *phys_addr, u32 *offset,
--					  u32 mask)
-+					  u64 *phys_addr, u64 *offset,
-+					  u64 mask)
- {
--	dma_addr_t new_addr = *phys_addr & ~mask;
-+	u64 new_addr = *phys_addr & ~mask;
- 
- 	*offset = 0;
- 
-@@ -2430,8 +2428,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- 			rx_ring->fbr[1]->offset);
- #endif
- 	for (i = 0; i < (rx_ring->fbr[0]->num_entries / FBR_CHUNKS); i++) {
--		dma_addr_t fbr1_tmp_physaddr;
--		u32 fbr1_offset;
-+		u64 fbr1_tmp_physaddr;
-+		u64 fbr1_offset;
- 		u32 fbr1_align;
- 
- 		/* This code allocates an area of memory big enough for N
-@@ -2496,8 +2494,8 @@ static int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
- #ifdef USE_FBR0
- 	/* Same for FBR0 (if in use) */
- 	for (i = 0; i < (rx_ring->fbr[1]->num_entries / FBR_CHUNKS); i++) {
--		dma_addr_t fbr0_tmp_physaddr;
--		u32 fbr0_offset;
-+		u64 fbr0_tmp_physaddr;
-+		u64 fbr0_offset;
- 
- 		fbr_chunksize =
- 		    ((FBR_CHUNKS + 1) * rx_ring->fbr[1]->buffsize) - 1;
 -- 
-1.7.7.3
-
+Regards/Gruss,
+Boris.
