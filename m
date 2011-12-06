@@ -1,130 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab1LFVtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 16:49:33 -0500
-Received: from fieldses.org ([174.143.236.118]:52929 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754799Ab1LFVtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 16:49:32 -0500
-Date: Tue, 6 Dec 2011 16:49:28 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
-        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
-Subject: Re: [PATCH 2/2] SUNRPC: register service stats /proc entries in
- passed network namespace context
-Message-ID: <20111206214928.GF12640@fieldses.org>
-References: <20111206123748.15702.93290.stgit@localhost6.localdomain6>
- <20111206124249.15702.211.stgit@localhost6.localdomain6>
+	id S1754813Ab1LFVvD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 16:51:03 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55689 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab1LFVvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 16:51:01 -0500
+Date: Tue, 6 Dec 2011 22:50:56 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Heiko Schocher <hs@denx.de>
+Cc: Wolfgang Denk <wd@denx.de>, Vitaly Bordug <vbordug@ru.mvista.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] drivers, char: add U-Boot bootcount driver
+Message-ID: <20111206215056.GD14154@pengutronix.de>
+References: <1322991921-21096-1-git-send-email-hs@denx.de>
+ <20111204114741.GA5788@pengutronix.de>
+ <4EDCD7B2.5030409@denx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IDYEmSnFhs3mNXr+"
 Content-Disposition: inline
-In-Reply-To: <20111206124249.15702.211.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EDCD7B2.5030409@denx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 04:42:49PM +0300, Stanislav Kinsbursky wrote:
-> This patch makes it possible to create NFSd program entry ("/proc/net/rpc/nfsd")
-> in passed network namespace context instead of hard-coded "init_net".
 
-	Acked-by: J. Bruce Fields <bfields@redhat.com>
+--IDYEmSnFhs3mNXr+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Or I can just apply it.  I'll assume it's going through Trond's tree
-unless I hear otherwise.
+Hi Heiko,
 
---b.
+> >> This driver provides read/write access to the U-Boot bootcounter
+> >> through PROC FS and/or sysFS file.
+> >=20
+> > Why ProcFS? Why ProcFS and/or SysFS? Which has priority? Why not /dev?
+>=20
+> I drop the ProcFS support for v2.
 
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
-> ---
->  fs/nfsd/stats.c              |    5 +++--
->  include/linux/sunrpc/stats.h |    8 ++++----
->  net/sunrpc/stats.c           |    8 ++++----
->  3 files changed, 11 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/nfsd/stats.c b/fs/nfsd/stats.c
-> index a2e2402..6d4521f 100644
-> --- a/fs/nfsd/stats.c
-> +++ b/fs/nfsd/stats.c
-> @@ -25,6 +25,7 @@
->  #include <linux/module.h>
->  #include <linux/sunrpc/stats.h>
->  #include <linux/nfsd/stats.h>
-> +#include <net/net_namespace.h>
->  
->  #include "nfsd.h"
->  
-> @@ -94,11 +95,11 @@ static const struct file_operations nfsd_proc_fops = {
->  void
->  nfsd_stat_init(void)
->  {
-> -	svc_proc_register(&nfsd_svcstats, &nfsd_proc_fops);
-> +	svc_proc_register(&init_net, &nfsd_svcstats, &nfsd_proc_fops);
->  }
->  
->  void
->  nfsd_stat_shutdown(void)
->  {
-> -	svc_proc_unregister("nfsd");
-> +	svc_proc_unregister(&init_net, "nfsd");
->  }
-> diff --git a/include/linux/sunrpc/stats.h b/include/linux/sunrpc/stats.h
-> index f625b57..4720b12 100644
-> --- a/include/linux/sunrpc/stats.h
-> +++ b/include/linux/sunrpc/stats.h
-> @@ -61,9 +61,9 @@ void			rpc_modcount(struct inode *, int);
->  struct proc_dir_entry *	rpc_proc_register(struct net *,struct rpc_stat *);
->  void			rpc_proc_unregister(struct net *,const char *);
->  void			rpc_proc_zero(struct rpc_program *);
-> -struct proc_dir_entry *	svc_proc_register(struct svc_stat *,
-> +struct proc_dir_entry *	svc_proc_register(struct net *, struct svc_stat *,
->  					  const struct file_operations *);
-> -void			svc_proc_unregister(const char *);
-> +void			svc_proc_unregister(struct net *, const char *);
->  
->  void			svc_seq_show(struct seq_file *,
->  				     const struct svc_stat *);
-> @@ -73,9 +73,9 @@ static inline struct proc_dir_entry *rpc_proc_register(struct net *, struct rpc_
->  static inline void rpc_proc_unregisterstruct net *, (const char *p) {}
->  static inline void rpc_proc_zero(struct rpc_program *p) {}
->  
-> -static inline struct proc_dir_entry *svc_proc_register(struct svc_stat *s,
-> +static inline struct proc_dir_entry *svc_proc_register(struct net *net, struct svc_stat *s,
->  						       const struct file_operations *f) { return NULL; }
-> -static inline void svc_proc_unregister(const char *p) {}
-> +static inline void svc_proc_unregister(struct net *net, const char *p) {}
->  
->  static inline void svc_seq_show(struct seq_file *seq,
->  				const struct svc_stat *st) {}
-> diff --git a/net/sunrpc/stats.c b/net/sunrpc/stats.c
-> index f0f6e7c..3c4f688 100644
-> --- a/net/sunrpc/stats.c
-> +++ b/net/sunrpc/stats.c
-> @@ -241,18 +241,18 @@ rpc_proc_unregister(struct net *net, const char *name)
->  EXPORT_SYMBOL_GPL(rpc_proc_unregister);
->  
->  struct proc_dir_entry *
-> -svc_proc_register(struct svc_stat *statp, const struct file_operations *fops)
-> +svc_proc_register(struct net *net, struct svc_stat *statp, const struct file_operations *fops)
->  {
-> -	return do_register(&init_net, statp->program->pg_name, statp, fops);
-> +	return do_register(net, statp->program->pg_name, statp, fops);
->  }
->  EXPORT_SYMBOL_GPL(svc_proc_register);
->  
->  void
-> -svc_proc_unregister(const char *name)
-> +svc_proc_unregister(struct net *net, const char *name)
->  {
->  	struct sunrpc_net *sn;
->  
-> -	sn = net_generic(&init_net, sunrpc_net_id);
-> +	sn = net_generic(net, sunrpc_net_id);
->  	remove_proc_entry(name, sn->proc_net_rpc);
->  }
->  EXPORT_SYMBOL_GPL(svc_proc_unregister);
-> 
+Don't bother. This approach starts from the wrong side.
+
+>=20
+> >> The bootcountregister gets configured via DTS.
+> >> for example on the enbw_cmc board:
+> >>
+> >> bootcount@0x23060 {
+> >>                   compatible =3D "uboot,bootcount";
+> >=20
+> > No. I assume you are not the vendor of what is at 0x23060, the actual d=
+evice.
+> > Only the device must be encoded in the compatible-entry which then impl=
+ies the
+> > bootcount functionality. Also, keep in mind that your solution should be
+> > generic for bootloaders.
+>=20
+> So I should call it compatible =3D "generic, bootcount" ?
+
+Nope, you should give it the name of the device. Remember that 'compatible'=
+ is
+no 1:1 replacement for platform_driver-binding. Check
+http://devicetree.org/Device_Tree_Usage, especially the sections about the
+compatible-property.
+
+bootcount itself is not a device. It is a feature of certain devices. And t=
+hat
+needs to be implemented; possibly generic enough that it can work for regis=
+ter
+based, i2c based, and so forth, accesses.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--IDYEmSnFhs3mNXr+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEUEARECAAYFAk7ejkAACgkQD27XaX1/VRsK8gCgsBZlpGkToxR4W/TNp7j9yOmo
+8TEAmNpVaf1A7KManfT9jWcx10Ntn/M=
+=k/HJ
+-----END PGP SIGNATURE-----
+
+--IDYEmSnFhs3mNXr+--
