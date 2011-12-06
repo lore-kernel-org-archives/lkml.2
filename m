@@ -1,234 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab1LFXBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 18:01:15 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51301 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab1LFXBN (ORCPT
+	id S1755424Ab1LFXCG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 18:02:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49512 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab1LFXCD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 18:01:13 -0500
-Date: Wed, 7 Dec 2011 02:01:07 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Add refcount type and refcount misuse debugging
-Message-ID: <20111206230107.GA22471@p183.telecom.by>
+	Tue, 6 Dec 2011 18:02:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1750B7704D@HQMAIL01.nvidia.com>
+References: <1322736891-11262-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF174FDB0304@HQMAIL01.nvidia.com>
+	<CACRpkdZM9vjc+6bkqQi9233j=TYRb3dy4-K_zRtvZhv68fUGTA@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1750B7704D@HQMAIL01.nvidia.com>
+Date: Wed, 7 Dec 2011 00:02:03 +0100
+Message-ID: <CACRpkdaJshh4dzDOH2_bV9VtaMpxf_Uc7kpStOnSJVLWF40e-Q@mail.gmail.com>
+Subject: Re: [PATCH 1/2 v5] pinctrl: add a pin config interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is quite a lot of idiomatic code which does
+Hm, at some point I hit the wrong reply button so the list missed mine
+and Stephens replies :-/ sorry. Quoting verbose.
 
-	if (atomic_dec_and_test(&obj->refcnt))
-		[destroy obj]
+On Mon, Dec 5, 2011 at 6:56 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Monday, December 05, 2011 8:43 AM:
+>> On Thu, Dec 1, 2011 at 10:44 PM, Stephen Warren <swarren@nvidia.com> wrote:
+>> > Linus Walleij wrote at Thursday, December 01, 2011 3:55 AM:
+> ...
+>> >> +extern int pin_config_get(struct pinctrl_dev *pctldev, int pin,
+>> >> +                       unsigned long *config);
+>> >> +extern int pin_config_set(struct pinctrl_dev *pctldev, int pin,
+>> >> +                       unsigned long config);
+>> >
+>> > Should the per-pin APIs take a pin name (char*) instead of a pin number
+>> > just like the per-group APIs? That seems more consistent. Currently, only
+>> > the pinctrl core -> driver API ever deals with pin numbers, and e.g. the
+>> > mapping table only deals with names.
+>>
+>> But the group definitions deal only with numbers.
+>>
+>> And the name is not compulsory, and not required to be
+>> unique. Which is in turn a side effect of the fact that some chip
+>> engineers insist on doing crazy stuff like naming 15 different
+>> pins "GND". So requireing them to all be uniquely named
+>> could lead to enforcing som arbitrary naming policy which
+>> cause a disalignment with terms found in the data sheet,
+>> or just bring us full circle back to pin numbers by prefixing
+>> or suffixing each name with a number albeit in ASCII...
+>>
+>> So we'd better stick with numbers ftm, as pointed out
+>> we want to get rid of casual use of these functions
+>> anyway.
+>
+> The big problem here is: How do users of these APIs know what the pin
+> numbers are? With names, the datasheet presumably gives standard names
+> to each pin, whereas the numbering scheme chosen by a pinctrl driver can
+> be essentially arbitrary (well, perhaps not with a PLCC package, but
+> with others...). I suppose the driver could expose a header with all the
+> names in, but it seems like we're trying to get away from that kind of
+> thing.
+>
+> Related, numbers in device tree suck, since there's currently no way of
+> using symbolic constants. I suppose the DT parsing code would do a mapping
+> from text name to pin number using the driver's exposed table of pins
+> though.
+>
+> Re: unique names: Every pins does have a unique name. "GND" is really
+> the semantics of the pin, not its name; it always has some defined ball,
+> pad, or pin number which can be included in the name to make it unique.
+> I'd certainly vote for making pin names mandatory and unique.
 
-Bugs like double-frees in this case are dereferred and it may not be
-immediately obvious that double-free has happened.
+Hm, you are making a perfectly good point about cross-referencing
+documentation. And matches my experience.
 
-The answer is to wrap reference count debugging to every such operation.
+I certainly have to look into this.
 
-Enter _refcnt_t (non-atomic version), refcnt_t (atomic version) datatypes
-and CONFIG_DEBUG_REFCNT config option.
+So I need to make pin names
+- compulsory
+- unique
+- reqrite API accessors
 
-The latter directly checks for
-a) GET on dead object
-b) PUT on dead object (aka double PUT)
-(and indirectly for memory corruptions turning positive integers into negative)
+I think it can be done since the in-tree drivers have all unique pin
+names.
 
-All of this has basic idea coming from grsecurity/PaX's CONFIG_PAX_REFCOUNT code.
-The main difference is that developer has to opt in into new code.
+I'll hack on this, it'll be a good step forward.
 
-Convert struct proc_dir_entry for a start.
-
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
----
-
- Very ligthly tested.
-
- fs/proc/generic.c       |    4 +-
- fs/proc/internal.h      |    2 -
- fs/proc/root.c          |    3 +
- include/linux/proc_fs.h |    4 +-
- include/linux/refcnt.h  |   89 ++++++++++++++++++++++++++++++++++++++++++++++++
- lib/Kconfig.debug       |    3 +
- 6 files changed, 99 insertions(+), 6 deletions(-)
-
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -624,7 +624,7 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
- 	ent->namelen = len;
- 	ent->mode = mode;
- 	ent->nlink = nlink;
--	atomic_set(&ent->count, 1);
-+	refcnt_init(&ent->refcnt);
- 	ent->pde_users = 0;
- 	spin_lock_init(&ent->pde_unload_lock);
- 	ent->pde_unload_completion = NULL;
-@@ -774,7 +774,7 @@ static void free_proc_entry(struct proc_dir_entry *de)
- 
- void pde_put(struct proc_dir_entry *pde)
- {
--	if (atomic_dec_and_test(&pde->count))
-+	if (refcnt_put(&pde->refcnt))
- 		free_proc_entry(pde);
- }
- 
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -110,7 +110,7 @@ void task_mem(struct seq_file *, struct mm_struct *);
- 
- static inline struct proc_dir_entry *pde_get(struct proc_dir_entry *pde)
- {
--	atomic_inc(&pde->count);
-+	refcnt_get(&pde->refcnt);
- 	return pde;
- }
- void pde_put(struct proc_dir_entry *pde);
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -9,6 +9,7 @@
- #include <asm/uaccess.h>
- 
- #include <linux/errno.h>
-+#include <linux/refcnt.h>
- #include <linux/time.h>
- #include <linux/proc_fs.h>
- #include <linux/stat.h>
-@@ -188,7 +189,7 @@ struct proc_dir_entry proc_root = {
- 	.namelen	= 5, 
- 	.mode		= S_IFDIR | S_IRUGO | S_IXUGO, 
- 	.nlink		= 2, 
--	.count		= ATOMIC_INIT(1),
-+	.refcnt		= REFCNT_INIT,
- 	.proc_iops	= &proc_root_inode_operations, 
- 	.proc_fops	= &proc_root_operations,
- 	.parent		= &proc_root,
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -1,11 +1,11 @@
- #ifndef _LINUX_PROC_FS_H
- #define _LINUX_PROC_FS_H
- 
-+#include <linux/refcnt.h>
- #include <linux/slab.h>
- #include <linux/fs.h>
- #include <linux/spinlock.h>
- #include <linux/magic.h>
--#include <linux/atomic.h>
- 
- struct net;
- struct completion;
-@@ -69,7 +69,7 @@ struct proc_dir_entry {
- 	void *data;
- 	read_proc_t *read_proc;
- 	write_proc_t *write_proc;
--	atomic_t count;		/* use count */
-+	refcnt_t refcnt;
- 	int pde_users;	/* number of callers into module in progress */
- 	struct completion *pde_unload_completion;
- 	struct list_head pde_openers;	/* who did ->open, but not ->release */
---- /dev/null
-+++ b/include/linux/refcnt.h
-@@ -0,0 +1,89 @@
-+/*
-+ * Use these types iff
-+ * a) object is created with refcount 1, and
-+ * b) every GET does +1, and
-+ * c) every PUT does -1, and
-+ * d) once refcount reaches 0, object is destroyed.
-+ *
-+ * Do not use otherwise.
-+ *
-+ * Use underscored version if refcount manipulations are under
-+ * some sort of locking already making additional atomicity unnecessary.
-+ */
-+#ifndef _LINUX_REFCNT_H
-+#define _LINUX_REFCNT_H
-+#include <linux/types.h>
-+#include <asm/atomic.h>
-+#ifdef CONFIG_DEBUG_REFCNT
-+#include <asm/bug.h>
-+#endif
-+
-+typedef struct {
-+	int _n;
-+} _refcnt_t;
-+#define _REFCNT_INIT	((_refcnt_t){ ._n = 1 })
-+
-+static inline void _refcnt_init(_refcnt_t *refcnt)
-+{
-+	refcnt->_n = 1;
-+}
-+
-+static inline void _refcnt_get(_refcnt_t *refcnt)
-+{
-+#ifdef CONFIG_DEBUG_REFCNT
-+	BUG_ON(refcnt->_n < 1);
-+#endif
-+	refcnt->_n++;
-+}
-+
-+static inline int _refcnt_put(_refcnt_t *refcnt)
-+{
-+#ifdef CONFIG_DEBUG_REFCNT
-+	BUG_ON(refcnt->_n < 1);
-+#endif
-+	refcnt->_n--;
-+	return refcnt->_n == 0;
-+}
-+
-+typedef struct {
-+	atomic_t _n;
-+} refcnt_t;
-+#define REFCNT_INIT	((refcnt_t){ ._n = ATOMIC_INIT(1) })
-+
-+static inline void refcnt_init(refcnt_t *refcnt)
-+{
-+	atomic_set(&refcnt->_n, 1);
-+}
-+
-+static inline void refcnt_get(refcnt_t *refcnt)
-+{
-+#ifdef CONFIG_DEBUG_REFCNT
-+	int rv;
-+
-+	rv = atomic_inc_return(&refcnt->_n);
-+	BUG_ON(rv < 2);
-+#else
-+	atomic_inc(&refcnt->_n);
-+#endif
-+}
-+
-+/*
-+ * Return 1 if last PUT was done, return 0 otherwise.
-+ *
-+ *	if (refcnt_put(&obj->refcnt)) {
-+ *		[destroy object]
-+ *	}
-+ */
-+static inline int refcnt_put(refcnt_t *refcnt)
-+{
-+#ifdef CONFIG_DEBUG_REFCNT
-+	int rv;
-+
-+	rv = atomic_dec_return(&refcnt->_n);
-+	BUG_ON(rv < 0);
-+	return rv == 0;
-+#else
-+	return atomic_dec_and_test(&refcnt->_n);
-+#endif
-+}
-+#endif
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1276,3 +1276,6 @@ source "lib/Kconfig.kmemcheck"
- 
- config TEST_KSTRTOX
- 	tristate "Test kstrto*() family of functions at runtime"
-+
-+config DEBUG_REFCNT
-+	bool "Debug reference count objects"
+Yours,
+Linus Walleij
