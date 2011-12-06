@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab1LFD3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 22:29:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60558 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859Ab1LFD3v (ORCPT
+	id S932884Ab1LFDeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 22:34:05 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:34336 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756393Ab1LFDeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 22:29:51 -0500
-Date: Tue, 6 Dec 2011 11:29:33 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: [PATCH 3/3] rcu: use rt_mutex_lock_irqdisabled() in rcu_boost()
-Message-ID: <20111206032933.GC17091@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
- <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111205091924.GA28117@zhy>
- <20111205164505.GB2326@linux.vnet.ibm.com>
- <20111206012635.GA32498@zhy>
- <20111206021227.GO2326@linux.vnet.ibm.com>
+	Mon, 5 Dec 2011 22:34:03 -0500
+Message-ID: <4EDD8D1B.5040803@tao.ma>
+Date: Tue, 06 Dec 2011 11:33:47 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111206021227.GO2326@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yongqiang Yang <xiaoqiangnk@gmail.com>
+CC: Allison Henderson <achender@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Curt Wohlgemuth <curtw@google.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Rafael Wysocki <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>	<20111121165626.GD14568@thunk.org>	<alpine.LSU.2.00.1111211331120.1879@sister.anvils>	<alpine.LSU.2.00.1112051456580.3938@sister.anvils>	<4EDD729E.2060402@linux.vnet.ibm.com> <CAGBYx2YNKEiuRF31CaRiK2ROj_xmVsnL4rcWnoofyziYCkYjpw@mail.gmail.com>
+In-Reply-To: <CAGBYx2YNKEiuRF31CaRiK2ROj_xmVsnL4rcWnoofyziYCkYjpw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we will get false positive warning from might_sleep()
+On 12/06/2011 11:08 AM, Yongqiang Yang wrote:
+> Hi Allison,
+> 
+> I noticed another problem which has nothing to do with punching hole.
+>  __block_write_begin does not zero buffers beyond EOF.(I guess you
+yes, that is expected.
+> tried to zero them in your code, am I right? )  When users mapread
+> beyond EOF,  users get non-zero data.  I am not sure zero or non-zero
+> data should be, but fsx thinks they should be zero data and reports an
+> error.
+why users can read the data passing EOF? I am also puzzled. Punching
+hole will do this? I don't think it's right.
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
----
- kernel/rcutree_plugin.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 2020e8a..489b1cd 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1237,7 +1237,7 @@ static int rcu_boost(struct rcu_node *rnp)
- 				   "rcu_boost_mutex");
- 	t->rcu_boost_mutex = &mtx;
- 	raw_spin_unlock(&rnp->lock); /* rrupts remain disabled. */
--	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
-+	rt_mutex_lock_irqdisabled(&mtx);  /* Side effect: boosts task t's priority. */
- 	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
- 	local_irq_restore(flags);
- 
--- 
-1.7.5.4
+Thanks
+Tao
+> 
+> It I understand the problem right, it happens more often with punch hole.
+> 
+> Yongqiang.
+> On Tue, Dec 6, 2011 at 9:40 AM, Allison Henderson
+> <achender@linux.vnet.ibm.com> wrote:
+>> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
+>>>
+>>> On Mon, 21 Nov 2011, Hugh Dickins wrote:
+>>>>
+>>>> On Mon, 21 Nov 2011, Ted Ts'o wrote:
+>>>>>
+>>>>> On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
+>>>>>>
+>>>>>> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
+>>>>>> It appears that there's a bug with this patch:
+>>>
+>>>
+>>> This has been outstanding for a month now, and we've heard no progress:
+>>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for rc5.
+>>>
+>>> The problems appear on a 1k-blocksize filesystem under memory pressure:
+>>> the hunk in ext4_da_write_end() causes oops, because it's playing with
+>>> a page after generic_write_end() dropped our last reference to it; and
+>>> backing out the hunk in ext4_da_write_begin() is then found to stop
+>>> rare data corruption seen when kbuilding.
+>>>
+>>> Although I earlier reported that backing out the patch caused an fsx
+>>> test to fail earlier, I've since found great variation in how soon it
+>>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
+>>> I also reported that I had to go back to 2.6.38 for fsx not to fail
+>>> under memory pressure: you won't be surprised that that turned out to
+>>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
+>>>
+>>> Thanks,
+>>> Hugh
+>>>
+>>
+>>
+>> Hi there,
+>>
+>> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
+>> works well when blocksize < pagesize" ?  I have tried it and it does seem to
+>> help, but I am still running into some failures that I am trying to debug,
+>> but let please let us know if it helps the issues that you are seeing.  Thx!
+>>
+>> Allison Henderson
+>>
+> 
+> 
+> 
 
