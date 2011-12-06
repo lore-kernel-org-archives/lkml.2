@@ -1,172 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab1LFPgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 10:36:18 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36965 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754667Ab1LFPgQ convert rfc822-to-8bit (ORCPT
+	id S1751918Ab1LFPlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 10:41:11 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49998 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751142Ab1LFPlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 10:36:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EDE2F61.301@redhat.com>
-References: <4ED75F53.30709@redhat.com>
-	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
-	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
-	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
-	<4EDC9B17.2080701@gmail.com>
-	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
-	<4EDD01BA.40208@redhat.com>
-	<4EDD2C82.7040804@linuxtv.org>
-	<20111205205554.2caeb496@lxorguk.ukuu.org.uk>
-	<4EDD3583.30405@linuxtv.org>
-	<20111206111829.GB17194@sirena.org.uk>
-	<4EDE0400.1070304@linuxtv.org>
-	<4EDE1457.7070408@redhat.com>
-	<4EDE1A06.1060108@linuxtv.org>
-	<4EDE22F0.30909@redhat.com>
-	<4EDE28EB.7050407@linuxtv.org>
-	<4EDE2F61.301@redhat.com>
-Date: Tue, 6 Dec 2011 21:06:14 +0530
-Message-ID: <CAHFNz9JqrtfvEmgoPeWG3kLAzrqZes9J3yHrAoJG-_JLUuTBcQ@mail.gmail.com>
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
- because of worrying about possible misusage?
-From: Manu Abraham <abraham.manu@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Andreas Oberritter <obi@linuxtv.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, HoP <jpetrous@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Dec 2011 10:41:09 -0500
+Date: Tue, 6 Dec 2011 15:42:06 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, ben@decadent.org.uk,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] lockdep, bug: Exclude
+ TAINT_FIRMWARE_WORKAROUND from disabling lockdep
+Message-ID: <20111206154206.441e85c6@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111206151345.GA22353@elliptictech.com>
+References: <tip-xopopjjens57r0i13qnyh2yo@git.kernel.org>
+	<20111206151345.GA22353@elliptictech.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 8:36 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> On 06-12-2011 12:38, Andreas Oberritter wrote:
->>
->> On 06.12.2011 15:13, Mauro Carvalho Chehab wrote:
->>>
->>> O_NONBLOCK
->>>     When opening a FIFO with O_RDONLY or O_WRONLY set:
->>
->>                      ^^^^ This does not apply.
->>
->> [...]
->>
->>>     When opening a block special or character special file that supports
->>> non-blocking opens:
->>>
->>>         If O_NONBLOCK is set, the open() function shall return without
->>> blocking for the device to be ready or available. Subsequent behavior of
->>> the device is device-specific.
->>
->>
->> This is the important part:
->> - It specifies the behaviour of open(), not ioctl(). I don't see a
->> reason why open should block with vtunerc.
->> - Read again: "Subsequent behavior of the device is device-specific."
->>
->>>         If O_NONBLOCK is clear, the open() function shall block the
->>> calling thread until the device is ready or available before returning.
->>>
->>>     Otherwise, the behavior of O_NONBLOCK is unspecified.
->>>
->>> Basically, syscall should not block waiting for some data to be read (or
->>> written).
->>
->>
->> That's because open() does not read or write.
->>
->>> The ioctl definition defines [EAGAIN] error code, if, for any reason, an
->>> ioctl would block.
->>
->>
->> Fine.
->>
->>> Btw, the vtunerc doesn't handle O_NONBLOCK flag. For each DVB ioctl, for
->>> example
->>> read_snr[1], it calls wait_event_interruptible()[2], even if the
->>> application opens
->>> it with O_NONBLOCK flag. So, it is likely that non-blocking-mode
->>> applications
->>> will break.
->>
->>
->> Of course, read operations must wait until the value read is available
->> or an error (e.g. timeout, i/o error) occurs. Whether it's an i2c
->> transfer, an usb transfer or a network transfer doesn't make a
->> difference. Every transfer takes a nonzero amount of time.
->
->
-> Yes, posix is not 100% clear about what "non block" means for ioctl's, but
-> waiting for an event is clearly a block condition. This is different than
-> doing something like mdelay() (or even mleep()) in order to wait for an
-> specific amount of time for an operation to complete.
->
-> A vtunerc => daemon => network transfer =>daemon => vtunerc is a block
-> condition,
-> as the network may return in a few ms or may not return and a long
-> timeout at the daemon would give an error. Also, as the daemon may be
-> swapped
-> to disk (as the daemon runs on userspace), this may even involve other
-> blocking operations at the block layer.
->
->
->> As Honza already demonstrated, in a typical LAN setup, this takes only
->> few milliseconds, which with fast devices may even be faster than some
->> slow local devices using many delays in their driver code.
->>
->> If an application breaks because of that, then it's a bug in the
->> application which may as well be triggered by a local driver and thus
->> needs to be fixed anyway.
->
->
-> It is not a bug in the application. It requested a non-block mode. The
-> driver
-> is working in block mode instead. It is a driver's bug.
->
->
->>>> Mauro, if the network is broken, any application using the network will
->>>> break. No specially designed protocol will fix that.
->>>
->>>
->>> A high delay network (even a congested one) is not broken, if it can
->>> still provide the throughput required by the application, and a
->>> latency/QoS
->>> that would fit.
->>
->>
->> Then neither vtunerc nor any other application will break. Fine.
->>
->>>> If you want to enforce strict maximum latencies, you can do that in the
->>>> userspace daemon using the vtunerc interface. It has all imaginable
->>>> possibilities to control data flow over the network and to return errors
->>>> to vtunerc.
->>>
->>>
->>> Yes, you can do anything you want at the userspace daemon, but the
->>> non-userspace daemon aware applications will know nothing about it, and
->>> this is the flaw on this design: Applications can't negotiate what
->>> network
->>> parameters are ok or not for its usecase.
->>
->>
->> How do you negotiate network parameters with your ISP and all involved
->> parties on the internet on the way from your DSL line to some other
->> peer? Let me answer it: You don't.
->
->
-> TCP flow control mechanisms, RSVP, MPLS, IP QoS flags, ICMP messages, etc.
->
+On Tue, 6 Dec 2011 10:13:45 -0500
+Nick Bowler <nbowler@elliptictech.com> wrote:
 
-You would need a Data Link Protocol, which would be PPP of some form
+> On 2011-12-06 01:38 -0800, tip-bot for Peter Zijlstra wrote:
+> > Commit-ID:  df754e6af2f237a6c020c0daff55a1a609338e31
+> > Gitweb:     http://git.kernel.org/tip/df754e6af2f237a6c020c0daff55a1a609338e31
+> > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > AuthorDate: Mon, 14 Nov 2011 13:13:49 +0100
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Tue, 6 Dec 2011 08:16:47 +0100
+> > 
+> > lockdep, bug: Exclude TAINT_FIRMWARE_WORKAROUND from disabling lockdep
+> > 
+> > It's unlikely that TAINT_FIRMWARE_WORKAROUND causes false
+> > lockdep messages, so do not disable lockdep in that case.
+> > We still want to keep lockdep disabled in the
+> > TAINT_OOT_MODULE case:
+> > 
+> >   - bin-only modules can cause various instabilities in
+> >     their and in unrelated kernel code
+> > 
+> >   - they are impossible to debug for kernel developers
+> > 
+> >   - they also typically do not have the copyright license
+> >     permission to link to the GPL-ed lockdep code.
+> 
+> This is all bogus.  We have a proprietary module taint for the above.
+> Out of tree does not mean "bin-only", "non-GPL" or anything else like
+> that.  
 
-http://en.wikipedia.org/wiki/Point-to-Point_Protocol
+It also stops people developing drivers of their own who are not
+building them in the kernel tree currently (eg when I'm building tests
+of the GMA500 graphics driver). This is a ludicrous patch and should be
+reverted
 
-I don't think, you have much to negotiate there.
+Alan
 
-Regards,
-Manu
