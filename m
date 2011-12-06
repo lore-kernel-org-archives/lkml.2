@@ -1,135 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab1LFGxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 01:53:37 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:31917
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753080Ab1LFGxf (ORCPT
+	id S1754097Ab1LFGyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 01:54:08 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33762 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab1LFGyG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 01:53:35 -0500
-X-SpamScore: -6
-X-BigFish: VS-6(zz1432N98dKc8kzz1202hzz8275bh8275dhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 6 Dec 2011 15:06:16 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Dong Aisheng <b29396@freescale.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linus.walleij@stericsson.com>, <s.hauer@pengutronix.de>,
-        <kernel@pengutronix.de>
-Subject: Re: [RFC PATCH 1/3] pinctrl: imx: add pinmux imx core driver
-Message-ID: <20111206070615.GJ2980@S2100-06.ap.freescale.net>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+	Tue, 6 Dec 2011 01:54:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1322999384-7886-1-git-send-email-b29396@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20111205084159.GD12507@redhat.com>
+References: <4ED212A1.3060300@redhat.com>
+	<1322807192-14147-1-git-send-email-kernelfans@gmail.com>
+	<4ED91871.4050904@siemens.com>
+	<CAFgQCTvDQ9E5cGVxRP3ZPv8=TmhFqVOdMbcdcSMC8ctR3S+m6A@mail.gmail.com>
+	<20111204121000.GC12507@redhat.com>
+	<CAFgQCTu32fTfV2ZwTy+S4RxD4mr_pq8dddQnttLnSGvYsmh+HQ@mail.gmail.com>
+	<20111205084159.GD12507@redhat.com>
+Date: Tue, 6 Dec 2011 14:54:06 +0800
+Message-ID: <CAFgQCTuTBO5WsKbMcZtwei74QiniWZ1mCiMGKivEpUJdP=v2Yg@mail.gmail.com>
+Subject: Re: [PATCH] kvm: make vcpu life cycle separated from kvm instance
+From: Liu ping fan <kernelfans@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, avi@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aliguori@us.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 04, 2011 at 07:49:42PM +0800, Dong Aisheng wrote:
-> ---
-> This patch series shows the basic idea of driver design. There're still
-> some TODOes like adding more pinmux functions and gpio support.
-> The patch is here for request for comments on the driver design
-> and other might exist issues.
-> 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Shawn Guo <shanw.guo@freescale.com>
-> ---
->  drivers/pinctrl/Kconfig           |    6 +
->  drivers/pinctrl/Makefile          |    2 +
->  drivers/pinctrl/pinmux-imx-core.c |  284 +++++++++++++++++++++++++++++++++++++
->  drivers/pinctrl/pinmux-imx-core.h |   83 +++++++++++
->  4 files changed, 375 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-> index ef56644..214d072 100644
-> --- a/drivers/pinctrl/Kconfig
-> +++ b/drivers/pinctrl/Kconfig
-> @@ -40,4 +40,10 @@ config PINMUX_U300
->  	help
->  	  Say Y here to enable the U300 pinmux driver
->  
-> +config PINMUX_IMX
-> +	bool "IMX pinmux driver"
-> +	depends on ARCH_MXC
-> +	select PINMUX
-> +	help
-> +	  Say Y here to enable the IMX pinmux driver
->  endif
-> diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-> index bdc548a..764657b 100644
-> --- a/drivers/pinctrl/Makefile
-> +++ b/drivers/pinctrl/Makefile
-> @@ -4,5 +4,7 @@ ccflags-$(CONFIG_DEBUG_PINMUX)	+= -DDEBUG
->  
->  obj-$(CONFIG_PINCTRL)		+= core.o
->  obj-$(CONFIG_PINMUX)		+= pinmux.o
-> +obj-$(CONFIG_PINMUX_IMX)	+= pinmux-imx-core.o \
-> +				   pinmux-imx53.o pinmux-imx6q.o
+On Mon, Dec 5, 2011 at 4:41 PM, Gleb Natapov <gleb@redhat.com> wrote:
+> On Mon, Dec 05, 2011 at 01:39:37PM +0800, Liu ping fan wrote:
+>> On Sun, Dec 4, 2011 at 8:10 PM, Gleb Natapov <gleb@redhat.com> wrote:
+>> > On Sun, Dec 04, 2011 at 07:53:37PM +0800, Liu ping fan wrote:
+>> >> On Sat, Dec 3, 2011 at 2:26 AM, Jan Kiszka <jan.kiszka@siemens.com> wrote:
+>> >> > On 2011-12-02 07:26, Liu Ping Fan wrote:
+>> >> >> From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+>> >> >>
+>> >> >> Currently, vcpu can be destructed only when kvm instance destroyed.
+>> >> >> Change this to vcpu's destruction taken when its refcnt is zero,
+>> >> >> and then vcpu MUST and CAN be destroyed before kvm's destroy.
+>> >> >
+>> >> > I'm lacking the big picture yet (would be good to have in the change log
+>> >> > - at least I'm too lazy to read the code):
+>> >> >
+>> >> > What increments the refcnt, what decrements it again? IOW, how does user
+>> >> > space controls the life-cycle of a vcpu after your changes?
+>> >> >
+>> >> In local APIC mode, delivering IPI to target APIC, target's refcnt is
+>> >> incremented, and decremented when finished. At other times, using RCU to
+>> > Why is this needed?
+>> >
+>> Suppose the following scene:
+>>
+>> #define kvm_for_each_vcpu(idx, vcpup, kvm) \
+>>         for (idx = 0; \
+>>              idx < atomic_read(&kvm->online_vcpus) && \
+>>              (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
+>>              idx++)
+>>
+>> ------------------------------------------------------------------------------------------>
+>> Here kvm_vcpu's destruction is called
+>>               vcpup->vcpu_id ...  //oops!
+>>
+>>
+> And this is exactly how your code looks. i.e you do not increment
+> reference count in most of the loops, you only increment it twice
+> (in pic_unlock() and kvm_irq_delivery_to_apic()) because you are using
+> vcpu outside of rcu_read_lock() protected section and I do not see why
+> not just extend protected section to include kvm_vcpu_kick(). As far as
+> I can see this function does not sleep.
+>
+:-), I just want to minimize the RCU critical area, and as you say, we
+can  extend protected section to include kvm_vcpu_kick()
 
-You do not have pinmux-imx53.c and pinmux-imx6q.c in this patch yet.
+> What should protect vcpu from disappearing in your example above is RCU
+> itself if you are using it right. But since I do not see any calls to
+> rcu_assign_pointer()/rcu_dereference() I doubt you are using it right
+> actually.
+>
+Sorry, but I thought it would not be. Please help me to check my thoughts :
 
->  obj-$(CONFIG_PINMUX_SIRF)	+= pinmux-sirf.o
->  obj-$(CONFIG_PINMUX_U300)	+= pinmux-u300.o
-> diff --git a/drivers/pinctrl/pinmux-imx-core.c b/drivers/pinctrl/pinmux-imx-core.c
-> new file mode 100644
-> index 0000000..1e60932
-> --- /dev/null
-> +++ b/drivers/pinctrl/pinmux-imx-core.c
-> @@ -0,0 +1,284 @@
-> +/*
-> + * Core driver for the imx pin controller
-> + *
-> + * Copyright (C) 2011 Freescale Semiconductor, Inc.
-> + * Copyright (C) 2011 Linaro Ltd.
-> + *
-> + * Author: Dong Aisheng <dong.aisheng@linaro.org>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <linux/err.h>
-> +#include <linux/pinctrl/pinctrl.h>
-> +#include <linux/pinctrl/pinmux.h>
-> +
-> +#include "pinmux-imx-core.h"
-> +
-> +#define DRIVER_NAME "pinmux-imx"
-> +
-> +/**
-> + * @dev: a pointer back to containing device
-> + * @virtbase: the offset to the controller in virtual memory
-> + */
-> +struct imx_pmx {
-> +	struct device *dev;
-> +	struct pinctrl_dev *pctl;
-> +	void __iomem *virtbase;
-> +	struct imx_pinctrl_info *info;
-> +};
-> +
-> +#define IMX_PINCTRL_REG_SIZE 4
-> +#define IMX_PINCTRL_MAX_FUNC 7
-> +
-> +extern struct imx_pinctrl_info mx53_pinctrl_info;
-> +extern struct imx_pinctrl_info mx6q_pinctrl_info;
-> +
+struct kvm_vcpu *kvm_vcpu_get(struct kvm_vcpu *vcpu)
+{
+	if (vcpu == NULL)
+		return NULL;
+	if (atomic_add_unless(&vcpu->refcount, 1, 0))
+------------------------------increment
+		return vcpu;
+	return NULL;
+}
 
-You do not have mx53_pinctrl_info and mx6q_pinctrl_info in this patch
-yet.
+void kvm_vcpu_put(struct kvm_vcpu *vcpu)
+{
+	struct kvm *kvm;
+	if (atomic_dec_and_test(&vcpu->refcount)) {
+--------------------------decrement
+		kvm = vcpu->kvm;
+		mutex_lock(&kvm->lock);
+		kvm->vcpus[vcpu->vcpu_id] = NULL;
+		atomic_dec(&kvm->online_vcpus);
+		mutex_unlock(&kvm->lock);
+		call_rcu(&vcpu->head, kvm_vcpu_zap);
+	}
+}
 
-Regards,
-Shawn
+The atomic of decrement and increment are protected by cache coherent protocol.
+So once we hold a valid kvm_vcpu pointer through kvm_vcpu_get(),
+we will always keep it until we release it, then, the destruction may happen.
 
+Thanks and regards,
+ping fan
+
+> --
+>                        Gleb.
