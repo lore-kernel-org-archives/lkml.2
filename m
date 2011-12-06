@@ -1,147 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932839Ab1LFAIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 19:08:39 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59989 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab1LFAIh (ORCPT
+	id S932814Ab1LFAKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 19:10:42 -0500
+Received: from cpanel23.proisp.no ([88.87.44.74]:45739 "EHLO
+	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab1LFAKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 19:08:37 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 6 Dec 2011 09:07:26 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <ebiederm@xmission.com>, <davem@davemloft.net>,
-        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
-        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
-Subject: Re: [PATCH v7 10/10] Disable task moving when using kernel memory
- accounting
-Message-Id: <20111206090726.21037cb9.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4EDC8C6D.2070001@parallels.com>
-References: <1322611021-1730-1-git-send-email-glommer@parallels.com>
-	<1322611021-1730-11-git-send-email-glommer@parallels.com>
-	<20111130112210.1d979512.kamezawa.hiroyu@jp.fujitsu.com>
-	<4ED914EC.6020500@parallels.com>
-	<20111205111835.b1432603.kamezawa.hiroyu@jp.fujitsu.com>
-	<4EDC8C6D.2070001@parallels.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Dec 2011 19:10:41 -0500
+Message-ID: <4EDD5D77.3030101@numascale.com>
+Date: Tue, 06 Dec 2011 01:10:31 +0100
+From: Steffen Persvold <sp@numascale.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jbarnes@virtuousgeek.org, tglx@linutronix.de,
+        daniel@numascale-asia.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/apic] x86: Add NumaChip support
+References: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com> <tip-44b111b519160e33fdc41eadb39af86a24707edf@git.kernel.org> <20111205203130.GA12364@elte.hu>
+In-Reply-To: <20111205203130.GA12364@elte.hu>
+Content-Type: multipart/mixed;
+ boundary="------------090603000700040207060702"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - numascale.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Dec 2011 07:18:37 -0200
-Glauber Costa <glommer@parallels.com> wrote:
+This is a multi-part message in MIME format.
+--------------090603000700040207060702
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 
-> On 12/05/2011 12:18 AM, KAMEZAWA Hiroyuki wrote:
-> > On Fri, 2 Dec 2011 16:11:56 -0200
-> > Glauber Costa<glommer@parallels.com>  wrote:
-> >
-> >> On 11/30/2011 12:22 AM, KAMEZAWA Hiroyuki wrote:
-> >>> On Tue, 29 Nov 2011 21:57:01 -0200
-> >>> Glauber Costa<glommer@parallels.com>   wrote:
-> >>>
-> >>>> Since this code is still experimental, we are leaving the exact
-> >>>> details of how to move tasks between cgroups when kernel memory
-> >>>> accounting is used as future work.
-> >>>>
-> >>>> For now, we simply disallow movement if there are any pending
-> >>>> accounted memory.
-> >>>>
-> >>>> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> >>>> CC: Hiroyouki Kamezawa<kamezawa.hiroyu@jp.fujitsu.com>
-> >>>> ---
-> >>>>    mm/memcontrol.c |   23 ++++++++++++++++++++++-
-> >>>>    1 files changed, 22 insertions(+), 1 deletions(-)
-> >>>>
-> >>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> >>>> index a31a278..dd9a6d9 100644
-> >>>> --- a/mm/memcontrol.c
-> >>>> +++ b/mm/memcontrol.c
-> >>>> @@ -5453,10 +5453,19 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
-> >>>>    {
-> >>>>    	int ret = 0;
-> >>>>    	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgroup);
-> >>>> +	struct mem_cgroup *from = mem_cgroup_from_task(p);
-> >>>> +
-> >>>> +#if defined(CONFIG_CGROUP_MEM_RES_CTLR_KMEM)&&   defined(CONFIG_INET)
-> >>>> +	if (from != memcg&&   !mem_cgroup_is_root(from)&&
-> >>>> +	    res_counter_read_u64(&from->tcp_mem.tcp_memory_allocated, RES_USAGE)) {
-> >>>> +		printk(KERN_WARNING "Can't move tasks between cgroups: "
-> >>>> +			"Kernel memory held.\n");
-> >>>> +		return 1;
-> >>>> +	}
-> >>>> +#endif
-> >>>
-> >>> I wonder....reading all codes again, this is incorrect check.
-> >>>
-> >>> Hm, let me cralify. IIUC, in old code, "prevent moving" is because you hold
-> >>> reference count of cgroup, which can cause trouble at rmdir() as leaking refcnt.
-> >> right.
-> >>
-> >>> BTW, because socket is a shared resource between cgroup, changes in mm->owner
-> >>> may cause task cgroup moving implicitly. So, if you allow leak of resource
-> >>> here, I guess... you can take mem_cgroup_get() refcnt which is memcg-local and
-> >>> allow rmdir(). Then, this limitation may disappear.
-> >>
-> >> Sorry, I didn't fully understand. Can you clarify further?
-> >> If the task is implicitly moved, it will end up calling can_attach as
-> >> well, right?
-> >>
-> > I'm sorry that my explanation is bad.
-> >
-> > You can take memory cgroup itself's reference count by mem_cgroup_put/get.
-> > By getting this, memory cgroup object will continue to exist even after
-> > its struct cgroup* is freed by rmdir().
-> >
-> > So, assume you do mem_cgroup_get()/put at socket attaching/detatching.
-> >
-> > 0) A task has a tcp socekts in memcg0.
-> >
-> > task(memcg0)
-> >   +- socket0 -->  memcg0,usage=4096
-> >
-> > 1) move this task to memcg1
-> >
-> > task(memcg1)
-> >   +- socket0 -->  memcg0,usage=4096
-> >
-> > 2) The task create a new socket.
-> >
-> > task(memcg1)
-> >   +- socekt0 -->  memcg0,usage=4096
-> >   +- socket1 -->  memcg1,usage=xxxx
-> >
-> > Here, the task will hold 4096bytes of usage in memcg0 implicitly.
-> >
-> > 3) an admin removes memcg0
-> > task(memcg1)
-> >   +- socket0 -->memcg0, usage=4096<-----(*)
-> >   +- socket1 -->memcg1, usage=xxxx
-> >
-> > (*) is invisible to users....but this will not be very big problem.
-> >
-> Hi Kame,
+On 12/5/2011 21:31, Ingo Molnar wrote:
+[]
+> There's a new build failure caused by this commit:
+
+It's this commit actually :
+
+Commit-ID:  64be4c1c2428e148de6081af235e2418e6a66dda
+Gitweb:     http://git.kernel.org/tip/64be4c1c2428e148de6081af235e2418e6a66dda
+Author:     Daniel J Blueman <daniel@numascale-asia.com>
+AuthorDate: Mon, 5 Dec 2011 16:20:37 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 5 Dec 2011 17:17:21 +0100
+
+x86: Add x86_init platform override to fix up NUMA core numbering
+
 > 
-> Thanks for the explanation.
+>   arch/x86/kernel/cpu/common.c:1149:2: error: ‘struct cpuinfo_x86’ has no member named ‘phys_proc_id’
 > 
-> Hummm, Do you think that by doing it, we get rid of the need of moving 
-> sockets to another memcg when the task is moved? So in my original 
-> patchset, if you recall, I wanted to keep a socket forever in the same 
-> cgroup. I didn't, because then rmdir would be blocked.
+> Note that the config is a !SMP one - that's probably the key
+> detail.
+
+Yes, phys_proc_id in struct cpuinfo_x86 is covered within "ifdef CONFIG_SMP".
+
 > 
-> By using this memcg reference trick, both can be achieved. What do you 
-> think ?
+> Please send a delta fix that resolves this bug. You can find the
+> current lineup in:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+> 
 
-I think so. Using mem_cgroup_put/get is a way. Could you try ?
+Will do, should be fairly simple. Something in the lines of the attached should work (tested).
 
-Thanks,
--Kame
+Note: I used "ifdef CONFIG_NUMA" simply because it doesn't make sense in a non-numa configuration even with SMP enabled. Besides, the only place where it is called right now is in kernel/cpu/amd.c:srat_detect_node() within the "CONFIG_NUMA" protected part.
 
+Cheers,
+-- 
+Steffen Persvold, Chief Architect NumaChip
+Numascale AS - www.numascale.com
+Tel: +47 92 49 25 54 Skype: spersvold
 
+--------------090603000700040207060702
+Content-Type: text/x-patch;
+ name="0002-x86_init-core-numbering-delta.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0002-x86_init-core-numbering-delta.patch"
 
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index ad4da45..a70bd5b 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1146,7 +1146,9 @@ static void dbg_restore_debug_regs(void)
+  */
+ void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
++#ifdef CONFIG_NUMA
+ 	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
++#endif
+ }
+ 
+ /*
+
+--------------090603000700040207060702--
