@@ -1,229 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932747Ab1LFHVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 02:21:42 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:23292
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750941Ab1LFHVl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 02:21:41 -0500
-X-SpamScore: -17
-X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Guo Shawn-R65073 <r65073@freescale.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Sascha Hauer <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: RE: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
-Thread-Topic: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
-Thread-Index: AQHMsnlB4tyTDOR3uEmPDrmj3tcvppXN3aMAgABI6ACAAB4tMIAAg9EA//+f8wA=
-Date: Tue, 6 Dec 2011 07:21:36 +0000
-Message-ID: <65EE16ACC360FA4D99C96DC085B3F7723459F6@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
- <1322999384-7886-2-git-send-email-b29396@freescale.com>
- <CACRpkdaYz+-nZA6atxA+5kvWOO84YeSHQPNiojq_R4zkHUGz3Q@mail.gmail.com>
- <20111205211838.GG27267@pengutronix.de>
- <65EE16ACC360FA4D99C96DC085B3F7723458DA@039-SN1MPN1-002.039d.mgd.msft.net>
- <20111206065825.GB3649@S2100-06.ap.freescale.net>
-In-Reply-To: <20111206065825.GB3649@S2100-06.ap.freescale.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.89]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S932742Ab1LFHXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 02:23:20 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:47469 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab1LFHXT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 02:23:19 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+X-Originating-IP: [41.212.118.124]
+In-Reply-To: <20111201141130.GA2323@infradead.org>
+References: <1319048598-15030-1-git-send-email-dsahern@gmail.com>
+ <20111019183848.GE2229@ghostprotocols.net> <4E9F1AA0.4010706@gmail.com>
+ <20111019192011.GG2229@ghostprotocols.net> <4E9F4B50.1060207@gmail.com>
+ <20111020130041.GB1772@ghostprotocols.net> <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
+ <CAHVUoiTeCuFLCkyEzCMJ6g1wAp+FWDR3qkSrqE3vJAYwLsRC9Q@mail.gmail.com>
+ <20111130181011.GA4111@infradead.org> <CAHVUoiQC5RjuHUsfPVTQ_C+W0Khp=hQC+_csP0+fJgUnoaALAA@mail.gmail.com>
+ <20111201141130.GA2323@infradead.org>
+From: Brian Gitonga Marete <marete@toshnix.com>
+Date: Tue, 6 Dec 2011 10:22:57 +0300
+Message-ID: <CAHVUoiR=gMcdLZcR+TmB6CiRhEP+x8aXjR5r5Wc4k6gZwzLAjg@mail.gmail.com>
+Subject: Re: [PATCH] perf top: fix crash on annotate request
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
+Content-Type: multipart/mixed; boundary=90e6ba53a9082d3c5304b3674f58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Guo Shawn-R65073
-> Sent: Tuesday, December 06, 2011 2:58 PM
-> To: Dong Aisheng-B29396
-> Cc: Sascha Hauer; Linus Walleij; linux-kernel@vger.kernel.org; linux-arm-
-> kernel@lists.infradead.org; linus.walleij@stericsson.com; Guo Shawn-
-> R65073; kernel@pengutronix.de
-> Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
-> 
-> On Tue, Dec 06, 2011 at 01:54:35PM +0800, Dong Aisheng-B29396 wrote:
-> > > -----Original Message-----
-> > > From: Sascha Hauer [mailto:s.hauer@pengutronix.de]
-> > > Sent: Tuesday, December 06, 2011 5:19 AM
-> > > To: Linus Walleij
-> > > Cc: Dong Aisheng-B29396; linux-kernel@vger.kernel.org; linux-arm-
-> > > kernel@lists.infradead.org; linus.walleij@stericsson.com; Guo Shawn-
-> > > R65073; kernel@pengutronix.de
-> > > Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
-> > >
-> > > On Mon, Dec 05, 2011 at 05:57:42PM +0100, Linus Walleij wrote:
-> > > > On Sun, Dec 4, 2011 at 12:49 PM, Dong Aisheng
-> > > > <b29396@freescale.com>
-> > > wrote:
-> > > >
-> > > > > +enum imx_mx53_pads {
-> > > > > +       MX53_GPIO_19 = 0,
-> > > > > +       MX53_KEY_COL0 = 1,
-> > > > (...)
-> > > >
-> > > > First I thought it looked a bit strange since you needed enums for
-> > > > all pads but then I realized that your macros use the same
-> > > > enumerator name to name the pad and then it looks sort of clever.
-> > > >
-> > > > But maybe put in a comment about that here:
-> > > >
-> > > > > +/* Pad names for the pinmux subsystem */
-> > > >
-> > > > Like this:
-> > > >
-> > > > /*
-> > > >  * Pad names for the pinmux subsystem.
-> > > >  * These pad names are constructed from the pin enumerator names
-> > > >  * in the IMX_PINCTRL_PIN() macro.
-> > > >  */
-> > > >
-> > > > > +static const struct pinctrl_pin_desc mx53_pads[] = {
-> > > > > +       IMX_PINCTRL_PIN(MX53_GPIO_19),
-> > > > > +       IMX_PINCTRL_PIN(MX53_KEY_COL0),
-> > > > (...)
-> > > >
-> > > > > +/* mx53 pin groups and mux mode */ static const unsigned
-> > > > > +mx53_fec_pins[] = {
-> > > > > +       MX53_FEC_MDC,
-> > > > > +       MX53_FEC_MDIO,
-> > > > > +       MX53_FEC_REF_CLK,
-> > > > > +       MX53_FEC_RX_ER,
-> > > > > +       MX53_FEC_CRS_DV,
-> > > > > +       MX53_FEC_RXD1,
-> > > > > +       MX53_FEC_RXD0,
-> > > > > +       MX53_FEC_TX_EN,
-> > > > > +       MX53_FEC_TXD1,
-> > > > > +       MX53_FEC_TXD0,
-> > > > > +};
-> > > >
-> > > > I understand this.
-> > > >
-> > > > > +static const unsigned mx53_fec_mux[] = { 0, 0, 0, 0, 0, 0, 0,
-> > > > > +0, 0, 0 };
-> > > >
-> > > > But what is this? Just zeroes? Why?
-> > > > Especially with a const so they really cannot be anything else.
-> > > > The same pin (0) can only be enumerated once.
-> > > >
-> > > > > +static const unsigned mx53_sd1_pins[] = {
-> > > > > +       MX53_SD1_CMD,
-> > > > > +       MX53_SD1_CLK,
-> > > > > +       MX53_SD1_DATA0,
-> > > > > +       MX53_SD1_DATA1,
-> > > > > +       MX53_SD1_DATA2,
-> > > > > +       MX53_SD1_DATA3,
-> > > > > +
-> > > > > +};
-> > > > > +static const unsigned mx53_sd1_mux[] = { 0, 0, 0, 0, 0, 0 };
-> > > >
-> > > > And here again.
-> > > >
-> > > > > +static const unsigned mx53_sd3_pins[] = {
-> > > > > +       MX53_PATA_DATA8,
-> > > > > +       MX53_PATA_DATA9,
-> > > > > +       MX53_PATA_DATA10,
-> > > > > +       MX53_PATA_DATA11,
-> > > > > +       MX53_PATA_DATA0,
-> > > > > +       MX53_PATA_DATA1,
-> > > > > +       MX53_PATA_DATA2,
-> > > > > +       MX53_PATA_DATA3,
-> > > > > +       MX53_PATA_IORDY,
-> > > > > +       MX53_PATA_RESET_B,
-> > > > > +
-> > > > > +};
-> > > > > +static const unsigned mx53_sd3_mux[] = { 4, 4, 4, 4, 4, 4, 4,
-> > > > > +4, 2,
-> > > > > +2 };
-> > > >
-> > > > This also looks strange. Can you explain what these muxes are?
-> > >
-> > > Freescale has named the pins after their primary function which is
-> > > quite confusing.
-> > >
-> > > The above means:
-> > >
-> > > MX53_PATA_DATA8 -> mux mode 4
-> > > MX53_PATA_DATA9 -> mux mode 4
-> > > ...
-> > >
-> > > This brings me to the point that currently we have the pins
-> > > described as
-> > >
-> > > #define MX53_PAD_<name>__<function>
-> > >
-> > > which means that you don't have to look into the datasheet to get
-> > > the different options for a pin (and don't have a chance to get it
-> wrong).
-> > > I don't really want to lose this.
-> > >
-> > Obviously current used pin defines in that way is pretty good.
-> > And I also don't want to lose this.
-> >
-> > Actually I also have tried to see if we can reuse the current iomux-v3
-> code.
-> >
-> > For current pinmux driver, one approach I can see is that define mux
-> > in enum for each pin like:
-> >
-> > enum MX53_PAD_GPIO_19_MUX {
-> >         MX53_PAD_GPIO_19__KPP_COL_5,
-> >         MX53_PAD_GPIO_19__GPIO4_5,
-> >         MX53_PAD_GPIO_19__CCM_CLKO,
-> >         MX53_PAD_GPIO_19__SPDIF_OUT1,
-> >         MX53_PAD_GPIO_19__RTC_CE_RTC_EXT_TRIG2,
-> >         MX53_PAD_GPIO_19__ECSPI1_RDY,
-> >         MX53_PAD_GPIO_19__FEC_TDATA_3,
-> >         MX53_PAD_GPIO_19__SRC_INT_BOOT, };
-> 
-> I would say, no, do not do that, because it simply does not worth.
-> Most of the definitions will probably never be used.
-> 
-> IMO, we can just focus on the support for device tree case (imx6) for now.
-> With proper DT binding for pinctrl settled, all these data can go into DT.
-> For those non-DT cases, we may want to leave them as they are for now.
-> 
+--90e6ba53a9082d3c5304b3674f58
+Content-Type: text/plain; charset=ISO-8859-1
 
-Can current pinctrl framework support DT well?
-Linus,
-Can you help answer it or if you have a plan on DT support if it's still not ready?
+On Thu, Dec 1, 2011 at 5:11 PM, Arnaldo Carvalho de Melo
+<acme@infradead.org> wrote:
+>
+> Its just this one, can you try doing something like:
+>
+> perf top -vvv > /tmp/debug.top 2>&1
+> bzip2 /tmp/debug.top
+>
+> That will print lots of information about symbols being loaded,
+> overlapping maps, etc that can help me understand why that symbol name
+> looks garbage.
+>
+> And send me in pvt the result together with a fresh backtrace with those
+> symbols printed? Also which distro are you using?
+>
 
-I was ever thought it might not support DT that why I changed to run the
-driver for imx53 first.
+Hello Arnaldo. Curiously, I am unable to reproduce the crash when
+stdout is redirected to a file. I am able to capture lots of output if
+I redirect stdout to a file in verbose mode, but it won't crash when I
+do that. Just the same, I am still able to always reproduce (within a
+few seconds) with your perf/core branch on the tree you pointed me to.
+This time, I did a `thread apply all bt' in gdb to show the trace for
+the UI thread since it now seems to me to probably have something with
+the UI output (because I cannot reproduce if o/put is to a file). The
+trace is attached in the file gdb.txt.
 
-> 
-> > Then put them in a common file for each mx53 based board to use.
-> >
-> > Take uart1 as an example, it could be:
-> > static const unsigned mx53_uart1_pins[] = {
-> >         MX53_CSI0_DAT10,
-> >         MX53_CSI0_DAT11,
-> > };
-> >
-> > static const unsigned mx53_uart1_mux[] = {
-> >         MX53_CSI0_DAT10__UART1_TXD_MUX,
-> >         MX53_CSI0_DAT11__UART1_RXD_MUX };
-> >
-> > static const struct imx_pin_group mx53_pin_groups[] = {
-> >         IMX_PIN_GROUP("uart1grp", mx53_uart1_pins, mx53_uart1_mux), };
-> >
-> > The benefit is that it's very clear and good maintainable.
-> > The defect is it will increase the code size a lot by defining all
-> > pin's mux enum and each pin's mux array in board file.
-> >
-> > Do you think if it's ok or you have any better idea?
-> >
-> > Regards
-> > Dong Aisheng
+Is the `perf top -vvv > /tmp/debug.top 2>&1' output useful even if it
+is captured in a session that does not crash? If so will send the
+output privately to you.
 
+I am using Ubuntu 10.10
+
+Thanks!
+
+-- 
+Brian Gitonga Marete
+Toshnix Systems
+Tel: +254722151590
+
+--90e6ba53a9082d3c5304b3674f58
+Content-Type: text/plain; charset=US-ASCII; name="gdb.txt"
+Content-Disposition: attachment; filename="gdb.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gvukyf0r0
+
+UmVhZGluZyBzeW1ib2xzIGZyb20gL2hvbWUvbWFyZWJyaS9kZXZlbC9wZXJmLWNvcmUuZ2l0L3Rv
+b2xzL3BlcmYvcGVyZi4uLmRvbmUuClN0YXJ0aW5nIHByb2dyYW06IC9ob21lL21hcmVicmkvZGV2
+ZWwvcGVyZi1jb3JlLmdpdC90b29scy9wZXJmL3BlcmYgdG9wCltUaHJlYWQgZGVidWdnaW5nIHVz
+aW5nIGxpYnRocmVhZF9kYiBlbmFibGVkXQpbTmV3IFRocmVhZCAweDdmZmZmNDk1OTcwMCAoTFdQ
+IDc3ODApXQoKUHJvZ3JhbSByZWNlaXZlZCBzaWduYWwgU0lHU0VHViwgU2VnbWVudGF0aW9uIGZh
+dWx0LgoweDAwMDAwMDAwMDA0MmZkYTcgaW4gc3ltYm9sX19pbmNfYWRkcl9zYW1wbGVzIChzeW09
+MHgxN2U2YTYwLCBtYXA9MHg4ZThiNjAsIAogICAgZXZpZHg9MCwgYWRkcj05MzU1MykgYXQgdXRp
+bC9hbm5vdGF0ZS5jOjczCjczCQloLT5hZGRyW29mZnNldF0rKzsKCiMjIyMjIyBPdXRwdXQgb2Yg
+YnQgZm9sbG93cwoKIzAgIDB4MDAwMDAwMDAwMDQyZmRhNyBpbiBzeW1ib2xfX2luY19hZGRyX3Nh
+bXBsZXMgKHN5bT0weDE3ZTZhNjAsIG1hcD0KICAgIDB4OGU4YjYwLCBldmlkeD0wLCBhZGRyPTkz
+NTUzKSBhdCB1dGlsL2Fubm90YXRlLmM6NzMKIzEgIDB4MDAwMDAwMDAwMDQyMjI5ZCBpbiBwZXJm
+X3RvcF9fcmVjb3JkX3ByZWNpc2VfaXAgKHRvcD0weDdmZmZmZmZmZDVhMCwgaGU9CiAgICAweDIy
+MmU4YzAsIGNvdW50ZXI9MCwgaXA9OTM1NTMpIGF0IGJ1aWx0aW4tdG9wLmM6MTg4CiMyICAweDAw
+MDAwMDAwMDA0MjNhOGEgaW4gcGVyZl9ldmVudF9fcHJvY2Vzc19zYW1wbGUgKHRvb2w9MHg3ZmZm
+ZmZmZmQ1YTAsIAogICAgZXZlbnQ9MHg3ZmZmZjdmNDU3MTAsIGV2c2VsPTB4ODMyZTkwLCBzYW1w
+bGU9MHg3ZmZmZmZmZmNiZTAsIG1hY2hpbmU9CiAgICAweDgzMzM3MCkgYXQgYnVpbHRpbi10b3Au
+Yzo3NDMKIzMgIDB4MDAwMDAwMDAwMDQyM2NlNSBpbiBwZXJmX3RvcF9fbW1hcF9yZWFkX2lkeCAo
+dG9wPTB4N2ZmZmZmZmZkNWEwLCBpZHg9MCkKICAgIGF0IGJ1aWx0aW4tdG9wLmM6ODA0CiM0ICAw
+eDAwMDAwMDAwMDA0MjNkYTcgaW4gcGVyZl90b3BfX21tYXBfcmVhZCAodG9wPTB4N2ZmZmZmZmZk
+NWEwKQogICAgYXQgYnVpbHRpbi10b3AuYzo4MTkKIzUgIDB4MDAwMDAwMDAwMDQyNDM4MCBpbiBf
+X2NtZF90b3AgKHRvcD0weDdmZmZmZmZmZDVhMCkgYXQgYnVpbHRpbi10b3AuYzo5ODUKIzYgIDB4
+MDAwMDAwMDAwMDQyNTM1ZSBpbiBjbWRfdG9wIChhcmdjPTAsIGFyZ3Y9MHg3ZmZmZmZmZmRhMzAs
+IHByZWZpeD0weDApCiAgICBhdCBidWlsdGluLXRvcC5jOjEyNzIKIzcgIDB4MDAwMDAwMDAwMDQx
+MDJkNSBpbiBydW5fYnVpbHRpbiAocD0weDZhNmJlOCwgYXJnYz0xLCBhcmd2PTB4N2ZmZmZmZmZk
+YTMwKQogICAgYXQgcGVyZi5jOjI3MwojOCAgMHgwMDAwMDAwMDAwNDEwNGE4IGluIGhhbmRsZV9p
+bnRlcm5hbF9jb21tYW5kIChhcmdjPTEsIGFyZ3Y9MHg3ZmZmZmZmZmRhMzApCiAgICBhdCBwZXJm
+LmM6MzQ1CiM5ICAweDAwMDAwMDAwMDA0MTA1YWUgaW4gcnVuX2FyZ3YgKGFyZ2NwPTB4N2ZmZmZm
+ZmZkOTFjLCBhcmd2PTB4N2ZmZmZmZmZkOTEwKQogICAgYXQgcGVyZi5jOjM4OQojMTAgMHgwMDAw
+MDAwMDAwNDEwN2IzIGluIG1haW4gKGFyZ2M9MSwgYXJndj0weDdmZmZmZmZmZGEzMCkgYXQgcGVy
+Zi5jOjQ4NwoKIyMjIyMjIyBPdXRwdXQgb2YgcCAqc3ltIGZvbGxvd3MKCiQxID0ge3JiX25vZGUg
+PSB7cmJfcGFyZW50X2NvbG9yID0gMTg5MTc0NDEsIHJiX3JpZ2h0ID0gMHgxMjEzMTMwLCByYl9s
+ZWZ0ID0gCiAgICAweDE3OWQ5MjB9LCBzdGFydCA9IDIyODcyMCwgZW5kID0gMjI4OTE2LCBuYW1l
+bGVuID0gMTQsIAogIGJpbmRpbmcgPSAxICdcMDAxJywgaWdub3JlID0gZmFsc2UsIG5hbWUgPSAw
+eDE3ZTZhNjAgIkFcMjUwIFwwMDEifQoKIyMjIyMjIE91dHB1dCBvZiBwICptYXAgZm9sbG93cwoK
+JDIgPSB7e3JiX25vZGUgPSB7cmJfcGFyZW50X2NvbG9yID0gOTM0MjI4OSwgcmJfcmlnaHQgPSAw
+eDhlOGM1MCwgcmJfbGVmdCA9IAogICAgMHg4ZThhNzB9LCBub2RlID0ge25leHQgPSAweDhlOGQ1
+MSwgcHJldiA9IDB4OGU4YzUwfX0sIHN0YXJ0ID0gNDE0NDI3OTU1MiwgCiAgZW5kID0gNDE0NTQy
+NjQzMiwgdHlwZSA9IDAgJ1wwMDAnLCByZWZlcmVuY2VkID0gdHJ1ZSwgcHJpdiA9IDAsIHBnb2Zm
+ID0gMCwgCiAgbWFwX2lwID0gMHg0NTIzY2QgPG1hcF9fbWFwX2lwPiwgdW5tYXBfaXAgPSAweDQ1
+MjNmNiA8bWFwX191bm1hcF9pcD4sIGRzbyA9IAogICAgMHg4ZThiYzAsIGdyb3VwcyA9IDB4OGVh
+ZjY4fQoKIyMjIyMjIE91dHB1dCBvZiBpbmZvIHRocmVhZCBmb2xsb3dzCgogIDIgVGhyZWFkIDB4
+N2ZmZmY0OTU5NzAwIChMV1AgNzc4MCkgIDB4MDAwMDdmZmZmNjU2MDJjMyBpbiBzZWxlY3QgKCkK
+ICAgIGF0IC4uL3N5c2RlcHMvdW5peC9zeXNjYWxsLXRlbXBsYXRlLlM6ODIKKiAxIFRocmVhZCAw
+eDdmZmZmN2ZjMTcwMCAoTFdQIDc3NzcpICAweDAwMDAwMDAwMDA0MmZkYTcgaW4gc3ltYm9sX19p
+bmNfYWRkcl9zYW1wbGVzIChzeW09MHgxN2U2YTYwLCBtYXA9MHg4ZThiNjAsIGV2aWR4PTAsIGFk
+ZHI9OTM1NTMpIGF0IHV0aWwvYW5ub3RhdGUuYzo3MwoKIyMjIyMjIyBPdXRwdXQgb2YgdGhyZWFk
+IGFwcGx5IGFsbCBidCBmb2xsb3dzCgpUaHJlYWQgMiAoVGhyZWFkIDB4N2ZmZmY0OTU5NzAwIChM
+V1AgNzc4MCkpOgojMCAgMHgwMDAwN2ZmZmY2NTYwMmMzIGluIHNlbGVjdCAoKSBhdCAuLi9zeXNk
+ZXBzL3VuaXgvc3lzY2FsbC10ZW1wbGF0ZS5TOjgyCiMxICAweDAwMDAwMDAwMDA0NzFhZDEgaW4g
+dWlfX2dldGNoIChkZWxheV9zZWNzPTIpIGF0IHV0aWwvdWkvc2V0dXAuYzo2MgojMiAgMHgwMDAw
+MDAwMDAwNDcyOWVlIGluIHVpX2Jyb3dzZXJfX3J1biAoc2VsZj0weGNhMjNiMCwgZGVsYXlfc2Vj
+cz0yKQogICAgYXQgdXRpbC91aS9icm93c2VyLmM6MzY0CiMzICAweDAwMDAwMDAwMDA0NzRlNGUg
+aW4gaGlzdF9icm93c2VyX19ydW4gKHNlbGY9MHhjYTIzYjAsIGV2X25hbWU9CiAgICAweDgzMzE0
+MCAiY3ljbGVzIiwgdGltZXI9MHg0MjMzNWQgPHBlcmZfdG9wX19zb3J0X25ld19zYW1wbGVzPiwg
+YXJnPQogICAgMHg3ZmZmZmZmZmQ1YTAsIGRlbGF5X3NlY3M9MikgYXQgdXRpbC91aS9icm93c2Vy
+cy9oaXN0cy5jOjMyNAojNCAgMHgwMDAwMDAwMDAwNDc2NDQyIGluIHBlcmZfZXZzZWxfX2hpc3Rz
+X2Jyb3dzZSAoZXZzZWw9MHg4MzJlOTAsIAogICAgbnJfZXZlbnRzPTEsIGhlbHBsaW5lPQogICAg
+MHg0ODQ3YzggIkZvciBhIGhpZ2hlciBsZXZlbCBvdmVydmlldywgdHJ5OiBwZXJmIHRvcCAtLXNv
+cnQgY29tbSxkc28iLCAKICAgIGV2X25hbWU9MHg4MzMxNDAgImN5Y2xlcyIsIGxlZnRfZXhpdHM9
+ZmFsc2UsIHRpbWVyPQogICAgMHg0MjMzNWQgPHBlcmZfdG9wX19zb3J0X25ld19zYW1wbGVzPiwg
+YXJnPTB4N2ZmZmZmZmZkNWEwLCBkZWxheV9zZWNzPTIpCiAgICBhdCB1dGlsL3VpL2Jyb3dzZXJz
+L2hpc3RzLmM6ODgzCiM1ICAweDAwMDAwMDAwMDA0NzczMTcgaW4gcGVyZl9ldmxpc3RfX3R1aV9i
+cm93c2VfaGlzdHMgKGV2bGlzdD0weDgwOTVjMCwgaGVscD0KICAgIDB4NDg0N2M4ICJGb3IgYSBo
+aWdoZXIgbGV2ZWwgb3ZlcnZpZXcsIHRyeTogcGVyZiB0b3AgLS1zb3J0IGNvbW0sZHNvIiwgCiAg
+ICB0aW1lcj0weDQyMzM1ZCA8cGVyZl90b3BfX3NvcnRfbmV3X3NhbXBsZXM+LCBhcmc9MHg3ZmZm
+ZmZmZmQ1YTAsIAogICAgZGVsYXlfc2Vjcz0yKSBhdCB1dGlsL3VpL2Jyb3dzZXJzL2hpc3RzLmM6
+MTI1NAojNiAgMHgwMDAwMDAwMDAwNDIzNDcwIGluIGRpc3BsYXlfdGhyZWFkX3R1aSAoYXJnPTB4
+N2ZmZmZmZmZkNWEwKQogICAgYXQgYnVpbHRpbi10b3AuYzo1NDYKIzcgIDB4MDAwMDdmZmZmN2Jj
+Njk3MSBpbiBzdGFydF90aHJlYWQgKGFyZz08dmFsdWUgb3B0aW1pemVkIG91dD4pCiAgICBhdCBw
+dGhyZWFkX2NyZWF0ZS5jOjMwNAojOCAgMHgwMDAwN2ZmZmY2NTY3OTJkIGluIGNsb25lICgpCiAg
+ICBhdCAuLi9zeXNkZXBzL3VuaXgvc3lzdi9saW51eC94ODZfNjQvY2xvbmUuUzoxMTIKIzkgIDB4
+MDAwMDAwMDAwMDAwMDAwMCBpbiA/PyAoKQoKVGhyZWFkIDEgKFRocmVhZCAweDdmZmZmN2ZjMTcw
+MCAoTFdQIDc3NzcpKToKIzAgIDB4MDAwMDAwMDAwMDQyZmRhNyBpbiBzeW1ib2xfX2luY19hZGRy
+X3NhbXBsZXMgKHN5bT0weDE3ZTZhNjAsIG1hcD0KICAgIDB4OGU4YjYwLCBldmlkeD0wLCBhZGRy
+PTkzNTUzKSBhdCB1dGlsL2Fubm90YXRlLmM6NzMKIzEgIDB4MDAwMDAwMDAwMDQyMjI5ZCBpbiBw
+ZXJmX3RvcF9fcmVjb3JkX3ByZWNpc2VfaXAgKHRvcD0weDdmZmZmZmZmZDVhMCwgaGU9CiAgICAw
+eDIyMmU4YzAsIGNvdW50ZXI9MCwgaXA9OTM1NTMpIGF0IGJ1aWx0aW4tdG9wLmM6MTg4CiMyICAw
+eDAwMDAwMDAwMDA0MjNhOGEgaW4gcGVyZl9ldmVudF9fcHJvY2Vzc19zYW1wbGUgKHRvb2w9MHg3
+ZmZmZmZmZmQ1YTAsIAogICAgZXZlbnQ9MHg3ZmZmZjdmNDU3MTAsIGV2c2VsPTB4ODMyZTkwLCBz
+YW1wbGU9MHg3ZmZmZmZmZmNiZTAsIG1hY2hpbmU9CiAgICAweDgzMzM3MCkgYXQgYnVpbHRpbi10
+b3AuYzo3NDMKIzMgIDB4MDAwMDAwMDAwMDQyM2NlNSBpbiBwZXJmX3RvcF9fbW1hcF9yZWFkX2lk
+eCAodG9wPTB4N2ZmZmZmZmZkNWEwLCBpZHg9MCkKICAgIGF0IGJ1aWx0aW4tdG9wLmM6ODA0CiM0
+ICAweDAwMDAwMDAwMDA0MjNkYTcgaW4gcGVyZl90b3BfX21tYXBfcmVhZCAodG9wPTB4N2ZmZmZm
+ZmZkNWEwKQogICAgYXQgYnVpbHRpbi10b3AuYzo4MTkKIzUgIDB4MDAwMDAwMDAwMDQyNDM4MCBp
+biBfX2NtZF90b3AgKHRvcD0weDdmZmZmZmZmZDVhMCkgYXQgYnVpbHRpbi10b3AuYzo5ODUKIzYg
+IDB4MDAwMDAwMDAwMDQyNTM1ZSBpbiBjbWRfdG9wIChhcmdjPTAsIGFyZ3Y9MHg3ZmZmZmZmZmRh
+MzAsIHByZWZpeD0weDApCiAgICBhdCBidWlsdGluLXRvcC5jOjEyNzIKIzcgIDB4MDAwMDAwMDAw
+MDQxMDJkNSBpbiBydW5fYnVpbHRpbiAocD0weDZhNmJlOCwgYXJnYz0xLCBhcmd2PTB4N2ZmZmZm
+ZmZkYTMwKQogICAgYXQgcGVyZi5jOjI3MwojOCAgMHgwMDAwMDAwMDAwNDEwNGE4IGluIGhhbmRs
+ZV9pbnRlcm5hbF9jb21tYW5kIChhcmdjPTEsIGFyZ3Y9MHg3ZmZmZmZmZmRhMzApCiAgICBhdCBw
+ZXJmLmM6MzQ1CiM5ICAweDAwMDAwMDAwMDA0MTA1YWUgaW4gcnVuX2FyZ3YgKGFyZ2NwPTB4N2Zm
+ZmZmZmZkOTFjLCBhcmd2PTB4N2ZmZmZmZmZkOTEwKQogICAgYXQgcGVyZi5jOjM4OQojMTAgMHgw
+MDAwMDAwMDAwNDEwN2IzIGluIG1haW4gKGFyZ2M9MSwgYXJndj0weDdmZmZmZmZmZGEzMCkgYXQg
+cGVyZi5jOjQ4NwpLaWxsIHRoZSBwcm9ncmFtIGJlaW5nIGRlYnVnZ2VkPyAoeSBvciBuKSAK
+--90e6ba53a9082d3c5304b3674f58--
