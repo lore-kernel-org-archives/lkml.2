@@ -1,110 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752365Ab1LFPoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 10:44:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50068 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751149Ab1LFPoD (ORCPT
+	id S1751396Ab1LFPpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 10:45:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58710 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab1LFPp3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 10:44:03 -0500
-Message-ID: <1323186215.7454.271.camel@deadeye>
-Subject: Re: [tip:core/locking] lockdep, bug: Exclude
- TAINT_FIRMWARE_WORKAROUND from disabling lockdep
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Nick Bowler <nbowler@elliptictech.com>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Date: Tue, 06 Dec 2011 15:43:35 +0000
-In-Reply-To: <20111206154206.441e85c6@lxorguk.ukuu.org.uk>
-References: <tip-xopopjjens57r0i13qnyh2yo@git.kernel.org>
-	 <20111206151345.GA22353@elliptictech.com>
-	 <20111206154206.441e85c6@lxorguk.ukuu.org.uk>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-3QC/SVshFQafNKWt19Z/"
-X-Mailer: Evolution 3.0.3-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 6 Dec 2011 10:45:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACVXFVO8Uk808J9HgVv6ernd4x_QwN3YsAaERF=W8F=NQrLwQw@mail.gmail.com>
+References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com>
+	<201112061255.56136.arnd@arndb.de>
+	<CACVXFVPYUY-vpeoKJKX2XN7-0w+=seW0u3EaP=hD9m1Sy7nkTQ@mail.gmail.com>
+	<201112061441.25822.arnd@arndb.de>
+	<CACVXFVO8Uk808J9HgVv6ernd4x_QwN3YsAaERF=W8F=NQrLwQw@mail.gmail.com>
+Date: Tue, 6 Dec 2011 23:45:27 +0800
+Message-ID: <CACVXFVOoQRZKDEWUtuq3hE3H25b7UUWWAJbsTGgVHJcUbnihig@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
+From: Ming Lei <ming.lei@canonical.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-3QC/SVshFQafNKWt19Z/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 6, 2011 at 10:52 PM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Tue, Dec 6, 2011 at 10:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> 3. extending video_usercopy in some way to make this work, preferably
+>>   in a generic way.
+>
+> Maybe this one is a good choice, and I think that it is worthy to
+> support the below kind of array parameter:
+>
+> struct v4l2_fd_result {
+>        __u32   buf_index;
+>        __u32   face_cnt;
+>        __u32   reserved[6];
+>        struct v4l2_fd_detection fd[];
+> };
+>
+> and it is not difficult to implement it in a generic way so that new
+> array parameters can be supported as 64/32 compatible.
 
-On Tue, 2011-12-06 at 15:42 +0000, Alan Cox wrote:
-> On Tue, 6 Dec 2011 10:13:45 -0500
-> Nick Bowler <nbowler@elliptictech.com> wrote:
->=20
-> > On 2011-12-06 01:38 -0800, tip-bot for Peter Zijlstra wrote:
-> > > Commit-ID:  df754e6af2f237a6c020c0daff55a1a609338e31
-> > > Gitweb:     http://git.kernel.org/tip/df754e6af2f237a6c020c0daff55a1a=
-609338e31
-> > > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > AuthorDate: Mon, 14 Nov 2011 13:13:49 +0100
-> > > Committer:  Ingo Molnar <mingo@elte.hu>
-> > > CommitDate: Tue, 6 Dec 2011 08:16:47 +0100
-> > >=20
-> > > lockdep, bug: Exclude TAINT_FIRMWARE_WORKAROUND from disabling lockde=
-p
-> > >=20
-> > > It's unlikely that TAINT_FIRMWARE_WORKAROUND causes false
-> > > lockdep messages, so do not disable lockdep in that case.
-> > > We still want to keep lockdep disabled in the
-> > > TAINT_OOT_MODULE case:
-> > >=20
-> > >   - bin-only modules can cause various instabilities in
-> > >     their and in unrelated kernel code
-> > >=20
-> > >   - they are impossible to debug for kernel developers
-> > >=20
-> > >   - they also typically do not have the copyright license
-> > >     permission to link to the GPL-ed lockdep code.
-> >=20
-> > This is all bogus.  We have a proprietary module taint for the above.
-> > Out of tree does not mean "bin-only", "non-GPL" or anything else like
-> > that. =20
->=20
-> It also stops people developing drivers of their own who are not
-> building them in the kernel tree currently (eg when I'm building tests
-> of the GMA500 graphics driver). This is a ludicrous patch and should be
-> reverted
+How about the blow patch to support 64/32 compatible array parameter?
 
-My change to set TAINT_OOT_MODULE had the (unintentional) effect of
-disabling lockdep for OOT modules.  I subsequently proposed to change
-that (while adding taint flags to lockdep output).  This patch doesn't
-make any change either way.
+diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
+index e1da8fc..72c81f7 100644
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -2239,6 +2239,26 @@ static int check_array_args(unsigned int cmd,
+void *parg, size_t *array_size,
+ 	return ret;
+ }
 
-Ben.
++static int is_64_32_array_args(unsigned int cmd, void *parg, int *extra_len)
++{
++	int ret = 0;
++
++	switch (cmd) {
++	case VIDIOC_G_FD_RESULT: {
++		struct v4l2_fd_result *fr = parg;
++
++		*extra_len = fr->faces_cnt *
++			sizeof(struct v4l2_fd_detection);
++		ret = 1;
++		break;
++	}
++	default:
++		break;
++	}
++
++	return ret;
++}
++
+ long
+ video_usercopy(struct file *file, unsigned int cmd, unsigned long arg,
+ 	       v4l2_kioctl func)
+@@ -2251,6 +2271,7 @@ video_usercopy(struct file *file, unsigned int
+cmd, unsigned long arg,
+ 	size_t  array_size = 0;
+ 	void __user *user_ptr = NULL;
+ 	void	**kernel_ptr = NULL;
++	int	extra = 0;
 
---=20
-Ben Hutchings
-Absolutum obsoletum. (If it works, it's out of date.) - Stafford Beer
+ 	/*  Copy arguments into temp kernel buffer  */
+ 	if (_IOC_DIR(cmd) != _IOC_NONE) {
+@@ -2280,9 +2301,29 @@ video_usercopy(struct file *file, unsigned int
+cmd, unsigned long arg,
+ 		}
+ 	}
 
---=-3QC/SVshFQafNKWt19Z/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+-	err = check_array_args(cmd, parg, &array_size, &user_ptr, &kernel_ptr);
++	if (is_64_32_array_args(cmd, parg, &extra)) {
++		int size;
++		void *old_mbuf;
++
++		err = 0;
++		if (!extra)
++			goto out_array_args;
++		old_mbuf = mbuf;
++		size = extra + _IOC_SIZE(cmd);
++		mbuf = kmalloc(size, GFP_KERNEL);
++		if (NULL == mbuf)
++			return -ENOMEM;
++		memcpy(mbuf, parg, _IOC_SIZE(cmd));
++		parg = mbuf;
++		kfree(old_mbuf);
++	} else {
++		err = check_array_args(cmd, parg, &array_size,
++				&user_ptr, &kernel_ptr);
++	}
++
+ 	if (err < 0)
+ 		goto out;
++out_array_args:
+ 	has_array_args = err;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ 	if (has_array_args) {
+@@ -2321,7 +2362,7 @@ out_array_args:
+ 	switch (_IOC_DIR(cmd)) {
+ 	case _IOC_READ:
+ 	case (_IOC_WRITE | _IOC_READ):
+-		if (copy_to_user((void __user *)arg, parg, _IOC_SIZE(cmd)))
++		if (copy_to_user((void __user *)arg, parg, _IOC_SIZE(cmd) + extra))
+ 			err = -EFAULT;
+ 		break;
+ 	}
 
-iQIVAwUATt44J+e/yOyVhhEJAQoYGRAAzh5hgn2VFNuIKzmVVhr+hTIkx+y6LytT
-G5qJ9NWx8PVf0CGK4xWbgxiLp9T74i5eoRATankPFfbkj73/l1FSYkie28k2lhhv
-m2upLCks9wgO9ZWhJkrNG7ae/leI2L7r/ZQ+DC4hac6R4aAuB2n5BJz2n5ikf7FD
-LIzkHRjMqf9gEfI3oCyn9LXeMzgM0C4FlNFlneeFgDtsff5/MBWuv45RKlZmuM2P
-cQXrBwq305bBYZ04YaPpiMTp+4CnnlzRs644iT/lbTQEXaHuUuvz44PsgVwnYRLX
-Z7fxXvdf0EXO2sCc38GChvd6Be+0BhbidPM89DqMzlXZ96KW6uNyMbP8WZcs1MqT
-MCt3fc2gwVVA5zva65PdCqkNzUcWwhEDSewYoJRLPyEGewMEfo23RcLzmgdbyIsv
-aUcmsGLrBnQ3WEhBWa9w9wPTmgLBSiakSIjU/xcMKcR/gcl9NIYHrjNkpFguTiZo
-1qi2I4bLT7zStbh/REfn/qfSIuUxnYRpjlfFGWYuQCHQNUOWvt9i+PYX1AYWaIK7
-9a9JSZYf4YpCz100SiJWuMVwnnrOcXr3HCOFYeAqphcXA0fQ53ATYuhtW3+fzmlq
-2HieHaQCi+oy3L5tAWONOREpR6uXCg4yaczhmOG/fbUgJMrPaKXcHCUsOvy2t91M
-FXV8HVaF0yc=
-=7Vz2
------END PGP SIGNATURE-----
 
---=-3QC/SVshFQafNKWt19Z/--
+
+thanks,
+--
+Ming Lei
