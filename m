@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1LFM5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 07:57:52 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:37331
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752266Ab1LFM5u (ORCPT
+	id S933370Ab1LFNA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:00:26 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:59066 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932980Ab1LFNAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 07:57:50 -0500
-X-SpamScore: -19
-X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVS9C5-02-M3Q-02
-X-M-MSG: 
-Date: Tue, 6 Dec 2011 13:57:39 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: KyongHo Cho <pullip.cho@samsung.com>
-CC: Kyungmin Park <kmpark@infradead.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        <iommu@lists.linux-foundation.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 0/2] iommu/exynos: Add IOMMU/System MMU driver for
- Samsung Exynos
-Message-ID: <20111206125739.GK25178@amd.com>
-References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com>
- <20111205154715.GE25178@amd.com>
- <CAH9JG2VALcm-PreS7S2SZPPgEbid_6_VWJA0PHBEtY5KvaA3Og@mail.gmail.com>
- <CAHQjnOOCHO3eDiUft4WgS=8N5EheWas+n3MD9xxBKUoSjmNQSQ@mail.gmail.com>
+	Tue, 6 Dec 2011 08:00:25 -0500
+Date: Tue, 6 Dec 2011 14:00:20 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Fenghua Yu <fenghua.yu@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Borislav Petkov <bp@amd64.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
+Message-ID: <20111206130020.GB28735@gere.osrc.amd.com>
+References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
+ <20111206084230.GC30062@elte.hu>
+ <20111206085816.GA11116@elte.hu>
+ <4EDDE5D0.7030906@linux.vnet.ibm.com>
+ <20111206103500.GD15966@elte.hu>
+ <4EDDF2DE.7020701@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHQjnOOCHO3eDiUft4WgS=8N5EheWas+n3MD9xxBKUoSjmNQSQ@mail.gmail.com>
+In-Reply-To: <4EDDF2DE.7020701@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 09:13:18PM +0900, KyongHo Cho wrote:
-> > BTW, how do you test it at mainline kernel?
-> >
-> I merged IOMMU mainline branch to our kernel branch and tested it with
-> our FIMC, MFC, JPEG, 2D.
+On Tue, Dec 06, 2011 at 04:17:58PM +0530, Srivatsa S. Bhat wrote:
+> In this case, the other patch that I mentioned in my previous mail
+> would be required (or an equivalent), because the optimization
+> patch which is now in mainline, would apply the same old microcode
+> image on this new CPU too, blindly.
 
-This is not sufficient. Please do it the other way around, merge your
-outstanding changes into the mainline kernel (or for iommu topics my
-next branch) and test against that. This way it is easier to catch bugs
-in mainline.
-
-
-	Joerg
+Not blindly, the microcode is still verified.
 
 -- 
-AMD Operating System Research Center
+Regards/Gruss,
+Boris.
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
