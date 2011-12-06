@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700Ab1LFQX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:23:57 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:4008
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751508Ab1LFQXz (ORCPT
+	id S1751532Ab1LFQ2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:28:13 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59210 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1LFQ2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:23:55 -0500
-X-SpamScore: -17
-X-BigFish: VPS-17(zz98dK4015Lzz1202hzz15d4Rz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVSIVM-02-23E-02
-X-M-MSG: 
-Date: Tue, 6 Dec 2011 17:23:46 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: KyongHo Cho <pullip.cho@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        <iommu@lists.linux-foundation.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 0/2] iommu/exynos: Add IOMMU/System MMU driver for
- Samsung Exynos
-Message-ID: <20111206162346.GP25178@amd.com>
-References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com>
- <20111205154715.GE25178@amd.com>
+	Tue, 6 Dec 2011 11:28:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111205154715.GE25178@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <alpine.DEB.2.00.1112061619190.11925@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1112061619190.11925@skynet.skynet.ie>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 6 Dec 2011 08:27:50 -0800
+X-Google-Sender-Auth: IlbATOkHztKAr8rpd8wU5klF4mM
+Message-ID: <CA+55aFyFar45vTWb33FnJ1xv4zT+9XfnKBs=Xwx6-5O-RBHO4Q@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 04:47:15PM +0100, Joerg Roedel wrote:
+On Tue, Dec 6, 2011 at 8:21 AM, Dave Airlie <airlied@linux.ie> wrote:
+>
+> 3 fixes, one for an ongoing Intel VT-d/Ironlake GPU that I've been
+> testing, and one kexec fix from Jerome for an issue reported on the list
+> where the gpu writeback engines need to be switched off, along with a
+> trivial fix from Alex.
 
-> Okay, I merged it into arm/exynos, but it is not pushed yet. Actually
-> there were conflicts while merging, which I resolved. What I failed
-> to find is a config for Exynos that actually builds for upstream Linux.
-> Probably I havn't tried hard enough to find one... Can you provide a
-> kernel config that I can use for my testing and that builds a current
-> 3.2-rc4 kernel for Exynos?
+Quite frankly, I think it's too late for something like a kexec
+bugfix. Nobody cares. So kexec doesn't work - that's not something
+new. This doesn't smell like a regression to me. And the kcalloc
+things you mention *sound* like some kind of cleanup crap.
 
-Okay, since there are new objections and since I can't even reliably
-build test the driver I unmerged it again.
-Please fix the outstanding issues and rebase it against a recent upstream
-kernel so that the result can be compiled to a kernel-image.
+The DRM layer has been fairly good for a few releases, but I'm getting
+the feeling that I need to start pushing back, because I'm getting
+stuff that I don't think matters, and shouldn't be sent to me after
+-rc4.
 
+So I'm not pulling this.
 
-Thanks,
+What the heck is up?
 
-	Joerg
+By now, I want fixes that either fix real regressions that people
+*care* about, or that help new unreleased hardware that people *will*
+care about and that cannot possibly mess up old users.
 
+kexec? Who the f*ck cares? Really?
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+                      Linus
