@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab1LFTMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:12:19 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50965 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753385Ab1LFTMM (ORCPT
+	id S1753381Ab1LFTMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:12:10 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45409 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab1LFTMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:12:12 -0500
-Date: Tue, 6 Dec 2011 20:12:03 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>
-Subject: Re: [MXS MMC 4/5] Check the return codes of clk_enable() and
- mxs_reset_block()
-Message-ID: <20111206191203.GE7835@pengutronix.de>
-References: <cover.1323177907.git.LW@KARO-electronics.de>
- <b4779523002ceef3e95887bbcf7ed570cdd93a95.1323177907.git.LW@KARO-electronics.de>
+	Tue, 6 Dec 2011 14:12:07 -0500
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com
+Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 01/25] kernel/module.c: fix compile err, warnings under ifdef DEBUGP
+Date: Tue,  6 Dec 2011 12:11:11 -0700
+Message-Id: <1323198694-7186-2-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
+References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>, <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
+ <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JBi0ZxuS5uaEhkUZ"
-Content-Disposition: inline
-In-Reply-To: <b4779523002ceef3e95887bbcf7ed570cdd93a95.1323177907.git.LW@KARO-electronics.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jim Cromie <jim.cromie@gmail.com>
 
---JBi0ZxuS5uaEhkUZ
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+resubmit of https://lkml.org/lkml/2010/9/15/399 4/4 patch
+with tiny mod.
 
-On Tue, Dec 06, 2011 at 02:41:29PM +0100, Lothar Wa=DFmann wrote:
-> Add an int return value to mxs_mmc_reset(), so that the return code of
-> mxs_reset_block() can be promoted to the caller.
-> Also check the return code of clk_enable() in the probe function.
->=20
-> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
-> -	clk_enable(host->clk);
-> +	ret =3D clk_enable(host->clk);
-> +	if (ret) {
-> +		dev_err(mmc_dev(host->mmc),
-> +			"%s: failed to enable clock: %d\n", __func__, ret);
-> +		goto out_clk_put;
-> +	}
-> =20
-> -	mxs_mmc_reset(host);
-> +	ret =3D mxs_mmc_reset(host);
-> +	if (ret) {
-> +		dev_err(mmc_dev(host->mmc),
-> +			"%s: failed to reset controller: %d\n", __func__, ret);
-> +		goto out_clk_put;
-> +	}
+Fixes these warnings, err if DEBUGP is defined in kernel/module.c:
 
-Why __func__ here? dev_err and the msg itself should be indication enough?
+kernel/module.c: In function ‘layout_sections’:
+kernel/module.c:1776: error: ‘name’ undeclared (first use in this function)
+kernel/module.c:1776: error: (Each undeclared identifier is reported only once
+kernel/module.c:1776: error: for each function it appears in.)
+kernel/module.c: In function ‘move_module’:
+kernel/module.c:2394: warning: format ‘%lx’ expects type ‘long unsigned int’,
+but argument 2 has type ‘Elf64_Addr’
 
-Otherwise
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ kernel/module.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+diff --git a/kernel/module.c b/kernel/module.c
+index 178333c..30ffed4 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1978,7 +1978,7 @@ static void layout_sections(struct module *mod, struct load_info *info)
+ 			    || strstarts(sname, ".init"))
+ 				continue;
+ 			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
+-			DEBUGP("\t%s\n", name);
++			DEBUGP("\t%s\n", sname);
+ 		}
+ 		switch (m) {
+ 		case 0: /* executable */
+@@ -2639,8 +2639,8 @@ static int move_module(struct module *mod, struct load_info *info)
+ 			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
+ 		/* Update sh_addr to point to copy in image. */
+ 		shdr->sh_addr = (unsigned long)dest;
+-		DEBUGP("\t0x%lx %s\n",
+-		       shdr->sh_addr, info->secstrings + shdr->sh_name);
++		DEBUGP("\t0x%p %s\n",
++		       (void *)shdr->sh_addr, info->secstrings + shdr->sh_name);
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.7.3
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---JBi0ZxuS5uaEhkUZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk7eaQMACgkQD27XaX1/VRsmVQCgo5C27YH0V2JpiZdVCoLmhRk8
-R0sAoKv1OoiKTNL/O5v9j3Pgi3rxLL/B
-=3SQY
------END PGP SIGNATURE-----
-
---JBi0ZxuS5uaEhkUZ--
