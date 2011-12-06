@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab1LFTAf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:00:35 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:60638 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab1LFTAe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:00:34 -0500
-Date: Tue, 06 Dec 2011 14:00:09 -0500 (EST)
-Message-Id: <20111206.140009.2069228986419257738.davem@davemloft.net>
-To: sboyd@codeaurora.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCHv2] net: Silence seq_scale() unused warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1323194680-32127-1-git-send-email-sboyd@codeaurora.org>
-References: <20111206.003157.159978113328078893.davem@davemloft.net>
-	<1323194680-32127-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 06 Dec 2011 11:00:12 -0800 (PST)
+	id S1752954Ab1LFTCp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:02:45 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:55676 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752289Ab1LFTCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 14:02:43 -0500
+From: Alexandre Bounine <alexandre.bounine@idt.com>
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>
+Subject: [PATCH] rapidio/tsi721: Fix mailbox resource reporting
+Date: Tue,  6 Dec 2011 14:01:27 -0500
+Message-Id: <1323198088-11669-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
-Date: Tue,  6 Dec 2011 10:04:40 -0800
+Report support of four RapidIO mailboxes (MBOX0 - MBOX3) instead of MBOX0
+only.
 
-> On a CONFIG_NET=y build
-> 
-> net/core/secure_seq.c:22: warning: 'seq_scale' defined but not
-> used
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+---
+ drivers/rapidio/devices/tsi721.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Applied, thanks.
+diff --git a/drivers/rapidio/devices/tsi721.c b/drivers/rapidio/devices/tsi721.c
+index 514c28c..83ac8728 100644
+--- a/drivers/rapidio/devices/tsi721.c
++++ b/drivers/rapidio/devices/tsi721.c
+@@ -2107,8 +2107,8 @@ static int __devinit tsi721_setup_mport(struct tsi721_device *priv)
+ 	INIT_LIST_HEAD(&mport->dbells);
+ 
+ 	rio_init_dbell_res(&mport->riores[RIO_DOORBELL_RESOURCE], 0, 0xffff);
+-	rio_init_mbox_res(&mport->riores[RIO_INB_MBOX_RESOURCE], 0, 0);
+-	rio_init_mbox_res(&mport->riores[RIO_OUTB_MBOX_RESOURCE], 0, 0);
++	rio_init_mbox_res(&mport->riores[RIO_INB_MBOX_RESOURCE], 0, 3);
++	rio_init_mbox_res(&mport->riores[RIO_OUTB_MBOX_RESOURCE], 0, 3);
+ 	strcpy(mport->name, "Tsi721 mport");
+ 
+ 	/* Hook up interrupt handler */
+-- 
+1.7.6
+
