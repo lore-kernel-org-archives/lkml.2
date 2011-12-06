@@ -1,117 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab1LFVOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 16:14:53 -0500
-Received: from fieldses.org ([174.143.236.118]:54691 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753394Ab1LFVOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 16:14:52 -0500
-Date: Tue, 6 Dec 2011 16:14:50 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: neilb@suse.de, linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFSd: use network-namespace-aware cache registering
- routines
-Message-ID: <20111206211450.GD12640@fieldses.org>
-References: <20111206130330.25851.55807.stgit@localhost6.localdomain6>
- <20111206210234.GC12640@fieldses.org>
+	id S1754543Ab1LFVPN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 16:15:13 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61320 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754522Ab1LFVPL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 16:15:11 -0500
+Date: Tue, 6 Dec 2011 21:14:46 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Jon Masters <jcm@redhat.com>
+Cc: mhban <mhban@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DavidHowells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michel Lespinasse <walken@google.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] ARM: futex: fix clobbering oldval
+Message-ID: <20111206211446.GB15640@mudshark.cambridge.arm.com>
+References: <1316660015.6872.1.camel@puffmine-laptop>
+ <20110922172653.GH13572@e102144-lin.cambridge.arm.com>
+ <1323197914.11696.30.camel@constitution.bos.jonmasters.org>
+ <20111206191109.GB5385@mudshark.cambridge.arm.com>
+ <1323200328.11696.32.camel@constitution.bos.jonmasters.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111206210234.GC12640@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1323200328.11696.32.camel@constitution.bos.jonmasters.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 04:02:34PM -0500, J. Bruce Fields wrote:
-> On Tue, Dec 06, 2011 at 05:04:31PM +0300, Stanislav Kinsbursky wrote:
-> > This is a cleanup patch. Some day (hope, soon enough) generic cache_register()
-> > and cache_unregister() will be removed.
+On Tue, Dec 06, 2011 at 07:38:48PM +0000, Jon Masters wrote:
+> On Tue, 2011-12-06 at 19:11 +0000, Will Deacon wrote:
+> > On Tue, Dec 06, 2011 at 06:58:34PM +0000, Jon Masters wrote:
+> > > 
+> > > Was there ever any additional followup on this topic?
+> > 
+> > Yup, check commit df77abca ("ARM: 7099/1: futex: preserve oldval in SMP
+> > __futex_atomic_op"). It should be in stable for all affected kernels too.
 > 
-> OK, applying for 3.3.--b.
+> Yea, Mark flagged that patch and it was included into the kernels on our
+> boards here. So far, it seems to be making some improvement, though we
+> still have stuck boards and weird signal issues sometimes. We are trying
+> to collect more data when this occurs (I gave the engineer concerned
+> some instructions around collecting data that will be of use). So I just
+> wondered if you saw any more futex issues, or if this is believe fixed.
 
-Whoops, no I'm not, these make modular builds fail.  Looks like we need
-a couple EXPORT_SYMBOL_GPL()'s.  Could you resend?
+I think this is fixed, but that doesn't mean there aren't bugs lurking
+elsewhere that I'm simply not seeing. If you do get any diagnostics or
+concrete debug information, please CC me on any posts to the list.
 
---b.
+Cheers,
 
-> 
-> > 
-> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> > 
-> > ---
-> >  fs/nfsd/export.c    |   10 +++++-----
-> >  fs/nfsd/nfs4idmap.c |   11 ++++++-----
-> >  2 files changed, 11 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-> > index 62f3b90..d1feeef 100644
-> > --- a/fs/nfsd/export.c
-> > +++ b/fs/nfsd/export.c
-> > @@ -1226,12 +1226,12 @@ nfsd_export_init(void)
-> >  	int rv;
-> >  	dprintk("nfsd: initializing export module.\n");
-> >  
-> > -	rv = cache_register(&svc_export_cache);
-> > +	rv = cache_register_net(&svc_export_cache, &init_net);
-> >  	if (rv)
-> >  		return rv;
-> > -	rv = cache_register(&svc_expkey_cache);
-> > +	rv = cache_register_net(&svc_expkey_cache, &init_net);
-> >  	if (rv)
-> > -		cache_unregister(&svc_export_cache);
-> > +		cache_unregister_net(&svc_export_cache, &init_net);
-> >  	return rv;
-> >  
-> >  }
-> > @@ -1255,8 +1255,8 @@ nfsd_export_shutdown(void)
-> >  
-> >  	dprintk("nfsd: shutting down export module.\n");
-> >  
-> > -	cache_unregister(&svc_expkey_cache);
-> > -	cache_unregister(&svc_export_cache);
-> > +	cache_unregister_net(&svc_expkey_cache, &init_net);
-> > +	cache_unregister_net(&svc_export_cache, &init_net);
-> >  	svcauth_unix_purge();
-> >  
-> >  	dprintk("nfsd: export shutdown complete.\n");
-> > diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-> > index 55780a2..9409627 100644
-> > --- a/fs/nfsd/nfs4idmap.c
-> > +++ b/fs/nfsd/nfs4idmap.c
-> > @@ -36,6 +36,7 @@
-> >  #include <linux/seq_file.h>
-> >  #include <linux/sched.h>
-> >  #include <linux/slab.h>
-> > +#include <net/net_namespace.h>
-> >  #include "idmap.h"
-> >  #include "nfsd.h"
-> >  
-> > @@ -466,20 +467,20 @@ nfsd_idmap_init(void)
-> >  {
-> >  	int rv;
-> >  
-> > -	rv = cache_register(&idtoname_cache);
-> > +	rv = cache_register_net(&idtoname_cache, &init_net);
-> >  	if (rv)
-> >  		return rv;
-> > -	rv = cache_register(&nametoid_cache);
-> > +	rv = cache_register_net(&nametoid_cache, &init_net);
-> >  	if (rv)
-> > -		cache_unregister(&idtoname_cache);
-> > +		cache_unregister_net(&idtoname_cache, &init_net);
-> >  	return rv;
-> >  }
-> >  
-> >  void
-> >  nfsd_idmap_shutdown(void)
-> >  {
-> > -	cache_unregister(&idtoname_cache);
-> > -	cache_unregister(&nametoid_cache);
-> > +	cache_unregister_net(&idtoname_cache, &init_net);
-> > +	cache_unregister_net(&nametoid_cache, &init_net);
-> >  }
-> >  
-> >  static int
-> > 
+Will
