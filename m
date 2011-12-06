@@ -1,52 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333Ab1LFR4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 12:56:53 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54606 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab1LFR4v convert rfc822-to-8bit (ORCPT
+	id S1752557Ab1LFSAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:00:40 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:59908 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab1LFSAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 12:56:51 -0500
-Message-ID: <1323194173.32012.83.camel@twins>
-Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
- error
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Ben Hutchings <ben@decadent.org.uk>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
-        linux-tip-commits@vger.kernel.org
-Date: Tue, 06 Dec 2011 18:56:13 +0100
-In-Reply-To: <20111206175558.3215907c@lxorguk.ukuu.org.uk>
-References: <1319773015.6759.30.camel@deadeye>
-	 <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
-	 <1323185640.7454.269.camel@deadeye> <1323193731.32012.81.camel@twins>
-	 <20111206175558.3215907c@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
+	Tue, 6 Dec 2011 13:00:39 -0500
+Date: Tue, 06 Dec 2011 12:57:43 -0500 (EST)
+Message-Id: <20111206.125743.160144181036493070.davem@davemloft.net>
+To: panweiping3@gmail.com
+Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net] ipv6:export nd_tbl
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <a46bd31bb9a4876e97f96e82d399a26506646d04.1323154266.git.panweiping3@gmail.com>
+References: <a46bd31bb9a4876e97f96e82d399a26506646d04.1323154266.git.panweiping3@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 06 Dec 2011 09:57:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-06 at 17:55 +0000, Alan Cox wrote:
-> On Tue, 06 Dec 2011 18:48:51 +0100
-> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+From: Weiping Pan <panweiping3@gmail.com>
+Date: Tue,  6 Dec 2011 14:52:41 +0800
+
+> A customer wants to use nd_tbl in his kernel module,
+> the easiest way is to export nd_tbl, just as arp_tbl.
 > 
-> > On Tue, 2011-12-06 at 15:34 +0000, Ben Hutchings wrote:
-> > > If you disagree with a patch, do not silently drop parts of it.  I
-> > > demand that you remove my 'Signed-off-by' as this is not the change I
-> > > submitted. 
-> > 
-> > The easy solution is that I never take patches from you again, ever.
-> > Consider that done. I'll let Ingo see if he can remove your SOB.
+> There were some requests to export nd_tbl, like:
+> http://marc.info/?l=netfilter-devel&m=111416950824614&w=2
+> http://marc.info/?l=linux-netdev&m=110715893206991&w=2
 > 
-> In which case you are presumably ceasing to be a maintainer for that
-> code ? Your statement above appears to be inconsistent with the rôle of a
-> maintainer.
+> But they were all rejected.
+> I want to know the reason why can't nd_tbl be exported just as arp_tbl,
+> and how can we look up nd_tbl without exporting it.
+> 
+> Signed-off-by: Weiping Pan <panweiping3@gmail.com>
 
-There's plenty people who have various other people blacklisted in the
-procmail. My blacklist is shorter than some, Merkey isn't actually on it
-for instance.
-
-
+We do not accomodate out-of-tree code, arp_tbl is exported because
+modules (such as ATM clip) in the upstream tree use that symbol.
