@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab1LFKct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 05:32:49 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:51848 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933146Ab1LFKcq (ORCPT
+	id S933219Ab1LFKc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:32:57 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38683 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933146Ab1LFKcy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 05:32:46 -0500
-From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH][NET] several cleanups and bugfixes for fec.c: make FEC driver buildable as module
-Date: Tue,  6 Dec 2011 11:27:16 +0100
-Message-Id: <7338d82895fef133b2593d950ea4638887ed7a32.1323163127.git.LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <04c11563fee748562d7b53d5e5b3c5cf37fef200.1323163127.git.LW@KARO-electronics.de>
-References: <cover.1323163127.git.LW@KARO-electronics.de>
- <bd4415514fa0b40ece04d56b3ac4f549e79d87d7.1323163127.git.LW@KARO-electronics.de>
- <6c28f25c5c6d2f88d0985ce361c5e16f19db27d0.1323163127.git.LW@KARO-electronics.de>
- <0b92136d69e509a6ce49b526e1834f0ec90b04a4.1323163127.git.LW@KARO-electronics.de>
- <6d1e5cdcbfc48df864ec9e0939645c0e95389d2a.1323163127.git.LW@KARO-electronics.de>
- <55b78c1766da5b0d0d679f5eae3fb9fc74a6ceef.1323163127.git.LW@KARO-electronics.de>
- <d6f4de9e4cfb393754b42815a2ef1a59c96eab83.1323163127.git.LW@KARO-electronics.de>
- <04c11563fee748562d7b53d5e5b3c5cf37fef200.1323163127.git.LW@KARO-electronics.de>
-In-Reply-To: <cover.1323163127.git.LW@KARO-electronics.de>
-References: <cover.1323163127.git.LW@KARO-electronics.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Tue, 6 Dec 2011 05:32:54 -0500
+Message-ID: <1323167527.32012.61.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
+ involving interrupt disabling
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Date: Tue, 06 Dec 2011 11:32:07 +0100
+In-Reply-To: <20111206100537.GA5203@zhy>
+References: <20111203183417.GA18914@linux.vnet.ibm.com>
+	 <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20111205091924.GA28117@zhy> <20111205164505.GB2326@linux.vnet.ibm.com>
+	 <20111206012635.GA32498@zhy> <1323165152.32012.51.camel@twins>
+	 <20111206100537.GA5203@zhy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-12-06 at 18:05 +0800, Yong Zhang wrote:
+> On Tue, Dec 06, 2011 at 10:52:32AM +0100, Peter Zijlstra wrote:
+> > On Tue, 2011-12-06 at 09:26 +0800, Yong Zhang wrote:
+> > 
+> > > Yeah, because we call might_sleep() in rt_mutex_lock() unconditionally.
+> > > But in this case the 'BUG: sleeping function called from invalid context
+> > > at *' is obviously false positive.
+> > 
+> > Why can't this mutex acquisition not block?
+> 
+> It could block. The issue it's legal to call rt_mutex_lock() with
+> irqs disabled and we don't want might_sleep() bite us on this
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/net/ethernet/freescale/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Of course its legal (nobody will arrest you for it), but its also bloody
+horrid.
 
-diff --git a/drivers/net/ethernet/freescale/Kconfig b/drivers/net/ethernet/freescale/Kconfig
-index c520cfd..b02e315 100644
---- a/drivers/net/ethernet/freescale/Kconfig
-+++ b/drivers/net/ethernet/freescale/Kconfig
-@@ -21,7 +21,7 @@ config NET_VENDOR_FREESCALE
- if NET_VENDOR_FREESCALE
- 
- config FEC
--	bool "FEC ethernet controller (of ColdFire and some i.MX CPUs)"
-+	tristate "FEC ethernet controller (of ColdFire and some i.MX CPUs)"
- 	depends on (M523x || M527x || M5272 || M528x || M520x || M532x || \
- 		   ARCH_MXC || ARCH_MXS)
- 	select PHYLIB
--- 
-1.5.6.5
+> special case. When we are going to sleep, we re-enable irq in
+> __rt_mutex_slowlock().
+> 
+> > 
+> > > Maybe we could teach might_sleep() about this special case?
+> > 
+> > Sounds horrid.
+> 
+> Maybe, any alternative?
 
+Maybe someone explain this mess first?
