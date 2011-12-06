@@ -1,41 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933395Ab1LFLkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 06:40:49 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38925
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933231Ab1LFLkq (ORCPT
+	id S933386Ab1LFLmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 06:42:09 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:54574 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933231Ab1LFLmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 06:40:46 -0500
-Date: Tue, 6 Dec 2011 06:40:41 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: Re: [PATCH 5/5 resend] Documentation: Correct s_umount state for
- freeze_fs/unfreeze_fs
-Message-ID: <20111206114041.GB4439@infradead.org>
-References: <1323118489-16326-1-git-send-email-kamal@canonical.com>
- <1323118489-16326-6-git-send-email-kamal@canonical.com>
+	Tue, 6 Dec 2011 06:42:08 -0500
+X-IronPort-AV: E=Sophos;i="4.71,304,1320624000"; 
+   d="scan'208";a="9313514"
+Subject: Re: [PATCH 1/2] xen/granttable: Support sub-page grants
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: "annie.li@oracle.com" <annie.li@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>
+Date: Tue, 6 Dec 2011 11:42:06 +0000
+In-Reply-To: <1323168999-4434-1-git-send-email-annie.li@oracle.com>
+References: <4EDDF41E.8070200@oracle.com>
+	 <1323168999-4434-1-git-send-email-annie.li@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323171726.23681.65.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323118489-16326-6-git-send-email-kamal@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good,
+On Tue, 2011-12-06 at 10:56 +0000, annie.li@oracle.com wrote:
+> From: Annie Li <annie.li@oracle.com>
+> 
+>     -- They can't be used to map the page (so can only be used in a GNTTABOP_copy
+>        hypercall).
+>     -- It's possible to grant access with a finer granularity than whole pages.
+>     -- Xen guarantees that they can be revoked quickly (a normal map grant can
+>        only be revoked with the cooperation of the domain which has been granted
+>        access).
+> 
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Almost all my comments will apply to the transitive grants patch too.
+
+> Signed-off-by: Annie Li <annie.li@oracle.com>
+> ---
+>  drivers/xen/grant-table.c |   41 +++++++++++++++++++++++++++++++++++++++++
+>  include/xen/grant_table.h |   13 +++++++++++++
+>  2 files changed, 54 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index bd325fd..7a0f4d1 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -261,6 +261,47 @@ int gnttab_grant_foreign_access(domid_t domid, unsigned long frame,
+>  }
+>  EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access);
+>  
+> +int gnttab_grant_foreign_access_subpage_v2(domid_t domid, unsigned long frame,
+> +					   int flags, unsigned page_off,
+> +					   unsigned length)
+
+Please drop the v2 suffixes on the public functions.
+
+Any reason not to route these via the ops table for consistency with all
+the other ops? Then your availability check becomes a test for NULL fn
+pointer rather than a specific version.
+
+> +{
+> +	int ref;
+> +
+> +	ref = get_free_entries(1);
+> +	if (unlikely(ref < 0))
+> +		return -ENOSPC;
+> +
+> +	gnttab_grant_foreign_access_ref_subpage_v2(ref, domid, frame, flags,
+> +						   page_off, length);
+> +
+> +	return ref;
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_subpage_v2);
+> +
+> +void gnttab_grant_foreign_access_ref_subpage_v2(grant_ref_t ref, domid_t domid,
+> +						unsigned long frame, int flags,
+> +						unsigned page_off,
+> +						unsigned length)
+> +{
+> +	BUG_ON(flags & (GTF_accept_transfer | GTF_reading |
+> +			GTF_writing | GTF_transitive));
+> +	BUG_ON(grant_table_version == 1);
+
+Returning -Esomething might be less drastic? ENOSYS perhaps?
+
+> +	gnttab_shared.v2[ref].sub_page.frame = frame;
+> +	gnttab_shared.v2[ref].sub_page.page_off = page_off;
+> +	gnttab_shared.v2[ref].sub_page.length = length;
+> +	gnttab_shared.v2[ref].hdr.domid = domid;
+> +	wmb();
+> +	gnttab_shared.v2[ref].hdr.flags =
+> +				GTF_permit_access | GTF_sub_page | flags;
+> +}
+> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_ref_subpage_v2);
+> +
+> +bool gnttab_subpage_trans_grants_available(void)
+> +{
+> +	return grant_table_version == 2;
+> +}
+
+It's not clear this adds anything over and above letting the user query
+the grant table version. It's hard to tell since there are no users
+presented here though. Perhaps separate subpage and transitive functions
+would be cleaner?
+
+> +EXPORT_SYMBOL_GPL(gnttab_subpage_trans_grants_available);
+> +
+>  static int gnttab_query_foreign_access_v1(grant_ref_t ref)
+>  {
+>  	return gnttab_shared.v1[ref].flags & (GTF_reading|GTF_writing);
+> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+> index fea4954..7e43652 100644
+> --- a/include/xen/grant_table.h
+> +++ b/include/xen/grant_table.h
+> @@ -62,6 +62,15 @@ int gnttab_resume(void);
+>  
+>  int gnttab_grant_foreign_access(domid_t domid, unsigned long frame,
+>  				int readonly);
+> +int gnttab_grant_foreign_access_subpage_v2(domid_t domid, unsigned long frame,
+> +					   int flags, unsigned page_off,
+> +					   unsigned length);
+
+> +
+> +/*
+> + * Are sub-page or transitive grants available on this version of Xen?  Returns
+> + * true if they are, and false if they're not.
+> + */
+> +bool gnttab_subpage_trans_grants_available(void);
+>  
+>  /*
+>   * End access through the given grant reference, iff the grant entry is no
+> @@ -108,6 +117,10 @@ void gnttab_cancel_free_callback(struct gnttab_free_callback *callback);
+>  
+>  void gnttab_grant_foreign_access_ref(grant_ref_t ref, domid_t domid,
+>  				     unsigned long frame, int readonly);
+> +void gnttab_grant_foreign_access_ref_subpage_v2(grant_ref_t ref, domid_t domid,
+> +						unsigned long frame, int flags,
+> +						unsigned page_off,
+> +						unsigned length);
+>  
+>  void gnttab_grant_foreign_transfer_ref(grant_ref_t, domid_t domid,
+>  				       unsigned long pfn);
+
+
