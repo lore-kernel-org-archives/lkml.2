@@ -1,182 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933090Ab1LFJoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:44:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34793 "EHLO
+	id S933087Ab1LFJoq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:44:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34804 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932959Ab1LFJn6 (ORCPT
+	with ESMTP id S932959Ab1LFJop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:43:58 -0500
-Date: Tue, 6 Dec 2011 01:43:32 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-515yhoatehd3gza7we9fapaa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, gleb@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, gleb@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+	Tue, 6 Dec 2011 04:44:45 -0500
+Date: Tue, 6 Dec 2011 01:44:17 -0800
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-1e2ad28f80b4e155678259238f51edebc19e4014@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, robert.richter@amd.com, a.p.zijlstra@chello.nl,
         tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, robert.richter@amd.com,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1321616122-1533-2-git-send-email-robert.richter@amd.com>
+References: <1321616122-1533-2-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Avoid a useless pmu_disable() in the perf-tick
-Git-Commit-ID: 0f5a2601284237e2ba089389fd75d67f77626cef
+Subject: [tip:perf/core] perf, x86: Implement event scheduler helper functions
+Git-Commit-ID: 1e2ad28f80b4e155678259238f51edebc19e4014
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:43:37 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:44:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0f5a2601284237e2ba089389fd75d67f77626cef
-Gitweb:     http://git.kernel.org/tip/0f5a2601284237e2ba089389fd75d67f77626cef
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Wed, 16 Nov 2011 14:38:16 +0100
+Commit-ID:  1e2ad28f80b4e155678259238f51edebc19e4014
+Gitweb:     http://git.kernel.org/tip/1e2ad28f80b4e155678259238f51edebc19e4014
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Fri, 18 Nov 2011 12:35:21 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 08:33:52 +0100
+CommitDate: Tue, 6 Dec 2011 08:33:54 +0100
 
-perf: Avoid a useless pmu_disable() in the perf-tick
+perf, x86: Implement event scheduler helper functions
 
-Gleb writes:
+This patch introduces x86 perf scheduler code helper functions. We
+need this to later add more complex functionality to support
+overlapping counter constraints (next patch).
 
- > Currently pmu is disabled and re-enabled on each timer interrupt even
- > when no rotation or frequency adjustment is needed. On Intel CPU this
- > results in two writes into PERF_GLOBAL_CTRL MSR per tick. On bare metal
- > it does not cause significant slowdown, but when running perf in a virtual
- > machine it leads to 20% slowdown on my machine.
+The algorithm is modified so that the range of weight values is now
+generated from the constraints. There shouldn't be other functional
+changes.
 
-Cure this by keeping a perf_event_context::nr_freq counter that counts the
-number of active events that require frequency adjustments and use this in a
-similar fashion to the already existing nr_events != nr_active test in
-perf_rotate_context().
+With the helper functions the scheduler is controlled. There are
+functions to initialize, traverse the event list, find unused counters
+etc. The scheduler keeps its own state.
 
-By being able to exclude both rotation and frequency adjustments a-priory for
-the common case we can avoid the otherwise superfluous PMU disable.
+V3:
+* Added macro for_each_set_bit_cont().
+* Changed functions interfaces of perf_sched_find_counter() and
+  perf_sched_next_event() to use bool as return value.
+* Added some comments to make code better understandable.
 
-Suggested-by: Gleb Natapov <gleb@redhat.com>
+V4:
+* Fix broken event assignment if weight of the first event is not
+  wmin (perf_sched_init()).
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-515yhoatehd3gza7we9fapaa@git.kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1321616122-1533-2-git-send-email-robert.richter@amd.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/perf_event.h |    1 +
- kernel/events/core.c       |   48 +++++++++++++++++++++++++++++--------------
- 2 files changed, 33 insertions(+), 16 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |  185 +++++++++++++++++++++++++++-----------
+ include/linux/bitops.h           |   10 ++-
+ 2 files changed, 140 insertions(+), 55 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index b1f8912..cb44c9e 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -890,6 +890,7 @@ struct perf_event_context {
- 	int				nr_active;
- 	int				is_active;
- 	int				nr_stat;
-+	int				nr_freq;
- 	int				rotate_disable;
- 	atomic_t			refcount;
- 	struct task_struct		*task;
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index a355ffb..b3fed52 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1130,6 +1130,8 @@ event_sched_out(struct perf_event *event,
- 	if (!is_software_event(event))
- 		cpuctx->active_oncpu--;
- 	ctx->nr_active--;
-+	if (event->attr.freq && event->attr.sample_freq)
-+		ctx->nr_freq--;
- 	if (event->attr.exclusive || !cpuctx->active_oncpu)
- 		cpuctx->exclusive = 0;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 2bda212..5a469d3 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -484,18 +484,145 @@ static inline int is_x86_event(struct perf_event *event)
+ 	return event->pmu == &pmu;
  }
-@@ -1407,6 +1409,8 @@ event_sched_in(struct perf_event *event,
- 	if (!is_software_event(event))
- 		cpuctx->active_oncpu++;
- 	ctx->nr_active++;
-+	if (event->attr.freq && event->attr.sample_freq)
-+		ctx->nr_freq++;
  
- 	if (event->attr.exclusive)
- 		cpuctx->exclusive = 1;
-@@ -2329,6 +2333,9 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
- 	u64 interrupts, now;
- 	s64 delta;
- 
-+	if (!ctx->nr_freq)
-+		return;
++/*
++ * Event scheduler state:
++ *
++ * Assign events iterating over all events and counters, beginning
++ * with events with least weights first. Keep the current iterator
++ * state in struct sched_state.
++ */
++struct sched_state {
++	int	weight;
++	int	event;		/* event index */
++	int	counter;	/* counter index */
++	int	unassigned;	/* number of events to be assigned left */
++	unsigned long used[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
++};
 +
- 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
- 		if (event->state != PERF_EVENT_STATE_ACTIVE)
- 			continue;
-@@ -2384,12 +2391,14 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
++struct perf_sched {
++	int			max_weight;
++	int			max_events;
++	struct event_constraint	**constraints;
++	struct sched_state	state;
++};
++
++/*
++ * Initialize interator that runs through all events and counters.
++ */
++static void perf_sched_init(struct perf_sched *sched, struct event_constraint **c,
++			    int num, int wmin, int wmax)
++{
++	int idx;
++
++	memset(sched, 0, sizeof(*sched));
++	sched->max_events	= num;
++	sched->max_weight	= wmax;
++	sched->constraints	= c;
++
++	for (idx = 0; idx < num; idx++) {
++		if (c[idx]->weight == wmin)
++			break;
++	}
++
++	sched->state.event	= idx;		/* start with min weight */
++	sched->state.weight	= wmin;
++	sched->state.unassigned	= num;
++}
++
++/*
++ * Select a counter for the current event to schedule. Return true on
++ * success.
++ */
++static bool perf_sched_find_counter(struct perf_sched *sched)
++{
++	struct event_constraint *c;
++	int idx;
++
++	if (!sched->state.unassigned)
++		return false;
++
++	if (sched->state.event >= sched->max_events)
++		return false;
++
++	c = sched->constraints[sched->state.event];
++
++	/* Grab the first unused counter starting with idx */
++	idx = sched->state.counter;
++	for_each_set_bit_cont(idx, c->idxmsk, X86_PMC_IDX_MAX) {
++		if (!__test_and_set_bit(idx, sched->state.used))
++			break;
++	}
++	sched->state.counter = idx;
++
++	if (idx >= X86_PMC_IDX_MAX)
++		return false;
++
++	return true;
++}
++
++/*
++ * Go through all unassigned events and find the next one to schedule.
++ * Take events with the least weight first. Return true on success.
++ */
++static bool perf_sched_next_event(struct perf_sched *sched)
++{
++	struct event_constraint *c;
++
++	if (!sched->state.unassigned || !--sched->state.unassigned)
++		return false;
++
++	do {
++		/* next event */
++		sched->state.event++;
++		if (sched->state.event >= sched->max_events) {
++			/* next weight */
++			sched->state.event = 0;
++			sched->state.weight++;
++			if (sched->state.weight > sched->max_weight)
++				return false;
++		}
++		c = sched->constraints[sched->state.event];
++	} while (c->weight != sched->state.weight);
++
++	sched->state.counter = 0;	/* start with first counter */
++
++	return true;
++}
++
++/*
++ * Assign a counter for each event.
++ */
++static int perf_assign_events(struct event_constraint **constraints, int n,
++			      int wmin, int wmax, int *assign)
++{
++	struct perf_sched sched;
++
++	perf_sched_init(&sched, constraints, n, wmin, wmax);
++
++	do {
++		if (!perf_sched_find_counter(&sched))
++			break;	/* failed */
++		if (assign)
++			assign[sched.state.event] = sched.state.counter;
++	} while (perf_sched_next_event(&sched));
++
++	return sched.state.unassigned;
++}
++
+ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
  {
- 	u64 interval = (u64)cpuctx->jiffies_interval * TICK_NSEC;
- 	struct perf_event_context *ctx = NULL;
--	int rotate = 0, remove = 1;
-+	int rotate = 0, remove = 1, freq = 0;
+ 	struct event_constraint *c, *constraints[X86_PMC_IDX_MAX];
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+-	int i, j, w, wmax, num = 0;
++	int i, wmin, wmax, num = 0;
+ 	struct hw_perf_event *hwc;
  
- 	if (cpuctx->ctx.nr_events) {
- 		remove = 0;
- 		if (cpuctx->ctx.nr_events != cpuctx->ctx.nr_active)
- 			rotate = 1;
-+		if (cpuctx->ctx.nr_freq)
-+			freq = 1;
+ 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+ 
+-	for (i = 0; i < n; i++) {
++	for (i = 0, wmin = X86_PMC_IDX_MAX, wmax = 0; i < n; i++) {
+ 		c = x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
+ 		constraints[i] = c;
++		wmin = min(wmin, c->weight);
++		wmax = max(wmax, c->weight);
  	}
  
- 	ctx = cpuctx->task_ctx;
-@@ -2397,33 +2406,40 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
- 		remove = 0;
- 		if (ctx->nr_events != ctx->nr_active)
- 			rotate = 1;
-+		if (ctx->nr_freq)
-+			freq = 1;
+ 	/*
+@@ -521,59 +648,11 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ 		if (assign)
+ 			assign[i] = hwc->idx;
  	}
- 
-+	if (!rotate && !freq)
-+		goto done;
-+
- 	perf_ctx_lock(cpuctx, cpuctx->task_ctx);
- 	perf_pmu_disable(cpuctx->ctx.pmu);
--	perf_ctx_adjust_freq(&cpuctx->ctx, interval);
--	if (ctx)
--		perf_ctx_adjust_freq(ctx, interval);
- 
--	if (!rotate)
+-	if (i == n)
 -		goto done;
-+	if (freq) {
-+		perf_ctx_adjust_freq(&cpuctx->ctx, interval);
-+		if (ctx)
-+			perf_ctx_adjust_freq(ctx, interval);
-+	}
  
--	cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
--	if (ctx)
--		ctx_sched_out(ctx, cpuctx, EVENT_FLEXIBLE);
-+	if (rotate) {
-+		cpu_ctx_sched_out(cpuctx, EVENT_FLEXIBLE);
-+		if (ctx)
-+			ctx_sched_out(ctx, cpuctx, EVENT_FLEXIBLE);
+-	/*
+-	 * begin slow path
+-	 */
++	/* slow path */
++	if (i != n)
++		num = perf_assign_events(constraints, n, wmin, wmax, assign);
  
--	rotate_ctx(&cpuctx->ctx);
--	if (ctx)
--		rotate_ctx(ctx);
-+		rotate_ctx(&cpuctx->ctx);
-+		if (ctx)
-+			rotate_ctx(ctx);
-+
-+		perf_event_sched_in(cpuctx, ctx, current);
-+	}
- 
--	perf_event_sched_in(cpuctx, ctx, current);
-+	perf_pmu_enable(cpuctx->ctx.pmu);
-+	perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
- 
- done:
- 	if (remove)
- 		list_del_init(&cpuctx->rotation_list);
+-	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
 -
--	perf_pmu_enable(cpuctx->ctx.pmu);
--	perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
- }
+-	/*
+-	 * weight = number of possible counters
+-	 *
+-	 * 1    = most constrained, only works on one counter
+-	 * wmax = least constrained, works on any counter
+-	 *
+-	 * assign events to counters starting with most
+-	 * constrained events.
+-	 */
+-	wmax = x86_pmu.num_counters;
+-
+-	/*
+-	 * when fixed event counters are present,
+-	 * wmax is incremented by 1 to account
+-	 * for one more choice
+-	 */
+-	if (x86_pmu.num_counters_fixed)
+-		wmax++;
+-
+-	for (w = 1, num = n; num && w <= wmax; w++) {
+-		/* for each event */
+-		for (i = 0; num && i < n; i++) {
+-			c = constraints[i];
+-			hwc = &cpuc->event_list[i]->hw;
+-
+-			if (c->weight != w)
+-				continue;
+-
+-			for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
+-				if (!test_bit(j, used_mask))
+-					break;
+-			}
+-
+-			if (j == X86_PMC_IDX_MAX)
+-				break;
+-
+-			__set_bit(j, used_mask);
+-
+-			if (assign)
+-				assign[i] = j;
+-			num--;
+-		}
+-	}
+-done:
+ 	/*
+ 	 * scheduling failed or is just a simulation,
+ 	 * free resources if necessary
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index a3ef66a..3c1063a 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -22,8 +22,14 @@ extern unsigned long __sw_hweight64(__u64 w);
+ #include <asm/bitops.h>
  
- void perf_event_task_tick(void)
+ #define for_each_set_bit(bit, addr, size) \
+-	for ((bit) = find_first_bit((addr), (size)); \
+-	     (bit) < (size); \
++	for ((bit) = find_first_bit((addr), (size));		\
++	     (bit) < (size);					\
++	     (bit) = find_next_bit((addr), (size), (bit) + 1))
++
++/* same as for_each_set_bit() but use bit as value to start with */
++#define for_each_set_bit_cont(bit, addr, size) \
++	for ((bit) = find_next_bit((addr), (size), (bit));	\
++	     (bit) < (size);					\
+ 	     (bit) = find_next_bit((addr), (size), (bit) + 1))
+ 
+ static __inline__ int get_bitmask_order(unsigned int count)
