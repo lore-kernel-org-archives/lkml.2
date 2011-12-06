@@ -1,123 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1LFUNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 15:13:15 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:61757 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab1LFUNO (ORCPT
+	id S1753530Ab1LFUPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 15:15:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38151 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab1LFUPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 15:13:14 -0500
-Date: Tue, 6 Dec 2011 12:13:10 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>, Mike Galbraith <efault@gmx.de>
-cc: Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [patch-final] Re: patch] cpusets, cgroups: disallow attaching
- kthreadd
-In-Reply-To: <alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
-References: <1316758874.7393.2.camel@marge.simson.net> <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net> <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com> <1316770936.6641.11.camel@marge.simson.net>
- <1316775204.7562.9.camel@marge.simson.net> <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com> <1316788392.6544.33.camel@marge.simson.net> <1318224892.6161.45.camel@marge.simson.net> <1318233815.6527.5.camel@marge.simson.net>
- <1318925436.9641.23.camel@marge.simson.net> <CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com> <1319001860.6222.34.camel@marge.simson.net> <alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
- <alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 6 Dec 2011 15:15:36 -0500
+Date: Tue, 6 Dec 2011 12:14:58 -0800
+From: tip-bot for Yong Zhang <yong.zhang0@gmail.com>
+Message-ID: <tip-a33caeb118198286309859f014c0662f3ed54ed4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, vegard.nossum@gmail.com,
+        sergey.senozhatsky@gmail.com, bp@alien8.de, stable@kernel.org,
+        tj@kernel.org, tglx@linutronix.de, yong.zhang0@gmail.com,
+        rientjes@google.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, vegard.nossum@gmail.com,
+        sergey.senozhatsky@gmail.com, bp@alien8.de, stable@kernel.org,
+        tj@kernel.org, yong.zhang0@gmail.com, tglx@linutronix.de,
+        rientjes@google.com, mingo@elte.hu
+In-Reply-To: <20111109080451.GB8124@zhy>
+References: <20111109080451.GB8124@zhy>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
+Git-Commit-ID: a33caeb118198286309859f014c0662f3ed54ed4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 12:15:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Nov 2011, David Rientjes wrote:
+Commit-ID:  a33caeb118198286309859f014c0662f3ed54ed4
+Gitweb:     http://git.kernel.org/tip/a33caeb118198286309859f014c0662f3ed54ed4
+Author:     Yong Zhang <yong.zhang0@gmail.com>
+AuthorDate: Wed, 9 Nov 2011 16:04:51 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 6 Dec 2011 18:18:13 +0100
 
-> On Wed, 26 Oct 2011, David Rientjes wrote:
-> 
-> > On Wed, 19 Oct 2011, Mike Galbraith wrote:
-> > 
-> > > cpusets, cgroups: disallow attaching kthreadd
-> > > 
-> > > Allowing kthreadd to be moved to a non-root group makes no sense, it being
-> > > a global resource, and needlessly leads unsuspecting users toward trouble.
-> > > 
-> > > 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
-> > > allocated is not schedulable.  Simple user error, but harmful to the box.
-> > > 
-> > > 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
-> > > rendering the cpuset immortal.
-> > > 
-> > > Save the user some unexpected trouble, just say no.
-> > > 
-> > > Signed-off-by: Mike Galbraith <efault@gmx.de>
-> > > Acked-by: David Rientjes <rientjes@google.com>
-> > > Acked-by: Paul Menage <paul@paulmenage.org>
-> > > 
-> > 
-> > Let's add Andrew to the cc so we can get it in -mm, I haven't seen it hit 
-> > linux-next yet.
-> > 
-> 
-> Ping?  Still missing from -mm and linux-next.
-> 
+lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
 
-Ping #2?
+Since commit f59de89 ("lockdep: Clear whole lockdep_map on initialization"),
+lockdep_init_map() will clear all the struct. But it will break
+lock_set_class()/lock_set_subclass(). A typical race condition
+is like below:
 
-> > > ---
-> > >  kernel/cpuset.c |    6 ++++--
-> > >  kernel/sched.c  |   10 ++++++++++
-> > >  2 files changed, 14 insertions(+), 2 deletions(-)
-> > > 
-> > > Index: linux-3.0-tip/kernel/cpuset.c
-> > > ===================================================================
-> > > --- linux-3.0-tip.orig/kernel/cpuset.c
-> > > +++ linux-3.0-tip/kernel/cpuset.c
-> > > @@ -59,6 +59,7 @@
-> > >  #include <linux/mutex.h>
-> > >  #include <linux/workqueue.h>
-> > >  #include <linux/cgroup.h>
-> > > +#include <linux/kthread.h>
-> > >  
-> > >  /*
-> > >   * Workqueue for cpuset related tasks.
-> > > @@ -1382,9 +1383,10 @@ static int cpuset_can_attach(struct cgro
-> > >  	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
-> > >  	 * applicable for such threads.  This prevents checking for success of
-> > >  	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
-> > > -	 * be changed.
-> > > +	 * be changed.  We also disallow attaching kthreadd, to prevent it's
-> > > +	 * child from becoming trapped should it then acquire PF_THREAD_BOUND.
-> > >  	 */
-> > > -	if (tsk->flags & PF_THREAD_BOUND)
-> > > +	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
-> > >  		return -EINVAL;
-> > >  
-> > >  	return 0;
-> > > Index: linux-3.0-tip/kernel/sched.c
-> > > ===================================================================
-> > > --- linux-3.0-tip.orig/kernel/sched.c
-> > > +++ linux-3.0-tip/kernel/sched.c
-> > > @@ -71,6 +71,7 @@
-> > >  #include <linux/ctype.h>
-> > >  #include <linux/ftrace.h>
-> > >  #include <linux/slab.h>
-> > > +#include <linux/kthread.h>
-> > >  
-> > >  #include <asm/tlb.h>
-> > >  #include <asm/irq_regs.h>
-> > > @@ -9141,6 +9142,15 @@ cpu_cgroup_destroy(struct cgroup_subsys
-> > >  static int
-> > >  cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-> > >  {
-> > > +	/*
-> > > +	 * kthreadd can fork workers for an RT workqueue in a cgroup
-> > > +	 * which may or may not have rt_runtime allocated.  Just say no,
-> > > +	 * as attaching a global resource to a non-root group  doesn't
-> > > +	 * make any sense anyway.
-> > > +	 */
-> > > +	if (tsk == kthreadd_task)
-> > > +		return -EINVAL;
-> > > +
-> > >  #ifdef CONFIG_RT_GROUP_SCHED
-> > >  	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
-> > >  		return -EINVAL;
-> 
+     CPU A                                   CPU B
+lock_set_subclass(lockA);
+ lock_set_class(lockA);
+   lockdep_init_map(lockA);
+     /* lockA->name is cleared */
+     memset(lockA);
+                                     __lock_acquire(lockA);
+                                       /* lockA->class_cache[] is cleared */
+                                       register_lock_class(lockA);
+                                         look_up_lock_class(lockA);
+                                           WARN_ON_ONCE(class->name !=
+                                                     lock->name);
+
+     lock->name = name;
+
+So restore to what we have done before commit f59de89 but annotate
+->lock with kmemcheck_mark_initialized() to suppress the kmemcheck
+warning reported in commit f59de89.
+
+Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Reported-by: Borislav Petkov <bp@alien8.de>
+Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: <stable@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20111109080451.GB8124@zhy
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/lockdep.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index e69434b..b2e08c9 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -44,6 +44,7 @@
+ #include <linux/stringify.h>
+ #include <linux/bitops.h>
+ #include <linux/gfp.h>
++#include <linux/kmemcheck.h>
+ 
+ #include <asm/sections.h>
+ 
+@@ -2948,7 +2949,12 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
+ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 		      struct lock_class_key *key, int subclass)
+ {
+-	memset(lock, 0, sizeof(*lock));
++	int i;
++
++	kmemcheck_mark_initialized(lock, sizeof(*lock));
++
++	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
++		lock->class_cache[i] = NULL;
+ 
+ #ifdef CONFIG_LOCK_STAT
+ 	lock->cpu = raw_smp_processor_id();
