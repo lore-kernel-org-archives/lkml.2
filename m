@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab1LFQro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:47:44 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:61845 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750846Ab1LFQrn (ORCPT
+	id S1751613Ab1LFQv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:51:29 -0500
+Received: from andromeda.dapyr.net ([206.212.254.10]:60131 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab1LFQv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:47:43 -0500
-Message-ID: <4EDE470D.3070808@6wind.com>
-Date: Tue, 06 Dec 2011 17:47:09 +0100
-From: Damien Millescamps <damien.millescamps@6wind.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: "Eric W . Biederman" <ebiederm@xmission.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Octavian Purdila <tavi@cs.pub.ro>,
-        "David S . Miller" <davem@davemloft.net>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: v6: faster tree-based sysctl implementation
-References: <CAPLs8y9omncDbLE_KNoKOLLbfwHjWYUJX_i7cC4bLiJsyPbtZQ@mail.gmail.com> <CAJL_dMtgP+BqFn3aGVBbGDJ+kMyGiEC_NmDURzh4mU=Jo=qZVA@mail.gmail.com> <CAPLs8y8vhioqc3CPrD7ugmVkR2DjKWNm8+T5j9QQnrxi=BgvdA@mail.gmail.com>
-In-Reply-To: <CAPLs8y8vhioqc3CPrD7ugmVkR2DjKWNm8+T5j9QQnrxi=BgvdA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Dec 2011 11:51:28 -0500
+Date: Tue, 6 Dec 2011 12:49:47 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        x86@kernel.org, Gleb Natapov <gleb@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Xen <xen-devel@lists.xensource.com>, Dave Jiang <dave.jiang@intel.com>,
+        KVM <kvm@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>
+Subject: Re: [Xen-devel] [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM hypervisor to support pv-ticketlocks
+Message-ID: <20111206164947.GA13184@andromeda.dapyr.net>
+References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com> <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com> <4ED760F1.6080804@redhat.com> <4ED7DA85.5080504@linux.vnet.ibm.com> <4EDBB6C2.9050303@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EDBB6C2.9050303@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 03:33 PM, Lucian Adrian Grijincu wrote:
-> On Tue, Dec 6, 2011 at 4:11 PM, Anca Emanuel<anca.emanuel@gmail.com>  wrote:
->> time modprobe dummy numdummies=1000FATAL: Error inserting dummy
->> (/lib/modules/3.2.0-3-generic/kernel/drivers/net/dummy.ko): Operation
->> not permitted
-> Generally when you get "Operation not permitted" you should try with sudo.
-> This is the man-page: http://xkcd.com/149/ :)
->
->
->> What are the practical problems you solve with this ?
->> Name one or more.
->
-> Sysctl uses a slow algorithm: O(N^2) for insertions, O(N) for lookup,
-> with a relatively big constant.
-> The performance is acceptable when N is small, but sometimes it can
-> grow to bigger values.
-> One case where N can grow to very large values is when you add network
-> interfaces.
->
-> Some companies (like IXIACOM which sponsored this work at the
-> beginning of this year) have use-cases in which they need 10^3..10^6
-> network interfaces. The current sysctl implementation is unacceptable
-> for them.
->
-> @Damien Millescamps might have some input on where he needs better
-> sysctl performance as he prompted me to re-send this patch series.
->
-> This algorithm is O(N * logN) for insert and O(logN) for lookup.
->
->
+On Sun, Dec 04, 2011 at 11:36:58PM +0530, Raghavendra K T wrote:
+> On 12/02/2011 01:20 AM, Raghavendra K T wrote:
+> >>Have you tested it on AMD machines? There are some differences in the
+> >>hypercall infrastructure there.
+> >
+> >Yes. 'll test on AMD machine and update on that.
+> >
+> 
+> I tested the code on 64 bit Dual-Core AMD Opteron machine, and it is 
+> working.
 
-A use-case for wanting to be able to create several interfaces is to 
-have a "tunnel" server handling several dynamic point to point connections.
-
-The current implementation dates from the "sysctl cleanup" from Al Viro: 
-commits 734550921e9b7ab924a43aa3d0bd4239dac4fbf1 to 
-ae7edecc9b8810770a8e5cb9a466ea4bdcfa8401, plus some later fixes.
-This implementation was suboptimal, and modifying it necessitates a lot 
-of reworking of the structures used, so the diff is clearly big. Also 
-Lucian took time to add lots of comment to help understanding and using 
-the new implementation, which also explains the amount of modifications 
-in kernel/sysctl.c
-
-For information, the main idea is to implement sysctl, which has a 
-filesystem structure, like most other file system implementation (like 
-sysfs), i.e. using an rb_tree.
-
--- 
-damien
-
-
+I am not that familiar with how KVM does migration, but do you need any
+special flags in QEMU to when migrating a KVM-pv-spinlock enabled guest
+to another machine?
