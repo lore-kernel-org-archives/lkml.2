@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219Ab1LFKc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 05:32:57 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38683 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933146Ab1LFKcy convert rfc822-to-8bit (ORCPT
+	id S933243Ab1LFKdD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:33:03 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:59831
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933146Ab1LFKc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 05:32:54 -0500
-Message-ID: <1323167527.32012.61.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
- involving interrupt disabling
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Date: Tue, 06 Dec 2011 11:32:07 +0100
-In-Reply-To: <20111206100537.GA5203@zhy>
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
-	 <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20111205091924.GA28117@zhy> <20111205164505.GB2326@linux.vnet.ibm.com>
-	 <20111206012635.GA32498@zhy> <1323165152.32012.51.camel@twins>
-	 <20111206100537.GA5203@zhy>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 6 Dec 2011 05:32:59 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVS2MS-01-BNO-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 04/10] perf tools: Fix out-of-bound access to struct perf_session
+Date: Tue, 6 Dec 2011 11:32:34 +0100
+Message-ID: <1323167560-2282-5-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1323167560-2282-1-git-send-email-robert.richter@amd.com>
+References: <1323167560-2282-1-git-send-email-robert.richter@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-06 at 18:05 +0800, Yong Zhang wrote:
-> On Tue, Dec 06, 2011 at 10:52:32AM +0100, Peter Zijlstra wrote:
-> > On Tue, 2011-12-06 at 09:26 +0800, Yong Zhang wrote:
-> > 
-> > > Yeah, because we call might_sleep() in rt_mutex_lock() unconditionally.
-> > > But in this case the 'BUG: sleeping function called from invalid context
-> > > at *' is obviously false positive.
-> > 
-> > Why can't this mutex acquisition not block?
-> 
-> It could block. The issue it's legal to call rt_mutex_lock() with
-> irqs disabled and we don't want might_sleep() bite us on this
+If filename is NULL there is an out-of-bound access to struct
+perf_session if it would be used with perf_session__open(). Shouldn't
+actually happen in current implementation as filename is always
+!NULL. Fixing this by always null-terminating filename.
 
-Of course its legal (nobody will arrest you for it), but its also bloody
-horrid.
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ tools/perf/util/session.c |    2 +-
+ tools/perf/util/session.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-> special case. When we are going to sleep, we re-enable irq in
-> __rt_mutex_slowlock().
-> 
-> > 
-> > > Maybe we could teach might_sleep() about this special case?
-> > 
-> > Sounds horrid.
-> 
-> Maybe, any alternative?
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 85c1e6b7..2ad9c10 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -132,7 +132,7 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 				       bool force, bool repipe,
+ 				       struct perf_event_ops *ops)
+ {
+-	size_t len = filename ? strlen(filename) + 1 : 0;
++	size_t len = filename ? strlen(filename) : 0;
+ 	struct perf_session *self = zalloc(sizeof(*self) + len);
+ 
+ 	if (self == NULL)
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 6e393c9..f320cd5 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -54,7 +54,7 @@ struct perf_session {
+ 	char			*cwd;
+ 	struct ordered_samples	ordered_samples;
+ 	struct callchain_cursor	callchain_cursor;
+-	char			filename[0];
++	char			filename[1];
+ };
+ 
+ struct perf_evsel;
+-- 
+1.7.7
 
-Maybe someone explain this mess first?
+
