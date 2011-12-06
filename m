@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab1LFTQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:16:45 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40261 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753774Ab1LFTQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:16:43 -0500
-Date: Tue, 6 Dec 2011 20:14:58 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
- error
-Message-ID: <20111206191458.GA25568@elte.hu>
-References: <1319773015.6759.30.camel@deadeye>
- <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
- <1323185640.7454.269.camel@deadeye>
- <1323193731.32012.81.camel@twins>
- <20111206175558.3215907c@lxorguk.ukuu.org.uk>
- <20111206175919.GA5386@elte.hu>
- <20111206181715.GG3366@decadent.org.uk>
- <20111206182847.GB12094@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206182847.GB12094@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1753624Ab1LFTMb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:12:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56514 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753283Ab1LFTM1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 14:12:27 -0500
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com
+Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 08/25] dynamic_debug: drop explicit !=NULL checks
+Date: Tue,  6 Dec 2011 12:11:18 -0700
+Message-Id: <1323198694-7186-9-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
+References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>, <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
+ <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jim Cromie <jim.cromie@gmail.com>
 
-Anyway, SOB flaming aside, i think there's now consensus that we 
-don't want to disable lockdep for TAINT_OOT modules.
 
-Mind (re-)sending a delta patch against tip:master that excludes 
-that taint flag in addition to the already excluded 
-TAINT_FIRMWARE case? That should close this rather verbose 
-chapter of taint flag handling changes for good ;-)
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ lib/dynamic_debug.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-Thanks,
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 4c6d0b7..6904fdc 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -115,27 +115,26 @@ static void ddebug_change(const struct ddebug_query *query,
+ 	list_for_each_entry(dt, &ddebug_tables, link) {
+ 
+ 		/* match against the module name */
+-		if (query->module != NULL &&
+-		    strcmp(query->module, dt->mod_name))
++		if (query->module && strcmp(query->module, dt->mod_name))
+ 			continue;
+ 
+ 		for (i = 0 ; i < dt->num_ddebugs ; i++) {
+ 			struct _ddebug *dp = &dt->ddebugs[i];
+ 
+ 			/* match against the source filename */
+-			if (query->filename != NULL &&
++			if (query->filename &&
+ 			    strcmp(query->filename, dp->filename) &&
+ 			    strcmp(query->filename, basename(dp->filename)))
+ 				continue;
+ 
+ 			/* match against the function */
+-			if (query->function != NULL &&
++			if (query->function &&
+ 			    strcmp(query->function, dp->function))
+ 				continue;
+ 
+ 			/* match against the format */
+-			if (query->format != NULL &&
+-			    strstr(dp->format, query->format) == NULL)
++			if (query->format &&
++			    !strstr(dp->format, query->format))
+ 				continue;
+ 
+ 			/* match against the line number range */
+-- 
+1.7.7.3
 
-	Ingo
