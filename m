@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab1LFTRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:17:51 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55667 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752989Ab1LFTRt (ORCPT
+	id S1753610Ab1LFTSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:18:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56514 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396Ab1LFTMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:17:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <1323169412.32012.69.camel@twins>
-References: <1318595833-29984-1-git-send-email-eranian@google.com>
-	<1323124766.32012.49.camel@twins>
-	<20111206094927.GA25782@mudshark.cambridge.arm.com>
-	<1323169412.32012.69.camel@twins>
-Date: Tue, 6 Dec 2011 11:14:14 -0800
-Message-ID: <CABPqkBQq=ra+-O==qT+8DtFZ5T7=M4yJrnPJ_bb+UmUTGGQepQ@mail.gmail.com>
-Subject: Re: [PATCH 00/12] perf_events: add support for sampling taken
- branches (v2)
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "acme@redhat.com" <acme@redhat.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "robert.richter@amd.com" <robert.richter@amd.com>,
-        "ravitillo@lbl.gov" <ravitillo@lbl.gov>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "rth@twiddle.net" <rth@twiddle.net>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Tue, 6 Dec 2011 14:12:16 -0500
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com
+Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 04/25] dynamic_debug: make dynamic-debug supersede DEBUG ccflag
+Date: Tue,  6 Dec 2011 12:11:14 -0700
+Message-Id: <1323198694-7186-5-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
+References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>, <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
+ <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 3:03 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2011-12-06 at 09:49 +0000, Will Deacon wrote:
->> On Mon, Dec 05, 2011 at 10:39:26PM +0000, Peter Zijlstra wrote:
->> > On Fri, 2011-10-14 at 14:37 +0200, Stephane Eranian wrote:
->> > > This patchset adds an important and useful new feature to
->> > > perf_events: branch stack sampling. In other words, the
->> > > ability to capture taken branches into each sample.
->> > >
->> > Other than the few comments given it all looks good. My main worry is
->> > the Intel only aspect, I'd really love for there to be another platform
->> > that could implement at least part of this.
->>
->> I discussed this with Stephane in Prague and, although it would be lovely to
->> have this on ARM, we simply don't have the hardware to do it. So the nature
->> of series does seem to be x86-centric unless there's way to do a watered
->> down version in software.
->
-> The only way to do this in software would be like
-> CONFIG_PROFILE_ALL_BRANCHES and that's horrid (and kernel only).
->
-> But there's more than Intel & ARM, but it looks like PPC doesn't have
-> this either and I suspect MIPS and SPARC don't either, which doesn't
-> leave us with much else.
->
-There is a hardware branch buffer on all Itanium processors.
-You can find the description for the McKinley implementation
- (Itanium2) branch buffer in section 10.3.9 from:
-http://download.intel.com/design/Itanium2/manuals/25111003.pdf
+From: Jim Cromie <jim.cromie@gmail.com>
 
-> So I guess we should just go ahead and merge this and hope more hardware
-> grows this feature in a compatible enough manner.
+if CONFIG_DYNAMIC_DEBUG is defined, honor it over DEBUG, so that
+pr_debug()s are controllable, instead of always-on.  When DEBUG is
+also defined, change _DPRINTK_FLAGS_DEFAULT to enable printing by
+default.
+
+Also adding _DPRINTK_FLAGS_INCL_MODNAME would be nice, but there are
+numerous cases of pr_debug(NAME ": ...), which would result in double
+printing of module-name.  So defer this until things settle.
+
+CC: Joe Perches <joe@perches.com>
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ include/linux/device.h        |    8 ++++----
+ include/linux/dynamic_debug.h |    4 ++++
+ include/linux/netdevice.h     |    8 ++++----
+ include/linux/printk.h        |    8 ++++----
+ 4 files changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 3136ede..c9468c1 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -872,14 +872,14 @@ int _dev_info(const struct device *dev, const char *fmt, ...)
+ 
+ #define dev_info(dev, fmt, arg...) _dev_info(dev, fmt, ##arg)
+ 
+-#if defined(DEBUG)
+-#define dev_dbg(dev, format, arg...)		\
+-	dev_printk(KERN_DEBUG, dev, format, ##arg)
+-#elif defined(CONFIG_DYNAMIC_DEBUG)
++#if defined(CONFIG_DYNAMIC_DEBUG)
+ #define dev_dbg(dev, format, ...)		     \
+ do {						     \
+ 	dynamic_dev_dbg(dev, format, ##__VA_ARGS__); \
+ } while (0)
++#elif defined(DEBUG)
++#define dev_dbg(dev, format, arg...)		\
++	dev_printk(KERN_DEBUG, dev, format, ##arg)
+ #else
+ #define dev_dbg(dev, format, arg...)				\
+ ({								\
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index f71a6b04..29ea09a 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -26,7 +26,11 @@ struct _ddebug {
+ #define _DPRINTK_FLAGS_INCL_FUNCNAME	(1<<2)
+ #define _DPRINTK_FLAGS_INCL_LINENO	(1<<3)
+ #define _DPRINTK_FLAGS_INCL_TID		(1<<4)
++#if defined DEBUG
++#define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT
++#else
+ #define _DPRINTK_FLAGS_DEFAULT 0
++#endif
+ 	unsigned int flags:8;
+ } __attribute__((aligned(8)));
+ 
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index cbeb586..f8b71a3c 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -2643,14 +2643,14 @@ int netdev_info(const struct net_device *dev, const char *format, ...);
+ #define MODULE_ALIAS_NETDEV(device) \
+ 	MODULE_ALIAS("netdev-" device)
+ 
+-#if defined(DEBUG)
+-#define netdev_dbg(__dev, format, args...)			\
+-	netdev_printk(KERN_DEBUG, __dev, format, ##args)
+-#elif defined(CONFIG_DYNAMIC_DEBUG)
++#if defined(CONFIG_DYNAMIC_DEBUG)
+ #define netdev_dbg(__dev, format, args...)			\
+ do {								\
+ 	dynamic_netdev_dbg(__dev, format, ##args);		\
+ } while (0)
++#elif defined(DEBUG)
++#define netdev_dbg(__dev, format, args...)			\
++	netdev_printk(KERN_DEBUG, __dev, format, ##args)
+ #else
+ #define netdev_dbg(__dev, format, args...)			\
+ ({								\
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index f0e22f7..f9abd93 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -180,13 +180,13 @@ extern void dump_stack(void) __cold;
+ #endif
+ 
+ /* If you are writing a driver, please use dev_dbg instead */
+-#if defined(DEBUG)
+-#define pr_debug(fmt, ...) \
+-	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+-#elif defined(CONFIG_DYNAMIC_DEBUG)
++#if defined(CONFIG_DYNAMIC_DEBUG)
+ /* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
+ #define pr_debug(fmt, ...) \
+ 	dynamic_pr_debug(fmt, ##__VA_ARGS__)
++#elif defined(DEBUG)
++#define pr_debug(fmt, ...) \
++	printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+ #else
+ #define pr_debug(fmt, ...) \
+ 	no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+-- 
+1.7.7.3
+
