@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932913Ab1LFDno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 22:43:44 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:26571
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754606Ab1LFDnn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 22:43:43 -0500
-X-SpamScore: -17
-X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: RE: [RFC PATCH 1/3] pinctrl: imx: add pinmux imx core driver
-Thread-Topic: [RFC PATCH 1/3] pinctrl: imx: add pinmux imx core driver
-Thread-Index: AQHMsnlAdrguC9Qi5Ei/Yb1CNiu/O5XNneYAgACOr8A=
-Date: Tue, 6 Dec 2011 03:41:13 +0000
-Message-ID: <65EE16ACC360FA4D99C96DC085B3F7723457F0@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
- <CACRpkdaayt=VuUz2XrkYgGJWFzW3hwJZDP+vHWTf9vLYRY4q5w@mail.gmail.com>
-In-Reply-To: <CACRpkdaayt=VuUz2XrkYgGJWFzW3hwJZDP+vHWTf9vLYRY4q5w@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.89]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932922Ab1LFDoK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 22:44:10 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46996 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab1LFDoI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 22:44:08 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <4EDD8D1B.5040803@tao.ma>
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
+	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>
+	<20111121165626.GD14568@thunk.org>
+	<alpine.LSU.2.00.1111211331120.1879@sister.anvils>
+	<alpine.LSU.2.00.1112051456580.3938@sister.anvils>
+	<4EDD729E.2060402@linux.vnet.ibm.com>
+	<CAGBYx2YNKEiuRF31CaRiK2ROj_xmVsnL4rcWnoofyziYCkYjpw@mail.gmail.com>
+	<4EDD8D1B.5040803@tao.ma>
+Date: Tue, 6 Dec 2011 11:44:07 +0800
+Message-ID: <CAGBYx2aPjDY_xXqPw4=Urr5nUMQbHxzgwGu9mZ8fCe7mFsrVXw@mail.gmail.com>
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+To: Tao Ma <tm@tao.ma>
+Cc: Allison Henderson <achender@linux.vnet.ibm.com>,
+        Hugh Dickins <hughd@google.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Curt Wohlgemuth <curtw@google.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Rafael Wysocki <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Linus Walleij [mailto:linus.walleij@linaro.org]
-> Sent: Monday, December 05, 2011 9:10 PM
-> To: Dong Aisheng-B29396
-> Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> linus.walleij@stericsson.com; s.hauer@pengutronix.de; Guo Shawn-R65073;
-> kernel@pengutronix.de
-> Subject: Re: [RFC PATCH 1/3] pinctrl: imx: add pinmux imx core driver
-> 
-> On Sun, Dec 4, 2011 at 12:49 PM, Dong Aisheng <b29396@freescale.com>
-> wrote:
-> 
-> > ---
-> > This patch series shows the basic idea of driver design. There're
-> > still some TODOes like adding more pinmux functions and gpio support.
-> > The patch is here for request for comments on the driver design and
-> > other might exist issues.
-> >
-> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> > Cc: Shawn Guo <shanw.guo@freescale.com>
-> 
-> Dong, this is looking real good from pinctrl subsystem point of view.
-> 
+On Tue, Dec 6, 2011 at 11:33 AM, Tao Ma <tm@tao.ma> wrote:
+> On 12/06/2011 11:08 AM, Yongqiang Yang wrote:
+>> Hi Allison,
+>>
+>> I noticed another problem which has nothing to do with punching hole.
+>>  __block_write_begin does not zero buffers beyond EOF.(I guess you
+> yes, that is expected.
+>> tried to zero them in your code, am I right? )  When users mapread
+>> beyond EOF,  users get non-zero data.  I am not sure zero or non-zero
+>> data should be, but fsx thinks they should be zero data and reports an
+>> error.
+> why users can read the data passing EOF? I am also puzzled. Punching
+> hole will do this? I don't think it's right.
+According to code, fiemap_fault handles the case right.   But I met
+the error - 'non-zero data beyond EOF' reported by fsx.  It is
+strange.  It seems that uptodate status is set wrong.  Just a guess:-)
 
-It's good if it's ok.
-Thanks for your review.
+I am guessing Allison met the problem before and tried to fix it in
+write path by zeroing buffers beyond EOF.
 
-Regards
-Dong Aisheng
+Yongqiang.
+>
+> Thanks
+> Tao
+>>
+>> It I understand the problem right, it happens more often with punch hole.
+>>
+>> Yongqiang.
+>> On Tue, Dec 6, 2011 at 9:40 AM, Allison Henderson
+>> <achender@linux.vnet.ibm.com> wrote:
+>>> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
+>>>>
+>>>> On Mon, 21 Nov 2011, Hugh Dickins wrote:
+>>>>>
+>>>>> On Mon, 21 Nov 2011, Ted Ts'o wrote:
+>>>>>>
+>>>>>> On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
+>>>>>>>
+>>>>>>> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
+>>>>>>> It appears that there's a bug with this patch:
+>>>>
+>>>>
+>>>> This has been outstanding for a month now, and we've heard no progress:
+>>>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for rc5.
+>>>>
+>>>> The problems appear on a 1k-blocksize filesystem under memory pressure:
+>>>> the hunk in ext4_da_write_end() causes oops, because it's playing with
+>>>> a page after generic_write_end() dropped our last reference to it; and
+>>>> backing out the hunk in ext4_da_write_begin() is then found to stop
+>>>> rare data corruption seen when kbuilding.
+>>>>
+>>>> Although I earlier reported that backing out the patch caused an fsx
+>>>> test to fail earlier, I've since found great variation in how soon it
+>>>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
+>>>> I also reported that I had to go back to 2.6.38 for fsx not to fail
+>>>> under memory pressure: you won't be surprised that that turned out to
+>>>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
+>>>>
+>>>> Thanks,
+>>>> Hugh
+>>>>
+>>>
+>>>
+>>> Hi there,
+>>>
+>>> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
+>>> works well when blocksize < pagesize" ?  I have tried it and it does seem to
+>>> help, but I am still running into some failures that I am trying to debug,
+>>> but let please let us know if it helps the issues that you are seeing.  Thx!
+>>>
+>>> Allison Henderson
+>>>
+>>
+>>
+>>
+>
 
 
+
+-- 
+Best Wishes
+Yongqiang Yang
