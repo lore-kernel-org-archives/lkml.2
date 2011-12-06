@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751482Ab1LFQTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:19:11 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:39571 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110Ab1LFQTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:19:10 -0500
-Date: Tue, 6 Dec 2011 16:21:52 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1112061619190.11925@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751528Ab1LFQVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:21:16 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48693 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab1LFQVP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 11:21:15 -0500
+Date: Tue, 6 Dec 2011 21:51:00 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: Steffen Persvold <sp@numascale.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        daniel@numascale-asia.com, mingo@elte.hu, jbarnes@virtuousgeek.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH tip] Fix build failure x86_default_fixup_cpu_id() with
+ !CONFIG_SMP
+Message-ID: <20111206162100.GC8567@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+References: <20111206104755.GA8567@linux.vnet.ibm.com>
+ <4EDDFE79.9010109@linux.vnet.ibm.com>
+ <4EDE002E.8040007@numascale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4EDE002E.8040007@numascale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11120616-5564-0000-0000-00000065ABEF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Steffen Persvold <sp@numascale.com> [2011-12-06 12:44:46]:
 
-Hi Linus,
+> On 12/6/2011 12:37, Srivatsa S. Bhat wrote:
+> >Hi Kamalesh,
+> >
+> >On 12/06/2011 04:17 PM, Kamalesh Babulal wrote:
+> >
+> >>Hi,
+> >>
+> >>tip (a4a7e7e29333) build fails, when compiled with !CONFIG_SMP.
+> >>I have only build tested the patch.
+> >>
+> >>x86: Fix x86_default_fixup_cpu_id() build failure with !CONFIG_SMP
+> >>
+> >>arch/x86/kernel/cpu/common.c: In function 'x86_default_fixup_cpu_id':
+> >>arch/x86/kernel/cpu/common.c:1149: error: 'struct cpuinfo_x86' has no member named 'phys_proc_id'
+> >>make[3]: *** [arch/x86/kernel/cpu/common.o] Error 1
+> >>
+> >>the code was introduced by commit 64be4c1c24. This patch
+> >>introduced #ifdef to guard !SMP case.
+> >>
+> >>Signed-off-by: Kamalesh Babulal<kamalesh@linux.vnet.ibm.com>
+> >>----
+> >
+> >
+> >There was a similar build-fix patch by Steffen Persvold at:
+> >https://lkml.org/lkml/2011/12/6/28
+> >
+> >That would solve your case too, right?
+> >
 
-3 fixes, one for an ongoing Intel VT-d/Ironlake GPU that I've been 
-testing, and one kexec fix from Jerome for an issue reported on the list
-where the gpu writeback engines need to be switched off, along with a 
-trivial fix from Alex.
+Thanks for pointing out the patch.
 
-Due to the size of the kexec fix I've decided to keep this pull small.
-(I have some kzalloc->kcalloc fixes to check on).
+> 
+> I would hope so (I tested with !CONFIG_SMP also), albeit I used :
+> 
+> #ifdef CONFIG_NUMA
+> 
+> and not
+> 
+> #ifdef CONFIG_SMP
+> 
+> 
+> but I don't think you can compile with CONFIG_NUMA without having
+> CONFIG_SMP  (if I read the Kconfig correctly..).
+> 
+> I used CONFIG_NUMA because the code-path doesn't really make sense
+> on non-numa nodes.
 
-Dave.
+agree, cpuinfo_x86->phys_proc_id is protected within CONFIG_SMP but the
+right way is to fix using CONFIG_NUMA as explained by you in 
+https://lkml.org/lkml/2011/12/6/28.
 
-The following changes since commit 45e713efe2fa574b6662e7fb63fae9497c5e03d4:
+Regards,
+Kamalesh.
 
-  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2011-12-05 16:54:15 -0800)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-Alex Deucher (1):
-      drm/radeon/kms: fix return type for radeon_encoder_get_dp_bridge_encoder_id
-
-Daniel Vetter (1):
-      drm/i915: fix infinite recursion on unbind due to ilk vt-d w/a
-
-Jerome Glisse (1):
-      drm/radeon: disable possible GPU writeback early v3
-
- drivers/gpu/drm/i915/i915_gem.c          |    7 ++++++-
- drivers/gpu/drm/radeon/evergreen.c       |    2 ++
- drivers/gpu/drm/radeon/ni.c              |   18 ++++++++++++++++++
- drivers/gpu/drm/radeon/nid.h             |   19 +++++++++++++++++++
- drivers/gpu/drm/radeon/r100.c            |   20 ++++++--------------
- drivers/gpu/drm/radeon/r520.c            |    2 +-
- drivers/gpu/drm/radeon/r600.c            |   16 ++++++++++++++++
- drivers/gpu/drm/radeon/radeon_asic.h     |    2 ++
- drivers/gpu/drm/radeon/radeon_encoders.c |    7 +++----
- drivers/gpu/drm/radeon/rs600.c           |   20 +++++++++++++++++++-
- drivers/gpu/drm/radeon/rs600d.h          |   21 +++++++++++++++++++++
- drivers/gpu/drm/radeon/rs690.c           |    2 +-
- drivers/gpu/drm/radeon/rv515.c           |    2 +-
- drivers/gpu/drm/radeon/rv770.c           |   16 ++++++++++++++++
- drivers/gpu/drm/radeon/rv770d.h          |   20 ++++++++++++++++++++
- 15 files changed, 151 insertions(+), 23 deletions(-)
