@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab1LFTFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:05:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289Ab1LFTFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:05:34 -0500
-Date: Tue, 6 Dec 2011 13:10:01 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH 0/3] Use jump_label for sched_feat()
-Message-ID: <20111206181000.GE2449@redhat.com>
-References: <20111206171534.429636558@chello.nl>
+	id S1753016Ab1LFTGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:06:11 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56424 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab1LFTGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 14:06:08 -0500
+Date: Tue, 6 Dec 2011 20:05:55 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>
+Subject: Re: [MXS MMC 1/5] Fix grammatical error in comment
+Message-ID: <20111206190555.GC7835@pengutronix.de>
+References: <cover.1323177907.git.LW@KARO-electronics.de>
+ <1ebaeb7f7ed88b1d82f5fc3a01c0661f38e2a16d.1323177907.git.LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6zdv2QT/q3FMhpsV"
 Content-Disposition: inline
-In-Reply-To: <20111206171534.429636558@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1ebaeb7f7ed88b1d82f5fc3a01c0661f38e2a16d.1323177907.git.LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 06:15:34PM +0100, Peter Zijlstra wrote:
-> These patches implement sched_feat() using jump_labels. The first is a section
-> mismatch fix. The second patch provides a little infrastructure and the third
-> patch applies it to make sched_feat() use static_branch().
-> 
-> It uses static_branch() coupled with unlikely/likely in order to control the
-> branch block position. I haven't checked if it works, but it likely doesn't,
-> although it should.
-> 
-> 
 
-It doesn't. I played around with unlikely/likely a bit, and it
-didn't seem to make a difference. That said, jump_labels could still be
-an improvement here - it be good if we had some numbers, I guess.
+--6zdv2QT/q3FMhpsV
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
+On Tue, Dec 06, 2011 at 02:41:26PM +0100, Lothar Wa=DFmann wrote:
+>=20
+> Signed-off-by: Lothar Wa=DFmann <LW@KARO-electronics.de>
 
--Jason
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--6zdv2QT/q3FMhpsV
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk7eZ5MACgkQD27XaX1/VRvZQQCdHL4Qz4cqBx995kDfmLDab/HW
+wUgAn0adspevevdVLCruE3jbpJwmWWUx
+=bEP3
+-----END PGP SIGNATURE-----
+
+--6zdv2QT/q3FMhpsV--
