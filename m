@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933477Ab1LFMfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 07:35:10 -0500
-Received: from lo.gmane.org ([80.91.229.12]:34360 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933327Ab1LFMfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 07:35:09 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Steven Seagull <steven7779@gmx.net>
-Subject: possible causes for EADDRINUSE in client code
-Date: Tue, 6 Dec 2011 12:11:26 +0000 (UTC)
-Message-ID: <jbl0pd$g9q$1@dough.gmane.org>
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: tor.foldr.org
+	id S933173Ab1LFMo2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 07:44:28 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:2840 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933130Ab1LFMo1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 07:44:27 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqYBAEoN3k4Y9geI/2dsb2JhbAAMOIUFoyGFKQQBAQEBAyMEUQEQCw4KAgIFFgsCAgkDAgECAUUGDQEHAQGFRII3oxqSDoEyiGqBFgSILp52
+X-IronPort-AV: E=Sophos;i="4.71,305,1320642000"; 
+   d="scan'208";a="151089055"
+Message-ID: <4EDE0E29.9070809@teksavvy.com>
+Date: Tue, 06 Dec 2011 07:44:25 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
+References: <4EA89972.5060101@teksavvy.com>   <20111026.194045.2019668159403582571.davem@davemloft.net>   <4EA8B283.3010105@teksavvy.com>   <20111026.221719.2216112919297458522.davem@davemloft.net>   <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>   <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>   <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>   <4EBAB643.8020603@teksavvy.com> <1320859911.2781.1.camel@bwh-desktop>   <4EBABAFD.6050604@teksavvy.com> <1320860895.2781.6.camel@bwh-desktop>  <4EDCD828.2090904@teksavvy.com> <1323098335.7454.214.camel@deadeye>
+In-Reply-To: <1323098335.7454.214.camel@deadeye>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 11-12-05 10:18 AM, Ben Hutchings wrote:
+> On Mon, 2011-12-05 at 09:41 -0500, Mark Lord wrote:
+> [...]
+>> static int ax88772b_bind(struct usbnet *dev, struct usb_interface *intf)
+>> {
+>> ...
+>>         /* register support for hardware checksums */
+>>         dev->net->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+>>
+>>         /* enable hardware checksums */
+>>         dev->net->features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+>>         ax88772b_set_features(dev->net, dev->net->features);
+>> ...
+>> }
+>> -------------------------------snip-----------------------------------
+>>
+>> Does this look correct -- any improvements/fixes to suggest?
+> [...]
+> 
+> NETIF_F_HW_CSUM means the hardware implements generic IP-style
+> checksumming: the stack specifies the offset at which to start
+> checksumming and the offset at which to store the checksum, and the
+> hardware does not attempt to parse the headers.
+> 
+> If this hardware recognises specific protocols and works out the offsets
+> itself, then you must claim NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM instead.
 
-I'm running a 2.6.26 kernel where I have to create short-lived TCP
-connections with a high frequency. In order to do this, I am using
-non-blocking sockets which are bound to different IP addresses in a
-round-robin manner, and to port 0, so the kernel can choose a free
-local port.
+Yeah, the hardware seems to understand quite a few protocol formats.
+Okay, so I'll claim the protocol-specific flags in net->hw_features.
 
-Now I observed that I am getting EADDRINUSE errors on the bind system
-call, even though there should be ports left according to the current
-net.ipv4.ip_local_port_range sysctl setting.
+But what do I use in net->features?
+The exact same protocol flags,
+or the generic NETIF_F_HW_CSUM | NETIF_F_RXCSUM ones?
 
-I tried to enumerate the used ports at the time of the error using
-netstat, which shows only rather few ports being in use, but I
-realize that this is an inaccurate measure because it takes time for
-netstat to be forked and run.
-
-What I wonder is: Is there any limit beyond
-net.ipv4.ip_local_port_range which may lead to EADDRINUSE errors?
-Maybe any limits in the kernel data structures I should be aware of
-when working with huge amounts of TCP connections?
+The set_features() function also has to test for flags
+to know what to do.  Should it test specific protocol flags,
+or just the generic two ?
 
 Thanks!
-
---
-Steven
-
