@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab1LFSNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 13:13:15 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:51231 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab1LFSNO convert rfc822-to-8bit (ORCPT
+	id S1752853Ab1LFSOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:14:45 -0500
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:60513 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752650Ab1LFSOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 13:13:14 -0500
+	Tue, 6 Dec 2011 13:14:44 -0500
+Date: Tue, 6 Dec 2011 13:14:22 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ben Hutchings <ben@decadent.org.uk>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
+ error
+Message-ID: <20111206181422.GA11881@elliptictech.com>
+References: <1319773015.6759.30.camel@deadeye>
+ <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
+ <1323185640.7454.269.camel@deadeye>
+ <20111206175443.GB25031@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <20111206095456.GB1342@tiehlicka.suse.cz>
-References: <CABexPfE84OgdGQtKUm2JQ9_5ZBFs_pr3gdxMLYmxd=wVyBZhpQ@mail.gmail.com>
-	<CABexPfFZ8LJxmsuiSOtejfVebrTRM3=ppW5hxbQgmgX04VdAOA@mail.gmail.com>
-	<20111206095456.GB1342@tiehlicka.suse.cz>
-Date: Wed, 7 Dec 2011 02:13:13 +0800
-Message-ID: <CABexPfHvvsymd0ZZxWzp=E0PdUXgfzRDu32Wx+xs7ciiCM6scw@mail.gmail.com>
-Subject: Re: [Page Allocator] when is init_per_zone_wmark_min called to first
- initialize the watermarks, reserved memory etc?
-From: zhihua che <zhihua.che@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111206175443.GB25031@elte.hu>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/6 Michal Hocko <mhocko@suse.cz>:
-> On Tue 06-12-11 03:25:29, zhihua che wrote:
->> 2011/12/6 zhihua che <zhihua.che@gmail.com>:
->> > Hi, everyone
->> >
->> >        I'm reading the linux kernel codes, and now focusing on memory
->> > management. I came across a simple problem:).
->> >        I know the every zone keeps three water marks to control the
->> > allocator's behavior and I find the three watermarks is initialized in
->> > init_per_zone_wmark_min.
->> > Unfortunately, I can't find when this function is called FIRSTduring
->> > the kernel booting process. I searched the source codes using LXR and
->> > cscope and got nothing.
->> > I guess I missed something but I have no any idea.
->> >
->> > harvey.
->>
->>
->> Maybe I'm closer the truth:-)
->> I find this function is defined as a module entry function (I should'v
->> found this earlier). As far as I know module entry functions are
->> called at the end of start_kernel() by rest_init(), whereas page
->> allocator / buddy system is used before they are called. For example,
->> __get_free_pages() is called in kmem_cache_init() which in turn is
->> called in start_kernel() earlier than rest_init().
->
-> Yes, this is correct. We do live without watermarks (resp. with 0) for
-> some time and we rely that we have sufficient memory for that time (who
-> we would reclaim from when no processes exist - apart from init and few
-> kernel threads).
-> kswapd is started around the same time.
->
-> HTH
-> --
+On 2011-12-06 18:54 +0100, Ingo Molnar wrote:
+> * Ben Hutchings <ben@decadent.org.uk> wrote:
+> > On Tue, 2011-12-06 at 01:38 -0800, tip-bot for Ben Hutchings wrote:
+> > > Commit-ID:  fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013
+> > > Gitweb:     http://git.kernel.org/tip/fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013
+> > > Author:     Ben Hutchings <ben@decadent.org.uk>
+> > > AuthorDate: Fri, 28 Oct 2011 04:36:55 +0100
+> > > Committer:  Ingo Molnar <mingo@elte.hu>
+> > > CommitDate: Tue, 6 Dec 2011 08:16:49 +0100
+> > > 
+> > > lockdep, rtmutex, bug: Show taint flags on error
+> > > 
+> > > Show the taint flags in all lockdep and rtmutex-debug error messages.
+> > > 
+> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > Link: http://lkml.kernel.org/r/1319773015.6759.30.camel@deadeye
+> > > Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > [...]
+> > 
+> > If you disagree with a patch, do not silently drop parts of 
+> > it.  I demand that you remove my 'Signed-off-by' as this is 
+> > not the change I submitted.
+> 
+> FYI, there's no "I will only sign off on a patch doing two 
+> things if it's applied in full" kind of condition in the SOB 
+> definition, allowing that would break the GPL: people have the 
+> right to take your modifications to the GPL-ed kernel and modify 
+> it further.
 
-Thanks for your tips. I think it helps.
+If you want to play the GPL card, you will note that the GPL requires
+modified versions of a work to carry prominent notices that they have
+been modified, including the date of any change.
+
+A signoff by a maintainer does not imply that any modifications have
+been made, so I don't think that counts as "prominent".
+
+> Your original patch did two things. Peter did the sensible 
+> thing: he split out the print_kernel_ident() changes from your 
+> patch which stand on their own and kept your authorship in place 
+> - that is what the above patch does.
+
+In which case, the changelog should have been amended to state that
+it's a modification of Ben's original submission.
+
+> Once you send it out the SOB is valid and people can (and 
+> typically will) modify it - and if you are still the main author 
+> (which you are here 100%) then keeping you as the author is the 
+> proper approach - Peter added his own SOB after yours.
+
+Linux convention is to add a signoff *and* a description of any changes
+to the original submission in square brackets.
+
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
