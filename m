@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933156Ab1LFNHD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 08:07:03 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:21018 "EHLO relay.sw.ru"
+	id S1754344Ab1LFNLH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:11:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49239 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753502Ab1LFNHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 08:07:00 -0500
-Subject: [PATCH] NFSd: use network-namespace-aware cache registering routines
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: neilb@suse.de, linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 06 Dec 2011 17:04:31 +0300
-Message-ID: <20111206130330.25851.55807.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1751903Ab1LFNLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 08:11:05 -0500
+Message-ID: <4EDE1457.7070408@redhat.com>
+Date: Tue, 06 Dec 2011 11:10:47 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Andreas Oberritter <obi@linuxtv.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, HoP <jpetrous@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk> <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com> <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <4EDD2C82.7040804@linuxtv.org> <20111205205554.2caeb496@lxorguk.ukuu.org.uk> <4EDD3583.30405@linuxtv.org> <20111206111829.GB17194@sirena.org.uk> <4EDE0400.1070304@linuxtv.org>
+In-Reply-To: <4EDE0400.1070304@linuxtv.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cleanup patch. Some day (hope, soon enough) generic cache_register()
-and cache_unregister() will be removed.
+On 06-12-2011 10:01, Andreas Oberritter wrote:
+> On 06.12.2011 12:18, Mark Brown wrote:
+>> On Mon, Dec 05, 2011 at 10:20:03PM +0100, Andreas Oberritter wrote:
+>>> On 05.12.2011 21:55, Alan Cox wrote:
+>>>> The USB case is quite different because your latency is very tightly
+>>>> bounded, your dead device state is rigidly defined, and your loss of
+>>>> device is accurately and immediately signalled.
+>>
+>>>> Quite different.
+>>
+>>> How can usbip work if networking and usb are so different and what's so
+>>> different between vtunerc and usbip, that made it possible to put usbip
+>>> into drivers/staging?
+>>
+>> USB-IP is a hack that will only work well on a tightly bounded set of
+>> networks - if you run it over a lightly loaded local network it can
+>> work adequately.  This starts to break down as you vary the network
+>> configuration.
+>
+> I see. So it has problems that vtunerc doesn't have.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+The vtunerc has the same issues. High latency (due to high loads,  high
+latency links or whatever) affects it badly, and may cause application
+breakages if if the device is opened are using O_NONBLOCK mode [1].
 
----
- fs/nfsd/export.c    |   10 +++++-----
- fs/nfsd/nfs4idmap.c |   11 ++++++-----
- 2 files changed, 11 insertions(+), 10 deletions(-)
+Regards,
+Mauro.
 
-diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
-index 62f3b90..d1feeef 100644
---- a/fs/nfsd/export.c
-+++ b/fs/nfsd/export.c
-@@ -1226,12 +1226,12 @@ nfsd_export_init(void)
- 	int rv;
- 	dprintk("nfsd: initializing export module.\n");
- 
--	rv = cache_register(&svc_export_cache);
-+	rv = cache_register_net(&svc_export_cache, &init_net);
- 	if (rv)
- 		return rv;
--	rv = cache_register(&svc_expkey_cache);
-+	rv = cache_register_net(&svc_expkey_cache, &init_net);
- 	if (rv)
--		cache_unregister(&svc_export_cache);
-+		cache_unregister_net(&svc_export_cache, &init_net);
- 	return rv;
- 
- }
-@@ -1255,8 +1255,8 @@ nfsd_export_shutdown(void)
- 
- 	dprintk("nfsd: shutting down export module.\n");
- 
--	cache_unregister(&svc_expkey_cache);
--	cache_unregister(&svc_export_cache);
-+	cache_unregister_net(&svc_expkey_cache, &init_net);
-+	cache_unregister_net(&svc_export_cache, &init_net);
- 	svcauth_unix_purge();
- 
- 	dprintk("nfsd: export shutdown complete.\n");
-diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
-index 55780a2..9409627 100644
---- a/fs/nfsd/nfs4idmap.c
-+++ b/fs/nfsd/nfs4idmap.c
-@@ -36,6 +36,7 @@
- #include <linux/seq_file.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
-+#include <net/net_namespace.h>
- #include "idmap.h"
- #include "nfsd.h"
- 
-@@ -466,20 +467,20 @@ nfsd_idmap_init(void)
- {
- 	int rv;
- 
--	rv = cache_register(&idtoname_cache);
-+	rv = cache_register_net(&idtoname_cache, &init_net);
- 	if (rv)
- 		return rv;
--	rv = cache_register(&nametoid_cache);
-+	rv = cache_register_net(&nametoid_cache, &init_net);
- 	if (rv)
--		cache_unregister(&idtoname_cache);
-+		cache_unregister_net(&idtoname_cache, &init_net);
- 	return rv;
- }
- 
- void
- nfsd_idmap_shutdown(void)
- {
--	cache_unregister(&idtoname_cache);
--	cache_unregister(&nametoid_cache);
-+	cache_unregister_net(&idtoname_cache, &init_net);
-+	cache_unregister_net(&nametoid_cache, &init_net);
- }
- 
- static int
-
+[1] Btw, if some DVB ioctl currently waits in O_NONBLOCK, this is a POSIX
+violation that needs to be fixed.
