@@ -1,176 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932992Ab1LFH5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 02:57:10 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48420 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932964Ab1LFH5I convert rfc822-to-8bit (ORCPT
+	id S932998Ab1LFIFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 03:05:51 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40141 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932964Ab1LFIFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 02:57:08 -0500
+	Tue, 6 Dec 2011 03:05:50 -0500
+Date: Tue, 6 Dec 2011 09:05:44 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linus.walleij@stericsson.com,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Dong Aisheng <b29396@freescale.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+Message-ID: <20111206080544.GF4585@pengutronix.de>
+References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+ <1322999384-7886-2-git-send-email-b29396@freescale.com>
+ <CACRpkdaYz+-nZA6atxA+5kvWOO84YeSHQPNiojq_R4zkHUGz3Q@mail.gmail.com>
+ <20111205211838.GG27267@pengutronix.de>
+ <20111206062500.GA3649@S2100-06.ap.freescale.net>
+ <20189.50504.375779.311903@ipc1.ka-ro>
 MIME-Version: 1.0
-In-Reply-To: <4EDD948A.4000506@linux.vnet.ibm.com>
-References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
-	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>
-	<20111121165626.GD14568@thunk.org>
-	<alpine.LSU.2.00.1111211331120.1879@sister.anvils>
-	<alpine.LSU.2.00.1112051456580.3938@sister.anvils>
-	<4EDD729E.2060402@linux.vnet.ibm.com>
-	<CAGBYx2YNKEiuRF31CaRiK2ROj_xmVsnL4rcWnoofyziYCkYjpw@mail.gmail.com>
-	<4EDD8D1B.5040803@tao.ma>
-	<CAGBYx2aPjDY_xXqPw4=Urr5nUMQbHxzgwGu9mZ8fCe7mFsrVXw@mail.gmail.com>
-	<4EDD948A.4000506@linux.vnet.ibm.com>
-Date: Tue, 6 Dec 2011 15:57:07 +0800
-Message-ID: <CAGBYx2bmBAzHyG010Cfgh=4ttdSYZ-z78+LfDhVHAv=unS43SA@mail.gmail.com>
-Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
-To: Allison Henderson <achender@linux.vnet.ibm.com>
-Cc: Tao Ma <tm@tao.ma>, Hugh Dickins <hughd@google.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
-        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20189.50504.375779.311903@ipc1.ka-ro>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 12:05 PM, Allison Henderson
-<achender@linux.vnet.ibm.com> wrote:
-> On 12/05/2011 08:44 PM, Yongqiang Yang wrote:
->>
->> On Tue, Dec 6, 2011 at 11:33 AM, Tao Ma<tm@tao.ma>  wrote:
->>>
->>> On 12/06/2011 11:08 AM, Yongqiang Yang wrote:
->>>>
->>>> Hi Allison,
->>>>
->>>> I noticed another problem which has nothing to do with punching hole.
->>>>  __block_write_begin does not zero buffers beyond EOF.(I guess you
->>>
->>> yes, that is expected.
->>>>
->>>> tried to zero them in your code, am I right? )  When users mapread
->>>> beyond EOF,  users get non-zero data.  I am not sure zero or non-zero
->>>> data should be, but fsx thinks they should be zero data and reports an
->>>> error.
->>>
->>> why users can read the data passing EOF? I am also puzzled. Punching
->>> hole will do this? I don't think it's right.
->>
->> According to code, fiemap_fault handles the case right.   But I met
->> the error - 'non-zero data beyond EOF' reported by fsx.  It is
->> strange.  It seems that uptodate status is set wrong.  Just a guess:-)
->>
->> I am guessing Allison met the problem before and tried to fix it in
->> write path by zeroing buffers beyond EOF.
->
->
-> Yes I did run into something similar.  I found 2 cases that involved EOF:
-> 1. A truncate shortens EOF, but only zeroed to the end of the block, but not
-> to the end of the page.  This was corrected by "[PATCH 5/6 v7] ext4: fix fsx
-> truncate failure"
->
-> 2. A write extends EOF, but does not zero all of the page beyond EOF, and
-> that was what "[PATCH 6/6 v7] ext4: fix partial page writes" was supposed to
-> address.
-I ran into the 2nd case, this case should be handled by readpage.   In
-this case, write_end should not set uptodate on page.   Both mapread
-and read should work.  Becasue fiemap_fault calls readpage on
-non-uptodate page in mapread case.
+Hi,
 
-It seems that write_end sets page uptodate, as a result garbage data
-is seen by applications.  But I can not find why this happens.
+On Tue, Dec 06, 2011 at 08:33:28AM +0100, Lothar Waßmann wrote:
+> Shawn Guo writes:
+> > On Mon, Dec 05, 2011 at 10:18:38PM +0100, Sascha Hauer wrote:
+> > > Freescale has named the pins after their primary function which is quite
+> > > confusing.
+> > > 
+> > > The above means:
+> > > 
+> > > MX53_PATA_DATA8 -> mux mode 4
+> > > MX53_PATA_DATA9 -> mux mode 4
+> > > ...
+> > > 
+> > > This brings me to the point that currently we have the pins described as
+> > > 
+> > > #define MX53_PAD_<name>__<function>
+> > > 
+> > But that's also the reason why we have so many lengthy iomux-mx*.h on
+> > imx.  Taking iomux-mx53.h for example, it's a 109K header with 1219
+> > LOC, but probably only 10% of the definitions will actually be used.
+> > 
+> Which has the benefit of having correct pin definitions for everyone
+> to use. If developers who need to use currently unused pindefs have to
+> create them on their own, there will always be a good chance in
+> getting them wrong.
+Another upside is, that adding the complete list once doesn't result in
+conflicts if two people add new definitions in the same timeframe. As
+the header are only cpp symbols that don't hurt at runtime I think
+having them complete is better than the incremental approach.
 
-
-Yongqiang.
->
-> I am still digging through tracing output at the moment, so I dont have a
-> very good explanation right now, but I will keep folks posted if I find
-> something.
->
-> Allison Henderson
->
->
->
->>
->> Yongqiang.
->>>
->>>
->>> Thanks
->>> Tao
->>>>
->>>>
->>>> It I understand the problem right, it happens more often with punch
->>>> hole.
->>>>
->>>> Yongqiang.
->>>> On Tue, Dec 6, 2011 at 9:40 AM, Allison Henderson
->>>> <achender@linux.vnet.ibm.com>  wrote:
->>>>>
->>>>> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
->>>>>>
->>>>>>
->>>>>> On Mon, 21 Nov 2011, Hugh Dickins wrote:
->>>>>>>
->>>>>>>
->>>>>>> On Mon, 21 Nov 2011, Ted Ts'o wrote:
->>>>>>>>
->>>>>>>>
->>>>>>>> On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
->>>>>>>>> It appears that there's a bug with this patch:
->>>>>>
->>>>>>
->>>>>>
->>>>>> This has been outstanding for a month now, and we've heard no
->>>>>> progress:
->>>>>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for
->>>>>> rc5.
->>>>>>
->>>>>> The problems appear on a 1k-blocksize filesystem under memory
->>>>>> pressure:
->>>>>> the hunk in ext4_da_write_end() causes oops, because it's playing with
->>>>>> a page after generic_write_end() dropped our last reference to it; and
->>>>>> backing out the hunk in ext4_da_write_begin() is then found to stop
->>>>>> rare data corruption seen when kbuilding.
->>>>>>
->>>>>> Although I earlier reported that backing out the patch caused an fsx
->>>>>> test to fail earlier, I've since found great variation in how soon it
->>>>>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
->>>>>> I also reported that I had to go back to 2.6.38 for fsx not to fail
->>>>>> under memory pressure: you won't be surprised that that turned out to
->>>>>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
->>>>>>
->>>>>> Thanks,
->>>>>> Hugh
->>>>>>
->>>>>
->>>>>
->>>>> Hi there,
->>>>>
->>>>> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
->>>>> works well when blocksize<  pagesize" ?  I have tried it and it does
->>>>> seem to
->>>>> help, but I am still running into some failures that I am trying to
->>>>> debug,
->>>>> but let please let us know if it helps the issues that you are seeing.
->>>>>  Thx!
->>>>>
->>>>> Allison Henderson
->>>>>
->>>>
->>>>
->>>>
->>>
->>
->>
->>
->
-
-
+Best regards
+Uwe
 
 -- 
-Best Wishes
-Yongqiang Yang
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
