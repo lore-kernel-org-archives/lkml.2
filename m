@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754038Ab1LFT4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:56:38 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:50008 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab1LFT4h (ORCPT
+	id S1754099Ab1LFT46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:56:58 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57190 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab1LFT45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:56:37 -0500
-Date: Tue, 6 Dec 2011 20:56:30 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, H Peter Anvin <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH] x86/mcheck/therm_throt.c: Don't log power limit and
- package level thermal throttle event in mce log
-Message-ID: <20111206195630.GH20445@aftab>
-References: <1321305082-31310-1-git-send-email-fenghua.yu@intel.com>
- <20111205131825.GA31275@gere.osrc.amd.com>
- <0207C53569FE594381A4F2EB66570B2A018EE61884@orsmsx508.amr.corp.intel.com>
- <20111206153108.GD28735@gere.osrc.amd.com>
- <43F901BD926A4E43B106BF17856F075501A22B5365@orsmsx508.amr.corp.intel.com>
- <20111206190648.GB20445@aftab>
- <CA+8MBb+v_HJ=odHMTZUP_LuNkAj=dHPC28i3HWAkemW7CN=hMw@mail.gmail.com>
+	Tue, 6 Dec 2011 14:56:57 -0500
+Date: Tue, 6 Dec 2011 11:56:51 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, vegard.nossum@gmail.com,
+        sergey.senozhatsky@gmail.com, bp@alien8.de, tj@kernel.org,
+        yong.zhang0@gmail.com, tglx@linutronix.de, mingo@elte.hu
+cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] lockdep, kmemcheck: Annotate ->lock in
+ lockdep_init_map()
+In-Reply-To: <tip-d3d03d4fc5b1bec3a579112de170a9676e9d97cb@git.kernel.org>
+Message-ID: <alpine.DEB.2.00.1112061156330.24076@chino.kir.corp.google.com>
+References: <20111109080451.GB8124@zhy> <tip-d3d03d4fc5b1bec3a579112de170a9676e9d97cb@git.kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+8MBb+v_HJ=odHMTZUP_LuNkAj=dHPC28i3HWAkemW7CN=hMw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 11:26:03AM -0800, Tony Luck wrote:
-> On Tue, Dec 6, 2011 at 11:06 AM, Borislav Petkov <bp@amd64.org> wrote:
-> > I can see all that. Still, I'm questioning the need for those printks. A
-> > user application polling the counters is a much better solution, IMHO,
-> > than spamming the logs. IOW, is there a strong reason to have this -
-> > even ratelimited - information in the logs and unnerve users, or, would
-> > it be better to collect this info somewhere queitly and present it only
-> > when something requests it?
+On Tue, 6 Dec 2011, tip-bot for Yong Zhang wrote:
+
+> Commit-ID:  d3d03d4fc5b1bec3a579112de170a9676e9d97cb
+> Gitweb:     http://git.kernel.org/tip/d3d03d4fc5b1bec3a579112de170a9676e9d97cb
+> Author:     Yong Zhang <yong.zhang0@gmail.com>
+> AuthorDate: Wed, 9 Nov 2011 16:04:51 +0800
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Tue, 6 Dec 2011 08:16:51 +0100
 > 
-> Striking the right balance here is hard - if one has a BIOS that set the
-> thresholds at "interesting" values - then you certainly don't want to the
-> console to be spammed with a lot of useless junk.
+> lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
 > 
-> But if there is a real problem - then having someone tell you later that
-> you should have been checking some obscure file in /sys to see that
-> some thermal/power limit events were being seen may not go over very
-> well.
+> Since commit f59de89 ("lockdep: Clear whole lockdep_map on initialization"),
+> lockdep_init_map() will clear all the struct. But it will break
+> lock_set_class()/lock_set_subclass(). A typical race condition
+> is like below:
+> 
+>      CPU A                                   CPU B
+> lock_set_subclass(lockA);
+>  lock_set_class(lockA);
+>    lockdep_init_map(lockA);
+>      /* lockA->name is cleared */
+>      memset(lockA);
+>                                      __lock_acquire(lockA);
+>                                        /* lockA->class_cache[] is cleared */
+>                                        register_lock_class(lockA);
+>                                          look_up_lock_class(lockA);
+>                                            WARN_ON_ONCE(class->name !=
+>                                                      lock->name);
+> 
+>      lock->name = name;
+> 
+> So restore to what we have done before commit f59de89 but annotate
+> ->lock with kmemcheck_mark_initialized() to suppress the kmemcheck
+> warning reported in commit f59de89.
+> 
+> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: David Rientjes <rientjes@google.com>
 
-Agreed.
+Acked-by: David Rientjes <rientjes@google.com>
 
-> When we have some comprehensive system health monitoring daemon that
-> does check these files, and can be configured to raise suitable
-> alerts, then the printks can go away.
-
-Ok, that makes sense, actually. A follow-up: what recovery handling are
-you thinking of here, maybe force-suspend the box or disable boosting or
-whatever?
-
-All I'm saying is, how does one take care of the real problem you
-mention above? I hope you're seeing my point here: I'm simply
-questioning the fact whether printk's are optimal here.
-
-But, before we completely drift off, to answer your original question:
-I'm fine with the patch, it is Intel-only anyway so if you guys feel it
-is a step in the right direction, you can have my ACK.
-
-The printks story sounds like something we'll not be solving today
-anyway, so... :-)
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Link: http://lkml.kernel.org/r/20111109080451.GB8124@zhy
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
