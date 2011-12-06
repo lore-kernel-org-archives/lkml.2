@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab1LFCM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 21:12:56 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:12062 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932811Ab1LFCMz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 21:12:55 -0500
-X-SpamScore: -15
-X-BigFish: VPS-15(zzbb2dK9371K1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:141.131.3.20;KIP:(null);UIP:(null);IPV:NLI;H:mail1.cirrus.com;RD:mail1.cirrus.com;EFVD:NLI
-From: "Austin, Brian" <Brian.Austin@cirrus.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "qi.wang@intel.com" <qi.wang@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yong.y.wang@intel.com" <yong.y.wang@intel.com>,
-        "kok.howg.ewe@intel.com" <kok.howg.ewe@intel.com>,
-        Daniel Mack <zonque@gmail.com>, Liam Girdwood <lrg@ti.com>,
-        "joel.clark@intel.com" <joel.clark@intel.com>
-Subject: Re: [alsa-devel] [PATCH v2] soc/lapis: add machine driver
-Thread-Topic: [alsa-devel] [PATCH v2] soc/lapis: add machine driver
-Thread-Index: AQHMs3w6kfRt8JlU6U2rOqmxskGzHpXOc80A//+eT8A=
-Date: Tue, 6 Dec 2011 02:11:40 +0000
-Message-ID: <057C8CCF-453E-4DC2-8E22-3D260973D35E@cirrus.com>
-References: <1322819115-15808-1-git-send-email-tomoya.rohm@gmail.com>
-	<20111202153401.GX8245@opensource.wolfsonmicro.com>
-	<CANKRQniyjT_2Ko=EYmffu3_NzDJQTMm9nY6rUp-DQ70e6AVQpA@mail.gmail.com>
-	<20111205183223.GB7467@opensource.wolfsonmicro.com>,<CANKRQnhEFvubv0b63z34=_xn4x4q=20enofqPrMsFetj1x7-NQ@mail.gmail.com>
-In-Reply-To: <CANKRQnhEFvubv0b63z34=_xn4x4q=20enofqPrMsFetj1x7-NQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932856Ab1LFCOn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 21:14:43 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:42768 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932811Ab1LFCOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 21:14:42 -0500
+Date: Mon, 5 Dec 2011 18:12:27 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
+ involving interrupt disabling
+Message-ID: <20111206021227.GO2326@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111203183417.GA18914@linux.vnet.ibm.com>
+ <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20111205091924.GA28117@zhy>
+ <20111205164505.GB2326@linux.vnet.ibm.com>
+ <20111206012635.GA32498@zhy>
 MIME-Version: 1.0
-X-OriginatorOrg: cirrus.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111206012635.GA32498@zhy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11120602-1976-0000-0000-000008482583
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Dec 5, 2011, at 8:01 PM, "Tomoya MORINAGA" <tomoya.rohm@gmail.com> wrote:
-
-> 2011/12/6 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->>> According to "machine.txt", I created this machine driver referring
->>> corgi.c/spitz.c.
->>> However, corgi.c/spitz.c. don't look obeying your saying.
->> 
->> You really need to look at current drivers to make sure you're following
->> current best practice - older drivers, particularly for obsolte hardware
->> like the Zaurus machines, may well not reflect the current best practices.
+On Tue, Dec 06, 2011 at 09:26:35AM +0800, Yong Zhang wrote:
+> On Mon, Dec 05, 2011 at 08:45:05AM -0800, Paul E. McKenney wrote:
+> > On Mon, Dec 05, 2011 at 05:19:24PM +0800, Yong Zhang wrote:
+> > > On Sat, Dec 03, 2011 at 10:34:42AM -0800, Paul E. McKenney wrote:
+> > > > From: Yong Zhang <yong.zhang0@gmail.com>
+> > > > 
+> > > > RCU-lockdep will issue warnings given the following use pattern:
+> > > > 
+> > > > 	rcu_read_lock();
+> > > > 	local_irq_disable();
+> > > > 	rcu_read_unlock();
+> > > > 	local_irq_enable();
+> > > > 
+> > > > However, this use pattern is legal except for the scheduler's runqueue
+> > > > and priority-inheritance locks (and any other locks that the scheduler
+> > > > might use during priority-inheritance operations).
+> > > > 
+> > > > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > ---
+> > > >  kernel/rcutree_plugin.h |    8 ++++++--
+> > > >  1 files changed, 6 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> > > > index 8cd9efe..2020e8a 100644
+> > > > --- a/kernel/rcutree_plugin.h
+> > > > +++ b/kernel/rcutree_plugin.h
+> > > > @@ -401,8 +401,11 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
+> > > >  
+> > > >  #ifdef CONFIG_RCU_BOOST
+> > > >  		/* Unboost if we were boosted. */
+> > > > -		if (rbmp)
+> > > > +		if (rbmp) {
+> > > > +			local_irq_save(flags);
+> > > >  			rt_mutex_unlock(rbmp);
+> > > > +			local_irq_restore(flags);
+> > > > +		}
+> > > >  #endif /* #ifdef CONFIG_RCU_BOOST */
+> > > >  
+> > > >  		/*
+> > > > @@ -1233,9 +1236,10 @@ static int rcu_boost(struct rcu_node *rnp)
+> > > >  	lockdep_set_class_and_name(&mtx.wait_lock, &rcu_boost_class,
+> > > >  				   "rcu_boost_mutex");
+> > > >  	t->rcu_boost_mutex = &mtx;
+> > > > -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+> > > > +	raw_spin_unlock(&rnp->lock); /* rrupts remain disabled. */
+> > > >  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
+> > > >  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
+> > > 
+> > > We permit rt_mutex_unlock() to be call with irq disabled,
+> > > but rt_mutex_lock() is still not allowed. So this usage
+> > > is not legal now.
+> > 
+> > Even after commit #5342e269b has been applied?
 > 
-> I see.
-> I won't read this docs.
+> Yeah, because we call might_sleep() in rt_mutex_lock() unconditionally.
+> But in this case the 'BUG: sleeping function called from invalid context
+> at *' is obviously false positive.
 > 
-> BTW, Let me know the best practice of machine driver?
-> I can't identify which driver is modern or not.
-> 
-> 
-Check the OMAP and Samsung directories. Those are pretty current
+> Maybe we could teach might_sleep() about this special case?
 
+That sounds very good to me!
+
+							Thanx, Paul
 
