@@ -1,114 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932818Ab1LFBhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 20:37:20 -0500
-Received: from utopia.booyaka.com ([72.9.107.138]:38487 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932809Ab1LFBhS (ORCPT
+	id S932852Ab1LFBiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 20:38:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63222 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932809Ab1LFBiE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 20:37:18 -0500
-Date: Mon, 5 Dec 2011 18:37:17 -0700 (MST)
-From: Paul Walmsley <paul@pwsan.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
-        tglx@linutronix.de, linus.walleij@stericsson.com,
-        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
-        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
-        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
-        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
-        richard.zhao@linaro.org, Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
-In-Reply-To: <20111205234849.GA14547@n2100.arm.linux.org.uk>
-Message-ID: <alpine.DEB.2.00.1112051706300.6289@utopia.booyaka.com>
-References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1112051342430.6289@utopia.booyaka.com> <20111205234849.GA14547@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 5 Dec 2011 20:38:04 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4EDD50F5.30300@fb.com>
+References: <20111121145114.049265181@chello.nl>
+	<4ED9267F.10106@fb.com>
+	<CABPqkBRpYA-StOTDFwyFhFtBPynbn-FLUzqZvaQn3oM3SJpCWg@mail.gmail.com>
+	<4EDD26B9.8070007@fb.com>
+	<4EDD50F5.30300@fb.com>
+Date: Mon, 5 Dec 2011 17:38:01 -0800
+Message-ID: <CABPqkBQLq6dm1CabOKTycJVZ3aiVHfD-0J7sTGN1VDah1C40Gg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/6] perf: x86 RDPMC and RDTSC support
+From: Stephane Eranian <eranian@google.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
+        William Cohen <wcohen@redhat.com>, Vince Weaver <vince@deater.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Dec 2011, Russell King - ARM Linux wrote:
+I believe the multiplexing rate is just unnecessary high too. I think
+Peter added some code to
+make it tunable but the user interface is not there yet AFAICT. There
+is quite some work needed
+to stop, reschedule and restart the counters.
 
-> On Mon, Dec 05, 2011 at 02:15:56PM -0700, Paul Walmsley wrote:
+On Mon, Dec 5, 2011 at 3:17 PM, Arun Sharma <asharma@fb.com> wrote:
+> On 12/5/11 12:16 PM, Arun Sharma wrote:
+>>
+>> On 12/2/11 2:22 PM, Stephane Eranian wrote:
+>>>
+>>> Have you tried with inheritance disabled?
+>>> I don't remember if perf stat has it enabled buy default.
+>>
+>>
+>> Disabling inheritance using the -i switch as in:
+>>
+>> (for i in `seq 1 10`; do numactl --cpunodebind 1 perf stat -i -e
+>> instructions ./lat_ctx -P1 -s32k 4; done)
+>>
+>> shows numbers closer to baseline, since the threads used for
+>> benchmarking are not counting events.
 >
-> > But I'd propose that we instead increase the size of struct clk.rate to be 
-> > s64:
-> > 
-> > s64 clk_round_rate(struct clk *clk, s64 desired_rate);
-> > int clk_set_rate(struct clk *clk, s64 rate);
-> > s64 clk_get_rate(struct clk *clk);
-> > 
-> > struct clk {
-> > ...
-> >      s64 rate;
-> > ...
-> > };
-> > 
-> > That way the clock framework can accommodate current clock rates, as well 
-> > as any conceivable future clock rate.  (Some production CPUs are already 
-> > running at clock rates greater than 4 GiHZ[1].  RF devices with 4 GiHz+ 
-> > clock rates are also common, such as 802.11a devices running in the 5.8 
-> > GHz band, and drivers for those may eventually wish to use the clock 
-> > framework.)
-> 
-> Yuck.  You are aware that 64-bit math on 32-bit CPUs sucks? So burdening 
-> _everything_ with 64-bit rate quantities is absurd.  As for making then 
-> 64-bit signed quantities, that's asking for horrid code from gcc for the 
-> majority of cases.
-
-64-bit divides would be the only real issue in the clock framework 
-context.  And those are easily avoided on clock hardware where the parent 
-rate can never exceed 32 bits.
-
-For example, here's a trivial implementation for rate recalculation for a 
-integer divider clock node (that can't be handled with a right shift):
-
-s64 div(struct clk *clk, u32 div) {
-	if (clk->flags & CLK_PARENT_RATE_MAX_U32)
-		return ((u32)(clk->parent->rate & 0xffffffff)) / div;
-
-	clk->rate = clk->parent->rate;
-	do_div(clk->rate, div);
-	return clk->rate;
-}
-
-gcc generates this for ARMv6:
-
-00000010 <div>:
-  10:	e92d4038 	push	{r3, r4, r5, lr}
-  14:	e1a05000 	mov	r5, r0         
-  18:	e5d03010 	ldrb	r3, [r0, #16]  @ clk->flags
-  1c:	e1a04001 	mov	r4, r1
-  20:	e3130001 	tst	r3, #1         @ 32-bit parent rate?
-  24:	1a000007 	bne	48 <div+0x38>  @ do 32-bit divide 
-
-/* 64-bit divide by 32-bit follows */
-
-  28:	e5903000 	ldr	r3, [r0]
-  2c:	e1c300d8 	ldrd	r0, [r3, #8]
-  30:	ebfffffe 	bl	0 <__do_div64>
-  34:	e1a00002 	mov	r0, r2
-  38:	e1a01003 	mov	r1, r3
-  3c:	e5852008 	str	r2, [r5, #8]
-  40:	e585300c 	str	r3, [r5, #12]
-  44:	e8bd8038 	pop	{r3, r4, r5, pc}
-
-/* 32-bit divide follows */
-
-  48:	e5900000 	ldr	r0, [r0]
-  4c:	e5900008 	ldr	r0, [r0, #8]
-  50:	ebfffffe 	bl	0 <__aeabi_uidiv>
-  54:	e3a01000 	mov	r1, #0
-  58:	e8bd8038 	pop	{r3, r4, r5, pc}
-
-
-Not bad at all, and this isn't even optimized.  (The conditional could be 
-avoided completely with a little work during clock init.)  What little 
-overhead there is seems quite trivial if it means that the clock framework 
-will be useful for present and future devices.
-
-
-- Paul
+>
+> I spent some more time looking into this. Running:
+>
+> perf stat -e instructions  ./lat_ctx -P1 -s32k 4 -N 1000000 &
+> perf record -ag -- sleep 3
+>
+> didn't show high cycles counts on any perf_events related functions in the
+> context switch path. The only PMU related stuff that showed up had to do
+> with x86_pmu_enable called from an IPI.
+>
+> So just as an experiment I disabled perf_rotate_context() via:
+>
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -4252,8 +4252,6 @@ void scheduler_tick(void)
+>        curr->sched_class->task_tick(rq, curr, 0);
+>        raw_spin_unlock(&rq->lock);
+>
+> -       perf_event_task_tick();
+> -
+>
+> That seems to bring the lat_ctx numbers very close to baseline.
+>
+> I suspect that some optimizations are possible in perf_rotate_context that
+> don't involve enabling/disabling the PMU via an IPI for simple cases that
+> involve one or two hardware events (eg: fixed counters).
+>
+>  -Arun
+>
+> Sample stack trace:
+>
+> lat_ctx 29874 [012] 350729.824173: cycles:
+>        ffffffff8101149c intel_pmu_enable_all ([kernel.kallsyms])
+>        ffffffff810115f7 intel_pmu_nhm_enable_all ([kernel.kallsyms])
+>        ffffffff8100e877 x86_pmu_enable ([kernel.kallsyms])
+>        ffffffff810a99de perf_pmu_enable ([kernel.kallsyms])
+>        ffffffff8100d682 x86_pmu_commit_txn ([kernel.kallsyms])
+>        ffffffff810aa4f9 group_sched_in ([kernel.kallsyms])
+>        ffffffff810ab06d __perf_event_enable ([kernel.kallsyms])
+>        ffffffff810a8c93 remote_function ([kernel.kallsyms])
+>        ffffffff81065eec generic_smp_call_function_single_interrupt
+> ([kernel.kallsyms])
+>        ffffffff81018064 smp_call_function_single_interrupt
+> ([kernel.kallsyms])
+>        ffffffff81461fcb call_function_single_interrupt ([kernel.kallsyms])
+>                  401ec4 bread (/root/lat_ctx)
+>
