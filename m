@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147Ab1LFJwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:52:39 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:52455 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933068Ab1LFJwg (ORCPT
+	id S933154Ab1LFJxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:53:01 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34937 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933068Ab1LFJw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:52:36 -0500
-Message-ID: <4EDDE5D0.7030906@linux.vnet.ibm.com>
-Date: Tue, 06 Dec 2011 15:22:16 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Tue, 6 Dec 2011 04:52:59 -0500
+Date: Tue, 6 Dec 2011 01:52:42 -0800
+From: tip-bot for Shan Hai <haishan.bai@gmail.com>
+Message-ID: <tip-5b680fd61388abb9059fbc8e7a2f60f602bfce15@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        kamalesh@linux.vnet.ibm.com, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, haishan.bai@gmail.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        kamalesh@linux.vnet.ibm.com, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, haishan.bai@gmail.com, mingo@elte.hu
+In-Reply-To: <1322535836-13590-2-git-send-email-haishan.bai@gmail.com>
+References: <1322535836-13590-2-git-send-email-haishan.bai@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/rt: Code cleanup, remove a redundant function call
+Git-Commit-ID: 5b680fd61388abb9059fbc8e7a2f60f602bfce15
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Fenghua Yu <fenghua.yu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Borislav Petkov <bp@amd64.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com> <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu>
-In-Reply-To: <20111206085816.GA11116@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120609-5564-0000-0000-00000063A0D1
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:52:47 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 02:28 PM, Ingo Molnar wrote:
+Commit-ID:  5b680fd61388abb9059fbc8e7a2f60f602bfce15
+Gitweb:     http://git.kernel.org/tip/5b680fd61388abb9059fbc8e7a2f60f602bfce15
+Author:     Shan Hai <haishan.bai@gmail.com>
+AuthorDate: Tue, 29 Nov 2011 11:03:56 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 6 Dec 2011 09:06:28 +0100
 
-> 
-> * Ingo Molnar <mingo@elte.hu> wrote:
-> 
->> Secondly, and more importantly, is there *any* hardware in 
->> existence that has a BIOS that can suspend/resume successfully 
->> with BSP offlined? If such hardware exists then we need to 
->> support it properly - initially perhaps by whitelisting such 
->> systems.
-> 
-> I suspect the answer to that is 'no' - as resume is really just 
-> a fresh bootup of the physical CPU and BIOSen just start on the 
-> boot CPU, no questions asked.
-> 
-> So the right approach there would be to detect the case where we 
-> boot up back from S2RAM resume on an offlined CPU (the BSP is 
-> really just one of the possibilities - in theory a S2RAM resume 
-> could boot back up on any of the APs as well) - the resume code 
-> should move off that CPU ASAP and keep that CPU offlined.
-> 
-> But the hibernation angle should be considered. Hibernation 
-> already has to deal with the case where someone physically 
-> unplugs a CPU and then resumes from the disk image, right? How 
-> does the hibernation code handle that case currently?
-> 
+sched/rt: Code cleanup, remove a redundant function call
 
+The second call to sched_rt_period() is redundant, because the value of the
+rt_runtime was already read and it was protected by the ->rt_runtime_lock.
 
-Oh, wait a minute. Are we talking about physical CPU Hotplug in between
-hibernation and restore? AFAIK, currently we don't handle that at all. 
-One of the things I recall in this context is that, while developing
-the x86 microcode update optimization patch (now, mainline commit Id
-7098944), it was pointed out that physical CPU hotplug on x86, and that
-too *in-between* hibernation and restore, is very far-fetched and not
-handled at present.
+Signed-off-by: Shan Hai <haishan.bai@gmail.com>
+Reviewed-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1322535836-13590-2-git-send-email-haishan.bai@gmail.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched/rt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I had posted another patch to go along with the above optimization patch
-so that we don't break stuff when physical cpu hotplug comes into picture.
-Link: http://thread.gmane.org/gmane.linux.kernel/1205405/focus=1205784
-May be it will come of use now, as it is, or in a better form.
-
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
-
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 58a4844..3640ebb 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -846,7 +846,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
+ 	if (rt_rq->rt_throttled)
+ 		return rt_rq_throttled(rt_rq);
+ 
+-	if (sched_rt_runtime(rt_rq) >= sched_rt_period(rt_rq))
++	if (runtime >= sched_rt_period(rt_rq))
+ 		return 0;
+ 
+ 	balance_runtime(rt_rq);
