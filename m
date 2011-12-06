@@ -1,66 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933484Ab1LFOTp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 09:19:45 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:56511 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933470Ab1LFOTm (ORCPT
+	id S933502Ab1LFOT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 09:19:56 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51328 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933464Ab1LFOTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 09:19:42 -0500
-Message-ID: <4EDE246D.5000500@linux.vnet.ibm.com>
-Date: Tue, 06 Dec 2011 19:49:25 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Tue, 6 Dec 2011 09:19:54 -0500
+Date: Tue, 6 Dec 2011 12:19:42 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@elte.hu, asharma@fb.com, devel@openvz.org, dsahern@gmail.com,
+        linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 3/7] perf: add ability to change event according to
+ sample (v2)
+Message-ID: <20111206141942.GE10709@infradead.org>
+References: <1322471015-107825-1-git-send-email-avagin@openvz.org>
+ <1322471015-107825-4-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Ingo Molnar <mingo@elte.hu>, Fenghua Yu <fenghua.yu@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com> <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu> <4EDDE5D0.7030906@linux.vnet.ibm.com> <20111206103500.GD15966@elte.hu> <4EDDF2DE.7020701@linux.vnet.ibm.com> <20111206130020.GB28735@gere.osrc.amd.com> <4EDE20F5.4030601@linux.vnet.ibm.com> <20111206141543.GA19241@aftab>
-In-Reply-To: <20111206141543.GA19241@aftab>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120614-5564-0000-0000-000000654212
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1322471015-107825-4-git-send-email-avagin@openvz.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 07:45 PM, Borislav Petkov wrote:
-
-> On Tue, Dec 06, 2011 at 07:34:37PM +0530, Srivatsa S. Bhat wrote:
->>> Not blindly, the microcode is still verified.
->>>
->> I saw your other mail about the validity of this whole scenario, and I
->> kind of agree to your point.
->>
->> My thoughts below might not be so relevant/significant considering that,
->> but anyways, just to understand what you said above:
->> I didn't quite find where the microcode is verified if the kernel happens
->> to have the microcode image already.
+Em Mon, Nov 28, 2011 at 12:03:31PM +0300, Andrew Vagin escreveu:
+> It's opposition of perf_session__parse_sample.
 > 
-> Sorry, I might not've been clear enough: it is still verified by the
-> _hardware_, regardless of whether the ucode loader checks it or not.
-> Remember, hw guys don't trust sw guys and the reverse holds true too.
+> v2: fixed mistakes which David Arhen found
+
+Ok, I'm taking this one, David, can I added an 'Acked-by: you"? Or even
+"reviewed-by:" ?
+
+I'm just changing 'data' to 'sample', data is way to vague, I kept it
+for a while in the past just to reduce patch size, but this is something
+completely new, so better use 'sample'.
+
+- Arnaldo
+ 
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+> ---
+>  tools/perf/util/event.h   |    2 +
+>  tools/perf/util/evsel.c   |   74 +++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/session.h |    9 +++++
+>  3 files changed, 85 insertions(+), 0 deletions(-)
 > 
-> :-)
-> 
-
-
-Oh.. Ok :-) And thank you for the explanation!
-
-Regards,
-Srivatsa S. Bhat
-
+> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+> index 357a85b..0493101 100644
+> --- a/tools/perf/util/event.h
+> +++ b/tools/perf/util/event.h
+> @@ -187,5 +187,7 @@ const char *perf_event__name(unsigned int id);
+>  int perf_event__parse_sample(const union perf_event *event, u64 type,
+>  			     int sample_size, bool sample_id_all,
+>  			     struct perf_sample *sample, bool swapped);
+> +int perf_event__change_sample(union perf_event *event, u64 type,
+> +			     const struct perf_sample *data, bool swapped);
+>  
+>  #endif /* __PERF_RECORD_H */
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index e426264..d697568 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -494,3 +494,77 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+>  
+>  	return 0;
+>  }
+> +
+> +int perf_event__change_sample(union perf_event *event, u64 type,
+> +			     const struct perf_sample *data, bool swapped)
+> +{
+> +	u64 *array;
+> +
+> +	/*
+> +	 * used for cross-endian analysis. See git commit 65014ab3
+> +	 * for why this goofiness is needed.
+> +	 */
+> +	union {
+> +		u64 val64;
+> +		u32 val32[2];
+> +	} u;
+> +
+> +	array = event->sample.array;
+> +
+> +	if (type & PERF_SAMPLE_IP) {
+> +		event->ip.ip = data->ip;
+> +		array++;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_TID) {
+> +		u.val32[0] = data->pid;
+> +		u.val32[1] = data->tid;
+> +		if (swapped) {
+> +			/* undo swap of u64, then swap on individual u32s */
+> +			u.val32[0] = bswap_32(u.val32[0]);
+> +			u.val32[1] = bswap_32(u.val32[1]);
+> +			u.val64 = bswap_64(u.val64);
+> +		}
+> +
+> +		*array = u.val64;
+> +		array++;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_TIME) {
+> +		*array = data->time;
+> +		array++;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_ADDR) {
+> +		*array = data->addr;
+> +		array++;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_ID) {
+> +		*array = data->id;
+> +		array++;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_STREAM_ID) {
+> +		*array = data->stream_id;
+> +		array++;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_CPU) {
+> +		u.val32[0] = data->cpu;
+> +		if (swapped) {
+> +			/* undo swap of u64, then swap on individual u32s */
+> +			u.val32[0] = bswap_32(u.val32[0]);
+> +			u.val64 = bswap_64(u.val64);
+> +		}
+> +		*array = u.val64;
+> +		array++;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_PERIOD) {
+> +		*array = data->period;
+> +		array++;
+> +	}
+> +
+> +	return 0;
+> +}
+> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+> index 6e393c9..444f121 100644
+> --- a/tools/perf/util/session.h
+> +++ b/tools/perf/util/session.h
+> @@ -167,6 +167,15 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+>  					session->header.needs_swap);
+>  }
+>  
+> +static inline int perf_session__change_sample(struct perf_session *session,
+> +					     union perf_event *event,
+> +					     const struct perf_sample *sample)
+> +{
+> +	return perf_event__change_sample(event, session->sample_type,
+> +					sample,
+> +					session->header.needs_swap);
+> +}
+> +
+>  struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+>  					    unsigned int type);
+>  
+> -- 
+> 1.7.1
