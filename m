@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462Ab1LFNma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 08:42:30 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:64351 "EHLO
+	id S933448Ab1LFNm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:42:27 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:64350 "EHLO
 	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933445Ab1LFNm2 (ORCPT
+	with ESMTP id S933264Ab1LFNmZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 08:42:28 -0500
+	Tue, 6 Dec 2011 08:42:25 -0500
 From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
         linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Chris Ball <cjb@laptop.org>,
         =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [MXS MMC 2/5] Some cleanups for the MMC driver
-Date: Tue,  6 Dec 2011 14:41:27 +0100
-Message-Id: <d935557e044d2ebc56b4e70487b519fe722e9017.1323177907.git.LW@KARO-electronics.de>
+Subject: [MXS MMC 3/5] Add support for SSP/MMC ports 2 & 3
+Date: Tue,  6 Dec 2011 14:41:28 +0100
+Message-Id: <e668bb1ab5fbe406ef604a18f59292a05149ae51.1323177907.git.LW@KARO-electronics.de>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1ebaeb7f7ed88b1d82f5fc3a01c0661f38e2a16d.1323177907.git.LW@KARO-electronics.de>
+In-Reply-To: <d935557e044d2ebc56b4e70487b519fe722e9017.1323177907.git.LW@KARO-electronics.de>
 References: <cover.1323177907.git.LW@KARO-electronics.de>
  <1ebaeb7f7ed88b1d82f5fc3a01c0661f38e2a16d.1323177907.git.LW@KARO-electronics.de>
+ <d935557e044d2ebc56b4e70487b519fe722e9017.1323177907.git.LW@KARO-electronics.de>
 In-Reply-To: <cover.1323177907.git.LW@KARO-electronics.de>
 References: <cover.1323177907.git.LW@KARO-electronics.de>
 MIME-Version: 1.0
@@ -29,139 +30,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - Remove bogus parens around numerical arguments in #define's
- - When defining bit masks, use the #def for the shift count
-   instead of repeating the numbers
- - Remove bogus whitespace in indentation
- - Remove 'break' at end of switch statement
+i.MX28 has four SSP/MMC units, only two of which are currently
+usable.
 
 Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 ---
- drivers/mmc/host/mxs-mmc.c |   57 +++++++++++++++++++++----------------------
- 1 files changed, 28 insertions(+), 29 deletions(-)
+ arch/arm/mach-mxs/clock-mx28.c               |    4 ++++
+ arch/arm/mach-mxs/devices/platform-mxs-mmc.c |    2 ++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 99b449d..a9b70d2 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -47,7 +47,7 @@
- #define DRIVER_NAME	"mxs-mmc"
+diff --git a/arch/arm/mach-mxs/clock-mx28.c b/arch/arm/mach-mxs/clock-mx28.c
+index fc86b04..b8cc458 100644
+--- a/arch/arm/mach-mxs/clock-mx28.c
++++ b/arch/arm/mach-mxs/clock-mx28.c
+@@ -625,6 +625,8 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("mxs-dma-apbx", NULL, xbus_clk)
+ 	_REGISTER_CLOCK("mxs-mmc.0", NULL, ssp0_clk)
+ 	_REGISTER_CLOCK("mxs-mmc.1", NULL, ssp1_clk)
++	_REGISTER_CLOCK("mxs-mmc.2", NULL, ssp2_clk)
++	_REGISTER_CLOCK("mxs-mmc.3", NULL, ssp3_clk)
+ 	_REGISTER_CLOCK("flexcan.0", NULL, can0_clk)
+ 	_REGISTER_CLOCK("flexcan.1", NULL, can1_clk)
+ 	_REGISTER_CLOCK(NULL, "usb0", usb0_clk)
+@@ -774,6 +776,8 @@ int __init mx28_clocks_init(void)
+ 	 */
+ 	clk_set_parent(&ssp0_clk, &ref_io0_clk);
+ 	clk_set_parent(&ssp1_clk, &ref_io0_clk);
++	clk_set_parent(&ssp2_clk, &ref_io1_clk);
++	clk_set_parent(&ssp3_clk, &ref_io1_clk);
  
- /* card detect polling timeout */
--#define MXS_MMC_DETECT_TIMEOUT			(HZ/2)
-+#define MXS_MMC_DETECT_TIMEOUT			(HZ / 2)
- 
- #define SSP_VERSION_LATEST	4
- #define ssp_is_old()		(host->version < SSP_VERSION_LATEST)
-@@ -59,39 +59,39 @@
- #define  BM_SSP_CTRL0_IGNORE_CRC		(1 << 26)
- #define  BM_SSP_CTRL0_READ			(1 << 25)
- #define  BM_SSP_CTRL0_DATA_XFER			(1 << 24)
--#define  BP_SSP_CTRL0_BUS_WIDTH			(22)
--#define  BM_SSP_CTRL0_BUS_WIDTH			(0x3 << 22)
-+#define  BP_SSP_CTRL0_BUS_WIDTH			22
-+#define  BM_SSP_CTRL0_BUS_WIDTH			(0x3 << BP_SSP_CTRL0_BUS_WIDTH)
- #define  BM_SSP_CTRL0_WAIT_FOR_IRQ		(1 << 21)
- #define  BM_SSP_CTRL0_LONG_RESP			(1 << 19)
- #define  BM_SSP_CTRL0_GET_RESP			(1 << 17)
- #define  BM_SSP_CTRL0_ENABLE			(1 << 16)
--#define  BP_SSP_CTRL0_XFER_COUNT		(0)
--#define  BM_SSP_CTRL0_XFER_COUNT		(0xffff)
-+#define  BP_SSP_CTRL0_XFER_COUNT		0
-+#define  BM_SSP_CTRL0_XFER_COUNT		0xffff
- #define HW_SSP_CMD0				0x010
- #define  BM_SSP_CMD0_DBL_DATA_RATE_EN		(1 << 25)
- #define  BM_SSP_CMD0_SLOW_CLKING_EN		(1 << 22)
- #define  BM_SSP_CMD0_CONT_CLKING_EN		(1 << 21)
- #define  BM_SSP_CMD0_APPEND_8CYC		(1 << 20)
--#define  BP_SSP_CMD0_BLOCK_SIZE			(16)
--#define  BM_SSP_CMD0_BLOCK_SIZE			(0xf << 16)
--#define  BP_SSP_CMD0_BLOCK_COUNT		(8)
--#define  BM_SSP_CMD0_BLOCK_COUNT		(0xff << 8)
--#define  BP_SSP_CMD0_CMD			(0)
--#define  BM_SSP_CMD0_CMD			(0xff)
-+#define  BP_SSP_CMD0_BLOCK_SIZE			16
-+#define  BM_SSP_CMD0_BLOCK_SIZE			(0xf << BP_SSP_CMD0_BLOCK_SIZE)
-+#define  BP_SSP_CMD0_BLOCK_COUNT		8
-+#define  BM_SSP_CMD0_BLOCK_COUNT		(0xff << BP_SSP_CMD0_BLOCK_COUNT)
-+#define  BP_SSP_CMD0_CMD			0
-+#define  BM_SSP_CMD0_CMD			0xff
- #define HW_SSP_CMD1				0x020
- #define HW_SSP_XFER_SIZE			0x030
- #define HW_SSP_BLOCK_SIZE			0x040
--#define  BP_SSP_BLOCK_SIZE_BLOCK_COUNT		(4)
--#define  BM_SSP_BLOCK_SIZE_BLOCK_COUNT		(0xffffff << 4)
--#define  BP_SSP_BLOCK_SIZE_BLOCK_SIZE		(0)
--#define  BM_SSP_BLOCK_SIZE_BLOCK_SIZE		(0xf)
-+#define  BP_SSP_BLOCK_SIZE_BLOCK_COUNT		4
-+#define  BM_SSP_BLOCK_SIZE_BLOCK_COUNT		(0xffffff << BP_SSP_BLOCK_SIZE_BLOCK_COUNT)
-+#define  BP_SSP_BLOCK_SIZE_BLOCK_SIZE		0
-+#define  BM_SSP_BLOCK_SIZE_BLOCK_SIZE		0xf
- #define HW_SSP_TIMING				(ssp_is_old() ? 0x050 : 0x070)
--#define  BP_SSP_TIMING_TIMEOUT			(16)
--#define  BM_SSP_TIMING_TIMEOUT			(0xffff << 16)
--#define  BP_SSP_TIMING_CLOCK_DIVIDE		(8)
--#define  BM_SSP_TIMING_CLOCK_DIVIDE		(0xff << 8)
--#define  BP_SSP_TIMING_CLOCK_RATE		(0)
--#define  BM_SSP_TIMING_CLOCK_RATE		(0xff)
-+#define  BP_SSP_TIMING_TIMEOUT			16
-+#define  BM_SSP_TIMING_TIMEOUT			(0xffff << BP_SSP_TIMING_TIMEOUT)
-+#define  BP_SSP_TIMING_CLOCK_DIVIDE		8
-+#define  BM_SSP_TIMING_CLOCK_DIVIDE		(0xff << BP_SSP_TIMING_CLOCK_DIVIDE)
-+#define  BP_SSP_TIMING_CLOCK_RATE		0
-+#define  BM_SSP_TIMING_CLOCK_RATE		0xff
- #define HW_SSP_CTRL1				(ssp_is_old() ? 0x060 : 0x080)
- #define  BM_SSP_CTRL1_SDIO_IRQ			(1 << 31)
- #define  BM_SSP_CTRL1_SDIO_IRQ_EN		(1 << 30)
-@@ -111,10 +111,10 @@
- #define  BM_SSP_CTRL1_FIFO_OVERRUN_IRQ_EN	(1 << 14)
- #define  BM_SSP_CTRL1_DMA_ENABLE		(1 << 13)
- #define  BM_SSP_CTRL1_POLARITY			(1 << 9)
--#define  BP_SSP_CTRL1_WORD_LENGTH		(4)
--#define  BM_SSP_CTRL1_WORD_LENGTH		(0xf << 4)
--#define  BP_SSP_CTRL1_SSP_MODE			(0)
--#define  BM_SSP_CTRL1_SSP_MODE			(0xf)
-+#define  BP_SSP_CTRL1_WORD_LENGTH		4
-+#define  BM_SSP_CTRL1_WORD_LENGTH		(0xf << BP_SSP_CTRL1_WORD_LENGTH)
-+#define  BP_SSP_CTRL1_SSP_MODE			0
-+#define  BM_SSP_CTRL1_SSP_MODE			0xf
- #define HW_SSP_SDRESP0				(ssp_is_old() ? 0x080 : 0x0a0)
- #define HW_SSP_SDRESP1				(ssp_is_old() ? 0x090 : 0x0b0)
- #define HW_SSP_SDRESP2				(ssp_is_old() ? 0x0a0 : 0x0c0)
-@@ -123,7 +123,7 @@
- #define  BM_SSP_STATUS_CARD_DETECT		(1 << 28)
- #define  BM_SSP_STATUS_SDIO_IRQ			(1 << 17)
- #define HW_SSP_VERSION				(cpu_is_mx23() ? 0x110 : 0x130)
--#define  BP_SSP_VERSION_MAJOR			(24)
-+#define  BP_SSP_VERSION_MAJOR			24
- 
- #define BF_SSP(value, field)	(((value) << BP_SSP_##field) & BM_SSP_##field)
- 
-@@ -151,7 +151,7 @@ struct mxs_mmc_host {
- 	struct clk			*clk;
- 	unsigned int			clk_rate;
- 
--	struct dma_chan         	*dmach;
-+	struct dma_chan			*dmach;
- 	struct mxs_dma_data		dma_data;
- 	unsigned int			dma_dir;
- 	u32				ssp_pio_words[SSP_PIO_NUM];
-@@ -277,7 +277,7 @@ static irqreturn_t mxs_mmc_irq_handler(int irq, void *dev_id)
- 
- 	stat = readl(host->base + HW_SSP_CTRL1);
- 	writel(stat & MXS_MMC_IRQ_BITS,
--	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
-+		host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
- 
- 	if ((stat & BM_SSP_CTRL1_SDIO_IRQ) && (stat & BM_SSP_CTRL1_SDIO_IRQ_EN))
- 		mmc_signal_sdio_irq(host->mmc);
-@@ -550,7 +550,6 @@ static void mxs_mmc_start_cmd(struct mxs_mmc_host *host,
- 	default:
- 		dev_warn(mmc_dev(host->mmc),
- 			 "%s: unknown MMC command\n", __func__);
--		break;
- 	}
- }
+ 	clk_enable(&cpu_clk);
+ 	clk_enable(&hbus_clk);
+diff --git a/arch/arm/mach-mxs/devices/platform-mxs-mmc.c b/arch/arm/mach-mxs/devices/platform-mxs-mmc.c
+index 382dacb..bef9d92 100644
+--- a/arch/arm/mach-mxs/devices/platform-mxs-mmc.c
++++ b/arch/arm/mach-mxs/devices/platform-mxs-mmc.c
+@@ -41,6 +41,8 @@ const struct mxs_mxs_mmc_data mx23_mxs_mmc_data[] __initconst = {
+ const struct mxs_mxs_mmc_data mx28_mxs_mmc_data[] __initconst = {
+ 	mxs_mxs_mmc_data_entry(MX28, 0, 0),
+ 	mxs_mxs_mmc_data_entry(MX28, 1, 1),
++	mxs_mxs_mmc_data_entry(MX28, 2, 2),
++	mxs_mxs_mmc_data_entry(MX28, 3, 3),
+ };
+ #endif
  
 -- 
 1.5.6.5
