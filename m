@@ -1,148 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475Ab1LFO5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 09:57:46 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62186 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933389Ab1LFO5p (ORCPT
+	id S933494Ab1LFO7F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 09:59:05 -0500
+Received: from mga14.intel.com ([143.182.124.37]:28671 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751310Ab1LFO7E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 09:57:45 -0500
-Message-ID: <4EDE2D62.9050802@gmail.com>
-Date: Tue, 06 Dec 2011 07:57:38 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	Tue, 6 Dec 2011 09:59:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,306,1320652800"; 
+   d="scan'208";a="82769045"
+From: "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
+Date: Tue, 6 Dec 2011 06:58:59 -0800
+Subject: RE: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
+Thread-Topic: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
+Thread-Index: Acyz9YgY2wUNVuxsT/K7TQr//xnXVAAMgbNw
+Message-ID: <26E9B811E137AB4B95200FD4C950886BFFB4653B@orsmsx507.amr.corp.intel.com>
+References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
+ <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu>
+In-Reply-To: <20111206085816.GA11116@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        asharma@fb.com, devel@openvz.org, linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH 3/7] perf: add ability to change event according to sample
- (v2)
-References: <1322471015-107825-1-git-send-email-avagin@openvz.org> <1322471015-107825-4-git-send-email-avagin@openvz.org> <20111206141942.GE10709@infradead.org>
-In-Reply-To: <20111206141942.GE10709@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> But the hibernation angle should be considered. Hibernation already has to deal
+> with the case where someone physically unplugs a CPU and then resumes from
+> the disk image, right? How does the hibernation code handle that case
+> currently?
 
+it'll fail the resume.
 
-On 12/06/2011 07:19 AM, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Nov 28, 2011 at 12:03:31PM +0300, Andrew Vagin escreveu:
->> It's opposition of perf_session__parse_sample.
->>
->> v2: fixed mistakes which David Arhen found
-> 
-> Ok, I'm taking this one, David, can I added an 'Acked-by: you"? Or even
-> "reviewed-by:" ?
-> 
-> I'm just changing 'data' to 'sample', data is way to vague, I kept it
-> for a while in the past just to reduce patch size, but this is something
-> completely new, so better use 'sample'.
-> 
-> - Arnaldo
->  
->> Signed-off-by: Andrew Vagin <avagin@openvz.org>
->> ---
->>  tools/perf/util/event.h   |    2 +
->>  tools/perf/util/evsel.c   |   74 +++++++++++++++++++++++++++++++++++++++++++++
->>  tools/perf/util/session.h |    9 +++++
->>  3 files changed, 85 insertions(+), 0 deletions(-)
->>
->> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
->> index 357a85b..0493101 100644
->> --- a/tools/perf/util/event.h
->> +++ b/tools/perf/util/event.h
->> @@ -187,5 +187,7 @@ const char *perf_event__name(unsigned int id);
->>  int perf_event__parse_sample(const union perf_event *event, u64 type,
->>  			     int sample_size, bool sample_id_all,
->>  			     struct perf_sample *sample, bool swapped);
->> +int perf_event__change_sample(union perf_event *event, u64 type,
->> +			     const struct perf_sample *data, bool swapped);
->>  
->>  #endif /* __PERF_RECORD_H */
->> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
->> index e426264..d697568 100644
->> --- a/tools/perf/util/evsel.c
->> +++ b/tools/perf/util/evsel.c
->> @@ -494,3 +494,77 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
->>  
->>  	return 0;
->>  }
->> +
->> +int perf_event__change_sample(union perf_event *event, u64 type,
->> +			     const struct perf_sample *data, bool swapped)
->> +{
->> +	u64 *array;
->> +
->> +	/*
->> +	 * used for cross-endian analysis. See git commit 65014ab3
->> +	 * for why this goofiness is needed.
->> +	 */
->> +	union {
->> +		u64 val64;
->> +		u32 val32[2];
->> +	} u;
->> +
->> +	array = event->sample.array;
->> +
->> +	if (type & PERF_SAMPLE_IP) {
->> +		event->ip.ip = data->ip;
->> +		array++;
->> +	}
->> +
->> +	if (type & PERF_SAMPLE_TID) {
->> +		u.val32[0] = data->pid;
->> +		u.val32[1] = data->tid;
->> +		if (swapped) {
->> +			/* undo swap of u64, then swap on individual u32s */
-
-Comment is from the parse sample code; this is the inverse of that code
-so the comment needs to be updated here.
-
->> +			u.val32[0] = bswap_32(u.val32[0]);
->> +			u.val32[1] = bswap_32(u.val32[1]);
->> +			u.val64 = bswap_64(u.val64);
->> +		}
->> +
->> +		*array = u.val64;
->> +		array++;
->> +	}
->> +
->> +	if (type & PERF_SAMPLE_TIME) {
->> +		*array = data->time;
->> +		array++;
->> +	}
->> +
->> +	if (type & PERF_SAMPLE_ADDR) {
->> +		*array = data->addr;
->> +		array++;
->> +	}
->> +
->> +	if (type & PERF_SAMPLE_ID) {
->> +		*array = data->id;
->> +		array++;
->> +	}
->> +
->> +	if (type & PERF_SAMPLE_STREAM_ID) {
->> +		*array = data->stream_id;
->> +		array++;
->> +	}
->> +
->> +	if (type & PERF_SAMPLE_CPU) {
->> +		u.val32[0] = data->cpu;
->> +		if (swapped) {
->> +			/* undo swap of u64, then swap on individual u32s */
-
-Ditto on that comment.
-
-I did not test it, but the logic is in the inverse of parse_sample so it
-should be correct.
-
-Arnaldo: you could use remove the 2 comment lines on the commit since
-there are no logic impacts.
-
-Reviewed-by: David Ahern <dsahern@gmail.com>
-
-David
