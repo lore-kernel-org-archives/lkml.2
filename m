@@ -1,116 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab1LFT7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:59:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320Ab1LFT7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:59:46 -0500
-Date: Tue, 06 Dec 2011 14:59:43 -0500 (EST)
-Message-Id: <20111206.145943.888247369587722446.davem@redhat.com>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@redhat.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=utf-8
+	id S1753330Ab1LFUBe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 15:01:34 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37803 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab1LFUBd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 15:01:33 -0500
+Date: Tue, 6 Dec 2011 20:00:52 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Martin <dave.martin@linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
+        Pawel Moll <pawel.moll@arm.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
+Message-ID: <20111206200052.GU14542@n2100.arm.linux.org.uk>
+References: <1322867573.11728.22.camel@pasglop> <20111205161157.GA27550@localhost.localdomain> <alpine.LFD.2.02.1112051236350.2357@xanadu.home> <20111205180253.GB29812@localhost.localdomain> <alpine.LFD.2.02.1112051310150.2357@xanadu.home> <20111205192605.GD29812@localhost.localdomain> <alpine.LFD.2.02.1112051443190.2357@xanadu.home> <20111206093709.GB2274@linaro.org> <20111206104654.GN14542@n2100.arm.linux.org.uk> <CA+55aFwZBr+3_S9kU-+m8zN8iwOvn2miuuAy-zt7sUjW_+abBg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwZBr+3_S9kU-+m8zN8iwOvn2miuuAy-zt7sUjW_+abBg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pB6K04Bh017255
 
+On Tue, Dec 06, 2011 at 11:20:49AM -0800, Linus Torvalds wrote:
+> Not for any device driver, though.
+> 
+> It's used entirely internally, and it doesn't even use
+> "request_irq()". It uses the magic internal "setup_irq()" and never
+> *ever* exposes irq0 as anything that a driver can see.
+> 
+> That's what matters. You can use irq0 in ARM land all you like, AS
+> LONG AS IT'S SOME HIDDEN INTERNAL USE. No drivers. No *nothing* that
+> ever uses that absolutely *idiotic* NO_IRQ crap.
+> 
+> In fact, you may be *forced* to use what is "physically" irq0 - it's
+> just that you should never expose it as such to drivers. And x86
+> doesn't.
+> 
+> So Russell, if you think this has anything to do with NO_IRQ, and how
+> x86 isn't doing things right, you're wrong. It's just like the
+> internal exception thing, or the magical "cascade interrupt", or the
+> "x87 exception mapped through the PIC". They are magic hidden
+> interrupts that are set up in one place (well, one place *each*), and
+> are never exposed anywhere else.
+> 
+> The problem with NO_IRQ is that stupid "we expose our mind-numbingly
+> stupid interfaces across the whole kernel".
+> 
+> x86 never did that.  ARM still does. x86 doesn't have to fix anything. ARM does.
 
-1) RTO_ONLINK state bit can be lost in routing cache entries, fix from
-   Julian Anastasov.
-
-2) INET peer validation fix could result in an OOPS if the call fails,
-   but allowing this operation to fail in the first place is the real
-   issue.  If we can't lookup the neighbour for the new gateway, simply
-   revert back to the old one.  We'll end up with another ICMP redirect
-   but that's fine and better than failing and having to add ugly recovery
-   code all over the place.
-
-3) FIFO overflow and packet processing race fixes in r8169 from
-   Fran√ßois Reomieu.
-
-4) pasemi_mac build was broken accidently, fix from Ben Hutchings.
-
-5) cfg80211 wireless race fixes from Luis R. Rodriguez.
-
-6) Reconfiguring HT40 after assosciation in iwlwifi results in a firmware
-   abort, so don't do it.  From Wey-Yi Guy.
-
-Please pull, thanks a lot.
-
-The following changes since commit 45e713efe2fa574b6662e7fb63fae9497c5e03d4:
-
-  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2011-12-05 16:54:15 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Ben Hutchings (1):
-      pasemi_mac: Fix building as module
-
-David S. Miller (2):
-      ipv4: Fix peer validation on cached lookup.
-      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
-
-Johannes Berg (1):
-      iwlagn: fix HW crypto for TX-only keys
-
-John W. Linville (2):
-      Revert "mac80211: clear sta.drv_priv on reconfiguration"
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Julian Anastasov (1):
-      ipv4: make sure RTO_ONLINK is saved in routing cache
-
-Luis R. Rodriguez (2):
-      cfg80211: fix race on init and driver registration
-      cfg80211: amend regulatory NULL dereference fix
-
-Peter Pan(ÊΩòÂç´Âπ≥) (1):
-      ipv4:correct description for tcp_max_syn_backlog
-
-Simon Wunderlich (1):
-      mac80211: fill rate filter for internal scan requests
-
-Stephen Boyd (1):
-      net: Silence seq_scale() unused warning
-
-Wei Liu (1):
-      netback: Fix alert message.
-
-Wey-Yi Guy (2):
-      iwlwifi: do not re-configure HT40 after associated
-      iwlwifi: change the default behavior of watchdog timer
-
-fran√ßois romieu (2):
-      r8169: Rx FIFO overflow fixes.
-      r8169: fix Rx index race between FIFO overflow recovery and NAPI handler.
-
- Documentation/networking/ip-sysctl.txt      |   10 +++---
- drivers/net/ethernet/pasemi/Makefile        |    3 +-
- drivers/net/ethernet/realtek/r8169.c        |   53 ++++++++++-----------------
- drivers/net/wireless/iwlwifi/iwl-1000.c     |    1 +
- drivers/net/wireless/iwlwifi/iwl-5000.c     |    1 +
- drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |   36 ++++++++++++-------
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c  |    5 ---
- drivers/net/wireless/iwlwifi/iwl-agn.c      |   34 +++++++++---------
- drivers/net/wireless/iwlwifi/iwl-agn.h      |    2 +
- drivers/net/wireless/iwlwifi/iwl-core.c     |   22 +++++++++---
- drivers/net/wireless/iwlwifi/iwl-core.h     |    2 +
- drivers/net/wireless/iwlwifi/iwl-shared.h   |    4 +-
- drivers/net/xen-netback/netback.c           |    2 +-
- net/core/request_sock.c                     |    7 ++--
- net/core/secure_seq.c                       |    2 +
- net/ipv4/route.c                            |   47 ++++++++++--------------
- net/mac80211/main.c                         |    6 +++
- net/mac80211/util.c                         |    1 -
- net/wireless/reg.c                          |   49 ++++++++++++++++---------
- 19 files changed, 155 insertions(+), 132 deletions(-)
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Remember you said that I shouldn't take things personally?  Well,
+this is one issue I really don't care about.  I don't think any
+platform I _actually_ have will be impacted by any change in this
+area.  Other platform maintainers may have their own issues but
+that's not _my_ problem.
