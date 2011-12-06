@@ -1,81 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942Ab1LFSRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 13:17:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51106 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752161Ab1LFSRb (ORCPT
+	id S1752915Ab1LFSTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:19:41 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60165 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab1LFSTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 13:17:31 -0500
-Date: Tue, 6 Dec 2011 18:17:15 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Message-ID: <20111206181715.GG3366@decadent.org.uk>
-References: <1319773015.6759.30.camel@deadeye>
- <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
- <1323185640.7454.269.camel@deadeye>
- <1323193731.32012.81.camel@twins>
- <20111206175558.3215907c@lxorguk.ukuu.org.uk>
- <20111206175919.GA5386@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111206175919.GA5386@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
- error
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Tue, 6 Dec 2011 13:19:40 -0500
+Date: Tue, 06 Dec 2011 13:17:10 -0500 (EST)
+Message-Id: <20111206.131710.2181211652306186928.davem@davemloft.net>
+To: LW@KARO-electronics.de
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, shawn.guo@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1323163127.git.LW@KARO-electronics.de>
+References: <cover.1323163127.git.LW@KARO-electronics.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 06 Dec 2011 10:17:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 06:59:19PM +0100, Ingo Molnar wrote:
-> 
-> * Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> 
-> > On Tue, 06 Dec 2011 18:48:51 +0100
-> > Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > 
-> > > On Tue, 2011-12-06 at 15:34 +0000, Ben Hutchings wrote:
-> 
-> > > > If you disagree with a patch, do not silently drop parts 
-> > > > of it.  I demand that you remove my 'Signed-off-by' as 
-> > > > this is not the change I submitted.
-> > > 
-> > > The easy solution is that I never take patches from you 
-> > > again, ever. Consider that done. I'll let Ingo see if he can 
-> > > remove your SOB.
-> > 
-> > In which case you are presumably ceasing to be a maintainer 
-> > for that code ? Your statement above appears to be 
-> > inconsistent with the rôle of a maintainer.
-> 
-> What Peter did was rather sensible: he split a patch that did 
-> two things into two and applied one standalone, uncontroversial 
-> half of it and kept the part of the part of the changelog that 
-> related to that change.
-[...]
 
-I can accept that if the change from my submission is commented
-in the commit message.  (I sometimes do that with other people's
-patches.)  But this was modified without comment.
+Please use a more reasonable Subject line for your patches.
 
-Giving credit for authorship is important, but it is also
-important not to say someone is the sole author of something
-when they aren't and haven't approved the subsequent changes
-(cf. Alan Smithee).
- 
-Ben.
+Saying "several cleanups and bugfixes for fec.c:" in every subject
+line of a whole series of patches isn't very helpful.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Just "fec: set con_id in clk_get() call to NULL", as one example, would be fine.
+
+You will need to resubmit this entire patch series, afresh, with this fixup.
+Do not try to fix it up by replying to the individual patch postings.
