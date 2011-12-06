@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869Ab1LFCtj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 21:49:39 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40311 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932842Ab1LFCti convert rfc822-to-8bit (ORCPT
+	id S932867Ab1LFDIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 22:08:38 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40550 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756393Ab1LFDIh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 21:49:38 -0500
+	Mon, 5 Dec 2011 22:08:37 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111206021749.GA7202@earth.universe>
-References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
-	<20111206021749.GA7202@earth.universe>
-Date: Tue, 6 Dec 2011 04:49:37 +0200
-Message-ID: <CAMP44s3JF9QM00x=aUq3tHGfeuTRnKMbT2WrMseZXZTJg1qUyQ@mail.gmail.com>
-Subject: Re: [PATCH] mfd: add bq2415x charger driver
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Sebastian Reichel <sre@debian.org>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
-        Vladimir Zapolskiy <vz@mleia.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4EDD729E.2060402@linux.vnet.ibm.com>
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
+	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>
+	<20111121165626.GD14568@thunk.org>
+	<alpine.LSU.2.00.1111211331120.1879@sister.anvils>
+	<alpine.LSU.2.00.1112051456580.3938@sister.anvils>
+	<4EDD729E.2060402@linux.vnet.ibm.com>
+Date: Tue, 6 Dec 2011 11:08:36 +0800
+Message-ID: <CAGBYx2YNKEiuRF31CaRiK2ROj_xmVsnL4rcWnoofyziYCkYjpw@mail.gmail.com>
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+To: Allison Henderson <achender@linux.vnet.ibm.com>
+Cc: Hugh Dickins <hughd@google.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Curt Wohlgemuth <curtw@google.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Rafael Wysocki <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Allison,
 
-2011/12/6 Sebastian Reichel <sre@debian.org>:
-> Good to hear somebody is working on this :) I planned to do this
-> myself, but didn't find any time for it. Here are some comments
-> from me:
+I noticed another problem which has nothing to do with punching hole.
+ __block_write_begin does not zero buffers beyond EOF.(I guess you
+tried to zero them in your code, am I right? )  When users mapread
+beyond EOF,  users get non-zero data.  I am not sure zero or non-zero
+data should be, but fsx thinks they should be zero data and reports an
+error.
 
-:)
+It I understand the problem right, it happens more often with punch hole.
 
-> [...]
+Yongqiang.
+On Tue, Dec 6, 2011 at 9:40 AM, Allison Henderson
+<achender@linux.vnet.ibm.com> wrote:
+> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
+>>
+>> On Mon, 21 Nov 2011, Hugh Dickins wrote:
+>>>
+>>> On Mon, 21 Nov 2011, Ted Ts'o wrote:
+>>>>
+>>>> On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
+>>>>>
+>>>>> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
+>>>>> It appears that there's a bug with this patch:
+>>
+>>
+>> This has been outstanding for a month now, and we've heard no progress:
+>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for rc5.
+>>
+>> The problems appear on a 1k-blocksize filesystem under memory pressure:
+>> the hunk in ext4_da_write_end() causes oops, because it's playing with
+>> a page after generic_write_end() dropped our last reference to it; and
+>> backing out the hunk in ext4_da_write_begin() is then found to stop
+>> rare data corruption seen when kbuilding.
+>>
+>> Although I earlier reported that backing out the patch caused an fsx
+>> test to fail earlier, I've since found great variation in how soon it
+>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
+>> I also reported that I had to go back to 2.6.38 for fsx not to fail
+>> under memory pressure: you won't be surprised that that turned out to
+>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
+>>
+>> Thanks,
+>> Hugh
+>>
 >
->> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
 >
-> I would expect the driver in drivers/power. But maybe MFD is
-> better, since the chip can also be used to power USB host?
-
-Perhaps, at least I haven't tried that.
-
-> [...]
+> Hi there,
 >
->> +#define BQ2415X_VOLTAGE_SCALE 20000
+> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
+> works well when blocksize < pagesize" ? �I have tried it and it does seem to
+> help, but I am still running into some failures that I am trying to debug,
+> but let please let us know if it helps the issues that you are seeing. �Thx!
 >
-> If I remember correctly (I read the specs some time ago), this can
-> be configured via external resistor. So this is board specific?
-
-Not really. There are 6 bits: 640, 320, 160, 80, 40, 20. So values
-from 0 to 1260mV can be represented, at steps of 20mV. A value of 0
-means 3.5V.
-
-> [...]
+> Allison Henderson
 >
->> +     bq2415x_i2c_write(cli, BQ2415X_CHG_CTL, 0x42);
->> +     bq2415x_set_voltage(cli, 0, 4200000);
->> +     bq2415x_set_current_limit(cli, 1800000, 1800000);
->
-> So it always charges with 1.8A? Shouldn't this be dependent on the
-> input source (e.g. 500mA from USB)? Also what's if no charger is
-> connected at all?
 
-No. I'm hard-coding those values, but I wrote the functions
-(set_voltate, set_current_limit) so all values are supported.
 
-What is missing is the code to connect this driver to the charger
-detector driver (isp1704), so those values are determined dynamically.
-
-> Apart from this I think those values should be exposed to sysfs
-> via /sys/class/power_supply.
-
-Perhaps. Although I don't see much of the power supply interface that
-could be useful here, but if so, I guess this should be indeed in
-'drivers/power'.
-
-Cheers.
 
 -- 
-Felipe Contreras
+Best Wishes
+Yongqiang Yang
