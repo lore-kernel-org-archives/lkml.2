@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab1LFQKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:10:06 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:54646 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750883Ab1LFQKE (ORCPT
+	id S1751340Ab1LFQOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:14:41 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61014 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab1LFQOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:10:04 -0500
-Date: Tue, 6 Dec 2011 11:10:02 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Namjae Jeon <linkinjeon@gmail.com>
-cc: akpm@linux-foundation.org, <linux-kernel@vger.kernel.org>,
-        Ashish Sangwan <ashishsangwan2@gmail.com>
-Subject: Re: [PATCH] nls: add surrogate pair support in nls utf8.
-In-Reply-To: <CAKYAXd-c9-UgMsa=VJXkvd7k=jPFZXCmQQZEh6eBiFbDayg6bw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1112061102270.1469-100000@iolanthe.rowland.org>
+	Tue, 6 Dec 2011 11:14:40 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4EDDCD6D.1010907@jp.fujitsu.com>
+References: <20111123144417.2da5958c@jbarnes-desktop> <CA+55aFyaiJBYmgVCLfPA7q3hqtPHYh9wwsmVTCewbBoxMsDE8A@mail.gmail.com>
+ <20111205112256.68e59434@jbarnes-desktop> <4EDDCD6D.1010907@jp.fujitsu.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 6 Dec 2011 08:14:17 -0800
+X-Google-Sender-Auth: wXnCp5szptyZq7dzqNprYjcFcqA
+Message-ID: <CA+55aFwuZxGZhXyhj+cb5WLnFPDh45Dy6BwgmvEQKAM5swaM6w@mail.gmail.com>
+Subject: Re: [git pull] PCI fixes
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Dec 2011, Namjae Jeon wrote:
+On Tue, Dec 6, 2011 at 12:08 AM, Kenji Kaneshige
+<kaneshige.kenji@jp.fujitsu.com> wrote:
+>
+> In the past, pciehp waits 100 ms instead of 1 sec after checking the link
+> state. This 100 ms was based on PCIe spec.
 
-> > Firstly, have you checked whether the callers of this function expect
-> > to receive back more than one 16-bit value?  Maybe you will overrun
-> > their buffers by doing this.
-> Hi Alan.
-> first Thanks for your review.
-> yes, you're right. and yes I have checked it on FAT fs,  I will try to
-> post the below FAT patch after this patch is applied.
+I would like to point out that these kinds of delays are *really*
+annoying to users. And they add up.
 
-But what about other callers?  Have you checked the entire kernel 
-source to see if char2uni is used anywhere else?
+One second per se is not a huge problem, but imagine that you're
+hotplugging some regular user device (think thunderbolt or something
+that we'd expect normal users to see). First one second for the kernel
+to even see it, then some random udev rules, then some disk spinup
+times or whatever, and soon a few delays here and a few delays there,
+and it takes say three seconds for the folder to show up on the
+desktop (or whatever acknowledgement of "yes, I see your device now").
 
-> --- a/fs/fat/namei_vfat.c
-> +++ b/fs/fat/namei_vfat.c
-> @@ -555,7 +555,10 @@ xlate_to_uni(const unsigned char *name, int len,
-> unsigned char *outname,
->                                                 return -EINVAL;
->                                         ip += charlen;
->                                         i += charlen;
-> -                                       op += 2;
-> +                                       if (charlen == sizeof(unicode_t))
-> +                                               op += 4;
-> +                                       else
-> +                                               op += 2;
+That's a *long* time, and it's irritating to the user. It makes the
+user think "the machine is slow".
 
-This seems completely wrong.  The amount you increment the output
-pointer doesn't depend on the length of the input character; it depends
-on whether the output needed to use a surrogate pair.
+We used to have this exact problem with USB hotplugging with slow
+devices, so I know. It's still not necessarily immediate, but it's
+better than it has been.
 
-Furthermore, it doesn't answer my question.  What happens if _every_
-character in the input filename has to be converted to a surrogate 
-pair?  Then the output string will be twice as long as xlate_to_uni() 
-expects, so it might overrun the output buffer.
+One second *total* is what people will consider pretty much immediate.
+Any more than that is "thumb twiddling time".
 
+And quite frankly, an unconditional one-second delay here seems bad.
+Two seconds was unacceptable, one second is just bad.
 
-> > Secondly, you shouldn't have to make all these changes.  Just call
-> > utf8s_to_utf16s(); then all you have to worry about is changing an
-> > invalid character to a '?'.
-> Currently there are two paths along mount option. if using -o utf8
-> mount option, utf8s_to_utf16s have been used in xlate_to_uni of FAT.
-> and if using iocharset=utf8, char2uni have been used..
-> nls->char2uni works on a single charachter while utf8s_to_utf16s works
-> on whole string.
-> when the mount option(uni_xlate) that require scanning character by
-> character is used it is needed.
+>                                                              This is
+> based on the PCIe description "software must allow 1 second after the Data
+> Link Layer Link Active bit reads 1b before it is permitted to determine
+> that a hot plugged device which fails to return a Successful Completion for
+> a Valid Configuration Request is a broken device".
 
-That doesn't matter.  The point is that you have duplicated the code in 
-nls_base.c, which is a bad idea.  Instead of making a copy of the code, 
-you should use the code that is already there.  You may find that the 
-easiest way is to add a new utf32_to_utf16 function in nls_base.c.
+Quite frankly, the way that reads to me says "you must wait at most 1s
+before you consider a device broken".
 
-Alan Stern
+But a *successful* read of the LT bit should abort the wait early. So
+that good devices that aren't broken can complete setup much faster.
 
+Please try to make something like that work. Instead of always waiting
+for one second, wait for up to one second only for failure cases. Any
+possibility of that?
+
+Clearly most devices are perfectly fine almost immediately. It's sad
+to wait for good devices for no good reason.
+
+                       Linus
