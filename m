@@ -1,133 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab1LFWdC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:33:02 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:45815 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753421Ab1LFWdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:33:00 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2 1/3] PM / Sleep: Make [un]lock_system_sleep() generic
-Date: Tue, 6 Dec 2011 23:35:53 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com, tj@kernel.org,
-        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, oleg@redhat.com
-References: <20111206192000.25854.53769.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20111206192000.25854.53769.stgit@srivatsabhat.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1755419Ab1LFWdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:33:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43071 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341Ab1LFWdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 17:33:14 -0500
+Date: Tue, 6 Dec 2011 14:33:13 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
+Message-Id: <20111206143313.ac2e7287.akpm@linux-foundation.org>
+In-Reply-To: <20111206181026.GO29781@moon>
+References: <20111206181026.GO29781@moon>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112062335.53670.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 06, 2011, Srivatsa S. Bhat wrote:
-> The [un]lock_system_sleep() APIs were originally introduced to mutually
-> exclude memory hotplug and hibernation.
-> 
-> Directly using mutex_lock(&pm_mutex) to achieve mutual exclusion with
-> suspend or hibernation code can lead to freezing failures. However, the
-> APIs [un]lock_system_sleep() can be safely used to achieve the same,
-> without causing freezing failures.
-> 
-> So, since it would be beneficial to modify all the existing users of
-> mutex_lock(&pm_mutex) (in all parts of the kernel), so that they use these
-> safe APIs intead, make these APIs generic by removing the restriction that
-> they work only when CONFIG_HIBERNATE_CALLBACKS is set. Moreover, that
-> restriction didn't buy us anything anyway.
-> 
-> v2: Rebased on top of the patchset posted at:
->     https://lkml.org/lkml/2011/12/6/334
-> 
-> Suggested-by: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+On Tue, 6 Dec 2011 22:10:26 +0400
+Cyrill Gorcunov <gorcunov@openvz.org> wrote:
 
-All patches in this series applied to linux-pm/linux-next.
-
-Thanks,
-Rafael
-
-
-> ---
+> There is no easy way to make a reverse parent->children chain
+> from the task status, in turn children->parent provided with "PPid"
+> field.
 > 
->  include/linux/suspend.h |   36 ++++++++++++++++--------------------
->  1 files changed, 16 insertions(+), 20 deletions(-)
+> So instead of walking over all pids in system to figure out what
+> children the task have -- we add explicit /proc/<pid>/children entry,
+> since kernel already knows this kind of information but it was not
+> yet exported.
 > 
-> diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-> index 906d62c..95040cc 100644
-> --- a/include/linux/suspend.h
-> +++ b/include/linux/suspend.h
-> @@ -332,6 +332,8 @@ static inline bool system_entering_hibernation(void) { return false; }
->  #define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
->  #define PM_POST_RESTORE		0x0006 /* Restore failed */
->  
-> +extern struct mutex pm_mutex;
-> +
->  #ifdef CONFIG_PM_SLEEP
->  void save_processor_state(void);
->  void restore_processor_state(void);
-> @@ -352,6 +354,19 @@ extern bool events_check_enabled;
->  extern bool pm_wakeup_pending(void);
->  extern bool pm_get_wakeup_count(unsigned int *count);
->  extern bool pm_save_wakeup_count(unsigned int count);
-> +
-> +static inline void lock_system_sleep(void)
+>
+> ...
+>
+> +static int children_seq_show(struct seq_file *seq, void *v)
 > +{
-> +	freezer_do_not_count();
-> +	mutex_lock(&pm_mutex);
+> +	struct task_struct *task = container_of(v, struct task_struct, sibling);
+> +	return seq_printf(seq, " %d", pid_vnr(task_pid(task)));
+> +}
+
+Printing a pid_t with %d is a bit risky.  At present all architectures
+appear to use int for pid_t so it's not broken (yet!).  I suppose we
+can leave this code as-is for now - if some 32-bit arch turns up with a
+64-bit pid_t, we'll want that warning to come out.
+
+> +static void *children_seq_start(struct seq_file *seq, loff_t *pos)
+> +{
+> +	struct task_struct *task;
+> +
+> +	rcu_read_lock();
+> +	task = seq->private;
+> +	if (task)
+> +		return seq_list_start(&task->children, *pos);
+> +
+> +	return NULL;
 > +}
 > +
-> +static inline void unlock_system_sleep(void)
+> +static void *children_seq_next(struct seq_file *seq, void *v, loff_t *pos)
 > +{
-> +	mutex_unlock(&pm_mutex);
-> +	freezer_count();
+> +	struct task_struct *task = seq->private;
+> +	if (task)
+> +		return seq_list_next(v, &task->children, pos);
+> +	return NULL;
 > +}
 > +
->  #else /* !CONFIG_PM_SLEEP */
->  
->  static inline int register_pm_notifier(struct notifier_block *nb)
-> @@ -367,30 +382,11 @@ static inline int unregister_pm_notifier(struct notifier_block *nb)
->  #define pm_notifier(fn, pri)	do { (void)(fn); } while (0)
->  
->  static inline bool pm_wakeup_pending(void) { return false; }
-> -#endif /* !CONFIG_PM_SLEEP */
-> -
-> -extern struct mutex pm_mutex;
->  
-> -#ifndef CONFIG_HIBERNATE_CALLBACKS
->  static inline void lock_system_sleep(void) {}
->  static inline void unlock_system_sleep(void) {}
->  
-> -#else
-> -
-> -/* Let some subsystems like memory hotadd exclude hibernation */
-> -
-> -static inline void lock_system_sleep(void)
-> -{
-> -	freezer_do_not_count();
-> -	mutex_lock(&pm_mutex);
-> -}
-> -
-> -static inline void unlock_system_sleep(void)
-> -{
-> -	mutex_unlock(&pm_mutex);
-> -	freezer_count();
-> -}
-> -#endif
-> +#endif /* !CONFIG_PM_SLEEP */
->  
->  #ifdef CONFIG_ARCH_SAVE_PAGE_KEYS
->  /*
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+> +static void children_seq_stop(struct seq_file *seq, void *v)
+> +{
+> +	rcu_read_unlock();
+> +	seq_printf(seq, "\n");
+> +}
+
+So as I understand it, they way this works is that when the seqfile
+buffer fills up we will drop the rcu lock, will flush the buffer and
+then we reacquire the lock and the seq_file core will iterate over the
+children list until we end up the same number of items from the head,
+and populating the output buffer will resume.
+
+This means that if the children list changes during the flush, the data
+which userspace reads will be wrong.  Of course, inaccuracy is
+unavoidable when returning kernel-internal data such as this to
+userspace.
+
+I suggest that the changelog should explain these races and should also
+explain how you propose that the client software will be robust against
+such races.
+
+It's also worth adding a warning about this into the documentation for
+this procfs file.  Documentation which this patch forgot to provide,
+btw!
+
 
