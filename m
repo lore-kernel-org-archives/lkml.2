@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791Ab1LFBF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 20:05:58 -0500
-Received: from mga11.intel.com ([192.55.52.93]:41617 "EHLO mga11.intel.com"
+	id S932829Ab1LFBGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 20:06:15 -0500
+Received: from mga11.intel.com ([192.55.52.93]:18104 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932716Ab1LFBF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 20:05:57 -0500
+	id S932716Ab1LFBGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Dec 2011 20:06:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,302,1320652800"; 
-   d="scan'208";a="92645287"
+   d="scan'208";a="92645293"
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         user-mode-linux-devel@lists.sourceforge.net,
         linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 0/3] UML fixes for tip:x86/syscall
-Date: Mon,  5 Dec 2011 17:05:46 -0800
-Message-Id: <1323133549-13590-1-git-send-email-hpa@linux.intel.com>
+Subject: [PATCH 1/3] um: Run host archheaders, allow use of host generated headers
+Date: Mon,  5 Dec 2011 17:05:47 -0800
+Message-Id: <1323133549-13590-2-git-send-email-hpa@linux.intel.com>
 X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1323133549-13590-1-git-send-email-hpa@linux.intel.com>
+References: <1323133549-13590-1-git-send-email-hpa@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-The patch series currently in -tip as x86/syscall, which builds
-syscall tables from a simple text file also broke UML.
+Run the "archheaders" target for the host architecture, for
+architectures (like x86, now) that want to generate some of the
+necessary header files.
 
-I intend to apply this patch to tip:x86/syscall, but if the UML folks
-would either holler or ack that would be appreciated.
+Add $(HOST_DIR)/include/generated to the include path so we then pick
+them up.
 
-This patch series enables using generated host header files in UML,
-and then uses the new x86 generated syscall tables in the same uniform
-style as the native kernel.
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/um/Makefile |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-The native kernel relies on asm-offsets.h to generate the syscall
-fencepost symbols automatically (it is done that way rather in the
-script to make the future extension to multiple supported ABIs work
-better.)  On UML, asm-offsets.h is generated globally, but
-user-constants.h has per-subarchitecture support; it feels a little
-like an odd place for it but I put the fenceposts there.  The UML
-folks might want to holler if that is too broken.
-
- arch/um/Makefile                |    9 +++++-
- arch/x86/um/Makefile            |    3 +-
- arch/x86/um/sys_call_table_32.S |   26 ------------------
- arch/x86/um/sys_call_table_32.c |   55 +++++++++++++++++++++++++++++++++++++++
- arch/x86/um/sys_call_table_64.c |   31 ++++++++-------------
- arch/x86/um/user-offsets.c      |   15 ++++++++++
- 6 files changed, 91 insertions(+), 48 deletions(-)
+diff --git a/arch/um/Makefile b/arch/um/Makefile
+index 7730af6..00210e9 100644
+--- a/arch/um/Makefile
++++ b/arch/um/Makefile
+@@ -64,7 +64,8 @@ USER_CFLAGS = $(patsubst $(KERNEL_DEFINES),,$(patsubst -D__KERNEL__,,\
+ #This will adjust *FLAGS accordingly to the platform.
+ include $(srctree)/$(ARCH_DIR)/Makefile-os-$(OS)
+ 
+-KBUILD_CPPFLAGS += -I$(srctree)/$(HOST_DIR)/include
++KBUILD_CPPFLAGS += -I$(srctree)/$(HOST_DIR)/include \
++		   -I$(HOST_DIR)/include/generated
+ 
+ # -Derrno=kernel_errno - This turns all kernel references to errno into
+ # kernel_errno to separate them from the libc errno.  This allows -fno-common
+@@ -96,6 +97,10 @@ endef
+ 
+ KBUILD_KCONFIG := $(HOST_DIR)/um/Kconfig
+ 
++archheaders:
++	$(Q)$(MAKE) -C '$(KBUILD_SRC)' KBUILD_SRC= \
++		ARCH=$(SUBARCH) O='$(objtree)' archheaders
++
+ archprepare: include/generated/user_constants.h
+ 
+ LINK-$(CONFIG_LD_SCRIPT_STATIC) += -static
+-- 
+1.7.6.4
 
