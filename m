@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab1LFTp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:45:28 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:51780 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752054Ab1LFTp0 (ORCPT
+	id S1753929Ab1LFTpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:45:34 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:16171 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589Ab1LFTpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:45:26 -0500
-Message-ID: <4EDE7EB7.7080507@xenotime.net>
-Date: Tue, 06 Dec 2011 12:44:39 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        x86 maintainers <x86@kernel.org>
-Subject: Re: linux-next: Tree for Dec 6 (x86, not SMP)
-References: <20111206154450.5e2ef2baed27993b23a55802@canb.auug.org.au>
-In-Reply-To: <20111206154450.5e2ef2baed27993b23a55802@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Tue, 6 Dec 2011 14:45:32 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Tue, 06 Dec 2011 14:45:30 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Tixy <tixy@yxit.co.uk>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        John Holland <john.holland@cellent-fs.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lennert Buytenhek <kernel@wantstofly.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC][PATCH] ARM: kirkwood: Remove eSATA SheevaPlug board support
+In-reply-to: <1323155228.2237.10.camel@computer2>
+Message-id: <alpine.LFD.2.02.1112061442430.2357@xanadu.home>
+References: <1322737480.9622.5.camel@phoenix>
+ <1322912383.2378.79.camel@computer2>
+ <alpine.LFD.2.02.1112031247230.2357@xanadu.home>
+ <1323155228.2237.10.camel@computer2>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2011 08:44 PM, Stephen Rothwell wrote:
-> Hi all,
+On Tue, 6 Dec 2011, Tixy wrote:
+
+> On Sat, 2011-12-03 at 13:00 -0500, Nicolas Pitre wrote:
+> > On Sat, 3 Dec 2011, Tixy wrote:
+> > > [PATCH] Fix machine_is_xxx() naming for eSata SheevaPlug and QNAP TS-209
+> > > 
+> > > The eSata SheevaPlug and QNAP TS-209 devices were removed from
+> > > mach-types due to naming mismatches between machine_is_xxx(), CONFIG_XXX
+> > > and MACH_TYPE_XXX.
+> > > 
+> > > This patch fixes those mismatches and adds the devices back into
+> > > mach-types.
+> > > 
+> > > Cc: Nicolas Pitre <nico@fluxnic.net>
+> > > Cc: Lennert Buytenhek <kernel@wantstofly.org>
+> > > Cc: Russell King <linux@arm.linux.org.uk>
+> > > Signed-off-by: Jon Medhurst <tixy@yxit.co.uk>
+> > 
+> > Acked-by: Nicolas Pitre <nico@linaro.org>
+> > 
+> > Obviously, the change to mach-types should be done in the machine 
+> > registry database as well by RMK.
 > 
-> Changes since 20111205:
+> Which tree should this go through? Russell's or arm-soc?
+
+The arm-soc tree is probably more appropriate.  Don't include the 
+mach-types changes though as it is preferable if they come through RMK's 
+database updates.
 
 
-on x86, when CONFIG_SMP is not enabled:
-
-arch/x86/kernel/cpu/common.c:1149:2: error: 'struct cpuinfo_x86' has no member named 'phys_proc_id'
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Nicolas
