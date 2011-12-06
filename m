@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933249Ab1LFK2m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 05:28:42 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49246 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933052Ab1LFK2k (ORCPT
+	id S933239Ab1LFK2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:28:32 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:51647 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933052Ab1LFK23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 05:28:40 -0500
-Date: Tue, 6 Dec 2011 10:30:22 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: Re: [PATCH -tip] x86: fix build without CONFIG_X86_MRST
-Message-ID: <20111206103022.434ebf6f@lxorguk.ukuu.org.uk>
-In-Reply-To: <1323166702-12990-1-git-send-email-sgruszka@redhat.com>
-References: <1323166702-12990-1-git-send-email-sgruszka@redhat.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Dec 2011 05:28:29 -0500
+From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [PATCH][NET] several cleanups and bugfixes for fec.c: misc cleanups
+Date: Tue,  6 Dec 2011 11:27:09 +0100
+Message-Id: <bd4415514fa0b40ece04d56b3ac4f549e79d87d7.1323163127.git.LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <cover.1323163127.git.LW@KARO-electronics.de>
+References: <cover.1323163127.git.LW@KARO-electronics.de>
+In-Reply-To: <cover.1323163127.git.LW@KARO-electronics.de>
+References: <cover.1323163127.git.LW@KARO-electronics.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  6 Dec 2011 11:18:22 +0100
-Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+ - remove some bogus whitespace
+ - remove line wraps from printk messages
 
-> Fix compilation error when compiled with CONFIG_X86_INTEL_MID and
-> without CONFIG_X86_MRST:
-> 
-> arch/x86/built-in.o: In function `add_rtc_cmos':
-> rtc.c:(.init.text+0x34bd): undefined reference to `__mrst_cpu_chip'
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/net/ethernet/freescale/fec.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-It really is INTEL_MID wide, but there were other problems with the
-way the INTEL_MID selection was done. Should be fixed with the patch I
-sent Ingo.
+diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
+index 1124ce0..f224e58 100644
+--- a/drivers/net/ethernet/freescale/fec.c
++++ b/drivers/net/ethernet/freescale/fec.c
+@@ -99,7 +99,7 @@ static struct platform_device_id fec_devtype[] = {
+ MODULE_DEVICE_TABLE(platform, fec_devtype);
+ 
+ enum imx_fec_type {
+-	IMX25_FEC = 1, 	/* runs on i.mx25/50/53 */
++	IMX25_FEC = 1,	/* runs on i.mx25/50/53 */
+ 	IMX27_FEC,	/* runs on i.mx27/35/51 */
+ 	IMX28_FEC,
+ 	IMX6Q_FEC,
+@@ -132,7 +132,7 @@ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
+ #elif defined (CONFIG_M5272C3)
+ #define	FEC_FLASHMAC	(0xffe04000 + 4)
+ #elif defined(CONFIG_MOD5272)
+-#define FEC_FLASHMAC 	0xffc0406b
++#define FEC_FLASHMAC	0xffc0406b
+ #else
+ #define	FEC_FLASHMAC	0
+ #endif
+@@ -972,8 +972,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
+ 	}
+ 
+ 	if (phy_id >= PHY_MAX_ADDR) {
+-		printk(KERN_INFO "%s: no PHY, assuming direct connection "
+-			"to switch\n", ndev->name);
++		printk(KERN_INFO
++			"%s: no PHY, assuming direct connection to switch\n",
++			ndev->name);
+ 		strncpy(mdio_bus_id, "0", MII_BUS_ID_SIZE);
+ 		phy_id = 0;
+ 	}
+@@ -998,8 +999,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
+ 	fep->link = 0;
+ 	fep->full_duplex = 0;
+ 
+-	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
+-		"(mii_bus:phy_addr=%s, irq=%d)\n", ndev->name,
++	printk(KERN_INFO
++		"%s: Freescale FEC PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
++		ndev->name,
+ 		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
+ 		fep->phy_dev->irq);
+ 
+-- 
+1.5.6.5
 
-Thanks
-
-Alan
