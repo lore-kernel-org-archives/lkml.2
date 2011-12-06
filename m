@@ -1,57 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118Ab1LFKFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 05:05:53 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:34119
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933037Ab1LFKFu (ORCPT
+	id S933128Ab1LFKNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:13:41 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34654 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933074Ab1LFKNk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 05:05:50 -0500
-X-SpamScore: -19
-X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4R8275bhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LVS1DF-02-DUU-02
-X-M-MSG: 
-Date: Tue, 6 Dec 2011 11:05:37 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Alex Williamson <alex.williamson@redhat.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <bhelgaas@google.com>
-Subject: Re: [PATCH 0/2] PCI: PRI/PASSID cleanup and fix
-Message-ID: <20111206100537.GH25178@amd.com>
-References: <20111111170319.32668.48479.stgit@bling.home>
- <20111123104705.GC11876@amd.com>
- <20111123144510.56ff6d1d@jbarnes-desktop>
- <20111128104055.GI11876@amd.com>
- <20111205102423.476b7ce4@jbarnes-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111205102423.476b7ce4@jbarnes-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 6 Dec 2011 05:13:40 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 6 Dec 2011 19:12:11 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
+Subject: [RFC][PATCH 1/4] memcg: simplify page cache charging
+Message-Id: <20111206191211.3be32ccb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 10:24:23AM -0800, Jesse Barnes wrote:
-> On Mon, 28 Nov 2011 11:40:55 +0100
-> Joerg Roedel <joerg.roedel@amd.com> wrote:
+This is an add-on patches to mem_cgroup_replace_page_cache(), introducing
+new LRU rule under memcg, finally. After this, lru handling will be
+much simplified. (all pathces are based on 3.2.0-rc4-next-20111205+)
 
-> > Great. Can you provide a seperate branch with these changes that I can
-> > pull into my tree, please? I have upcoming changes that will conflict
-> > with these patches. And I would like to solve them before merge.
-> 
-> Ok, I pushed these to a 'pri-changes' branch, which is a superset of my
-> current linux-next branch.
+But this is experimental... I may forget some important corner cases.
+==
+>From 028eddd3fea1634e23b18a96ba5653e8c54b437b Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 6 Dec 2011 14:57:01 +0900
+Subject: [PATCH 1/4] memcg: simplify page cache charging.
 
-Great, thanks :)
+Because of commit ef6a3c6311, FUSE uses replace_page_cache() instead
+of add_to_page_cache(). Then, mem_cgroup_cache_charge() is not
+called against FUSE's pages from splice.
 
+So, Now, mem_cgroup_cache_charge() doesn't receive a page on LRU
+unless it's not SwapCache.
+For checking, WARN_ON_ONCE(PageLRU(page)) is added.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   31 +++++++++----------------------
+ 1 files changed, 9 insertions(+), 22 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a9e92a6..947c62c 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2710,6 +2710,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 				gfp_t gfp_mask)
+ {
+ 	struct mem_cgroup *memcg = NULL;
++	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
+ 	int ret;
+ 
+ 	if (mem_cgroup_disabled())
+@@ -2719,31 +2720,17 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+ 
+ 	if (unlikely(!mm))
+ 		mm = &init_mm;
++	if (!page_is_file_cache(page))
++		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+ 
+-	if (page_is_file_cache(page)) {
+-		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, true);
+-		if (ret || !memcg)
+-			return ret;
+-
+-		/*
+-		 * FUSE reuses pages without going through the final
+-		 * put that would remove them from the LRU list, make
+-		 * sure that they get relinked properly.
+-		 */
+-		__mem_cgroup_commit_charge_lrucare(page, memcg,
+-					MEM_CGROUP_CHARGE_TYPE_CACHE);
+-		return ret;
+-	}
+-	/* shmem */
+-	if (PageSwapCache(page)) {
++	if (!PageSwapCache(page)) {
++		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
++		WARN_ON_ONCE(PageLRU(page));
++	} else { /* page is swapcache/shmem */
+ 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &memcg);
+ 		if (!ret)
+-			__mem_cgroup_commit_charge_swapin(page, memcg,
+-					MEM_CGROUP_CHARGE_TYPE_SHMEM);
+-	} else
+-		ret = mem_cgroup_charge_common(page, mm, gfp_mask,
+-					MEM_CGROUP_CHARGE_TYPE_SHMEM);
+-
++			__mem_cgroup_commit_charge_swapin(page, memcg, type);
++	}
+ 	return ret;
+ }
+ 
 -- 
-AMD Operating System Research Center
+1.7.4.1
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
