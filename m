@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933131Ab1LFJvm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:51:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34914 "EHLO
+	id S933134Ab1LFJwc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:52:32 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34924 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933063Ab1LFJvl (ORCPT
+	with ESMTP id S933063Ab1LFJwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:51:41 -0500
-Date: Tue, 6 Dec 2011 01:51:09 -0800
-From: tip-bot for Mike Galbraith <mgalbraith@suse.de>
-Message-ID: <tip-916671c08b7808aebec87cc56c85788e665b3c6b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mgalbraith@suse.de, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, mgalbraith@suse.de,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1321971686.6855.18.camel@marge.simson.net>
-References: <1321971686.6855.18.camel@marge.simson.net>
+	Tue, 6 Dec 2011 04:52:30 -0500
+Date: Tue, 6 Dec 2011 01:51:55 -0800
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-4d78a2239e393f09e0964a2f8da394cc91d75155@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20111118230554.164910950@sbsiddha-desk.sc.intel.com>
+References: <20111118230554.164910950@sbsiddha-desk.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Set skip_clock_update in yield_task_fair()
-Git-Commit-ID: 916671c08b7808aebec87cc56c85788e665b3c6b
+Subject: [tip:sched/core] sched: Fix the sched group node allocation for SD_OVERLAP domains
+Git-Commit-ID: 4d78a2239e393f09e0964a2f8da394cc91d75155
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:51:15 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:52:10 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  916671c08b7808aebec87cc56c85788e665b3c6b
-Gitweb:     http://git.kernel.org/tip/916671c08b7808aebec87cc56c85788e665b3c6b
-Author:     Mike Galbraith <mgalbraith@suse.de>
-AuthorDate: Tue, 22 Nov 2011 15:21:26 +0100
+Commit-ID:  4d78a2239e393f09e0964a2f8da394cc91d75155
+Gitweb:     http://git.kernel.org/tip/4d78a2239e393f09e0964a2f8da394cc91d75155
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Fri, 18 Nov 2011 15:03:29 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 09:06:24 +0100
+CommitDate: Tue, 6 Dec 2011 09:06:26 +0100
 
-sched: Set skip_clock_update in yield_task_fair()
+sched: Fix the sched group node allocation for SD_OVERLAP domains
 
-This is another case where we are on our way to schedule(),
-so can save a useless clock update and resulting microscopic
-vruntime update.
+For the SD_OVERLAP domain, sched_groups for each CPU's sched_domain are
+privately allocated and not shared with any other cpu. So the
+sched group allocation should come from the cpu's node for which
+SD_OVERLAP sched domain is being setup.
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1321971686.6855.18.camel@marge.simson.net
+Link: http://lkml.kernel.org/r/20111118230554.164910950@sbsiddha-desk.sc.intel.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched/core.c |    7 +++++++
- kernel/sched/fair.c |    6 ++++++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+ kernel/sched/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ca8fd44..db313c3 100644
+index db313c3..07f1e99 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -4547,6 +4547,13 @@ again:
- 		 */
- 		if (preempt && rq != p_rq)
- 			resched_task(p_rq->curr);
-+	} else {
-+		/*
-+		 * We might have set it in task_yield_fair(), but are
-+		 * not going to schedule(), so don't want to skip
-+		 * the next update.
-+		 */
-+		rq->skip_clock_update = 0;
- 	}
+@@ -5885,7 +5885,7 @@ build_overlap_sched_groups(struct sched_domain *sd, int cpu)
+ 			continue;
  
- out:
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8e534a0..81ccb81 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3075,6 +3075,12 @@ static void yield_task_fair(struct rq *rq)
- 		 * Update run-time statistics of the 'current'.
- 		 */
- 		update_curr(cfs_rq);
-+		/*
-+		 * Tell update_rq_clock() that we've just updated,
-+		 * so we don't do microscopic update in schedule()
-+		 * and double the fastpath cost.
-+		 */
-+		 rq->skip_clock_update = 1;
- 	}
+ 		sg = kzalloc_node(sizeof(struct sched_group) + cpumask_size(),
+-				GFP_KERNEL, cpu_to_node(i));
++				GFP_KERNEL, cpu_to_node(cpu));
  
- 	set_skip_buddy(se);
+ 		if (!sg)
+ 			goto fail;
