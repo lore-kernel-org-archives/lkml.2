@@ -1,415 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab1LFNXM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 08:23:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50518 "EHLO mx1.redhat.com"
+	id S933339Ab1LFNXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:23:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57570 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933164Ab1LFNXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 08:23:11 -0500
-Date: Tue, 6 Dec 2011 11:22:59 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10] perf report: Accept fifos as input file
-Message-ID: <20111206132259.GE7059@infradead.org>
-References: <1323167560-2282-1-git-send-email-robert.richter@amd.com> <1323167560-2282-8-git-send-email-robert.richter@amd.com>
+	id S933164Ab1LFNXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 08:23:13 -0500
+Message-ID: <4EDE1733.8060409@redhat.com>
+Date: Tue, 06 Dec 2011 11:22:59 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323167560-2282-8-git-send-email-robert.richter@amd.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: HoP <jpetrous@gmail.com>
+CC: Florian Fainelli <f.fainelli@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk> <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com> <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <CAJbz7-1S6K=sDJFcOM8mMxL3t2JS91k+fHLy4gq868_9eUyS9A@mail.gmail.com>
+In-Reply-To: <CAJbz7-1S6K=sDJFcOM8mMxL3t2JS91k+fHLy4gq868_9eUyS9A@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 06, 2011 at 11:32:37AM +0100, Robert Richter escreveu:
-> The default input file for perf report is not handled the same way as
-> perf record does it for its output file. This leads to unexpected
-> behavior of perf report, etc. E.g.:
-> 
->  # perf record -a -e cpu-cycles sleep 2 | perf report | cat
->  failed to open perf.data: No such file or directory  (try 'perf record' first)
+On 05-12-2011 22:07, HoP wrote:
+>> I doubt that scan or w_scan would support it. Even if it supports, that
+>> would mean that,
+>> for each ioctl that would be sent to the remote server, the error code would
+>> take 480 ms
+>> to return. Try to calculate how many time w_scan would work with that. The
+>> calculus is easy:
+>> see how many ioctl's are called by each frequency and multiply by the number
+>> of frequencies
+>> that it would be seek. You should then add the delay introduced over
+>> streaming the data
+>> from the demux, using the same calculus. This is the additional time over a
+>> local w_scan.
+>>
+>> A grouch calculus with scandvb: to tune into a single DVB-C frequency, it
+>> used 45 ioctls.
+>> Each taking 480 ms round trip would mean an extra delay of 21.6 seconds.
+>> There are 155
+>> possible frequencies here. So, imagining that scan could deal with 21.6
+>> seconds of delay
+>> for each channel (with it doesn't), the extra delay added by it is 1 hour
+>> (45 * 0.48 * 155).
+>>
+>> On the other hand, a solution like the one described by Florian would
+>> introduce a delay of
+>> 480 ms for the entire scan to happen, as only one data packet would be
+>> needed to send a
+>> scan request, and one one stream of packets traveling at 10GB/s would bring
+>> the answer
+>> back.
 >
-> While perf record writes to a fifo, perf report expects perf.data to
-> be read. This patch changes this to accept fifos as input file.
+> Andreas was excited by your imaginations and calculations, but not me.
+> Now you again manifested you are not treating me as partner for discussion.
+> Otherwise you should try to understand how-that-ugly-hack works.
+> But you surelly didn't try to do it at all.
+>
+> How do you find those 45 ioctls for DVB-C tune?
 
-Nice feature!
+With strace. See how many ioctl's are called for each tune. Ok, perhaps scandvb
+is badly written, but if your idea is to support 100% of the applications, you
+should be prepared for badly written applications.
 
-The idea of writing to a pipe initially considered just 'perf script'
-iirc, but having it working for all commands like this is indeed a good
-thing.
- 
-> Applies to the following commands:
-> 
->  perf annotate
->  perf buildid-list
->  perf evlist
->  perf kmem
->  perf lock
->  perf report
->  perf sched
->  perf script
->  perf timechart
-> 
-> Also fixes char const* -> const char* type declaration for filename
-> strings.
-> 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  tools/perf/Documentation/perf-annotate.txt     |    2 +-
->  tools/perf/Documentation/perf-buildid-list.txt |    2 +-
->  tools/perf/Documentation/perf-evlist.txt       |    2 +-
->  tools/perf/Documentation/perf-kmem.txt         |    2 +-
->  tools/perf/Documentation/perf-lock.txt         |    2 +-
->  tools/perf/Documentation/perf-report.txt       |    2 +-
->  tools/perf/Documentation/perf-sched.txt        |    2 +-
->  tools/perf/Documentation/perf-script.txt       |    2 +-
->  tools/perf/Documentation/perf-timechart.txt    |    2 +-
->  tools/perf/builtin-annotate.c                  |    4 ++--
->  tools/perf/builtin-buildid-list.c              |   19 ++++++++++---------
->  tools/perf/builtin-evlist.c                    |    2 +-
->  tools/perf/builtin-kmem.c                      |    2 +-
->  tools/perf/builtin-lock.c                      |    2 +-
->  tools/perf/builtin-report.c                    |    4 ++--
->  tools/perf/builtin-sched.c                     |    2 +-
->  tools/perf/builtin-script.c                    |    4 ++--
->  tools/perf/builtin-timechart.c                 |    4 ++--
->  tools/perf/util/session.c                      |   15 +++++++++++++--
->  19 files changed, 44 insertions(+), 32 deletions(-)
-> 
-> diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
-> index fe6762e..0d0f217 100644
-> --- a/tools/perf/Documentation/perf-annotate.txt
-> +++ b/tools/perf/Documentation/perf-annotate.txt
-> @@ -22,7 +22,7 @@ OPTIONS
->  -------
->  -i::
->  --input=::
-> -        Input file name. (default: perf.data)
-> +        Input file name. (default: perf.data unless stdin is a fifo)
->  
->  -d::
->  --dsos=<dso[,dso...]>::
-> diff --git a/tools/perf/Documentation/perf-buildid-list.txt b/tools/perf/Documentation/perf-buildid-list.txt
-> index cc22325..25c52ef 100644
-> --- a/tools/perf/Documentation/perf-buildid-list.txt
-> +++ b/tools/perf/Documentation/perf-buildid-list.txt
-> @@ -26,7 +26,7 @@ OPTIONS
->          Show only DSOs with hits.
->  -i::
->  --input=::
-> -        Input file name. (default: perf.data)
-> +        Input file name. (default: perf.data unless stdin is a fifo)
->  -f::
->  --force::
->  	Don't do ownership validation.
-> diff --git a/tools/perf/Documentation/perf-evlist.txt b/tools/perf/Documentation/perf-evlist.txt
-> index 0cada9e..0507ec7 100644
-> --- a/tools/perf/Documentation/perf-evlist.txt
-> +++ b/tools/perf/Documentation/perf-evlist.txt
-> @@ -18,7 +18,7 @@ OPTIONS
->  -------
->  -i::
->  --input=::
-> -        Input file name. (default: perf.data)
-> +        Input file name. (default: perf.data unless stdin is a fifo)
->  
->  SEE ALSO
->  --------
-> diff --git a/tools/perf/Documentation/perf-kmem.txt b/tools/perf/Documentation/perf-kmem.txt
-> index a52fcde..7c8fbbf 100644
-> --- a/tools/perf/Documentation/perf-kmem.txt
-> +++ b/tools/perf/Documentation/perf-kmem.txt
-> @@ -23,7 +23,7 @@ OPTIONS
->  -------
->  -i <file>::
->  --input=<file>::
-> -	Select the input file (default: perf.data)
-> +	Select the input file (default: perf.data unless stdin is a fifo)
->  
->  --caller::
->  	Show per-callsite statistics
-> diff --git a/tools/perf/Documentation/perf-lock.txt b/tools/perf/Documentation/perf-lock.txt
-> index 4a26a2f..d6b2a4f 100644
-> --- a/tools/perf/Documentation/perf-lock.txt
-> +++ b/tools/perf/Documentation/perf-lock.txt
-> @@ -29,7 +29,7 @@ COMMON OPTIONS
->  
->  -i::
->  --input=<file>::
-> -        Input file name.
-> +        Input file name. (default: perf.data unless stdin is a fifo)
->  
->  -v::
->  --verbose::
-> diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-> index 212f24d..a67be86 100644
-> --- a/tools/perf/Documentation/perf-report.txt
-> +++ b/tools/perf/Documentation/perf-report.txt
-> @@ -19,7 +19,7 @@ OPTIONS
->  -------
->  -i::
->  --input=::
-> -        Input file name. (default: perf.data)
-> +        Input file name. (default: perf.data unless stdin is a fifo)
->  
->  -v::
->  --verbose::
-> diff --git a/tools/perf/Documentation/perf-sched.txt b/tools/perf/Documentation/perf-sched.txt
-> index 5b212b5..8ff4df9 100644
-> --- a/tools/perf/Documentation/perf-sched.txt
-> +++ b/tools/perf/Documentation/perf-sched.txt
-> @@ -40,7 +40,7 @@ OPTIONS
->  -------
->  -i::
->  --input=<file>::
-> -        Input file name. (default: perf.data)
-> +        Input file name. (default: perf.data unless stdin is a fifo)
->  
->  -v::
->  --verbose::
-> diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-> index dec87ec..d465c11 100644
-> --- a/tools/perf/Documentation/perf-script.txt
-> +++ b/tools/perf/Documentation/perf-script.txt
-> @@ -106,7 +106,7 @@ OPTIONS
->  
->  -i::
->  --input=::
-> -        Input file name.
-> +        Input file name. (default: perf.data unless stdin is a fifo)
->  
->  -d::
->  --debug-mode::
-> diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
-> index d7b79e2..1632b0e 100644
-> --- a/tools/perf/Documentation/perf-timechart.txt
-> +++ b/tools/perf/Documentation/perf-timechart.txt
-> @@ -27,7 +27,7 @@ OPTIONS
->          Select the output file (default: output.svg)
->  -i::
->  --input=::
-> -        Select the input file (default: perf.data)
-> +        Select the input file (default: perf.data unless stdin is a fifo)
->  -w::
->  --width=::
->          Select the width of the SVG file (default: 1000)
-> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-> index 46b4c24..a6374cd 100644
-> --- a/tools/perf/builtin-annotate.c
-> +++ b/tools/perf/builtin-annotate.c
-> @@ -30,7 +30,7 @@
->  
->  #include <linux/bitmap.h>
->  
-> -static char		const *input_name = "perf.data";
-> +static const char	*input_name;
->  
->  static bool		force, use_tui, use_stdio;
->  
-> @@ -223,7 +223,7 @@ static int __cmd_annotate(void)
->  	}
->  
->  	if (total_nr_samples == 0) {
-> -		ui__warning("The %s file has no samples!\n", input_name);
-> +		ui__warning("The %s file has no samples!\n", session->filename);
->  		goto out_delete;
->  	}
->  out_delete:
-> diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-> index 4895668..5248046 100644
-> --- a/tools/perf/builtin-buildid-list.c
-> +++ b/tools/perf/builtin-buildid-list.c
-> @@ -18,7 +18,7 @@
->  
->  #include <libelf.h>
->  
-> -static char const *input_name = "perf.data";
-> +static const char *input_name;
->  static bool force;
->  static bool show_kernel;
->  static bool with_hits;
-> @@ -71,16 +71,24 @@ static int perf_session__list_build_ids(void)
->  {
->  	struct perf_session *session;
->  
-> +	elf_version(EV_CURRENT);
-> +
->  	session = perf_session__new(input_name, O_RDONLY, force, false,
->  				    &build_id__mark_dso_hit_ops);
->  	if (session == NULL)
->  		return -1;
->  
-> +	/*
-> +	 * See if this is an ELF file first:
-> +	 */
-> +	if (filename__fprintf_build_id(session->filename, stdout))
-> +		goto out;
-> +
->  	if (with_hits)
->  		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
->  
->  	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
-> -
-> +out:
->  	perf_session__delete(session);
->  	return 0;
->  }
-> @@ -90,13 +98,6 @@ static int __cmd_buildid_list(void)
->  	if (show_kernel)
->  		return sysfs__fprintf_build_id(stdout);
->  
-> -	elf_version(EV_CURRENT);
-> -	/*
-> - 	 * See if this is an ELF file first:
-> - 	 */
-> -	if (filename__fprintf_build_id(input_name, stdout))
-> -		return 0;
-> -
->  	return perf_session__list_build_ids();
->  }
->  
-> diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
-> index 4c5e9e0..2676032 100644
-> --- a/tools/perf/builtin-evlist.c
-> +++ b/tools/perf/builtin-evlist.c
-> @@ -15,7 +15,7 @@
->  #include "util/parse-options.h"
->  #include "util/session.h"
->  
-> -static char const *input_name = "perf.data";
-> +static const char *input_name;
->  
->  static int __cmd_evlist(void)
->  {
-> diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-> index 225e963..f2a1c33 100644
-> --- a/tools/perf/builtin-kmem.c
-> +++ b/tools/perf/builtin-kmem.c
-> @@ -18,7 +18,7 @@
->  struct alloc_stat;
->  typedef int (*sort_fn_t)(struct alloc_stat *, struct alloc_stat *);
->  
-> -static char const		*input_name = "perf.data";
-> +static const char		*input_name;
->  
->  static int			alloc_flag;
->  static int			caller_flag;
-> diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-> index 899080a..c743b2a 100644
-> --- a/tools/perf/builtin-lock.c
-> +++ b/tools/perf/builtin-lock.c
-> @@ -325,7 +325,7 @@ alloc_failed:
->  	die("memory allocation failed\n");
->  }
->  
-> -static char			const *input_name = "perf.data";
-> +static const char *input_name;
->  
->  struct raw_event_sample {
->  	u32			size;
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index 88ca2d4..19c2217 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -35,7 +35,7 @@
->  
->  #include <linux/bitmap.h>
->  
-> -static char		const *input_name = "perf.data";
-> +static const char	*input_name;
->  
->  static bool		force, use_tui, use_stdio;
->  static bool		hide_unresolved;
-> @@ -327,7 +327,7 @@ static int __cmd_report(void)
->  	}
->  
->  	if (nr_samples == 0) {
-> -		ui__warning("The %s file has no samples!\n", input_name);
-> +		ui__warning("The %s file has no samples!\n", session->filename);
->  		goto out_delete;
->  	}
->  
-> diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-> index 5177964..9816fa9 100644
-> --- a/tools/perf/builtin-sched.c
-> +++ b/tools/perf/builtin-sched.c
-> @@ -19,7 +19,7 @@
->  #include <pthread.h>
->  #include <math.h>
->  
-> -static char			const *input_name = "perf.data";
-> +static const char		*input_name;
->  
->  static char			default_sort_order[] = "avg, max, switch, runtime";
->  static const char		*sort_order = default_sort_order;
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index 82cca10..6d74933 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -433,7 +433,7 @@ static int cleanup_scripting(void)
->  	return scripting_ops->stop_script();
->  }
->  
-> -static char const		*input_name = "perf.data";
-> +static const char *input_name;
->  
->  static int process_sample_event(union perf_event *event,
->  				struct perf_sample *sample,
-> @@ -1302,7 +1302,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
->  			return -1;
->  		}
->  
-> -		input = open(input_name, O_RDONLY);
-> +		input = open(session->filename, O_RDONLY);	/* input_name */
->  		if (input < 0) {
->  			perror("failed to open file");
->  			exit(-1);
-> diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-> index aa26f4d..08e4fd0 100644
-> --- a/tools/perf/builtin-timechart.c
-> +++ b/tools/perf/builtin-timechart.c
-> @@ -36,8 +36,8 @@
->  #define PWR_EVENT_EXIT -1
->  
->  
-> -static char		const *input_name = "perf.data";
-> -static char		const *output_name = "output.svg";
-> +static const char	*input_name;
-> +static const char	*output_name = "output.svg";
->  
->  static unsigned int	numcpus;
->  static u64		min_freq;	/* Lowest CPU frequency seen */
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 2ad9c10..fdd135d 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -132,8 +132,19 @@ struct perf_session *perf_session__new(const char *filename, int mode,
->  				       bool force, bool repipe,
->  				       struct perf_event_ops *ops)
->  {
-> -	size_t len = filename ? strlen(filename) : 0;
-> -	struct perf_session *self = zalloc(sizeof(*self) + len);
-> +	struct perf_session *self;
-> +	struct stat st;
-> +	size_t len;
-> +
-> +	if (!filename || !strlen(filename)) {
-> +		if (!fstat(STDIN_FILENO, &st) && S_ISFIFO(st.st_mode))
-> +			filename = "-";
-> +		else
-> +			filename = "perf.data";
-> +	}
-> +
-> +	len = strlen(filename);
-> +	self = zalloc(sizeof(*self) + len);
->  
->  	if (self == NULL)
->  		goto out;
-> -- 
-> 1.7.7
-> 
+$strace -e ioctl scandvb dvbc-teste
+scanning dvbc-teste
+using '/dev/dvb/adapter0/frontend0' and '/dev/dvb/adapter0/demux0'
+ioctl(3, FE_GET_INFO, 0x60a640)         = 0
+initial transponder 573000000 5217000 0 5
+>>> tune to: 573000000:INVERSION_AUTO:5217000:FEC_NONE:QAM_256
+ioctl(3, FE_SET_FRONTEND, 0x7fff5f7f2cd0) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(4, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(5, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(6, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(7, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(8, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(9, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(10, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(11, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(12, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(13, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(14, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(15, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(16, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(17, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(18, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(19, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(20, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(21, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(22, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(23, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(24, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(4, DMX_STOP, 0x1)                 = 0
+ioctl(15, DMX_STOP, 0x1)                = 0
+ioctl(11, DMX_STOP, 0x1)                = 0
+ioctl(22, DMX_STOP, 0x1)                = 0
+ioctl(17, DMX_STOP, 0x1)                = 0
+ioctl(16, DMX_STOP, 0x1)                = 0
+0x0000 0x0004: pmt_pid 0x0108 (null) -- SBT (running)
+0x0000 0x0005: pmt_pid 0x0250 (null) -- Globo (running)
+0x0000 0x0007: pmt_pid 0x0128 (null) -- Record (running)
+0x0000 0x000d: pmt_pid 0x0118 (null) -- Band (running)
+0x0000 0x002e: pmt_pid 0x0148 (null) -- Cartoon Network (running, scrambled)
+0x0000 0x0030: pmt_pid 0x0158 (null) -- TNT (running, scrambled)
+0x0000 0x0039: pmt_pid 0x0168 (null) -- Boomerang (running, scrambled)
+0x0000 0x0090: pmt_pid 0x0178 (null) -- DW-TV (running, scrambled)
+0x0000 0x0098: pmt_pid 0x0188 (null) -- BBC World News (running, scrambled)
+0x0000 0x00cb: pmt_pid 0x01a8 (null) -- NET Games (running)
+0x0000 0x012c: pmt_pid 0x0198 (null) -- NET M�sica (running, scrambled)
+0x0000 0x0133: pmt_pid 0x0022 (null) -- Pagode (running)
+0x0000 0x0135: pmt_pid 0x0020 (null) -- Ax� (running)
+0x0000 0x0146: pmt_pid 0x0023 (null) -- Festa (running)
+0x0000 0x0156: pmt_pid 0x0024 (null) -- Trilhas Sonoras (running)
+0x0000 0x015b: pmt_pid 0x0021 (null) -- Radio Multishow (running)
+0x0000 0x0320: pmt_pid 0x02c4 (null) -- 01070136 (running)
+0x0000 0x0321: pmt_pid 0x02c5 (null) -- 01070236 (running)
+ioctl(5, DMX_STOP, 0x1)                 = 0
+ioctl(24, DMX_STOP, 0x1)                = 0
+ioctl(23, DMX_STOP, 0x1)                = 0
+ioctl(7, DMX_STOP, 0x1)                 = 0
+ioctl(19, DMX_STOP, 0x1)                = 0
+ioctl(18, DMX_STOP, 0x1)                = 0
+ioctl(21, DMX_STOP, 0x1)                = 0
+ioctl(12, DMX_STOP, 0x1)                = 0
+ioctl(13, DMX_STOP, 0x1)                = 0
+ioctl(20, DMX_STOP, 0x1)                = 0
+ioctl(10, DMX_STOP, 0x1)                = 0
+ioctl(9, DMX_STOP, 0x1)                 = 0
+ioctl(8, DMX_STOP, 0x1)                 = 0
+ioctl(14, DMX_STOP, 0x1)                = 0
+Network Name 'NET SJC'
+ioctl(6, DMX_STOP, 0x1)                 = 0
+>>> tune to: 591000000:INVERSION_AUTO:5217000:FEC_3_4:QAM_256
+ioctl(3, FE_SET_FRONTEND, 0x7fff5f7f2cd0) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(4, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(5, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(6, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(7, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(8, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(9, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(10, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(11, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(12, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(13, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(14, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(15, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(16, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(17, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(18, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(19, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(4, DMX_STOP, 0x1)                 = 0
+ioctl(9, DMX_STOP, 0x1)                 = 0
+ioctl(10, DMX_STOP, 0x1)                = 0
+ioctl(12, DMX_STOP, 0x1)                = 0
+ioctl(11, DMX_STOP, 0x1)                = 0
+ioctl(14, DMX_STOP, 0x1)                = 0
+ioctl(8, DMX_STOP, 0x1)                 = 0
+ioctl(7, DMX_STOP, 0x1)                 = 0
+ioctl(13, DMX_STOP, 0x1)                = 0
+ioctl(15, DMX_STOP, 0x1)                = 0
+0x0090 0x0029: pmt_pid 0x0468 (null) -- GNT (running, scrambled)
+0x0090 0x002a: pmt_pid 0x0458 (null) -- Multishow (running, scrambled)
+0x0090 0x002f: pmt_pid 0x0077 (null) -- Warner Channel (running, scrambled)
+0x0090 0x0042: pmt_pid 0x0478 (null) -- Canal Brasil (running, scrambled)
+0x0090 0x0046: pmt_pid 0x0438 (null) -- ESPN Brasil (running, scrambled)
+0x0090 0x0049: pmt_pid 0x0428 (null) -- HBO2 (running, scrambled)
+0x0090 0x007c: pmt_pid 0x0488 (null) -- Premiere FC (running, scrambled)
+0x0090 0x008c: pmt_pid 0x0108 (null) -- RAI (running, scrambled)
+0x0090 0x0099: pmt_pid 0x0408 (null) -- CNN International (running, scrambled)
+0x0090 0x013e: pmt_pid 0x0021 (null) -- Anos 80 (running)
+0x0090 0x014d: pmt_pid 0x0022 (null) -- Blues (running)
+0x0090 0x014e: pmt_pid 0x0023 (null) -- Rhythm & Blues (running)
+0x0090 0x014f: pmt_pid 0x0020 (null) -- Standards (running)
+ioctl(5, DMX_STOP, 0x1)                 = 0
+ioctl(17, DMX_STOP, 0x1)                = 0
+ioctl(18, DMX_STOP, 0x1)                = 0
+ioctl(16, DMX_STOP, 0x1)                = 0
+ioctl(19, DMX_STOP, 0x1)                = 0
+Network Name 'NET SJC'
+ioctl(6, DMX_STOP, 0x1)                 = 0
+>>> tune to: 597000000:INVERSION_AUTO:5217000:FEC_3_4:QAM_256
+ioctl(3, FE_SET_FRONTEND, 0x7fff5f7f2cd0) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(4, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(5, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(6, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(7, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(8, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(9, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(10, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(11, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(12, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(13, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(14, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(15, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(16, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(17, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(18, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(19, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(4, DMX_STOP, 0x1)                 = 0
+ioctl(9, DMX_STOP, 0x1)                 = 0
+ioctl(19, DMX_STOP, 0x1)                = 0
+ioctl(18, DMX_STOP, 0x1)                = 0
+ioctl(7, DMX_STOP, 0x1)                 = 0
+0x0091 0x0010: pmt_pid 0x0e08 (null) -- TV Senado (running)
+0x0091 0x0013: pmt_pid 0x0518 (null) -- Rede Vida (running)
+0x0091 0x0023: pmt_pid 0x0508 (null) -- Canal Rural (running, scrambled)
+0x0091 0x0038: pmt_pid 0x0578 (null) -- Disney XD (running, scrambled)
+0x0091 0x003d: pmt_pid 0x0558 (null) -- Telecine Premium (running, scrambled)
+0x0091 0x0041: pmt_pid 0x0568 (null) -- Telecine Cult (running, scrambled)
+0x0091 0x0043: pmt_pid 0x0588 (null) -- Disney Channel (running, scrambled)
+0x0091 0x005d: pmt_pid 0x0528 (null) -- Record News (running, scrambled)
+0x0091 0x008d: pmt_pid 0x138f (null) -- TV5 (running, scrambled)
+0x0091 0x0134: pmt_pid 0x0020 (null) -- Samba de Raiz (running)
+0x0091 0x0149: pmt_pid 0x0021 (null) -- New Age (running)
+0x0091 0x0151: pmt_pid 0x0022 (null) -- Jazz Contemporaneo (running)
+0x0091 0x0152: pmt_pid 0x0023 (null) -- M�sica Cl�ssica (running)
+ioctl(5, DMX_STOP, 0x1)                 = 0
+ioctl(16, DMX_STOP, 0x1)                = 0
+ioctl(14, DMX_STOP, 0x1)                = 0
+ioctl(12, DMX_STOP, 0x1)                = 0
+ioctl(10, DMX_STOP, 0x1)                = 0
+ioctl(8, DMX_STOP, 0x1)                 = 0
+ioctl(17, DMX_STOP, 0x1)                = 0
+ioctl(11, DMX_STOP, 0x1)                = 0
+ioctl(15, DMX_STOP, 0x1)                = 0
+ioctl(13, DMX_STOP, 0x1)                = 0
+Network Name 'NET SJC'
+ioctl(6, DMX_STOP, 0x1)                 = 0
+>>> tune to: 603000000:INVERSION_AUTO:5217000:FEC_3_4:QAM_256
+ioctl(3, FE_SET_FRONTEND, 0x7fff5f7f2cd0) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(4, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(5, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(6, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(7, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(8, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(9, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(10, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(11, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(12, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(13, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(14, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(15, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(16, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(17, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(18, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(19, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(4, DMX_STOP, 0x1)                 = 0
+ioctl(8, DMX_STOP, 0x1)                 = 0
+ioctl(14, DMX_STOP, 0x1)                = 0
+ioctl(7, DMX_STOP, 0x1)                 = 0
+ioctl(9, DMX_STOP, 0x1)                 = 0
+ioctl(10, DMX_STOP, 0x1)                = 0
+ioctl(17, DMX_STOP, 0x1)                = 0
+ioctl(18, DMX_STOP, 0x1)                = 0
+ioctl(12, DMX_STOP, 0x1)                = 0
+ioctl(13, DMX_STOP, 0x1)                = 0
+0x0092 0x0028: pmt_pid 0x0668 (null) -- Globo News (running, scrambled)
+0x0092 0x002b: pmt_pid 0x0658 (null) -- Universal Channel (running, scrambled)
+0x0092 0x002c: pmt_pid 0x0628 (null) -- Nickelodeon (running, scrambled)
+0x0092 0x003e: pmt_pid 0x0608 (null) -- Telecine Action (running, scrambled)
+0x0092 0x003f: pmt_pid 0x0618 (null) -- Telecine Touch (running, scrambled)
+0x0092 0x0058: pmt_pid 0x0688 (null) -- VH1 Mega Hits (running, scrambled)
+0x0092 0x0059: pmt_pid 0x0648 (null) -- VH1 (running, scrambled)
+0x0092 0x007e: pmt_pid 0x139a (null) -- Aquecimento BBB12 (running, scrambled)
+0x0092 0x011d: pmt_pid 0x0678 (null) -- Sexy Hot (running, scrambled)
+0x0092 0x0131: pmt_pid 0x0024 (null) -- R�dio Kids (running)
+0x0092 0x0137: pmt_pid 0x0020 (null) -- Forr� (running)
+0x0092 0x0148: pmt_pid 0x0023 (null) -- Lounge (running)
+0x0092 0x0153: pmt_pid 0x0022 (null) -- M�sica Orquestrada (running)
+ioctl(5, DMX_STOP, 0x1)                 = 0
+ioctl(11, DMX_STOP, 0x1)                = 0
+ioctl(19, DMX_STOP, 0x1)                = 0
+ioctl(15, DMX_STOP, 0x1)                = 0
+Network Name 'NET SJC'
+ioctl(16, DMX_STOP, 0x1)                = 0
+ioctl(6, DMX_STOP, 0x1)                 = 0
+>>> tune to: 609000000:INVERSION_AUTO:5217000:FEC_3_4:QAM_256
+ioctl(3, FE_SET_FRONTEND, 0x7fff5f7f2cd0) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(3, FE_READ_STATUS, 0x7fff5f7f2cfc) = 0
+ioctl(4, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(5, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(6, DMX_SET_FILTER, 0x7fff5f7f1ad0) = 0
+ioctl(7, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(8, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(9, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(10, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(11, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(12, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(13, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(14, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(15, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(16, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(17, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(18, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(19, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(20, DMX_SET_FILTER, 0x7fff5f7f1910) = 0
+ioctl(4, DMX_STOP, 0x1)                 = 0
+ioctl(9, DMX_STOP, 0x1)                 = 0
+ioctl(17, DMX_STOP, 0x1)                = 0
+ioctl(20, DMX_STOP, 0x1)                = 0
+ioctl(10, DMX_STOP, 0x1)                = 0
+ioctl(19, DMX_STOP, 0x1)                = 0
+ioctl(13, DMX_STOP, 0x1)                = 0
+ioctl(14, DMX_STOP, 0x1)                = 0
+ioctl(16, DMX_STOP, 0x1)                = 0
+ioctl(15, DMX_STOP, 0x1)                = 0
+ioctl(7, DMX_STOP, 0x1)                 = 0
+ioctl(18, DMX_STOP, 0x1)                = 0
+ioctl(11, DMX_STOP, 0x1)                = 0
+ioctl(8, DMX_STOP, 0x1)                 = 0
+ioctl(12, DMX_STOP, 0x1)                = 0
+0x0093 0x000a: pmt_pid 0x0708 (null) -- NET Cidade (running)
+0x0093 0x0012: pmt_pid 0x0728 (null) -- Rede Mundial (running)
+0x0093 0x0014: pmt_pid 0x0738 (null) -- Rede 21 (running, scrambled)
+0x0093 0x0015: pmt_pid 0x011f (null) -- TV Justi�a (running)
+0x0093 0x0026: pmt_pid 0x0758 (null) -- SporTV2 (running, scrambled)
+0x0093 0x0027: pmt_pid 0x0748 (null) -- SporTV (running, scrambled)
+0x0093 0x0036: pmt_pid 0x0768 (null) -- FX (running, scrambled)
+0x0093 0x0052: pmt_pid 0x0788 (null) -- The History Channel (running, scrambled)
+0x0093 0x0060: pmt_pid 0x0778 (null) -- Fox Life (running, scrambled)
+0x0093 0x0136: pmt_pid 0x0020 (null) -- Sertanejo (running)
+0x0093 0x0140: pmt_pid 0x0024 (null) -- Rock Cl�ssico (running)
+0x0093 0x0143: pmt_pid 0x0022 (null) -- Reggae (running)
+0x0093 0x0147: pmt_pid 0x0023 (null) -- Eletr�nica (running)
+0x0093 0x015d: pmt_pid 0x0021 (null) -- CBN (running)
+ioctl(5, DMX_STOP, 0x1)                 = 0
+Network Name 'NET SJC'
+ioctl(6, DMX_STOP, 0x1)                 = 0
+...
