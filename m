@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab1LFTOP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:14:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56514 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753994Ab1LFTNA (ORCPT
+	id S1753519Ab1LFTMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:12:48 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45409 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab1LFTMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:13:00 -0500
+	Tue, 6 Dec 2011 14:12:45 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 19/25] pnp: if CONFIG_DYNAMIC_DEBUG, use pnp.dyndbg instead of pnp.debug
-Date: Tue,  6 Dec 2011 12:11:29 -0700
-Message-Id: <1323198694-7186-20-git-send-email-jim.cromie@gmail.com>
+        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 14/25] dynamic_debug: enlarge command/query write buffer
+Date: Tue,  6 Dec 2011 12:11:24 -0700
+Message-Id: <1323198694-7186-15-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
 References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>, <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
@@ -25,107 +24,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-based upon https://lkml.org/lkml/2010/9/15/398
-
-This patch splits control of pnp debug messages for 2 configs:
-
-CONFIG_DYNAMIC_DEBUG:
-  use pnp.dyndbg, using pnp.debug will warn
-!CONFIG_DYNAMIC_DEBUG:
-  use pnp.debug, using pnp.dyndbg will warn
-
-2 separate boot options is perhaps suboptimal, but dyndbg is a 'fake'
-parameter, and is special enough that adapting one to another is both
-more suboptimal and harder to explain succinctly.
-
-Thomas' original comments, still pertinent:
-
-I wonder whether CONFIG_PNP_DEBUG_MESSAGES can vanish totally with
-this or at some time. Only advantage having it is: If you are
-restricted and your kernel must not exceed X bytes, you cannot compile
-in PNP debug messages only, but you have to compile in all debug
-messages.
+Current query write buffer is 256 bytes, on stack.  In comparison, the
+ddebug_query boot-arg is 1024.  Allocate the buffer off heap, and
+enlarge it to 4096 bytes, big enough for ~100 queries (at 40 bytes
+each), and error out if not.  This makes it play nicely with large
+query sets (to be added later).  The buffer should be enough for most
+uses, and others should probably be split into subsets.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-CC: Thomas Renninger <trenn@suse.de>
-CC: Bjorn Helgaas <bhelgaas@google.com>
 ---
- Documentation/kernel-parameters.txt |   14 ++++++++------
- drivers/pnp/base.h                  |    8 ++++++--
- drivers/pnp/core.c                  |   12 ++++++++++++
- 3 files changed, 26 insertions(+), 8 deletions(-)
+ lib/dynamic_debug.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a0c5c5f..81c27b1 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2123,12 +2123,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Override pmtimer IOPort with a hex value.
- 			e.g. pmtmr=0x508
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index d285bb5..6e5b9a3 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -570,24 +570,32 @@ __setup("ddebug_query=", ddebug_setup_query);
+  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
+  * command text from userspace, parses and executes it.
+  */
++#define USER_BUF_PAGE 4095
+ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 				  size_t len, loff_t *offp)
+ {
+-	char tmpbuf[256];
++	char *tmpbuf;
+ 	int ret;
  
--	pnp.debug=1	[PNP]
--			Enable PNP debug messages (depends on the
--			CONFIG_PNP_DEBUG_MESSAGES option).  Change at run-time
--			via /sys/module/pnp/parameters/debug.  We always show
--			current resource usage; turning this on also shows
--			possible settings and some assignment information.
-+	pnp.debug=1	[PNP] Enable PNP debug messages
-+		        (depends on CONFIG_PNP_DEBUG_MESSAGES and
-+			!CONFIG_DYNAMIC_DEBUG options.  If latter, use
-+			pnp.dyndbg instead).  Change at run-time via
-+			/sys/module/pnp/parameters/debug.  We always
-+			show current resource usage; turning this on
-+			also shows possible settings and some
-+			assignment information.
+ 	if (len == 0)
+ 		return 0;
+-	/* we don't check *offp -- multiple writes() are allowed */
+-	if (len > sizeof(tmpbuf)-1)
++	if (len > USER_BUF_PAGE - 1) {
++		pr_warn("expected <%d bytes into control\n", USER_BUF_PAGE);
+ 		return -E2BIG;
+-	if (copy_from_user(tmpbuf, ubuf, len))
++	}
++	tmpbuf = kmalloc(len + 1, GFP_KERNEL);
++	if (!tmpbuf)
++		return -ENOMEM;
++	if (copy_from_user(tmpbuf, ubuf, len)) {
++		kfree(tmpbuf);
+ 		return -EFAULT;
++	}
+ 	tmpbuf[len] = '\0';
+ 	if (verbose)
+ 		pr_info("read %d bytes from userspace\n", (int)len);
  
- 	pnpacpi=	[ACPI]
- 			{ off }
-diff --git a/drivers/pnp/base.h b/drivers/pnp/base.h
-index fa4e0a5..28e98aa 100644
---- a/drivers/pnp/base.h
-+++ b/drivers/pnp/base.h
-@@ -173,12 +173,16 @@ struct pnp_resource *pnp_add_bus_resource(struct pnp_dev *dev,
- 					  resource_size_t start,
- 					  resource_size_t end);
+ 	ret = ddebug_exec_query(tmpbuf);
++	kfree(tmpbuf);
+ 	if (ret)
+ 		return ret;
  
--extern int pnp_debug;
--
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+#define pnp_dbg(dev, format, arg...)					\
-+	({ dev_dbg(dev, format, ## arg); 0; })
-+#else
- #if defined(CONFIG_PNP_DEBUG_MESSAGES)
-+extern int pnp_debug;
- #define pnp_dbg(dev, format, arg...)					\
- 	({ if (pnp_debug) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
- #else
- #define pnp_dbg(dev, format, arg...)					\
- 	({ if (0) dev_printk(KERN_DEBUG, dev, format, ## arg); 0; })
- #endif
-+#endif
-diff --git a/drivers/pnp/core.c b/drivers/pnp/core.c
-index cb6ce42..838d82c 100644
---- a/drivers/pnp/core.c
-+++ b/drivers/pnp/core.c
-@@ -219,6 +219,18 @@ subsys_initcall(pnp_init);
- 
- int pnp_debug;
- 
-+#if defined(CONFIG_DYNAMIC_DEBUG)
-+static int __init pnp_debug_setup(char *__unused)
-+{
-+	pr_info("DYNAMIC_DEBUG enabled, use pnp.dyndbg instead\n");
-+	return 1;
-+}
-+__setup("pnp.debug", pnp_debug_setup);
-+
-+#else
-+
- #if defined(CONFIG_PNP_DEBUG_MESSAGES)
- module_param_named(debug, pnp_debug, int, 0644);
- #endif
-+
-+#endif
 -- 
 1.7.7.3
 
