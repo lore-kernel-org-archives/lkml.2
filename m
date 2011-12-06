@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab1LFNLH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 08:11:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49239 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751903Ab1LFNLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 08:11:05 -0500
-Message-ID: <4EDE1457.7070408@redhat.com>
-Date: Tue, 06 Dec 2011 11:10:47 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S933244Ab1LFNLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:11:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50130 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530Ab1LFNLL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 08:11:11 -0500
 MIME-Version: 1.0
-To: Andreas Oberritter <obi@linuxtv.org>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, HoP <jpetrous@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk> <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com> <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <4EDD2C82.7040804@linuxtv.org> <20111205205554.2caeb496@lxorguk.ukuu.org.uk> <4EDD3583.30405@linuxtv.org> <20111206111829.GB17194@sirena.org.uk> <4EDE0400.1070304@linuxtv.org>
-In-Reply-To: <4EDE0400.1070304@linuxtv.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201112061255.56136.arnd@arndb.de>
+References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com>
+	<201112051437.27538.arnd@arndb.de>
+	<CACVXFVMB+HuQDb+Pxo0d8x46P82-c-OPxaL0c661Wztyx3NWJA@mail.gmail.com>
+	<201112061255.56136.arnd@arndb.de>
+Date: Tue, 6 Dec 2011 21:11:08 +0800
+Message-ID: <CACVXFVPYUY-vpeoKJKX2XN7-0w+=seW0u3EaP=hD9m1Sy7nkTQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
+From: Ming Lei <ming.lei@canonical.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06-12-2011 10:01, Andreas Oberritter wrote:
-> On 06.12.2011 12:18, Mark Brown wrote:
->> On Mon, Dec 05, 2011 at 10:20:03PM +0100, Andreas Oberritter wrote:
->>> On 05.12.2011 21:55, Alan Cox wrote:
->>>> The USB case is quite different because your latency is very tightly
->>>> bounded, your dead device state is rigidly defined, and your loss of
->>>> device is accurately and immediately signalled.
+On Tue, Dec 6, 2011 at 8:55 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 06 December 2011, Ming Lei wrote:
+>> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+>> index 073eb4d..8aeaa1e 100644
+>> --- a/include/linux/videodev2.h
+>> +++ b/include/linux/videodev2.h
+>> @@ -2214,7 +2214,12 @@ struct v4l2_fd_result {
+>>         __u32   buf_index;
+>>         __u32   face_cnt;
+>>         __u32   reserved[6];
+>> -       struct v4l2_fd_detection *fd;
+>> +
+>> +       /*make 64/32 compatible*/
+>> +       union {
+>> +               struct v4l2_fd_detection *fd;
+>> +               __u64   dummy;
+>> +       };
+>>  };
 >>
->>>> Quite different.
->>
->>> How can usbip work if networking and usb are so different and what's so
->>> different between vtunerc and usbip, that made it possible to put usbip
->>> into drivers/staging?
->>
->> USB-IP is a hack that will only work well on a tightly bounded set of
->> networks - if you run it over a lightly loaded local network it can
->> work adequately.  This starts to break down as you vary the network
->> configuration.
 >
-> I see. So it has problems that vtunerc doesn't have.
+> That's not compatible, at least not on any big-endian architecture.
+> If you want to have an indirect pointer, you have to cast it to the
+> __u64 member in user space and back in kernel space.
 
-The vtunerc has the same issues. High latency (due to high loads,  high
-latency links or whatever) affects it badly, and may cause application
-breakages if if the device is opened are using O_NONBLOCK mode [1].
+Looks like it is a bit ugly.
 
-Regards,
-Mauro.
+>
+> Using an array added to the end of the v4l2_fd_result structure
+> rather than a pointer would really make this easier IMHO.
 
-[1] Btw, if some DVB ioctl currently waits in O_NONBLOCK, this is a POSIX
-violation that needs to be fixed.
+I have tried to do this, but video_usercopy needs a few changes
+to handle array args if no indirect pointer is passed to kernel.
+
+I am not sure if media guys are happy to accept the changes, :-)
+
+thanks,
+--
+Ming Lei
