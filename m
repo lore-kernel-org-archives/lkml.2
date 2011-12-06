@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814Ab1LFAKm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 19:10:42 -0500
-Received: from cpanel23.proisp.no ([88.87.44.74]:45739 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab1LFAKl (ORCPT
+	id S932827Ab1LFAMu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 19:12:50 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43111 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab1LFAMt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 19:10:41 -0500
-Message-ID: <4EDD5D77.3030101@numascale.com>
-Date: Tue, 06 Dec 2011 01:10:31 +0100
-From: Steffen Persvold <sp@numascale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Mon, 5 Dec 2011 19:12:49 -0500
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org, tglx@linutronix.de,
-        daniel@numascale-asia.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/apic] x86: Add NumaChip support
-References: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com> <tip-44b111b519160e33fdc41eadb39af86a24707edf@git.kernel.org> <20111205203130.GA12364@elte.hu>
-In-Reply-To: <20111205203130.GA12364@elte.hu>
-Content-Type: multipart/mixed;
- boundary="------------090603000700040207060702"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <2013134.msetbOSBe8@pali-elitebook>
+References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
+	<2013134.msetbOSBe8@pali-elitebook>
+Date: Tue, 6 Dec 2011 02:12:47 +0200
+Message-ID: <CAMP44s1TrRkcy-xS+fXMyv0FAL1TnsPnnTa=gHSd2=P=iFkSUg@mail.gmail.com>
+Subject: Re: [PATCH] mfd: add bq2415x charger driver
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
+        Vladimir Zapolskiy <vz@mleia.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090603000700040207060702
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Hi,
 
-On 12/5/2011 21:31, Ingo Molnar wrote:
-[]
-> There's a new build failure caused by this commit:
+On Tue, Dec 6, 2011 at 1:05 AM, Pali Roh√°r <pali.rohar@gmail.com> wrote:
+> I started writing other implementaion of bq2415x charger driver, which should
+> support also setting usb host mode. Code is still unfinished, but now is
+> devided into 2 parts: one power_supply driver and one driver which cover all
+> bq registers. See:
+>
+> http://atrey.karlin.mff.cuni.cz/~pali/bq2415x/
+>
+> Felipe Contreras, I think that my implementation is better - it will export
+> all bq registers (which is needed for hostmode boost) and will also register
+> regulator interface.
 
-It's this commit actually :
+I took a look at your driver, and there's definitely good stuff in it.
+However, I think there's a lot of unnecessary stuff, like the
+miscdevice stuff (which was frowned upon for bq27x00), and a lot of
+user-space interface. Moreover, it doesn't seem to do anything on its
+own (it needs interaction from user-space).
 
-Commit-ID:  64be4c1c2428e148de6081af235e2418e6a66dda
-Gitweb:     http://git.kernel.org/tip/64be4c1c2428e148de6081af235e2418e6a66dda
-Author:     Daniel J Blueman <daniel@numascale-asia.com>
-AuthorDate: Mon, 5 Dec 2011 16:20:37 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 5 Dec 2011 17:17:21 +0100
+IMO the first step should be to have a minimal driver that just works,
+even if it doesn't achieve the absolute best charging performance.
+More features could be added later on.
 
-x86: Add x86_init platform override to fix up NUMA core numbering
+Also, I'm not familiar with the regulator interface, but it seems to
+be meant for real regulators, which have consumers, and based on those
+consumers's needs the real voltage changes. This battery charger on
+the other hand doesn't have anything like that. There will be no
+consumer, and some stuff like the weak battery voltage is not even
+related to a voltage supply, but rather a threshold that can be
+configured to change some behavior of the charger, but there's no
+point in changing it dynamically (or maybe at all).
 
-> 
->   arch/x86/kernel/cpu/common.c:1149:2: error: ëstruct cpuinfo_x86í has no member named ëphys_proc_idí
-> 
-> Note that the config is a !SMP one - that's probably the key
-> detail.
+I guess the important one is the charge voltage, which is linked to a
+real voltage, but what consumers would it have? I don't think there's
+any.
 
-Yes, phys_proc_id in struct cpuinfo_x86 is covered within "ifdef CONFIG_SMP".
+Finally, I don't think user-space interaction should be needed at all.
+The driver should start charging immediately when there power supply
+available, and stop when there isn't any. Maybe at some point a
+user-space interface will be useful later on (I don't see why), but I
+don't think it should be *necessary*.
 
-> 
-> Please send a delta fix that resolves this bug. You can find the
-> current lineup in:
-> 
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
-> 
+I'm not familiar with any of this stuff, so don't take my opinions too
+seriously :)
 
-Will do, should be fairly simple. Something in the lines of the attached should work (tested).
+Cheers.
 
-Note: I used "ifdef CONFIG_NUMA" simply because it doesn't make sense in a non-numa configuration even with SMP enabled. Besides, the only place where it is called right now is in kernel/cpu/amd.c:srat_detect_node() within the "CONFIG_NUMA" protected part.
-
-Cheers,
 -- 
-Steffen Persvold, Chief Architect NumaChip
-Numascale AS - www.numascale.com
-Tel: +47 92 49 25 54 Skype: spersvold
-
---------------090603000700040207060702
-Content-Type: text/x-patch;
- name="0002-x86_init-core-numbering-delta.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0002-x86_init-core-numbering-delta.patch"
-
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index ad4da45..a70bd5b 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1146,7 +1146,9 @@ static void dbg_restore_debug_regs(void)
-  */
- void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
- {
-+#ifdef CONFIG_NUMA
- 	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
-+#endif
- }
- 
- /*
-
---------------090603000700040207060702--
+Felipe Contreras
