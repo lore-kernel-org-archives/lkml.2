@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752578Ab1LFSC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 13:02:28 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:51016 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776Ab1LFSC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 13:02:26 -0500
-Message-ID: <4EDE58AA.8090305@gentoo.org>
-Date: Tue, 06 Dec 2011 19:02:18 +0100
-From: =?ISO-8859-1?Q?Ra=FAl_Porcel?= <armin76@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Michael Cree <mcree@orcon.net.nz>
-CC: linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Turner <mattst88@gmail.com>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>, 649468@bugs.debian.org,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH] alpha: add io{read,write}{16,32}be functions
-References: <1322640100-14534-1-git-send-email-mcree@orcon.net.nz>
-In-Reply-To: <1322640100-14534-1-git-send-email-mcree@orcon.net.nz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S1752650Ab1LFSEM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:04:12 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:59951 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752300Ab1LFSEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 13:04:10 -0500
+Date: Tue, 06 Dec 2011 13:02:46 -0500 (EST)
+Message-Id: <20111206.130246.1089940767987284936.davem@davemloft.net>
+To: nhorman@tuxdriver.com
+Cc: panweiping3@gmail.com, shanwei88@gmail.com, rdunlap@xenotime.net,
+        eric.dumazet@gmail.com, shanwei@cn.fujitsu.com, makc@redhat.com,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH V2 net] ipv4:correct description for tcp_max_syn_backlog
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111206140709.GA29082@hmsreliant.think-freely.org>
+References: <4EDDC1D6.6000708@gmail.com>
+	<ed04712f4f61e291ac784a8a77e2831981cfb9c1.1323156956.git.panweiping3@gmail.com>
+	<20111206140709.GA29082@hmsreliant.think-freely.org>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 06 Dec 2011 10:02:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2011 09:01 AM, Michael Cree wrote:
-> These functions are used in some PCI drivers with big-endian
-> MMIO space.
-> 
-> Admittedly it is almost certain that no one this side of the
-> Moon would use such a card in an Alpha but it does get us
-> closer to being able to build allyesconfig or allmodconfig,
-> and it enables the Debian default generic config to build.
-> 
-> Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-> ---
-[snip]
+From: Neil Horman <nhorman@tuxdriver.com>
+Date: Tue, 6 Dec 2011 09:07:09 -0500
 
-WFM on my DS20E using 3.2.0-rc4-00231-g958c6c2
+> On Tue, Dec 06, 2011 at 03:39:41PM +0800, Weiping Pan wrote:
+>> Since commit c5ed63d66f24(tcp: fix three tcp sysctls tuning),
+>> sysctl_max_syn_backlog is determined by tcp_hashinfo->ehash_mask,
+>> and the minimal value is 128, and it will increase in proportion to the
+>> memory of machine.
+>> The original description for tcp_max_syn_backlog and sysctl_max_syn_backlog
+>> are out of date.
+>> 
+>> Changelog:
+>> V2: update description for sysctl_max_syn_backlog
+>> 
+>> Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+ ...
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-so,
-
-Tested-by: Raúl Porcel <armin76@gentoo.org>
+Applied, thanks everyone.
