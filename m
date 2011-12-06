@@ -1,32 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab1LFSab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 13:30:31 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34306 "EHLO mx3.mail.elte.hu"
+	id S1753249Ab1LFSgI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:36:08 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59472 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934Ab1LFSa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 13:30:29 -0500
-Date: Tue, 6 Dec 2011 19:28:47 +0100
+	id S1752632Ab1LFSgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 13:36:06 -0500
+Date: Tue, 6 Dec 2011 19:34:25 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        mingo@redhat.com, hpa@zytor.com, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de
 Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
  error
-Message-ID: <20111206182847.GB12094@elte.hu>
+Message-ID: <20111206183425.GC12094@elte.hu>
 References: <1319773015.6759.30.camel@deadeye>
  <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
  <1323185640.7454.269.camel@deadeye>
- <1323193731.32012.81.camel@twins>
- <20111206175558.3215907c@lxorguk.ukuu.org.uk>
- <20111206175919.GA5386@elte.hu>
- <20111206181715.GG3366@decadent.org.uk>
+ <20111206175443.GB25031@elte.hu>
+ <20111206181422.GA11881@elliptictech.com>
+ <20111206182155.6b4dedc3@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111206181715.GG3366@decadent.org.uk>
+In-Reply-To: <20111206182155.6b4dedc3@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -40,42 +38,57 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ben Hutchings <ben@decadent.org.uk> wrote:
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-> > What Peter did was rather sensible: he split a patch that 
-> > did two things into two and applied one standalone, 
-> > uncontroversial half of it and kept the part of the part of 
-> > the changelog that related to that change.
-> [...]
+> > FYI, there's no "I will only sign off on a patch doing two 
+> > things if it's applied in full" kind of condition in the SOB 
+> > definition, allowing that would break the GPL: people have 
+> > the right to take your modifications to the GPL-ed kernel 
+> > and modify it further.
 > 
-> I can accept that if the change from my submission is 
-> commented in the commit message.  (I sometimes do that with 
-> other people's patches.)  But this was modified without 
-> comment.
+> That gets into moral rights, and at least in the EU 
+> representing someone as the author of something they are not 
+> [..]
 
-That was not what you requested though:
+Alan, stop being silly - you clearly don't know what you are 
+talking about.
 
-> > > > > If you disagree with a patch, do not silently drop 
-> > > > > parts of it.  I demand that you remove my 
-> > > > > 'Signed-off-by' as this is not the change I submitted.
+The fact is, *every single line of code* in that commit was 
+written by Ben Hutchinson. Peter was being excessively helpful, 
+polite and did Ben a favor by splitting out the debug-printks 
+from the original submission and upstreaming them.
 
-What happened is that you did two things in a single patch and 
-Peter applied the uncontroversial, unrelated bits in full.
+What he did not do was to apply an unrelated, still under 
+discussion change mixed into that debug-printouts patch.
 
-> Giving credit for authorship is important, but it is also 
-> important not to say someone is the sole author of something 
-> when they aren't and haven't approved the subsequent changes 
-> (cf. Alan Smithee).
+Look at the original submission by Ben on lkml:
 
-It's all hunks submitted by you, you are the only author.
+ Subject: [PATCH 1/2] lockdep,rtmutex,bug: Show taint flags on error
 
-He did not modify your changes - you submitted several changes. 
+The hunk that Peter left out of that patch was not declared in 
+the patch title and was unrelated to the rest of the patch:
 
-You are actually the sole author of those changes in the commit. 
-Peter only split up your original patch - he was actually being 
-very constructive and 100% helpful with upstreaming your debug 
-printout changes - which makes your original objection doubly 
-offensive.
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -233,16 +233,6 @@ unsigned long get_taint(void)
+
+ void add_taint(unsigned flag)
+ {
+-       /*
+-        * Can't trust the integrity of the kernel anymore.
+-        * We don't call directly debug_locks_off() because the issue
+-        * is not necessarily serious enough to set oops_in_progress to 1
+-        * Also we want to keep up lockdep for staging development and
+-        * post-warning case.
+-        */
+-       if (flag != TAINT_CRAP && flag != TAINT_WARN && __debug_locks_off())
+-               printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
+-
+        set_bit(flag, &tainted_mask);
+
+Criticising Peter for not applying that change which the patch 
+title did not even mention and then sulkingly asking the SOB to 
+be removed is silly and offensive square two.
 
 Thanks,
 
