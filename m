@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933453Ab1LFNo5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 08:44:57 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:64433 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933315Ab1LFNoz (ORCPT
+	id S933420Ab1LFNpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:45:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55226 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933251Ab1LFNpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 08:44:55 -0500
-Message-ID: <20190.7244.156557.313315@ipc1.ka-ro>
-Date: Tue, 6 Dec 2011 14:44:44 +0100
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: netdev@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: don't
- munge MAC address from platform data
-In-Reply-To: <20111206124857.GB14048@sapphire.tkos.co.il>
-References: <cover.1323163127.git.LW@KARO-electronics.de>
-	<55b78c1766da5b0d0d679f5eae3fb9fc74a6ceef.1323163127.git.LW@KARO-electronics.de>
-	<20111206124857.GB14048@sapphire.tkos.co.il>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	Tue, 6 Dec 2011 08:45:44 -0500
+Date: Tue, 6 Dec 2011 11:45:26 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-perf-users@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        devel@openvz.org, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Arun Sharma <asharma@fb.com>
+Subject: Re: [Devel] [PATCH 0/7] Profiling sleep times (v3)
+Message-ID: <20111206134526.GB10709@infradead.org>
+References: <1322471015-107825-1-git-send-email-avagin@openvz.org>
+ <4EDDC0FB.6080005@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EDDC0FB.6080005@openvz.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Baruch Siach writes:
-> Hi Lothar,
+Em Tue, Dec 06, 2011 at 11:15:07AM +0400, Andrey Vagin escreveu:
+> Hello Arnaldo,
 > 
-> On Tue, Dec 06, 2011 at 11:27:13AM +0100, Lothar Waßmann wrote:
-> > When the MAC address is supplied via platform_data it should be OK as
-> > it is and should not be modified in case of a dual FEC setup.
-> > Also copying the MAC from platform_data to the single 'macaddr'
-> > variable will overwrite the MAC for the first interface in case of a
-> > dual FEC setup.
-> > 
-> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> > ---
-> >  drivers/net/ethernet/freescale/fec.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
-> > index e2b5ce6..11534b9 100644
-> > --- a/drivers/net/ethernet/freescale/fec.c
-> > +++ b/drivers/net/ethernet/freescale/fec.c
-> > @@ -818,7 +818,7 @@ static void __inline__ fec_get_mac(struct net_device *ndev)
-> >  			iap = (unsigned char *)FEC_FLASHMAC;
-> >  #else
-> >  		if (pdata)
-> > -			memcpy(iap, pdata->mac, ETH_ALEN);
-> > +			iap = (unsigned char *)&pdata->mac;
+> I found, that you commit patches for perf. Could you review this part?
 > 
-> Since pdata might point to __initdata struct, you must hold a copy of its 
-> content.
+> Arun Sharma said, that the second versions of patches works ok for him.
+> (Arun is the first user of this functionality after me.)
+
+I'm going to check if the patches still apply and then review,
+
+- Arnaldo
+ 
+> Thanks.
 > 
-No. platform_data must be present during the life time of a driver
-using it and thus must never be __initdata!
-
-
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+> On 11/28/2011 01:03 PM, Andrew Vagin wrote:
+> >Do you want to know where your code waits locks for a long time?
+> >Yes! It's for you. This feature helps you to find bottlenecks.
+> >
+> >It's not artificial task. Once one of my colleague was investigating a
+> >scalability problem. He pressed sysrq-t some times and tried to merge
+> >call-chains by hand. But perf can do that.
+> >
+> >Problem:
+> >The problem is that events sched_stat_* contain call-chains of
+> >non-target tasks.
+> >About month ago I sent series of patches:
+> >
+> >[PATCH 0/3] trace: add ability to collect call chains of non current task.
+> >
+> >Peter and Frederic explained me, that this solve isn't good and will be
+> >better to make it in userspace.
+> >
+> >Now it's in userspace. This series expands "perf inject" to be able to
+> >merge sched_switch events and sched_stat* events. sched_switch events
+> >contain correct call-chains and sched_stat contains a correct time
+> >slices.
+> >
+> >v2:
+> >* Removed all known issues. Now it works completely.
+> >* Improved usability of sched-stat scripts according with Arun's comments.
+> >v3: fixed accoding to comments from David Ahem
+> >
+> >Andrew Vagin (7):
+> >   perf: use event_name() to get an event name
+> >   perf: add ability to record event period
+> >   perf: add ability to change event according to sample (v2)
+> >   perf: teach "perf inject" to work with files
+> >   perf: teach perf inject to merge sched_stat_* and sched_switch events
+> >   perf: add scripts for profiling sleep times (v2)
+> >   event: add tracepoint for accounting block time
+> >
+> >  include/trace/events/sched.h                    |    7 ++
+> >  kernel/sched_fair.c                             |    2 +
+> >  tools/perf/builtin-inject.c                     |  120 ++++++++++++++++++++++-
+> >  tools/perf/builtin-record.c                     |    5 +
+> >  tools/perf/scripts/python/bin/sched-stat-record |   65 ++++++++++++
+> >  tools/perf/scripts/python/bin/sched-stat-report |    5 +
+> >  tools/perf/util/event.h                         |    2 +
+> >  tools/perf/util/evsel.c                         |   74 ++++++++++++++
+> >  tools/perf/util/header.c                        |    2 +-
+> >  tools/perf/util/session.h                       |    9 ++
+> >  10 files changed, 288 insertions(+), 3 deletions(-)
+> >  create mode 100644 tools/perf/scripts/python/bin/sched-stat-record
+> >  create mode 100644 tools/perf/scripts/python/bin/sched-stat-report
+> >
+> >_______________________________________________
+> >Devel mailing list
+> >Devel@openvz.org
+> >https://openvz.org/mailman/listinfo/devel
