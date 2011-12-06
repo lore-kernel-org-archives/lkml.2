@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995Ab1LFGaj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 01:30:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42331 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932847Ab1LFGah (ORCPT
+	id S932968Ab1LFGbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 01:31:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33966 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932822Ab1LFGbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 01:30:37 -0500
+	Tue, 6 Dec 2011 01:31:32 -0500
+Date: Mon, 5 Dec 2011 22:30:35 -0800
+From: tip-bot for Steffen Persvold <sp@numascale.com>
+Message-ID: <tip-e4a02b4a951a7adf9d982b11c64686570c29fbe7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        sp@numascale.com, jbarnes@virtuousgeek.org, tglx@linutronix.de,
+        daniel@numascale-asia.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sp@numascale.com, jbarnes@virtuousgeek.org, tglx@linutronix.de,
+        daniel@numascale-asia.com, mingo@elte.hu
+In-Reply-To: <1323073238-32686-2-git-send-email-daniel@numascale-asia.com>
+References: <1323073238-32686-2-git-send-email-daniel@numascale-asia.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86: Fix the !CONFIG_NUMA build of the new CPU ID fixup code support
+Git-Commit-ID: e4a02b4a951a7adf9d982b11c64686570c29fbe7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <201112051437.27538.arnd@arndb.de>
-References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com>
-	<42689146.OPtqLboC2m@wuerfel>
-	<CACVXFVO5Bu8vTfLN_WFsEkHW6JhQFmWPmEyNnrvTsDhoF-WVeA@mail.gmail.com>
-	<201112051437.27538.arnd@arndb.de>
-Date: Tue, 6 Dec 2011 14:30:34 +0800
-Message-ID: <CACVXFVMB+HuQDb+Pxo0d8x46P82-c-OPxaL0c661Wztyx3NWJA@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
-From: Ming Lei <ming.lei@canonical.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 22:30:44 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  e4a02b4a951a7adf9d982b11c64686570c29fbe7
+Gitweb:     http://git.kernel.org/tip/e4a02b4a951a7adf9d982b11c64686570c29fbe7
+Author:     Steffen Persvold <sp@numascale.com>
+AuthorDate: Tue, 6 Dec 2011 01:10:31 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 6 Dec 2011 07:03:37 +0100
 
-On Mon, Dec 5, 2011 at 10:37 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 04 December 2011, Ming Lei wrote:
->> >
->> > This data structure is not 32/64 bit safe: running a 64 bit kernel with 32 bit
->> > user space will see an incompatible layout.
->>
->> I agree that this is not 32/64 bit safe, but I understand lib32 can handle
->> this correctly, otherwise many 32bit applications can't run on current
->> 64bit kernel
->> since many kernel structures used by user space contained pointer,
->> such as struct v4l2_buffer, struct v4l2_ext_controls in v4l2 ABI.
->
-> The other ones you mentioned are handled in the kernel in
-> drivers/media/video/v4l2-compat-ioctl32.c. For new ioctl commands,
-> it's better to define the data structure in a compatible way
-> so you do not need a wrapper like that.
+x86: Fix the !CONFIG_NUMA build of the new CPU ID fixup code support
 
-OK, I opt to use __u64 to pass the user pointer, so how about the blow
-changes on this patch?
+I used "ifdef CONFIG_NUMA" simply because it doesn't make
+sense in a non-numa configuration even with SMP enabled.
 
-diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index 073eb4d..8aeaa1e 100644
---- a/include/linux/videodev2.h
-+++ b/include/linux/videodev2.h
-@@ -2214,7 +2214,12 @@ struct v4l2_fd_result {
- 	__u32	buf_index;
- 	__u32	face_cnt;
- 	__u32	reserved[6];
--	struct v4l2_fd_detection *fd;
-+
-+	/*make 64/32 compatible*/
-+	union {
-+		struct v4l2_fd_detection *fd;
-+		__u64	dummy;
-+	};
- };
+Besides, the only place where it is called right now is
+in kernel/cpu/amd.c:srat_detect_node() within the
+"CONFIG_NUMA" protected part.
 
- /**
+Signed-off-by: Steffen Persvold <sp@numascale.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Link: http://lkml.kernel.org/r/1323073238-32686-2-git-send-email-daniel@numascale-asia.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/common.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-thanks,
---
-Ming Lei
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index ad4da45..a70bd5b 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1146,7 +1146,9 @@ static void dbg_restore_debug_regs(void)
+  */
+ void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+ {
++#ifdef CONFIG_NUMA
+ 	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
++#endif
+ }
+ 
+ /*
