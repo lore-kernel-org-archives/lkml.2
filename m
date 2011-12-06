@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab1LFGaJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 01:30:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33954 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932822Ab1LFGaH (ORCPT
+	id S932995Ab1LFGaj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 01:30:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42331 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932847Ab1LFGah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 01:30:07 -0500
-Date: Mon, 5 Dec 2011 22:29:49 -0800
-From: tip-bot for Alan Cox <alan@linux.intel.com>
-Message-ID: <tip-b4b547d311e01f276f267beeef8ac1cbb311f058@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
-        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20111205231433.28811.51297.stgit@bob.linux.org.uk>
-References: <20111205231433.28811.51297.stgit@bob.linux.org.uk>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/intel_mid: Fix the Kconfig for MID selection
-Git-Commit-ID: b4b547d311e01f276f267beeef8ac1cbb311f058
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Tue, 6 Dec 2011 01:30:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 22:29:57 -0800 (PST)
+In-Reply-To: <201112051437.27538.arnd@arndb.de>
+References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com>
+	<42689146.OPtqLboC2m@wuerfel>
+	<CACVXFVO5Bu8vTfLN_WFsEkHW6JhQFmWPmEyNnrvTsDhoF-WVeA@mail.gmail.com>
+	<201112051437.27538.arnd@arndb.de>
+Date: Tue, 6 Dec 2011 14:30:34 +0800
+Message-ID: <CACVXFVMB+HuQDb+Pxo0d8x46P82-c-OPxaL0c661Wztyx3NWJA@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
+From: Ming Lei <ming.lei@canonical.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b4b547d311e01f276f267beeef8ac1cbb311f058
-Gitweb:     http://git.kernel.org/tip/b4b547d311e01f276f267beeef8ac1cbb311f058
-Author:     Alan Cox <alan@linux.intel.com>
-AuthorDate: Mon, 5 Dec 2011 23:14:39 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 06:57:29 +0100
+Hi,
 
-x86/intel_mid: Fix the Kconfig for MID selection
+On Mon, Dec 5, 2011 at 10:37 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Sunday 04 December 2011, Ming Lei wrote:
+>> >
+>> > This data structure is not 32/64 bit safe: running a 64 bit kernel with 32 bit
+>> > user space will see an incompatible layout.
+>>
+>> I agree that this is not 32/64 bit safe, but I understand lib32 can handle
+>> this correctly, otherwise many 32bit applications can't run on current
+>> 64bit kernel
+>> since many kernel structures used by user space contained pointer,
+>> such as struct v4l2_buffer, struct v4l2_ext_controls in v4l2 ABI.
+>
+> The other ones you mentioned are handled in the kernel in
+> drivers/media/video/v4l2-compat-ioctl32.c. For new ioctl commands,
+> it's better to define the data structure in a compatible way
+> so you do not need a wrapper like that.
 
-We could build all the bits to make generic MID work if you
-picked MID platform alone but that's really silly. Instead use
-select and two variables.
+OK, I opt to use __u64 to pass the user pointer, so how about the blow
+changes on this patch?
 
-This looks a bit daft right now but once we add a Medfield
-selection it'll start to look a good deal more sensible.
+diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+index 073eb4d..8aeaa1e 100644
+--- a/include/linux/videodev2.h
++++ b/include/linux/videodev2.h
+@@ -2214,7 +2214,12 @@ struct v4l2_fd_result {
+ 	__u32	buf_index;
+ 	__u32	face_cnt;
+ 	__u32	reserved[6];
+-	struct v4l2_fd_detection *fd;
++
++	/*make 64/32 compatible*/
++	union {
++		struct v4l2_fd_detection *fd;
++		__u64	dummy;
++	};
+ };
 
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Link: http://lkml.kernel.org/r/20111205231433.28811.51297.stgit@bob.linux.org.uk
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/Kconfig |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ /**
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index faf39a0..417883b 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -390,7 +390,7 @@ config X86_INTEL_CE
- 	  This option compiles in support for the CE4100 SOC for settop
- 	  boxes and media devices.
- 
--config X86_INTEL_MID
-+config X86_WANT_INTEL_MID
- 	bool "Intel MID platform support"
- 	depends on X86_32
- 	depends on X86_EXTENDED_PLATFORM
-@@ -399,7 +399,7 @@ config X86_INTEL_MID
- 	  systems which do not have the PCI legacy interfaces (Moorestown,
- 	  Medfield). If you are building for a PC class system say N here.
- 
--if X86_INTEL_MID
-+if X86_WANT_INTEL_MID
- 
- config X86_MRST
-        bool "Moorestown MID platform"
-@@ -411,6 +411,7 @@ config X86_MRST
- 	select SPI
- 	select INTEL_SCU_IPC
- 	select X86_PLATFORM_DEVICES
-+	select X86_INTEL_MID
- 	---help---
- 	  Moorestown is Intel's Low Power Intel Architecture (LPIA) based Moblin
- 	  Internet Device(MID) platform. Moorestown consists of two chips:
+thanks,
+--
+Ming Lei
