@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab1LFQVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:21:16 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48693 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab1LFQVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:21:15 -0500
-Date: Tue, 6 Dec 2011 21:51:00 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: Steffen Persvold <sp@numascale.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        daniel@numascale-asia.com, mingo@elte.hu, jbarnes@virtuousgeek.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH tip] Fix build failure x86_default_fixup_cpu_id() with
- !CONFIG_SMP
-Message-ID: <20111206162100.GC8567@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-References: <20111206104755.GA8567@linux.vnet.ibm.com>
- <4EDDFE79.9010109@linux.vnet.ibm.com>
- <4EDE002E.8040007@numascale.com>
+	id S1751583Ab1LFQXn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:23:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:7793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028Ab1LFQXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 11:23:41 -0500
+Message-ID: <4EDE4162.3070200@redhat.com>
+Date: Tue, 06 Dec 2011 10:22:58 -0600
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4EDE002E.8040007@numascale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11120616-5564-0000-0000-00000065ABEF
+To: Matt Fleming <matt@console-pimps.org>
+CC: Kamal Mostafa <kamal@canonical.com>, Jan Kara <jack@suse.cz>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Surbhi Palande <surbhi.palande@canonical.com>
+Subject: Re: [PATCH 2/5 resend] Thaw the journal when you unfreeze the fs.
+References: <1323118489-16326-1-git-send-email-kamal@canonical.com>  <1323118489-16326-3-git-send-email-kamal@canonical.com> <1323169644.4838.13.camel@mfleming-mobl1.ger.corp.intel.com>
+In-Reply-To: <1323169644.4838.13.camel@mfleming-mobl1.ger.corp.intel.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steffen Persvold <sp@numascale.com> [2011-12-06 12:44:46]:
+On 12/6/11 5:07 AM, Matt Fleming wrote:
+> On Mon, 2011-12-05 at 12:54 -0800, Kamal Mostafa wrote:
+>> From: Surbhi Palande <surbhi.palande@canonical.com>
+>>
+>> Thaw the journal so that transactions can resume
+>>
+>> BugLink: https://bugs.launchpad.net/bugs/897421
+>> Signed-off-by: Surbhi Palande <surbhi.palande@canonical.com>
+>> Cc: Kamal Mostafa <kamal@canonical.com>
+>> Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+>> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+>> ---
+>>  fs/ext4/super.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> Shouldn't this patch really be merged with [PATCH 1/5] ? Otherwise it's
+> possible to freeze a journal that will never be unfrozen, if say, you're
+> doing a git bisect and you have [PATCH 1/5] applied but not [PATCH 2/5].
 
-> On 12/6/2011 12:37, Srivatsa S. Bhat wrote:
-> >Hi Kamalesh,
-> >
-> >On 12/06/2011 04:17 PM, Kamalesh Babulal wrote:
-> >
-> >>Hi,
-> >>
-> >>tip (a4a7e7e29333) build fails, when compiled with !CONFIG_SMP.
-> >>I have only build tested the patch.
-> >>
-> >>x86: Fix x86_default_fixup_cpu_id() build failure with !CONFIG_SMP
-> >>
-> >>arch/x86/kernel/cpu/common.c: In function 'x86_default_fixup_cpu_id':
-> >>arch/x86/kernel/cpu/common.c:1149: error: 'struct cpuinfo_x86' has no member named 'phys_proc_id'
-> >>make[3]: *** [arch/x86/kernel/cpu/common.o] Error 1
-> >>
-> >>the code was introduced by commit 64be4c1c24. This patch
-> >>introduced #ifdef to guard !SMP case.
-> >>
-> >>Signed-off-by: Kamalesh Babulal<kamalesh@linux.vnet.ibm.com>
-> >>----
-> >
-> >
-> >There was a similar build-fix patch by Steffen Persvold at:
-> >https://lkml.org/lkml/2011/12/6/28
-> >
-> >That would solve your case too, right?
-> >
+I second that; I was going to send the same comment but you beat
+me to it.  Doing it this way will make it a tough go when bisecting
+freeze issues, it needs to be rolled into patch 1.
 
-Thanks for pointing out the patch.
-
-> 
-> I would hope so (I tested with !CONFIG_SMP also), albeit I used :
-> 
-> #ifdef CONFIG_NUMA
-> 
-> and not
-> 
-> #ifdef CONFIG_SMP
-> 
-> 
-> but I don't think you can compile with CONFIG_NUMA without having
-> CONFIG_SMP  (if I read the Kconfig correctly..).
-> 
-> I used CONFIG_NUMA because the code-path doesn't really make sense
-> on non-numa nodes.
-
-agree, cpuinfo_x86->phys_proc_id is protected within CONFIG_SMP but the
-right way is to fix using CONFIG_NUMA as explained by you in 
-https://lkml.org/lkml/2011/12/6/28.
-
-Regards,
-Kamalesh.
-
+Thanks,
+-Eric
