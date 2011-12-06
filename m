@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583Ab1LFQXn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:23:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab1LFQXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:23:41 -0500
-Message-ID: <4EDE4162.3070200@redhat.com>
-Date: Tue, 06 Dec 2011 10:22:58 -0600
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1751700Ab1LFQX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:23:57 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:4008
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751508Ab1LFQXz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 11:23:55 -0500
+X-SpamScore: -17
+X-BigFish: VPS-17(zz98dK4015Lzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVSIVM-02-23E-02
+X-M-MSG: 
+Date: Tue, 6 Dec 2011 17:23:46 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: KyongHo Cho <pullip.cho@samsung.com>
+CC: Kukjin Kim <kgene.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
+        Younglak Kim <younglak1004.kim@samsung.com>,
+        <iommu@lists.linux-foundation.org>,
+        <linux-samsung-soc@vger.kernel.org>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 0/2] iommu/exynos: Add IOMMU/System MMU driver for
+ Samsung Exynos
+Message-ID: <20111206162346.GP25178@amd.com>
+References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com>
+ <20111205154715.GE25178@amd.com>
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-CC: Kamal Mostafa <kamal@canonical.com>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Surbhi Palande <surbhi.palande@canonical.com>
-Subject: Re: [PATCH 2/5 resend] Thaw the journal when you unfreeze the fs.
-References: <1323118489-16326-1-git-send-email-kamal@canonical.com>  <1323118489-16326-3-git-send-email-kamal@canonical.com> <1323169644.4838.13.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1323169644.4838.13.camel@mfleming-mobl1.ger.corp.intel.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111205154715.GE25178@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/6/11 5:07 AM, Matt Fleming wrote:
-> On Mon, 2011-12-05 at 12:54 -0800, Kamal Mostafa wrote:
->> From: Surbhi Palande <surbhi.palande@canonical.com>
->>
->> Thaw the journal so that transactions can resume
->>
->> BugLink: https://bugs.launchpad.net/bugs/897421
->> Signed-off-by: Surbhi Palande <surbhi.palande@canonical.com>
->> Cc: Kamal Mostafa <kamal@canonical.com>
->> Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
->> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
->> ---
->>  fs/ext4/super.c |    4 ++++
->>  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> Shouldn't this patch really be merged with [PATCH 1/5] ? Otherwise it's
-> possible to freeze a journal that will never be unfrozen, if say, you're
-> doing a git bisect and you have [PATCH 1/5] applied but not [PATCH 2/5].
+On Mon, Dec 05, 2011 at 04:47:15PM +0100, Joerg Roedel wrote:
 
-I second that; I was going to send the same comment but you beat
-me to it.  Doing it this way will make it a tough go when bisecting
-freeze issues, it needs to be rolled into patch 1.
+> Okay, I merged it into arm/exynos, but it is not pushed yet. Actually
+> there were conflicts while merging, which I resolved. What I failed
+> to find is a config for Exynos that actually builds for upstream Linux.
+> Probably I havn't tried hard enough to find one... Can you provide a
+> kernel config that I can use for my testing and that builds a current
+> 3.2-rc4 kernel for Exynos?
+
+Okay, since there are new objections and since I can't even reliably
+build test the driver I unmerged it again.
+Please fix the outstanding issues and rebase it against a recent upstream
+kernel so that the result can be compiled to a kernel-image.
+
 
 Thanks,
--Eric
+
+	Joerg
+
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
