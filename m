@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab1LFSOp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 13:14:45 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:60513 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752650Ab1LFSOo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 13:14:44 -0500
-Date: Tue, 6 Dec 2011 13:14:22 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ben Hutchings <ben@decadent.org.uk>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
- error
-Message-ID: <20111206181422.GA11881@elliptictech.com>
-References: <1319773015.6759.30.camel@deadeye>
- <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
- <1323185640.7454.269.camel@deadeye>
- <20111206175443.GB25031@elte.hu>
+	id S1752913Ab1LFSPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:15:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37555 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752650Ab1LFSPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 13:15:01 -0500
+Message-ID: <4EDE5B36.2000203@kernel.org>
+Date: Tue, 06 Dec 2011 10:13:10 -0800
+From: "H. Peter Anvin" <hpa@kernel.org>
+Organization: Linux Kernel Organization, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206175443.GB25031@elte.hu>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Arnaud Lacombe <lacombar@gmail.com>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: x86-32 PAE-enabled kernel fails to boot with 64GB of RAM
+References: <CACqU3MXMAP-7LtVWHENNAQSS+B0c5qVcdWq=4NFGNACxkTRYzg@mail.gmail.com> <20111206102628.GC1342@tiehlicka.suse.cz>
+In-Reply-To: <20111206102628.GC1342@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-06 18:54 +0100, Ingo Molnar wrote:
-> * Ben Hutchings <ben@decadent.org.uk> wrote:
-> > On Tue, 2011-12-06 at 01:38 -0800, tip-bot for Ben Hutchings wrote:
-> > > Commit-ID:  fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013
-> > > Gitweb:     http://git.kernel.org/tip/fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013
-> > > Author:     Ben Hutchings <ben@decadent.org.uk>
-> > > AuthorDate: Fri, 28 Oct 2011 04:36:55 +0100
-> > > Committer:  Ingo Molnar <mingo@elte.hu>
-> > > CommitDate: Tue, 6 Dec 2011 08:16:49 +0100
-> > > 
-> > > lockdep, rtmutex, bug: Show taint flags on error
-> > > 
-> > > Show the taint flags in all lockdep and rtmutex-debug error messages.
-> > > 
-> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > Link: http://lkml.kernel.org/r/1319773015.6759.30.camel@deadeye
-> > > Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > [...]
-> > 
-> > If you disagree with a patch, do not silently drop parts of 
-> > it.  I demand that you remove my 'Signed-off-by' as this is 
-> > not the change I submitted.
+On 12/06/2011 02:26 AM, Michal Hocko wrote:
 > 
-> FYI, there's no "I will only sign off on a patch doing two 
-> things if it's applied in full" kind of condition in the SOB 
-> definition, allowing that would break the GPL: people have the 
-> right to take your modifications to the GPL-ed kernel and modify 
-> it further.
+> Quoting from Documentation/vm/highmem.txt:
+> "
+> The general recommendation is that you don't use more than 8GiB on a
+> 32-bit machine - although more might work for you and your workload,
+> you're pretty much on your own - don't expect kernel developers to
+> really care much if things come apart.
+> "
+> 
 
-If you want to play the GPL card, you will note that the GPL requires
-modified versions of a work to carry prominent notices that they have
-been modified, including the date of any change.
+Still, I suspect the failure to cap the memory space... it still
+*should* at least limp along.  But yes, at some point the wheels really
+will just come off the bus.
 
-A signoff by a maintainer does not imply that any modifications have
-been made, so I don't think that counts as "prominent".
+Does specifying a kernel"mem=" option (thereby capping the memory
+artificially) work?
 
-> Your original patch did two things. Peter did the sensible 
-> thing: he split out the print_kernel_ident() changes from your 
-> patch which stand on their own and kept your authorship in place 
-> - that is what the above patch does.
+	-hpa
 
-In which case, the changelog should have been amended to state that
-it's a modification of Ben's original submission.
-
-> Once you send it out the SOB is valid and people can (and 
-> typically will) modify it - and if you are still the main author 
-> (which you are here 100%) then keeping you as the author is the 
-> proper approach - Peter added his own SOB after yours.
-
-Linux convention is to add a signoff *and* a description of any changes
-to the original submission in square brackets.
-
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
