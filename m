@@ -1,50 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1LFRbg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 12:31:36 -0500
-Received: from casper.infradead.org ([85.118.1.10]:54244 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab1LFRbf (ORCPT
+	id S1752081Ab1LFRbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 12:31:44 -0500
+Received: from [205.233.59.134] ([205.233.59.134]:44521 "EHLO
+	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751326Ab1LFRbn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 12:31:35 -0500
-Message-Id: <20111206172803.473155622@chello.nl>
+	Tue, 6 Dec 2011 12:31:43 -0500
+Message-Id: <20111206172803.527747222@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Tue, 06 Dec 2011 18:15:36 +0100
+Date: Tue, 06 Dec 2011 18:15:37 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>
 Cc: linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
         Paul Turner <pjt@google.com>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/3] sched: Fix compile error for UP,!NOHZ
+Subject: [PATCH 3/3] sched: Use jump_labels for sched_feat
 References: <20111206171534.429636558@chello.nl>
-Content-Disposition: inline; filename=sched-fix-split-fallout.patch
+Content-Disposition: inline; filename=sched-debug-feat-static_branch.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 69e1e811 ("sched, nohz: Track nr_busy_cpus in the
-sched_group_power") messed up the static inline function definition.
+Now that we initialize jump_labels before sched_init() we can use them
+for the debug features without having to worry about a window where
+they have the wrong setting.
 
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/sched.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6/include/linux/sched.h
+ include/linux/jump_label.h |    3 ++
+ kernel/jump_label.c        |   12 +++++++----
+ kernel/sched/core.c        |   46 ++++++++++++++++++++++++++++++++++++++-------
+ kernel/sched/features.h    |   30 ++++++++++++++---------------
+ kernel/sched/sched.h       |   28 +++++++++++++++++++++++++++
+ 5 files changed, 93 insertions(+), 26 deletions(-)
+Index: linux-2.6/kernel/sched/core.c
 ===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -277,7 +277,7 @@ extern void set_cpu_sd_state_idle(void);
- extern int get_nohz_timer_target(void);
- #else
- static inline void select_nohz_load_balancer(int stop_tick) { }
--static inline void set_cpu_sd_state_idle(void);
-+static inline void set_cpu_sd_state_idle(void) { }
- #endif
+--- linux-2.6.orig/kernel/sched/core.c
++++ linux-2.6/kernel/sched/core.c
+@@ -149,7 +149,7 @@ static int sched_feat_show(struct seq_fi
+ {
+ 	int i;
+ 
+-	for (i = 0; sched_feat_names[i]; i++) {
++	for (i = 0; i < __SCHED_FEAT_NR; i++) {
+ 		if (!(sysctl_sched_features & (1UL << i)))
+ 			seq_puts(m, "NO_");
+ 		seq_printf(m, "%s ", sched_feat_names[i]);
+@@ -159,6 +159,36 @@ static int sched_feat_show(struct seq_fi
+ 	return 0;
+ }
+ 
++#ifdef HAVE_JUMP_LABEL
++
++#define jump_label_key__true  jump_label_key_enabled
++#define jump_label_key__false jump_label_key_disabled
++
++#define SCHED_FEAT(name, enabled)	\
++	jump_label_key__##enabled ,
++
++struct jump_label_key sched_feat_keys[__SCHED_FEAT_NR] = {
++#include "features.h"
++};
++
++#undef SCHED_FEAT
++
++static void sched_feat_disable(int i)
++{
++	if (jump_label_enabled(&sched_feat_keys[i]))
++		jump_label_dec(&sched_feat_keys[i]);
++}
++
++static void sched_feat_enable(int i)
++{
++	if (!jump_label_enabled(&sched_feat_keys[i]))
++		jump_label_inc(&sched_feat_keys[i]);
++}
++#else
++static void sched_feat_disable(int i) { };
++static void sched_feat_enable(int i) { };
++#endif /* HAVE_JUMP_LABEL */
++
+ static ssize_t
+ sched_feat_write(struct file *filp, const char __user *ubuf,
+ 		size_t cnt, loff_t *ppos)
+@@ -182,17 +212,20 @@ sched_feat_write(struct file *filp, cons
+ 		cmp += 3;
+ 	}
+ 
+-	for (i = 0; sched_feat_names[i]; i++) {
++	for (i = 0; i < __SCHED_FEAT_NR; i++) {
+ 		if (strcmp(cmp, sched_feat_names[i]) == 0) {
+-			if (neg)
++			if (neg) {
+ 				sysctl_sched_features &= ~(1UL << i);
+-			else
++				sched_feat_disable(i);
++			} else {
+ 				sysctl_sched_features |= (1UL << i);
++				sched_feat_enable(i);
++			}
+ 			break;
+ 		}
+ 	}
+ 
+-	if (!sched_feat_names[i])
++	if (i == __SCHED_FEAT_NR)
+ 		return -EINVAL;
+ 
+ 	*ppos += cnt;
+@@ -221,8 +254,7 @@ static __init int sched_init_debug(void)
+ 	return 0;
+ }
+ late_initcall(sched_init_debug);
+-
+-#endif
++#endif /* CONFIG_SCHED_DEBUG */
  
  /*
+  * Number of tasks to iterate in a single balance run.
+Index: linux-2.6/kernel/sched/features.h
+===================================================================
+--- linux-2.6.orig/kernel/sched/features.h
++++ linux-2.6/kernel/sched/features.h
+@@ -3,13 +3,13 @@
+  * them to run sooner, but does not allow tons of sleepers to
+  * rip the spread apart.
+  */
+-SCHED_FEAT(GENTLE_FAIR_SLEEPERS, 1)
++SCHED_FEAT(GENTLE_FAIR_SLEEPERS, true)
+ 
+ /*
+  * Place new tasks ahead so that they do not starve already running
+  * tasks
+  */
+-SCHED_FEAT(START_DEBIT, 1)
++SCHED_FEAT(START_DEBIT, true)
+ 
+ /*
+  * Based on load and program behaviour, see if it makes sense to place
+@@ -17,54 +17,54 @@ SCHED_FEAT(START_DEBIT, 1)
+  * improve cache locality. Typically used with SYNC wakeups as
+  * generated by pipes and the like, see also SYNC_WAKEUPS.
+  */
+-SCHED_FEAT(AFFINE_WAKEUPS, 1)
++SCHED_FEAT(AFFINE_WAKEUPS, true)
+ 
+ /*
+  * Prefer to schedule the task we woke last (assuming it failed
+  * wakeup-preemption), since its likely going to consume data we
+  * touched, increases cache locality.
+  */
+-SCHED_FEAT(NEXT_BUDDY, 0)
++SCHED_FEAT(NEXT_BUDDY, false)
+ 
+ /*
+  * Prefer to schedule the task that ran last (when we did
+  * wake-preempt) as that likely will touch the same data, increases
+  * cache locality.
+  */
+-SCHED_FEAT(LAST_BUDDY, 1)
++SCHED_FEAT(LAST_BUDDY, true)
+ 
+ /*
+  * Consider buddies to be cache hot, decreases the likelyness of a
+  * cache buddy being migrated away, increases cache locality.
+  */
+-SCHED_FEAT(CACHE_HOT_BUDDY, 1)
++SCHED_FEAT(CACHE_HOT_BUDDY, true)
+ 
+ /*
+  * Use arch dependent cpu power functions
+  */
+-SCHED_FEAT(ARCH_POWER, 0)
++SCHED_FEAT(ARCH_POWER, false)
+ 
+-SCHED_FEAT(HRTICK, 0)
+-SCHED_FEAT(DOUBLE_TICK, 0)
+-SCHED_FEAT(LB_BIAS, 1)
++SCHED_FEAT(HRTICK, false)
++SCHED_FEAT(DOUBLE_TICK, false)
++SCHED_FEAT(LB_BIAS, true)
+ 
+ /*
+  * Spin-wait on mutex acquisition when the mutex owner is running on
+  * another cpu -- assumes that when the owner is running, it will soon
+  * release the lock. Decreases scheduling overhead.
+  */
+-SCHED_FEAT(OWNER_SPIN, 1)
++SCHED_FEAT(OWNER_SPIN, true)
+ 
+ /*
+  * Decrement CPU power based on time not spent running tasks
+  */
+-SCHED_FEAT(NONTASK_POWER, 1)
++SCHED_FEAT(NONTASK_POWER, true)
+ 
+ /*
+  * Queue remote wakeups on the target CPU and process them
+  * using the scheduler IPI. Reduces rq->lock contention/bounces.
+  */
+-SCHED_FEAT(TTWU_QUEUE, 1)
++SCHED_FEAT(TTWU_QUEUE, true)
+ 
+-SCHED_FEAT(FORCE_SD_OVERLAP, 0)
+-SCHED_FEAT(RT_RUNTIME_SHARE, 1)
++SCHED_FEAT(FORCE_SD_OVERLAP, false)
++SCHED_FEAT(RT_RUNTIME_SHARE, true)
+Index: linux-2.6/kernel/sched/sched.h
+===================================================================
+--- linux-2.6.orig/kernel/sched/sched.h
++++ linux-2.6/kernel/sched/sched.h
+@@ -581,6 +581,7 @@ static inline void __set_task_cpu(struct
+  * Tunables that become constants when CONFIG_SCHED_DEBUG is off:
+  */
+ #ifdef CONFIG_SCHED_DEBUG
++# include <linux/jump_label.h>
+ # define const_debug __read_mostly
+ #else
+ # define const_debug const
+@@ -593,11 +594,37 @@ extern const_debug unsigned int sysctl_s
+ 
+ enum {
+ #include "features.h"
++	__SCHED_FEAT_NR,
+ };
+ 
+ #undef SCHED_FEAT
+ 
++#if defined(CONFIG_SCHED_DEBUG) && defined(HAVE_JUMP_LABEL)
++static __always_inline bool static_branch__true(struct jump_label_key *key)
++{
++	return likely(static_branch(key)); /* Not out of line branch. */
++}
++
++static __always_inline bool static_branch__false(struct jump_label_key *key)
++{
++	return unlikely(static_branch(key)); /* Out of line branch. */
++}
++
++#define SCHED_FEAT(name, enabled)					\
++static __always_inline bool static_branch_##name(struct jump_label_key *key) \
++{									\
++	return static_branch__##enabled(key);				\
++}
++
++#include "features.h"
++
++#undef SCHED_FEAT
++
++extern struct jump_label_key sched_feat_keys[__SCHED_FEAT_NR];
++#define sched_feat(x) (static_branch_##x(&sched_feat_keys[__SCHED_FEAT_##x]))
++#else /* !(SCHED_DEBUG && HAVE_JUMP_LABEL) */
+ #define sched_feat(x) (sysctl_sched_features & (1UL << __SCHED_FEAT_##x))
++#endif /* SCHED_DEBUG && HAVE_JUMP_LABEL */
+ 
+ static inline u64 global_rt_period(void)
+ {
 
 
