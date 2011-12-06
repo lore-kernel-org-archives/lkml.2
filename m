@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab1LFUWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 15:22:09 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:44443 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab1LFUWH (ORCPT
+	id S1754280Ab1LFUWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 15:22:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38253 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab1LFUWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 15:22:07 -0500
-Date: Tue, 6 Dec 2011 12:22:03 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        tglx@linutronix.de
-cc: H Hartley Sweeten <hartleys@visionengravers.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: [patch resend] x86: use the same node_distance for 32 and 64-bit
-In-Reply-To: <20111205124449.GG3143@elte.hu>
-Message-ID: <alpine.DEB.2.00.1112061220310.28251@chino.kir.corp.google.com>
-References: <201109191603.15560.hartleys@visionengravers.com> <alpine.DEB.2.00.1109191748170.8943@chino.kir.corp.google.com> <alpine.DEB.2.00.1110141325010.24783@chino.kir.corp.google.com> <20111205124449.GG3143@elte.hu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 6 Dec 2011 15:22:12 -0500
+Date: Tue, 6 Dec 2011 12:21:51 -0800
+From: tip-bot for Glauber Costa <glommer@parallels.com>
+Message-ID: <tip-1c77f38ad623d8c3bc062f0ff9b8c5a2dfb2f1a2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, glommer@parallels.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        glommer@parallels.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1322863119-14225-2-git-send-email-glommer@parallels.com>
+References: <1322863119-14225-2-git-send-email-glommer@parallels.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/accounting: Fix user/system tick double accounting
+Git-Commit-ID: 1c77f38ad623d8c3bc062f0ff9b8c5a2dfb2f1a2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 12:21:56 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-		
-The node_distance function is not x86 64-bit specific.  Having the #ifdef
-around the extern function declaration and the #define causes the default
-node_distance macro to be used in asm-generic/topology.h. This also causes
-a sparse warning in arch/x86/mm/numa.c when CONFIG_X86_64 is not set:
+Commit-ID:  1c77f38ad623d8c3bc062f0ff9b8c5a2dfb2f1a2
+Gitweb:     http://git.kernel.org/tip/1c77f38ad623d8c3bc062f0ff9b8c5a2dfb2f1a2
+Author:     Glauber Costa <glommer@parallels.com>
+AuthorDate: Fri, 2 Dec 2011 19:58:38 -0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 6 Dec 2011 20:51:23 +0100
 
-warning: symbol '__node_distance' was not declared. Should it be static?
+sched/accounting: Fix user/system tick double accounting
 
-Remove the #ifdef to fix both issues.
+Now that we're  pointing cpuacct's root cgroup to cpustat and accounting
+through task_group_account_field(), we should not access cpustat directly.
+Since it is done anyway inside the acessor function, we end up accounting
+it twice, which is wrong.
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1322863119-14225-2-git-send-email-glommer@parallels.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/topology.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ kernel/sched/core.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -130,10 +130,8 @@ extern void setup_node_to_cpumask_map(void);
- 	.balance_interval	= 1,					\
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3e078f2..6e86010 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2601,8 +2601,6 @@ static inline void task_group_account_field(struct task_struct *p,
+ void account_user_time(struct task_struct *p, cputime_t cputime,
+ 		       cputime_t cputime_scaled)
+ {
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-	u64 tmp;
+ 	int index;
+ 
+ 	/* Add user time to process. */
+@@ -2610,13 +2608,11 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+ 	p->utimescaled = cputime_add(p->utimescaled, cputime_scaled);
+ 	account_group_user_time(p, cputime);
+ 
+-	/* Add user time to cpustat. */
+-	tmp = cputime_to_cputime64(cputime);
+-
+ 	index = (TASK_NICE(p) > 0) ? CPUTIME_NICE : CPUTIME_USER;
+-	cpustat[index] += tmp;
+ 
++	/* Add user time to cpustat. */
+ 	task_group_account_field(p, index, cputime);
++
+ 	/* Account for user time used */
+ 	acct_update_integrals(p);
  }
+@@ -2662,16 +2658,12 @@ static inline
+ void __account_system_time(struct task_struct *p, cputime_t cputime,
+ 			cputime_t cputime_scaled, int index)
+ {
+-	u64 tmp = cputime_to_cputime64(cputime);
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-
+ 	/* Add system time to process. */
+ 	p->stime = cputime_add(p->stime, cputime);
+ 	p->stimescaled = cputime_add(p->stimescaled, cputime_scaled);
+ 	account_group_system_time(p, cputime);
  
--#ifdef CONFIG_X86_64
- extern int __node_distance(int, int);
- #define node_distance(a, b) __node_distance(a, b)
--#endif
+ 	/* Add system time to cpustat. */
+-	cpustat[index] += tmp;
+ 	task_group_account_field(p, index, cputime);
  
- #else /* !CONFIG_NUMA */
- 
+ 	/* Account for system time used */
