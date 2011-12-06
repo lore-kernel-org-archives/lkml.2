@@ -1,86 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933480Ab1LFOwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 09:52:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47190 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab1LFOwo convert rfc822-to-8bit (ORCPT
+	id S933475Ab1LFO5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 09:57:46 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62186 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933389Ab1LFO5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 09:52:44 -0500
+	Tue, 6 Dec 2011 09:57:45 -0500
+Message-ID: <4EDE2D62.9050802@gmail.com>
+Date: Tue, 06 Dec 2011 07:57:38 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <201112061441.25822.arnd@arndb.de>
-References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com>
-	<201112061255.56136.arnd@arndb.de>
-	<CACVXFVPYUY-vpeoKJKX2XN7-0w+=seW0u3EaP=hD9m1Sy7nkTQ@mail.gmail.com>
-	<201112061441.25822.arnd@arndb.de>
-Date: Tue, 6 Dec 2011 22:52:41 +0800
-Message-ID: <CACVXFVO8Uk808J9HgVv6ernd4x_QwN3YsAaERF=W8F=NQrLwQw@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
-From: Ming Lei <ming.lei@canonical.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
+        asharma@fb.com, devel@openvz.org, linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 3/7] perf: add ability to change event according to sample
+ (v2)
+References: <1322471015-107825-1-git-send-email-avagin@openvz.org> <1322471015-107825-4-git-send-email-avagin@openvz.org> <20111206141942.GE10709@infradead.org>
+In-Reply-To: <20111206141942.GE10709@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 10:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 06 December 2011, Ming Lei wrote:
->> > Using an array added to the end of the v4l2_fd_result structure
->> > rather than a pointer would really make this easier IMHO.
+
+
+On 12/06/2011 07:19 AM, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Nov 28, 2011 at 12:03:31PM +0300, Andrew Vagin escreveu:
+>> It's opposition of perf_session__parse_sample.
 >>
->> I have tried to do this, but video_usercopy needs a few changes
->> to handle array args if no indirect pointer is passed to kernel.
->
-> Ah, I see. Or you would have to encode the array size into the
-> ioctl command, which is also ugly in a different way.
->
->> I am not sure if media guys are happy to accept the changes, :-)
->
-> Maybe Mauro can comment on which solution he prefers then, given
-> the choice between:
->
-> 1. adding another handler in drivers/media/video/v4l2-compat-ioctl32.c
->
-> 2. passing a pointer that is casted to __u64 in user space an back
->   in the kernel
->
-> 3. extending video_usercopy in some way to make this work, preferably
->   in a generic way.
+>> v2: fixed mistakes which David Arhen found
+> 
+> Ok, I'm taking this one, David, can I added an 'Acked-by: you"? Or even
+> "reviewed-by:" ?
+> 
+> I'm just changing 'data' to 'sample', data is way to vague, I kept it
+> for a while in the past just to reduce patch size, but this is something
+> completely new, so better use 'sample'.
+> 
+> - Arnaldo
+>  
+>> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+>> ---
+>>  tools/perf/util/event.h   |    2 +
+>>  tools/perf/util/evsel.c   |   74 +++++++++++++++++++++++++++++++++++++++++++++
+>>  tools/perf/util/session.h |    9 +++++
+>>  3 files changed, 85 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+>> index 357a85b..0493101 100644
+>> --- a/tools/perf/util/event.h
+>> +++ b/tools/perf/util/event.h
+>> @@ -187,5 +187,7 @@ const char *perf_event__name(unsigned int id);
+>>  int perf_event__parse_sample(const union perf_event *event, u64 type,
+>>  			     int sample_size, bool sample_id_all,
+>>  			     struct perf_sample *sample, bool swapped);
+>> +int perf_event__change_sample(union perf_event *event, u64 type,
+>> +			     const struct perf_sample *data, bool swapped);
+>>  
+>>  #endif /* __PERF_RECORD_H */
+>> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+>> index e426264..d697568 100644
+>> --- a/tools/perf/util/evsel.c
+>> +++ b/tools/perf/util/evsel.c
+>> @@ -494,3 +494,77 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+>>  
+>>  	return 0;
+>>  }
+>> +
+>> +int perf_event__change_sample(union perf_event *event, u64 type,
+>> +			     const struct perf_sample *data, bool swapped)
+>> +{
+>> +	u64 *array;
+>> +
+>> +	/*
+>> +	 * used for cross-endian analysis. See git commit 65014ab3
+>> +	 * for why this goofiness is needed.
+>> +	 */
+>> +	union {
+>> +		u64 val64;
+>> +		u32 val32[2];
+>> +	} u;
+>> +
+>> +	array = event->sample.array;
+>> +
+>> +	if (type & PERF_SAMPLE_IP) {
+>> +		event->ip.ip = data->ip;
+>> +		array++;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_TID) {
+>> +		u.val32[0] = data->pid;
+>> +		u.val32[1] = data->tid;
+>> +		if (swapped) {
+>> +			/* undo swap of u64, then swap on individual u32s */
 
-Maybe this one is a good choice, and I think that it is worthy to
-support the below kind of array parameter:
+Comment is from the parse sample code; this is the inverse of that code
+so the comment needs to be updated here.
 
-struct v4l2_fd_result {
-	__u32   buf_index;
-	__u32   face_cnt;
-	__u32   reserved[6];
-	struct v4l2_fd_detection fd[];
-};
+>> +			u.val32[0] = bswap_32(u.val32[0]);
+>> +			u.val32[1] = bswap_32(u.val32[1]);
+>> +			u.val64 = bswap_64(u.val64);
+>> +		}
+>> +
+>> +		*array = u.val64;
+>> +		array++;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_TIME) {
+>> +		*array = data->time;
+>> +		array++;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_ADDR) {
+>> +		*array = data->addr;
+>> +		array++;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_ID) {
+>> +		*array = data->id;
+>> +		array++;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_STREAM_ID) {
+>> +		*array = data->stream_id;
+>> +		array++;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_CPU) {
+>> +		u.val32[0] = data->cpu;
+>> +		if (swapped) {
+>> +			/* undo swap of u64, then swap on individual u32s */
 
-and it is not difficult to implement it in a generic way so that new
-array parameters can be supported as 64/32 compatible.
+Ditto on that comment.
 
-> 4. using a variable command number like
->   #define VIDIOC_G_FD_RESULT(num)      _IOC(_IOC_READ|_IOC_WRITE,'V', 95, \
->                sizeof(struct v4l2_fd_result) + (num) * sizeof(struct v4l2_fd_detection)
->
-> 5. requiring the interface to be simplified to return only a single
->   struct v4l2_fd_detection at a time
+I did not test it, but the logic is in the inverse of parse_sample so it
+should be correct.
 
-Maybe this one is not user friendly since other v4l2 interfaces provide
-array parameters way, :-)
+Arnaldo: you could use remove the 2 comment lines on the commit since
+there are no logic impacts.
 
-> I agree that none of these are nice. My preferred option would be last one,
-> but I don't know how performance critical the interface is or if it would
-> cause any races that you want to avoid.
+Reviewed-by: David Ahern <dsahern@gmail.com>
 
-
-thanks,
---
-Ming Lei
+David
