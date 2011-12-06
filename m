@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab1LFSEn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 13:04:43 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:65048 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab1LFSEm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 13:04:42 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6552"; a="141907837"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: "David S . Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCHv2] net: Silence seq_scale() unused warning
-Date: Tue,  6 Dec 2011 10:04:40 -0800
-Message-Id: <1323194680-32127-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.108.g7e02a
-In-Reply-To: <20111206.003157.159978113328078893.davem@davemloft.net>
+	id S1752706Ab1LFSFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:05:49 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51256 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752622Ab1LFSFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 13:05:48 -0500
+Date: Tue, 6 Dec 2011 19:04:02 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ben Hutchings <ben@decadent.org.uk>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
+ error
+Message-ID: <20111206180402.GA7080@elte.hu>
+References: <1319773015.6759.30.camel@deadeye>
+ <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
+ <1323185640.7454.269.camel@deadeye>
+ <1323193731.32012.81.camel@twins>
+ <20111206175558.3215907c@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111206175558.3215907c@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On a CONFIG_NET=y build
 
-net/core/secure_seq.c:22: warning: 'seq_scale' defined but not
-used
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+> On Tue, 06 Dec 2011 18:48:51 +0100
+> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > On Tue, 2011-12-06 at 15:34 +0000, Ben Hutchings wrote:
+> > > If you disagree with a patch, do not silently drop parts of it.  I
+> > > demand that you remove my 'Signed-off-by' as this is not the change I
+> > > submitted. 
+> > 
+> > The easy solution is that I never take patches from you again, ever.
+> > Consider that done. I'll let Ingo see if he can remove your SOB.
+> 
+> In which case you are presumably ceasing to be a maintainer for that
+> code ? Your statement above appears to be inconsistent with the rôle of a
+> maintainer.
 
-On 12/5/2011 9:31 PM, David Miller wrote:
-> Just test INET all by itself, IPV6 will always need the INET
-> infrastructure for hash tables and inet socket management even in the
-> extremely unlikely event that we make ipv4 independently selectable at
-> some point.
+Just for the record, Peter is co-maintaining the lockdep code 
+with me (and is doing a superb job with that) and as such he has 
+no obligation whatsoever to interact with every contributor - as 
+long as at least one maintainer considers every patch submitted.
 
-Ok.
+Personally, reading various past discussions i can understand 
+Peter not wanting to work with Ben Hutchings for some time - 
+i'll look at his future patches and will consider them.
 
- net/core/secure_seq.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Thanks,
 
-diff --git a/net/core/secure_seq.c b/net/core/secure_seq.c
-index 025233d..925991a 100644
---- a/net/core/secure_seq.c
-+++ b/net/core/secure_seq.c
-@@ -19,6 +19,7 @@ static int __init net_secret_init(void)
- }
- late_initcall(net_secret_init);
- 
-+#ifdef CONFIG_INET
- static u32 seq_scale(u32 seq)
- {
- 	/*
-@@ -33,6 +34,7 @@ static u32 seq_scale(u32 seq)
- 	 */
- 	return seq + (ktime_to_ns(ktime_get_real()) >> 6);
- }
-+#endif
- 
- #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
- __u32 secure_tcpv6_sequence_number(const __be32 *saddr, const __be32 *daddr,
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+	Ingo
