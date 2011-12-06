@@ -1,102 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752980Ab1LFGJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 01:09:16 -0500
-Received: from cpanel23.proisp.no ([88.87.44.74]:37804 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab1LFGJP (ORCPT
+	id S932899Ab1LFGKQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 01:10:16 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:40906 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab1LFGKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 01:09:15 -0500
-Message-ID: <4EDDB184.6000901@numascale.com>
-Date: Tue, 06 Dec 2011 07:09:08 +0100
-From: Steffen Persvold <sp@numascale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Tue, 6 Dec 2011 01:10:14 -0500
+Date: Tue, 6 Dec 2011 09:10:18 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Marcos Paulo de Souza <marcos.mage@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 1/2] staging: vt6656: aes_ccmp, baseband, bssdb, card:
+ Change BOOL to int
+Message-ID: <20111206061018.GD3374@mwanda>
+References: <1323047566-12650-1-git-send-email-marcos.mage@gmail.com>
+ <20111205065517.GC3236@mwanda>
+ <alpine.LNX.2.00.1112052237140.2379@cactuar.localhost>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org, tglx@linutronix.de,
-        daniel@numascale-asia.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/apic] x86: Add NumaChip support
-References: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com> <tip-44b111b519160e33fdc41eadb39af86a24707edf@git.kernel.org> <20111205203130.GA12364@elte.hu> <4EDD5D77.3030101@numascale.com> <20111206055023.GB1580@elte.hu>
-In-Reply-To: <20111206055023.GB1580@elte.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+KJYzRxRHjYqLGl5"
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1112052237140.2379@cactuar.localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090201.4EDDB1C1.0042,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/6/2011 06:50, Ingo Molnar wrote:
->
-> * Steffen Persvold<sp@numascale.com>  wrote:
->
->> On 12/5/2011 21:31, Ingo Molnar wrote:
->> []
->>> There's a new build failure caused by this commit:
->>
->> It's this commit actually :
->>
->> Commit-ID:  64be4c1c2428e148de6081af235e2418e6a66dda
->> Gitweb:     http://git.kernel.org/tip/64be4c1c2428e148de6081af235e2418e6a66dda
->> Author:     Daniel J Blueman<daniel@numascale-asia.com>
->> AuthorDate: Mon, 5 Dec 2011 16:20:37 +0800
->> Committer:  Ingo Molnar<mingo@elte.hu>
->> CommitDate: Mon, 5 Dec 2011 17:17:21 +0100
->>
->> x86: Add x86_init platform override to fix up NUMA core numbering
->>
->>>
->>>    arch/x86/kernel/cpu/common.c:1149:2: error: ‘struct cpuinfo_x86’ has no member named ‘phys_proc_id’
->>>
->>> Note that the config is a !SMP one - that's probably the key
->>> detail.
->>
->> Yes, phys_proc_id in struct cpuinfo_x86 is covered within "ifdef CONFIG_SMP".
->>
->>>
->>> Please send a delta fix that resolves this bug. You can find the
->>> current lineup in:
->>>
->>>     git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
->>>
->>
->> Will do, should be fairly simple. Something in the lines of the attached should work (tested).
->>
->> Note: I used "ifdef CONFIG_NUMA" simply because it doesn't make sense in a non-numa configuration even with SMP enabled. Besides, the only place where it is called right now is in kernel/cpu/amd.c:srat_detect_node() within the "CONFIG_NUMA" protected part.
->>
->> Cheers,
->> --
->> Steffen Persvold, Chief Architect NumaChip
->> Numascale AS - www.numascale.com
->> Tel: +47 92 49 25 54 Skype: spersvold
->
->> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
->> index ad4da45..a70bd5b 100644
->> --- a/arch/x86/kernel/cpu/common.c
->> +++ b/arch/x86/kernel/cpu/common.c
->> @@ -1146,7 +1146,9 @@ static void dbg_restore_debug_regs(void)
->>    */
->>   void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
->>   {
->> +#ifdef CONFIG_NUMA
->>   	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
->> +#endif
->>   }
->
-> Yep, this should do the trick - i'll need a Signed-off-by line
-> to apply it.
 
-Signed-off-by: Steffen Persvold <sp@numascale.com>
+--+KJYzRxRHjYqLGl5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cheers,
--- 
-Steffen Persvold, Chief Architect NumaChip
-Numascale AS - www.numascale.com
-Tel: +47 92 49 25 54 Skype: spersvold
+On Mon, Dec 05, 2011 at 10:41:54PM -0200, Marcos Paulo de Souza wrote:
+> On Mon, 5 Dec 2011, Dan Carpenter wrote:
+> >On Sun, Dec 04, 2011 at 11:12:46PM -0200, Marcos Paulo de Souza wrote:
+> >>This patch change all references of BOOL to int. As asked by the TODO
+> >>file of the driver, we need to remove the ttype.h, and this file do a
+> >>typedef of int to BOOL. We don't need this.
+>=20
+> Dan, I'm trying to remove this chunk of code:
+>=20
+> drivers/staging/vt6656/ttype.h:
+>=20
+> typedef int BOOL;
+>=20
+> Are we talinkg about the same BOOL type?
+>=20
+
+Yes.
+
+> >
+> >Why not use bool?  Especially inside structs bool takes up less
+> >space than an int.  Also static analysis tools care about the type.
+>=20
+> This typedef is about a int type.
+
+Yes.  I know that.  But these things are used like bool not like int
+so bool is the correct thing.
+
+Bool is a different type from int, so you'll have to verify that
+changing it doesn't break anything.  It's a more difficult change
+but it's the right thing to do.
+
+regards,
+dan carpenter
+
+
+--+KJYzRxRHjYqLGl5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJO3bHJAAoJEOnZkXI/YHqRDw8P/2EUIx4CWYo8tbZXWfs3mO9m
+dqC3YM9BmKoq2kbtNiShMJZWy+NpLR9EiuZgXx7gw9b7Ub2YR9+vqT1+DrhoKM5o
+PXURmLmesVJBa2ANNJuQpSm40rLXOVWIofSXNRpZhKXwRAP3gX04DSRc+PS7Gl1s
+g97osv3OPts1Djji20cnroCkvdzBhaTPVVQ3VWXgVfyJJudD/OKxSr4tCg9L7EY9
+IzKe5xBODxEX7zLDgcFl9tABYkWVRCDOWNeVKXrv3bVfIKPCHGb2vXlajW1VJtVl
+UK7VnCW7XAMmkwVvz39SQBJybNG6D/gvBU/eAVGK8cXlobVR0yd0ta3WPvaYe1Hx
+gMPJdf4TAla/dd00rb1F0aDbkVDJhqkUU5Riy8DVLdetR9JedALpPDa8cehHWxGG
+wV/iUVVIba2zkcn72d2lpfHKTMEkWMz3qa0Cp3uCUXaYSKYbmADkFB1aUQhUEYN5
+SQEzJCqn+XTrsaV7vzVTiJ1HMgaq2po+HpD1B68tKU8tvimcu2yCZDrVnaqKPOwF
+B9tyBLtUxrSDzBtXh/0B3VO8IUuq/Q1LKXyJKVV2V1aLu64MI7dMa1IhG0pE7J+W
+UchtY2rwFFbB27nUjPtYp14MiF+QS1BdHmqoWYPXD7eP26VuFogi9lYt8TMo8chw
+VQa4Y1PTdYn3AQ4hzrYx
+=T3bU
+-----END PGP SIGNATURE-----
+
+--+KJYzRxRHjYqLGl5--
