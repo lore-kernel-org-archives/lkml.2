@@ -1,101 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835Ab1LFANu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 19:13:50 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:48733 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab1LFANs (ORCPT
+	id S932840Ab1LFAQe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 19:16:34 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44163 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab1LFAQc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 19:13:48 -0500
-From: Maxim Uvarov <maxim.uvarov@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-watchdog@vger.kernel.org, wim@iguana.be,
-        Maxim Uvarov <maxim.uvarov@oracle.com>
-Subject: [PATCH] hpwd watchdog mark page writable
-Date: Mon,  5 Dec 2011 16:11:44 -0800
-Message-Id: <1323130304-32165-1-git-send-email-maxim.uvarov@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4EDD5E37.009D,ss=1,re=0.000,fgs=0
+	Mon, 5 Dec 2011 19:16:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOcJUbz-Gy7ncVqBnqZmohZc2OF37HQEJPRu3s-cDbzoKT79bA@mail.gmail.com>
+References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com>
+	<4ED6C5B8.8040803@linuxtv.org>
+	<4ED75F53.30709@redhat.com>
+	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
+	<4EDC9B17.2080701@gmail.com>
+	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
+	<CAOcJUbz-Gy7ncVqBnqZmohZc2OF37HQEJPRu3s-cDbzoKT79bA@mail.gmail.com>
+Date: Tue, 6 Dec 2011 01:16:31 +0100
+Message-ID: <CAJbz7-3sciDeNB+31pBKZSCcwonw8Yru2tZ9du3OnELS4CwfSQ@mail.gmail.com>
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+From: HoP <jpetrous@gmail.com>
+To: Michael Krufky <mkrufky@linuxtv.org>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andreas Oberritter <obi@linuxtv.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark hpwdt watchdog pages writable to prevent failing:
+Hi Michael
 
-BUG: unable to handle kernel paging request at c00f0000
- IP: [<c00f0000>] 0xc00effff
- *pdpt = 0000000000b7c001 *pde = 0000000000cf5067 *pte = 80000000000f0163
- Oops: 0011 [#1] SMP
- Modules linked in: hpwdt(+)(U) ipmi_si(U) ipmi_msghandler(U) serio_raw(U)
- pcspkr(U) k8temp(U) ext4(U) mbcache(U) jbd2(U) hpsa(U) cciss(U) lpfc(U)
- qla2xxx(U) scsi_transport_fc(U) scsi_tgt(U) radeon(U) ttm(U)
- drm_kms_helper(U) drm(U) hwmon(U) i2c_algo_bit(U) i2c_core(U) dm_mod(U)
- .
- Pid: 741, comm: modprobe Not tainted 2.6.39-100.0.15.el6uek.i686 #1 HP
- ProLiant BL685c G1
- EIP: 0060:[<c00f0000>] EFLAGS: 00010286 CPU: 1
- EIP is at 0xc00f0000
- EAX: 55524324 EBX: 00000000 ECX: 00000000 EDX: 00000000
- ESI: 00000000 EDI: 00000000 EBP: e892fda0 ESP: e892fd70
-  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
- Process modprobe (pid: 741, ti=e892e000 task=e96d0da0 task.ti=e892e000)
- Stack:
-  f902b020 00000060 0000007b 00000286 ffffffed c00f0000 e892fda0 e892fda0
-  c00f0000 00000001 00000000 c00f0000 e892fdc4 f902b500 f902c0e0 c00f0000
-  e892fdc4 c0439b6f c00ffee0 c0100000 c00f0000 e892fdf0 f902b627 ea276860
- Call Trace:
-  [<f902b020>] ? asminline_call+0x20/0x50 [hpwdt]
-  [<f902b500>] cru_detect+0x43/0xf6 [hpwdt]
-  [<c0439b6f>] ? ioremap_nocache+0x1f/0x30
-  [<f902b627>] hpwdt_init_nmi_decoding+0x74/0x16b [hpwdt]
-  [<c085f469>] ? printk+0x1d/0x24
-  [<f902b7f4>] hpwdt_init_one+0xd6/0x162 [hpwdt]
-  [<c06d8475>] ? pm_runtime_enable+0x45/0x70
-  [<c06149c7>] local_pci_probe+0x47/0xb0
-  [<c0615978>] pci_device_probe+0x68/0x90
-  [<c06d0aee>] really_probe+0x5e/0x210
-  [<c06d9808>] ? pm_runtime_barrier+0x48/0xb0
-  [<c06d0ce3>] driver_probe_device+0x43/0xa0
-  [<c061494e>] ? pci_match_device+0x9e/0xb0
-  [<c06d0dc1>] __driver_attach+0x81/0x90
-  [<c06d0020>] bus_for_each_dev+0x50/0x70
-  [<c06d08fe>] driver_attach+0x1e/0x20
-  [<c06d0d40>] ? driver_probe_device+0xa0/0xa0
-  [<c06d0397>] bus_add_driver+0x197/0x270
-  [<c06157f0>] ? pci_dev_put+0x20/0x20
-  [<c06d13ea>] driver_register+0x6a/0x130
-  [<c0615ba5>] __pci_register_driver+0x45/0xb0
-  [<f902e017>] hpwdt_init+0x17/0x19 [hpwdt]
-  [<c0403035>] do_one_initcall+0x35/0x170
-  [<f902e000>] ? 0xf902dfff
-  [<c0491ac5>] sys_init_module+0x75/0x1c0
-  [<c04ac8a6>] ? audit_syscall_exit+0x216/0x240
-  [<c0868f9f>] sysenter_do_call+0x12/0x28
- Code: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
- ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
-  90 80 fc d8 75 0d e9 03 07 00 00 b8 04 00 00 02 05 00 00 9c
- EIP: [<c00f0000>] 0xc00f0000 SS:ESP 0068:e892fd70
- CR2: 00000000c00f0000
+2011/12/5 Michael Krufky <mkrufky@linuxtv.org>:
+> On Mon, Dec 5, 2011 at 9:28 AM, HoP <jpetrous@gmail.com> wrote:
+>> Hi
+>>
+>> 2011/12/5 Florian Fainelli <f.fainelli@gmail.com>:
+>>> Hello,
+>>>
+>>>
+>>> On 12/03/11 01:37, HoP wrote:
+>>>>
+>>>> Hi Alan.
+>>>>
+>>>> 2011/12/3 Alan Cox<alan@lxorguk.ukuu.org.uk>:
+>>>>>
+>>>>> On Thu, 1 Dec 2011 15:58:41 +0100
+>>>>> HoP<jpetrous@gmail.com>  wrote:
+>>>>>
+>>>>>> Hi,
+>>>>>>
+>>>>>> let me ask you some details of your interesting idea (how to
+>>>>>> achieve the same functionality as with vtunerc driver):
+>>>>>>
+>>>>>> [...]
+>>>>>>
+>>>>>>> The driver, as proposed, is not really a driver, as it doesn't support
+>>>>>>> any
+>>>>>>> hardware. The kernel driver would be used to just copy data from one
+>>>>>>> userspace
+>>>>>>
+>>>>>>
+>>>>>> Please stop learning me what can be called driver and what nope.
+>>>>>> Your definition is nonsense and I don't want to follow you on it.
+>>>>>
+>>>>>
+>>>>> You can stick your fingers in your ears and shout all you like but given
+>>>>> Mauro is the maintainer I'd suggest you work with him rather than making
+>>>>> it painful. One of the failures we routinely exclude code from the kernel
+>>>>> for is best described as "user interface of contributor"
+>>>>
+>>>>
+>>>> You may be not read all my mails but I really tried to be very positive in
+>>>> them.
+>>>> I wanted to focus on my Subject, but Mauro has, sometimes, the demand
+>>>> to focus on insignificant things (like if the code is driver or not). At
+>>>> least
+>>>> it is my feeling from all those disscussions with him.
+>>>>
+>>>>>
+>>>>> It's a loopback that adds a performance hit. The right way to do this is
+>>>>> in userspace with the userspace infrastructure. At that point you can
+>>>>> handle all the corner cases properly, integrate things like service
+>>>>> discovery into your model and so on - stuff you'll never get to work that
+>>>>> well with kernel loopback hackery.
+>>>>>
+>>>>>> Can you show me, how then can be reused most important part
+>>>>>> of dvb-core subsystem like tuning and demuxing? Or do you want me
+>>>>>> to invent wheels and to recode everything in the library? Of course
+>>>>>
+>>>>>
+>>>>> You could certainly build a library from the same code. That might well
+>>>>> be a good thing for all kinds of 'soft' DV applications. At that point
+>>>>> the discussion to have is the best way to make that code sharable between
+>>>>> a userspace library and the kernel and buildable for both.
+>>>>>
+>>>>>> I can be wrong, I'm no big kernel hacker. So please show me the
+>>>>>> way for it. BTW, even if you can find the way, then data copying
+>>>>>> from userspace to the kernel and back is also necessery. I really
+>>>>>> don't see any advantage of you solution.
+>>>>>
+>>>>>
+>>>>> In a properly built media subsystem you shouldn't need any copies beyond
+>>>>> those that naturally occur as part of a processing pass and are therefore
+>>>>> free.
+>>>>
+>>>>
+>>>> I may describe project goal, in few sentences: We have small box, running
+>>>> embedded linux with 2 satellite tuners on input and ethernet. Nothing
+>>>> more.
+>>>> We have designed the box for live sat TV/Radio reception, distributing
+>>>> them
+>>>> down to the network. One of the mode of working is "vtuner", what allows
+>>>> reuse those tuners remotely on linux desktop. The kernel part is very
+>>>> simple
+>>>> code exposing kernel's dvb-core to the userspace. Userspace client/server
+>>>> tools do all resource discovery and connection management. It works
+>>>> nicely and guys with vdr who is using it are rather satisfied with it.
+>>>> So, the main
+>>>> goal of vtuner code is to fully virtualize remote DVB adapter. To any
+>>>> linux dvb api
+>>>> compatible applications and tools. The vtuner kernel code seems to be
+>>>> the simplest and straightforward way to achieve it.
+>>>
+>>>
+>>> The company I work for also has something like this. We can attach a DVB
+>>> tuner to either the Gateway or the STB we provide and use it indifferently ,
+>>> except that we have the following architecture:
+>>>
+>>> - a DVB daemon controlling the physical DVB tuner and exposing methods for
+>>> tuning/scanning/zapping
+>>> - a web server and web services for accessing the DVB daemon methods
+>>> - a RTSP streamer with associated methods for controlling streaming
+>>>
+>>> The software running on both devices is the same (one compiled for ARM, the
+>>> other for x86).
+>>>
+>>> I do not see any problem with this solution, people wanting to get the
+>>> stream can still get the RTSP stream directly joining the multicast group,
+>>> which is fortunately OS agnostic at the same time.
+>>
+>> Nice. Are your solution open-sourced? If so, can you give me URL?
+>>
+>>>> I still think the code is very similar to NBD (Network block device) what
+>>>> sits
+>>>> in the kernel and is using silently. I guess NBD also do data copying
+>>>> from/to user space. Is there something what I overlooked?
+>>>>
+>>>> Can you show me the way (hint please) I can initiate TCP connection
+>>>> from within kernel space? If I can do it, then the big disadvantage
+>>>> of data passing to and from kernel can be removed.
+>>>
+>>>
+>>> Don't do this in kernel-space (remember the mechanism/policy split).
+>>
+>> Yes, that can be the issue, I understand that.
+>>
+>> You know - I'm a bit confused. Somebody are pointing on double
+>> data copying (userspace networked daemon -> kernel -> application)
+>> issue and another one warn me to not start network connection
+>> from the kernel. But if it works for NFS or CIFS then it should not
+>> be so weaky, isn't it?
+>>
+>>>> I must say that the box is primary focused to the DLNA/UpnP world, so
+>>>> vtuner feature is something like interesting addon only. But I was myself
+>>>> very nice surprised how good it behaves on real installations and that
+>>>> was reason I decided to try to get it included in kernel. I see that
+>>>> in present there is no willingness for code acceptation, so I will
+>>>> continue
+>>>> out of the kernel tree.
+>>>>
+>>>> Anyway, if I can find the way how to start TCP connection from the kernel
+>>>> part, I understand it can boost throughput very nicely up.
+>>>
+>>>
+>>> And here is a new hack.
+>>
+>> I'm really tired from all those "hack, crap, pigback ..." wordings.
+>>
+>> What exactly vtuner aproach does so hackish (other then exposing
+>> DVB internals, what is every time made if virtualization support is developing)?
+>>
+>> The code itself no need to patch any line of vanilla kernel source, it even
+>> doesn't change any processing of the rest of kernel, it is very simple
+>> driver/code/whatever.
+>>
+>> I can understand that some developers don't like to get dvb-core opened,
+>> I don't agree with them, but I don't really need to fight with them.
+>> Its theirs opinion.
+>> But even I try to see what is so hackish in vtuner implementation, I don't catch
+>> anything. Simplicity? I thought that simplicity is a big advanatge (simple code,
+>> easy to analyze). What else?
+>
+> Honza,
+>
+> I just want to reiterate my *positive* opinion.  (you already heard my
+> negative, I don't need to repeat it) ...  I am very excited to hear
+> that you're working on this virtual tuner driver, and I don't care
+> what policy says what -- I, personally, want to play with this for my
+> own uses.
+>
+> Let's stop arguing, and just write code!   That's what makes us happy
+> - lets be happy :-)
+>
+> I haven't had a chance yet to look at your full sources, but I
+> reiterate how excited I am that this virtual dvb adapter exists now.
+> Regardless of whether the community (or I) agrees as to its kernel
+> inclusion, nothing stops you from continuing your work, and publishing
+> tools that use this virtual adapter.
+>
+> If, in the end, the community wants this merged into the kernel, then
+> the community will have spoken and things will go the way that they
+> should.
+>
+> Meanwhile, you don't need to be included in the vanilla kernel if you
+> want to be used.  People have gcc toolchains and they can build the
+> module themselves if they want it.
+>
+> Let's not worry about politics or kernel inclusion -- let's just work
+> on our projects.  The work speaks for itself best.
+>
+> I hope you take these words as positive encouragement, regardless of
+> what I think, personally, about merging to the kernel -- that is an
+> entirely separate issue.
+>
 
-Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
----
- drivers/watchdog/hpwdt.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+I really appreciate your email.
 
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 3774c9b..fe50812 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -335,6 +335,8 @@ static int __devinit detect_cru_service(void)
- 	if (p == NULL)
- 		return -ENOMEM;
- 
-+	set_memory_x((unsigned long)p & PAGE_MASK, ROM_SIZE >> PAGE_SHIFT);
-+
- 	for (q = p; q < p + ROM_SIZE; q += 16) {
- 		rc = bios32_present(q);
- 		if (!rc)
--- 
-1.7.4.1
+Believe me that Mauro's NACK is not reason for me to stop work on vtuner.
+Fortunatelly the code is very compact and not need for any kernel patching
+so doing out-of-tree development is possible and works very well.
 
+I hope for one day when the code gets accepted somehow. In the meantime
+I'm going to place some notes about development progress time to time here.
+Next time w/o any word regarding code inclusion :-)
+
+Regards
+
+Honza
