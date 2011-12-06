@@ -1,96 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab1LFWs0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:48:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38323 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab1LFWsX (ORCPT
+	id S1752089Ab1LFWxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:53:21 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39752 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1LFWxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:48:23 -0500
-Message-ID: <4EDE9BAE.50003@canonical.com>
-Date: Tue, 06 Dec 2011 14:48:14 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Tue, 6 Dec 2011 17:53:20 -0500
+Date: Wed, 7 Dec 2011 02:53:15 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs, proc: Add start_data, end_data, start_brk members to
+ /proc/$pid/stat v2
+Message-ID: <20111206225315.GA20459@moon>
+References: <20111205182010.GV14515@moon>
+ <20111206140833.3b43fbeb.akpm@linux-foundation.org>
+ <20111206221515.GP29781@moon>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com> <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com> <20111206214126.GL2203@ZenIV.linux.org.uk>
-In-Reply-To: <20111206214126.GL2203@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111206221515.GP29781@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 01:41 PM, Al Viro wrote:
-> On Tue, Dec 06, 2011 at 01:07:56PM -0800, Linus Torvalds wrote:
->> On Tue, Dec 6, 2011 at 12:53 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>>
->>> The trouble is, might very well stop *NOT* at the global root. ?Consider
->>> a race with umount -l; we have no way to tell "it had been outside of
->>> chroot jail" from "it had walked up to the place where ->mnt_parent had
->>> been already reset, sorry, no idea what it was".
->>
->> Sure, but you made that case return NULL already as part of the "no
->> bastard" case, didn't you?
->>
->> That part of the patch looked fine.
->>
->> It was just the extra convolutions around 'bastard' that seemed to be
->> over-designed, and made for just a single use that seems very
->> peripheral anyway.
->>
->> Apart from AppArmor, afaik nobody even really cared where they ended
->> up, and even AppArmor really didn't want to know - it just had this
->> totally crazy special case about "/sys".
+On Wed, Dec 07, 2011 at 02:15:15AM +0400, Cyrill Gorcunov wrote:
+> On Tue, Dec 06, 2011 at 02:08:33PM -0800, Andrew Morton wrote:
+> > On Mon, 5 Dec 2011 22:20:11 +0400
+> > Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> > 
+> > > It helps to dump and restore this mm_struct members.
+> > 
+> > Sorry, I'm not going to apply a patch with a changelog like that.
+> >
 > 
-> It's not /sys, actually, it's implicit /proc/sys/something from sysctl() ;-/
+> OK, I'll update it. The problem is that while we "read" this entries
+> from procfs, the restoration is supposed to be done via prctl interface
+> (the patch is in fly, and I'm trying to improve it at moment).
 > 
-> Hell knows.  Frankly, the whole "let's build a pathname and decide basing
-> on it" thing had been insane from the very beginning.  For many reasons,
-> starting with "pathname in which namespace?" and continuing through "who said
-> that it still means what it used to at the moment of operation" to "what
-> if it's not a part of any namespace anymore/had never been in one".
+> > It needs a full description of how this will be used and why it is
+> > needed.  So that others can understand and evaluate the proposal, and
+> > any possible alternatives.
+> > 
+> > Such a description would also let us see whether this is just some
+> > "hey, maybe we'll use this sometime" thing, in which case it should not
+> > yet be applied.
 > 
-> Hey, it wasn't me who insisted that pathname-based stuff made any sense
-> whatsoever...  But "path to the nearest thing that has no ancestor now"
-> is _meaningless_ if we know nothing about that ancestor.  Cases include
-> 	* that ancestor is the root of our namespace.
-> 	* that ancestor is a solitary vfsmount we'd started in, never had
-> been mounted in any namespace (e.g. procfs internal vfsmount, etc.)
-> 	* that ancestor is a random vfsmount in a subtree that had been
-> hit by umount -l, just as we'd been looking at it.  Might be its root,
-> might be equal to path->mnt, might be something in between.
-> 	* cases 1 and 3 in another process' namespace
+> I understand.
 > 
-> In case 3 and analogs the path we'd obtained is pure junk, so I can agree
-> with "let's just return NULL on those".  The trouble is, how do you tell
-> (3) from (2)?  And do we want (1)-not-our-namespace to be distinguished
-> from (1)-our-namespace?
+> > 
+> > >  fs/proc/array.c |    7 +++++--
+> > 
+> > Also, every change to any procfs interface should have an associated
+> > change to procfs documentation.  If no relevant document exists then
+> > heck, write one.  No exceptions.
+> >
+> 
+> ok, thanks.
+> 
+> 	Cyrill
 
-You don't, and the chroot case of walking back to the namespace while sort
-of possible isn't something I like either.  This whole mess with bastard
-comes about because apparmor is supposed to deny access to the disconnected
-paths, so it needs to know where it stopped so it can disconnect the path
-that __d_path so helpfully attaches to /.  As I said early its insane to
-mediate off of disconnected paths, and it can only be done via a previous
-labeling.
+What about such changelog? Does it look better?
 
-The path value we get in these disconnected path cases is used for logging
-to help the user figuring out why/where the access was denied.  Having
-this information when building policy his helpful, but isn't critical as
-it can only be used as a guide.
+	Cyrill
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH] fs, proc: Add start_data, end_data, start_brk members to /proc/$pid/stat v3
 
-The current labeling in apparmor is crude and needs to be updated/replaced,
-It is the only way to correctly handle fs namespaces.  As I offered before
-we can break the one case that is currently problematic, until we can get
-our labeling in order.
+These members are involved into calculation of program
+data segment size (which might be seen in /proc/<pid>/statm)
+and brk() call, so in a sake of restore we need
+these entries to be set to exactly same values
+a process had at dumpimg time.
 
-It would be nice to still be able to get a path back, in the cases where
-the path isn't connected to root so we can log it but if we have to we can
-live without it.
+While setting these entries back to a running task
+is supposed to be implemented via prctl interface (which is
+not addressed in this patch) the export of these values
+are done via /proc/$pid/stat, which btw already has
+start_code, end_code and start_stack entries.
 
+v2:
+ - Kees and Alexey pointed out that "1" hack is unnecessary,
+   so make it to have plain (mm && permitted) ? mm->member : 0
+   form.
+
+v3:
+ - Andrew pointed that documentation update is missed.
+   Chagelog is updated as well.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Alexey Dobriyan <adobriyan@gmail.com>
+---
+ Documentation/filesystems/proc.txt |    3 +++
+ fs/proc/array.c                    |    7 +++++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+Index: linux-2.6.git/Documentation/filesystems/proc.txt
+===================================================================
+--- linux-2.6.git.orig/Documentation/filesystems/proc.txt
++++ linux-2.6.git/Documentation/filesystems/proc.txt
+@@ -305,6 +305,9 @@ Table 1-4: Contents of the stat files (a
+   blkio_ticks   time spent waiting for block IO
+   gtime         guest time of the task in jiffies
+   cgtime        guest time of the task children in jiffies
++  start_data    address above which program data is placed
++  end_data      address above which program data is placed
++  start_brk     address above which program data can be expanded with brk() call
+ ..............................................................................
+ 
+ The /proc/PID/maps file containing the currently mapped memory regions and
+Index: linux-2.6.git/fs/proc/array.c
+===================================================================
+--- linux-2.6.git.orig/fs/proc/array.c
++++ linux-2.6.git/fs/proc/array.c
+@@ -464,7 +464,7 @@ static int do_task_stat(struct seq_file
+ 
+ 	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
+ %lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
+-%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld\n",
++%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
+ 		pid_nr_ns(pid, ns),
+ 		tcomm,
+ 		state,
+@@ -511,7 +511,10 @@ static int do_task_stat(struct seq_file
+ 		task->policy,
+ 		(unsigned long long)delayacct_blkio_ticks(task),
+ 		cputime_to_clock_t(gtime),
+-		cputime_to_clock_t(cgtime));
++		cputime_to_clock_t(cgtime),
++		(mm && permitted) ? mm->start_data : 0,
++		(mm && permitted) ? mm->end_data : 0,
++		(mm && permitted) ? mm->start_brk : 0);
+ 	if (mm)
+ 		mmput(mm);
+ 	return 0;
