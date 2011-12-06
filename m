@@ -1,88 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab1LFPeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 10:34:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49998 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754427Ab1LFPeV (ORCPT
+	id S1755051Ab1LFPgS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 10:36:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36965 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754667Ab1LFPgQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 10:34:21 -0500
-Message-ID: <1323185640.7454.269.camel@deadeye>
-Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
- error
-From: Ben Hutchings <ben@decadent.org.uk>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Date: Tue, 06 Dec 2011 15:34:00 +0000
-In-Reply-To: <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
-References: <1319773015.6759.30.camel@deadeye>
-	 <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-M3C6ASRt4vOUbVXur8cb"
-X-Mailer: Evolution 3.0.3-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 6 Dec 2011 10:36:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EDE2F61.301@redhat.com>
+References: <4ED75F53.30709@redhat.com>
+	<CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com>
+	<20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+	<CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
+	<4EDC9B17.2080701@gmail.com>
+	<CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
+	<4EDD01BA.40208@redhat.com>
+	<4EDD2C82.7040804@linuxtv.org>
+	<20111205205554.2caeb496@lxorguk.ukuu.org.uk>
+	<4EDD3583.30405@linuxtv.org>
+	<20111206111829.GB17194@sirena.org.uk>
+	<4EDE0400.1070304@linuxtv.org>
+	<4EDE1457.7070408@redhat.com>
+	<4EDE1A06.1060108@linuxtv.org>
+	<4EDE22F0.30909@redhat.com>
+	<4EDE28EB.7050407@linuxtv.org>
+	<4EDE2F61.301@redhat.com>
+Date: Tue, 6 Dec 2011 21:06:14 +0530
+Message-ID: <CAHFNz9JqrtfvEmgoPeWG3kLAzrqZes9J3yHrAoJG-_JLUuTBcQ@mail.gmail.com>
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+From: Manu Abraham <abraham.manu@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Andreas Oberritter <obi@linuxtv.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, HoP <jpetrous@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 6, 2011 at 8:36 PM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> On 06-12-2011 12:38, Andreas Oberritter wrote:
+>>
+>> On 06.12.2011 15:13, Mauro Carvalho Chehab wrote:
+>>>
+>>> O_NONBLOCK
+>>>     When opening a FIFO with O_RDONLY or O_WRONLY set:
+>>
+>>                      ^^^^ This does not apply.
+>>
+>> [...]
+>>
+>>>     When opening a block special or character special file that supports
+>>> non-blocking opens:
+>>>
+>>>         If O_NONBLOCK is set, the open() function shall return without
+>>> blocking for the device to be ready or available. Subsequent behavior of
+>>> the device is device-specific.
+>>
+>>
+>> This is the important part:
+>> - It specifies the behaviour of open(), not ioctl(). I don't see a
+>> reason why open should block with vtunerc.
+>> - Read again: "Subsequent behavior of the device is device-specific."
+>>
+>>>         If O_NONBLOCK is clear, the open() function shall block the
+>>> calling thread until the device is ready or available before returning.
+>>>
+>>>     Otherwise, the behavior of O_NONBLOCK is unspecified.
+>>>
+>>> Basically, syscall should not block waiting for some data to be read (or
+>>> written).
+>>
+>>
+>> That's because open() does not read or write.
+>>
+>>> The ioctl definition defines [EAGAIN] error code, if, for any reason, an
+>>> ioctl would block.
+>>
+>>
+>> Fine.
+>>
+>>> Btw, the vtunerc doesn't handle O_NONBLOCK flag. For each DVB ioctl, for
+>>> example
+>>> read_snr[1], it calls wait_event_interruptible()[2], even if the
+>>> application opens
+>>> it with O_NONBLOCK flag. So, it is likely that non-blocking-mode
+>>> applications
+>>> will break.
+>>
+>>
+>> Of course, read operations must wait until the value read is available
+>> or an error (e.g. timeout, i/o error) occurs. Whether it's an i2c
+>> transfer, an usb transfer or a network transfer doesn't make a
+>> difference. Every transfer takes a nonzero amount of time.
+>
+>
+> Yes, posix is not 100% clear about what "non block" means for ioctl's, but
+> waiting for an event is clearly a block condition. This is different than
+> doing something like mdelay() (or even mleep()) in order to wait for an
+> specific amount of time for an operation to complete.
+>
+> A vtunerc => daemon => network transfer =>daemon => vtunerc is a block
+> condition,
+> as the network may return in a few ms or may not return and a long
+> timeout at the daemon would give an error. Also, as the daemon may be
+> swapped
+> to disk (as the daemon runs on userspace), this may even involve other
+> blocking operations at the block layer.
+>
+>
+>> As Honza already demonstrated, in a typical LAN setup, this takes only
+>> few milliseconds, which with fast devices may even be faster than some
+>> slow local devices using many delays in their driver code.
+>>
+>> If an application breaks because of that, then it's a bug in the
+>> application which may as well be triggered by a local driver and thus
+>> needs to be fixed anyway.
+>
+>
+> It is not a bug in the application. It requested a non-block mode. The
+> driver
+> is working in block mode instead. It is a driver's bug.
+>
+>
+>>>> Mauro, if the network is broken, any application using the network will
+>>>> break. No specially designed protocol will fix that.
+>>>
+>>>
+>>> A high delay network (even a congested one) is not broken, if it can
+>>> still provide the throughput required by the application, and a
+>>> latency/QoS
+>>> that would fit.
+>>
+>>
+>> Then neither vtunerc nor any other application will break. Fine.
+>>
+>>>> If you want to enforce strict maximum latencies, you can do that in the
+>>>> userspace daemon using the vtunerc interface. It has all imaginable
+>>>> possibilities to control data flow over the network and to return errors
+>>>> to vtunerc.
+>>>
+>>>
+>>> Yes, you can do anything you want at the userspace daemon, but the
+>>> non-userspace daemon aware applications will know nothing about it, and
+>>> this is the flaw on this design: Applications can't negotiate what
+>>> network
+>>> parameters are ok or not for its usecase.
+>>
+>>
+>> How do you negotiate network parameters with your ISP and all involved
+>> parties on the internet on the way from your DSL line to some other
+>> peer? Let me answer it: You don't.
+>
+>
+> TCP flow control mechanisms, RSVP, MPLS, IP QoS flags, ICMP messages, etc.
+>
 
---=-M3C6ASRt4vOUbVXur8cb
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+You would need a Data Link Protocol, which would be PPP of some form
 
-On Tue, 2011-12-06 at 01:38 -0800, tip-bot for Ben Hutchings wrote:
-> Commit-ID:  fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013
-> Gitweb:     http://git.kernel.org/tip/fbdc4b9a6c29befbcca65e5366e5aaf2abb=
-7a013
-> Author:     Ben Hutchings <ben@decadent.org.uk>
-> AuthorDate: Fri, 28 Oct 2011 04:36:55 +0100
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Tue, 6 Dec 2011 08:16:49 +0100
->=20
-> lockdep, rtmutex, bug: Show taint flags on error
->=20
-> Show the taint flags in all lockdep and rtmutex-debug error messages.
->=20
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/1319773015.6759.30.camel@deadeye
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-[...]
+http://en.wikipedia.org/wiki/Point-to-Point_Protocol
 
-If you disagree with a patch, do not silently drop parts of it.  I
-demand that you remove my 'Signed-off-by' as this is not the change I
-submitted.
+I don't think, you have much to negotiate there.
 
-Ben.
-
---=20
-Ben Hutchings
-Absolutum obsoletum. (If it works, it's out of date.) - Stafford Beer
-
---=-M3C6ASRt4vOUbVXur8cb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATt416Oe/yOyVhhEJAQqEmhAAjPgL3sa5s6HuwxcKqUoRzj8NjdC3p9Z0
-sPzFGKh6q5L5fc00C91xYGJPBrK4AbPkrZn6Qm2J4We4h9sct6y5NXLDkjWgNeRC
-q7WL5/ISIcl43P1e/YTVIMyFLsbu0YcuoWf/cqB+f1PVT7q3AC0v8gulQpHjdy6r
-Xj2M3ipeHgG2KqkkwkIpYyW06zPPM70C92l5jWTsB5q40xSXTALD6ZnPeuWff19j
-R1cax2uxpQgpboCtELk4w8KXn/A7wNlrQXkduy1RfGz+U6wWuQADlNLpHpVuDzrQ
-7wHkPUZxiFwNKRNnkLltmitU57ye0nvO4/vIQXHu5QPzDHp05nHIu+Kv4gPNNDJn
-6Ey63A1sO/Qs+IiSy+FxUra6XaZBauH21aiR8Z5UsejH3b+gf7vB1e233DGo+3dD
-9JPjQgd7ixofNyBdfy6T2OcsRT6rWSpwqqOy1E0KD0EJwBP0vg7yjjIamBabYFAL
-I9gpxy9GNaFUXcQk8lp8UC93A7klwzJHAWVGBJsVUB1vLKL9XBYKWbtbdd663VfR
-8zlaGMHyUX0tu88NznyK8DwE0OgK0fv0c7b1pnZsgpu6knObXeYMiD27+vQwEZSb
-I4o2iNZ9l5NoQfhFf1PFnfLxVa8o/Chx4+2Ck10OU1SocW/NvS/4oJhN5mC0z/OQ
-p3dCv/0I1x8=
-=0qCo
------END PGP SIGNATURE-----
-
---=-M3C6ASRt4vOUbVXur8cb--
+Regards,
+Manu
