@@ -1,70 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755379Ab1LFWcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:32:13 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:33197 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab1LFWcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:32:12 -0500
-Date: Tue, 6 Dec 2011 14:31:37 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Yongqiang Yang <xiaoqiangnk@gmail.com>
-cc: Allison Henderson <achender@linux.vnet.ibm.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
-        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
-In-Reply-To: <CAGBYx2YA3B5-nLxwdHavmd=794ycrpqnMbvM=VabrdPL2FQ0sw@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1112061412310.1949@sister.anvils>
-References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com> <alpine.LSU.2.00.1111201121120.1264@sister.anvils> <20111121165626.GD14568@thunk.org> <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils>
- <4EDD729E.2060402@linux.vnet.ibm.com> <alpine.LSU.2.00.1112060030220.1615@sister.anvils> <CAGBYx2YA3B5-nLxwdHavmd=794ycrpqnMbvM=VabrdPL2FQ0sw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1755395Ab1LFWdC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:33:02 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:45815 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753421Ab1LFWdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 17:33:00 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2 1/3] PM / Sleep: Make [un]lock_system_sleep() generic
+Date: Tue, 6 Dec 2011 23:35:53 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: pavel@ucw.cz, len.brown@intel.com, ebiederm@xmission.com, tj@kernel.org,
+        rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, oleg@redhat.com
+References: <20111206192000.25854.53769.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20111206192000.25854.53769.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-813777252-1323210711=:1949"
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112062335.53670.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tuesday, December 06, 2011, Srivatsa S. Bhat wrote:
+> The [un]lock_system_sleep() APIs were originally introduced to mutually
+> exclude memory hotplug and hibernation.
+> 
+> Directly using mutex_lock(&pm_mutex) to achieve mutual exclusion with
+> suspend or hibernation code can lead to freezing failures. However, the
+> APIs [un]lock_system_sleep() can be safely used to achieve the same,
+> without causing freezing failures.
+> 
+> So, since it would be beneficial to modify all the existing users of
+> mutex_lock(&pm_mutex) (in all parts of the kernel), so that they use these
+> safe APIs intead, make these APIs generic by removing the restriction that
+> they work only when CONFIG_HIBERNATE_CALLBACKS is set. Moreover, that
+> restriction didn't buy us anything anyway.
+> 
+> v2: Rebased on top of the patchset posted at:
+>     https://lkml.org/lkml/2011/12/6/334
+> 
+> Suggested-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
---8323584-813777252-1323210711=:1949
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+All patches in this series applied to linux-pm/linux-next.
 
-On Tue, 6 Dec 2011, Yongqiang Yang wrote:
-> On Tue, Dec 6, 2011 at 4:55 PM, Hugh Dickins <hughd@google.com> wrote:
-> >
-> > I've now tried the fsx test on three machines, with both 1/2 and 2/2
-> > applied to 3.2-rc4. =A0On one machine, with ext2 on loop on tmpfs, the
-> > fsx test failed in a couple of minutes with those patches; on another
-> > machine, with ext2 on loop on tmpfs, it failed after about 40 minutes
-> > with =A0the patches; on this laptop, with ext2 on SSD, it's just now
-> > failed after 35 minutes with the patches.
+Thanks,
+Rafael
 
-> ext2?  So files are indirect mapped?  If so, the failure should has
-> nothing to do with punching hole, I remember that punch hole is not
-> supported for indirect mapped files.
 
-Yes, I am not trying to test hole punching: just trying to do my own
-testing under traditional loads, and hitting problems in changes which
-have gone into extN to fix up hole punching.
+> ---
+> 
+>  include/linux/suspend.h |   36 ++++++++++++++++--------------------
+>  1 files changed, 16 insertions(+), 20 deletions(-)
+> 
+> diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+> index 906d62c..95040cc 100644
+> --- a/include/linux/suspend.h
+> +++ b/include/linux/suspend.h
+> @@ -332,6 +332,8 @@ static inline bool system_entering_hibernation(void) { return false; }
+>  #define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
+>  #define PM_POST_RESTORE		0x0006 /* Restore failed */
+>  
+> +extern struct mutex pm_mutex;
+> +
+>  #ifdef CONFIG_PM_SLEEP
+>  void save_processor_state(void);
+>  void restore_processor_state(void);
+> @@ -352,6 +354,19 @@ extern bool events_check_enabled;
+>  extern bool pm_wakeup_pending(void);
+>  extern bool pm_get_wakeup_count(unsigned int *count);
+>  extern bool pm_save_wakeup_count(unsigned int count);
+> +
+> +static inline void lock_system_sleep(void)
+> +{
+> +	freezer_do_not_count();
+> +	mutex_lock(&pm_mutex);
+> +}
+> +
+> +static inline void unlock_system_sleep(void)
+> +{
+> +	mutex_unlock(&pm_mutex);
+> +	freezer_count();
+> +}
+> +
+>  #else /* !CONFIG_PM_SLEEP */
+>  
+>  static inline int register_pm_notifier(struct notifier_block *nb)
+> @@ -367,30 +382,11 @@ static inline int unregister_pm_notifier(struct notifier_block *nb)
+>  #define pm_notifier(fn, pri)	do { (void)(fn); } while (0)
+>  
+>  static inline bool pm_wakeup_pending(void) { return false; }
+> -#endif /* !CONFIG_PM_SLEEP */
+> -
+> -extern struct mutex pm_mutex;
+>  
+> -#ifndef CONFIG_HIBERNATE_CALLBACKS
+>  static inline void lock_system_sleep(void) {}
+>  static inline void unlock_system_sleep(void) {}
+>  
+> -#else
+> -
+> -/* Let some subsystems like memory hotadd exclude hibernation */
+> -
+> -static inline void lock_system_sleep(void)
+> -{
+> -	freezer_do_not_count();
+> -	mutex_lock(&pm_mutex);
+> -}
+> -
+> -static inline void unlock_system_sleep(void)
+> -{
+> -	mutex_unlock(&pm_mutex);
+> -	freezer_count();
+> -}
+> -#endif
+> +#endif /* !CONFIG_PM_SLEEP */
+>  
+>  #ifdef CONFIG_ARCH_SAVE_PAGE_KEYS
+>  /*
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
 
-Some of the time I've been using an old fsx which doesn't even know
-about fallocate(), some of the time a recent fsx from xfstests.  Most
-of the time I've been using ext2, but occasionally I try it on ext4.
-
-I think the only thing which makes the problems go away is blocksize
-same as pagesize; but it's a long time since I tried nomblk_io_submit,
-that made a big difference around 2.6.38/39, perhaps it still does.
-
->=20
-> Do you mean fsx failure or the bug you reported earlier due to
-> referencing a unlocked page?
-
-In first quoted paragraph above, fsx failure.
-
-Hugh
---8323584-813777252-1323210711=:1949--
