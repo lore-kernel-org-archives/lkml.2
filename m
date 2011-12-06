@@ -1,94 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab1LFFwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 00:52:04 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62206 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab1LFFwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 00:52:02 -0500
-Message-ID: <4EDDAD46.6020508@cn.fujitsu.com>
-Date: Tue, 06 Dec 2011 13:51:02 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752740Ab1LFFwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 00:52:11 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51413 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867Ab1LFFwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 00:52:07 -0500
+Date: Tue, 6 Dec 2011 06:50:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steffen Persvold <sp@numascale.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jbarnes@virtuousgeek.org, tglx@linutronix.de,
+        daniel@numascale-asia.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/apic] x86: Add NumaChip support
+Message-ID: <20111206055023.GB1580@elte.hu>
+References: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com>
+ <tip-44b111b519160e33fdc41eadb39af86a24707edf@git.kernel.org>
+ <20111205203130.GA12364@elte.hu>
+ <4EDD5D77.3030101@numascale.com>
 MIME-Version: 1.0
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        viro <viro@zeniv.linux.org.uk>, Chris Mason <chris.mason@oracle.com>,
-        Ito <t-itoh@jp.fujitsu.com>, Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH 1/2] vfs: make writeback_in_progress() inline
-References: <4EDDA9B1.5050000@cn.fujitsu.com>
-In-Reply-To: <4EDDA9B1.5050000@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-06 13:51:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-06 13:51:33,
-	Serialize complete at 2011-12-06 13:51:33
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=GB2312
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4EDD5D77.3030101@numascale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc Fengguang
-cc Linux-kernel
 
-On tue, 06 Dec 2011 13:35:45 +0800, Miao Xie wrote:
-> writeback_in_progress() is very simple, and we will use writeback_in_progress()
-> in the module, so make it inline.
+* Steffen Persvold <sp@numascale.com> wrote:
+
+> On 12/5/2011 21:31, Ingo Molnar wrote:
+> []
+> > There's a new build failure caused by this commit:
 > 
-> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-> ---
->  fs/fs-writeback.c           |   12 ------------
->  include/linux/backing-dev.h |   12 +++++++++++-
->  2 files changed, 11 insertions(+), 13 deletions(-)
+> It's this commit actually :
 > 
-> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> index 04cf3b9..341448c 100644
-> --- a/fs/fs-writeback.c
-> +++ b/fs/fs-writeback.c
-> @@ -59,18 +59,6 @@ struct wb_writeback_work {
+> Commit-ID:  64be4c1c2428e148de6081af235e2418e6a66dda
+> Gitweb:     http://git.kernel.org/tip/64be4c1c2428e148de6081af235e2418e6a66dda
+> Author:     Daniel J Blueman <daniel@numascale-asia.com>
+> AuthorDate: Mon, 5 Dec 2011 16:20:37 +0800
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Mon, 5 Dec 2011 17:17:21 +0100
+> 
+> x86: Add x86_init platform override to fix up NUMA core numbering
+> 
+> > 
+> >   arch/x86/kernel/cpu/common.c:1149:2: error: ‘struct cpuinfo_x86’ has no member named ‘phys_proc_id’
+> > 
+> > Note that the config is a !SMP one - that's probably the key
+> > detail.
+> 
+> Yes, phys_proc_id in struct cpuinfo_x86 is covered within "ifdef CONFIG_SMP".
+> 
+> > 
+> > Please send a delta fix that resolves this bug. You can find the
+> > current lineup in:
+> > 
+> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+> > 
+> 
+> Will do, should be fairly simple. Something in the lines of the attached should work (tested).
+> 
+> Note: I used "ifdef CONFIG_NUMA" simply because it doesn't make sense in a non-numa configuration even with SMP enabled. Besides, the only place where it is called right now is in kernel/cpu/amd.c:srat_detect_node() within the "CONFIG_NUMA" protected part.
+> 
+> Cheers,
+> -- 
+> Steffen Persvold, Chief Architect NumaChip
+> Numascale AS - www.numascale.com
+> Tel: +47 92 49 25 54 Skype: spersvold
+
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index ad4da45..a70bd5b 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -1146,7 +1146,9 @@ static void dbg_restore_debug_regs(void)
 >   */
->  int nr_pdflush_threads;
->  
-> -/**
-> - * writeback_in_progress - determine whether there is writeback in progress
-> - * @bdi: the device's backing_dev_info structure.
-> - *
-> - * Determine whether there is writeback waiting to be handled against a
-> - * backing device.
-> - */
-> -int writeback_in_progress(struct backing_dev_info *bdi)
-> -{
-> -	return test_bit(BDI_writeback_running, &bdi->state);
-> -}
-> -
->  static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
+>  void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
 >  {
->  	struct super_block *sb = inode->i_sb;
-> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-> index 3b2f9cb..ae4d7c0 100644
-> --- a/include/linux/backing-dev.h
-> +++ b/include/linux/backing-dev.h
-> @@ -258,7 +258,17 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned int max_ratio);
->  extern struct backing_dev_info default_backing_dev_info;
->  extern struct backing_dev_info noop_backing_dev_info;
->  
-> -int writeback_in_progress(struct backing_dev_info *bdi);
-> +/**
-> + * writeback_in_progress - determine whether there is writeback in progress
-> + * @bdi: the device's backing_dev_info structure.
-> + *
-> + * Determine whether there is writeback waiting to be handled against a
-> + * backing device.
-> + */
-> +static inline int writeback_in_progress(struct backing_dev_info *bdi)
-> +{
-> +	return test_bit(BDI_writeback_running, &bdi->state);
-> +}
->  
->  static inline int bdi_congested(struct backing_dev_info *bdi, int bdi_bits)
->  {
+> +#ifdef CONFIG_NUMA
+>  	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
+> +#endif
+>  }
 
+Yep, this should do the trick - i'll need a Signed-off-by line 
+to apply it.
+
+Ideally i think c->phys_proc_id should should be available 
+regardless of CONFIG_SMP or CONFIG_NUMA considerations - but 
+that would be a wider change. (feel free to have a shot at it 
+though, in addition to the fix above)
+
+Thanks,
+
+	Ingo
