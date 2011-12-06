@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978Ab1LFHsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 02:48:08 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:34814
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932947Ab1LFHsG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 02:48:06 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzzz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Date: Tue, 6 Dec 2011 16:00:06 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-CC: Sascha Hauer <s.hauer@pengutronix.de>, <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
-        Dong Aisheng <b29396@freescale.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
-Message-ID: <20111206080005.GA3864@S2100-06.ap.freescale.net>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
- <1322999384-7886-2-git-send-email-b29396@freescale.com>
- <CACRpkdaYz+-nZA6atxA+5kvWOO84YeSHQPNiojq_R4zkHUGz3Q@mail.gmail.com>
- <20111205211838.GG27267@pengutronix.de>
- <20111206062500.GA3649@S2100-06.ap.freescale.net>
- <20189.50504.375779.311903@ipc1.ka-ro>
+	id S932977Ab1LFHzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 02:55:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932414Ab1LFHzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 02:55:21 -0500
+Date: Tue, 6 Dec 2011 08:55:31 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH repost] mm,x86: remove debug_pagealloc_enabled
+Message-ID: <20111206075530.GA3105@redhat.com>
+References: <1322582711-14571-1-git-send-email-sgruszka@redhat.com>
+ <20111205110656.GA22259@elte.hu>
+ <20111205150019.GA5434@redhat.com>
+ <20111205155434.GD30287@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20189.50504.375779.311903@ipc1.ka-ro>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20111205155434.GD30287@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 08:33:28AM +0100, Lothar Waßmann wrote:
-> Hi,
+On Mon, Dec 05, 2011 at 04:54:34PM +0100, Ingo Molnar wrote:
 > 
-> Shawn Guo writes:
-> > On Mon, Dec 05, 2011 at 10:18:38PM +0100, Sascha Hauer wrote:
-> > > Freescale has named the pins after their primary function which is quite
-> > > confusing.
-> > > 
-> > > The above means:
-> > > 
-> > > MX53_PATA_DATA8 -> mux mode 4
-> > > MX53_PATA_DATA9 -> mux mode 4
-> > > ...
-> > > 
-> > > This brings me to the point that currently we have the pins described as
-> > > 
-> > > #define MX53_PAD_<name>__<function>
-> > > 
-> > But that's also the reason why we have so many lengthy iomux-mx*.h on
-> > imx.  Taking iomux-mx53.h for example, it's a 109K header with 1219
-> > LOC, but probably only 10% of the definitions will actually be used.
-> > 
-> Which has the benefit of having correct pin definitions for everyone
-> to use. If developers who need to use currently unused pindefs have to
-> create them on their own, there will always be a good chance in
-> getting them wrong.
-
-If the configuration is not working, they will notice it's wrong anyway.
-
+> * Stanislaw Gruszka <sgruszka@redhat.com> wrote:
 > 
-> > > which means that you don't have to look into the datasheet to get the
-> > > different options for a pin
+> > On Mon, Dec 05, 2011 at 12:06:56PM +0100, Ingo Molnar wrote:
+> > > 
+> > > * Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+> > > 
+> > > > When (no)bootmem finish operation, it pass pages to buddy allocator.
+> > > > Since debug_pagealloc_enabled is not set, we will do not protect pages,
+> > > > what is not what we want with CONFIG_DEBUG_PAGEALLOC=y.
+> > > > 
+> > > > To fix remove debug_pagealloc_enabled. That variable was introduced by
+> > > > commit 12d6f21e "x86: do not PSE on CONFIG_DEBUG_PAGEALLOC=y" to get
+> > > > more CPA (change page attribude) code testing. But currently we have
+> > > > CONFIG_CPA_DEBUG, which test CPA.
+> > > > 
+> > > > Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> > > > Acked-by: Mel Gorman <mgorman@suse.de>
+> > > > ---
+> > > >  arch/x86/mm/pageattr.c |    6 ------
+> > > >  include/linux/mm.h     |   10 ----------
+> > > >  init/main.c            |    5 -----
+> > > >  mm/debug-pagealloc.c   |    3 ---
+> > > >  4 files changed, 0 insertions(+), 24 deletions(-)
+> > > 
+> > > I'm getting this boot crash with the patch applied:
 > > 
-> > Looking at the datasheet when we write code is a pretty natural thing
-> > to me.
+> > I'm sorry for breaking the boot. I tried to reproduce problem 
+> > on my laptop, but failed. I plan to test patch with your 
+> > config on some other machines.
 > > 
-> The pindefs are like interrupt numbers or IO addresses for which there
-> also is a complete list of definitions in the kernel no matter whether
-> they are actually all in use.
+> > On the meantime can you test attached incremental patch and 
+> > see if it workaround the crash? I suspect memblock reuse pages 
+> > that it passed already to buddy allocator.
 > 
-The interrupt list is much shorter than iomux list here, which enumerate
-every single function for every single pad.  Also, most interrupts stand
-a pretty good chance to be used, while most of the pad functions do not.
+> That will take some time - so if you could try my config on 
+> another box that would be great. There isnt anything special 
+> about that box.
 
--- 
-Regards,
-Shawn
+I reproduced with limiting memory via mem=1G and increase
+find_range_array count argument, what caused "struct range"
+array was bigger and needed more memory. With that I can
+confirm that previous patch fixes the problem. I think
+it's the simplest possible fix, I'll post patch with 
+changelog and comment in the next email.
 
+Stanislaw 
