@@ -1,110 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933073Ab1LFJk3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:40:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34736 "EHLO
+	id S933076Ab1LFJk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:40:57 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34747 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932974Ab1LFJk1 (ORCPT
+	with ESMTP id S932974Ab1LFJkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:40:27 -0500
-Date: Tue, 6 Dec 2011 01:39:42 -0800
-From: tip-bot for Yong Zhang <yong.zhang0@gmail.com>
-Message-ID: <tip-d3d03d4fc5b1bec3a579112de170a9676e9d97cb@git.kernel.org>
+	Tue, 6 Dec 2011 04:40:55 -0500
+Date: Tue, 6 Dec 2011 01:40:28 -0800
+From: tip-bot for Ming Lei <tom.leiming@gmail.com>
+Message-ID: <tip-73839c5b2eacc15cb0aa79c69b285fc659fa8851@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, vegard.nossum@gmail.com,
-        sergey.senozhatsky@gmail.com, bp@alien8.de, tj@kernel.org,
-        tglx@linutronix.de, yong.zhang0@gmail.com, rientjes@google.com,
-        mingo@elte.hu
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org, tglx@linutronix.de, yong.zhang0@gmail.com,
+        tom.leiming@gmail.com, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, vegard.nossum@gmail.com,
-        sergey.senozhatsky@gmail.com, bp@alien8.de, tj@kernel.org,
-        yong.zhang0@gmail.com, tglx@linutronix.de, rientjes@google.com,
-        mingo@elte.hu
-In-Reply-To: <20111109080451.GB8124@zhy>
-References: <20111109080451.GB8124@zhy>
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, yong.zhang0@gmail.com,
+        tom.leiming@gmail.com, mingo@elte.hu
+In-Reply-To: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
+References: <1321508072-23853-1-git-send-email-tom.leiming@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
-Git-Commit-ID: d3d03d4fc5b1bec3a579112de170a9676e9d97cb
+Subject: [tip:core/locking] init/main.c: Execute lockdep_init() as early as possible
+Git-Commit-ID: 73839c5b2eacc15cb0aa79c69b285fc659fa8851
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:39:48 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:40:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d3d03d4fc5b1bec3a579112de170a9676e9d97cb
-Gitweb:     http://git.kernel.org/tip/d3d03d4fc5b1bec3a579112de170a9676e9d97cb
-Author:     Yong Zhang <yong.zhang0@gmail.com>
-AuthorDate: Wed, 9 Nov 2011 16:04:51 +0800
+Commit-ID:  73839c5b2eacc15cb0aa79c69b285fc659fa8851
+Gitweb:     http://git.kernel.org/tip/73839c5b2eacc15cb0aa79c69b285fc659fa8851
+Author:     Ming Lei <tom.leiming@gmail.com>
+AuthorDate: Thu, 17 Nov 2011 13:34:31 +0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 08:16:51 +0100
+CommitDate: Tue, 6 Dec 2011 08:16:53 +0100
 
-lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
+init/main.c: Execute lockdep_init() as early as possible
 
-Since commit f59de89 ("lockdep: Clear whole lockdep_map on initialization"),
-lockdep_init_map() will clear all the struct. But it will break
-lock_set_class()/lock_set_subclass(). A typical race condition
-is like below:
+This patch fixes a lockdep warning on ARM platforms:
 
-     CPU A                                   CPU B
-lock_set_subclass(lockA);
- lock_set_class(lockA);
-   lockdep_init_map(lockA);
-     /* lockA->name is cleared */
-     memset(lockA);
-                                     __lock_acquire(lockA);
-                                       /* lockA->class_cache[] is cleared */
-                                       register_lock_class(lockA);
-                                         look_up_lock_class(lockA);
-                                           WARN_ON_ONCE(class->name !=
-                                                     lock->name);
+  [    0.000000] WARNING: lockdep init error! Arch code didn't call lockdep_init() early enough?
+  [    0.000000] Call stack leading to lockdep invocation was:
+  [    0.000000]  [<c00164bc>] save_stack_trace_tsk+0x0/0x90
+  [    0.000000]  [<ffffffff>] 0xffffffff
 
-     lock->name = name;
+The warning is caused by printk inside smp_setup_processor_id().
 
-So restore to what we have done before commit f59de89 but annotate
-->lock with kmemcheck_mark_initialized() to suppress the kmemcheck
-warning reported in commit f59de89.
+It is safe to do this because lockdep_init() doesn't depend on
+smp_setup_processor_id(), so improve things that printk can be
+called as early as possible without lockdep complaint.
 
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reported-by: Borislav Petkov <bp@alien8.de>
-Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20111109080451.GB8124@zhy
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1321508072-23853-1-git-send-email-tom.leiming@gmail.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/lockdep.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+ init/main.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index a2ab30c..54cc0dc 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -44,6 +44,7 @@
- #include <linux/stringify.h>
- #include <linux/bitops.h>
- #include <linux/gfp.h>
-+#include <linux/kmemcheck.h>
+diff --git a/init/main.c b/init/main.c
+index 217ed23..2c76efb 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -469,13 +469,12 @@ asmlinkage void __init start_kernel(void)
+ 	char * command_line;
+ 	extern const struct kernel_param __start___param[], __stop___param[];
  
- #include <asm/sections.h>
+-	smp_setup_processor_id();
+-
+ 	/*
+ 	 * Need to run as early as possible, to initialize the
+ 	 * lockdep hash:
+ 	 */
+ 	lockdep_init();
++	smp_setup_processor_id();
+ 	debug_objects_early_init();
  
-@@ -2950,7 +2951,12 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
- void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 		      struct lock_class_key *key, int subclass)
- {
--	memset(lock, 0, sizeof(*lock));
-+	int i;
-+
-+	kmemcheck_mark_initialized(lock, sizeof(*lock));
-+
-+	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
-+		lock->class_cache[i] = NULL;
- 
- #ifdef CONFIG_LOCK_STAT
- 	lock->cpu = raw_smp_processor_id();
+ 	/*
