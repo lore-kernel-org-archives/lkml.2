@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504Ab1LFTuo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:50:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32638 "EHLO mx1.redhat.com"
+	id S1754385Ab1LFTuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:50:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51591 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab1LFTuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:50:07 -0500
+	id S1753888Ab1LFTuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 14:50:03 -0500
 From: Amit Shah <amit.shah@redhat.com>
 To: Virtualization List <virtualization@lists.linux-foundation.org>
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
         linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: [PATCH v4 11/12] virtio: balloon: Move out vq initialization into separate function
-Date: Wed,  7 Dec 2011 01:18:49 +0530
-Message-Id: <4de29520414c87a14ce0dd6b2a5b0c46d921f1eb.1323199985.git.amit.shah@redhat.com>
+Subject: [PATCH v4 10/12] virtio: balloon: ensure thread exists before stopping it
+Date: Wed,  7 Dec 2011 01:18:48 +0530
+Message-Id: <e85c8b64de7619522a565d8c38e5b2c8c8ed1412.1323199985.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1323199985.git.amit.shah@redhat.com>
 References: <cover.1323199985.git.amit.shah@redhat.com>
 In-Reply-To: <cover.1323199985.git.amit.shah@redhat.com>
@@ -22,87 +22,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The probe and PM restore functions will share this code.
+The vballoon thread could have exited earlier and not re-started.
+Ensure we don't try to stop a non-existent thread.
 
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
+This can happen if the balloon driver goes into S4 state and the thread
+exits (this code lands in the next patch).  If, however, on restore, the
+vqs fail to initialise, the vballoon thread will not be re-created.
+Upon a subsequent module removal in that state, we will end up
+dereferencing an invalid pointer without this patch.
 ---
- drivers/virtio/virtio_balloon.c |   48 ++++++++++++++++++++++++--------------
- 1 files changed, 30 insertions(+), 18 deletions(-)
+ drivers/virtio/virtio_balloon.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index 22f7c69..8bf99be 100644
+index 94fd738..22f7c69 100644
 --- a/drivers/virtio/virtio_balloon.c
 +++ b/drivers/virtio/virtio_balloon.c
-@@ -275,32 +275,21 @@ static int balloon(void *_vballoon)
- 	return 0;
- }
- 
--static int virtballoon_probe(struct virtio_device *vdev)
-+static int init_vqs(struct virtio_balloon *vb)
+@@ -338,7 +338,9 @@ static void __devexit virtballoon_remove(struct virtio_device *vdev)
  {
--	struct virtio_balloon *vb;
- 	struct virtqueue *vqs[3];
- 	vq_callback_t *callbacks[] = { balloon_ack, balloon_ack, stats_request };
- 	const char *names[] = { "inflate", "deflate", "stats" };
- 	int err, nvqs;
+ 	struct virtio_balloon *vb = vdev->priv;
  
--	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
--	if (!vb) {
--		err = -ENOMEM;
--		goto out;
--	}
--
--	INIT_LIST_HEAD(&vb->pages);
--	vb->num_pages = 0;
--	init_waitqueue_head(&vb->config_change);
--	vb->vdev = vdev;
--	vb->need_stats_update = 0;
--
--	/* We expect two virtqueues: inflate and deflate,
--	 * and optionally stat. */
-+	/*
-+	 * We expect two virtqueues: inflate and deflate, and
-+	 * optionally stat.
-+	 */
- 	nvqs = virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_STATS_VQ) ? 3 : 2;
--	err = vdev->config->find_vqs(vdev, nvqs, vqs, callbacks, names);
-+	err = vb->vdev->config->find_vqs(vb->vdev, nvqs, vqs, callbacks, names);
- 	if (err)
--		goto out_free_vb;
-+		return err;
+-	kthread_stop(vb->thread);
++	/* Thread may not have started on restore after a suspend */
++	if (vb->thread)
++		kthread_stop(vb->thread);
  
- 	vb->inflate_vq = vqs[0];
- 	vb->deflate_vq = vqs[1];
-@@ -317,6 +306,29 @@ static int virtballoon_probe(struct virtio_device *vdev)
- 			BUG();
- 		virtqueue_kick(vb->stats_vq);
- 	}
-+	return 0;
-+}
-+
-+static int virtballoon_probe(struct virtio_device *vdev)
-+{
-+	struct virtio_balloon *vb;
-+	int err;
-+
-+	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
-+	if (!vb) {
-+		err = -ENOMEM;
-+		goto out;
-+	}
-+
-+	INIT_LIST_HEAD(&vb->pages);
-+	vb->num_pages = 0;
-+	init_waitqueue_head(&vb->config_change);
-+	vb->vdev = vdev;
-+	vb->need_stats_update = 0;
-+
-+	err = init_vqs(vb);
-+	if (err)
-+		goto out_free_vb;
- 
- 	vb->thread = kthread_run(balloon, vb, "vballoon");
- 	if (IS_ERR(vb->thread)) {
+ 	/* There might be pages left in the balloon: free them. */
+ 	while (vb->num_pages)
 -- 
 1.7.7.3
 
