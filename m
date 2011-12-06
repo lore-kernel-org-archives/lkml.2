@@ -1,149 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013Ab1LFGM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 01:12:28 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:40855
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752743Ab1LFGM1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 01:12:27 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371K1432N98dKzz1202hzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 6 Dec 2011 14:25:01 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Dong Aisheng <b29396@freescale.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linus.walleij@stericsson.com>,
-        <kernel@pengutronix.de>
-Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
-Message-ID: <20111206062500.GA3649@S2100-06.ap.freescale.net>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
- <1322999384-7886-2-git-send-email-b29396@freescale.com>
- <CACRpkdaYz+-nZA6atxA+5kvWOO84YeSHQPNiojq_R4zkHUGz3Q@mail.gmail.com>
- <20111205211838.GG27267@pengutronix.de>
+	id S1753118Ab1LFGSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 01:18:15 -0500
+Received: from 1.mo1.mail-out.ovh.net ([178.32.127.22]:43807 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752812Ab1LFGSN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 01:18:13 -0500
+X-Greylist: delayed 52392 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Dec 2011 01:18:13 EST
+Date: Tue, 6 Dec 2011 07:13:21 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <pawel.moll@arm.com>, devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, Jeff Garzik <jgarzik@redhat.com>,
+        linux-ide@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-next@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
+Message-ID: <20111206061321.GH9192@game.jcrosoft.org>
+References: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
+ <20111202192618.GC3037@localhost.localdomain>
+ <CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com>
+ <1322867573.11728.22.camel@pasglop>
+ <20111205161157.GA27550@localhost.localdomain>
+ <alpine.LFD.2.02.1112051236350.2357@xanadu.home>
+ <20111205180253.GB29812@localhost.localdomain>
+ <alpine.LFD.2.02.1112051310150.2357@xanadu.home>
+ <20111205184522.316598de@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111205211838.GG27267@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20111205184522.316598de@lxorguk.ukuu.org.uk>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 12923923555944409957
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedrudefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeen
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeefjedrudefucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpeen
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 10:18:38PM +0100, Sascha Hauer wrote:
-> On Mon, Dec 05, 2011 at 05:57:42PM +0100, Linus Walleij wrote:
-> > On Sun, Dec 4, 2011 at 12:49 PM, Dong Aisheng <b29396@freescale.com> wrote:
-> > 
-> > > +enum imx_mx53_pads {
-> > > +       MX53_GPIO_19 = 0,
-> > > +       MX53_KEY_COL0 = 1,
-> > (...)
-> > 
-> > First I thought it looked a bit strange since you needed enums for all pads
-> > but then I realized that your macros use the same enumerator name to
-> > name the pad and then it looks sort of clever.
-> > 
-> > But maybe put in a comment about that here:
-> > 
-> > > +/* Pad names for the pinmux subsystem */
-> > 
-> > Like this:
-> > 
-> > /*
-> >  * Pad names for the pinmux subsystem.
-> >  * These pad names are constructed from the pin enumerator names
-> >  * in the IMX_PINCTRL_PIN() macro.
-> >  */
-> > 
-> > > +static const struct pinctrl_pin_desc mx53_pads[] = {
-> > > +       IMX_PINCTRL_PIN(MX53_GPIO_19),
-> > > +       IMX_PINCTRL_PIN(MX53_KEY_COL0),
-> > (...)
-> > 
-> > > +/* mx53 pin groups and mux mode */
-> > > +static const unsigned mx53_fec_pins[] = {
-> > > +       MX53_FEC_MDC,
-> > > +       MX53_FEC_MDIO,
-> > > +       MX53_FEC_REF_CLK,
-> > > +       MX53_FEC_RX_ER,
-> > > +       MX53_FEC_CRS_DV,
-> > > +       MX53_FEC_RXD1,
-> > > +       MX53_FEC_RXD0,
-> > > +       MX53_FEC_TX_EN,
-> > > +       MX53_FEC_TXD1,
-> > > +       MX53_FEC_TXD0,
-> > > +};
-> > 
-> > I understand this.
-> > 
-> > > +static const unsigned mx53_fec_mux[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-> > 
-> > But what is this? Just zeroes? Why?
-> > Especially with a const so they really cannot be anything
-> > else. The same pin (0) can only be enumerated once.
-> > 
-> > > +static const unsigned mx53_sd1_pins[] = {
-> > > +       MX53_SD1_CMD,
-> > > +       MX53_SD1_CLK,
-> > > +       MX53_SD1_DATA0,
-> > > +       MX53_SD1_DATA1,
-> > > +       MX53_SD1_DATA2,
-> > > +       MX53_SD1_DATA3,
-> > > +
-> > > +};
-> > > +static const unsigned mx53_sd1_mux[] = { 0, 0, 0, 0, 0, 0 };
-> > 
-> > And here again.
-> > 
-> > > +static const unsigned mx53_sd3_pins[] = {
-> > > +       MX53_PATA_DATA8,
-> > > +       MX53_PATA_DATA9,
-> > > +       MX53_PATA_DATA10,
-> > > +       MX53_PATA_DATA11,
-> > > +       MX53_PATA_DATA0,
-> > > +       MX53_PATA_DATA1,
-> > > +       MX53_PATA_DATA2,
-> > > +       MX53_PATA_DATA3,
-> > > +       MX53_PATA_IORDY,
-> > > +       MX53_PATA_RESET_B,
-> > > +
-> > > +};
-> > > +static const unsigned mx53_sd3_mux[] = { 4, 4, 4, 4, 4, 4, 4, 4, 2, 2 };
-> > 
-> > This also looks strange. Can you explain what these muxes are?
+On 18:45 Mon 05 Dec     , Alan Cox wrote:
+> > But as you illustrated, there is a large number of drivers that already 
+> > assume no IRQ is < 0, even if they don't use any IRQ #0 themselves.  
+> > That is a much bigger problem to fix.
 > 
-> Freescale has named the pins after their primary function which is quite
-> confusing.
+> And a much larger number assuming the reverse is true which are hiding
+> potential bugs on ARM.
 > 
-> The above means:
+> Looking at the serial stuff the best checks appear to be looking at
+> "irq", "-1" and NO_IRQ.
 > 
-> MX53_PATA_DATA8 -> mux mode 4
-> MX53_PATA_DATA9 -> mux mode 4
-> ...
+> For migration stuff that's doing broken things like
 > 
-> This brings me to the point that currently we have the pins described as
+> 	if (irq < 0)
 > 
-> #define MX53_PAD_<name>__<function>
+> can be changed to
 > 
-But that's also the reason why we have so many lengthy iomux-mx*.h on
-imx.  Taking iomux-mx53.h for example, it's a 109K header with 1219
-LOC, but probably only 10% of the definitions will actually be used.
+> 	if (irq <= 0)
+> 
+> and that can be done before NO_IRQ itself is nailed on ARM and PA-RISC.
+can we sinply introduce a macro irq_is_valid
 
-> which means that you don't have to look into the datasheet to get the
-> different options for a pin
+and make it chip dependant as gpio_is_valid
+and then move away from irq 0 valid
 
-Looking at the datasheet when we write code is a pretty natural thing
-to me.
+so we do not need to brake anthing first and then easly convert them
 
--- 
-Regards,
-Shawn
-
-> (and don't have a chance to get it wrong).
-> I don't really want to lose this.
-> 
-
+Best Regards,
+J.
