@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221Ab1LFK20 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 05:28:26 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63354 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933052Ab1LFK2X (ORCPT
+	id S933249Ab1LFK2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:28:42 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49246 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933052Ab1LFK2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 05:28:23 -0500
-Message-ID: <4EDDEE15.3090200@polito.it>
-Date: Tue, 06 Dec 2011 11:27:33 +0100
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jmorris@namei.org
-Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
-References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>  <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>  <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>  <1321564518.21708.63.camel@falcor> <4EC63302.4040006@polito.it>  <1321637471.2158.44.camel@falcor> <4ECA6595.7010406@polito.it>  <1323041763.2061.22.camel@falcor> <4EDC9726.1040801@polito.it>  <1323090236.2061.63.camel@falcor> <4EDCCD7D.7010406@polito.it> <1323118629.2061.117.camel@falcor>
-In-Reply-To: <1323118629.2061.117.camel@falcor>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 6 Dec 2011 05:28:40 -0500
+Date: Tue, 6 Dec 2011 10:30:22 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: Re: [PATCH -tip] x86: fix build without CONFIG_X86_MRST
+Message-ID: <20111206103022.434ebf6f@lxorguk.ukuu.org.uk>
+In-Reply-To: <1323166702-12990-1-git-send-email-sgruszka@redhat.com>
+References: <1323166702-12990-1-git-send-email-sgruszka@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2011 09:57 PM, Mimi Zohar wrote:
-> On Mon, 2011-12-05 at 14:56 +0100, Roberto Sassu wrote:
->> On 12/05/2011 02:03 PM, Mimi Zohar wrote:
->>> On Mon, 2011-12-05 at 11:04 +0100, Roberto Sassu wrote:
->>>
->>>> Hi Mimi
->>>>
->>>> i think moving this logic to the TPM driver (or in general, delaying
->>>> the action after the list mutex is unlocked) is not safe, because in
->>>> this way you are relying on the kernel trustworthiness to protect
->>>> itself and IMA against unmeasured potential attacks. So, the verifier
->>>> is unable to detect a kernel tampering that removed the limitation
->>>> on the TPM Quote operation.
->>>>
->>>> What i'm proposing in the patch:
->>>>
->>>> https://lkml.org/lkml/2011/11/21/202
->>>>
->>>> is in fact a new extension, which is triggered by a new kernel
->>>> parameter, so that the behaviour of the base IMA is not modified.
->>>
->>> How/why the TPM fails is important.  If the TPM fails because of an
->>> intermittent problem, then your solution of denying read/execute could
->>> work, but what would happen if it was persistent?  Would you be able to
->>> quiesce the system?
->>>
->>> As there is no way of differentiating a persistent from intermittent
->>> failure, both need to be addressed in the same manor.  For persistent
->>> TPM failure, we can not access the TPM to modify the PCR.  So what
->>> options do we have left?  My suggestion, though not optimal, prevents
->>> the IMA PCR from being quoted.
->>>
->>
->> Hi Mimi
->>
->> the solution you are proposing is reasonable as the default
->> behaviour, because not all IMA users need the high confidence
->> in the measurements, as ensured by denying the execution of
->> system calls.
->>
->> However, during the IMA initialization the TPM is tested
->> by issuing a PCR read (the test procedure may be extended
->> to better detect existing errors in advance). So, this means
->> that a TPM failure when the system is already powered on is
->> very unlikely and may cause serious issues as it could happen
->> if other devices are involved.
->>
->> For this reason, also my extension seems helpful especially
->> in the situations where all events need to be measured properly.
->> In this case, IMA users are aware that a TPM failure could hang
->> their systems, because they need to manually insert the required
->> kernel parameter.
->
-> As you said a TPM failure is very unlikely, what type of attack are you
-> trying to defend against, that could possibly warrant causing the system
-> to hang?
->
+On Tue,  6 Dec 2011 11:18:22 +0100
+Stanislaw Gruszka <sgruszka@redhat.com> wrote:
 
-I don't know if this can really happen, but an attacker may issue
-a lot of commands to the TPM, so that the timeout limit is reached
-when IMA is trying to extend the PCR.
+> Fix compilation error when compiled with CONFIG_X86_INTEL_MID and
+> without CONFIG_X86_MRST:
+> 
+> arch/x86/built-in.o: In function `add_rtc_cmos':
+> rtc.c:(.init.text+0x34bd): undefined reference to `__mrst_cpu_chip'
 
-Roberto Sassu
+It really is INTEL_MID wide, but there were other problems with the
+way the INTEL_MID selection was done. Should be fixed with the patch I
+sent Ingo.
 
+Thanks
 
-> Mimi
->
-
+Alan
