@@ -1,334 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933172Ab1LFJzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:55:19 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34975 "EHLO
+	id S933174Ab1LFJ4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:56:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34991 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932955Ab1LFJzR (ORCPT
+	with ESMTP id S933071Ab1LFJ4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:55:17 -0500
-Date: Tue, 6 Dec 2011 01:54:59 -0800
+	Tue, 6 Dec 2011 04:56:08 -0500
+Date: Tue, 6 Dec 2011 01:55:45 -0800
 From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-0b005cf54eac170a8f22540ab096a6e07bf49e7c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, tim.c.chen@intel.com, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, tim.c.chen@intel.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20111202010832.602203411@sbsiddha-desk.sc.intel.com>
-References: <20111202010832.602203411@sbsiddha-desk.sc.intel.com>
+Message-ID: <tip-786d6dc7aeb2bfbfe417507b7beb83919f319db3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20111202010832.656983582@sbsiddha-desk.sc.intel.com>
+References: <20111202010832.656983582@sbsiddha-desk.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched, nohz: Implement sched group, domain aware nohz idle load balancing
-Git-Commit-ID: 0b005cf54eac170a8f22540ab096a6e07bf49e7c
+Subject: [tip:sched/core] sched, nohz: Clean up the find_new_ilb() using sched groups nr_busy_cpus
+Git-Commit-ID: 786d6dc7aeb2bfbfe417507b7beb83919f319db3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:55:05 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:55:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0b005cf54eac170a8f22540ab096a6e07bf49e7c
-Gitweb:     http://git.kernel.org/tip/0b005cf54eac170a8f22540ab096a6e07bf49e7c
+Commit-ID:  786d6dc7aeb2bfbfe417507b7beb83919f319db3
+Gitweb:     http://git.kernel.org/tip/786d6dc7aeb2bfbfe417507b7beb83919f319db3
 Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Thu, 1 Dec 2011 17:07:34 -0800
+AuthorDate: Thu, 1 Dec 2011 17:07:35 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 09:06:34 +0100
+CommitDate: Tue, 6 Dec 2011 09:06:36 +0100
 
-sched, nohz: Implement sched group, domain aware nohz idle load balancing
+sched, nohz: Clean up the find_new_ilb() using sched groups nr_busy_cpus
 
-When there are many logical cpu's that enter and exit idle often, members of
-the global nohz data structure are getting modified very frequently causing
-lot of cache-line contention.
+nr_busy_cpus in the sched_group_power indicates whether the group
+is semi idle or not. This helps remove the is_semi_idle_group() and simplify
+the find_new_ilb() in the context of finding an optimal cpu that can do
+idle load balancing.
 
-Make the nohz idle load balancing more scalabale by using the sched domain
-topology and 'nr_busy_cpu's in the struct sched_group_power.
-
-Idle load balance is kicked on one of the idle cpu's when there is atleast
-one idle cpu and:
-
- - a busy rq having more than one task or
-
- - a busy rq's scheduler group that share package resources (like HT/MC
-   siblings) and has more than one member in that group busy or
-
- - for the SD_ASYM_PACKING domain, if the lower numbered cpu's in that
-   domain are idle compared to the busy ones.
-
-This will help in kicking the idle load balancing request only when
-there is a potential imbalance. And once it is mostly balanced, these kicks will
-be minimized.
-
-These changes helped improve the workload that is context switch intensive
-between number of task pairs by 2x on a 8 socket NHM-EX based system.
-
-Reported-by: Tim Chen <tim.c.chen@intel.com>
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/20111202010832.602203411@sbsiddha-desk.sc.intel.com
+Link: http://lkml.kernel.org/r/20111202010832.656983582@sbsiddha-desk.sc.intel.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched/fair.c |  160 +++++++++++++++------------------------------------
- 1 files changed, 47 insertions(+), 113 deletions(-)
+ kernel/sched/fair.c |   48 ++++++++++++------------------------------------
+ 1 files changed, 12 insertions(+), 36 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e050563..821af14 100644
+index 821af14..65a6f8b 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -4727,28 +4727,17 @@ out_unlock:
- #ifdef CONFIG_NO_HZ
- /*
-  * idle load balancing details
-- * - One of the idle CPUs nominates itself as idle load_balancer, while
-- *   entering idle.
-- * - This idle load balancer CPU will also go into tickless mode when
-- *   it is idle, just like all other idle CPUs
-  * - When one of the busy CPUs notice that there may be an idle rebalancing
-  *   needed, they will kick the idle load balancer, which then does idle
-  *   load balancing for all the idle CPUs.
+@@ -4733,7 +4733,6 @@ out_unlock:
   */
  static struct {
--	atomic_t load_balancer;
--	atomic_t first_pick_cpu;
--	atomic_t second_pick_cpu;
  	cpumask_var_t idle_cpus_mask;
- 	cpumask_var_t grp_idle_mask;
-+	atomic_t nr_cpus;
+-	cpumask_var_t grp_idle_mask;
+ 	atomic_t nr_cpus;
  	unsigned long next_balance;     /* in jiffy units */
  } nohz ____cacheline_aligned;
+@@ -4774,33 +4773,6 @@ static inline struct sched_domain *lowest_flag_domain(int cpu, int flag)
+ 		(sd && (sd->flags & flag)); sd = sd->parent)
  
--int get_nohz_load_balancer(void)
--{
--	return atomic_read(&nohz.load_balancer);
--}
--
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
  /**
-  * lowest_flag_domain - Return lowest sched_domain containing flag.
-@@ -4825,9 +4814,9 @@ static inline int is_semi_idle_group(struct sched_group *ilb_group)
-  */
+- * is_semi_idle_group - Checks if the given sched_group is semi-idle.
+- * @ilb_group:	group to be checked for semi-idleness
+- *
+- * Returns:	1 if the group is semi-idle. 0 otherwise.
+- *
+- * We define a sched_group to be semi idle if it has atleast one idle-CPU
+- * and atleast one non-idle CPU. This helper function checks if the given
+- * sched_group is semi-idle or not.
+- */
+-static inline int is_semi_idle_group(struct sched_group *ilb_group)
+-{
+-	cpumask_and(nohz.grp_idle_mask, nohz.idle_cpus_mask,
+-					sched_group_cpus(ilb_group));
+-
+-	/*
+-	 * A sched_group is semi-idle when it has atleast one busy cpu
+-	 * and atleast one idle cpu.
+-	 */
+-	if (cpumask_empty(nohz.grp_idle_mask))
+-		return 0;
+-
+-	if (cpumask_equal(nohz.grp_idle_mask, sched_group_cpus(ilb_group)))
+-		return 0;
+-
+-	return 1;
+-}
+-/**
+  * find_new_ilb - Finds the optimum idle load balancer for nomination.
+  * @cpu:	The cpu which is nominating a new idle_load_balancer.
+  *
+@@ -4815,8 +4787,8 @@ static inline int is_semi_idle_group(struct sched_group *ilb_group)
  static int find_new_ilb(int cpu)
  {
-+	int ilb = cpumask_first(nohz.idle_cpus_mask);
+ 	int ilb = cpumask_first(nohz.idle_cpus_mask);
++	struct sched_group *ilbg;
  	struct sched_domain *sd;
- 	struct sched_group *ilb_group;
--	int ilb = nr_cpu_ids;
+-	struct sched_group *ilb_group;
  
  	/*
  	 * Have idle load balancer selection from semi-idle packages only
-@@ -4881,13 +4870,10 @@ static void nohz_balancer_kick(int cpu)
+@@ -4834,23 +4806,28 @@ static int find_new_ilb(int cpu)
  
- 	nohz.next_balance++;
+ 	rcu_read_lock();
+ 	for_each_flag_domain(cpu, sd, SD_POWERSAVINGS_BALANCE) {
+-		ilb_group = sd->groups;
++		ilbg = sd->groups;
  
--	ilb_cpu = get_nohz_load_balancer();
-+	ilb_cpu = find_new_ilb(cpu);
+ 		do {
+-			if (is_semi_idle_group(ilb_group)) {
+-				ilb = cpumask_first(nohz.grp_idle_mask);
++			if (ilbg->group_weight !=
++				atomic_read(&ilbg->sgp->nr_busy_cpus)) {
++				ilb = cpumask_first_and(nohz.idle_cpus_mask,
++							sched_group_cpus(ilbg));
+ 				goto unlock;
+ 			}
  
--	if (ilb_cpu >= nr_cpu_ids) {
--		ilb_cpu = cpumask_first(nohz.idle_cpus_mask);
--		if (ilb_cpu >= nr_cpu_ids)
--			return;
--	}
-+	if (ilb_cpu >= nr_cpu_ids)
-+		return;
+-			ilb_group = ilb_group->next;
++			ilbg = ilbg->next;
  
- 	if (test_and_set_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu)))
- 		return;
-@@ -4932,77 +4918,20 @@ void set_cpu_sd_state_idle(void)
- }
- 
- /*
-- * This routine will try to nominate the ilb (idle load balancing)
-- * owner among the cpus whose ticks are stopped. ilb owner will do the idle
-- * load balancing on behalf of all those cpus.
-- *
-- * When the ilb owner becomes busy, we will not have new ilb owner until some
-- * idle CPU wakes up and goes back to idle or some busy CPU tries to kick
-- * idle load balancing by kicking one of the idle CPUs.
-- *
-- * Ticks are stopped for the ilb owner as well, with busy CPU kicking this
-- * ilb owner CPU in future (when there is a need for idle load balancing on
-- * behalf of all idle CPUs).
-+ * This routine will record that this cpu is going idle with tick stopped.
-+ * This info will be used in performing idle load balancing in the future.
-  */
- void select_nohz_load_balancer(int stop_tick)
- {
- 	int cpu = smp_processor_id();
- 
- 	if (stop_tick) {
--		if (!cpu_active(cpu)) {
--			if (atomic_read(&nohz.load_balancer) != cpu)
--				return;
--
--			/*
--			 * If we are going offline and still the leader,
--			 * give up!
--			 */
--			if (atomic_cmpxchg(&nohz.load_balancer, cpu,
--					   nr_cpu_ids) != cpu)
--				BUG();
--
-+		if (test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))
- 			return;
--		}
- 
- 		cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
--
--		if (atomic_read(&nohz.first_pick_cpu) == cpu)
--			atomic_cmpxchg(&nohz.first_pick_cpu, cpu, nr_cpu_ids);
--		if (atomic_read(&nohz.second_pick_cpu) == cpu)
--			atomic_cmpxchg(&nohz.second_pick_cpu, cpu, nr_cpu_ids);
--
--		if (atomic_read(&nohz.load_balancer) >= nr_cpu_ids) {
--			int new_ilb;
--
--			/* make me the ilb owner */
--			if (atomic_cmpxchg(&nohz.load_balancer, nr_cpu_ids,
--					   cpu) != nr_cpu_ids)
--				return;
--
--			/*
--			 * Check to see if there is a more power-efficient
--			 * ilb.
--			 */
--			new_ilb = find_new_ilb(cpu);
--			if (new_ilb < nr_cpu_ids && new_ilb != cpu) {
--				atomic_set(&nohz.load_balancer, nr_cpu_ids);
--				resched_cpu(new_ilb);
--				return;
--			}
--			return;
--		}
--
-+		atomic_inc(&nohz.nr_cpus);
- 		set_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
--	} else {
--		if (!cpumask_test_cpu(cpu, nohz.idle_cpus_mask))
--			return;
--
--		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
--
--		if (atomic_read(&nohz.load_balancer) == cpu)
--			if (atomic_cmpxchg(&nohz.load_balancer, cpu,
--					   nr_cpu_ids) != cpu)
--				BUG();
+-		} while (ilb_group != sd->groups);
++		} while (ilbg != sd->groups);
  	}
- 	return;
- }
-@@ -5113,7 +5042,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
- 		goto end;
+ unlock:
+ 	rcu_read_unlock();
  
- 	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
--		if (balance_cpu == this_cpu)
-+		if (balance_cpu == this_cpu || !idle_cpu(this_cpu))
- 			continue;
- 
- 		/*
-@@ -5141,22 +5070,18 @@ end:
- }
- 
- /*
-- * Current heuristic for kicking the idle load balancer
-- * - first_pick_cpu is the one of the busy CPUs. It will kick
-- *   idle load balancer when it has more than one process active. This
-- *   eliminates the need for idle load balancing altogether when we have
-- *   only one running process in the system (common case).
-- * - If there are more than one busy CPU, idle load balancer may have
-- *   to run for active_load_balance to happen (i.e., two busy CPUs are
-- *   SMT or core siblings and can run better if they move to different
-- *   physical CPUs). So, second_pick_cpu is the second of the busy CPUs
-- *   which will kick idle load balancer as soon as it has any load.
-+ * Current heuristic for kicking the idle load balancer in the presence
-+ * of an idle cpu is the system.
-+ *   - This rq has more than one task.
-+ *   - At any scheduler domain level, this cpu's scheduler group has multiple
-+ *     busy cpu's exceeding the group's power.
-+ *   - For SD_ASYM_PACKING, if the lower numbered cpu's in the scheduler
-+ *     domain span are idle.
-  */
- static inline int nohz_kick_needed(struct rq *rq, int cpu)
- {
- 	unsigned long now = jiffies;
--	int ret;
--	int first_pick_cpu, second_pick_cpu;
-+	struct sched_domain *sd;
- 
- 	if (unlikely(idle_cpu(cpu)))
- 		return 0;
-@@ -5166,32 +5091,44 @@ static inline int nohz_kick_needed(struct rq *rq, int cpu)
- 	* busy tick after returning from idle, we will update the busy stats.
- 	*/
- 	set_cpu_sd_state_busy();
--	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu))))
-+	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
- 		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
-+		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
-+		atomic_dec(&nohz.nr_cpus);
-+	}
+ out_done:
+-	return ilb;
++	if (ilb < nr_cpu_ids && idle_cpu(ilb))
++		return ilb;
 +
-+	/*
-+	 * None are in tickless mode and hence no need for NOHZ idle load
-+	 * balancing.
-+	 */
-+	if (likely(!atomic_read(&nohz.nr_cpus)))
-+		return 0;
- 
- 	if (time_before(now, nohz.next_balance))
- 		return 0;
- 
--	first_pick_cpu = atomic_read(&nohz.first_pick_cpu);
--	second_pick_cpu = atomic_read(&nohz.second_pick_cpu);
-+	if (rq->nr_running >= 2)
-+		goto need_kick;
- 
--	if (first_pick_cpu < nr_cpu_ids && first_pick_cpu != cpu &&
--	    second_pick_cpu < nr_cpu_ids && second_pick_cpu != cpu)
--		return 0;
-+	for_each_domain(cpu, sd) {
-+		struct sched_group *sg = sd->groups;
-+		struct sched_group_power *sgp = sg->sgp;
-+		int nr_busy = atomic_read(&sgp->nr_busy_cpus);
- 
--	ret = atomic_cmpxchg(&nohz.first_pick_cpu, nr_cpu_ids, cpu);
--	if (ret == nr_cpu_ids || ret == cpu) {
--		atomic_cmpxchg(&nohz.second_pick_cpu, cpu, nr_cpu_ids);
--		if (rq->nr_running > 1)
--			return 1;
--	} else {
--		ret = atomic_cmpxchg(&nohz.second_pick_cpu, nr_cpu_ids, cpu);
--		if (ret == nr_cpu_ids || ret == cpu) {
--			if (rq->nr_running)
--				return 1;
--		}
-+		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
-+			goto need_kick;
-+
-+		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
-+		    && (cpumask_first_and(nohz.idle_cpus_mask,
-+					  sched_domain_span(sd)) < cpu))
-+			goto need_kick;
-+
-+		if (!(sd->flags & (SD_SHARE_PKG_RESOURCES | SD_ASYM_PACKING)))
-+			break;
- 	}
- 	return 0;
-+need_kick:
-+	return 1;
++	return nr_cpu_ids;
  }
- #else
- static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle) { }
-@@ -5652,9 +5589,6 @@ __init void init_sched_fair_class(void)
+ #else /*  (CONFIG_SCHED_MC || CONFIG_SCHED_SMT) */
+ static inline int find_new_ilb(int call_cpu)
+@@ -5588,7 +5565,6 @@ __init void init_sched_fair_class(void)
+ 
  #ifdef CONFIG_NO_HZ
  	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
- 	alloc_cpumask_var(&nohz.grp_idle_mask, GFP_NOWAIT);
--	atomic_set(&nohz.load_balancer, nr_cpu_ids);
--	atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
--	atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
+-	alloc_cpumask_var(&nohz.grp_idle_mask, GFP_NOWAIT);
  #endif
  #endif /* SMP */
  
