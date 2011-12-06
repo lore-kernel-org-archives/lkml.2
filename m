@@ -1,143 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199Ab1LFUUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 15:20:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38230 "EHLO
+	id S1754168Ab1LFUVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 15:21:36 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38242 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab1LFUUw (ORCPT
+	with ESMTP id S1753289Ab1LFUVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 15:20:52 -0500
-Date: Tue, 6 Dec 2011 12:20:18 -0800
-From: tip-bot for Mike Galbraith <mgalbraith@suse.de>
-Message-ID: <tip-b39e66eaf9c573f38133e894256caeaf9fd2a528@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mgalbraith@suse.de, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
+	Tue, 6 Dec 2011 15:21:35 -0500
+Date: Tue, 6 Dec 2011 12:21:05 -0800
+From: tip-bot for Glauber Costa <glommer@parallels.com>
+Message-ID: <tip-54c707e98de9ca899e6552a47c797c62c45885ee@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, glommer@parallels.com, pjt@google.com,
         tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, mgalbraith@suse.de,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        glommer@parallels.com, a.p.zijlstra@chello.nl, pjt@google.com,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1321971607.6855.17.camel@marge.simson.net>
-References: <1321971607.6855.17.camel@marge.simson.net>
+In-Reply-To: <1322498719-2255-4-git-send-email-glommer@parallels.com>
+References: <1322498719-2255-4-git-send-email-glommer@parallels.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Save some hrtick_start_fair cycles
-Git-Commit-ID: b39e66eaf9c573f38133e894256caeaf9fd2a528
+Subject: [tip:sched/core] sched/accounting: Re-use scheduler statistics for the root cgroup
+Git-Commit-ID: 54c707e98de9ca899e6552a47c797c62c45885ee
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 12:20:24 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 12:21:12 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b39e66eaf9c573f38133e894256caeaf9fd2a528
-Gitweb:     http://git.kernel.org/tip/b39e66eaf9c573f38133e894256caeaf9fd2a528
-Author:     Mike Galbraith <mgalbraith@suse.de>
-AuthorDate: Tue, 22 Nov 2011 15:20:07 +0100
+Commit-ID:  54c707e98de9ca899e6552a47c797c62c45885ee
+Gitweb:     http://git.kernel.org/tip/54c707e98de9ca899e6552a47c797c62c45885ee
+Author:     Glauber Costa <glommer@parallels.com>
+AuthorDate: Mon, 28 Nov 2011 14:45:19 -0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 20:51:20 +0100
+CommitDate: Tue, 6 Dec 2011 20:51:21 +0100
 
-sched: Save some hrtick_start_fair cycles
+sched/accounting: Re-use scheduler statistics for the root cgroup
 
-hrtick_start_fair() shows up in profiles even when disabled.
+Right now, after we collect tick statistics for user and system and store them
+in a well known location, we keep the same statistics again for cpuacct.
+Since cpuacct is hierarchical, the numbers for the root cgroup should be
+absolutely equal to the system-wide numbers.
 
-v3.0.6
+So it would be better to just use it: this patch changes cpuacct accounting
+in a way that the cpustat statistics are kept in a struct kernel_cpustat percpu
+array. In the root cgroup case, we just point it to the main array. The rest of
+the hierarchy walk can be totally disabled later with a static branch - but I am
+not doing it here.
 
-taskset -c 3 pipe-test
-
-   PerfTop:     997 irqs/sec  kernel:89.5%  exact:  0.0% [1000Hz cycles],  (all, CPU: 3)
-------------------------------------------------------------------------------------------------
-
-             Virgin                                    Patched
-             samples  pcnt function                    samples  pcnt function
-             _______ _____ ___________________________ _______ _____ ___________________________
-
-             2880.00 10.2% __schedule                  3136.00 11.3% __schedule
-             1634.00  5.8% pipe_read                   1615.00  5.8% pipe_read
-             1458.00  5.2% system_call                 1534.00  5.5% system_call
-             1382.00  4.9% _raw_spin_lock_irqsave      1412.00  5.1% _raw_spin_lock_irqsave
-             1202.00  4.3% pipe_write                  1255.00  4.5% copy_user_generic_string
-             1164.00  4.1% copy_user_generic_string    1241.00  4.5% __switch_to
-             1097.00  3.9% __switch_to                  929.00  3.3% mutex_lock
-              872.00  3.1% mutex_lock                   846.00  3.0% mutex_unlock
-              687.00  2.4% mutex_unlock                 804.00  2.9% pipe_write
-              682.00  2.4% native_sched_clock           713.00  2.6% native_sched_clock
-              643.00  2.3% system_call_after_swapgs     653.00  2.3% _raw_spin_unlock_irqrestore
-              617.00  2.2% sched_clock_local            633.00  2.3% fsnotify
-              612.00  2.2% fsnotify                     605.00  2.2% sched_clock_local
-              596.00  2.1% _raw_spin_unlock_irqrestore  593.00  2.1% system_call_after_swapgs
-              542.00  1.9% sysret_check                 559.00  2.0% sysret_check
-              467.00  1.7% fget_light                   472.00  1.7% fget_light
-              462.00  1.6% finish_task_switch           461.00  1.7% finish_task_switch
-              437.00  1.5% vfs_write                    442.00  1.6% vfs_write
-              431.00  1.5% do_sync_write                428.00  1.5% do_sync_write
-              413.00  1.5% select_task_rq_fair          404.00  1.5% _raw_spin_lock_irq
-              386.00  1.4% update_curr                  402.00  1.4% update_curr
-              385.00  1.4% rw_verify_area               389.00  1.4% do_sync_read
-              377.00  1.3% _raw_spin_lock_irq           378.00  1.4% vfs_read
-              369.00  1.3% do_sync_read                 340.00  1.2% pipe_iov_copy_from_user
-              360.00  1.3% vfs_read                     316.00  1.1% __wake_up_sync_key
-*             342.00  1.2% hrtick_start_fair            313.00  1.1% __wake_up_common
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-[ fixed !CONFIG_SCHED_HRTICK borkage ]
+Signed-off-by: Glauber Costa <glommer@parallels.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1321971607.6855.17.camel@marge.simson.net
+Cc: Paul Tuner <pjt@google.com>
+Link: http://lkml.kernel.org/r/1322498719-2255-4-git-send-email-glommer@parallels.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched/fair.c  |    7 ++++---
- kernel/sched/sched.h |    7 +++++++
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ kernel/sched/core.c  |  165 +++++++++++++++++++++++---------------------------
+ kernel/sched/sched.h |   34 +++++++++-
+ 2 files changed, 106 insertions(+), 93 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 65a6f8b..4174338 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2137,7 +2137,7 @@ static void hrtick_start_fair(struct rq *rq, struct task_struct *p)
- 
- 	WARN_ON(task_rq(p) != rq);
- 
--	if (hrtick_enabled(rq) && cfs_rq->nr_running > 1) {
-+	if (cfs_rq->nr_running > 1) {
- 		u64 slice = sched_slice(cfs_rq, se);
- 		u64 ran = se->sum_exec_runtime - se->prev_sum_exec_runtime;
- 		s64 delta = slice - ran;
-@@ -2168,7 +2168,7 @@ static void hrtick_update(struct rq *rq)
- {
- 	struct task_struct *curr = rq->curr;
- 
--	if (curr->sched_class != &fair_sched_class)
-+	if (!hrtick_enabled(rq) || curr->sched_class != &fair_sched_class)
- 		return;
- 
- 	if (cfs_rq_of(&curr->se)->nr_running < sched_nr_latency)
-@@ -3031,7 +3031,8 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
- 	} while (cfs_rq);
- 
- 	p = task_of(se);
--	hrtick_start_fair(rq, p);
-+	if (hrtick_enabled(rq))
-+		hrtick_start_fair(rq, p);
- 
- 	return p;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a727c4e..3e078f2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2556,6 +2556,42 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+ 	return ns;
  }
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 91810f0..d88545c 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -885,6 +885,13 @@ static inline int hrtick_enabled(struct rq *rq)
  
- void hrtick_start(struct rq *rq, u64 delay);
- 
-+#else
++#ifdef CONFIG_CGROUP_CPUACCT
++struct cgroup_subsys cpuacct_subsys;
++struct cpuacct root_cpuacct;
++#endif
 +
-+static inline int hrtick_enabled(struct rq *rq)
++static inline void task_group_account_field(struct task_struct *p,
++					     u64 tmp, int index)
 +{
-+	return 0;
++#ifdef CONFIG_CGROUP_CPUACCT
++	struct kernel_cpustat *kcpustat;
++	struct cpuacct *ca;
++#endif
++	/*
++	 * Since all updates are sure to touch the root cgroup, we
++	 * get ourselves ahead and touch it first. If the root cgroup
++	 * is the only cgroup, then nothing else should be necessary.
++	 *
++	 */
++	__get_cpu_var(kernel_cpustat).cpustat[index] += tmp;
++
++#ifdef CONFIG_CGROUP_CPUACCT
++	if (unlikely(!cpuacct_subsys.active))
++		return;
++
++	rcu_read_lock();
++	ca = task_ca(p);
++	while (ca && (ca != &root_cpuacct)) {
++		kcpustat = this_cpu_ptr(ca->cpustat);
++		kcpustat->cpustat[index] += tmp;
++		ca = parent_ca(ca);
++	}
++	rcu_read_unlock();
++#endif
 +}
 +
- #endif /* CONFIG_SCHED_HRTICK */
++
+ /*
+  * Account user cpu time to a process.
+  * @p: the process that the cpu time gets accounted to
+@@ -2580,7 +2616,7 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+ 	index = (TASK_NICE(p) > 0) ? CPUTIME_NICE : CPUTIME_USER;
+ 	cpustat[index] += tmp;
  
- #ifdef CONFIG_SMP
+-	cpuacct_update_stats(p, CPUACCT_STAT_USER, cputime);
++	task_group_account_field(p, index, cputime);
+ 	/* Account for user time used */
+ 	acct_update_integrals(p);
+ }
+@@ -2636,7 +2672,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
+ 
+ 	/* Add system time to cpustat. */
+ 	cpustat[index] += tmp;
+-	cpuacct_update_stats(p, CPUACCT_STAT_SYSTEM, cputime);
++	task_group_account_field(p, index, cputime);
+ 
+ 	/* Account for system time used */
+ 	acct_update_integrals(p);
+@@ -6781,8 +6817,15 @@ void __init sched_init(void)
+ 	INIT_LIST_HEAD(&root_task_group.children);
+ 	INIT_LIST_HEAD(&root_task_group.siblings);
+ 	autogroup_init(&init_task);
++
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
++#ifdef CONFIG_CGROUP_CPUACCT
++	root_cpuacct.cpustat = &kernel_cpustat;
++	root_cpuacct.cpuusage = alloc_percpu(u64);
++	/* Too early, not expected to fail */
++	BUG_ON(!root_cpuacct.cpuusage);
++#endif
+ 	for_each_possible_cpu(i) {
+ 		struct rq *rq;
+ 
+@@ -7843,44 +7886,16 @@ struct cgroup_subsys cpu_cgroup_subsys = {
+  * (balbir@in.ibm.com).
+  */
+ 
+-/* track cpu usage of a group of tasks and its child groups */
+-struct cpuacct {
+-	struct cgroup_subsys_state css;
+-	/* cpuusage holds pointer to a u64-type object on every cpu */
+-	u64 __percpu *cpuusage;
+-	struct percpu_counter cpustat[CPUACCT_STAT_NSTATS];
+-};
+-
+-struct cgroup_subsys cpuacct_subsys;
+-
+-/* return cpu accounting group corresponding to this container */
+-static inline struct cpuacct *cgroup_ca(struct cgroup *cgrp)
+-{
+-	return container_of(cgroup_subsys_state(cgrp, cpuacct_subsys_id),
+-			    struct cpuacct, css);
+-}
+-
+-/* return cpu accounting group to which this task belongs */
+-static inline struct cpuacct *task_ca(struct task_struct *tsk)
+-{
+-	return container_of(task_subsys_state(tsk, cpuacct_subsys_id),
+-			    struct cpuacct, css);
+-}
+-
+-static inline struct cpuacct *parent_ca(struct cpuacct *ca)
+-{
+-	if (!ca || !ca->css.cgroup->parent)
+-		return NULL;
+-	return cgroup_ca(ca->css.cgroup->parent);
+-}
+-
+ /* create a new cpu accounting group */
+ static struct cgroup_subsys_state *cpuacct_create(
+ 	struct cgroup_subsys *ss, struct cgroup *cgrp)
+ {
+-	struct cpuacct *ca = kzalloc(sizeof(*ca), GFP_KERNEL);
+-	int i;
++	struct cpuacct *ca;
+ 
++	if (!cgrp->parent)
++		return &root_cpuacct.css;
++
++	ca = kzalloc(sizeof(*ca), GFP_KERNEL);
+ 	if (!ca)
+ 		goto out;
+ 
+@@ -7888,15 +7903,13 @@ static struct cgroup_subsys_state *cpuacct_create(
+ 	if (!ca->cpuusage)
+ 		goto out_free_ca;
+ 
+-	for (i = 0; i < CPUACCT_STAT_NSTATS; i++)
+-		if (percpu_counter_init(&ca->cpustat[i], 0))
+-			goto out_free_counters;
++	ca->cpustat = alloc_percpu(struct kernel_cpustat);
++	if (!ca->cpustat)
++		goto out_free_cpuusage;
+ 
+ 	return &ca->css;
+ 
+-out_free_counters:
+-	while (--i >= 0)
+-		percpu_counter_destroy(&ca->cpustat[i]);
++out_free_cpuusage:
+ 	free_percpu(ca->cpuusage);
+ out_free_ca:
+ 	kfree(ca);
+@@ -7909,10 +7922,8 @@ static void
+ cpuacct_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
+ {
+ 	struct cpuacct *ca = cgroup_ca(cgrp);
+-	int i;
+ 
+-	for (i = 0; i < CPUACCT_STAT_NSTATS; i++)
+-		percpu_counter_destroy(&ca->cpustat[i]);
++	free_percpu(ca->cpustat);
+ 	free_percpu(ca->cpuusage);
+ 	kfree(ca);
+ }
+@@ -8005,16 +8016,31 @@ static const char *cpuacct_stat_desc[] = {
+ };
+ 
+ static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
+-		struct cgroup_map_cb *cb)
++			      struct cgroup_map_cb *cb)
+ {
+ 	struct cpuacct *ca = cgroup_ca(cgrp);
+-	int i;
++	int cpu;
++	s64 val = 0;
+ 
+-	for (i = 0; i < CPUACCT_STAT_NSTATS; i++) {
+-		s64 val = percpu_counter_read(&ca->cpustat[i]);
+-		val = cputime64_to_clock_t(val);
+-		cb->fill(cb, cpuacct_stat_desc[i], val);
++	for_each_online_cpu(cpu) {
++		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
++		val += kcpustat->cpustat[CPUTIME_USER];
++		val += kcpustat->cpustat[CPUTIME_NICE];
+ 	}
++	val = cputime64_to_clock_t(val);
++	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_USER], val);
++
++	val = 0;
++	for_each_online_cpu(cpu) {
++		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
++		val += kcpustat->cpustat[CPUTIME_SYSTEM];
++		val += kcpustat->cpustat[CPUTIME_IRQ];
++		val += kcpustat->cpustat[CPUTIME_SOFTIRQ];
++	}
++
++	val = cputime64_to_clock_t(val);
++	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_SYSTEM], val);
++
+ 	return 0;
+ }
+ 
+@@ -8066,45 +8092,6 @@ void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+ 	rcu_read_unlock();
+ }
+ 
+-/*
+- * When CONFIG_VIRT_CPU_ACCOUNTING is enabled one jiffy can be very large
+- * in cputime_t units. As a result, cpuacct_update_stats calls
+- * percpu_counter_add with values large enough to always overflow the
+- * per cpu batch limit causing bad SMP scalability.
+- *
+- * To fix this we scale percpu_counter_batch by cputime_one_jiffy so we
+- * batch the same amount of time with CONFIG_VIRT_CPU_ACCOUNTING disabled
+- * and enabled. We cap it at INT_MAX which is the largest allowed batch value.
+- */
+-#ifdef CONFIG_SMP
+-#define CPUACCT_BATCH	\
+-	min_t(long, percpu_counter_batch * cputime_one_jiffy, INT_MAX)
+-#else
+-#define CPUACCT_BATCH	0
+-#endif
+-
+-/*
+- * Charge the system/user time to the task's accounting group.
+- */
+-void cpuacct_update_stats(struct task_struct *tsk,
+-		enum cpuacct_stat_index idx, cputime_t val)
+-{
+-	struct cpuacct *ca;
+-	int batch = CPUACCT_BATCH;
+-
+-	if (unlikely(!cpuacct_subsys.active))
+-		return;
+-
+-	rcu_read_lock();
+-	ca = task_ca(tsk);
+-
+-	do {
+-		__percpu_counter_add(&ca->cpustat[idx], val, batch);
+-		ca = parent_ca(ca);
+-	} while (ca);
+-	rcu_read_unlock();
+-}
+-
+ struct cgroup_subsys cpuacct_subsys = {
+ 	.name = "cpuacct",
+ 	.create = cpuacct_create,
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index d88545c..c248016 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -830,13 +830,39 @@ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime
+ extern void update_cpu_load(struct rq *this_rq);
+ 
+ #ifdef CONFIG_CGROUP_CPUACCT
++#include <linux/cgroup.h>
++/* track cpu usage of a group of tasks and its child groups */
++struct cpuacct {
++	struct cgroup_subsys_state css;
++	/* cpuusage holds pointer to a u64-type object on every cpu */
++	u64 __percpu *cpuusage;
++	struct kernel_cpustat __percpu *cpustat;
++};
++
++/* return cpu accounting group corresponding to this container */
++static inline struct cpuacct *cgroup_ca(struct cgroup *cgrp)
++{
++	return container_of(cgroup_subsys_state(cgrp, cpuacct_subsys_id),
++			    struct cpuacct, css);
++}
++
++/* return cpu accounting group to which this task belongs */
++static inline struct cpuacct *task_ca(struct task_struct *tsk)
++{
++	return container_of(task_subsys_state(tsk, cpuacct_subsys_id),
++			    struct cpuacct, css);
++}
++
++static inline struct cpuacct *parent_ca(struct cpuacct *ca)
++{
++	if (!ca || !ca->css.cgroup->parent)
++		return NULL;
++	return cgroup_ca(ca->css.cgroup->parent);
++}
++
+ extern void cpuacct_charge(struct task_struct *tsk, u64 cputime);
+-extern void cpuacct_update_stats(struct task_struct *tsk,
+-		enum cpuacct_stat_index idx, cputime_t val);
+ #else
+ static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime) {}
+-static inline void cpuacct_update_stats(struct task_struct *tsk,
+-		enum cpuacct_stat_index idx, cputime_t val) {}
+ #endif
+ 
+ static inline void inc_nr_running(struct rq *rq)
