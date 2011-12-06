@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933245Ab1LFKsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 05:48:23 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54779 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933089Ab1LFKsV (ORCPT
+	id S933257Ab1LFKsh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:48:37 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34446 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab1LFKsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 05:48:21 -0500
-Date: Tue, 6 Dec 2011 10:46:54 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
-        Pawel Moll <pawel.moll@arm.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
-Message-ID: <20111206104654.GN14542@n2100.arm.linux.org.uk>
-References: <20111202192618.GC3037@localhost.localdomain> <CA+55aFwekNWz+V4440f=2iu_BfOxSg0NjVogv4cZZDFbJBNoAQ@mail.gmail.com> <1322867573.11728.22.camel@pasglop> <20111205161157.GA27550@localhost.localdomain> <alpine.LFD.2.02.1112051236350.2357@xanadu.home> <20111205180253.GB29812@localhost.localdomain> <alpine.LFD.2.02.1112051310150.2357@xanadu.home> <20111205192605.GD29812@localhost.localdomain> <alpine.LFD.2.02.1112051443190.2357@xanadu.home> <20111206093709.GB2274@linaro.org>
+	Tue, 6 Dec 2011 05:48:10 -0500
+Message-ID: <4EDDF2DE.7020701@linux.vnet.ibm.com>
+Date: Tue, 06 Dec 2011 16:17:58 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206093709.GB2274@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Fenghua Yu <fenghua.yu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Borislav Petkov <bp@amd64.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
+References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com> <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu> <4EDDE5D0.7030906@linux.vnet.ibm.com> <20111206103500.GD15966@elte.hu>
+In-Reply-To: <20111206103500.GD15966@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120600-5140-0000-0000-000000616B4E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 09:37:09AM +0000, Dave Martin wrote:
-> To clarify, you're suggesting that the meanings of all other IRQ values
-> would not change initially?  (i.e., we remap HW irq 0, if there is one,
-> to some other random number but have a 1:1 mapping for everything else).
+On 12/06/2011 04:05 PM, Ingo Molnar wrote:
 
-Even better.  Avoid the first 16 IRQ numbers altogether - so that ISA
-drivers which have these numbers hard-encoded in them will see failures
-if they're expecting standard ISA IRQ numbering.
+> 
+> * Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> 
+>>> But the hibernation angle should be considered. Hibernation 
+>>> already has to deal with the case where someone physically 
+>>> unplugs a CPU and then resumes from the disk image, right? 
+>>> How does the hibernation code handle that case currently?
+>>
+>> Oh, wait a minute. Are we talking about physical CPU Hotplug 
+>> in between hibernation and restore? AFAIK, currently we don't 
+>> handle that at all. [...]
+> 
+> Well, not hotplug, but plain old-fashioned: 'hibernate the box, 
+> take out a CPU physically and thaw' kind of hardware change.
+>
 
-We already do that with the GIC, partly because of the hardware design.
-We do that on Footbridge based systems, because they may or may not have
-a real ISA IRQ controller.
 
-But.. let's make one thing clear: Alan Cox and Linus have been going on
-about how IRQ0 should not be used.  Let's be crystal clear: even x86
-uses IRQ0.  It happens to be the PIC timer, and that gets claimed early
-on during the x86 boot.  So please don't tell me that x86 avoids IRQ0.
-It doesn't.  It just happens that x86 never shows IRQ0 to anything but
-the i8253 PIC driver.
+Well, actually that's what I meant, taking this same idea a bit
+further: hibernate the box, take out a CPU physically, insert a
+slightly different CPU (which needs a different microcode image)
+and thaw.
 
-So lets see how x86 squeels if we make the i8253 PIC driver reject IRQ0.
-I bet that there'd be absolute fury at such a suggestion.
+In this case, the other patch that I mentioned in my previous mail
+would be required (or an equivalent), because the optimization
+patch which is now in mainline, would apply the same old microcode
+image on this new CPU too, blindly.
 
-When x86 sorts this out, there _might_ be some more motivation to take
-such comments seriously.  Until then it's more like a joke.
+ 
+> How will the hibernation code handle this case?
+
+
+I am not familiar with how the rest of the hibernation code handles
+the case you described. I just happen to know about the microcode
+case needing some more work for this to work reliably.
+
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
