@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932827Ab1LFAMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 19:12:50 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43111 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab1LFAMt convert rfc822-to-8bit (ORCPT
+	id S932835Ab1LFANu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 19:13:50 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:48733 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932738Ab1LFANs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 19:12:49 -0500
-MIME-Version: 1.0
-In-Reply-To: <2013134.msetbOSBe8@pali-elitebook>
-References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
-	<2013134.msetbOSBe8@pali-elitebook>
-Date: Tue, 6 Dec 2011 02:12:47 +0200
-Message-ID: <CAMP44s1TrRkcy-xS+fXMyv0FAL1TnsPnnTa=gHSd2=P=iFkSUg@mail.gmail.com>
-Subject: Re: [PATCH] mfd: add bq2415x charger driver
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
-        Vladimir Zapolskiy <vz@mleia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 5 Dec 2011 19:13:48 -0500
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-watchdog@vger.kernel.org, wim@iguana.be,
+        Maxim Uvarov <maxim.uvarov@oracle.com>
+Subject: [PATCH] hpwd watchdog mark page writable
+Date: Mon,  5 Dec 2011 16:11:44 -0800
+Message-Id: <1323130304-32165-1-git-send-email-maxim.uvarov@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090208.4EDD5E37.009D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Mark hpwdt watchdog pages writable to prevent failing:
 
-On Tue, Dec 6, 2011 at 1:05 AM, Pali Rohár <pali.rohar@gmail.com> wrote:
-> I started writing other implementaion of bq2415x charger driver, which should
-> support also setting usb host mode. Code is still unfinished, but now is
-> devided into 2 parts: one power_supply driver and one driver which cover all
-> bq registers. See:
->
-> http://atrey.karlin.mff.cuni.cz/~pali/bq2415x/
->
-> Felipe Contreras, I think that my implementation is better - it will export
-> all bq registers (which is needed for hostmode boost) and will also register
-> regulator interface.
+BUG: unable to handle kernel paging request at c00f0000
+ IP: [<c00f0000>] 0xc00effff
+ *pdpt = 0000000000b7c001 *pde = 0000000000cf5067 *pte = 80000000000f0163
+ Oops: 0011 [#1] SMP
+ Modules linked in: hpwdt(+)(U) ipmi_si(U) ipmi_msghandler(U) serio_raw(U)
+ pcspkr(U) k8temp(U) ext4(U) mbcache(U) jbd2(U) hpsa(U) cciss(U) lpfc(U)
+ qla2xxx(U) scsi_transport_fc(U) scsi_tgt(U) radeon(U) ttm(U)
+ drm_kms_helper(U) drm(U) hwmon(U) i2c_algo_bit(U) i2c_core(U) dm_mod(U)
+ .
+ Pid: 741, comm: modprobe Not tainted 2.6.39-100.0.15.el6uek.i686 #1 HP
+ ProLiant BL685c G1
+ EIP: 0060:[<c00f0000>] EFLAGS: 00010286 CPU: 1
+ EIP is at 0xc00f0000
+ EAX: 55524324 EBX: 00000000 ECX: 00000000 EDX: 00000000
+ ESI: 00000000 EDI: 00000000 EBP: e892fda0 ESP: e892fd70
+  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+ Process modprobe (pid: 741, ti=e892e000 task=e96d0da0 task.ti=e892e000)
+ Stack:
+  f902b020 00000060 0000007b 00000286 ffffffed c00f0000 e892fda0 e892fda0
+  c00f0000 00000001 00000000 c00f0000 e892fdc4 f902b500 f902c0e0 c00f0000
+  e892fdc4 c0439b6f c00ffee0 c0100000 c00f0000 e892fdf0 f902b627 ea276860
+ Call Trace:
+  [<f902b020>] ? asminline_call+0x20/0x50 [hpwdt]
+  [<f902b500>] cru_detect+0x43/0xf6 [hpwdt]
+  [<c0439b6f>] ? ioremap_nocache+0x1f/0x30
+  [<f902b627>] hpwdt_init_nmi_decoding+0x74/0x16b [hpwdt]
+  [<c085f469>] ? printk+0x1d/0x24
+  [<f902b7f4>] hpwdt_init_one+0xd6/0x162 [hpwdt]
+  [<c06d8475>] ? pm_runtime_enable+0x45/0x70
+  [<c06149c7>] local_pci_probe+0x47/0xb0
+  [<c0615978>] pci_device_probe+0x68/0x90
+  [<c06d0aee>] really_probe+0x5e/0x210
+  [<c06d9808>] ? pm_runtime_barrier+0x48/0xb0
+  [<c06d0ce3>] driver_probe_device+0x43/0xa0
+  [<c061494e>] ? pci_match_device+0x9e/0xb0
+  [<c06d0dc1>] __driver_attach+0x81/0x90
+  [<c06d0020>] bus_for_each_dev+0x50/0x70
+  [<c06d08fe>] driver_attach+0x1e/0x20
+  [<c06d0d40>] ? driver_probe_device+0xa0/0xa0
+  [<c06d0397>] bus_add_driver+0x197/0x270
+  [<c06157f0>] ? pci_dev_put+0x20/0x20
+  [<c06d13ea>] driver_register+0x6a/0x130
+  [<c0615ba5>] __pci_register_driver+0x45/0xb0
+  [<f902e017>] hpwdt_init+0x17/0x19 [hpwdt]
+  [<c0403035>] do_one_initcall+0x35/0x170
+  [<f902e000>] ? 0xf902dfff
+  [<c0491ac5>] sys_init_module+0x75/0x1c0
+  [<c04ac8a6>] ? audit_syscall_exit+0x216/0x240
+  [<c0868f9f>] sysenter_do_call+0x12/0x28
+ Code: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+ ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  90 80 fc d8 75 0d e9 03 07 00 00 b8 04 00 00 02 05 00 00 9c
+ EIP: [<c00f0000>] 0xc00f0000 SS:ESP 0068:e892fd70
+ CR2: 00000000c00f0000
 
-I took a look at your driver, and there's definitely good stuff in it.
-However, I think there's a lot of unnecessary stuff, like the
-miscdevice stuff (which was frowned upon for bq27x00), and a lot of
-user-space interface. Moreover, it doesn't seem to do anything on its
-own (it needs interaction from user-space).
+Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+---
+ drivers/watchdog/hpwdt.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-IMO the first step should be to have a minimal driver that just works,
-even if it doesn't achieve the absolute best charging performance.
-More features could be added later on.
-
-Also, I'm not familiar with the regulator interface, but it seems to
-be meant for real regulators, which have consumers, and based on those
-consumers's needs the real voltage changes. This battery charger on
-the other hand doesn't have anything like that. There will be no
-consumer, and some stuff like the weak battery voltage is not even
-related to a voltage supply, but rather a threshold that can be
-configured to change some behavior of the charger, but there's no
-point in changing it dynamically (or maybe at all).
-
-I guess the important one is the charge voltage, which is linked to a
-real voltage, but what consumers would it have? I don't think there's
-any.
-
-Finally, I don't think user-space interaction should be needed at all.
-The driver should start charging immediately when there power supply
-available, and stop when there isn't any. Maybe at some point a
-user-space interface will be useful later on (I don't see why), but I
-don't think it should be *necessary*.
-
-I'm not familiar with any of this stuff, so don't take my opinions too
-seriously :)
-
-Cheers.
-
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 3774c9b..fe50812 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -335,6 +335,8 @@ static int __devinit detect_cru_service(void)
+ 	if (p == NULL)
+ 		return -ENOMEM;
+ 
++	set_memory_x((unsigned long)p & PAGE_MASK, ROM_SIZE >> PAGE_SHIFT);
++
+ 	for (q = p; q < p + ROM_SIZE; q += 16) {
+ 		rc = bios32_present(q);
+ 		if (!rc)
 -- 
-Felipe Contreras
+1.7.4.1
+
