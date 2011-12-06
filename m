@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1LFPYj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 10:24:39 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:22813 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753702Ab1LFPYh (ORCPT
+	id S1754943Ab1LFP0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 10:26:17 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:54629 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754187Ab1LFP0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 10:24:37 -0500
-Message-ID: <1323185069.7454.263.camel@deadeye>
-Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: prevent
- dobule restart of interface on FDX/HDX change
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Lothar =?ISO-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Date: Tue, 6 Dec 2011 15:24:29 +0000
-In-Reply-To: <0b92136d69e509a6ce49b526e1834f0ec90b04a4.1323163127.git.LW@KARO-electronics.de>
-References: <cover.1323163127.git.LW@KARO-electronics.de>
-	 <0b92136d69e509a6ce49b526e1834f0ec90b04a4.1323163127.git.LW@KARO-electronics.de>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Dec 2011 10:26:15 -0500
+Date: Tue, 6 Dec 2011 10:26:14 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: NeilBrown <neilb@suse.de>, Ming Lei <tom.leiming@gmail.com>,
+        Chen Peter-B29397 <B29397@freescale.com>, Greg KH <greg@kroah.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: [PATCH] Driver core: leave runtime PM enabled during system shutdown
+In-Reply-To: <201112052332.10822.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1112061024240.1469-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18562.005
-X-TM-AS-Result: No--6.615600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You shouldn't repeat the subject of the whole series in the subject of
-each patch.  Just put the name of the component you're changing (in this
-case, 'fec: prevent dobule restart of interface on FDX/HDX change').
+Disabling all runtime PM during system shutdown turns out not to be a
+good idea, because some devices may need to be woken up from a
+low-power state at that time.
 
-(Nitpick: typo in 'double'.)
+The whole point of disabling runtime PM for system shutdown was to
+prevent untimely runtime-suspend method calls.  This patch (as1504)
+accomplishes the same result by incrementing the usage count for each
+device and waiting for ongoing runtime-PM callbacks to finish.  This
+is what we already do during system suspend and hibernation, which
+makes sense since the shutdown method is pretty much a legacy analog
+of the pm->poweroff method.
 
-Ben.
+This fixes a regression on some OMAP systems.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: NeilBrown <neilb@suse.de>
+CC: Chen Peter-B29397 <B29397@freescale.com>
+
+---
+
+ drivers/base/core.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+Index: usb-3.2/drivers/base/core.c
+===================================================================
+--- usb-3.2.orig/drivers/base/core.c
++++ usb-3.2/drivers/base/core.c
+@@ -1743,8 +1743,10 @@ void device_shutdown(void)
+ 		 */
+ 		list_del_init(&dev->kobj.entry);
+ 		spin_unlock(&devices_kset->list_lock);
+-		/* Disable all device's runtime power management */
+-		pm_runtime_disable(dev);
++
++		/* Don't allow any more runtime suspends */
++		pm_runtime_get_noresume(dev);
++		pm_runtime_barrier(dev);
+ 
+ 		if (dev->bus && dev->bus->shutdown) {
+ 			dev_dbg(dev, "shutdown\n");
 
