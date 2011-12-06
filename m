@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754352Ab1LFVH2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 16:07:28 -0500
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:20834
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753653Ab1LFVH0 (ORCPT
+	id S1754495Ab1LFVIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 16:08:20 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43346 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab1LFVIT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 16:07:26 -0500
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:160.36.179.113;KIP:(null);UIP:(null);IPV:NLI;H:kedge4.utk.tennessee.edu;RD:kedge4.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 6 Dec 2011 16:07:21 -0500
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: <eranian@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: perf_event self-monitoring overhead regression
-In-Reply-To: <CAMsRxfJmXXxDrofY3PDOLWRC7E-o6mANiTSJwYbyMTgOT_J0UA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1112061604040.23414@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1111300011260.7107@cl320.eecs.utk.edu> <1322654092.2921.256.camel@twins> <CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com> <alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
- <CAMsRxfJmXXxDrofY3PDOLWRC7E-o6mANiTSJwYbyMTgOT_J0UA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 6 Dec 2011 16:08:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <20111206205346.GK2203@ZenIV.linux.org.uk>
+References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
+ <20111206205346.GK2203@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 6 Dec 2011 13:07:56 -0800
+X-Google-Sender-Auth: x3n-YVtksB7GGaikozfnUvPjYAU
+Message-ID: <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        John Johansen <john.johansen@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Dec 2011, stephane eranian wrote:
+On Tue, Dec 6, 2011 at 12:53 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> The trouble is, might very well stop *NOT* at the global root.  Consider
+> a race with umount -l; we have no way to tell "it had been outside of
+> chroot jail" from "it had walked up to the place where ->mnt_parent had
+> been already reset, sorry, no idea what it was".
 
-> I take it your test is all about self-monitoring, single event, single thread.
-> Did you try breaking down the cost using  TSC and rdtsc() to pinpoint where the
-> regression is coming from in the 3 perf_event syscalls you're using?
+Sure, but you made that case return NULL already as part of the "no
+bastard" case, didn't you?
 
-I've started gathering results using rdtsc() and the results are even more 
-puzzling.  
+That part of the patch looked fine.
 
-See:
-   http://web.eecs.utk.edu/~vweaver1/projects/perf-events/benchmarks/rdtsc_overhead/core2_raw_null_kernel_rdtsc.png
-for example.
+It was just the extra convolutions around 'bastard' that seemed to be
+over-designed, and made for just a single use that seems very
+peripheral anyway.
 
-Those results are from a core2 machine, with the CPU scaling governor set 
-to "performance", the test bound to CPU0, and the test run 1000 times.
+Apart from AppArmor, afaik nobody even really cared where they ended
+up, and even AppArmor really didn't want to know - it just had this
+totally crazy special case about "/sys".
 
-Part of the issue is that a few of those kernels are Debian unstable 
-distro kernels and not hand-compiled stock kernels.  I'll rebuild a full 
-set of kernels myself and see if I can reproduce the results.
-
-Vince
-
+                 Linus
