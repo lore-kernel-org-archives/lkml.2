@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab1LFQBU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:01:20 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:63618 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab1LFQBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:01:17 -0500
-Date: Tue, 6 Dec 2011 16:59:11 +0100
-From: Alessandro Rubini <rubini@unipv.it>
-To: dave.martin@linaro.org
-Cc: linux@arm.linux.org.uk, patches@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
-        a.zummo@towertech.it, alsa-devel@alsa-project.org, cjb@laptop.org,
-        dan.j.williams@intel.com, dmitry.torokhov@gmail.com,
-        grant.likely@secretlab.ca, perex@perex.cz, jassisinghbrar@gmail.com,
-        julia@diku.dk, linus.walleij@linaro.org, linux-fbdev@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-serial@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        lethal@linux-sh.org, Pawel.Moll@arm.com, rtc-linux@googlegroups.com,
-        spi-devel-general@lists.sourceforge.net, tiwai@suse.de,
-        vinod.koul@intel.com, wim@iguana.be
-Subject: Re: [GIT PULL] ARM: amba: Enable module alias autogeneration for
- AMBA drivers
-Message-ID: <20111206155911.GA11902@mail.gnudd.com>
+	id S1751191Ab1LFQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:03:56 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34968 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715Ab1LFQDy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 11:03:54 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] PM / Freezer: Remove the "userspace only" constraint from
+ freezer[_do_not]_count()
+To: rjw@sisk.pl
+Cc: pavel@ucw.cz, len.brown@intel.com, tj@kernel.org, oleg@redhat.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Date: Tue, 06 Dec 2011 21:33:44 +0530
+Message-ID: <20111206160251.16729.62719.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <20111206151541.GA13774@linaro.org>
-References: <20111206151541.GA13774@linaro.org>
-  <1321961573-4562-1-git-send-email-dave.martin@linaro.org>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120606-5140-0000-0000-00000061A93F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ... it looks like Alessandro's proposed change to tidy up scripts/mod/
-> ile2alias.c may get merged soon
+At present, the functions freezer_count() and freezer_do_not_count()
+impose the restriction that they are effective only for userspace processes.
+However, now, these functions have found more utility than originally
+intended by the commit which introduced it: ba96a0c8 (freezer:
+fix vfork problem). And moreover, even the vfork issue does not need
+the above restriction in these functions, since they are anyway called by
+userspace processes.
 
-No, I don't think it will happen. Rusty disagrees, and his own
-suggestion is in the queue. I'm waiting a while to understand
-what is happening.
+So, modify these functions to make them work even for kernel threads, so
+that they can be used at other places in the kernel, where the userspace
+restriction doesn't apply.
 
-Anyways, I think it's better for me to wait for amba to come in, and
-work on scripts/mod later on. After all, it's meant to ease adding new
-buses later, not to make it more difficult for already scheduled ones.
+Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Suggested-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-/alessandro
+ include/linux/freezer.h |   28 +++++++++++-----------------
+ 1 files changed, 11 insertions(+), 17 deletions(-)
+
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index 30f06c2..7bcfe73 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -67,33 +67,27 @@ static inline bool cgroup_freezing(struct task_struct *task)
+  * appropriately in case the child has exited before the freezing of tasks is
+  * complete.  However, we don't want kernel threads to be frozen in unexpected
+  * places, so we allow them to block freeze_processes() instead or to set
+- * PF_NOFREEZE if needed and PF_FREEZER_SKIP is only set for userland vfork
+- * parents.  Fortunately, in the ____call_usermodehelper() case the parent won't
+- * really block freeze_processes(), since ____call_usermodehelper() (the child)
+- * does a little before exec/exit and it can't be frozen before waking up the
+- * parent.
++ * PF_NOFREEZE if needed. Fortunately, in the ____call_usermodehelper() case the
++ * parent won't really block freeze_processes(), since ____call_usermodehelper()
++ * (the child) does a little before exec/exit and it can't be frozen before
++ * waking up the parent.
+  */
+ 
+-/*
+- * If the current task is a user space one, tell the freezer not to count it as
+- * freezable.
+- */
++
++/* Tell the freezer not to count the current task as freezable. */
+ static inline void freezer_do_not_count(void)
+ {
+-	if (current->mm)
+-		current->flags |= PF_FREEZER_SKIP;
++	current->flags |= PF_FREEZER_SKIP;
+ }
+ 
+ /*
+- * If the current task is a user space one, tell the freezer to count it as
+- * freezable again and try to freeze it.
++ * Tell the freezer to count the current task as freezable again and try to
++ * freeze it.
+  */
+ static inline void freezer_count(void)
+ {
+-	if (current->mm) {
+-		current->flags &= ~PF_FREEZER_SKIP;
+-		try_to_freeze();
+-	}
++	current->flags &= ~PF_FREEZER_SKIP;
++	try_to_freeze();
+ }
+ 
+ /*
+
