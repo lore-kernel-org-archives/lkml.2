@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244Ab1LFNLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 08:11:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50130 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530Ab1LFNLL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 08:11:11 -0500
+	id S1754530Ab1LFNQx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:16:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752386Ab1LFNQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 08:16:52 -0500
+Date: Tue, 6 Dec 2011 11:16:34 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/10] perf tools: cleanups, fixes, updates
+Message-ID: <20111206131634.GA7059@infradead.org>
+References: <1323167560-2282-1-git-send-email-robert.richter@amd.com> <20111206110430.GK15738@erda.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <201112061255.56136.arnd@arndb.de>
-References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com>
-	<201112051437.27538.arnd@arndb.de>
-	<CACVXFVMB+HuQDb+Pxo0d8x46P82-c-OPxaL0c661Wztyx3NWJA@mail.gmail.com>
-	<201112061255.56136.arnd@arndb.de>
-Date: Tue, 6 Dec 2011 21:11:08 +0800
-Message-ID: <CACVXFVPYUY-vpeoKJKX2XN7-0w+=seW0u3EaP=hD9m1Sy7nkTQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
-From: Ming Lei <ming.lei@canonical.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111206110430.GK15738@erda.amd.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 8:55 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 06 December 2011, Ming Lei wrote:
->> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
->> index 073eb4d..8aeaa1e 100644
->> --- a/include/linux/videodev2.h
->> +++ b/include/linux/videodev2.h
->> @@ -2214,7 +2214,12 @@ struct v4l2_fd_result {
->>         __u32   buf_index;
->>         __u32   face_cnt;
->>         __u32   reserved[6];
->> -       struct v4l2_fd_detection *fd;
->> +
->> +       /*make 64/32 compatible*/
->> +       union {
->> +               struct v4l2_fd_detection *fd;
->> +               __u64   dummy;
->> +       };
->>  };
->>
->
-> That's not compatible, at least not on any big-endian architecture.
-> If you want to have an indirect pointer, you have to cast it to the
-> __u64 member in user space and back in kernel space.
+Em Tue, Dec 06, 2011 at 12:04:30PM +0100, Robert Richter escreveu:
+> On 06.12.11 11:32:30, Robert Richter wrote:
+> > The patch set contains some cleanups, fixes and updates I found worth
+> > to implement during code review. Some patches can be applied
+> > independently.
+> > 
+> > Patches #1 and #2 are a repost.
+> > 
+> > Robert Richter (10):
+> >   perf script: Fix mem leaks and NULL pointer checks around strdup()s
+> >   perf script: Implement option for system-wide profiling
 
-Looks like it is a bit ugly.
+The two above were merged already in:
 
->
-> Using an array added to the end of the v4l2_fd_result structure
-> rather than a pointer would really make this easier IMHO.
+https://github.com/acmel/linux/commits/perf/core
 
-I have tried to do this, but video_usercopy needs a few changes
-to handle array args if no indirect pointer is passed to kernel.
+> >   perf tools: Continue processing header on unknown features
+> >   perf tools: Fix out-of-bound access to struct perf_session
+> >   perf tool: Moving code in some files
+> >   perf report: Setup browser if stdout is a pipe
+> >   perf report: Accept fifos as input file
+> >   perf tool: Unify handling of features when writing feature section
+> >   perf tools: Improve macros for struct feature_ops
+> >   perf tools: Use for_each_set_bit() to iterate over feature flags
+> 
+> I just realized conflicts with latest tip/perf/core. This applies on
+> c23205c8488f11cb9ebe7a7b5851a1d8a0171011.
+> 
+> I can resent a rebased version but would like to wait for review
+> first.
 
-I am not sure if media guys are happy to accept the changes, :-)
+Ok, going thru them now.
 
-thanks,
---
-Ming Lei
+- Arnaldo
