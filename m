@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab1LFLOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 06:14:34 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45105 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933153Ab1LFLOd (ORCPT
+	id S1753899Ab1LFLPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 06:15:04 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52783 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751791Ab1LFLPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 06:14:33 -0500
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH] drm/i915: fix infinite recursion on unbind due to ilk vt-d w/a
-Date: Tue,  6 Dec 2011 12:12:33 +0100
-Message-Id: <1323169953-7697-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.7.6.4
+	Tue, 6 Dec 2011 06:15:03 -0500
+Date: Tue, 6 Dec 2011 11:14:58 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: aliaksei.katovich@nokia.com
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] mfd: bq2415x charger driver
+Message-ID: <20111206111458.GA17194@sirena.org.uk>
+References: <cover.1299679848.git.aliaksei.katovich@nokia.com>
+ <af9ea8649257cedcdcc531ce918fa4fba5b4e4a7.1299679848.git.aliaksei.katovich@nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <af9ea8649257cedcdcc531ce918fa4fba5b4e4a7.1299679848.git.aliaksei.katovich@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recursion loop goes retire_requests->unbind->gpu_idle->retire_reqeusts.
+On Wed, Mar 09, 2011 at 04:48:03PM +0200, aliaksei.katovich@nokia.com wrote:
 
-Every time we go through this we need a
-- active object that can be retired
-- and there are no other references to that object than the one from
-  the active list, so that it gets unbound and freed immediately.
-Otherwise the recursion stops. So the recursion is only limited by the
-number of objects that fit these requirements sitting in the active list
-any time retire_request is called.
+> +	file = debugfs_create_file("regdump", 0444, root, cli, &bq2415x_ops);
+> +	if (IS_ERR(file))
+> +		return;
 
-Issue exercised by tests/gem_unref_active_buffers from i-g-t.
+Rather than create a custom register dump interface I'd suggest
+converting to the regmap API which provides standard code to do this.
 
-There's been a decent bikeshed discussion whether it wouldn't be
-better to pass around a flag, but imo this is o.k. for such a limited
-case that only supports a w/a.
+> +
+> +/**
+> + * bq2415x_exec - execute charger specific command
+> + *
+> + * Returns result of command execution upon success or negative otherwise
+> + */
+> +int bq2415x_exec(enum bq2415x_cmd cmd)
+> +{
+> +	int res;
 
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Chris Wilson <chris@chris-wilson> # we built better
-	bikesheds, but this keeps the rain off for now
----
- drivers/gpu/drm/i915/i915_gem.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+> +	if (!bq2415x_cli)
+> +		return -ENODEV;
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 036bc58..d7d5801 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -2026,8 +2026,13 @@ i915_wait_request(struct intel_ring_buffer *ring,
- 	 * to handle this, the waiter on a request often wants an associated
- 	 * buffer to have made it to the inactive list, and we would need
- 	 * a separate wait queue to handle that.
-+	 *
-+	 * To avoid a recursion with the ilk VT-d workaround (that calls
-+	 * gpu_idle when unbinding objects with interruptible==false) don't
-+	 * retire requests in that case (because it might call unbind if the
-+	 * active list holds the last reference to the object).
- 	 */
--	if (ret == 0)
-+	if (ret == 0 && dev_priv->mm.interruptible)
- 		i915_gem_retire_requests_ring(ring);
- 
- 	return ret;
--- 
-1.7.6.4
+> +	switch (cmd) {
+> +	case BQ2415X_ENABLE_CHARGER:
+> +		res = bq2415x_enable_charger(true);
+> +		break;
 
+...
+
+> +EXPORT_SYMBOL(bq2415x_exec);
+
+This should clearly be going through kernel frameworks and even if
+defining a custom in kernel API for this device there's no reason to
+emulate ioctl().
+
+> +static int bq2415x_list_voltage(struct regulator_dev *rdev, unsigned i)
+> +{
+> +	struct bq2415x_regulator *r = rdev_get_drvdata(rdev);
+> +
+> +	if (i >= r->desc.n_voltages)
+> +		return 0;
+> +
+> +	return bq2415x_vmap_calc(i, r->val_summ, r->init.constraints.min_uV);
+> +}
+
+MFDs should put their subfunction drivers within the appropriate
+subsystem.
+
+> +static int
+> +bq2415x_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV)
+> +{
+
+This won't compile against current kernels, always submit against the
+latest development versions (though in this case it won't compile with
+3.0...)
+
+
+> +	/* populate my consumers table */
+> +	for (i = 0, j = 0; i < init->num_consumer_supplies && j < n; i++) {
+
+No, this is all wrong - just pass the init data (including consumers)
+straight through from the machine driver like all the other regulator
+drivers.
