@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab1LFSPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 13:15:11 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37555 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752930Ab1LFSPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 13:15:07 -0500
-Date: Tue, 6 Dec 2011 19:13:18 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Nick Bowler <nbowler@elliptictech.com>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, ben@decadent.org.uk,
+	id S1752942Ab1LFSRc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 13:17:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51106 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752161Ab1LFSRb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 13:17:31 -0500
+Date: Tue, 6 Dec 2011 18:17:15 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
         linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] lockdep, bug: Exclude
- TAINT_FIRMWARE_WORKAROUND from disabling lockdep
-Message-ID: <20111206181318.GA9842@elte.hu>
-References: <tip-xopopjjens57r0i13qnyh2yo@git.kernel.org>
- <20111206151345.GA22353@elliptictech.com>
- <20111206154206.441e85c6@lxorguk.ukuu.org.uk>
- <20111206174320.GA25031@elte.hu>
- <20111206175230.2c5b2ea0@lxorguk.ukuu.org.uk>
+Message-ID: <20111206181715.GG3366@decadent.org.uk>
+References: <1319773015.6759.30.camel@deadeye>
+ <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
+ <1323185640.7454.269.camel@deadeye>
+ <1323193731.32012.81.camel@twins>
+ <20111206175558.3215907c@lxorguk.ukuu.org.uk>
+ <20111206175919.GA5386@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111206175230.2c5b2ea0@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111206175919.GA5386@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
+ error
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-
-> > My primary worry is to not have lockdep active when there's 
-> > binary modules in a system - can TAINT_OOT_MODULE be set but 
-> > TAINT_PROPRIETARY_MODULE not set for non-GPL modules?
+On Tue, Dec 06, 2011 at 06:59:19PM +0100, Ingo Molnar wrote:
 > 
-> Yes. I imagine anyone wanting to use lockdep with binary modules
-> would just lie anyway.
+> * Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 > 
-> > If not, and if TAINT_OOT_MODULE set and TAINT_PROPRIETARY_MODULE 
-> > cleared guarantees the GPL-ness of the module then i have no 
-> > problem with keeping lockdep active in that case.
+> > On Tue, 06 Dec 2011 18:48:51 +0100
+> > Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > 
+> > > On Tue, 2011-12-06 at 15:34 +0000, Ben Hutchings wrote:
 > 
-> Insofar as nobody is making their code line about licenses.
+> > > > If you disagree with a patch, do not silently drop parts 
+> > > > of it.  I demand that you remove my 'Signed-off-by' as 
+> > > > this is not the change I submitted.
+> > > 
+> > > The easy solution is that I never take patches from you 
+> > > again, ever. Consider that done. I'll let Ingo see if he can 
+> > > remove your SOB.
+> > 
+> > In which case you are presumably ceasing to be a maintainer 
+> > for that code ? Your statement above appears to be 
+> > inconsistent with the rôle of a maintainer.
+> 
+> What Peter did was rather sensible: he split a patch that did 
+> two things into two and applied one standalone, uncontroversial 
+> half of it and kept the part of the part of the changelog that 
+> related to that change.
+[...]
 
-Fair enough - so i agree that we can allow OOT_MODULE's with 
-lockdep and thus revert the lockdep-disabling effect of:
+I can accept that if the change from my submission is commented
+in the commit message.  (I sometimes do that with other people's
+patches.)  But this was modified without comment.
 
- 2449b8ba0745: module,bug: Add TAINT_OOT_MODULE flag for modules not built in-tree
+Giving credit for authorship is important, but it is also
+important not to say someone is the sole author of something
+when they aren't and haven't approved the subsequent changes
+(cf. Alan Smithee).
+ 
+Ben.
 
-Thanks,
-
-	Ingo
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
