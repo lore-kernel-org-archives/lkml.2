@@ -1,119 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006Ab1LFIIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 03:08:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56285 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932989Ab1LFIIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 03:08:34 -0500
-Date: Tue, 6 Dec 2011 09:08:34 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] mm,x86: initialize high mem before free_all_bootmem()
-Message-ID: <20111206080833.GB3105@redhat.com>
-References: <1322582711-14571-1-git-send-email-sgruszka@redhat.com>
- <20111205110656.GA22259@elte.hu>
- <20111205150019.GA5434@redhat.com>
- <20111205155434.GD30287@elte.hu>
- <20111206075530.GA3105@redhat.com>
+	id S933020Ab1LFIIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 03:08:43 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43140 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932989Ab1LFIIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 03:08:42 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4EDDCD6D.1010907@jp.fujitsu.com>
+Date: Tue, 06 Dec 2011 17:08:13 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206075530.GA3105@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [git pull] PCI fixes
+References: <20111123144417.2da5958c@jbarnes-desktop> <CA+55aFyaiJBYmgVCLfPA7q3hqtPHYh9wwsmVTCewbBoxMsDE8A@mail.gmail.com> <20111205112256.68e59434@jbarnes-desktop>
+In-Reply-To: <20111205112256.68e59434@jbarnes-desktop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch fixes boot crash with my previous patch "mm,x86: remove
-debug_pagealloc_enabled" applied:
+(2011/12/06 4:22), Jesse Barnes wrote:
+> On Wed, 23 Nov 2011 15:02:01 -0800
+> Linus Torvalds<torvalds@linux-foundation.org>  wrote:
+>
+>> On Wed, Nov 23, 2011 at 2:44 PM, Jesse Barnes<jbarnes@virtuousgeek.org>  wrote:
+>>>
+>>> Nothing too exciting this time, mostly some minor fixes for things
+>>> normal people don't really hit.  Happy Thanksgiving.
+>>
+>> Ugh. This looks bogus:
+>>
+>>> Kenji Kaneshige (2):
+>>>       PCI: pciehp: wait 1000 ms before Link Training check
+>>
+>> Look at that patch more closely. After the patch, the code looks like this:
+>>
+>>
+>>           if (ctrl->link_active_reporting)
+>>                   pcie_wait_link_active(ctrl);
+>>           else
+>>                   msleep(1000);
+>>
+>> +	/*
+>> +	 * Need to wait for 1000 ms after Data Link Layer Link Active
+>> +	 * (DLLLA) bit reads 1b before sending configuration request.
+>> +	 * We need it before checking Link Training (LT) bit becuase
+>> +	 * LT is still set even after DLLLA bit is set on some platform.
+>> +	 */
+>> +	msleep(1000);
+>>
+>> and I'm pretty sure you should remove the "else msleep(1000)" there.
+>> Doing the 1s wait *twice* seems entirely bogus, even if you are
+>> missing link_active_reporting. No?
+>>
+>> I pulled it since I can't test it, but it really smells fishy to me.
+>
+> Sure looks like it... Kenji-san, you went back and forth on this one a
+> little, can you confirm (and preferably test)?
+>
+> Thanks,
 
-Initializing HighMem for node 0 (000377fe:0003fff0)
-BUG: unable to handle kernel paging request at f6fefe80
-IP: [<c1621ab5>] find_range_array+0x5e/0x69
-*pde = 01ff2067 *pte = 36fef160
-Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
-Modules linked in:
+I'm very sorry for the long delay.
 
-Pid: 0, comm: swapper Not tainted 3.2.0-rc4-tip-01533-g9b242f0-dirty #162987 System manufacturer System Product Name/A8N-E
-EIP: 0060:[<c1621ab5>] EFLAGS: 00010046 CPU: 0
-EIP is at find_range_array+0x5e/0x69
-EAX: 00000000 EBX: 00000300 ECX: 00000300 EDX: f6fefe80
-ESI: 00000030 EDI: f6fefe80 EBP: c15b9ed0 ESP: c15b9eb0
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process swapper (pid: 0, ti=c15b8000 task=c15bdee0 task.ti=c15b8000)
-Stack:
- 377fe000 00000000 00000300 00000000 00000010 00000000 c1608c40 00000000
- c15b9f00 c1622064 c15b0020 c15c32a0 c15c32b0 c15c32a0 000377fe c15b9f1c
- 00000002 c1608c40 000377fe 0003fff0 c15b9f2c c1620dd0 0003fff0 d9d9ca83
-Call Trace:
- [<c1622064>] __get_free_all_memory_range+0x39/0xb4
- [<c1620dd0>] add_highpages_with_active_regions+0x18/0x9b
- [<c1621a2e>] set_highmem_pages_init+0x70/0x90
- [<c162122b>] mem_init+0x50/0x21b
- [<c1629913>] ? __alloc_bootmem_node_nopanic+0x63/0x86
- [<c13ea147>] ? printk+0x1d/0x1f
- [<c162ac6a>] ? page_cgroup_init_flatmem+0x8f/0xbc
- [<c16155bd>] start_kernel+0x1bf/0x31c
- [<c1615213>] ? obsolete_checksetup+0x95/0x95
- [<c1615065>] i386_start_kernel+0x65/0x67
-Code: 00 00 c7 44 24 04 00 00 00 00 e8 e5 81 00 00 09 c2 75 0c c7 04 24
-28 fc 51 c1 e8 60 84 dc ff 8d 90 00 00 00 c0 89 d9 31 c0 89 d7 <f3> aa
-83 c4 18 89 d0 5b 5f
-+5d c3 55 89 e5 57 89 d7 56 89 c6 53
-EIP: [<c1621ab5>] find_range_array+0x5e/0x69 SS:ESP 0068:c15b9eb0
-CR2: 00000000f6fefe80
+Each 1000 ms wait has defferent meaning. But as Linus pointed out, the
+first one ("else msleep(1000)") can be removed. I'll work on this.
+Though the patch is not clean, I tested it from the regression point of
+view. And Yinghai also confirmed it fix his problem.
 
-Crash can happen when memblock want to allocate big area for temporary
-"struct range" array and reuse pages from top of low memory, which were
-already passed to the buddy allocator.
+Here are explanation for each 1000 ms with history.
 
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
-Would be good to apply this patch before "mm,x86: remove
-debug_pagealloc_enabled" to prevent problem be possibly
-observable during bisection.
+>>           if (ctrl->link_active_reporting)
+>>                   pcie_wait_link_active(ctrl);
+>>           else
+>>                   msleep(1000);
 
- arch/x86/mm/init_32.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+This chunk is to wait for Link Active. After PCIe specification 1.1,
+downstream port with hotplug slots needs to support link active reporting.
+But older specification PCIe 1.0a doesn't have link active reporting. The
+"else msleep(1000)" is for PCIe 1.0a. It wait for 1 sec instead of polling
+data link layer link active bit. In PCIe 1.0a spec, the bit corresponding
+to the data link layer link active bit in PCIe 1.1 or later is defined
+reserved zero. So as Linus pointed out, we can remove "else msleep(1000)".
+The reason why I added "if (crtl->link_active_reporting)" here was that I
+didn't want to change the behavior for old hot-plug controller (PCIe 1.0a),
+but I think it was too much.
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 29f7c6d..649de41 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -760,6 +760,17 @@ void __init mem_init(void)
- #ifdef CONFIG_FLATMEM
- 	BUG_ON(!mem_map);
- #endif
-+	/*
-+	 * With CONFIG_DEBUG_PAGEALLOC initialization of highmem pages has to
-+	 * be done before free_all_bootmem(). Memblock use free low memory for
-+	 * temporary data (see find_range_array()) and for this purpose can use
-+	 * pages that was already passed to the buddy allocator, hence marked as
-+	 * not accessible in the page tables when compiled with
-+	 * CONFIG_DEBUG_PAGEALLOC. Otherwise order of initialization is not
-+	 * important here.
-+	 */
-+	set_highmem_pages_init();
-+
- 	/* this will put all low memory onto the freelists */
- 	totalram_pages += free_all_bootmem();
- 
-@@ -771,8 +782,6 @@ void __init mem_init(void)
- 		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
- 			reservedpages++;
- 
--	set_highmem_pages_init();
--
- 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
- 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
- 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
--- 
-1.7.1
+>> +	/*
+>> +	 * Need to wait for 1000 ms after Data Link Layer Link Active
+>> +	 * (DLLLA) bit reads 1b before sending configuration request.
+>> +	 * We need it before checking Link Training (LT) bit becuase
+>> +	 * LT is still set even after DLLLA bit is set on some platform.
+>> +	 */
+>> +	msleep(1000);
 
+In the past, pciehp waits 100 ms instead of 1 sec after checking the link
+state. This 100 ms was based on PCIe spec. But we encountered the problem
+that configuration access to some HBA card doesn't return the proper value.
+To fix this problem, we replaced this 100 ms wait with 1 sec wait. This is
+based on the PCIe description "software must allow 1 second after the Data
+Link Layer Link Active bit reads 1b before it is permitted to determine
+that a hot plugged device which fails to return a Successful Completion for
+a Valid Configuration Request is a broken device". Then, another problem
+was reported by Yinghai Lu. The problem is that LT bit is still set even
+after DLLLA bit is set on his platform. To fix the problem 1 sec wait was
+moved to before LT check, which was placed after LT check.
+
+Regards,
+Kenji Kaneshige
