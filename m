@@ -1,95 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab1LFWgj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:36:39 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43239 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab1LFWgh (ORCPT
+	id S1755476Ab1LFWgl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:36:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43088 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779Ab1LFWgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:36:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwuZxGZhXyhj+cb5WLnFPDh45Dy6BwgmvEQKAM5swaM6w@mail.gmail.com>
-References: <20111123144417.2da5958c@jbarnes-desktop>
-	<CA+55aFyaiJBYmgVCLfPA7q3hqtPHYh9wwsmVTCewbBoxMsDE8A@mail.gmail.com>
-	<20111205112256.68e59434@jbarnes-desktop>
-	<4EDDCD6D.1010907@jp.fujitsu.com>
-	<CA+55aFwuZxGZhXyhj+cb5WLnFPDh45Dy6BwgmvEQKAM5swaM6w@mail.gmail.com>
-Date: Tue, 6 Dec 2011 14:36:37 -0800
-X-Google-Sender-Auth: A9yfB-tN-PNcVn0Gd1u7TufvyGk
-Message-ID: <CAE9FiQXwTcvfH21QZ87rU2vgf-xo8OT8L3f5gYwtbxJUDkDatQ@mail.gmail.com>
-Subject: Re: [git pull] PCI fixes
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=20cf303f6d4c72148e04b374110f
+	Tue, 6 Dec 2011 17:36:40 -0500
+Date: Tue, 6 Dec 2011 14:36:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] rapidio/tsi721: Fix mailbox resource reporting
+Message-Id: <20111206143638.12598c7b.akpm@linux-foundation.org>
+In-Reply-To: <1323198088-11669-1-git-send-email-alexandre.bounine@idt.com>
+References: <1323198088-11669-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf303f6d4c72148e04b374110f
-Content-Type: text/plain; charset=ISO-8859-1
+On Tue,  6 Dec 2011 14:01:27 -0500
+Alexandre Bounine <alexandre.bounine@idt.com> wrote:
 
-On Tue, Dec 6, 2011 at 8:14 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Please try to make something like that work. Instead of always waiting
-> for one second, wait for up to one second only for failure cases. Any
-> possibility of that?
+> Report support of four RapidIO mailboxes (MBOX0 - MBOX3) instead of MBOX0
+> only.
 
-i had another version that was not send out. that worked on my test setups too.
-it will try to read pci conf several times in 1s.
+I don't know how important these changes are and I don't know what
+their end user visible effects are.  Hence I am unable to decide which
+kernel version(s) we should merge the patches into.
 
-please check refreshed version against your tree.
+That's why these things should always be explained in changelogs,
+please.
 
-Thanks
-
-Yinghai
-
---20cf303f6d4c72148e04b374110f
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="pciehp_debug_x_3_1_access_pci_conf.patch"
-Content-Disposition: attachment; 
-	filename="pciehp_debug_x_3_1_access_pci_conf.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gvvhim9v0
-
-LS0tCiBkcml2ZXJzL3BjaS9ob3RwbHVnL3BjaWVocF9ocGMuYyB8ICAgNDcgKysrKysrKysrKysr
-KysrKysrKysrKysrKystLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgMzIgaW5zZXJ0aW9u
-cygrKSwgMTUgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL2hvdHBs
-dWcvcGNpZWhwX2hwYy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNp
-L2hvdHBsdWcvcGNpZWhwX2hwYy5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvaG90cGx1Zy9w
-Y2llaHBfaHBjLmMKQEAgLTI2NSw2ICsyNjUsMzUgQEAgc3RhdGljIHZvaWQgcGNpZV93YWl0X2xp
-bmtfYWN0aXZlKHN0cnVjdAogCWN0cmxfZGJnKGN0cmwsICJEYXRhIExpbmsgTGF5ZXIgTGluayBB
-Y3RpdmUgbm90IHNldCBpbiAxMDAwIG1zZWNcbiIpOwogfQogCitzdGF0aWMgYm9vbCBwY2lfYnVz
-X2NoZWNrX2RldihzdHJ1Y3QgcGNpX2J1cyAqYnVzLCBpbnQgZGV2Zm4pCit7CisJdTMyIGw7CisJ
-aW50IGRlbGF5ID0gMTAwMDsKKworYWdhaW46CisJaWYgKHBjaV9idXNfcmVhZF9jb25maWdfZHdv
-cmQoYnVzLCBkZXZmbiwgUENJX1ZFTkRPUl9JRCwgJmwpKQorCQlnb3RvIHdhaXQ7CisKKwkvKiBz
-b21lIGJyb2tlbiBib2FyZHMgcmV0dXJuIDAgb3IgfjAgaWYgYSBzbG90IGlzIGVtcHR5OiAqLwor
-CWlmIChsID09IDB4ZmZmZmZmZmYgfHwgbCA9PSAweDAwMDAwMDAwIHx8CisJICAgIGwgPT0gMHgw
-MDAwZmZmZiB8fCBsID09IDB4ZmZmZjAwMDApCisJCWdvdG8gd2FpdDsKKworCS8qIENvbmZpZ3Vy
-YXRpb24gcmVxdWVzdCBSZXRyeSBTdGF0dXMgKi8KKwlpZiAobCA9PSAweGZmZmYwMDAxKQorCQln
-b3RvIHdhaXQ7CisKKwlyZXR1cm4gdHJ1ZTsKKword2FpdDoKKwltZGVsYXkoMTAwKTsKKwlkZWxh
-eSAtPSAxMDA7CisJaWYgKGRlbGF5ID4gMCkKKwkJZ290byBhZ2FpbjsKKworCXJldHVybiBmYWxz
-ZTsKK30KKwogaW50IHBjaWVocF9jaGVja19saW5rX3N0YXR1cyhzdHJ1Y3QgY29udHJvbGxlciAq
-Y3RybCkKIHsKIAl1MTYgbG5rX3N0YXR1czsKQEAgLTI4MCwxMyArMzA5LDkgQEAgaW50IHBjaWVo
-cF9jaGVja19saW5rX3N0YXR1cyhzdHJ1Y3QgY29udAogICAgICAgICBlbHNlCiAgICAgICAgICAg
-ICAgICAgbXNsZWVwKDEwMDApOwogCi0JLyoKLQkgKiBOZWVkIHRvIHdhaXQgZm9yIDEwMDAgbXMg
-YWZ0ZXIgRGF0YSBMaW5rIExheWVyIExpbmsgQWN0aXZlCi0JICogKERMTExBKSBiaXQgcmVhZHMg
-MWIgYmVmb3JlIHNlbmRpbmcgY29uZmlndXJhdGlvbiByZXF1ZXN0LgotCSAqIFdlIG5lZWQgaXQg
-YmVmb3JlIGNoZWNraW5nIExpbmsgVHJhaW5pbmcgKExUKSBiaXQgYmVjdWFzZQotCSAqIExUIGlz
-IHN0aWxsIHNldCBldmVuIGFmdGVyIERMTExBIGJpdCBpcyBzZXQgb24gc29tZSBwbGF0Zm9ybS4K
-LQkgKi8KLQltc2xlZXAoMTAwMCk7CisJLyogd2FpdCAxMDBtcyBiZWZvcmUgcmVhZCBwY2kgY29u
-ZiwgYW5kIHRyeSBpbiAxcyAqLworCW1zbGVlcCgxMDApOworCXBjaV9idXNfY2hlY2tfZGV2KGN0
-cmwtPnBjaWUtPnBvcnQtPnN1Ym9yZGluYXRlLCBQQ0lfREVWRk4oMCwgMCkpOwogCiAJcmV0dmFs
-ID0gcGNpZWhwX3JlYWR3KGN0cmwsIFBDSV9FWFBfTE5LU1RBLCAmbG5rX3N0YXR1cyk7CiAJaWYg
-KHJldHZhbCkgewpAQCAtMzAyLDE0ICszMjcsNiBAQCBpbnQgcGNpZWhwX2NoZWNrX2xpbmtfc3Rh
-dHVzKHN0cnVjdCBjb250CiAJCXJldHVybiByZXR2YWw7CiAJfQogCi0JLyoKLQkgKiBJZiB0aGUg
-cG9ydCBzdXBwb3J0cyBMaW5rIHNwZWVkcyBncmVhdGVyIHRoYW4gNS4wIEdUL3MsIHdlCi0JICog
-bXVzdCB3YWl0IGZvciAxMDAgbXMgYWZ0ZXIgTGluayB0cmFpbmluZyBjb21wbGV0ZXMgYmVmb3Jl
-Ci0JICogc2VuZGluZyBjb25maWd1cmF0aW9uIHJlcXVlc3QuCi0JICovCi0JaWYgKGN0cmwtPnBj
-aWUtPnBvcnQtPnN1Ym9yZGluYXRlLT5tYXhfYnVzX3NwZWVkID4gUENJRV9TUEVFRF81XzBHVCkK
-LQkJbXNsZWVwKDEwMCk7Ci0KIAlwY2llX3VwZGF0ZV9saW5rX3NwZWVkKGN0cmwtPnBjaWUtPnBv
-cnQtPnN1Ym9yZGluYXRlLCBsbmtfc3RhdHVzKTsKIAogCXJldHVybiByZXR2YWw7Cg==
---20cf303f6d4c72148e04b374110f--
