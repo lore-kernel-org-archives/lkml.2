@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab1LFNRM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 08:17:12 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:60277 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753038Ab1LFNRK (ORCPT
+	id S933258Ab1LFNSE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:18:04 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49635 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753899Ab1LFNSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 08:17:10 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Clark <rob@ti.com>
-Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
-Date: Tue, 6 Dec 2011 13:16:58 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: Daniel Vetter <daniel@ffwll.ch>, t.stanislaws@samsung.com,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, m.szyprowski@samsung.com,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <CAKMK7uHw3OpMAtVib=e=s_us9Tx9TebzehGg59d4-g9dUXr+pQ@mail.gmail.com> <CAF6AEGto-+oSqguuWyPunUbtE65GpNiXh21srQzrChiBQMb1Nw@mail.gmail.com>
-In-Reply-To: <CAF6AEGto-+oSqguuWyPunUbtE65GpNiXh21srQzrChiBQMb1Nw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Tue, 6 Dec 2011 08:18:03 -0500
+Date: Tue, 6 Dec 2011 13:17:06 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: Re: [PATCH -tip] x86: fix build without CONFIG_X86_MRST
+Message-ID: <20111206131706.5491a5f2@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111206103103.GC15966@elte.hu>
+References: <1323166702-12990-1-git-send-email-sgruszka@redhat.com>
+	<20111206103022.434ebf6f@lxorguk.ukuu.org.uk>
+	<20111206103103.GC15966@elte.hu>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112061316.58858.arnd@arndb.de>
-X-Provags-ID: V02:K0:1MisO0sdFP9AUe3yino3RBdN4M5Xar9/K6IcyM4Lfas
- jduN0YJqBepOINSj8FqKSraapkMTgSabnWeRmQ9+EXQJ1KKXRK
- mmd9nnywEHlltC/f8+DsmefEeya3W6CqQrXPaG63YpQai0VrqG
- RHthV+8qSAEY5NmkYJbQvXuReALcBoLEaFGPhlLzcqJXqzYEKb
- HTZUv4BqNSTO8zql8mZvIZtr+3+Ycz1lik432myzET9gYavI7W
- n1euWlRDlh8hzREOKXvd61FSvzUtVejqekZ510sAk1l1LXVXvG
- AEGJTHY6JH4MDilSm6sAz6ahBDkb7ESaeYa97QC6WSI8kifYpr
- r1KYOm7jpd2sMA4/Dtik=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 05 December 2011, Rob Clark wrote:
-> > On the topic of a coherency model for dmabuf, I think we need to look at
-> > dma_buf_attachment_map/unmap (and also the mmap variants cpu_start and
-> > cpu_finish or whatever they might get called) as barriers:
-> >
-> > So after a dma_buf_map, all previsously completed dma operations (i.e.
-> > unmap already called) and any cpu writes (i.e. cpu_finish called) will be
-> > coherent. Similar rule holds for cpu access through the userspace mmap,
-> > only writes completed before the cpu_start will show up.
-> >
-> > Similar, writes done by the device are only guaranteed to show up after
-> > the _unmap. Dito for cpu writes and cpu_finish.
-> >
-> > In short we always need two function calls to denote the start/end of the
-> > "critical section".
+On Tue, 6 Dec 2011 11:31:03 +0100
+Ingo Molnar <mingo@elte.hu> wrote:
+
 > 
-> Yup, this was exactly my assumption.  But I guess it is better to spell it out.
+> * Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> 
+> > On Tue,  6 Dec 2011 11:18:22 +0100
+> > Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+> > 
+> > > Fix compilation error when compiled with CONFIG_X86_INTEL_MID and
+> > > without CONFIG_X86_MRST:
+> > > 
+> > > arch/x86/built-in.o: In function `add_rtc_cmos':
+> > > rtc.c:(.init.text+0x34bd): undefined reference to `__mrst_cpu_chip'
+> > 
+> > It really is INTEL_MID wide, but there were other problems 
+> > with the way the INTEL_MID selection was done. Should be fixed 
+> > with the patch I sent Ingo.
+> 
+> Hm, i didnt realize that it broke the build upstream as well. I 
+> improved your changelog to indicate the build failure and also 
+> cherry-picked it over from tip:x86/platform (v3.3 material) into 
+> tip:x86/urgent (v3.2 fixes).
 
-I still don't understand how this is going to help you if you let
-multiple drivers enter and leave the critical section without serializing
-against one another. That doesn't sound like what I know as critical
-section.
+Nor me - thanks
 
-Given some reasonable constraints (all devices must be in the same coherency
-domain, for instance), you can probably define it in a way that you can
-have multiple devices mapping the same buffer at the same time, and
-when no device has mapped the buffer you can have as many concurrent
-kernel and user space accesses on the same buffer as you like. But you
-must still guarantee that no software touches a noncoherent buffer while
-it is mapped into any device and vice versa.
+I've sent you a follow up fix.
 
-Why can't we just mandate that all mappings into the kernel must be
-coherent and that user space accesses must either be coherent as well
-or be done by user space that uses explicit serialization with all
-DMA accesses?
-
-	Arnd
+Alan
