@@ -1,52 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab1LFTMm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:12:42 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56514 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743Ab1LFTMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:12:38 -0500
-From: jim.cromie@gmail.com
-To: jbaron@redhat.com
-Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 12/25] dynamic_debug: reduce lineno field to a saner 18 bits
-Date: Tue,  6 Dec 2011 12:11:22 -0700
-Message-Id: <1323198694-7186-13-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
-References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>, <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
- <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
+	id S1753872Ab1LFTPW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:15:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:61668 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752806Ab1LFTPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 14:15:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="84135619"
+Subject: Re: [patch v3 3/6] sched, nohz: sched group, domain aware nohz idle
+ load balancing
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Venki Pallipadi <venki@google.com>, Mike Galbraith <efault@gmx.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.jf.intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>
+Date: Tue, 06 Dec 2011 11:19:37 -0800
+In-Reply-To: <20111206063736.GA18040@linux.vnet.ibm.com>
+References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
+	 <20111202010832.602203411@sbsiddha-desk.sc.intel.com>
+	 <20111206063736.GA18040@linux.vnet.ibm.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323199177.1984.12.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Cromie <jim.cromie@gmail.com>
+On Mon, 2011-12-05 at 22:37 -0800, Srivatsa Vaddagiri wrote:
+> * Suresh Siddha <suresh.b.siddha@intel.com> [2011-12-01 17:07:34]:
+> 
+> > @@ -5090,7 +5019,7 @@ static void nohz_idle_balance(int this_c
+> >  		goto end;
+> > 
+> >  	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
+> > -		if (balance_cpu == this_cpu)
+> > +		if (balance_cpu == this_cpu || !idle_cpu(this_cpu))
+> >  			continue;
+> 
+> Hmm ..did you mean to use '!idle_cpu(balance_cpu)' there?
 
-lineno:24 allows files with 4 million lines, an insane file-size, even
-for never-to-get-in-tree machine generated code.  Reduce this to 18
-bits, which still allows 256k lines.  This is still insanely big, but
-its not raving mad.
-
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+Thanks for reviewing closely. yes, it was a typo. Peter, please queue up
+this fix.
 ---
- include/linux/dynamic_debug.h |    2 +-
+
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: sched, nohz: fix the idle cpu check in nohz_idle_balance
+
+cpu bit in the nohz.idle_cpu_mask are reset in the first busy tick after
+exiting idle. So during nohz_idle_balance(), intention is to double
+check if the cpu that is part of the idle_cpu_mask is indeed idle before
+going ahead in performing idle balance for that cpu.
+
+Fix the cpu typo in the idle_cpu() check during nohz_idle_balance().
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ kernel/sched/fair.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index fc39640..7e3c53a 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -15,7 +15,7 @@ struct _ddebug {
- 	const char *function;
- 	const char *filename;
- 	const char *format;
--	unsigned int lineno:24;
-+	unsigned int lineno:18;
- 	/*
-  	 * The flags field controls the behaviour at the callsite.
-  	 * The bits here are changed dynamically when the user
--- 
-1.7.7.3
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 65a6f8b..0bcd144 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5019,7 +5019,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
+ 		goto end;
+ 
+ 	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
+-		if (balance_cpu == this_cpu || !idle_cpu(this_cpu))
++		if (balance_cpu == this_cpu || !idle_cpu(balance_cpu))
+ 			continue;
+ 
+ 		/*
+
 
