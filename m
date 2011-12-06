@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab1LFUn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 15:43:58 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43139 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab1LFUn4 convert rfc822-to-8bit (ORCPT
+	id S1753566Ab1LFUpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 15:45:33 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34439 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753144Ab1LFUpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 15:43:56 -0500
+	Tue, 6 Dec 2011 15:45:32 -0500
+Date: Tue, 6 Dec 2011 12:45:28 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Petr Holasek <pholasek@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Anton Arapov <anton@redhat.com>
+Subject: Re: NUMA x86: add constraints check for nid parameters
+In-Reply-To: <20111202105538.GB2188@dhcp-27-244.brq.redhat.com>
+Message-ID: <alpine.DEB.2.00.1112061233330.28251@chino.kir.corp.google.com>
+References: <1322739907-4695-1-git-send-email-pholasek@redhat.com> <20111201133451.5fc1ee7b.akpm@linux-foundation.org> <20111201231441.GA3293@stainedmachine.redhat.com> <20111201152851.7e39f034.akpm@linux-foundation.org>
+ <20111202105538.GB2188@dhcp-27-244.brq.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1112061214590.28251@chino.kir.corp.google.com>
-References: <CALCETrW1mpVCz2tO5roaz1r6vnno+srHR-dHA6_pkRi2qiCfdw@mail.gmail.com>
- <CAJd=RBDdirdNiPMVcYLNFO5Ho+pRGCfh_RRA7_re+76Ds+H0pw@mail.gmail.com>
- <CALCETrVL3MUMh2kDPaZ6Z9Lz=eWas_dF0jwWMiF3KvNUcJKXJw@mail.gmail.com> <alpine.DEB.2.00.1112061214590.28251@chino.kir.corp.google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 6 Dec 2011 12:43:34 -0800
-Message-ID: <CALCETrW77ZE62dbHJxoL3Ef1gAGeMQaSZrOOiM1_ZrY53zbxUQ@mail.gmail.com>
-Subject: Re: hugetlb oops on 3.1.0-rc8-devel
-To: David Rientjes <rientjes@google.com>
-Cc: Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 12:16 PM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 2 Nov 2011, Andy Lutomirski wrote:
->
->> > --- a/mm/hugetlb.c      Sat Aug 13 11:45:14 2011
->> > +++ b/mm/hugetlb.c      Wed Nov  2 20:12:00 2011
->> > @@ -2422,6 +2422,8 @@ retry_avoidcopy:
->> >         * anon_vma prepared.
->> >         */
->> >        if (unlikely(anon_vma_prepare(vma))) {
->> > +               page_cache_release(new_page);
->> > +               page_cache_release(old_page);
->> >                /* Caller expects lock to be held */
->> >                spin_lock(&mm->page_table_lock);
->> >                return VM_FAULT_OOM;
->> >
->>
->> I'll patch it in.  My test case took over a week to hit it once, so I
->> can't guarantee I'll spot it.
->>
->
-> This patch was merged and released in 3.2-rc3 as ea4039a34c4c ("hugetlb:
-> release pages in the error path of hugetlb_cow()"), Andy is this issue
-> fixed for you?
+On Fri, 2 Dec 2011, Petr Holasek wrote:
 
-I haven't seen it again with or without the patch.  I suspect that to
-trigger it again I'd have to set up an old, buggy version of my
-software to hammer on it for awhile, which I won't have a chance to do
-any time soon.  Sorry.
+> > > > > This patch adds constraints checks into __node_distance() and
+> > > > > numa_set_distance() functions. If from or to parameters are
+> > > > > lower than zero, it results into oops now.
+> > > > 
+> > > > Passing negative numbers into __node_distance() sounds like a bug in
+> > > > the caller, and this patch will remove our means of detecting that bug.
+> > > 
+> > > That's true, but upper boundary is checked now, so why not to check lower?
+> > 
+> > Because it adds more code to the kernel and can hide bugs?
+> > 
 
-If you're interested, the workload that triggered the problem was,
-roughly, two programs.  Both were set up to use libhugetlbfs for
-everything, and the first program spawned (presumably via fork as
-opposed to any clone magic) copies of the second program frequently.
-The second program was very memory intensive.  The result was that,
-occasionally, fork had issues because it couldn't find free huge pages
-in the pool.
+The upper bound is checked to ensure that we don't dereference past end of 
+the array that stores the distance table, so it will catch errors for 
+things like memory hotplug when additional nodes are onlined and the data 
+structure isn't updated accordingly.
 
---Andy
+> > If what we're doing here is to be defensive against buggy BIOS tables
+> > (a good idea) then we should validate the BIOS table values as close as
+> > possible to the point where they were read frmo the BIOS.  And we should
+> > (probably) emit a warning if a bad table entry is detected, rather than
+> > silently fixing it up.
+> 
+> numa_set_distance() does exactly what you described above, only emits a
+> warning. I agree with your objections with __node_distance() checks, it
+> really can hide bugs in caller. So silent fix-up is the main problem and
+> we shouldn't check anything so the caller will be advised when using 
+> wrong nid by oops with a benefit of less code for us. Do I understand your
+> opinion on this type of code?
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
-Office: (310) 553-5322
-Mobile: (650) 906-0647
+I'd have no objection to adding a check to numa_set_distance() to ensure 
+the node ids are non-negative in the same way we check that the distances 
+themselves are non-negative; that can catch errors when pxms are used 
+uninitialized when parsing the SRAT.  However, I think adding the check to 
+__node_distance() is unnecessary.
