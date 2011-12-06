@@ -1,73 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab1LFVl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 16:41:29 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40651 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab1LFVl1 (ORCPT
+	id S1754754Ab1LFVs7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 16:48:59 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58965 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752622Ab1LFVs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 16:41:27 -0500
-Date: Tue, 6 Dec 2011 21:41:26 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        John Johansen <john.johansen@canonical.com>
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-Message-ID: <20111206214126.GL2203@ZenIV.linux.org.uk>
-References: <20111206154854.GH2203@ZenIV.linux.org.uk>
- <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
- <20111206205346.GK2203@ZenIV.linux.org.uk>
- <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+	Tue, 6 Dec 2011 16:48:57 -0500
+X-Sasl-enc: OHrndC2oszk8eSK737VrXrSmOUBtQjWNraaZrnlTi7ZO 1323208136
+Date: Tue, 6 Dec 2011 13:44:46 -0800
+From: Greg KH <greg@kroah.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        devel@driverdev.osuosl.org, lttng-dev@lists.lttng.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
+Message-ID: <20111206214446.GD1247@kroah.com>
+References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
+ <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com>
+ <1322776568.4699.52.camel@twins>
+ <20111201221404.GC3365@kroah.com>
+ <1322780830.4699.62.camel@twins>
+ <20111201231751.GA4961@kroah.com>
+ <20111205141749.GC28866@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+In-Reply-To: <20111205141749.GC28866@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 01:07:56PM -0800, Linus Torvalds wrote:
-> On Tue, Dec 6, 2011 at 12:53 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > The trouble is, might very well stop *NOT* at the global root. ?Consider
-> > a race with umount -l; we have no way to tell "it had been outside of
-> > chroot jail" from "it had walked up to the place where ->mnt_parent had
-> > been already reset, sorry, no idea what it was".
+On Mon, Dec 05, 2011 at 03:17:49PM +0100, Ingo Molnar wrote:
 > 
-> Sure, but you made that case return NULL already as part of the "no
-> bastard" case, didn't you?
+> * Greg KH <greg@kroah.com> wrote:
 > 
-> That part of the patch looked fine.
+> > On Fri, Dec 02, 2011 at 12:07:10AM +0100, Peter Zijlstra wrote:
+> > > On Thu, 2011-12-01 at 14:14 -0800, Greg KH wrote:
+> > > > greg k-h
+> > > 
+> > > Greg, why are you merging this crap anyway? Aren't there enough tracer
+> > > thingies around already?
+> > 
+> > I don't know, is there?
+> > 
+> > There's some reason the distros, and users, still use lttng, 
+> > so I'm guessing that it fits the needs of quite a few people.
 > 
-> It was just the extra convolutions around 'bastard' that seemed to be
-> over-designed, and made for just a single use that seems very
-> peripheral anyway.
+> Same goes for a whole lot of other crap that distros are 
+> carrying. Would we want to merge a different CPU scheduler or 
+> the 4g:4g patch or a completely new networking stack into 
+> drivers/staging/? I don't think so.
+
+Distros have new CPU schedulers and are still dragging the 4g split
+around?  A whole new networking stack would be interesting, and if
+self-contained, possible :)
+
+> I.e. putting LTTNG into drivers/staging/ will not really solve 
+> anything - and in may in fact delay any sane technical 
+> resolution:
 > 
-> Apart from AppArmor, afaik nobody even really cared where they ended
-> up, and even AppArmor really didn't want to know - it just had this
-> totally crazy special case about "/sys".
+> There's a difference between a driver that has to go into 
+> drivers/staging/ because nobody cares enough [and the driver 
+> isnt high quality enough yet], and a core kernel feature that we 
+> DO care about and which HAS BEEN REJECTED IN ITS FORM.
 
-It's not /sys, actually, it's implicit /proc/sys/something from sysctl() ;-/
+I didn't realize that lttng was rejected, when was that done?  I
+couldn't find it in the archives anywhere.
 
-Hell knows.  Frankly, the whole "let's build a pathname and decide basing
-on it" thing had been insane from the very beginning.  For many reasons,
-starting with "pathname in which namespace?" and continuing through "who said
-that it still means what it used to at the moment of operation" to "what
-if it's not a part of any namespace anymore/had never been in one".
+That's why I took this.  It's a way for the code to get cleaned up, and
+into "mergable" state, much easier, with more help than if it was
+out-of-tree.  The fact that distros have been shipping and relying on it
+for years shows that it is something that is needed, and it being
+self-contained, makes it eligible for the staging tree.
 
-Hey, it wasn't me who insisted that pathname-based stuff made any sense
-whatsoever...  But "path to the nearest thing that has no ancestor now"
-is _meaningless_ if we know nothing about that ancestor.  Cases include
-	* that ancestor is the root of our namespace.
-	* that ancestor is a solitary vfsmount we'd started in, never had
-been mounted in any namespace (e.g. procfs internal vfsmount, etc.)
-	* that ancestor is a random vfsmount in a subtree that had been
-hit by umount -l, just as we'd been looking at it.  Might be its root,
-might be equal to path->mnt, might be something in between.
-	* cases 1 and 3 in another process' namespace
+> > That's why I'm merging it, if that the in-kernel stuff 
+> > obsoletes lttng, great, let me, and the distros know.
+> 
+> I'm NAK-ing the LTTNG driver really, as it's a workaround for a 
+> core kernel NAK.
 
-In case 3 and analogs the path we'd obtained is pure junk, so I can agree
-with "let's just return NULL on those".  The trouble is, how do you tell
-(3) from (2)?  And do we want (1)-not-our-namespace to be distinguished
-from (1)-our-namespace?
+Huh?
+
+> Mathieu, please work with the tracing folks who DO care about 
+> this stuff. It's not like there's a lack of interest in this 
+> area, nor is there a lack of willingness to take patches. What 
+> there is a lack of is your willingness to actually work on 
+> getting something unified, integrated to users...
+> 
+> LTTNG has been going on for how many years? I havent seen many 
+> steps towards actually *merging* its functionality - you insist 
+> on doing your own random thing, which is different in random 
+> ways. Yes, some of those random ways may in fact be better than 
+> what we have upstream - would you be interested in filtering 
+> those out and pushing them upstream? I certainly would like to 
+> see that happen.
+> 
+> We want to pick the best features, and throw away current 
+> upstream code in favor of superior out of tree code - this 
+> concept of letting crap sit alongside each other when people do 
+> care i cannot agree with.
+
+Mathieu, a good explaination of what lttng has that the in-kernel
+tracing and perf doesn't have would be a good place to start.
+
+thanks,
+
+greg k-h
