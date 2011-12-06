@@ -1,260 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab1LFOH3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 09:07:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56037 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933233Ab1LFOH1 convert rfc822-to-8bit (ORCPT
+	id S933408Ab1LFOHg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 09:07:36 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:36802 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933233Ab1LFOHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 09:07:27 -0500
+	Tue, 6 Dec 2011 09:07:34 -0500
+Date: Tue, 6 Dec 2011 09:07:09 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Weiping Pan <panweiping3@gmail.com>
+Cc: shanwei88@gmail.com, Randy Dunlap <rdunlap@xenotime.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Shan Wei <shanwei@cn.fujitsu.com>, Max Matveev <makc@redhat.com>,
+        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:NETWORKING [GENERAL]" <netdev@vger.kernel.org>
+Subject: Re: [PATCH V2 net] ipv4:correct description for tcp_max_syn_backlog
+Message-ID: <20111206140709.GA29082@hmsreliant.think-freely.org>
+References: <4EDDC1D6.6000708@gmail.com>
+ <ed04712f4f61e291ac784a8a77e2831981cfb9c1.1323156956.git.panweiping3@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4EDD3DEE.6060506@gmail.com>
-References: <1322838172-11149-1-git-send-email-ming.lei@canonical.com>
-	<1322838172-11149-7-git-send-email-ming.lei@canonical.com>
-	<4EDD3DEE.6060506@gmail.com>
-Date: Tue, 6 Dec 2011 22:07:24 +0800
-Message-ID: <CACVXFVPrAro=3t-wpbR_cVahzcx7SCa2J=s2nyyKfQ6SG-i0VQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 6/7] media: video: introduce face detection driver module
-From: Ming Lei <ming.lei@canonical.com>
-To: Sylwester Nawrocki <snjw23@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ed04712f4f61e291ac784a8a77e2831981cfb9c1.1323156956.git.panweiping3@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: 0.2 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Dec 06, 2011 at 03:39:41PM +0800, Weiping Pan wrote:
+> Since commit c5ed63d66f24(tcp: fix three tcp sysctls tuning),
+> sysctl_max_syn_backlog is determined by tcp_hashinfo->ehash_mask,
+> and the minimal value is 128, and it will increase in proportion to the
+> memory of machine.
+> The original description for tcp_max_syn_backlog and sysctl_max_syn_backlog
+> are out of date.
+> 
+> Changelog:
+> V2: update description for sysctl_max_syn_backlog
+> 
+> Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+> ---
+>  Documentation/networking/ip-sysctl.txt |   10 +++++-----
+>  net/core/request_sock.c                |    7 ++++---
+>  2 files changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+> index f049a1c..589f2da 100644
+> --- a/Documentation/networking/ip-sysctl.txt
+> +++ b/Documentation/networking/ip-sysctl.txt
+> @@ -282,11 +282,11 @@ tcp_max_ssthresh - INTEGER
+>  	Default: 0 (off)
+>  
+>  tcp_max_syn_backlog - INTEGER
+> -	Maximal number of remembered connection requests, which are
+> -	still did not receive an acknowledgment from connecting client.
+> -	Default value is 1024 for systems with more than 128Mb of memory,
+> -	and 128 for low memory machines. If server suffers of overload,
+> -	try to increase this number.
+> +	Maximal number of remembered connection requests, which have not
+> +	received an acknowledgment from connecting client.
+> +	The minimal value is 128 for low memory machines, and it will
+> +	increase in proportion to the memory of machine.
+> +	If server suffers from overload, try increasing this number.
+>  
+>  tcp_max_tw_buckets - INTEGER
+>  	Maximal number of timewait sockets held by system simultaneously.
+> diff --git a/net/core/request_sock.c b/net/core/request_sock.c
+> index 182236b..9b570a6 100644
+> --- a/net/core/request_sock.c
+> +++ b/net/core/request_sock.c
+> @@ -26,10 +26,11 @@
+>   * but then some measure against one socket starving all other sockets
+>   * would be needed.
+>   *
+> - * It was 128 by default. Experiments with real servers show, that
+> + * The minimum value of it is 128. Experiments with real servers show that
+>   * it is absolutely not enough even at 100conn/sec. 256 cures most
+> - * of problems. This value is adjusted to 128 for very small machines
+> - * (<=32Mb of memory) and to 1024 on normal or better ones (>=256Mb).
+> + * of problems.
+> + * This value is adjusted to 128 for low memory machines,
+> + * and it will increase in proportion to the memory of machine.
+>   * Note : Dont forget somaxconn that may limit backlog too.
+>   */
+>  int sysctl_max_syn_backlog = 256;
+> -- 
+> 1.7.4.4
+> 
+> 
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-Thanks for your review.
-
-On Tue, Dec 6, 2011 at 5:55 AM, Sylwester Nawrocki <snjw23@gmail.com> wrote:
-> Hi Ming,
->
-> (I've pruned the Cc list, leaving just the mailing lists)
->
-> On 12/02/2011 04:02 PM, Ming Lei wrote:
->> This patch introduces one driver for face detection purpose.
->>
->> The driver is responsible for all v4l2 stuff, buffer management
->> and other general things, and doesn't touch face detection hardware
->> directly. Several interfaces are exported to low level drivers
->> (such as the coming omap4 FD driver)which will communicate with
->> face detection hw module.
->>
->> So the driver will make driving face detection hw modules more
->> easy.
->
->
-> I would hold on for a moment on implementing generic face detection
-> module which is based on the V4L2 video device interface. We need to
-> first define an API that would be also usable at sub-device interface
-> level (http://linuxtv.org/downloads/v4l-dvb-apis/subdev.html).
-
-If we can define a good/stable enough APIs between kernel and user space,
-I think the patches can be merged first. For internal kernel APIs, we should
-allow it to evolve as new hardware comes or new features are to be introduced.
-
-I understand the API you mentioned here should belong to kernel internal
-API, correct me if it is wrong.
-
-> AFAICS OMAP4 FDIF processes only data stored in memory, thus it seems
-> reasonable to use the videodev interface for passing data to the kernel
-> from user space.
->
-> But there might be face detection devices that accept data from other
-> H/W modules, e.g. transferred through SoC internal data buses between
-> image processing pipeline blocks. Thus any new interfaces need to be
-> designed with such devices in mind.
->
-> Also the face detection hardware block might now have an input DMA
-> engine in it, the data could be fed from memory through some other
-> subsystem (e.g. resize/colour converter). Then the driver for that
-> subsystem would implement a video node.
-
-I think the direct input image or frame data to FD should be from memory
-no matter the actual data is from external H/W modules or input DMA because
-FD will take lot of time to detect faces in one image or frame and FD can't
-have so much memory to cache several images or frames data.
-
-If you have seen this kind of FD hardware design, please let me know.
-
-> I'm for leaving the buffer handling details for individual drivers
-> and focusing on a standard interface for applications, i.e. new
-
-I think leaving buffer handling details in generic FD driver or
-individual drivers
-doesn't matter now, since it don't have effect on interfaces between kernel
-and user space.
-
-> ioctl(s) and controls.
->
->>
->> TODO:
->>       - implement FD setting interfaces with v4l2 controls or
->>       ext controls
->>
->> Signed-off-by: Ming Lei <ming.lei@canonical.com>
->> ---
->>  drivers/media/video/Kconfig       |    2 +
->>  drivers/media/video/Makefile      |    1 +
->>  drivers/media/video/fdif/Kconfig  |    7 +
->>  drivers/media/video/fdif/Makefile |    1 +
->>  drivers/media/video/fdif/fdif.c   |  645 +++++++++++++++++++++++++++++++++++++
->>  drivers/media/video/fdif/fdif.h   |  114 +++++++
->>  6 files changed, 770 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/media/video/fdif/Kconfig
->>  create mode 100644 drivers/media/video/fdif/Makefile
->>  create mode 100644 drivers/media/video/fdif/fdif.c
->>  create mode 100644 drivers/media/video/fdif/fdif.h
->
-> [...]
->
->> diff --git a/drivers/media/video/fdif/fdif.h b/drivers/media/video/fdif/fdif.h
->> new file mode 100644
->> index 0000000..ae37ab8
->> --- /dev/null
->> +++ b/drivers/media/video/fdif/fdif.h
->> @@ -0,0 +1,114 @@
->> +#ifndef _LINUX_FDIF_H
->> +#define _LINUX_FDIF_H
->> +
->> +#include <linux/types.h>
->> +#include <linux/magic.h>
->> +#include <linux/errno.h>
->> +#include <linux/kref.h>
->> +#include <linux/kernel.h>
->> +#include <linux/videodev2.h>
->> +#include <media/videobuf2-page.h>
->> +#include <media/v4l2-device.h>
->> +#include <media/v4l2-ioctl.h>
->> +#include <media/v4l2-ctrls.h>
->> +#include <media/v4l2-fh.h>
->> +#include <media/v4l2-event.h>
->> +#include <media/v4l2-common.h>
->> +
->> +#define MAX_FACE_COUNT               40
->> +
->> +#define      FACE_SIZE_20_PIXELS     0
->> +#define      FACE_SIZE_25_PIXELS     1
->> +#define      FACE_SIZE_32_PIXELS     2
->> +#define      FACE_SIZE_40_PIXELS     3
->
-> This is still OMAP4 FDIF specific, we need to think about v4l2 controls
-> for this. An ideal would be a menu control type that supports pixel size
-> (width/height), but unfortunately something like this isn't available
-> in v4l2 yet.
-
-Yes, it is on TODO list, :-)
-
->> +
->> +#define FACE_DIR_UP          0
->> +#define FACE_DIR_RIGHT               1
->> +#define FACE_DIR_LIFT                2
->> +
->> +struct fdif_fmt {
->> +     char  *name;
->> +     u32   fourcc;          /* v4l2 format id */
->> +     int   depth;
->> +     int   width, height;
->
-> Could width/height be negative ? I don't think it's the case for pixel
-> resolution. The more proper data type would be u32.
-
-Yes, they should be, will fix it in next version.
-
-> Please refer to struct v4l2_pix_format or struct v4l2_rect.
->
->> +};
->> +
->> +struct fdif_setting {
->> +     struct fdif_fmt            *fmt;
->> +     enum v4l2_field            field;
->> +
->> +     int                     min_face_size;
->> +     int                     face_dir;
->> +
->> +     int                     startx, starty;
->
-> s32
->
->> +     int                     sizex, sizey;
->
-> u32
->
->> +     int                     lhit;
->> +
->> +     int                     width, height;
->
-> u32
->
->> +};
->> +
->> +/* buffer for one video frame */
->> +struct fdif_buffer {
->> +     /* common v4l buffer stuff -- must be first */
->> +     struct vb2_buffer       vb;
->> +     struct list_head        list;
->> +};
->> +
->> +
->> +struct v4l2_fdif_result {
->> +     struct list_head                list;
->> +     unsigned int                    face_cnt;
->> +     struct v4l2_fd_detection        *faces;
->> +
->> +     /*v4l2 buffer index*/
->> +     __u32                           index;
->> +};
->> +
->> +struct fdif_dmaqueue {
->> +     struct list_head        complete;
->> +     struct list_head        active;
->> +     wait_queue_head_t       wq;
->> +};
->> +
->> +
->> +struct fdif_dev {
->> +     struct kref             ref;
->> +     struct device           *dev;
->> +
->> +     struct list_head        fdif_devlist;
->> +     struct v4l2_device      v4l2_dev;
->> +     struct vb2_queue        vbq;
->> +     struct mutex            mutex;
->> +     spinlock_t              lock;
->> +
->> +     struct video_device        *vfd;
->> +     struct fdif_dmaqueue    fdif_dq;
->> +
->> +     /*setting*/
->> +     struct fdif_setting     s;
->
-> yy, please make it more descriptive. e.g.
-
-Sounds reasonable, :-)
-
->
->        struct fdif_config      config;
->
->> +
->> +     struct fdif_ops *ops;
->> +
->> +     unsigned long   priv[0];
->> +};
->> +
-> [...]
->
-> --
->
-> Regards,
-> Sylwester
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-thanks,
---
-Ming Lei
