@@ -1,42 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab1LFT7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:59:41 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:43892 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752735Ab1LFT7k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:59:40 -0500
-Message-ID: <4EDE820E.5040006@xenotime.net>
-Date: Tue, 06 Dec 2011 12:58:54 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Martyn Welch <martyn.welch@ge.com>
-Subject: Re: linux-next: Tree for Dec 6 (staging/vme)
-References: <20111206154450.5e2ef2baed27993b23a55802@canb.auug.org.au>
-In-Reply-To: <20111206154450.5e2ef2baed27993b23a55802@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1753874Ab1LFT7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:59:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab1LFT7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 14:59:46 -0500
+Date: Tue, 06 Dec 2011 14:59:43 -0500 (EST)
+Message-Id: <20111206.145943.888247369587722446.davem@redhat.com>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@redhat.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On 12/05/2011 08:44 PM, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20111205:
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pB6K04Bh017255
 
 
-When CONFIG_GPIOLIB is not enabled:
+1) RTO_ONLINK state bit can be lost in routing cache entries, fix from
+   Julian Anastasov.
 
-drivers/staging/vme/devices/vme_pio2.h:237:19: error: field 'gc' has incomplete type
+2) INET peer validation fix could result in an OOPS if the call fails,
+   but allowing this operation to fail in the first place is the real
+   issue.  If we can't lookup the neighbour for the new gateway, simply
+   revert back to the old one.  We'll end up with another ICMP redirect
+   but that's fine and better than failing and having to add ugly recovery
+   code all over the place.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+3) FIFO overflow and packet processing race fixes in r8169 from
+   Fran√ßois Reomieu.
+
+4) pasemi_mac build was broken accidently, fix from Ben Hutchings.
+
+5) cfg80211 wireless race fixes from Luis R. Rodriguez.
+
+6) Reconfiguring HT40 after assosciation in iwlwifi results in a firmware
+   abort, so don't do it.  From Wey-Yi Guy.
+
+Please pull, thanks a lot.
+
+The following changes since commit 45e713efe2fa574b6662e7fb63fae9497c5e03d4:
+
+  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2011-12-05 16:54:15 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Ben Hutchings (1):
+      pasemi_mac: Fix building as module
+
+David S. Miller (2):
+      ipv4: Fix peer validation on cached lookup.
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+
+Johannes Berg (1):
+      iwlagn: fix HW crypto for TX-only keys
+
+John W. Linville (2):
+      Revert "mac80211: clear sta.drv_priv on reconfiguration"
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Julian Anastasov (1):
+      ipv4: make sure RTO_ONLINK is saved in routing cache
+
+Luis R. Rodriguez (2):
+      cfg80211: fix race on init and driver registration
+      cfg80211: amend regulatory NULL dereference fix
+
+Peter Pan(ÊΩòÂç´Âπ≥) (1):
+      ipv4:correct description for tcp_max_syn_backlog
+
+Simon Wunderlich (1):
+      mac80211: fill rate filter for internal scan requests
+
+Stephen Boyd (1):
+      net: Silence seq_scale() unused warning
+
+Wei Liu (1):
+      netback: Fix alert message.
+
+Wey-Yi Guy (2):
+      iwlwifi: do not re-configure HT40 after associated
+      iwlwifi: change the default behavior of watchdog timer
+
+fran√ßois romieu (2):
+      r8169: Rx FIFO overflow fixes.
+      r8169: fix Rx index race between FIFO overflow recovery and NAPI handler.
+
+ Documentation/networking/ip-sysctl.txt      |   10 +++---
+ drivers/net/ethernet/pasemi/Makefile        |    3 +-
+ drivers/net/ethernet/realtek/r8169.c        |   53 ++++++++++-----------------
+ drivers/net/wireless/iwlwifi/iwl-1000.c     |    1 +
+ drivers/net/wireless/iwlwifi/iwl-5000.c     |    1 +
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |   36 ++++++++++++-------
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c  |    5 ---
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |   34 +++++++++---------
+ drivers/net/wireless/iwlwifi/iwl-agn.h      |    2 +
+ drivers/net/wireless/iwlwifi/iwl-core.c     |   22 +++++++++---
+ drivers/net/wireless/iwlwifi/iwl-core.h     |    2 +
+ drivers/net/wireless/iwlwifi/iwl-shared.h   |    4 +-
+ drivers/net/xen-netback/netback.c           |    2 +-
+ net/core/request_sock.c                     |    7 ++--
+ net/core/secure_seq.c                       |    2 +
+ net/ipv4/route.c                            |   47 ++++++++++--------------
+ net/mac80211/main.c                         |    6 +++
+ net/mac80211/util.c                         |    1 -
+ net/wireless/reg.c                          |   49 ++++++++++++++++---------
+ 19 files changed, 155 insertions(+), 132 deletions(-)
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
