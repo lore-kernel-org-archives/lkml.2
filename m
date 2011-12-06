@@ -1,97 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884Ab1LFDeF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 22:34:05 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:34336 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756393Ab1LFDeD (ORCPT
+	id S1756558Ab1LFDiT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 22:38:19 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:51607 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756523Ab1LFDiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 22:34:03 -0500
-Message-ID: <4EDD8D1B.5040803@tao.ma>
-Date: Tue, 06 Dec 2011 11:33:47 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Yongqiang Yang <xiaoqiangnk@gmail.com>
-CC: Allison Henderson <achender@linux.vnet.ibm.com>,
-        Hugh Dickins <hughd@google.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Curt Wohlgemuth <curtw@google.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Rafael Wysocki <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
-References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>	<20111121165626.GD14568@thunk.org>	<alpine.LSU.2.00.1111211331120.1879@sister.anvils>	<alpine.LSU.2.00.1112051456580.3938@sister.anvils>	<4EDD729E.2060402@linux.vnet.ibm.com> <CAGBYx2YNKEiuRF31CaRiK2ROj_xmVsnL4rcWnoofyziYCkYjpw@mail.gmail.com>
-In-Reply-To: <CAGBYx2YNKEiuRF31CaRiK2ROj_xmVsnL4rcWnoofyziYCkYjpw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	Mon, 5 Dec 2011 22:38:18 -0500
+Date: Tue, 6 Dec 2011 14:38:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the memblock tree
+Message-Id: <20111206143808.3fa5f3785538a37c9686734d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__6_Dec_2011_14_38_08_+1100_YAB2kWqK3inb_TwP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 11:08 AM, Yongqiang Yang wrote:
-> Hi Allison,
-> 
-> I noticed another problem which has nothing to do with punching hole.
->  __block_write_begin does not zero buffers beyond EOF.(I guess you
-yes, that is expected.
-> tried to zero them in your code, am I right? )  When users mapread
-> beyond EOF,  users get non-zero data.  I am not sure zero or non-zero
-> data should be, but fsx thinks they should be zero data and reports an
-> error.
-why users can read the data passing EOF? I am also puzzled. Punching
-hole will do this? I don't think it's right.
+--Signature=_Tue__6_Dec_2011_14_38_08_+1100_YAB2kWqK3inb_TwP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks
-Tao
-> 
-> It I understand the problem right, it happens more often with punch hole.
-> 
-> Yongqiang.
-> On Tue, Dec 6, 2011 at 9:40 AM, Allison Henderson
-> <achender@linux.vnet.ibm.com> wrote:
->> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
->>>
->>> On Mon, 21 Nov 2011, Hugh Dickins wrote:
->>>>
->>>> On Mon, 21 Nov 2011, Ted Ts'o wrote:
->>>>>
->>>>> On Sun, Nov 20, 2011 at 12:59:10PM -0800, Hugh Dickins wrote:
->>>>>>
->>>>>> On Tue, 8 Nov 2011, Curt Wohlgemuth wrote:
->>>>>> It appears that there's a bug with this patch:
->>>
->>>
->>> This has been outstanding for a month now, and we've heard no progress:
->>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for rc5.
->>>
->>> The problems appear on a 1k-blocksize filesystem under memory pressure:
->>> the hunk in ext4_da_write_end() causes oops, because it's playing with
->>> a page after generic_write_end() dropped our last reference to it; and
->>> backing out the hunk in ext4_da_write_begin() is then found to stop
->>> rare data corruption seen when kbuilding.
->>>
->>> Although I earlier reported that backing out the patch caused an fsx
->>> test to fail earlier, I've since found great variation in how soon it
->>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
->>> I also reported that I had to go back to 2.6.38 for fsx not to fail
->>> under memory pressure: you won't be surprised that that turned out to
->>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
->>>
->>> Thanks,
->>> Hugh
->>>
->>
->>
->> Hi there,
->>
->> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
->> works well when blocksize < pagesize" ?  I have tried it and it does seem to
->> help, but I am still running into some failures that I am trying to debug,
->> but let please let us know if it helps the issues that you are seeing.  Thx!
->>
->> Allison Henderson
->>
-> 
-> 
-> 
+Hi Tejun,
 
+After merging the memblock tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+arch/powerpc/mm/numa.c: In function 'get_node_active_region':
+arch/powerpc/mm/numa.c:143:11: error: dereferencing pointer to incomplete t=
+ype
+arch/powerpc/mm/numa.c:144:11: error: dereferencing pointer to incomplete t=
+ype
+arch/powerpc/mm/numa.c:145:11: error: dereferencing pointer to incomplete t=
+ype
+arch/powerpc/mm/numa.c: In function 'mark_reserved_regions_for_nid':
+arch/powerpc/mm/numa.c:960:29: error: storage size of 'node_ar' isn't known
+arch/powerpc/mm/numa.c:960:29: error: unused variable 'node_ar' [-Werror=3D=
+unused-variable]
+cc1: all warnings being treated as errors
+
+Caused by commit 9d0d131f9f6d ("memblock: Kill early_node_map[]") which
+seems to have misspelled CONFIG_HAVE_MEMBLOCK_NODE_MAP as
+CONFIG_MEMBLOCK_HAVE_NODE_MAP in include/linux/mmzone.h.
+
+I have dropped the memblock tree for today - we can try again tomorrow.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__6_Dec_2011_14_38_08_+1100_YAB2kWqK3inb_TwP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO3Y4gAAoJEECxmPOUX5FEXnAP/0ur1LGLBKjbfSRk+Yk2gDN3
+eKTqHGN2ZkDhRqVJHUMrbXUYdJsr9SoGbBBE0m/qqiwJoOFpPT/HZRoIJ+NKoVzw
+Tpm6n/WObVPF/EKUNz6XEZzqy137bEEsaNNVSHGWNOpfPVfoACVMnRhcc9QKEOqo
+0TdCnr9trpVcIDjYoXbmhu9rDfK/pILxs+8awO5LETVlVQB/wc0RgUAhtyz8cHZ/
+h2+W7StF2dWgaMyjAIxsCGkRis2BREFVtlY+1ASIaebiQBAPga5aNl/VArlqrOi/
+HeeV4yttba2rM6/e9DCvJNfnSp8vd3pcoaad9Omv+VTkTApAcaFicQU7GiyycTeP
+mCnjQuTgwWzpuEKD7iYbnJ/klSoI4AJTzOtA8VovbAklh187dSZP5YeXMWSK+oHx
+kRGU+yVQ6isCyQsKz2Pr96IJeBxda6IzC0h5OxXH0K1sxeTM2oVKVq2uphkQgfGb
+pwK6bkVfebqf7r5SqyZ7qwQmHMigc1vOAWTfcbrMkDzYnXBuLycRZq4jDmFIveYm
+VbQtLzsC0erLhrxU9urEFKyXdxCSyQmhHWs1guWzrNTSPPLAPZH46SGz54PAOw2/
+z/OH3DUG0MsDrA5Snt9eLi4f9ss7SmSAkl7IPwqQS9oRwd1VpPBkofZLZVFy4apA
+f+AyXMLxBFAEkHrLU+2v
+=qNFz
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__6_Dec_2011_14_38_08_+1100_YAB2kWqK3inb_TwP--
