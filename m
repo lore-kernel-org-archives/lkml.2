@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab1LFVPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 16:15:13 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61320 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754522Ab1LFVPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 16:15:11 -0500
-Date: Tue, 6 Dec 2011 21:14:46 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jon Masters <jcm@redhat.com>
-Cc: mhban <mhban@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DavidHowells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michel Lespinasse <walken@google.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] ARM: futex: fix clobbering oldval
-Message-ID: <20111206211446.GB15640@mudshark.cambridge.arm.com>
-References: <1316660015.6872.1.camel@puffmine-laptop>
- <20110922172653.GH13572@e102144-lin.cambridge.arm.com>
- <1323197914.11696.30.camel@constitution.bos.jonmasters.org>
- <20111206191109.GB5385@mudshark.cambridge.arm.com>
- <1323200328.11696.32.camel@constitution.bos.jonmasters.org>
+	id S1754510Ab1LFVPn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 16:15:43 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:54112 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753394Ab1LFVPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 16:15:41 -0500
+Message-ID: <4EDE85F4.4020503@linux.vnet.ibm.com>
+Date: Tue, 06 Dec 2011 14:15:32 -0700
+From: Allison Henderson <achender@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323200328.11696.32.camel@constitution.bos.jonmasters.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hugh Dickins <hughd@google.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com> <alpine.LSU.2.00.1111201121120.1264@sister.anvils> <20111121165626.GD14568@thunk.org> <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils> <4EDD729E.2060402@linux.vnet.ibm.com> <alpine.LSU.2.00.1112060030220.1615@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1112060030220.1615@sister.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120621-3534-0000-0000-00000357BD3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 07:38:48PM +0000, Jon Masters wrote:
-> On Tue, 2011-12-06 at 19:11 +0000, Will Deacon wrote:
-> > On Tue, Dec 06, 2011 at 06:58:34PM +0000, Jon Masters wrote:
-> > > 
-> > > Was there ever any additional followup on this topic?
-> > 
-> > Yup, check commit df77abca ("ARM: 7099/1: futex: preserve oldval in SMP
-> > __futex_atomic_op"). It should be in stable for all affected kernels too.
-> 
-> Yea, Mark flagged that patch and it was included into the kernels on our
-> boards here. So far, it seems to be making some improvement, though we
-> still have stuck boards and weird signal issues sometimes. We are trying
-> to collect more data when this occurs (I gave the engineer concerned
-> some instructions around collecting data that will be of use). So I just
-> wondered if you saw any more futex issues, or if this is believe fixed.
+On 12/06/2011 01:55 AM, Hugh Dickins wrote:
+> On Mon, 5 Dec 2011, Allison Henderson wrote:
+>> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
+>>>
+>>> This has been outstanding for a month now, and we've heard no progress:
+>>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for rc5.
+>>>
+>>> The problems appear on a 1k-blocksize filesystem under memory pressure:
+>>> the hunk in ext4_da_write_end() causes oops, because it's playing with
+>>> a page after generic_write_end() dropped our last reference to it; and
+>>> backing out the hunk in ext4_da_write_begin() is then found to stop
+>>> rare data corruption seen when kbuilding.
+>>>
+>>> Although I earlier reported that backing out the patch caused an fsx
+>>> test to fail earlier, I've since found great variation in how soon it
+>>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
+>>> I also reported that I had to go back to 2.6.38 for fsx not to fail
+>>> under memory pressure: you won't be surprised that that turned out to
+>>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
+>>
+>> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
+>> works well when blocksize<  pagesize" ?  I have tried it and it does seem to
+>> help, but I am still running into some failures that I am trying to debug,
+>> but let please let us know if it helps the issues that you are seeing.  Thx!
+>
+> That 1/2, or the 2/2 "ext4: let ext4_discard_partial_buffers handle
+> pages without buffers correctly"?  The latter is mostly a reversion
+> of your 02fac1297eb3, so that's the one I need to fix the oops and
+> rare data corruption.  Perhaps you're suggesting 1/2 for fsx failures
+> under memory pressure?
+>
+> I've now tried the fsx test on three machines, with both 1/2 and 2/2
+> applied to 3.2-rc4.  On one machine, with ext2 on loop on tmpfs, the
+> fsx test failed in a couple of minutes with those patches; on another
+> machine, with ext2 on loop on tmpfs, it failed after about 40 minutes
+> with  the patches; on this laptop, with ext2 on SSD, it's just now
+> failed after 35 minutes with the patches.
+>
+> That's not to say that Yongqiang's patches aren't good; but I cannot
+> detect whether they make any improvement or not, since lasting for 2 or
+> 40 minutes is typical for fsx under memory pressure with recent kernels.
 
-I think this is fixed, but that doesn't mean there aren't bugs lurking
-elsewhere that I'm simply not seeing. If you do get any diagnostics or
-concrete debug information, please CC me on any posts to the list.
 
-Cheers,
+Well, initially I meant to just try the whole set, but now that I try 
+just one of them, I find that I get further with only the first one.  I 
+think Yongqiang and I have a similar set up because I get the hang if I 
+dont have the first patch, and I get the fsx write failure (in about 20 
+or so minutes) if I have the second one.  But I think Yongqiang's right, 
+we need to figure out why the page is uptodate when it shouldn't be.
 
-Will
+
+>
+> Hugh
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
