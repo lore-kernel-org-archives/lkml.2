@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab1LFWrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:47:25 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61798 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904Ab1LFWrY (ORCPT
+	id S1755484Ab1LFWr1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:47:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43118 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab1LFWrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Dec 2011 17:47:24 -0500
-Date: Tue, 6 Dec 2011 14:47:02 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Allison Henderson <achender@linux.vnet.ibm.com>
-cc: "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
-In-Reply-To: <4EDE85F4.4020503@linux.vnet.ibm.com>
-Message-ID: <alpine.LSU.2.00.1112061432000.1949@sister.anvils>
-References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com> <alpine.LSU.2.00.1111201121120.1264@sister.anvils> <20111121165626.GD14568@thunk.org> <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils>
- <4EDD729E.2060402@linux.vnet.ibm.com> <alpine.LSU.2.00.1112060030220.1615@sister.anvils> <4EDE85F4.4020503@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Tue, 6 Dec 2011 14:47:21 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mike Galbraith <efault@gmx.de>, Paul Menage <paul@paulmenage.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [patch-final] Re: patch] cpusets, cgroups: disallow attaching
+ kthreadd
+Message-Id: <20111206144721.7b1d473d.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	<4E7C2E7F.40307@cn.fujitsu.com>
+	<1316762345.8168.4.camel@marge.simson.net>
+	<alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	<1316770936.6641.11.camel@marge.simson.net>
+	<1316775204.7562.9.camel@marge.simson.net>
+	<alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	<1316788392.6544.33.camel@marge.simson.net>
+	<1318224892.6161.45.camel@marge.simson.net>
+	<1318233815.6527.5.camel@marge.simson.net>
+	<1318925436.9641.23.camel@marge.simson.net>
+	<CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com>
+	<1319001860.6222.34.camel@marge.simson.net>
+	<alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Dec 2011, Allison Henderson wrote:
-> On 12/06/2011 01:55 AM, Hugh Dickins wrote:
-> > On Mon, 5 Dec 2011, Allison Henderson wrote:
+On Tue, 6 Dec 2011 12:13:10 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
+
+> On Thu, 10 Nov 2011, David Rientjes wrote:
+> 
+> > On Wed, 26 Oct 2011, David Rientjes wrote:
+> > 
+> > > On Wed, 19 Oct 2011, Mike Galbraith wrote:
 > > > 
-> > > Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
-> > > works well when blocksize<  pagesize" ?  I have tried it and it does
-> > > seem to
-> > > help, but I am still running into some failures that I am trying to
-> > > debug,
-> > > but let please let us know if it helps the issues that you are seeing.
-> > > Thx!
+> > > > cpusets, cgroups: disallow attaching kthreadd
+> > > > 
+> > > > Allowing kthreadd to be moved to a non-root group makes no sense, it being
+> > > > a global resource, and needlessly leads unsuspecting users toward trouble.
+> > > > 
+> > > > 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+> > > > allocated is not schedulable.  Simple user error, but harmful to the box.
+> > > > 
+> > > > 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+> > > > rendering the cpuset immortal.
+> > > > 
+> > > > Save the user some unexpected trouble, just say no.
+> > > > 
+> > > > Signed-off-by: Mike Galbraith <efault@gmx.de>
+> > > > Acked-by: David Rientjes <rientjes@google.com>
+> > > > Acked-by: Paul Menage <paul@paulmenage.org>
+> > > > 
+> > > 
+> > > Let's add Andrew to the cc so we can get it in -mm, I haven't seen it hit 
+> > > linux-next yet.
+> > > 
 > > 
-> > That 1/2, or the 2/2 "ext4: let ext4_discard_partial_buffers handle
-> > pages without buffers correctly"?  The latter is mostly a reversion
-> > of your 02fac1297eb3, so that's the one I need to fix the oops and
-> > rare data corruption.  Perhaps you're suggesting 1/2 for fsx failures
-> > under memory pressure?
+> > Ping?  Still missing from -mm and linux-next.
 > > 
-> > I've now tried the fsx test on three machines, with both 1/2 and 2/2
-> > applied to 3.2-rc4.  On one machine, with ext2 on loop on tmpfs, the
-> > fsx test failed in a couple of minutes with those patches; on another
-> > machine, with ext2 on loop on tmpfs, it failed after about 40 minutes
-> > with  the patches; on this laptop, with ext2 on SSD, it's just now
-> > failed after 35 minutes with the patches.
-> > 
-> > That's not to say that Yongqiang's patches aren't good; but I cannot
-> > detect whether they make any improvement or not, since lasting for 2 or
-> > 40 minutes is typical for fsx under memory pressure with recent kernels.
 > 
+> Ping #2?
 > 
-> Well, initially I meant to just try the whole set, but now that I try just
-> one of them, I find that I get further with only the first one.  I think
-> Yongqiang and I have a similar set up because I get the hang if I dont have
-> the first patch, and I get the fsx write failure (in about 20 or so minutes)
-> if I have the second one.  But I think Yongqiang's right, we need to figure
-> out why the page is uptodate when it shouldn't be.
 
-I've not seen a hang myself.  I'm reluctant to drop the second patch,
-since it appears to fix the real problems (oops and corruption) that
-I have seen, and fsx fails with or without it; but I don't know whether
-it's any better than simply reverting yours.
+Why am I being pinged about scheduler patches?  My sole contribution
+to this one is to point out that "its"->possessive and "it's"->"it is".
 
-I would certainly like fsx under memory pressure to be reliable again -
-that will help all our testing of new changes; but I think it's more
-urgent to get normal loads to be reliable again.
+Also, Peter has said
 
-If you can call building on -t ext2 -b 1024 under memory pressure normal ;)
+: I really think that if we want to restrain userspace from doing
+: something stupid we might as well do something that makes sense, and
+: that is mandate kthreadd stays in the root group at all times for
+: everybody.
 
-Hugh
+which appears to be what the patch already did, so I'm confused again.
+
+It's time for a fresh resend, IMO.
