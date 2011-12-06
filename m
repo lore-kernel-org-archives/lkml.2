@@ -1,155 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386Ab1LFLmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 06:42:09 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:54574 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933231Ab1LFLmI (ORCPT
+	id S933380Ab1LFLnI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 06:43:08 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62473 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933231Ab1LFLnG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 06:42:08 -0500
-X-IronPort-AV: E=Sophos;i="4.71,304,1320624000"; 
-   d="scan'208";a="9313514"
-Subject: Re: [PATCH 1/2] xen/granttable: Support sub-page grants
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: "annie.li@oracle.com" <annie.li@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>
-Date: Tue, 6 Dec 2011 11:42:06 +0000
-In-Reply-To: <1323168999-4434-1-git-send-email-annie.li@oracle.com>
-References: <4EDDF41E.8070200@oracle.com>
-	 <1323168999-4434-1-git-send-email-annie.li@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323171726.23681.65.camel@zakaz.uk.xensource.com>
+	Tue, 6 Dec 2011 06:43:06 -0500
 MIME-Version: 1.0
+In-Reply-To: <20111206113131.GE17194@sirena.org.uk>
+References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
+	<20111206113131.GE17194@sirena.org.uk>
+Date: Tue, 6 Dec 2011 13:43:06 +0200
+Message-ID: <CAMP44s0VSdVo6EhvgVUcwryK39iss0mvDbxKjaeH_S+Vp4DwBw@mail.gmail.com>
+Subject: Re: [PATCH] mfd: add bq2415x charger driver
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "Pali Roh??r" <pali.rohar@gmail.com>,
+        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
+        Vladimir Zapolskiy <vz@mleia.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-06 at 10:56 +0000, annie.li@oracle.com wrote:
-> From: Annie Li <annie.li@oracle.com>
-> 
->     -- They can't be used to map the page (so can only be used in a GNTTABOP_copy
->        hypercall).
->     -- It's possible to grant access with a finer granularity than whole pages.
->     -- Xen guarantees that they can be revoked quickly (a normal map grant can
->        only be revoked with the cooperation of the domain which has been granted
->        access).
-> 
+On Tue, Dec 6, 2011 at 1:31 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, Dec 06, 2011 at 12:35:41AM +0200, Felipe Contreras wrote:
+>
+>> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
+>> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+>> @@ -925,6 +925,9 @@ static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_2[] = {
+>>               I2C_BOARD_INFO("bq27200", 0x55),
+>>       },
+>>  #endif
+>> +     {
+>> +             I2C_BOARD_INFO("bq24150", 0x6b),
+>> +     },
+>
+> Clearly this is orthogonal.
 
-Almost all my comments will apply to the transitive grants patch too.
+Yes, I added it just to demonstrate how to activate it.
 
-> Signed-off-by: Annie Li <annie.li@oracle.com>
-> ---
->  drivers/xen/grant-table.c |   41 +++++++++++++++++++++++++++++++++++++++++
->  include/xen/grant_table.h |   13 +++++++++++++
->  2 files changed, 54 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index bd325fd..7a0f4d1 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -261,6 +261,47 @@ int gnttab_grant_foreign_access(domid_t domid, unsigned long frame,
->  }
->  EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access);
->  
-> +int gnttab_grant_foreign_access_subpage_v2(domid_t domid, unsigned long frame,
-> +					   int flags, unsigned page_off,
-> +					   unsigned length)
+>> +static inline int bq2415x_i2c_read(struct i2c_client *cli, u8 reg)
+>> +{
+>> +     return i2c_smbus_read_byte_data(cli, reg);
+>> +}
+>> +
+>> +static inline int bq2415x_i2c_write(struct i2c_client *cli, u8 reg, u8 val)
+>> +{
+>> +     return i2c_smbus_write_byte_data(cli, reg, val);
+>> +}
+>
+> regmap might be useful here (it's got an update bits operation and
+> cache).
 
-Please drop the v2 suffixes on the public functions.
+Will take a look.
 
-Any reason not to route these via the ops table for consistency with all
-the other ops? Then your availability check becomes a test for NULL fn
-pointer rather than a specific version.
+>> +static int bq2415x_set_current_limit(struct i2c_client *cli,
+>> +             int min_uA, int max_uA)
+>> +{
+>> +     int res;
+>> +
+>> +     res = bq2415x_i2c_read(cli, BQ2415X_GEN_CTL);
+>> +     if (res < 0)
+>> +             return res;
+>> +
+>> +     res &= ~BQ2415X_IIN_LIMIT_UNLIM_MASK;
+>> +
+>> +     if (min_uA >= BQ2415X_IIN_LIMIT_100 && max_uA < BQ2415X_IIN_LIMIT_500)
+>> +             ;
+>> +     else if (min_uA >= BQ2415X_IIN_LIMIT_500 && max_uA < BQ2415X_IIN_LIMIT_800)
+>> +             res |= BQ2415X_IIN_LIMIT_500_MASK;
+>> +     else if (min_uA >= BQ2415X_IIN_LIMIT_800 && max_uA < BQ2415X_IIN_LIMIT_UNLIM)
+>> +             res |= BQ2415X_IIN_LIMIT_800_MASK;
+>> +     else if (min_uA >= BQ2415X_IIN_LIMIT_UNLIM)
+>> +             res |= BQ2415X_IIN_LIMIT_UNLIM_MASK;
+>> +     else
+>> +             return -EINVAL;
+>> +
+>> +     return bq2415x_i2c_write(cli, BQ2415X_GEN_CTL, res);
+>> +}
+>
+> This is the sort of stuff that people were pushing through the regulator
+> API (and you have cloned the interface...) in order to allow a separate
+> bit of code to pick the current limits.  At the minute it looks like
+> you're hard coding the settings, the regulator API would at least let
+> you punt those to machines with fixed configurations and provides a hook
+> for anything which does want to play with the configuration at runtime.
+> Don't know if there's a better API, but it does seem like this is a
+> general thing for chargers and should therefore go through a generic
+> API.
 
-> +{
-> +	int ref;
-> +
-> +	ref = get_free_entries(1);
-> +	if (unlikely(ref < 0))
-> +		return -ENOSPC;
-> +
-> +	gnttab_grant_foreign_access_ref_subpage_v2(ref, domid, frame, flags,
-> +						   page_off, length);
-> +
-> +	return ref;
-> +}
-> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_subpage_v2);
-> +
-> +void gnttab_grant_foreign_access_ref_subpage_v2(grant_ref_t ref, domid_t domid,
-> +						unsigned long frame, int flags,
-> +						unsigned page_off,
-> +						unsigned length)
-> +{
-> +	BUG_ON(flags & (GTF_accept_transfer | GTF_reading |
-> +			GTF_writing | GTF_transitive));
-> +	BUG_ON(grant_table_version == 1);
+Yes, for this particular case the regulator API might be useful, but I
+don't see how external code will use this. Will they have to search
+for the name of this regulator, and then try to change the
+current_limit?
 
-Returning -Esomething might be less drastic? ENOSYS perhaps?
+Anyway, there are other levels I'm not sure the regulator interface is
+good for, like a "weak battery" voltage threshold, that most likely
+would only make sense to handle internally in the driver.
 
-> +	gnttab_shared.v2[ref].sub_page.frame = frame;
-> +	gnttab_shared.v2[ref].sub_page.page_off = page_off;
-> +	gnttab_shared.v2[ref].sub_page.length = length;
-> +	gnttab_shared.v2[ref].hdr.domid = domid;
-> +	wmb();
-> +	gnttab_shared.v2[ref].hdr.flags =
-> +				GTF_permit_access | GTF_sub_page | flags;
-> +}
-> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_ref_subpage_v2);
-> +
-> +bool gnttab_subpage_trans_grants_available(void)
-> +{
-> +	return grant_table_version == 2;
-> +}
+> On the other hand if you just set limits and let the charger get on with
+> its thing and run autonomously starting, stopping and fast charging by
+> itself then a power supply driver seems like a good fit - just provide
+> the upper limits as platform data or something and watch it go.
 
-It's not clear this adds anything over and above letting the user query
-the grant table version. It's hard to tell since there are no users
-presented here though. Perhaps separate subpage and transitive functions
-would be cleaner?
+It would have to change its behavior depending on external events,
+like charger plugged/unplugged, different types of chargers, and so
+on. I'm thinking the rx51 board code could join some hooks from
+isp1704 (which detects the events) into this driver.
 
-> +EXPORT_SYMBOL_GPL(gnttab_subpage_trans_grants_available);
-> +
->  static int gnttab_query_foreign_access_v1(grant_ref_t ref)
->  {
->  	return gnttab_shared.v1[ref].flags & (GTF_reading|GTF_writing);
-> diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
-> index fea4954..7e43652 100644
-> --- a/include/xen/grant_table.h
-> +++ b/include/xen/grant_table.h
-> @@ -62,6 +62,15 @@ int gnttab_resume(void);
->  
->  int gnttab_grant_foreign_access(domid_t domid, unsigned long frame,
->  				int readonly);
-> +int gnttab_grant_foreign_access_subpage_v2(domid_t domid, unsigned long frame,
-> +					   int flags, unsigned page_off,
-> +					   unsigned length);
+Cheers.
 
-> +
-> +/*
-> + * Are sub-page or transitive grants available on this version of Xen?  Returns
-> + * true if they are, and false if they're not.
-> + */
-> +bool gnttab_subpage_trans_grants_available(void);
->  
->  /*
->   * End access through the given grant reference, iff the grant entry is no
-> @@ -108,6 +117,10 @@ void gnttab_cancel_free_callback(struct gnttab_free_callback *callback);
->  
->  void gnttab_grant_foreign_access_ref(grant_ref_t ref, domid_t domid,
->  				     unsigned long frame, int readonly);
-> +void gnttab_grant_foreign_access_ref_subpage_v2(grant_ref_t ref, domid_t domid,
-> +						unsigned long frame, int flags,
-> +						unsigned page_off,
-> +						unsigned length);
->  
->  void gnttab_grant_foreign_transfer_ref(grant_ref_t, domid_t domid,
->  				       unsigned long pfn);
-
-
+-- 
+Felipe Contreras
