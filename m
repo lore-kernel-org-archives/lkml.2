@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab1LFWPW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:15:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39350 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab1LFWPV (ORCPT
+	id S1755272Ab1LFWTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:19:20 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59691 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab1LFWTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:15:21 -0500
-Date: Wed, 7 Dec 2011 02:15:15 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, proc: Add start_data, end_data, start_brk members to
- /proc/$pid/stat v2
-Message-ID: <20111206221515.GP29781@moon>
-References: <20111205182010.GV14515@moon>
- <20111206140833.3b43fbeb.akpm@linux-foundation.org>
+	Tue, 6 Dec 2011 17:19:19 -0500
+Message-ID: <4EDE94DC.8010106@canonical.com>
+Date: Tue, 06 Dec 2011 14:19:08 -0800
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206140833.3b43fbeb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com> <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+In-Reply-To: <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 02:08:33PM -0800, Andrew Morton wrote:
-> On Mon, 5 Dec 2011 22:20:11 +0400
-> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+On 12/06/2011 01:07 PM, Linus Torvalds wrote:
+> On Tue, Dec 6, 2011 at 12:53 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>
+>> The trouble is, might very well stop *NOT* at the global root.  Consider
+>> a race with umount -l; we have no way to tell "it had been outside of
+>> chroot jail" from "it had walked up to the place where ->mnt_parent had
+>> been already reset, sorry, no idea what it was".
 > 
-> > It helps to dump and restore this mm_struct members.
+> Sure, but you made that case return NULL already as part of the "no
+> bastard" case, didn't you?
 > 
-> Sorry, I'm not going to apply a patch with a changelog like that.
->
-
-OK, I'll update it. The problem is that while we "read" this entries
-from procfs, the restoration is supposed to be done via prctl interface
-(the patch is in fly, and I'm trying to improve it at moment).
-
-> It needs a full description of how this will be used and why it is
-> needed.  So that others can understand and evaluate the proposal, and
-> any possible alternatives.
+> That part of the patch looked fine.
 > 
-> Such a description would also let us see whether this is just some
-> "hey, maybe we'll use this sometime" thing, in which case it should not
-> yet be applied.
-
-I understand.
-
+> It was just the extra convolutions around 'bastard' that seemed to be
+> over-designed, and made for just a single use that seems very
+> peripheral anyway.
 > 
-> >  fs/proc/array.c |    7 +++++--
+it is, and the plan is to not need the bastard even.  What apparmor should
+be doing is lazy labeling the live objects, and anything that is disconnected
+is evaluated based on the previous labeling.  This will also remove its
+use of passing root = { NULL, NULL } to __d_path.
+
+> Apart from AppArmor, afaik nobody even really cared where they ended
+> up, and even AppArmor really didn't want to know - it just had this
+> totally crazy special case about "/sys".
 > 
-> Also, every change to any procfs interface should have an associated
-> change to procfs documentation.  If no relevant document exists then
-> heck, write one.  No exceptions.
->
 
-ok, thanks.
+right it only cared about where it endup in the cases of reaching the fs->root
+or own_mnt.  The sys case really is just broken, I started looking at it when
+Al poked me and said wtf, and have been looking at ways to remove it.
 
-	Cyrill
+Right now we could drop the bastard parameter and passing root = { NULL, NULL }
+__d_path and only break in the case of some chroot situations, which is not the
+standard use case anyways.  We are willing to drop support for this, and it can
+be picked backup when the labeling patch is done.
+
