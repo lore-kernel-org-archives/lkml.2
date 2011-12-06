@@ -1,105 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab1LFFwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 00:52:11 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51413 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751867Ab1LFFwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 00:52:07 -0500
-Date: Tue, 6 Dec 2011 06:50:23 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steffen Persvold <sp@numascale.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbarnes@virtuousgeek.org, tglx@linutronix.de,
-        daniel@numascale-asia.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/apic] x86: Add NumaChip support
-Message-ID: <20111206055023.GB1580@elte.hu>
-References: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com>
- <tip-44b111b519160e33fdc41eadb39af86a24707edf@git.kernel.org>
- <20111205203130.GA12364@elte.hu>
- <4EDD5D77.3030101@numascale.com>
+	id S932851Ab1LFFyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 00:54:40 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:40312
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751870Ab1LFFyj convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 00:54:39 -0500
+X-SpamScore: -17
+X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: RE: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+Thread-Topic: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+Thread-Index: AQHMsnlB4tyTDOR3uEmPDrmj3tcvppXN3aMAgABI6ACAAB4tMA==
+Date: Tue, 6 Dec 2011 05:54:35 +0000
+Message-ID: <65EE16ACC360FA4D99C96DC085B3F7723458DA@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+ <1322999384-7886-2-git-send-email-b29396@freescale.com>
+ <CACRpkdaYz+-nZA6atxA+5kvWOO84YeSHQPNiojq_R4zkHUGz3Q@mail.gmail.com>
+ <20111205211838.GG27267@pengutronix.de>
+In-Reply-To: <20111205211838.GG27267@pengutronix.de>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.89]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4EDD5D77.3030101@numascale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> -----Original Message-----
+> From: Sascha Hauer [mailto:s.hauer@pengutronix.de]
+> Sent: Tuesday, December 06, 2011 5:19 AM
+> To: Linus Walleij
+> Cc: Dong Aisheng-B29396; linux-kernel@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linus.walleij@stericsson.com; Guo Shawn-
+> R65073; kernel@pengutronix.de
+> Subject: Re: [RFC PATCH 2/3] pinctrl: imx: add pinmux-imx53 support
+> 
+> On Mon, Dec 05, 2011 at 05:57:42PM +0100, Linus Walleij wrote:
+> > On Sun, Dec 4, 2011 at 12:49 PM, Dong Aisheng <b29396@freescale.com>
+> wrote:
+> >
+> > > +enum imx_mx53_pads {
+> > > +       MX53_GPIO_19 = 0,
+> > > +       MX53_KEY_COL0 = 1,
+> > (...)
+> >
+> > First I thought it looked a bit strange since you needed enums for all
+> > pads but then I realized that your macros use the same enumerator name
+> > to name the pad and then it looks sort of clever.
+> >
+> > But maybe put in a comment about that here:
+> >
+> > > +/* Pad names for the pinmux subsystem */
+> >
+> > Like this:
+> >
+> > /*
+> >  * Pad names for the pinmux subsystem.
+> >  * These pad names are constructed from the pin enumerator names
+> >  * in the IMX_PINCTRL_PIN() macro.
+> >  */
+> >
+> > > +static const struct pinctrl_pin_desc mx53_pads[] = {
+> > > +       IMX_PINCTRL_PIN(MX53_GPIO_19),
+> > > +       IMX_PINCTRL_PIN(MX53_KEY_COL0),
+> > (...)
+> >
+> > > +/* mx53 pin groups and mux mode */
+> > > +static const unsigned mx53_fec_pins[] = {
+> > > +       MX53_FEC_MDC,
+> > > +       MX53_FEC_MDIO,
+> > > +       MX53_FEC_REF_CLK,
+> > > +       MX53_FEC_RX_ER,
+> > > +       MX53_FEC_CRS_DV,
+> > > +       MX53_FEC_RXD1,
+> > > +       MX53_FEC_RXD0,
+> > > +       MX53_FEC_TX_EN,
+> > > +       MX53_FEC_TXD1,
+> > > +       MX53_FEC_TXD0,
+> > > +};
+> >
+> > I understand this.
+> >
+> > > +static const unsigned mx53_fec_mux[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0,
+> > > +0 };
+> >
+> > But what is this? Just zeroes? Why?
+> > Especially with a const so they really cannot be anything else. The
+> > same pin (0) can only be enumerated once.
+> >
+> > > +static const unsigned mx53_sd1_pins[] = {
+> > > +       MX53_SD1_CMD,
+> > > +       MX53_SD1_CLK,
+> > > +       MX53_SD1_DATA0,
+> > > +       MX53_SD1_DATA1,
+> > > +       MX53_SD1_DATA2,
+> > > +       MX53_SD1_DATA3,
+> > > +
+> > > +};
+> > > +static const unsigned mx53_sd1_mux[] = { 0, 0, 0, 0, 0, 0 };
+> >
+> > And here again.
+> >
+> > > +static const unsigned mx53_sd3_pins[] = {
+> > > +       MX53_PATA_DATA8,
+> > > +       MX53_PATA_DATA9,
+> > > +       MX53_PATA_DATA10,
+> > > +       MX53_PATA_DATA11,
+> > > +       MX53_PATA_DATA0,
+> > > +       MX53_PATA_DATA1,
+> > > +       MX53_PATA_DATA2,
+> > > +       MX53_PATA_DATA3,
+> > > +       MX53_PATA_IORDY,
+> > > +       MX53_PATA_RESET_B,
+> > > +
+> > > +};
+> > > +static const unsigned mx53_sd3_mux[] = { 4, 4, 4, 4, 4, 4, 4, 4, 2,
+> > > +2 };
+> >
+> > This also looks strange. Can you explain what these muxes are?
+> 
+> Freescale has named the pins after their primary function which is quite
+> confusing.
+> 
+> The above means:
+> 
+> MX53_PATA_DATA8 -> mux mode 4
+> MX53_PATA_DATA9 -> mux mode 4
+> ...
+> 
+> This brings me to the point that currently we have the pins described as
+> 
+> #define MX53_PAD_<name>__<function>
+> 
+> which means that you don't have to look into the datasheet to get the
+> different options for a pin (and don't have a chance to get it wrong).
+> I don't really want to lose this.
+> 
+Obviously current used pin defines in that way is pretty good.
+And I also don't want to lose this.
 
-* Steffen Persvold <sp@numascale.com> wrote:
+Actually I also have tried to see if we can reuse the current iomux-v3 code.
 
-> On 12/5/2011 21:31, Ingo Molnar wrote:
-> []
-> > There's a new build failure caused by this commit:
-> 
-> It's this commit actually :
-> 
-> Commit-ID:  64be4c1c2428e148de6081af235e2418e6a66dda
-> Gitweb:     http://git.kernel.org/tip/64be4c1c2428e148de6081af235e2418e6a66dda
-> Author:     Daniel J Blueman <daniel@numascale-asia.com>
-> AuthorDate: Mon, 5 Dec 2011 16:20:37 +0800
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Mon, 5 Dec 2011 17:17:21 +0100
-> 
-> x86: Add x86_init platform override to fix up NUMA core numbering
-> 
-> > 
-> >   arch/x86/kernel/cpu/common.c:1149:2: error: â€˜struct cpuinfo_x86â€™ has no member named â€˜phys_proc_idâ€™
-> > 
-> > Note that the config is a !SMP one - that's probably the key
-> > detail.
-> 
-> Yes, phys_proc_id in struct cpuinfo_x86 is covered within "ifdef CONFIG_SMP".
-> 
-> > 
-> > Please send a delta fix that resolves this bug. You can find the
-> > current lineup in:
-> > 
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
-> > 
-> 
-> Will do, should be fairly simple. Something in the lines of the attached should work (tested).
-> 
-> Note: I used "ifdef CONFIG_NUMA" simply because it doesn't make sense in a non-numa configuration even with SMP enabled. Besides, the only place where it is called right now is in kernel/cpu/amd.c:srat_detect_node() within the "CONFIG_NUMA" protected part.
-> 
-> Cheers,
-> -- 
-> Steffen Persvold, Chief Architect NumaChip
-> Numascale AS - www.numascale.com
-> Tel: +47 92 49 25 54 Skype: spersvold
+For current pinmux driver, one approach I can see is that define mux
+in enum for each pin like:
 
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index ad4da45..a70bd5b 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -1146,7 +1146,9 @@ static void dbg_restore_debug_regs(void)
->   */
->  void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
->  {
-> +#ifdef CONFIG_NUMA
->  	pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
-> +#endif
->  }
+enum MX53_PAD_GPIO_19_MUX {
+        MX53_PAD_GPIO_19__KPP_COL_5,
+        MX53_PAD_GPIO_19__GPIO4_5,
+        MX53_PAD_GPIO_19__CCM_CLKO,
+        MX53_PAD_GPIO_19__SPDIF_OUT1,
+        MX53_PAD_GPIO_19__RTC_CE_RTC_EXT_TRIG2,
+        MX53_PAD_GPIO_19__ECSPI1_RDY,
+        MX53_PAD_GPIO_19__FEC_TDATA_3,
+        MX53_PAD_GPIO_19__SRC_INT_BOOT,
+};
+Then put them in a common file for each mx53 based board to use.
 
-Yep, this should do the trick - i'll need a Signed-off-by line 
-to apply it.
+Take uart1 as an example, it could be:
+static const unsigned mx53_uart1_pins[] = {
+        MX53_CSI0_DAT10,
+        MX53_CSI0_DAT11,
+};
 
-Ideally i think c->phys_proc_id should should be available 
-regardless of CONFIG_SMP or CONFIG_NUMA considerations - but 
-that would be a wider change. (feel free to have a shot at it 
-though, in addition to the fix above)
+static const unsigned mx53_uart1_mux[] = {
+        MX53_CSI0_DAT10__UART1_TXD_MUX,
+        MX53_CSI0_DAT11__UART1_RXD_MUX
+};
 
-Thanks,
+static const struct imx_pin_group mx53_pin_groups[] = {
+        IMX_PIN_GROUP("uart1grp", mx53_uart1_pins, mx53_uart1_mux),
+};
 
-	Ingo
+The benefit is that it's very clear and good maintainable.
+The defect is it will increase the code size a lot by defining all
+pin's mux enum and each pin's mux array in board file.
+
+Do you think if it's ok or you have any better idea?
+
+Regards
+Dong Aisheng
+
