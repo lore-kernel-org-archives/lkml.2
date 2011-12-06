@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab1LFJtY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 04:49:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34871 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933026Ab1LFJtX (ORCPT
+	id S933123Ab1LFJtf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 04:49:35 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:42708 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933026Ab1LFJtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 04:49:23 -0500
-Date: Tue, 6 Dec 2011 01:48:52 -0800
-From: tip-bot for Andrew Vagin <avagin@openvz.org>
-Message-ID: <tip-b781a602ac745ee3d5d745276f1e1905a2c101f9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, avagin@openvz.org,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, avagin@openvz.org,
-        mingo@elte.hu
-In-Reply-To: <1322471015-107825-8-git-send-email-avagin@openvz.org>
-References: <1322471015-107825-8-git-send-email-avagin@openvz.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] events, sched: Add tracepoint for accounting blocked time
-Git-Commit-ID: b781a602ac745ee3d5d745276f1e1905a2c101f9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	Tue, 6 Dec 2011 04:49:33 -0500
+Date: Tue, 6 Dec 2011 09:49:28 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "acme@redhat.com" <acme@redhat.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "robert.richter@amd.com" <robert.richter@amd.com>,
+        "ravitillo@lbl.gov" <ravitillo@lbl.gov>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "rth@twiddle.net" <rth@twiddle.net>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>
+Subject: Re: [PATCH 00/12] perf_events: add support for sampling taken
+ branches (v2)
+Message-ID: <20111206094927.GA25782@mudshark.cambridge.arm.com>
+References: <1318595833-29984-1-git-send-email-eranian@google.com>
+ <1323124766.32012.49.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Dec 2011 01:48:57 -0800 (PST)
+In-Reply-To: <1323124766.32012.49.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b781a602ac745ee3d5d745276f1e1905a2c101f9
-Gitweb:     http://git.kernel.org/tip/b781a602ac745ee3d5d745276f1e1905a2c101f9
-Author:     Andrew Vagin <avagin@openvz.org>
-AuthorDate: Mon, 28 Nov 2011 12:03:35 +0300
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Dec 2011 08:51:23 +0100
+On Mon, Dec 05, 2011 at 10:39:26PM +0000, Peter Zijlstra wrote:
+> On Fri, 2011-10-14 at 14:37 +0200, Stephane Eranian wrote:
+> > This patchset adds an important and useful new feature to
+> > perf_events: branch stack sampling. In other words, the
+> > ability to capture taken branches into each sample.
+> > 
+> Other than the few comments given it all looks good. My main worry is
+> the Intel only aspect, I'd really love for there to be another platform
+> that could implement at least part of this.
 
-events, sched: Add tracepoint for accounting blocked time
+I discussed this with Stephane in Prague and, although it would be lovely to
+have this on ARM, we simply don't have the hardware to do it. So the nature
+of series does seem to be x86-centric unless there's way to do a watered
+down version in software.
 
-This tracepoint shows how long a task is sleeping in uninterruptible state.
-
-E.g. it may show how long and where a mutex is waited for.
-
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1322471015-107825-8-git-send-email-avagin@openvz.org
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- include/trace/events/sched.h |    7 +++++++
- kernel/sched/fair.c          |    2 ++
- 2 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 959ff18..e33ed1b 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -331,6 +331,13 @@ DEFINE_EVENT(sched_stat_template, sched_stat_iowait,
- 	     TP_ARGS(tsk, delay));
- 
- /*
-+ * Tracepoint for accounting blocked time (time the task is in uninterruptible).
-+ */
-+DEFINE_EVENT(sched_stat_template, sched_stat_blocked,
-+	     TP_PROTO(struct task_struct *tsk, u64 delay),
-+	     TP_ARGS(tsk, delay));
-+
-+/*
-  * Tracepoint for accounting runtime (time the task is executing
-  * on a CPU).
-  */
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index cd3b642..7c62e2b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1030,6 +1030,8 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 				trace_sched_stat_iowait(tsk, delta);
- 			}
- 
-+			trace_sched_stat_blocked(tsk, delta);
-+
- 			/*
- 			 * Blocking time is in units of nanosecs, so shift by
- 			 * 20 to get a milliseconds-range estimation of the
+Will
