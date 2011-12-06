@@ -1,91 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932843Ab1LFBdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 20:33:11 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:41412 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932780Ab1LFBdK (ORCPT
+	id S932818Ab1LFBhU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 20:37:20 -0500
+Received: from utopia.booyaka.com ([72.9.107.138]:38487 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932809Ab1LFBhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 20:33:10 -0500
-Date: Tue, 6 Dec 2011 05:33:06 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 5/5] power: sbs-battery: Change power supply name
-Message-ID: <20111206013305.GB3065@oksana.dev.rtsoft.ru>
-References: <1323129487-24859-1-git-send-email-rklein@nvidia.com>
- <1323129487-24859-5-git-send-email-rklein@nvidia.com>
+	Mon, 5 Dec 2011 20:37:18 -0500
+Date: Mon, 5 Dec 2011 18:37:17 -0700 (MST)
+From: Paul Walmsley <paul@pwsan.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Mike Turquette <mturquette@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jeremy.kerr@canonical.com, broonie@opensource.wolfsonmicro.com,
+        tglx@linutronix.de, linus.walleij@stericsson.com,
+        amit.kucheria@linaro.org, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
+        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org, Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v3 3/5] clk: introduce the common clock framework
+In-Reply-To: <20111205234849.GA14547@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.00.1112051706300.6289@utopia.booyaka.com>
+References: <1321926047-14211-1-git-send-email-mturquette@linaro.org> <1321926047-14211-4-git-send-email-mturquette@linaro.org> <alpine.DEB.2.00.1112051342430.6289@utopia.booyaka.com> <20111205234849.GA14547@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1323129487-24859-5-git-send-email-rklein@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 03:58:07PM -0800, Rhyland Klein wrote:
->  static int sbs_read_word_data(struct i2c_client *client, u8 address)
-> @@ -681,15 +682,25 @@ static int __devinit sbs_probe(struct i2c_client *client,
->  	struct sbs_platform_data *pdata = client->dev.platform_data;
->  	int rc;
->  	int irq;
-> +	char *name;
->  
-> -	chip = kzalloc(sizeof(struct sbs_info), GFP_KERNEL);
-> -	if (!chip)
-> +	name = kasprintf(GFP_KERNEL, "%s-%s", "sbs", dev_name(&client->dev));
+On Mon, 5 Dec 2011, Russell King - ARM Linux wrote:
 
-Mm... why not just
+> On Mon, Dec 05, 2011 at 02:15:56PM -0700, Paul Walmsley wrote:
+>
+> > But I'd propose that we instead increase the size of struct clk.rate to be 
+> > s64:
+> > 
+> > s64 clk_round_rate(struct clk *clk, s64 desired_rate);
+> > int clk_set_rate(struct clk *clk, s64 rate);
+> > s64 clk_get_rate(struct clk *clk);
+> > 
+> > struct clk {
+> > ...
+> >      s64 rate;
+> > ...
+> > };
+> > 
+> > That way the clock framework can accommodate current clock rates, as well 
+> > as any conceivable future clock rate.  (Some production CPUs are already 
+> > running at clock rates greater than 4 GiHZ[1].  RF devices with 4 GiHz+ 
+> > clock rates are also common, such as 802.11a devices running in the 5.8 
+> > GHz band, and drivers for those may eventually wish to use the clock 
+> > framework.)
+> 
+> Yuck.  You are aware that 64-bit math on 32-bit CPUs sucks? So burdening 
+> _everything_ with 64-bit rate quantities is absurd.  As for making then 
+> 64-bit signed quantities, that's asking for horrid code from gcc for the 
+> majority of cases.
 
-kasprintf(GFP_KERNEL, "sbs-%s", dev_name(&client->dev)) ?
+64-bit divides would be the only real issue in the clock framework 
+context.  And those are easily avoided on clock hardware where the parent 
+rate can never exceed 32 bits.
 
-> +	if (!name) {
-> +		dev_err(&client->dev, "Failed to allocate device name\n");
->  		return -ENOMEM;
-> +	}
-> +
-> +	chip = kzalloc(sizeof(struct sbs_info), GFP_KERNEL);
-> +	if (!chip) {
-> +		rc = -ENOMEM;
-> +		goto exit_free_name;
-> +	}
->  
->  	chip->client = client;
->  	chip->enable_detection = false;
->  	chip->gpio_detect = false;
-> -	chip->power_supply.name = "battery";
-> +	chip->name = name;
-> +	chip->power_supply.name = name;
->  	chip->power_supply.type = POWER_SUPPLY_TYPE_BATTERY;
->  	chip->power_supply.properties = sbs_properties;
->  	chip->power_supply.num_properties = ARRAY_SIZE(sbs_properties);
-> @@ -774,6 +785,9 @@ exit_psupply:
->  
->  	kfree(chip);
->  
-> +exit_free_name:
-> +	kfree(name);
-> +
->  	return rc;
->  }
->  
-> @@ -790,6 +804,7 @@ static int __devexit sbs_remove(struct i2c_client *client)
->  
->  	cancel_delayed_work_sync(&chip->work);
->  
-> +	kfree(chip->name);
+For example, here's a trivial implementation for rate recalculation for a 
+integer divider clock node (that can't be handled with a right shift):
 
-I think you don't really need chip->name.
+s64 div(struct clk *clk, u32 div) {
+	if (clk->flags & CLK_PARENT_RATE_MAX_U32)
+		return ((u32)(clk->parent->rate & 0xffffffff)) / div;
 
-power_supply_unregister() won't touch power_supply.name, so
-you can kfree(chip->power_supply.name);
+	clk->rate = clk->parent->rate;
+	do_div(clk->rate, div);
+	return clk->rate;
+}
 
-Otherwise, the patch looks great.
+gcc generates this for ARMv6:
 
-Thanks!
+00000010 <div>:
+  10:	e92d4038 	push	{r3, r4, r5, lr}
+  14:	e1a05000 	mov	r5, r0         
+  18:	e5d03010 	ldrb	r3, [r0, #16]  @ clk->flags
+  1c:	e1a04001 	mov	r4, r1
+  20:	e3130001 	tst	r3, #1         @ 32-bit parent rate?
+  24:	1a000007 	bne	48 <div+0x38>  @ do 32-bit divide 
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+/* 64-bit divide by 32-bit follows */
+
+  28:	e5903000 	ldr	r3, [r0]
+  2c:	e1c300d8 	ldrd	r0, [r3, #8]
+  30:	ebfffffe 	bl	0 <__do_div64>
+  34:	e1a00002 	mov	r0, r2
+  38:	e1a01003 	mov	r1, r3
+  3c:	e5852008 	str	r2, [r5, #8]
+  40:	e585300c 	str	r3, [r5, #12]
+  44:	e8bd8038 	pop	{r3, r4, r5, pc}
+
+/* 32-bit divide follows */
+
+  48:	e5900000 	ldr	r0, [r0]
+  4c:	e5900008 	ldr	r0, [r0, #8]
+  50:	ebfffffe 	bl	0 <__aeabi_uidiv>
+  54:	e3a01000 	mov	r1, #0
+  58:	e8bd8038 	pop	{r3, r4, r5, pc}
+
+
+Not bad at all, and this isn't even optimized.  (The conditional could be 
+avoided completely with a little work during clock init.)  What little 
+overhead there is seems quite trivial if it means that the clock framework 
+will be useful for present and future devices.
+
+
+- Paul
