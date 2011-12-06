@@ -1,43 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901Ab1LFE6j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 23:58:39 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37292 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756389Ab1LFE6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 23:58:38 -0500
+	id S1750966Ab1LFFIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 00:08:38 -0500
+Received: from mail.santacruz.k12.az.us ([67.212.206.114]:36296 "EHLO
+	outlook.santacruz.k12.az.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750739Ab1LFFIh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 00:08:37 -0500
+X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Dec 2011 00:08:37 EST
+From: Luz Romero <LRomero@santacruz.k12.az.us>
+Date: Mon, 5 Dec 2011 22:03:29 -0700
+Subject: WebCT Administrator
+Thread-Topic: WebCT Administrator
+Thread-Index: AQHMs9Rk2ExVM27dz025/UwNY64Yow==
+Message-ID: <D002CC3CE57B7549810C7CC2FC0765044E391C390F@SC-EXCHMB.santacruz.local>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20111205115054.GH11150@opensource.wolfsonmicro.com>
-References: <1323083592.6763.5.camel@phoenix>
-	<20111205115054.GH11150@opensource.wolfsonmicro.com>
-Date: Tue, 6 Dec 2011 12:58:36 +0800
-Message-ID: <CAN1soZwuTqiPC1wof6PfeLb3zhzm+w1WSUsJJQWmCS-3ECxTJw@mail.gmail.com>
-Subject: Re: [PATCH] Input: zylonite-wm97xx - replace IRQ_GPIO() with gpio_to_irq()
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 5, 2011 at 7:50 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Dec 05, 2011 at 07:13:12PM +0800, Axel Lin wrote:
->> Since commit 6384fd "ARM: pxa: rename IRQ_GPIO to PXA_GPIO_TO_IRQ",
->> I got below buid errors due to implicit declaration of function 'IRQ_GPIO'.
->
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
->
-> I guess that for bisection this should go via Eric's tree as it
-> introduced the issue.
-> --
-Sure. We'll handle it.
 
-Best Regards
-Haojian
+Your mailbox has exceeded the storage limit which is 20GB as set by your administrator, you are currently running on 20.9GB, you may not be able to send or receive new mail until you re-validate your mailbox.To re-validate your mailbox please <http://kbjomss.tk/> CLICK HERE<http://kbjomss.tk/>
+
+Thanks
+System Administrator.
+WebCT Administrator
