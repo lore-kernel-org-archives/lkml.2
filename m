@@ -1,97 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab1LFB0s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 20:26:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63362 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932780Ab1LFB0r (ORCPT
+	id S932842Ab1LFB06 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 20:26:58 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56862 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932780Ab1LFB05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 20:26:47 -0500
-Date: Tue, 6 Dec 2011 09:26:35 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
- involving interrupt disabling
-Message-ID: <20111206012635.GA32498@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
- <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111205091924.GA28117@zhy>
- <20111205164505.GB2326@linux.vnet.ibm.com>
+	Mon, 5 Dec 2011 20:26:57 -0500
+Message-ID: <4EDD6EB5.4000303@solonet.org.ua>
+Date: Tue, 06 Dec 2011 03:24:05 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111205164505.GB2326@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v3 resend] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver
+ use gpiolib
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 08:45:05AM -0800, Paul E. McKenney wrote:
-> On Mon, Dec 05, 2011 at 05:19:24PM +0800, Yong Zhang wrote:
-> > On Sat, Dec 03, 2011 at 10:34:42AM -0800, Paul E. McKenney wrote:
-> > > From: Yong Zhang <yong.zhang0@gmail.com>
-> > > 
-> > > RCU-lockdep will issue warnings given the following use pattern:
-> > > 
-> > > 	rcu_read_lock();
-> > > 	local_irq_disable();
-> > > 	rcu_read_unlock();
-> > > 	local_irq_enable();
-> > > 
-> > > However, this use pattern is legal except for the scheduler's runqueue
-> > > and priority-inheritance locks (and any other locks that the scheduler
-> > > might use during priority-inheritance operations).
-> > > 
-> > > Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > ---
-> > >  kernel/rcutree_plugin.h |    8 ++++++--
-> > >  1 files changed, 6 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > > index 8cd9efe..2020e8a 100644
-> > > --- a/kernel/rcutree_plugin.h
-> > > +++ b/kernel/rcutree_plugin.h
-> > > @@ -401,8 +401,11 @@ static noinline void rcu_read_unlock_special(struct task_struct *t)
-> > >  
-> > >  #ifdef CONFIG_RCU_BOOST
-> > >  		/* Unboost if we were boosted. */
-> > > -		if (rbmp)
-> > > +		if (rbmp) {
-> > > +			local_irq_save(flags);
-> > >  			rt_mutex_unlock(rbmp);
-> > > +			local_irq_restore(flags);
-> > > +		}
-> > >  #endif /* #ifdef CONFIG_RCU_BOOST */
-> > >  
-> > >  		/*
-> > > @@ -1233,9 +1236,10 @@ static int rcu_boost(struct rcu_node *rnp)
-> > >  	lockdep_set_class_and_name(&mtx.wait_lock, &rcu_boost_class,
-> > >  				   "rcu_boost_mutex");
-> > >  	t->rcu_boost_mutex = &mtx;
-> > > -	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> > > +	raw_spin_unlock(&rnp->lock); /* rrupts remain disabled. */
-> > >  	rt_mutex_lock(&mtx);  /* Side effect: boosts task t's priority. */
-> > >  	rt_mutex_unlock(&mtx);  /* Keep lockdep happy. */
-> > 
-> > We permit rt_mutex_unlock() to be call with irq disabled,
-> > but rt_mutex_lock() is still not allowed. So this usage
-> > is not legal now.
-> 
-> Even after commit #5342e269b has been applied?
+Make s3c24xx LEDS driver use gpiolib. Fix error disabling pull during probe.
 
-Yeah, because we call might_sleep() in rt_mutex_lock() unconditionally.
-But in this case the 'BUG: sleeping function called from invalid context
-at *' is obviously false positive.
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+---
 
-Maybe we could teach might_sleep() about this special case?
+There is a comment "no point in having a pull-up if we are always driving"
+but code was actually enabled pull-resistor for that case probably because of
+function parameter misunderstanding (1 - disables, 0 - enables). So this was
+changed to another function which takes alphabetically defined constant as
+parameter.
+Tested on Mini2440 board which implements most complex case where both
+S3C24XX_LEDF_ACTLOW and S3C24XX_LEDF_TRISTATE are set.
 
-Thanks,
-Yong
+Changes v1->v2
+        Fix typo's and style problems.
+Changes v2->v3
+        Remove pull-resistor enabling code for case of S3C24XX_LEDF_TRISTATE
+flag is set
+
+diff --git a/drivers/leds/leds-s3c24xx.c b/drivers/leds/leds-s3c24xx.c
+index a77771d..a1dbf54 100644
+--- a/drivers/leds/leds-s3c24xx.c
++++ b/drivers/leds/leds-s3c24xx.c
+@@ -45,23 +45,35 @@ static void s3c24xx_led_set(struct led_classdev *led_cdev,
+ 	struct s3c24xx_gpio_led *led = to_gpio(led_cdev);
+ 	struct s3c24xx_led_platdata *pd = led->pdata;
+ -	/* there will be a short delay between setting the output and
+-	 * going from output to input when using tristate. */
+-
+-	s3c2410_gpio_setpin(pd->gpio, (value ? 1 : 0) ^
+-			    (pd->flags & S3C24XX_LEDF_ACTLOW));
+-
+-	if (pd->flags & S3C24XX_LEDF_TRISTATE)
+-		s3c2410_gpio_cfgpin(pd->gpio,
+-			value ? S3C2410_GPIO_OUTPUT : S3C2410_GPIO_INPUT);
++	/*
++	 * ensure value is 0 or 1 to use it with bitwise XOR (^)
++	 * (only 100% brightness is supported)
++	 */
++	value = value ? 1 : 0;
++
++	if (pd->flags & S3C24XX_LEDF_TRISTATE) {
++		if (value) {
++			/* invert value if S3C24XX_LEDF_ACTLOW is set */
++			value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
++			gpio_direction_output(pd->gpio, value);
++		} else {
++			gpio_direction_input(pd->gpio);
++		}
++	} else {
++		/* invert value if S3C24XX_LEDF_ACTLOW is set */
++		value = (pd->flags & S3C24XX_LEDF_ACTLOW) ^ value;
++		gpio_set_value(pd->gpio, value);
++	}
+  }
+  static int s3c24xx_led_remove(struct platform_device *dev)
+ {
++	struct s3c24xx_led_platdata *pdata = dev->dev.platform_data;
+ 	struct s3c24xx_gpio_led *led = pdev_to_gpio(dev);
+  	led_classdev_unregister(&led->cdev);
++	gpio_free(pdata->gpio);
+ 	kfree(led);
+  	return 0;
+@@ -76,7 +88,8 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 	led = kzalloc(sizeof(struct s3c24xx_gpio_led), GFP_KERNEL);
+ 	if (led == NULL) {
+ 		dev_err(&dev->dev, "No memory for device\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_kzalloc;
+ 	}
+  	platform_set_drvdata(dev, led);
+@@ -88,15 +101,24 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+  	led->pdata = pdata;
+ -	/* no point in having a pull-up if we are always driving */
++	ret = gpio_request(pdata->gpio, pdata->name);
++	if (ret < 0) {
++		dev_err(&dev->dev, "gpio_request failed\n");
++		goto err_gpio_request;
++	}
+ +	/* apply GPIO settings and initially turn off the LED */
+ 	if (pdata->flags & S3C24XX_LEDF_TRISTATE) {
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
+-		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_INPUT);
++		ret = gpio_direction_input(pdata->gpio);
+ 	} else {
+-		s3c2410_gpio_pullup(pdata->gpio, 0);
+-		s3c2410_gpio_setpin(pdata->gpio, 0);
+-		s3c2410_gpio_cfgpin(pdata->gpio, S3C2410_GPIO_OUTPUT);
++		/* no point in having a pull-up as we are always driving */
++		s3c_gpio_setpull(pdata->gpio, S3C_GPIO_PULL_NONE);
++		ret = gpio_direction_output(pdata->gpio,
++				!!(pdata->flags & S3C24XX_LEDF_ACTLOW));
++	}
++	if (ret < 0) {
++		dev_err(&dev->dev, "can't set gpio direction\n");
++		goto err_gpio_set_direction;
+ 	}
+  	/* register our new led device */
+@@ -104,11 +126,18 @@ static int s3c24xx_led_probe(struct platform_device *dev)
+ 	ret = led_classdev_register(&dev->dev, &led->cdev);
+ 	if (ret < 0) {
+ 		dev_err(&dev->dev, "led_classdev_register failed\n");
+-		kfree(led);
+-		return ret;
++		goto err_led_classdev_register;
+ 	}
+  	return 0;
++
++err_led_classdev_register:
++err_gpio_set_direction:
++		gpio_free(pdata->gpio);
++err_gpio_request:
++		kfree(led);
++err_kzalloc:
++		return ret;
+ }
+  static struct platform_driver s3c24xx_led_driver = {
