@@ -1,147 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab1LFWxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:53:21 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39752 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1LFWxU (ORCPT
+	id S1753399Ab1LFWx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:53:56 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54697 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1LFWxz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:53:20 -0500
-Date: Wed, 7 Dec 2011 02:53:15 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, proc: Add start_data, end_data, start_brk members to
- /proc/$pid/stat v2
-Message-ID: <20111206225315.GA20459@moon>
-References: <20111205182010.GV14515@moon>
- <20111206140833.3b43fbeb.akpm@linux-foundation.org>
- <20111206221515.GP29781@moon>
+	Tue, 6 Dec 2011 17:53:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206221515.GP29781@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF1750B7703C@HQMAIL01.nvidia.com>
+References: <1322736902-11297-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF174FDB0312@HQMAIL01.nvidia.com>
+	<CACRpkdaGaYdQagOkFxfRpV=oxyxab40X5zzpeCamTCksuHQAaw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF1750B7703C@HQMAIL01.nvidia.com>
+Date: Tue, 6 Dec 2011 23:53:55 +0100
+Message-ID: <CACRpkdYXazmia5=U-JFKUdfTzST_+=uWz4Za4o1ngzGjHy86qw@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v5] pinctrl: introduce generic pin config
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 02:15:15AM +0400, Cyrill Gorcunov wrote:
-> On Tue, Dec 06, 2011 at 02:08:33PM -0800, Andrew Morton wrote:
-> > On Mon, 5 Dec 2011 22:20:11 +0400
-> > Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > 
-> > > It helps to dump and restore this mm_struct members.
-> > 
-> > Sorry, I'm not going to apply a patch with a changelog like that.
-> >
-> 
-> OK, I'll update it. The problem is that while we "read" this entries
-> from procfs, the restoration is supposed to be done via prctl interface
-> (the patch is in fly, and I'm trying to improve it at moment).
-> 
-> > It needs a full description of how this will be used and why it is
-> > needed.  So that others can understand and evaluate the proposal, and
-> > any possible alternatives.
-> > 
-> > Such a description would also let us see whether this is just some
-> > "hey, maybe we'll use this sometime" thing, in which case it should not
-> > yet be applied.
-> 
-> I understand.
-> 
-> > 
-> > >  fs/proc/array.c |    7 +++++--
-> > 
-> > Also, every change to any procfs interface should have an associated
-> > change to procfs documentation.  If no relevant document exists then
-> > heck, write one.  No exceptions.
-> >
-> 
-> ok, thanks.
-> 
-> 	Cyrill
+On Mon, Dec 5, 2011 at 6:36 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Linus Walleij wrote at Monday, December 05, 2011 9:01 AM:
+>> But if I can control the resistance of the pull-up resistor
+>> that brings us to a triplet: {parameter, type, argument}
+>> like this to set the generic pull-up to 100 kOhm:
+>>
+>> set_generic_bias(PIN_CONFIG_BIAS, PIN_CONFIG_BIAS_PULL_UP, 100000);
+>>
+>> parameter = BIAS
+>> type = PULL_UP
+>> argument = 100 kOhm
+>
+> I think that selecting what the value of pull-up is and enabling/disabling
+> pull-up are separate things, so you'd have:
+>
+> set PIN_CONFIG_PULL_UP_RESISTANCE 100000
+> set PIN_CONFIG_BIAS PULL_UP
 
-What about such changelog? Does it look better?
+So two calls to set the pull up instead of one?
+That does not look good.
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH] fs, proc: Add start_data, end_data, start_brk members to /proc/$pid/stat v3
+> Of course, this probably ties into which of the following options your chip
+> HW has:
+>
+> a) Pull-up 100K or pull-up 10K or pull-down or tri-state
+>
+> b) Pull-up or pull-down or tri-state, with a second register field to
+> set pull-up at 100k or 10k.
 
-These members are involved into calculation of program
-data segment size (which might be seen in /proc/<pid>/statm)
-and brk() call, so in a sake of restore we need
-these entries to be set to exactly same values
-a process had at dumpimg time.
+But what registers to write and in which order doesn't matter
+for this interface. That is up to the driver and that is the kind
+of stuff drivers are supposed to figure out.
 
-While setting these entries back to a running task
-is supposed to be implemented via prctl interface (which is
-not addressed in this patch) the export of these values
-are done via /proc/$pid/stat, which btw already has
-start_code, end_code and start_stack entries.
+If the driver gets a single call which says "pull up" and
+a parameter "100k" it can very well figure out what to do
+with that.
 
-v2:
- - Kees and Alexey pointed out that "1" hack is unnecessary,
-   so make it to have plain (mm && permitted) ? mm->member : 0
-   form.
+> ... which then goes back to the discussion of whether attempting to
+> shoe-horn every SoC into a standardized parameter set makes sense.
 
-v3:
- - Andrew pointed that documentation update is missed.
-   Chagelog is updated as well.
+Which is why the generic parameter set is now optional in
+the first place, right?
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
----
- Documentation/filesystems/proc.txt |    3 +++
- fs/proc/array.c                    |    7 +++++--
- 2 files changed, 8 insertions(+), 2 deletions(-)
+>> Don't you mean we would then have
+>>
+>> pin_config_param {
+>>    PIN_CONFIG_INPUT_MODE,
+>>    ...
+>> }
+>>
+>> enum pin_config_input_mode_value {
+>>     PIN_CONFIG_INPUT_MODE_SCHMITT,
+>>     PIN_CONFIG_INPUT_MODE_DEBOUNCE,
+>> };
+>
+> Schmitt and debounce seem like completely orthogonal HW features to me,
+> so I wouldn't make them mutually exclusive.
 
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -305,6 +305,9 @@ Table 1-4: Contents of the stat files (a
-   blkio_ticks   time spent waiting for block IO
-   gtime         guest time of the task in jiffies
-   cgtime        guest time of the task children in jiffies
-+  start_data    address above which program data is placed
-+  end_data      address above which program data is placed
-+  start_brk     address above which program data can be expanded with brk() call
- ..............................................................................
- 
- The /proc/PID/maps file containing the currently mapped memory regions and
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -464,7 +464,7 @@ static int do_task_stat(struct seq_file
- 
- 	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
- %lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
--%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld\n",
-+%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
- 		pid_nr_ns(pid, ns),
- 		tcomm,
- 		state,
-@@ -511,7 +511,10 @@ static int do_task_stat(struct seq_file
- 		task->policy,
- 		(unsigned long long)delayacct_blkio_ticks(task),
- 		cputime_to_clock_t(gtime),
--		cputime_to_clock_t(cgtime));
-+		cputime_to_clock_t(cgtime),
-+		(mm && permitted) ? mm->start_data : 0,
-+		(mm && permitted) ? mm->end_data : 0,
-+		(mm && permitted) ? mm->start_brk : 0);
- 	if (mm)
- 		mmput(mm);
- 	return 0;
+True. But the above enumerators does not make them
+mutually exclusive do they? You can very well set both
+with two calls.
+
+>> I think it might be sub-dividing it too much, but it certainly
+>> doesn't hurt the implementation much to split it in three,
+>> say 8 bits parameter 8 bits type 16 bits argument if that is
+>> preferable what do others say?
+>
+> That doesn't seem quite right to me. I guess I can't really describe why
+> though; it just feels wrong to be going that way.
+
+I feel the same way, so let's think about this.
+
+I think we need some more air into this discussion, what
+does other people think?
+
+Yours,
+Linus Walleij
