@@ -1,150 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933471Ab1LFMUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 07:20:35 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43125 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933368Ab1LFMUd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 07:20:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <007e01ccb40c$ed62bca0$c82835e0$%szyprowski@samsung.com>
-References: <1321609650-1329-1-git-send-email-pullip.cho@samsung.com>
-	<1321609650-1329-3-git-send-email-pullip.cho@samsung.com>
-	<007e01ccb40c$ed62bca0$c82835e0$%szyprowski@samsung.com>
-Date: Tue, 6 Dec 2011 21:20:31 +0900
-X-Google-Sender-Auth: K_gMCjHGCZA_UXlpr8H7DGvx_b4
-Message-ID: <CAHQjnOM9N8zJmiNnHfrN00jbF8Wk5WwtsBsuPsC2Xv0g_O1tdA@mail.gmail.com>
-Subject: Re: [PATCH v7 2/2] iommu/exynos: Add iommu driver for Exynos Platforms
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933480Ab1LFM0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 07:26:51 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46194 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933349Ab1LFM0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 07:26:50 -0500
+X-Authority-Analysis: v=2.0 cv=QqvcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=7FkR-CEZipcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=PNydA2PQNY-S6bkLfvoA:9 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
+ involving interrupt disabling
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org
+In-Reply-To: <1323167527.32012.61.camel@twins>
+References: <20111203183417.GA18914@linux.vnet.ibm.com>
+	 <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20111205091924.GA28117@zhy> <20111205164505.GB2326@linux.vnet.ibm.com>
+	 <20111206012635.GA32498@zhy> <1323165152.32012.51.camel@twins>
+	 <20111206100537.GA5203@zhy>  <1323167527.32012.61.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Dec 2011 07:26:45 -0500
+Message-ID: <1323174405.30977.86.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 8:48 PM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> Hello,
->
-> I'm trying to integrate your SYSMMU driver with my DMA-mapping & IOMMU
-> API integration patches. I've noticed some issues, please see my comments below.
->
-Thank you!
+On Tue, 2011-12-06 at 11:32 +0100, Peter Zijlstra wrote:
 
-> On Friday, November 18, 2011 10:48 AM KyongHo Cho wrote:
->
->> +
->> +static int exynos_sysmmu_probe(struct platform_device *pdev)
->> +{
->> +     struct resource *res, *ioarea;
->> +     int ret;
->> +     int irq;
->> +     struct device *dev;
->> +     void *sfr;
->> +     struct sysmmu_drvdata *data;
->> +     char *emsg;
->> +
->> +     dev = &pdev->dev;
->> +
->> +     if (dev_get_platdata(dev) == NULL) {
->> +             pr_debug("%s: No System MMU is assigned for %s.%d.\n", __func__,
->> +                             pdev->name, pdev->id);
->> +             return -ENODEV;
->> +     }
->> +
->> +     data = kzalloc(sizeof(*data), GFP_KERNEL);
->> +     if (!data) {
->> +             emsg = "Not enough memory";
->> +             ret = -ENOMEM;
->> +             goto err_alloc;
->> +     }
->> +
->> +     data->owner = dev_get_platdata(dev);
->> +
->> +     ret = dev_set_drvdata(dev, data);
->> +     if (ret) {
->> +             emsg = "Unable to set driver data.";
->> +             goto err_init;
->> +     }
->> +
->> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +     if (!res) {
->> +             emsg = "Failed probing system MMU: failed to get resource.";
->> +             goto err_init;
->> +     }
->> +
->> +     ioarea = request_mem_region(res->start, resource_size(res),
->> +                                                             dev_name(dev));
->> +     if (ioarea == NULL) {
->> +             emsg = "failed to request memory region.";
->> +             ret = -ENOMEM;
->> +             goto err_init;
->> +     }
->> +
->> +     sfr = ioremap(res->start, resource_size(res));
->> +     if (!sfr) {
->> +             emsg = "failed to call ioremap().";
->> +             ret = -ENOENT;
->> +             goto err_ioremap;
->> +     }
->> +
->> +     irq = platform_get_irq(pdev, 0);
->> +     if (irq <= 0) {
->> +             emsg = "failed to get irq resource.";
->> +             ret = irq;
->> +             goto err_irq;
->> +     }
->> +
->> +     ret = request_irq(irq, exynos_sysmmu_irq, 0, dev_name(dev), data);
->> +     if (ret) {
->> +             emsg = "failed to request irq.";
->> +             goto err_irq;
->> +     }
->> +
->> +     data->clk = clk_get(dev, "sysmmu");
->> +     if (IS_ERR(data->clk)) {
->> +             emsg = "failed to get clock descriptor";
->> +             ret = PTR_ERR(data->clk);
->> +             goto err_clk;
->> +     }
->> +
->> +     data->dev = dev;
->> +     data->sfrbase = sfr;
->> +     __set_fault_handler(data, &default_fault_handler);
->> +     rwlock_init(&data->lock);
->
-> Here is a serious problem: __set_fault_handler takes data->lock which is initialized after calling
-> this function.
->
+> > > 
+> > > > Maybe we could teach might_sleep() about this special case?
+> > > 
+> > > Sounds horrid.
+> > 
+> > Maybe, any alternative?
+> 
+> Maybe someone explain this mess first?
 
-Yeah, you're right. Thank you. I didn't notice it.
-I will fix it.
+Me too, because this looks like a hack that's just like a lie. The first
+lie to be said gets you out of a bit of trouble, but then something else
+happens based on that lie, in which you need to make another bigger lie.
+This new lie affects more people and requires new more ingenious lies to
+control the chaos. But eventually the lies required to keep everything
+going become so overwhelming that it all blows up in your face and you
+end up looking like a jackass.
 
->> +
->> +static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
->> +                                     short *pgcounter)
->> +{
->> +     if (lv1ent_fault(sent)) {
->> +             unsigned long *pent;
->> +
->> +             pent = kzalloc(1024, GFP_KERNEL);
->
-> I would use GFP_ATOMIC here. iommu_map() function might be called in atomic context, and
-> GFP_KERNEL here causes kernel ops/warning.
->
+Why is rcu using rt_mutex_lock() in strange ways? It's lying about its
+use. And now this patch is the bigger lie to get around the issues of
+the first lie. Eventually this code will continue to expand largely
+based on these lies and will explode in our faces, and I feel sorry for
+the poor jackass that needs to fix it.
 
-I wanted to avoid to allocate memory from emergency pool.
-Do you think that it needs to allocate memory with GFP_ATOMIC flag?
+Perhaps the real answer is that we need to create an API for priority
+inheritance, that things like RCU could use. Attach a task that another
+task requires to finish something and boost the priority of that task.
+Maybe even completions could use such a thing?
 
-Thanks.
+-- Steve
 
-KyongHo.
+
