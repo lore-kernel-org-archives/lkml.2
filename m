@@ -1,103 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab1LFWUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:20:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59696 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252Ab1LFWUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:20:11 -0500
-From: Andy Whitcroft <apw@canonical.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org,
-        Allison Henderson <achender@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 1/1] ext4: correct partial write discard size calculation
-Date: Tue,  6 Dec 2011 22:19:48 +0000
-Message-Id: <1323209988-14304-1-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1755289Ab1LFW0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:26:51 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:46361 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753183Ab1LFW0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 17:26:50 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] unifdef: drop unused errno.h include
+Date: Tue,  6 Dec 2011 17:26:50 -0500
+Message-Id: <1323210410-27111-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When copying large numbers of files we are seeing occasional write failures
-with errno EINVAL.  These are being returned from ext4_da_write_end()
-when attempting to discard the end portion of a partial write.  The error
-is detected and reported by the page index check below:
+This is the only header on my system that ends up requiring kernel
+headers, so if the kernel headers aren't available, we end up being
+unable to install kernel headers :).
 
-    int ext4_discard_partial_page_buffers_no_lock(handle_t *handle,
-		    struct inode *inode, struct page *page, loff_t from,
-		    loff_t length, int flags)
-    {
-    [...]
-        if (index != page->index)
-                return -EINVAL;
-    [...]
+Since this file doesn't actually use anything from errno.h, drop
+the include so it at least makes us a bit more robust on glibc.
 
-This code was introduced by the commit below:
-
-  commit 02fac1297eb3f471a27368271aadd285548297b0
-  Author: Allison Henderson <achender@linux.vnet.ibm.com>
-  Date:   Tue Sep 6 21:53:01 2011 -0400
-
-    ext4: fix partial page writes
-
-This error is triggering when a write occurs at pos == 0 and results in
-0 bytes being written (copied == 0):
-
-    page_len = PAGE_CACHE_SIZE -
-                    ((pos + copied - 1) & (PAGE_CACHE_SIZE - 1));
-    if (page_len > 0) {
-            ret = ext4_discard_partial_page_buffers_no_lock(handle,
-                    inode, page, pos + copied - 1, page_len,
-    [...]
-
-In this case we will calculate that we need to clear out only one byte of
-the page.  As we are aligned at the page boundary and wrote 0 bytes we
-actually need to clear the entire page.  Also note that when we attempt
-to apply the discard we will apply it at offset -1 (0 + 0 - 1), which is
-the wrong place:
-
-    page_len = 4096 - ((0 + 0 - 1) & 4095)
-    page_len = 1
-
-Firstly fix up the offset calculation.  Once this is done the erroring
-case will correctly believe that the entire page needs to be discarded.
-However in this case we did not actually write to the page so the page
-is not instantiated and no discard is required.  So also only apply the
-discard where we are not discarding the entire page.
-
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 ---
- fs/ext4/inode.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ scripts/unifdef.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-This issue is most easily reproducible within a VM on a fast, lightly
-loaded host.  In that configuration I can trigger a failure with about
-1/2GB of medium sized files (.debs in this case).  Without the patch
-the copy will fail 'EINVAL' 99% of the time, always failing within two
-iterations.  With the patch I have run 100 iterations of the same copy
-without failure.
-
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 240f6e2..c137168 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2533,11 +2533,11 @@ static int ext4_da_write_end(struct file *file,
- 							page, fsdata);
+diff --git a/scripts/unifdef.c b/scripts/unifdef.c
+index 7493c0e..c5dfae5 100644
+--- a/scripts/unifdef.c
++++ b/scripts/unifdef.c
+@@ -48,7 +48,6 @@
  
- 	page_len = PAGE_CACHE_SIZE -
--			((pos + copied - 1) & (PAGE_CACHE_SIZE - 1));
-+			((pos + copied) & (PAGE_CACHE_SIZE - 1));
- 
--	if (page_len > 0) {
-+	if (page_len > 0 && page_len < PAGE_CACHE_SIZE) {
- 		ret = ext4_discard_partial_page_buffers_no_lock(handle,
--			inode, page, pos + copied - 1, page_len,
-+			inode, page, pos + copied, page_len,
- 			EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED);
- 	}
- 
+ #include <ctype.h>
+ #include <err.h>
+-#include <errno.h>
+ #include <stdarg.h>
+ #include <stdbool.h>
+ #include <stdio.h>
 -- 
-1.7.5.4
+1.7.6.1
 
