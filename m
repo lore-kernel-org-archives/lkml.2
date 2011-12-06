@@ -1,140 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752Ab1LFXpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 18:45:38 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45389 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754392Ab1LFXph (ORCPT
+	id S1754799Ab1LFXxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 18:53:10 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:60273 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab1LFXxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 18:45:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EDEA152.90804@canonical.com>
-References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
- <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
- <4EDE94DC.8010106@canonical.com> <20111206224100.GM2203@ZenIV.linux.org.uk> <4EDEA152.90804@canonical.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Dec 2011 15:45:15 -0800
-X-Google-Sender-Auth: qbRUFZjLfaM5Z-Fv7XNo_AIdozE
-Message-ID: <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-To: John Johansen <john.johansen@canonical.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=f46d043891212745b504b37508b6
+	Tue, 6 Dec 2011 18:53:09 -0500
+Date: Wed, 7 Dec 2011 10:52:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20111207105252.25156be522cc26b520eac8f0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__7_Dec_2011_10_52_52_+1100_hUws5Zn40Fw8ZpLX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d043891212745b504b37508b6
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Wed__7_Dec_2011_10_52_52_+1100_hUws5Zn40Fw8ZpLX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Dec 6, 2011 at 3:12 PM, John Johansen
-<john.johansen@canonical.com> wrote:
->
-> What we want to know is if we missed the supplied root, so that we don't
-> mediate off of that path. =A0And it would be nice to get a partial path f=
-or
-> the purposes of logging, so that there is some guidance on how to update
-> policy.
+Hi Arnd,
 
-How about this change:
- - don't change 'root' (and mark it const)
- - if we hit the expected root, we're all happy and do what we do now
- - if we hit some *unexpected* root (the "global root") add a '?' or
-something at the head of the path.
+Today's linux-next merge of the arm-soc tree got conflicts in
+arch/arm/mach-mxs/mach-m28evk.c and
+arch/arm/mach-mxs/mach-stmp378x_devb.c between commit d4e717535e94 ("ARM:
+restart: mxs: use new restart hook") from the arm tree and commit
+8d2d2d1d7e96 ("ARM: mxs: fix machines' initializers order") from the
+arm-soc tree.
 
-End result: callers like getcwd() can trivially replace their current
-"path_equal(&tmp,&root)" (or whatever they do) with just checking the
-first character of the end result. A good path always starts with '/'.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Something kind of like this (this does *not* change apparmor or tomoyo
-- I didn't even look at those uses).
+diff --cc arch/arm/mach-mxs/mach-m28evk.c
+index 7799cd9,6b00577..0000000
+--- a/arch/arm/mach-mxs/mach-m28evk.c
++++ b/arch/arm/mach-mxs/mach-m28evk.c
+@@@ -361,7 -361,6 +361,7 @@@ static struct sys_timer m28evk_timer =3D=20
+  MACHINE_START(M28EVK, "DENX M28 EVK")
+  	.map_io		=3D mx28_map_io,
+  	.init_irq	=3D mx28_init_irq,
+- 	.init_machine	=3D m28evk_init,
+  	.timer		=3D &m28evk_timer,
++ 	.init_machine	=3D m28evk_init,
+ +	.restart	=3D mxs_restart,
+  MACHINE_END
+diff --cc arch/arm/mach-mxs/mach-stmp378x_devb.c
+index 857e857,6834dea..0000000
+--- a/arch/arm/mach-mxs/mach-stmp378x_devb.c
++++ b/arch/arm/mach-mxs/mach-stmp378x_devb.c
+@@@ -115,7 -115,6 +115,7 @@@ static struct sys_timer stmp378x_dvb_ti
+  MACHINE_START(STMP378X, "STMP378X")
+  	.map_io		=3D mx23_map_io,
+  	.init_irq	=3D mx23_init_irq,
+- 	.init_machine	=3D stmp378x_dvb_init,
+  	.timer		=3D &stmp378x_dvb_timer,
++ 	.init_machine	=3D stmp378x_dvb_init,
+ +	.restart	=3D mxs_restart,
+  MACHINE_END
 
-Comments?
+--Signature=_Wed__7_Dec_2011_10_52_52_+1100_hUws5Zn40Fw8ZpLX
+Content-Type: application/pgp-signature
 
-               Linus
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
---f46d043891212745b504b37508b6
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gvvk3zp00
+iQIcBAEBCAAGBQJO3qrUAAoJEECxmPOUX5FE+LoP/A7ACnJXayTXkVxoPjX97c8I
+7iBXkzTJ2EtER81cOzicRqp6gCBmFfv5cK1qRy521GAWkE84Rq0yEid3m88lqyn9
+BKmqu2/jixDGUXAPap4cT2Ms1hyEeDJR3jNjqSh4ilXJi63CHQoLuxMXjF/0RxoV
+I8DD6izt8R1vYue2jBQmXjZzOgbK6SC8WyWgu2MhaHCj7/Hr0O3L/JrMdyofyl7I
+xuVSxHGxb6AQfENZtiO7t6P4fLlnnKAmmVYOdsn7iFy4TeUwTc4XB6+mXA9le6KT
+Ui9p0Awe5HvSNpPOZJg3EOzE6f+gqt3L/T3CW6F68jnbMPHWtLFZAUR6HSjVI/tJ
+ijXAtuKJlZBqRuBOgRtlhIjQ7l1OMS02c6ZNiLkfs2D0khTduWlxoL8i/+PO1beM
+TMd/qWg3q17TNFuQ1w0nRj6p//g+TR8vVEJYUuNPLYwrQExjakzjbmoV+dkeNc4Y
+/oxptlVpzREmjs9XQyekqdzIu4WZdEN1XOolygG0qRsP6UbC1S5jVhbNml1VwFQn
+K5t98Xb3vuTLqPajHcBluU/uoiXzeBpIDDsJXB9mt95gRAezXsk4c8bR4j7wAmQP
+exC7YavKM+IbCwetw5mWVihoGXNU9nLyplyy7ne5yuc6VUAYL7VNTpX1Y/XVR0Zc
+H+PO4zwp5upMvln+NnhW
+=BNDp
+-----END PGP SIGNATURE-----
 
-IGZzL2RjYWNoZS5jICAgICAgICAgICAgICB8ICAgMTIgKysrKystLS0tLS0tCiBmcy9zZXFfZmls
-ZS5jICAgICAgICAgICAgfCAgICA2ICsrLS0tLQogaW5jbHVkZS9saW51eC9kY2FjaGUuaCAgIHwg
-ICAgMiArLQogaW5jbHVkZS9saW51eC9zZXFfZmlsZS5oIHwgICAgNCArKy0tCiA0IGZpbGVzIGNo
-YW5nZWQsIDEwIGluc2VydGlvbnMoKyksIDE0IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2Zz
-L2RjYWNoZS5jIGIvZnMvZGNhY2hlLmMKaW5kZXggMTBiYTkyZGVmM2Y2Li45M2UwNjNmNzEzZjUg
-MTAwNjQ0Ci0tLSBhL2ZzL2RjYWNoZS5jCisrKyBiL2ZzL2RjYWNoZS5jCkBAIC0yNDQ4LDcgKzI0
-NDgsNyBAQCBzdGF0aWMgaW50IHByZXBlbmRfbmFtZShjaGFyICoqYnVmZmVyLCBpbnQgKmJ1Zmxl
-biwgc3RydWN0IHFzdHIgKm5hbWUpCiAgKiBJZiBwYXRoIGlzIG5vdCByZWFjaGFibGUgZnJvbSB0
-aGUgc3VwcGxpZWQgcm9vdCwgdGhlbiB0aGUgdmFsdWUgb2YKICAqIHJvb3QgaXMgY2hhbmdlZCAo
-d2l0aG91dCBtb2RpZnlpbmcgcmVmY291bnRzKS4KICAqLwotc3RhdGljIGludCBwcmVwZW5kX3Bh
-dGgoY29uc3Qgc3RydWN0IHBhdGggKnBhdGgsIHN0cnVjdCBwYXRoICpyb290LAorc3RhdGljIGlu
-dCBwcmVwZW5kX3BhdGgoY29uc3Qgc3RydWN0IHBhdGggKnBhdGgsIGNvbnN0IHN0cnVjdCBwYXRo
-ICpyb290LAogCQkJY2hhciAqKmJ1ZmZlciwgaW50ICpidWZsZW4pCiB7CiAJc3RydWN0IGRlbnRy
-eSAqZGVudHJ5ID0gcGF0aC0+ZGVudHJ5OwpAQCAtMjUwMCw4ICsyNTAwLDcgQEAgZ2xvYmFsX3Jv
-b3Q6CiAJCVdBUk4oMSwgIlJvb3QgZGVudHJ5IGhhcyB3ZWlyZCBuYW1lIDwlLipzPlxuIiwKIAkJ
-ICAgICAoaW50KSBkZW50cnktPmRfbmFtZS5sZW4sIGRlbnRyeS0+ZF9uYW1lLm5hbWUpOwogCX0K
-LQlyb290LT5tbnQgPSB2ZnNtbnQ7Ci0Jcm9vdC0+ZGVudHJ5ID0gZGVudHJ5OworCWVycm9yID0g
-cHJlcGVuZChidWZmZXIsIGJ1ZmxlbiwgIj8iLCAxKTsKIAlnb3RvIG91dDsKIH0KIApAQCAtMjUy
-Miw3ICsyNTIxLDcgQEAgZ2xvYmFsX3Jvb3Q6CiAgKiBJZiBwYXRoIGlzIG5vdCByZWFjaGFibGUg
-ZnJvbSB0aGUgc3VwcGxpZWQgcm9vdCwgdGhlbiB0aGUgdmFsdWUgb2YKICAqIHJvb3QgaXMgY2hh
-bmdlZCAod2l0aG91dCBtb2RpZnlpbmcgcmVmY291bnRzKS4KICAqLwotY2hhciAqX19kX3BhdGgo
-Y29uc3Qgc3RydWN0IHBhdGggKnBhdGgsIHN0cnVjdCBwYXRoICpyb290LAorY2hhciAqX19kX3Bh
-dGgoY29uc3Qgc3RydWN0IHBhdGggKnBhdGgsIGNvbnN0IHN0cnVjdCBwYXRoICpyb290LAogCSAg
-ICAgICBjaGFyICpidWYsIGludCBidWZsZW4pCiB7CiAJY2hhciAqcmVzID0gYnVmICsgYnVmbGVu
-OwpAQCAtMjc1OCwxOSArMjc1NywxOCBAQCBTWVNDQUxMX0RFRklORTIoZ2V0Y3dkLCBjaGFyIF9f
-dXNlciAqLCBidWYsIHVuc2lnbmVkIGxvbmcsIHNpemUpCiAJd3JpdGVfc2VxbG9jaygmcmVuYW1l
-X2xvY2spOwogCWlmICghZF91bmxpbmtlZChwd2QuZGVudHJ5KSkgewogCQl1bnNpZ25lZCBsb25n
-IGxlbjsKLQkJc3RydWN0IHBhdGggdG1wID0gcm9vdDsKIAkJY2hhciAqY3dkID0gcGFnZSArIFBB
-R0VfU0laRTsKIAkJaW50IGJ1ZmxlbiA9IFBBR0VfU0laRTsKIAogCQlwcmVwZW5kKCZjd2QsICZi
-dWZsZW4sICJcMCIsIDEpOwotCQllcnJvciA9IHByZXBlbmRfcGF0aCgmcHdkLCAmdG1wLCAmY3dk
-LCAmYnVmbGVuKTsKKwkJZXJyb3IgPSBwcmVwZW5kX3BhdGgoJnB3ZCwgJnJvb3QsICZjd2QsICZi
-dWZsZW4pOwogCQl3cml0ZV9zZXF1bmxvY2soJnJlbmFtZV9sb2NrKTsKIAogCQlpZiAoZXJyb3Ip
-CiAJCQlnb3RvIG91dDsKIAogCQkvKiBVbnJlYWNoYWJsZSBmcm9tIGN1cnJlbnQgcm9vdCAqLwot
-CQlpZiAoIXBhdGhfZXF1YWwoJnRtcCwgJnJvb3QpKSB7CisJCWlmIChjd2RbMF0gIT0gJy8nKSB7
-CiAJCQllcnJvciA9IHByZXBlbmRfdW5yZWFjaGFibGUoJmN3ZCwgJmJ1Zmxlbik7CiAJCQlpZiAo
-ZXJyb3IpCiAJCQkJZ290byBvdXQ7CmRpZmYgLS1naXQgYS9mcy9zZXFfZmlsZS5jIGIvZnMvc2Vx
-X2ZpbGUuYwppbmRleCAwNWQ2YjBlNzhjOTUuLmQ1YTEyODc0Njk3NCAxMDA2NDQKLS0tIGEvZnMv
-c2VxX2ZpbGUuYworKysgYi9mcy9zZXFfZmlsZS5jCkBAIC00MjcsNyArNDI3LDcgQEAgRVhQT1JU
-X1NZTUJPTChtYW5nbGVfcGF0aCk7CiAgKiByZXR1cm4gdGhlIGFic29sdXRlIHBhdGggb2YgJ3Bh
-dGgnLCBhcyByZXByZXNlbnRlZCBieSB0aGUKICAqIGRlbnRyeSAvIG1udCBwYWlyIGluIHRoZSBw
-YXRoIHBhcmFtZXRlci4KICAqLwotaW50IHNlcV9wYXRoKHN0cnVjdCBzZXFfZmlsZSAqbSwgc3Ry
-dWN0IHBhdGggKnBhdGgsIGNoYXIgKmVzYykKK2ludCBzZXFfcGF0aChzdHJ1Y3Qgc2VxX2ZpbGUg
-Km0sIGNvbnN0IHN0cnVjdCBwYXRoICpwYXRoLCBjaGFyICplc2MpCiB7CiAJY2hhciAqYnVmOwog
-CXNpemVfdCBzaXplID0gc2VxX2dldF9idWYobSwgJmJ1Zik7CkBAIC00NDksMTAgKzQ0OSw4IEBA
-IEVYUE9SVF9TWU1CT0woc2VxX3BhdGgpOwogCiAvKgogICogU2FtZSBhcyBzZXFfcGF0aCwgYnV0
-IHJlbGF0aXZlIHRvIHN1cHBsaWVkIHJvb3QuCi0gKgotICogcm9vdCBtYXkgYmUgY2hhbmdlZCwg
-c2VlIF9fZF9wYXRoKCkuCiAgKi8KLWludCBzZXFfcGF0aF9yb290KHN0cnVjdCBzZXFfZmlsZSAq
-bSwgc3RydWN0IHBhdGggKnBhdGgsIHN0cnVjdCBwYXRoICpyb290LAoraW50IHNlcV9wYXRoX3Jv
-b3Qoc3RydWN0IHNlcV9maWxlICptLCBjb25zdCBzdHJ1Y3QgcGF0aCAqcGF0aCwgY29uc3Qgc3Ry
-dWN0IHBhdGggKnJvb3QsCiAJCSAgY2hhciAqZXNjKQogewogCWNoYXIgKmJ1ZjsKZGlmZiAtLWdp
-dCBhL2luY2x1ZGUvbGludXgvZGNhY2hlLmggYi9pbmNsdWRlL2xpbnV4L2RjYWNoZS5oCmluZGV4
-IDRkZjkyNjE5OTM2OS4uNTgxZmVhYmE4MjYwIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2Rj
-YWNoZS5oCisrKyBiL2luY2x1ZGUvbGludXgvZGNhY2hlLmgKQEAgLTMzOSw3ICszMzksNyBAQCBl
-eHRlcm4gaW50IGRfdmFsaWRhdGUoc3RydWN0IGRlbnRyeSAqLCBzdHJ1Y3QgZGVudHJ5ICopOwog
-ICovCiBleHRlcm4gY2hhciAqZHluYW1pY19kbmFtZShzdHJ1Y3QgZGVudHJ5ICosIGNoYXIgKiwg
-aW50LCBjb25zdCBjaGFyICosIC4uLik7CiAKLWV4dGVybiBjaGFyICpfX2RfcGF0aChjb25zdCBz
-dHJ1Y3QgcGF0aCAqcGF0aCwgc3RydWN0IHBhdGggKnJvb3QsIGNoYXIgKiwgaW50KTsKK2V4dGVy
-biBjaGFyICpfX2RfcGF0aChjb25zdCBzdHJ1Y3QgcGF0aCAqcGF0aCwgY29uc3Qgc3RydWN0IHBh
-dGggKnJvb3QsIGNoYXIgKiwgaW50KTsKIGV4dGVybiBjaGFyICpkX3BhdGgoY29uc3Qgc3RydWN0
-IHBhdGggKiwgY2hhciAqLCBpbnQpOwogZXh0ZXJuIGNoYXIgKmRfcGF0aF93aXRoX3VucmVhY2hh
-YmxlKGNvbnN0IHN0cnVjdCBwYXRoICosIGNoYXIgKiwgaW50KTsKIGV4dGVybiBjaGFyICpkZW50
-cnlfcGF0aF9yYXcoc3RydWN0IGRlbnRyeSAqLCBjaGFyICosIGludCk7CmRpZmYgLS1naXQgYS9p
-bmNsdWRlL2xpbnV4L3NlcV9maWxlLmggYi9pbmNsdWRlL2xpbnV4L3NlcV9maWxlLmgKaW5kZXgg
-MGI2OWE0Njg0MjE2Li4wYjBhMDE1YzU1M2EgMTAwNjQ0Ci0tLSBhL2luY2x1ZGUvbGludXgvc2Vx
-X2ZpbGUuaAorKysgYi9pbmNsdWRlL2xpbnV4L3NlcV9maWxlLmgKQEAgLTg2LDkgKzg2LDkgQEAg
-aW50IHNlcV93cml0ZShzdHJ1Y3Qgc2VxX2ZpbGUgKnNlcSwgY29uc3Qgdm9pZCAqZGF0YSwgc2l6
-ZV90IGxlbik7CiAKIF9fcHJpbnRmKDIsIDMpIGludCBzZXFfcHJpbnRmKHN0cnVjdCBzZXFfZmls
-ZSAqLCBjb25zdCBjaGFyICosIC4uLik7CiAKLWludCBzZXFfcGF0aChzdHJ1Y3Qgc2VxX2ZpbGUg
-Kiwgc3RydWN0IHBhdGggKiwgY2hhciAqKTsKK2ludCBzZXFfcGF0aChzdHJ1Y3Qgc2VxX2ZpbGUg
-KiwgY29uc3Qgc3RydWN0IHBhdGggKiwgY2hhciAqKTsKIGludCBzZXFfZGVudHJ5KHN0cnVjdCBz
-ZXFfZmlsZSAqLCBzdHJ1Y3QgZGVudHJ5ICosIGNoYXIgKik7Ci1pbnQgc2VxX3BhdGhfcm9vdChz
-dHJ1Y3Qgc2VxX2ZpbGUgKm0sIHN0cnVjdCBwYXRoICpwYXRoLCBzdHJ1Y3QgcGF0aCAqcm9vdCwK
-K2ludCBzZXFfcGF0aF9yb290KHN0cnVjdCBzZXFfZmlsZSAqbSwgY29uc3Qgc3RydWN0IHBhdGgg
-KnBhdGgsIGNvbnN0IHN0cnVjdCBwYXRoICpyb290LAogCQkgIGNoYXIgKmVzYyk7CiBpbnQgc2Vx
-X2JpdG1hcChzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIGNvbnN0IHVuc2lnbmVkIGxvbmcgKmJpdHMsCiAJ
-CQkJICAgdW5zaWduZWQgaW50IG5yX2JpdHMpOwo=
---f46d043891212745b504b37508b6--
+--Signature=_Wed__7_Dec_2011_10_52_52_+1100_hUws5Zn40Fw8ZpLX--
