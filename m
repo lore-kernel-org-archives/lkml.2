@@ -1,153 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab1LFVda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 16:33:30 -0500
-Received: from fieldses.org ([174.143.236.118]:51650 "EHLO fieldses.org"
+	id S1754753Ab1LFVfE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 16:35:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34157 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754487Ab1LFVd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 16:33:26 -0500
-Date: Tue, 6 Dec 2011 16:33:22 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
-        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
-Subject: Re: [PATCH 1/2] SUNRPC: register RPC stats /proc entries in passed
- network namespace context
-Message-ID: <20111206213322.GE12640@fieldses.org>
-References: <20111206123748.15702.93290.stgit@localhost6.localdomain6>
- <20111206124240.15702.61866.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206124240.15702.61866.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752974Ab1LFVfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 16:35:01 -0500
+Date: Wed, 7 Dec 2011 08:34:46 +1100
+From: NeilBrown <neilb@suse.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Ming Lei <tom.leiming@gmail.com>,
+        Chen Peter-B29397 <B29397@freescale.com>, Greg KH <greg@kroah.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH] Driver core: leave runtime PM enabled during system
+ shutdown
+Message-ID: <20111207083446.6ad6aa02@notabene.brown>
+In-Reply-To: <Pine.LNX.4.44L0.1112061024240.1469-100000@iolanthe.rowland.org>
+References: <201112052332.10822.rjw@sisk.pl>
+	<Pine.LNX.4.44L0.1112061024240.1469-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/qX.H.KbRet==tzqLA4Ax7iv"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 04:42:40PM +0300, Stanislav Kinsbursky wrote:
-> This patch makes it possible to create NFS program entry ("/proc/net/rpc/nfs")
-> in passed network namespace context instead of hard-coded "init_net".
+--Sig_/qX.H.KbRet==tzqLA4Ax7iv
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Looks straightforward to me.
+On Tue, 6 Dec 2011 10:26:14 -0500 (EST) Alan Stern
+<stern@rowland.harvard.edu> wrote:
 
-	Acked-by: J. Bruce Fields <bfields@redhat.com>
-
---b.
-
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
+> Disabling all runtime PM during system shutdown turns out not to be a
+> good idea, because some devices may need to be woken up from a
+> low-power state at that time.
+>=20
+> The whole point of disabling runtime PM for system shutdown was to
+> prevent untimely runtime-suspend method calls.  This patch (as1504)
+> accomplishes the same result by incrementing the usage count for each
+> device and waiting for ongoing runtime-PM callbacks to finish.  This
+> is what we already do during system suspend and hibernation, which
+> makes sense since the shutdown method is pretty much a legacy analog
+> of the pm->poweroff method.
+>=20
+> This fixes a regression on some OMAP systems.
+>=20
+> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+> Reported-by: NeilBrown <neilb@suse.de>
+> CC: Chen Peter-B29397 <B29397@freescale.com>
+>=20
 > ---
->  fs/nfs/inode.c               |    6 +++---
->  include/linux/sunrpc/stats.h |    8 ++++----
->  net/sunrpc/stats.c           |   15 ++++++++-------
->  3 files changed, 15 insertions(+), 14 deletions(-)
-> 
-> diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-> index 98b2508..5cad6c5 100644
-> --- a/fs/nfs/inode.c
-> +++ b/fs/nfs/inode.c
-> @@ -1623,14 +1623,14 @@ static int __init init_nfs_fs(void)
->  		goto out0;
->  
->  #ifdef CONFIG_PROC_FS
-> -	rpc_proc_register(&nfs_rpcstat);
-> +	rpc_proc_register(&init_net, &nfs_rpcstat);
->  #endif
->  	if ((err = register_nfs_fs()) != 0)
->  		goto out;
->  	return 0;
->  out:
->  #ifdef CONFIG_PROC_FS
-> -	rpc_proc_unregister("nfs");
-> +	rpc_proc_unregister(&init_net, "nfs");
->  #endif
->  	nfs_destroy_directcache();
->  out0:
-> @@ -1669,7 +1669,7 @@ static void __exit exit_nfs_fs(void)
->  	nfs_dns_resolver_destroy();
->  	nfs_idmap_quit();
->  #ifdef CONFIG_PROC_FS
-> -	rpc_proc_unregister("nfs");
-> +	rpc_proc_unregister(&init_net, "nfs");
->  #endif
->  	nfs_cleanup_cb_ident_idr();
->  	unregister_nfs_fs();
-> diff --git a/include/linux/sunrpc/stats.h b/include/linux/sunrpc/stats.h
-> index 680471d..f625b57 100644
-> --- a/include/linux/sunrpc/stats.h
-> +++ b/include/linux/sunrpc/stats.h
-> @@ -58,8 +58,8 @@ void			rpc_modcount(struct inode *, int);
->  #endif
->  
->  #ifdef CONFIG_PROC_FS
-> -struct proc_dir_entry *	rpc_proc_register(struct rpc_stat *);
-> -void			rpc_proc_unregister(const char *);
-> +struct proc_dir_entry *	rpc_proc_register(struct net *,struct rpc_stat *);
-> +void			rpc_proc_unregister(struct net *,const char *);
->  void			rpc_proc_zero(struct rpc_program *);
->  struct proc_dir_entry *	svc_proc_register(struct svc_stat *,
->  					  const struct file_operations *);
-> @@ -69,8 +69,8 @@ void			svc_seq_show(struct seq_file *,
->  				     const struct svc_stat *);
->  #else
->  
-> -static inline struct proc_dir_entry *rpc_proc_register(struct rpc_stat *s) { return NULL; }
-> -static inline void rpc_proc_unregister(const char *p) {}
-> +static inline struct proc_dir_entry *rpc_proc_register(struct net *, struct rpc_stat *s) { return NULL; }
-> +static inline void rpc_proc_unregisterstruct net *, (const char *p) {}
->  static inline void rpc_proc_zero(struct rpc_program *p) {}
->  
->  static inline struct proc_dir_entry *svc_proc_register(struct svc_stat *s,
-> diff --git a/net/sunrpc/stats.c b/net/sunrpc/stats.c
-> index 80df89d..f0f6e7c 100644
-> --- a/net/sunrpc/stats.c
-> +++ b/net/sunrpc/stats.c
-> @@ -213,28 +213,29 @@ EXPORT_SYMBOL_GPL(rpc_print_iostats);
->   * Register/unregister RPC proc files
->   */
->  static inline struct proc_dir_entry *
-> -do_register(const char *name, void *data, const struct file_operations *fops)
-> +do_register(struct net *net, const char *name, void *data,
-> +	    const struct file_operations *fops)
->  {
->  	struct sunrpc_net *sn;
->  
->  	dprintk("RPC:       registering /proc/net/rpc/%s\n", name);
-> -	sn = net_generic(&init_net, sunrpc_net_id);
-> +	sn = net_generic(net, sunrpc_net_id);
->  	return proc_create_data(name, 0, sn->proc_net_rpc, fops, data);
->  }
->  
->  struct proc_dir_entry *
-> -rpc_proc_register(struct rpc_stat *statp)
-> +rpc_proc_register(struct net *net, struct rpc_stat *statp)
->  {
-> -	return do_register(statp->program->name, statp, &rpc_proc_fops);
-> +	return do_register(net, statp->program->name, statp, &rpc_proc_fops);
->  }
->  EXPORT_SYMBOL_GPL(rpc_proc_register);
->  
->  void
-> -rpc_proc_unregister(const char *name)
-> +rpc_proc_unregister(struct net *net, const char *name)
->  {
->  	struct sunrpc_net *sn;
->  
-> -	sn = net_generic(&init_net, sunrpc_net_id);
-> +	sn = net_generic(net, sunrpc_net_id);
->  	remove_proc_entry(name, sn->proc_net_rpc);
->  }
->  EXPORT_SYMBOL_GPL(rpc_proc_unregister);
-> @@ -242,7 +243,7 @@ EXPORT_SYMBOL_GPL(rpc_proc_unregister);
->  struct proc_dir_entry *
->  svc_proc_register(struct svc_stat *statp, const struct file_operations *fops)
->  {
-> -	return do_register(statp->program->pg_name, statp, fops);
-> +	return do_register(&init_net, statp->program->pg_name, statp, fops);
->  }
->  EXPORT_SYMBOL_GPL(svc_proc_register);
->  
-> 
+>=20
+>  drivers/base/core.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+>=20
+> Index: usb-3.2/drivers/base/core.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- usb-3.2.orig/drivers/base/core.c
+> +++ usb-3.2/drivers/base/core.c
+> @@ -1743,8 +1743,10 @@ void device_shutdown(void)
+>  		 */
+>  		list_del_init(&dev->kobj.entry);
+>  		spin_unlock(&devices_kset->list_lock);
+> -		/* Disable all device's runtime power management */
+> -		pm_runtime_disable(dev);
+> +
+> +		/* Don't allow any more runtime suspends */
+> +		pm_runtime_get_noresume(dev);
+> +		pm_runtime_barrier(dev);
+> =20
+>  		if (dev->bus && dev->bus->shutdown) {
+>  			dev_dbg(dev, "shutdown\n");
+
+
+Thanks a lot.
+I can confirm that this definitely fixes my problem.
+  Tested-by: NeilBrown <neilb@suse.de>
+
+Thanks for your help!
+
+NeilBrown
+
+--Sig_/qX.H.KbRet==tzqLA4Ax7iv
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTt6Kdjnsnt1WYoG5AQLKTw//dAkNcpdC6jyHCEQ1Enpv/vQgyxgmDAEa
+VuM/R6lNBI4Nc0vSFKVuLIQ28zojgV/8hpR0LIWumSFYGcbaS71sI6MaCm0lq+sN
+6zt9BdtRAa/eamRgpDo7a2HYm0pQ7nshOt3Msex6fYrnau5kUAfSZkWFV9xE5PTh
+y7a67wPuk2YtMvhNQDCQlQgISbMaZMBl7qLcVhQJprEj4fNzhWw/CB/JTksYAbHz
+57GMyIQiXQ0dKuC4TeDzNzVX+0VAA8dLTws9kbbndWSHLhY4VFdG/VP0OF2oSe/O
+SBkIq09KhFfHss7MNG8PUsW5j5cBlYu5y8g3F0XQV5vAf7TftZTTNDWHpfce8qFH
+kw8WZ4EOCmxNu0WNrH9QnozdkGsyykdEgasBklbHVxL+fVvghUn3tjsLQXlnViva
+/qCVH3vh8RszRzoqPnRT4AW05g9MZcwpCvwsyGMAVty+sGlyWP/UASppxBm3shB/
+JWzTNmOCcCWFHW+VUqNQvpl8E4KBNgFKc8eaWRquRv8qlX7LW/aT9Yy+aEBM2DmY
+KM+c0Bs1T+6cpWs+4XmLL9lfBxUZlyM/1XlMPqzCW0nur9+Gpu1VUSn4fMsvR+O4
+4sKhce75BLQylvd5YIGzgo/8oXb69Fv6EhKjAJGfKTFfzhC1zh+d1O6Bk/fLo7NX
+UzkcOiRC3XY=
+=jetS
+-----END PGP SIGNATURE-----
+
+--Sig_/qX.H.KbRet==tzqLA4Ax7iv--
