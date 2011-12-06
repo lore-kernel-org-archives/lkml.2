@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933338Ab1LFLZh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 06:25:37 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38045 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab1LFLZf (ORCPT
+	id S933352Ab1LFLZt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 06:25:49 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:43741 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab1LFLZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 06:25:35 -0500
-Date: Tue, 6 Dec 2011 11:25:31 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Pali Roh?r <pali.rohar@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
-        Vladimir Zapolskiy <vz@mleia.com>
-Subject: Re: [PATCH] mfd: add bq2415x charger driver
-Message-ID: <20111206112531.GD17194@sirena.org.uk>
-References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
- <2013134.msetbOSBe8@pali-elitebook>
- <CAMP44s1TrRkcy-xS+fXMyv0FAL1TnsPnnTa=gHSd2=P=iFkSUg@mail.gmail.com>
- <8650361.EbH1hYJT76@pali-elitebook>
+	Tue, 6 Dec 2011 06:25:36 -0500
+Message-ID: <4EDDFB8E.10801@linux.vnet.ibm.com>
+Date: Tue, 06 Dec 2011 16:55:02 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8650361.EbH1hYJT76@pali-elitebook>
-X-Cookie: Garbage In, Gospel Out
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Ingo Molnar <mingo@elte.hu>
+CC: Fenghua Yu <fenghua.yu@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Borislav Petkov <bp@amd64.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
+References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com> <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu> <4EDDE5D0.7030906@linux.vnet.ibm.com> <20111206103500.GD15966@elte.hu> <4EDDF2DE.7020701@linux.vnet.ibm.com>
+In-Reply-To: <4EDDF2DE.7020701@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120601-0260-0000-0000-0000002C9972
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 08:25:49AM +0100, Pali Roh?r wrote:
-> On Tuesday 06 December 2011 02:12:47 you wrote:
+On 12/06/2011 04:17 PM, Srivatsa S. Bhat wrote:
 
-> > Also, I'm not familiar with the regulator interface, but it seems to
-> > be meant for real regulators, which have consumers, and based on those
-> > consumers's needs the real voltage changes. This battery charger on
-> > the other hand doesn't have anything like that. There will be no
-> > consumer, and some stuff like the weak battery voltage is not even
-> > related to a voltage supply, but rather a threshold that can be
-> > configured to change some behavior of the charger, but there's no
-> > point in changing it dynamically (or maybe at all).
+> On 12/06/2011 04:05 PM, Ingo Molnar wrote:
+> 
+>>
+>> * Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>>
+>>>> But the hibernation angle should be considered. Hibernation 
+>>>> already has to deal with the case where someone physically 
+>>>> unplugs a CPU and then resumes from the disk image, right? 
+>>>> How does the hibernation code handle that case currently?
+>>>
+>>> Oh, wait a minute. Are we talking about physical CPU Hotplug 
+>>> in between hibernation and restore? AFAIK, currently we don't 
+>>> handle that at all. [...]
+>>
+>> Well, not hotplug, but plain old-fashioned: 'hibernate the box, 
+>> take out a CPU physically and thaw' kind of hardware change.
+>>
+> 
+> 
+> Well, actually that's what I meant, taking this same idea a bit
+> further: hibernate the box, take out a CPU physically, insert a
+> slightly different CPU (which needs a different microcode image)
+> and thaw.
+> 
+> In this case, the other patch that I mentioned in my previous mail
+> would be required (or an equivalent), because the optimization
+> patch which is now in mainline, would apply the same old microcode
+> image on this new CPU too, blindly.
+> 
 
-> If regulator interface is not good, I can change it to some sysfs interface. 
-> But bq2415x chip driver is not only rx51 specified, so it should handle all 
-> chip capabilities.
 
-It's been used by a few charger drivers not for the voltage regulation
-but for the current regulation interface - it does provide an
-abstraction allowing the battery driver to vary the current going into
-the battery independantly of the thing regulating that current.  This
-does depend on what control the charger offers, some are designed to be
-more autonomous than others.
+By the way, this problem is not tied to CPU0 alone, it exists for any
+CPU! (as long as we are talking about plugging in/out CPUs physically).
+
+Regards,
+Srivatsa S. Bhat
+
