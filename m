@@ -1,103 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab1LFUDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 15:03:00 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36121 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760Ab1LFUC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 15:02:59 -0500
-Date: Tue, 6 Dec 2011 21:01:08 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, robert.richter@amd.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/debug] x86, NMI: Add NMI IPI selftest
-Message-ID: <20111206200108.GA30264@elte.hu>
-References: <1318533267-18880-3-git-send-email-dzickus@redhat.com>
- <tip-99e8b9ca90d688c3ac7d3a141b701c9694a93925@git.kernel.org>
- <20111206090612.GA18662@elte.hu>
- <20111206180859.GR1669@redhat.com>
+	id S1753359Ab1LFUNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 15:13:15 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61757 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab1LFUNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 15:13:14 -0500
+Date: Tue, 6 Dec 2011 12:13:10 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>, Mike Galbraith <efault@gmx.de>
+cc: Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>,
+        Tejun Heo <htejun@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [patch-final] Re: patch] cpusets, cgroups: disallow attaching
+ kthreadd
+In-Reply-To: <alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net> <4E7C2E7F.40307@cn.fujitsu.com> <1316762345.8168.4.camel@marge.simson.net> <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com> <1316770936.6641.11.camel@marge.simson.net>
+ <1316775204.7562.9.camel@marge.simson.net> <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com> <1316788392.6544.33.camel@marge.simson.net> <1318224892.6161.45.camel@marge.simson.net> <1318233815.6527.5.camel@marge.simson.net>
+ <1318925436.9641.23.camel@marge.simson.net> <CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com> <1319001860.6222.34.camel@marge.simson.net> <alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206180859.GR1669@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 10 Nov 2011, David Rientjes wrote:
 
-* Don Zickus <dzickus@redhat.com> wrote:
-
-> On Tue, Dec 06, 2011 at 10:06:12AM +0100, Ingo Molnar wrote:
-> > 
-> > * tip-bot for Don Zickus <dzickus@redhat.com> wrote:
-> > 
-> > > Commit-ID:  99e8b9ca90d688c3ac7d3a141b701c9694a93925
-> > > Gitweb:     http://git.kernel.org/tip/99e8b9ca90d688c3ac7d3a141b701c9694a93925
-> > > Author:     Don Zickus <dzickus@redhat.com>
-> > > AuthorDate: Thu, 13 Oct 2011 15:14:26 -0400
-> > > Committer:  Ingo Molnar <mingo@elte.hu>
-> > > CommitDate: Mon, 5 Dec 2011 12:00:16 +0100
-> > > 
-> > > x86, NMI: Add NMI IPI selftest
-> > 
-> > The NMI test-suite has caught some badness:
-> > 
-> > [    0.179992] calling  tracer_alloc_buffers+0x0/0x224 @ 1
-> > [    0.183417] initcall tracer_alloc_buffers+0x0/0x224 returned 0 after 0 usecs
-> > [    0.186658] calling  init_trace_printk+0x0/0xf @ 1
-> > [    0.189992] initcall init_trace_printk+0x0/0xf returned 0 after 0 usecs
-> > [    0.193324] Brought up 1 CPUs
-> > [    0.196657] ----------------
-> > [    0.199989] | NMI testsuite:
-> > [    0.203322] --------------------
-> > [    0.206655]   remote IPI:
-> > [    0.209991] ------------[ cut here ]------------
-> > [    0.213325] WARNING: at arch/x86/kernel/apic/ipi.c:109 default_send_IPI_mask_logical+0xdb/0x120()
-> > [    0.216655] Hardware name: System Product Name
-> > [    0.219987] empty IPI mask
-> > [    0.223321] Modules linked in:
-> > [    0.227015] Pid: 1, comm: swapper/0 Tainted: G        W    3.2.0-rc4-tip+ #163124
-> > [    0.229987] Call Trace:
-> > [    0.233326]  [<c102e2a2>] warn_slowpath_common+0x72/0xa0
-> > [    0.236656]  [<c101e04b>] ? default_send_IPI_mask_logical+0xdb/0x120
-> > [    0.239989]  [<c101e04b>] ? default_send_IPI_mask_logical+0xdb/0x120
-> > [    0.243321]  [<c102e373>] warn_slowpath_fmt+0x33/0x40
-> > [    0.246655]  [<c101e04b>] default_send_IPI_mask_logical+0xdb/0x120
-> > [    0.249988]  [<c1024025>] test_nmi_ipi.constprop.2+0x55/0xb0
-> > [    0.253320]  [<c10240c8>] remote_ipi+0x48/0x80
-> > [    0.256654]  [<c102417d>] dotest.constprop.3+0xd/0x90
-> > [    0.259987]  [<c1024265>] nmi_selftest+0x65/0x120
-> > [    0.263320]  [<c14d4e73>] native_smp_cpus_done+0x15/0xff
-> > [    0.266653]  [<c14ddf3f>] smp_init+0xdb/0xe2
-> > [    0.269988]  [<c14cb7bb>] ? start_kernel+0x386/0x386
-> > [    0.273320]  [<c14cb81d>] kernel_init+0x62/0x118
-> > [    0.276653]  [<c138bb3e>] kernel_thread_helper+0x6/0x10
-> > 
-> > That's an empty IPI mask. NOTE the boot parameters i used:
+> On Wed, 26 Oct 2011, David Rientjes wrote:
 > 
-> I'm on paternity leave, [...]
+> > On Wed, 19 Oct 2011, Mike Galbraith wrote:
+> > 
+> > > cpusets, cgroups: disallow attaching kthreadd
+> > > 
+> > > Allowing kthreadd to be moved to a non-root group makes no sense, it being
+> > > a global resource, and needlessly leads unsuspecting users toward trouble.
+> > > 
+> > > 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+> > > allocated is not schedulable.  Simple user error, but harmful to the box.
+> > > 
+> > > 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+> > > rendering the cpuset immortal.
+> > > 
+> > > Save the user some unexpected trouble, just say no.
+> > > 
+> > > Signed-off-by: Mike Galbraith <efault@gmx.de>
+> > > Acked-by: David Rientjes <rientjes@google.com>
+> > > Acked-by: Paul Menage <paul@paulmenage.org>
+> > > 
+> > 
+> > Let's add Andrew to the cc so we can get it in -mm, I haven't seen it hit 
+> > linux-next yet.
+> > 
+> 
+> Ping?  Still missing from -mm and linux-next.
+> 
 
-Congrats! :)
+Ping #2?
 
-> [...] so I hacked this up for now and compiled tested this.  
-> On Monday I can dive into this further if the patch below 
-> doesn't solve it.
-
-I'll apply this one and will let you know if there are other 
-problems (but i think it will solve it).
-
-Thanks,
-
-	Ingo
+> > > ---
+> > >  kernel/cpuset.c |    6 ++++--
+> > >  kernel/sched.c  |   10 ++++++++++
+> > >  2 files changed, 14 insertions(+), 2 deletions(-)
+> > > 
+> > > Index: linux-3.0-tip/kernel/cpuset.c
+> > > ===================================================================
+> > > --- linux-3.0-tip.orig/kernel/cpuset.c
+> > > +++ linux-3.0-tip/kernel/cpuset.c
+> > > @@ -59,6 +59,7 @@
+> > >  #include <linux/mutex.h>
+> > >  #include <linux/workqueue.h>
+> > >  #include <linux/cgroup.h>
+> > > +#include <linux/kthread.h>
+> > >  
+> > >  /*
+> > >   * Workqueue for cpuset related tasks.
+> > > @@ -1382,9 +1383,10 @@ static int cpuset_can_attach(struct cgro
+> > >  	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
+> > >  	 * applicable for such threads.  This prevents checking for success of
+> > >  	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+> > > -	 * be changed.
+> > > +	 * be changed.  We also disallow attaching kthreadd, to prevent it's
+> > > +	 * child from becoming trapped should it then acquire PF_THREAD_BOUND.
+> > >  	 */
+> > > -	if (tsk->flags & PF_THREAD_BOUND)
+> > > +	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
+> > >  		return -EINVAL;
+> > >  
+> > >  	return 0;
+> > > Index: linux-3.0-tip/kernel/sched.c
+> > > ===================================================================
+> > > --- linux-3.0-tip.orig/kernel/sched.c
+> > > +++ linux-3.0-tip/kernel/sched.c
+> > > @@ -71,6 +71,7 @@
+> > >  #include <linux/ctype.h>
+> > >  #include <linux/ftrace.h>
+> > >  #include <linux/slab.h>
+> > > +#include <linux/kthread.h>
+> > >  
+> > >  #include <asm/tlb.h>
+> > >  #include <asm/irq_regs.h>
+> > > @@ -9141,6 +9142,15 @@ cpu_cgroup_destroy(struct cgroup_subsys
+> > >  static int
+> > >  cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+> > >  {
+> > > +	/*
+> > > +	 * kthreadd can fork workers for an RT workqueue in a cgroup
+> > > +	 * which may or may not have rt_runtime allocated.  Just say no,
+> > > +	 * as attaching a global resource to a non-root group  doesn't
+> > > +	 * make any sense anyway.
+> > > +	 */
+> > > +	if (tsk == kthreadd_task)
+> > > +		return -EINVAL;
+> > > +
+> > >  #ifdef CONFIG_RT_GROUP_SCHED
+> > >  	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
+> > >  		return -EINVAL;
+> 
