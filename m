@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab1LFK2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 05:28:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35566 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933052Ab1LFK2S convert rfc822-to-8bit (ORCPT
+	id S933221Ab1LFK20 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 05:28:26 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63354 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933052Ab1LFK2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 05:28:18 -0500
-Message-ID: <1323167246.32012.60.camel@twins>
-Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
- involving interrupt disabling
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Date: Tue, 06 Dec 2011 11:27:26 +0100
-In-Reply-To: <1323165152.32012.51.camel@twins>
-References: <20111203183417.GA18914@linux.vnet.ibm.com>
-	 <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20111205091924.GA28117@zhy> <20111205164505.GB2326@linux.vnet.ibm.com>
-	 <20111206012635.GA32498@zhy> <1323165152.32012.51.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 6 Dec 2011 05:28:23 -0500
+Message-ID: <4EDDEE15.3090200@polito.it>
+Date: Tue, 06 Dec 2011 11:27:33 +0100
+From: Roberto Sassu <roberto.sassu@polito.it>
+Organization: Politecnico di Torino
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jmorris@namei.org
+Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
+References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>  <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>  <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>  <1321564518.21708.63.camel@falcor> <4EC63302.4040006@polito.it>  <1321637471.2158.44.camel@falcor> <4ECA6595.7010406@polito.it>  <1323041763.2061.22.camel@falcor> <4EDC9726.1040801@polito.it>  <1323090236.2061.63.camel@falcor> <4EDCCD7D.7010406@polito.it> <1323118629.2061.117.camel@falcor>
+In-Reply-To: <1323118629.2061.117.camel@falcor>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-06 at 10:52 +0100, Peter Zijlstra wrote:
-> On Tue, 2011-12-06 at 09:26 +0800, Yong Zhang wrote:
-> 
-> > Yeah, because we call might_sleep() in rt_mutex_lock() unconditionally.
-> > But in this case the 'BUG: sleeping function called from invalid context
-> > at *' is obviously false positive.
-> 
-> Why can't this mutex acquisition not block?
+On 12/05/2011 09:57 PM, Mimi Zohar wrote:
+> On Mon, 2011-12-05 at 14:56 +0100, Roberto Sassu wrote:
+>> On 12/05/2011 02:03 PM, Mimi Zohar wrote:
+>>> On Mon, 2011-12-05 at 11:04 +0100, Roberto Sassu wrote:
+>>>
+>>>> Hi Mimi
+>>>>
+>>>> i think moving this logic to the TPM driver (or in general, delaying
+>>>> the action after the list mutex is unlocked) is not safe, because in
+>>>> this way you are relying on the kernel trustworthiness to protect
+>>>> itself and IMA against unmeasured potential attacks. So, the verifier
+>>>> is unable to detect a kernel tampering that removed the limitation
+>>>> on the TPM Quote operation.
+>>>>
+>>>> What i'm proposing in the patch:
+>>>>
+>>>> https://lkml.org/lkml/2011/11/21/202
+>>>>
+>>>> is in fact a new extension, which is triggered by a new kernel
+>>>> parameter, so that the behaviour of the base IMA is not modified.
+>>>
+>>> How/why the TPM fails is important.  If the TPM fails because of an
+>>> intermittent problem, then your solution of denying read/execute could
+>>> work, but what would happen if it was persistent?  Would you be able to
+>>> quiesce the system?
+>>>
+>>> As there is no way of differentiating a persistent from intermittent
+>>> failure, both need to be addressed in the same manor.  For persistent
+>>> TPM failure, we can not access the TPM to modify the PCR.  So what
+>>> options do we have left?  My suggestion, though not optimal, prevents
+>>> the IMA PCR from being quoted.
+>>>
+>>
+>> Hi Mimi
+>>
+>> the solution you are proposing is reasonable as the default
+>> behaviour, because not all IMA users need the high confidence
+>> in the measurements, as ensured by denying the execution of
+>> system calls.
+>>
+>> However, during the IMA initialization the TPM is tested
+>> by issuing a PCR read (the test procedure may be extended
+>> to better detect existing errors in advance). So, this means
+>> that a TPM failure when the system is already powered on is
+>> very unlikely and may cause serious issues as it could happen
+>> if other devices are involved.
+>>
+>> For this reason, also my extension seems helpful especially
+>> in the situations where all events need to be measured properly.
+>> In this case, IMA users are aware that a TPM failure could hang
+>> their systems, because they need to manually insert the required
+>> kernel parameter.
+>
+> As you said a TPM failure is very unlikely, what type of attack are you
+> trying to defend against, that could possibly warrant causing the system
+> to hang?
+>
 
-Gaah!! I see, this 5342e269 patch is revolting.. guys that's really vile
-don't do that!
+I don't know if this can really happen, but an attacker may issue
+a lot of commands to the TPM, so that the timeout limit is reached
+when IMA is trying to extend the PCR.
 
-I tried reading the RCU code but I gave up.. rcu_boost() does:
-
-  rt_mutex_init_proxy_locked();
-  raw_spin_unlock_irqrestore();
-  rt_mutex_lock();
-  rt_mutex_unlock();
-
-vs rcu_read_unlock_special()'s RCU_READ_UNLOCK_BLOCKED branch:
-
-  rt_mutex_unlock();
+Roberto Sassu
 
 
-The latter looks to be unbalanced because I can't actually find a
-matching lock. Also, all of that is ran with IRQs enabled. So what's the
-problem?
-
+> Mimi
+>
 
