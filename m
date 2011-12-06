@@ -1,32 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933216Ab1LFMox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 07:44:53 -0500
-Received: from smtp.mail.umich.edu ([141.211.14.82]:33121 "EHLO
-	hellskitchen.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933094Ab1LFMov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 07:44:51 -0500
-Date: Tue, 6 Dec 2011 07:44:27 -0500
-From: Jim Rees <rees@umich.edu>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
-        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	id S933250Ab1LFMpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 07:45:01 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:44370 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933094Ab1LFMpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 07:45:00 -0500
+Subject: [PATCH 0/2] SUNRPC: make /proc helpers network-namespace-aware
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Subject: Re: [PATCH] SUNRPC: create svc_xprt in proper network namespace
-Message-ID: <20111206124427.GA12890@umich.edu>
-References: <20111206101910.1878.21798.stgit@localhost6.localdomain6>
+Date: Tue, 06 Dec 2011 16:42:27 +0300
+Message-ID: <20111206123748.15702.93290.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206101910.1878.21798.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanislav Kinsbursky wrote:
+This is one more precursor patch set. Both patches in the series will be used
+later for creating /proc entries for NFS and NFSd statistics per network
+namespace context.
 
-  This patch makes svc_xprt inherit network namespace link from it's socket.
+The following series consists of:
 
-Should be "its socket."
+---
+
+Stanislav Kinsbursky (2):
+      SUNRPC: register RPC stats /proc entries in passed network namespace context
+      SUNRPC: register service stats /proc entries in passed network namespace context
+
+
+ fs/nfs/inode.c               |    6 +++---
+ fs/nfsd/stats.c              |    5 +++--
+ include/linux/sunrpc/stats.h |   16 ++++++++--------
+ net/sunrpc/stats.c           |   21 +++++++++++----------
+ 4 files changed, 25 insertions(+), 23 deletions(-)
+
