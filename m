@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab1LFWbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:31:48 -0500
-Received: from lvps80-90-199-152.vps.webfusion.co.uk ([80.90.199.152]:51546
-	"EHLO lvps80-90-199-152.vps.webfusion.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753286Ab1LFWbq (ORCPT
+	id S1755379Ab1LFWcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:32:13 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:33197 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421Ab1LFWcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:31:46 -0500
-Date: Tue, 6 Dec 2011 23:31:09 +0100
-From: Baptiste Jonglez <baptiste@jonglez.org>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: joeyli <jlee@suse.com>, Baptiste Jonglez <baptiste@jonglez.org>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx@lists.freedesktop.org,
-        Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
-Subject: Re: [Dual-LVDS Acer Iconia laptop] i915/DRM issue: one screen stays
- off [3.2-rc4+]
-Message-ID: <20111206223109.GA1867@archminux>
-Mail-Followup-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-	joeyli <jlee@suse.com>, Baptiste Jonglez <baptiste@jonglez.org>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	intel-gfx@lists.freedesktop.org,
-	Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
-References: <20111204160728.GA27292@archminux>
- <1323054041.6046.79.camel@linux-s257.site>
- <20111206215137.GA20907@archminux>
- <CAN+gG=EaG1h=seuKQa_SF2O033WWn52USh=tjO9F9O55DgH17Q@mail.gmail.com>
+	Tue, 6 Dec 2011 17:32:12 -0500
+Date: Tue, 6 Dec 2011 14:31:37 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Yongqiang Yang <xiaoqiangnk@gmail.com>
+cc: Allison Henderson <achender@linux.vnet.ibm.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
+        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+In-Reply-To: <CAGBYx2YA3B5-nLxwdHavmd=794ycrpqnMbvM=VabrdPL2FQ0sw@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1112061412310.1949@sister.anvils>
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com> <alpine.LSU.2.00.1111201121120.1264@sister.anvils> <20111121165626.GD14568@thunk.org> <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils>
+ <4EDD729E.2060402@linux.vnet.ibm.com> <alpine.LSU.2.00.1112060030220.1615@sister.anvils> <CAGBYx2YA3B5-nLxwdHavmd=794ycrpqnMbvM=VabrdPL2FQ0sw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+gG=EaG1h=seuKQa_SF2O033WWn52USh=tjO9F9O55DgH17Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-813777252-1323210711=:1949"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 11:12:26PM +0100, Benjamin Tissoires wrote:
-> Hi Baptiste,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi,
+--8323584-813777252-1323210711=:1949
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-> On Tue, Dec 6, 2011 at 22:51, Baptiste Jonglez <baptiste@jonglez.org> wrote:
-> > The second screen works fine with the attached patch. It actually is
-> > 6 months old but seems to have been lost in the wild...
-> 
-> You don't have the problem of the second backlight still off?
-> On our Iconia, we need to trigger a special DMI command to set it up
-> (SDSS, IIRC).
+On Tue, 6 Dec 2011, Yongqiang Yang wrote:
+> On Tue, Dec 6, 2011 at 4:55 PM, Hugh Dickins <hughd@google.com> wrote:
+> >
+> > I've now tried the fsx test on three machines, with both 1/2 and 2/2
+> > applied to 3.2-rc4. =A0On one machine, with ext2 on loop on tmpfs, the
+> > fsx test failed in a couple of minutes with those patches; on another
+> > machine, with ext2 on loop on tmpfs, it failed after about 40 minutes
+> > with =A0the patches; on this laptop, with ext2 on SSD, it's just now
+> > failed after 35 minutes with the patches.
 
-No, with the patch, it worked out-of-the-box.
+> ext2?  So files are indirect mapped?  If so, the failure should has
+> nothing to do with punching hole, I remember that punch hole is not
+> supported for indirect mapped files.
 
-I can even control the brightness in
-`/sys/class/backlight/acpi_video0/brightness' (it affects both
-displays at the same time though). But even at 0, it's still perfectly
-readable.
+Yes, I am not trying to test hole punching: just trying to do my own
+testing under traditional loads, and hitting problems in changes which
+have gone into extN to fix up hole punching.
 
-Maybe this a bug that got fixed recently? I've actually tried the 3.1
-kernel (and then the 3.2-rc4) because I noticed a lot of commits and
-improvements in the i915 driver recently.
+Some of the time I've been using an old fsx which doesn't even know
+about fallocate(), some of the time a recent fsx from xfstests.  Most
+of the time I've been using ext2, but occasionally I try it on ext4.
 
-> > Thanks Benjamin!
-> 
-> All the credits are from Ajax and somebody else on IRC I don't recall,
-> really sorry. Thanks to them.
-> 
-> Cheers,
-> Benjamin.
+I think the only thing which makes the problems go away is blocksize
+same as pagesize; but it's a long time since I tried nomblk_io_submit,
+that made a big difference around 2.6.38/39, perhaps it still does.
 
-Regards,
-Baptiste
+>=20
+> Do you mean fsx failure or the bug you reported earlier due to
+> referencing a unlocked page?
+
+In first quoted paragraph above, fsx failure.
+
+Hugh
+--8323584-813777252-1323210711=:1949--
