@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab1LFOTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 09:19:37 -0500
-Received: from yop.chewa.net ([91.121.105.214]:46958 "EHLO yop.chewa.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933255Ab1LFOTf convert rfc822-to-8bit (ORCPT
+	id S933484Ab1LFOTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 09:19:45 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:56511 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933470Ab1LFOTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 09:19:35 -0500
-From: "=?utf-8?q?R=C3=A9mi?= Denis-Courmont" <remi@remlab.net>
-Organization: Remlab.net
-To: linux-media@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because of worrying about possible misusage?
-Date: Tue, 6 Dec 2011 16:19:30 +0200
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-686-pae; KDE/4.6.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4EDE1733.8060409@redhat.com> <4EDE1D57.90307@linuxtv.org>
-In-Reply-To: <4EDE1D57.90307@linuxtv.org>
+	Tue, 6 Dec 2011 09:19:42 -0500
+Message-ID: <4EDE246D.5000500@linux.vnet.ibm.com>
+Date: Tue, 06 Dec 2011 19:49:25 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201112061619.31357.remi@remlab.net>
+To: Borislav Petkov <bp@amd64.org>
+CC: Ingo Molnar <mingo@elte.hu>, Fenghua Yu <fenghua.yu@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
+References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com> <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu> <4EDDE5D0.7030906@linux.vnet.ibm.com> <20111206103500.GD15966@elte.hu> <4EDDF2DE.7020701@linux.vnet.ibm.com> <20111206130020.GB28735@gere.osrc.amd.com> <4EDE20F5.4030601@linux.vnet.ibm.com> <20111206141543.GA19241@aftab>
+In-Reply-To: <20111206141543.GA19241@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120614-5564-0000-0000-000000654212
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 6 décembre 2011 15:49:11 Andreas Oberritter, vous avez écrit :
-> You don't need to wait for write-only operations. Basically all demux
-> ioctls are write-only. Since vtunerc is using dvb-core's software demux
-> *locally*, errors for invalid arguments etc. will be returned as usual.
+On 12/06/2011 07:45 PM, Borislav Petkov wrote:
 
-That's a limitation, not a feature.
-You should not transmit unwanted programs over the network, nor copy them to 
-kernel space.
+> On Tue, Dec 06, 2011 at 07:34:37PM +0530, Srivatsa S. Bhat wrote:
+>>> Not blindly, the microcode is still verified.
+>>>
+>> I saw your other mail about the validity of this whole scenario, and I
+>> kind of agree to your point.
+>>
+>> My thoughts below might not be so relevant/significant considering that,
+>> but anyways, just to understand what you said above:
+>> I didn't quite find where the microcode is verified if the kernel happens
+>> to have the microcode image already.
+> 
+> Sorry, I might not've been clear enough: it is still verified by the
+> _hardware_, regardless of whether the ucode loader checks it or not.
+> Remember, hw guys don't trust sw guys and the reverse holds true too.
+> 
+> :-)
+> 
 
--- 
-Rémi Denis-Courmont
-http://www.remlab.net/
-http://fi.linkedin.com/in/remidenis
+
+Oh.. Ok :-) And thank you for the explanation!
+
+Regards,
+Srivatsa S. Bhat
+
