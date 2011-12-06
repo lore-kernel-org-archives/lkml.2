@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab1LFGX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 01:23:27 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58894 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909Ab1LFGXZ (ORCPT
+	id S932937Ab1LFGZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 01:25:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33888 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932847Ab1LFGZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 01:23:25 -0500
-From: Weiping Pan <panweiping3@gmail.com>
-Cc: Weiping Pan <panweiping3@gmail.com>,
-        Randy Dunlap <rdunlap@xenotime.net> (maintainer:DOCUMENTATION),
-        "David S. Miller" <davem@davemloft.net> (commit_signer:11/16=69%),
-        Eric Dumazet <eric.dumazet@gmail.com> (commit_signer:3/16=19%),
-        Shan Wei <shanwei@cn.fujitsu.com> (commit_signer:3/16=19%),
-        Neil Horman <nhorman@tuxdriver.com> (commit_signer:2/16=12%),
-        Max Matveev <makc@redhat.com> (commit_signer:2/16=12%),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH net]ipv4:correct description for tcp_max_syn_backlog
-Date: Tue,  6 Dec 2011 14:26:09 +0800
-Message-Id: <cbb1399605b0c1fb69da3da08373c7a1874ec206.1323152726.git.panweiping3@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 6 Dec 2011 01:25:32 -0500
+Date: Mon, 5 Dec 2011 22:25:17 -0800
+From: tip-bot for Ilya Dryomov <idryomov@gmail.com>
+Message-ID: <tip-cb59974742aea24adf6637eb0c4b8e7b48bca6fb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        idryomov@gmail.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        idryomov@gmail.com, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <1320052062-7846-1-git-send-email-idryomov@gmail.com>
+References: <1320052062-7846-1-git-send-email-idryomov@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: fix event_subsystem ref counting
+Git-Commit-ID: cb59974742aea24adf6637eb0c4b8e7b48bca6fb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Dec 2011 22:25:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit c5ed63d66f24(tcp: fix three tcp sysctls tuning),
-sysctl_max_syn_backlog is determined by tcp_hashinfo->ehash_mask,
-and the minimal value is 128, and it will increase in proportion to the
-memory of machine.
-The original description for tcp_max_syn_backlog has grammar error,
-and it is out of date.
+Commit-ID:  cb59974742aea24adf6637eb0c4b8e7b48bca6fb
+Gitweb:     http://git.kernel.org/tip/cb59974742aea24adf6637eb0c4b8e7b48bca6fb
+Author:     Ilya Dryomov <idryomov@gmail.com>
+AuthorDate: Mon, 31 Oct 2011 11:07:42 +0200
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Mon, 5 Dec 2011 13:28:44 -0500
 
-Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+tracing: fix event_subsystem ref counting
+
+Fix a bug introduced by e9dbfae5, which prevents event_subsystem from
+ever being released.
+
+Ref_count was added to keep track of subsystem users, not for counting
+events.  Subsystem is created with ref_count = 1, so there is no need to
+increment it for every event, we have nr_events for that.  Fix this by
+touching ref_count only when we actually have a new user -
+subsystem_open().
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Ilya Dryomov <idryomov@gmail.com>
+Link: http://lkml.kernel.org/r/1320052062-7846-1-git-send-email-idryomov@gmail.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- Documentation/networking/ip-sysctl.txt |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ kernel/trace/trace_events.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index f049a1c..589f2da 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -282,11 +282,11 @@ tcp_max_ssthresh - INTEGER
- 	Default: 0 (off)
- 
- tcp_max_syn_backlog - INTEGER
--	Maximal number of remembered connection requests, which are
--	still did not receive an acknowledgment from connecting client.
--	Default value is 1024 for systems with more than 128Mb of memory,
--	and 128 for low memory machines. If server suffers of overload,
--	try to increase this number.
-+	Maximal number of remembered connection requests, which have not
-+	received an acknowledgment from connecting client.
-+	The minimal value is 128 for low memory machines, and it will
-+	increase in proportion to the memory of machine.
-+	If server suffers from overload, try increasing this number.
- 
- tcp_max_tw_buckets - INTEGER
- 	Maximal number of timewait sockets held by system simultaneously.
--- 
-1.7.4.4
-
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 581876f..c212a7f 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1078,7 +1078,6 @@ event_subsystem_dir(const char *name, struct dentry *d_events)
+ 	/* First see if we did not already create this dir */
+ 	list_for_each_entry(system, &event_subsystems, list) {
+ 		if (strcmp(system->name, name) == 0) {
+-			__get_system(system);
+ 			system->nr_events++;
+ 			return system->entry;
+ 		}
