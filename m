@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab1LFUxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 15:53:50 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52153 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283Ab1LFUxs (ORCPT
+	id S1753718Ab1LFU72 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 15:59:28 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:56336 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab1LFU71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 15:53:48 -0500
-Date: Tue, 6 Dec 2011 20:53:46 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        John Johansen <john.johansen@canonical.com>
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-Message-ID: <20111206205346.GK2203@ZenIV.linux.org.uk>
-References: <20111206154854.GH2203@ZenIV.linux.org.uk>
- <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
+	Tue, 6 Dec 2011 15:59:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Ming Lei <ming.lei@canonical.com>, Tony Lindgren <tony@atomide.com>,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Sylwester Nawrocki <snjw23@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
+Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
+Date: Tue, 06 Dec 2011 21:59:11 +0100
+Message-ID: <2893768.IFJoMOGMWT@wuerfel>
+User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <CACVXFVOoQRZKDEWUtuq3hE3H25b7UUWWAJbsTGgVHJcUbnihig@mail.gmail.com>
+References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com> <CACVXFVO8Uk808J9HgVv6ernd4x_QwN3YsAaERF=W8F=NQrLwQw@mail.gmail.com> <CACVXFVOoQRZKDEWUtuq3hE3H25b7UUWWAJbsTGgVHJcUbnihig@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:6knwqCJcJwzvPyybYK7+xXGMYcgvcSZPuSNlU/FTly1
+ fUxmbTijEtuJGgvxcs8k0whcgPtQpNymHOl8JyFKExTtm1DVQg
+ Jr8sLOlBk3sOFNEbQXgqjDQdsBFMKnW+j/ir1gEdk/qo/Zutvw
+ zCT8X0s1eX3KCZ9CwF3b7i7xsvj22vRkEC7TgMZ+w7It1sSJNw
+ vMEqhhMDYrw/4OUdJPHrWX4aayeCiJC6ofsYQDQm+4JKu4sZXw
+ eURlYbgvn/vYxgnjrfB1HWZGiOpnD07RMMGlT8lliHJ7fq+Bi9
+ XYrTWGb/Hw/5dzjec8ukWJxZhN4bQdKgm5Dk5C0jYfbY4H1j5R
+ hEBL1rmssqVukCCDWPTU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 11:54:16AM -0800, Linus Torvalds wrote:
-> Is AA *worth* that special case? Does it even care that deeply?
+On Tuesday 06 December 2011 23:45:27 Ming Lei wrote:
+> >
+> > and it is not difficult to implement it in a generic way so that new
+> > array parameters can be supported as 64/32 compatible.
 > 
-> So my argument is that I think your change to make 'root' const an
-> dnot be changed is good, and should stay. But 'bastard' should just go
-> away, amusingly named or not. All sane callers already call it with a
-> NULL pointer. The one case that doesn't isn't worth worrying about,
-> and should strive to solve its problems some saner way.
-> 
-> John explicitly cc'd, since he's the one that would have to figure out
-> that /sys special case. Is it possible that just calling __d_path()
-> with the global system root would be sufficient for apparmor in this
-> case to figure out the /sys part?
+> How about the below patch to support 64/32 compatible array parameter?
 
-The trouble is, might very well stop *NOT* at the global root.  Consider
-a race with umount -l; we have no way to tell "it had been outside of
-chroot jail" from "it had walked up to the place where ->mnt_parent had
-been already reset, sorry, no idea what it was".
+Looks technically correct to me, if you replace the 'return -ENOMEM' with
+'ret = -ENOMEM;\n goto out;'.
 
-That's why __d_path() modifying root had been asking for trouble (besides
-being in bad taste); the really are situations when it's very tempting
-to look at the place where it had stopped.
+The video_usercopy function already has multiple micro-optimizations
+(on-stack buffers, cmd_input_size) that make it more complex than
+I'd hope, but your addition seems ok to me.
 
-Hell knows...  We definitely want to be able to distinguish global roots from
-detached vfsmounts.  We _might_ want to distinguish the root of our namespace
-from those of others, but I'm less sure about that.
+Let's see what Mauro thinks.
 
-And we don't have a lot of channels for returning extra information, short
-of passing a pointer to store it in.  In which case we might bloody well
-return the entire vfsmount/dentry pair and let the caller sort it out.
-
-Don't get me wrong, I'm not particulary enthusiastic about that variant;
-it's just that I don't see an alternative that would be any better.  I mean,
-__d_path(path, root, buf, buflen, &enum_what_kind_of_place_have_I_ended_up_in)?
-Can be done, but that'll be just as ugly *and* we'll end up with a growing
-zoo of those "kinds" over the next few years... ;-/
+	Arnd
