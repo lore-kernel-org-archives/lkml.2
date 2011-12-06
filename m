@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab1LFWTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:19:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:59691 "EHLO
+	id S1755285Ab1LFWUM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:20:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:59696 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab1LFWTT (ORCPT
+	with ESMTP id S1755252Ab1LFWUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:19:19 -0500
-Message-ID: <4EDE94DC.8010106@canonical.com>
-Date: Tue, 06 Dec 2011 14:19:08 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com> <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
-In-Reply-To: <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Dec 2011 17:20:11 -0500
+From: Andy Whitcroft <apw@canonical.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org,
+        Allison Henderson <achender@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH 1/1] ext4: correct partial write discard size calculation
+Date: Tue,  6 Dec 2011 22:19:48 +0000
+Message-Id: <1323209988-14304-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 01:07 PM, Linus Torvalds wrote:
-> On Tue, Dec 6, 2011 at 12:53 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>
->> The trouble is, might very well stop *NOT* at the global root.  Consider
->> a race with umount -l; we have no way to tell "it had been outside of
->> chroot jail" from "it had walked up to the place where ->mnt_parent had
->> been already reset, sorry, no idea what it was".
-> 
-> Sure, but you made that case return NULL already as part of the "no
-> bastard" case, didn't you?
-> 
-> That part of the patch looked fine.
-> 
-> It was just the extra convolutions around 'bastard' that seemed to be
-> over-designed, and made for just a single use that seems very
-> peripheral anyway.
-> 
-it is, and the plan is to not need the bastard even.  What apparmor should
-be doing is lazy labeling the live objects, and anything that is disconnected
-is evaluated based on the previous labeling.  This will also remove its
-use of passing root = { NULL, NULL } to __d_path.
+When copying large numbers of files we are seeing occasional write failures
+with errno EINVAL.  These are being returned from ext4_da_write_end()
+when attempting to discard the end portion of a partial write.  The error
+is detected and reported by the page index check below:
 
-> Apart from AppArmor, afaik nobody even really cared where they ended
-> up, and even AppArmor really didn't want to know - it just had this
-> totally crazy special case about "/sys".
-> 
+    int ext4_discard_partial_page_buffers_no_lock(handle_t *handle,
+		    struct inode *inode, struct page *page, loff_t from,
+		    loff_t length, int flags)
+    {
+    [...]
+        if (index != page->index)
+                return -EINVAL;
+    [...]
 
-right it only cared about where it endup in the cases of reaching the fs->root
-or own_mnt.  The sys case really is just broken, I started looking at it when
-Al poked me and said wtf, and have been looking at ways to remove it.
+This code was introduced by the commit below:
 
-Right now we could drop the bastard parameter and passing root = { NULL, NULL }
-__d_path and only break in the case of some chroot situations, which is not the
-standard use case anyways.  We are willing to drop support for this, and it can
-be picked backup when the labeling patch is done.
+  commit 02fac1297eb3f471a27368271aadd285548297b0
+  Author: Allison Henderson <achender@linux.vnet.ibm.com>
+  Date:   Tue Sep 6 21:53:01 2011 -0400
+
+    ext4: fix partial page writes
+
+This error is triggering when a write occurs at pos == 0 and results in
+0 bytes being written (copied == 0):
+
+    page_len = PAGE_CACHE_SIZE -
+                    ((pos + copied - 1) & (PAGE_CACHE_SIZE - 1));
+    if (page_len > 0) {
+            ret = ext4_discard_partial_page_buffers_no_lock(handle,
+                    inode, page, pos + copied - 1, page_len,
+    [...]
+
+In this case we will calculate that we need to clear out only one byte of
+the page.  As we are aligned at the page boundary and wrote 0 bytes we
+actually need to clear the entire page.  Also note that when we attempt
+to apply the discard we will apply it at offset -1 (0 + 0 - 1), which is
+the wrong place:
+
+    page_len = 4096 - ((0 + 0 - 1) & 4095)
+    page_len = 1
+
+Firstly fix up the offset calculation.  Once this is done the erroring
+case will correctly believe that the entire page needs to be discarded.
+However in this case we did not actually write to the page so the page
+is not instantiated and no discard is required.  So also only apply the
+discard where we are not discarding the entire page.
+
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ fs/ext4/inode.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+This issue is most easily reproducible within a VM on a fast, lightly
+loaded host.  In that configuration I can trigger a failure with about
+1/2GB of medium sized files (.debs in this case).  Without the patch
+the copy will fail 'EINVAL' 99% of the time, always failing within two
+iterations.  With the patch I have run 100 iterations of the same copy
+without failure.
+
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 240f6e2..c137168 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2533,11 +2533,11 @@ static int ext4_da_write_end(struct file *file,
+ 							page, fsdata);
+ 
+ 	page_len = PAGE_CACHE_SIZE -
+-			((pos + copied - 1) & (PAGE_CACHE_SIZE - 1));
++			((pos + copied) & (PAGE_CACHE_SIZE - 1));
+ 
+-	if (page_len > 0) {
++	if (page_len > 0 && page_len < PAGE_CACHE_SIZE) {
+ 		ret = ext4_discard_partial_page_buffers_no_lock(handle,
+-			inode, page, pos + copied - 1, page_len,
++			inode, page, pos + copied, page_len,
+ 			EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED);
+ 	}
+ 
+-- 
+1.7.5.4
 
