@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871Ab1LFDRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 22:17:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35644 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756454Ab1LFDRS convert rfc822-to-8bit (ORCPT
+	id S1756515Ab1LFDSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 22:18:34 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:39650 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756452Ab1LFDSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 22:17:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111206111852.6931fd03f0b1a86e318a29e3@canb.auug.org.au>
-References: <20111206111852.6931fd03f0b1a86e318a29e3@canb.auug.org.au>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 5 Dec 2011 20:16:54 -0700
-Message-ID: <CAErSpo6YrEZZjd=j6xoUfSvDHTT+-9g0zAb=ff2F1jA-0V9rHw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the pci tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 5 Dec 2011 22:18:33 -0500
+Date: Tue, 6 Dec 2011 14:18:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the memblock tree with the arm tree
+Message-Id: <20111206141816.628d9fc4ab58e23eb9fc63f0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__6_Dec_2011_14_18_16_+1100_e8hsKNvNMuzqVbDY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 5, 2011 at 5:18 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Jesse,
->
-> After merging the pci tree, today's linux-next build
-> (powerpc_ppc64_defconfig) failed like this:
->
-> arch/powerpc/kernel/pci_64.c: In function 'pcibios_map_io_space':
-> arch/powerpc/kernel/pci_64.c:201:2: error: implicit declaration of function 'pcibios_phb_map_phb_io_space' [-Werror=implicit-function-declaration]
->
-> Caused by commit fb8fca4ff3f7 ("powerpc/PCI: split PHB part out of
-> pcibios_map_io_space()").
->
-> arch/powerpc/kernel/pci-common.c: In function 'pcibios_scan_phb':
-> arch/powerpc/kernel/pci-common.c:1726:7: error: incompatible type for argument 5 of 'pci_create_root_bus'
-> include/linux/pci.h:665:17: note: expected 'struct list_head *' but argument is of type 'struct list_head'
->
-> Caused by commit 3c73944e7ace ("powerpc/PCI: convert to
-> pci_create_root_bus()").
->
-> I have used the pci tree from next-20111205 for today.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
+--Signature=_Tue__6_Dec_2011_14_18_16_+1100_e8hsKNvNMuzqVbDY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I fixed these; the updated patches are on
-git://github.com/bjorn-helgaas/linux.git on
-the "pci-scan-v4" branch (head f9da8b214fef1ac4072e4af2a663293ab965f796).
+Hi Tejun,
 
-Here's the incremental diff from v3 to v4 (hand-created and whitespace-damaged):
+[Tejun, I know you told me about these, but I am reporting them anyway
+just for completeness.]
 
-diff --git a/c4677881a:arch/powerpc/kernel/pci_64.c
-b/f9da8b214:arch/powerpc/kernel/pci_64.c
-index 4401425..3318d39 100644
---- a/c4677881a:arch/powerpc/kernel/pci_64.c
-+++ b/f9da8b214:arch/powerpc/kernel/pci_64.c
-@@ -197,7 +198,7 @@ int __devinit pcibios_map_io_space(struct pci_bus *bus)
-                return 0;
-        }
+Today's linux-next merge of the memblock tree got a conflict in
+arch/arm/mm/init.c between commit 27a3f0e91bed ("ARM: sort the meminfo
+array earlier") from the arm tree and commit 0dac7e2d90aa ("memblock:
+Kill memblock_init()") from the memblock tree.
 
--       return pcibios_phb_map_phb_io_space(pci_bus_to_host(bus));
-+       return pcibios_map_phb_io_space(pci_bus_to_host(bus));
- }
- EXPORT_SYMBOL_GPL(pcibios_map_io_space);
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/c4677881a:arch/powerpc/kernel/pci-common.c
-b/f9da8b214:arch/powerpc/kernel/pci-common.c
-index 8c47c57..2aa707b 100644
---- a/c4677881a:arch/powerpc/kernel/pci-common.c
-+++ b/f9da8b214:arch/powerpc/kernel/pci-common.c
-@@ -1711,7 +1712,7 @@ void __devinit pcibios_scan_phb(struct
-pci_controller *hose)
+diff --cc arch/arm/mm/init.c
+index 786addd,7c38474..0000000
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@@ -310,7 -331,8 +311,6 @@@ void __init arm_memblock_init(struct me
+  {
+  	int i;
+ =20
+- 	memblock_init();
+ -	sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_c=
+mp, NULL);
+ -
+  	for (i =3D 0; i < mi->nr_banks; i++)
+  		memblock_add(mi->bank[i].start, mi->bank[i].size);
+ =20
 
-        /* Create an empty bus for the toplevel */
-        bus = pci_create_root_bus(hose->parent, hose->first_busno,
--                                 hose->ops, hose, resources);
-+                                 hose->ops, hose, &resources);
-        if (bus == NULL) {
-                pr_err("Failed to create bus for PCI domain %04x\n",
-                        hose->global_number);
+--Signature=_Tue__6_Dec_2011_14_18_16_+1100_e8hsKNvNMuzqVbDY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO3Yl4AAoJEECxmPOUX5FEr2gP/0ZXipvyq7QO3vhk0yqUa4Qe
+4ZVR4yoAOkBwGa39bLCiG31FG7Zw+aK1WdX2TmEJoA4B07I0VhILWONxGIUJGuN5
+0wPUdML1dUhAQmaPrCPkFaFmyPSYUmFAeT18YtEHHcZgsZVchHDjtO/DlN19gUn5
+LtfPCUZ5OySnrl66jNqVtr7qMENFfIIZFxIvzwK/zuQPMaT2dk1C34qQHBxy0vNF
+MkmvmjYGMhuoPtZqHyj2c7M9jf+x3kPiRX1Tu2JHjg830UejNgNxq4/FEf+bAh9o
+z7HMw6Mg+Ok3/5KATGO9OTQ+5RfmBo0a/O89cl1KXRtZliKuyAHtRZg8ptTSpkyG
+N9GNlj/3VKzbDeiC5A83oSLCpeGFw73kkdq+rLBAAGA86NMsGYqWtzAqj0pN5dtw
+cx+Na/U7Fnp/7S8iSkFQIQKnawB5DkRz4u7dAjpTonKt+23RuqU/kcgTzXKC+5sO
+nzTCLTys+Y0TsjeDHBw2AxDx8QLBa1MaQ/JrL6pNUeqGJrs+TMr+mSX+FBLc0Irk
+ptu/AlsRH7IF/Hw8C2yiV9wJklYe4gq0qjZqnupyMVU9hC6LIf47qBggHO22jaRy
+wtLjhJuDewr/DS5t8pR4r64WYXD3BLGNl7yz1Slf6XfSveaXoGPUrtGX7ZBBOCUf
+Dr6L2jjn0HCX8c0ENsVV
+=v6kD
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__6_Dec_2011_14_18_16_+1100_e8hsKNvNMuzqVbDY--
