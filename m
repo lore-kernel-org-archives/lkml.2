@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340Ab1LFQOl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:14:41 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61014 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab1LFQOk (ORCPT
+	id S1751578Ab1LFQP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:15:58 -0500
+Received: from [205.233.59.134] ([205.233.59.134]:52649 "EHLO
+	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028Ab1LFQP5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:14:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EDDCD6D.1010907@jp.fujitsu.com>
-References: <20111123144417.2da5958c@jbarnes-desktop> <CA+55aFyaiJBYmgVCLfPA7q3hqtPHYh9wwsmVTCewbBoxMsDE8A@mail.gmail.com>
- <20111205112256.68e59434@jbarnes-desktop> <4EDDCD6D.1010907@jp.fujitsu.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Dec 2011 08:14:17 -0800
-X-Google-Sender-Auth: wXnCp5szptyZq7dzqNprYjcFcqA
-Message-ID: <CA+55aFwuZxGZhXyhj+cb5WLnFPDh45Dy6BwgmvEQKAM5swaM6w@mail.gmail.com>
-Subject: Re: [git pull] PCI fixes
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Dec 2011 11:15:57 -0500
+Message-ID: <1323188096.32012.77.camel@twins>
+Subject: Re: [PATCH RFC tip/core/rcu 7/7] rcu: Quiet RCU-lockdep warnings
+ involving interrupt disabling
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org
+Date: Tue, 06 Dec 2011 17:14:56 +0100
+In-Reply-To: <20111206161110.GD2325@linux.vnet.ibm.com>
+References: <20111203183417.GA18914@linux.vnet.ibm.com>
+	 <1322937282-19846-7-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20111205091924.GA28117@zhy> <20111205164505.GB2326@linux.vnet.ibm.com>
+	 <20111206012635.GA32498@zhy> <1323165152.32012.51.camel@twins>
+	 <1323167246.32012.60.camel@twins>
+	 <20111206161110.GD2325@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 12:08 AM, Kenji Kaneshige
-<kaneshige.kenji@jp.fujitsu.com> wrote:
->
-> In the past, pciehp waits 100 ms instead of 1 sec after checking the link
-> state. This 100 ms was based on PCIe spec.
+On Tue, 2011-12-06 at 08:11 -0800, Paul E. McKenney wrote:
 
-I would like to point out that these kinds of delays are *really*
-annoying to users. And they add up.
+> The problem with the IRQs enabled is the following sequence:
+> 
+> 	rcu_read_lock();
+> 	/* do stuff */
+> 	local_irq_save(flags);
+> 	/* do more stuff */
+> 	rcu_read_unlock();
+> 	/* do even more stuff */
+> 	local_irq_restore(flags);
+> 
+> This has been legal in the past, and might well be used in places that
+> -rt does not exercise, hence the desire to explicitly legalize it.
 
-One second per se is not a huge problem, but imagine that you're
-hotplugging some regular user device (think thunderbolt or something
-that we'd expect normal users to see). First one second for the kernel
-to even see it, then some random udev rules, then some disk spinup
-times or whatever, and soon a few delays here and a few delays there,
-and it takes say three seconds for the folder to show up on the
-desktop (or whatever acknowledgement of "yes, I see your device now").
-
-That's a *long* time, and it's irritating to the user. It makes the
-user think "the machine is slow".
-
-We used to have this exact problem with USB hotplugging with slow
-devices, so I know. It's still not necessarily immediate, but it's
-better than it has been.
-
-One second *total* is what people will consider pretty much immediate.
-Any more than that is "thumb twiddling time".
-
-And quite frankly, an unconditional one-second delay here seems bad.
-Two seconds was unacceptable, one second is just bad.
-
->                                                              This is
-> based on the PCIe description "software must allow 1 second after the Data
-> Link Layer Link Active bit reads 1b before it is permitted to determine
-> that a hot plugged device which fails to return a Successful Completion for
-> a Valid Configuration Request is a broken device".
-
-Quite frankly, the way that reads to me says "you must wait at most 1s
-before you consider a device broken".
-
-But a *successful* read of the LT bit should abort the wait early. So
-that good devices that aren't broken can complete setup much faster.
-
-Please try to make something like that work. Instead of always waiting
-for one second, wait for up to one second only for failure cases. Any
-possibility of that?
-
-Clearly most devices are perfectly fine almost immediately. It's sad
-to wait for good devices for no good reason.
-
-                       Linus
+So why not make it strictly dis-allowed, even for !-rt and see what
+falls over? If there's lots of fallout we might need to reconsider, but
+wouldn't it be easier to all abide by the strictest rules than to try
+and frob stuff like was proposed?
