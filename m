@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab1LFVtG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 16:49:06 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:35342 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754799Ab1LFVtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 16:49:03 -0500
-X-Sasl-enc: StQsMigZrno9YzG1DJeEpMZLsksPoDlrcpddK8VWjIhU 1323208142
-Date: Tue, 6 Dec 2011 13:48:47 -0800
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, NeilBrown <neilb@suse.de>,
-        Ming Lei <tom.leiming@gmail.com>,
-        Chen Peter-B29397 <B29397@freescale.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        "hzpeterchen@gmail.com" <hzpeterchen@gmail.com>,
-        Igor Grinberg <grinberg@compulab.co.il>
-Subject: Re: [PATCH] Driver core: leave runtime PM enabled during system
- shutdown
-Message-ID: <20111206214847.GH1247@kroah.com>
-References: <201112052332.10822.rjw@sisk.pl>
- <Pine.LNX.4.44L0.1112061024240.1469-100000@iolanthe.rowland.org>
+	id S1754860Ab1LFVtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 16:49:33 -0500
+Received: from fieldses.org ([174.143.236.118]:52929 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754799Ab1LFVtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 16:49:32 -0500
+Date: Tue, 6 Dec 2011 16:49:28 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
+Subject: Re: [PATCH 2/2] SUNRPC: register service stats /proc entries in
+ passed network namespace context
+Message-ID: <20111206214928.GF12640@fieldses.org>
+References: <20111206123748.15702.93290.stgit@localhost6.localdomain6>
+ <20111206124249.15702.211.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1112061024240.1469-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111206124249.15702.211.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 10:26:14AM -0500, Alan Stern wrote:
-> Disabling all runtime PM during system shutdown turns out not to be a
-> good idea, because some devices may need to be woken up from a
-> low-power state at that time.
-> 
-> The whole point of disabling runtime PM for system shutdown was to
-> prevent untimely runtime-suspend method calls.  This patch (as1504)
-> accomplishes the same result by incrementing the usage count for each
-> device and waiting for ongoing runtime-PM callbacks to finish.  This
-> is what we already do during system suspend and hibernation, which
-> makes sense since the shutdown method is pretty much a legacy analog
-> of the pm->poweroff method.
-> 
-> This fixes a regression on some OMAP systems.
-> 
-> Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-> Reported-by: NeilBrown <neilb@suse.de>
-> CC: Chen Peter-B29397 <B29397@freescale.com>
+On Tue, Dec 06, 2011 at 04:42:49PM +0300, Stanislav Kinsbursky wrote:
+> This patch makes it possible to create NFSd program entry ("/proc/net/rpc/nfsd")
+> in passed network namespace context instead of hard-coded "init_net".
 
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+	Acked-by: J. Bruce Fields <bfields@redhat.com>
 
-Rafael, you will take this in your tree, right?
+Or I can just apply it.  I'll assume it's going through Trond's tree
+unless I hear otherwise.
 
+--b.
+
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> ---
+>  fs/nfsd/stats.c              |    5 +++--
+>  include/linux/sunrpc/stats.h |    8 ++++----
+>  net/sunrpc/stats.c           |    8 ++++----
+>  3 files changed, 11 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/nfsd/stats.c b/fs/nfsd/stats.c
+> index a2e2402..6d4521f 100644
+> --- a/fs/nfsd/stats.c
+> +++ b/fs/nfsd/stats.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/module.h>
+>  #include <linux/sunrpc/stats.h>
+>  #include <linux/nfsd/stats.h>
+> +#include <net/net_namespace.h>
+>  
+>  #include "nfsd.h"
+>  
+> @@ -94,11 +95,11 @@ static const struct file_operations nfsd_proc_fops = {
+>  void
+>  nfsd_stat_init(void)
+>  {
+> -	svc_proc_register(&nfsd_svcstats, &nfsd_proc_fops);
+> +	svc_proc_register(&init_net, &nfsd_svcstats, &nfsd_proc_fops);
+>  }
+>  
+>  void
+>  nfsd_stat_shutdown(void)
+>  {
+> -	svc_proc_unregister("nfsd");
+> +	svc_proc_unregister(&init_net, "nfsd");
+>  }
+> diff --git a/include/linux/sunrpc/stats.h b/include/linux/sunrpc/stats.h
+> index f625b57..4720b12 100644
+> --- a/include/linux/sunrpc/stats.h
+> +++ b/include/linux/sunrpc/stats.h
+> @@ -61,9 +61,9 @@ void			rpc_modcount(struct inode *, int);
+>  struct proc_dir_entry *	rpc_proc_register(struct net *,struct rpc_stat *);
+>  void			rpc_proc_unregister(struct net *,const char *);
+>  void			rpc_proc_zero(struct rpc_program *);
+> -struct proc_dir_entry *	svc_proc_register(struct svc_stat *,
+> +struct proc_dir_entry *	svc_proc_register(struct net *, struct svc_stat *,
+>  					  const struct file_operations *);
+> -void			svc_proc_unregister(const char *);
+> +void			svc_proc_unregister(struct net *, const char *);
+>  
+>  void			svc_seq_show(struct seq_file *,
+>  				     const struct svc_stat *);
+> @@ -73,9 +73,9 @@ static inline struct proc_dir_entry *rpc_proc_register(struct net *, struct rpc_
+>  static inline void rpc_proc_unregisterstruct net *, (const char *p) {}
+>  static inline void rpc_proc_zero(struct rpc_program *p) {}
+>  
+> -static inline struct proc_dir_entry *svc_proc_register(struct svc_stat *s,
+> +static inline struct proc_dir_entry *svc_proc_register(struct net *net, struct svc_stat *s,
+>  						       const struct file_operations *f) { return NULL; }
+> -static inline void svc_proc_unregister(const char *p) {}
+> +static inline void svc_proc_unregister(struct net *net, const char *p) {}
+>  
+>  static inline void svc_seq_show(struct seq_file *seq,
+>  				const struct svc_stat *st) {}
+> diff --git a/net/sunrpc/stats.c b/net/sunrpc/stats.c
+> index f0f6e7c..3c4f688 100644
+> --- a/net/sunrpc/stats.c
+> +++ b/net/sunrpc/stats.c
+> @@ -241,18 +241,18 @@ rpc_proc_unregister(struct net *net, const char *name)
+>  EXPORT_SYMBOL_GPL(rpc_proc_unregister);
+>  
+>  struct proc_dir_entry *
+> -svc_proc_register(struct svc_stat *statp, const struct file_operations *fops)
+> +svc_proc_register(struct net *net, struct svc_stat *statp, const struct file_operations *fops)
+>  {
+> -	return do_register(&init_net, statp->program->pg_name, statp, fops);
+> +	return do_register(net, statp->program->pg_name, statp, fops);
+>  }
+>  EXPORT_SYMBOL_GPL(svc_proc_register);
+>  
+>  void
+> -svc_proc_unregister(const char *name)
+> +svc_proc_unregister(struct net *net, const char *name)
+>  {
+>  	struct sunrpc_net *sn;
+>  
+> -	sn = net_generic(&init_net, sunrpc_net_id);
+> +	sn = net_generic(net, sunrpc_net_id);
+>  	remove_proc_entry(name, sn->proc_net_rpc);
+>  }
+>  EXPORT_SYMBOL_GPL(svc_proc_unregister);
+> 
