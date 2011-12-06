@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab1LFXUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 18:20:07 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56646 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab1LFXUF (ORCPT
+	id S1754667Ab1LFXWG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 18:22:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49440 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab1LFXWE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 18:20:05 -0500
-From: Mark Einon <mark.einon@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: sfr@canb.auug.org.au, Mark Einon <mark.einon@gmail.com>
-Subject: [PATCH] [TRIVIAL] linux-next: Fixed spelling typo in types.h
-Date: Tue,  6 Dec 2011 23:18:14 +0000
-Message-Id: <1323213494-21947-1-git-send-email-mark.einon@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 6 Dec 2011 18:22:04 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111206225315.GA20459@moon>
+References: <20111205182010.GV14515@moon>
+	<20111206140833.3b43fbeb.akpm@linux-foundation.org>
+	<20111206221515.GP29781@moon>
+	<20111206225315.GA20459@moon>
+Date: Tue, 6 Dec 2011 15:22:03 -0800
+X-Google-Sender-Auth: reDUufTKmlgLKATaAyvS6v5_hkE
+Message-ID: <CAGXu5j+RENTABtLqq4Vv4XOXStfw6rqpaKrtUMwFAZ5VCEwr8g@mail.gmail.com>
+Subject: Re: [PATCH] fs, proc: Add start_data, end_data, start_brk members to
+ /proc/$pid/stat v2
+From: Kees Cook <keescook@chromium.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Vagin <avagin@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Spelling change, architetures -> architectures
+On Tue, Dec 6, 2011 at 2:53 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> +  start_data    address above which program data is placed
+> +  end_data      address above which program data is placed
 
-Signed-off-by: Mark Einon <mark.einon@gmail.com>
----
- include/linux/types.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Should the latter be "address below which program data is placed"?
 
-diff --git a/include/linux/types.h b/include/linux/types.h
-index 57a9723..cbcef6e 100644
---- a/include/linux/types.h
-+++ b/include/linux/types.h
-@@ -188,7 +188,7 @@ typedef __u32 __bitwise __wsum;
-  * aligned_u64 should be used in defining kernel<->userspace ABIs to avoid
-  * common 32/64-bit compat problems.
-  * 64-bit values align to 4-byte boundaries on x86_32 (and possibly other
-- * architectures) and to 8-byte boundaries on 64-bit architetures.  The new
-+ * architectures) and to 8-byte boundaries on 64-bit architectures.  The new
-  * aligned_64 type enforces 8-byte alignment so that structs containing
-  * aligned_64 values have the same alignment on 32-bit and 64-bit architectures.
-  * No conversions are necessary between 32-bit user-space and a 64-bit kernel.
+-Kees
+
 -- 
-1.7.7.3
-
+Kees Cook
+ChromeOS Security
