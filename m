@@ -1,119 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933398Ab1LFOvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 09:51:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:65399 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab1LFOvc (ORCPT
+	id S933480Ab1LFOwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 09:52:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47190 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab1LFOwo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 09:51:32 -0500
-Message-ID: <4EDE2BC8.9080109@polito.it>
-Date: Tue, 06 Dec 2011 15:50:48 +0100
-From: Roberto Sassu <roberto.sassu@polito.it>
-Organization: Politecnico di Torino
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	Tue, 6 Dec 2011 09:52:44 -0500
 MIME-Version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jmorris@namei.org, Kenneth Goldman <kgoldman@us.ibm.com>
-Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
-References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>  <1321450690.1901.24.camel@falcor> <4EC3CA9A.3070401@polito.it>  <4EC40682.2050602@linux.vnet.ibm.com> <4EC4E89F.2060608@polito.it>  <1321564518.21708.63.camel@falcor> <4EC63302.4040006@polito.it>  <1321637471.2158.44.camel@falcor> <4ECA6595.7010406@polito.it>  <1323041763.2061.22.camel@falcor> <4EDC9726.1040801@polito.it>  <1323090236.2061.63.camel@falcor> <4EDCCD7D.7010406@polito.it>  <1323118629.2061.117.camel@falcor> <4EDDEE15.3090200@polito.it> <1323181487.2165.35.camel@falcor>
-In-Reply-To: <1323181487.2165.35.camel@falcor>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201112061441.25822.arnd@arndb.de>
+References: <1322817178-8931-1-git-send-email-ming.lei@canonical.com>
+	<201112061255.56136.arnd@arndb.de>
+	<CACVXFVPYUY-vpeoKJKX2XN7-0w+=seW0u3EaP=hD9m1Sy7nkTQ@mail.gmail.com>
+	<201112061441.25822.arnd@arndb.de>
+Date: Tue, 6 Dec 2011 22:52:41 +0800
+Message-ID: <CACVXFVO8Uk808J9HgVv6ernd4x_QwN3YsAaERF=W8F=NQrLwQw@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
+From: Ming Lei <ming.lei@canonical.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Sylwester Nawrocki <snjw23@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 03:24 PM, Mimi Zohar wrote:
-> On Tue, 2011-12-06 at 11:27 +0100, Roberto Sassu wrote:
->> On 12/05/2011 09:57 PM, Mimi Zohar wrote:
->>> On Mon, 2011-12-05 at 14:56 +0100, Roberto Sassu wrote:
->>>> On 12/05/2011 02:03 PM, Mimi Zohar wrote:
->>>>> On Mon, 2011-12-05 at 11:04 +0100, Roberto Sassu wrote:
->>>>>
->>>>>> Hi Mimi
->>>>>>
->>>>>> i think moving this logic to the TPM driver (or in general, delaying
->>>>>> the action after the list mutex is unlocked) is not safe, because in
->>>>>> this way you are relying on the kernel trustworthiness to protect
->>>>>> itself and IMA against unmeasured potential attacks. So, the verifier
->>>>>> is unable to detect a kernel tampering that removed the limitation
->>>>>> on the TPM Quote operation.
->>>>>>
->>>>>> What i'm proposing in the patch:
->>>>>>
->>>>>> https://lkml.org/lkml/2011/11/21/202
->>>>>>
->>>>>> is in fact a new extension, which is triggered by a new kernel
->>>>>> parameter, so that the behaviour of the base IMA is not modified.
->>>>>
->>>>> How/why the TPM fails is important.  If the TPM fails because of an
->>>>> intermittent problem, then your solution of denying read/execute could
->>>>> work, but what would happen if it was persistent?  Would you be able to
->>>>> quiesce the system?
->>>>>
->>>>> As there is no way of differentiating a persistent from intermittent
->>>>> failure, both need to be addressed in the same manor.  For persistent
->>>>> TPM failure, we can not access the TPM to modify the PCR.  So what
->>>>> options do we have left?  My suggestion, though not optimal, prevents
->>>>> the IMA PCR from being quoted.
->>>>>
->>>>
->>>> Hi Mimi
->>>>
->>>> the solution you are proposing is reasonable as the default
->>>> behaviour, because not all IMA users need the high confidence
->>>> in the measurements, as ensured by denying the execution of
->>>> system calls.
->>>>
->>>> However, during the IMA initialization the TPM is tested
->>>> by issuing a PCR read (the test procedure may be extended
->>>> to better detect existing errors in advance). So, this means
->>>> that a TPM failure when the system is already powered on is
->>>> very unlikely and may cause serious issues as it could happen
->>>> if other devices are involved.
->>>>
->>>> For this reason, also my extension seems helpful especially
->>>> in the situations where all events need to be measured properly.
->>>> In this case, IMA users are aware that a TPM failure could hang
->>>> their systems, because they need to manually insert the required
->>>> kernel parameter.
->>>
->>> As you said a TPM failure is very unlikely, what type of attack are you
->>> trying to defend against, that could possibly warrant causing the system
->>> to hang?
->>>
+On Tue, Dec 6, 2011 at 10:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 06 December 2011, Ming Lei wrote:
+>> > Using an array added to the end of the v4l2_fd_result structure
+>> > rather than a pointer would really make this easier IMHO.
 >>
->> I don't know if this can really happen, but an attacker may issue
->> a lot of commands to the TPM, so that the timeout limit is reached
->> when IMA is trying to extend the PCR.
->>
->> Roberto Sassu
+>> I have tried to do this, but video_usercopy needs a few changes
+>> to handle array args if no indirect pointer is passed to kernel.
 >
-> Processing lots of commands isn't an issue, as IMA takes the
-> ima_extend_list_mutex to synchronize adding the measurement to the
-> measurement list and extending the PCR.  The TPM device driver takes the
-> tpm_mutex, in tpm_transmit(), before transmitting the command.
+> Ah, I see. Or you would have to encode the array size into the
+> ioctl command, which is also ugly in a different way.
 >
-
-I mean issuing a lot of TPM commands, so that the TPM is unable
-to process the IMA request.
-
-
-> So the issue remains whether an individual PCR extend can timeout/fail.
-> As you previously said, this is highly unlikely.
+>> I am not sure if media guys are happy to accept the changes, :-)
 >
-
-I think the question is whether or not an attacker can cause the
-TPM to reach the timeout limit. If this is feasible and it cannot
-be clearly detected by inspecting the measurements list, denying
-the system call for which the measurement cannot be taken may be a solution.
-
-Roberto Sassu
-
-
-> Mimi
+> Maybe Mauro can comment on which solution he prefers then, given
+> the choice between:
 >
+> 1. adding another handler in drivers/media/video/v4l2-compat-ioctl32.c
+>
+> 2. passing a pointer that is casted to __u64 in user space an back
+>   in the kernel
+>
+> 3. extending video_usercopy in some way to make this work, preferably
+>   in a generic way.
 
+Maybe this one is a good choice, and I think that it is worthy to
+support the below kind of array parameter:
+
+struct v4l2_fd_result {
+	__u32   buf_index;
+	__u32   face_cnt;
+	__u32   reserved[6];
+	struct v4l2_fd_detection fd[];
+};
+
+and it is not difficult to implement it in a generic way so that new
+array parameters can be supported as 64/32 compatible.
+
+> 4. using a variable command number like
+>   #define VIDIOC_G_FD_RESULT(num)      _IOC(_IOC_READ|_IOC_WRITE,'V', 95, \
+>                sizeof(struct v4l2_fd_result) + (num) * sizeof(struct v4l2_fd_detection)
+>
+> 5. requiring the interface to be simplified to return only a single
+>   struct v4l2_fd_detection at a time
+
+Maybe this one is not user friendly since other v4l2 interfaces provide
+array parameters way, :-)
+
+> I agree that none of these are nice. My preferred option would be last one,
+> but I don't know how performance critical the interface is or if it would
+> cause any races that you want to avoid.
+
+
+thanks,
+--
+Ming Lei
