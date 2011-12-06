@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933414Ab1LFNol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 08:44:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:50788 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933315Ab1LFNoh (ORCPT
+	id S933453Ab1LFNo5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 08:44:57 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:64433 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933315Ab1LFNoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 08:44:37 -0500
-Date: Tue, 6 Dec 2011 11:44:31 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Brian Gitonga Marete <marete@toshnix.com>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com
-Subject: Re: [PATCH] perf top: fix crash on annotate request
-Message-ID: <20111206134431.GA10709@infradead.org>
-References: <4E9F1AA0.4010706@gmail.com>
- <20111019192011.GG2229@ghostprotocols.net>
- <4E9F4B50.1060207@gmail.com>
- <20111020130041.GB1772@ghostprotocols.net>
- <CAHVUoiSwem2r9J==gmHPfst3_0ZB5bd0ykf9cPUMdhZFaXC9EA@mail.gmail.com>
- <CAHVUoiTeCuFLCkyEzCMJ6g1wAp+FWDR3qkSrqE3vJAYwLsRC9Q@mail.gmail.com>
- <20111130181011.GA4111@infradead.org>
- <CAHVUoiQC5RjuHUsfPVTQ_C+W0Khp=hQC+_csP0+fJgUnoaALAA@mail.gmail.com>
- <20111201141130.GA2323@infradead.org>
- <CAHVUoiR=gMcdLZcR+TmB6CiRhEP+x8aXjR5r5Wc4k6gZwzLAjg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHVUoiR=gMcdLZcR+TmB6CiRhEP+x8aXjR5r5Wc4k6gZwzLAjg@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 6 Dec 2011 08:44:55 -0500
+Message-ID: <20190.7244.156557.313315@ipc1.ka-ro>
+Date: Tue, 6 Dec 2011 14:44:44 +0100
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: netdev@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: don't
+ munge MAC address from platform data
+In-Reply-To: <20111206124857.GB14048@sapphire.tkos.co.il>
+References: <cover.1323163127.git.LW@KARO-electronics.de>
+	<55b78c1766da5b0d0d679f5eae3fb9fc74a6ceef.1323163127.git.LW@KARO-electronics.de>
+	<20111206124857.GB14048@sapphire.tkos.co.il>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 06, 2011 at 10:22:57AM +0300, Brian Gitonga Marete escreveu:
-> On Thu, Dec 1, 2011 at 5:11 PM, Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> > Its just this one, can you try doing something like:
+Hi,
 
-> > perf top -vvv > /tmp/debug.top 2>&1
-> > bzip2 /tmp/debug.top
+Baruch Siach writes:
+> Hi Lothar,
+> 
+> On Tue, Dec 06, 2011 at 11:27:13AM +0100, Lothar Waßmann wrote:
+> > When the MAC address is supplied via platform_data it should be OK as
+> > it is and should not be modified in case of a dual FEC setup.
+> > Also copying the MAC from platform_data to the single 'macaddr'
+> > variable will overwrite the MAC for the first interface in case of a
+> > dual FEC setup.
+> > 
+> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+> > ---
+> >  drivers/net/ethernet/freescale/fec.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
+> > index e2b5ce6..11534b9 100644
+> > --- a/drivers/net/ethernet/freescale/fec.c
+> > +++ b/drivers/net/ethernet/freescale/fec.c
+> > @@ -818,7 +818,7 @@ static void __inline__ fec_get_mac(struct net_device *ndev)
+> >  			iap = (unsigned char *)FEC_FLASHMAC;
+> >  #else
+> >  		if (pdata)
+> > -			memcpy(iap, pdata->mac, ETH_ALEN);
+> > +			iap = (unsigned char *)&pdata->mac;
+> 
+> Since pdata might point to __initdata struct, you must hold a copy of its 
+> content.
+> 
+No. platform_data must be present during the life time of a driver
+using it and thus must never be __initdata!
 
-> > That will print lots of information about symbols being loaded,
-> > overlapping maps, etc that can help me understand why that symbol name
-> > looks garbage.
 
-> > And send me in pvt the result together with a fresh backtrace with those
-> > symbols printed? Also which distro are you using?
+Lothar Waßmann
+-- 
+___________________________________________________________
 
-> Hello Arnaldo. Curiously, I am unable to reproduce the crash when
-> stdout is redirected to a file. I am able to capture lots of output if
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
 
-That is good input, so can you please try using just:
-
-perf top --stdio
-
-I.e. probably the problem is with the TUI code and running it in --stdio
-mode will help us pinpoint that. No need to redirect anything.
-
-> I redirect stdout to a file in verbose mode, but it won't crash when I
-> do that. Just the same, I am still able to always reproduce (within a
-> few seconds) with your perf/core branch on the tree you pointed me to.
-> This time, I did a `thread apply all bt' in gdb to show the trace for
-> the UI thread since it now seems to me to probably have something with
-> the UI output (because I cannot reproduce if o/put is to a file). The
-> trace is attached in the file gdb.txt.
- 
-> Is the `perf top -vvv > /tmp/debug.top 2>&1' output useful even if it
-> is captured in a session that does not crash? If so will send the
-> output privately to you.
-
-please.
- 
-> I am using Ubuntu 10.10
-
-Ok,
-
-- Arnaldo
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
