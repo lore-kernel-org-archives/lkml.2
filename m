@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab1LFWlG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:41:06 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42811 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab1LFWlF (ORCPT
+	id S1754444Ab1LFWrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:47:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61798 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904Ab1LFWrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:41:05 -0500
-Date: Tue, 6 Dec 2011 22:41:00 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: John Johansen <john.johansen@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-Message-ID: <20111206224100.GM2203@ZenIV.linux.org.uk>
-References: <20111206154854.GH2203@ZenIV.linux.org.uk>
- <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
- <20111206205346.GK2203@ZenIV.linux.org.uk>
- <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
- <4EDE94DC.8010106@canonical.com>
+	Tue, 6 Dec 2011 17:47:24 -0500
+Date: Tue, 6 Dec 2011 14:47:02 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Allison Henderson <achender@linux.vnet.ibm.com>
+cc: "Ted Ts'o" <tytso@mit.edu>, Curt Wohlgemuth <curtw@google.com>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        Surbhi Palande <csurbhi@gmail.com>, Rafael Wysocki <rjw@sisk.pl>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+In-Reply-To: <4EDE85F4.4020503@linux.vnet.ibm.com>
+Message-ID: <alpine.LSU.2.00.1112061432000.1949@sister.anvils>
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com> <alpine.LSU.2.00.1111201121120.1264@sister.anvils> <20111121165626.GD14568@thunk.org> <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils>
+ <4EDD729E.2060402@linux.vnet.ibm.com> <alpine.LSU.2.00.1112060030220.1615@sister.anvils> <4EDE85F4.4020503@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EDE94DC.8010106@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 02:19:08PM -0800, John Johansen wrote:
-> On 12/06/2011 01:07 PM, Linus Torvalds wrote:
-> > On Tue, Dec 6, 2011 at 12:53 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >>
-> >> The trouble is, might very well stop *NOT* at the global root.  Consider
-> >> a race with umount -l; we have no way to tell "it had been outside of
-> >> chroot jail" from "it had walked up to the place where ->mnt_parent had
-> >> been already reset, sorry, no idea what it was".
+On Tue, 6 Dec 2011, Allison Henderson wrote:
+> On 12/06/2011 01:55 AM, Hugh Dickins wrote:
+> > On Mon, 5 Dec 2011, Allison Henderson wrote:
+> > > 
+> > > Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
+> > > works well when blocksize<  pagesize" ?  I have tried it and it does
+> > > seem to
+> > > help, but I am still running into some failures that I am trying to
+> > > debug,
+> > > but let please let us know if it helps the issues that you are seeing.
+> > > Thx!
 > > 
-> > Sure, but you made that case return NULL already as part of the "no
-> > bastard" case, didn't you?
+> > That 1/2, or the 2/2 "ext4: let ext4_discard_partial_buffers handle
+> > pages without buffers correctly"?  The latter is mostly a reversion
+> > of your 02fac1297eb3, so that's the one I need to fix the oops and
+> > rare data corruption.  Perhaps you're suggesting 1/2 for fsx failures
+> > under memory pressure?
 > > 
-> > That part of the patch looked fine.
+> > I've now tried the fsx test on three machines, with both 1/2 and 2/2
+> > applied to 3.2-rc4.  On one machine, with ext2 on loop on tmpfs, the
+> > fsx test failed in a couple of minutes with those patches; on another
+> > machine, with ext2 on loop on tmpfs, it failed after about 40 minutes
+> > with  the patches; on this laptop, with ext2 on SSD, it's just now
+> > failed after 35 minutes with the patches.
 > > 
-> > It was just the extra convolutions around 'bastard' that seemed to be
-> > over-designed, and made for just a single use that seems very
-> > peripheral anyway.
-> > 
-> it is, and the plan is to not need the bastard even.  What apparmor should
-> be doing is lazy labeling the live objects, and anything that is disconnected
-> is evaluated based on the previous labeling.
+> > That's not to say that Yongqiang's patches aren't good; but I cannot
+> > detect whether they make any improvement or not, since lasting for 2 or
+> > 40 minutes is typical for fsx under memory pressure with recent kernels.
+> 
+> 
+> Well, initially I meant to just try the whole set, but now that I try just
+> one of them, I find that I get further with only the first one.  I think
+> Yongqiang and I have a similar set up because I get the hang if I dont have
+> the first patch, and I get the fsx write failure (in about 20 or so minutes)
+> if I have the second one.  But I think Yongqiang's right, we need to figure
+> out why the page is uptodate when it shouldn't be.
 
-I still don't understand how you deal with objects seen by processes in
-different namespaces.  Please, explain lazy labeling in details...
+I've not seen a hang myself.  I'm reluctant to drop the second patch,
+since it appears to fix the real problems (oops and corruption) that
+I have seen, and fsx fails with or without it; but I don't know whether
+it's any better than simply reverting yours.
 
-You do realize that there's no hope whatsoever for prohibiting access
-to struct file opened in parent's namespace and already written into
-there, right?
+I would certainly like fsx under memory pressure to be reliable again -
+that will help all our testing of new changes; but I think it's more
+urgent to get normal loads to be reliable again.
 
-> This will also remove its
-> use of passing root = { NULL, NULL } to __d_path.
+If you can call building on -t ext2 -b 1024 under memory pressure normal ;)
 
-One word: tomoyo...  You are not the only weird one.  They want an absolute
-pathname and don't care about races with umount.  Whatever it's relative
-to, the thing just goes ahead and plays with itse^Wthe string it got.  As
-long as they are not dereferencing pointers to free objects, I Don't Want To
-Know(tm).
-
-> Right now we could drop the bastard parameter and passing root = { NULL, NULL }
-
-OK, please tell me what do you need from __d_path().  Suppose it has missed
-the supplied root; what do you want to know about the place it had stopped
-in?  If we don't do extra arguments, we are limited by this:
-	* some condition is checked by __d_path(); if it's satisfied,
-pointer to relative pathname (based hell-knows-where) is returned as
-usual; we *can't* tell that from normal "reached root, here's your
-pathname" case.
-	* if it isn't satisfied, we return NULL.  No relative pathname
-to look at, etc.
-
-Unless you are OK with what __d_path(path, root, NULL, buf, buflen) is doing
-with this patch, we'd need to split it; seq_path_root()/show_mountinfo()
-requirements leave no wiggling space for case root->mnt != NULL,
-bastard == NULL.
+Hugh
