@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab1LFTMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:12:48 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45409 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488Ab1LFTMp (ORCPT
+	id S1753822Ab1LFTMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:12:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56514 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab1LFTMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:12:45 -0500
+	Tue, 6 Dec 2011 14:12:38 -0500
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com
 Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
         linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 14/25] dynamic_debug: enlarge command/query write buffer
-Date: Tue,  6 Dec 2011 12:11:24 -0700
-Message-Id: <1323198694-7186-15-git-send-email-jim.cromie@gmail.com>
+Subject: [PATCH 12/25] dynamic_debug: reduce lineno field to a saner 18 bits
+Date: Tue,  6 Dec 2011 12:11:22 -0700
+Message-Id: <1323198694-7186-13-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323198694-7186-1-git-send-email-jim.cromie@gmail.com>
 References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>, <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com>
@@ -24,59 +24,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jim Cromie <jim.cromie@gmail.com>
 
-Current query write buffer is 256 bytes, on stack.  In comparison, the
-ddebug_query boot-arg is 1024.  Allocate the buffer off heap, and
-enlarge it to 4096 bytes, big enough for ~100 queries (at 40 bytes
-each), and error out if not.  This makes it play nicely with large
-query sets (to be added later).  The buffer should be enough for most
-uses, and others should probably be split into subsets.
+lineno:24 allows files with 4 million lines, an insane file-size, even
+for never-to-get-in-tree machine generated code.  Reduce this to 18
+bits, which still allows 256k lines.  This is still insanely big, but
+its not raving mad.
 
 Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
 ---
- lib/dynamic_debug.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ include/linux/dynamic_debug.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index d285bb5..6e5b9a3 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -570,24 +570,32 @@ __setup("ddebug_query=", ddebug_setup_query);
-  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
-  * command text from userspace, parses and executes it.
-  */
-+#define USER_BUF_PAGE 4095
- static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
- 				  size_t len, loff_t *offp)
- {
--	char tmpbuf[256];
-+	char *tmpbuf;
- 	int ret;
- 
- 	if (len == 0)
- 		return 0;
--	/* we don't check *offp -- multiple writes() are allowed */
--	if (len > sizeof(tmpbuf)-1)
-+	if (len > USER_BUF_PAGE - 1) {
-+		pr_warn("expected <%d bytes into control\n", USER_BUF_PAGE);
- 		return -E2BIG;
--	if (copy_from_user(tmpbuf, ubuf, len))
-+	}
-+	tmpbuf = kmalloc(len + 1, GFP_KERNEL);
-+	if (!tmpbuf)
-+		return -ENOMEM;
-+	if (copy_from_user(tmpbuf, ubuf, len)) {
-+		kfree(tmpbuf);
- 		return -EFAULT;
-+	}
- 	tmpbuf[len] = '\0';
- 	if (verbose)
- 		pr_info("read %d bytes from userspace\n", (int)len);
- 
- 	ret = ddebug_exec_query(tmpbuf);
-+	kfree(tmpbuf);
- 	if (ret)
- 		return ret;
- 
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index fc39640..7e3c53a 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -15,7 +15,7 @@ struct _ddebug {
+ 	const char *function;
+ 	const char *filename;
+ 	const char *format;
+-	unsigned int lineno:24;
++	unsigned int lineno:18;
+ 	/*
+  	 * The flags field controls the behaviour at the callsite.
+  	 * The bits here are changed dynamically when the user
 -- 
 1.7.7.3
 
