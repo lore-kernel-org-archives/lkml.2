@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab1LFQ2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 11:28:13 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59210 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1LFQ2M (ORCPT
+	id S1751529Ab1LFQeX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 11:34:23 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:22699 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab1LFQeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 11:28:12 -0500
+	Tue, 6 Dec 2011 11:34:22 -0500
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzzz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVSJCY-01-203-02
+X-M-MSG: 
+Date: Tue, 6 Dec 2011 17:33:58 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/10] perf tool: Unify handling of features when writing
+ feature section
+Message-ID: <20111206163358.GL15738@erda.amd.com>
+References: <1323167560-2282-1-git-send-email-robert.richter@amd.com>
+ <1323167560-2282-9-git-send-email-robert.richter@amd.com>
+ <20111206133630.GI7059@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1112061619190.11925@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1112061619190.11925@skynet.skynet.ie>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Dec 2011 08:27:50 -0800
-X-Google-Sender-Auth: IlbATOkHztKAr8rpd8wU5klF4mM
-Message-ID: <CA+55aFyFar45vTWb33FnJ1xv4zT+9XfnKBs=Xwx6-5O-RBHO4Q@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111206133630.GI7059@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 8:21 AM, Dave Airlie <airlied@linux.ie> wrote:
->
-> 3 fixes, one for an ongoing Intel VT-d/Ironlake GPU that I've been
-> testing, and one kexec fix from Jerome for an issue reported on the list
-> where the gpu writeback engines need to be switched off, along with a
-> trivial fix from Alex.
+On 06.12.11 11:36:30, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Dec 06, 2011 at 11:32:38AM +0100, Robert Richter escreveu:
+> > Also moving special code for HEADER_BUILD_ID out to write_build_id().
+> 
+> For this one I just would add a big fat warning that if there are
+> build-ids on the system but the table can't be written, then extreme
+> care has to be taken when doing a perf report.
+> 
+> I.e. one has to be completely sure that the binaries hasn't changed if
+> not validating the build-ids.
+> 
+> If you fix that please add this warning as well when no build-ids are
+> found, which hopefully is the odd case these days as all distros I'm
+> aware of have build-ids in all DSOs.
 
-Quite frankly, I think it's too late for something like a kexec
-bugfix. Nobody cares. So kexec doesn't work - that's not something
-new. This doesn't smell like a regression to me. And the kcalloc
-things you mention *sound* like some kind of cleanup crap.
+What about the following change in addition? perf record then still
+stops with an error, but --no-buildid could be used to proceed anyway:
 
-The DRM layer has been fairly good for a few releases, but I'm getting
-the feeling that I need to start pushing back, because I'm getting
-stuff that I don't think matters, and shouldn't be sent to me after
--rc4.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 766fa0a..80e08ca 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -493,6 +493,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+                        return err;
+        }
+ 
++       if (!no_buildid
++           && !perf_header__has_feat(&session->header, HEADER_BUILD_ID)) {
++               pr_err("Couldn't generate buildids. "
++                      "Use --no-buildid option to profile anyway.\n");
++               return -1;
++       }
++
+        rec->post_processing_offset = lseek(output, 0, SEEK_CUR);
+ 
+        machine = perf_session__find_host_machine(session);
 
-So I'm not pulling this.
 
-What the heck is up?
+-Robert
 
-By now, I want fixes that either fix real regressions that people
-*care* about, or that help new unreleased hardware that people *will*
-care about and that cannot possibly mess up old users.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-kexec? Who the f*ck cares? Really?
-
-                      Linus
