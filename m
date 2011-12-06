@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933444Ab1LFMBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 07:01:47 -0500
-Received: from ffm.saftware.de ([83.141.3.46]:50954 "EHLO ffm.saftware.de"
+	id S933448Ab1LFMJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 07:09:58 -0500
+Received: from ozlabs.org ([203.10.76.45]:50607 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933269Ab1LFMBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 07:01:46 -0500
-Message-ID: <4EDE0427.2050307@linuxtv.org>
-Date: Tue, 06 Dec 2011 13:01:43 +0100
-From: Andreas Oberritter <obi@linuxtv.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S933238Ab1LFMJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 07:09:57 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        markmc@redhat.com
+Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect descriptors
+In-Reply-To: <4EDDE73D.1080209@redhat.com>
+References: <1322669511.3985.8.camel@lappy> <87wrahrp0u.fsf@rustcorp.com.au> <20111201075847.GA5479@redhat.com> <1322726977.3259.3.camel@lappy> <20111201102640.GB8822@redhat.com> <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy> <4EDB5EF0.2010909@redhat.com> <20111204120132.GB18758@redhat.com> <4EDB624A.3030403@redhat.com> <20111204151148.GA21851@redhat.com> <4EDB8EEB.4070309@redhat.com> <87bornri92.fsf@rustcorp.com.au> <4EDC9476.3000301@redhat.com> <87pqg2p9t8.fsf@rustcorp.com.au> <4EDDE73D.1080209@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 06 Dec 2011 22:33:21 +1030
+Message-ID: <87pqg1kiuu.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <CAJbz7-2T33c+2uTciEEnzRTaHF7yMW9aYKNiiLniH8dPUYKw_w@mail.gmail.com> <4ED6C5B8.8040803@linuxtv.org> <4ED75F53.30709@redhat.com> <CAJbz7-0td1FaDkuAkSGQRdgG5pkxjYMUGLDi0Y5BrBF2=6aVCw@mail.gmail.com> <20111202231909.1ca311e2@lxorguk.ukuu.org.uk> <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com> <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <4EDD2C82.7040804@linuxtv.org> <20111206112153.GC17194@sirena.org.uk>
-In-Reply-To: <20111206112153.GC17194@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.12.2011 12:21, Mark Brown wrote:
-> On Mon, Dec 05, 2011 at 09:41:38PM +0100, Andreas Oberritter wrote:
->> On 05.12.2011 18:39, Mauro Carvalho Chehab wrote:
+On Tue, 06 Dec 2011 11:58:21 +0200, Avi Kivity <avi@redhat.com> wrote:
+> On 12/06/2011 07:07 AM, Rusty Russell wrote:
+> > Yes, but the hypervisor/trusted party would simply have to do the copy;
+> > the rings themselves would be shared A would say "copy this to/from B's
+> > ring entry N" and you know that A can't have changed B's entry.
 > 
->>> When you put someone via the network, issues like latency,  package
->>> drops, IP
->>> congestion, QoS issues, cryptography, tunneling, etc should be taken
->>> into account
->>> by the application, in order to properly address the network issues.
-> 
->> Are you serious? Lower networking layers should be transparent to the
->> upper layers. You don't implement VPN or say TCP in all of your
->> applications, do you? These are just some more made-up arguments which
->> don't have anything to do with the use cases I explained earlier.
-> 
-> For real time applications it does make a big difference - decisions
-> taken at the application level can greatly impact end application
-> performance.  For example with VoIP on a LAN you can get great audio
-> quality by using very little compression at the expense of high
-> bandwidth and you can probably use a very small jitter buffer.  Try
-> doing that over a longer distance or more congested network which drops
-> packets and it becomes useful to use a more commpressed encoding for
-> your data which may have better features for handling packet loss, or to
-> increase your jitter buffer to cope with the less reliable transmit
-> times.
+> Sorry, I don't follow.  How can the rings be shared?  If A puts a gpa in
+> A's address space into the ring, there's no way B can do anything with
+> it, it's an opaque number.  Xen solves this with an extra layer of
+> indirection (grant table handles) that cost extra hypercalls to map or
+> copy.
 
-Can you please explain how this relates to the topic we're discussing?
+It's not symmetric.  B can see the desc and avail pages R/O, and the
+used page R/W.  It needs to ask the something to copy in/out of
+descriptors, though, because they're an opaque number, and it doesn't
+have access.  ie. the existence of the descriptor in the ring *implies*
+a grant.
+
+Perhaps this could be generalized further into a "connect these two
+rings", but I'm not sure.  Descriptors with both read and write parts
+are tricky.
+
+> > Every driver really wants to put a pointer in there.  We have an array
+> > to map desc. numbers to cookies inside the virtio core.
+> >
+> > We really want 64 bits.
+> 
+> With multiqueue, it may be cheaper to do the extra translation locally
+> than to ship the cookie across cores (or, more likely, it will make no
+> difference).
+
+Indeed.
+
+> However, moving pointers only works if you trust the other side.  That
+> doesn't work if we manage to share a ring.
+
+Yes, that part needs to be trusted too.
+
+> > I'm just not sure how the host would even know to hint.
+> 
+> For JBOD storage, a good rule of thumb is (number of spindles) x 3. 
+> With less, you might leave an idle spindle; with more, you're just
+> adding latency.  This assumes you're using indirects so ring entry ==
+> request.  The picture is muddier with massive battery-backed RAID
+> controllers or flash.
+> 
+> For networking, you want (ring size) * min(expected packet size, page
+> size) / (link bandwidth) to be something that doesn't get the
+> bufferbloat people after your blood.
+
+OK, so while neither side knows, the host knows slightly more.
+
+Now I think about it, from a spec POV, saying it's a "hint" is useless,
+as it doesn't tell the driver what to do with it.  I'll say it's a
+maximum, which keeps it simple.
+
+Cheers,
+Rusty.
