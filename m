@@ -1,91 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147Ab1LFRf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 12:35:59 -0500
-Received: from [205.233.59.134] ([205.233.59.134]:44580 "EHLO
-	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab1LFRf5 convert rfc822-to-8bit (ORCPT
+	id S1752043Ab1LFRlK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 12:41:10 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:37710 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab1LFRlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 12:35:57 -0500
-Message-ID: <1323192923.32012.79.camel@twins>
-Subject: Re: [PATCH 2/3] sched: Fix compile error for UP,!NOHZ
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
-        Mike Galbraith <efault@gmx.de>, Paul Turner <pjt@google.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Tue, 06 Dec 2011 18:35:23 +0100
-In-Reply-To: <20111206172803.473155622@chello.nl>
-References: <20111206171534.429636558@chello.nl>
-	 <20111206172803.473155622@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 6 Dec 2011 12:41:08 -0500
+Date: Tue, 6 Dec 2011 17:41:00 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 1/5] drivers: power: Rename bq20z75 to sbs-battery
+Message-ID: <20111206174100.GA15449@srcf.ucam.org>
+References: <1323129487-24859-1-git-send-email-rklein@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323129487-24859-1-git-send-email-rklein@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 05, 2011 at 03:58:03PM -0800, Rhyland Klein wrote:
 
-Gah, wrong patch as nr.2
+> +config BATTERY_SBS
+> +        tristate "SBS Compliant gas gauge"
 
----
-Subject: jump_label: Provide jump_label_key initializers
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed Jul 06 14:20:14 CEST 2011
+This could potentially be confusing with the ACPI SBS code - I guess the 
+long term ideal would be to merge them?
 
-Provide two initializers for jump_label_key that initialize it enabled
-or disabled. Also modify all jump_label code to allow for jump_labels to be
-initialized enabled.
-
-Cc: Jason Baron <jbaron@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-p40e3yj21b68y03z1yv825e7@git.kernel.org
----
- include/linux/jump_label.h |    3 +++
- kernel/jump_label.c        |   12 ++++++++----
- 2 files changed, 11 insertions(+), 4 deletions(-)
-Index: linux-2.6/include/linux/jump_label.h
-===================================================================
---- linux-2.6.orig/include/linux/jump_label.h
-+++ linux-2.6/include/linux/jump_label.h
-@@ -128,4 +128,7 @@ static inline void jump_label_rate_limit
- }
- #endif	/* HAVE_JUMP_LABEL */
- 
-+#define jump_label_key_enabled	((struct jump_label_key){ .enabled = ATOMIC_INIT(1), })
-+#define jump_label_key_disabled	((struct jump_label_key){ .enabled = ATOMIC_INIT(0), })
-+
- #endif	/* _LINUX_JUMP_LABEL_H */
-Index: linux-2.6/kernel/jump_label.c
-===================================================================
---- linux-2.6.orig/kernel/jump_label.c
-+++ linux-2.6/kernel/jump_label.c
-@@ -248,8 +248,13 @@ void jump_label_apply_nops(struct module
- 	if (iter_start == iter_stop)
- 		return;
- 
--	for (iter = iter_start; iter < iter_stop; iter++)
--		arch_jump_label_transform_static(iter, JUMP_LABEL_DISABLE);
-+	for (iter = iter_start; iter < iter_stop; iter++) {
-+		struct jump_label_key *iterk;
-+
-+		iterk = (struct jump_label_key *)(unsigned long)iter->key;
-+		arch_jump_label_transform_static(iter, jump_label_enabled(iterk) ?
-+				JUMP_LABEL_ENABLE : JUMP_LABEL_DISABLE);
-+	}
- }
- 
- static int jump_label_add_module(struct module *mod)
-@@ -289,8 +294,7 @@ static int jump_label_add_module(struct 
- 		key->next = jlm;
- 
- 		if (jump_label_enabled(key))
--			__jump_label_update(key, iter, iter_stop,
--					    JUMP_LABEL_ENABLE);
-+			__jump_label_update(key, iter, iter_stop, JUMP_LABEL_ENABLE);
- 	}
- 
- 	return 0;
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
