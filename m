@@ -1,122 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933380Ab1LFLnI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 06:43:08 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62473 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933231Ab1LFLnG convert rfc822-to-8bit (ORCPT
+	id S933403Ab1LFLnX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 06:43:23 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39773 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933231Ab1LFLnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 06:43:06 -0500
+	Tue, 6 Dec 2011 06:43:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111206113131.GE17194@sirena.org.uk>
-References: <1323124541-7590-1-git-send-email-felipe.contreras@nokia.com>
-	<20111206113131.GE17194@sirena.org.uk>
-Date: Tue, 6 Dec 2011 13:43:06 +0200
-Message-ID: <CAMP44s0VSdVo6EhvgVUcwryK39iss0mvDbxKjaeH_S+Vp4DwBw@mail.gmail.com>
-Subject: Re: [PATCH] mfd: add bq2415x charger driver
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "Pali Roh??r" <pali.rohar@gmail.com>,
-        Aliaksei Katovich <aliaksei.katovich@nokia.com>,
-        Vladimir Zapolskiy <vz@mleia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20111201072947.GA10329@onthe.net.au>
+References: <20111130071319.GA16711@onthe.net.au>
+	<1321861008-20611-1-git-send-email-chris@onthe.net.au>
+	<20111129082501.GA569@onthe.net.au>
+	<2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC20@SACMVEXC2-PRD.hq.netapp.com>
+	<24960.1322643283@redhat.com>
+	<20111201004709.GA26085@onthe.net.au>
+	<20111201063157.GA495@boyd>
+	<20111201072947.GA10329@onthe.net.au>
+Date: Tue, 6 Dec 2011 12:43:19 +0100
+Message-ID: <CADDYkjQ5G0NnABCJa+TjkTxG8UHSeDJfN9jzm6f5Q5Q-Szuc8g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] fix d_revalidate oopsen on NFS exports
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: Chris Dunlop <chris@onthe.net.au>
+Cc: Tyler Hicks <tyhicks@canonical.com>, David Howells <dhowells@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        Jan Harkes <jaharkes@cs.cmu.edu>,
+        "maintainer:CODA FILE SYSTEM" <coda@cs.cmu.edu>,
+        Dave Kleikamp <shaggy@kernel.org>,
+        Petr Vandrovec <petr@vandrovec.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        v9fs-developer@lists.sourceforge.net, linux-afs@lists.infradead.org,
+        codalist@telemann.coda.cs.cmu.edu,
+        jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 1:31 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Dec 06, 2011 at 12:35:41AM +0200, Felipe Contreras wrote:
+2011/12/1 Chris Dunlop <chris@onthe.net.au>:
+[!snip]
+>> I'm also not sure about the printk in the NFS case. Instead of littering
+>> the logs, we should probably just disallow the stacked filesystem (are
+>> we talking about eCryptfs here?) from mounting on top of NFS in the
+>> first place.
 >
->> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
->> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
->> @@ -925,6 +925,9 @@ static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_2[] = {
->>               I2C_BOARD_INFO("bq27200", 0x55),
->>       },
->>  #endif
->> +     {
->> +             I2C_BOARD_INFO("bq24150", 0x6b),
->> +     },
->
-> Clearly this is orthogonal.
+> See other reply: it wasn't a stacked file system.
 
-Yes, I added it just to demonstrate how to activate it.
+I've actually hit the same think with NFS on vanilla 2.6.39.4. There
+was no stacked fs on top as this host is only running Jenkins master
+instance where few jar are on NFS homedir mounted by autofs.
 
->> +static inline int bq2415x_i2c_read(struct i2c_client *cli, u8 reg)
->> +{
->> +     return i2c_smbus_read_byte_data(cli, reg);
->> +}
->> +
->> +static inline int bq2415x_i2c_write(struct i2c_client *cli, u8 reg, u8 val)
->> +{
->> +     return i2c_smbus_write_byte_data(cli, reg, val);
->> +}
->
-> regmap might be useful here (it's got an update bits operation and
-> cache).
+As there's no way I could actually wait for Al patches what is then
+the best way to limit this issue (BTW: I was not able to reproduce
+this anywhere yet)? The gentle msg info and -EIO sound like good idea
+until we will be suck up by black hole.
 
-Will take a look.
-
->> +static int bq2415x_set_current_limit(struct i2c_client *cli,
->> +             int min_uA, int max_uA)
->> +{
->> +     int res;
->> +
->> +     res = bq2415x_i2c_read(cli, BQ2415X_GEN_CTL);
->> +     if (res < 0)
->> +             return res;
->> +
->> +     res &= ~BQ2415X_IIN_LIMIT_UNLIM_MASK;
->> +
->> +     if (min_uA >= BQ2415X_IIN_LIMIT_100 && max_uA < BQ2415X_IIN_LIMIT_500)
->> +             ;
->> +     else if (min_uA >= BQ2415X_IIN_LIMIT_500 && max_uA < BQ2415X_IIN_LIMIT_800)
->> +             res |= BQ2415X_IIN_LIMIT_500_MASK;
->> +     else if (min_uA >= BQ2415X_IIN_LIMIT_800 && max_uA < BQ2415X_IIN_LIMIT_UNLIM)
->> +             res |= BQ2415X_IIN_LIMIT_800_MASK;
->> +     else if (min_uA >= BQ2415X_IIN_LIMIT_UNLIM)
->> +             res |= BQ2415X_IIN_LIMIT_UNLIM_MASK;
->> +     else
->> +             return -EINVAL;
->> +
->> +     return bq2415x_i2c_write(cli, BQ2415X_GEN_CTL, res);
->> +}
->
-> This is the sort of stuff that people were pushing through the regulator
-> API (and you have cloned the interface...) in order to allow a separate
-> bit of code to pick the current limits.  At the minute it looks like
-> you're hard coding the settings, the regulator API would at least let
-> you punt those to machines with fixed configurations and provides a hook
-> for anything which does want to play with the configuration at runtime.
-> Don't know if there's a better API, but it does seem like this is a
-> general thing for chargers and should therefore go through a generic
-> API.
-
-Yes, for this particular case the regulator API might be useful, but I
-don't see how external code will use this. Will they have to search
-for the name of this regulator, and then try to change the
-current_limit?
-
-Anyway, there are other levels I'm not sure the regulator interface is
-good for, like a "weak battery" voltage threshold, that most likely
-would only make sense to handle internally in the driver.
-
-> On the other hand if you just set limits and let the charger get on with
-> its thing and run autonomously starting, stopping and fast charging by
-> itself then a power supply driver seems like a good fit - just provide
-> the upper limits as platform data or something and watch it go.
-
-It would have to change its behavior depending on external events,
-like charger plugged/unplugged, different types of chargers, and so
-on. I'm thinking the rx51 board code could join some hooks from
-isp1704 (which detects the events) into this driver.
-
-Cheers.
-
--- 
-Felipe Contreras
+-Jacek
