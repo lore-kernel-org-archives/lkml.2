@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab1LFW0v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:26:51 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:46361 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753183Ab1LFW0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:26:50 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] unifdef: drop unused errno.h include
-Date: Tue,  6 Dec 2011 17:26:50 -0500
-Message-Id: <1323210410-27111-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.6.1
+	id S1755359Ab1LFWbs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:31:48 -0500
+Received: from lvps80-90-199-152.vps.webfusion.co.uk ([80.90.199.152]:51546
+	"EHLO lvps80-90-199-152.vps.webfusion.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753286Ab1LFWbq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 17:31:46 -0500
+Date: Tue, 6 Dec 2011 23:31:09 +0100
+From: Baptiste Jonglez <baptiste@jonglez.org>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: joeyli <jlee@suse.com>, Baptiste Jonglez <baptiste@jonglez.org>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx@lists.freedesktop.org,
+        Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
+Subject: Re: [Dual-LVDS Acer Iconia laptop] i915/DRM issue: one screen stays
+ off [3.2-rc4+]
+Message-ID: <20111206223109.GA1867@archminux>
+Mail-Followup-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+	joeyli <jlee@suse.com>, Baptiste Jonglez <baptiste@jonglez.org>,
+	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	intel-gfx@lists.freedesktop.org,
+	Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
+References: <20111204160728.GA27292@archminux>
+ <1323054041.6046.79.camel@linux-s257.site>
+ <20111206215137.GA20907@archminux>
+ <CAN+gG=EaG1h=seuKQa_SF2O033WWn52USh=tjO9F9O55DgH17Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=EaG1h=seuKQa_SF2O033WWn52USh=tjO9F9O55DgH17Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the only header on my system that ends up requiring kernel
-headers, so if the kernel headers aren't available, we end up being
-unable to install kernel headers :).
+On Tue, Dec 06, 2011 at 11:12:26PM +0100, Benjamin Tissoires wrote:
+> Hi Baptiste,
 
-Since this file doesn't actually use anything from errno.h, drop
-the include so it at least makes us a bit more robust on glibc.
+Hi,
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- scripts/unifdef.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+> On Tue, Dec 6, 2011 at 22:51, Baptiste Jonglez <baptiste@jonglez.org> wrote:
+> > The second screen works fine with the attached patch. It actually is
+> > 6 months old but seems to have been lost in the wild...
+> 
+> You don't have the problem of the second backlight still off?
+> On our Iconia, we need to trigger a special DMI command to set it up
+> (SDSS, IIRC).
 
-diff --git a/scripts/unifdef.c b/scripts/unifdef.c
-index 7493c0e..c5dfae5 100644
---- a/scripts/unifdef.c
-+++ b/scripts/unifdef.c
-@@ -48,7 +48,6 @@
- 
- #include <ctype.h>
- #include <err.h>
--#include <errno.h>
- #include <stdarg.h>
- #include <stdbool.h>
- #include <stdio.h>
--- 
-1.7.6.1
+No, with the patch, it worked out-of-the-box.
 
+I can even control the brightness in
+`/sys/class/backlight/acpi_video0/brightness' (it affects both
+displays at the same time though). But even at 0, it's still perfectly
+readable.
+
+Maybe this a bug that got fixed recently? I've actually tried the 3.1
+kernel (and then the 3.2-rc4) because I noticed a lot of commits and
+improvements in the i915 driver recently.
+
+> > Thanks Benjamin!
+> 
+> All the credits are from Ajax and somebody else on IRC I don't recall,
+> really sorry. Thanks to them.
+> 
+> Cheers,
+> Benjamin.
+
+Regards,
+Baptiste
