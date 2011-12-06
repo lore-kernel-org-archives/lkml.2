@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab1LFWr1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 17:47:27 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43118 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab1LFWrY (ORCPT
+	id S1755503Ab1LFWsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 17:48:16 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43801 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801Ab1LFWsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 17:47:24 -0500
-Date: Tue, 6 Dec 2011 14:47:21 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Mike Galbraith <efault@gmx.de>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [patch-final] Re: patch] cpusets, cgroups: disallow attaching
- kthreadd
-Message-Id: <20111206144721.7b1d473d.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
-References: <1316758874.7393.2.camel@marge.simson.net>
-	<4E7C2E7F.40307@cn.fujitsu.com>
-	<1316762345.8168.4.camel@marge.simson.net>
-	<alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-	<1316770936.6641.11.camel@marge.simson.net>
-	<1316775204.7562.9.camel@marge.simson.net>
-	<alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
-	<1316788392.6544.33.camel@marge.simson.net>
-	<1318224892.6161.45.camel@marge.simson.net>
-	<1318233815.6527.5.camel@marge.simson.net>
-	<1318925436.9641.23.camel@marge.simson.net>
-	<CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com>
-	<1319001860.6222.34.camel@marge.simson.net>
-	<alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Dec 2011 17:48:14 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: "David S . Miller" <davem@davemloft.net>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: [PATCH 0/3] crypto: Add per-cpu transform helpers
+Date: Tue,  6 Dec 2011 16:45:57 -0600
+Message-Id: <1323211560-18181-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 11120622-3270-0000-0000-00000262C85C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Dec 2011 12:13:10 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
+This patchset includes two new functions for the cryptographic library,
+crypto_alloc_percpu_tfms() and crypto_free_percpu_tfms(), which assist users
+in allocating and freeing per-cpu transforms.
 
-> On Thu, 10 Nov 2011, David Rientjes wrote:
-> 
-> > On Wed, 26 Oct 2011, David Rientjes wrote:
-> > 
-> > > On Wed, 19 Oct 2011, Mike Galbraith wrote:
-> > > 
-> > > > cpusets, cgroups: disallow attaching kthreadd
-> > > > 
-> > > > Allowing kthreadd to be moved to a non-root group makes no sense, it being
-> > > > a global resource, and needlessly leads unsuspecting users toward trouble.
-> > > > 
-> > > > 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
-> > > > allocated is not schedulable.  Simple user error, but harmful to the box.
-> > > > 
-> > > > 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
-> > > > rendering the cpuset immortal.
-> > > > 
-> > > > Save the user some unexpected trouble, just say no.
-> > > > 
-> > > > Signed-off-by: Mike Galbraith <efault@gmx.de>
-> > > > Acked-by: David Rientjes <rientjes@google.com>
-> > > > Acked-by: Paul Menage <paul@paulmenage.org>
-> > > > 
-> > > 
-> > > Let's add Andrew to the cc so we can get it in -mm, I haven't seen it hit 
-> > > linux-next yet.
-> > > 
-> > 
-> > Ping?  Still missing from -mm and linux-next.
-> > 
-> 
-> Ping #2?
-> 
+It also includes typing wrappers for the compression algorithm class.
 
-Why am I being pinged about scheduler patches?  My sole contribution
-to this one is to point out that "its"->possessive and "it's"->"it is".
+The reason for this patch is that during my work to enable page compression
+via the cryptographic API in the zcache staging driver, and realized that I
+had rewritten some per-cpu transform code that already exists in the
+xfrm_ipcomp code.
 
-Also, Peter has said
+In an effort to avoid duplication, this patchset moves the per-cpu code into
+helper functions in the cryptographic library and makes the necessary
+modifications to the xfrm_ipcomp code.
 
-: I really think that if we want to restrain userspace from doing
-: something stupid we might as well do something that makes sense, and
-: that is mandate kthreadd stays in the root group at all times for
-: everybody.
+After this change is (hopefully) merged, I will submit the zcache driver
+changes, which will be the second user of these helpers.
 
-which appears to be what the patch already did, so I'm confused again.
+Seth Jennings (3):
+  crypto: Add per-cpu transform alloc() and free()
+  crypto: Add inline per-cpu wrappers for compression
+  xfrm: Modify xfrm_ipcomp code to use new per-cpu helpers
 
-It's time for a fresh resend, IMO.
+ crypto/api.c           |   62 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/crypto.h |   28 +++++++++++++++++++++
+ net/xfrm/xfrm_ipcomp.c |   34 ++++++--------------------
+ 3 files changed, 98 insertions(+), 26 deletions(-)
+
+-- 
+1.7.5.4
+
