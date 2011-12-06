@@ -1,103 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932831Ab1LFA1n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 19:27:43 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47396 "EHLO
+	id S932797Ab1LFA1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 19:27:42 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47395 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932706Ab1LFA1k (ORCPT
+	with ESMTP id S932697Ab1LFA1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 5 Dec 2011 19:27:40 -0500
 From: Maxim Uvarov <maxim.uvarov@oracle.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-watchdog@vger.kernel.org, wim@iguana.be,
-        Maxim Uvarov <maxim.uvarov@oracle.com>
-Subject: [PATCH] hpwd watchdog mark page executable
-Date: Mon,  5 Dec 2011 16:25:39 -0800
-Message-Id: <1323131139-32451-2-git-send-email-maxim.uvarov@oracle.com>
+Cc: linux-watchdog@vger.kernel.org, wim@iguana.be
+Subject: [PATCH] hpwd watchdog mark page executable 
+Date: Mon,  5 Dec 2011 16:25:38 -0800
+Message-Id: <1323131139-32451-1-git-send-email-maxim.uvarov@oracle.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1323131139-32451-1-git-send-email-maxim.uvarov@oracle.com>
-References: <1323131139-32451-1-git-send-email-maxim.uvarov@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4EDD617A.007F,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4EDD617A.008F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark hpwdt watchdog pages executable to prevent failing:
-BUG: unable to handle kernel paging request at c00f0000
- IP: [<c00f0000>] 0xc00effff
- *pdpt = 0000000000b7c001 *pde = 0000000000cf5067 *pte = 80000000000f0163
- Oops: 0011 [#1] SMP
- Modules linked in: hpwdt(+)(U) ipmi_si(U) ipmi_msghandler(U) serio_raw(U)
- pcspkr(U) k8temp(U) ext4(U) mbcache(U) jbd2(U) hpsa(U) cciss(U) lpfc(U)
- qla2xxx(U) scsi_transport_fc(U) scsi_tgt(U) radeon(U) ttm(U)
- drm_kms_helper(U) drm(U) hwmon(U) i2c_algo_bit(U) i2c_core(U) dm_mod(U)
- .
- Pid: 741, comm: modprobe Not tainted 2.6.39-100.0.15.el6uek.i686 #1 HP
- ProLiant BL685c G1
- EIP: 0060:[<c00f0000>] EFLAGS: 00010286 CPU: 1
- EIP is at 0xc00f0000
- EAX: 55524324 EBX: 00000000 ECX: 00000000 EDX: 00000000
- ESI: 00000000 EDI: 00000000 EBP: e892fda0 ESP: e892fd70
-  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
- Process modprobe (pid: 741, ti=e892e000 task=e96d0da0 task.ti=e892e000)
- Stack:
-  f902b020 00000060 0000007b 00000286 ffffffed c00f0000 e892fda0 e892fda0
-  c00f0000 00000001 00000000 c00f0000 e892fdc4 f902b500 f902c0e0 c00f0000
-  e892fdc4 c0439b6f c00ffee0 c0100000 c00f0000 e892fdf0 f902b627 ea276860
- Call Trace:
-  [<f902b020>] ? asminline_call+0x20/0x50 [hpwdt]
-  [<f902b500>] cru_detect+0x43/0xf6 [hpwdt]
-  [<c0439b6f>] ? ioremap_nocache+0x1f/0x30
-  [<f902b627>] hpwdt_init_nmi_decoding+0x74/0x16b [hpwdt]
-  [<c085f469>] ? printk+0x1d/0x24
-  [<f902b7f4>] hpwdt_init_one+0xd6/0x162 [hpwdt]
-  [<c06d8475>] ? pm_runtime_enable+0x45/0x70
-  [<c06149c7>] local_pci_probe+0x47/0xb0
-  [<c0615978>] pci_device_probe+0x68/0x90
-  [<c06d0aee>] really_probe+0x5e/0x210
-  [<c06d9808>] ? pm_runtime_barrier+0x48/0xb0
-  [<c06d0ce3>] driver_probe_device+0x43/0xa0
-  [<c061494e>] ? pci_match_device+0x9e/0xb0
-  [<c06d0dc1>] __driver_attach+0x81/0x90
-  [<c06d0020>] bus_for_each_dev+0x50/0x70
-  [<c06d08fe>] driver_attach+0x1e/0x20
-  [<c06d0d40>] ? driver_probe_device+0xa0/0xa0
-  [<c06d0397>] bus_add_driver+0x197/0x270
-  [<c06157f0>] ? pci_dev_put+0x20/0x20
-  [<c06d13ea>] driver_register+0x6a/0x130
-  [<c0615ba5>] __pci_register_driver+0x45/0xb0
-  [<f902e017>] hpwdt_init+0x17/0x19 [hpwdt]
-  [<c0403035>] do_one_initcall+0x35/0x170
-  [<f902e000>] ? 0xf902dfff
-  [<c0491ac5>] sys_init_module+0x75/0x1c0
-  [<c04ac8a6>] ? audit_syscall_exit+0x216/0x240
-  [<c0868f9f>] sysenter_do_call+0x12/0x28
- Code: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
- ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
-  90 80 fc d8 75 0d e9 03 07 00 00 b8 04 00 00 02 05 00 00 9c
- EIP: [<c00f0000>] 0xc00f0000 SS:ESP 0068:e892fd70
- CR2: 00000000c00f0000
 
-Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
----
- drivers/watchdog/hpwdt.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 3774c9b..fe50812 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -335,6 +335,8 @@ static int __devinit detect_cru_service(void)
- 	if (p == NULL)
- 		return -ENOMEM;
- 
-+	set_memory_x((unsigned long)p & PAGE_MASK, ROM_SIZE >> PAGE_SHIFT);
-+
- 	for (q = p; q < p + ROM_SIZE; q += 16) {
- 		rc = bios32_present(q);
- 		if (!rc)
--- 
-1.7.4.1
+Of course set up executable flag. Not writable :)
 
