@@ -1,369 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932798Ab1LFAVT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Dec 2011 19:21:19 -0500
-Received: from andromeda.dapyr.net ([206.212.254.10]:45591 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932697Ab1LFAVS (ORCPT
+	id S932831Ab1LFA1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Dec 2011 19:27:43 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47396 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932706Ab1LFA1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Dec 2011 19:21:18 -0500
-X-Greylist: delayed 328 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Dec 2011 19:21:17 EST
-Date: Mon, 5 Dec 2011 20:13:27 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Gleb Natapov <gleb@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        KVM <kvm@vger.kernel.org>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sedat Dilek <sedat.dilek@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: Re: [Xen-devel] [PATCH RFC V3 1/4] debugfs: Add support to print u32 array in debugfs
-Message-ID: <20111206001327.GA20511@andromeda.dapyr.net>
-References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com> <20111130085939.23386.1242.sendpatchset@oc5400248562.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111130085939.23386.1242.sendpatchset@oc5400248562.ibm.com>
-User-Agent: Mutt/1.5.9i
+	Mon, 5 Dec 2011 19:27:40 -0500
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-watchdog@vger.kernel.org, wim@iguana.be,
+        Maxim Uvarov <maxim.uvarov@oracle.com>
+Subject: [PATCH] hpwd watchdog mark page executable
+Date: Mon,  5 Dec 2011 16:25:39 -0800
+Message-Id: <1323131139-32451-2-git-send-email-maxim.uvarov@oracle.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1323131139-32451-1-git-send-email-maxim.uvarov@oracle.com>
+References: <1323131139-32451-1-git-send-email-maxim.uvarov@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4EDD617A.007F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 02:29:39PM +0530, Raghavendra K T wrote:
-> Add debugfs support to print u32-arrays in debugfs. Move the code from Xen to debugfs
-> to make the code common for other users as well.
-> 
-> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Mark hpwdt watchdog pages executable to prevent failing:
+BUG: unable to handle kernel paging request at c00f0000
+ IP: [<c00f0000>] 0xc00effff
+ *pdpt = 0000000000b7c001 *pde = 0000000000cf5067 *pte = 80000000000f0163
+ Oops: 0011 [#1] SMP
+ Modules linked in: hpwdt(+)(U) ipmi_si(U) ipmi_msghandler(U) serio_raw(U)
+ pcspkr(U) k8temp(U) ext4(U) mbcache(U) jbd2(U) hpsa(U) cciss(U) lpfc(U)
+ qla2xxx(U) scsi_transport_fc(U) scsi_tgt(U) radeon(U) ttm(U)
+ drm_kms_helper(U) drm(U) hwmon(U) i2c_algo_bit(U) i2c_core(U) dm_mod(U)
+ .
+ Pid: 741, comm: modprobe Not tainted 2.6.39-100.0.15.el6uek.i686 #1 HP
+ ProLiant BL685c G1
+ EIP: 0060:[<c00f0000>] EFLAGS: 00010286 CPU: 1
+ EIP is at 0xc00f0000
+ EAX: 55524324 EBX: 00000000 ECX: 00000000 EDX: 00000000
+ ESI: 00000000 EDI: 00000000 EBP: e892fda0 ESP: e892fd70
+  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+ Process modprobe (pid: 741, ti=e892e000 task=e96d0da0 task.ti=e892e000)
+ Stack:
+  f902b020 00000060 0000007b 00000286 ffffffed c00f0000 e892fda0 e892fda0
+  c00f0000 00000001 00000000 c00f0000 e892fdc4 f902b500 f902c0e0 c00f0000
+  e892fdc4 c0439b6f c00ffee0 c0100000 c00f0000 e892fdf0 f902b627 ea276860
+ Call Trace:
+  [<f902b020>] ? asminline_call+0x20/0x50 [hpwdt]
+  [<f902b500>] cru_detect+0x43/0xf6 [hpwdt]
+  [<c0439b6f>] ? ioremap_nocache+0x1f/0x30
+  [<f902b627>] hpwdt_init_nmi_decoding+0x74/0x16b [hpwdt]
+  [<c085f469>] ? printk+0x1d/0x24
+  [<f902b7f4>] hpwdt_init_one+0xd6/0x162 [hpwdt]
+  [<c06d8475>] ? pm_runtime_enable+0x45/0x70
+  [<c06149c7>] local_pci_probe+0x47/0xb0
+  [<c0615978>] pci_device_probe+0x68/0x90
+  [<c06d0aee>] really_probe+0x5e/0x210
+  [<c06d9808>] ? pm_runtime_barrier+0x48/0xb0
+  [<c06d0ce3>] driver_probe_device+0x43/0xa0
+  [<c061494e>] ? pci_match_device+0x9e/0xb0
+  [<c06d0dc1>] __driver_attach+0x81/0x90
+  [<c06d0020>] bus_for_each_dev+0x50/0x70
+  [<c06d08fe>] driver_attach+0x1e/0x20
+  [<c06d0d40>] ? driver_probe_device+0xa0/0xa0
+  [<c06d0397>] bus_add_driver+0x197/0x270
+  [<c06157f0>] ? pci_dev_put+0x20/0x20
+  [<c06d13ea>] driver_register+0x6a/0x130
+  [<c0615ba5>] __pci_register_driver+0x45/0xb0
+  [<f902e017>] hpwdt_init+0x17/0x19 [hpwdt]
+  [<c0403035>] do_one_initcall+0x35/0x170
+  [<f902e000>] ? 0xf902dfff
+  [<c0491ac5>] sys_init_module+0x75/0x1c0
+  [<c04ac8a6>] ? audit_syscall_exit+0x216/0x240
+  [<c0868f9f>] sysenter_do_call+0x12/0x28
+ Code: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+ ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+  90 80 fc d8 75 0d e9 03 07 00 00 b8 04 00 00 02 05 00 00 9c
+ EIP: [<c00f0000>] 0xc00f0000 SS:ESP 0068:e892fd70
+ CR2: 00000000c00f0000
 
-Looks good to me.
-> ---
-> diff --git a/arch/x86/xen/debugfs.c b/arch/x86/xen/debugfs.c
-> index 7c0fedd..c8377fb 100644
-> --- a/arch/x86/xen/debugfs.c
-> +++ b/arch/x86/xen/debugfs.c
-> @@ -19,107 +19,3 @@ struct dentry * __init xen_init_debugfs(void)
->  	return d_xen_debug;
->  }
->  
-> -struct array_data
-> -{
-> -	void *array;
-> -	unsigned elements;
-> -};
-> -
-> -static int u32_array_open(struct inode *inode, struct file *file)
-> -{
-> -	file->private_data = NULL;
-> -	return nonseekable_open(inode, file);
-> -}
-> -
-> -static size_t format_array(char *buf, size_t bufsize, const char *fmt,
-> -			   u32 *array, unsigned array_size)
-> -{
-> -	size_t ret = 0;
-> -	unsigned i;
-> -
-> -	for(i = 0; i < array_size; i++) {
-> -		size_t len;
-> -
-> -		len = snprintf(buf, bufsize, fmt, array[i]);
-> -		len++;	/* ' ' or '\n' */
-> -		ret += len;
-> -
-> -		if (buf) {
-> -			buf += len;
-> -			bufsize -= len;
-> -			buf[-1] = (i == array_size-1) ? '\n' : ' ';
-> -		}
-> -	}
-> -
-> -	ret++;		/* \0 */
-> -	if (buf)
-> -		*buf = '\0';
-> -
-> -	return ret;
-> -}
-> -
-> -static char *format_array_alloc(const char *fmt, u32 *array, unsigned array_size)
-> -{
-> -	size_t len = format_array(NULL, 0, fmt, array, array_size);
-> -	char *ret;
-> -
-> -	ret = kmalloc(len, GFP_KERNEL);
-> -	if (ret == NULL)
-> -		return NULL;
-> -
-> -	format_array(ret, len, fmt, array, array_size);
-> -	return ret;
-> -}
-> -
-> -static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
-> -			      loff_t *ppos)
-> -{
-> -	struct inode *inode = file->f_path.dentry->d_inode;
-> -	struct array_data *data = inode->i_private;
-> -	size_t size;
-> -
-> -	if (*ppos == 0) {
-> -		if (file->private_data) {
-> -			kfree(file->private_data);
-> -			file->private_data = NULL;
-> -		}
-> -
-> -		file->private_data = format_array_alloc("%u", data->array, data->elements);
-> -	}
-> -
-> -	size = 0;
-> -	if (file->private_data)
-> -		size = strlen(file->private_data);
-> -
-> -	return simple_read_from_buffer(buf, len, ppos, file->private_data, size);
-> -}
-> -
-> -static int xen_array_release(struct inode *inode, struct file *file)
-> -{
-> -	kfree(file->private_data);
-> -
-> -	return 0;
-> -}
-> -
-> -static const struct file_operations u32_array_fops = {
-> -	.owner	= THIS_MODULE,
-> -	.open	= u32_array_open,
-> -	.release= xen_array_release,
-> -	.read	= u32_array_read,
-> -	.llseek = no_llseek,
-> -};
-> -
-> -struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
-> -					    struct dentry *parent,
-> -					    u32 *array, unsigned elements)
-> -{
-> -	struct array_data *data = kmalloc(sizeof(*data), GFP_KERNEL);
-> -
-> -	if (data == NULL)
-> -		return NULL;
-> -
-> -	data->array = array;
-> -	data->elements = elements;
-> -
-> -	return debugfs_create_file(name, mode, parent, data, &u32_array_fops);
-> -}
-> diff --git a/arch/x86/xen/debugfs.h b/arch/x86/xen/debugfs.h
-> index e281320..12ebf33 100644
-> --- a/arch/x86/xen/debugfs.h
-> +++ b/arch/x86/xen/debugfs.h
-> @@ -3,8 +3,4 @@
->  
->  struct dentry * __init xen_init_debugfs(void);
->  
-> -struct dentry *xen_debugfs_create_u32_array(const char *name, mode_t mode,
-> -					    struct dentry *parent,
-> -					    u32 *array, unsigned elements);
-> -
->  #endif /* _XEN_DEBUGFS_H */
-> diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-> index fc506e6..14a8961 100644
-> --- a/arch/x86/xen/spinlock.c
-> +++ b/arch/x86/xen/spinlock.c
-> @@ -286,7 +286,7 @@ static int __init xen_spinlock_debugfs(void)
->  	debugfs_create_u64("time_blocked", 0444, d_spin_debug,
->  			   &spinlock_stats.time_blocked);
->  
-> -	xen_debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
-> +	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
->  				     spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
->  
->  	return 0;
-> diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-> index 90f7657..df44ccf 100644
-> --- a/fs/debugfs/file.c
-> +++ b/fs/debugfs/file.c
-> @@ -18,6 +18,7 @@
->  #include <linux/pagemap.h>
->  #include <linux/namei.h>
->  #include <linux/debugfs.h>
-> +#include <linux/slab.h>
->  
->  static ssize_t default_read_file(struct file *file, char __user *buf,
->  				 size_t count, loff_t *ppos)
-> @@ -525,3 +526,130 @@ struct dentry *debugfs_create_blob(const char *name, mode_t mode,
->  	return debugfs_create_file(name, mode, parent, blob, &fops_blob);
->  }
->  EXPORT_SYMBOL_GPL(debugfs_create_blob);
-> +
-> +struct array_data {
-> +	void *array;
-> +	u32 elements;
-> +};
-> +
-> +static int u32_array_open(struct inode *inode, struct file *file)
-> +{
-> +	file->private_data = NULL;
-> +	return nonseekable_open(inode, file);
-> +}
-> +
-> +static size_t format_array(char *buf, size_t bufsize, const char *fmt,
-> +			   u32 *array, u32 array_size)
-> +{
-> +	size_t ret = 0;
-> +	u32 i;
-> +
-> +	for (i = 0; i < array_size; i++) {
-> +		size_t len;
-> +
-> +		len = snprintf(buf, bufsize, fmt, array[i]);
-> +		len++;	/* ' ' or '\n' */
-> +		ret += len;
-> +
-> +		if (buf) {
-> +			buf += len;
-> +			bufsize -= len;
-> +			buf[-1] = (i == array_size-1) ? '\n' : ' ';
-> +		}
-> +	}
-> +
-> +	ret++;		/* \0 */
-> +	if (buf)
-> +		*buf = '\0';
-> +
-> +	return ret;
-> +}
-> +
-> +static char *format_array_alloc(const char *fmt, u32 *array,
-> +						u32 array_size)
-> +{
-> +	size_t len = format_array(NULL, 0, fmt, array, array_size);
-> +	char *ret;
-> +
-> +	ret = kmalloc(len, GFP_KERNEL);
-> +	if (ret == NULL)
-> +		return NULL;
-> +
-> +	format_array(ret, len, fmt, array, array_size);
-> +	return ret;
-> +}
-> +
-> +static ssize_t u32_array_read(struct file *file, char __user *buf, size_t len,
-> +			      loff_t *ppos)
-> +{
-> +	struct inode *inode = file->f_path.dentry->d_inode;
-> +	struct array_data *data = inode->i_private;
-> +	size_t size;
-> +
-> +	if (*ppos == 0) {
-> +		if (file->private_data) {
-> +			kfree(file->private_data);
-> +			file->private_data = NULL;
-> +		}
-> +
-> +		file->private_data = format_array_alloc("%u", data->array,
-> +							      data->elements);
-> +	}
-> +
-> +	size = 0;
-> +	if (file->private_data)
-> +		size = strlen(file->private_data);
-> +
-> +	return simple_read_from_buffer(buf, len, ppos,
-> +					file->private_data, size);
-> +}
-> +
-> +static int u32_array_release(struct inode *inode, struct file *file)
-> +{
-> +	kfree(file->private_data);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct file_operations u32_array_fops = {
-> +	.owner	 = THIS_MODULE,
-> +	.open	 = u32_array_open,
-> +	.release = u32_array_release,
-> +	.read	 = u32_array_read,
-> +	.llseek  = no_llseek,
-> +};
-> +
-> +/**
-> + * debugfs_create_u32_array - create a debugfs file that is used to read u32
-> + * array.
-> + * @name: a pointer to a string containing the name of the file to create.
-> + * @mode: the permission that the file should have.
-> + * @parent: a pointer to the parent dentry for this file.  This should be a
-> + *          directory dentry if set.  If this parameter is %NULL, then the
-> + *          file will be created in the root of the debugfs filesystem.
-> + * @array: u32 array that provides data.
-> + * @elements: total number of elements in the array.
-> + *
-> + * This function creates a file in debugfs with the given name that exports
-> + * @array as data. If the @mode variable is so set it can be read from.
-> + * Writing is not supported. Seek within the file is also not supported.
-> + * Once array is created its size can not be changed.
-> + *
-> + * The function returns a pointer to dentry on success. If debugfs is not
-> + * enabled in the kernel, the value -%ENODEV will be returned.
-> + */
-> +struct dentry *debugfs_create_u32_array(const char *name, mode_t mode,
-> +					    struct dentry *parent,
-> +					    u32 *array, u32 elements)
-> +{
-> +	struct array_data *data = kmalloc(sizeof(*data), GFP_KERNEL);
-> +
-> +	if (data == NULL)
-> +		return NULL;
-> +
-> +	data->array = array;
-> +	data->elements = elements;
-> +
-> +	return debugfs_create_file(name, mode, parent, data, &u32_array_fops);
-> +}
-> +EXPORT_SYMBOL_GPL(debugfs_create_u32_array);
-> diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-> index e7d9b20..253e2fb 100644
-> --- a/include/linux/debugfs.h
-> +++ b/include/linux/debugfs.h
-> @@ -74,6 +74,10 @@ struct dentry *debugfs_create_blob(const char *name, mode_t mode,
->  				  struct dentry *parent,
->  				  struct debugfs_blob_wrapper *blob);
->  
-> +struct dentry *debugfs_create_u32_array(const char *name, mode_t mode,
-> +					struct dentry *parent,
-> +					u32 *array, u32 elements);
-> +
->  bool debugfs_initialized(void);
->  
->  #else
-> @@ -193,6 +197,13 @@ static inline bool debugfs_initialized(void)
->  	return false;
->  }
->  
-> +struct dentry *debugfs_create_u32_array(const char *name, mode_t mode,
-> +					struct dentry *parent,
-> +					u32 *array, u32 elements)
-> +{
-> +	return ERR_PTR(-ENODEV);
-> +}
-> +
->  #endif
->  
->  #endif
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+---
+ drivers/watchdog/hpwdt.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 3774c9b..fe50812 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -335,6 +335,8 @@ static int __devinit detect_cru_service(void)
+ 	if (p == NULL)
+ 		return -ENOMEM;
+ 
++	set_memory_x((unsigned long)p & PAGE_MASK, ROM_SIZE >> PAGE_SHIFT);
++
+ 	for (q = p; q < p + ROM_SIZE; q += 16) {
+ 		rc = bios32_present(q);
+ 		if (!rc)
+-- 
+1.7.4.1
+
