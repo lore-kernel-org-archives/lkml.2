@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab1LFT46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 14:56:58 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57190 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab1LFT45 (ORCPT
+	id S1753269Ab1LFT7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 14:59:41 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:43892 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752735Ab1LFT7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 14:56:57 -0500
-Date: Tue, 6 Dec 2011 11:56:51 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, vegard.nossum@gmail.com,
-        sergey.senozhatsky@gmail.com, bp@alien8.de, tj@kernel.org,
-        yong.zhang0@gmail.com, tglx@linutronix.de, mingo@elte.hu
-cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] lockdep, kmemcheck: Annotate ->lock in
- lockdep_init_map()
-In-Reply-To: <tip-d3d03d4fc5b1bec3a579112de170a9676e9d97cb@git.kernel.org>
-Message-ID: <alpine.DEB.2.00.1112061156330.24076@chino.kir.corp.google.com>
-References: <20111109080451.GB8124@zhy> <tip-d3d03d4fc5b1bec3a579112de170a9676e9d97cb@git.kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 6 Dec 2011 14:59:40 -0500
+Message-ID: <4EDE820E.5040006@xenotime.net>
+Date: Tue, 06 Dec 2011 12:58:54 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Martyn Welch <martyn.welch@ge.com>
+Subject: Re: linux-next: Tree for Dec 6 (staging/vme)
+References: <20111206154450.5e2ef2baed27993b23a55802@canb.auug.org.au>
+In-Reply-To: <20111206154450.5e2ef2baed27993b23a55802@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Dec 2011, tip-bot for Yong Zhang wrote:
+On 12/05/2011 08:44 PM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20111205:
 
-> Commit-ID:  d3d03d4fc5b1bec3a579112de170a9676e9d97cb
-> Gitweb:     http://git.kernel.org/tip/d3d03d4fc5b1bec3a579112de170a9676e9d97cb
-> Author:     Yong Zhang <yong.zhang0@gmail.com>
-> AuthorDate: Wed, 9 Nov 2011 16:04:51 +0800
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Tue, 6 Dec 2011 08:16:51 +0100
-> 
-> lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
-> 
-> Since commit f59de89 ("lockdep: Clear whole lockdep_map on initialization"),
-> lockdep_init_map() will clear all the struct. But it will break
-> lock_set_class()/lock_set_subclass(). A typical race condition
-> is like below:
-> 
->      CPU A                                   CPU B
-> lock_set_subclass(lockA);
->  lock_set_class(lockA);
->    lockdep_init_map(lockA);
->      /* lockA->name is cleared */
->      memset(lockA);
->                                      __lock_acquire(lockA);
->                                        /* lockA->class_cache[] is cleared */
->                                        register_lock_class(lockA);
->                                          look_up_lock_class(lockA);
->                                            WARN_ON_ONCE(class->name !=
->                                                      lock->name);
-> 
->      lock->name = name;
-> 
-> So restore to what we have done before commit f59de89 but annotate
-> ->lock with kmemcheck_mark_initialized() to suppress the kmemcheck
-> warning reported in commit f59de89.
-> 
-> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: David Rientjes <rientjes@google.com>
 
-Acked-by: David Rientjes <rientjes@google.com>
+When CONFIG_GPIOLIB is not enabled:
 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/20111109080451.GB8124@zhy
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+drivers/staging/vme/devices/vme_pio2.h:237:19: error: field 'gc' has incomplete type
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
