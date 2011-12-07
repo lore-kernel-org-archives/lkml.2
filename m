@@ -1,62 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab1LGIka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 03:40:30 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42453 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab1LGIk2 convert rfc822-to-8bit (ORCPT
+	id S1754760Ab1LGImM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 03:42:12 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34231 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab1LGImK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 03:40:28 -0500
+	Wed, 7 Dec 2011 03:42:10 -0500
 MIME-Version: 1.0
-X-Originating-IP: [62.165.247.249]
-In-Reply-To: <CAJfpeguawQGYvL+tDD-mgxjyZPVbJs04tug853H0yLn7MyfLig@mail.gmail.com>
-References: <1321873893-4544-1-git-send-email-miklos@szeredi.hu>
-	<CAJfpeguawQGYvL+tDD-mgxjyZPVbJs04tug853H0yLn7MyfLig@mail.gmail.com>
-Date: Wed, 7 Dec 2011 09:40:27 +0100
-Message-ID: <CAJfpegt76t=kn4k73ASrvUMyJJxhF=nPYMTz1JVLbRVRAkW5uw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] read-only remount race fix v10
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@zeniv.linux.org.uk
-Cc: hch@infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
-        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1323048028-10421-7-git-send-email-ming.m.lin@intel.com>
+References: <1323048028-10421-1-git-send-email-ming.m.lin@intel.com>
+	<1323048028-10421-7-git-send-email-ming.m.lin@intel.com>
+Date: Wed, 7 Dec 2011 16:42:09 +0800
+X-Google-Sender-Auth: 089ByB2WIYFOQR-N6S2CroKxglc
+Message-ID: <CAF1ivSbr3b8vkgtA1Lzy-hKvm6MJ77bS5V2JkJF5+ybKCPObKg@mail.gmail.com>
+Subject: Re: [PATCH v5 6/6] ata: add ata port runtime PM callbacks
+From: Lin Ming <ming.m.lin@intel.com>
+To: Jeff Garzik <jgarzik@pobox.com>,
+        James Bottomley <JBottomley@parallels.com>,
+        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 28, 2011 at 10:39 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Mon, Nov 21, 2011 at 12:11 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> Al,
->>
->> Please apply the following patches that fix read-only remount races.
->>
->> Git tree is here:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git read-only-remount-fixes.v10
+On Mon, Dec 5, 2011 at 9:20 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> Add ata port runtime suspend/resume/idle callbacks.
+> Set ->eh_noresume to skip the runtime PM calls on scsi host
+> in the error handler to avoid dead lock.
 
-Al, what's up with this?  Am I on your block list?  Or bug fixes for
-the VFS are no longer interesting?  Or what?
+Hi Tejun & Alan,
 
-Thanks,
-MIklos
+How about this patch?
 
->> ---
->> Miklos Szeredi (4):
->> Â  Â  Â vfs: keep list of mounts for each superblock
->> Â  Â  Â vfs: protect remounting superblock read-only
->> Â  Â  Â vfs: count unlinked inodes
->> Â  Â  Â vfs: prevent remount read-only if pending removes
->>
->> ---
->> Â fs/file_table.c Â  Â  Â  | Â  23 -------------
->> Â fs/inode.c Â  Â  Â  Â  Â  Â | Â  85 +++++++++++++++++++++++++++++++++++++++++++++++++
->> Â fs/internal.h Â  Â  Â  Â  | Â  Â 1 +
->> Â fs/namespace.c Â  Â  Â  Â | Â  57 ++++++++++++++++++++++++++++++++-
->> Â fs/super.c Â  Â  Â  Â  Â  Â | Â  20 +++++++++--
->> Â include/linux/fs.h Â  Â | Â  67 ++++++--------------------------------
->> Â include/linux/mount.h | Â  Â 1 +
->> Â 7 files changed, 170 insertions(+), 84 deletions(-)
->>
->>
+Lin Ming
+
+>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/ata/libata-core.c      |   10 ++++++++++
+>  drivers/ata/libata-scsi.c      |    1 +
+>  drivers/ata/libata-transport.c |    4 ++++
+>  3 files changed, 15 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index 04c208e..15a3d4d 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -66,6 +66,7 @@
+>  #include <asm/byteorder.h>
+>  #include <linux/cdrom.h>
+>  #include <linux/ratelimit.h>
+> +#include <linux/pm_runtime.h>
+>
+>  #include "libata.h"
+>  #include "libata-transport.h"
+> @@ -5307,9 +5308,18 @@ static int ata_port_resume(struct device *dev)
+>        return rc;
+>  }
+>
+> +static int ata_port_runtime_idle(struct device *dev)
+> +{
+> +       return pm_runtime_suspend(dev);
+> +}
+> +
+>  static const struct dev_pm_ops ata_port_pm_ops = {
+>        .suspend = ata_port_suspend,
+>        .resume = ata_port_resume,
+> +
+> +       .runtime_suspend = ata_port_suspend_common,
+> +       .runtime_resume = ata_port_resume,
+> +       .runtime_idle = ata_port_runtime_idle,
+>  };
+>
+>  /**
+> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> index 7ae1e77..508a60b 100644
+> --- a/drivers/ata/libata-scsi.c
+> +++ b/drivers/ata/libata-scsi.c
+> @@ -3381,6 +3381,7 @@ int ata_scsi_add_hosts(struct ata_host *host, struct scsi_host_template *sht)
+>                if (!shost)
+>                        goto err_alloc;
+>
+> +               shost->eh_noresume = 1;
+>                *(struct ata_port **)&shost->hostdata[0] = ap;
+>                ap->scsi_host = shost;
+>
+> diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
+> index 3ceb3d9..9a7f0ea 100644
+> --- a/drivers/ata/libata-transport.c
+> +++ b/drivers/ata/libata-transport.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/libata.h>
+>  #include <linux/hdreg.h>
+>  #include <linux/uaccess.h>
+> +#include <linux/pm_runtime.h>
+>
+>  #include "libata.h"
+>  #include "libata-transport.h"
+> @@ -290,6 +291,9 @@ int ata_tport_add(struct device *parent,
+>                goto tport_err;
+>        }
+>
+> +       pm_runtime_set_active(dev);
+> +       pm_runtime_enable(dev);
+> +
+>        transport_add_device(dev);
+>        transport_configure_device(dev);
+>
+> --
+> 1.7.2.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
