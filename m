@@ -1,34 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009Ab1LGQ4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:56:32 -0500
-Received: from ffm.saftware.de ([83.141.3.46]:42732 "EHLO ffm.saftware.de"
+	id S1757339Ab1LGQSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:18:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33243 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754291Ab1LGQ43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:56:29 -0500
-Message-ID: <4EDF9AB8.3050602@linuxtv.org>
-Date: Wed, 07 Dec 2011 17:56:24 +0100
-From: Andreas Oberritter <obi@linuxtv.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <4EDD2C82.7040804@linuxtv.org> <20111206112153.GC17194@sirena.org.uk> <4EDE0427.2050307@linuxtv.org> <20111206141929.GE17731@opensource.wolfsonmicro.com> <4EDE2B3B.2080905@linuxtv.org> <20111207134848.GB18837@opensource.wolfsonmicro.com> <4EDF71AE.5070509@linuxtv.org> <20111207161058.GC22355@opensource.wolfsonmicro.com>
-In-Reply-To: <20111207161058.GC22355@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757321Ab1LGQSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:30 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
+Message-Id: <20111207160824.957354711@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:06:48 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Jeff Ohlstein <johlstei@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [28/80] hrtimer: Fix extra wakeups from __remove_hrtimer()
+In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.12.2011 17:10, Mark Brown wrote:
-> a simple loopback in the style of FUSE which
-> bounces the kernel APIs up to userspace for virtual drivers would make
-> sense.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-That's exactly what vtunerc is.
+------------------
+
+From: Jeff Ohlstein <johlstei@codeaurora.org>
+
+commit 27c9cd7e601632b3794e1c3344d37b86917ffb43 upstream.
+
+__remove_hrtimer() attempts to reprogram the clockevent device when
+the timer being removed is the next to expire. However,
+__remove_hrtimer() reprograms the clockevent *before* removing the
+timer from the timerqueue and thus when hrtimer_force_reprogram()
+finds the next timer to expire it finds the timer we're trying to
+remove.
+
+This is especially noticeable when the system switches to NOHz mode
+and the system tick is removed. The timer tick is removed from the
+system but the clockevent is programmed to wakeup in another HZ
+anyway.
+
+Silence the extra wakeup by removing the timer from the timerqueue
+before calling hrtimer_force_reprogram() so that we actually program
+the clockevent for the next timer to expire.
+
+This was broken by 998adc3 "hrtimers: Convert hrtimers to use
+timerlist infrastructure".
+
+Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
+Link: http://lkml.kernel.org/r/1321660030-8520-1-git-send-email-johlstei@codeaurora.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/hrtimer.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -885,10 +885,13 @@ static void __remove_hrtimer(struct hrti
+ 			     struct hrtimer_clock_base *base,
+ 			     unsigned long newstate, int reprogram)
+ {
++	struct timerqueue_node *next_timer;
+ 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
+ 		goto out;
+ 
+-	if (&timer->node == timerqueue_getnext(&base->active)) {
++	next_timer = timerqueue_getnext(&base->active);
++	timerqueue_del(&base->active, &timer->node);
++	if (&timer->node == next_timer) {
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 		/* Reprogram the clock event device. if enabled */
+ 		if (reprogram && hrtimer_hres_active()) {
+@@ -901,7 +904,6 @@ static void __remove_hrtimer(struct hrti
+ 		}
+ #endif
+ 	}
+-	timerqueue_del(&base->active, &timer->node);
+ 	if (!timerqueue_getnext(&base->active))
+ 		base->cpu_base->active_bases &= ~(1 << base->index);
+ out:
+
+
