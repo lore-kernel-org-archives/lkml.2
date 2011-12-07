@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab1LGDge (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 22:36:34 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:35277 "EHLO
+	id S1755527Ab1LGDgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 22:36:55 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35379 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754821Ab1LGDgd (ORCPT
+	with ESMTP id S1754845Ab1LGDgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 22:36:33 -0500
-Message-ID: <4EDEDF2E.3040204@oracle.com>
-Date: Wed, 07 Dec 2011 11:36:14 +0800
+	Tue, 6 Dec 2011 22:36:53 -0500
+Message-ID: <4EDEDF44.4000307@oracle.com>
+Date: Wed, 07 Dec 2011 11:36:36 +0800
 From: ANNIE LI <annie.li@oracle.com>
 Organization: Oracle Corporation
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
         "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
         Paul Durrant <Paul.Durrant@citrix.com>
 Subject: Re: [PATCH 1/2] xen/granttable: Support sub-page grants
-References: <4EDDF41E.8070200@oracle.com>	 <1323168999-4434-1-git-send-email-annie.li@oracle.com> <1323171726.23681.65.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1323171726.23681.65.camel@zakaz.uk.xensource.com>
+References: <4EDDF41E.8070200@oracle.com>  <1323168999-4434-1-git-send-email-annie.li@oracle.com> <1323171726.23681.65.camel@zakaz.uk.xensource.com> <4EDE4EC4.8070802@goop.org>
+In-Reply-To: <4EDE4EC4.8070802@goop.org>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4EDEDF3C.00BF,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090205.4EDEDF51.0054,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your reviewing, Ian.
->>   EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access);
->>
->> +int gnttab_grant_foreign_access_subpage_v2(domid_t domid, unsigned long frame,
->> +					   int flags, unsigned page_off,
->> +					   unsigned length)
-> Please drop the v2 suffixes on the public functions.
-OK, the initial interface is without v2 suffixes. It was added in order 
-to reminder user the interfaces are only available for grant table v2.
-But I am fine to remove it, and following ops fn pointers are better.
-> Any reason not to route these via the ops table for consistency with all
-> the other ops? Then your availability check becomes a test for NULL fn
-> pointer rather than a specific version.
-Ok, it is good.
-How about following implements?
 
-gnttab_v1_ops = {
-  ...
-.access_subpage = NULL;
-.access_ref_subpage = NULL;
-.access_trans = NULL;
-.access_ref_trans = NULL;
-}
 
-gnttab_v2_ops = {
-  ...
-.access_subpage = access_subpage_v2;
-.access_ref_subpage = access_ref_subpage_v2;
-.access_trans = access_trans_v2;
-.access_ref_trans = access_ref_trans_v2;
-}
-
-gnttab_request_version()
-{
-.....
-    if(v2)
-       gnttab_interface = &gnttab_v2_ops;
-    else
-       gnttab_interface = &gnttab_v1_ops;
-.....
-}
-
-int gnttab_grant_foreign_access_subpage()
-{
-       if(gnttab_interface->access_subpage != NULL)
-             return gnttab_interface->access_subpage;
-       return Esomething;
-}
-
-Same operations for access_ref_subpage, access_trans and access_ref_trans.
-
-bool gnttab_subpage_available()
-{
-      return (gnttab_interface->access_subpage != NULL);
-}
-
-bool gnttab_subpage_available()
-{
-      return (gnttab_interface->access_trans != NULL);
-}
+>> Returning -Esomething might be less drastic? ENOSYS perhaps?
+> Yeah, BUG_ON shouldn't be used for API misuse unless there's absolutely
+> no other way to handle it.
+OK, will change it, thanks.
+>>> +	gnttab_shared.v2[ref].sub_page.frame = frame;
+>>> +	gnttab_shared.v2[ref].sub_page.page_off = page_off;
+>>> +	gnttab_shared.v2[ref].sub_page.length = length;
+>>> +	gnttab_shared.v2[ref].hdr.domid = domid;
+>>> +	wmb();
+>>> +	gnttab_shared.v2[ref].hdr.flags =
+>>> +				GTF_permit_access | GTF_sub_page | flags;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_ref_subpage_v2);
+>>> +
+>>> +bool gnttab_subpage_trans_grants_available(void)
+>>> +{
+>>> +	return grant_table_version == 2;
+>>> +}
+>> It's not clear this adds anything over and above letting the user query
+>> the grant table version. It's hard to tell since there are no users
+>> presented here though. Perhaps separate subpage and transitive functions
+>> would be cleaner?
+> Well, in general, specifically testing for features rather than
+> interface versions is better.
+Ok, will split it into 2 functions and check the function pointer 
+instead of grant table version, thanks.
 
 Thanks
 Annie
+
