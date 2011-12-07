@@ -1,95 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab1LGDaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 22:30:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63531 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab1LGDaS (ORCPT
+	id S1755066Ab1LGDge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 22:36:34 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35277 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754821Ab1LGDgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 22:30:18 -0500
-Date: Wed, 7 Dec 2011 11:14:12 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] nohz: Remove ts->inidle checks before restarting the tick
-Message-ID: <20111207031412.GA9166@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1323181843-12144-1-git-send-email-fweisbec@gmail.com>
+	Tue, 6 Dec 2011 22:36:33 -0500
+Message-ID: <4EDEDF2E.3040204@oracle.com>
+Date: Wed, 07 Dec 2011 11:36:14 +0800
+From: ANNIE LI <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1323181843-12144-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>
+Subject: Re: [PATCH 1/2] xen/granttable: Support sub-page grants
+References: <4EDDF41E.8070200@oracle.com>	 <1323168999-4434-1-git-send-email-annie.li@oracle.com> <1323171726.23681.65.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1323171726.23681.65.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4EDEDF3C.00BF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 03:30:43PM +0100, Frederic Weisbecker wrote:
-> ts->inidle is set by tick_nohz_stop_sched_tick(1) and unset
-> by tick_nohz_restart_sched_tick(). These two calls are assumed
-> to be always paired. This means that by the time we call
-> tick_nohz_restart_sched_tick(), ts->inidle is supposed to
-> be always set to 1.
-> 
-> Remove the checks for ts->inidle in tick_nohz_restart_sched_tick().
-> This simplifies a bit the code and improves its debuggability
-> (ie: ensure the call is paired with a tick_nohz_stop_sched_tick() call).
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Thanks for your reviewing, Ian.
+>>   EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access);
+>>
+>> +int gnttab_grant_foreign_access_subpage_v2(domid_t domid, unsigned long frame,
+>> +					   int flags, unsigned page_off,
+>> +					   unsigned length)
+> Please drop the v2 suffixes on the public functions.
+OK, the initial interface is without v2 suffixes. It was added in order 
+to reminder user the interfaces are only available for grant table v2.
+But I am fine to remove it, and following ops fn pointers are better.
+> Any reason not to route these via the ops table for consistency with all
+> the other ops? Then your availability check becomes a test for NULL fn
+> pointer rather than a specific version.
+Ok, it is good.
+How about following implements?
 
-Reviewed-by: Yong Zhang <yong.zhang0@gmail.com>
+gnttab_v1_ops = {
+  ...
+.access_subpage = NULL;
+.access_ref_subpage = NULL;
+.access_trans = NULL;
+.access_ref_trans = NULL;
+}
 
-Thanks,
-Yong
+gnttab_v2_ops = {
+  ...
+.access_subpage = access_subpage_v2;
+.access_ref_subpage = access_ref_subpage_v2;
+.access_trans = access_trans_v2;
+.access_ref_trans = access_ref_trans_v2;
+}
 
+gnttab_request_version()
+{
+.....
+    if(v2)
+       gnttab_interface = &gnttab_v2_ops;
+    else
+       gnttab_interface = &gnttab_v1_ops;
+.....
+}
 
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> ---
->  kernel/time/tick-sched.c |   12 +++++++-----
->  1 files changed, 7 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 4042064..0f7c5e5 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -529,20 +529,22 @@ void tick_nohz_restart_sched_tick(void)
->  	ktime_t now;
->  
->  	local_irq_disable();
-> -	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
-> +
-> +	WARN_ON_ONCE(!ts->inidle);
-> +
-> +	ts->inidle = 0;
-> +
-> +	if (ts->idle_active || ts->tick_stopped)
->  		now = ktime_get();
->  
->  	if (ts->idle_active)
->  		tick_nohz_stop_idle(cpu, now);
->  
-> -	if (!ts->inidle || !ts->tick_stopped) {
-> -		ts->inidle = 0;
-> +	if (!ts->tick_stopped) {
->  		local_irq_enable();
->  		return;
->  	}
->  
-> -	ts->inidle = 0;
-> -
->  	rcu_exit_nohz();
->  
->  	/* Update jiffies first */
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+int gnttab_grant_foreign_access_subpage()
+{
+       if(gnttab_interface->access_subpage != NULL)
+             return gnttab_interface->access_subpage;
+       return Esomething;
+}
 
--- 
-Only stand for myself
+Same operations for access_ref_subpage, access_trans and access_ref_trans.
+
+bool gnttab_subpage_available()
+{
+      return (gnttab_interface->access_subpage != NULL);
+}
+
+bool gnttab_subpage_available()
+{
+      return (gnttab_interface->access_trans != NULL);
+}
+
+Thanks
+Annie
