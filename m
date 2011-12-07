@@ -1,96 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab1LGM5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 07:57:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52494 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab1LGM5S convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 07:57:18 -0500
+	id S1755771Ab1LGNFN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:05:13 -0500
+Received: from mga11.intel.com ([192.55.52.93]:59082 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755060Ab1LGNFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 08:05:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,313,1320652800"; 
+   d="scan'208";a="99612429"
+Date: Wed, 7 Dec 2011 15:05:17 +0200
+From: Heikki Krogerus <krohei@gmail.com>
+To: Felipe Contreras <felipe.contreras@nokia.com>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
+        Heikki Krogerus <heikki.krogerus@nokia.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
+Message-ID: <20111207130517.GA22946@xps8300>
+References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
+ <1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
 MIME-Version: 1.0
-In-Reply-To: <1323250088-1729-9-git-send-email-sjur.brandeland@stericsson.com>
-References: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
-	<1323250088-1729-9-git-send-email-sjur.brandeland@stericsson.com>
-Date: Wed, 7 Dec 2011 13:57:17 +0100
-Message-ID: <CACRpkda7Bm2QY2dFs-xctOgFdVeL0YH-rOepxYHnZhXE-xu0zQ@mail.gmail.com>
-Subject: Re: [PATCH 8/9] xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/7 Sjur Brændeland <sjur.brandeland@stericsson.com>:
+Hi,
 
-Some commit blurb here pls.
-
-> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+On Mon, Dec 05, 2011 at 07:23:40PM +0200, Felipe Contreras wrote:
+> From: Felipe Contreras <felipe.contreras@gmail.com>
+> 
+> This reverts commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2.
+> 
+> This seems to break USB networking stuff.
+> 
+> Cc: Kalle Jokiniemi <kalle.jokiniemi@nokia.com>
+> Cc: Heikki Krogerus <heikki.krogerus@nokia.com>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 > ---
-(...)
-> diff --git a/drivers/xshm/Kconfig b/drivers/xshm/Kconfig
-> new file mode 100644
-> index 0000000..80daca4
-> --- /dev/null
-> +++ b/drivers/xshm/Kconfig
-> @@ -0,0 +1,17 @@
-> +# XSHM gets selected by whoever wants it.
-> +config XSHM
-> +       depends on CONFIG_C2C
-> +       tristate
-> +
-> +config XSHM_CHR
-> +       tristate "Character device for External Shared Memory (XSHM)"
-> +       select XSHM
-> +       default n
-> +       ---help---
-> +       Say "Y" to use a character device for the External Shared
-> +       Memory (XSHM) IPC mechanism. XSHM is an IPC protocol used to
-> +       talk to external device such as modem over a shared memory
-> +       (e.g. Chip to Chip).
-> +       Only say "M" here if you want to test XSHM and need to load
-> +       and unload its module.
-> +       If unsure say N.
+>  arch/arm/mach-omap2/board-rx51-peripherals.c |   27 +------------------------
+>  1 files changed, 2 insertions(+), 25 deletions(-)
 
-As mentioned this needs some Kconfig entry to enable the
-dummy driver.
+<snip>
 
-This will appear right in the root menu of the driver config,
-and I think it is more apropriate to hide this from systems that
-do not have xshm, so check for how I did in drivers/pinctrl for
-example like this:
+> -static void __init rx51_charger_init(void)
+> -{
+> -	WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
+> -		GPIOF_OUT_INIT_LOW, "isp1704_reset"));
 
-config XSHM
-        bool
-        depends on EXPERIMENTAL
+How about simply GPIOF_OUT_INIT_HIGH here. Is that not enough to fix
+your problem? Revering the whole thing does not make any sense to me.
 
-if XSHM
-
-menu "XSHM drivers and interfaces"
-        depends on XSHM
-
-... your previous entries here ...
-
-endmenu
-
-endif
-
-This will hide everything until an arch issues
-select XSHM in it's say arch/arm/mach-foo/Kconfig.
-
-> diff --git a/drivers/xshm/Makefile b/drivers/xshm/Makefile
-> new file mode 100644
-> index 0000000..954bd22
-> --- /dev/null
-> +++ b/drivers/xshm/Makefile
-> @@ -0,0 +1,3 @@
-> +obj-$(CONFIG_XSHM) += xshm.o
-> +xshm-objs := xshm_boot.o xshm_dev.o
-> +obj-$(CONFIG_XSHM_CHR) +=  xshm_chr.o
-
-Also include a build rule for the dummy driver here.
-
-Thanks,
-Linus Walleij
+-- 
+heikki
