@@ -1,175 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1LGHcv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 02:32:51 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58074 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752009Ab1LGHcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 02:32:50 -0500
-Date: Wed, 7 Dec 2011 08:30:51 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        kernel-hardening@lists.openwall.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2011.1] fs: symlink restrictions on sticky directories
-Message-ID: <20111207073051.GB16942@elte.hu>
-References: <20111206235815.GA21764@www.outflux.net>
+	id S1753365Ab1LGHj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 02:39:58 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57498 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab1LGHj5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 02:39:57 -0500
+Date: Wed, 7 Dec 2011 15:39:43 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, mingo@elte.hu,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: [BUG -tip/sched] INFO: suspicious RCU usage
+Message-ID: <20111207073942.GA12029@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111206235815.GA21764@www.outflux.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+===============================
+[ INFO: suspicious RCU usage. ]
+-------------------------------
+/build/linux/kernel/sched/fair.c:5091 suspicious rcu_dereference_check() usage!
 
-* Kees Cook <keescook@chromium.org> wrote:
+other info that might help us debug this:
 
-> Past objections and rebuttals could be summarized as:
-> 
->  - Violates POSIX.
->    - POSIX didn't consider this situation and it's not useful to follow
->      a broken specification at the cost of security.
 
-Correct.
+rcu_scheduler_active = 1, debug_locks = 1
+1 lock held by swapper/0/1:
+ #0:  (&sb->s_type->i_mutex_key#2){+.+.+.}, at: [<ffffffff812a0e0c>] debugfs_create_file+0x8c/0x270
 
->  - Might break unknown applications that use this feature.
->    - Applications that break because of the change are easy to spot and
->      fix. Applications that are vulnerable to symlink ToCToU by not having
->      the change aren't. Additionally, no applications have yet been found
->      that rely on this behavior.
+stack backtrace:
+Pid: 1, comm: swapper/0 Not tainted 3.2.0-rc1-00339-gcd490c5 #14
+Call Trace:
+ <IRQ>  [<ffffffff815f9968>] ? _raw_spin_unlock_irqrestore+0x38/0x80
+ [<ffffffff8109407f>] lockdep_rcu_suspicious+0xbf/0xe0
+ [<ffffffff8107dd48>] trigger_load_balance+0x5b8/0x5c0
+ [<ffffffff81070544>] scheduler_tick+0x104/0x160
+ [<ffffffff8104a1ce>] update_process_times+0x6e/0x90
+ [<ffffffff8108e32c>] tick_periodic+0x2c/0x70
+ [<ffffffff8108e394>] tick_handle_periodic+0x24/0x80
+ [<ffffffff812a07a7>] ? T.562+0xf7/0x170
+ [<ffffffff815fce56>] smp_apic_timer_interrupt+0x66/0x98
+ [<ffffffff815fb2f0>] apic_timer_interrupt+0x70/0x80
+ <EOI>  [<ffffffff810984a4>] ? lock_release+0xe4/0x2b0
+ [<ffffffff815f98f3>] _raw_spin_unlock+0x23/0x60
+ [<ffffffff812a07a7>] T.562+0xf7/0x170
+ [<ffffffff812a0e71>] debugfs_create_file+0xf1/0x270
+ [<ffffffff810e96c9>] trace_create_file+0x19/0x50
+ [<ffffffff81af7b3c>] tracer_init_debugfs+0x2bd/0x3c0
+ [<ffffffff810e96c9>] ? trace_create_file+0x19/0x50
+ [<ffffffff81af787f>] ? clear_boot_tracer+0x2d/0x2d
+ [<ffffffff810001d3>] do_one_initcall+0x43/0x180
+ [<ffffffff81adf637>] kernel_init+0xd0/0x156
+ [<ffffffff815fc574>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8106fdb8>] ? finish_task_switch+0x88/0xf0
+ [<ffffffff815f99eb>] ? _raw_spin_unlock_irq+0x3b/0x70
+ [<ffffffff815f9f61>] ? retint_restore_args+0xe/0xe
+ [<ffffffff81adf567>] ? parse_early_options+0x20/0x20
+ [<ffffffff815fc570>] ? gs_change+0xb/0xb
 
-Are there *known* applications that break?
-
->  - Applications should just use mkstemp() or O_CREATE|O_EXCL.
->    - True, but applications are not perfect, and new software is written
->      all the time that makes these mistakes; blocking this flaw at the
->      kernel is a single solution to the entire class of vulnerability.
-
-Right.
-
->  - This should live in the core VFS.
->    - This should live in an LSM. (https://lkml.org/lkml/2010/5/31/135)
->  - This should live in an LSM.
->    - This should live in the core VFS. (https://lkml.org/lkml/2010/8/2/188)
-
-Ugh - and people continue to get exploited from a preventable, 
-fixable and already fixed VFS design flaw.
-
-> This patch is based on the patch in Openwall and grsecurity, 
-> along with suggestions from Al Viro. I have added a sysctl to 
-> enable the protected behavior, documentation, and a 
-> ratelimited warning.
-
-> +config PROTECTED_STICKY_SYMLINKS
-> +	bool "Protect symlink following in sticky world-writable directories"
-> +	help
-> +	  A long-standing class of security issues is the symlink-based
-> +	  time-of-check-time-of-use race, most commonly seen in
-> +	  world-writable directories like /tmp. The common method of
-> +	  exploitation of this flaw is to cross privilege boundaries
-> +	  when following a given symlink (i.e. a root process follows
-> +	  a malicious symlink belonging to another user).
-> +
-> +	  Enabling this solves the problem by permitting symlinks to only
-> +	  be followed when outside a sticky world-writable directory,
-> +	  or when the uid of the symlink and follower match, or when
-> +	  the directory and symlink owners match.
-
-Unless there are known apps that regress, shouldnt this be 
-default y? Even if we were forced to not actually release such a 
-final kernel, doing it in -rc1 would flush weird apps out of the 
-woodwork.
-
-> +int protected_sticky_symlinks =
-
-__read_mostly, most emphatically.
-
-> +static inline int
-> +may_follow_link(struct dentry *dentry, struct nameidata *nameidata)
-> +{
-> +	int error = 0;
-> +	const struct inode *parent;
-> +	const struct inode *inode;
-> +	const struct cred *cred;
-> +
-> +	if (!protected_sticky_symlinks)
-> +		return 0;
-> +
-> +	/* Allowed if owner and follower match. */
-> +	cred = current_cred();
-> +	inode = dentry->d_inode;
-> +	if (cred->fsuid == inode->i_uid)
-> +		return 0;
-> +
-> +	/* Check parent directory mode and owner. */
-> +	spin_lock(&dentry->d_lock);
-> +	parent = dentry->d_parent->d_inode;
-> +	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
-> +	    parent->i_uid != inode->i_uid) {
-> +		error = -EACCES;
-> +	}
-> +	spin_unlock(&dentry->d_lock);
-
-Taking the global /tmp and /lib, /usr/lib dentry spinlocks here 
-every time we follow a symlink is a bit sad: there are a lot of 
-high-profile symlinks in a Linux installation in those places, 
-followed by non-owners.
-
-Nor is it really a realistic race that happens often: neither 
-/tmp nor the library directories are being renamed or their 
-permissions changed all that often for this parent lock taking 
-to matter in practice.
-
-Couldnt we somehow export this information outside the dentry 
-lock, allowing safe lockless access to it?
-
-> +
-> +	if (error) {
-> +		char name[sizeof(current->comm)];
-> +		printk_ratelimited(KERN_NOTICE "non-matching-uid symlink "
-> +			"following attempted in sticky world-writable "
-> +			"directory by %s (fsuid %d)\n",
-> +			get_task_comm(name, current), cred->fsuid);
-
-I don't think the get_task_comm() extra layer is really 
-necessary here - this is called in the *current* task's context 
-- and it's not like that tasks are changing their own names all 
-that often while they are busy executing VFS code, right? The 
-race with some other task writing to /proc/PID/comm is 
-uninteresting.
-
-The more important piece of forensic information to log would be 
-the file name that got attempted and perhaps the directory name 
-as well. If there's an unknown hole in an unknown privileged app 
-then this warning alone does not give the admin any clues where 
-to look - the name of the expoiting task is probably obfuscated 
-anyway, it's the identity of the attack vector that matters - 
-and that name can generally not be controlled and obfuscated by 
-the attacker.
-
-If those issues are resolved:
-
- Reviewed-by: Ingo Molnar <mingo@elte.hu>
+Seems due to commit [0b005cf5: sched, nohz: Implement sched group, domain
+aware nohz idle load balancing]
 
 Thanks,
-
-	Ingo
+Yong
