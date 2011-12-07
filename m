@@ -1,96 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab1LGAJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:09:36 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:51497
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755395Ab1LGAJf (ORCPT
+	id S1754980Ab1LGAKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:10:30 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64715 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754618Ab1LGAK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:09:35 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zzbb2dK9371K1432N98dKzz1202hzz8275bhz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4EDEAEB9.6020703@freescale.com>
-Date: Tue, 6 Dec 2011 18:09:29 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	Tue, 6 Dec 2011 19:10:28 -0500
+Message-ID: <4EDEAE3A.9020203@solonet.org.ua>
+Date: Wed, 07 Dec 2011 02:07:22 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-To: <shuo.liu@freescale.com>
-CC: <dwmw2@infradead.org>, <Artem.Bityutskiy@nokia.com>,
-        <linux-mtd@lists.infradead.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>
-Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com> <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>
-In-Reply-To: <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH v2] s3c24xx: cpufreq: Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ selected.
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2011 10:31 PM, shuo.liu@freescale.com wrote:
-> From: Liu Shuo <shuo.liu@freescale.com>
-> 
-> Freescale FCM controller has a 2K size limitation of buffer RAM. In order
-> to support the Nand flash chip whose page size is larger than 2K bytes,
-> we read/write 2k data repeatedly by issuing FIR_OP_RB/FIR_OP_WB and save
-> them to a large buffer.
-> 
-> Signed-off-by: Liu Shuo <shuo.liu@freescale.com>
-> ---
-> v3:
->     -remove page_size of struct fsl_elbc_mtd.
->     -do a oob write by NAND_CMD_RNDIN. 
-> 
->  drivers/mtd/nand/fsl_elbc_nand.c |  243 ++++++++++++++++++++++++++++++++++----
->  1 files changed, 218 insertions(+), 25 deletions(-)
+Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
 
-What is the plan for bad block marker migration?
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+---
 
-> @@ -473,13 +568,72 @@ static void fsl_elbc_cmdfunc(struct mtd_info *mtd, unsigned int command,
->  		 * write so the HW generates the ECC.
->  		 */
->  		if (elbc_fcm_ctrl->oob || elbc_fcm_ctrl->column != 0 ||
-> -		    elbc_fcm_ctrl->index != mtd->writesize + mtd->oobsize)
-> -			out_be32(&lbc->fbcr,
-> -				elbc_fcm_ctrl->index - elbc_fcm_ctrl->column);
-> -		else
-> +		    elbc_fcm_ctrl->index != mtd->writesize + mtd->oobsize) {
-> +			if (elbc_fcm_ctrl->oob && mtd->writesize > 2048) {
-> +				out_be32(&lbc->fbcr, 64);
-> +			} else {
-> +				out_be32(&lbc->fbcr, elbc_fcm_ctrl->index
-> +						- elbc_fcm_ctrl->column);
-> +			}
+Patch is against 3.2-rc4.
+CONFIG_S3C2410_IOTIMING is not selected for MACH_MINI2440. Because of this the
+file s3c2410-iotiming.c is not ever compiled and enabling 
+CONFIG_CPU_FREQ_S3C24XX_DEBUGFS option caused undefined reference to function 
+s3c2410_iotiming_debugfs defined in that file. s3c2410_iotiming_debugfs defined
+as NULL for this case.
 
-We need to limit ourselves to the regions that have actually been
-written to in the buffer.  fbcr needs to be set separately for first and
-last subpages, with intermediate subpages having 0, 64, or 2112 as
-appropriate.  Subpages that are entirely before column or entirely after
-column + index should be skipped.
+Changelog:
+v1 -> v2
+New CONFIG_ symbols S3C241{0,2}_IOTIMING were removed as It was observed that 
+they already present but hidden from user.
 
-> +		} else {
-> +			out_be32(&lbc->fir, FIR_OP_WB << FIR_OP1_SHIFT);
-> +			for (i = 1; i < n; i++) {
-> +				if (i == n - 1) {
-> +					elbc_fcm_ctrl->use_mdr = 1;
-> +					out_be32(&lbc->fir,
-> +						(FIR_OP_WB  << FIR_OP1_SHIFT) |
-> +						(FIR_OP_CM3 << FIR_OP2_SHIFT) |
-> +						(FIR_OP_CW1 << FIR_OP3_SHIFT) |
-> +						(FIR_OP_RS  << FIR_OP4_SHIFT));
-
-Please explicitly show the (FIR_OP_NOP << FIR_OP0_SHIFT) compenent.
-
-> +	} else if (mtd->writesize >= 2048 && mtd->writesize <= 16 * 1024) {
-> +
->  		setbits32(&lbc->bank[priv->bank].or, OR_FCM_PGS);
-
-Don't insert a blank line here.
-
--Scott
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index e084b7e..133d005 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -2118,7 +2118,7 @@ config CPU_FREQ_S3C24XX_DEBUG
+ 
+ config CPU_FREQ_S3C24XX_IODEBUG
+ 	bool "Debug CPUfreq Samsung driver IO timing"
+-	depends on CPU_FREQ_S3C24XX
++	depends on CPU_FREQ_S3C24XX && (S3C2410_IOTIMING || S3C2412_IOTIMING)
+ 	help
+ 	  Enable s3c_freq_iodbg for the Samsung S3C CPUfreq core
+ 
+diff --git a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+index dac4760..c465252 100644
+--- a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
++++ b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+@@ -202,13 +202,23 @@ extern int s3c_plltab_register(struct cpufreq_frequency_table *plls,
+ extern struct s3c_cpufreq_config *s3c_cpufreq_getconfig(void);
+ extern struct s3c_iotimings *s3c_cpufreq_getiotimings(void);
+ 
+-extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
+-				     struct s3c_cpufreq_config *cfg,
+-				     union s3c_iobank *iob);
+-
+-extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
+-				     struct s3c_cpufreq_config *cfg,
+-				     union s3c_iobank *iob);
++#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
++	#ifdef CONFIG_S3C2410_IOTIMING
++	extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
++					     struct s3c_cpufreq_config *cfg,
++					     union s3c_iobank *iob);
++	#else
++	#define s3c2410_iotiming_debugfs	NULL
++	#endif
++
++	#ifdef CONFIG_S3C2412_IOTIMING
++	extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
++					     struct s3c_cpufreq_config *cfg,
++					     union s3c_iobank *iob);
++	#else
++	#define s3c2412_iotiming_debugfs	NULL
++	#endif
++#endif
+ 
+ #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ #define s3c_cpufreq_debugfs_call(x) x
+@@ -241,10 +251,7 @@ extern void s3c2410_iotiming_set(struct s3c_cpufreq_config *cfg,
+ #endif /* CONFIG_S3C2410_IOTIMING */
+ 
+ /* S3C2412 compatible routines */
+-
+-extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+-				struct s3c_iotimings *timings);
+-
++#ifdef CONFIG_S3C2412_IOTIMING
+ extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+ 				struct s3c_iotimings *timings);
+ 
+@@ -253,6 +260,11 @@ extern int s3c2412_iotiming_calc(struct s3c_cpufreq_config *cfg,
+ 
+ extern void s3c2412_iotiming_set(struct s3c_cpufreq_config *cfg,
+ 				 struct s3c_iotimings *iot);
++#else
++#define s3c2412_iotiming_calc NULL
++#define s3c2412_iotiming_get NULL
++#define s3c2412_iotiming_set NULL
++#endif
+ 
+ #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUG
+ #define s3c_freq_dbg(x...) printk(KERN_INFO x)
 
