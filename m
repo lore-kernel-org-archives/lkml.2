@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804Ab1LGQZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:25:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34620 "EHLO mx2.suse.de"
+	id S1757852Ab1LGQZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:25:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34651 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757785Ab1LGQZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:25:11 -0500
+	id S1757816Ab1LGQZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:25:21 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:20 2011
-Message-Id: <20111207161220.128396853@clark.kroah.org>
+Message-Id: <20111207161220.380972634@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:07 -0800
+Date: Wed, 07 Dec 2011 08:12:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Bernd Porr <berndporr@f2s.com>
-Subject: [065/104] staging: comedi: fix oops for USB DAQ devices.
+        <alan@lxorguk.ukuu.org.uk>, Kevin Hilman <khilman@ti.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [068/104] usb: musb: PM: fix context save/restore in suspend/resume path
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,147 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bernd Porr <berndporr@f2s.com>
+From: Kevin Hilman <khilman@ti.com>
 
-commit 3ffab428f40849ed5f21bcfd7285bdef7902f9ca upstream.
+commit 5d193ce8f1fa7c67c7fd7be2c03ef31eed344a4f upstream.
 
-This fixes kernel oops when an USB DAQ device is plugged out while it's
-communicating with the userspace software.
+Currently the driver tries to save context in the suspend path, but
+will cause an abort if the device is already runtime suspended.  This
+happens, for example, if MUSB loaded/compiled-in, in host mode, but no
+USB devices are attached.  MUSB will be runtime suspended, but then
+attempting a system suspend will crash due to the context save
+being attempted while the device is disabled.
 
-Signed-off-by: Bernd Porr <berndporr@f2s.com>
+On OMAP, as of v3.1, the driver's ->runtime_suspend() callback will be
+called late in the suspend path (by the PM domain layer) if the driver
+is not already runtime suspended, ensuring a full shutdown.
+
+Therefore, the context save is not needed in the ->suspend() method
+since it will be called in the ->runtime_suspend() method anyways
+(similarily for resume.)
+
+NOTE: this leaves the suspend/resume methods basically empty (with
+      some FIXMEs and comments, but I'll leave it to the maintainers
+      to decide whether to remove them.
+
+Signed-off-by: Kevin Hilman <khilman@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/comedi/comedi_fops.c |   73 +++++++++++++++++++++++++----------
- 1 file changed, 54 insertions(+), 19 deletions(-)
+ drivers/usb/musb/musb_core.c |    6 ------
+ 1 file changed, 6 deletions(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1452,9 +1452,6 @@ static struct vm_operations_struct comed
- static int comedi_mmap(struct file *file, struct vm_area_struct *vma)
- {
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
- 	struct comedi_async *async = NULL;
- 	unsigned long start = vma->vm_start;
- 	unsigned long size;
-@@ -1462,6 +1459,15 @@ static int comedi_mmap(struct file *file
- 	int i;
- 	int retval;
- 	struct comedi_subdevice *s;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+
-+	dev_file_info = comedi_get_device_file_info(minor);
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -2302,18 +2302,12 @@ static int musb_suspend(struct device *d
+ 		 */
+ 	}
  
- 	mutex_lock(&dev->mutex);
- 	if (!dev->attached) {
-@@ -1528,11 +1534,17 @@ static unsigned int comedi_poll(struct f
- {
- 	unsigned int mask = 0;
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
- 	struct comedi_subdevice *read_subdev;
- 	struct comedi_subdevice *write_subdev;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	mutex_lock(&dev->mutex);
- 	if (!dev->attached) {
-@@ -1578,9 +1590,15 @@ static ssize_t comedi_write(struct file
- 	int n, m, count = 0, retval = 0;
- 	DECLARE_WAITQUEUE(wait, current);
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	if (!dev->attached) {
- 		DPRINTK("no driver configured on comedi%i\n", dev->minor);
-@@ -1683,9 +1701,15 @@ static ssize_t comedi_read(struct file *
- 	int n, m, count = 0, retval = 0;
- 	DECLARE_WAITQUEUE(wait, current);
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	if (!dev->attached) {
- 		DPRINTK("no driver configured on comedi%i\n", dev->minor);
-@@ -1885,11 +1909,17 @@ ok:
- static int comedi_close(struct inode *inode, struct file *file)
- {
- 	const unsigned minor = iminor(inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
- 	struct comedi_subdevice *s = NULL;
- 	int i;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	mutex_lock(&dev->mutex);
- 
-@@ -1923,10 +1953,15 @@ static int comedi_close(struct inode *in
- static int comedi_fasync(int fd, struct file *file, int on)
- {
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
+-	musb_save_context(musb);
 -
--	struct comedi_device *dev = dev_file_info->device;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	return fasync_helper(fd, file, on, &dev->async_queue);
+ 	spin_unlock_irqrestore(&musb->lock, flags);
+ 	return 0;
  }
+ 
+ static int musb_resume_noirq(struct device *dev)
+ {
+-	struct musb	*musb = dev_to_musb(dev);
+-
+-	musb_restore_context(musb);
+-
+ 	/* for static cmos like DaVinci, register values were preserved
+ 	 * unless for some reason the whole soc powered down or the USB
+ 	 * module got reset through the PSC (vs just being disabled).
 
 
