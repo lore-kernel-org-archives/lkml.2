@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab1LGS7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 13:59:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9547 "EHLO mx1.redhat.com"
+	id S1758213Ab1LGS7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 13:59:49 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:38007 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757832Ab1LGS7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 13:59:09 -0500
-Date: Wed, 7 Dec 2011 19:53:43 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
-Message-ID: <20111207185343.GA3209@redhat.com>
-References: <20111206181026.GO29781@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206181026.GO29781@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757711Ab1LGS7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 13:59:47 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: "David S . Miller" <davem@davemloft.net>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: [PATCH 0/3] crypto: Add per-cpu transform helpers
+Date: Wed,  7 Dec 2011 12:59:07 -0600
+Message-Id: <1323284350-13784-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 11120718-9360-0000-0000-00000151FABA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cyrill,
+This patchset includes two new functions for the cryptographic library,
+crypto_alloc_percpu_tfms() and crypto_free_percpu_tfms(), which assist users
+in allocating and freeing per-cpu transforms.
 
-Sorry, I didn't read this patch yet, but
+It also includes typing wrappers for the compression algorithm class.
 
-On 12/06, Cyrill Gorcunov wrote:
->
-> +static void *children_seq_start(struct seq_file *seq, loff_t *pos)
-> +{
-> +	struct task_struct *task;
-> +
-> +	rcu_read_lock();
-> +	task = seq->private;
-> +	if (task)
-> +		return seq_list_start(&task->children, *pos);
+The reason for this patch is that during my work to enable page compression
+via the cryptographic API in the zcache staging driver, and realized that I
+had rewritten some per-cpu transform code that already exists in the
+xfrm_ipcomp code.
 
-This looks "obviously wrong".
+In an effort to avoid duplication, this patchset moves the per-cpu code into
+helper functions in the cryptographic library and makes the necessary
+modifications to the xfrm_ipcomp code.
 
-We can not trust ->children->next after rcu_read_unlock(). Another
-rcu_read_lock() can't help.
+After this change is (hopefully) merged, I will submit the zcache driver
+changes, which will be the second user of these helpers.
 
-Once again, I can be easily wrong, need to read the patch first.
+Seth Jennings (3):
+  crypto: Add per-cpu transform alloc() and free()
+  crypto: Add inline per-cpu wrappers for compression
+  xfrm: Modify xfrm_ipcomp code to use new per-cpu helpers
 
-Oleg.
+ crypto/api.c           |   62 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/crypto.h |   28 +++++++++++++++++++++
+ net/xfrm/xfrm_ipcomp.c |   34 ++++++--------------------
+ 3 files changed, 98 insertions(+), 26 deletions(-)
+
+-- 
+1.7.5.4
 
