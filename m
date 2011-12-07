@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726Ab1LGQXR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:23:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34176 "EHLO mx2.suse.de"
+	id S933496Ab1LGQWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:22:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33924 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933658Ab1LGQXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:23:11 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:19 2011
-Message-Id: <20111207161219.618318525@clark.kroah.org>
+	id S933473Ab1LGQV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:21:58 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:15 2011
+Message-Id: <20111207161215.600665601@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:01 -0800
+Date: Wed, 07 Dec 2011 08:11:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Axel Lin <axel.lin@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [059/104] ASoC: Fix wrong define for AD1836_ADC_WORD_OFFSET
+        <alan@lxorguk.ukuu.org.uk>, Eric Anholt <eric@anholt.net>,
+        Keith Packard <keithp@keithp.com>
+Subject: [010/104] drm/i915: Turn on another required clock gating bit on gen6.
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@gmail.com>
+From: Eric Anholt <eric@anholt.net>
 
-commit 72531c9434fa884d20cb3c36fcec83752f32fdf4 upstream.
+commit 9ca1d10d748e56964de95e3ed80211b192f56cf4 upstream.
 
-According to the datasheet:
-The BIT[5:4] of ADC Control Register 2 is to control the word width.
-        00 = 25 Bits
-        01 = 20 Bits
-        10 = 16 Bits
-        11 = Invalid
+Unlike the previous one, I don't have known testcases it fixes.  I'd
+rather not go through the same debug cycle on whatever testcases those
+might be.
 
-Thus, the AD1836_ADC_WORD_OFFSET should be defined as 4.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/ad1836.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |    7 ++++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/ad1836.h
-+++ b/sound/soc/codecs/ad1836.h
-@@ -34,7 +34,7 @@
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3403,6 +3403,7 @@
  
- #define AD1836_ADC_CTRL2               13
- #define AD1836_ADC_WORD_LEN_MASK       0x30
--#define AD1836_ADC_WORD_OFFSET         5
-+#define AD1836_ADC_WORD_OFFSET         4
- #define AD1836_ADC_SERFMT_MASK         (7 << 6)
- #define AD1836_ADC_SERFMT_PCK256       (0x4 << 6)
- #define AD1836_ADC_SERFMT_PCK128       (0x5 << 6)
+ #define GEN6_UCGCTL2				0x9404
+ # define GEN6_RCPBUNIT_CLOCK_GATE_DISABLE		(1 << 12)
++# define GEN6_RCCUNIT_CLOCK_GATE_DISABLE		(1 << 11)
+ 
+ #define GEN6_RPNSWREQ				0xA008
+ #define   GEN6_TURBO_DISABLE			(1<<31)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7888,8 +7888,13 @@ static void gen6_init_clock_gating(struc
+ 	 * some amount of runtime in the Mesa "fire" demo, and Unigine
+ 	 * Sanctuary and Tropics, and apparently anything else with
+ 	 * alpha test or pixel discard.
++	 *
++	 * According to the spec, bit 11 (RCCUNIT) must also be set,
++	 * but we didn't debug actual testcases to find it out.
+ 	 */
+-	I915_WRITE(GEN6_UCGCTL2, GEN6_RCPBUNIT_CLOCK_GATE_DISABLE);
++	I915_WRITE(GEN6_UCGCTL2,
++		   GEN6_RCPBUNIT_CLOCK_GATE_DISABLE |
++		   GEN6_RCCUNIT_CLOCK_GATE_DISABLE);
+ 
+ 	/*
+ 	 * According to the spec the following bits should be
 
 
