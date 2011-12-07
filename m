@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab1LGH2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 02:28:35 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51572 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab1LGH2e (ORCPT
+	id S1752930Ab1LGH3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 02:29:40 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:47619 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab1LGH3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 02:28:34 -0500
-Date: Tue, 6 Dec 2011 23:28:27 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Shaohua Li <shaohua.li@intel.com>
-cc: "Shi, Alex" <alex.shi@intel.com>, Christoph Lameter <cl@linux.com>,
-        "penberg@kernel.org" <penberg@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
-In-Reply-To: <1323234673.22361.372.camel@sli10-conroe>
-Message-ID: <alpine.DEB.2.00.1112062319010.21785@chino.kir.corp.google.com>
-References: <1322814189-17318-1-git-send-email-alex.shi@intel.com> <alpine.DEB.2.00.1112020842280.10975@router.home> <1323076965.16790.670.camel@debian> <alpine.DEB.2.00.1112061259210.28251@chino.kir.corp.google.com>
- <1323234673.22361.372.camel@sli10-conroe>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 7 Dec 2011 02:29:38 -0500
+Date: Wed, 7 Dec 2011 08:29:24 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Tang Yuantian-B29983 <B29983@freescale.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Tabi Timur-B04825 <B04825@freescale.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sun york-R58495 <R58495@freescale.com>,
+        Durai Kumar-R34055 <r34055@freescale.com>,
+        Huang Changming-R66093 <r66093@freescale.com>
+Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+Message-ID: <20111207082924.2f88bd5d@endymion.delvare>
+In-Reply-To: <3C06C26914DACA4BB3A368F78CA0B3A71345F2@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
+	<1321464509.7847.41.camel@oslab-l1>
+	<1321464968.2309.384.camel@groeck-laptop>
+	<1321466135.7847.55.camel@oslab-l1>
+	<20111116190954.67c846fc@endymion.delvare>
+	<1321467638.7847.73.camel@oslab-l1>
+	<20111116201048.4b7877dd@endymion.delvare>
+	<1321470915.7847.122.camel@oslab-l1>
+	<20111116201847.6b11dc7f@endymion.delvare>
+	<3C06C26914DACA4BB3A368F78CA0B3A7134583@039-SN1MPN1-004.039d.mgd.msft.net>
+	<20111207032000.GA17575@ericsson.com>
+	<3C06C26914DACA4BB3A368F78CA0B3A71345F2@039-SN1MPN1-004.039d.mgd.msft.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Dec 2011, Shaohua Li wrote:
+Hi Yuantian,
 
-> interesting. I did similar experiment before (try to sort the page
-> according to free number), but it appears quite hard. The free number of
-> a page is dynamic, eg more slabs can be freed when the page is in
-> partial list. And in netperf test, the partial list could be very very
-> long. Can you post your patch, I definitely what to look at it.
+Please don't top-post.
 
-It was over a couple of years ago and the slub code has changed 
-significantly since then, but you can see the general concept of the "slab 
-thrashing" problem with netperf and my solution back then:
+On Wed, 7 Dec 2011 05:25:49 +0000, Tang Yuantian-B29983 wrote:
+> Hi Guenter,
+> 
+> I thought you were bore of discussion.
+> Do you mind if I post similar patch?
 
-	http://marc.info/?l=linux-kernel&m=123839191416478
-	http://marc.info/?l=linux-kernel&m=123839203016592
-	http://marc.info/?l=linux-kernel&m=123839202916583
+I have no objection, as long as you give proper credit to the original
+author.
 
-I also had a separate patchset that, instead of this approach, would just 
-iterate through the partial list in get_partial_node() looking for 
-anything where the number of free objects met a certain threshold, which 
-still defaulted to 25% and instantly picked it.  The overhead was taking 
-slab_lock() for each page, but that was nullified by the performance 
-speedup of using the alloc fastpath a majority of the time for both 
-kmalloc-256 and kmalloc-2k when in the past it had only been able to serve 
-one or two allocs.  If no partial slab met the threshold, the slab_lock() 
-is held of the partial slab with the most free objects and returned 
-instead.
+Note that ultimately you'll have to get Ben Dooks to apply the patch. I
+helped with the review but the i2c-mpc driver doesn't actually fall in
+my jurisdiction.
 
-> What I have about the partial list is it wastes a lot of memory.
-
-That's not going to be helped with the above approach since we typically 
-try to fill a partial slab with many free objects, but it also won't be 
-severely impacted because if the threshold is kept small enough, then we 
-simply return the first partial slab that meets the criteria.  That allows 
-the partial slabs at the end of the list to hopefully become mostly free.
-
-And, for completeness, there's also a possibility that you have some 
-completely free slabs on the partial list that coule be freed back to the 
-buddy allocator by decreasing min_partial by way of 
-/sys/kernel/slab/cache/min_partial at the risk of performance and then 
-invoke /sys/kernel/slab/cache/shrink to free the unused slabs.
+-- 
+Jean Delvare
