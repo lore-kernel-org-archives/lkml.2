@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab1LGQSe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:18:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33243 "EHLO mx2.suse.de"
+	id S1754691Ab1LGQ5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:57:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33227 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757321Ab1LGQSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:18:30 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
-Message-Id: <20111207160824.957354711@clark.kroah.org>
+	id S1756973Ab1LGQSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:23 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:24 2011
+Message-Id: <20111207160824.801299363@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:48 -0800
+Date: Wed, 07 Dec 2011 08:06:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Jeff Ohlstein <johlstei@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [28/80] hrtimer: Fix extra wakeups from __remove_hrtimer()
+        <alan@lxorguk.ukuu.org.uk>, Michal Hocko <mhocko@suse.cz>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Tomasz Buchert <tomasz.buchert@inria.fr>,
+        Paul Menage <paul@paulmenage.org>, Tejun Heo <htejun@gmail.com>
+Subject: [26/80] cgroup_freezer: fix freezing groups with stopped tasks
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Ohlstein <johlstei@codeaurora.org>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 27c9cd7e601632b3794e1c3344d37b86917ffb43 upstream.
+commit 884a45d964dd395eda945842afff5e16bcaedf56 upstream.
 
-__remove_hrtimer() attempts to reprogram the clockevent device when
-the timer being removed is the next to expire. However,
-__remove_hrtimer() reprograms the clockevent *before* removing the
-timer from the timerqueue and thus when hrtimer_force_reprogram()
-finds the next timer to expire it finds the timer we're trying to
-remove.
+2d3cbf8b (cgroup_freezer: update_freezer_state() does incorrect state
+transitions) removed is_task_frozen_enough and replaced it with a simple
+frozen call. This, however, breaks freezing for a group with stopped tasks
+because those cannot be frozen and so the group remains in CGROUP_FREEZING
+state (update_if_frozen doesn't count stopped tasks) and never reaches
+CGROUP_FROZEN.
 
-This is especially noticeable when the system switches to NOHz mode
-and the system tick is removed. The timer tick is removed from the
-system but the clockevent is programmed to wakeup in another HZ
-anyway.
+Let's add is_task_frozen_enough back and use it at the original locations
+(update_if_frozen and try_to_freeze_cgroup). Semantically we consider
+stopped tasks as frozen enough so we should consider both cases when
+testing frozen tasks.
 
-Silence the extra wakeup by removing the timer from the timerqueue
-before calling hrtimer_force_reprogram() so that we actually program
-the clockevent for the next timer to expire.
+Testcase:
+mkdir /dev/freezer
+mount -t cgroup -o freezer none /dev/freezer
+mkdir /dev/freezer/foo
+sleep 1h &
+pid=$!
+kill -STOP $pid
+echo $pid > /dev/freezer/foo/tasks
+echo FROZEN > /dev/freezer/foo/freezer.state
+while true
+do
+	cat /dev/freezer/foo/freezer.state
+	[ "`cat /dev/freezer/foo/freezer.state`" = "FROZEN" ] && break
+	sleep 1
+done
+echo OK
 
-This was broken by 998adc3 "hrtimers: Convert hrtimers to use
-timerlist infrastructure".
-
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
-Link: http://lkml.kernel.org/r/1321660030-8520-1-git-send-email-johlstei@codeaurora.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Tejun Heo <htejun@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/hrtimer.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/cgroup_freezer.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -885,10 +885,13 @@ static void __remove_hrtimer(struct hrti
- 			     struct hrtimer_clock_base *base,
- 			     unsigned long newstate, int reprogram)
- {
-+	struct timerqueue_node *next_timer;
- 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
- 		goto out;
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -153,6 +153,13 @@ static void freezer_destroy(struct cgrou
+ 	kfree(cgroup_freezer(cgroup));
+ }
  
--	if (&timer->node == timerqueue_getnext(&base->active)) {
-+	next_timer = timerqueue_getnext(&base->active);
-+	timerqueue_del(&base->active, &timer->node);
-+	if (&timer->node == next_timer) {
- #ifdef CONFIG_HIGH_RES_TIMERS
- 		/* Reprogram the clock event device. if enabled */
- 		if (reprogram && hrtimer_hres_active()) {
-@@ -901,7 +904,6 @@ static void __remove_hrtimer(struct hrti
- 		}
- #endif
++/* task is frozen or will freeze immediately when next it gets woken */
++static bool is_task_frozen_enough(struct task_struct *task)
++{
++	return frozen(task) ||
++		(task_is_stopped_or_traced(task) && freezing(task));
++}
++
+ /*
+  * The call to cgroup_lock() in the freezer.state write method prevents
+  * a write to that file racing against an attach, and hence the
+@@ -231,7 +238,7 @@ static void update_if_frozen(struct cgro
+ 	cgroup_iter_start(cgroup, &it);
+ 	while ((task = cgroup_iter_next(cgroup, &it))) {
+ 		ntotal++;
+-		if (frozen(task))
++		if (is_task_frozen_enough(task))
+ 			nfrozen++;
  	}
--	timerqueue_del(&base->active, &timer->node);
- 	if (!timerqueue_getnext(&base->active))
- 		base->cpu_base->active_bases &= ~(1 << base->index);
- out:
+ 
+@@ -284,7 +291,7 @@ static int try_to_freeze_cgroup(struct c
+ 	while ((task = cgroup_iter_next(cgroup, &it))) {
+ 		if (!freeze_task(task, true))
+ 			continue;
+-		if (frozen(task))
++		if (is_task_frozen_enough(task))
+ 			continue;
+ 		if (!freezing(task) && !freezer_should_skip(task))
+ 			num_cant_freeze_now++;
 
 
