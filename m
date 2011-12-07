@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab1LGL6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 06:58:09 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:60263 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab1LGL6I (ORCPT
+	id S1755537Ab1LGL7s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 06:59:48 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:43858 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755010Ab1LGL7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 06:58:08 -0500
-Message-ID: <20191.21688.696997.76000@ipc1.ka-ro>
-Date: Wed, 7 Dec 2011 12:57:44 +0100
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>
+	Wed, 7 Dec 2011 06:59:46 -0500
+Date: Wed, 7 Dec 2011 12:59:37 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the tip tree with the cputime tree
+Message-ID: <20111207125937.4d4adc38@de.ibm.com>
+In-Reply-To: <4EDF4F6D.1040806@parallels.com>
+References: <20111207150956.52d41fd8580de3b66abd5d2d@canb.auug.org.au>
+	<4EDF4F6D.1040806@parallels.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [MXS MMC 2/5] Some cleanups for the MMC driver
-In-Reply-To: <20111207120120.GK5550@S2100-06.ap.freescale.net>
-References: <cover.1323177907.git.LW@KARO-electronics.de>
-	<d935557e044d2ebc56b4e70487b519fe722e9017.1323177907.git.LW@KARO-electronics.de>
-	<20111207120120.GK5550@S2100-06.ap.freescale.net>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120711-0342-0000-0000-0000004722FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 7 Dec 2011 09:35:09 -0200
+Glauber Costa <glommer@parallels.com> wrote:
 
-Shawn Guo writes:
-> I'm fine with this cosmetic patch with the comments below addressed.
+> On 12/07/2011 02:09 AM, Stephen Rothwell wrote:
+> > + 	index = (TASK_NICE(p)>  0) ? CPUTIME_NICE : CPUTIME_USER;
+> > +
+> >    	/* Add user time to cpustat. */
+> > - 	if (TASK_NICE(p)>  0)
+> > - 		cpustat->nice += (__force cputime64_t) cputime;
+> > - 	else
+> > - 		cpustat->user += (__force cputime64_t) cputime;
+> >   -	task_group_account_field(p, index, cputime);
+> > ++	task_group_account_field(p, index, (__force cputime64_t) cputime);
 > 
-> On Tue, Dec 06, 2011 at 02:41:27PM +0100, Lothar Waßmann wrote:
-> >  - Remove bogus parens around numerical arguments in #define's
-> >  - When defining bit masks, use the #def for the shift count
-> >    instead of repeating the numbers
 > 
-> This change brings a few 'line over 80 characters' checkpatch warnings.
-> 
-will fix.
+> I doubt __force cputime64_t is necessary. After these patches, those 
+> fields are all u64.
 
-> >  - Remove bogus whitespace in indentation
-> >  - Remove 'break' at end of switch statement
-> > 
-> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> > ---
-> >  drivers/mmc/host/mxs-mmc.c |   57 +++++++++++++++++++++----------------------
-> >  1 files changed, 28 insertions(+), 29 deletions(-)
-> > 
-> > diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-> [...]
-> > @@ -277,7 +277,7 @@ static irqreturn_t mxs_mmc_irq_handler(int irq, void *dev_id)
-> >  
-> >  	stat = readl(host->base + HW_SSP_CTRL1);
-> >  	writel(stat & MXS_MMC_IRQ_BITS,
-> > -	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
-> 
-> This is an intended indentation with 7 spaces.
-> 
-According to Documentation/CodingStyle spaces are never used for
-indentation (except in documentation, Kconfig and comments).
+You need the __force keyword whenever a conversion between a cputime[64]_t
+and a plain scalar type is done. The cputime[64]_t types are defined with
+__nocast so that sparse can find bugs in the usage of cputime.
 
-
-Lothar Waßmann
 -- 
-___________________________________________________________
+blue skies,
+   Martin.
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+"Reality continues to ruin my life." - Calvin.
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
