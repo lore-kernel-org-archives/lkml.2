@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab1LGREP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:04:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39479 "EHLO mx2.suse.de"
+	id S1757529Ab1LGRFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:05:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39506 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757041Ab1LGREL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:04:11 -0500
+	id S1757531Ab1LGREO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:04:14 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:02 2011
-Message-Id: <20111207165602.232166480@clark.kroah.org>
+Message-Id: <20111207165602.323149548@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:54:55 -0800
+Date: Wed, 07 Dec 2011 08:54:56 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Salman Qazi <sqazi@google.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [22/27] sched, x86: Avoid unnecessary overflow in sched_clock
+        <alan@lxorguk.ukuu.org.uk>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan McGrath <troubledaemon@gmail.com>,
+        Alexey Starikovskiy <aystarik@gmail.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [23/27] x86/mpparse: Account for bus types other than ISA and PCI
 In-Reply-To: <20111207165611.GA19872@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,72 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salman Qazi <sqazi@google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 4cecf6d401a01d054afc1e5f605bcbfe553cb9b9 upstream.
+commit 9e6866686bdf2dcf3aeb0838076237ede532dcc8 upstream.
 
-(Added the missing signed-off-by line)
+In commit f8924e770e04 ("x86: unify mp_bus_info"), the 32-bit
+and 64-bit versions of MP_bus_info were rearranged to match each
+other better.  Unfortunately it introduced a regression: prior
+to that change we used to always set the mp_bus_not_pci bit,
+then clear it if we found a PCI bus.  After it, we set
+mp_bus_not_pci for ISA buses, clear it for PCI buses, and leave
+it alone otherwise.
 
-In hundreds of days, the __cycles_2_ns calculation in sched_clock
-has an overflow.  cyc * per_cpu(cyc2ns, cpu) exceeds 64 bits, causing
-the final value to become zero.  We can solve this without losing
-any precision.
+In the cases of ISA and PCI, there's not much difference.  But
+ISA is not the only non-PCI bus, so it's better to always set
+mp_bus_not_pci and clear it only for PCI.
 
-We can decompose TSC into quotient and remainder of division by the
-scale factor, and then use this to convert TSC into nanoseconds.
+Without this change, Dan's Dell PowerEdge 4200 panics on boot
+with a log indicating interrupt routing trouble unless the
+"noapic" option is supplied.  With this change, the machine
+boots reliably without "noapic".
 
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Acked-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com
+Fixes http://bugs.debian.org/586494
+
+Reported-bisected-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Dan McGrath <troubledaemon@gmail.com>
+Cc: Alexey Starikovskiy <aystarik@gmail.com>
+[jrnieder@gmail.com: clarified commit message]
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Link: http://lkml.kernel.org/r/20111122215000.GA9151@elie.hsd1.il.comcast.net
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/timer.h |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ arch/x86/kernel/mpparse.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -38,6 +38,22 @@ extern int no_timer_check;
-  *  (mathieu.desnoyers@polymtl.ca)
-  *
-  *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
-+ *
-+ * In:
-+ *
-+ * ns = cycles * cyc2ns_scale / SC
-+ *
-+ * Although we may still have enough bits to store the value of ns,
-+ * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
-+ * leading to an incorrect result.
-+ *
-+ * To avoid this, we can decompose 'cycles' into quotient and remainder
-+ * of division by SC.  Then,
-+ *
-+ * ns = (quot * SC + rem) * cyc2ns_scale / SC
-+ *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
-+ *
-+ *			- sqazi@google.com
-  */
+--- a/arch/x86/kernel/mpparse.c
++++ b/arch/x86/kernel/mpparse.c
+@@ -94,8 +94,8 @@ static void __init MP_bus_info(struct mp
+ 	}
+ #endif
  
- DECLARE_PER_CPU(unsigned long, cyc2ns);
-@@ -47,9 +63,14 @@ DECLARE_PER_CPU(unsigned long long, cyc2
- 
- static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
- {
-+	unsigned long long quot;
-+	unsigned long long rem;
- 	int cpu = smp_processor_id();
- 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
--	ns += cyc * per_cpu(cyc2ns, cpu) >> CYC2NS_SCALE_FACTOR;
-+	quot = (cyc >> CYC2NS_SCALE_FACTOR);
-+	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
-+	ns += quot * per_cpu(cyc2ns, cpu) +
-+		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
- 	return ns;
- }
- 
++	set_bit(m->busid, mp_bus_not_pci);
+ 	if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
+-		set_bit(m->busid, mp_bus_not_pci);
+ #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
+ 		mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
+ #endif
 
 
