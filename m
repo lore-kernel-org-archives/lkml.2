@@ -1,132 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab1LGQ2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:28:42 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39734 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757843Ab1LGQZv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:25:51 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/4] gpio: Add decode of WM8994 GPIO configuration
-Date: Thu,  8 Dec 2011 00:24:01 +0800
-Message-Id: <1323275041-25493-4-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323275041-25493-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20111207162256.GI22355@opensource.wolfsonmicro.com>
- <1323275041-25493-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1757982Ab1LGQ3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:29:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34693 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757862Ab1LGQZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:25:35 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:23 2011
+Message-Id: <20111207161223.158891479@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:12:44 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Robert Richter <robert.richter@amd.com>
+Subject: [102/104] oprofile: Fix crash when unloading module (hr timer mode)
+In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the human reader.
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+------------------
+
+From: Robert Richter <robert.richter@amd.com>
+
+commit 87121ca504fd1d963a66b3fb0c72054b0fd9a177 upstream.
+
+Oprofile may crash in a KVM guest while unlaoding modules. This
+happens if oprofile_arch_init() fails and oprofile switches to the hr
+timer mode as a fallback. In this case oprofile_arch_exit() is called,
+but it never was initialized properly which causes the crash. This
+patch fixes this.
+
+oprofile: using timer interrupt.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+PGD 41da3f067 PUD 41d80e067 PMD 0
+Oops: 0002 [#1] PREEMPT SMP
+CPU 5
+Modules linked in: oprofile(-)
+
+Pid: 2382, comm: modprobe Not tainted 3.1.0-rc7-00018-g709a39d #18 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+RSP: 0018:ffff88041de1de98  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: ffffffffa00060e0 RCX: dead000000200200
+RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
+RBP: ffff88041de1dea8 R08: 0000000000000001 R09: 0000000000000082
+R10: 0000000000000000 R11: ffff88041de1dde8 R12: 0000000000000080
+R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
+FS:  00007f9ae5bef700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000008 CR3: 000000041ca44000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process modprobe (pid: 2382, threadinfo ffff88041de1c000, task ffff88042db6d040)
+Stack:
+ ffff88041de1deb8 ffffffffa0006770 ffff88041de1deb8 ffffffffa000251e
+ ffff88041de1dec8 ffffffffa00022c2 ffff88041de1ded8 ffffffffa0004993
+ ffff88041de1df78 ffffffff81073115 656c69666f72706f 0000000000610200
+Call Trace:
+ [<ffffffffa000251e>] op_nmi_exit+0x15/0x17 [oprofile]
+ [<ffffffffa00022c2>] oprofile_arch_exit+0xe/0x10 [oprofile]
+ [<ffffffffa0004993>] oprofile_exit+0x13/0x15 [oprofile]
+ [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
+ [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
+Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
+ 89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
+RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+ RSP <ffff88041de1de98>
+CR2: 0000000000000008
+---[ end trace 06d4e95b6aa3b437 ]---
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/gpio/gpio-wm8994.c |   79 ++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 77 insertions(+), 2 deletions(-)
+ drivers/oprofile/oprof.c     |   29 ++++++++++++++++++++++++-----
+ drivers/oprofile/timer_int.c |    1 +
+ 2 files changed, 25 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpio/gpio-wm8994.c b/drivers/gpio/gpio-wm8994.c
-index 96198f3..92ea535 100644
---- a/drivers/gpio/gpio-wm8994.c
-+++ b/drivers/gpio/gpio-wm8994.c
-@@ -117,6 +117,60 @@ static int wm8994_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
- 
- 
- #ifdef CONFIG_DEBUG_FS
-+static const char *wm8994_gpio_fn(u16 fn)
-+{
-+	switch (fn) {
-+	case WM8994_GP_FN_PIN_SPECIFIC:
-+		return "pin-specific";
-+	case WM8994_GP_FN_GPIO:
-+		return "GPIO";
-+	case WM8994_GP_FN_SDOUT:
-+		return "SDOUT";
-+	case WM8994_GP_FN_IRQ:
-+		return "IRQ";
-+	case WM8994_GP_FN_TEMPERATURE:
-+		return "Temperature";
-+	case WM8994_GP_FN_MICBIAS1_DET:
-+		return "MICBIAS1 detect";
-+	case WM8994_GP_FN_MICBIAS1_SHORT:
-+		return "MICBIAS1 short";
-+	case WM8994_GP_FN_MICBIAS2_DET:
-+		return "MICBIAS2 detect";
-+	case WM8994_GP_FN_MICBIAS2_SHORT:
-+		return "MICBIAS2 short";
-+	case WM8994_GP_FN_FLL1_LOCK:
-+		return "FLL1 lock";
-+	case WM8994_GP_FN_FLL2_LOCK:
-+		return "FLL2 lock";
-+	case WM8994_GP_FN_SRC1_LOCK:
-+		return "SRC1 lock";
-+	case WM8994_GP_FN_SRC2_LOCK:
-+		return "SRC2 lock";
-+	case WM8994_GP_FN_DRC1_ACT:
-+		return "DRC1 activity";
-+	case WM8994_GP_FN_DRC2_ACT:
-+		return "DRC2 activity";
-+	case WM8994_GP_FN_DRC3_ACT:
-+		return "DRC3 activity";
-+	case WM8994_GP_FN_WSEQ_STATUS:
-+		return "Write sequencer";
-+	case WM8994_GP_FN_FIFO_ERROR:
-+		return "FIFO error";
-+	case WM8994_GP_FN_OPCLK:
-+		return "OPCLK";
-+	case WM8994_GP_FN_THW:
-+		return "Thermal warning";
-+	case WM8994_GP_FN_DCS_DONE:
-+		return "DC servo";
-+	case WM8994_GP_FN_FLL1_OUT:
-+		return "FLL1 output";
-+	case WM8994_GP_FN_FLL2_OUT:
-+		return "FLL1 output";
-+	default:
-+		return "Unknown";
-+	}
-+}
-+
- static void wm8994_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- {
- 	struct wm8994_gpio *wm8994_gpio = to_wm8994_gpio(chip);
-@@ -148,8 +202,29 @@ static void wm8994_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
- 			continue;
- 		}
- 
--		/* No decode yet; note that GPIO2 is special */
--		seq_printf(s, "(%x)\n", reg);
-+		if (reg & WM8994_GPN_DIR)
-+			seq_printf(s, "in ");
-+		else
-+			seq_printf(s, "out ");
-+
-+		if (reg & WM8994_GPN_PU)
-+			seq_printf(s, "pull up ");
-+
-+		if (reg & WM8994_GPN_PD)
-+			seq_printf(s, "pull down ");
-+
-+		if (reg & WM8994_GPN_POL)
-+			seq_printf(s, "inverted ");
-+		else
-+			seq_printf(s, "noninverted ");
-+
-+		if (reg & WM8994_GPN_OP_CFG)
-+			seq_printf(s, "open drain ");
-+		else
-+			seq_printf(s, "CMOS ");
-+
-+		seq_printf(s, "%s (%x)\n",
-+			   wm8994_gpio_fn(reg & WM8994_GPN_FN_MASK), reg);
- 	}
+--- a/drivers/oprofile/oprof.c
++++ b/drivers/oprofile/oprof.c
+@@ -239,26 +239,45 @@ int oprofile_set_ulong(unsigned long *ad
+ 	return err;
  }
- #else
--- 
-1.7.7.3
+ 
++static int timer_mode;
++
+ static int __init oprofile_init(void)
+ {
+ 	int err;
+ 
++	/* always init architecture to setup backtrace support */
+ 	err = oprofile_arch_init(&oprofile_ops);
+-	if (err < 0 || timer) {
+-		printk(KERN_INFO "oprofile: using timer interrupt.\n");
++
++	timer_mode = err || timer;	/* fall back to timer mode on errors */
++	if (timer_mode) {
++		if (!err)
++			oprofile_arch_exit();
+ 		err = oprofile_timer_init(&oprofile_ops);
+ 		if (err)
+ 			return err;
+ 	}
+-	return oprofilefs_register();
++
++	err = oprofilefs_register();
++	if (!err)
++		return 0;
++
++	/* failed */
++	if (timer_mode)
++		oprofile_timer_exit();
++	else
++		oprofile_arch_exit();
++
++	return err;
+ }
+ 
+ 
+ static void __exit oprofile_exit(void)
+ {
+-	oprofile_timer_exit();
+ 	oprofilefs_unregister();
+-	oprofile_arch_exit();
++	if (timer_mode)
++		oprofile_timer_exit();
++	else
++		oprofile_arch_exit();
+ }
+ 
+ 
+--- a/drivers/oprofile/timer_int.c
++++ b/drivers/oprofile/timer_int.c
+@@ -110,6 +110,7 @@ int oprofile_timer_init(struct oprofile_
+ 	ops->start = oprofile_hrtimer_start;
+ 	ops->stop = oprofile_hrtimer_stop;
+ 	ops->cpu_type = "timer";
++	printk(KERN_INFO "oprofile: using timer interrupt.\n");
+ 	return 0;
+ }
+ 
+
 
