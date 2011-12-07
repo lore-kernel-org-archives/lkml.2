@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab1LGQaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:30:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34657 "EHLO mx2.suse.de"
+	id S1757825Ab1LGQZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:25:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34642 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757833Ab1LGQZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:25:24 -0500
+	id S1757806Ab1LGQZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:25:18 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:20 2011
-Message-Id: <20111207161220.458838045@clark.kroah.org>
+Message-Id: <20111207161220.297115692@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:11 -0800
+Date: Wed, 07 Dec 2011 08:12:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [069/104] USB: whci-hcd: fix endian conversion in qset_clear()
+        <alan@lxorguk.ukuu.org.uk>, Alessandro Rubini <rubini@gnudd.com>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [067/104] Staging: comedi: fix signal handling in read and write
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Federico Vaga <federico.vaga@gmail.com>
 
-commit 8746c83d538cab273d335acb2be226d096f4a5af upstream.
+commit 6a9ce6b654e491981f6ef7e214cbd4f63e033848 upstream.
 
-qset->qh.link is an __le64 field and we should be using cpu_to_le64()
-to fill it.
+After sleeping on a wait queue, signal_pending(current) should be
+checked (not before sleeping).
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Alessandro Rubini <rubini@gnudd.com>
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/whci/qset.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/comedi_fops.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/whci/qset.c
-+++ b/drivers/usb/host/whci/qset.c
-@@ -124,7 +124,7 @@ void qset_clear(struct whc *whc, struct
- {
- 	qset->td_start = qset->td_end = qset->ntds = 0;
- 
--	qset->qh.link = cpu_to_le32(QH_LINK_NTDS(8) | QH_LINK_T);
-+	qset->qh.link = cpu_to_le64(QH_LINK_NTDS(8) | QH_LINK_T);
- 	qset->qh.status = qset->qh.status & QH_STATUS_SEQ_MASK;
- 	qset->qh.err_count = 0;
- 	qset->qh.scratch[0] = 0;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1673,11 +1673,11 @@ static ssize_t comedi_write(struct file
+ 				retval = -EAGAIN;
+ 				break;
+ 			}
++			schedule();
+ 			if (signal_pending(current)) {
+ 				retval = -ERESTARTSYS;
+ 				break;
+ 			}
+-			schedule();
+ 			if (!s->busy)
+ 				break;
+ 			if (s->busy != file) {
+@@ -1780,11 +1780,11 @@ static ssize_t comedi_read(struct file *
+ 				retval = -EAGAIN;
+ 				break;
+ 			}
++			schedule();
+ 			if (signal_pending(current)) {
+ 				retval = -ERESTARTSYS;
+ 				break;
+ 			}
+-			schedule();
+ 			if (!s->busy) {
+ 				retval = 0;
+ 				break;
 
 
