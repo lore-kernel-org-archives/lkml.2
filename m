@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab1LGKsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 05:48:09 -0500
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:3804 "EHLO
-	VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028Ab1LGKsG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 05:48:06 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzz8275dhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 7 Dec 2011 19:00:48 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-CC: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>, <linux-mmc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>
-Subject: Re: [MXS MMC 1/5] Fix grammatical error in comment
-Message-ID: <20111207110047.GI5550@S2100-06.ap.freescale.net>
-References: <cover.1323177907.git.LW@KARO-electronics.de>
- <1ebaeb7f7ed88b1d82f5fc3a01c0661f38e2a16d.1323177907.git.LW@KARO-electronics.de>
+	id S1755092Ab1LGKs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:48:59 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:54908 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754820Ab1LGKs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 05:48:58 -0500
+Date: Wed, 7 Dec 2011 10:51:43 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes the reduced version
+Message-ID: <alpine.DEB.2.00.1112071049560.14889@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <1ebaeb7f7ed88b1d82f5fc3a01c0661f38e2a16d.1323177907.git.LW@KARO-electronics.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 02:41:26PM +0100, Lothar Waﬂmann wrote:
-> 
-> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
-> ---
->  arch/arm/mach-mxs/clock-mx28.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mxs/clock-mx28.c b/arch/arm/mach-mxs/clock-mx28.c
-> index da6e4aa..fc86b04 100644
-> --- a/arch/arm/mach-mxs/clock-mx28.c
-> +++ b/arch/arm/mach-mxs/clock-mx28.c
-> @@ -554,7 +554,7 @@ static struct clk rtc_clk = {
->  	.parent = &ref_xtal_clk,
->  };
->  
-> -/* usb_clk gate is controlled in DIGCTRL other than CLKCTRL */
-> +/* usb_clk gate is controlled in DIGCTRL rather than CLKCTRL */
->  static struct clk usb0_clk = {
->  	.enable_reg = DIGCTRL_BASE_ADDR,
->  	.enable_shift = 2,
-> -- 
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Hi Linus,
 
--- 
-Regards,
-Shawn
+Okay the 2 non-kexec fixes + one of the calloc changes as by looking at 
+it, there was nothing stopping userspace for abusing the integer overflow 
+on these ioctls. The other calloc changes either were kernel internal or 
+had other things stopping userspace from exploiting them.
 
+Dave.
+
+The following changes since commit 45e713efe2fa574b6662e7fb63fae9497c5e03d4:
+
+  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2011-12-05 16:54:15 -0800)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+Alex Deucher (1):
+      drm/radeon/kms: fix return type for radeon_encoder_get_dp_bridge_encoder_id
+
+Daniel Vetter (1):
+      drm/i915: fix infinite recursion on unbind due to ilk vt-d w/a
+
+Thomas Meyer (1):
+      vmwgfx: Use kcalloc instead of kzalloc to allocate array
+
+ drivers/gpu/drm/i915/i915_gem.c          |    7 ++++++-
+ drivers/gpu/drm/radeon/radeon_encoders.c |    7 +++----
+ drivers/gpu/drm/vmwgfx/vmwgfx_ioctl.c    |    4 ++--
+ 3 files changed, 11 insertions(+), 7 deletions(-)
