@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab1LGAJV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:09:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56461 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab1LGAJU (ORCPT
+	id S1755502Ab1LGAJg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:09:36 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:51497
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755395Ab1LGAJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:09:20 -0500
-Message-ID: <4EDEAEA7.9060806@canonical.com>
-Date: Tue, 06 Dec 2011 16:09:11 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Tue, 6 Dec 2011 19:09:35 -0500
+X-SpamScore: -15
+X-BigFish: VS-15(zzbb2dK9371K1432N98dKzz1202hzz8275bhz2dh2a8h668h839h93fh)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Message-ID: <4EDEAEB9.6020703@freescale.com>
+Date: Tue, 6 Dec 2011 18:09:29 -0600
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com> <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com> <4EDE94DC.8010106@canonical.com> <20111206224100.GM2203@ZenIV.linux.org.uk> <4EDEA152.90804@canonical.com> <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
-In-Reply-To: <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: <shuo.liu@freescale.com>
+CC: <dwmw2@infradead.org>, <Artem.Bityutskiy@nokia.com>,
+        <linux-mtd@lists.infradead.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <leoli@freescale.com>
+Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
+ large-page Nand chip
+References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com> <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>
+In-Reply-To: <1322973098-2528-3-git-send-email-shuo.liu@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 03:45 PM, Linus Torvalds wrote:
-> On Tue, Dec 6, 2011 at 3:12 PM, John Johansen
-> <john.johansen@canonical.com> wrote:
->>
->> What we want to know is if we missed the supplied root, so that we don't
->> mediate off of that path.  And it would be nice to get a partial path for
->> the purposes of logging, so that there is some guidance on how to update
->> policy.
+On 12/03/2011 10:31 PM, shuo.liu@freescale.com wrote:
+> From: Liu Shuo <shuo.liu@freescale.com>
 > 
-> How about this change:
->  - don't change 'root' (and mark it const)
->  - if we hit the expected root, we're all happy and do what we do now
->  - if we hit some *unexpected* root (the "global root") add a '?' or
-> something at the head of the path.
+> Freescale FCM controller has a 2K size limitation of buffer RAM. In order
+> to support the Nand flash chip whose page size is larger than 2K bytes,
+> we read/write 2k data repeatedly by issuing FIR_OP_RB/FIR_OP_WB and save
+> them to a large buffer.
 > 
-> End result: callers like getcwd() can trivially replace their current
-> "path_equal(&tmp,&root)" (or whatever they do) with just checking the
-> first character of the end result. A good path always starts with '/'.
+> Signed-off-by: Liu Shuo <shuo.liu@freescale.com>
+> ---
+> v3:
+>     -remove page_size of struct fsl_elbc_mtd.
+>     -do a oob write by NAND_CMD_RNDIN. 
 > 
-> Something kind of like this (this does *not* change apparmor or tomoyo
-> - I didn't even look at those uses).
-> 
-yes this would give apparmor what it needs.  We would still have to break
-one chroot case, until our labeling is properly updated.  But its insane
-to plan the api around that case as it is hardly used and a proper solution
-for that case is in the works.
+>  drivers/mtd/nand/fsl_elbc_nand.c |  243 ++++++++++++++++++++++++++++++++++----
+>  1 files changed, 218 insertions(+), 25 deletions(-)
+
+What is the plan for bad block marker migration?
+
+> @@ -473,13 +568,72 @@ static void fsl_elbc_cmdfunc(struct mtd_info *mtd, unsigned int command,
+>  		 * write so the HW generates the ECC.
+>  		 */
+>  		if (elbc_fcm_ctrl->oob || elbc_fcm_ctrl->column != 0 ||
+> -		    elbc_fcm_ctrl->index != mtd->writesize + mtd->oobsize)
+> -			out_be32(&lbc->fbcr,
+> -				elbc_fcm_ctrl->index - elbc_fcm_ctrl->column);
+> -		else
+> +		    elbc_fcm_ctrl->index != mtd->writesize + mtd->oobsize) {
+> +			if (elbc_fcm_ctrl->oob && mtd->writesize > 2048) {
+> +				out_be32(&lbc->fbcr, 64);
+> +			} else {
+> +				out_be32(&lbc->fbcr, elbc_fcm_ctrl->index
+> +						- elbc_fcm_ctrl->column);
+> +			}
+
+We need to limit ourselves to the regions that have actually been
+written to in the buffer.  fbcr needs to be set separately for first and
+last subpages, with intermediate subpages having 0, 64, or 2112 as
+appropriate.  Subpages that are entirely before column or entirely after
+column + index should be skipped.
+
+> +		} else {
+> +			out_be32(&lbc->fir, FIR_OP_WB << FIR_OP1_SHIFT);
+> +			for (i = 1; i < n; i++) {
+> +				if (i == n - 1) {
+> +					elbc_fcm_ctrl->use_mdr = 1;
+> +					out_be32(&lbc->fir,
+> +						(FIR_OP_WB  << FIR_OP1_SHIFT) |
+> +						(FIR_OP_CM3 << FIR_OP2_SHIFT) |
+> +						(FIR_OP_CW1 << FIR_OP3_SHIFT) |
+> +						(FIR_OP_RS  << FIR_OP4_SHIFT));
+
+Please explicitly show the (FIR_OP_NOP << FIR_OP0_SHIFT) compenent.
+
+> +	} else if (mtd->writesize >= 2048 && mtd->writesize <= 16 * 1024) {
+> +
+>  		setbits32(&lbc->bank[priv->bank].or, OR_FCM_PGS);
+
+Don't insert a blank line here.
+
+-Scott
 
