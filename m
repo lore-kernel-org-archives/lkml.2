@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758213Ab1LGS7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 13:59:49 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:38007 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757711Ab1LGS7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 13:59:47 -0500
+	id S1758245Ab1LGS74 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 13:59:56 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:43123 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758217Ab1LGS7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 13:59:52 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: "David S . Miller" <davem@davemloft.net>
 Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-crypto@vger.kernel.org,
@@ -13,43 +14,90 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-crypto@vger.kernel.org,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Brian King <brking@linux.vnet.ibm.com>,
         Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: [PATCH 0/3] crypto: Add per-cpu transform helpers
-Date: Wed,  7 Dec 2011 12:59:07 -0600
-Message-Id: <1323284350-13784-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCH 3/3] xfrm: Modify xfrm_ipcomp code to use new per-cpu helpers
+Date: Wed,  7 Dec 2011 12:59:10 -0600
+Message-Id: <1323284350-13784-4-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
-x-cbid: 11120718-9360-0000-0000-00000151FABA
+In-Reply-To: <1323284350-13784-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1323284350-13784-1-git-send-email-sjenning@linux.vnet.ibm.com>
+x-cbid: 11120718-3270-0000-0000-00000267E4F5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset includes two new functions for the cryptographic library,
-crypto_alloc_percpu_tfms() and crypto_free_percpu_tfms(), which assist users
-in allocating and freeing per-cpu transforms.
+This patch exchanges the per-cpu transform allocation/free
+code in xfrm_ipcomp for a call to the new helper in the
+cryptographic API
 
-It also includes typing wrappers for the compression algorithm class.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ net/xfrm/xfrm_ipcomp.c |   34 ++++++++--------------------------
+ 1 files changed, 8 insertions(+), 26 deletions(-)
 
-The reason for this patch is that during my work to enable page compression
-via the cryptographic API in the zcache staging driver, and realized that I
-had rewritten some per-cpu transform code that already exists in the
-xfrm_ipcomp code.
-
-In an effort to avoid duplication, this patchset moves the per-cpu code into
-helper functions in the cryptographic library and makes the necessary
-modifications to the xfrm_ipcomp code.
-
-After this change is (hopefully) merged, I will submit the zcache driver
-changes, which will be the second user of these helpers.
-
-Seth Jennings (3):
-  crypto: Add per-cpu transform alloc() and free()
-  crypto: Add inline per-cpu wrappers for compression
-  xfrm: Modify xfrm_ipcomp code to use new per-cpu helpers
-
- crypto/api.c           |   62 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/crypto.h |   28 +++++++++++++++++++++
- net/xfrm/xfrm_ipcomp.c |   34 ++++++--------------------
- 3 files changed, 98 insertions(+), 26 deletions(-)
-
+diff --git a/net/xfrm/xfrm_ipcomp.c b/net/xfrm/xfrm_ipcomp.c
+index e5246fb..d681fbd 100644
+--- a/net/xfrm/xfrm_ipcomp.c
++++ b/net/xfrm/xfrm_ipcomp.c
+@@ -245,7 +245,6 @@ static void * __percpu *ipcomp_alloc_scratches(void)
+ static void ipcomp_free_tfms(struct crypto_comp * __percpu *tfms)
+ {
+ 	struct ipcomp_tfms *pos;
+-	int cpu;
+ 
+ 	list_for_each_entry(pos, &ipcomp_tfms_list, list) {
+ 		if (pos->tfms == tfms)
+@@ -259,15 +258,7 @@ static void ipcomp_free_tfms(struct crypto_comp * __percpu *tfms)
+ 
+ 	list_del(&pos->list);
+ 	kfree(pos);
+-
+-	if (!tfms)
+-		return;
+-
+-	for_each_possible_cpu(cpu) {
+-		struct crypto_comp *tfm = *per_cpu_ptr(tfms, cpu);
+-		crypto_free_comp(tfm);
+-	}
+-	free_percpu(tfms);
++	crypto_free_percpu_comp(tfms, cpu_possible_mask);
+ }
+ 
+ static struct crypto_comp * __percpu *ipcomp_alloc_tfms(const char *alg_name)
+@@ -295,27 +286,18 @@ static struct crypto_comp * __percpu *ipcomp_alloc_tfms(const char *alg_name)
+ 	if (!pos)
+ 		return NULL;
+ 
++	tfms = crypto_alloc_percpu_comp(alg_name, 0, CRYPTO_ALG_ASYNC,
++					cpu_possible_mask);
++	if (IS_ERR_VALUE((unsigned long)tfms)) {
++		kfree(pos);
++		return NULL;
++	}
++
+ 	pos->users = 1;
+ 	INIT_LIST_HEAD(&pos->list);
+ 	list_add(&pos->list, &ipcomp_tfms_list);
+ 
+-	pos->tfms = tfms = alloc_percpu(struct crypto_comp *);
+-	if (!tfms)
+-		goto error;
+-
+-	for_each_possible_cpu(cpu) {
+-		struct crypto_comp *tfm = crypto_alloc_comp(alg_name, 0,
+-							    CRYPTO_ALG_ASYNC);
+-		if (IS_ERR(tfm))
+-			goto error;
+-		*per_cpu_ptr(tfms, cpu) = tfm;
+-	}
+-
+ 	return tfms;
+-
+-error:
+-	ipcomp_free_tfms(tfms);
+-	return NULL;
+ }
+ 
+ static void ipcomp_free_data(struct ipcomp_data *ipcd)
 -- 
 1.7.5.4
 
