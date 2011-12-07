@@ -1,60 +1,463 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab1LGAio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:38:44 -0500
-Received: from mga14.intel.com ([143.182.124.37]:15821 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753992Ab1LGAin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:38:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,309,1320652800"; 
-   d="scan'208";a="82966153"
-Subject: Re: [PATCH v4] x86, efi: Calling __pa() with an ioremap'd address
- is invalid
-From: Zhang Rui <rui.zhang@intel.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>
-In-Reply-To: <1323092402.4838.6.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1321621751-3650-1-git-send-email-matt@console-pimps.org>
-	 <20111205123217.GF3143@elte.hu>
-	 <1323092402.4838.6.camel@mfleming-mobl1.ger.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Dec 2011 08:36:23 +0800
-Message-ID: <1323218183.9574.1434.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755222Ab1LGAjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:39:25 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55901 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab1LGAjY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 19:39:24 -0500
+Date: Wed, 7 Dec 2011 00:39:22 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+Message-ID: <20111207003922.GO2203@ZenIV.linux.org.uk>
+References: <20111206154854.GH2203@ZenIV.linux.org.uk>
+ <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
+ <20111206205346.GK2203@ZenIV.linux.org.uk>
+ <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+ <4EDE94DC.8010106@canonical.com>
+ <20111206224100.GM2203@ZenIV.linux.org.uk>
+ <4EDEA152.90804@canonical.com>
+ <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
+ <20111207001643.GN2203@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111207001643.GN2203@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-12-05 at 21:40 +0800, Matt Fleming wrote:
-> On Mon, 2011-12-05 at 13:32 +0100, Ingo Molnar wrote:
-> > * Matt Fleming <matt@console-pimps.org> wrote:
-> > 
-> > > Zhang, it'd be good to make sure that this still actually 
-> > > fixes your problem on CONFIG_X86_32. Also, if anyone has a 
-> > > Macbook Pro/Macbook Air, please make sure that this patch 
-> > > doesn't cause your machine to reboot/hang, as those machines 
-> > > tend to be the ones that this problem.
-> > 
-> > Ping - has it been tested on an affected box, can we apply it to 
-> > the x86 tree?
+On Wed, Dec 07, 2011 at 12:16:43AM +0000, Al Viro wrote:
+> 	__d_path(path, root, buf, buflen) - expects non-NULL in
+> root->mnt, never changes root, returns NULL if path is not under root
+> 	d_absolute_path(path, ancestor, buf, buflen) - grabs the
+> reference to the most remote ancestor it can find, puts pathname
+> into buf, never returns NULL.
 > 
-> I've not had any response from Zhang or anyone with a macbook. So as far
-> as I know, no, this v4 patch hasn't been tested on any of the affected
-> machines.
+> Let tomoyo use that one and path_put(ancestor) afterwards (or look at
+> it first, if it cares).  And let apparmor do the following:
+> 	* first call __d_path(), unless asked not to.  If it returns
+> non-NULL, great we've got that path, game over.  Otherwise call
+> d_absolute_path() and log that partial pathname, check where we'd got,
+> etc.  Just remember to path_put(ancestor) after that.
 > 
-> Zhang, could you test this patch, please? Or pass it along to someone
-> else who can do the testing. Thanks.
+> We are trying to shove two different things in one function and result
+> is ugly; so let's just split it instead of trying to breed weird
+> hybrids.
 > 
-Sure.
-I can test it tomorrow because I'm in a training these two days.
+> Comments?
 
-thanks,
-rui
+IOW, I mean this:
 
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 10ba92d..8ee05a0 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2439,7 +2439,8 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+ /**
+  * prepend_path - Prepend path string to a buffer
+  * @path: the dentry/vfsmount to report
+- * @root: root vfsmnt/dentry (may be modified by this function)
++ * @root: root vfsmnt/dentry
++ * @ancestor: the fatherless thing we'd walked up to if we missed root
+  * @buffer: pointer to the end of the buffer
+  * @buflen: pointer to buffer length
+  *
+@@ -2448,7 +2449,9 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+  * If path is not reachable from the supplied root, then the value of
+  * root is changed (without modifying refcounts).
+  */
+-static int prepend_path(const struct path *path, struct path *root,
++static int prepend_path(const struct path *path,
++			const struct path *root,
++			struct path *ancestor,
+ 			char **buffer, int *buflen)
+ {
+ 	struct dentry *dentry = path->dentry;
+@@ -2483,10 +2486,10 @@ static int prepend_path(const struct path *path, struct path *root,
+ 		dentry = parent;
+ 	}
+ 
+-out:
+ 	if (!error && !slash)
+ 		error = prepend(buffer, buflen, "/", 1);
+ 
++out:
+ 	br_read_unlock(vfsmount_lock);
+ 	return error;
+ 
+@@ -2500,15 +2503,21 @@ global_root:
+ 		WARN(1, "Root dentry has weird name <%.*s>\n",
+ 		     (int) dentry->d_name.len, dentry->d_name.name);
+ 	}
+-	root->mnt = vfsmnt;
+-	root->dentry = dentry;
++	if (ancestor) {
++		ancestor->mnt = mntget(vfsmnt);
++		ancestor->dentry = dget(dentry);
++	}
++	if (!slash)
++		error = prepend(buffer, buflen, "/", 1);
++	if (!error)
++		error = 1;
+ 	goto out;
+ }
+ 
+ /**
+  * __d_path - return the path of a dentry
+  * @path: the dentry/vfsmount to report
+- * @root: root vfsmnt/dentry (may be modified by this function)
++ * @root: root vfsmnt/dentry
+  * @buf: buffer to return value in
+  * @buflen: buffer length
+  *
+@@ -2519,10 +2528,10 @@ global_root:
+  *
+  * "buflen" should be positive.
+  *
+- * If path is not reachable from the supplied root, then the value of
+- * root is changed (without modifying refcounts).
++ * If the path is not reachable from the supplied root, return %NULL.
+  */
+-char *__d_path(const struct path *path, struct path *root,
++char *__d_path(const struct path *path,
++	       const struct path *root,
+ 	       char *buf, int buflen)
+ {
+ 	char *res = buf + buflen;
+@@ -2530,10 +2539,30 @@ char *__d_path(const struct path *path, struct path *root,
+ 
+ 	prepend(&res, &buflen, "\0", 1);
+ 	write_seqlock(&rename_lock);
+-	error = prepend_path(path, root, &res, &buflen);
++	error = prepend_path(path, root, NULL, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
+ 
+-	if (error)
++	if (error < 0)
++		return ERR_PTR(error);
++	if (error > 0)
++		return NULL;
++	return res;
++}
++
++char *d_absolute_path(const struct path *path,
++	       struct path *ancestor,
++	       char *buf, int buflen)
++{
++	struct path root = {};
++	char *res = buf + buflen;
++	int error;
++
++	prepend(&res, &buflen, "\0", 1);
++	write_seqlock(&rename_lock);
++	error = prepend_path(path, &root, ancestor, &res, &buflen);
++	write_sequnlock(&rename_lock);
++
++	if (error < 0)
+ 		return ERR_PTR(error);
+ 	return res;
+ }
+@@ -2541,8 +2570,9 @@ char *__d_path(const struct path *path, struct path *root,
+ /*
+  * same as __d_path but appends "(deleted)" for unlinked files.
+  */
+-static int path_with_deleted(const struct path *path, struct path *root,
+-				 char **buf, int *buflen)
++static int path_with_deleted(const struct path *path,
++			     const struct path *root,
++			     char **buf, int *buflen)
+ {
+ 	prepend(buf, buflen, "\0", 1);
+ 	if (d_unlinked(path->dentry)) {
+@@ -2551,7 +2581,7 @@ static int path_with_deleted(const struct path *path, struct path *root,
+ 			return error;
+ 	}
+ 
+-	return prepend_path(path, root, buf, buflen);
++	return prepend_path(path, root, NULL, buf, buflen);
+ }
+ 
+ static int prepend_unreachable(char **buffer, int *buflen)
+@@ -2579,7 +2609,6 @@ char *d_path(const struct path *path, char *buf, int buflen)
+ {
+ 	char *res = buf + buflen;
+ 	struct path root;
+-	struct path tmp;
+ 	int error;
+ 
+ 	/*
+@@ -2594,9 +2623,8 @@ char *d_path(const struct path *path, char *buf, int buflen)
+ 
+ 	get_fs_root(current->fs, &root);
+ 	write_seqlock(&rename_lock);
+-	tmp = root;
+-	error = path_with_deleted(path, &tmp, &res, &buflen);
+-	if (error)
++	error = path_with_deleted(path, &root, &res, &buflen);
++	if (error < 0)
+ 		res = ERR_PTR(error);
+ 	write_sequnlock(&rename_lock);
+ 	path_put(&root);
+@@ -2617,7 +2645,6 @@ char *d_path_with_unreachable(const struct path *path, char *buf, int buflen)
+ {
+ 	char *res = buf + buflen;
+ 	struct path root;
+-	struct path tmp;
+ 	int error;
+ 
+ 	if (path->dentry->d_op && path->dentry->d_op->d_dname)
+@@ -2625,9 +2652,8 @@ char *d_path_with_unreachable(const struct path *path, char *buf, int buflen)
+ 
+ 	get_fs_root(current->fs, &root);
+ 	write_seqlock(&rename_lock);
+-	tmp = root;
+-	error = path_with_deleted(path, &tmp, &res, &buflen);
+-	if (!error && !path_equal(&tmp, &root))
++	error = path_with_deleted(path, &root, &res, &buflen);
++	if (error > 0)
+ 		error = prepend_unreachable(&res, &buflen);
+ 	write_sequnlock(&rename_lock);
+ 	path_put(&root);
+@@ -2758,19 +2784,18 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 	write_seqlock(&rename_lock);
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+-		struct path tmp = root;
+ 		char *cwd = page + PAGE_SIZE;
+ 		int buflen = PAGE_SIZE;
+ 
+ 		prepend(&cwd, &buflen, "\0", 1);
+-		error = prepend_path(&pwd, &tmp, &cwd, &buflen);
++		error = prepend_path(&pwd, &root, NULL, &cwd, &buflen);
+ 		write_sequnlock(&rename_lock);
+ 
+-		if (error)
++		if (error < 0)
+ 			goto out;
+ 
+ 		/* Unreachable from current root */
+-		if (!path_equal(&tmp, &root)) {
++		if (error > 0) {
+ 			error = prepend_unreachable(&cwd, &buflen);
+ 			if (error)
+ 				goto out;
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 6d3a196..cfc6d44 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1048,15 +1048,12 @@ static int show_mountinfo(struct seq_file *m, void *v)
+ 	if (err)
+ 		goto out;
+ 	seq_putc(m, ' ');
+-	seq_path_root(m, &mnt_path, &root, " \t\n\\");
+-	if (root.mnt != p->root.mnt || root.dentry != p->root.dentry) {
+-		/*
+-		 * Mountpoint is outside root, discard that one.  Ugly,
+-		 * but less so than trying to do that in iterator in a
+-		 * race-free way (due to renames).
+-		 */
+-		return SEQ_SKIP;
+-	}
++
++	/* mountpoints outside of chroot jail will give SEQ_SKIP on this */
++	err = seq_path_root(m, &mnt_path, &root, " \t\n\\");
++	if (err)
++		goto out;
++
+ 	seq_puts(m, mnt->mnt_flags & MNT_READONLY ? " ro" : " rw");
+ 	show_mnt_opts(m, mnt);
+ 
+@@ -2776,3 +2773,8 @@ void kern_unmount(struct vfsmount *mnt)
+ 	}
+ }
+ EXPORT_SYMBOL(kern_unmount);
++
++bool our_mnt(struct vfsmount *mnt)
++{
++	return check_mnt(mnt);
++}
+diff --git a/fs/seq_file.c b/fs/seq_file.c
+index 05d6b0e..dba43c3 100644
+--- a/fs/seq_file.c
++++ b/fs/seq_file.c
+@@ -449,8 +449,6 @@ EXPORT_SYMBOL(seq_path);
+ 
+ /*
+  * Same as seq_path, but relative to supplied root.
+- *
+- * root may be changed, see __d_path().
+  */
+ int seq_path_root(struct seq_file *m, struct path *path, struct path *root,
+ 		  char *esc)
+@@ -463,6 +461,8 @@ int seq_path_root(struct seq_file *m, struct path *path, struct path *root,
+ 		char *p;
+ 
+ 		p = __d_path(path, root, buf, size);
++		if (!p)
++			return SEQ_SKIP;
+ 		res = PTR_ERR(p);
+ 		if (!IS_ERR(p)) {
+ 			char *end = mangle_path(buf, p, esc);
+@@ -474,7 +474,7 @@ int seq_path_root(struct seq_file *m, struct path *path, struct path *root,
+ 	}
+ 	seq_commit(m, res);
+ 
+-	return res < 0 ? res : 0;
++	return res < 0 && res != -ENAMETOOLONG ? res : 0;
+ }
+ 
+ /*
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 4df9261..2c32199 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -339,7 +339,8 @@ extern int d_validate(struct dentry *, struct dentry *);
+  */
+ extern char *dynamic_dname(struct dentry *, char *, int, const char *, ...);
+ 
+-extern char *__d_path(const struct path *path, struct path *root, char *, int);
++extern char *__d_path(const struct path *, const struct path *, char *, int);
++extern char *d_absolute_path(const struct path *, struct path *, char *, int);
+ extern char *d_path(const struct path *, char *, int);
+ extern char *d_path_with_unreachable(const struct path *, char *, int);
+ extern char *dentry_path_raw(struct dentry *, char *, int);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e313022..019dc55 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1942,6 +1942,7 @@ extern int fd_statfs(int, struct kstatfs *);
+ extern int statfs_by_dentry(struct dentry *, struct kstatfs *);
+ extern int freeze_super(struct super_block *super);
+ extern int thaw_super(struct super_block *super);
++extern bool our_mnt(struct vfsmount *mnt);
+ 
+ extern int current_umask(void);
+ 
+diff --git a/security/apparmor/path.c b/security/apparmor/path.c
+index 36cc0cc..044d2a3 100644
+--- a/security/apparmor/path.c
++++ b/security/apparmor/path.c
+@@ -57,23 +57,27 @@ static int prepend(char **buffer, int buflen, const char *str, int namelen)
+ static int d_namespace_path(struct path *path, char *buf, int buflen,
+ 			    char **name, int flags)
+ {
+-	struct path root, tmp;
++	struct path ancestor = {};
+ 	char *res;
+-	int connected, error = 0;
++	int error = 0;
++	int connected = 1;
+ 
+-	/* Get the root we want to resolve too, released below */
++	/* resolve paths relative to chroot?*/
+ 	if (flags & PATH_CHROOT_REL) {
+-		/* resolve paths relative to chroot */
++		struct path root = {};
+ 		get_fs_root(current->fs, &root);
+-	} else {
+-		/* resolve paths relative to namespace */
+-		root.mnt = current->nsproxy->mnt_ns->root;
+-		root.dentry = root.mnt->mnt_root;
+-		path_get(&root);
++		res = __d_path(path, &root, buf, buflen);
++		if (res && !IS_ERR(res)) {
++			/* everything's fine */
++			*name = res;
++			path_put(&root);
++			goto ok;
++		}
++		path_put(&root);
++		connected = 0;
+ 	}
+ 
+-	tmp = root;
+-	res = __d_path(path, &tmp, buf, buflen);
++	res = d_absolute_path(path, &ancestor, buf, buflen);
+ 
+ 	*name = res;
+ 	/* handle error conditions - and still allow a partial path to
+@@ -84,7 +88,10 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+ 		*name = buf;
+ 		goto out;
+ 	}
++	if (!our_mnt(ancestor.mnt))
++		connected = 0;
+ 
++ok:
+ 	/* Handle two cases:
+ 	 * 1. A deleted dentry && profile is not allowing mediation of deleted
+ 	 * 2. On some filesystems, newly allocated dentries appear to the
+@@ -97,10 +104,7 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+ 			goto out;
+ 	}
+ 
+-	/* Determine if the path is connected to the expected root */
+-	connected = tmp.dentry == root.dentry && tmp.mnt == root.mnt;
+-
+-	/* If the path is not connected,
++	/* If the path is not connected to the expected root,
+ 	 * check if it is a sysctl and handle specially else remove any
+ 	 * leading / that __d_path may have returned.
+ 	 * Unless
+@@ -113,7 +117,7 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+ 	 */
+ 	if (!connected) {
+ 		/* is the disconnect path a sysctl? */
+-		if (tmp.dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
++		if (ancestor.dentry->d_sb->s_magic == PROC_SUPER_MAGIC &&
+ 		    strncmp(*name, "/sys/", 5) == 0) {
+ 			/* TODO: convert over to using a per namespace
+ 			 * control instead of hard coded /proc
+@@ -121,8 +125,7 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+ 			error = prepend(name, *name - buf, "/proc", 5);
+ 		} else if (!(flags & PATH_CONNECT_PATH) &&
+ 			   !(((flags & CHROOT_NSCONNECT) == CHROOT_NSCONNECT) &&
+-			     (tmp.mnt == current->nsproxy->mnt_ns->root &&
+-			      tmp.dentry == tmp.mnt->mnt_root))) {
++			     our_mnt(ancestor.mnt))) {
+ 			/* disconnected path, don't return pathname starting
+ 			 * with '/'
+ 			 */
+@@ -133,7 +136,8 @@ static int d_namespace_path(struct path *path, char *buf, int buflen,
+ 	}
+ 
+ out:
+-	path_put(&root);
++	if (ancestor.mnt)
++		path_put(&ancestor);
+ 
+ 	return error;
+ }
+diff --git a/security/tomoyo/realpath.c b/security/tomoyo/realpath.c
+index 738bbdf..19a6c23 100644
+--- a/security/tomoyo/realpath.c
++++ b/security/tomoyo/realpath.c
+@@ -101,16 +101,19 @@ static char *tomoyo_get_absolute_path(struct path *path, char * const buffer,
+ {
+ 	char *pos = ERR_PTR(-ENOMEM);
+ 	if (buflen >= 256) {
+-		struct path ns_root = { };
++		struct path ancestor = { };
+ 		/* go to whatever namespace root we are under */
+-		pos = __d_path(path, &ns_root, buffer, buflen - 1);
+-		if (!IS_ERR(pos) && *pos == '/' && pos[1]) {
++		pos = d_absolute_path(path, &ancestor, buffer, buflen - 1);
++		if (IS_ERR(pos))
++			return pos;
++		if (*pos == '/' && pos[1]) {
+ 			struct inode *inode = path->dentry->d_inode;
+ 			if (inode && S_ISDIR(inode->i_mode)) {
+ 				buffer[buflen - 2] = '/';
+ 				buffer[buflen - 1] = '\0';
+ 			}
+ 		}
++		path_put(&ancestor);
+ 	}
+ 	return pos;
+ }
