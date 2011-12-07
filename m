@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab1LGPPz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 10:15:55 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:44323
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756358Ab1LGPPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 10:15:53 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        James.Bottomley@HansenPartnership.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] Staging: hv: storvsc: Fix a bug in create_bounce_buffer()
-Date: Wed,  7 Dec 2011 07:15:52 -0800
-Message-Id: <1323270952-22646-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756603Ab1LGPQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 10:16:16 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55276 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756586Ab1LGPQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 10:16:14 -0500
+Message-ID: <1323270953.4009.21.camel@lappy>
+Subject: Re: [PATCH 1/2] KVM: VMX: Notify if VMX is already in use
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org
+Date: Wed, 07 Dec 2011 17:15:53 +0200
+In-Reply-To: <4EDF7797.9080103@redhat.com>
+References: <1322764218-4698-1-git-send-email-levinsasha928@gmail.com>
+	   <4EDF7590.5060701@redhat.com> <1323267521.4009.11.camel@lappy>
+	  <4EDF76D6.7020800@redhat.com> <1323267891.4009.16.camel@lappy>
+	 <4EDF7797.9080103@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the length field of the scatter gather elements correctly when we create
-the bounce buffer. When we use the bounce buffer for a "write" operation,
-the act of copying to the bounce buffer, correctly deals with this issue.
-However, on the "read" side, the current code was not correctly setting
-the buffer length. Fix this bug. Note that when we copy from the bounce
-buffer (for the read case), the amount we copy is controlled by the original
-scatter gather list given to the driver.
+On Wed, 2011-12-07 at 16:26 +0200, Avi Kivity wrote:
+> On 12/07/2011 04:24 PM, Sasha Levin wrote:
+> > > 
+> > > That's odd.  IIRC when we discussed this with them, they were executing
+> > > VMXON/VMXOFF dynamically.  Looks like they changed this.
+> > > 
+> > > Anyway, please adjust according to Joerg's comment (and add the word
+> > > "using"), and I'll apply.
+> >
+> > I've seen it the day before I've sent those patches. vbox driver loaded,
+> > kvm silently failed and rdmsr showed SVME turned on.
+> >
+> > Will resend.
+> 
+> Ah, maybe they do it differently on AMD.  Or they changed things.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reported-by: Dadok Milan <dadok@kvados.cz> 
----
- drivers/staging/hv/storvsc_drv.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+I've grabbed their code just to see whats going on there and traced the
+vmxon calls back to module init.
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 18f8771..eb853f7 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -893,12 +893,14 @@ static int do_bounce_buffer(struct scatterlist *sgl, unsigned int sg_count)
- 
- static struct scatterlist *create_bounce_buffer(struct scatterlist *sgl,
- 						unsigned int sg_count,
--						unsigned int len)
-+						unsigned int len,
-+						int write)
- {
- 	int i;
- 	int num_pages;
- 	struct scatterlist *bounce_sgl;
- 	struct page *page_buf;
-+	unsigned int buf_len = ((write == WRITE_TYPE) ? 0 : PAGE_SIZE);
- 
- 	num_pages = ALIGN(len, PAGE_SIZE) >> PAGE_SHIFT;
- 
-@@ -910,7 +912,7 @@ static struct scatterlist *create_bounce_buffer(struct scatterlist *sgl,
- 		page_buf = alloc_page(GFP_ATOMIC);
- 		if (!page_buf)
- 			goto cleanup;
--		sg_set_page(&bounce_sgl[i], page_buf, 0, 0);
-+		sg_set_page(&bounce_sgl[i], page_buf, buf_len, 0);
- 	}
- 
- 	return bounce_sgl;
-@@ -1348,7 +1350,8 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
- 		if (do_bounce_buffer(sgl, scsi_sg_count(scmnd)) != -1) {
- 			cmd_request->bounce_sgl =
- 				create_bounce_buffer(sgl, scsi_sg_count(scmnd),
--						     scsi_bufflen(scmnd));
-+						     scsi_bufflen(scmnd),
-+						     vm_srb->data_in);
- 			if (!cmd_request->bounce_sgl) {
- 				scmnd->host_scribble = NULL;
- 				mempool_free(cmd_request,
+Are you sure it ever happened on-demand and not on init? If you are,
+I'll actually build that module and give it a go :)
+
 -- 
-1.7.4.1
+
+Sasha.
 
