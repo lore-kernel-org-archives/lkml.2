@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab1LGJVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:21:18 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:45585 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab1LGJVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:21:16 -0500
-Date: Wed, 7 Dec 2011 10:21:07 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
-Subject: Re: [BUGFIX][PATCH] add mem_cgroup_replace_page_cache.
-Message-ID: <20111207092107.GB12673@cmpxchg.org>
-References: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1752436Ab1LGJWO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:22:14 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54200 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab1LGJWM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 04:22:12 -0500
+Message-ID: <1323249719.27710.2.camel@phoenix>
+Subject: [PATCH] highmem: fix missed kmap_atomic update in
+ arch/arm/include/asm/highmem.h
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Cong Wang <amwang@redhat.com>, Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Date: Wed, 07 Dec 2011 17:21:59 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 12:39:23PM +0900, KAMEZAWA Hiroyuki wrote:
-> 
-> Hm, is this too naive ? better idea is welcome. 
-> ==
-> >From 33638351c5cd28af9f47f9ab1c44eeb1f63d9964 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Tue, 6 Dec 2011 12:32:32 +0900
-> Subject: [PATCH] memcg: add mem_cgroup_replace_page_cache() for fixing LRU issue.
-> 
-> commit ef6a3c6311 adds a function replace_page_cache_page(). This
-> function replaces a page in radix-tree with a new page.
-> At doing this, memory cgroup need to fix up the accounting information.
-> memcg need to check PCG_USED bit etc.
-> 
-> In some(many?) case, 'newpage' is on LRU before calling replace_page_cache().
-> So, memcg's LRU accounting information should be fixed, too.
-> 
-> This patch adds mem_cgroup_replace_page_cache() and removing old hooks.
-> In that function, old pages will be unaccounted without touching res_counter
-> and new page will be accounted to the memcg (of old page). At overwriting
-> pc->mem_cgroup of newpage, take zone->lru_lock and avoid race with
-> LRU handling.
-> 
-> Background:
->   replace_page_cache_page() is called by FUSE code in its splice() handling.
->   Here, 'newpage' is replacing oldpage but this newpage is not a newly allocated
->   page and may be on LRU. LRU mis-accounting will be critical for memory cgroup
->   because rmdir() checks the whole LRU is empty and there is no account leak.
->   If a page is on the other LRU than it should be, rmdir() will fail.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+commit 37bfbb "highmem: kill all __kmap_atomic()" missed the update to
+arch/arm/include/asm/highmem.h.
 
-I think this is okay.  It's a tiny bit unfortunate that the migration
-code is more or less duplicated with some optimizations, but I fear
-the other solutions would be more complex and thus not adequate as a
-bug fix.
+This patch fixes below build error:
+  CC      init/main.o
+In file included from include/linux/pagemap.h:10,
+                 from include/linux/mempolicy.h:70,
+                 from init/main.c:49:
+include/linux/highmem.h: In function 'kmap_atomic_deprecated':
+include/linux/highmem.h:127: error: implicit declaration of function 'kmap_atomic'
+include/linux/highmem.h:127: warning: return makes pointer from integer without a cast
+include/linux/highmem.h: In function 'clear_highpage':
+include/linux/highmem.h:218: warning: initialization makes pointer from integer without a cast
+include/linux/highmem.h: In function 'zero_user_segments':
+include/linux/highmem.h:227: warning: initialization makes pointer from integer without a cast
+include/linux/highmem.h: In function 'copy_highpage':
+include/linux/highmem.h:279: warning: assignment makes pointer from integer without a cast
+include/linux/highmem.h:280: warning: assignment makes pointer from integer without a cast
+make[1]: *** [init/main.o] Error 1
+make: *** [init] Error 2
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+I got the build error by "make tegra_defconfig;make" on linux-next 20111207.
+Thus this patch is against linux-next tree.
+
+BTW, why commit 37bfbb "highmem: kill all __kmap_atomic()" does not have any
+Signed-off-by?
+
+Axel
+ arch/arm/include/asm/highmem.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/include/asm/highmem.h b/arch/arm/include/asm/highmem.h
+index a4edd19..8c5e828 100644
+--- a/arch/arm/include/asm/highmem.h
++++ b/arch/arm/include/asm/highmem.h
+@@ -57,7 +57,7 @@ static inline void *kmap_high_get(struct page *page)
+ #ifdef CONFIG_HIGHMEM
+ extern void *kmap(struct page *page);
+ extern void kunmap(struct page *page);
+-extern void *__kmap_atomic(struct page *page);
++extern void *kmap_atomic(struct page *page);
+ extern void __kunmap_atomic(void *kvaddr);
+ extern void *kmap_atomic_pfn(unsigned long pfn);
+ extern struct page *kmap_atomic_to_page(const void *ptr);
+-- 
+1.7.5.4
+
+
+
