@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab1LGJCA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:02:00 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:20129 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289Ab1LGJB7 convert rfc822-to-8bit (ORCPT
+	id S1755409Ab1LGJDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:03:15 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:27822
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754140Ab1LGJDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:01:59 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zzc89bh179dN1432N98dKzz1202hzz8275dhz2dh2a8h668h839h61h)
+	Wed, 7 Dec 2011 04:03:10 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzzz2dh668h839h61h)
 X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 7 Dec 2011 17:14:42 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-CC: <netdev@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: don't
- munge MAC address from platform data
-Message-ID: <20111207091441.GF5550@S2100-06.ap.freescale.net>
-References: <cover.1323163127.git.LW@KARO-electronics.de>
- <55b78c1766da5b0d0d679f5eae3fb9fc74a6ceef.1323163127.git.LW@KARO-electronics.de>
- <20111207084953.GD5550@S2100-06.ap.freescale.net>
- <20191.10281.826050.193987@ipc1.ka-ro>
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVTT50-01-ASJ-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH v2 0/7] perf tools: cleanups, fixes, updates
+Date: Wed, 7 Dec 2011 10:02:50 +0100
+Message-ID: <1323248577-11268-1-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <20191.10281.826050.193987@ipc1.ka-ro>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 09:47:37AM +0100, Lothar Waßmann wrote:
-> Hi,
-> 
-> Shawn Guo writes:
-> > On Tue, Dec 06, 2011 at 11:27:13AM +0100, Lothar Waßmann wrote:
-> > > When the MAC address is supplied via platform_data it should be OK as
-> > > it is and should not be modified in case of a dual FEC setup.
-> > > Also copying the MAC from platform_data to the single 'macaddr'
-> > > variable will overwrite the MAC for the first interface in case of a
-> > > dual FEC setup.
-> > 
-> > Hmm, I do not follow that.  If 'macaddr' holds a valid mac address,
-> > the code path has no chance to be hit at all.  Otherwise, 'macaddr'
-> > is just a place holder for copying mac address from pdata, in which
-> > case the mac address will be fixed up at the end of the function for
-> > dual FEC setup.
-> > 
-> In case of dual FEC and MAC address provided by platform_data the
-> first mac address will be copied to the 'macaddr' variable with no
-> chance for the second interface to get its mac address assigned from
-> platform_data too.
-> 
-Indeed.  So again other than subject,
+The patch set contains some cleanups, fixes and updates I found worth
+to implement during code review. Some patches can be applied
+independently.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+v2:
+
+* Rebased version to latest tip/perf/core.
+
+* Removed patches #1 and #2 as they are already applied.
+
+* Dropping patch "perf report: Setup browser if stdout is a pipe", the
+  patch did not properly handle ^C to terminate profiling.
+
+* perf record throws an error now if buildids may not be generated,
+  which can be disabled with the --no-buildid option.
+
+* Prevent potential null pointer access to input_name in
+  builtin-report.c. Needed due to removal of patch "perf report: Setup
+  browser if stdout is a pipe"
+
+Robert Richter (7):
+  perf tools: Continue processing header on unknown features
+  perf tools: Fix out-of-bound access to struct perf_session
+  perf tool: Moving code in some files
+  perf report: Accept fifos as input file
+  perf tool: Unify handling of features when writing feature section
+  perf tools: Improve macros for struct feature_ops
+  perf tools: Use for_each_set_bit() to iterate over feature flags
+
+ tools/perf/Documentation/perf-annotate.txt     |    2 +-
+ tools/perf/Documentation/perf-buildid-list.txt |    2 +-
+ tools/perf/Documentation/perf-evlist.txt       |    2 +-
+ tools/perf/Documentation/perf-kmem.txt         |    2 +-
+ tools/perf/Documentation/perf-lock.txt         |    2 +-
+ tools/perf/Documentation/perf-report.txt       |    2 +-
+ tools/perf/Documentation/perf-sched.txt        |    2 +-
+ tools/perf/Documentation/perf-script.txt       |    2 +-
+ tools/perf/Documentation/perf-timechart.txt    |    2 +-
+ tools/perf/builtin-annotate.c                  |    3 +-
+ tools/perf/builtin-buildid-list.c              |   53 +-
+ tools/perf/builtin-evlist.c                    |    2 +-
+ tools/perf/builtin-kmem.c                      |    2 +-
+ tools/perf/builtin-lock.c                      |    2 +-
+ tools/perf/builtin-record.c                    |    7 +
+ tools/perf/builtin-report.c                    |   13 +-
+ tools/perf/builtin-sched.c                     |    2 +-
+ tools/perf/builtin-script.c                    |    4 +-
+ tools/perf/builtin-timechart.c                 |    4 +-
+ tools/perf/util/header.c                       |  663 +++++++++++-------------
+ tools/perf/util/header.h                       |    6 +-
+ tools/perf/util/include/linux/bitops.h         |  118 +++++
+ tools/perf/util/session.c                      |   15 +-
+ tools/perf/util/session.h                      |    2 +-
+ 24 files changed, 496 insertions(+), 418 deletions(-)
 
 -- 
-Regards,
-Shawn
+1.7.7
+
 
