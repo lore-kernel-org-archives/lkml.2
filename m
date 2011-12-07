@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757867Ab1LGQZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:25:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34663 "EHLO mx2.suse.de"
+	id S1757917Ab1LGQ0C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:26:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34753 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757849Ab1LGQZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:25:28 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:19 2011
-Message-Id: <20111207161219.715941846@clark.kroah.org>
+	id S1757901Ab1LGQZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:25:57 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:22 2011
+Message-Id: <20111207161222.586002859@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:02 -0800
+Date: Wed, 07 Dec 2011 08:12:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [060/104] firmware: Sigma: Prevent out of bounds memory access
+        <alan@lxorguk.ukuu.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [095/104] trace_events_filter: Use rcu_assign_pointer() when setting ftrace_event_call->filter
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,164 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit 4f718a29fe4908c2cea782f751e9805319684e2b upstream.
+commit d3d9acf646679c1981032b0985b386d12fccc60c upstream.
 
-The SigmaDSP firmware loader currently does not perform enough boundary size
-checks when processing the firmware. As a result it is possible that a
-malformed firmware can cause an out of bounds memory access.
+ftrace_event_call->filter is sched RCU protected but didn't use
+rcu_assign_pointer().  Use it.
 
-This patch adds checks which ensure that both the action header and the payload
-are completely inside the firmware data boundaries before processing them.
+TODO: Add proper __rcu annotation to call->filter and all its users.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+-v2: Use RCU_INIT_POINTER() for %NULL clearing as suggested by Eric.
+
+Link: http://lkml.kernel.org/r/20111123164949.GA29639@google.com
+
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firmware/sigma.c |   76 ++++++++++++++++++++++++++++++++++-------------
- include/linux/sigma.h    |    5 ---
- 2 files changed, 55 insertions(+), 26 deletions(-)
+ kernel/trace/trace_events_filter.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/firmware/sigma.c
-+++ b/drivers/firmware/sigma.c
-@@ -14,13 +14,34 @@
- #include <linux/module.h>
- #include <linux/sigma.h>
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -1766,7 +1766,7 @@ static int replace_system_preds(struct e
+ 		 * replace the filter for the call.
+ 		 */
+ 		filter = call->filter;
+-		call->filter = filter_item->filter;
++		rcu_assign_pointer(call->filter, filter_item->filter);
+ 		filter_item->filter = filter;
  
--/* Return: 0==OK, <0==error, =1 ==no more actions */
-+static size_t sigma_action_size(struct sigma_action *sa)
-+{
-+	size_t payload = 0;
-+
-+	switch (sa->instr) {
-+	case SIGMA_ACTION_WRITEXBYTES:
-+	case SIGMA_ACTION_WRITESINGLE:
-+	case SIGMA_ACTION_WRITESAFELOAD:
-+		payload = sigma_action_len(sa);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	payload = ALIGN(payload, 2);
-+
-+	return payload + sizeof(struct sigma_action);
-+}
-+
-+/*
-+ * Returns a negative error value in case of an error, 0 if processing of
-+ * the firmware should be stopped after this action, 1 otherwise.
-+ */
- static int
--process_sigma_action(struct i2c_client *client, struct sigma_firmware *ssfw)
-+process_sigma_action(struct i2c_client *client, struct sigma_action *sa)
- {
--	struct sigma_action *sa = (void *)(ssfw->fw->data + ssfw->pos);
- 	size_t len = sigma_action_len(sa);
--	int ret = 0;
-+	int ret;
- 
- 	pr_debug("%s: instr:%i addr:%#x len:%zu\n", __func__,
- 		sa->instr, sa->addr, len);
-@@ -29,44 +50,50 @@ process_sigma_action(struct i2c_client *
- 	case SIGMA_ACTION_WRITEXBYTES:
- 	case SIGMA_ACTION_WRITESINGLE:
- 	case SIGMA_ACTION_WRITESAFELOAD:
--		if (ssfw->fw->size < ssfw->pos + len)
--			return -EINVAL;
- 		ret = i2c_master_send(client, (void *)&sa->addr, len);
- 		if (ret < 0)
- 			return -EINVAL;
- 		break;
--
- 	case SIGMA_ACTION_DELAY:
--		ret = 0;
- 		udelay(len);
- 		len = 0;
- 		break;
--
- 	case SIGMA_ACTION_END:
--		return 1;
--
-+		return 0;
- 	default:
- 		return -EINVAL;
- 	}
- 
--	/* when arrive here ret=0 or sent data */
--	ssfw->pos += sigma_action_size(sa, len);
--	return ssfw->pos == ssfw->fw->size;
-+	return 1;
- }
- 
- static int
- process_sigma_actions(struct i2c_client *client, struct sigma_firmware *ssfw)
- {
--	pr_debug("%s: processing %p\n", __func__, ssfw);
-+	struct sigma_action *sa;
-+	size_t size;
-+	int ret;
-+
-+	while (ssfw->pos + sizeof(*sa) <= ssfw->fw->size) {
-+		sa = (struct sigma_action *)(ssfw->fw->data + ssfw->pos);
-+
-+		size = sigma_action_size(sa);
-+		ssfw->pos += size;
-+		if (ssfw->pos > ssfw->fw->size || size == 0)
-+			break;
-+
-+		ret = process_sigma_action(client, sa);
- 
--	while (1) {
--		int ret = process_sigma_action(client, ssfw);
- 		pr_debug("%s: action returned %i\n", __func__, ret);
--		if (ret == 1)
--			return 0;
--		else if (ret)
-+
-+		if (ret <= 0)
- 			return ret;
- 	}
-+
-+	if (ssfw->pos != ssfw->fw->size)
-+		return -EINVAL;
-+
-+	return 0;
- }
- 
- int process_sigma_firmware(struct i2c_client *client, const char *name)
-@@ -89,7 +116,14 @@ int process_sigma_firmware(struct i2c_cl
- 
- 	/* then verify the header */
- 	ret = -EINVAL;
--	if (fw->size < sizeof(*ssfw_head))
-+
-+	/*
-+	 * Reject too small or unreasonable large files. The upper limit has been
-+	 * chosen a bit arbitrarily, but it should be enough for all practical
-+	 * purposes and having the limit makes it easier to avoid integer
-+	 * overflows later in the loading process.
-+	 */
-+	if (fw->size < sizeof(*ssfw_head) || fw->size >= 0x4000000)
- 		goto done;
- 
- 	ssfw_head = (void *)fw->data;
---- a/include/linux/sigma.h
-+++ b/include/linux/sigma.h
-@@ -50,11 +50,6 @@ static inline u32 sigma_action_len(struc
- 	return (sa->len_hi << 16) | sa->len;
- }
- 
--static inline size_t sigma_action_size(struct sigma_action *sa, u32 payload_len)
--{
--	return sizeof(*sa) + payload_len + (payload_len % 2);
--}
--
- extern int process_sigma_firmware(struct i2c_client *client, const char *name);
- 
- #endif
+ 		fail = false;
+@@ -1821,7 +1821,7 @@ int apply_event_filter(struct ftrace_eve
+ 		filter = call->filter;
+ 		if (!filter)
+ 			goto out_unlock;
+-		call->filter = NULL;
++		RCU_INIT_POINTER(call->filter, NULL);
+ 		/* Make sure the filter is not being used */
+ 		synchronize_sched();
+ 		__free_filter(filter);
+@@ -1862,7 +1862,7 @@ out:
+ 	 * string
+ 	 */
+ 	tmp = call->filter;
+-	call->filter = filter;
++	rcu_assign_pointer(call->filter, filter);
+ 	if (tmp) {
+ 		/* Make sure the call is done with the filter */
+ 		synchronize_sched();
 
 
