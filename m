@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab1LGQWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:22:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33994 "EHLO mx2.suse.de"
+	id S933632Ab1LGQWp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:22:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34061 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933579Ab1LGQWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:22:31 -0500
+	id S932977Ab1LGQWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:22:41 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:18 2011
-Message-Id: <20111207161218.729790011@clark.kroah.org>
+Message-Id: <20111207161218.896811126@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:50 -0800
+Date: Wed, 07 Dec 2011 08:11:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>, greg@kroah.com
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
         <alan@lxorguk.ukuu.org.uk>, xfs@oss.sgi.com, bpm@sgi.com,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Alex Elder <aelder@sgi.com>
-Subject: [048/104] xfs: Return -EIO when xfs_vn_getattr() failed
+        Carlos Maiolino <cmaiolino@redhat.com>, Alex Elder <aelder@sgi.com>
+Subject: [050/104] xfs: Fix possible memory corruption in xfs_readlink
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +26,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+From: Carlos Maiolino <cmaiolino@redhat.com>
 
-commit ed32201e65e15f3e6955cb84cbb544b08f81e5a5 upstream.
+commit b52a360b2aa1c59ba9970fb0f52bbb093fcc7a24 upstream.
 
-An attribute of inode can be fetched via xfs_vn_getattr() in XFS.
-Currently it returns EIO, not negative value, when it failed.  As a
-result, the system call returns not negative value even though an
-error occured. The stat(2), ls and mv commands cannot handle this
-error and do not work correctly.
+Fixes a possible memory corruption when the link is larger than
+MAXPATHLEN and XFS_DEBUG is not enabled. This also remove the
+S_ISLNK assert, since the inode mode is checked previously in
+xfs_readlink_by_handle() and via VFS.
 
-This patch fixes this bug, and returns -EIO, not EIO when an error
-is detected in xfs_vn_getattr().
+Updated to address concerns raised by Ben Hutchings about the loose
+attention paid to 32- vs 64-bit values, and the lack of handling a
+potentially negative pathlen value:
+ - Changed type of "pathlen" to be xfs_fsize_t, to match that of
+   ip->i_d.di_size
+ - Added checking for a negative pathlen to the too-long pathlen
+   test, and generalized the message that gets reported in that case
+   to reflect the change
+As a result, if a negative pathlen were encountered, this function
+would return EFSCORRUPTED (and would fail an assertion for a debug
+build)--just as would a too-long pathlen.
 
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Alex Elder <aelder@sgi.com>
+Signed-off-by: Carlos Maiolino <cmaiolino@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 Cc: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/xfs/xfs_iops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/xfs/xfs_vnodeops.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/fs/xfs/xfs_iops.c
-+++ b/fs/xfs/xfs_iops.c
-@@ -465,7 +465,7 @@ xfs_vn_getattr(
- 	trace_xfs_getattr(ip);
+--- a/fs/xfs/xfs_vnodeops.c
++++ b/fs/xfs/xfs_vnodeops.c
+@@ -113,7 +113,7 @@ xfs_readlink(
+ 	char		*link)
+ {
+ 	xfs_mount_t	*mp = ip->i_mount;
+-	int		pathlen;
++	xfs_fsize_t	pathlen;
+ 	int		error = 0;
  
- 	if (XFS_FORCED_SHUTDOWN(mp))
--		return XFS_ERROR(EIO);
-+		return -XFS_ERROR(EIO);
+ 	trace_xfs_readlink(ip);
+@@ -123,13 +123,19 @@ xfs_readlink(
  
- 	stat->size = XFS_ISIZE(ip);
- 	stat->dev = inode->i_sb->s_dev;
+ 	xfs_ilock(ip, XFS_ILOCK_SHARED);
+ 
+-	ASSERT(S_ISLNK(ip->i_d.di_mode));
+-	ASSERT(ip->i_d.di_size <= MAXPATHLEN);
+-
+ 	pathlen = ip->i_d.di_size;
+ 	if (!pathlen)
+ 		goto out;
+ 
++	if (pathlen < 0 || pathlen > MAXPATHLEN) {
++		xfs_alert(mp, "%s: inode (%llu) bad symlink length (%lld)",
++			 __func__, (unsigned long long) ip->i_ino,
++			 (long long) pathlen);
++		ASSERT(0);
++		return XFS_ERROR(EFSCORRUPTED);
++	}
++
++
+ 	if (ip->i_df.if_flags & XFS_IFINLINE) {
+ 		memcpy(link, ip->i_df.if_u1.if_data, pathlen);
+ 		link[pathlen] = '\0';
 
 
