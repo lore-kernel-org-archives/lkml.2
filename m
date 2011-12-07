@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab1LGQv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:51:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33561 "EHLO mx2.suse.de"
+	id S1757581Ab1LGQUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:20:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33556 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757587Ab1LGQUB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:20:01 -0500
+	id S1756193Ab1LGQT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:19:57 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:27 2011
-Message-Id: <20111207160827.106077244@clark.kroah.org>
+Message-Id: <20111207160827.025231068@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:15 -0800
+Date: Wed, 07 Dec 2011 08:07:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        Matthieu Castet <matthieu.castet@parrot.com>,
-        Thomas Poussevin <thomas.poussevin@parrot.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [55/80] USB: EHCI: fix HUB TT scheduling issue with iso transfer
+        <alan@lxorguk.ukuu.org.uk>, Qinglin Ye <yestyle@gmail.com>
+Subject: [54/80] USB: usb-storage: unusual_devs entry for Kingston DT 101 G2
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,104 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Poussevin <thomas.poussevin@parrot.com>
+From: Qinglin Ye <yestyle@gmail.com>
 
-commit 811c926c538f7e8d3c08b630dd5844efd7e000f6 upstream.
+commit cec28a5428793b6bc64e56687fb239759d6da74e upstream.
 
-The current TT scheduling doesn't allow to play and then record on a
-full-speed device connected to a high speed hub.
+Kingston DT 101 G2 replies a wrong tag while transporting, add an
+unusal_devs entry to ignore the tag validation.
 
-The IN iso stream can only start on the first uframe (0-2 for a 165 us)
-because of CSPLIT transactions.
-For the OUT iso stream there no such restriction. uframe 0-5 are possible.
-
-The idea of this patch is that the first uframe are precious (for IN TT iso
-stream) and we should allocate the last uframes first if possible.
-
-For that we reverse the order of uframe allocation (last uframe first).
-
-Here an example :
-
-hid interrupt stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame | 13  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
-----------------------------------------------------------------------
-
-iso OUT stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame | 13  | 125 |  39 |  0  |  0  |  0  |  0  |  0  |
-----------------------------------------------------------------------
-
-There no place for iso IN stream  (uframe 0-2 are used) and we got "cannot
-submit datapipe for urb 0, error -28: not enough bandwidth" error.
-
-With the patch this become.
-
-iso OUT stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame |  13 |  0  |  0  |  0  | 125 |  39 |  0  |  0  |
-----------------------------------------------------------------------
-
-iso IN stream
-----------------------------------------------------------------------
-uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
-----------------------------------------------------------------------
-max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
-----------------------------------------------------------------------
-used usecs on a frame |  13 |  0  | 125 | 40  | 125 |  39 |  0  |  0  |
-----------------------------------------------------------------------
-
-Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
-Signed-off-by: Thomas Poussevin <thomas.poussevin@parrot.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Qinglin Ye <yestyle@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-sched.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1483,10 +1483,15 @@ iso_stream_schedule (
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1854,6 +1854,13 @@ UNUSUAL_DEV(  0x1370, 0x6828, 0x0110, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_IGNORE_RESIDUE ),
  
- 		/* NOTE:  assumes URB_ISO_ASAP, to limit complexity/bugs */
- 
--		/* find a uframe slot with enough bandwidth */
--		next = start + period;
--		for (; start < next; start++) {
--
-+		/* find a uframe slot with enough bandwidth.
-+		 * Early uframes are more precious because full-speed
-+		 * iso IN transfers can't use late uframes,
-+		 * and therefore they should be allocated last.
-+		 */
-+		next = start;
-+		start += period;
-+		do {
-+			start--;
- 			/* check schedule: enough space? */
- 			if (stream->highspeed) {
- 				if (itd_slot_ok(ehci, mod, start,
-@@ -1499,7 +1504,7 @@ iso_stream_schedule (
- 						start, sched, period))
- 					break;
- 			}
--		}
-+		} while (start > next);
- 
- 		/* no room in the schedule */
- 		if (start == next) {
++/* Reported by Qinglin Ye <yestyle@gmail.com> */
++UNUSUAL_DEV(  0x13fe, 0x3600, 0x0100, 0x0100,
++		"Kingston",
++		"DT 101 G2",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_BULK_IGNORE_TAG ),
++
+ /* Reported by Francesco Foresti <frafore@tiscali.it> */
+ UNUSUAL_DEV(  0x14cd, 0x6600, 0x0201, 0x0201,
+ 		"Super Top",
 
 
