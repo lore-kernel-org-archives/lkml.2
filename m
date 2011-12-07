@@ -1,74 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab1LGI4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 03:56:52 -0500
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:39959 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751300Ab1LGI4u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 03:56:50 -0500
-Date: Wed, 7 Dec 2011 10:56:46 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: gadget: storage: Use kcalloc instead of kzalloc to
- allocate array
-Message-ID: <20111207085645.GL32368@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1322600880.1534.336.camel@localhost.localdomain>
+	id S1754930Ab1LGI6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 03:58:05 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:24544 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752705Ab1LGI6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 03:58:03 -0500
+Subject: [PATCH v2] NFSd: use network-namespace-aware cache registering
+ routines
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: neilb@suse.de, linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 07 Dec 2011 12:57:56 +0300
+Message-ID: <20111207085741.7867.57700.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GU3/x65mZ6MFE8p3"
-Content-Disposition: inline
-In-Reply-To: <1322600880.1534.336.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+v2: cache_register_net() and cache_unregister_net() GPL exports added
 
---GU3/x65mZ6MFE8p3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a cleanup patch. Hope, some day generic cache_register() and
+cache_unregister() will be removed.
 
-On Tue, Nov 29, 2011 at 10:08:00PM +0100, Thomas Meyer wrote:
-> The advantage of kcalloc is, that will prevent integer overflows which co=
-uld
-> result from the multiplication of number of elements and size and it is a=
-lso
-> a bit nicer to read.
->=20
-> The semantic patch that makes this change is available
-> in https://lkml.org/lkml/2011/11/25/107
->=20
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-applied, thanks
+---
+ fs/nfsd/export.c    |   10 +++++-----
+ fs/nfsd/nfs4idmap.c |   11 ++++++-----
+ net/sunrpc/cache.c  |    2 ++
+ 3 files changed, 13 insertions(+), 10 deletions(-)
 
---=20
-balbi
+diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+index 62f3b90..d1feeef 100644
+--- a/fs/nfsd/export.c
++++ b/fs/nfsd/export.c
+@@ -1226,12 +1226,12 @@ nfsd_export_init(void)
+ 	int rv;
+ 	dprintk("nfsd: initializing export module.\n");
+ 
+-	rv = cache_register(&svc_export_cache);
++	rv = cache_register_net(&svc_export_cache, &init_net);
+ 	if (rv)
+ 		return rv;
+-	rv = cache_register(&svc_expkey_cache);
++	rv = cache_register_net(&svc_expkey_cache, &init_net);
+ 	if (rv)
+-		cache_unregister(&svc_export_cache);
++		cache_unregister_net(&svc_export_cache, &init_net);
+ 	return rv;
+ 
+ }
+@@ -1255,8 +1255,8 @@ nfsd_export_shutdown(void)
+ 
+ 	dprintk("nfsd: shutting down export module.\n");
+ 
+-	cache_unregister(&svc_expkey_cache);
+-	cache_unregister(&svc_export_cache);
++	cache_unregister_net(&svc_expkey_cache, &init_net);
++	cache_unregister_net(&svc_export_cache, &init_net);
+ 	svcauth_unix_purge();
+ 
+ 	dprintk("nfsd: export shutdown complete.\n");
+diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+index 55780a2..9409627 100644
+--- a/fs/nfsd/nfs4idmap.c
++++ b/fs/nfsd/nfs4idmap.c
+@@ -36,6 +36,7 @@
+ #include <linux/seq_file.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
++#include <net/net_namespace.h>
+ #include "idmap.h"
+ #include "nfsd.h"
+ 
+@@ -466,20 +467,20 @@ nfsd_idmap_init(void)
+ {
+ 	int rv;
+ 
+-	rv = cache_register(&idtoname_cache);
++	rv = cache_register_net(&idtoname_cache, &init_net);
+ 	if (rv)
+ 		return rv;
+-	rv = cache_register(&nametoid_cache);
++	rv = cache_register_net(&nametoid_cache, &init_net);
+ 	if (rv)
+-		cache_unregister(&idtoname_cache);
++		cache_unregister_net(&idtoname_cache, &init_net);
+ 	return rv;
+ }
+ 
+ void
+ nfsd_idmap_shutdown(void)
+ {
+-	cache_unregister(&idtoname_cache);
+-	cache_unregister(&nametoid_cache);
++	cache_unregister_net(&idtoname_cache, &init_net);
++	cache_unregister_net(&nametoid_cache, &init_net);
+ }
+ 
+ static int
+diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+index 72ad836..b8daa57 100644
+--- a/net/sunrpc/cache.c
++++ b/net/sunrpc/cache.c
+@@ -1641,6 +1641,7 @@ int cache_register_net(struct cache_detail *cd, struct net *net)
+ 		sunrpc_destroy_cache_detail(cd);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(cache_register_net);
+ 
+ int cache_register(struct cache_detail *cd)
+ {
+@@ -1653,6 +1654,7 @@ void cache_unregister_net(struct cache_detail *cd, struct net *net)
+ 	remove_cache_proc_entries(cd, net);
+ 	sunrpc_destroy_cache_detail(cd);
+ }
++EXPORT_SYMBOL_GPL(cache_unregister_net);
+ 
+ void cache_unregister(struct cache_detail *cd)
+ {
 
---GU3/x65mZ6MFE8p3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO3ypNAAoJEIaOsuA1yqREaikQAJEpVf7c0RLfMIn394JRQyj+
-l/JJyMrKeYVcgCIlfAGp2XRXT5RJAyE5CbehArvjEBjCtaup9EYZpTQ1T5qEayxy
-p4gM+wyz98LxDe2XC2xovNLx08/EP8cmC09KnJ0gx5PZ5+QSQeNnJ84EgIYYFxEP
-EBE0N70V6gCcf44KJnwN693Jk2dTzCWKG8B94Hnt4O2g33orpLgyBdAys/corUlg
-kRiUC8x3GLILCo5hKwmcVbmApTDaF1NGQwl/YVTnWKhd3nextxy4MprYbpQJGyAk
-Lmoai4lTe7yJ96S/JtYK8MgMnv5GrvoJb15KyvSTvQEcU79srktiSq0onf+DxDzQ
-I8Cm48z1vVRZva9pfMekcjU0vcJ8NLAA6DsZEWgqXPq2owtwORMR4F0UCrW7HV2T
-1yy3LHaICwEZ+8EyDh0DDf30+cvRWZvPzC3dC61EC6jKE++4C0vfE40yF56/wz8O
-E7q9JMgeBQjVyUQWLAi2qY6MryznM/beeaxhV5nGa6qgYKnmq5264irpVrltx8vh
-Hk3q9uh4qFeiigFDE4lW8SAo26jrET7iRwcdcbyT+XjNdtp+4GdeXtszK2QFdYtK
-Cji8NkajQgTLd+QdnzXYoxA2IwcnLJT+pPP3pqlit/ldKPu+tweylcVP1IcTvepF
-eXKc8nzCCKPqPwjNGkYq
-=0qzw
------END PGP SIGNATURE-----
-
---GU3/x65mZ6MFE8p3--
