@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754204Ab1LGIPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 03:15:04 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:9132 "EHLO
-	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab1LGIPC convert rfc822-to-8bit (ORCPT
+	id S1754322Ab1LGITA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 03:19:00 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55431 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab1LGIS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 03:15:02 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzz8275dhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 7 Dec 2011 16:27:38 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-CC: <netdev@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: don't
- request invalid IRQ
-Message-ID: <20111207082737.GC5550@S2100-06.ap.freescale.net>
-References: <cover.1323163127.git.LW@KARO-electronics.de>
- <6d1e5cdcbfc48df864ec9e0939645c0e95389d2a.1323163127.git.LW@KARO-electronics.de>
+	Wed, 7 Dec 2011 03:18:58 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4EDF2152.1090005@jp.fujitsu.com>
+Date: Wed, 07 Dec 2011 17:18:26 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <6d1e5cdcbfc48df864ec9e0939645c0e95389d2a.1323163127.git.LW@KARO-electronics.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] PCI fixes
+References: <20111123144417.2da5958c@jbarnes-desktop> <CA+55aFyaiJBYmgVCLfPA7q3hqtPHYh9wwsmVTCewbBoxMsDE8A@mail.gmail.com> <20111205112256.68e59434@jbarnes-desktop> <4EDDCD6D.1010907@jp.fujitsu.com> <CA+55aFwuZxGZhXyhj+cb5WLnFPDh45Dy6BwgmvEQKAM5swaM6w@mail.gmail.com> <CAE9FiQXwTcvfH21QZ87rU2vgf-xo8OT8L3f5gYwtbxJUDkDatQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQXwTcvfH21QZ87rU2vgf-xo8OT8L3f5gYwtbxJUDkDatQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 11:27:12AM +0100, Lothar Waﬂmann wrote:
-> prevent calling request_irq() with a known invalid IRQ number and
-> preserve the return value of the platform_get_irq() function
-> 
-> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
++	/* Configuration request Retry Status */
++	if (l == 0xffff0001)
++		goto wait;
 
-Other than subject,
+I think this works only when CRS Software Visibility is enabled,
+isn't it? Currently there is no code to enable CRS Software
+Visibility. And there can be root ports that doesn't support CRS
+Software Visibility. We need consideration about this.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
++	mdelay(100);
++	delay -= 100;
++	if (delay > 0)
++		goto again;
 
--- 
+We must use msleep() instead of mdelay().
+
 Regards,
-Shawn
+Kenji Kaneshige
+
+
+(2011/12/07 7:36), Yinghai Lu wrote:
+> On Tue, Dec 6, 2011 at 8:14 AM, Linus Torvalds
+> <torvalds@linux-foundation.org>  wrote:
+>> Please try to make something like that work. Instead of always waiting
+>> for one second, wait for up to one second only for failure cases. Any
+>> possibility of that?
+>
+> i had another version that was not send out. that worked on my test setups too.
+> it will try to read pci conf several times in 1s.
+>
+> please check refreshed version against your tree.
+>
+> Thanks
+>
+> Yinghai
 
