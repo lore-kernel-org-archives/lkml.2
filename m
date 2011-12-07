@@ -1,113 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab1LGLU7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 06:20:59 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:46520 "EHLO relay.sw.ru"
+	id S1755010Ab1LGLa2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 06:30:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59564 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755545Ab1LGLUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 06:20:45 -0500
-Subject: [PATCH 4/4] SUNRPC: use passed network namespace context in
- rpc_uaddr2sockaddr()
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Wed, 07 Dec 2011 15:20:40 +0300
-Message-ID: <20111207112039.17273.45973.stgit@localhost6.localdomain6>
-In-Reply-To: <20111207111716.17273.63010.stgit@localhost6.localdomain6>
-References: <20111207111716.17273.63010.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1754513Ab1LGLa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 06:30:26 -0500
+Date: Wed, 7 Dec 2011 22:30:03 +1100
+From: NeilBrown <neilb@suse.de>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: balbi@ti.com, Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [regression] Re: [PATCH 3/7] mfd: twl4030-irq: drop the kthread
+Message-ID: <20111207223003.0a0ae278@notabene.brown>
+In-Reply-To: <CAMP44s0psqeMEh8vgYSfV=MAqSOJ6+EpWndXpc89qfGHMX_f=w@mail.gmail.com>
+References: <1309427470-605-1-git-send-email-balbi@ti.com>
+	<1309427470-605-4-git-send-email-balbi@ti.com>
+	<CAMP44s3hFyAK+1W6eU30RNn3=cPDRGKXW+E+sDoWNrNhU0ZpPA@mail.gmail.com>
+	<20111207065106.GE32368@legolas.emea.dhcp.ti.com>
+	<CAMP44s0psqeMEh8vgYSfV=MAqSOJ6+EpWndXpc89qfGHMX_f=w@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/_xP0y7muJyQ6j+mb41pKaKB"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use incomming network context in rpc_uaddr2sockaddr() instead of hard-coded
-"init_net".
+--Sig_/_xP0y7muJyQ6j+mb41pKaKB
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+On Wed, 7 Dec 2011 13:04:03 +0200 Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
 
----
- fs/nfsd/nfs4state.c         |    2 +-
- include/linux/sunrpc/clnt.h |    2 +-
- net/sunrpc/addr.c           |    8 +++++---
- net/sunrpc/rpcb_clnt.c      |    2 +-
- 4 files changed, 8 insertions(+), 6 deletions(-)
+> On Wed, Dec 7, 2011 at 8:51 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > On Tue, Dec 06, 2011 at 05:28:58PM +0200, Felipe Contreras wrote:
+> >> On Thu, Jun 30, 2011 at 12:51 PM, Felipe Balbi <balbi@ti.com> wrote:
+> >> > ... and use threaded IRQ infrastructure. Later
+> >> > patches will come dropping both workqueues and
+> >> > setting the nested thread flag.
+> >>
+> >> There's something wrong. When I boot my Nokia N900 with this, as soon
+> >> as I press a key from the keyboard the whole device hangs. I don't see
+> >> anything on the console framebuffer, and with a jig I can't boot from
+> >> MMC, so there isn't much more I can provide at the moment.
+> >
+> > Funny, this booted fine on my beagle and MMC card uses a twl GPIO for
+> > card detection. Maybe it's something fairly obvious that I missed :-(
+>=20
+> Did you try typing anything? That's where the problem happened on my side.
+>=20
+> I'll try to flash a system to NAND, since I can't seem to just get the
+> MMC to work when the cover is open and the device is connected to the
+> jig to see if I can see something from serial console.
+>=20
+> You don't have any idea about what to try?
+>=20
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 47e94e3..e18f46f 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1301,7 +1301,7 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_r
- 	else
- 		goto out_err;
- 
--	conn->cb_addrlen = rpc_uaddr2sockaddr(se->se_callback_addr_val,
-+	conn->cb_addrlen = rpc_uaddr2sockaddr(&init_net, se->se_callback_addr_val,
- 					    se->se_callback_addr_len,
- 					    (struct sockaddr *)&conn->cb_addr,
- 					    sizeof(conn->cb_addr));
-diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-index 877a466..029fb48 100644
---- a/include/linux/sunrpc/clnt.h
-+++ b/include/linux/sunrpc/clnt.h
-@@ -165,7 +165,7 @@ size_t		rpc_ntop(const struct sockaddr *, char *, const size_t);
- size_t		rpc_pton(struct net *, const char *, const size_t,
- 			 struct sockaddr *, const size_t);
- char *		rpc_sockaddr2uaddr(const struct sockaddr *, gfp_t);
--size_t		rpc_uaddr2sockaddr(const char *, const size_t,
-+size_t		rpc_uaddr2sockaddr(struct net *, const char *, const size_t,
- 				   struct sockaddr *, const size_t);
- 
- static inline unsigned short rpc_get_port(const struct sockaddr *sap)
-diff --git a/net/sunrpc/addr.c b/net/sunrpc/addr.c
-index 982fac7..bad31da 100644
---- a/net/sunrpc/addr.c
-+++ b/net/sunrpc/addr.c
-@@ -297,6 +297,7 @@ char *rpc_sockaddr2uaddr(const struct sockaddr *sap, gfp_t gfp_flags)
- 
- /**
-  * rpc_uaddr2sockaddr - convert a universal address to a socket address.
-+ * @net: applicable network namespace
-  * @uaddr: C string containing universal address to convert
-  * @uaddr_len: length of universal address string
-  * @sap: buffer into which to plant socket address
-@@ -308,8 +309,9 @@ char *rpc_sockaddr2uaddr(const struct sockaddr *sap, gfp_t gfp_flags)
-  * Returns the size of the socket address if successful; otherwise
-  * zero is returned.
-  */
--size_t rpc_uaddr2sockaddr(const char *uaddr, const size_t uaddr_len,
--			  struct sockaddr *sap, const size_t salen)
-+size_t rpc_uaddr2sockaddr(struct net *net, const char *uaddr,
-+			  const size_t uaddr_len, struct sockaddr *sap,
-+			  const size_t salen)
- {
- 	char *c, buf[RPCBIND_MAXUADDRLEN + sizeof('\0')];
- 	unsigned long portlo, porthi;
-@@ -341,7 +343,7 @@ size_t rpc_uaddr2sockaddr(const char *uaddr, const size_t uaddr_len,
- 	port = (unsigned short)((porthi << 8) | portlo);
- 
- 	*c = '\0';
--	if (rpc_pton(&init_net, buf, strlen(buf), sap, salen) == 0)
-+	if (rpc_pton(net, buf, strlen(buf), sap, salen) == 0)
- 		return 0;
- 
- 	switch (sap->sa_family) {
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index 8761bf8..42e1b2e 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -925,7 +925,7 @@ static int rpcb_dec_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
- 	dprintk("RPC: %5u RPCB_%s reply: %s\n", task->tk_pid,
- 			task->tk_msg.rpc_proc->p_name, (char *)p);
- 
--	if (rpc_uaddr2sockaddr((char *)p, len, sap, sizeof(address)) == 0)
-+	if (rpc_uaddr2sockaddr(&init_net, (char *)p, len, sap, sizeof(address)) == 0)
- 		goto out_fail;
- 	rpcb->r_port = rpc_get_port(sap);
- 
+ Try the patches I posted to linux-kernel on Nov 27:
 
+   Subject: [PATCH 0/4] fixes for twl4030-irq in mainline
+
+and following
+
+   http://lkml.org/lkml/2011/11/26/92
+
+I think I hit exactly the same bug and you and (eventually) fix it (that was
+a fun learning experience).
+
+NeilBrown
+
+
+--Sig_/_xP0y7muJyQ6j+mb41pKaKB
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTt9OQjnsnt1WYoG5AQL9KhAAsgaQwChMwYYv5jnspM8HPKt4f4zmS7Vz
+O9WrTwVRorQhxwoBvQNDKzqLTYhtMXETtXtUfe/x5GP5qe01HJLpCOhzoxHOiWK8
+V2v2DqZE+jOeYIfwz36UJoCbEl5ikHG51EaTNK3F+Kx96COKslh3gfe+t+eKdZQG
+aVS+oRh7nmDm+LZhL/kmWlpCWMV1mPmK4ibeYprEfzxbNRsjVQsgC7XYuiSwkyQJ
+rmjBxVI+OKrCn8qLhLcktQAPsWHLpPZ21DHHXVSRXXKeEjFQGa2fFJvUxOaL4FQ1
+lsvaTZ4vpFvEowOVAhV5sE31+4LucBPzP8kr1D/v4y+18V7IyYWj0M9vtdsjdPzY
+I5QEea75N8/s8vxgGkRJh4G0P5mncvg6tB2pkGt/AdoPBCpt7k5j6H2v+Yy7THTr
+unFKcuz8ZfKteJM4x+IkamsG4bnzzdhrq6mJ4SSVKO2NXAhVfGRu2LEi/fWCIMQw
+MQ7EFgeoLKgFI6zy5tP3PO11A4qaDFGj+F5tlyhbPIUWGXwiHGqp0RRQM/gd0V2g
+Jae1k4KJpJ2ygsrQRmcq/VfzNYbhRwRY8ksKrHI57yp/I7MLmRL+qRsIJT0DbJmK
+sorvoPLvO+rMz6BGBYULQqLM+07X5eUvu9fjDuUGLFP6936tTfIkh/+4Tcj7xeZJ
+7RR7JI06MPc=
+=BlEV
+-----END PGP SIGNATURE-----
+
+--Sig_/_xP0y7muJyQ6j+mb41pKaKB--
