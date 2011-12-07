@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab1LGJDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:03:35 -0500
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:38624
-	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755367Ab1LGJDO (ORCPT
+	id S1755617Ab1LGJDa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:03:30 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:31917 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140Ab1LGJDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:03:14 -0500
+	Wed, 7 Dec 2011 04:03:15 -0500
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h61h)
-X-Spam-TCS-SCL: 0:0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h66h)
+X-Spam-TCS-SCL: 5:0
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVTT57-01-AST-02
+X-WSS-ID: 0LVTT55-01-ASQ-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -20,9 +20,9 @@ CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH v2 5/7] perf tool: Unify handling of features when writing feature section
-Date: Wed, 7 Dec 2011 10:02:55 +0100
-Message-ID: <1323248577-11268-6-git-send-email-robert.richter@amd.com>
+Subject: [PATCH v2 3/7] perf tool: Moving code in some files
+Date: Wed, 7 Dec 2011 10:02:53 +0100
+Message-ID: <1323248577-11268-4-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1323248577-11268-1-git-send-email-robert.richter@amd.com>
 References: <1323248577-11268-1-git-send-email-robert.richter@amd.com>
@@ -33,99 +33,588 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The features HEADER_TRACE_INFO and HEADER_BUILD_ID are handled
-different when writing the feature section. All other features are
-simply disabled on failure and writing the section goes on without
-returning an error. There is no reason for these special cases. This
-patch unifies handling of the features.
+Needed for later changes. No modified functionality.
 
-This should be ok since all features can be parsed independently.
-Offset and size of a feature's block is stored in struct perf_file_
-section right after the data block of perf.data (see perf_session__
-write_header()). Thus, if a feature does not exist then other features
-can be processed anyway.
-
-Also moving special code for HEADER_BUILD_ID out to write_build_id().
-
-v2:
-* perf record throws an error now if buildids may not be generated,
-  which can be disabled with the --no-buildid option.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- tools/perf/builtin-record.c |    7 +++++++
- tools/perf/util/header.c    |   14 +++++---------
- 2 files changed, 12 insertions(+), 9 deletions(-)
+ tools/perf/builtin-buildid-list.c |   36 ++--
+ tools/perf/util/header.c          |  495 ++++++++++++++++++-------------------
+ 2 files changed, 264 insertions(+), 267 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 766fa0a..ec230e2 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -493,6 +493,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
- 			return err;
- 	}
+diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
+index cb690a6..4895668 100644
+--- a/tools/perf/builtin-buildid-list.c
++++ b/tools/perf/builtin-buildid-list.c
+@@ -39,24 +39,6 @@ static const struct option options[] = {
+ 	OPT_END()
+ };
  
-+	if (!!rec->no_buildid
-+	    && !perf_header__has_feat(&session->header, HEADER_BUILD_ID)) {
-+		pr_err("Couldn't generating buildids. "
-+		       "Use --no-buildid to profile anyway.\n");
-+		return -1;
-+	}
+-static int perf_session__list_build_ids(void)
+-{
+-	struct perf_session *session;
+-
+-	session = perf_session__new(input_name, O_RDONLY, force, false,
+-				    &build_id__mark_dso_hit_ops);
+-	if (session == NULL)
+-		return -1;
+-
+-	if (with_hits)
+-		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
+-
+-	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
+-
+-	perf_session__delete(session);
+-	return 0;
+-}
+-
+ static int sysfs__fprintf_build_id(FILE *fp)
+ {
+ 	u8 kallsyms_build_id[BUILD_ID_SIZE];
+@@ -85,6 +67,24 @@ static int filename__fprintf_build_id(const char *name, FILE *fp)
+ 	return fprintf(fp, "%s\n", sbuild_id);
+ }
+ 
++static int perf_session__list_build_ids(void)
++{
++	struct perf_session *session;
 +
- 	rec->post_processing_offset = lseek(output, 0, SEEK_CUR);
- 
- 	machine = perf_session__find_host_machine(session);
++	session = perf_session__new(input_name, O_RDONLY, force, false,
++				    &build_id__mark_dso_hit_ops);
++	if (session == NULL)
++		return -1;
++
++	if (with_hits)
++		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
++
++	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
++
++	perf_session__delete(session);
++	return 0;
++}
++
+ static int __cmd_buildid_list(void)
+ {
+ 	if (show_kernel)
 diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 8928381..129c92d 100644
+index 47a7826..8928381 100644
 --- a/tools/perf/util/header.c
 +++ b/tools/perf/util/header.c
-@@ -445,6 +445,9 @@ static int write_build_id(int fd, struct perf_header *h,
+@@ -28,9 +28,6 @@ static struct perf_trace_event_type *events;
+ static u32 header_argc;
+ static const char **header_argv;
  
- 	session = container_of(h, struct perf_session, header);
+-static int dsos__write_buildid_table(struct perf_header *header, int fd);
+-static int perf_session__cache_build_ids(struct perf_session *session);
+-
+ int perf_header__push_event(u64 id, const char *name)
+ {
+ 	if (strlen(name) > MAX_EVENT_NAME)
+@@ -187,6 +184,252 @@ perf_header__set_cmdline(int argc, const char **argv)
+ 	return 0;
+ }
  
-+	if (!perf_session__read_build_ids(session, true))
++#define dsos__for_each_with_build_id(pos, head)	\
++	list_for_each_entry(pos, head, node)	\
++		if (!pos->has_build_id)		\
++			continue;		\
++		else
++
++static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
++				u16 misc, int fd)
++{
++	struct dso *pos;
++
++	dsos__for_each_with_build_id(pos, head) {
++		int err;
++		struct build_id_event b;
++		size_t len;
++
++		if (!pos->hit)
++			continue;
++		len = pos->long_name_len + 1;
++		len = ALIGN(len, NAME_ALIGN);
++		memset(&b, 0, sizeof(b));
++		memcpy(&b.build_id, pos->build_id, sizeof(pos->build_id));
++		b.pid = pid;
++		b.header.misc = misc;
++		b.header.size = sizeof(b) + len;
++		err = do_write(fd, &b, sizeof(b));
++		if (err < 0)
++			return err;
++		err = write_padded(fd, pos->long_name,
++				   pos->long_name_len + 1, len);
++		if (err < 0)
++			return err;
++	}
++
++	return 0;
++}
++
++static int machine__write_buildid_table(struct machine *machine, int fd)
++{
++	int err;
++	u16 kmisc = PERF_RECORD_MISC_KERNEL,
++	    umisc = PERF_RECORD_MISC_USER;
++
++	if (!machine__is_host(machine)) {
++		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
++		umisc = PERF_RECORD_MISC_GUEST_USER;
++	}
++
++	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine->pid,
++					  kmisc, fd);
++	if (err == 0)
++		err = __dsos__write_buildid_table(&machine->user_dsos,
++						  machine->pid, umisc, fd);
++	return err;
++}
++
++static int dsos__write_buildid_table(struct perf_header *header, int fd)
++{
++	struct perf_session *session = container_of(header,
++			struct perf_session, header);
++	struct rb_node *nd;
++	int err = machine__write_buildid_table(&session->host_machine, fd);
++
++	if (err)
++		return err;
++
++	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		err = machine__write_buildid_table(pos, fd);
++		if (err)
++			break;
++	}
++	return err;
++}
++
++int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
++			  const char *name, bool is_kallsyms)
++{
++	const size_t size = PATH_MAX;
++	char *realname, *filename = zalloc(size),
++	     *linkname = zalloc(size), *targetname;
++	int len, err = -1;
++
++	if (is_kallsyms) {
++		if (symbol_conf.kptr_restrict) {
++			pr_debug("Not caching a kptr_restrict'ed /proc/kallsyms\n");
++			return 0;
++		}
++		realname = (char *)name;
++	} else
++		realname = realpath(name, NULL);
++
++	if (realname == NULL || filename == NULL || linkname == NULL)
++		goto out_free;
++
++	len = snprintf(filename, size, "%s%s%s",
++		       debugdir, is_kallsyms ? "/" : "", realname);
++	if (mkdir_p(filename, 0755))
++		goto out_free;
++
++	snprintf(filename + len, sizeof(filename) - len, "/%s", sbuild_id);
++
++	if (access(filename, F_OK)) {
++		if (is_kallsyms) {
++			 if (copyfile("/proc/kallsyms", filename))
++				goto out_free;
++		} else if (link(realname, filename) && copyfile(name, filename))
++			goto out_free;
++	}
++
++	len = snprintf(linkname, size, "%s/.build-id/%.2s",
++		       debugdir, sbuild_id);
++
++	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
++		goto out_free;
++
++	snprintf(linkname + len, size - len, "/%s", sbuild_id + 2);
++	targetname = filename + strlen(debugdir) - 5;
++	memcpy(targetname, "../..", 5);
++
++	if (symlink(targetname, linkname) == 0)
++		err = 0;
++out_free:
++	if (!is_kallsyms)
++		free(realname);
++	free(filename);
++	free(linkname);
++	return err;
++}
++
++static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
++				 const char *name, const char *debugdir,
++				 bool is_kallsyms)
++{
++	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
++
++	build_id__sprintf(build_id, build_id_size, sbuild_id);
++
++	return build_id_cache__add_s(sbuild_id, debugdir, name, is_kallsyms);
++}
++
++int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
++{
++	const size_t size = PATH_MAX;
++	char *filename = zalloc(size),
++	     *linkname = zalloc(size);
++	int err = -1;
++
++	if (filename == NULL || linkname == NULL)
++		goto out_free;
++
++	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
++		 debugdir, sbuild_id, sbuild_id + 2);
++
++	if (access(linkname, F_OK))
++		goto out_free;
++
++	if (readlink(linkname, filename, size - 1) < 0)
++		goto out_free;
++
++	if (unlink(linkname))
++		goto out_free;
++
++	/*
++	 * Since the link is relative, we must make it absolute:
++	 */
++	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
++		 debugdir, sbuild_id, filename);
++
++	if (unlink(linkname))
++		goto out_free;
++
++	err = 0;
++out_free:
++	free(filename);
++	free(linkname);
++	return err;
++}
++
++static int dso__cache_build_id(struct dso *dso, const char *debugdir)
++{
++	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
++
++	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id),
++				     dso->long_name, debugdir, is_kallsyms);
++}
++
++static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
++{
++	struct dso *pos;
++	int err = 0;
++
++	dsos__for_each_with_build_id(pos, head)
++		if (dso__cache_build_id(pos, debugdir))
++			err = -1;
++
++	return err;
++}
++
++static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
++{
++	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, debugdir);
++	ret |= __dsos__cache_build_ids(&machine->user_dsos, debugdir);
++	return ret;
++}
++
++static int perf_session__cache_build_ids(struct perf_session *session)
++{
++	struct rb_node *nd;
++	int ret;
++	char debugdir[PATH_MAX];
++
++	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
++
++	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
 +		return -1;
 +
- 	err = dsos__write_buildid_table(h, fd);
- 	if (err < 0) {
- 		pr_debug("failed to write buildid table\n");
-@@ -1413,10 +1416,6 @@ static int perf_header__adds_write(struct perf_header *header,
- 
- 	session = container_of(header, struct perf_session, header);
- 
--	if (perf_header__has_feat(header, HEADER_BUILD_ID &&
--	    !perf_session__read_build_ids(session, true)))
--		perf_header__clear_feat(header, HEADER_BUILD_ID);
--
- 	nr_sections = bitmap_weight(header->adds_features, HEADER_FEAT_BITS);
- 	if (!nr_sections)
- 		return 0;
-@@ -1432,13 +1431,11 @@ static int perf_header__adds_write(struct perf_header *header,
- 
- 	err = do_write_feat(fd, header, HEADER_TRACE_INFO, &p, evlist);
- 	if (err)
--		goto out_free;
-+		perf_header__clear_feat(header, HEADER_TRACE_INFO);
- 
- 	err = do_write_feat(fd, header, HEADER_BUILD_ID, &p, evlist);
--	if (err) {
-+	if (err)
- 		perf_header__clear_feat(header, HEADER_BUILD_ID);
--		goto out_free;
--	}
- 
- 	err = do_write_feat(fd, header, HEADER_HOSTNAME, &p, evlist);
- 	if (err)
-@@ -1496,7 +1493,6 @@ static int perf_header__adds_write(struct perf_header *header,
- 	err = do_write(fd, feat_sec, sec_size);
- 	if (err < 0)
- 		pr_debug("failed to write feature section\n");
--out_free:
- 	free(feat_sec);
- 	return err;
++	ret = machine__cache_build_ids(&session->host_machine, debugdir);
++
++	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		ret |= machine__cache_build_ids(pos, debugdir);
++	}
++	return ret ? -1 : 0;
++}
++
++static bool machine__read_build_ids(struct machine *machine, bool with_hits)
++{
++	bool ret = __dsos__read_build_ids(&machine->kernel_dsos, with_hits);
++	ret |= __dsos__read_build_ids(&machine->user_dsos, with_hits);
++	return ret;
++}
++
++static bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
++{
++	struct rb_node *nd;
++	bool ret = machine__read_build_ids(&session->host_machine, with_hits);
++
++	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
++		struct machine *pos = rb_entry(nd, struct machine, rb_node);
++		ret |= machine__read_build_ids(pos, with_hits);
++	}
++
++	return ret;
++}
++
+ static int write_trace_info(int fd, struct perf_header *h __used,
+ 			    struct perf_evlist *evlist)
+ {
+@@ -1132,252 +1375,6 @@ int perf_header__fprintf_info(struct perf_session *session, FILE *fp, bool full)
+ 	return 0;
  }
+ 
+-#define dsos__for_each_with_build_id(pos, head)	\
+-	list_for_each_entry(pos, head, node)	\
+-		if (!pos->has_build_id)		\
+-			continue;		\
+-		else
+-
+-static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
+-				u16 misc, int fd)
+-{
+-	struct dso *pos;
+-
+-	dsos__for_each_with_build_id(pos, head) {
+-		int err;
+-		struct build_id_event b;
+-		size_t len;
+-
+-		if (!pos->hit)
+-			continue;
+-		len = pos->long_name_len + 1;
+-		len = ALIGN(len, NAME_ALIGN);
+-		memset(&b, 0, sizeof(b));
+-		memcpy(&b.build_id, pos->build_id, sizeof(pos->build_id));
+-		b.pid = pid;
+-		b.header.misc = misc;
+-		b.header.size = sizeof(b) + len;
+-		err = do_write(fd, &b, sizeof(b));
+-		if (err < 0)
+-			return err;
+-		err = write_padded(fd, pos->long_name,
+-				   pos->long_name_len + 1, len);
+-		if (err < 0)
+-			return err;
+-	}
+-
+-	return 0;
+-}
+-
+-static int machine__write_buildid_table(struct machine *machine, int fd)
+-{
+-	int err;
+-	u16 kmisc = PERF_RECORD_MISC_KERNEL,
+-	    umisc = PERF_RECORD_MISC_USER;
+-
+-	if (!machine__is_host(machine)) {
+-		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
+-		umisc = PERF_RECORD_MISC_GUEST_USER;
+-	}
+-
+-	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine->pid,
+-					  kmisc, fd);
+-	if (err == 0)
+-		err = __dsos__write_buildid_table(&machine->user_dsos,
+-						  machine->pid, umisc, fd);
+-	return err;
+-}
+-
+-static int dsos__write_buildid_table(struct perf_header *header, int fd)
+-{
+-	struct perf_session *session = container_of(header,
+-			struct perf_session, header);
+-	struct rb_node *nd;
+-	int err = machine__write_buildid_table(&session->host_machine, fd);
+-
+-	if (err)
+-		return err;
+-
+-	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
+-		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+-		err = machine__write_buildid_table(pos, fd);
+-		if (err)
+-			break;
+-	}
+-	return err;
+-}
+-
+-int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+-			  const char *name, bool is_kallsyms)
+-{
+-	const size_t size = PATH_MAX;
+-	char *realname, *filename = zalloc(size),
+-	     *linkname = zalloc(size), *targetname;
+-	int len, err = -1;
+-
+-	if (is_kallsyms) {
+-		if (symbol_conf.kptr_restrict) {
+-			pr_debug("Not caching a kptr_restrict'ed /proc/kallsyms\n");
+-			return 0;
+-		}
+-		realname = (char *)name;
+-	} else
+-		realname = realpath(name, NULL);
+-
+-	if (realname == NULL || filename == NULL || linkname == NULL)
+-		goto out_free;
+-
+-	len = snprintf(filename, size, "%s%s%s",
+-		       debugdir, is_kallsyms ? "/" : "", realname);
+-	if (mkdir_p(filename, 0755))
+-		goto out_free;
+-
+-	snprintf(filename + len, sizeof(filename) - len, "/%s", sbuild_id);
+-
+-	if (access(filename, F_OK)) {
+-		if (is_kallsyms) {
+-			 if (copyfile("/proc/kallsyms", filename))
+-				goto out_free;
+-		} else if (link(realname, filename) && copyfile(name, filename))
+-			goto out_free;
+-	}
+-
+-	len = snprintf(linkname, size, "%s/.build-id/%.2s",
+-		       debugdir, sbuild_id);
+-
+-	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
+-		goto out_free;
+-
+-	snprintf(linkname + len, size - len, "/%s", sbuild_id + 2);
+-	targetname = filename + strlen(debugdir) - 5;
+-	memcpy(targetname, "../..", 5);
+-
+-	if (symlink(targetname, linkname) == 0)
+-		err = 0;
+-out_free:
+-	if (!is_kallsyms)
+-		free(realname);
+-	free(filename);
+-	free(linkname);
+-	return err;
+-}
+-
+-static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
+-				 const char *name, const char *debugdir,
+-				 bool is_kallsyms)
+-{
+-	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
+-
+-	build_id__sprintf(build_id, build_id_size, sbuild_id);
+-
+-	return build_id_cache__add_s(sbuild_id, debugdir, name, is_kallsyms);
+-}
+-
+-int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
+-{
+-	const size_t size = PATH_MAX;
+-	char *filename = zalloc(size),
+-	     *linkname = zalloc(size);
+-	int err = -1;
+-
+-	if (filename == NULL || linkname == NULL)
+-		goto out_free;
+-
+-	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
+-		 debugdir, sbuild_id, sbuild_id + 2);
+-
+-	if (access(linkname, F_OK))
+-		goto out_free;
+-
+-	if (readlink(linkname, filename, size - 1) < 0)
+-		goto out_free;
+-
+-	if (unlink(linkname))
+-		goto out_free;
+-
+-	/*
+-	 * Since the link is relative, we must make it absolute:
+-	 */
+-	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
+-		 debugdir, sbuild_id, filename);
+-
+-	if (unlink(linkname))
+-		goto out_free;
+-
+-	err = 0;
+-out_free:
+-	free(filename);
+-	free(linkname);
+-	return err;
+-}
+-
+-static int dso__cache_build_id(struct dso *dso, const char *debugdir)
+-{
+-	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
+-
+-	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id),
+-				     dso->long_name, debugdir, is_kallsyms);
+-}
+-
+-static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
+-{
+-	struct dso *pos;
+-	int err = 0;
+-
+-	dsos__for_each_with_build_id(pos, head)
+-		if (dso__cache_build_id(pos, debugdir))
+-			err = -1;
+-
+-	return err;
+-}
+-
+-static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
+-{
+-	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, debugdir);
+-	ret |= __dsos__cache_build_ids(&machine->user_dsos, debugdir);
+-	return ret;
+-}
+-
+-static int perf_session__cache_build_ids(struct perf_session *session)
+-{
+-	struct rb_node *nd;
+-	int ret;
+-	char debugdir[PATH_MAX];
+-
+-	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
+-
+-	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
+-		return -1;
+-
+-	ret = machine__cache_build_ids(&session->host_machine, debugdir);
+-
+-	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
+-		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+-		ret |= machine__cache_build_ids(pos, debugdir);
+-	}
+-	return ret ? -1 : 0;
+-}
+-
+-static bool machine__read_build_ids(struct machine *machine, bool with_hits)
+-{
+-	bool ret = __dsos__read_build_ids(&machine->kernel_dsos, with_hits);
+-	ret |= __dsos__read_build_ids(&machine->user_dsos, with_hits);
+-	return ret;
+-}
+-
+-static bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
+-{
+-	struct rb_node *nd;
+-	bool ret = machine__read_build_ids(&session->host_machine, with_hits);
+-
+-	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
+-		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+-		ret |= machine__read_build_ids(pos, with_hits);
+-	}
+-
+-	return ret;
+-}
+-
+ static int do_write_feat(int fd, struct perf_header *h, int type,
+ 			 struct perf_file_section **p,
+ 			 struct perf_evlist *evlist)
 -- 
 1.7.7
 
