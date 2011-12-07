@@ -1,103 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821Ab1LGNFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:05:25 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64841 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755790Ab1LGNFV (ORCPT
+	id S1755798Ab1LGNPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:15:46 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:36046 "EHLO
+	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755488Ab1LGNPo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:05:21 -0500
-X-Authority-Analysis: v=2.0 cv=QqvcLCOd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=966GW1DbTNkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=ypRPNEk8Tx07dXLQRyoA:9 a=QEXdDO2ut3YA:10 a=_RhRFcbxBZMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Subject: Re: [patch] intel_idle: convert i7300_idle_lock to raw spinlock
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1323258522.5057.73.camel@marge.simson.net>
-References: <1323258522.5057.73.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Dec 2011 08:05:13 -0500
-Message-ID: <1323263113.2832.7.camel@pippen.local.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Dec 2011 08:15:44 -0500
+X-SpamScore: -5
+X-BigFish: VS-5(z37d4lzc89bh1432N98dKzz1202hzzz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 7 Dec 2011 21:28:29 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: <netdev@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: fix the
+ .remove code
+Message-ID: <20111207132828.GQ5550@S2100-06.ap.freescale.net>
+References: <cover.1323163127.git.LW@KARO-electronics.de>
+ <04c11563fee748562d7b53d5e5b3c5cf37fef200.1323163127.git.LW@KARO-electronics.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <04c11563fee748562d7b53d5e5b3c5cf37fef200.1323163127.git.LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks as this should also go mainline (Cc'd LKML)
-
-Note, as I want to release 3.0.12-rt30 today, this wont make it. It will
-have to wait till -rt31.
-
--- Steve
-
-On Wed, 2011-12-07 at 12:48 +0100, Mike Galbraith wrote:
-> 24 core Intel box's first exposure to 3.0.12-rt30-rc3 didn't go well.
+On Tue, Dec 06, 2011 at 11:27:15AM +0100, Lothar Waﬂmann wrote:
+> The .remove code is broken in several ways.
+>  - mdiobus_unregister() is called twice for the same object in case of dual FEC
+>  - phy_disconnect() is being called when the PHY is already disconnected
+>  - the requested IRQ(s) are not freed
+>  - fec_stop() is being called with the inteface already stopped
 > 
-> [   27.104159] i7300_idle: loaded v1.55
-> [   27.104192] BUG: scheduling while atomic: swapper/2/0/0x00000002
-> [   27.104309] Pid: 0, comm: swapper/2 Tainted: G           N  3.0.12-rt30-rc3-rt #1
-> [   27.104317] Call Trace:
-> [   27.104338]  [<ffffffff810046a5>] dump_trace+0x85/0x2e0
-> [   27.104372]  [<ffffffff8144eb00>] thread_return+0x12b/0x30b
-> [   27.104381]  [<ffffffff8144f1b9>] schedule+0x29/0xb0
-> [   27.104389]  [<ffffffff814506e5>] rt_spin_lock_slowlock+0xc5/0x240
-> [   27.104401]  [<ffffffffa01f818f>] i7300_idle_notifier+0x3f/0x360 [i7300_idle]
-> [   27.104415]  [<ffffffff814546c7>] notifier_call_chain+0x37/0x70
-> [   27.104426]  [<ffffffff81454748>] __atomic_notifier_call_chain+0x48/0x70
-> [   27.104439]  [<ffffffff81001a39>] cpu_idle+0x89/0xb0
-> [   27.104449] bad: scheduling from the idle thread!
+>  All of those lead to kernel crashes if the remove function is actually used.
 > 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> 
+> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
 > ---
->  drivers/idle/i7300_idle.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+>  drivers/net/ethernet/freescale/fec.c |   30 +++++++++++++++++++++---------
+>  1 files changed, 21 insertions(+), 9 deletions(-)
 > 
-> Index: linux-3.2-rt/drivers/idle/i7300_idle.c
-> ===================================================================
-> --- linux-3.2-rt.orig/drivers/idle/i7300_idle.c
-> +++ linux-3.2-rt/drivers/idle/i7300_idle.c
-> @@ -75,7 +75,7 @@ static unsigned long past_skip;
+> diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
+> index ab0afb5..70ec7ec 100644
+> --- a/drivers/net/ethernet/freescale/fec.c
+> +++ b/drivers/net/ethernet/freescale/fec.c
+> @@ -235,6 +235,7 @@ struct fec_enet_private {
 >  
->  static struct pci_dev *fbd_dev;
->  
-> -static spinlock_t i7300_idle_lock;
-> +static raw_spinlock_t i7300_idle_lock;
->  static int i7300_idle_active;
->  
->  static u8 i7300_idle_thrtctl_saved;
-> @@ -457,7 +457,7 @@ static int i7300_idle_notifier(struct no
->  		idle_begin_time = ktime_get();
+>  	/* Phylib and MDIO interface */
+>  	struct	mii_bus *mii_bus;
+> +	int	mii_cnt;
+>  	struct	phy_device *phy_dev;
+>  	int	mii_timeout;
+>  	uint	phy_speed;
+> @@ -1040,8 +1041,12 @@ static int fec_enet_mii_init(struct platform_device *pdev)
+>  	 */
+>  	if ((id_entry->driver_data & FEC_QUIRK_ENET_MAC) && pdev->id > 0) {
+>  		/* fec1 uses fec0 mii_bus */
+> -		fep->mii_bus = fec0_mii_bus;
+> -		return 0;
+> +		if (fep->mii_cnt && fec0_mii_bus) {
+
+This seems broken.  The second fec has its own fep and fep->mii_cnt is
+always 0 here.
+
+Regards,
+Shawn
+
+> +			fep->mii_bus = fec0_mii_bus;
+> +			fep->mii_cnt++;
+> +			return 0;
+> +		}
+> +		return -ENOENT;
 >  	}
 >  
-> -	spin_lock_irqsave(&i7300_idle_lock, flags);
-> +	raw_spin_lock_irqsave(&i7300_idle_lock, flags);
->  	if (val == IDLE_START) {
+>  	fep->mii_timeout = 0;
+> @@ -1086,6 +1091,8 @@ static int fec_enet_mii_init(struct platform_device *pdev)
+>  	if (mdiobus_register(fep->mii_bus))
+>  		goto err_out_free_mdio_irq;
 >  
->  		cpumask_set_cpu(smp_processor_id(), idle_cpumask);
-> @@ -506,7 +506,7 @@ static int i7300_idle_notifier(struct no
->  		}
->  	}
->  end:
-> -	spin_unlock_irqrestore(&i7300_idle_lock, flags);
-> +	raw_spin_unlock_irqrestore(&i7300_idle_lock, flags);
->  	return 0;
+> +	fep->mii_cnt++;
+> +
+>  	/* save fec0 mii_bus */
+>  	if (id_entry->driver_data & FEC_QUIRK_ENET_MAC)
+>  		fec0_mii_bus = fep->mii_bus;
+> @@ -1102,11 +1109,11 @@ err_out:
+>  
+>  static void fec_enet_mii_remove(struct fec_enet_private *fep)
+>  {
+> -	if (fep->phy_dev)
+> -		phy_disconnect(fep->phy_dev);
+> -	mdiobus_unregister(fep->mii_bus);
+> -	kfree(fep->mii_bus->irq);
+> -	mdiobus_free(fep->mii_bus);
+> +	if (--fep->mii_cnt == 0) {
+> +		mdiobus_unregister(fep->mii_bus);
+> +		kfree(fep->mii_bus->irq);
+> +		mdiobus_free(fep->mii_bus);
+> +	}
 >  }
 >  
-> @@ -554,7 +554,7 @@ struct debugfs_file_info {
+>  static int fec_enet_get_settings(struct net_device *ndev,
+> @@ -1646,13 +1653,18 @@ fec_drv_remove(struct platform_device *pdev)
+>  	struct net_device *ndev = platform_get_drvdata(pdev);
+>  	struct fec_enet_private *fep = netdev_priv(ndev);
+>  	struct resource *r;
+> +	int i;
 >  
->  static int __init i7300_idle_init(void)
->  {
-> -	spin_lock_init(&i7300_idle_lock);
-> +	raw_spin_lock_init(&i7300_idle_lock);
->  	total_us = 0;
+> -	fec_stop(ndev);
+> +	unregister_netdev(ndev);
+>  	fec_enet_mii_remove(fep);
+> +	for (i = 0; i < FEC_IRQ_NUM; i++) {
+> +		int irq = platform_get_irq(pdev, i);
+> +		if (irq > 0)
+> +			free_irq(irq, ndev);
+> +	}
+>  	clk_disable(fep->clk);
+>  	clk_put(fep->clk);
+>  	iounmap(fep->hwp);
+> -	unregister_netdev(ndev);
+>  	free_netdev(ndev);
 >  
->  	if (i7300_idle_platform_probe(&fbd_dev, &ioat_dev, forceload))
-> 
-
+>  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -- 
+> 1.5.6.5
 
