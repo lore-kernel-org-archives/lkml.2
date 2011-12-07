@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab1LGNqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:46:13 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:53822 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755801Ab1LGNqL (ORCPT
+	id S1756124Ab1LGNta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:49:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46983 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755810Ab1LGNt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:46:11 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/6iWJzNEH6xTS8fjy4BwwrDUwYtubPbC4oRCqoGk
-	EEWlnXhKZyaQYS
-Subject: Re: [patch] intel_idle: convert i7300_idle_lock to raw spinlock
-From: Mike Galbraith <efault@gmx.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1323263113.2832.7.camel@pippen.local.home>
-References: <1323258522.5057.73.camel@marge.simson.net>
-	 <1323263113.2832.7.camel@pippen.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Dec 2011 14:46:00 +0100
-Message-ID: <1323265560.5057.99.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Wed, 7 Dec 2011 08:49:29 -0500
+Date: Wed, 7 Dec 2011 13:49:00 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andreas Oberritter <obi@linuxtv.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
+ because of worrying about possible misusage?
+Message-ID: <20111207134848.GB18837@opensource.wolfsonmicro.com>
+References: <20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
+ <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
+ <4EDC9B17.2080701@gmail.com>
+ <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
+ <4EDD01BA.40208@redhat.com>
+ <4EDD2C82.7040804@linuxtv.org>
+ <20111206112153.GC17194@sirena.org.uk>
+ <4EDE0427.2050307@linuxtv.org>
+ <20111206141929.GE17731@opensource.wolfsonmicro.com>
+ <4EDE2B3B.2080905@linuxtv.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EDE2B3B.2080905@linuxtv.org>
+X-Cookie: You will have long and healthy life.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-07 at 08:05 -0500, Steven Rostedt wrote:
-> Looks as this should also go mainline (Cc'd LKML)
-> 
-> Note, as I want to release 3.0.12-rt30 today, this wont make it. It will
-> have to wait till -rt31.
+On Tue, Dec 06, 2011 at 03:48:27PM +0100, Andreas Oberritter wrote:
+> On 06.12.2011 15:19, Mark Brown wrote:
 
-No hurry.  (20 synchronized core jitter test was horrid).
+> > Your assertatation that applications should ignore the underlying
+> > transport (which seems to be a big part of what you're saying) isn't
+> > entirely in line with reality.
 
-> -- Steve
-> 
-> On Wed, 2011-12-07 at 12:48 +0100, Mike Galbraith wrote:
-> > 24 core Intel box's first exposure to 3.0.12-rt30-rc3 didn't go well.
-> > 
-> > [   27.104159] i7300_idle: loaded v1.55
-> > [   27.104192] BUG: scheduling while atomic: swapper/2/0/0x00000002
-> > [   27.104309] Pid: 0, comm: swapper/2 Tainted: G           N  3.0.12-rt30-rc3-rt #1
-> > [   27.104317] Call Trace:
-> > [   27.104338]  [<ffffffff810046a5>] dump_trace+0x85/0x2e0
-> > [   27.104372]  [<ffffffff8144eb00>] thread_return+0x12b/0x30b
-> > [   27.104381]  [<ffffffff8144f1b9>] schedule+0x29/0xb0
-> > [   27.104389]  [<ffffffff814506e5>] rt_spin_lock_slowlock+0xc5/0x240
-> > [   27.104401]  [<ffffffffa01f818f>] i7300_idle_notifier+0x3f/0x360 [i7300_idle]
-> > [   27.104415]  [<ffffffff814546c7>] notifier_call_chain+0x37/0x70
-> > [   27.104426]  [<ffffffff81454748>] __atomic_notifier_call_chain+0x48/0x70
-> > [   27.104439]  [<ffffffff81001a39>] cpu_idle+0x89/0xb0
-> > [   27.104449] bad: scheduling from the idle thread!
-> > 
-> > Signed-off-by: Mike Galbraith <efault@gmx.de>
-> > 
-> > ---
-> >  drivers/idle/i7300_idle.c |    8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > Index: linux-3.2-rt/drivers/idle/i7300_idle.c
-> > ===================================================================
-> > --- linux-3.2-rt.orig/drivers/idle/i7300_idle.c
-> > +++ linux-3.2-rt/drivers/idle/i7300_idle.c
-> > @@ -75,7 +75,7 @@ static unsigned long past_skip;
-> >  
-> >  static struct pci_dev *fbd_dev;
-> >  
-> > -static spinlock_t i7300_idle_lock;
-> > +static raw_spinlock_t i7300_idle_lock;
-> >  static int i7300_idle_active;
-> >  
-> >  static u8 i7300_idle_thrtctl_saved;
-> > @@ -457,7 +457,7 @@ static int i7300_idle_notifier(struct no
-> >  		idle_begin_time = ktime_get();
-> >  	}
-> >  
-> > -	spin_lock_irqsave(&i7300_idle_lock, flags);
-> > +	raw_spin_lock_irqsave(&i7300_idle_lock, flags);
-> >  	if (val == IDLE_START) {
-> >  
-> >  		cpumask_set_cpu(smp_processor_id(), idle_cpumask);
-> > @@ -506,7 +506,7 @@ static int i7300_idle_notifier(struct no
-> >  		}
-> >  	}
-> >  end:
-> > -	spin_unlock_irqrestore(&i7300_idle_lock, flags);
-> > +	raw_spin_unlock_irqrestore(&i7300_idle_lock, flags);
-> >  	return 0;
-> >  }
-> >  
-> > @@ -554,7 +554,7 @@ struct debugfs_file_info {
-> >  
-> >  static int __init i7300_idle_init(void)
-> >  {
-> > -	spin_lock_init(&i7300_idle_lock);
-> > +	raw_spin_lock_init(&i7300_idle_lock);
-> >  	total_us = 0;
-> >  
-> >  	if (i7300_idle_platform_probe(&fbd_dev, &ioat_dev, forceload))
-> > 
-> 
-> 
+> Did you notice that we're talking about a very particular application?
 
+*sigh*
 
+> VoIP really is totally off-topic. The B in DVB stands for broadcast.
+> There's only one direction in which MPEG payload is to be sent (using
+> RTP for example). You can't just re-encode the data on the fly without
+> loss of information.
+
+This is pretty much exactly the case for VoIP some of the time (though
+obviously bidirectional use cases are rather common there's things like
+conferencing).  I would really expect similar considerations to apply
+for video content as they certainly do in videoconferencing VoIP
+applications - if the application knows about the network it can tailor
+what it's doing to that network.  
+
+For example, if it is using a network with a guaranteed bandwidth it can
+assume that bandwidth.  If it knows something about the structure of the
+network it may be able to arrange to work around choke points.
+Depending on the situation even something lossy may be the answer - if
+it's the difference between working at all and not working then the cost
+may be worth it.
