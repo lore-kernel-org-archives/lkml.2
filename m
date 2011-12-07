@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933460Ab1LGQVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:21:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33901 "EHLO mx2.suse.de"
+	id S933420Ab1LGQVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:21:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33885 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933388Ab1LGQVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:21:51 -0500
+	id S933384Ab1LGQVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:21:44 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:15 2011
-Message-Id: <20111207161215.447285296@clark.kroah.org>
+Message-Id: <20111207161215.272114271@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:10 -0800
+Date: Wed, 07 Dec 2011 08:11:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>
-Subject: [008/104] drm/i915: Ivybridge still has fences!
+        <alan@lxorguk.ukuu.org.uk>, Xi Wang <xi.wang@gmail.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [006/104] drm: integer overflow in drm_mode_dirtyfb_ioctl()
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit 775d17b6ca4357048f36c22151335addfe15db4b upstream.
+commit a5cd335165e31db9dbab636fd29895d41da55dd2 upstream.
 
-So don't forget to restore them on resume and dump them into
-the error state.
+There is a potential integer overflow in drm_mode_dirtyfb_ioctl()
+if userspace passes in a large num_clips.  The call to kmalloc would
+allocate a small buffer, and the call to fb->funcs->dirty may result
+in a memory corruption.
 
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+Reported-by: Haogang Chen <haogangchen@gmail.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c     |    1 +
- drivers/gpu/drm/i915/i915_suspend.c |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/gpu/drm/drm_crtc.c |    4 ++++
+ include/drm/drm_mode.h     |    2 ++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -822,6 +822,7 @@ static void i915_gem_record_fences(struc
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -1868,6 +1868,10 @@ int drm_mode_dirtyfb_ioctl(struct drm_de
+ 	}
  
- 	/* Fences */
- 	switch (INTEL_INFO(dev)->gen) {
-+	case 7:
- 	case 6:
- 		for (i = 0; i < 16; i++)
- 			error->fence[i] = I915_READ64(FENCE_REG_SANDYBRIDGE_0 + (i * 8));
---- a/drivers/gpu/drm/i915/i915_suspend.c
-+++ b/drivers/gpu/drm/i915/i915_suspend.c
-@@ -370,6 +370,7 @@ static void i915_save_modeset_reg(struct
+ 	if (num_clips && clips_ptr) {
++		if (num_clips < 0 || num_clips > DRM_MODE_FB_DIRTY_MAX_CLIPS) {
++			ret = -EINVAL;
++			goto out_err1;
++		}
+ 		clips = kzalloc(num_clips * sizeof(*clips), GFP_KERNEL);
+ 		if (!clips) {
+ 			ret = -ENOMEM;
+--- a/include/drm/drm_mode.h
++++ b/include/drm/drm_mode.h
+@@ -233,6 +233,8 @@ struct drm_mode_fb_cmd {
+ #define DRM_MODE_FB_DIRTY_ANNOTATE_FILL 0x02
+ #define DRM_MODE_FB_DIRTY_FLAGS         0x03
  
- 	/* Fences */
- 	switch (INTEL_INFO(dev)->gen) {
-+	case 7:
- 	case 6:
- 		for (i = 0; i < 16; i++)
- 			dev_priv->saveFENCE[i] = I915_READ64(FENCE_REG_SANDYBRIDGE_0 + (i * 8));
-@@ -404,6 +405,7 @@ static void i915_restore_modeset_reg(str
- 
- 	/* Fences */
- 	switch (INTEL_INFO(dev)->gen) {
-+	case 7:
- 	case 6:
- 		for (i = 0; i < 16; i++)
- 			I915_WRITE64(FENCE_REG_SANDYBRIDGE_0 + (i * 8), dev_priv->saveFENCE[i]);
++#define DRM_MODE_FB_DIRTY_MAX_CLIPS     256
++
+ /*
+  * Mark a region of a framebuffer as dirty.
+  *
 
 
