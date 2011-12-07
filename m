@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933755Ab1LGQX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:23:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34195 "EHLO mx2.suse.de"
+	id S933739Ab1LGQXY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:23:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34189 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933732Ab1LGQXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:23:22 -0500
+	id S933639Ab1LGQXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:23:18 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:17 2011
-Message-Id: <20111207161217.561533308@clark.kroah.org>
+Message-Id: <20111207161217.479239582@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:36 -0800
+Date: Wed, 07 Dec 2011 08:11:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Tero Kristo <t-kristo@ti.com>,
+        <alan@lxorguk.ukuu.org.uk>, Axel Lin <axel.lin@gmail.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [034/104] regulator: twl: fix twl4030 support for smps regulators
+Subject: [033/104] regulator: aat2870: Fix the logic of checking if no id is matched in aat2870_get_regulator
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,99 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tero Kristo <t-kristo@ti.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit ba305e31e88ea5c2f598ff9fbc5424711a429e30 upstream.
+commit d4d6373c1109b11c8118340be97ae31b8f94d66a upstream.
 
-SMPS regulator voltage control differs from the one of the LDO ones.
-Current TWL code was using LDO regulator ops for controlling the SMPS
-regulators, which fails. This was fixed fixed by adding separate
-regulator type which uses correct logic and calculations for the
-voltage levels.
+In current implementation, the pointer ri is not NULL if no id is matched.
+Fix it by checking i == ARRAY_SIZE(aat2870_regulators) if no id is matched.
 
-Signed-off-by: Tero Kristo <t-kristo@ti.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/regulator/twl-regulator.c |   46 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 44 insertions(+), 2 deletions(-)
+ drivers/regulator/aat2870-regulator.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -71,6 +71,7 @@ struct twlreg_info {
- #define VREG_TYPE		1
- #define VREG_REMAP		2
- #define VREG_DEDICATED		3	/* LDO control */
-+#define VREG_VOLTAGE_SMPS_4030	9
- /* TWL6030 register offsets */
- #define VREG_TRANS		1
- #define VREG_STATE		2
-@@ -514,6 +515,32 @@ static struct regulator_ops twl4030ldo_o
- 	.get_status	= twl4030reg_get_status,
- };
- 
-+static int
-+twl4030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
-+			unsigned *selector)
-+{
-+	struct twlreg_info *info = rdev_get_drvdata(rdev);
-+	int vsel = DIV_ROUND_UP(min_uV - 600000, 12500);
-+
-+	twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_VOLTAGE_SMPS_4030,
-+		vsel);
-+	return 0;
-+}
-+
-+static int twl4030smps_get_voltage(struct regulator_dev *rdev)
-+{
-+	struct twlreg_info *info = rdev_get_drvdata(rdev);
-+	int vsel = twlreg_read(info, TWL_MODULE_PM_RECEIVER,
-+		VREG_VOLTAGE_SMPS_4030);
-+
-+	return vsel * 12500 + 600000;
-+}
-+
-+static struct regulator_ops twl4030smps_ops = {
-+	.set_voltage	= twl4030smps_set_voltage,
-+	.get_voltage	= twl4030smps_get_voltage,
-+};
-+
- static int twl6030ldo_list_voltage(struct regulator_dev *rdev, unsigned index)
- {
- 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
-@@ -856,6 +883,21 @@ static struct regulator_ops twlsmps_ops
- 		}, \
+--- a/drivers/regulator/aat2870-regulator.c
++++ b/drivers/regulator/aat2870-regulator.c
+@@ -159,7 +159,7 @@ static struct aat2870_regulator *aat2870
+ 			break;
  	}
  
-+#define TWL4030_ADJUSTABLE_SMPS(label, offset, num, turnon_delay, remap_conf) \
-+	{ \
-+	.base = offset, \
-+	.id = num, \
-+	.delay = turnon_delay, \
-+	.remap = remap_conf, \
-+	.desc = { \
-+		.name = #label, \
-+		.id = TWL4030_REG_##label, \
-+		.ops = &twl4030smps_ops, \
-+		.type = REGULATOR_VOLTAGE, \
-+		.owner = THIS_MODULE, \
-+		}, \
-+	}
-+
- #define TWL6030_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts) { \
- 	.base = offset, \
- 	.min_mV = min_mVolts, \
-@@ -947,8 +989,8 @@ static struct twlreg_info twl_regs[] = {
- 	TWL4030_ADJUSTABLE_LDO(VINTANA2, 0x43, 12, 100, 0x08),
- 	TWL4030_FIXED_LDO(VINTDIG, 0x47, 1500, 13, 100, 0x08),
- 	TWL4030_ADJUSTABLE_LDO(VIO, 0x4b, 14, 1000, 0x08),
--	TWL4030_ADJUSTABLE_LDO(VDD1, 0x55, 15, 1000, 0x08),
--	TWL4030_ADJUSTABLE_LDO(VDD2, 0x63, 16, 1000, 0x08),
-+	TWL4030_ADJUSTABLE_SMPS(VDD1, 0x55, 15, 1000, 0x08),
-+	TWL4030_ADJUSTABLE_SMPS(VDD2, 0x63, 16, 1000, 0x08),
- 	TWL4030_FIXED_LDO(VUSB1V5, 0x71, 1500, 17, 100, 0x08),
- 	TWL4030_FIXED_LDO(VUSB1V8, 0x74, 1800, 18, 100, 0x08),
- 	TWL4030_FIXED_LDO(VUSB3V1, 0x77, 3100, 19, 150, 0x08),
+-	if (!ri)
++	if (i == ARRAY_SIZE(aat2870_regulators))
+ 		return NULL;
+ 
+ 	ri->enable_addr = AAT2870_LDO_EN;
 
 
