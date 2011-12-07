@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756989Ab1LGQQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:16:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32921 "EHLO mx2.suse.de"
+	id S1757100Ab1LGQRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:17:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33023 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756957Ab1LGQQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:16:52 -0500
+	id S1757057Ab1LGQRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:17:15 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
-Message-Id: <20111207160825.029459655@clark.kroah.org>
+Message-Id: <20111207160825.626823550@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:49 -0800
+Date: Wed, 07 Dec 2011 08:06:56 -0800
 From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        stable@kernel.org
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Michael Buesch <m@bues.ch>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [29/80] p54spi: Add missing spin_lock_init
+        <alan@lxorguk.ukuu.org.uk>, Guenter Roeck <guenter.roeck@ericsson.com>,
+        Greg KH <greg@kroah.com>, Jean Delvare <khali@linux-fr.org>,
+        Durgadoss R <durgadoss.r@intel.com>, Fenghua Yu <fenghua.yu@intel.com>
+Subject: [36/80] hwmon: (coretemp) Fix oops on driver load
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michael=20B=C3=BCsch?= <m@bues.ch>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 32d3a3922d617a5a685a5e2d24b20d0e88f192a9 upstream.
+This is for stable kernel branch 3.0 only. Previous and later versions
+have different code paths and are not affected by this bug.
 
-The tx_lock is not initialized properly. Add spin_lock_init().
+If the CPU microcode is too old, the coretemp driver won't work. But
+instead of failing gracefully, it currently oops. Check for NULL
+platform device data to avoid this.
 
-Signed-off-by: Michael Buesch <m@bues.ch>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Durgadoss R <durgadoss.r@intel.com>
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/p54spi.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hwmon/coretemp.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/p54/p54spi.c
-+++ b/drivers/net/wireless/p54/p54spi.c
-@@ -657,6 +657,7 @@ static int __devinit p54spi_probe(struct
- 	init_completion(&priv->fw_comp);
- 	INIT_LIST_HEAD(&priv->tx_pending);
- 	mutex_init(&priv->mutex);
-+	spin_lock_init(&priv->tx_lock);
- 	SET_IEEE80211_DEV(hw, &spi->dev);
- 	priv->common.open = p54spi_op_start;
- 	priv->common.stop = p54spi_op_stop;
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -539,6 +539,8 @@ static void coretemp_add_core(unsigned i
+ 		return;
+ 
+ 	pdata = platform_get_drvdata(pdev);
++	if (!pdata)
++		return;
+ 
+ 	err = create_core_data(pdata, pdev, cpu, pkg_flag);
+ 	if (err)
 
 
