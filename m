@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab1LGUe5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 15:34:57 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46402 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757652Ab1LGUez (ORCPT
+	id S1757985Ab1LGUfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 15:35:14 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59840 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757652Ab1LGUfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 15:34:55 -0500
-Date: Thu, 8 Dec 2011 00:34:50 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
-Message-ID: <20111207203450.GS21678@moon>
-References: <20111206181026.GO29781@moon>
- <20111207185343.GA3209@redhat.com>
- <20111207190340.GP21678@moon>
- <20111207191916.GR21678@moon>
+	Wed, 7 Dec 2011 15:35:10 -0500
+Message-ID: <4EDFCDAC.3060600@fb.com>
+Date: Wed, 7 Dec 2011 12:33:48 -0800
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111207191916.GR21678@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <avagin@openvz.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        <linux-perf-users@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        <devel@openvz.org>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [Devel] [PATCH 0/7] Profiling sleep times (v3)
+References: <1322471015-107825-1-git-send-email-avagin@openvz.org> <4EDDC0FB.6080005@openvz.org>
+In-Reply-To: <4EDDC0FB.6080005@openvz.org>
+Content-Type: text/plain; charset="KOI8-R"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
+ definitions=2011-12-07_07:2011-12-07,2011-12-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 11:19:16PM +0400, Cyrill Gorcunov wrote:
-...
-> > > 
-> > > This looks "obviously wrong".
-> > > 
-> > > We can not trust ->children->next after rcu_read_unlock(). Another
-> > > rcu_read_lock() can't help.
-> > > 
-> > > Once again, I can be easily wrong, need to read the patch first.
-> > > 
-> > 
-> > Wait, Oleg, I might be wrong as well, but it's now as
-> > 
-> > children_seq_open
-> >  get_proc_task (so ref to task increased)
-> > 
-> > the children_seq_start/children_seq_stop works
-> > in iteration and every new iteration seq_list_next
-> > walks over the whole children list from the list
-> > head under rcu lock, so even if task is removed
-> > or added the link should exsist until rcu is unlocked
-> > and sync'ed no?
-> > 
-> 
-> On the other hands some if (task) tests are redundant
-> and might be dropped since we have a reference to a
-> task until seq-file is not released. I'll update it
-> and shrink a patch some more.
-> 
+On 12/5/11 11:15 PM, Andrey Vagin wrote:
 
-So while adding new task to a list is not a problem (the reader
-will simply not notice it) removing task from a list is a bit
-tricky, but as far as I see switch_task_namespaces (from exit_notify)
-uses synchronize_rcu as well as release_task calls for call_rcu
-for put_task_struct) so I think we will not get any wrong dereference
-in
+> Arun Sharma said, that the second versions of patches works ok for him.
+> (Arun is the first user of this functionality after me.)
 
-static int children_seq_show(struct seq_file *seq, void *v)
-{
-	struct task_struct *task = container_of(v, struct task_struct, sibling);
-	return seq_printf(seq, " %lu", (unsigned long)pid_vnr(task_pid(task)));
-}
+Yes - Andrey's patches (v2) have been functional for me when used via:
 
-while we're in rcu reader section. I might be wrong of course, so
-please verify this claim.
+perf record -agP -e sched:sched_switch --filter "prev_state == 1 || 
+prev_state == 2" -e sched:sched_stat_sleep,sched:sched_stat_iowait -- 
+sleep 3
+mv perf.data{,.old}; perf inject -s -i perf.data.old -o perf.data
+perf report --stdio -g graph --sort pid -C command-name
 
-	Cyrill
+There are two major issues though:
+
+* The above command lines cause us to collect way too much data and perf 
+can't keep up on a busy server
+
+Eg:
+
+Warning:
+Processed 55182 events and lost 13 chunks!
+
+Check IO/CPU overload!
+
+* Requires root access
+
+I suspect there is a way to stash the delay information available at 
+enqueue_sleeper() into the task_struct (or some place else) and make it 
+available at the sched:sched_switch tracepoint. This would solve both of 
+the problems above, but I don't have a patch yet.
+
+  -Arun
