@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933496Ab1LGQWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:22:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33924 "EHLO mx2.suse.de"
+	id S933796Ab1LGQXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:23:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34249 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933473Ab1LGQV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:21:58 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:15 2011
-Message-Id: <20111207161215.600665601@clark.kroah.org>
+	id S933742Ab1LGQXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:23:31 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:17 2011
+Message-Id: <20111207161217.819029275@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:12 -0800
+Date: Wed, 07 Dec 2011 08:11:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Eric Anholt <eric@anholt.net>,
-        Keith Packard <keithp@keithp.com>
-Subject: [010/104] drm/i915: Turn on another required clock gating bit on gen6.
+        <alan@lxorguk.ukuu.org.uk>, Jeff Ohlstein <johlstei@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [037/104] hrtimer: Fix extra wakeups from __remove_hrtimer()
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Anholt <eric@anholt.net>
+From: Jeff Ohlstein <johlstei@codeaurora.org>
 
-commit 9ca1d10d748e56964de95e3ed80211b192f56cf4 upstream.
+commit 27c9cd7e601632b3794e1c3344d37b86917ffb43 upstream.
 
-Unlike the previous one, I don't have known testcases it fixes.  I'd
-rather not go through the same debug cycle on whatever testcases those
-might be.
+__remove_hrtimer() attempts to reprogram the clockevent device when
+the timer being removed is the next to expire. However,
+__remove_hrtimer() reprograms the clockevent *before* removing the
+timer from the timerqueue and thus when hrtimer_force_reprogram()
+finds the next timer to expire it finds the timer we're trying to
+remove.
 
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+This is especially noticeable when the system switches to NOHz mode
+and the system tick is removed. The timer tick is removed from the
+system but the clockevent is programmed to wakeup in another HZ
+anyway.
+
+Silence the extra wakeup by removing the timer from the timerqueue
+before calling hrtimer_force_reprogram() so that we actually program
+the clockevent for the next timer to expire.
+
+This was broken by 998adc3 "hrtimers: Convert hrtimers to use
+timerlist infrastructure".
+
+Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
+Link: http://lkml.kernel.org/r/1321660030-8520-1-git-send-email-johlstei@codeaurora.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |    7 ++++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ kernel/hrtimer.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3403,6 +3403,7 @@
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -885,10 +885,13 @@ static void __remove_hrtimer(struct hrti
+ 			     struct hrtimer_clock_base *base,
+ 			     unsigned long newstate, int reprogram)
+ {
++	struct timerqueue_node *next_timer;
+ 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
+ 		goto out;
  
- #define GEN6_UCGCTL2				0x9404
- # define GEN6_RCPBUNIT_CLOCK_GATE_DISABLE		(1 << 12)
-+# define GEN6_RCCUNIT_CLOCK_GATE_DISABLE		(1 << 11)
- 
- #define GEN6_RPNSWREQ				0xA008
- #define   GEN6_TURBO_DISABLE			(1<<31)
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7888,8 +7888,13 @@ static void gen6_init_clock_gating(struc
- 	 * some amount of runtime in the Mesa "fire" demo, and Unigine
- 	 * Sanctuary and Tropics, and apparently anything else with
- 	 * alpha test or pixel discard.
-+	 *
-+	 * According to the spec, bit 11 (RCCUNIT) must also be set,
-+	 * but we didn't debug actual testcases to find it out.
- 	 */
--	I915_WRITE(GEN6_UCGCTL2, GEN6_RCPBUNIT_CLOCK_GATE_DISABLE);
-+	I915_WRITE(GEN6_UCGCTL2,
-+		   GEN6_RCPBUNIT_CLOCK_GATE_DISABLE |
-+		   GEN6_RCCUNIT_CLOCK_GATE_DISABLE);
- 
- 	/*
- 	 * According to the spec the following bits should be
+-	if (&timer->node == timerqueue_getnext(&base->active)) {
++	next_timer = timerqueue_getnext(&base->active);
++	timerqueue_del(&base->active, &timer->node);
++	if (&timer->node == next_timer) {
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 		/* Reprogram the clock event device. if enabled */
+ 		if (reprogram && hrtimer_hres_active()) {
+@@ -901,7 +904,6 @@ static void __remove_hrtimer(struct hrti
+ 		}
+ #endif
+ 	}
+-	timerqueue_del(&base->active, &timer->node);
+ 	if (!timerqueue_getnext(&base->active))
+ 		base->cpu_base->active_bases &= ~(1 << base->index);
+ out:
 
 
