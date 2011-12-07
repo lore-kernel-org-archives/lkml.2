@@ -1,58 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1LGBXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 20:23:21 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36103 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab1LGBXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 20:23:20 -0500
-Date: Wed, 7 Dec 2011 01:23:18 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-Message-ID: <20111207012318.GR2203@ZenIV.linux.org.uk>
-References: <20111206205346.GK2203@ZenIV.linux.org.uk>
- <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
- <4EDE94DC.8010106@canonical.com>
- <20111206224100.GM2203@ZenIV.linux.org.uk>
- <4EDEA152.90804@canonical.com>
- <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
- <20111207001643.GN2203@ZenIV.linux.org.uk>
- <CA+55aFzEE+qoRsiSQt7PecvS+hhnMRT9ytsRQKcBrjTQFg9kPg@mail.gmail.com>
- <20111207005253.GP2203@ZenIV.linux.org.uk>
- <CA+55aFxzZOL_TgQSvCUBNsm8OjR_UDHADL=bBeLe-xJ=3PsNhg@mail.gmail.com>
+	id S1754427Ab1LGB0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 20:26:21 -0500
+Received: from mga11.intel.com ([192.55.52.93]:46035 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752574Ab1LGB0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 20:26:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,310,1320652800"; 
+   d="scan'208";a="93165458"
+Date: Wed, 7 Dec 2011 09:37:54 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Lameter <cl@linux.com>,
+        "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>
+Subject: Re: [patch v2]numa: add a sysctl to control interleave allocation
+ granularity from each node
+Message-ID: <20111207013754.GA23364@sli10-conroe.sh.intel.com>
+References: <1323055846.22361.362.camel@sli10-conroe>
+ <alpine.DEB.2.00.1112061248500.28251@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxzZOL_TgQSvCUBNsm8OjR_UDHADL=bBeLe-xJ=3PsNhg@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1112061248500.28251@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 05:11:59PM -0800, Linus Torvalds wrote:
-
-> It's
-> *some* kind of root, but that's just about all the relevant
-> information you'd ever want to know.
-
-Damnit, it may very well be NOT ANY KIND OF ROOT AT ALL.  Which is what
-I'd been trying to tell you all along.  You can race with umount -l.
-In that case that thing might have been *INSIDE* your chroot jail.
-Anywhere in it.
-
-We raced with umount -l /mnt.  And what would be /mnt/1/2/foo/bar/baz
-had shown up as /foo/bar/baz.  A few cycles earlier or later it could
-be /1/2/foo/bar/baz or /bar/baz.  And you are not in chroot jail at
-all.  _That_ is what I have trouble with.  Because that sysadmin will
-misinterpret it exactly the way you have...
-
-See what I'm talking about?  I'm fine with giving the pathname to global
-root.  It's doing that to *random* just-unmounted vfsmount that is not
-a good thing.
-
-And yes, we can avoid returning that struct vfsmount *.  Fortunately.
-See the posting in another branch of that thread for details.
+On Wed, Dec 07, 2011 at 04:52:56AM +0800, David Rientjes wrote:
+> On Mon, 5 Dec 2011, Shaohua Li wrote:
+> 
+> > If mem plicy is interleaves, we will allocated pages from nodes in a round
+> > robin way. This surely can do interleave fairly, but not optimal.
+> > 
+> > Say the pages will be used for I/O later. Interleave allocation for two pages
+> > are allocated from two nodes, so the pages are not physically continuous. Later
+> > each page needs one segment for DMA scatter-gathering. But maxium hardware
+> > segment number is limited. The non-continuous pages will use up maxium
+> > hardware segment number soon and we can't merge I/O to bigger DMA. Allocating
+> > pages from one node hasn't such issue. The memory allocator pcp list makes
+> > we can get physically continuous pages in several alloc quite likely.
+> > 
+> > Below patch adds a sysctl to control the allocation granularity from each node.
+> > 
+> > Run a sequential read workload which accesses disk sdc - sdf. The test uses
+> > a LSI SAS1068E card. iostat -x -m 5 shows:
+> > 
+> > without numactl --interleave=0,1:
+> > Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await  svctm  %util
+> > sdc              13.40     0.00  259.00    0.00    67.05     0.00   530.19     5.00   19.38   3.86 100.00
+> > sdd              13.00     0.00  249.00    0.00    64.95     0.00   534.21     5.05   19.73   4.02 100.00
+> > sde              13.60     0.00  258.60    0.00    67.40     0.00   533.78     4.96   18.98   3.87 100.00
+> > sdf              13.00     0.00  261.60    0.00    67.50     0.00   528.44     5.24   19.77   3.82 100.00
+> > 
+> > with numactl --interleave=0,1:
+> > sdc               6.80     0.00  419.60    0.00    64.90     0.00   316.77    14.17   34.04   2.38 100.00
+> > sdd               6.00     0.00  423.40    0.00    65.58     0.00   317.23    17.33   41.14   2.36 100.00
+> > sde               5.60     0.00  419.60    0.00    64.90     0.00   316.77    17.29   40.94   2.38 100.00
+> > sdf               5.20     0.00  417.80    0.00    64.17     0.00   314.55    16.69   39.42   2.39 100.00
+> > 
+> > with numactl --interleave=0,1 and below patch, setting numa_interleave_granularity to 8
+> > (setting it to 2 gives similar result, I only recorded the data with 8):
+> > sdc              13.00     0.00  261.20    0.00    68.20     0.00   534.74     5.05   19.19   3.83 100.00
+> > sde              13.40     0.00  259.00    0.00    67.85     0.00   536.52     4.85   18.80   3.86 100.00
+> > sdf              13.00     0.00  260.60    0.00    68.20     0.00   535.97     4.85   18.61   3.84 100.00
+> > sdd              13.20     0.00  251.60    0.00    66.00     0.00   537.23     4.95   19.45   3.97 100.00
+> > 
+> > The avgrq-sz is increased a lot. performance boost a little too.
+> > 
+> 
+> I really like being able to control the interleave granularity, but I 
+> think it can be done even better: instead of having a strict count on the 
+> number of allocations (slab or otherwise) to allocate on a single node 
+> before moving on to another, which could result in large asymmetries 
+> between nodes which is the antagonist of any interleaved mempolicy, have 
+> you considered basing the granularity on size instead?  interleave_nodes() 
+> would then only move onto the next node when a size threshold has been 
+> reached.
+based on the allocation size, right? I did consider it. It would be easy to
+implement this. Note even without my patch we have the issue if allocation
+from one node is big order and small order from other node. And nobody
+complains the imbalance. This makes me think maybe people didn't care
+about the imbalance too much.
