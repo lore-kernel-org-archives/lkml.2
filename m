@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757722Ab1LGQUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:20:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33684 "EHLO mx2.suse.de"
+	id S933241Ab1LGQV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:21:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33780 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757687Ab1LGQUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:20:40 -0500
+	id S933126Ab1LGQVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:21:21 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:16 2011
-Message-Id: <20111207161216.002300432@clark.kroah.org>
+Message-Id: <20111207161216.915835380@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:17 -0800
+Date: Wed, 07 Dec 2011 08:11:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Felipe Balbi <balbi@ti.com>, Eric Miao <eric.y.miao@gmail.com>
-Subject: [015/104] ARM: pxa: fix inconsistent CONFIG_USB_PXA27X
+        <alan@lxorguk.ukuu.org.uk>, Timur Tabi <timur@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [026/104] ASoC: fsl_ssi: properly initialize the sysfs attribute object
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,157 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Haojian Zhuang <haojian.zhuang@marvell.com>
+From: Timur Tabi <timur@freescale.com>
 
-commit c0a39151a4055332897cba615623d3de2f3896df upstream.
+commit 0f768a7235d3dfb6f4833030a95a06419df089cb upstream.
 
-Since CONFIG_USB_GADGET_PXA27X and other macros are renamed to
-CONFIG_USB_PXA27X. Update them in arch/arm/mach-pxa and arch/arm/configs
-to keep consistent.
+Commit 6992f533 ("sysfs: Use one lockdep class per sysfs attribute")
+requires 'struct attribute' objects to be initialized with sysfs_attr_init().
 
-Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: Timur Tabi <timur@freescale.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/configs/ezx_defconfig           |    2 +-
- arch/arm/configs/imote2_defconfig        |    2 +-
- arch/arm/configs/magician_defconfig      |    2 +-
- arch/arm/configs/zeus_defconfig          |    2 +-
- arch/arm/mach-pxa/balloon3.c             |    2 +-
- arch/arm/mach-pxa/colibri-pxa320.c       |    2 +-
- arch/arm/mach-pxa/gumstix.c              |    2 +-
- arch/arm/mach-pxa/include/mach/palm27x.h |    4 ++--
- arch/arm/mach-pxa/palm27x.c              |    4 ++--
- arch/arm/mach-pxa/palmtc.c               |    2 +-
- arch/arm/mach-pxa/vpac270.c              |    2 +-
- 11 files changed, 13 insertions(+), 13 deletions(-)
+ sound/soc/fsl/fsl_ssi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/configs/ezx_defconfig
-+++ b/arch/arm/configs/ezx_defconfig
-@@ -287,7 +287,7 @@ CONFIG_USB=y
- # CONFIG_USB_DEVICE_CLASS is not set
- CONFIG_USB_OHCI_HCD=y
- CONFIG_USB_GADGET=y
--CONFIG_USB_GADGET_PXA27X=y
-+CONFIG_USB_PXA27X=y
- CONFIG_USB_ETH=m
- # CONFIG_USB_ETH_RNDIS is not set
- CONFIG_MMC=y
---- a/arch/arm/configs/imote2_defconfig
-+++ b/arch/arm/configs/imote2_defconfig
-@@ -263,7 +263,7 @@ CONFIG_USB=y
- # CONFIG_USB_DEVICE_CLASS is not set
- CONFIG_USB_OHCI_HCD=y
- CONFIG_USB_GADGET=y
--CONFIG_USB_GADGET_PXA27X=y
-+CONFIG_USB_PXA27X=y
- CONFIG_USB_ETH=m
- # CONFIG_USB_ETH_RNDIS is not set
- CONFIG_MMC=y
---- a/arch/arm/configs/magician_defconfig
-+++ b/arch/arm/configs/magician_defconfig
-@@ -132,7 +132,7 @@ CONFIG_USB_MON=m
- CONFIG_USB_OHCI_HCD=y
- CONFIG_USB_GADGET=y
- CONFIG_USB_GADGET_VBUS_DRAW=500
--CONFIG_USB_GADGET_PXA27X=y
-+CONFIG_USB_PXA27X=y
- CONFIG_USB_ETH=m
- # CONFIG_USB_ETH_RNDIS is not set
- CONFIG_USB_GADGETFS=m
---- a/arch/arm/configs/zeus_defconfig
-+++ b/arch/arm/configs/zeus_defconfig
-@@ -140,7 +140,7 @@ CONFIG_USB_SERIAL=m
- CONFIG_USB_SERIAL_GENERIC=y
- CONFIG_USB_SERIAL_MCT_U232=m
- CONFIG_USB_GADGET=m
--CONFIG_USB_GADGET_PXA27X=y
-+CONFIG_USB_PXA27X=y
- CONFIG_USB_ETH=m
- CONFIG_USB_GADGETFS=m
- CONFIG_USB_FILE_STORAGE=m
---- a/arch/arm/mach-pxa/balloon3.c
-+++ b/arch/arm/mach-pxa/balloon3.c
-@@ -307,7 +307,7 @@ static inline void balloon3_mmc_init(voi
- /******************************************************************************
-  * USB Gadget
-  ******************************************************************************/
--#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
-+#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
- static void balloon3_udc_command(int cmd)
- {
- 	if (cmd == PXA2XX_UDC_CMD_CONNECT)
---- a/arch/arm/mach-pxa/colibri-pxa320.c
-+++ b/arch/arm/mach-pxa/colibri-pxa320.c
-@@ -146,7 +146,7 @@ static void __init colibri_pxa320_init_e
- static inline void __init colibri_pxa320_init_eth(void) {}
- #endif /* CONFIG_AX88796 */
+--- a/sound/soc/fsl/fsl_ssi.c
++++ b/sound/soc/fsl/fsl_ssi.c
+@@ -703,6 +703,7 @@ static int __devinit fsl_ssi_probe(struc
  
--#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
-+#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
- static struct gpio_vbus_mach_info colibri_pxa320_gpio_vbus_info = {
- 	.gpio_vbus		= mfp_to_gpio(MFP_PIN_GPIO96),
- 	.gpio_pullup		= -1,
---- a/arch/arm/mach-pxa/gumstix.c
-+++ b/arch/arm/mach-pxa/gumstix.c
-@@ -106,7 +106,7 @@ static void __init gumstix_mmc_init(void
- }
- #endif
- 
--#ifdef CONFIG_USB_GADGET_PXA25X
-+#ifdef CONFIG_USB_PXA25X
- static struct gpio_vbus_mach_info gumstix_udc_info = {
- 	.gpio_vbus		= GPIO_GUMSTIX_USB_GPIOn,
- 	.gpio_pullup		= GPIO_GUMSTIX_USB_GPIOx,
---- a/arch/arm/mach-pxa/include/mach/palm27x.h
-+++ b/arch/arm/mach-pxa/include/mach/palm27x.h
-@@ -37,8 +37,8 @@ extern void __init palm27x_lcd_init(int
- static inline void palm27x_lcd_init(int power, struct pxafb_mode_info *mode) {}
- #endif
- 
--#if	defined(CONFIG_USB_GADGET_PXA27X) || \
--	defined(CONFIG_USB_GADGET_PXA27X_MODULE)
-+#if	defined(CONFIG_USB_PXA27X) || \
-+	defined(CONFIG_USB_PXA27X_MODULE)
- extern void __init palm27x_udc_init(int vbus, int pullup,
- 					int vbus_inverted);
- #else
---- a/arch/arm/mach-pxa/palm27x.c
-+++ b/arch/arm/mach-pxa/palm27x.c
-@@ -164,8 +164,8 @@ void __init palm27x_lcd_init(int power,
- /******************************************************************************
-  * USB Gadget
-  ******************************************************************************/
--#if	defined(CONFIG_USB_GADGET_PXA27X) || \
--	defined(CONFIG_USB_GADGET_PXA27X_MODULE)
-+#if	defined(CONFIG_USB_PXA27X) || \
-+	defined(CONFIG_USB_PXA27X_MODULE)
- static struct gpio_vbus_mach_info palm27x_udc_info = {
- 	.gpio_vbus_inverted	= 1,
- };
---- a/arch/arm/mach-pxa/palmtc.c
-+++ b/arch/arm/mach-pxa/palmtc.c
-@@ -338,7 +338,7 @@ static inline void palmtc_mkp_init(void)
- /******************************************************************************
-  * UDC
-  ******************************************************************************/
--#if defined(CONFIG_USB_GADGET_PXA25X)||defined(CONFIG_USB_GADGET_PXA25X_MODULE)
-+#if defined(CONFIG_USB_PXA25X)||defined(CONFIG_USB_PXA25X_MODULE)
- static struct gpio_vbus_mach_info palmtc_udc_info = {
- 	.gpio_vbus		= GPIO_NR_PALMTC_USB_DETECT_N,
- 	.gpio_vbus_inverted	= 1,
---- a/arch/arm/mach-pxa/vpac270.c
-+++ b/arch/arm/mach-pxa/vpac270.c
-@@ -343,7 +343,7 @@ static inline void vpac270_uhc_init(void
- /******************************************************************************
-  * USB Gadget
-  ******************************************************************************/
--#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
-+#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
- static struct gpio_vbus_mach_info vpac270_gpio_vbus_info = {
- 	.gpio_vbus		= GPIO41_VPAC270_UDC_DETECT,
- 	.gpio_pullup		= -1,
+ 	/* Initialize the the device_attribute structure */
+ 	dev_attr = &ssi_private->dev_attr;
++	sysfs_attr_init(&dev_attr->attr);
+ 	dev_attr->attr.name = "statistics";
+ 	dev_attr->attr.mode = S_IRUGO;
+ 	dev_attr->show = fsl_sysfs_ssi_show;
 
 
