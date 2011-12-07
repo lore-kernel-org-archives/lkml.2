@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1LGNnK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:43:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab1LGNnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:43:08 -0500
-Message-ID: <4EDF6D66.5030003@redhat.com>
-Date: Wed, 07 Dec 2011 15:43:02 +0200
-From: Dor Laor <dlaor@redhat.com>
-Reply-To: dlaor@redhat.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Amit Shah <amit.shah@redhat.com>,
-        Virtualization List <virtualization@lists.linux-foundation.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 00/12] virtio: s4 support
-References: <cover.1323199985.git.amit.shah@redhat.com> <87wra8j13m.fsf@rustcorp.com.au> <20111207104459.GR12507@redhat.com>
-In-Reply-To: <20111207104459.GR12507@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756116Ab1LGNqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:46:13 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:53822 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755801Ab1LGNqL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 08:46:11 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/6iWJzNEH6xTS8fjy4BwwrDUwYtubPbC4oRCqoGk
+	EEWlnXhKZyaQYS
+Subject: Re: [patch] intel_idle: convert i7300_idle_lock to raw spinlock
+From: Mike Galbraith <efault@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1323263113.2832.7.camel@pippen.local.home>
+References: <1323258522.5057.73.camel@marge.simson.net>
+	 <1323263113.2832.7.camel@pippen.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 07 Dec 2011 14:46:00 +0100
+Message-ID: <1323265560.5057.99.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2011 12:44 PM, Gleb Natapov wrote:
-> On Wed, Dec 07, 2011 at 05:54:29PM +1030, Rusty Russell wrote:
->> On Wed,  7 Dec 2011 01:18:38 +0530, Amit Shah<amit.shah@redhat.com>  wrote:
->>> Hi,
->>>
->>> These patches add support for S4 to virtio (pci) and all drivers.
->>
->> Dumb meta-question: why do we want to hibernate virtual machines?
->>
-> For instance you want to hibernate your laptop while it is running a virtual
-> machine. You can pause them of course, but then time will be incorrect
-> inside a guest after resume.
+On Wed, 2011-12-07 at 08:05 -0500, Steven Rostedt wrote:
+> Looks as this should also go mainline (Cc'd LKML)
+> 
+> Note, as I want to release 3.0.12-rt30 today, this wont make it. It will
+> have to wait till -rt31.
 
-Exactly. Today with do that through live migration into a file, we call 
-it external hibernation. The problem that it is transparent from the 
-guest and thus it loses time keeping. Even NTP can't handle it since if 
-it has more than 0.5% delay it stops syncing.
+No hurry.  (20 synchronized core jitter test was horrid).
 
-The solution is to do it through s4 where the guest gets a notification 
-when it resumes.
+> -- Steve
+> 
+> On Wed, 2011-12-07 at 12:48 +0100, Mike Galbraith wrote:
+> > 24 core Intel box's first exposure to 3.0.12-rt30-rc3 didn't go well.
+> > 
+> > [   27.104159] i7300_idle: loaded v1.55
+> > [   27.104192] BUG: scheduling while atomic: swapper/2/0/0x00000002
+> > [   27.104309] Pid: 0, comm: swapper/2 Tainted: G           N  3.0.12-rt30-rc3-rt #1
+> > [   27.104317] Call Trace:
+> > [   27.104338]  [<ffffffff810046a5>] dump_trace+0x85/0x2e0
+> > [   27.104372]  [<ffffffff8144eb00>] thread_return+0x12b/0x30b
+> > [   27.104381]  [<ffffffff8144f1b9>] schedule+0x29/0xb0
+> > [   27.104389]  [<ffffffff814506e5>] rt_spin_lock_slowlock+0xc5/0x240
+> > [   27.104401]  [<ffffffffa01f818f>] i7300_idle_notifier+0x3f/0x360 [i7300_idle]
+> > [   27.104415]  [<ffffffff814546c7>] notifier_call_chain+0x37/0x70
+> > [   27.104426]  [<ffffffff81454748>] __atomic_notifier_call_chain+0x48/0x70
+> > [   27.104439]  [<ffffffff81001a39>] cpu_idle+0x89/0xb0
+> > [   27.104449] bad: scheduling from the idle thread!
+> > 
+> > Signed-off-by: Mike Galbraith <efault@gmx.de>
+> > 
+> > ---
+> >  drivers/idle/i7300_idle.c |    8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > Index: linux-3.2-rt/drivers/idle/i7300_idle.c
+> > ===================================================================
+> > --- linux-3.2-rt.orig/drivers/idle/i7300_idle.c
+> > +++ linux-3.2-rt/drivers/idle/i7300_idle.c
+> > @@ -75,7 +75,7 @@ static unsigned long past_skip;
+> >  
+> >  static struct pci_dev *fbd_dev;
+> >  
+> > -static spinlock_t i7300_idle_lock;
+> > +static raw_spinlock_t i7300_idle_lock;
+> >  static int i7300_idle_active;
+> >  
+> >  static u8 i7300_idle_thrtctl_saved;
+> > @@ -457,7 +457,7 @@ static int i7300_idle_notifier(struct no
+> >  		idle_begin_time = ktime_get();
+> >  	}
+> >  
+> > -	spin_lock_irqsave(&i7300_idle_lock, flags);
+> > +	raw_spin_lock_irqsave(&i7300_idle_lock, flags);
+> >  	if (val == IDLE_START) {
+> >  
+> >  		cpumask_set_cpu(smp_processor_id(), idle_cpumask);
+> > @@ -506,7 +506,7 @@ static int i7300_idle_notifier(struct no
+> >  		}
+> >  	}
+> >  end:
+> > -	spin_unlock_irqrestore(&i7300_idle_lock, flags);
+> > +	raw_spin_unlock_irqrestore(&i7300_idle_lock, flags);
+> >  	return 0;
+> >  }
+> >  
+> > @@ -554,7 +554,7 @@ struct debugfs_file_info {
+> >  
+> >  static int __init i7300_idle_init(void)
+> >  {
+> > -	spin_lock_init(&i7300_idle_lock);
+> > +	raw_spin_lock_init(&i7300_idle_lock);
+> >  	total_us = 0;
+> >  
+> >  	if (i7300_idle_platform_probe(&fbd_dev, &ioat_dev, forceload))
+> > 
+> 
+> 
 
-
->
->> I figure there's a reason, but it seems a bit weird :)
->>
->> Thanks,
->> Rusty.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
-> --
-> 			Gleb.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
