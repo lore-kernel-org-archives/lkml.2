@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab1LGJ5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:57:31 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:59599 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab1LGJ5a (ORCPT
+	id S1754235Ab1LGKL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:11:29 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:57550 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab1LGKL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:57:30 -0500
-X-IronPort-AV: E=Sophos;i="4.71,313,1320624000"; 
-   d="scan'208";a="9336778"
-Subject: RE: [PATCH 1/2] xen/granttable: Support sub-page grants
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: ANNIE LI <annie.li@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-Date: Wed, 7 Dec 2011 09:57:29 +0000
-In-Reply-To: <291EDFCB1E9E224A99088639C4762022B5988E542E@LONPMAILBOX01.citrite.net>
-References: <4EDDF41E.8070200@oracle.com>
-	 <1323168999-4434-1-git-send-email-annie.li@oracle.com>
-	 <1323171726.23681.65.camel@zakaz.uk.xensource.com>
-	 <4EDEDF2E.3040204@oracle.com>
-	 <291EDFCB1E9E224A99088639C4762022B5988E542E@LONPMAILBOX01.citrite.net>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323251849.23681.128.camel@zakaz.uk.xensource.com>
+	Wed, 7 Dec 2011 05:11:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Semwal, Sumit" <sumit.semwal@ti.com>
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+Date: Wed, 7 Dec 2011 10:11:03 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        linux@arm.linux.org.uk, jesse.barker@linaro.org,
+        m.szyprowski@samsung.com, rob@ti.com, daniel@ffwll.ch,
+        t.stanislaws@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <201112051718.48324.arnd@arndb.de> <CAB2ybb8-0_HupO95UUvLN9ovVxnU+uvn4UXbwqZLSFuC9MZs0w@mail.gmail.com>
+In-Reply-To: <CAB2ybb8-0_HupO95UUvLN9ovVxnU+uvn4UXbwqZLSFuC9MZs0w@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112071011.03525.arnd@arndb.de>
+X-Provags-ID: V02:K0:XcQ31WI5i4DDjg6nezQlIhUx6hFXA5kNbhKMVqsH+iW
+ 803TA1tVAAHVKpWrMKFfgKFY9JFdzRiuOORZwrV0AU59KlgPPk
+ vpJmxBhvipyWmhUXL01fheToxVClL7iKHknokZr9wtPLB2D01t
+ Fg/hRY2HHGncxblf3Lhlc4YbEI5kE1KYBoiXqpibvhO9z2E3Mb
+ 2Yc2ZobNtxXfutN26MRHdLRLVtmvLTmgDZt4M/4LRiaI8TAE8u
+ GabCzeuGyO9o8jMuW4u2AGTn+VeijXKai7KfGJVg6K+Okh3f3x
+ VXWKa90/teIQYC46Juu83gK6KEjverN5ZBmzJwxuF5iY9u8Aie
+ wgEChQJM55hmxZbmzkeA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-07 at 08:59 +0000, Paul Durrant wrote:
-> > gnttab_v2_ops = {
-> >   ...
-> > .access_subpage = access_subpage_v2;
-> > .access_ref_subpage = access_ref_subpage_v2; .access_trans =
-> > access_trans_v2; .access_ref_trans = access_ref_trans_v2; }
-> > 
-> 
-> 
-> Do you need ops for the ref and non-ref functions? I would have
-> thought you could just have the ref ones since the all the non-ref
-> variants do is allocate and then call the ref variant.
+On Wednesday 07 December 2011, Semwal, Sumit wrote:
+> >
+> > Do you have a use case for making the interface compile-time disabled?
+> > I had assumed that any code using it would make no sense if it's not
+> > available so you don't actually need this.
+>
+> Ok. Though if we keep the interface compile-time disabled, the users
+> can actually check and fail or fall-back gracefully when the API is
+> not available; If I remove it, anyways the users would need to do the
+> same compile time check whether API is available or not, right?
 
-Good point. It appears that all the existing ops are only present in the
-ref form.
+If you have to do a compile-time check for the config symbol, it's better
+to do it the way you did here than in the caller.
 
-Ian.
+My guess was that no caller would actually require this, because when you
+write a part of a subsystem to interact with the dma-buf infrastructure,
+you would always disable compilation of an extire file that deals with 
+everything related to struct dma_buf, not just stub out the calls.
 
-
+	Arnd
