@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933768Ab1LGQXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:23:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34209 "EHLO mx2.suse.de"
+	id S933755Ab1LGQX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:23:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34195 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933742Ab1LGQXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:23:25 -0500
+	id S933732Ab1LGQXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:23:22 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:17 2011
-Message-Id: <20111207161217.649690605@clark.kroah.org>
+Message-Id: <20111207161217.561533308@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:37 -0800
+Date: Wed, 07 Dec 2011 08:11:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Michal Hocko <mhocko@suse.cz>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Tomasz Buchert <tomasz.buchert@inria.fr>,
-        Paul Menage <paul@paulmenage.org>, Tejun Heo <htejun@gmail.com>
-Subject: [035/104] cgroup_freezer: fix freezing groups with stopped tasks
+        <alan@lxorguk.ukuu.org.uk>, Tero Kristo <t-kristo@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [034/104] regulator: twl: fix twl4030 support for smps regulators
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,84 +25,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Tero Kristo <t-kristo@ti.com>
 
-commit 884a45d964dd395eda945842afff5e16bcaedf56 upstream.
+commit ba305e31e88ea5c2f598ff9fbc5424711a429e30 upstream.
 
-2d3cbf8b (cgroup_freezer: update_freezer_state() does incorrect state
-transitions) removed is_task_frozen_enough and replaced it with a simple
-frozen call. This, however, breaks freezing for a group with stopped tasks
-because those cannot be frozen and so the group remains in CGROUP_FREEZING
-state (update_if_frozen doesn't count stopped tasks) and never reaches
-CGROUP_FROZEN.
+SMPS regulator voltage control differs from the one of the LDO ones.
+Current TWL code was using LDO regulator ops for controlling the SMPS
+regulators, which fails. This was fixed fixed by adding separate
+regulator type which uses correct logic and calculations for the
+voltage levels.
 
-Let's add is_task_frozen_enough back and use it at the original locations
-(update_if_frozen and try_to_freeze_cgroup). Semantically we consider
-stopped tasks as frozen enough so we should consider both cases when
-testing frozen tasks.
-
-Testcase:
-mkdir /dev/freezer
-mount -t cgroup -o freezer none /dev/freezer
-mkdir /dev/freezer/foo
-sleep 1h &
-pid=$!
-kill -STOP $pid
-echo $pid > /dev/freezer/foo/tasks
-echo FROZEN > /dev/freezer/foo/freezer.state
-while true
-do
-	cat /dev/freezer/foo/freezer.state
-	[ "`cat /dev/freezer/foo/freezer.state`" = "FROZEN" ] && break
-	sleep 1
-done
-echo OK
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
-Cc: Paul Menage <paul@paulmenage.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Tejun Heo <htejun@gmail.com>
+Signed-off-by: Tero Kristo <t-kristo@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/cgroup_freezer.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/regulator/twl-regulator.c |   46 ++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 44 insertions(+), 2 deletions(-)
 
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -153,6 +153,13 @@ static void freezer_destroy(struct cgrou
- 	kfree(cgroup_freezer(cgroup));
- }
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -71,6 +71,7 @@ struct twlreg_info {
+ #define VREG_TYPE		1
+ #define VREG_REMAP		2
+ #define VREG_DEDICATED		3	/* LDO control */
++#define VREG_VOLTAGE_SMPS_4030	9
+ /* TWL6030 register offsets */
+ #define VREG_TRANS		1
+ #define VREG_STATE		2
+@@ -514,6 +515,32 @@ static struct regulator_ops twl4030ldo_o
+ 	.get_status	= twl4030reg_get_status,
+ };
  
-+/* task is frozen or will freeze immediately when next it gets woken */
-+static bool is_task_frozen_enough(struct task_struct *task)
++static int
++twl4030smps_set_voltage(struct regulator_dev *rdev, int min_uV, int max_uV,
++			unsigned *selector)
 +{
-+	return frozen(task) ||
-+		(task_is_stopped_or_traced(task) && freezing(task));
++	struct twlreg_info *info = rdev_get_drvdata(rdev);
++	int vsel = DIV_ROUND_UP(min_uV - 600000, 12500);
++
++	twlreg_write(info, TWL_MODULE_PM_RECEIVER, VREG_VOLTAGE_SMPS_4030,
++		vsel);
++	return 0;
 +}
 +
- /*
-  * The call to cgroup_lock() in the freezer.state write method prevents
-  * a write to that file racing against an attach, and hence the
-@@ -231,7 +238,7 @@ static void update_if_frozen(struct cgro
- 	cgroup_iter_start(cgroup, &it);
- 	while ((task = cgroup_iter_next(cgroup, &it))) {
- 		ntotal++;
--		if (frozen(task))
-+		if (is_task_frozen_enough(task))
- 			nfrozen++;
++static int twl4030smps_get_voltage(struct regulator_dev *rdev)
++{
++	struct twlreg_info *info = rdev_get_drvdata(rdev);
++	int vsel = twlreg_read(info, TWL_MODULE_PM_RECEIVER,
++		VREG_VOLTAGE_SMPS_4030);
++
++	return vsel * 12500 + 600000;
++}
++
++static struct regulator_ops twl4030smps_ops = {
++	.set_voltage	= twl4030smps_set_voltage,
++	.get_voltage	= twl4030smps_get_voltage,
++};
++
+ static int twl6030ldo_list_voltage(struct regulator_dev *rdev, unsigned index)
+ {
+ 	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+@@ -856,6 +883,21 @@ static struct regulator_ops twlsmps_ops
+ 		}, \
  	}
  
-@@ -284,7 +291,7 @@ static int try_to_freeze_cgroup(struct c
- 	while ((task = cgroup_iter_next(cgroup, &it))) {
- 		if (!freeze_task(task, true))
- 			continue;
--		if (frozen(task))
-+		if (is_task_frozen_enough(task))
- 			continue;
- 		if (!freezing(task) && !freezer_should_skip(task))
- 			num_cant_freeze_now++;
++#define TWL4030_ADJUSTABLE_SMPS(label, offset, num, turnon_delay, remap_conf) \
++	{ \
++	.base = offset, \
++	.id = num, \
++	.delay = turnon_delay, \
++	.remap = remap_conf, \
++	.desc = { \
++		.name = #label, \
++		.id = TWL4030_REG_##label, \
++		.ops = &twl4030smps_ops, \
++		.type = REGULATOR_VOLTAGE, \
++		.owner = THIS_MODULE, \
++		}, \
++	}
++
+ #define TWL6030_ADJUSTABLE_LDO(label, offset, min_mVolts, max_mVolts) { \
+ 	.base = offset, \
+ 	.min_mV = min_mVolts, \
+@@ -947,8 +989,8 @@ static struct twlreg_info twl_regs[] = {
+ 	TWL4030_ADJUSTABLE_LDO(VINTANA2, 0x43, 12, 100, 0x08),
+ 	TWL4030_FIXED_LDO(VINTDIG, 0x47, 1500, 13, 100, 0x08),
+ 	TWL4030_ADJUSTABLE_LDO(VIO, 0x4b, 14, 1000, 0x08),
+-	TWL4030_ADJUSTABLE_LDO(VDD1, 0x55, 15, 1000, 0x08),
+-	TWL4030_ADJUSTABLE_LDO(VDD2, 0x63, 16, 1000, 0x08),
++	TWL4030_ADJUSTABLE_SMPS(VDD1, 0x55, 15, 1000, 0x08),
++	TWL4030_ADJUSTABLE_SMPS(VDD2, 0x63, 16, 1000, 0x08),
+ 	TWL4030_FIXED_LDO(VUSB1V5, 0x71, 1500, 17, 100, 0x08),
+ 	TWL4030_FIXED_LDO(VUSB1V8, 0x74, 1800, 18, 100, 0x08),
+ 	TWL4030_FIXED_LDO(VUSB3V1, 0x77, 3100, 19, 150, 0x08),
 
 
