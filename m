@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab1LGBJf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 20:09:35 -0500
-Received: from ozlabs.org ([203.10.76.45]:42826 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753919Ab1LGBJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 20:09:34 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: jim.cromie@gmail.com, jbaron@redhat.com
-Cc: greg@kroah.com, joe@perches.com, bart.vanassche@gmail.com,
-        linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>,
-        Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 18/25] dynamic_debug: Introduce global fake module param $module.dyndbg
-In-Reply-To: <1323198694-7186-19-git-send-email-jim.cromie@gmail.com>
-References: <CAJfuBxyyriN6vYgwzEft9PKFjWsa2E4FZmbFMmtO6G_DP=nosg@mail.gmail.com>, <CAJfuBxzM6rg21Rpq+ww+=2qK_am44V-Btvhp3Z3hbP2TKP8JTw@mail.gmail.com> <1323198694-7186-1-git-send-email-jim.cromie@gmail.com> <1323198694-7186-19-git-send-email-jim.cromie@gmail.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 07 Dec 2011 11:31:55 +1030
-Message-ID: <8739cxjit8.fsf@rustcorp.com.au>
+	id S1755548Ab1LGBKu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 20:10:50 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33241 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754032Ab1LGBKt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 20:10:49 -0500
+Date: Wed, 7 Dec 2011 01:10:47 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+Message-ID: <20111207011047.GQ2203@ZenIV.linux.org.uk>
+References: <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
+ <20111206205346.GK2203@ZenIV.linux.org.uk>
+ <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+ <4EDE94DC.8010106@canonical.com>
+ <20111206224100.GM2203@ZenIV.linux.org.uk>
+ <4EDEA152.90804@canonical.com>
+ <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
+ <20111207001643.GN2203@ZenIV.linux.org.uk>
+ <20111207003922.GO2203@ZenIV.linux.org.uk>
+ <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  6 Dec 2011 12:11:28 -0700, jim.cromie@gmail.com wrote:
-> From: Jim Cromie <jim.cromie@gmail.com>
+On Tue, Dec 06, 2011 at 04:42:00PM -0800, Linus Torvalds wrote:
+
+> This part is still just pure and utter sh*t.
 > 
-> Rework Thomas Renninger's $module.ddebug boot-time debugging feature,
-> from https://lkml.org/lkml/2010/9/15/397
-
-This worked out pretty neatly.  Thanks!
-
-A few questions from your patches:
-
-> diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-> index 7e3c53a..b77f43b 100644
-> --- a/include/linux/dynamic_debug.h
-> +++ b/include/linux/dynamic_debug.h
-> @@ -39,11 +39,16 @@ struct _ddebug {
->  int ddebug_add_module(struct _ddebug *tab, unsigned int n,
->  				const char *modname);
->  
-> +struct kernel_param;
-> +
->  #if defined(CONFIG_DYNAMIC_DEBUG)
->  extern int ddebug_remove_module(const char *mod_name);
-> +
->  extern __printf(2, 3)
->  int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...);
-
-struct kernel_param def belongs in future patch?  And whitespace change
-is kind of annoying.
-
-> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-> index 7939f63..91bd56a 100644
-> --- a/include/linux/moduleparam.h
-> +++ b/include/linux/moduleparam.h
-> @@ -292,7 +292,7 @@ extern int parse_args(const char *name,
->  		      char *args,
->  		      const struct kernel_param *params,
->  		      unsigned num,
-> -		      int (*unknown)(char *param, char *val));
-> +		      int (*unknown)(char *param, char *val, const char *modname));
-
-Do you really want the modname here, or a struct module?  I wonder if we
-should make this a standard opaque void *.  Of course, we'd have to
-modify parse_args callers, but you're abusing "name" arg here a bit
-anyway.
-
-> @@ -2893,7 +2893,8 @@ static struct module *load_module(void __user *umod,
-> 	  mutex_unlock(&module_mutex);
+> You have not explained why that information is *ever* valid. And I
+> claim it isn't.
 > 
-> 	  /* Module is ready to execute: parsing args may do that. */
-> -	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
-> +	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
-> +			 ddebug_dyndbg_param_cb);
-> 	  if (err < 0)
-> 		  goto unlink;
+> We have a bug in our current __d_path(). And I claim that the
+> underlying cause of the bug is the crazy "let's return this
+> nonsensical and idiotic information that cannot possibly make sense to
+> anybody".
+> 
+> We shouldn't have done that in the first place. And we certainly
+> shouldn't *continue* doing that.
 
-You have to 
+Sigh...  This is what it boils down to: there are 3 very different cases -
+we'd walked to a global root, we'd raced with umount and we are someplace
+never mounted at all.  Case 1 is fine; if apparmor cares whose namespace
+it is, it can bloody well check path->mnt itself.  Case 2 is one where
+I think that returning pathname does more damage than good; it's really
+random in that case and returning NULL is the best thing we can do.
+So far, so good, and we don't need to return *any* references to vfsmounts.
 
+Unfortunately, there's also case 3.  Internal vfsmounts.  And that's where
+it hits the fan.  Oh, wait...
 
+Guys, I think I know how to deal with that crap.  We *CAN* recognize
+internal vfsmounts just fine.  It's right there in ->mnt_flags.  And
+in that case bothering with __d_path() and correcting it post-factum is
+just plain wrong.
 
-> @@ -510,8 +510,7 @@ asmlinkage void __init start_kernel(void)
->  	printk(KERN_NOTICE "Kernel command line: %s\n", boot_command_line);
->  	parse_early_param();
->  	parse_args("Booting kernel", static_command_line, __start___param,
-> -		   __stop___param - __start___param,
-> -		   &unknown_bootoption);
-> +		   __stop___param - __start___param, &unknown_bootoption);
->  
->  	jump_label_init();
-
-Gratuitous whitespace change.
-
-> +int ddebug_dyndbg_param_cb(char *param, char* val, const char* modname)
-> +{
-> +	if (strcmp(param, "dyndbg")) {
-> +		pr_warn("bogus param %s=%s received for %s\n",
-> +			param, val, modname);
-> +		return -EINVAL;
-> +	}
-
-This is already done in parse_args(); don't add a pr_warn here.
-
-Thanks,
-Rusty.
+So let's add d_absolute_path(path, buf, buflen).  Having it check that
+we'd walked to something mounted.  And returning NULL otherwise.  _Never_
+mangle the pathname; replace that procfs weirdness in apparmor with
+"Is our path on internal vfsmount?  If so, use dentry_path() on dentry
+part and slap /proc/ in front if it was procfs" and that's it.
