@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab1LGQVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:21:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33721 "EHLO mx2.suse.de"
+	id S933022Ab1LGQVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:21:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33752 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757764Ab1LGQU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:20:57 -0500
+	id S932952Ab1LGQVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:21:07 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:16 2011
-Message-Id: <20111207161216.408196532@clark.kroah.org>
+Message-Id: <20111207161216.560474946@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:22 -0800
+Date: Wed, 07 Dec 2011 08:11:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Kevin Hilman <khilman@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [020/104] ARM: OMAP: PM: only register TWL with voltage layer when device is present
+        <alan@lxorguk.ukuu.org.uk>, Takashi Iwai <tiwai@suse.de>
+Subject: [022/104] ALSA: hda - Fix jack-detection control of VT1708
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,92 +24,202 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin Hilman <khilman@ti.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 46232a3622c6e33605906ee6690dfef372925f53 upstream.
+commit 187d333edc0a8e1bb507900ce89853ffe3bd2c84 upstream.
 
-Current code registers voltage layer details for TWL PMIC even when a TWL
-has not been registered.  Fix this to only register the TWL with voltage
-layer when the TWL PMIC is initialized by board-level code.
+VT1708 has no support for unsolicited events per jack-plug, the driver
+implements the workq for polling the jack-detection.  The mixer element
+"Jack Detect" was supposed to control this behavior on/off, but this
+doesn't work properly as is now.  The workq is always started and the
+HP automute is always enabled.
 
-Signed-off-by: Kevin Hilman <khilman@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+This patch fixes the jack-detect control behavior by triggering / stopping
+the work appropriately at the state change.  Also the work checks the
+internal state to continue scheduling or not.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-omap2/pm.c         |    6 ++----
- arch/arm/mach-omap2/twl-common.c |   11 +++++++++++
- arch/arm/mach-omap2/twl-common.h |    3 +++
- 3 files changed, 16 insertions(+), 4 deletions(-)
+ sound/pci/hda/patch_via.c |   76 ++++++++++++++++++++++++++--------------------
+ 1 file changed, 43 insertions(+), 33 deletions(-)
 
---- a/arch/arm/mach-omap2/pm.c
-+++ b/arch/arm/mach-omap2/pm.c
-@@ -23,6 +23,7 @@
- #include "powerdomain.h"
- #include "clockdomain.h"
- #include "pm.h"
-+#include "twl-common.h"
+--- a/sound/pci/hda/patch_via.c
++++ b/sound/pci/hda/patch_via.c
+@@ -207,6 +207,7 @@ struct via_spec {
+ 	/* work to check hp jack state */
+ 	struct hda_codec *codec;
+ 	struct delayed_work vt1708_hp_work;
++	int hp_work_active;
+ 	int vt1708_jack_detect;
+ 	int vt1708_hp_present;
  
- static struct omap_device_pm_latency *pm_lats;
+@@ -304,27 +305,35 @@ enum {
+ static void analog_low_current_mode(struct hda_codec *codec);
+ static bool is_aa_path_mute(struct hda_codec *codec);
  
-@@ -251,11 +252,8 @@ postcore_initcall(omap2_common_pm_init);
- 
- static int __init omap2_common_pm_late_init(void)
+-static void vt1708_start_hp_work(struct via_spec *spec)
++#define hp_detect_with_aa(codec) \
++	(snd_hda_get_bool_hint(codec, "analog_loopback_hp_detect") == 1 && \
++	 !is_aa_path_mute(codec))
++
++static void vt1708_stop_hp_work(struct via_spec *spec)
  {
--	/* Init the OMAP TWL parameters */
--	omap3_twl_init();
--	omap4_twl_init();
--
- 	/* Init the voltage layer */
-+	omap_pmic_late_init();
- 	omap_voltage_late_init();
- 
- 	/* Initialize the voltages */
---- a/arch/arm/mach-omap2/twl-common.c
-+++ b/arch/arm/mach-omap2/twl-common.c
-@@ -30,6 +30,7 @@
- #include <plat/usb.h>
- 
- #include "twl-common.h"
-+#include "pm.h"
- 
- static struct i2c_board_info __initdata pmic_i2c_board_info = {
- 	.addr		= 0x48,
-@@ -48,6 +49,16 @@ void __init omap_pmic_init(int bus, u32
- 	omap_register_i2c_bus(bus, clkrate, &pmic_i2c_board_info, 1);
+ 	if (spec->codec_type != VT1708 || spec->autocfg.hp_pins[0] == 0)
+ 		return;
+-	snd_hda_codec_write(spec->codec, 0x1, 0, 0xf81,
+-			    !spec->vt1708_jack_detect);
+-	if (!delayed_work_pending(&spec->vt1708_hp_work))
+-		schedule_delayed_work(&spec->vt1708_hp_work,
+-				      msecs_to_jiffies(100));
++	if (spec->hp_work_active) {
++		snd_hda_codec_write(spec->codec, 0x1, 0, 0xf81, 1);
++		cancel_delayed_work_sync(&spec->vt1708_hp_work);
++		spec->hp_work_active = 0;
++	}
  }
  
-+void __init omap_pmic_late_init(void)
-+{
-+	/* Init the OMAP TWL parameters (if PMIC has been registerd) */
-+	if (!pmic_i2c_board_info.irq)
-+		return;
-+
-+	omap3_twl_init();
-+	omap4_twl_init();
-+}
-+
- #if defined(CONFIG_ARCH_OMAP3)
- static struct twl4030_usb_data omap3_usb_pdata = {
- 	.usb_mode	= T2_USB_MODE_ULPI,
---- a/arch/arm/mach-omap2/twl-common.h
-+++ b/arch/arm/mach-omap2/twl-common.h
-@@ -1,6 +1,8 @@
- #ifndef __OMAP_PMIC_COMMON__
- #define __OMAP_PMIC_COMMON__
+-static void vt1708_stop_hp_work(struct via_spec *spec)
++static void vt1708_update_hp_work(struct via_spec *spec)
+ {
+ 	if (spec->codec_type != VT1708 || spec->autocfg.hp_pins[0] == 0)
+ 		return;
+-	if (snd_hda_get_bool_hint(spec->codec, "analog_loopback_hp_detect") == 1
+-	    && !is_aa_path_mute(spec->codec))
+-		return;
+-	snd_hda_codec_write(spec->codec, 0x1, 0, 0xf81,
+-			    !spec->vt1708_jack_detect);
+-	cancel_delayed_work_sync(&spec->vt1708_hp_work);
++	if (spec->vt1708_jack_detect &&
++	    (spec->active_streams || hp_detect_with_aa(spec->codec))) {
++		if (!spec->hp_work_active) {
++			snd_hda_codec_write(spec->codec, 0x1, 0, 0xf81, 0);
++			schedule_delayed_work(&spec->vt1708_hp_work,
++					      msecs_to_jiffies(100));
++			spec->hp_work_active = 1;
++		}
++	} else if (!hp_detect_with_aa(spec->codec))
++		vt1708_stop_hp_work(spec);
+ }
  
-+#include <plat/irqs.h>
-+
- #define TWL_COMMON_PDATA_USB		(1 << 0)
- #define TWL_COMMON_PDATA_BCI		(1 << 1)
- #define TWL_COMMON_PDATA_MADC		(1 << 2)
-@@ -30,6 +32,7 @@ struct twl4030_platform_data;
+ static void set_widgets_power_state(struct hda_codec *codec)
+@@ -342,12 +351,7 @@ static int analog_input_switch_put(struc
  
- void omap_pmic_init(int bus, u32 clkrate, const char *pmic_type, int pmic_irq,
- 		    struct twl4030_platform_data *pmic_data);
-+void omap_pmic_late_init(void);
+ 	set_widgets_power_state(codec);
+ 	analog_low_current_mode(snd_kcontrol_chip(kcontrol));
+-	if (snd_hda_get_bool_hint(codec, "analog_loopback_hp_detect") == 1) {
+-		if (is_aa_path_mute(codec))
+-			vt1708_start_hp_work(codec->spec);
+-		else
+-			vt1708_stop_hp_work(codec->spec);
+-	}
++	vt1708_update_hp_work(codec->spec);
+ 	return change;
+ }
  
- static inline void omap2_pmic_init(const char *pmic_type,
- 				   struct twl4030_platform_data *pmic_data)
+@@ -1153,7 +1157,7 @@ static int via_playback_multi_pcm_prepar
+ 	spec->cur_dac_stream_tag = stream_tag;
+ 	spec->cur_dac_format = format;
+ 	mutex_unlock(&spec->config_mutex);
+-	vt1708_start_hp_work(spec);
++	vt1708_update_hp_work(spec);
+ 	return 0;
+ }
+ 
+@@ -1173,7 +1177,7 @@ static int via_playback_hp_pcm_prepare(s
+ 	spec->cur_hp_stream_tag = stream_tag;
+ 	spec->cur_hp_format = format;
+ 	mutex_unlock(&spec->config_mutex);
+-	vt1708_start_hp_work(spec);
++	vt1708_update_hp_work(spec);
+ 	return 0;
+ }
+ 
+@@ -1187,7 +1191,7 @@ static int via_playback_multi_pcm_cleanu
+ 	snd_hda_multi_out_analog_cleanup(codec, &spec->multiout);
+ 	spec->active_streams &= ~STREAM_MULTI_OUT;
+ 	mutex_unlock(&spec->config_mutex);
+-	vt1708_stop_hp_work(spec);
++	vt1708_update_hp_work(spec);
+ 	return 0;
+ }
+ 
+@@ -1202,7 +1206,7 @@ static int via_playback_hp_pcm_cleanup(s
+ 		snd_hda_codec_setup_stream(codec, spec->hp_dac_nid, 0, 0, 0);
+ 	spec->active_streams &= ~STREAM_INDEP_HP;
+ 	mutex_unlock(&spec->config_mutex);
+-	vt1708_stop_hp_work(spec);
++	vt1708_update_hp_work(spec);
+ 	return 0;
+ }
+ 
+@@ -1632,7 +1636,8 @@ static void via_hp_automute(struct hda_c
+ 	int nums;
+ 	struct via_spec *spec = codec->spec;
+ 
+-	if (!spec->hp_independent_mode && spec->autocfg.hp_pins[0])
++	if (!spec->hp_independent_mode && spec->autocfg.hp_pins[0] &&
++	    (spec->codec_type != VT1708 || spec->vt1708_jack_detect))
+ 		present = snd_hda_jack_detect(codec, spec->autocfg.hp_pins[0]);
+ 
+ 	if (spec->smart51_enabled)
+@@ -2599,8 +2604,6 @@ static int vt1708_jack_detect_get(struct
+ 
+ 	if (spec->codec_type != VT1708)
+ 		return 0;
+-	spec->vt1708_jack_detect =
+-		!((snd_hda_codec_read(codec, 0x1, 0, 0xf84, 0) >> 8) & 0x1);
+ 	ucontrol->value.integer.value[0] = spec->vt1708_jack_detect;
+ 	return 0;
+ }
+@@ -2610,18 +2613,22 @@ static int vt1708_jack_detect_put(struct
+ {
+ 	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+ 	struct via_spec *spec = codec->spec;
+-	int change;
++	int val;
+ 
+ 	if (spec->codec_type != VT1708)
+ 		return 0;
+-	spec->vt1708_jack_detect = ucontrol->value.integer.value[0];
+-	change = (0x1 & (snd_hda_codec_read(codec, 0x1, 0, 0xf84, 0) >> 8))
+-		== !spec->vt1708_jack_detect;
+-	if (spec->vt1708_jack_detect) {
++	val = !!ucontrol->value.integer.value[0];
++	if (spec->vt1708_jack_detect == val)
++		return 0;
++	spec->vt1708_jack_detect = val;
++	if (spec->vt1708_jack_detect &&
++	    snd_hda_get_bool_hint(codec, "analog_loopback_hp_detect") != 1) {
+ 		mute_aa_path(codec, 1);
+ 		notify_aa_path_ctls(codec);
+ 	}
+-	return change;
++	via_hp_automute(codec);
++	vt1708_update_hp_work(spec);
++	return 1;
+ }
+ 
+ static const struct snd_kcontrol_new vt1708_jack_detect_ctl = {
+@@ -2758,6 +2765,7 @@ static int via_init(struct hda_codec *co
+ 	via_auto_init_unsol_event(codec);
+ 
+ 	via_hp_automute(codec);
++	vt1708_update_hp_work(spec);
+ 
+ 	return 0;
+ }
+@@ -2774,7 +2782,9 @@ static void vt1708_update_hp_jack_state(
+ 		spec->vt1708_hp_present ^= 1;
+ 		via_hp_automute(spec->codec);
+ 	}
+-	vt1708_start_hp_work(spec);
++	if (spec->vt1708_jack_detect)
++		schedule_delayed_work(&spec->vt1708_hp_work,
++				      msecs_to_jiffies(100));
+ }
+ 
+ static int get_mux_nids(struct hda_codec *codec)
 
 
