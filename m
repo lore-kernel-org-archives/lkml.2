@@ -1,86 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab1LGGv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 01:51:28 -0500
-Received: from mx1.orcon.net.nz ([219.88.242.51]:35484 "EHLO mx1.orcon.net.nz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472Ab1LGGv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 01:51:26 -0500
-Message-ID: <4EDF0CEB.80904@orcon.net.nz>
-Date: Wed, 07 Dec 2011 19:51:23 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	id S1752420Ab1LGGy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 01:54:59 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50045 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab1LGGy6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 01:54:58 -0500
+Date: Wed, 7 Dec 2011 06:54:38 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: john.johansen@canonical.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+Message-ID: <20111207065437.GB2203@ZenIV.linux.org.uk>
+References: <20111207001643.GN2203@ZenIV.linux.org.uk>
+ <20111207003922.GO2203@ZenIV.linux.org.uk>
+ <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com>
+ <20111207011047.GQ2203@ZenIV.linux.org.uk>
+ <20111207013720.GS2203@ZenIV.linux.org.uk>
+ <201112070326.pB73QPZo042162@www262.sakura.ne.jp>
+ <20111207034238.GX2203@ZenIV.linux.org.uk>
+ <201112070501.pB751LoP064331@www262.sakura.ne.jp>
+ <20111207051908.GA2203@ZenIV.linux.org.uk>
+ <201112070544.pB75iX12072157@www262.sakura.ne.jp>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-alpha@vger.kernel.org, Shaohua Li <shaohua.li@intel.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: rcu_sched_state detected stalls on Alpha with generic config
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx1.orcon.net.nz on Wed, 07 Dec 2011 19:51:45 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Wed Dec  7 19:51:45 2011
-X-DSPAM-Confidence: 0.6180
-X-DSPAM-Probability: 0.0000
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112070544.pB75iX12072157@www262.sakura.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am seeing "rcu_sched_state detected stall on CPU" messages on Alpha
-architecture with a generic SMP config.  Interactive tasks are seen to
-lock up, with "INFO: task X blocked for more than 120 seconds" in the
-kernel logs, and eventual kernel oops and panic, on latest 3.2-rc4 and
-traceable back to 3.0.  Bisection between 2.6.39 and 3.0 leads to commit:
+On Wed, Dec 07, 2011 at 02:44:33PM +0900, Tetsuo Handa wrote:
 
-09223371deac67d08ca0b70bd18787920284c967
-rcu: Use softirq to address performance regression
+> Excuse me, what "once the race window is over" means?
+> Does
+> 
+>   do {
+>     pos = d_absolute_path(path, buffer, buflen - 1);
+>   } while (pos == ERR_PTR(-EINVAL));
+> 
+> work (i.e. racing with "umount -l" is a temporary failure)?
 
-as the first bad commit.
+I said "what your original use of __d_path() would stabilize to".  IOW,
+that's what you'd get after all ->mnt_parent in the chain are killed
+by release_mounts().  And no, since the moment that release_mounts()
+started there was *no* *absolute* *path* *at* *all*.
 
-Tested on an Alpha ES45 (Titan) with three 1.25 GHz CPUs and 4 GByte
-memory.  Testing procedure is to build git software and run its test
-suite with -j4 in the make command argument.
+>From that moment on, the point you are looking at is not connected to any
+global root.  Or to anything still mounted, of course.  What changes is
+how little of what used to be the path to root remains; very shortly
+it's down to just path->mnt not connected to *anything*.  __d_path() call
+as you have it in the current tree will report the remaining (shrinking)
+part of path, eventually settling to just the part from path->mnt->root
+to path->dentry.  d_absolute_path() will be giving you ERR_PTR(-EINVAL)
+all along; the thing it is supposed to give you does not exist anymore.
 
-The CPU stall messages and eventually system lockup is only seen with a
-generic Alpha config, never with a Titan machine specific config.
+Racing with umount -l is temporary in a sense that as soon as a vfsmount
+detached by umount -l ceases being busy, it gets killed.  If you stand
+there, holding a reference and looking for a path connecting it to something
+mounted, well... (a) such path won't appear and (b) vfsmount will remain
+busy for as long as you are holding that reference...
 
-An example of kernel logs is (this one probably produced when I tried to
-shutdown the system when it is falling over):
+The real question is what pathname do you _want_ in this situation.  Define
+that and we'll be able to do something about it; if you really are asking
+for "whatever this code used to do, modulo races", then what you want is
+	if (pos == ERR_PTR(-EINVAL)) {
+		/* it got unmounted; just report what's left and be quiet */
+		struct path root = {path->mnt, path->mnt->root};
+		pos = __d_path(path, &root, buf, buflen - 1);
+		if (!pos) /* it's really, *REALLY* screwed up somehow */
+			return ERR_PTR(-EINVAL);
+	}
+and that's it.  But at that point I would start seriously thinking about the
+usefulness of checks done on that tail of pathname, false negatives, etc.
 
-[45360.930876] INFO: rcu_sched_state detected stall on CPU 1 (t=798848
-jiffies)
-[45360.931853] INFO: rcu_sched_state detected stalls on CPUs/tasks: { 1}
-(detected by 0, t=798850 jiffies)
-[45489.080225] INFO: task umount:17371 blocked for more than 120 seconds.
-[45489.158350] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
-disables this message.
-[45489.252100] umount          D fffffc00013461ac     0 17371  17368
-0x00000000
-[45489.336084] fffffc00fdd53db8 fffffc00fdd97bb8 fffffc000108ca1c
-fffffc00dcc9e800
-[45489.422998]        fffffc00dcc9e810 fffffc00013b3a5d fffffc000106289c
-fffffc00ff0dfda8
-[45489.519678]        0000000000000000 fffffc000108c81c fffffc0001cd73f0
-0000000000000001
-[45489.615381]        fffffc00010627f0 0000000000000000 fffffc00dcc9e920
-fffffc00ff0bf780
-[45489.712060]        fffffc00010111b8 fffffc00ff0dfda8 fffffc00ff0dfde8
-fffffc0001cdaa58
-[45489.808740]        0000000000000000 0000000000000000 fffffc0000000000
-fffffc0000000000
-[45489.907373] Trace:
-[45489.930810] [<fffffc000108ca1c>] watchdog+0x200/0x27c
-[45489.991357] [<fffffc000106289c>] kthread+0xac/0xc4
-[45490.048974] [<fffffc000108c81c>] watchdog+0x0/0x27c
-[45490.107568] [<fffffc00010627f0>] kthread+0x0/0xc4
-[45490.164209] [<fffffc00010111b8>] kernel_thread+0x28/0x90
-[45490.227685]
+We could, I guess, make d_absolute_path() do just that on such paths as an
+automatic fallback [1].  apparmor's use of our_mnt(path->mnt) would've caught
+those, so we are not introducing false negatives there.
 
-Let me know if any other information is needed to narrow down the problem.
-
-Cheers
-Michael.
+However, I *really* wonder if that's the right thing to do in any sense.
+BTW, what your current code does if you have a file bound on another
+file, open it, umount -l it, let the dust settle and then do some operation
+that triggers tomoyo_get_absolute_path() on it?  Because you'll be getting
+a vfsmount/dentry pair that has
+	* dentry == vfsmount->mnt_root
+	* vfsmount->mnt_parent == vfsmount
+	* dentry->d_inode being a non-directory
+and there is nothing whatsoever in what remains of the pathname.  Not a single
+component.  IOW, you'll get "/" in buf.  Might be good in a testsuite - is
+there any code in security/tomoyo that would be relying on assumption that
+only directory might have a name entirely without components?
