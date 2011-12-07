@@ -1,93 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1LGHut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 02:50:49 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43017 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab1LGHus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 02:50:48 -0500
-Date: Wed, 7 Dec 2011 08:49:01 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@redhat.com,
-        hpa@zytor.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/locking] lockdep, rtmutex, bug: Show taint flags on
- error
-Message-ID: <20111207074901.GD16942@elte.hu>
-References: <1319773015.6759.30.camel@deadeye>
- <tip-fbdc4b9a6c29befbcca65e5366e5aaf2abb7a013@git.kernel.org>
- <1323185640.7454.269.camel@deadeye>
- <1323193731.32012.81.camel@twins>
- <20111206175558.3215907c@lxorguk.ukuu.org.uk>
- <20111206175919.GA5386@elte.hu>
- <20111206181715.GG3366@decadent.org.uk>
- <20111206182847.GB12094@elte.hu>
- <20111206191458.GA25568@elte.hu>
- <20111206211342.GI3366@decadent.org.uk>
+	id S1751871Ab1LGH6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 02:58:51 -0500
+Received: from imr-da03.mx.aol.com ([205.188.105.145]:36384 "EHLO
+	imr-da03.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab1LGH6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 02:58:50 -0500
+Message-Id: <201112070758.pB77w2Bp018538@imr-da03.mx.aol.com>
+Reply-To: <wanchaiwanchai1@w.cn>
+From: "May  Aphradee" <gjabaay771@aol.com>
+Subject: Highly Important Read and Reply.
+Date: Tue, 6 Dec 2011 23:56:39 -0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206211342.GI3366@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0004_01C2A9A6.520D0A74"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-AOL-VSS-INFO: 5400.1158/76706
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:312219264:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: G
+X-AOL-VSS-INFO: 5400.1158/76706
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:237654864:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-sid: 3039ac1d33834edf1c8961d6
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
 
-* Ben Hutchings <ben@decadent.org.uk> wrote:
+------=_NextPart_000_0004_01C2A9A6.520D0A74
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-> So what I would like to do is either:
-> 
-> 1. No longer disable lock debugging due to any taint
-> or
-> 2. Disable lock debugging only when TAINT_PROPRIETARY_MODULE is set
+I hereby write you regarding some vital fund issue.   Read the attached message and reply ASAP. 
 
-I'd like a whitelist - i.e. disable on taint by default, but 
-allow case by case exceptions such as OOT_MODULE.
+------=_NextPart_000_0004_01C2A9A6.520D0A74
+Content-Type: application/octet-stream;
+	name="from may.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="from may.rtf"
 
-Nor am i singling out bin-only modules, look at the current set 
-of taint flags:
+RnJvbSB0aGUgZGVzayBvZiB0aGUgRGlyZWN0b3IgR2VuZXJhbCANCg0KQXNz
+b2NpYXRpb24gb2YgU291dGggRWFzdCBBc2lhbiBOYXRpb25zIChBU0VBTikg
+DQoNCkFudGkgRnJhdWQgJiBDcmltZXMgQ29tbWlzc2lvbi4gDQoNCiAgDQoN
+CkhlbGxvLA0KDQogIA0KDQpJbiB0aGUgZm91cnRlZW50aCBzdW1taXQgb2Yg
+dGhlIEFzc29jaWF0aW9uIG9mIFNvdXRoIEVhc3QgQXNpYW4gTmF0aW9uIHdo
+aWNoIHdhcyBoZWxkIGluIHRoZSByZXNvcnQgY2l0eSBvZiBQYXR0YXlhIFRo
+YWlsYW5kICwgb25lIG9mIHRoZSBpc3N1ZXMgcmFpc2VkIGluIHRoZSBzdW1t
+aXQgd2FzIHRoZSBlZmZlY3Qgb2YgZnJhdWQgYW5kIGNyaW1lcyBvbiB0aGUg
+Y2l0aXplbnJ5IG9mIHRoaXMgZ3JlYXQgYXNzb2NpYXRpb24gYW5kIHRoZSB3
+b3JsZCBpbiBnZW5lcmFsLiBUaGVyZSB3YXMgYW4gb3V0Y3J5IHdpdGggYSBs
+b3Qgb2YgcGVvcGxlIGhhdmluZyBiZWVuIHN3aW5kbGVkIG9mIHRoZWlyIGxp
+ZmUgZWFybmluZ3MgYW5kIGFyZSBsZWZ0IHRvIHdhbGxvcCBpbiBhYmplY3Qg
+cG92ZXJ0eSBhcyB0aGUgZWZmZWN0IG9mIGZyYXVkIGFuZCBjcmltZXMgcmFn
+ZXMgaW4gdGhlIHNvY2lldHkuIFRvIHRoaXMsIGVmZm9ydHMgaGFzIGJlZW4g
+bWFkZSB3aXRoIHRoZSBoZWxwIG9mIHRoZSByZWdpb25hbCBicmFuY2ggb2Yg
+dGhlIFVuaXRlZCBOYXRpb25zIChVTikgYW5kIFdvcmxkIEJhbmsgd2hpY2gg
+Ym90aCBhZ3JlZWQgdG8gY29tZSB0byB0aGUgYWlkIG9mIGFsbCB2aWN0aW1z
+LiBJdCB3YXMgYWdyZWVkIGJ5IGFsbCB0aGUgcGFydGllcyBhbmQgYSBzZXR0
+bGVtZW50IGNvbW1pdHRlZSB3YXMgc2V0IHVwIHdpdGggaXRzIHNlY3JldGFy
+aWF0IGluIHRoZSByZXNvcnQgY2l0eSBvZiBQYXR0YXlhIGFzIHdlbGwuIEEg
+aHVnZSBhbW91bnQgb2YgaGFsZiBhIGJpbGxpb24gZG9sbGFycyAoVVMkNTAw
+LDAwMCwwMDAuMDApIHdhcyBlYXJtYXJrZWQgZm9yIHRoaXMgcHJvamVjdCB3
+aGlsZSB0aGV5IHNldCBvdXQgZmlzaGluZyBvdXQgdmljdGltcyBvZiB0aGlz
+IGJhcmJhcmljIGFjdC4gU2luY2UgdGhlIGluYXVndXJhdGlvbiBvZiB0aGlz
+IGNvbW1pdHRlZSBmcmFudGljIGVmZm9ydHMgaGFzIGJlZW4gbWFkZSBpbiBj
+b250YWN0aW5nIHZpY3RpbXMgYnkgd2F5IG9mIGFubm91bmNlbWVudHMgYW5k
+IG90aGVyIG1hc3MgbWVkaWEgYW5kIHZpY3RpbXMgaGFzIGJlZW4gY29taW5n
+IGZvcndhcmQgZm9yIGNsYWltLCBhIGxhcmdlIHN1bSBoYXMgYmVlbiBwYWlk
+IG91dCBpcnJlc3BlY3RpdmUgb2YgdGhlaXIgY291bnRyaWVzIGFuZCBnZW8t
+cG9saXRpY2FsIHJlZ2lvbnMuIA0KDQogIA0KDQpSZWNlbnRseSB5b3VyIG5h
+bWUgaGFzIGNvbWUgdXAgYXMgYSB2aWN0aW0gYW5kIHdlIGFyZSBoYXBweSB0
+byBjb250YWN0IHlvdS4gRmlyc3QgeW91IGhhdmUgdG8gZGVzaXN0IGZyb20g
+Y29udGFjdGluZyBhbnlib2R5IGFuZCBmb2N1cyBvbiByZWdhaW5pbmcgYWxs
+IHlvdSBoYXZlIGxvc3QsIGFuZCBoZXJlIGlzIGEgY2hhbmNlIGZvciB0aGlz
+IGFzc29jaWF0aW9uIGhlbHBpbmcgeW91ICBpbiByZWNvdmVyaW5nIHBhcnQg
+b2Ygd2hhdCB5b3UgaGF2ZSBsb3N0LCB5b3VyIG5hbWVzIGFyZSBpbiB0aGUg
+cXVvdGEgZm9yIGZvdXJ0aCBxdWFydGVybHkgcGF5bWVudCBmb3IgdGhpcyB5
+ZWFyIHdoaWNoIHJlc3VtZXMgaW4gdGhlIG1vbnRoIG9mICBOb3ZlbWJlciAg
+YW5kIHdpbGwgbGFzdCB1bnRpbCB0aGUgZW5kIG9mIHRoZSB5ZWFyIDIwMTEg
+KHdlIHdpbGwgZS1tYWlsIHlvdSBuYW1lcyBvZiBwZXJzb25zIGFuZCB0aGVp
+ciBjb21wZW5zYXRpb24gYW1vdW50cyBhcyBhcHByb3ZlZCBieSB0aGUgYXNz
+b2NpYXRpb24gYW5kIHRoZSBwYXlpbmcgYmFuaykuIFlvdSBoYXZlIGJlZW4g
+YXBwcm92ZWQgZm9yIGEgY29tcGVuc2F0aW9uYWwgYW1vdW50IG9mIE9uZSBN
+aWxsaW9uIFR3byBIdW5kcmVkIEFuZCBGaWZ0eSB0aG91c2FuZCBkb2xsYXJz
+IChVUyQxLDI1MCwwMDAuMDApIGluIGNhc2ggb3IgQVRNIHRocm91Z2ggIG91
+ciBwYXlpbmcgYmFuay4gQWxsIHlvdSBoYXZlIHRvIGRvIHJpZ2h0IG5vdyBp
+cyB0byBjb250YWN0IHRoZSB1bmRlcnNpZ25lZCBwZXJzb24gYXQgdGhlIGUt
+bWFpbCBwcm92aWRlZCBiZWxvdy4NCg0KTXIuIFdhbmNoYWkgICBQcmFjaGEN
+CkVtYWlsLiAgIHdhbmNoYWlwcmFjaGFAZ21haWwuY29tICANCg0KYW5kIGZ1
+cm5pc2ggdGhpcyBvZmZpY2Ugd2l0aCB0aGUgZm9sbG93aW5nIGRhdGEgb2Yg
+eW91cnMgaW1tZWRpYXRlbHkgZm9yIGNyb3NzIGNoZWNraW5nIGFzIHdlIGlu
+dGVuZCBmaW5hbGl6aW5nIHRoaXMgcGF5bWVudCBpbiBhIGZldyBkYXlzLXRp
+bWUuDQogDQogMS4gWW91ciBGdWxsIE5hbWUuDQogMi5Zb3VyIEFkZHJlc3MN
+CiAzLllvdXIgZGlyZWN0IFRlbGVwaG9uZSBudW1iZXINCg0KDQoNCk5PVEU6
+IFlvdSBhcmUgYWR2aWNlIHRvIHN0b3AgZnVydGhlciBjb21tdW5pY2F0aW9u
+IHdpdGggYW55Ym9keSBpbiBvdGhlciBub3QgdG8gY29tcG91bmQgeW91ciBw
+cm9ibGVtcyBhcyB3ZSBhcmUgZ29pbmcgdG8gcHJvdGVjdCB5b3UgYW5kIGd1
+aWRlIHlvdSBvbiBob3cgeW91IGFyZSBnb2luZyB0byByZWNlaXZlIHlvdXIg
+Y29tcGVuc2F0aW9uYWwgZnVuZCB3aGlsZSBhdm9pZGluZyB5b3UgZ2V0dGlu
+ZyBpbnRvIHRoZSBoYW5kcyBvZiB0aGVzZSBmcmF1ZHN0ZXJzIHNvIHdlIHNo
+YWxsIGRpcmVjdCB5b3Ugb24gaG93IHRvIHJlY2VpdmUgeW91ciBjb21wZW5z
+YXRpb24gaW1tZWRpYXRlbHkuIA0KDQogIA0KDQpXZSBhc3N1cmUgeW91IG9m
+IG91ciB1bmFsbG95ZWQgYW5kIG1vc3Qgc2luY2VyZSBjb29wZXJhdGlvbi4g
+DQoNCiAgDQoNCllvdXJzIHRydWx5IA0KDQpNcy4gTWF5ICBBcGhyYWRlZQ0K
+DQpTZWNyZXRhcnkgQVNFQU4gVGhhaWxhbmQgDQo=
 
-#define TAINT_PROPRIETARY_MODULE        0
-#define TAINT_FORCED_MODULE             1
-#define TAINT_UNSAFE_SMP                2
-#define TAINT_FORCED_RMMOD              3
-#define TAINT_MACHINE_CHECK             4
-#define TAINT_BAD_PAGE                  5
-#define TAINT_USER                      6
-#define TAINT_DIE                       7
-#define TAINT_OVERRIDDEN_ACPI_TABLE     8
-#define TAINT_WARN                      9
-#define TAINT_CRAP                      10
-#define TAINT_FIRMWARE_WORKAROUND       11
-#define TAINT_OOT_MODULE                12
-
-*all* except TAINT_FIRMWARE_WORKAROUND, TAINT_CRAP and OOT 
-should result in lockdep disabling. (perhaps 
-OVERRIDDEN_ACPI_TABLE, as a variant of FIRMWARE_WORKAROUND, 
-could be added as an exception too)
-
-Module forcing causes various lifetime issues and lockdep tracks 
-lifetime so can get confused on that. Unsafe SMP - enough said. 
-Lockdep also wants to disable on the first WARN_ON() - which is 
-typically the sign of some initial badness, which should be 
-investigated before any lockdep splat is looked into.
-
-Since most of the taint flags show deep kernel or hardware 
-troubles i'd like most new taint flags to be lockdep off by 
-default. As new taint flags are introduced they can be added to 
-the whitelist when justified.
-
-Thanks,
-
-	Ingo
+------=_NextPart_000_0004_01C2A9A6.520D0A74--
