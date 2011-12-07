@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab1LGREl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:04:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39594 "EHLO mx2.suse.de"
+	id S1757504Ab1LGREW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:04:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39514 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757226Ab1LGRE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:04:27 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:01 2011
-Message-Id: <20111207165601.845530512@clark.kroah.org>
+	id S1757555Ab1LGRER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:04:17 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:02 2011
+Message-Id: <20111207165602.407872916@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:54:50 -0800
+Date: Wed, 07 Dec 2011 08:54:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        Veli-Pekka Peltola <veli-pekka.peltola@bluegiga.com>
-Subject: [17/27] usb: option: add SIMCom SIM5218
+        <alan@lxorguk.ukuu.org.uk>, Robert Richter <robert.richter@amd.com>
+Subject: [24/27] oprofile, x86: Fix crash when unloading module (nmi timer mode)
 In-Reply-To: <20111207165611.GA19872@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,28 +24,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Veli-Pekka Peltola <veli-pekka.peltola@bluegiga.com>
+From: Robert Richter <robert.richter@amd.com>
 
-commit ec0cd94d881ca89cc9fb61d00d0f4b2b52e605b3 upstream.
+commit 97f7f8189fe54e3cfe324ef9ad35064f3d2d3bff upstream.
 
-Tested with SIM5218EVB-KIT evaluation kit.
+If oprofile uses the nmi timer interrupt there is a crash while
+unloading the module. The bug can be triggered with oprofile build as
+module and kernel parameter nolapic set. This patch fixes this.
 
-Signed-off-by: Veli-Pekka Peltola <veli-pekka.peltola@bluegiga.com>
+oprofile: using NMI timer interrupt.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+PGD 42dbca067 PUD 41da6a067 PMD 0
+Oops: 0002 [#1] PREEMPT SMP
+CPU 5
+Modules linked in: oprofile(-) [last unloaded: oprofile]
+
+Pid: 2518, comm: modprobe Not tainted 3.1.0-rc7-00019-gb2fb49d #19 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+RSP: 0018:ffff88041ef71e98  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: ffffffffa0017100 RCX: dead000000200200
+RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
+RBP: ffff88041ef71ea8 R08: 0000000000000001 R09: 0000000000000082
+R10: 0000000000000000 R11: ffff88041ef71de8 R12: 0000000000000080
+R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
+FS:  00007fc902f20700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000008 CR3: 000000041cdb6000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process modprobe (pid: 2518, threadinfo ffff88041ef70000, task ffff88041d348040)
+Stack:
+ ffff88041ef71eb8 ffffffffa0017790 ffff88041ef71eb8 ffffffffa0013532
+ ffff88041ef71ec8 ffffffffa00132d6 ffff88041ef71ed8 ffffffffa00159b2
+ ffff88041ef71f78 ffffffff81073115 656c69666f72706f 0000000000610200
+Call Trace:
+ [<ffffffffa0013532>] op_nmi_exit+0x15/0x17 [oprofile]
+ [<ffffffffa00132d6>] oprofile_arch_exit+0xe/0x10 [oprofile]
+ [<ffffffffa00159b2>] oprofile_exit+0x1e/0x20 [oprofile]
+ [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
+ [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
+Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
+ 89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
+RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+ RSP <ffff88041ef71e98>
+CR2: 0000000000000008
+---[ end trace 43a541a52956b7b0 ]---
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/oprofile/init.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -578,6 +578,7 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
-+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
+--- a/arch/x86/oprofile/init.c
++++ b/arch/x86/oprofile/init.c
+@@ -21,6 +21,7 @@ extern int op_nmi_timer_init(struct opro
+ extern void op_nmi_exit(void);
+ extern void x86_backtrace(struct pt_regs * const regs, unsigned int depth);
+ 
++static int nmi_timer;
+ 
+ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ {
+@@ -31,8 +32,9 @@ int __init oprofile_arch_init(struct opr
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	ret = op_nmi_init(ops);
+ #endif
++	nmi_timer = (ret != 0);
+ #ifdef CONFIG_X86_IO_APIC
+-	if (ret < 0)
++	if (nmi_timer)
+ 		ret = op_nmi_timer_init(ops);
+ #endif
+ 	ops->backtrace = x86_backtrace;
+@@ -44,6 +46,7 @@ int __init oprofile_arch_init(struct opr
+ void oprofile_arch_exit(void)
+ {
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	op_nmi_exit();
++	if (!nmi_timer)
++		op_nmi_exit();
+ #endif
+ }
 
 
