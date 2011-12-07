@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933702Ab1LGQbv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:31:51 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39724 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757766Ab1LGQZH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:25:07 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/4] gpio: Explicitly index samsung_gpio_cfgs
-Date: Thu,  8 Dec 2011 00:23:58 +0800
-Message-Id: <1323275041-25493-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <20111207162256.GI22355@opensource.wolfsonmicro.com>
-References: <20111207162256.GI22355@opensource.wolfsonmicro.com>
+	id S934067Ab1LGQcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:32:15 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47016 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757725Ab1LGQcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:32:11 -0500
+Date: Wed, 7 Dec 2011 17:32:08 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: atl1c: WARNING: at net/sched/sch_generic.c:255 dev_watchdog
+Message-ID: <20111207163208.GA1840@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Josh Boyer <jwboyer@gmail.com>, netdev@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20111206232741.GA5368@x1.osrc.amd.com>
+ <CA+5PVA7bM8ZGaCiyZdHcMVccJYh2=bk-gsHLo9ZmBP_SYT208w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA7bM8ZGaCiyZdHcMVccJYh2=bk-gsHLo9ZmBP_SYT208w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it easier to follow the by number references into samsung_gpio_cfgs
-by putting the indexes into the code initialising the array, improving
-readability a bit. Ideally we wouldn't be using magic array indexes at all
-but this is easier than coming up with a better way.
+On Tue, Dec 06, 2011 at 07:12:21PM -0500, Josh Boyer wrote:
+> On Tue, Dec 6, 2011 at 6:27 PM, Borislav Petkov <bp@alien8.de> wrote:
+> > Hi,
+> >
+> > this seems like a pretty old issue judging by a quick net search. It
+> > still triggers on latest -rc4 here, below the whole trace. I'm willing
+> > to test patches :).
+> >
+> > [14622.820555] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
+> > [14632.816280] ------------[ cut here ]------------
+> > [14632.816314] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x237/0x240()
+> > [14632.816323] Hardware name: 30515QG
+> > [14632.816332] NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+> 
+> Matthew Garrett has a patch to the atl1c driver that changed it's ASPM
+> behavior that seemed to help.  Dave Miller applied it, but I don't see
+> it in linux-next for some reason.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/gpio/gpio-samsung.c |   29 +++++++++++++++++++----------
- 1 files changed, 19 insertions(+), 10 deletions(-)
+Yeah, he reverted them due to build issues. I'm not sure they'll be
+coming back though, judging by the thread.
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index 6b4d23f..f1c1ecd 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -470,33 +470,42 @@ static struct samsung_gpio_cfg s5p64x0_gpio_cfg_rbank = {
- #endif
- 
- static struct samsung_gpio_cfg samsung_gpio_cfgs[] = {
--	{
-+	[0] = {
- 		.cfg_eint	= 0x0,
--	}, {
-+	},
-+	[1] = {
- 		.cfg_eint	= 0x3,
--	}, {
-+	},
-+	[2] = {
- 		.cfg_eint	= 0x7,
--	}, {
-+	},
-+	[3] = {
- 		.cfg_eint	= 0xF,
--	}, {
-+	},
-+	[4] = {
- 		.cfg_eint	= 0x0,
- 		.set_config	= samsung_gpio_setcfg_2bit,
- 		.get_config	= samsung_gpio_getcfg_2bit,
--	}, {
-+	},
-+	[5] = {
- 		.cfg_eint	= 0x2,
- 		.set_config	= samsung_gpio_setcfg_2bit,
- 		.get_config	= samsung_gpio_getcfg_2bit,
--	}, {
-+	},
-+	[6] = {
- 		.cfg_eint	= 0x3,
- 		.set_config	= samsung_gpio_setcfg_2bit,
- 		.get_config	= samsung_gpio_getcfg_2bit,
--	}, {
-+	},
-+	[7] = {
- 		.set_config	= samsung_gpio_setcfg_2bit,
- 		.get_config	= samsung_gpio_getcfg_2bit,
--	}, {
-+	},
-+	[8] = {
- 		.set_pull	= exynos4_gpio_setpull,
- 		.get_pull	= exynos4_gpio_getpull,
--	}, {
-+	},
-+	[9] = {
- 		.cfg_eint	= 0x3,
- 		.set_pull	= exynos4_gpio_setpull,
- 		.get_pull	= exynos4_gpio_getpull,
+Thanks.
+
 -- 
-1.7.7.3
-
+Regards/Gruss,
+Boris.
