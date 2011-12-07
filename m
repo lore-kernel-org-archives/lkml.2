@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985Ab1LGUfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 15:35:14 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:59840 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757652Ab1LGUfK (ORCPT
+	id S1757803Ab1LGUny (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 15:43:54 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50355 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757383Ab1LGUnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 15:35:10 -0500
-Message-ID: <4EDFCDAC.3060600@fb.com>
-Date: Wed, 7 Dec 2011 12:33:48 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 7 Dec 2011 15:43:53 -0500
+Date: Wed, 7 Dec 2011 21:43:44 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kok.howg.ewe@intel.com, qi.wang@intel.com, joel.clark@intel.com,
+        yong.y.wang@intel.com
+Subject: Re: [PATCH] spi-topcliff-pch: Fix count calculation issue
+Message-ID: <20111207204344.GC3744@pengutronix.de>
+References: <1321511841-12824-1-git-send-email-tomoya.rohm@gmail.com>
 MIME-Version: 1.0
-To: <avagin@openvz.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        <linux-perf-users@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        <devel@openvz.org>, David Ahern <dsahern@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [Devel] [PATCH 0/7] Profiling sleep times (v3)
-References: <1322471015-107825-1-git-send-email-avagin@openvz.org> <4EDDC0FB.6080005@openvz.org>
-In-Reply-To: <4EDDC0FB.6080005@openvz.org>
-Content-Type: text/plain; charset="KOI8-R"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-07_07:2011-12-07,2011-12-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WplhKdTI2c8ulnbP"
+Content-Disposition: inline
+In-Reply-To: <1321511841-12824-1-git-send-email-tomoya.rohm@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/5/11 11:15 PM, Andrey Vagin wrote:
 
-> Arun Sharma said, that the second versions of patches works ok for him.
-> (Arun is the first user of this functionality after me.)
+--WplhKdTI2c8ulnbP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes - Andrey's patches (v2) have been functional for me when used via:
+Hi,
 
-perf record -agP -e sched:sched_switch --filter "prev_state == 1 || 
-prev_state == 2" -e sched:sched_stat_sleep,sched:sched_stat_iowait -- 
-sleep 3
-mv perf.data{,.old}; perf inject -s -i perf.data.old -o perf.data
-perf report --stdio -g graph --sort pid -C command-name
+On Thu, Nov 17, 2011 at 03:37:21PM +0900, Tomoya MORINAGA wrote:
+> Currently, count value is not correct more than len=3D8193 like below.
+>=20
+> len	Current-cnt	New-cnt		Anticipated-cnt
+> 4095	1		1		1
+> 4096	1		1		1
+> 4097	2		2		2
+>=20
+> 8191	2		2		2
+> 8192	2		2		2
+> 8193	2(NG)		3		3
+>=20
+> 12287	3		3		3
+> 12288	3		3		3
+> 12289	3(NG)		4		4
+>=20
+> This patch fixes the issue.
+>=20
+> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-There are two major issues though:
+Which branch is this patch based on?
 
-* The above command lines cause us to collect way too much data and perf 
-can't keep up on a busy server
+Regards,
 
-Eg:
+   Wolfram
 
-Warning:
-Processed 55182 events and lost 13 chunks!
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Check IO/CPU overload!
+--WplhKdTI2c8ulnbP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-* Requires root access
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-I suspect there is a way to stash the delay information available at 
-enqueue_sleeper() into the task_struct (or some place else) and make it 
-available at the sched:sched_switch tracepoint. This would solve both of 
-the problems above, but I don't have a patch yet.
+iEYEARECAAYFAk7f0AAACgkQD27XaX1/VRu18wCgieyMu97KZviV7ovGE8MjlVzu
+nj8An3SOFxGxtu0td6qHmvohCm/abNiU
+=Xqwo
+-----END PGP SIGNATURE-----
 
-  -Arun
+--WplhKdTI2c8ulnbP--
