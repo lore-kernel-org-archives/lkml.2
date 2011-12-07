@@ -1,68 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab1LGNta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:49:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46983 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755810Ab1LGNt3 (ORCPT
+	id S1756131Ab1LGNub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:50:31 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:34171 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755810Ab1LGNu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:49:29 -0500
-Date: Wed, 7 Dec 2011 13:49:00 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andreas Oberritter <obi@linuxtv.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver
- because of worrying about possible misusage?
-Message-ID: <20111207134848.GB18837@opensource.wolfsonmicro.com>
-References: <20111202231909.1ca311e2@lxorguk.ukuu.org.uk>
- <CAJbz7-0Xnd30nJsb7SfT+j6uki+6PJpD77DY4zARgh_29Z=-+g@mail.gmail.com>
- <4EDC9B17.2080701@gmail.com>
- <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com>
- <4EDD01BA.40208@redhat.com>
- <4EDD2C82.7040804@linuxtv.org>
- <20111206112153.GC17194@sirena.org.uk>
- <4EDE0427.2050307@linuxtv.org>
- <20111206141929.GE17731@opensource.wolfsonmicro.com>
- <4EDE2B3B.2080905@linuxtv.org>
+	Wed, 7 Dec 2011 08:50:29 -0500
+Message-ID: <4EDF6EFA.3070708@atmel.com>
+Date: Wed, 07 Dec 2011 14:49:46 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EDE2B3B.2080905@linuxtv.org>
-X-Cookie: You will have long and healthy life.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: netdev@vger.kernel.org, David Miller <davem@davemloft.net>
+CC: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        plagnioj@jcrosoft.com, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org,
+        jamie@jamieiles.com
+Subject: Re: [PATCH v3 1/2] net/macb: add DT support for Cadence macb/gem
+ driver
+References: <1322847782-22650-1-git-send-email-nicolas.ferre@atmel.com> <714ca7492d8d45b50eab34448c4b70933ce5701c.1323086095.git.nicolas.ferre@atmel.com>
+In-Reply-To: <714ca7492d8d45b50eab34448c4b70933ce5701c.1323086095.git.nicolas.ferre@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 03:48:27PM +0100, Andreas Oberritter wrote:
-> On 06.12.2011 15:19, Mark Brown wrote:
+On 12/05/2011 12:59 PM, Nicolas Ferre :
+> From: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
+>
+> Allow the device tree to provide the mac address and the phy mode.
+>
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD<plagnioj@jcrosoft.com>
+> [nicolas.ferre@atmel.com: change "compatible" node property, doc and DT hwaddr]
+> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
+> [jamie@jamieiles.com: add "gem" compatibility strings and doc]
+> Acked-by: Jamie Iles<jamie@jamieiles.com>
 
-> > Your assertatation that applications should ignore the underlying
-> > transport (which seems to be a big part of what you're saying) isn't
-> > entirely in line with reality.
+David, can I have your acknowledgment on this patch so that I can send 
+it through arm-soc git tree? This way it will reside on top of previous 
+work by Jamie that is already in arm-soc git (for-next branch).
 
-> Did you notice that we're talking about a very particular application?
+Thanks, best regards,
 
-*sigh*
+> ---
+> v3: add "gem" compatibility strings
+> v2: modify macb_get_hwaddr_dt() parameter
+>
+>   Documentation/devicetree/bindings/net/macb.txt |   24 ++++++++
+>   drivers/net/ethernet/cadence/macb.c            |   73 +++++++++++++++++++++---
+>   drivers/net/ethernet/cadence/macb.h            |    2 +
+>   3 files changed, 91 insertions(+), 8 deletions(-)
+>   create mode 100644 Documentation/devicetree/bindings/net/macb.txt
+>
+> diff --git a/Documentation/devicetree/bindings/net/macb.txt b/Documentation/devicetree/bindings/net/macb.txt
+> new file mode 100644
+> index 0000000..2e24f05
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/macb.txt
+> @@ -0,0 +1,24 @@
+> +* Cadence MACB/GEM Ethernet controller
+> +
+> +Required properties:
+> +- compatible: Should be "cdns,[<chip>-]{macb|gem}"
+> +  Use "cdns,at91sam9260-macb" Atmel at91sam9260 and at91sam9263 SoCs.
+> +  Use "cdns,at32ap7000-macb" for other 10/100 usage or use the generic form: "cdns,macb".
+> +  Use "cnds,pc302-gem" for Picochip picoXcell pc302 and later devices based on
+> +  the Cadence GEM, or the generic form: "cdns,gem".
+> +- reg: Address and length of the register set for the device
+> +- interrupts: Should contain macb interrupt
+> +- phy-mode: String, operation mode of the PHY interface.
+> +  Supported values are: "mii", "rmii", "gmii", "rgmii".
+> +
+> +Optional properties:
+> +- local-mac-address: 6 bytes, mac address
+> +
+> +Examples:
+> +
+> +	macb0: ethernet@fffc4000 {
+> +		compatible = "cdns,at32ap7000-macb";
+> +		reg =<0xfffc4000 0x4000>;
+> +		interrupts =<21>;
+> +		phy-mode = "rmii";
+> +	};
+> diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
+> index 64d6146..baf1a0d 100644
+> --- a/drivers/net/ethernet/cadence/macb.c
+> +++ b/drivers/net/ethernet/cadence/macb.c
+> @@ -23,6 +23,8 @@
+>   #include<linux/platform_data/macb.h>
+>   #include<linux/platform_device.h>
+>   #include<linux/phy.h>
+> +#include<linux/of_device.h>
+> +#include<linux/of_net.h>
+>
+>   #include "macb.h"
+>
+> @@ -191,7 +193,6 @@ static int macb_mii_probe(struct net_device *dev)
+>   {
+>   	struct macb *bp = netdev_priv(dev);
+>   	struct phy_device *phydev;
+> -	struct macb_platform_data *pdata;
+>   	int ret;
+>
+>   	phydev = phy_find_first(bp->mii_bus);
+> @@ -200,14 +201,11 @@ static int macb_mii_probe(struct net_device *dev)
+>   		return -1;
+>   	}
+>
+> -	pdata = bp->pdev->dev.platform_data;
+>   	/* TODO : add pin_irq */
+>
+>   	/* attach the mac to the phy */
+>   	ret = phy_connect_direct(dev, phydev,&macb_handle_link_change, 0,
+> -				 pdata&&  pdata->is_rmii ?
+> -				 PHY_INTERFACE_MODE_RMII :
+> -				 PHY_INTERFACE_MODE_MII);
+> +				 bp->phy_interface);
+>   	if (ret) {
+>   		netdev_err(dev, "Could not attach to PHY\n");
+>   		return ret;
+> @@ -1244,6 +1242,52 @@ static const struct net_device_ops macb_netdev_ops = {
+>   #endif
+>   };
+>
+> +#if defined(CONFIG_OF)
+> +static const struct of_device_id macb_dt_ids[] = {
+> +	{ .compatible = "cdns,at32ap7000-macb" },
+> +	{ .compatible = "cdns,at91sam9260-macb" },
+> +	{ .compatible = "cdns,macb" },
+> +	{ .compatible = "cdns,pc302-gem" },
+> +	{ .compatible = "cdns,gem" },
+> +	{ /* sentinel */ }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, macb_dt_ids);
+> +
+> +static int __devinit macb_get_phy_mode_dt(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +
+> +	if (np)
+> +		return of_get_phy_mode(np);
+> +
+> +	return -ENODEV;
+> +}
+> +
+> +static int __devinit macb_get_hwaddr_dt(struct macb *bp)
+> +{
+> +	struct device_node *np = bp->pdev->dev.of_node;
+> +	if (np) {
+> +		const char *mac = of_get_mac_address(np);
+> +		if (mac) {
+> +			memcpy(bp->dev->dev_addr, mac, ETH_ALEN);
+> +			return 0;
+> +		}
+> +	}
+> +
+> +	return -ENODEV;
+> +}
+> +#else
+> +static int __devinit macb_get_phy_mode_dt(struct platform_device *pdev)
+> +{
+> +	return -ENODEV;
+> +}
+> +static int __devinit macb_get_hwaddr_dt(struct macb *bp)
+> +{
+> +	return -ENODEV;
+> +}
+> +#endif
+> +
+>   static int __init macb_probe(struct platform_device *pdev)
+>   {
+>   	struct macb_platform_data *pdata;
+> @@ -1318,10 +1362,22 @@ static int __init macb_probe(struct platform_device *pdev)
+>   	config |= macb_dbw(bp);
+>   	macb_writel(bp, NCFGR, config);
+>
+> -	macb_get_hwaddr(bp);
+> -	pdata = pdev->dev.platform_data;
+> +	err = macb_get_hwaddr_dt(bp);
+> +	if (err<  0)
+> +		macb_get_hwaddr(bp);
+> +
+> +	err = macb_get_phy_mode_dt(pdev);
+> +	if (err<  0) {
+> +		pdata = pdev->dev.platform_data;
+> +		if (pdata&&  pdata->is_rmii)
+> +			bp->phy_interface = PHY_INTERFACE_MODE_RMII;
+> +		else
+> +			bp->phy_interface = PHY_INTERFACE_MODE_MII;
+> +	} else {
+> +		bp->phy_interface = err;
+> +	}
+>
+> -	if (pdata&&  pdata->is_rmii)
+> +	if (bp->phy_interface == PHY_INTERFACE_MODE_RMII)
+>   #if defined(CONFIG_ARCH_AT91)
+>   		macb_or_gem_writel(bp, USRIO, (MACB_BIT(RMII) |
+>   					       MACB_BIT(CLKEN)));
+> @@ -1444,6 +1500,7 @@ static struct platform_driver macb_driver = {
+>   	.driver		= {
+>   		.name		= "macb",
+>   		.owner	= THIS_MODULE,
+> +		.of_match_table	= of_match_ptr(macb_dt_ids),
+>   	},
+>   };
+>
+> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+> index 1931078..335e288 100644
+> --- a/drivers/net/ethernet/cadence/macb.h
+> +++ b/drivers/net/ethernet/cadence/macb.h
+> @@ -532,6 +532,8 @@ struct macb {
+>   	unsigned int 		link;
+>   	unsigned int 		speed;
+>   	unsigned int 		duplex;
+> +
+> +	phy_interface_t		phy_interface;
+>   };
+>
+>   static inline bool macb_is_gem(struct macb *bp)
 
-> VoIP really is totally off-topic. The B in DVB stands for broadcast.
-> There's only one direction in which MPEG payload is to be sent (using
-> RTP for example). You can't just re-encode the data on the fly without
-> loss of information.
 
-This is pretty much exactly the case for VoIP some of the time (though
-obviously bidirectional use cases are rather common there's things like
-conferencing).  I would really expect similar considerations to apply
-for video content as they certainly do in videoconferencing VoIP
-applications - if the application knows about the network it can tailor
-what it's doing to that network.  
-
-For example, if it is using a network with a guaranteed bandwidth it can
-assume that bandwidth.  If it knows something about the structure of the
-network it may be able to arrange to work around choke points.
-Depending on the situation even something lossy may be the answer - if
-it's the difference between working at all and not working then the cost
-may be worth it.
+-- 
+Nicolas Ferre
