@@ -1,75 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab1LGKX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 05:23:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60755 "EHLO mx1.redhat.com"
+	id S1754790Ab1LGKXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:23:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54513 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518Ab1LGKX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 05:23:26 -0500
-Date: Wed, 7 Dec 2011 12:25:08 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, levinsasha928@gmail.com,
-        linux-kernel@vger.kernel.org
-Message-ID: <20111207102507.GB8326@redhat.com>
+	id S1753825Ab1LGKXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 05:23:45 -0500
+Date: Wed, 7 Dec 2011 11:23:44 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] writeback: charge leaked page dirties to active
+ tasks
+Message-ID: <20111207102344.GD4622@quack.suse.cz>
+References: <20111128135338.249672012@intel.com>
+ <20111128140513.150701975@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111128140513.150701975@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek <pavel@ucw.cz>,
-"Rafael J. Wysocki" <rjw@sisk.pl>,
-Len Brown <len.brown@intel.com>,
-linux-pm@vger.kernel.org
-Bcc: 
-Subject: Re: [PATCH v4 12/12] virtio: balloon: Add freeze, restore handlers
- to support S4
-Reply-To: 
-In-Reply-To: <5deccc36afa59032f0e3b10a653773bad511f303.1323199985.git.amit.shah@redhat.com>
-
-On Wed, Dec 07, 2011 at 01:18:50AM +0530, Amit Shah wrote:
-> Now to not race with a host issuing ballooning requests while we are in
-> the process of freezing, we just exit from the vballoon kthread when the
-> processes are asked to freeze.  Upon thaw and restore, we re-start the
-> thread.
-
-...
-
-> ---
->  drivers/virtio/virtio_balloon.c |   79 ++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 78 insertions(+), 1 deletions(-)
+On Mon 28-11-11 21:53:40, Wu Fengguang wrote:
+> It's a years long problem that a large number of short-lived dirtiers
+> (eg. gcc instances in a fast kernel build) may starve long-run dirtiers
+> (eg. dd) as well as pushing the dirty pages to the global hard limit.
 > 
-> diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> index 8bf99be..10ec638 100644
-> --- a/drivers/virtio/virtio_balloon.c
-> +++ b/drivers/virtio/virtio_balloon.c
-> @@ -258,7 +258,13 @@ static int balloon(void *_vballoon)
->  	while (!kthread_should_stop()) {
->  		s64 diff;
+> The solution is to charge the pages dirtied by the exited gcc to the
+> other random dirtying tasks. It sounds not perfect, however should
+> behave good enough in practice, seeing as that throttled tasks aren't
+> actually running so those that are running are more likely to pick it up
+> and get throttled, therefore promoting an equal spread.
+> 
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+  Since I don't see a better solution here :)
+Acked-by: Jan Kara <jack@suse.cz>
+
+								Honza
+> ---
+>  include/linux/writeback.h |    2 ++
+>  kernel/exit.c             |    2 ++
+>  mm/page-writeback.c       |   27 +++++++++++++++++++++++++++
+>  3 files changed, 31 insertions(+)
+> 
+> --- linux-next.orig/include/linux/writeback.h	2011-11-28 21:23:19.000000000 +0800
+> +++ linux-next/include/linux/writeback.h	2011-11-28 21:23:20.000000000 +0800
+> @@ -7,6 +7,8 @@
+>  #include <linux/sched.h>
+>  #include <linux/fs.h>
 >  
-> -		try_to_freeze();
-> +		/*
-> +		 * On suspend, we want to exit this thread.  We will
-> +		 * start a new thread on resume.
-> +		 */
-> +		if (freezing(current))
-> +			break;
+> +DECLARE_PER_CPU(int, dirty_throttle_leaks);
 > +
->  		wait_event_interruptible(vb->config_change,
->  					 (diff = towards_target(vb)) != 0
->  					 || vb->need_stats_update
-
-...
-
-Note: this relies on kthreads being frozen before devices.
-Looking at kernel/power/hibernate.c this is the case,
-but I think we should add a comment to note this.
-
-Also Cc linux-pm crowd in case I got it wrong.
-
+>  /*
+>   * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
+>   *
+> --- linux-next.orig/mm/page-writeback.c	2011-11-28 21:23:19.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-11-28 21:23:20.000000000 +0800
+> @@ -1195,6 +1195,22 @@ void set_page_dirty_balance(struct page 
+>  
+>  static DEFINE_PER_CPU(int, bdp_ratelimits);
+>  
+> +/*
+> + * Normal tasks are throttled by
+> + *	loop {
+> + *		dirty tsk->nr_dirtied_pause pages;
+> + *		take a snap in balance_dirty_pages();
+> + *	}
+> + * However there is a worst case. If every task exit immediately when dirtied
+> + * (tsk->nr_dirtied_pause - 1) pages, balance_dirty_pages() will never be
+> + * called to throttle the page dirties. The solution is to save the not yet
+> + * throttled page dirties in dirty_throttle_leaks on task exit and charge them
+> + * randomly into the running tasks. This works well for the above worst case,
+> + * as the new task will pick up and accumulate the old task's leaked dirty
+> + * count and eventually get throttled.
+> + */
+> +DEFINE_PER_CPU(int, dirty_throttle_leaks) = 0;
+> +
+>  /**
+>   * balance_dirty_pages_ratelimited_nr - balance dirty memory state
+>   * @mapping: address_space which was dirtied
+> @@ -1242,6 +1258,17 @@ void balance_dirty_pages_ratelimited_nr(
+>  			ratelimit = 0;
+>  		}
+>  	}
+> +	/*
+> +	 * Pick up the dirtied pages by the exited tasks. This avoids lots of
+> +	 * short-lived tasks (eg. gcc invocations in a kernel build) escaping
+> +	 * the dirty throttling and livelock other long-run dirtiers.
+> +	 */
+> +	p = &__get_cpu_var(dirty_throttle_leaks);
+> +	if (*p > 0 && current->nr_dirtied < ratelimit) {
+> +		nr_pages_dirtied = min(*p, ratelimit - current->nr_dirtied);
+> +		*p -= nr_pages_dirtied;
+> +		current->nr_dirtied += nr_pages_dirtied;
+> +	}
+>  	preempt_enable();
+>  
+>  	if (unlikely(current->nr_dirtied >= ratelimit))
+> --- linux-next.orig/kernel/exit.c	2011-11-28 21:23:19.000000000 +0800
+> +++ linux-next/kernel/exit.c	2011-11-28 21:23:20.000000000 +0800
+> @@ -1037,6 +1037,8 @@ NORET_TYPE void do_exit(long code)
+>  	validate_creds_for_do_exit(tsk);
+>  
+>  	preempt_disable();
+> +	if (tsk->nr_dirtied)
+> +		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
+>  	exit_rcu();
+>  	/* causes final put_task_struct in finish_task_switch(). */
+>  	tsk->state = TASK_DEAD;
+> 
+> 
 -- 
-MST
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
