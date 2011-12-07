@@ -1,128 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab1LGAa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:30:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43947 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab1LGAaz (ORCPT
+	id S1754783Ab1LGAdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:33:00 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:45322 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753959Ab1LGAc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:30:55 -0500
-Date: Tue, 6 Dec 2011 16:30:54 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add refcount type and refcount misuse debugging
-Message-Id: <20111206163054.f5e916e3.akpm@linux-foundation.org>
-In-Reply-To: <20111206230107.GA22471@p183.telecom.by>
-References: <20111206230107.GA22471@p183.telecom.by>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 6 Dec 2011 19:32:59 -0500
+Message-ID: <4EDEC21E.4050103@xenotime.net>
+Date: Tue, 06 Dec 2011 17:32:14 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Mark Einon <mark.einon@gmail.com>
+CC: linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
+        Trivial patch monkey <trivial@kernel.org>
+Subject: Re: [PATCH] [TRIVIAL] linux-next: Fixed spelling typo in types.h
+References: <1323213494-21947-1-git-send-email-mark.einon@gmail.com>
+In-Reply-To: <1323213494-21947-1-git-send-email-mark.einon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Dec 2011 02:01:07 +0300
-Alexey Dobriyan <adobriyan@gmail.com> wrote:
-
-> There is quite a lot of idiomatic code which does
+On 12/06/2011 03:18 PM, Mark Einon wrote:
+> Spelling change, architetures -> architectures
 > 
-> 	if (atomic_dec_and_test(&obj->refcnt))
-> 		[destroy obj]
+> Signed-off-by: Mark Einon <mark.einon@gmail.com>
+
+You should Cc: trivial@kernel.org also.
+[done]
+
+> ---
+>  include/linux/types.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Bugs like double-frees in this case are dereferred and it may not be
-> immediately obvious that double-free has happened.
-> 
-> The answer is to wrap reference count debugging to every such operation.
-> 
-> Enter _refcnt_t (non-atomic version), refcnt_t (atomic version) datatypes
-> and CONFIG_DEBUG_REFCNT config option.
-> 
-> The latter directly checks for
-> a) GET on dead object
-> b) PUT on dead object (aka double PUT)
-> (and indirectly for memory corruptions turning positive integers into negative)
-> 
-> All of this has basic idea coming from grsecurity/PaX's CONFIG_PAX_REFCOUNT code.
-> The main difference is that developer has to opt in into new code.
-> 
-> Convert struct proc_dir_entry for a start.
-> 
+> diff --git a/include/linux/types.h b/include/linux/types.h
+> index 57a9723..cbcef6e 100644
+> --- a/include/linux/types.h
+> +++ b/include/linux/types.h
+> @@ -188,7 +188,7 @@ typedef __u32 __bitwise __wsum;
+>   * aligned_u64 should be used in defining kernel<->userspace ABIs to avoid
+>   * common 32/64-bit compat problems.
+>   * 64-bit values align to 4-byte boundaries on x86_32 (and possibly other
+> - * architectures) and to 8-byte boundaries on 64-bit architetures.  The new
+> + * architectures) and to 8-byte boundaries on 64-bit architectures.  The new
+>   * aligned_64 type enforces 8-byte alignment so that structs containing
+>   * aligned_64 values have the same alignment on 32-bit and 64-bit architectures.
+>   * No conversions are necessary between 32-bit user-space and a 64-bit kernel.
 
-Fair enough.
 
-Does _refcnt_t need to exist?
-
-The use of a leading _ to denote the nonatomic variant is a bit odd but
-I guess it's better than putting "_nonatomic" at the end of everything.
-
-How much code bloat will all this cause, and is there anything that can be
-done to reduce it?
-
->  Very ligthly tested.
-
-erk.
-
->
-> ...
->
-> --- /dev/null
-> +++ b/include/linux/refcnt.h
-> @@ -0,0 +1,89 @@
-> +/*
-> + * Use these types iff
-> + * a) object is created with refcount 1, and
-> + * b) every GET does +1, and
-> + * c) every PUT does -1, and
-> + * d) once refcount reaches 0, object is destroyed.
-> + *
-> + * Do not use otherwise.
-> + *
-> + * Use underscored version if refcount manipulations are under
-> + * some sort of locking already making additional atomicity unnecessary.
-> + */
-> +#ifndef _LINUX_REFCNT_H
-> +#define _LINUX_REFCNT_H
-> +#include <linux/types.h>
-> +#include <asm/atomic.h>
-
-linux/atomic.h is more modern.
-
-> +#ifdef CONFIG_DEBUG_REFCNT
-> +#include <asm/bug.h>
-> +#endif
-
-This is a bit risky.  It means that a .c file such as
-
-#include <linux/refcnt.h>
-foo()
-{
-	BUG();
-}
-
-will compile OK with CONFIG_DEBUG_REFCNT=y and will fail with
-CONFIG_DEBUG_REFCNT=n.  This makes Randy send more emails.  Suggest
-removal of the ifdef.
-
-> +typedef struct {
-> +	int _n;
-
-The code would look nicer if the unneeded _ was removed.
-
-> +} _refcnt_t;
-> +#define _REFCNT_INIT	((_refcnt_t){ ._n = 1 })
->
-> ...
->
-> +typedef struct {
-> +	atomic_t _n;
-
-s/_//
-
-> +} refcnt_t;
-> +#define REFCNT_INIT	((refcnt_t){ ._n = ATOMIC_INIT(1) })
-> +
->
-> ...
->
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
