@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab1LGBQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 20:16:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44200 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab1LGBQT (ORCPT
+	id S1754235Ab1LGBWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 20:22:17 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42101 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907Ab1LGBWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 20:16:19 -0500
-Date: Tue, 6 Dec 2011 17:16:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: serge.hallyn@canonical.com, oleg@redhat.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@redhat.com>
-Subject: Re: [PATCH 1/1][V3] Add reboot_pid_ns to handle the reboot syscall
-Message-Id: <20111206171617.e31bc3a6.akpm@linux-foundation.org>
-In-Reply-To: <1323030290-22216-2-git-send-email-daniel.lezcano@free.fr>
-References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr>
-	<1323030290-22216-2-git-send-email-daniel.lezcano@free.fr>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Dec 2011 20:22:16 -0500
+Date: Tue, 6 Dec 2011 17:22:12 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        dchinner@redhat.com
+Subject: Re: [PATCH] oom: add tracepoints for oom_score_adj
+In-Reply-To: <20111207095434.5f2fed4b.kamezawa.hiroyu@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1112061721230.25238@chino.kir.corp.google.com>
+References: <20111207095434.5f2fed4b.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  4 Dec 2011 21:24:50 +0100
-Daniel Lezcano <daniel.lezcano@free.fr> wrote:
+On Wed, 7 Dec 2011, KAMEZAWA Hiroyuki wrote:
 
-> In the case of a child pid namespace, rebooting the system does not
-> really makes sense. When the pid namespace is used in conjunction
-> with the other namespaces in order to create a linux container, the
-> reboot syscall leads to some problems.
+> From 28189e4622fd97324893a0b234183f64472a54d6 Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Wed, 7 Dec 2011 09:58:16 +0900
+> Subject: [PATCH] oom: trace point for oom_score_adj
 > 
-> A container can reboot the host. That can be fixed by dropping
-> the sys_reboot capability but we are unable to correctly to poweroff/
-> halt/reboot a container and the container stays stuck at the shutdown
-> time with the container's init process waiting indefinitively.
+> oom_score_adj is set to prevent a task from being killed by OOM-Killer.
+> Some daemons sets this value and their children inerit it sometimes.
+> Because inheritance of oom_score_adj is done automatically, users
+> can be confused at seeing the value and finds it's hard to debug.
 > 
-> After several attempts, no solution from userspace was found to reliabily
-> handle the shutdown from a container.
+> This patch adds trace point for oom_score_adj. This adds 3 trace
+> points. at
+> 	- update oom_score_adj
+> 	- fork()
+> 	- rename task->comm(typically, exec())
 > 
-> This patch propose to store the reboot value in the 16 upper bits of the
-> exit code from the processes belonging to a pid namespace which has
-> rebooted. When the reboot syscall is called and we are not in the initial
-> pid namespace, we kill the pid namespace.
+> Outputs will be following.
+>    bash-2404  [006]   199.620841: oom_score_adj_update: task 2404[bash] updates oom_score_ad  j=-1000
+>    bash-2404  [006]   205.861287: oom_score_adj_inherited: new_task=2442 oom_score_adj=-1000
+>    su-2442  [003]   205.861761: oom_score_task_rename: rename task 2442[bash] to [su] oom_  score_adj=-1000
+>    su-2442  [003]   205.866737: oom_score_adj_inherited: new_task=2444 oom_score_adj=-1000
+>    bash-2444  [007]   205.868136: oom_score_task_rename: rename task 2444[su] to [bash] oom_  score_adj=-1000
+>    bash-2444  [007]   205.870407: oom_score_adj_inherited: new_task=2445 oom_score_adj=-1000
+>    bash-2445  [001]   205.870975: oom_score_adj_inherited: new_task=2446 oom_score_adj=-1000
 > 
-> By this way the parent process of the child pid namespace to know if
-> it rebooted or not and take the right decision.
 
-hm, modifying the exit code in this manner is a strange interface.  I
-didn't see that coming.  Perhaps some additional justification for this
-idea should be added to the changelog, along with discussion of
-alternative schemes.  I don't immediately see any problems with it,
-but, odd...  I wonder what potential it has to upset existing
-userspace.
+Little bit of whitespace damage there, but looks good in the code itself.
 
-Also, do we need to reserve all upper 16 bits of the exit code?  It
-would be better to formally leave some free for future use.
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Also, this alters the interface of wait4() and friends, yes?  If so,
-that should be documented in the manpages.  Please Cc Michael on such
-changes.
+Just minor alterations to the format of the tracepoints from the first 
+version, so carry over my
 
-Also, this affects the data delivered by taskstats, I believe.  Please
-check this, test it, document it in the changelog and update
-getdelays.c appropriately.
-
-Also, glibc might be affected.  For symmetry we might want to add a
-WIFREBOOT() or something.  And we now expect waitid() to fill in extra
-bits in siginfo_t.si_status, which assumes that glibc (and other
-libc's!) aren't using a u8 in there somewhere.  etcetera.  This all
-should be tested, and reviewed by Uli (please).
-
->
-> ...
->
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -444,6 +444,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->  	                magic2 != LINUX_REBOOT_MAGIC2C))
->  		return -EINVAL;
->  
-> +	if (task_active_pid_ns(current) != &init_pid_ns)
-> +		return reboot_pid_ns(task_active_pid_ns(current), cmd);
-
-This adds a bunch of useless code if CONFIG_PID_NS=n.  It would be
-better to do
-
-#ifdef CONFIG_PID_NS
-extern void pidns_handle_reboot(int cmd);
-#else
-static inline void pidns_handle_reboot(int cmd)
-{
-}
-#endif
-
-
+Acked-by: David Rientjes <rientjes@google.com>
