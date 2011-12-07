@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab1LGRAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:00:30 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:31552 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754374Ab1LGRA0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:00:26 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6552"; a="142242775"
-Date: Wed, 7 Dec 2011 09:00:24 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu/msm: Fix compile error in mach-msm/devices-iommu.c
-Message-ID: <20111207170024.GA23621@huya.qualcomm.com>
-References: <20111206102527.GI25178@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206102527.GI25178@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756949Ab1LGRA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:00:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33095 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757139Ab1LGQRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:17:31 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
+Message-Id: <20111207160825.865901776@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:06:59 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Hillf Danton <dhillf@gmail.com>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [39/80] hugetlb: release pages in the error path of hugetlb_cow()
+In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 11:25:27AM +0100, Joerg Roedel wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> I just added a patch to my iommu/fixes branch to fix a compile error
-> with IOMMU enabled. If there is another fix for this already somewhere
-> please let me know the commit-id so that I can add it to my out-of-tree
-> branch. If there is no other fix yet I will push this upstream soon with
-> the next round of iommu-fixes.
+------------------
 
-You can go ahead and push this fix through your tree.  I'll enable the
-iommu in my defconfigs so that I start catching things like this as
-well.
+From: Hillf Danton <dhillf@gmail.com>
 
-David
+commit ea4039a34c4c206d015d34a49d0b00868e37db1d upstream.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+If we fail to prepare an anon_vma, the {new, old}_page should be released,
+or they will leak.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ mm/hugetlb.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2415,6 +2415,8 @@ retry_avoidcopy:
+ 	 * anon_vma prepared.
+ 	 */
+ 	if (unlikely(anon_vma_prepare(vma))) {
++		page_cache_release(new_page);
++		page_cache_release(old_page);
+ 		/* Caller expects lock to be held */
+ 		spin_lock(&mm->page_table_lock);
+ 		return VM_FAULT_OOM;
+
+
