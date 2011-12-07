@@ -1,188 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab1LGPTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 10:19:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57976 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756362Ab1LGPTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 10:19:38 -0500
-Date: Wed, 7 Dec 2011 17:21:22 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] virtio_net: fix refill related races
-Message-ID: <20111207152120.GA23417@redhat.com>
+	id S1756626Ab1LGP0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 10:26:05 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35667 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756608Ab1LGP0D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 10:26:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo59CuEBbu4QWMkK23TyXafhMLOh1G7Z8YxojqiQmCM0Fw@mail.gmail.com>
+References: <20111207170533.3dea865573c916e79d274eca@canb.auug.org.au> <CAErSpo59CuEBbu4QWMkK23TyXafhMLOh1G7Z8YxojqiQmCM0Fw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 7 Dec 2011 08:25:39 -0700
+Message-ID: <CAErSpo5fO87Aj8_PcdTT5V1JC6D8_o5WEpEMmHCeC=2PA9rkoQ@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (pci tree related)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Content-Type: multipart/mixed; boundary=0016e6d58f3b5cf8fe04b3822bc4
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix theoretical races related to refill work:
-1. After napi is disabled by ndo_stop, refill work
-   can run and re-enable it.
-2. Refill can reschedule itself, if this happens
-   it can run after cancel_delayed_work_sync,
-   and will access device after it is destroyed.
+--0016e6d58f3b5cf8fe04b3822bc4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-As a solution, add flags to track napi state and
-to disable refill, and toggle them on start, stop
-and remove; check these flags on refill.
+On Wed, Dec 7, 2011 at 8:08 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Dec 6, 2011 at 11:05 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>> Hi all,
+>>
+>> After merging the final tree, today's linux-next build (sparc64 defconfi=
+g)
+>> failed like this:
+>>
+>> arch/sparc/kernel/pci.c: In function 'pci_scan_one_pbm':
+>> arch/sparc/kernel/pci.c:697:7: error: incompatible type for argument 5 o=
+f 'pci_create_root_bus'
+>> include/linux/pci.h:665:17: note: expected 'struct list_head *' but argu=
+ment is of type 'struct list_head'
+>>
+>> Caused by commit fa3cec8aff53 ("sparc/PCI: convert to pci_create_root_bu=
+s
+>> ()"). Same typo as for the powerpc tree. :-( =A0Please double check the
+>> rest of those changes, please.
+>>
+>> I applied the following patch for today.
+>
+> Thanks for doing that, sorry for the trouble. =A0I don't have a set of
+> cross-compilers, unfortunately, but I will inspect the rest manually.
+> Do we have to discover problems one-by-one, or can you tell us about
+> any other arch build problems at the same time?
 
-refill work structure and new fields aren't used
-on data path, so put them together near the end of
-struct virtnet_info.
+I checked the rest manually and didn't find any similar problems.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+The corrected patch attached (same as with Stephen's fixup) is
+attached.  Also available
+at git://github.com/bjorn-helgaas/linux.git on the "pci-scan-v5"
+branch as c0cab2621d0cf75e86fbbad44d0b2b84c3a42f97)
 
-RFC only since it's untested at this point.
-A bugfix so 3.2 material?
-Comments?
+Bjorn
 
+--0016e6d58f3b5cf8fe04b3822bc4
+Content-Type: application/octet-stream; name="patch.pci-host-bridge-sparc"
+Content-Disposition: attachment; filename="patch.pci-host-bridge-sparc"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gvwhoqzm0
 
- drivers/net/virtio_net.c |   57 +++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 46 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index f5b3f19..39eb24c 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -21,6 +21,7 @@
- #include <linux/etherdevice.h>
- #include <linux/ethtool.h>
- #include <linux/module.h>
-+#include <linux/mutex.h>
- #include <linux/virtio.h>
- #include <linux/virtio_net.h>
- #include <linux/scatterlist.h>
-@@ -68,15 +69,24 @@ struct virtnet_info {
- 	/* Active statistics */
- 	struct virtnet_stats __percpu *stats;
- 
--	/* Work struct for refilling if we run low on memory. */
--	struct delayed_work refill;
--
- 	/* Chain pages by the private ptr. */
- 	struct page *pages;
- 
- 	/* fragments + linear part + virtio header */
- 	struct scatterlist rx_sg[MAX_SKB_FRAGS + 2];
- 	struct scatterlist tx_sg[MAX_SKB_FRAGS + 2];
-+
-+	/* Work struct for refilling if we run low on memory. */
-+	struct delayed_work refill;
-+
-+	/* Set flag to allow delayed refill work, protected by a refill_lock. */
-+	bool refill_enable;
-+
-+	/* Whether napi is enabled, protected by a refill_lock. */
-+	bool napi_enable;
-+
-+	/* Lock to protect refill and napi enable/disable operations. */
-+	struct mutex refill_lock;
- };
- 
- struct skb_vnet_hdr {
-@@ -477,20 +487,35 @@ static void virtnet_napi_enable(struct virtnet_info *vi)
- 	}
- }
- 
-+static void virtnet_refill_enable(struct virtnet_info *vi, bool enable)
-+{
-+	mutex_lock(&vi->refill_lock);
-+	vi->refill_enable = enable;
-+	mutex_unlock(&vi->refill_lock);
-+}
-+
- static void refill_work(struct work_struct *work)
- {
- 	struct virtnet_info *vi;
- 	bool still_empty;
- 
- 	vi = container_of(work, struct virtnet_info, refill.work);
--	napi_disable(&vi->napi);
--	still_empty = !try_fill_recv(vi, GFP_KERNEL);
--	virtnet_napi_enable(vi);
- 
--	/* In theory, this can happen: if we don't get any buffers in
--	 * we will *never* try to fill again. */
--	if (still_empty)
--		schedule_delayed_work(&vi->refill, HZ/2);
-+	mutex_lock(&vi->refill_lock);
-+	if (vi->refill_enable) {
-+		if (vi->napi_enable)
-+			napi_disable(&vi->napi);
-+		still_empty = !try_fill_recv(vi, GFP_KERNEL);
-+		if (vi->napi_enable)
-+			virtnet_napi_enable(vi);
-+
-+		/* In theory, this can happen: if we don't get any buffers in
-+		 * we will *never* try to fill again. */
-+		if (still_empty)
-+			schedule_delayed_work(&vi->refill, HZ/2);
-+
-+	}
-+	mutex_unlock(&vi->refill_lock);
- }
- 
- static int virtnet_poll(struct napi_struct *napi, int budget)
-@@ -708,7 +733,10 @@ static int virtnet_open(struct net_device *dev)
- {
- 	struct virtnet_info *vi = netdev_priv(dev);
- 
-+	mutex_lock(&vi->refill_lock);
-+	vi->napi_enable = true;
- 	virtnet_napi_enable(vi);
-+	mutex_unlock(&vi->refill_lock);
- 	return 0;
- }
- 
-@@ -761,7 +789,10 @@ static int virtnet_close(struct net_device *dev)
- {
- 	struct virtnet_info *vi = netdev_priv(dev);
- 
-+	mutex_lock(&vi->refill_lock);
-+	vi->napi_enable = false;
- 	napi_disable(&vi->napi);
-+	mutex_unlock(&vi->refill_lock);
- 
- 	return 0;
- }
-@@ -1010,6 +1041,7 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (vi->stats == NULL)
- 		goto free;
- 
-+	mutex_init(&vi->refill_lock);
- 	INIT_DELAYED_WORK(&vi->refill, refill_work);
- 	sg_init_table(vi->rx_sg, ARRAY_SIZE(vi->rx_sg));
- 	sg_init_table(vi->tx_sg, ARRAY_SIZE(vi->tx_sg));
-@@ -1047,6 +1079,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 		goto free_vqs;
- 	}
- 
-+	virtnet_refill_enable(vi, true);
-+
- 	/* Last of all, set up some receive buffers. */
- 	try_fill_recv(vi, GFP_KERNEL);
- 
-@@ -1107,10 +1141,11 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
- {
- 	struct virtnet_info *vi = vdev->priv;
- 
-+	virtnet_refill_enable(vi, false);
-+
- 	/* Stop all the virtqueues. */
- 	vdev->config->reset(vdev);
- 
--
- 	unregister_netdev(vi->dev);
- 	cancel_delayed_work_sync(&vi->refill);
- 
--- 
-1.7.5.53.gc233e
+Y29tbWl0IDE4MzEzZDA5MjRiNjFmZWJmYmMxN2ZmMTlmMDdmZWE0MjJhMzg1MzQKQXV0aG9yOiBC
+am9ybiBIZWxnYWFzIDxiaGVsZ2Fhc0Bnb29nbGUuY29tPgpEYXRlOiAgIE1vbiBPY3QgMTAgMTg6
+MTQ6NDkgMjAxMSAtMDYwMAoKICAgIHNwYXJjL1BDSTogY29udmVydCB0byBwY2lfY3JlYXRlX3Jv
+b3RfYnVzKCkKICAgIAogICAgQ29udmVydCBmcm9tIHBjaV9jcmVhdGVfYnVzKCkgdG8gcGNpX2Ny
+ZWF0ZV9yb290X2J1cygpLiAgVGhpcyB3YXkgdGhlIHJvb3QKICAgIGJ1cyByZXNvdXJjZXMgYXJl
+IGNvcnJlY3QgaW1tZWRpYXRlbHkuICBUaGlzIHBhdGNoIGRvZXNuJ3QgZml4IGEgcHJvYmxlbQog
+ICAgYmVjYXVzZSBzcGFyYyBmaXhlZCB0aGUgcmVzb3VyY2VzIGJlZm9yZSBzY2FubmluZyB0aGUg
+YnVzLCBidXQgaXQgbWFrZXMKICAgIHNwYXJjIG1vcmUgY29uc2lzdGVudCB3aXRoIG90aGVyIGFy
+Y2hpdGVjdHVyZXMuCiAgICAKICAgIFNpZ25lZC1vZmYtYnk6IEJqb3JuIEhlbGdhYXMgPGJoZWxn
+YWFzQGdvb2dsZS5jb20+CiAgICBBY2tlZC1ieTogRGF2aWQgUy4gTWlsbGVyIDxkYXZlbUBkYXZl
+bWxvZnQubmV0PgoKZGlmZiAtLWdpdCBhL2FyY2gvc3BhcmMva2VybmVsL3BjaS5jIGIvYXJjaC9z
+cGFyYy9rZXJuZWwvcGNpLmMKaW5kZXggMzExMTFlMy4uNDlkZWRmMiAxMDA2NDQKLS0tIGEvYXJj
+aC9zcGFyYy9rZXJuZWwvcGNpLmMKKysrIGIvYXJjaC9zcGFyYy9rZXJuZWwvcGNpLmMKQEAgLTY4
+NSwyMyArNjg1LDI1IEBAIHN0YXRpYyB2b2lkIF9fZGV2aW5pdCBwY2lfYnVzX3JlZ2lzdGVyX29m
+X3N5c2ZzKHN0cnVjdCBwY2lfYnVzICpidXMpCiBzdHJ1Y3QgcGNpX2J1cyAqIF9fZGV2aW5pdCBw
+Y2lfc2Nhbl9vbmVfcGJtKHN0cnVjdCBwY2lfcGJtX2luZm8gKnBibSwKIAkJCQkJICAgIHN0cnVj
+dCBkZXZpY2UgKnBhcmVudCkKIHsKKwlMSVNUX0hFQUQocmVzb3VyY2VzKTsKIAlzdHJ1Y3QgZGV2
+aWNlX25vZGUgKm5vZGUgPSBwYm0tPm9wLT5kZXYub2Zfbm9kZTsKIAlzdHJ1Y3QgcGNpX2J1cyAq
+YnVzOwogCiAJcHJpbnRrKCJQQ0k6IFNjYW5uaW5nIFBCTSAlc1xuIiwgbm9kZS0+ZnVsbF9uYW1l
+KTsKIAotCWJ1cyA9IHBjaV9jcmVhdGVfYnVzKHBhcmVudCwgcGJtLT5wY2lfZmlyc3RfYnVzbm8s
+IHBibS0+cGNpX29wcywgcGJtKTsKKwlwY2lfYWRkX3Jlc291cmNlKCZyZXNvdXJjZXMsICZwYm0t
+PmlvX3NwYWNlKTsKKwlwY2lfYWRkX3Jlc291cmNlKCZyZXNvdXJjZXMsICZwYm0tPm1lbV9zcGFj
+ZSk7CisJYnVzID0gcGNpX2NyZWF0ZV9yb290X2J1cyhwYXJlbnQsIHBibS0+cGNpX2ZpcnN0X2J1
+c25vLCBwYm0tPnBjaV9vcHMsCisJCQkJICBwYm0sICZyZXNvdXJjZXMpOwogCWlmICghYnVzKSB7
+CiAJCXByaW50ayhLRVJOX0VSUiAiRmFpbGVkIHRvIGNyZWF0ZSBidXMgZm9yICVzXG4iLAogCQkg
+ICAgICAgbm9kZS0+ZnVsbF9uYW1lKTsKKwkJcGNpX2ZyZWVfcmVzb3VyY2VfbGlzdCgmcmVzb3Vy
+Y2VzKTsKIAkJcmV0dXJuIE5VTEw7CiAJfQogCWJ1cy0+c2Vjb25kYXJ5ID0gcGJtLT5wY2lfZmly
+c3RfYnVzbm87CiAJYnVzLT5zdWJvcmRpbmF0ZSA9IHBibS0+cGNpX2xhc3RfYnVzbm87CiAKLQli
+dXMtPnJlc291cmNlWzBdID0gJnBibS0+aW9fc3BhY2U7Ci0JYnVzLT5yZXNvdXJjZVsxXSA9ICZw
+Ym0tPm1lbV9zcGFjZTsKLQogCXBjaV9vZl9zY2FuX2J1cyhwYm0sIG5vZGUsIGJ1cyk7CiAJcGNp
+X2J1c19hZGRfZGV2aWNlcyhidXMpOwogCXBjaV9idXNfcmVnaXN0ZXJfb2Zfc3lzZnMoYnVzKTsK
+QEAgLTcxMSwxMyArNzEzLDYgQEAgc3RydWN0IHBjaV9idXMgKiBfX2RldmluaXQgcGNpX3NjYW5f
+b25lX3BibShzdHJ1Y3QgcGNpX3BibV9pbmZvICpwYm0sCiAKIHZvaWQgX19kZXZpbml0IHBjaWJp
+b3NfZml4dXBfYnVzKHN0cnVjdCBwY2lfYnVzICpwYnVzKQogewotCXN0cnVjdCBwY2lfcGJtX2lu
+Zm8gKnBibSA9IHBidXMtPnN5c2RhdGE7Ci0KLQkvKiBHZW5lcmljIFBDSSBidXMgcHJvYmluZyBz
+ZXRzIHRoZXNlIHRvIHBvaW50IGF0Ci0JICogJmlve3BvcnQsbWVtfV9yZXNvdWNlIHdoaWNoIGlz
+IHdyb25nIGZvciB1cy4KLQkgKi8KLQlwYnVzLT5yZXNvdXJjZVswXSA9ICZwYm0tPmlvX3NwYWNl
+OwotCXBidXMtPnJlc291cmNlWzFdID0gJnBibS0+bWVtX3NwYWNlOwogfQogCiB2b2lkIHBjaWJp
+b3NfdXBkYXRlX2lycShzdHJ1Y3QgcGNpX2RldiAqcGRldiwgaW50IGlycSkK
+--0016e6d58f3b5cf8fe04b3822bc4--
