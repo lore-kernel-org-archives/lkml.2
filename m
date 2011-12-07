@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab1LGNiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:38:52 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:64175 "EHLO
+	id S1756157Ab1LGNjh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:39:37 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:64171 "EHLO
 	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895Ab1LGNhX (ORCPT
+	with ESMTP id S1755810Ab1LGNhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Dec 2011 08:37:23 -0500
 From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
         =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH v2 6/8][NET] fec.c: preserve MII/RMII setting in fec_stop()
-Date: Wed,  7 Dec 2011 14:37:18 +0100
-Message-Id: <d6f4de9e4cfb393754b42815a2ef1a59c96eab83.1323256319.git.LW@KARO-electronics.de>
+Subject: [PATCH v2 1/8][NET] fec.c: misc cleanups
+Date: Wed,  7 Dec 2011 14:37:13 +0100
+Message-Id: <bd4415514fa0b40ece04d56b3ac4f549e79d87d7.1323256319.git.LW@KARO-electronics.de>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <55b78c1766da5b0d0d679f5eae3fb9fc74a6ceef.1323256319.git.LW@KARO-electronics.de>
+In-Reply-To: <cover.1323256319.git.LW@KARO-electronics.de>
 References: <cover.1323256319.git.LW@KARO-electronics.de>
- <bd4415514fa0b40ece04d56b3ac4f549e79d87d7.1323256319.git.LW@KARO-electronics.de>
- <6c28f25c5c6d2f88d0985ce361c5e16f19db27d0.1323256319.git.LW@KARO-electronics.de>
- <0b92136d69e509a6ce49b526e1834f0ec90b04a4.1323256319.git.LW@KARO-electronics.de>
- <6d1e5cdcbfc48df864ec9e0939645c0e95389d2a.1323256319.git.LW@KARO-electronics.de>
- <55b78c1766da5b0d0d679f5eae3fb9fc74a6ceef.1323256319.git.LW@KARO-electronics.de>
 In-Reply-To: <cover.1323256319.git.LW@KARO-electronics.de>
 References: <cover.1323256319.git.LW@KARO-electronics.de>
 MIME-Version: 1.0
@@ -31,38 +26,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Additionally to setting the ETHER_EN bit in FEC_ECNTRL the MII/RMII
-setting in FEC_R_CNTRL needs to be preserved to keep the MII interface
-functional.
+ - remove some bogus whitespace
+ - remove line wraps from printk messages
 
 Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 ---
- drivers/net/ethernet/freescale/fec.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ drivers/net/ethernet/freescale/fec.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
-index 11534b9..ab0afb5 100644
+index 1124ce0..f224e58 100644
 --- a/drivers/net/ethernet/freescale/fec.c
 +++ b/drivers/net/ethernet/freescale/fec.c
-@@ -515,6 +515,7 @@ fec_stop(struct net_device *ndev)
- 	struct fec_enet_private *fep = netdev_priv(ndev);
- 	const struct platform_device_id *id_entry =
- 				platform_get_device_id(fep->pdev);
-+	u32 rmii_mode = readl(fep->hwp + FEC_R_CNTRL) & (1 << 8);
+@@ -99,7 +99,7 @@ static struct platform_device_id fec_devtype[] = {
+ MODULE_DEVICE_TABLE(platform, fec_devtype);
  
- 	/* We cannot expect a graceful transmit stop without link !!! */
- 	if (fep->link) {
-@@ -531,8 +532,10 @@ fec_stop(struct net_device *ndev)
- 	writel(FEC_DEFAULT_IMASK, fep->hwp + FEC_IMASK);
+ enum imx_fec_type {
+-	IMX25_FEC = 1, 	/* runs on i.mx25/50/53 */
++	IMX25_FEC = 1,	/* runs on i.mx25/50/53 */
+ 	IMX27_FEC,	/* runs on i.mx27/35/51 */
+ 	IMX28_FEC,
+ 	IMX6Q_FEC,
+@@ -132,7 +132,7 @@ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
+ #elif defined (CONFIG_M5272C3)
+ #define	FEC_FLASHMAC	(0xffe04000 + 4)
+ #elif defined(CONFIG_MOD5272)
+-#define FEC_FLASHMAC 	0xffc0406b
++#define FEC_FLASHMAC	0xffc0406b
+ #else
+ #define	FEC_FLASHMAC	0
+ #endif
+@@ -972,8 +972,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
+ 	}
  
- 	/* We have to keep ENET enabled to have MII interrupt stay working */
--	if (id_entry->driver_data & FEC_QUIRK_ENET_MAC)
-+	if (id_entry->driver_data & FEC_QUIRK_ENET_MAC) {
- 		writel(2, fep->hwp + FEC_ECNTRL);
-+		writel(rmii_mode, fep->hwp + FEC_R_CNTRL);
-+	}
- }
+ 	if (phy_id >= PHY_MAX_ADDR) {
+-		printk(KERN_INFO "%s: no PHY, assuming direct connection "
+-			"to switch\n", ndev->name);
++		printk(KERN_INFO
++			"%s: no PHY, assuming direct connection to switch\n",
++			ndev->name);
+ 		strncpy(mdio_bus_id, "0", MII_BUS_ID_SIZE);
+ 		phy_id = 0;
+ 	}
+@@ -998,8 +999,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
+ 	fep->link = 0;
+ 	fep->full_duplex = 0;
  
+-	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
+-		"(mii_bus:phy_addr=%s, irq=%d)\n", ndev->name,
++	printk(KERN_INFO
++		"%s: Freescale FEC PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
++		ndev->name,
+ 		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
+ 		fep->phy_dev->irq);
  
 -- 
 1.5.6.5
