@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934040Ab1LGQcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:32:04 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:42093 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756574Ab1LGQcA (ORCPT
+	id S1757858Ab1LGQdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:33:00 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52178 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757819Ab1LGQc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:32:00 -0500
-Message-ID: <4EDF94F0.2080201@linux.vnet.ibm.com>
-Date: Wed, 07 Dec 2011 22:01:44 +0530
-From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	Wed, 7 Dec 2011 11:32:58 -0500
+Date: Wed, 7 Dec 2011 16:32:53 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: john.johansen@canonical.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+Message-ID: <20111207163253.GD2203@ZenIV.linux.org.uk>
+References: <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com>
+ <20111207011047.GQ2203@ZenIV.linux.org.uk>
+ <20111207013720.GS2203@ZenIV.linux.org.uk>
+ <201112070326.pB73QPZo042162@www262.sakura.ne.jp>
+ <20111207034238.GX2203@ZenIV.linux.org.uk>
+ <201112070501.pB751LoP064331@www262.sakura.ne.jp>
+ <20111207051908.GA2203@ZenIV.linux.org.uk>
+ <201112070544.pB75iX12072157@www262.sakura.ne.jp>
+ <20111207065437.GB2203@ZenIV.linux.org.uk>
+ <201112070859.pB78xn7x007845@www262.sakura.ne.jp>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Xen <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM hypervisor
- to support pv-ticketlocks
-References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com> <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com> <20111207104849.GA24849@amt.cnet> <4EDF5413.1030107@linux.vnet.ibm.com> <20111207123330.GA32212@amt.cnet>
-In-Reply-To: <20111207123330.GA32212@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120716-2674-0000-0000-0000028EE6AC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201112070859.pB78xn7x007845@www262.sakura.ne.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2011 06:03 PM, Marcelo Tosatti wrote:
-> On Wed, Dec 07, 2011 at 05:24:59PM +0530, Raghavendra K T wrote:
->> On 12/07/2011 04:18 PM, Marcelo Tosatti wrote:
->> Yes you are right. It was potentially racy and it was harmful too!.
->> I had observed that it was stalling the CPU before I introduced
->> kicked flag.
->>
->> But now,
->>
->> vcpu->kicked = 1  ==>  kvm_make_request(KVM_REQ_UNHALT, vcpu); ==>
->
-> Ok, please use a more descriptive name, such as "pvlock_kicked" or
-> something.
->
+On Wed, Dec 07, 2011 at 05:59:49PM +0900, Tetsuo Handa wrote:
+> Al Viro wrote:
+> > BTW, what your current code does if you have a file bound on another
+> > file, open it, umount -l it, let the dust settle and then do some operation
+> > that triggers tomoyo_get_absolute_path() on it?  Because you'll be getting
+> > a vfsmount/dentry pair that has
+> > 	* dentry == vfsmount->mnt_root
+> > 	* vfsmount->mnt_parent == vfsmount
+> > 	* dentry->d_inode being a non-directory
+> > and there is nothing whatsoever in what remains of the pathname.  Not a single
+> > component.  IOW, you'll get "/" in buf.  Might be good in a testsuite - is
+> > there any code in security/tomoyo that would be relying on assumption that
+> > only directory might have a name entirely without components?
+> 
+> TOMOYO assumes that only directory ends with '/'.
 
-Yes, pvlock_kicked seems good. 'll use same unless something else
-flashes.
+Then it's broken in the current mainline (and had been for as long as it
+had been using __d_path()).  Because that's all you'll get from it
+for such vfsmount/dentry pair...
 
->>
->> __vcpu_run() ==>  kvm_check_request(KVM_REQ_UNHALT, vcpu) ==>
->>
->> vcpuN->mp_state = KVM_MP_STATE_RUNNABLE; so eventually we will end up
->> in RUNNABLE.
->>
->> Also Avi pointed that, logically kvm_arch_vcpu_ioctl_set_mpstate should
->> be called only in vcpu thread, so after further debugging, I noticed
->> that,  setting vcpuN->mp_state = KVM_MP_STATE_RUNNABLE; is not
->> necessary.
->> I 'll remove that in the next patch. Thanks for pointing.
->
-> In fact you don't need kvm_arch_vcpu_ioctl_set_mpstate either, only the
-> new "kicked" flag.
->
+> Among above three results, the last one will be the best.
 
-True indeed, I meant the same.
+OK, I'm fine with your patch; for bisectability sake it ought to go before
+mine, with mine on top of it.
 
+How will we do that?  Should I put it into vfs.git#for-linus before __d_path()
+patch and ask Linus to pull that?
