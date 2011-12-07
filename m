@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab1LGQxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:53:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33517 "EHLO mx2.suse.de"
+	id S1757404Ab1LGQTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:19:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33487 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757523Ab1LGQTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:19:40 -0500
+	id S1757497Ab1LGQTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:19:30 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:28 2011
-Message-Id: <20111207160828.906711000@clark.kroah.org>
+Message-Id: <20111207160828.658779637@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:37 -0800
+Date: Wed, 07 Dec 2011 08:07:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jason Baron <jbaron@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        <alan@lxorguk.ukuu.org.uk>, Ilya Dryomov <idryomov@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [77/80] jump_label: jump_label_inc may return before the code is patched
+Subject: [74/80] tracing: fix event_subsystem ref counting
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gleb Natapov <gleb@redhat.com>
+From: Ilya Dryomov <idryomov@gmail.com>
 
-commit bbbf7af4bf8fc69bc751818cf30521080fa47dcb upstream.
+commit cb59974742aea24adf6637eb0c4b8e7b48bca6fb upstream.
 
-If cpu A calls jump_label_inc() just after atomic_add_return() is
-called by cpu B, atomic_inc_not_zero() will return value greater then
-zero and jump_label_inc() will return to a caller before jump_label_update()
-finishes its job on cpu B.
+Fix a bug introduced by e9dbfae5, which prevents event_subsystem from
+ever being released.
 
-Link: http://lkml.kernel.org/r/20111018175551.GH17571@redhat.com
+Ref_count was added to keep track of subsystem users, not for counting
+events.  Subsystem is created with ref_count = 1, so there is no need to
+increment it for every event, we have nr_events for that.  Fix this by
+touching ref_count only when we actually have a new user -
+subsystem_open().
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Jason Baron <jbaron@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Ilya Dryomov <idryomov@gmail.com>
+Link: http://lkml.kernel.org/r/1320052062-7846-1-git-send-email-idryomov@gmail.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/jump_label.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/trace/trace_events.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -66,8 +66,9 @@ void jump_label_inc(struct jump_label_ke
- 		return;
- 
- 	jump_label_lock();
--	if (atomic_add_return(1, &key->enabled) == 1)
-+	if (atomic_read(&key->enabled) == 0)
- 		jump_label_update(key, JUMP_LABEL_ENABLE);
-+	atomic_inc(&key->enabled);
- 	jump_label_unlock();
- }
- 
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1096,7 +1096,6 @@ event_subsystem_dir(const char *name, st
+ 	/* First see if we did not already create this dir */
+ 	list_for_each_entry(system, &event_subsystems, list) {
+ 		if (strcmp(system->name, name) == 0) {
+-			__get_system(system);
+ 			system->nr_events++;
+ 			return system->entry;
+ 		}
 
 
