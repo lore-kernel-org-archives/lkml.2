@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab1LGQRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:17:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33104 "EHLO mx2.suse.de"
+	id S1757045Ab1LGQRH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:17:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32959 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757126Ab1LGQRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:17:34 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:26 2011
-Message-Id: <20111207160825.939505224@clark.kroah.org>
+	id S1757027Ab1LGQRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:17:02 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
+Message-Id: <20111207160825.298114681@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:00 -0800
+Date: Wed, 07 Dec 2011 08:06:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [40/80] drm/radeon/kms: add some new pci ids
+        <alan@lxorguk.ukuu.org.uk>, Eliad Peller <eliad@wizery.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [32/80] nl80211: fix MAC address validation
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Eliad Peller <eliad@wizery.com>
 
-commit 2ed4d9d648cbd4fb1c232a646dbdbdfdd373ca94 upstream.
+commit e007b857e88097c96c45620bf3b04a4e309053d1 upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+MAC addresses have a fixed length. The current
+policy allows passing < ETH_ALEN bytes, which
+might result in reading beyond the buffer.
+
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/drm/drm_pciids.h |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/wireless/nl80211.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -197,6 +197,14 @@
- 	{0x1002, 0x6770, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6778, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6779, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CAICOS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6840, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6841, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6842, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6843, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6849, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6850, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6858, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x6859, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TURKS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6880, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6888, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6889, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -83,8 +83,8 @@ static const struct nla_policy nl80211_p
+ 	[NL80211_ATTR_IFINDEX] = { .type = NLA_U32 },
+ 	[NL80211_ATTR_IFNAME] = { .type = NLA_NUL_STRING, .len = IFNAMSIZ-1 },
+ 
+-	[NL80211_ATTR_MAC] = { .type = NLA_BINARY, .len = ETH_ALEN },
+-	[NL80211_ATTR_PREV_BSSID] = { .type = NLA_BINARY, .len = ETH_ALEN },
++	[NL80211_ATTR_MAC] = { .len = ETH_ALEN },
++	[NL80211_ATTR_PREV_BSSID] = { .len = ETH_ALEN },
+ 
+ 	[NL80211_ATTR_KEY] = { .type = NLA_NESTED, },
+ 	[NL80211_ATTR_KEY_DATA] = { .type = NLA_BINARY,
 
 
