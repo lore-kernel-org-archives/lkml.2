@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab1LGAPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:15:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:32588 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754606Ab1LGAPf convert rfc822-to-8bit (ORCPT
+	id S1755032Ab1LGAQs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:16:48 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37729 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751901Ab1LGAQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:15:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,309,1320652800"; 
-   d="scan'208";a="93136031"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Borislav Petkov <bp@amd64.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@elte.hu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Date: Tue, 6 Dec 2011 16:15:31 -0800
-Subject: RE: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-Thread-Topic: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-Thread-Index: Acy0F4VrFgz+G0QRSRKoig9ETSc2HgAXIP6A
-Message-ID: <43F901BD926A4E43B106BF17856F075501A22B5A53@orsmsx508.amr.corp.intel.com>
-References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
- <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu>
- <4EDDE5D0.7030906@linux.vnet.ibm.com> <20111206103500.GD15966@elte.hu>
- <4EDDF2DE.7020701@linux.vnet.ibm.com> <4EDDFB8E.10801@linux.vnet.ibm.com>
- <20111206130351.GC28735@gere.osrc.amd.com>
-In-Reply-To: <20111206130351.GC28735@gere.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Dec 2011 19:16:47 -0500
+Date: Wed, 7 Dec 2011 00:16:43 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+Message-ID: <20111207001643.GN2203@ZenIV.linux.org.uk>
+References: <20111206154854.GH2203@ZenIV.linux.org.uk>
+ <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
+ <20111206205346.GK2203@ZenIV.linux.org.uk>
+ <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+ <4EDE94DC.8010106@canonical.com>
+ <20111206224100.GM2203@ZenIV.linux.org.uk>
+ <4EDEA152.90804@canonical.com>
+ <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> From: Borislav Petkov [mailto:bp@amd64.org]
-> On Tue, Dec 06, 2011 at 04:55:02PM +0530, Srivatsa S. Bhat wrote:
-> > By the way, this problem is not tied to CPU0 alone, it exists for any
-> > CPU! (as long as we are talking about plugging in/out CPUs
-> physically).
+On Tue, Dec 06, 2011 at 03:45:15PM -0800, Linus Torvalds wrote:
+> How about this change:
+>  - don't change 'root' (and mark it const)
+>  - if we hit the expected root, we're all happy and do what we do now
+>  - if we hit some *unexpected* root (the "global root") add a '?' or
+> something at the head of the path.
 > 
-> Just a reminder: before you guys go and wander off into the woods of
-> hypothetical with this, please make sure this use case is relevant
-> enough for the trouble. The only real reason given so far AFAICT was
-> RAS
-> and to be able to offline BSP in order to prolong system life before
-> maintenance.
-> 
-> When you take it down for maintenance eventually, you don't need to
-> suspend but simply poweroff.
+> End result: callers like getcwd() can trivially replace their current
+> "path_equal(&tmp,&root)" (or whatever they do) with just checking the
+> first character of the end result. A good path always starts with '/'.
 
-Agree with you. To maintain a system with a bad CPU, either you hot plug or hot replace the CPU, or you power off then replace the CPU. Replacing the CPU between suspend and resume doesn't seem a normal RAS behavior.
+You get broken /proc/self/mountinfo for chrooted processes with that patch.
+You also get /proc/mounts contents change for the same.
 
-If you choose hotplug or hot replace the CPU, then this patchset is useful.
+Moreover, while we _probably_ can get away with that "prepend '?'",
+we'll need to make sure that all checks are comparing with '?', _not_
+with '/', or you'll get nasty surprises when __d_path() gets called
+on e.g. pipe dentry (pipe:[...]).  And while we are at it, we'd better
+document that "->d_dname() should never use '?' as the first character"
+restriction we've got.
 
-CPU0 offline/online is a must-have if you want to replace a socket which has the BSP in it for any errors in uncore or a sibling CPU. Not mention that CPU0 itself is bad and you want to hot unplug it.
+I don't know... playing with magical substrings in what it returns is,
+IMO, a bad idea.  I really wonder if we'd be better off with just
+this:
+	__d_path(path, root, buf, buflen) - expects non-NULL in
+root->mnt, never changes root, returns NULL if path is not under root
+	d_absolute_path(path, ancestor, buf, buflen) - grabs the
+reference to the most remote ancestor it can find, puts pathname
+into buf, never returns NULL.
 
-Thanks.
+Let tomoyo use that one and path_put(ancestor) afterwards (or look at
+it first, if it cares).  And let apparmor do the following:
+	* first call __d_path(), unless asked not to.  If it returns
+non-NULL, great we've got that path, game over.  Otherwise call
+d_absolute_path() and log that partial pathname, check where we'd got,
+etc.  Just remember to path_put(ancestor) after that.
 
--Fenghua
+We are trying to shove two different things in one function and result
+is ugly; so let's just split it instead of trying to breed weird
+hybrids.
+
+Comments?
