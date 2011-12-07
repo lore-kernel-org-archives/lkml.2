@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757153Ab1LGQRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:17:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33075 "EHLO mx2.suse.de"
+	id S1756763Ab1LGQRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:17:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32945 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757116Ab1LGQRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:17:24 -0500
+	id S1756769Ab1LGQQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:16:58 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
-Message-Id: <20111207160825.784267058@clark.kroah.org>
+Message-Id: <20111207160825.205080939@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:58 -0800
+Date: Wed, 07 Dec 2011 08:06:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
-Subject: [38/80] SCSI: Silencing killing requests for dead queue
+        <alan@lxorguk.ukuu.org.uk>, Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [31/80] rt2x00: Fix efuse EEPROM reading on PPC32.
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Gertjan van Wingerde <gwingerde@gmail.com>
 
-commit 745718132c3c7cac98a622b610e239dcd5217f71 upstream.
+commit 68fa64ef606bcee688fce46d07aa68f175070156 upstream.
 
-When we tear down a device we try to flush all outstanding
-commands in scsi_free_queue(). However the check in
-scsi_request_fn() is imperfect as it only signals that
-we _might start_ aborting commands, not that we've actually
-aborted some.
-So move the printk inside the scsi_kill_request function,
-this will also give us a hint about which commands are aborted.
+Fix __le32 to __le16 conversion of the first word of an 8-word block
+of EEPROM read via the efuse method.
 
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+Reported-and-tested-by: Ingvar Hagelund <ingvar@redpill-linpro.com>
+Signed-off-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/scsi_lib.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1407,6 +1407,8 @@ static void scsi_kill_request(struct req
- 
- 	blk_start_request(req);
- 
-+	scmd_printk(KERN_INFO, cmd, "killing request\n");
-+
- 	sdev = cmd->device;
- 	starget = scsi_target(sdev);
- 	shost = sdev->host;
-@@ -1488,7 +1490,6 @@ static void scsi_request_fn(struct reque
- 	struct request *req;
- 
- 	if (!sdev) {
--		printk("scsi: killing requests for dead queue\n");
- 		while ((req = blk_peek_request(q)) != NULL)
- 			scsi_kill_request(req, q);
- 		return;
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -3514,7 +3514,7 @@ static void rt2800_efuse_read(struct rt2
+ 	/* Apparently the data is read from end to start */
+ 	rt2800_register_read_lock(rt2x00dev, EFUSE_DATA3, &reg);
+ 	/* The returned value is in CPU order, but eeprom is le */
+-	rt2x00dev->eeprom[i] = cpu_to_le32(reg);
++	*(u32 *)&rt2x00dev->eeprom[i] = cpu_to_le32(reg);
+ 	rt2800_register_read_lock(rt2x00dev, EFUSE_DATA2, &reg);
+ 	*(u32 *)&rt2x00dev->eeprom[i + 2] = cpu_to_le32(reg);
+ 	rt2800_register_read_lock(rt2x00dev, EFUSE_DATA1, &reg);
 
 
