@@ -1,34 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab1LGAIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:08:24 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65149 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab1LGAIW (ORCPT
+	id S1754964Ab1LGAJV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:09:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56461 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754753Ab1LGAJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:08:22 -0500
+	Tue, 6 Dec 2011 19:09:20 -0500
+Message-ID: <4EDEAEA7.9060806@canonical.com>
+Date: Tue, 06 Dec 2011 16:09:11 -0800
+From: John Johansen <john.johansen@canonical.com>
+Organization: Canonical
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <CAJL_dMtvgnZHH0uLE3j7Mg2Xqwt2rd90Uy0pUxm6muPmjFbkQg@mail.gmail.com>
-References: <CAPLs8y9omncDbLE_KNoKOLLbfwHjWYUJX_i7cC4bLiJsyPbtZQ@mail.gmail.com>
-	<CAJL_dMtgP+BqFn3aGVBbGDJ+kMyGiEC_NmDURzh4mU=Jo=qZVA@mail.gmail.com>
-	<CAPLs8y8vhioqc3CPrD7ugmVkR2DjKWNm8+T5j9QQnrxi=BgvdA@mail.gmail.com>
-	<CAJL_dMtvgnZHH0uLE3j7Mg2Xqwt2rd90Uy0pUxm6muPmjFbkQg@mail.gmail.com>
-Date: Wed, 7 Dec 2011 02:08:22 +0200
-Message-ID: <CAJL_dMvbL0LBrJ4irP3vd_PA458i0YefWpmvMgphuT+TnF2O5Q@mail.gmail.com>
-Subject: Re: v6: faster tree-based sysctl implementation
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Cc: "Eric W . Biederman" <ebiederm@xmission.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Octavian Purdila <tavi@cs.pub.ro>,
-        "David S . Miller" <davem@davemloft.net>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Damien Millescamps <damien.millescamps@6wind.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com> <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com> <4EDE94DC.8010106@canonical.com> <20111206224100.GM2203@ZenIV.linux.org.uk> <4EDEA152.90804@canonical.com> <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
+In-Reply-To: <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
+X-Enigmail-Version: 1.4a1pre
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You can ask Stephen Rothwell to include your tree in next.
-git://github.com/luciang/linux-2.6-new-sysctl.git  v6-new-sysctl-alg
+On 12/06/2011 03:45 PM, Linus Torvalds wrote:
+> On Tue, Dec 6, 2011 at 3:12 PM, John Johansen
+> <john.johansen@canonical.com> wrote:
+>>
+>> What we want to know is if we missed the supplied root, so that we don't
+>> mediate off of that path.  And it would be nice to get a partial path for
+>> the purposes of logging, so that there is some guidance on how to update
+>> policy.
+> 
+> How about this change:
+>  - don't change 'root' (and mark it const)
+>  - if we hit the expected root, we're all happy and do what we do now
+>  - if we hit some *unexpected* root (the "global root") add a '?' or
+> something at the head of the path.
+> 
+> End result: callers like getcwd() can trivially replace their current
+> "path_equal(&tmp,&root)" (or whatever they do) with just checking the
+> first character of the end result. A good path always starts with '/'.
+> 
+> Something kind of like this (this does *not* change apparmor or tomoyo
+> - I didn't even look at those uses).
+> 
+yes this would give apparmor what it needs.  We would still have to break
+one chroot case, until our labeling is properly updated.  But its insane
+to plan the api around that case as it is hardly used and a proper solution
+for that case is in the works.
+
