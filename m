@@ -1,163 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137Ab1LGQrJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:47:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33773 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933075Ab1LGQVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:21:18 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:16 2011
-Message-Id: <20111207161216.827191796@clark.kroah.org>
-User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:27 -0800
-From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Johannes Stezenbach <js@sig21.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [025/104] ASoC: sta32x: preserve coefficient RAM
-In-Reply-To: <20111207161246.GA10995@kroah.com>
+	id S1758123Ab1LGQrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:47:08 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46008 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757966Ab1LGQrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:47:05 -0500
+Message-ID: <4EDF987B.8040900@linux.vnet.ibm.com>
+Date: Wed, 07 Dec 2011 22:16:51 +0530
+From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Xen <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM hypervisor
+ to support pv-ticketlocks
+References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com> <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com> <20111207104849.GA24849@amt.cnet> <4EDF5413.1030107@linux.vnet.ibm.com> <20111207123330.GA32212@amt.cnet> <4EDF6049.2030204@redhat.com> <20111207133947.GA1708@amt.cnet> <4EDF7DC5.5010504@redhat.com>
+In-Reply-To: <4EDF7DC5.5010504@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120716-2000-0000-0000-000005A142ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+On 12/07/2011 08:22 PM, Avi Kivity wrote:
+> On 12/07/2011 03:39 PM, Marcelo Tosatti wrote:
+>>> Also I think we can keep the kicked flag in vcpu->requests, no need for
+>>> new storage.
+>>
+>> Was going to suggest it but it violates the currently organized
+>> processing of entries at the beginning of vcpu_enter_guest.
+>>
+>> That is, this "kicked" flag is different enough from vcpu->requests
+>> processing that a separate variable seems worthwhile (even more
+>> different with convertion to MP_STATE at KVM_GET_MP_STATE).
+>
+> IMO, it's similar to KVM_REQ_EVENT (which can also cause mpstate to
+> change due to apic re-evaluation).
+>
 
-------------------
+Ok, So what I understand is we have to either :
+1. retain current kick flag AS-IS but would have to make it migration 
+friendly. [I still have to get more familiar with migration side]
+or
+2. introduce notion similar to KVM_REQ_PVLOCK_KICK(??) to be part of
+vcpu->requests.
 
-From: Johannes Stezenbach <js@sig21.net>
-
-commit 54dc6cabe684375b3cf549c7b0545613d694aba8 upstream.
-
-The coefficient RAM must be saved in a shadow so it can
-be restored when the codec is powered on using
-regulator_bulk_enable().
-
-Signed-off-by: Johannes Stezenbach <js@sig21.net>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/soc/codecs/sta32x.c |   63 +++++++++++++++++++++++++++++++++++++++++++++-
- sound/soc/codecs/sta32x.h |    1 
- 2 files changed, 63 insertions(+), 1 deletion(-)
-
---- a/sound/soc/codecs/sta32x.c
-+++ b/sound/soc/codecs/sta32x.c
-@@ -76,6 +76,8 @@ struct sta32x_priv {
- 
- 	unsigned int mclk;
- 	unsigned int format;
-+
-+	u32 coef_shadow[STA32X_COEF_COUNT];
- };
- 
- static const DECLARE_TLV_DB_SCALE(mvol_tlv, -12700, 50, 1);
-@@ -227,6 +229,7 @@ static int sta32x_coefficient_put(struct
- 				  struct snd_ctl_elem_value *ucontrol)
- {
- 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
-+	struct sta32x_priv *sta32x = snd_soc_codec_get_drvdata(codec);
- 	int numcoef = kcontrol->private_value >> 16;
- 	int index = kcontrol->private_value & 0xffff;
- 	unsigned int cfud;
-@@ -239,6 +242,11 @@ static int sta32x_coefficient_put(struct
- 	snd_soc_write(codec, STA32X_CFUD, cfud);
- 
- 	snd_soc_write(codec, STA32X_CFADDR2, index);
-+	for (i = 0; i < numcoef && (index + i < STA32X_COEF_COUNT); i++)
-+		sta32x->coef_shadow[index + i] =
-+			  (ucontrol->value.bytes.data[3 * i] << 16)
-+			| (ucontrol->value.bytes.data[3 * i + 1] << 8)
-+			| (ucontrol->value.bytes.data[3 * i + 2]);
- 	for (i = 0; i < 3 * numcoef; i++)
- 		snd_soc_write(codec, STA32X_B1CF1 + i,
- 			      ucontrol->value.bytes.data[i]);
-@@ -252,6 +260,48 @@ static int sta32x_coefficient_put(struct
- 	return 0;
- }
- 
-+int sta32x_sync_coef_shadow(struct snd_soc_codec *codec)
-+{
-+	struct sta32x_priv *sta32x = snd_soc_codec_get_drvdata(codec);
-+	unsigned int cfud;
-+	int i;
-+
-+	/* preserve reserved bits in STA32X_CFUD */
-+	cfud = snd_soc_read(codec, STA32X_CFUD) & 0xf0;
-+
-+	for (i = 0; i < STA32X_COEF_COUNT; i++) {
-+		snd_soc_write(codec, STA32X_CFADDR2, i);
-+		snd_soc_write(codec, STA32X_B1CF1,
-+			      (sta32x->coef_shadow[i] >> 16) & 0xff);
-+		snd_soc_write(codec, STA32X_B1CF2,
-+			      (sta32x->coef_shadow[i] >> 8) & 0xff);
-+		snd_soc_write(codec, STA32X_B1CF3,
-+			      (sta32x->coef_shadow[i]) & 0xff);
-+		/* chip documentation does not say if the bits are
-+		 * self-clearing, so do it explicitly */
-+		snd_soc_write(codec, STA32X_CFUD, cfud);
-+		snd_soc_write(codec, STA32X_CFUD, cfud | 0x01);
-+	}
-+	return 0;
-+}
-+
-+int sta32x_cache_sync(struct snd_soc_codec *codec)
-+{
-+	unsigned int mute;
-+	int rc;
-+
-+	if (!codec->cache_sync)
-+		return 0;
-+
-+	/* mute during register sync */
-+	mute = snd_soc_read(codec, STA32X_MMUTE);
-+	snd_soc_write(codec, STA32X_MMUTE, mute | STA32X_MMUTE_MMUTE);
-+	sta32x_sync_coef_shadow(codec);
-+	rc = snd_soc_cache_sync(codec);
-+	snd_soc_write(codec, STA32X_MMUTE, mute);
-+	return rc;
-+}
-+
- #define SINGLE_COEF(xname, index) \
- {	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
- 	.info = sta32x_coefficient_info, \
-@@ -657,7 +707,7 @@ static int sta32x_set_bias_level(struct
- 				return ret;
- 			}
- 
--			snd_soc_cache_sync(codec);
-+			sta32x_cache_sync(codec);
- 		}
- 
- 		/* Power up to mute */
-@@ -792,6 +842,17 @@ static int sta32x_probe(struct snd_soc_c
- 			    STA32X_CxCFG_OM_MASK,
- 			    2 << STA32X_CxCFG_OM_SHIFT);
- 
-+	/* initialize coefficient shadow RAM with reset values */
-+	for (i = 4; i <= 49; i += 5)
-+		sta32x->coef_shadow[i] = 0x400000;
-+	for (i = 50; i <= 54; i++)
-+		sta32x->coef_shadow[i] = 0x7fffff;
-+	sta32x->coef_shadow[55] = 0x5a9df7;
-+	sta32x->coef_shadow[56] = 0x7fffff;
-+	sta32x->coef_shadow[59] = 0x7fffff;
-+	sta32x->coef_shadow[60] = 0x400000;
-+	sta32x->coef_shadow[61] = 0x400000;
-+
- 	sta32x_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
- 	/* Bias level configuration will have done an extra enable */
- 	regulator_bulk_disable(ARRAY_SIZE(sta32x->supplies), sta32x->supplies);
---- a/sound/soc/codecs/sta32x.h
-+++ b/sound/soc/codecs/sta32x.h
-@@ -19,6 +19,7 @@
- /* STA326 register addresses */
- 
- #define STA32X_REGISTER_COUNT	0x2d
-+#define STA32X_COEF_COUNT 62
- 
- #define STA32X_CONFA	0x00
- #define STA32X_CONFB    0x01
-
+So what would be better? Please let me know.
 
