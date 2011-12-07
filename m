@@ -1,129 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab1LGRVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:21:18 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40062 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab1LGRVQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:21:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1112061734450.26844@chino.kir.corp.google.com>
-References: <1322770029-10297-1-git-send-email-yinghan@google.com>
-	<alpine.DEB.2.00.1112061734450.26844@chino.kir.corp.google.com>
-Date: Wed, 7 Dec 2011 09:21:15 -0800
-Message-ID: <CALWz4izNE6So17q0QqE34k1PoZD0hHJvm3L6V_yCaa19szzOrQ@mail.gmail.com>
-Subject: Re: [PATCH V6] Eliminate task stack trace duplication
-From: Ying Han <yinghan@google.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <bsingharora@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        Greg Thelen <gthelen@google.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1756766Ab1LGRVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:21:39 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64916 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752638Ab1LGRVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:21:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="83947460"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: andi.kleen@intel.com, linux-kernel@vger.kernel.org,
+        Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH-RESEND] x86: add IRQ context simulation in module mce-inject
+In-Reply-To: <4ec2fc2492784d824@agluck-desktop.sc.intel.com>
+Date: Wed, 07 Dec 2011 09:21:37 -0800
+Message-Id: <4edfa0a13094144086@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 5:35 PM, David Rientjes <rientjes@google.com> wrote:
-> On Thu, 1 Dec 2011, Ying Han wrote:
->
->> The problem with small dmesg ring buffer like 512k is that only limited number
->> of task traces will be logged. Sometimes we lose important information only
->> because of too many duplicated stack traces. This problem occurs when dumping
->> lots of stacks in a single operation, such as sysrq-T.
->>
->> This patch tries to reduce the duplication of task stack trace in the dump
->> message by hashing the task stack. The hashtable is a 32k pre-allocated buffer
->> during bootup. Each time if we find the identical task trace in the task stack,
->> we dump only the pid of the task which has the task trace dumped. So it is easy
->> to back track to the full stack with the pid.
->>
->> When we do the hashing, we eliminate garbage entries from stack traces. Those
->> entries are still being printed in the dump to provide more debugging
->> informations.
->>
->> [   58.469730] kworker/0:0     S 0000000000000000     0     4      2 0x00000000
->> [   58.469735]  ffff88082fcfde80 0000000000000046 ffff88082e9d8000 ffff88082fcfc010
->> [   58.469739]  ffff88082fce9860 0000000000011440 ffff88082fcfdfd8 ffff88082fcfdfd8
->> [   58.469743]  0000000000011440 0000000000000000 ffff88082fcee180 ffff88082fce9860
->> [   58.469747] Call Trace:
->> [   58.469751]  [<ffffffff8108525a>] worker_thread+0x24b/0x250
->> [   58.469754]  [<ffffffff8108500f>] ? manage_workers+0x192/0x192
->> [   58.469757]  [<ffffffff810885bd>] kthread+0x82/0x8a
->> [   58.469760]  [<ffffffff8141aed4>] kernel_thread_helper+0x4/0x10
->> [   58.469763]  [<ffffffff8108853b>] ? kthread_worker_fn+0x112/0x112
->> [   58.469765]  [<ffffffff8141aed0>] ? gs_change+0xb/0xb
->> [   58.469768] kworker/u:0     S 0000000000000004     0     5      2 0x00000000
->> [   58.469773]  ffff88082fcffe80 0000000000000046 ffff880800000000 ffff88082fcfe010
->> [   58.469777]  ffff88082fcea080 0000000000011440 ffff88082fcfffd8 ffff88082fcfffd8
->> [   58.469781]  0000000000011440 0000000000000000 ffff88082fd4e9a0 ffff88082fcea080
->> [   58.469785] Call Trace:
->> [   58.469786] <Same stack as pid 4>
->> [   58.470235] kworker/0:1     S 0000000000000000     0    13      2 0x00000000
->> [   58.470255]  ffff88082fd3fe80 0000000000000046 ffff880800000000 ffff88082fd3e010
->> [   58.470279]  ffff88082fcee180 0000000000011440 ffff88082fd3ffd8 ffff88082fd3ffd8
->> [   58.470301]  0000000000011440 0000000000000000 ffffffff8180b020 ffff88082fcee180
->> [   58.470325] Call Trace:
->> [   58.470332] <Same stack as pid 4>
->>
->> changelog v6..v5:
->> 1. clear saved stack trace before printing a set of stacks. this ensures the printed
->> stack traces are not omitted messages.
->> 2. add log level in printing duplicate stack.
->> 3. remove the show_stack() API change, and non-x86 arch won't need further change.
->> 4. add more inline documentations.
->>
->> changelog v5..v4:
->> 1. removed changes to Kconfig file
->> 2. changed hashtable to keep only hash value and length of stack
->> 3. simplified hashtable lookup
->>
->> changelog v4..v3:
->> 1. improve de-duplication by eliminating garbage entries from stack traces.
->> with this change 793/825 stack traces were recognized as duplicates. in v3
->> only 482/839 were duplicates.
->>
->> changelog v3..v2:
->> 1. again better documentation on the patch description.
->> 2. make the stack_hash_table to be allocated at compile time.
->> 3. have better name of variable index
->> 4. move save_dup_stack_trace() in kernel/stacktrace.c
->>
->> changelog v2..v1:
->> 1. better documentation on the patch description
->> 2. move the spinlock inside the hash lockup, so reducing the holding time.
->>
->> Note:
->> 1. with pid namespace, we might have same pid number for different processes. i
->> wonder how the stack trace (w/o dedup) handles the case, it uses tsk->pid as well
->> as far as I checked.
->> 2. the core functionality is in x86-specific code, this could be moved out to
->> support other architectures.
->> 3. Andrew made the suggestion of doing appending to stack_hash_table[].
->>
->> Signed-off-by: Ying Han <yinghan@google.com>
->> Signed-off-by: Greg Thelen <gthelen@google.com>
->> ---
->>  arch/x86/include/asm/stacktrace.h |   11 +++-
->>  arch/x86/kernel/dumpstack.c       |   24 ++++++-
->>  arch/x86/kernel/dumpstack_32.c    |    7 +-
->>  arch/x86/kernel/dumpstack_64.c    |    7 +-
->>  arch/x86/kernel/stacktrace.c      |  123 +++++++++++++++++++++++++++++++++++++
->>  include/linux/sched.h             |    3 +
->>  include/linux/stacktrace.h        |    4 +
->>  kernel/sched.c                    |   32 +++++++++-
->>  kernel/stacktrace.c               |   15 +++++
->>  9 files changed, 211 insertions(+), 15 deletions(-)
->>
->
-> Looks like something that would go through x86/debug?  Probably best to cc
-> Ingo, Peter, and Thomas.
+mce-inject provides a mechanism to simulate errors so that test
+scripts can check for correct operation of the kernel without
+requiring any specialized hardware to create rare events.
 
-Thank you David, I was about to add linux-kernel into the cc list
-yesterday as well.
+The existing code can simulate events in normal process context
+and also in NMI context - but not in IRQ context. This patch
+fills that gap.
 
---Ying
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+Acked-by: Tony Luck <tony.luck@intel.com>
+
+---
+[Re-wrote the commit comment - Chen Gong's original text is below,
+ in case I missed any critical aspect - Tony]
+module mce-inject is an interface which is used by user space app
+such as mce-inject. According to it one can inject all kinds of
+error combinations into the kernel. In this way, one can check
+error condition coverage in the kernel. To satisify this needs,
+module mce-inject must simulate enough scenarios such as process
+context, IRQ context, even NMI context, to ensure related kernel
+codes are strong and reliable. In current implementation, IRQ
+context hasn't been simulated. This patch is for this purpose.
+
+ arch/x86/include/asm/mce.h              |    9 ++++---
+ arch/x86/kernel/cpu/mcheck/mce-inject.c |   34 +++++++++++++++++++++++++++---
+ 2 files changed, 35 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index c9321f3..312d770 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -50,10 +50,11 @@
+ #define MCJ_CTX_MASK		3
+ #define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
+ #define MCJ_CTX_RANDOM		0    /* inject context: random */
+-#define MCJ_CTX_PROCESS		1    /* inject context: process */
+-#define MCJ_CTX_IRQ		2    /* inject context: IRQ */
+-#define MCJ_NMI_BROADCAST	4    /* do NMI broadcasting */
+-#define MCJ_EXCEPTION		8    /* raise as exception */
++#define MCJ_CTX_PROCESS		0x1  /* inject context: process */
++#define MCJ_CTX_IRQ		0x2  /* inject context: IRQ */
++#define MCJ_NMI_BROADCAST	0x4  /* do NMI broadcasting */
++#define MCJ_EXCEPTION		0x8  /* raise as exception */
++#define MCJ_IRQ_BRAODCAST	0x10 /* do IRQ broadcasting */
+ 
+ /* Fields are zero when not available */
+ struct mce {
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index 6199232..505461e 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -17,6 +17,7 @@
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
++#include <linux/preempt.h>
+ #include <linux/smp.h>
+ #include <linux/notifier.h>
+ #include <linux/kdebug.h>
+@@ -92,6 +93,18 @@ static int mce_raise_notify(unsigned int cmd, struct pt_regs *regs)
+ 	return NMI_HANDLED;
+ }
+ 
++static void mce_irq_ipi(void *info)
++{
++	int cpu = smp_processor_id();
++	struct mce *m = &__get_cpu_var(injectm);
++
++	if (cpumask_test_cpu(cpu, mce_inject_cpumask) &&
++			m->inject_flags & MCJ_EXCEPTION) {
++		cpumask_clear_cpu(cpu, mce_inject_cpumask);
++		raise_exception(m, NULL);
++	}
++}
++
+ /* Inject mce on current CPU */
+ static int raise_local(void)
+ {
+@@ -139,9 +152,10 @@ static void raise_mce(struct mce *m)
+ 		return;
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	if (m->inject_flags & MCJ_NMI_BROADCAST) {
++	if (m->inject_flags & (MCJ_IRQ_BRAODCAST | MCJ_NMI_BROADCAST)) {
+ 		unsigned long start;
+ 		int cpu;
++
+ 		get_online_cpus();
+ 		cpumask_copy(mce_inject_cpumask, cpu_online_mask);
+ 		cpumask_clear_cpu(get_cpu(), mce_inject_cpumask);
+@@ -151,13 +165,25 @@ static void raise_mce(struct mce *m)
+ 			    MCJ_CTX(mcpu->inject_flags) != MCJ_CTX_RANDOM)
+ 				cpumask_clear_cpu(cpu, mce_inject_cpumask);
+ 		}
+-		if (!cpumask_empty(mce_inject_cpumask))
+-			apic->send_IPI_mask(mce_inject_cpumask, NMI_VECTOR);
++		if (!cpumask_empty(mce_inject_cpumask)) {
++			if (m->inject_flags & MCJ_IRQ_BRAODCAST) {
++				/*
++				 * don't wait because mce_irq_ipi is necessary
++				 * to be sync with following raise_local
++				 */
++				preempt_disable();
++				smp_call_function_many(mce_inject_cpumask,
++					mce_irq_ipi, NULL, 0);
++				preempt_enable();
++			} else if (m->inject_flags & MCJ_NMI_BROADCAST)
++				apic->send_IPI_mask(mce_inject_cpumask,
++						NMI_VECTOR);
++		}
+ 		start = jiffies;
+ 		while (!cpumask_empty(mce_inject_cpumask)) {
+ 			if (!time_before(jiffies, start + 2*HZ)) {
+ 				printk(KERN_ERR
+-				"Timeout waiting for mce inject NMI %lx\n",
++				"Timeout waiting for mce inject %lx\n",
+ 					*cpumask_bits(mce_inject_cpumask));
+ 				break;
+ 			}
+-- 
+1.7.7.rc0.70.g82660
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
