@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab1LGRIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:08:36 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5584 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757417Ab1LGRId convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:08:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 07 Dec 2011 09:08:27 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Andrew Chew <AChew@nvidia.com>
-CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Dan Willemsen <dwillemsen@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        Venkat Moganty <vmoganty@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 7 Dec 2011 09:08:26 -0800
-Subject: RE: [PATCH 1/3 v4] usb: tegra20-ehci: Add devicetree support.
-Thread-Topic: [PATCH 1/3 v4] usb: tegra20-ehci: Add devicetree support.
-Thread-Index: Acy0ksKRlFZ1L/wmTAmiGfgitaRUbwAb+Fzw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1750B77736@HQMAIL01.nvidia.com>
-References: <1311283067-18952-1-git-send-email-achew@nvidia.com>
- <20111207034200.GG32515@game.jcrosoft.org>
-In-Reply-To: <20111207034200.GG32515@game.jcrosoft.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1757653Ab1LGRJC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:09:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39343 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757074Ab1LGRD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:03:28 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:00 2011
+Message-Id: <20111207165600.831023370@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:54:38 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Tim Blechmann <tim@klingt.org>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [05/27] ALSA: lx6464es - fix device communication via command bus
+In-Reply-To: <20111207165611.GA19872@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean-Christophe PLAGNIOL-VILLARD wrote at Tuesday, December 06, 2011 8:42 PM:
-> On 14:17 Thu 21 Jul     , achew@nvidia.com wrote:
-> > From: Andrew Chew <achew@nvidia.com>
-> >
-> > Add code to try to get platform data information (register base, irq,
-> > modes, various tuning parameters) from device tree, if not present in board
-> > files.
-...
-> > +static u64 tegra_ehci_dmamask = DMA_BIT_MASK(TEGRA_USB_DMA_ALIGN);
-> I really does not like this
-> as the dmamask is supposed to be device specific
-> 
-> before we put it in the soc codewhich alow to have it generic
-> 
-> this need to be manage a DT level
-> 	dmamask = <32>
-> 
-> or
-> 	dmamask = <0xffffffff>
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Jean-Christophe,
+------------------
 
-The patch you're replying to is very old; Olof has posted (and applied)
-some basic USB bindings much more recently than the above.
+From: Tim Blechmann <tim@klingt.org>
 
--- 
-nvpublic
+commit a29878553a9a7b4c06f93c7e383527cf014d4ceb upstream.
+
+commit 6175ddf06b6172046a329e3abfd9c901a43efd2e optimized the mem*io
+functions that have been used to send commands to the device. these
+optimizations somehow corrupted the communication with the lx6464es,
+that resulted the device to be unusable with kernels after 2.6.33.
+
+this patch emulates the memcpy_*_io functions via a loop to avoid these
+problems.
+
+Signed-off-by: Tim Blechmann <tim@klingt.org>
+LKML-Reference: <4ECB5257.4040600@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ sound/pci/lx6464es/lx_core.c |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+--- a/sound/pci/lx6464es/lx_core.c
++++ b/sound/pci/lx6464es/lx_core.c
+@@ -80,8 +80,12 @@ unsigned long lx_dsp_reg_read(struct lx6
+ 
+ void lx_dsp_reg_readbuf(struct lx6464es *chip, int port, u32 *data, u32 len)
+ {
+-	void __iomem *address = lx_dsp_register(chip, port);
+-	memcpy_fromio(data, address, len*sizeof(u32));
++	u32 __iomem *address = lx_dsp_register(chip, port);
++	int i;
++
++	/* we cannot use memcpy_fromio */
++	for (i = 0; i != len; ++i)
++		data[i] = ioread32(address + i);
+ }
+ 
+ 
+@@ -94,8 +98,12 @@ void lx_dsp_reg_write(struct lx6464es *c
+ void lx_dsp_reg_writebuf(struct lx6464es *chip, int port, const u32 *data,
+ 			 u32 len)
+ {
+-	void __iomem *address = lx_dsp_register(chip, port);
+-	memcpy_toio(address, data, len*sizeof(u32));
++	u32 __iomem *address = lx_dsp_register(chip, port);
++	int i;
++
++	/* we cannot use memcpy_to */
++	for (i = 0; i != len; ++i)
++		iowrite32(data[i], address + i);
+ }
+ 
+ 
+
 
