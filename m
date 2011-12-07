@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383Ab1LGQSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:18:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33271 "EHLO mx2.suse.de"
+	id S1757442Ab1LGQTB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:19:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33346 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757361Ab1LGQSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:18:40 -0500
+	id S1757413Ab1LGQS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:57 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:27 2011
-Message-Id: <20111207160827.517532356@clark.kroah.org>
+Message-Id: <20111207160827.930370636@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:20 -0800
+Date: Wed, 07 Dec 2011 08:07:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Peter Chubb <peter.chubb@nicta.com.au>,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [60/80] x86: Fix "Acer Aspire 1" reboot hang
+        <alan@lxorguk.ukuu.org.uk>, Johannes Berg <johannes.berg@intel.com>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [65/80] cfg80211: fix race on init and driver registration
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,69 +26,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chubb <peter.chubb@nicta.com.au>
+From: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
 
-commit 1ef03890969932e9359b9a4c658f7f87771910ac upstream.
+commit a042994dd377d86bff9446ee76151ceb6267c9ba upstream.
 
-Looks like on some Acer Aspire 1s with older bioses, reboot via bios
-fails.  It works on my machine, (with BIOS version 0.3310) but
-not on some others (BIOS version 0.3309).
+There is a theoretical race that if hit will trigger
+a crash. The race is between when we issue the first
+regulatory hint, regulatory_hint_core(), gets processed
+by the workqueue and between when the first device
+gets registered to the wireless core. This is not easy
+to reproduce but it was easy to do so through the
+regulatory simulator I have been working on. This
+is a port of the fix I implemented there [1].
 
-There's a log of problems at:
+[1] https://github.com/mcgrof/regsim/commit/a246ccf81f059cb662eee288aa13100f631e4cc8
 
-  https://bbs.archlinux.org/viewtopic.php?id=124136
-
-This patch adds a different callback to the reboot quirk table,
-to allow rebooting via keybaord controller.
-
-Reported-by: Uroš Vampl <mobile.leecher@gmail.com>
-Tested-by: Vasily Khoruzhick <anarsoul@gmail.com>
-Signed-off-by: Peter Chubb <peter.chubb@nicta.com.au>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1323093233-9481-1-git-send-email-anarsoul@gmail.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Cc: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/reboot.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ net/wireless/reg.c |   43 +++++++++++++++++++++++++++----------------
+ 1 file changed, 27 insertions(+), 16 deletions(-)
 
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -124,7 +124,7 @@ __setup("reboot=", reboot_setup);
-  */
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -57,8 +57,17 @@
+ #define REG_DBG_PRINT(args...)
+ #endif
  
- /*
-- * Some machines require the "reboot=b"  commandline option,
-+ * Some machines require the "reboot=b" or "reboot=k"  commandline options,
-  * this quirk makes that automatic.
-  */
- static int __init set_bios_reboot(const struct dmi_system_id *d)
-@@ -136,6 +136,15 @@ static int __init set_bios_reboot(const
- 	return 0;
++static struct regulatory_request core_request_world = {
++	.initiator = NL80211_REGDOM_SET_BY_CORE,
++	.alpha2[0] = '0',
++	.alpha2[1] = '0',
++	.intersect = false,
++	.processed = true,
++	.country_ie_env = ENVIRON_ANY,
++};
++
+ /* Receipt of information from last regulatory request */
+-static struct regulatory_request *last_request;
++static struct regulatory_request *last_request = &core_request_world;
+ 
+ /* To trigger userspace events */
+ static struct platform_device *reg_pdev;
+@@ -150,7 +159,7 @@ static char user_alpha2[2];
+ module_param(ieee80211_regdom, charp, 0444);
+ MODULE_PARM_DESC(ieee80211_regdom, "IEEE 802.11 regulatory domain code");
+ 
+-static void reset_regdomains(void)
++static void reset_regdomains(bool full_reset)
+ {
+ 	/* avoid freeing static information or freeing something twice */
+ 	if (cfg80211_regdomain == cfg80211_world_regdom)
+@@ -165,6 +174,13 @@ static void reset_regdomains(void)
+ 
+ 	cfg80211_world_regdom = &world_regdom;
+ 	cfg80211_regdomain = NULL;
++
++	if (!full_reset)
++		return;
++
++	if (last_request != &core_request_world)
++		kfree(last_request);
++	last_request = &core_request_world;
  }
  
-+static int __init set_kbd_reboot(const struct dmi_system_id *d)
-+{
-+	if (reboot_type != BOOT_KBD) {
-+		reboot_type = BOOT_KBD;
-+		printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboot.\n", d->ident);
-+	}
-+	return 0;
-+}
-+
- static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 	{	/* Handle problems with rebooting on Dell E520's */
- 		.callback = set_bios_reboot,
-@@ -295,7 +304,7 @@ static struct dmi_system_id __initdata r
- 		},
- 	},
- 	{ /* Handle reboot issue on Acer Aspire one */
--		.callback = set_bios_reboot,
-+		.callback = set_kbd_reboot,
- 		.ident = "Acer Aspire One A110",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+ /*
+@@ -175,7 +191,7 @@ static void update_world_regdomain(const
+ {
+ 	BUG_ON(!last_request);
+ 
+-	reset_regdomains();
++	reset_regdomains(false);
+ 
+ 	cfg80211_world_regdom = rd;
+ 	cfg80211_regdomain = rd;
+@@ -1396,7 +1412,8 @@ static int __regulatory_hint(struct wiph
+ 	}
+ 
+ new_request:
+-	kfree(last_request);
++	if (last_request != &core_request_world)
++		kfree(last_request);
+ 
+ 	last_request = pending_request;
+ 	last_request->intersect = intersect;
+@@ -1566,9 +1583,6 @@ static int regulatory_hint_core(const ch
+ {
+ 	struct regulatory_request *request;
+ 
+-	kfree(last_request);
+-	last_request = NULL;
+-
+ 	request = kzalloc(sizeof(struct regulatory_request),
+ 			  GFP_KERNEL);
+ 	if (!request)
+@@ -1766,7 +1780,7 @@ static void restore_regulatory_settings(
+ 	mutex_lock(&cfg80211_mutex);
+ 	mutex_lock(&reg_mutex);
+ 
+-	reset_regdomains();
++	reset_regdomains(true);
+ 	restore_alpha2(alpha2, reset_user);
+ 
+ 	/*
+@@ -2035,7 +2049,7 @@ static int __set_regdom(const struct iee
+ 		int r;
+ 
+ 		if (last_request->initiator != NL80211_REGDOM_SET_BY_DRIVER) {
+-			reset_regdomains();
++			reset_regdomains(false);
+ 			cfg80211_regdomain = rd;
+ 			return 0;
+ 		}
+@@ -2056,7 +2070,7 @@ static int __set_regdom(const struct iee
+ 		if (r)
+ 			return r;
+ 
+-		reset_regdomains();
++		reset_regdomains(false);
+ 		cfg80211_regdomain = rd;
+ 		return 0;
+ 	}
+@@ -2081,7 +2095,7 @@ static int __set_regdom(const struct iee
+ 
+ 		rd = NULL;
+ 
+-		reset_regdomains();
++		reset_regdomains(false);
+ 		cfg80211_regdomain = intersected_rd;
+ 
+ 		return 0;
+@@ -2101,7 +2115,7 @@ static int __set_regdom(const struct iee
+ 	kfree(rd);
+ 	rd = NULL;
+ 
+-	reset_regdomains();
++	reset_regdomains(false);
+ 	cfg80211_regdomain = intersected_rd;
+ 
+ 	return 0;
+@@ -2254,11 +2268,8 @@ void /* __init_or_exit */ regulatory_exi
+ 	mutex_lock(&cfg80211_mutex);
+ 	mutex_lock(&reg_mutex);
+ 
+-	reset_regdomains();
+-
+-	kfree(last_request);
++	reset_regdomains(true);
+ 
+-	last_request = NULL;
+ 	dev_set_uevent_suppress(&reg_pdev->dev, true);
+ 
+ 	platform_device_unregister(reg_pdev);
 
 
