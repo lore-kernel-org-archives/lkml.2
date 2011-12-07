@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab1LGLfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 06:35:44 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:50321 "EHLO mx2.parallels.com"
+	id S1755459Ab1LGLoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 06:44:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9852 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754732Ab1LGLfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 06:35:43 -0500
-Message-ID: <4EDF4F6D.1040806@parallels.com>
-Date: Wed, 7 Dec 2011 09:35:09 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1754732Ab1LGLoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 06:44:21 -0500
+Date: Wed, 7 Dec 2011 13:46:03 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 09/12] virtio: net: Add freeze, restore handlers to
+ support S4
+Message-ID: <20111207114603.GF8326@redhat.com>
+References: <cover.1323199985.git.amit.shah@redhat.com>
+ <712d8d78cf730161181562ed44d4fe08a370b85e.1323199985.git.amit.shah@redhat.com>
+ <20111207102824.GC8326@redhat.com>
+ <20111207103529.GG4651@amit-x200.redhat.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: linux-next: manual merge of the tip tree with the cputime tree
-References: <20111207150956.52d41fd8580de3b66abd5d2d@canb.auug.org.au>
-In-Reply-To: <20111207150956.52d41fd8580de3b66abd5d2d@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111207103529.GG4651@amit-x200.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2011 02:09 AM, Stephen Rothwell wrote:
-> + 	index = (TASK_NICE(p)>  0) ? CPUTIME_NICE : CPUTIME_USER;
-> +
->    	/* Add user time to cpustat. */
-> - 	if (TASK_NICE(p)>  0)
-> - 		cpustat->nice += (__force cputime64_t) cputime;
-> - 	else
-> - 		cpustat->user += (__force cputime64_t) cputime;
->   -	task_group_account_field(p, index, cputime);
-> ++	task_group_account_field(p, index, (__force cputime64_t) cputime);
+On Wed, Dec 07, 2011 at 04:05:29PM +0530, Amit Shah wrote:
+> On (Wed) 07 Dec 2011 [12:28:24], Michael S. Tsirkin wrote:
+> > On Wed, Dec 07, 2011 at 01:18:47AM +0530, Amit Shah wrote:
+> > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > > index 697a0fc..1378f3c 100644
+> > > --- a/drivers/net/virtio_net.c
+> > > +++ b/drivers/net/virtio_net.c
+> > > @@ -1151,6 +1151,38 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
+> > >  	free_netdev(vi->dev);
+> > >  }
+> > >  
+> > > +#ifdef CONFIG_PM
+> > > +static int virtnet_freeze(struct virtio_device *vdev)
+> > > +{
+> > > +	struct virtnet_info *vi = vdev->priv;
+> > > +
+> > > +	netif_device_detach(vi->dev);
+> > > +	if (netif_running(vi->dev))
+> > > +		napi_disable(&vi->napi);
+> > > +
+> > 
+> > Could refill_work still be running at this point?
+> 
+> Yes, it could.  So moving the cancel_delayed_work_sync() before
+> disabling napi would work fine?
+
+No, because napi poll can schedule that.
+Further, refill can reschedule itself.
+
+It also looks like we have a bug in virtio net cleanup now:
+cancel_delayed_work_sync is called after unregister, so
+it will be calling napi API on an invalid device.
+And, if it schedules itself it will run after device is gone.
+
+I think we need some locking to fix this.
+
+>  Anything else that might similar treatment?
+> 
+> 		Amit
 
 
-I doubt __force cputime64_t is necessary. After these patches, those 
-fields are all u64.
+
+-- 
+MST
