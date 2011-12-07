@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933821Ab1LGQXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:23:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34298 "EHLO mx2.suse.de"
+	id S933864Ab1LGQYD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:24:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34366 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933811Ab1LGQXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:23:42 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:17 2011
-Message-Id: <20111207161217.237310786@clark.kroah.org>
+	id S933844Ab1LGQX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:23:59 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:20 2011
+Message-Id: <20111207161220.871037891@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:32 -0800
+Date: Wed, 07 Dec 2011 08:12:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Tejun Heo <tj@kernel.org>,
-        "Theodore Tso" <tytso@mit.edu>
-Subject: [030/104] ext4: fix racy use-after-free in ext4_end_io_dio()
+        <alan@lxorguk.ukuu.org.uk>, Qinglin Ye <yestyle@gmail.com>
+Subject: [074/104] USB: usb-storage: unusual_devs entry for Kingston DT 101 G2
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Qinglin Ye <yestyle@gmail.com>
 
-commit 4c81f045c0bd2cbb78cc6446a4cd98038fe11a2e upstream.
+commit cec28a5428793b6bc64e56687fb239759d6da74e upstream.
 
-ext4_end_io_dio() queues io_end->work and then clears iocb->private;
-however, io_end->work calls aio_complete() which frees the iocb
-object.  If that slab object gets reallocated, then ext4_end_io_dio()
-can end up clearing someone else's iocb->private, this use-after-free
-can cause a leak of a struct ext4_io_end_t structure.
+Kingston DT 101 G2 replies a wrong tag while transporting, add an
+unusal_devs entry to ignore the tag validation.
 
-Detected and tested with slab poisoning.
-
-[ Note: Can also reproduce using 12 fio's against 12 file systems with the
-  following configuration file:
-
-  [global]
-  direct=1
-  ioengine=libaio
-  iodepth=1
-  bs=4k
-  ba=4k
-  size=128m
-
-  [create]
-  filename=${TESTDIR}
-  rw=write
-
-  -- tytso ]
-
-Google-Bug-Id: 5354697
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Reported-by: Kent Overstreet <koverstreet@google.com>
-Tested-by: Kent Overstreet <koverstreet@google.com>
+Signed-off-by: Qinglin Ye <yestyle@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -2656,8 +2656,8 @@ out:
- 	spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -1854,6 +1854,13 @@ UNUSUAL_DEV(  0x1370, 0x6828, 0x0110, 0x
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_IGNORE_RESIDUE ),
  
- 	/* queue the work to convert unwritten extents to written */
--	queue_work(wq, &io_end->work);
- 	iocb->private = NULL;
-+	queue_work(wq, &io_end->work);
- 
- 	/* XXX: probably should move into the real I/O completion handler */
- 	inode_dio_done(inode);
++/* Reported by Qinglin Ye <yestyle@gmail.com> */
++UNUSUAL_DEV(  0x13fe, 0x3600, 0x0100, 0x0100,
++		"Kingston",
++		"DT 101 G2",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_BULK_IGNORE_TAG ),
++
+ /* Reported by Francesco Foresti <frafore@tiscali.it> */
+ UNUSUAL_DEV(  0x14cd, 0x6600, 0x0201, 0x0201,
+ 		"Super Top",
 
 
