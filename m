@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab1LGQRu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:17:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33141 "EHLO mx2.suse.de"
+	id S1757275Ab1LGQSG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:18:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33185 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757206Ab1LGQRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:17:46 -0500
+	id S1757262Ab1LGQSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:02 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:26 2011
-Message-Id: <20111207160826.158302123@clark.kroah.org>
+Message-Id: <20111207160826.547279908@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:03 -0800
+Date: Wed, 07 Dec 2011 08:07:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [43/80] firmware: Sigma: Skip header during CRC generation
+        <alan@lxorguk.ukuu.org.uk>, Alessandro Rubini <rubini@gnudd.com>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [48/80] Staging: comedi: fix signal handling in read and write
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Federico Vaga <federico.vaga@gmail.com>
 
-commit c56935bdc0a8edf50237d3b0205133a5b0adc604 upstream.
+commit 6a9ce6b654e491981f6ef7e214cbd4f63e033848 upstream.
 
-The firmware header is not part of the CRC, so skip it. Otherwise the firmware
-will be rejected due to non-matching CRCs.
+After sleeping on a wait queue, signal_pending(current) should be
+checked (not before sleeping).
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Alessandro Rubini <rubini@gnudd.com>
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firmware/sigma.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/staging/comedi/comedi_fops.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/firmware/sigma.c
-+++ b/drivers/firmware/sigma.c
-@@ -130,7 +130,8 @@ int process_sigma_firmware(struct i2c_cl
- 	if (memcmp(ssfw_head->magic, SIGMA_MAGIC, ARRAY_SIZE(ssfw_head->magic)))
- 		goto done;
- 
--	crc = crc32(0, fw->data, fw->size);
-+	crc = crc32(0, fw->data + sizeof(*ssfw_head),
-+			fw->size - sizeof(*ssfw_head));
- 	pr_debug("%s: crc=%x\n", __func__, crc);
- 	if (crc != ssfw_head->crc)
- 		goto done;
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1673,11 +1673,11 @@ static ssize_t comedi_write(struct file
+ 				retval = -EAGAIN;
+ 				break;
+ 			}
++			schedule();
+ 			if (signal_pending(current)) {
+ 				retval = -ERESTARTSYS;
+ 				break;
+ 			}
+-			schedule();
+ 			if (!s->busy)
+ 				break;
+ 			if (s->busy != file) {
+@@ -1780,11 +1780,11 @@ static ssize_t comedi_read(struct file *
+ 				retval = -EAGAIN;
+ 				break;
+ 			}
++			schedule();
+ 			if (signal_pending(current)) {
+ 				retval = -ERESTARTSYS;
+ 				break;
+ 			}
+-			schedule();
+ 			if (!s->busy) {
+ 				retval = 0;
+ 				break;
 
 
