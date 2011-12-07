@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757204Ab1LGQRp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:17:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33134 "EHLO mx2.suse.de"
+	id S1756971Ab1LGQQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:16:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32898 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757126Ab1LGQRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:17:43 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:26 2011
-Message-Id: <20111207160826.085127186@clark.kroah.org>
+	id S1756941Ab1LGQQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:16:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:22 2011
+Message-Id: <20111207160822.706775702@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:02 -0800
+Date: Wed, 07 Dec 2011 08:06:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Lars-Peter Clausen <lars@metafoo.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [42/80] firmware: Sigma: Prevent out of bounds memory access
+        <alan@lxorguk.ukuu.org.uk>, Tyler Hicks <tyhicks@canonical.com>
+Subject: [01/80] eCryptfs: Flush file in vma close
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,164 +24,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit 4f718a29fe4908c2cea782f751e9805319684e2b upstream.
+commit 32001d6fe9ac6b0423e674a3093aa56740849f3b upstream.
 
-The SigmaDSP firmware loader currently does not perform enough boundary size
-checks when processing the firmware. As a result it is possible that a
-malformed firmware can cause an out of bounds memory access.
+Dirty pages weren't being written back when an mmap'ed eCryptfs file was
+closed before the mapping was unmapped. Since f_ops->flush() is not
+called by the munmap() path, the lower file was simply being released.
+This patch flushes the eCryptfs file in the vm_ops->close() path.
 
-This patch adds checks which ensure that both the action header and the payload
-are completely inside the firmware data boundaries before processing them.
+https://launchpad.net/bugs/870326
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/firmware/sigma.c |   76 ++++++++++++++++++++++++++++++++++-------------
- include/linux/sigma.h    |    5 ---
- 2 files changed, 55 insertions(+), 26 deletions(-)
+ fs/ecryptfs/file.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/drivers/firmware/sigma.c
-+++ b/drivers/firmware/sigma.c
-@@ -14,13 +14,34 @@
- #include <linux/module.h>
- #include <linux/sigma.h>
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -139,6 +139,27 @@ out:
+ 	return rc;
+ }
  
--/* Return: 0==OK, <0==error, =1 ==no more actions */
-+static size_t sigma_action_size(struct sigma_action *sa)
++static void ecryptfs_vma_close(struct vm_area_struct *vma)
 +{
-+	size_t payload = 0;
-+
-+	switch (sa->instr) {
-+	case SIGMA_ACTION_WRITEXBYTES:
-+	case SIGMA_ACTION_WRITESINGLE:
-+	case SIGMA_ACTION_WRITESAFELOAD:
-+		payload = sigma_action_len(sa);
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	payload = ALIGN(payload, 2);
-+
-+	return payload + sizeof(struct sigma_action);
++	filemap_write_and_wait(vma->vm_file->f_mapping);
 +}
 +
-+/*
-+ * Returns a negative error value in case of an error, 0 if processing of
-+ * the firmware should be stopped after this action, 1 otherwise.
-+ */
- static int
--process_sigma_action(struct i2c_client *client, struct sigma_firmware *ssfw)
-+process_sigma_action(struct i2c_client *client, struct sigma_action *sa)
- {
--	struct sigma_action *sa = (void *)(ssfw->fw->data + ssfw->pos);
- 	size_t len = sigma_action_len(sa);
--	int ret = 0;
-+	int ret;
- 
- 	pr_debug("%s: instr:%i addr:%#x len:%zu\n", __func__,
- 		sa->instr, sa->addr, len);
-@@ -29,44 +50,50 @@ process_sigma_action(struct i2c_client *
- 	case SIGMA_ACTION_WRITEXBYTES:
- 	case SIGMA_ACTION_WRITESINGLE:
- 	case SIGMA_ACTION_WRITESAFELOAD:
--		if (ssfw->fw->size < ssfw->pos + len)
--			return -EINVAL;
- 		ret = i2c_master_send(client, (void *)&sa->addr, len);
- 		if (ret < 0)
- 			return -EINVAL;
- 		break;
--
- 	case SIGMA_ACTION_DELAY:
--		ret = 0;
- 		udelay(len);
- 		len = 0;
- 		break;
--
- 	case SIGMA_ACTION_END:
--		return 1;
--
-+		return 0;
- 	default:
- 		return -EINVAL;
- 	}
- 
--	/* when arrive here ret=0 or sent data */
--	ssfw->pos += sigma_action_size(sa, len);
--	return ssfw->pos == ssfw->fw->size;
-+	return 1;
- }
- 
- static int
- process_sigma_actions(struct i2c_client *client, struct sigma_firmware *ssfw)
- {
--	pr_debug("%s: processing %p\n", __func__, ssfw);
-+	struct sigma_action *sa;
-+	size_t size;
-+	int ret;
++static const struct vm_operations_struct ecryptfs_file_vm_ops = {
++	.close		= ecryptfs_vma_close,
++	.fault		= filemap_fault,
++};
 +
-+	while (ssfw->pos + sizeof(*sa) <= ssfw->fw->size) {
-+		sa = (struct sigma_action *)(ssfw->fw->data + ssfw->pos);
++static int ecryptfs_file_mmap(struct file *file, struct vm_area_struct *vma)
++{
++	int rc;
 +
-+		size = sigma_action_size(sa);
-+		ssfw->pos += size;
-+		if (ssfw->pos > ssfw->fw->size || size == 0)
-+			break;
++	rc = generic_file_mmap(file, vma);
++	if (!rc)
++		vma->vm_ops = &ecryptfs_file_vm_ops;
 +
-+		ret = process_sigma_action(client, sa);
- 
--	while (1) {
--		int ret = process_sigma_action(client, ssfw);
- 		pr_debug("%s: action returned %i\n", __func__, ret);
--		if (ret == 1)
--			return 0;
--		else if (ret)
++	return rc;
++}
 +
-+		if (ret <= 0)
- 			return ret;
- 	}
-+
-+	if (ssfw->pos != ssfw->fw->size)
-+		return -EINVAL;
-+
-+	return 0;
- }
+ struct kmem_cache *ecryptfs_file_info_cache;
  
- int process_sigma_firmware(struct i2c_client *client, const char *name)
-@@ -89,7 +116,14 @@ int process_sigma_firmware(struct i2c_cl
- 
- 	/* then verify the header */
- 	ret = -EINVAL;
--	if (fw->size < sizeof(*ssfw_head))
-+
-+	/*
-+	 * Reject too small or unreasonable large files. The upper limit has been
-+	 * chosen a bit arbitrarily, but it should be enough for all practical
-+	 * purposes and having the limit makes it easier to avoid integer
-+	 * overflows later in the loading process.
-+	 */
-+	if (fw->size < sizeof(*ssfw_head) || fw->size >= 0x4000000)
- 		goto done;
- 
- 	ssfw_head = (void *)fw->data;
---- a/include/linux/sigma.h
-+++ b/include/linux/sigma.h
-@@ -50,11 +50,6 @@ static inline u32 sigma_action_len(struc
- 	return (sa->len_hi << 16) | sa->len;
- }
- 
--static inline size_t sigma_action_size(struct sigma_action *sa, u32 payload_len)
--{
--	return sizeof(*sa) + payload_len + (payload_len % 2);
--}
--
- extern int process_sigma_firmware(struct i2c_client *client, const char *name);
- 
+ /**
+@@ -348,7 +369,7 @@ const struct file_operations ecryptfs_ma
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = ecryptfs_compat_ioctl,
  #endif
+-	.mmap = generic_file_mmap,
++	.mmap = ecryptfs_file_mmap,
+ 	.open = ecryptfs_open,
+ 	.flush = ecryptfs_flush,
+ 	.release = ecryptfs_release,
 
 
