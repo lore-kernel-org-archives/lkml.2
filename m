@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757657Ab1LGQUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:20:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33626 "EHLO mx2.suse.de"
+	id S1757481Ab1LGQTX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:19:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33430 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757230Ab1LGQUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:20:20 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:29 2011
-Message-Id: <20111207160829.159142439@clark.kroah.org>
+	id S1757282Ab1LGQTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:19:20 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:28 2011
+Message-Id: <20111207160828.403515055@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:40 -0800
+Date: Wed, 07 Dec 2011 08:07:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [80/80] clockevents: Set noop handler in clockevents_exchange_device()
+        <alan@lxorguk.ukuu.org.uk>, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@lst.de>, Ben Myers <bpm@sgi.com>,
+        Dave Chinner <dchinner@redhat.com>
+Subject: [71/80] xfs: fix attr2 vs large data fork assert
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +26,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit de28f25e8244c7353abed8de0c7792f5f883588c upstream.
+commit 4c393a6059f8442a70512a48ce4639b882b6f6ad upstream.
 
-If a device is shutdown, then there might be a pending interrupt,
-which will be processed after we reenable interrupts, which causes the
-original handler to be run. If the old handler is the (broadcast)
-periodic handler the shutdown state might hang the kernel completely.
+With Dmitry fsstress updates I've seen very reproducible crashes in
+xfs_attr_shortform_remove because xfs_attr_shortform_bytesfit claims that
+the attributes would not fit inline into the inode after removing an
+attribute.  It turns out that we were operating on an inode with lots
+of delalloc extents, and thus an if_bytes values for the data fork that
+is larger than biggest possible on-disk storage for it which utterly
+confuses the code near the end of xfs_attr_shortform_bytesfit.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Fix this by always allowing the current attribute fork, like we already
+do for the attr1 format, given that delalloc conversion will take care
+for moving either the data or attribute area out of line if it doesn't
+fit at that point - or making the point moot by merging extents at this
+point.
+
+Also document the function better, and clean up some loose bits.
+
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ben Myers <bpm@sgi.com>
+Acked-by: Dave Chinner <dchinner@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/time/clockevents.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/xfs/xfs_attr_leaf.c |   64 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 39 insertions(+), 25 deletions(-)
 
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -286,6 +286,7 @@ void clockevents_exchange_device(struct
- 	 * released list and do a notify add later.
+--- a/fs/xfs/xfs_attr_leaf.c
++++ b/fs/xfs/xfs_attr_leaf.c
+@@ -110,6 +110,7 @@ xfs_attr_namesp_match(int arg_flags, int
+ /*
+  * Query whether the requested number of additional bytes of extended
+  * attribute space will be able to fit inline.
++ *
+  * Returns zero if not, else the di_forkoff fork offset to be used in the
+  * literal area for attribute data once the new bytes have been added.
+  *
+@@ -122,7 +123,7 @@ xfs_attr_shortform_bytesfit(xfs_inode_t
+ 	int offset;
+ 	int minforkoff;	/* lower limit on valid forkoff locations */
+ 	int maxforkoff;	/* upper limit on valid forkoff locations */
+-	int dsize;	
++	int dsize;
+ 	xfs_mount_t *mp = dp->i_mount;
+ 
+ 	offset = (XFS_LITINO(mp) - bytes) >> 3; /* rounded down */
+@@ -136,47 +137,60 @@ xfs_attr_shortform_bytesfit(xfs_inode_t
+ 		return (offset >= minforkoff) ? minforkoff : 0;
+ 	}
+ 
+-	if (!(mp->m_flags & XFS_MOUNT_ATTR2)) {
+-		if (bytes <= XFS_IFORK_ASIZE(dp))
+-			return dp->i_d.di_forkoff;
++	/*
++	 * If the requested numbers of bytes is smaller or equal to the
++	 * current attribute fork size we can always proceed.
++	 *
++	 * Note that if_bytes in the data fork might actually be larger than
++	 * the current data fork size is due to delalloc extents. In that
++	 * case either the extent count will go down when they are converted
++	 * to real extents, or the delalloc conversion will take care of the
++	 * literal area rebalancing.
++	 */
++	if (bytes <= XFS_IFORK_ASIZE(dp))
++		return dp->i_d.di_forkoff;
++
++	/*
++	 * For attr2 we can try to move the forkoff if there is space in the
++	 * literal area, but for the old format we are done if there is no
++	 * space in the fixed attribute fork.
++	 */
++	if (!(mp->m_flags & XFS_MOUNT_ATTR2))
+ 		return 0;
+-	}
+ 
+ 	dsize = dp->i_df.if_bytes;
+-	
++
+ 	switch (dp->i_d.di_format) {
+ 	case XFS_DINODE_FMT_EXTENTS:
+-		/* 
++		/*
+ 		 * If there is no attr fork and the data fork is extents, 
+-		 * determine if creating the default attr fork will result 
+-		 * in the extents form migrating to btree. If so, the 
+-		 * minimum offset only needs to be the space required for 
++		 * determine if creating the default attr fork will result
++		 * in the extents form migrating to btree. If so, the
++		 * minimum offset only needs to be the space required for
+ 		 * the btree root.
+-		 */ 
++		 */
+ 		if (!dp->i_d.di_forkoff && dp->i_df.if_bytes >
+ 		    xfs_default_attroffset(dp))
+ 			dsize = XFS_BMDR_SPACE_CALC(MINDBTPTRS);
+ 		break;
+-		
+ 	case XFS_DINODE_FMT_BTREE:
+ 		/*
+-		 * If have data btree then keep forkoff if we have one,
+-		 * otherwise we are adding a new attr, so then we set 
+-		 * minforkoff to where the btree root can finish so we have 
++		 * If we have a data btree then keep forkoff if we have one,
++		 * otherwise we are adding a new attr, so then we set
++		 * minforkoff to where the btree root can finish so we have
+ 		 * plenty of room for attrs
+ 		 */
+ 		if (dp->i_d.di_forkoff) {
+-			if (offset < dp->i_d.di_forkoff) 
++			if (offset < dp->i_d.di_forkoff)
+ 				return 0;
+-			else 
+-				return dp->i_d.di_forkoff;
+-		} else
+-			dsize = XFS_BMAP_BROOT_SPACE(dp->i_df.if_broot);
++			return dp->i_d.di_forkoff;
++		}
++		dsize = XFS_BMAP_BROOT_SPACE(dp->i_df.if_broot);
+ 		break;
+ 	}
+-	
+-	/* 
+-	 * A data fork btree root must have space for at least 
++
++	/*
++	 * A data fork btree root must have space for at least
+ 	 * MINDBTPTRS key/ptr pairs if the data fork is small or empty.
  	 */
- 	if (old) {
-+		old->event_handler = clockevents_handle_noop;
- 		clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
- 		list_del(&old->list);
- 		list_add(&old->list, &clockevents_released);
+ 	minforkoff = MAX(dsize, XFS_BMDR_SPACE_CALC(MINDBTPTRS));
+@@ -186,10 +200,10 @@ xfs_attr_shortform_bytesfit(xfs_inode_t
+ 	maxforkoff = XFS_LITINO(mp) - XFS_BMDR_SPACE_CALC(MINABTPTRS);
+ 	maxforkoff = maxforkoff >> 3;	/* rounded down */
+ 
+-	if (offset >= minforkoff && offset < maxforkoff)
+-		return offset;
+ 	if (offset >= maxforkoff)
+ 		return maxforkoff;
++	if (offset >= minforkoff)
++		return offset;
+ 	return 0;
+ }
+ 
 
 
