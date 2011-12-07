@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab1LGQPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:15:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60828 "EHLO mx2.suse.de"
+	id S1756745Ab1LGQPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:15:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60839 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756542Ab1LGQPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:15:46 -0500
+	id S1756542Ab1LGQPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:15:50 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:23 2011
-Message-Id: <20111207160823.530826216@clark.kroah.org>
+Message-Id: <20111207160823.615634967@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:31 -0800
+Date: Wed, 07 Dec 2011 08:06:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>, Timo Aaltonen <timo@canonical.com>
-Subject: [11/80] drm/i915: fix CB tuning check for ILK+
+        <alan@lxorguk.ukuu.org.uk>, Joerg Roedel <joerg.roedel@amd.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [12/80] PCI hotplug: shpchp: dont blindly claim non-AMD 0x7450 device IDs
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit cb0e093162d7b6589c2217a00e2abfef686b32d6 upstream.
+commit 4cac2eb158c6da0c761689345c6cc5df788a6292 upstream.
 
-CB tuning is needed to handle potential process variations that might
-cause clock jitter for certain PLL settings.  However, we were setting
-it incorrectly since we were using the wrong M value as a check (M1 when
-we needed to use the whole M value).  Fix it up, making my HDMI
-attached display a little prettier (used to have occasional dots crawl
-across the display).
+Previously we claimed device ID 0x7450, regardless of the vendor, which is
+clearly wrong.  Now we'll claim that device ID only for AMD.
 
+I suspect this was just a typo in the original code, but it's possible this
+change will break shpchp on non-7450 AMD bridges.  If so, we'll have to fix
+them as we find them.
+
+Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=638863
+Reported-by: Ralf Jung <ralfjung-e@gmx.de>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Timo Aaltonen <timo@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/hotplug/shpchp_core.c |    4 ++--
+ drivers/pci/hotplug/shpchp_hpc.c  |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4972,7 +4972,7 @@ static int ironlake_crtc_mode_set(struct
- 	} else if (is_sdvo && is_tv)
- 		factor = 20;
+--- a/drivers/pci/hotplug/shpchp_core.c
++++ b/drivers/pci/hotplug/shpchp_core.c
+@@ -278,8 +278,8 @@ static int get_adapter_status (struct ho
  
--	if (clock.m1 < factor * clock.n)
-+	if (clock.m < factor * clock.n)
- 		fp |= FP_CB_TUNE;
+ static int is_shpc_capable(struct pci_dev *dev)
+ {
+-	if ((dev->vendor == PCI_VENDOR_ID_AMD) || (dev->device ==
+-						PCI_DEVICE_ID_AMD_GOLAM_7450))
++	if (dev->vendor == PCI_VENDOR_ID_AMD &&
++	    dev->device == PCI_DEVICE_ID_AMD_GOLAM_7450)
+ 		return 1;
+ 	if (!pci_find_capability(dev, PCI_CAP_ID_SHPC))
+ 		return 0;
+--- a/drivers/pci/hotplug/shpchp_hpc.c
++++ b/drivers/pci/hotplug/shpchp_hpc.c
+@@ -944,8 +944,8 @@ int shpc_init(struct controller *ctrl, s
+ 	ctrl->pci_dev = pdev;  /* pci_dev of the P2P bridge */
+ 	ctrl_dbg(ctrl, "Hotplug Controller:\n");
  
- 	dpll = 0;
+-	if ((pdev->vendor == PCI_VENDOR_ID_AMD) || (pdev->device ==
+-				PCI_DEVICE_ID_AMD_GOLAM_7450)) {
++	if (pdev->vendor == PCI_VENDOR_ID_AMD &&
++	    pdev->device == PCI_DEVICE_ID_AMD_GOLAM_7450) {
+ 		/* amd shpc driver doesn't use Base Offset; assume 0 */
+ 		ctrl->mmio_base = pci_resource_start(pdev, 0);
+ 		ctrl->mmio_size = pci_resource_len(pdev, 0);
 
 
