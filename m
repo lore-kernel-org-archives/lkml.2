@@ -1,241 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947Ab1LGQYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:24:39 -0500
-Received: from casper.infradead.org ([85.118.1.10]:41845 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933679Ab1LGQYc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:24:32 -0500
-Message-ID: <1323275027.32012.114.camel@twins>
-Subject: Re: [patch v3 5/6] sched, ttwu_queue: queue remote wakeups only
- when crossing cache domains
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tim Chen <tim.c.chen@linux.jf.intel.com>, alex.shi@intel.com
-Date: Wed, 07 Dec 2011 17:23:47 +0100
-In-Reply-To: <1322796864.4755.5.camel@marge.simson.net>
-References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
-	 <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
-	 <1322796864.4755.5.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S933936Ab1LGQYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:24:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34479 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933910Ab1LGQY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:24:29 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:21 2011
+Message-Id: <20111207161221.538192066@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:12:24 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [082/104] x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode
+In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-02 at 04:34 +0100, Mike Galbraith wrote:
-> On Thu, 2011-12-01 at 17:07 -0800, Suresh Siddha wrote:
-> > plain text document attachment
-> > (use_ttwu_queue_when_crossing_cache_domains.patch)
-> > From: Mike Galbraith <efault@gmx.de>
-> > 
-> > Context-switch intensive microbenchmark on a 8-socket system had
-> > ~600K times more resched IPI's on each logical CPU because of the
-> > TTWU_QUEUE sched feature, which queues the task on the remote cpu's
-> > queue and completes the wakeup locally using an IPI.
-> > 
-> > As the TTWU_QUEUE sched feature is for minimizing the cache-misses
-> > associated with the remote wakeups, use the IPI only when the local and
-> > the remote cpu's are from different cache domains. Otherwise use the
-> > traditional remote wakeup.
-> 
-> FYI, Peter has already (improved and) queued this patch.
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-In fact, Ingo (rightfully) refused to take this due to the x86 specific
-code in scheduler guts..
+------------------
 
-Initially the idea was to provide a new arch interface and a fallback
-and do the Kconfig thing etc. After a bit of thought I decided against
-that for we already have that information in the sched_domain tree
-anyway and it should be a simple matter of representing things
-differently.
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-This led to the below patch, which seems to boot on my box. I still hate
-the sd_top_spr* names but whatever.. ;-)
+commit 2cd1c8d4dc7ecca9e9431e2dabe41ae9c7d89e51 upstream.
+
+Fix an outstanding issue that has been reported since 2.6.37.
+Under a heavy loaded machine processing "fork()" calls could
+crash with:
+
+BUG: unable to handle kernel paging request at f573fc8c
+IP: [<c01abc54>] swap_count_continued+0x104/0x180
+*pdpt = 000000002a3b9027 *pde = 0000000001bed067 *pte = 0000000000000000 Oops: 0000 [#1] SMP
+Modules linked in:
+Pid: 1638, comm: apache2 Not tainted 3.0.4-linode37 #1
+EIP: 0061:[<c01abc54>] EFLAGS: 00210246 CPU: 3
+EIP is at swap_count_continued+0x104/0x180
+.. snip..
+Call Trace:
+ [<c01ac222>] ? __swap_duplicate+0xc2/0x160
+ [<c01040f7>] ? pte_mfn_to_pfn+0x87/0xe0
+ [<c01ac2e4>] ? swap_duplicate+0x14/0x40
+ [<c01a0a6b>] ? copy_pte_range+0x45b/0x500
+ [<c01a0ca5>] ? copy_page_range+0x195/0x200
+ [<c01328c6>] ? dup_mmap+0x1c6/0x2c0
+ [<c0132cf8>] ? dup_mm+0xa8/0x130
+ [<c013376a>] ? copy_process+0x98a/0xb30
+ [<c013395f>] ? do_fork+0x4f/0x280
+ [<c01573b3>] ? getnstimeofday+0x43/0x100
+ [<c010f770>] ? sys_clone+0x30/0x40
+ [<c06c048d>] ? ptregs_clone+0x15/0x48
+ [<c06bfb71>] ? syscall_call+0x7/0xb
+
+The problem is that in copy_page_range() we turn lazy mode on,
+and then in swap_entry_free() we call swap_count_continued()
+which ends up in:
+
+         map = kmap_atomic(page, KM_USER0) + offset;
+
+and then later we touch *map.
+
+Since we are running in batched mode (lazy) we don't actually
+set up the PTE mappings and the kmap_atomic is not done
+synchronously and ends up trying to dereference a page that has
+not been set.
+
+Looking at kmap_atomic_prot_pfn(), it uses
+'arch_flush_lazy_mmu_mode' and doing the same in
+kmap_atomic_prot() and __kunmap_atomic() makes the problem go
+away.
+
+Interestingly, commit b8bcfe997e4615 ("x86/paravirt: remove lazy
+mode in interrupts") removed part of this to fix an interrupt
+issue - but it went to far and did not consider this scenario.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/sched/core.c  |   36 +++++++++++++++++++++++++++++++++++-
- kernel/sched/fair.c  |   24 +-----------------------
- kernel/sched/sched.h |   42 ++++++++++++++++++++++++++++++++++++------
- 3 files changed, 72 insertions(+), 30 deletions(-)
-Index: linux-2.6/kernel/sched/core.c
-===================================================================
---- linux-2.6.orig/kernel/sched/core.c
-+++ linux-2.6/kernel/sched/core.c
-@@ -1511,6 +1511,12 @@ static int ttwu_activate_remote(struct t
+ arch/x86/mm/highmem_32.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/arch/x86/mm/highmem_32.c
++++ b/arch/x86/mm/highmem_32.c
+@@ -45,6 +45,7 @@ void *kmap_atomic_prot(struct page *page
+ 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+ 	BUG_ON(!pte_none(*(kmap_pte-idx)));
+ 	set_pte(kmap_pte-idx, mk_pte(page, prot));
++	arch_flush_lazy_mmu_mode();
  
+ 	return (void *)vaddr;
  }
- #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
-+
-+static inline int ttwu_share_cache(int this_cpu, int that_cpu)
-+{
-+	return per_cpu(sd_top_spr_id, this_cpu) ==
-+		per_cpu(sd_top_spr_id, that_cpu);
-+}
- #endif /* CONFIG_SMP */
- 
- static void ttwu_queue(struct task_struct *p, int cpu)
-@@ -1518,7 +1524,7 @@ static void ttwu_queue(struct task_struc
- 	struct rq *rq = cpu_rq(cpu);
- 
- #if defined(CONFIG_SMP)
--	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
-+	if (sched_feat(TTWU_QUEUE) && !ttwu_share_cache(smp_processor_id(), cpu)) {
- 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
- 		ttwu_queue_remote(p, cpu);
- 		return;
-@@ -5751,6 +5757,32 @@ static void destroy_sched_domains(struct
- }
- 
- /*
-+ * Keep a special pointer to the highest sched_domain that has
-+ * SD_SHARE_PKG_RESOURCE set (Last Level Cache Domain) for this
-+ * allows us to avoid some pointer chasing select_idle_sibling().
-+ *
-+ * Also keep a unique ID per domain (we use the first cpu number in
-+ * the cpumask of the domain), this allows us to quickly tell if
-+ * two cpus are in the same cache domain, see ttwu_share_cache().
-+ */
-+DEFINE_PER_CPU(struct sched_domain *, sd_top_spr);
-+DEFINE_PER_CPU(int, sd_top_spr_id);
-+
-+static void update_top_cache_domain(int cpu)
-+{
-+	struct sched_domain *sd;
-+	int id = -1;
-+
-+	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
-+	if (sd)
-+		id = cpumask_first(sched_domain_span(sd));
-+
-+
-+	rcu_assign_pointer(per_cpu(sd_top_spr, cpu), sd);
-+	per_cpu(sd_top_spr_id, cpu) = id;
-+}
-+
-+/*
-  * Attach the domain 'sd' to 'cpu' as its base domain. Callers must
-  * hold the hotplug lock.
-  */
-@@ -5789,6 +5821,8 @@ cpu_attach_domain(struct sched_domain *s
- 	tmp = rq->sd;
- 	rcu_assign_pointer(rq->sd, sd);
- 	destroy_sched_domains(tmp, cpu);
-+
-+	update_top_cache_domain(cpu);
- }
- 
- /* cpus with isolated domains */
-Index: linux-2.6/kernel/sched/fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched/fair.c
-+++ linux-2.6/kernel/sched/fair.c
-@@ -2644,28 +2644,6 @@ find_idlest_cpu(struct sched_group *grou
- 	return idlest;
- }
- 
--/**
-- * highest_flag_domain - Return highest sched_domain containing flag.
-- * @cpu:	The cpu whose highest level of sched domain is to
-- *		be returned.
-- * @flag:	The flag to check for the highest sched_domain
-- *		for the given cpu.
-- *
-- * Returns the highest sched_domain of a cpu which contains the given flag.
-- */
--static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
--{
--	struct sched_domain *sd, *hsd = NULL;
--
--	for_each_domain(cpu, sd) {
--		if (!(sd->flags & flag))
--			break;
--		hsd = sd;
--	}
--
--	return hsd;
--}
--
- /*
-  * Try and locate an idle CPU in the sched_domain.
-  */
-@@ -2696,7 +2674,7 @@ static int select_idle_sibling(struct ta
- 	 */
- 	rcu_read_lock();
- 
--	sd = highest_flag_domain(target, SD_SHARE_PKG_RESOURCES);
-+	sd = rcu_dereference(per_cpu(sd_top_spr, target));
- 	for_each_lower_domain(sd) {
- 		sg = sd->groups;
- 		do {
-Index: linux-2.6/kernel/sched/sched.h
-===================================================================
---- linux-2.6.orig/kernel/sched/sched.h
-+++ linux-2.6/kernel/sched/sched.h
-@@ -487,6 +487,14 @@ static inline int cpu_of(struct rq *rq)
- 
- DECLARE_PER_CPU(struct rq, runqueues);
- 
-+#define cpu_rq(cpu)		(&per_cpu(runqueues, (cpu)))
-+#define this_rq()		(&__get_cpu_var(runqueues))
-+#define task_rq(p)		cpu_rq(task_cpu(p))
-+#define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
-+#define raw_rq()		(&__raw_get_cpu_var(runqueues))
-+
-+#ifdef CONFIG_SMP
-+
- #define rcu_dereference_check_sched_domain(p) \
- 	rcu_dereference_check((p), \
- 			      lockdep_is_held(&sched_domains_mutex))
-@@ -499,15 +507,37 @@ DECLARE_PER_CPU(struct rq, runqueues);
-  * preempt-disabled sections.
-  */
- #define for_each_domain(cpu, __sd) \
--	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); __sd; __sd = __sd->parent)
-+	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); \
-+			__sd; __sd = __sd->parent)
- 
- #define for_each_lower_domain(sd) for (; sd; sd = sd->child)
- 
--#define cpu_rq(cpu)		(&per_cpu(runqueues, (cpu)))
--#define this_rq()		(&__get_cpu_var(runqueues))
--#define task_rq(p)		cpu_rq(task_cpu(p))
--#define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
--#define raw_rq()		(&__raw_get_cpu_var(runqueues))
-+/**
-+ * highest_flag_domain - Return highest sched_domain containing flag.
-+ * @cpu:	The cpu whose highest level of sched domain is to
-+ *		be returned.
-+ * @flag:	The flag to check for the highest sched_domain
-+ *		for the given cpu.
-+ *
-+ * Returns the highest sched_domain of a cpu which contains the given flag.
-+ */
-+static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
-+{
-+	struct sched_domain *sd, *hsd = NULL;
-+
-+	for_each_domain(cpu, sd) {
-+		if (!(sd->flags & flag))
-+			break;
-+		hsd = sd;
-+	}
-+
-+	return hsd;
-+}
-+
-+DECLARE_PER_CPU(struct sched_domain *, sd_top_spr);
-+DECLARE_PER_CPU(int, sd_top_spr_id);
-+
-+#endif /* CONFIG_SMP */
- 
- #include "stats.h"
- #include "auto_group.h"
+@@ -88,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
+ 		 */
+ 		kpte_clear_flush(kmap_pte-idx, vaddr);
+ 		kmap_atomic_idx_pop();
++		arch_flush_lazy_mmu_mode();
+ 	}
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	else {
+
 
