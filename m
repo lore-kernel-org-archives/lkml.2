@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1LGLGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 06:06:34 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:65359 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755104Ab1LGLGc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 06:06:32 -0500
-Date: Wed, 7 Dec 2011 14:06:12 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        robert.richter@amd.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: [patch] x86, NMI: add to_cpumask() to silence compile warning
-Message-ID: <20111207110612.GA3437@mwanda>
-References: <1318533267-18880-3-git-send-email-dzickus@redhat.com>
- <tip-99e8b9ca90d688c3ac7d3a141b701c9694a93925@git.kernel.org>
- <20111206090612.GA18662@elte.hu>
- <20111206180859.GR1669@redhat.com>
+	id S1755406Ab1LGLHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 06:07:12 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:34359 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754924Ab1LGLHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 06:07:10 -0500
+Message-ID: <4EDF48A9.6090306@parallels.com>
+Date: Wed, 7 Dec 2011 09:06:17 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
-Content-Disposition: inline
-In-Reply-To: <20111206180859.GR1669@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4EDF489C.00B2,ss=1,re=0.000,fgs=0
+To: <linux-kernel@vger.kernel.org>
+CC: <lizf@cn.fujitsu.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <ebiederm@xmission.com>, <davem@davemloft.net>, <gthelen@google.com>,
+        <netdev@vger.kernel.org>, <linux-mm@kvack.org>, <kirill@shutemov.name>,
+        <avagin@parallels.com>, <devel@openvz.org>, <eric.dumazet@gmail.com>,
+        <cgroups@vger.kernel.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>
+Subject: Re: [PATCH v8 0/9] per-cgroup tcp memory pressure controls
+References: <1323120903-2831-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <1323120903-2831-1-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/05/2011 07:34 PM, Glauber Costa wrote:
+> Hi,
+>
+> This is my new attempt to fix all the concerns that were raised during
+> the last iteration.
+>
+> I should highlight:
+> 1) proc information is kept intact. (although I kept the wrapper functions)
+>     it will be submitted as a follow up patch so it can get the attention it
+>     deserves
+> 2) sockets now hold a reference to memcg. sockets can be alive even after the
+>     task is gone, so we don't bother with between cgroups movements.
+>     To be able to release resources more easily in this cenario, the parent
+>     pointer in struct cg_proto was replaced by a memcg object. We then iterate
+>     through its pointer (which is cleaner anyway)
+>
+> The rest should be mostly the same except for small fixes and style changes.
+>
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Kame,
 
-Gcc complains if we don't cast this to a struct cpumask pointer.
-arch/x86/kernel/nmi_selftest.c:93:2:
-	warning: passing argument 1 of =E2=80=98cpumask_empty=E2=80=99 from
-	incompatible pointer type [enabled by default]
+Does this one address your previous concerns?
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-
-diff --git a/arch/x86/kernel/nmi_selftest.c b/arch/x86/kernel/nmi_selftest.c
-index 1e42a23..0d01a8e 100644
---- a/arch/x86/kernel/nmi_selftest.c
-+++ b/arch/x86/kernel/nmi_selftest.c
-@@ -90,7 +90,7 @@ static void remote_ipi(void)
- {
- 	cpumask_copy(to_cpumask(nmi_ipi_mask), cpu_online_mask);
- 	cpumask_clear_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
--	if (!cpumask_empty(nmi_ipi_mask))
-+	if (!cpumask_empty(to_cpumask(nmi_ipi_mask)))
- 		test_nmi_ipi(to_cpumask(nmi_ipi_mask));
- }
-=20
-
---r5Pyd7+fXNt84Ff3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO30ikAAoJEOnZkXI/YHqRSm4P/jFs4DmwCqCZzJAIQIhEXXGK
-odheM/AfW5grQtEq1e2XAH8a+uK5CuJqUBqEd9LKS/J71jdWXTUDBU1dZqRmthyW
-ITurHFXoaBGhdlTaZ5xVhLuhN23wXhYHsaSIIhQV6avTL96Ixx7on3AsdRATfTAM
-vfoZNSw+wZatKEKVKNqmKmj6c0wrXUC4Ky4aY1EmWeko2vg9Daa1mAzHtIHdyU+6
-JwbgGq+pjUc2LlVgZbrCjIgDYFLuceMK54v6FQckQ2M/XarNAx2khKIpyMgKbf2n
-fiKW69uNwehL5PG+dmjce1YdWsBE+EdFHDTy4ICfPHU8frPnlOHuQy+radkIRwzk
-sXC45j7aFq7j6Kz3iJnfMuUZihCSnc1pSYDUTONIemZvPTKnBzgQFqr37fxObGma
-htdpjOicgYdptx7u1b/pyAQ69RnuXIL3SXBvQQAI2NWFXj685GqE/JcvRhHUhF9z
-jMXaELnEu6Egj2oDi3aSOJWJq8fRmvNfBGzpUF8JAeJglMXGD6xzlLhQKy+J/yj4
-/BRrqvv11Cy/nRV4kagBXvxa7mrc82txEbAveMXiBhtUdLVW0sVoy2NfV6qq4fb1
-92wkxMlLgh7VvvMJvPylhRPJ8mrNJxDBhaw9bqz5uc25jjKu/qdfz/dGDTgHdnwQ
-nCcOQTUs4pekA9QXt1h2
-=69JD
------END PGP SIGNATURE-----
-
---r5Pyd7+fXNt84Ff3--
+Thanks
