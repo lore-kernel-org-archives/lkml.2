@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757595Ab1LGRGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:06:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39447 "EHLO mx2.suse.de"
+	id S1757633Ab1LGRGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:06:11 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:44009 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757471Ab1LGREE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:04:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:02 2011
-Message-Id: <20111207165602.075372291@clark.kroah.org>
-User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:54:53 -0800
-From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [20/27] SCSI: Silencing killing requests for dead queue
-In-Reply-To: <20111207165611.GA19872@kroah.com>
+	id S1757612Ab1LGRGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:06:08 -0500
+Message-ID: <4EDF9CAB.3050502@linux.vnet.ibm.com>
+Date: Wed, 07 Dec 2011 10:04:43 -0700
+From: Allison Henderson <achender@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Yongqiang Yang <xiaoqiangnk@gmail.com>
+CC: Hugh Dickins <hughd@google.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Curt Wohlgemuth <curtw@google.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Rafael Wysocki <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com> <alpine.LSU.2.00.1111201121120.1264@sister.anvils> <20111121165626.GD14568@thunk.org> <alpine.LSU.2.00.1111211331120.1879@sister.anvils> <alpine.LSU.2.00.1112051456580.3938@sister.anvils> <4EDD729E.2060402@linux.vnet.ibm.com> <alpine.LSU.2.00.1112060030220.1615@sister.anvils> <4EDE85F4.4020503@linux.vnet.ibm.com> <CAGBYx2YmYRw_p5KHJCYaQNsCpe5OVV7X2TpaK=OE7znCiE7oZA@mail.gmail.com>
+In-Reply-To: <CAGBYx2YmYRw_p5KHJCYaQNsCpe5OVV7X2TpaK=OE7znCiE7oZA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120717-3534-0000-0000-0000035F6E36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On 12/07/2011 01:28 AM, Yongqiang Yang wrote:
+> Hi Allison and Hugh,
+>
+>   I think I found the problem and it has nothing to do with punching
+> hole.  The patch [ext4: let ext4_bio_write_page handle EOF correctly]
+> would fix up the problem.
+>
+> I post the patch so that it can be tested as early as possible.  The
+> problem has not appeared on my machine since the patch is applied.
+>
+> Yongqiang.
 
-------------------
+Great!  I will try it out with your other set in my sandbox and let you 
+know what happens.  Thx!
 
-From: Hannes Reinecke <hare@suse.de>
+Allison Henderson
 
-commit 745718132c3c7cac98a622b610e239dcd5217f71 upstream.
-
-When we tear down a device we try to flush all outstanding
-commands in scsi_free_queue(). However the check in
-scsi_request_fn() is imperfect as it only signals that
-we _might start_ aborting commands, not that we've actually
-aborted some.
-So move the printk inside the scsi_kill_request function,
-this will also give us a hint about which commands are aborted.
-
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/scsi/scsi_lib.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1382,6 +1382,8 @@ static void scsi_kill_request(struct req
- 		BUG();
- 	}
- 
-+	scmd_printk(KERN_INFO, cmd, "killing request\n");
-+
- 	sdev = cmd->device;
- 	starget = scsi_target(sdev);
- 	shost = sdev->host;
-@@ -1468,7 +1470,6 @@ static void scsi_request_fn(struct reque
- 	struct request *req;
- 
- 	if (!sdev) {
--		printk("scsi: killing requests for dead queue\n");
- 		while ((req = blk_peek_request(q)) != NULL)
- 			scsi_kill_request(req, q);
- 		return;
-
+> On Wed, Dec 7, 2011 at 5:15 AM, Allison Henderson
+> <achender@linux.vnet.ibm.com>  wrote:
+>> On 12/06/2011 01:55 AM, Hugh Dickins wrote:
+>>>
+>>> On Mon, 5 Dec 2011, Allison Henderson wrote:
+>>>>
+>>>> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
+>>>>>
+>>>>>
+>>>>> This has been outstanding for a month now, and we've heard no progress:
+>>>>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for
+>>>>> rc5.
+>>>>>
+>>>>> The problems appear on a 1k-blocksize filesystem under memory pressure:
+>>>>> the hunk in ext4_da_write_end() causes oops, because it's playing with
+>>>>> a page after generic_write_end() dropped our last reference to it; and
+>>>>> backing out the hunk in ext4_da_write_begin() is then found to stop
+>>>>> rare data corruption seen when kbuilding.
+>>>>>
+>>>>> Although I earlier reported that backing out the patch caused an fsx
+>>>>> test to fail earlier, I've since found great variation in how soon it
+>>>>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
+>>>>> I also reported that I had to go back to 2.6.38 for fsx not to fail
+>>>>> under memory pressure: you won't be surprised that that turned out to
+>>>>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
+>>>>
+>>>>
+>>>> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
+>>>> works well when blocksize<    pagesize" ?  I have tried it and it does seem
+>>>> to
+>>>> help, but I am still running into some failures that I am trying to
+>>>> debug,
+>>>> but let please let us know if it helps the issues that you are seeing.
+>>>>   Thx!
+>>>
+>>>
+>>> That 1/2, or the 2/2 "ext4: let ext4_discard_partial_buffers handle
+>>> pages without buffers correctly"?  The latter is mostly a reversion
+>>> of your 02fac1297eb3, so that's the one I need to fix the oops and
+>>> rare data corruption.  Perhaps you're suggesting 1/2 for fsx failures
+>>> under memory pressure?
+>>>
+>>> I've now tried the fsx test on three machines, with both 1/2 and 2/2
+>>> applied to 3.2-rc4.  On one machine, with ext2 on loop on tmpfs, the
+>>> fsx test failed in a couple of minutes with those patches; on another
+>>> machine, with ext2 on loop on tmpfs, it failed after about 40 minutes
+>>> with  the patches; on this laptop, with ext2 on SSD, it's just now
+>>> failed after 35 minutes with the patches.
+>>>
+>>> That's not to say that Yongqiang's patches aren't good; but I cannot
+>>> detect whether they make any improvement or not, since lasting for 2 or
+>>> 40 minutes is typical for fsx under memory pressure with recent kernels.
+>>
+>>
+>>
+>> Well, initially I meant to just try the whole set, but now that I try just
+>> one of them, I find that I get further with only the first one.  I think
+>> Yongqiang and I have a similar set up because I get the hang if I dont have
+>> the first patch, and I get the fsx write failure (in about 20 or so minutes)
+>> if I have the second one.  But I think Yongqiang's right, we need to figure
+>> out why the page is uptodate when it shouldn't be.
+>>
+>>
+>>>
+>>> Hugh
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
 
