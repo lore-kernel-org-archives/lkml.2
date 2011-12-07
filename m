@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab1LGBiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 20:38:13 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51924 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593Ab1LGBiK (ORCPT
+	id S1755626Ab1LGBmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 20:42:15 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33296 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753901Ab1LGBmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 20:38:10 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4EDEC375.2090808@jp.fujitsu.com>
-Date: Wed, 07 Dec 2011 10:37:57 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Tue, 6 Dec 2011 20:42:13 -0500
+Date: Tue, 6 Dec 2011 17:42:10 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohua Li <shaohua.li@intel.com>
+cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Lameter <cl@linux.com>,
+        "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>
+Subject: Re: [patch v2]numa: add a sysctl to control interleave allocation
+ granularity from each node
+In-Reply-To: <20111207013754.GA23364@sli10-conroe.sh.intel.com>
+Message-ID: <alpine.DEB.2.00.1112061739140.27247@chino.kir.corp.google.com>
+References: <1323055846.22361.362.camel@sli10-conroe> <alpine.DEB.2.00.1112061248500.28251@chino.kir.corp.google.com> <20111207013754.GA23364@sli10-conroe.sh.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: linux-btrfs@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 3/3] perf: allow typecast for signed value
-References: <4EDEC207.90403@jp.fujitsu.com>
-In-Reply-To: <4EDEC207.90403@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Still I got following warning with btrfs tracepoints:
+On Wed, 7 Dec 2011, Shaohua Li wrote:
 
-  $ perf script
-  Warning: Error: expected type 5 but read 4
-  Warning: Error: expected type 5 but read 0
+> based on the allocation size, right? I did consider it. It would be easy to
+> implement this. Note even without my patch we have the issue if allocation
+> from one node is big order and small order from other node. And nobody
+> complains the imbalance. This makes me think maybe people didn't care
+> about the imbalance too much.
+> 
 
-I found that the complained format is:
-
-  print fmt: "%s", (REC->val >= (u64)-4) ? "-" : __print_symbolic(...)
-                                     ~
-In perf's parser, the typecast, which is processed in process_paren(),
-only expects that (unsigned) token or another parenthesis will follow
-to the typecast.  It should expect signed tokens can be there too.
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
----
- tools/perf/util/trace-event-parse.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index b709f78..032f3de 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -1645,10 +1645,11 @@ process_paren(struct event *event, struct print_arg *arg, char **tok)
- 	type = read_token_item(&token);
- 
- 	/*
--	 * If the next token is an item or another open paren, then
--	 * this was a typecast.
-+	 * If the next token is an item (might be signed, with single op "-")
-+	 * or another open paren, then this was a typecast.
- 	 */
- 	if (event_item_type(type) ||
-+	    (type == EVENT_OP && strcmp(token, "-") == 0) ||
- 	    (type == EVENT_DELIM && strcmp(token, "(") == 0)) {
- 
- 		/* make this a typecast and contine */
--- 
-1.7.7.3
-
-
+Right, I certainly see what you're trying to do and I support it, however, 
+if we're going to add a userspace tunable then I think it would be better 
+implemented as a size.  You can still get the functionality that you have 
+with your patch (just with a size of 0, the default, making every 
+allocation on the next node) but can also interleave on PAGE_SIZE, 
+HPAGE_SIZE, etc, increments.  I think it would help for users who are 
+concerned about node symmetry for contention on the memory bus and it 
+would be a shame if someone needed to add a second tunable for that affect 
+if your tunable already has applications using it.
