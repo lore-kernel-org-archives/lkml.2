@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab1LGQqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:46:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33800 "EHLO mx2.suse.de"
+	id S1758137Ab1LGQrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:47:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33773 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933138Ab1LGQVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:21:24 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:17 2011
-Message-Id: <20111207161216.998068052@clark.kroah.org>
+	id S933075Ab1LGQVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:21:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:16 2011
+Message-Id: <20111207161216.827191796@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:29 -0800
+Date: Wed, 07 Dec 2011 08:11:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        <alan@lxorguk.ukuu.org.uk>, Johannes Stezenbach <js@sig21.net>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [027/104] ASoC: wm8753: Skip noop reconfiguration of DAI mode
+Subject: [025/104] ASoC: sta32x: preserve coefficient RAM
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +25,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+From: Johannes Stezenbach <js@sig21.net>
 
-commit 2391a0e06789a3f1718dee30b282562f7ed28c87 upstream.
+commit 54dc6cabe684375b3cf549c7b0545613d694aba8 upstream.
 
-This patch makes it possible to set DAI mode to its currently applied
-value even if codec is active. This is necessary to allow
+The coefficient RAM must be saved in a shadow so it can
+be restored when the codec is powered on using
+regulator_bulk_enable().
 
-aplay -t raw -r 44100 -f S16_LE -c 2 < /dev/urandom &
-alsactl store -f backup.state
-alsactl restore -f backup.state
-
-to work without returning errors. This patch is based on a patch sent
-by Klaus Kurzmann <mok@fluxnetz.de>.
-
-Signed-off-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+Signed-off-by: Johannes Stezenbach <js@sig21.net>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8753.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/soc/codecs/sta32x.c |   63 +++++++++++++++++++++++++++++++++++++++++++++-
+ sound/soc/codecs/sta32x.h |    1 
+ 2 files changed, 63 insertions(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8753.c
-+++ b/sound/soc/codecs/wm8753.c
-@@ -189,6 +189,9 @@ static int wm8753_set_dai(struct snd_kco
- 	struct wm8753_priv *wm8753 = snd_soc_codec_get_drvdata(codec);
- 	u16 ioctl;
+--- a/sound/soc/codecs/sta32x.c
++++ b/sound/soc/codecs/sta32x.c
+@@ -76,6 +76,8 @@ struct sta32x_priv {
  
-+	if (wm8753->dai_func == ucontrol->value.integer.value[0])
+ 	unsigned int mclk;
+ 	unsigned int format;
++
++	u32 coef_shadow[STA32X_COEF_COUNT];
+ };
+ 
+ static const DECLARE_TLV_DB_SCALE(mvol_tlv, -12700, 50, 1);
+@@ -227,6 +229,7 @@ static int sta32x_coefficient_put(struct
+ 				  struct snd_ctl_elem_value *ucontrol)
+ {
+ 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
++	struct sta32x_priv *sta32x = snd_soc_codec_get_drvdata(codec);
+ 	int numcoef = kcontrol->private_value >> 16;
+ 	int index = kcontrol->private_value & 0xffff;
+ 	unsigned int cfud;
+@@ -239,6 +242,11 @@ static int sta32x_coefficient_put(struct
+ 	snd_soc_write(codec, STA32X_CFUD, cfud);
+ 
+ 	snd_soc_write(codec, STA32X_CFADDR2, index);
++	for (i = 0; i < numcoef && (index + i < STA32X_COEF_COUNT); i++)
++		sta32x->coef_shadow[index + i] =
++			  (ucontrol->value.bytes.data[3 * i] << 16)
++			| (ucontrol->value.bytes.data[3 * i + 1] << 8)
++			| (ucontrol->value.bytes.data[3 * i + 2]);
+ 	for (i = 0; i < 3 * numcoef; i++)
+ 		snd_soc_write(codec, STA32X_B1CF1 + i,
+ 			      ucontrol->value.bytes.data[i]);
+@@ -252,6 +260,48 @@ static int sta32x_coefficient_put(struct
+ 	return 0;
+ }
+ 
++int sta32x_sync_coef_shadow(struct snd_soc_codec *codec)
++{
++	struct sta32x_priv *sta32x = snd_soc_codec_get_drvdata(codec);
++	unsigned int cfud;
++	int i;
++
++	/* preserve reserved bits in STA32X_CFUD */
++	cfud = snd_soc_read(codec, STA32X_CFUD) & 0xf0;
++
++	for (i = 0; i < STA32X_COEF_COUNT; i++) {
++		snd_soc_write(codec, STA32X_CFADDR2, i);
++		snd_soc_write(codec, STA32X_B1CF1,
++			      (sta32x->coef_shadow[i] >> 16) & 0xff);
++		snd_soc_write(codec, STA32X_B1CF2,
++			      (sta32x->coef_shadow[i] >> 8) & 0xff);
++		snd_soc_write(codec, STA32X_B1CF3,
++			      (sta32x->coef_shadow[i]) & 0xff);
++		/* chip documentation does not say if the bits are
++		 * self-clearing, so do it explicitly */
++		snd_soc_write(codec, STA32X_CFUD, cfud);
++		snd_soc_write(codec, STA32X_CFUD, cfud | 0x01);
++	}
++	return 0;
++}
++
++int sta32x_cache_sync(struct snd_soc_codec *codec)
++{
++	unsigned int mute;
++	int rc;
++
++	if (!codec->cache_sync)
 +		return 0;
 +
- 	if (codec->active)
- 		return -EBUSY;
++	/* mute during register sync */
++	mute = snd_soc_read(codec, STA32X_MMUTE);
++	snd_soc_write(codec, STA32X_MMUTE, mute | STA32X_MMUTE_MMUTE);
++	sta32x_sync_coef_shadow(codec);
++	rc = snd_soc_cache_sync(codec);
++	snd_soc_write(codec, STA32X_MMUTE, mute);
++	return rc;
++}
++
+ #define SINGLE_COEF(xname, index) \
+ {	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
+ 	.info = sta32x_coefficient_info, \
+@@ -657,7 +707,7 @@ static int sta32x_set_bias_level(struct
+ 				return ret;
+ 			}
  
+-			snd_soc_cache_sync(codec);
++			sta32x_cache_sync(codec);
+ 		}
+ 
+ 		/* Power up to mute */
+@@ -792,6 +842,17 @@ static int sta32x_probe(struct snd_soc_c
+ 			    STA32X_CxCFG_OM_MASK,
+ 			    2 << STA32X_CxCFG_OM_SHIFT);
+ 
++	/* initialize coefficient shadow RAM with reset values */
++	for (i = 4; i <= 49; i += 5)
++		sta32x->coef_shadow[i] = 0x400000;
++	for (i = 50; i <= 54; i++)
++		sta32x->coef_shadow[i] = 0x7fffff;
++	sta32x->coef_shadow[55] = 0x5a9df7;
++	sta32x->coef_shadow[56] = 0x7fffff;
++	sta32x->coef_shadow[59] = 0x7fffff;
++	sta32x->coef_shadow[60] = 0x400000;
++	sta32x->coef_shadow[61] = 0x400000;
++
+ 	sta32x_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+ 	/* Bias level configuration will have done an extra enable */
+ 	regulator_bulk_disable(ARRAY_SIZE(sta32x->supplies), sta32x->supplies);
+--- a/sound/soc/codecs/sta32x.h
++++ b/sound/soc/codecs/sta32x.h
+@@ -19,6 +19,7 @@
+ /* STA326 register addresses */
+ 
+ #define STA32X_REGISTER_COUNT	0x2d
++#define STA32X_COEF_COUNT 62
+ 
+ #define STA32X_CONFA	0x00
+ #define STA32X_CONFB    0x01
 
 
