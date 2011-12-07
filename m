@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933897Ab1LGQYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:24:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34417 "EHLO mx2.suse.de"
+	id S933890Ab1LGQYK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:24:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34398 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933875Ab1LGQYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:24:13 -0500
+	id S933873Ab1LGQYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:24:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:21 2011
-Message-Id: <20111207161221.194688599@clark.kroah.org>
+Message-Id: <20111207161221.048388834@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:20 -0800
+Date: Wed, 07 Dec 2011 08:12:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Andiry Xu <andiry.xu@amd.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [078/104] xHCI: fix bug in xhci_clear_command_ring()
+        <alan@lxorguk.ukuu.org.uk>,
+        Matthieu Castet <matthieu.castet@parrot.com>,
+        Thomas Poussevin <thomas.poussevin@parrot.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [076/104] USB: EHCI: fix HUB TT scheduling issue with iso transfer
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +27,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@amd.com>
+From: Thomas Poussevin <thomas.poussevin@parrot.com>
 
-commit 158886cd2cf4599e04f9b7e10cb767f5f39b14f1 upstream.
+commit 811c926c538f7e8d3c08b630dd5844efd7e000f6 upstream.
 
-When system enters suspend, xHCI driver clears command ring by writing zero
-to all the TRBs. However, this also writes zero to the Link TRB, and the ring
-is mangled. This may cause driver accesses wrong memory address and the
-result is unpredicted.
+The current TT scheduling doesn't allow to play and then record on a
+full-speed device connected to a high speed hub.
 
-When clear the command ring, keep the last Link TRB intact, only clear its
-cycle bit. This should fix the "command ring full" issue reported by Oliver
-Neukum.
+The IN iso stream can only start on the first uframe (0-2 for a 165 us)
+because of CSPLIT transactions.
+For the OUT iso stream there no such restriction. uframe 0-5 are possible.
 
-This should be backported to stable kernels as old as 2.6.37, since the
-commit 89821320 "xhci: Fix command ring replay after resume" is merged.
+The idea of this patch is that the first uframe are precious (for IN TT iso
+stream) and we should allocate the last uframes first if possible.
 
-Signed-off-by: Andiry Xu <andiry.xu@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Oliver Neukum <oneukum@suse.de>
+For that we reverse the order of uframe allocation (last uframe first).
+
+Here an example :
+
+hid interrupt stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame | 13  |  0  |  0  |  0  |  0  |  0  |  0  |  0  |
+----------------------------------------------------------------------
+
+iso OUT stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame | 13  | 125 |  39 |  0  |  0  |  0  |  0  |  0  |
+----------------------------------------------------------------------
+
+There no place for iso IN stream  (uframe 0-2 are used) and we got "cannot
+submit datapipe for urb 0, error -28: not enough bandwidth" error.
+
+With the patch this become.
+
+iso OUT stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame |  13 |  0  |  0  |  0  | 125 |  39 |  0  |  0  |
+----------------------------------------------------------------------
+
+iso IN stream
+----------------------------------------------------------------------
+uframe                |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+----------------------------------------------------------------------
+max_tt_usecs          | 125 | 125 | 125 | 125 | 125 | 125 | 30  |  0  |
+----------------------------------------------------------------------
+used usecs on a frame |  13 |  0  | 125 | 40  | 125 |  39 |  0  |  0  |
+----------------------------------------------------------------------
+
+Signed-off-by: Matthieu Castet <matthieu.castet@parrot.com>
+Signed-off-by: Thomas Poussevin <thomas.poussevin@parrot.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci-sched.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -657,7 +657,10 @@ static void xhci_clear_command_ring(stru
- 	ring = xhci->cmd_ring;
- 	seg = ring->deq_seg;
- 	do {
--		memset(seg->trbs, 0, SEGMENT_SIZE);
-+		memset(seg->trbs, 0,
-+			sizeof(union xhci_trb) * (TRBS_PER_SEGMENT - 1));
-+		seg->trbs[TRBS_PER_SEGMENT - 1].link.control &=
-+			cpu_to_le32(~TRB_CYCLE);
- 		seg = seg->next;
- 	} while (seg != ring->deq_seg);
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1480,10 +1480,15 @@ iso_stream_schedule (
  
+ 		/* NOTE:  assumes URB_ISO_ASAP, to limit complexity/bugs */
+ 
+-		/* find a uframe slot with enough bandwidth */
+-		next = start + period;
+-		for (; start < next; start++) {
+-
++		/* find a uframe slot with enough bandwidth.
++		 * Early uframes are more precious because full-speed
++		 * iso IN transfers can't use late uframes,
++		 * and therefore they should be allocated last.
++		 */
++		next = start;
++		start += period;
++		do {
++			start--;
+ 			/* check schedule: enough space? */
+ 			if (stream->highspeed) {
+ 				if (itd_slot_ok(ehci, mod, start,
+@@ -1496,7 +1501,7 @@ iso_stream_schedule (
+ 						start, sched, period))
+ 					break;
+ 			}
+-		}
++		} while (start > next);
+ 
+ 		/* no room in the schedule */
+ 		if (start == next) {
 
 
