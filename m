@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab1LGQfP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:35:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34461 "EHLO mx2.suse.de"
+	id S933897Ab1LGQYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:24:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34417 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933873Ab1LGQY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:24:26 -0500
+	id S933875Ab1LGQYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:24:13 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:21 2011
-Message-Id: <20111207161221.450297850@clark.kroah.org>
+Message-Id: <20111207161221.194688599@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:23 -0800
+Date: Wed, 07 Dec 2011 08:12:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Peter Chubb <peter.chubb@nicta.com.au>,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [081/104] x86: Fix "Acer Aspire 1" reboot hang
+        <alan@lxorguk.ukuu.org.uk>, Andiry Xu <andiry.xu@amd.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [078/104] xHCI: fix bug in xhci_clear_command_ring()
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,69 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chubb <peter.chubb@nicta.com.au>
+From: Andiry Xu <andiry.xu@amd.com>
 
-commit 1ef03890969932e9359b9a4c658f7f87771910ac upstream.
+commit 158886cd2cf4599e04f9b7e10cb767f5f39b14f1 upstream.
 
-Looks like on some Acer Aspire 1s with older bioses, reboot via bios
-fails.  It works on my machine, (with BIOS version 0.3310) but
-not on some others (BIOS version 0.3309).
+When system enters suspend, xHCI driver clears command ring by writing zero
+to all the TRBs. However, this also writes zero to the Link TRB, and the ring
+is mangled. This may cause driver accesses wrong memory address and the
+result is unpredicted.
 
-There's a log of problems at:
+When clear the command ring, keep the last Link TRB intact, only clear its
+cycle bit. This should fix the "command ring full" issue reported by Oliver
+Neukum.
 
-  https://bbs.archlinux.org/viewtopic.php?id=124136
+This should be backported to stable kernels as old as 2.6.37, since the
+commit 89821320 "xhci: Fix command ring replay after resume" is merged.
 
-This patch adds a different callback to the reboot quirk table,
-to allow rebooting via keybaord controller.
-
-Reported-by: Uroš Vampl <mobile.leecher@gmail.com>
-Tested-by: Vasily Khoruzhick <anarsoul@gmail.com>
-Signed-off-by: Peter Chubb <peter.chubb@nicta.com.au>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1323093233-9481-1-git-send-email-anarsoul@gmail.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andiry Xu <andiry.xu@amd.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/reboot.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -124,7 +124,7 @@ __setup("reboot=", reboot_setup);
-  */
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -657,7 +657,10 @@ static void xhci_clear_command_ring(stru
+ 	ring = xhci->cmd_ring;
+ 	seg = ring->deq_seg;
+ 	do {
+-		memset(seg->trbs, 0, SEGMENT_SIZE);
++		memset(seg->trbs, 0,
++			sizeof(union xhci_trb) * (TRBS_PER_SEGMENT - 1));
++		seg->trbs[TRBS_PER_SEGMENT - 1].link.control &=
++			cpu_to_le32(~TRB_CYCLE);
+ 		seg = seg->next;
+ 	} while (seg != ring->deq_seg);
  
- /*
-- * Some machines require the "reboot=b"  commandline option,
-+ * Some machines require the "reboot=b" or "reboot=k"  commandline options,
-  * this quirk makes that automatic.
-  */
- static int __init set_bios_reboot(const struct dmi_system_id *d)
-@@ -136,6 +136,15 @@ static int __init set_bios_reboot(const
- 	return 0;
- }
- 
-+static int __init set_kbd_reboot(const struct dmi_system_id *d)
-+{
-+	if (reboot_type != BOOT_KBD) {
-+		reboot_type = BOOT_KBD;
-+		printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboot.\n", d->ident);
-+	}
-+	return 0;
-+}
-+
- static struct dmi_system_id __initdata reboot_dmi_table[] = {
- 	{	/* Handle problems with rebooting on Dell E520's */
- 		.callback = set_bios_reboot,
-@@ -295,7 +304,7 @@ static struct dmi_system_id __initdata r
- 		},
- 	},
- 	{ /* Handle reboot issue on Acer Aspire one */
--		.callback = set_bios_reboot,
-+		.callback = set_kbd_reboot,
- 		.ident = "Acer Aspire One A110",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
 
 
