@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758538Ab1LGWkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 17:40:16 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33139 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757080Ab1LGWkO (ORCPT
+	id S1758517Ab1LGWmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 17:42:46 -0500
+Received: from lnx503.hrz.tu-darmstadt.de ([130.83.156.232]:32924 "EHLO
+	lnx503.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757080Ab1LGWmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 17:40:14 -0500
-Date: Wed, 7 Dec 2011 22:39:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Wu, Josh" <Josh.wu@atmel.com>
-Cc: g.liakhovetski@gmx.de, linux-media@vger.kernel.org,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] [media] V4L: atmel-isi: add code to
-	enable/disableISI_MCK clock
-Message-ID: <20111207223952.GH14542@n2100.arm.linux.org.uk>
-References: <1322647604-30662-1-git-send-email-josh.wu@atmel.com> <20111207084958.GA14542@n2100.arm.linux.org.uk> <4C79549CB6F772498162A641D92D5328039E9C15@penmb01.corp.atmel.com>
+	Wed, 7 Dec 2011 17:42:45 -0500
+From: Tim Sander <tim01@vlsi.informatik.tu-darmstadt.de>
+Organization: Sander & Lighting
+To: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-rt-users" <linux-rt-users@vger.kernel.org>
+Subject: reboot fails on preempt rt 3.0.12-rt29
+Date: Wed, 7 Dec 2011 23:42:33 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-rc3; KDE/4.6.5; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C79549CB6F772498162A641D92D5328039E9C15@penmb01.corp.atmel.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112072342.33752.tim01@vlsi.informatik.tu-darmstadt.de>
+X-PMX-TU: seen v1.2 by 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.12.7.223019
+X-PMX-RELAY: outgoing
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 06:12:52PM +0800, Wu, Josh wrote:
-> Hi, Russell King
-> 
-> On Wed, Dec 07, 2011 at 4:50 PM, Russell King wrote:
-> 
-> > On Wed, Nov 30, 2011 at 06:06:43PM +0800, Josh Wu wrote:
-> >> +	/* Get ISI_MCK, provided by programmable clock or external clock
-> */
-> >> +	isi->mck = clk_get(dev, "isi_mck");
-> >> +	if (IS_ERR_OR_NULL(isi->mck)) {
-> 
-> > This should be IS_ERR()
-> 
-> So it means the clk_get() will never return NULL even when clk structure
-> is NULL in clk lookup entry. Right?
+Hi
 
-It is not the drivers business to know whether NULL is valid or not.
+As you might now i am running a slightly patched rt 3.0.12-rt29 on arm pcm43 
+platform. Strangely the upstart 1.3 reboot command gives me very seldom the 
+error: 
+"reboot: Unable to execute shutdown: Bad address"
 
-clk_get() is defined to either return an error pointer, or a cookie
-which the rest of the clk API must accept.
+Since the string "Bad address" is nowhere to find within the upstart or libnih 
+sources i guess it is coming from the kernel sources or perror?
 
-If an implementation decides that clk_get() can return NULL and deals
-with that in the rest of the API (eg, to mean 'there is no clock but
-don't fail for this') then drivers must not reject that.
+Reboot in turn calls shutdown -r via execv. When calling reboot another time 
+it just works... The error seems so seldom that it didn't occur to me two 
+times in a row for now.
 
-If a driver rejects NULL then it is performing checks outside of the
-definition of the clk API, and making assumptions about the nature of
-valid cookies.
+Best regards
+Tim
+
