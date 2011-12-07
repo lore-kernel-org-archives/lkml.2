@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab1LGQQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:16:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32815 "EHLO mx2.suse.de"
+	id S1756842Ab1LGQQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:16:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60975 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756839Ab1LGQQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:16:33 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:23 2011
-Message-Id: <20111207160823.198249431@clark.kroah.org>
+	id S1756792Ab1LGQQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:16:16 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:22 2011
+Message-Id: <20111207160822.799771673@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:27 -0800
+Date: Wed, 07 Dec 2011 08:06:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Keith Packard <keithp@keithp.com>
-Subject: [07/80] drm/i915: Ivybridge still has fences!
+        <alan@lxorguk.ukuu.org.uk>, "Sheng-Hui J. Chu" <jeffchu@broadcom.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [02/80] i2c-algo-bit: Generate correct i2c address sequence for 10-bit target
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: "Jeffrey (Sheng-Hui) Chu" <jeffchu@broadcom.com>
 
-commit 775d17b6ca4357048f36c22151335addfe15db4b upstream.
+commit cc6bcf7d2ec2234e7b41770185e4dc826390185e upstream.
 
-So don't forget to restore them on resume and dump them into
-the error state.
+The wrong bits were put on the wire, fix that.
 
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Keith Packard <keithp@keithp.com>
+This fixes kernel bug #42562.
+
+Signed-off-by: Sheng-Hui J. Chu <jeffchu@broadcom.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c     |    1 +
- drivers/gpu/drm/i915/i915_suspend.c |    2 ++
- 2 files changed, 3 insertions(+)
+ drivers/i2c/algos/i2c-algo-bit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -820,6 +820,7 @@ static void i915_gem_record_fences(struc
+--- a/drivers/i2c/algos/i2c-algo-bit.c
++++ b/drivers/i2c/algos/i2c-algo-bit.c
+@@ -486,7 +486,7 @@ static int bit_doAddress(struct i2c_adap
  
- 	/* Fences */
- 	switch (INTEL_INFO(dev)->gen) {
-+	case 7:
- 	case 6:
- 		for (i = 0; i < 16; i++)
- 			error->fence[i] = I915_READ64(FENCE_REG_SANDYBRIDGE_0 + (i * 8));
---- a/drivers/gpu/drm/i915/i915_suspend.c
-+++ b/drivers/gpu/drm/i915/i915_suspend.c
-@@ -370,6 +370,7 @@ static void i915_save_modeset_reg(struct
- 
- 	/* Fences */
- 	switch (INTEL_INFO(dev)->gen) {
-+	case 7:
- 	case 6:
- 		for (i = 0; i < 16; i++)
- 			dev_priv->saveFENCE[i] = I915_READ64(FENCE_REG_SANDYBRIDGE_0 + (i * 8));
-@@ -404,6 +405,7 @@ static void i915_restore_modeset_reg(str
- 
- 	/* Fences */
- 	switch (INTEL_INFO(dev)->gen) {
-+	case 7:
- 	case 6:
- 		for (i = 0; i < 16; i++)
- 			I915_WRITE64(FENCE_REG_SANDYBRIDGE_0 + (i * 8), dev_priv->saveFENCE[i]);
+ 	if (flags & I2C_M_TEN) {
+ 		/* a ten bit address */
+-		addr = 0xf0 | ((msg->addr >> 7) & 0x03);
++		addr = 0xf0 | ((msg->addr >> 7) & 0x06);
+ 		bit_dbg(2, &i2c_adap->dev, "addr0: %d\n", addr);
+ 		/* try extended address code...*/
+ 		ret = try_address(i2c_adap, addr, retries);
+@@ -496,7 +496,7 @@ static int bit_doAddress(struct i2c_adap
+ 			return -EREMOTEIO;
+ 		}
+ 		/* the remaining 8 bit address */
+-		ret = i2c_outb(i2c_adap, msg->addr & 0x7f);
++		ret = i2c_outb(i2c_adap, msg->addr & 0xff);
+ 		if ((ret != 1) && !nak_ok) {
+ 			/* the chip did not ack / xmission error occurred */
+ 			dev_err(&i2c_adap->dev, "died at 2nd address code\n");
 
 
