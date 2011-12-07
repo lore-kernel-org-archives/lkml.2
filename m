@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab1LGTAq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 14:00:46 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48409 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758218Ab1LGTAj (ORCPT
+	id S1758218Ab1LGTDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 14:03:47 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65144 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757933Ab1LGTDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 14:00:39 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: "David S . Miller" <davem@davemloft.net>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] crypto: Add inline per-cpu wrappers for compression
-Date: Wed,  7 Dec 2011 12:59:09 -0600
-Message-Id: <1323284350-13784-3-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1323284350-13784-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1323284350-13784-1-git-send-email-sjenning@linux.vnet.ibm.com>
-x-cbid: 11120718-3352-0000-0000-0000013ACA25
+	Wed, 7 Dec 2011 14:03:46 -0500
+Date: Wed, 7 Dec 2011 23:03:40 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
+Message-ID: <20111207190340.GP21678@moon>
+References: <20111206181026.GO29781@moon>
+ <20111207185343.GA3209@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111207185343.GA3209@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds wrapper functions for compression users
-that allocate and free per-cpu compression transforms
+On Wed, Dec 07, 2011 at 07:53:43PM +0100, Oleg Nesterov wrote:
+> Hi Cyrill,
+> 
+> Sorry, I didn't read this patch yet, but
+> 
+> On 12/06, Cyrill Gorcunov wrote:
+> >
+> > +static void *children_seq_start(struct seq_file *seq, loff_t *pos)
+> > +{
+> > +	struct task_struct *task;
+> > +
+> > +	rcu_read_lock();
+> > +	task = seq->private;
+> > +	if (task)
+> > +		return seq_list_start(&task->children, *pos);
+> 
+> This looks "obviously wrong".
+> 
+> We can not trust ->children->next after rcu_read_unlock(). Another
+> rcu_read_lock() can't help.
+> 
+> Once again, I can be easily wrong, need to read the patch first.
+> 
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- include/linux/crypto.h |   28 ++++++++++++++++++++++++++++
- 1 files changed, 28 insertions(+), 0 deletions(-)
+Wait, Oleg, I might be wrong as well, but it's now as
 
-diff --git a/include/linux/crypto.h b/include/linux/crypto.h
-index 8a94217..5ed19c1 100644
---- a/include/linux/crypto.h
-+++ b/include/linux/crypto.h
-@@ -483,6 +483,10 @@ struct crypto_attr_u32 {
-  
- struct crypto_tfm *crypto_alloc_base(const char *alg_name, u32 type, u32 mask);
- void crypto_destroy_tfm(void *mem, struct crypto_tfm *tfm);
-+struct crypto_tfm * __percpu *crypto_alloc_percpu_tfms(const char *alg_name,
-+			u32 type, u32 mask, const struct cpumask *cpumask);
-+void crypto_free_percpu_tfms(struct crypto_tfm * __percpu *tfms,
-+				const struct cpumask *cpumask);
- 
- static inline void crypto_free_tfm(struct crypto_tfm *tfm)
- {
-@@ -1213,6 +1217,12 @@ static inline struct crypto_comp *__crypto_comp_cast(struct crypto_tfm *tfm)
- 	return (struct crypto_comp *)tfm;
- }
- 
-+static inline struct crypto_comp * __percpu *__crypto_comp_percpu_cast(
-+	struct crypto_tfm * __percpu *tfms)
-+{
-+	return (struct crypto_comp * __percpu *)tfms;
-+}
-+
- static inline struct crypto_comp *crypto_comp_cast(struct crypto_tfm *tfm)
- {
- 	BUG_ON((crypto_tfm_alg_type(tfm) ^ CRYPTO_ALG_TYPE_COMPRESS) &
-@@ -1230,6 +1240,17 @@ static inline struct crypto_comp *crypto_alloc_comp(const char *alg_name,
- 	return __crypto_comp_cast(crypto_alloc_base(alg_name, type, mask));
- }
- 
-+static inline struct crypto_comp * __percpu *crypto_alloc_percpu_comp(
-+	const char *alg_name, u32 type, u32 mask, const struct cpumask *cpumask)
-+{
-+	type &= ~CRYPTO_ALG_TYPE_MASK;
-+	type |= CRYPTO_ALG_TYPE_COMPRESS;
-+	mask |= CRYPTO_ALG_TYPE_MASK;
-+
-+	return __crypto_comp_percpu_cast(crypto_alloc_percpu_tfms(alg_name,
-+							type, mask, cpumask));
-+}
-+
- static inline struct crypto_tfm *crypto_comp_tfm(struct crypto_comp *tfm)
- {
- 	return &tfm->base;
-@@ -1240,6 +1261,13 @@ static inline void crypto_free_comp(struct crypto_comp *tfm)
- 	crypto_free_tfm(crypto_comp_tfm(tfm));
- }
- 
-+static inline void crypto_free_percpu_comp(struct crypto_comp * __percpu *tfms,
-+				const struct cpumask *cpumask)
-+{
-+	crypto_free_percpu_tfms((struct crypto_tfm * __percpu *)(tfms),
-+		cpumask);
-+}
-+
- static inline int crypto_has_comp(const char *alg_name, u32 type, u32 mask)
- {
- 	type &= ~CRYPTO_ALG_TYPE_MASK;
--- 
-1.7.5.4
+children_seq_open
+ get_proc_task (so ref to task increased)
 
+the children_seq_start/children_seq_stop works
+in iteration and every new iteration seq_list_next
+walks over the whole children list from the list
+head under rcu lock, so even if task is removed
+or added the link should exsist until rcu is unlocked
+and sync'ed no?
+
+	Cyrill
