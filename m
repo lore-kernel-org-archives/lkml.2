@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757010Ab1LGQQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:16:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32931 "EHLO mx2.suse.de"
+	id S1757153Ab1LGQRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:17:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33075 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756974Ab1LGQQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:16:55 -0500
+	id S1757116Ab1LGQRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:17:24 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
-Message-Id: <20111207160825.116516163@clark.kroah.org>
+Message-Id: <20111207160825.784267058@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:50 -0800
+Date: Wed, 07 Dec 2011 08:06:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Michael Buesch <m@bues.ch>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [30/80] p54spi: Fix workqueue deadlock
+        <alan@lxorguk.ukuu.org.uk>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+Subject: [38/80] SCSI: Silencing killing requests for dead queue
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Michael=20B=C3=BCsch?= <m@bues.ch>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 2d1618170eb493d18f66f2ac03775409a6fb97c6 upstream.
+commit 745718132c3c7cac98a622b610e239dcd5217f71 upstream.
 
-priv->work must not be synced while priv->mutex is locked, because
-the mutex is taken in the work handler.
-Move cancel_work_sync down to after the device shutdown code.
-This is safe, because the work handler checks fw_state and bails out
-early in case of a race.
+When we tear down a device we try to flush all outstanding
+commands in scsi_free_queue(). However the check in
+scsi_request_fn() is imperfect as it only signals that
+we _might start_ aborting commands, not that we've actually
+aborted some.
+So move the printk inside the scsi_kill_request function,
+this will also give us a hint about which commands are aborted.
 
-Signed-off-by: Michael Buesch <m@bues.ch>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/p54spi.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/scsi_lib.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/p54/p54spi.c
-+++ b/drivers/net/wireless/p54/p54spi.c
-@@ -589,8 +589,6 @@ static void p54spi_op_stop(struct ieee80
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1407,6 +1407,8 @@ static void scsi_kill_request(struct req
  
- 	WARN_ON(priv->fw_state != FW_STATE_READY);
+ 	blk_start_request(req);
  
--	cancel_work_sync(&priv->work);
--
- 	p54spi_power_off(priv);
- 	spin_lock_irqsave(&priv->tx_lock, flags);
- 	INIT_LIST_HEAD(&priv->tx_pending);
-@@ -598,6 +596,8 @@ static void p54spi_op_stop(struct ieee80
- 
- 	priv->fw_state = FW_STATE_OFF;
- 	mutex_unlock(&priv->mutex);
++	scmd_printk(KERN_INFO, cmd, "killing request\n");
 +
-+	cancel_work_sync(&priv->work);
- }
+ 	sdev = cmd->device;
+ 	starget = scsi_target(sdev);
+ 	shost = sdev->host;
+@@ -1488,7 +1490,6 @@ static void scsi_request_fn(struct reque
+ 	struct request *req;
  
- static int __devinit p54spi_probe(struct spi_device *spi)
+ 	if (!sdev) {
+-		printk("scsi: killing requests for dead queue\n");
+ 		while ((req = blk_peek_request(q)) != NULL)
+ 			scsi_kill_request(req, q);
+ 		return;
 
 
