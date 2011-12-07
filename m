@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab1LGUeH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 15:34:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37636 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757396Ab1LGUeF (ORCPT
+	id S1757940Ab1LGUee (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 15:34:34 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33519 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757775Ab1LGUec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 15:34:05 -0500
-Date: Wed, 7 Dec 2011 21:33:48 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: grant.likely@secretlab.ca, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: Re: [PATCH -resend 1/1] SPI: disable CONFIG_SPI_FSL_ESPI=m build
-Message-ID: <20111207203348.GB2526@pengutronix.de>
-References: <1323289096-13599-1-git-send-email-jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="b5gNqxB1S1yM7hjW"
-Content-Disposition: inline
-In-Reply-To: <1323289096-13599-1-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 7 Dec 2011 15:34:32 -0500
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: linux-input@vger.kernel.org
+Cc: rdunlap@xenotime.net, linux-next@vger.kernel.org, jkosina@suse.cz,
+        linux-kernel@vger.kernel.org,
+        David Herrmann <dh.herrmann@googlemail.com>
+Subject: [PATCH] HID: wiimote: Select INPUT_FF_MEMLESS
+Date: Wed,  7 Dec 2011 21:33:59 +0100
+Message-Id: <1323290039-28073-1-git-send-email-dh.herrmann@googlemail.com>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <4EDFD23D.4030703@xenotime.net>
+References: <4EDFD23D.4030703@xenotime.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We depend on memless force-feedback support, therefore correctly select the
+related config options.
 
---b5gNqxB1S1yM7hjW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
+---
+Hi Randy
 
-On Wed, Dec 07, 2011 at 09:18:16PM +0100, Jiri Slaby wrote:
-> When spi_fsl_espi is chosen to be built as a module, there is a build
-> error because we test only CONFIG_SPI_FSL_ESPI in declaration of
-> struct mpc8xxx_spi in drivers/spi/spi_fsl_lib.h. Also some called
-> functions are not exported.
->=20
-> So we forbid CONFIG_SPI_FSL_ESPI to be tristate here.
->=20
-> The error looks like:
-> drivers/spi/spi_fsl_espi.c: In function 'fsl_espi_bufs':
-> drivers/spi/spi_fsl_espi.c:232: error: 'struct mpc8xxx_spi' has no member=
- named 'len'
-> ...
->=20
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Acked-by: Kumar Gala <galak@kernel.crashing.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> ---
-> Maybe Grant is back already?
+Thanks for reporting this. This patch should fix this. I don't know whether such
+fixes belong to stable tree, if they do, Jiri could you CC stable when applying
+it?
 
-I just picked it up in the for-linus branch I am preparing while Grant
-is away.
+Cheers
+David
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+ drivers/hid/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
---b5gNqxB1S1yM7hjW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index edf2b2b..dae04a0 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -591,6 +591,7 @@ config HID_WIIMOTE
+ 	depends on BT_HIDP
+ 	depends on LEDS_CLASS
+ 	select POWER_SUPPLY
++	select INPUT_FF_MEMLESS
+ 	---help---
+ 	Support for the Nintendo Wii Remote bluetooth device.
+ 
+-- 
+1.7.8
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk7fzawACgkQD27XaX1/VRtpxQCgwyLXks2mr1yGcO3fyIQyknX2
-XxcAnRTjzECWSWEGOaZsyw6cMOt2tSzP
-=UflB
------END PGP SIGNATURE-----
-
---b5gNqxB1S1yM7hjW--
