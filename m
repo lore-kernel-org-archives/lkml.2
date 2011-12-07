@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab1LGEpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 23:45:14 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45936 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755689Ab1LGEpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 23:45:12 -0500
-Date: Wed, 7 Dec 2011 04:45:10 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: John Johansen <john.johansen@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-Message-ID: <20111207044510.GY2203@ZenIV.linux.org.uk>
-References: <20111206224100.GM2203@ZenIV.linux.org.uk>
- <4EDEA152.90804@canonical.com>
- <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
- <20111207001643.GN2203@ZenIV.linux.org.uk>
- <20111207003922.GO2203@ZenIV.linux.org.uk>
- <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com>
- <20111207011047.GQ2203@ZenIV.linux.org.uk>
- <20111207013720.GS2203@ZenIV.linux.org.uk>
- <4EDED96E.7000106@canonical.com>
- <4EDEEAE1.2060304@canonical.com>
+	id S1755789Ab1LGEu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 23:50:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36005 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755713Ab1LGEu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 23:50:57 -0500
+Date: Wed, 7 Dec 2011 10:20:48 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Virtualization List <virtualization@lists.linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 12/12] virtio: balloon: Add freeze, restore handlers
+ to support S4
+Message-ID: <20111207045048.GA9371@amit-x200.redhat.com>
+References: <cover.1323199985.git.amit.shah@redhat.com>
+ <5deccc36afa59032f0e3b10a653773bad511f303.1323199985.git.amit.shah@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EDEEAE1.2060304@canonical.com>
+In-Reply-To: <5deccc36afa59032f0e3b10a653773bad511f303.1323199985.git.amit.shah@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 08:26:09PM -0800, John Johansen wrote:
+On (Wed) 07 Dec 2011 [01:18:50], Amit Shah wrote:
 
-> Reviewed-by: John Johansen <john.johansen@canonical.com>
+[snip]
 
-Umm... assuming that's an ACK, the damn thing is in
-git://git.kernel.org:/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+> Now to not race with a host issuing ballooning requests while we are in
+> the process of freezing, we just exit from the vballoon kthread when the
+> processes are asked to freeze.  Upon thaw and restore, we re-start the
+> thread.
 
-Linus, could you pull it?
+Actually this isn't necessary.  I over-zealously killed the thread
+when it's not really necessary: the thread is frozen before calling
+the freeze() callback and is thawed only after the restore() or thaw()
+callbacks are done, so we're exactly in the same state with or without
+keeping the kthread around (just that the PID of the kthread will
+change).  So I'll back out this change for the next revision.
 
-Shortlog:
-Al Viro (1):
-      fix apparmor dereferencing potentially freed dentry, sanitize __d_path() API
 
-Diffstat:
- fs/dcache.c                |   71 +++++++++++++++++++++++++++----------------
- fs/namespace.c             |   20 +++++++-----
- fs/seq_file.c              |    6 ++--
- include/linux/dcache.h     |    3 +-
- include/linux/fs.h         |    1 +
- security/apparmor/path.c   |   65 +++++++++++++++++++++++----------------
- security/tomoyo/realpath.c |    3 +-
- 7 files changed, 100 insertions(+), 69 deletions(-)
-
+		Amit
