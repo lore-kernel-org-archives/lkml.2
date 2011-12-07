@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933971Ab1LGQ0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:26:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34769 "EHLO mx2.suse.de"
+	id S934065Ab1LGQ1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:27:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34794 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757910Ab1LGQ0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:26:00 -0500
+	id S1757792Ab1LGQ0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:26:07 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:22 2011
-Message-Id: <20111207161222.676101253@clark.kroah.org>
+Message-Id: <20111207161222.846828597@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:38 -0800
+Date: Wed, 07 Dec 2011 08:12:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, John Stultz <john.stultz@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: [096/104] rtc: Disable the alarm in the hardware
+        <alan@lxorguk.ukuu.org.uk>, Ilya Dryomov <idryomov@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [098/104] tracing: fix event_subsystem ref counting
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,112 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+From: Ilya Dryomov <idryomov@gmail.com>
 
-commit c0afabd3d553c521e003779c127143ffde55a16f upstream.
+commit cb59974742aea24adf6637eb0c4b8e7b48bca6fb upstream.
 
-Currently, the RTC code does not disable the alarm in the hardware.
+Fix a bug introduced by e9dbfae5, which prevents event_subsystem from
+ever being released.
 
-This means that after a sequence such as the one below (the files are in the
-RTC sysfs), the box will boot up after 2 minutes even though we've
-asked for the alarm to be turned off.
+Ref_count was added to keep track of subsystem users, not for counting
+events.  Subsystem is created with ref_count = 1, so there is no need to
+increment it for every event, we have nr_events for that.  Fix this by
+touching ref_count only when we actually have a new user -
+subsystem_open().
 
-	# echo $((`cat since_epoch`)+120) > wakealarm
-	# echo 0 > wakealarm
-	# poweroff
-
-Fix this by disabling the alarm when there are no timers to run.
-
-Cc: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Ilya Dryomov <idryomov@gmail.com>
+Link: http://lkml.kernel.org/r/1320052062-7846-1-git-send-email-idryomov@gmail.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/interface.c |   44 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 34 insertions(+), 10 deletions(-)
+ kernel/trace/trace_events.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -318,6 +318,20 @@ int rtc_read_alarm(struct rtc_device *rt
- }
- EXPORT_SYMBOL_GPL(rtc_read_alarm);
- 
-+static int ___rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
-+{
-+	int err;
-+
-+	if (!rtc->ops)
-+		err = -ENODEV;
-+	else if (!rtc->ops->set_alarm)
-+		err = -EINVAL;
-+	else
-+		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
-+
-+	return err;
-+}
-+
- static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
- {
- 	struct rtc_time tm;
-@@ -341,14 +355,7 @@ static int __rtc_set_alarm(struct rtc_de
- 	 * over right here, before we set the alarm.
- 	 */
- 
--	if (!rtc->ops)
--		err = -ENODEV;
--	else if (!rtc->ops->set_alarm)
--		err = -EINVAL;
--	else
--		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
--
--	return err;
-+	return ___rtc_set_alarm(rtc, alarm);
- }
- 
- int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
-@@ -762,6 +769,20 @@ static int rtc_timer_enqueue(struct rtc_
- 	return 0;
- }
- 
-+static void rtc_alarm_disable(struct rtc_device *rtc)
-+{
-+	struct rtc_wkalrm alarm;
-+	struct rtc_time tm;
-+
-+	__rtc_read_time(rtc, &tm);
-+
-+	alarm.time = rtc_ktime_to_tm(ktime_add(rtc_tm_to_ktime(tm),
-+				     ktime_set(300, 0)));
-+	alarm.enabled = 0;
-+
-+	___rtc_set_alarm(rtc, &alarm);
-+}
-+
- /**
-  * rtc_timer_remove - Removes a rtc_timer from the rtc_device timerqueue
-  * @rtc rtc device
-@@ -783,8 +804,10 @@ static void rtc_timer_remove(struct rtc_
- 		struct rtc_wkalrm alarm;
- 		int err;
- 		next = timerqueue_getnext(&rtc->timerqueue);
--		if (!next)
-+		if (!next) {
-+			rtc_alarm_disable(rtc);
- 			return;
-+		}
- 		alarm.time = rtc_ktime_to_tm(next->expires);
- 		alarm.enabled = 1;
- 		err = __rtc_set_alarm(rtc, &alarm);
-@@ -846,7 +869,8 @@ again:
- 		err = __rtc_set_alarm(rtc, &alarm);
- 		if (err == -ETIME)
- 			goto again;
--	}
-+	} else
-+		rtc_alarm_disable(rtc);
- 
- 	mutex_unlock(&rtc->ops_lock);
- }
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1078,7 +1078,6 @@ event_subsystem_dir(const char *name, st
+ 	/* First see if we did not already create this dir */
+ 	list_for_each_entry(system, &event_subsystems, list) {
+ 		if (strcmp(system->name, name) == 0) {
+-			__get_system(system);
+ 			system->nr_events++;
+ 			return system->entry;
+ 		}
 
 
