@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757949Ab1LGQ15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:27:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34744 "EHLO mx2.suse.de"
+	id S1757897Ab1LGQZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:25:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34723 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757151Ab1LGQZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:25:54 -0500
+	id S1756577Ab1LGQZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:25:46 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:22 2011
-Message-Id: <20111207161222.498232397@clark.kroah.org>
+Message-Id: <20111207161222.332098846@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:36 -0800
+Date: Wed, 07 Dec 2011 08:12:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [094/104] ftrace: Remove force undef config value left for testing
+        <alan@lxorguk.ukuu.org.uk>, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [092/104] iwlwifi: do not re-configure HT40 after associated
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,41 +25,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-commit c7c6ec8becaf742b223c7b491f4893014be23a07 upstream.
+commit 34a5b4b6af104cf18eb50748509528b9bdbc4036 upstream.
 
-A forced undef of a config value was used for testing and was
-accidently left in during the final commit. This causes x86 to
-run slower than needed while running function tracing as well
-as causes the function graph selftest to fail when DYNMAIC_FTRACE
-is not set. This is because the code in MCOUNT expects the ftrace
-code to be processed with the config value set that happened to
-be forced not set.
+The ht40 setting should not change after association unless channel switch
 
-The forced config option was left in by:
-    commit 6331c28c962561aee59e5a493b7556a4bb585957
-    ftrace: Fix dynamic selftest failure on some archs
+This fix a problem we are seeing which cause uCode assert because driver
+sending invalid information and make uCode confuse
 
-Link: http://lkml.kernel.org/r/20111102150255.GA6973@debian
+Here is the firmware assert message:
+kernel: iwlagn 0000:03:00.0: Microcode SW error detected.  Restarting 0x82000000.
+kernel: iwlagn 0000:03:00.0: Loaded firmware version: 17.168.5.3 build 42301
+kernel: iwlagn 0000:03:00.0: Start IWL Error Log Dump:
+kernel: iwlagn 0000:03:00.0: Status: 0x000512E4, count: 6
+kernel: iwlagn 0000:03:00.0: 0x00002078 | ADVANCED_SYSASSERT
+kernel: iwlagn 0000:03:00.0: 0x00009514 | uPc
+kernel: iwlagn 0000:03:00.0: 0x00009496 | branchlink1
+kernel: iwlagn 0000:03:00.0: 0x00009496 | branchlink2
+kernel: iwlagn 0000:03:00.0: 0x0000D1F2 | interruptlink1
+kernel: iwlagn 0000:03:00.0: 0x00000000 | interruptlink2
+kernel: iwlagn 0000:03:00.0: 0x01008035 | data1
+kernel: iwlagn 0000:03:00.0: 0x0000C90F | data2
+kernel: iwlagn 0000:03:00.0: 0x000005A7 | line
+kernel: iwlagn 0000:03:00.0: 0x5080B520 | beacon time
+kernel: iwlagn 0000:03:00.0: 0xCC515AE0 | tsf low
+kernel: iwlagn 0000:03:00.0: 0x00000003 | tsf hi
+kernel: iwlagn 0000:03:00.0: 0x00000000 | time gp1
+kernel: iwlagn 0000:03:00.0: 0x29703BF0 | time gp2
+kernel: iwlagn 0000:03:00.0: 0x00000000 | time gp3
+kernel: iwlagn 0000:03:00.0: 0x000111A8 | uCode version
+kernel: iwlagn 0000:03:00.0: 0x000000B0 | hw version
+kernel: iwlagn 0000:03:00.0: 0x00480303 | board version
+kernel: iwlagn 0000:03:00.0: 0x09E8004E | hcmd
+kernel: iwlagn 0000:03:00.0: CSR values:
+kernel: iwlagn 0000:03:00.0: (2nd byte of CSR_INT_COALESCING is CSR_INT_PERIODIC_REG)
+kernel: iwlagn 0000:03:00.0:        CSR_HW_IF_CONFIG_REG: 0X00480303
+kernel: iwlagn 0000:03:00.0:          CSR_INT_COALESCING: 0X0000ff40
+kernel: iwlagn 0000:03:00.0:                     CSR_INT: 0X00000000
+kernel: iwlagn 0000:03:00.0:                CSR_INT_MASK: 0X00000000
+kernel: iwlagn 0000:03:00.0:           CSR_FH_INT_STATUS: 0X00000000
+kernel: iwlagn 0000:03:00.0:                 CSR_GPIO_IN: 0X00000030
+kernel: iwlagn 0000:03:00.0:                   CSR_RESET: 0X00000000
+kernel: iwlagn 0000:03:00.0:                CSR_GP_CNTRL: 0X080403c5
+kernel: iwlagn 0000:03:00.0:                  CSR_HW_REV: 0X000000b0
+kernel: iwlagn 0000:03:00.0:              CSR_EEPROM_REG: 0X07d60ffd
+kernel: iwlagn 0000:03:00.0:               CSR_EEPROM_GP: 0X90000001
+kernel: iwlagn 0000:03:00.0:              CSR_OTP_GP_REG: 0X00030001
+kernel: iwlagn 0000:03:00.0:                 CSR_GIO_REG: 0X00080044
+kernel: iwlagn 0000:03:00.0:            CSR_GP_UCODE_REG: 0X000093bb
+kernel: iwlagn 0000:03:00.0:           CSR_GP_DRIVER_REG: 0X00000000
+kernel: iwlagn 0000:03:00.0:           CSR_UCODE_DRV_GP1: 0X00000000
+kernel: iwlagn 0000:03:00.0:           CSR_UCODE_DRV_GP2: 0X00000000
+kernel: iwlagn 0000:03:00.0:                 CSR_LED_REG: 0X00000078
+kernel: iwlagn 0000:03:00.0:        CSR_DRAM_INT_TBL_REG: 0X88214dd2
+kernel: iwlagn 0000:03:00.0:        CSR_GIO_CHICKEN_BITS: 0X27800200
+kernel: iwlagn 0000:03:00.0:             CSR_ANA_PLL_CFG: 0X00000000
+kernel: iwlagn 0000:03:00.0:           CSR_HW_REV_WA_REG: 0X0001001a
+kernel: iwlagn 0000:03:00.0:        CSR_DBG_HPET_MEM_REG: 0Xffff0010
+kernel: iwlagn 0000:03:00.0: FH register values:
+kernel: iwlagn 0000:03:00.0:         FH_RSCSR_CHNL0_STTS_WPTR_REG: 0X21316d00
+kernel: iwlagn 0000:03:00.0:        FH_RSCSR_CHNL0_RBDCB_BASE_REG: 0X021479c0
+kernel: iwlagn 0000:03:00.0:                  FH_RSCSR_CHNL0_WPTR: 0X00000060
+kernel: iwlagn 0000:03:00.0:         FH_MEM_RCSR_CHNL0_CONFIG_REG: 0X80819104
+kernel: iwlagn 0000:03:00.0:          FH_MEM_RSSR_SHARED_CTRL_REG: 0X000000fc
+kernel: iwlagn 0000:03:00.0:            FH_MEM_RSSR_RX_STATUS_REG: 0X07030000
+kernel: iwlagn 0000:03:00.0:    FH_MEM_RSSR_RX_ENABLE_ERR_IRQ2DRV: 0X00000000
+kernel: iwlagn 0000:03:00.0:                FH_TSSR_TX_STATUS_REG: 0X07ff0001
+kernel: iwlagn 0000:03:00.0:                 FH_TSSR_TX_ERROR_REG: 0X00000000
+kernel: iwlagn 0000:03:00.0: Start IWL Event Log Dump: display last 20 entries
+kernel: ------------[ cut here ]------------
+WARNING: at net/mac80211/util.c:1208 ieee80211_reconfig+0x1f1/0x407()
+kernel: Hardware name: 4290W4H
+kernel: Pid: 1896, comm: kworker/0:0 Not tainted 3.1.0 #2
+kernel: Call Trace:
+kernel:  [<ffffffff81036558>] ? warn_slowpath_common+0x73/0x87
+kernel:  [<ffffffff813b8966>] ? ieee80211_reconfig+0x1f1/0x407
+kernel:  [<ffffffff8139e8dc>] ? ieee80211_recalc_smps_work+0x32/0x32
+kernel:  [<ffffffff8139e95a>] ? ieee80211_restart_work+0x7e/0x87
+kernel:  [<ffffffff810472fa>] ? process_one_work+0x1c8/0x2e3
+kernel:  [<ffffffff810480c9>] ? worker_thread+0x17a/0x23a
+kernel:  [<ffffffff81047f4f>] ? manage_workers.clone.18+0x15b/0x15b
+kernel:  [<ffffffff81047f4f>] ? manage_workers.clone.18+0x15b/0x15b
+kernel:  [<ffffffff8104ba97>] ? kthread+0x7a/0x82
+kernel:  [<ffffffff813d21b4>] ? kernel_thread_helper+0x4/0x10
+kernel:  [<ffffffff8104ba1d>] ? kthread_flush_work_fn+0x11/0x11
+kernel:  [<ffffffff813d21b0>] ? gs_change+0xb/0xb
 
-Reported-by: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Udo Steinberg <udo@hypervisor.org>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/ftrace.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |   36 +++++++++++++++++-----------
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |   18 ++------------
+ drivers/net/wireless/iwlwifi/iwl-agn.h      |    2 +
+ 3 files changed, 28 insertions(+), 28 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -151,7 +151,6 @@ void clear_ftrace_function(void)
- 	ftrace_pid_function = ftrace_stub;
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
+@@ -542,6 +542,24 @@ int iwlagn_commit_rxon(struct iwl_priv *
+ 	return 0;
  }
  
--#undef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- #ifndef CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST
- /*
-  * For those archs that do not test ftrace_trace_stop in their
++void iwlagn_config_ht40(struct ieee80211_conf *conf,
++	struct iwl_rxon_context *ctx)
++{
++	if (conf_is_ht40_minus(conf)) {
++		ctx->ht.extension_chan_offset =
++			IEEE80211_HT_PARAM_CHA_SEC_BELOW;
++		ctx->ht.is_40mhz = true;
++	} else if (conf_is_ht40_plus(conf)) {
++		ctx->ht.extension_chan_offset =
++			IEEE80211_HT_PARAM_CHA_SEC_ABOVE;
++		ctx->ht.is_40mhz = true;
++	} else {
++		ctx->ht.extension_chan_offset =
++			IEEE80211_HT_PARAM_CHA_SEC_NONE;
++		ctx->ht.is_40mhz = false;
++	}
++}
++
+ int iwlagn_mac_config(struct ieee80211_hw *hw, u32 changed)
+ {
+ 	struct iwl_priv *priv = hw->priv;
+@@ -600,19 +618,11 @@ int iwlagn_mac_config(struct ieee80211_h
+ 				ctx->ht.enabled = conf_is_ht(conf);
+ 
+ 			if (ctx->ht.enabled) {
+-				if (conf_is_ht40_minus(conf)) {
+-					ctx->ht.extension_chan_offset =
+-						IEEE80211_HT_PARAM_CHA_SEC_BELOW;
+-					ctx->ht.is_40mhz = true;
+-				} else if (conf_is_ht40_plus(conf)) {
+-					ctx->ht.extension_chan_offset =
+-						IEEE80211_HT_PARAM_CHA_SEC_ABOVE;
+-					ctx->ht.is_40mhz = true;
+-				} else {
+-					ctx->ht.extension_chan_offset =
+-						IEEE80211_HT_PARAM_CHA_SEC_NONE;
+-					ctx->ht.is_40mhz = false;
+-				}
++				/* if HT40 is used, it should not change
++				 * after associated except channel switch */
++				if (iwl_is_associated_ctx(ctx) &&
++				     !ctx->ht.is_40mhz)
++					iwlagn_config_ht40(conf, ctx);
+ 			} else
+ 				ctx->ht.is_40mhz = false;
+ 
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -3075,21 +3075,9 @@ static void iwlagn_mac_channel_switch(st
+ 
+ 	/* Configure HT40 channels */
+ 	ctx->ht.enabled = conf_is_ht(conf);
+-	if (ctx->ht.enabled) {
+-		if (conf_is_ht40_minus(conf)) {
+-			ctx->ht.extension_chan_offset =
+-				IEEE80211_HT_PARAM_CHA_SEC_BELOW;
+-			ctx->ht.is_40mhz = true;
+-		} else if (conf_is_ht40_plus(conf)) {
+-			ctx->ht.extension_chan_offset =
+-				IEEE80211_HT_PARAM_CHA_SEC_ABOVE;
+-			ctx->ht.is_40mhz = true;
+-		} else {
+-			ctx->ht.extension_chan_offset =
+-				IEEE80211_HT_PARAM_CHA_SEC_NONE;
+-			ctx->ht.is_40mhz = false;
+-		}
+-	} else
++	if (ctx->ht.enabled)
++		iwlagn_config_ht40(conf, ctx);
++	else
+ 		ctx->ht.is_40mhz = false;
+ 
+ 	if ((le16_to_cpu(ctx->staging.channel) != ch))
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.h
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.h
+@@ -135,6 +135,8 @@ void iwlagn_bss_info_changed(struct ieee
+ 			     struct ieee80211_vif *vif,
+ 			     struct ieee80211_bss_conf *bss_conf,
+ 			     u32 changes);
++void iwlagn_config_ht40(struct ieee80211_conf *conf,
++			struct iwl_rxon_context *ctx);
+ 
+ /* uCode */
+ void iwlagn_rx_calib_result(struct iwl_priv *priv,
 
 
