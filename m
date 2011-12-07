@@ -1,136 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756727Ab1LGQNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:13:22 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:33656 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756649Ab1LGQNK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:13:10 -0500
-X-Sasl-enc: vBVpyqzTNU05K7RXou0QJHLKBKyFLZ/aHjG+6PeJe6V/ 1323274389
-Date: Wed, 7 Dec 2011 08:12:56 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [00/80] 3.0.13-stable review
-Message-ID: <20111207161256.GA7736@kroah.com>
+	id S1756722Ab1LGQOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:14:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60734 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756107Ab1LGQOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:14:42 -0500
+Date: Wed, 7 Dec 2011 17:14:40 +0100
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] writeback: dirty ratelimit - think time
+ compensation
+Message-ID: <20111207161440.GL4622@quack.suse.cz>
+References: <20111128135338.249672012@intel.com>
+ <20111128140513.653000555@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111128140513.653000555@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.13 release.
-There are 80 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+On Mon 28-11-11 21:53:44, Wu Fengguang wrote:
+> Compensate the task's think time when computing the final pause time,
+> so that ->dirty_ratelimit can be executed accurately.
+> 
+>         think time := time spend outside of balance_dirty_pages()
+> 
+> In the rare case that the task slept longer than the 200ms period time
+> (result in negative pause time), the sleep time will be compensated in
+> the following periods, too, if it's less than 1 second.
+> 
+> Accumulated errors are carefully avoided as long as the max pause area
+> is not hitted.
+> 
+> Pseudo code:
+> 
+>         period = pages_dirtied / task_ratelimit;
+>         think = jiffies - dirty_paused_when;
+>         pause = period - think;
+> 
+> 1) normal case: period > think
+> 
+>         pause = period - think
+>         dirty_paused_when = jiffies + pause
+>         nr_dirtied = 0
+> 
+>                              period time
+>               |===============================>|
+>                   think time      pause time
+>               |===============>|==============>|
+>         ------|----------------|---------------|------------------------
+>         dirty_paused_when   jiffies
+> 
+> 
+> 2) no pause case: period <= think
+> 
+>         don't pause; reduce future pause time by:
+>         dirty_paused_when += period
+>         nr_dirtied = 0
+> 
+>                            period time
+>               |===============================>|
+>                                   think time
+>               |===================================================>|
+>         ------|--------------------------------+-------------------|----
+>         dirty_paused_when                                       jiffies
+> 
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+  Looks good. You can add:
 
-Responses should be made by Friday, December 9, 2011, 17:00:00 UTC.
-Anything received after that time might be too late.
+  Acked-by: Jan Kara <jack@suse.cz>
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.13-rc1.gz
-and the diffstat can be found below.
+								Honza
 
-thanks,
-
-greg k-h
-
- Makefile                                  |    4 +-
- arch/arm/Kconfig                          |   12 ++++
- arch/arm/configs/ezx_defconfig            |    2 +-
- arch/arm/configs/imote2_defconfig         |    2 +-
- arch/arm/configs/magician_defconfig       |    2 +-
- arch/arm/configs/zeus_defconfig           |    2 +-
- arch/arm/kernel/process.c                 |    3 +
- arch/arm/mach-mxs/clock-mx28.c            |    2 +-
- arch/arm/mach-omap2/Kconfig               |    1 +
- arch/arm/mach-omap2/smartreflex.c         |    2 +-
- arch/arm/mach-pxa/balloon3.c              |    2 +-
- arch/arm/mach-pxa/colibri-pxa320.c        |    2 +-
- arch/arm/mach-pxa/gumstix.c               |    2 +-
- arch/arm/mach-pxa/include/mach/palm27x.h  |    4 +-
- arch/arm/mach-pxa/palm27x.c               |    4 +-
- arch/arm/mach-pxa/palmtc.c                |    2 +-
- arch/arm/mach-pxa/vpac270.c               |    2 +-
- arch/s390/kernel/ptrace.c                 |   18 ++++++
- arch/x86/include/asm/timer.h              |   23 +++++++-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    6 ++-
- arch/x86/kernel/mpparse.c                 |    2 +-
- arch/x86/kernel/reboot.c                  |   13 ++++-
- arch/x86/mm/highmem_32.c                  |    2 +
- arch/x86/oprofile/init.c                  |    7 ++-
- drivers/crypto/mv_cesa.c                  |   12 ++--
- drivers/firmware/sigma.c                  |   81 ++++++++++++++++++-------
- drivers/gpu/drm/drm_crtc.c                |    4 +
- drivers/gpu/drm/i915/i915_irq.c           |    1 +
- drivers/gpu/drm/i915/i915_reg.h           |    4 +
- drivers/gpu/drm/i915/i915_suspend.c       |    2 +
- drivers/gpu/drm/i915/intel_display.c      |   16 +++++-
- drivers/gpu/drm/radeon/evergreen.c        |    7 ++-
- drivers/gpu/drm/radeon/r100.c             |    7 ++-
- drivers/gpu/drm/radeon/radeon_atombios.c  |   24 +++++++
- drivers/gpu/drm/radeon/rs600.c            |    7 ++-
- drivers/gpu/drm/radeon/rv770.c            |    7 ++-
- drivers/gpu/drm/ttm/ttm_bo.c              |    3 +-
- drivers/hid/hid-core.c                    |    2 +-
- drivers/hid/hid-ids.h                     |    2 +-
- drivers/hwmon/coretemp.c                  |    2 +
- drivers/i2c/algos/i2c-algo-bit.c          |    4 +-
- drivers/mfd/twl-core.c                    |    2 +-
- drivers/net/wireless/p54/p54spi.c         |    5 +-
- drivers/net/wireless/rt2x00/rt2800lib.c   |    2 +-
- drivers/oprofile/oprof.c                  |   29 +++++++--
- drivers/oprofile/timer_int.c              |    1 +
- drivers/pci/hotplug/shpchp_core.c         |    4 +-
- drivers/pci/hotplug/shpchp_hpc.c          |    4 +-
- drivers/rtc/interface.c                   |   44 ++++++++++---
- drivers/scsi/scsi_lib.c                   |    3 +-
- drivers/staging/comedi/comedi_fops.c      |   94 ++++++++++++++++++++++-------
- drivers/staging/usbip/vhci_rx.c           |   10 ++-
- drivers/usb/host/ehci-sched.c             |   22 ++++---
- drivers/usb/host/whci/qset.c              |    2 +-
- drivers/usb/host/xhci.c                   |    5 +-
- drivers/usb/serial/ftdi_sio.c             |    1 +
- drivers/usb/serial/ftdi_sio_ids.h         |    1 +
- drivers/usb/serial/option.c               |    4 +
- drivers/usb/storage/unusual_devs.h        |    7 ++
- drivers/video/via/share.h                 |    4 +-
- fs/ecryptfs/crypto.c                      |    4 +-
- fs/ecryptfs/file.c                        |   23 +++++++-
- fs/nfs/nfs4filelayout.c                   |    8 +++
- fs/nfs/pnfs.c                             |    3 +-
- fs/xfs/linux-2.6/xfs_acl.c                |    2 +
- fs/xfs/linux-2.6/xfs_sync.c               |   11 ++++
- fs/xfs/xfs_attr_leaf.c                    |   64 ++++++++++++--------
- fs/xfs/xfs_inode.c                        |   21 +++++++
- fs/xfs/xfs_inode.h                        |    1 +
- include/drm/drm_mode.h                    |    2 +
- include/drm/drm_pciids.h                  |    8 +++
- include/linux/sigma.h                     |   13 +---
- kernel/cgroup_freezer.c                   |   11 +++-
- kernel/hrtimer.c                          |    6 +-
- kernel/irq/manage.c                       |    5 +-
- kernel/irq/spurious.c                     |    4 +-
- kernel/jump_label.c                       |    3 +-
- kernel/time/clockevents.c                 |    1 +
- kernel/time/clocksource.c                 |    4 +-
- kernel/time/tick-broadcast.c              |    2 +-
- kernel/time/timekeeping.c                 |    4 +
- kernel/trace/trace_events.c               |    1 -
- kernel/trace/trace_events_filter.c        |    6 +-
- mm/hugetlb.c                              |    2 +
- net/mac80211/agg-tx.c                     |   24 +++++++-
- net/sunrpc/xprtsock.c                     |    3 +-
- net/wireless/nl80211.c                    |    4 +-
- net/wireless/reg.c                        |   49 ++++++++++-----
- sound/pci/lx6464es/lx_core.c              |   16 ++++-
- sound/soc/codecs/wm8731.c                 |    1 +
- sound/soc/codecs/wm8753.c                 |    3 +
- sound/soc/fsl/fsl_ssi.c                   |    1 +
- tools/perf/util/trace-event-parse.c       |    2 +
- 93 files changed, 660 insertions(+), 202 deletions(-)
+> ---
+>  include/linux/sched.h            |    1 
+>  include/trace/events/writeback.h |   14 ++++++++---
+>  kernel/fork.c                    |    1 
+>  mm/page-writeback.c              |   36 +++++++++++++++++++++++++----
+>  4 files changed, 45 insertions(+), 7 deletions(-)
+> 
+> --- linux-next.orig/include/linux/sched.h	2011-11-17 20:12:22.000000000 +0800
+> +++ linux-next/include/linux/sched.h	2011-11-17 20:12:35.000000000 +0800
+> @@ -1527,6 +1527,7 @@ struct task_struct {
+>  	 */
+>  	int nr_dirtied;
+>  	int nr_dirtied_pause;
+> +	unsigned long dirty_paused_when; /* start of a write-and-pause period */
+>  
+>  #ifdef CONFIG_LATENCYTOP
+>  	int latency_record_count;
+> --- linux-next.orig/mm/page-writeback.c	2011-11-17 20:12:22.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2011-11-17 20:12:38.000000000 +0800
+> @@ -1010,6 +1010,7 @@ static void balance_dirty_pages(struct a
+>  	unsigned long background_thresh;
+>  	unsigned long dirty_thresh;
+>  	unsigned long bdi_thresh;
+> +	long period;
+>  	long pause = 0;
+>  	long uninitialized_var(max_pause);
+>  	bool dirty_exceeded = false;
+> @@ -1020,6 +1021,8 @@ static void balance_dirty_pages(struct a
+>  	unsigned long start_time = jiffies;
+>  
+>  	for (;;) {
+> +		unsigned long now = jiffies;
+> +
+>  		/*
+>  		 * Unstable writes are a feature of certain networked
+>  		 * filesystems (i.e. NFS) in which data may have been
+> @@ -1039,8 +1042,11 @@ static void balance_dirty_pages(struct a
+>  		 */
+>  		freerun = dirty_freerun_ceiling(dirty_thresh,
+>  						background_thresh);
+> -		if (nr_dirty <= freerun)
+> +		if (nr_dirty <= freerun) {
+> +			current->dirty_paused_when = now;
+> +			current->nr_dirtied = 0;
+>  			break;
+> +		}
+>  
+>  		if (unlikely(!writeback_in_progress(bdi)))
+>  			bdi_start_background_writeback(bdi);
+> @@ -1098,10 +1104,21 @@ static void balance_dirty_pages(struct a
+>  		task_ratelimit = ((u64)dirty_ratelimit * pos_ratio) >>
+>  							RATELIMIT_CALC_SHIFT;
+>  		if (unlikely(task_ratelimit == 0)) {
+> +			period = max_pause;
+>  			pause = max_pause;
+>  			goto pause;
+>  		}
+> -		pause = HZ * pages_dirtied / task_ratelimit;
+> +		period = HZ * pages_dirtied / task_ratelimit;
+> +		pause = period;
+> +		if (current->dirty_paused_when)
+> +			pause -= now - current->dirty_paused_when;
+> +		/*
+> +		 * For less than 1s think time (ext3/4 may block the dirtier
+> +		 * for up to 800ms from time to time on 1-HDD; so does xfs,
+> +		 * however at much less frequency), try to compensate it in
+> +		 * future periods by updating the virtual time; otherwise just
+> +		 * do a reset, as it may be a light dirtier.
+> +		 */
+>  		if (unlikely(pause <= 0)) {
+>  			trace_balance_dirty_pages(bdi,
+>  						  dirty_thresh,
+> @@ -1112,8 +1129,16 @@ static void balance_dirty_pages(struct a
+>  						  dirty_ratelimit,
+>  						  task_ratelimit,
+>  						  pages_dirtied,
+> +						  period,
+>  						  pause,
+>  						  start_time);
+> +			if (pause < -HZ) {
+> +				current->dirty_paused_when = now;
+> +				current->nr_dirtied = 0;
+> +			} else if (period) {
+> +				current->dirty_paused_when += period;
+> +				current->nr_dirtied = 0;
+> +			}
+>  			pause = 1; /* avoid resetting nr_dirtied_pause below */
+>  			break;
+>  		}
+> @@ -1129,11 +1154,15 @@ pause:
+>  					  dirty_ratelimit,
+>  					  task_ratelimit,
+>  					  pages_dirtied,
+> +					  period,
+>  					  pause,
+>  					  start_time);
+>  		__set_current_state(TASK_KILLABLE);
+>  		io_schedule_timeout(pause);
+>  
+> +		current->dirty_paused_when = now + pause;
+> +		current->nr_dirtied = 0;
+> +
+>  		/*
+>  		 * This is typically equal to (nr_dirty < dirty_thresh) and can
+>  		 * also keep "1000+ dd on a slow USB stick" under control.
+> @@ -1148,11 +1177,10 @@ pause:
+>  	if (!dirty_exceeded && bdi->dirty_exceeded)
+>  		bdi->dirty_exceeded = 0;
+>  
+> -	current->nr_dirtied = 0;
+>  	if (pause == 0) { /* in freerun area */
+>  		current->nr_dirtied_pause =
+>  				dirty_poll_interval(nr_dirty, dirty_thresh);
+> -	} else if (pause <= max_pause / 4 &&
+> +	} else if (period <= max_pause / 4 &&
+>  		   pages_dirtied >= current->nr_dirtied_pause) {
+>  		current->nr_dirtied_pause = clamp_val(
+>  					dirty_ratelimit * (max_pause / 2) / HZ,
+> --- linux-next.orig/kernel/fork.c	2011-11-17 20:12:23.000000000 +0800
+> +++ linux-next/kernel/fork.c	2011-11-17 20:12:35.000000000 +0800
+> @@ -1296,6 +1296,7 @@ static struct task_struct *copy_process(
+>  
+>  	p->nr_dirtied = 0;
+>  	p->nr_dirtied_pause = 128 >> (PAGE_SHIFT - 10);
+> +	p->dirty_paused_when = 0;
+>  
+>  	/*
+>  	 * Ok, make it visible to the rest of the system.
+> --- linux-next.orig/include/trace/events/writeback.h	2011-11-17 19:13:41.000000000 +0800
+> +++ linux-next/include/trace/events/writeback.h	2011-11-17 20:12:35.000000000 +0800
+> @@ -289,12 +289,13 @@ TRACE_EVENT(balance_dirty_pages,
+>  		 unsigned long dirty_ratelimit,
+>  		 unsigned long task_ratelimit,
+>  		 unsigned long dirtied,
+> +		 unsigned long period,
+>  		 long pause,
+>  		 unsigned long start_time),
+>  
+>  	TP_ARGS(bdi, thresh, bg_thresh, dirty, bdi_thresh, bdi_dirty,
+>  		dirty_ratelimit, task_ratelimit,
+> -		dirtied, pause, start_time),
+> +		dirtied, period, pause, start_time),
+>  
+>  	TP_STRUCT__entry(
+>  		__array(	 char,	bdi, 32)
+> @@ -309,6 +310,8 @@ TRACE_EVENT(balance_dirty_pages,
+>  		__field(unsigned int,	dirtied_pause)
+>  		__field(unsigned long,	paused)
+>  		__field(	 long,	pause)
+> +		__field(unsigned long,	period)
+> +		__field(	 long,	think)
+>  	),
+>  
+>  	TP_fast_assign(
+> @@ -325,6 +328,9 @@ TRACE_EVENT(balance_dirty_pages,
+>  		__entry->task_ratelimit	= KBps(task_ratelimit);
+>  		__entry->dirtied	= dirtied;
+>  		__entry->dirtied_pause	= current->nr_dirtied_pause;
+> +		__entry->think		= current->dirty_paused_when == 0 ? 0 :
+> +			 (long)(jiffies - current->dirty_paused_when) * 1000/HZ;
+> +		__entry->period		= period * 1000 / HZ;
+>  		__entry->pause		= pause * 1000 / HZ;
+>  		__entry->paused		= (jiffies - start_time) * 1000 / HZ;
+>  	),
+> @@ -335,7 +341,7 @@ TRACE_EVENT(balance_dirty_pages,
+>  		  "bdi_setpoint=%lu bdi_dirty=%lu "
+>  		  "dirty_ratelimit=%lu task_ratelimit=%lu "
+>  		  "dirtied=%u dirtied_pause=%u "
+> -		  "paused=%lu pause=%ld",
+> +		  "paused=%lu pause=%ld period=%lu think=%ld",
+>  		  __entry->bdi,
+>  		  __entry->limit,
+>  		  __entry->setpoint,
+> @@ -347,7 +353,9 @@ TRACE_EVENT(balance_dirty_pages,
+>  		  __entry->dirtied,
+>  		  __entry->dirtied_pause,
+>  		  __entry->paused,	/* ms */
+> -		  __entry->pause	/* ms */
+> +		  __entry->pause,	/* ms */
+> +		  __entry->period,	/* ms */
+> +		  __entry->think	/* ms */
+>  	  )
+>  );
+>  
+> 
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
