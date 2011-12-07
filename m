@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab1LGSet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 13:34:49 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60736 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754796Ab1LGSes convert rfc822-to-8bit (ORCPT
+	id S1757734Ab1LGSiS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 13:38:18 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:46468 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab1LGSiQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 13:34:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111126201334.16080.85045.stgit@notabene.brown>
-References: <20111126201334.16080.85045.stgit@notabene.brown>
-Date: Wed, 7 Dec 2011 20:34:47 +0200
-Message-ID: <CAMP44s1Nhv-ggAh3-wPXVMaLkiNm9VUo4TnsaZm-yoSpttqaOQ@mail.gmail.com>
-Subject: Re: [PATCH 0/4] fixes for twl4030-irq in mainline
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 7 Dec 2011 13:38:16 -0500
+Date: Wed, 07 Dec 2011 13:38:00 -0500 (EST)
+Message-Id: <20111207.133800.1403774147364781100.davem@davemloft.net>
+To: LW@KARO-electronics.de
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, shawn.guo@linaro.org
+Subject: Re: [PATCH v2 0/8][NET] fec.c: several cleanups and bugfixes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1323256319.git.LW@KARO-electronics.de>
+References: <cover.1323256319.git.LW@KARO-electronics.de>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 07 Dec 2011 10:38:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 26, 2011 at 10:17 PM, NeilBrown <neilb@suse.de> wrote:
->  The recent tidying up of twl4030-irq seems to have left it broken.
-> At least it doesn't work for me on my gta04 (www.gta04.org).  The
-> first interrupt from the device freezes the whole system (by being
-> constantly delivered)
->
-> The following 4 patches make it work for me and addresses some other
-> less critical issues like a typo in a comment :-)
+From: Lothar Wa�mann <LW@KARO-electronics.de>
+Date: Wed,  7 Dec 2011 14:37:12 +0100
 
-I also hit the same issue on the N900. These patches fix the problem for me:
+> The following set of patches provides some cleanup and bugfixes for
+> drivers/net/ethernet/freescale/fec.c and makes the driver buildable as
+> a module.
 
-Tested-by: Felipe Contreras <felipe.contreras@gmail.com>
+1) I said to use a subject prefix of "fec: " not "fec.c: "
 
--- 
-Felipe Contreras
+2) You did not integrate Shawn's "Acked-by: " tags, I'm not going to
+   go sifting through the previous patch postings to collect them up,
+   that's your job.
