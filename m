@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab1LGQSZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:18:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33219 "EHLO mx2.suse.de"
+	id S1757353Ab1LGQSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:18:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33250 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756839Ab1LGQST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:18:19 -0500
+	id S1757329Ab1LGQSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:33 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:24 2011
-Message-Id: <20111207160824.710286747@clark.kroah.org>
+Message-Id: <20111207160824.187111463@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:45 -0800
+Date: Wed, 07 Dec 2011 08:06:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [25/80] genirq: fix regression in irqfixup, irqpoll
+        <alan@lxorguk.ukuu.org.uk>, Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [19/80] ARM: 7161/1: errata: no automatic store buffer drain
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Edward Donovan <edward.donovan@numble.net>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 52553ddffad76ccf192d4dd9ce88d5818f57f62a upstream.
+commit 11ed0ba1754841316d4095478944300acf19acc3 upstream.
 
-Commit fa27271bc8d2("genirq: Fixup poll handling") introduced a
-regression that broke irqfixup/irqpoll for some hardware configurations.
+This patch implements a workaround for PL310 erratum 769419. On
+revisions of the PL310 prior to r3p2, the Store Buffer does not
+automatically drain. This can cause normal, non-cacheable writes to be
+retained when the memory system is idle, leading to suboptimal I/O
+performance for drivers using coherent DMA.
 
-Amidst reorganizing 'try_one_irq', that patch removed a test that
-checked for 'action->handler' returning IRQ_HANDLED, before acting on
-the interrupt.  Restoring this test back returns the functionality lost
-since 2.6.39.  In the current set of tests, after 'action' is set, it
-must precede '!action->next' to take effect.
+This patch adds an optional wmb() call to the cpu_idle loop. On systems
+with an outer cache, this causes an explicit flush of the store buffer.
 
-With this and my previous patch to irq/spurious.c, c75d720fca8a, all
-IRQ regressions that I have encountered are fixed.
-
-Signed-off-by: Edward Donovan <edward.donovan@numble.net>
-Reported-and-tested-by: Rogério Brito <rbrito@ime.usp.br>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Tested-by: Marc Zyngier <marc.zyngier@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/irq/spurious.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm/Kconfig          |   12 ++++++++++++
+ arch/arm/kernel/process.c |    3 +++
+ 2 files changed, 15 insertions(+)
 
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -84,7 +84,9 @@ static int try_one_irq(int irq, struct i
- 	 */
- 	action = desc->action;
- 	if (!action || !(action->flags & IRQF_SHARED) ||
--	    (action->flags & __IRQF_TIMER) || !action->next)
-+	    (action->flags & __IRQF_TIMER) ||
-+	    (action->handler(irq, action->dev_id) == IRQ_HANDLED) ||
-+	    !action->next)
- 		goto out;
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1312,6 +1312,18 @@ config ARM_ERRATA_764369
+ 	  relevant cache maintenance functions and sets a specific bit
+ 	  in the diagnostic control register of the SCU.
  
- 	/* Already running on another processor */
++config PL310_ERRATA_769419
++	bool "PL310 errata: no automatic Store Buffer drain"
++	depends on CACHE_L2X0
++	help
++	  On revisions of the PL310 prior to r3p2, the Store Buffer does
++	  not automatically drain. This can cause normal, non-cacheable
++	  writes to be retained when the memory system is idle, leading
++	  to suboptimal I/O performance for drivers using coherent DMA.
++	  This option adds a write barrier to the cpu_idle loop so that,
++	  on systems with an outer cache, the store buffer is drained
++	  explicitly.
++
+ endmenu
+ 
+ menu "Kernel Features"
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -191,6 +191,9 @@ void cpu_idle(void)
+ #endif
+ 
+ 			local_irq_disable();
++#ifdef CONFIG_PL310_ERRATA_769419
++			wmb();
++#endif
+ 			if (hlt_counter) {
+ 				local_irq_enable();
+ 				cpu_relax();
 
 
