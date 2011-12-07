@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933922Ab1LGQY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:24:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34446 "EHLO mx2.suse.de"
+	id S934012Ab1LGQY6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:24:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34542 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933910Ab1LGQYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:24:22 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:21 2011
-Message-Id: <20111207161221.360661803@clark.kroah.org>
+	id S933910Ab1LGQYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:24:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:22 2011
+Message-Id: <20111207161221.939576349@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:22 -0800
+Date: Wed, 07 Dec 2011 08:12:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan McGrath <troubledaemon@gmail.com>,
-        Alexey Starikovskiy <aystarik@gmail.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [080/104] x86/mpparse: Account for bus types other than ISA and PCI
+        <alan@lxorguk.ukuu.org.uk>, Nikolay Martynov <mar.kolya@gmail.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [087/104] mac80211: fix race condition caused by late addBA response
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit 9e6866686bdf2dcf3aeb0838076237ede532dcc8 upstream.
+From: Nikolay Martynov <mar.kolya@gmail.com>
 
-In commit f8924e770e04 ("x86: unify mp_bus_info"), the 32-bit
-and 64-bit versions of MP_bus_info were rearranged to match each
-other better.  Unfortunately it introduced a regression: prior
-to that change we used to always set the mp_bus_not_pci bit,
-then clear it if we found a PCI bus.  After it, we set
-mp_bus_not_pci for ISA buses, clear it for PCI buses, and leave
-it alone otherwise.
+Upstream commit d305a6557b2c4dca0110f05ffe745b1ef94adb80.
 
-In the cases of ISA and PCI, there's not much difference.  But
-ISA is not the only non-PCI bus, so it's better to always set
-mp_bus_not_pci and clear it only for PCI.
+If addBA responses comes in just after addba_resp_timer has
+expired mac80211 will still accept it and try to open the
+aggregation session. This causes drivers to be confused and
+in some cases even crash.
 
-Without this change, Dan's Dell PowerEdge 4200 panics on boot
-with a log indicating interrupt routing trouble unless the
-"noapic" option is supplied.  With this change, the machine
-boots reliably without "noapic".
+This patch fixes the race condition and makes sure that if
+addba_resp_timer has expired addBA response is not longer
+accepted and we do not try to open half-closed session.
 
-Fixes http://bugs.debian.org/586494
-
-Reported-bisected-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Dan McGrath <troubledaemon@gmail.com>
-Cc: Alexey Starikovskiy <aystarik@gmail.com>
-[jrnieder@gmail.com: clarified commit message]
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Link: http://lkml.kernel.org/r/20111122215000.GA9151@elie.hsd1.il.comcast.net
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Nikolay Martynov <mar.kolya@gmail.com>
+[some adjustments]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 ---
- arch/x86/kernel/mpparse.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/mac80211/agg-tx.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -95,8 +95,8 @@ static void __init MP_bus_info(struct mp
+--- a/net/mac80211/agg-tx.c
++++ b/net/mac80211/agg-tx.c
+@@ -792,12 +792,27 @@ void ieee80211_process_addba_resp(struct
+ 		goto out;
  	}
+ 
+-	del_timer(&tid_tx->addba_resp_timer);
++	del_timer_sync(&tid_tx->addba_resp_timer);
+ 
+ #ifdef CONFIG_MAC80211_HT_DEBUG
+ 	printk(KERN_DEBUG "switched off addBA timer for tid %d\n", tid);
  #endif
  
-+	set_bit(m->busid, mp_bus_not_pci);
- 	if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
--		set_bit(m->busid, mp_bus_not_pci);
- #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
- 		mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
- #endif
++	/*
++	 * addba_resp_timer may have fired before we got here, and
++	 * caused WANT_STOP to be set. If the stop then was already
++	 * processed further, STOPPING might be set.
++	 */
++	if (test_bit(HT_AGG_STATE_WANT_STOP, &tid_tx->state) ||
++	    test_bit(HT_AGG_STATE_STOPPING, &tid_tx->state)) {
++#ifdef CONFIG_MAC80211_HT_DEBUG
++		printk(KERN_DEBUG
++		       "got addBA resp for tid %d but we already gave up\n",
++		       tid);
++#endif
++		goto out;
++	}
++
+ 	if (le16_to_cpu(mgmt->u.action.u.addba_resp.status)
+ 			== WLAN_STATUS_SUCCESS) {
+ 		/*
 
 
