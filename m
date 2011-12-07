@@ -1,160 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab1LGJba (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:31:30 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38396 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752052Ab1LGJ2Y (ORCPT
+	id S1754407Ab1LGJb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:31:28 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56038 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab1LGJb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:28:24 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>, Paul Bolle <pebolle@tiscali.nl>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH 2/9] xshm: Channel config definitions for ST-E M7400 driver.
-Date: Wed,  7 Dec 2011 10:28:01 +0100
-Message-Id: <1323250088-1729-3-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
+	Wed, 7 Dec 2011 04:31:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <201111281753.45287.arnd@arndb.de>
+References: <CAJ0PZbQBXF1f7F27bkkT_ezFFtFi7kRVbF5WZXn+ZenZj2hT7w@mail.gmail.com>
+	<201111251402.28016.arnd@arndb.de>
+	<CACRpkdZSQcdK5ndSThQPRFAvp=sNMNDgBo5S6+H=t+0AYtJhOw@mail.gmail.com>
+	<201111281753.45287.arnd@arndb.de>
+Date: Wed, 7 Dec 2011 10:31:25 +0100
+Message-ID: <CACRpkdaTcAUuoUPkyCO4+KQH3KdRj9jiVKP8UmTp+HLzdX1xLw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] introduce: Multistate Switch Class
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@suse.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Donggeun Kim <dg77.kim@samsung.com>,
+        Minkyu Kang <mk7.kang@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Cc: myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org,
+        Mike Lockwood <lockwood@android.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Kalle Komierowski <karl.komierowski@stericsson.com>,
+        Johan PALSSON <johan.palsson@stericsson.com>,
+        Daniel WILLERUD <daniel.willerud@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Netlink parameters used for configuring channels from user space.
+Hm, as we're speaking and debating where these switches should go,
+it appears tasty drivers doing this or similar things are already actively
+being merged into drivers/misc/fsa9480.c:
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
- include/linux/Kbuild              |    1 +
- include/linux/xshm/Kbuild         |    1 +
- include/linux/xshm/xshm_netlink.h |   95 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 97 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/xshm/Kbuild
- create mode 100644 include/linux/xshm/xshm_netlink.h
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=a1bb73d76bc814e9385390e6aa9880d884322e2e
 
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-index f6ae2fa..504e113 100644
---- a/include/linux/Kbuild
-+++ b/include/linux/Kbuild
-@@ -18,6 +18,7 @@ header-y += netfilter_bridge/
- header-y += netfilter_ipv4/
- header-y += netfilter_ipv6/
- header-y += usb/
-+header-y += xshm/
- header-y += wimax/
- 
- objhdr-y += version.h
-diff --git a/include/linux/xshm/Kbuild b/include/linux/xshm/Kbuild
-new file mode 100644
-index 0000000..4315a21
---- /dev/null
-+++ b/include/linux/xshm/Kbuild
-@@ -0,0 +1 @@
-+header-y += xshm_netlink.h
-diff --git a/include/linux/xshm/xshm_netlink.h b/include/linux/xshm/xshm_netlink.h
-new file mode 100644
-index 0000000..80b01de
---- /dev/null
-+++ b/include/linux/xshm/xshm_netlink.h
-@@ -0,0 +1,95 @@
-+/*
-+ * Copyright (C) ST-Ericsson AB 2011
-+ * Author: Sjur Brendeland / sjur.brandeland@stericsson.com
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+
-+#ifndef XSHM_NL_H_
-+#define XSHM_NL_H_
-+
-+#define XSHM_PROTO_VERSION 1
-+#define XSHM_PROTO_SUB_VERSION 0
-+#define XSHM_NETLINK_VERSION 1
-+/**
-+ * enum XSHM_COMMANDS - Attributes used for configuring XSHM device.
-+ *
-+ * @XSHM_C_ADD_STREAM_CHANNEL: Adds a Stream Channel.
-+ * This will cause an instance of XSHM-CHR to be created.
-+ * @XSHM_C_ADD_PACKET_CHANNEL: Adds a Packet Channel.
-+ * This will cause an instance of CAIF-SHM to be created.
-+ * @XSHM_C_COMMIT: formats and write Channel configuration data to
-+ *	Shared Memory.
-+ * @XSHM_C_SET_ADDR: Writes the TOC address to GENO register.
-+ * @XSHM_C_REGISTER:  Initiates registration of the channel devices.
-+ *	This will cause xshm - character devices or
-+ *	CAIF network instances to be created.
-+ * @XSHM_C_RESET:  Reset the configuration data and removes the
-+ *	platform devices and their associated channel configuration.
-+ *	ipc_ready and caif_ready is set to false.
-+ *
-+ * A normal sequence of events is: [XSHM_C_RESET], [XSHM_C_ADD_X_CHANNEL],
-+ *	XSHM_C_COMMIT, XSHM_C_REGISTER, XSHM_C_SET_ADDR.
-+ */
-+enum XSHM_COMMANDS {
-+	XSHM_C_ADD_STREAM_CHANNEL = 1,
-+	XSHM_C_ADD_PACKET_CHANNEL,
-+	XSHM_C_RESET,
-+	XSHM_C_SET_ADDR,
-+	XSHM_C_COMMIT,
-+	XSHM_C_REGISTER,
-+	__XSHM_C_VERIFY,
-+	__XSHM_C_MAX
-+};
-+
-+/**
-+ * enum XSHM_ATTRIBUTES - Attributes used for configuring XSHM device.
-+ * @XSHM_A_VERSION: Version of XSHM netlink protocol. Type NLA_U8
-+ * @XSHM_A_SUB_VERSION: Sub-version of XSHM netlink protocol. Type NLA_U8
-+ * @XSHM_A_NAME: Name of the channel, max 15 characters. Type NLA_NUL_STRING
-+ * @XSHM_A_EXCL_GROUP: Devices may be part of a group. Devices from the
-+ *	same group are allowed to be open simultaneously,
-+ *	but devices from different groups cannot be opened
-+ *	at the same time. Type NLA_U8.
-+ * @XSHM_A_RX_CHANNEL: The RX direction attributes. Type NLA_NESTED.
-+ *	Each channel may contain the attributes - XSHM_A_CHANNEL_SIZE,
-+ *	XSHM_A_CHANNEL_BUFFERS, XSHM_A_ALIGNMENT, XSHM_A_MTU.
-+ *
-+ * @XSHM_A_TX_CHANNEL: The TX direction attributes. Type NLA_NESTED.
-+ *
-+ * @XSHM_A_CHANNEL_SIZE: Size of the data area for a channel. Specified
-+ *	for RX, TX. Type NLA_U32,
-+ * @XSHM_A_CHANNEL_BUFFERS: Numer of buffers for a packet channel.
-+ *	This attribute is only used for packet channels.  Specified for RX, TX.
-+ *	Type NLA_U32,
-+ * @XSHM_A_ALIGNMENT: Alignment for each packet in a buffer. This attribute
-+ *	 is only used for packet channels.  Specified for RX, TX.Type NLA_U8,
-+ * @XSHM_A_MTU: Maximum Transfer Unit for packets in a buffer.
-+ *	This is only appplicable for packet channels.
-+ *	Specified for RX, TX.Type NLA_U16,
-+ * @XSHM_A_PACKETS: Maximum number of packets in a buffer. Type NLA_U8
-+ * @XSHM_A_PRIORITY: Priority of the channel, legal range is 0-7 where
-+ *	0 is lowest priority. Type NLA_U8.
-+ * @XSHM_A_LATENCY: Latency for channel, value:0 means low latency
-+ *	 and low bandwidth,
-+ *	 value 1 means high latency and high bandwidth. Type NLA_U8.
-+ */
-+enum XSHM_ATTRIBUTES {
-+	__XSHM_A_FLAGS = 1,		/* Test flags: NLA_U32 */
-+	XSHM_A_VERSION,
-+	XSHM_A_SUB_VERSION,
-+	XSHM_A_NAME,
-+	XSHM_A_EXCL_GROUP,
-+	XSHM_A_RX_CHANNEL,
-+	XSHM_A_TX_CHANNEL,
-+	XSHM_A_CHANNEL_SIZE,
-+	XSHM_A_CHANNEL_BUFFERS,
-+	XSHM_A_ALIGNMENT,
-+	XSHM_A_MTU,
-+	XSHM_A_PACKETS,
-+	XSHM_A_PRIORITY,
-+	XSHM_A_LATENCY,
-+	__XSHM_A_MAX,
-+};
-+#define XSHM_A_MAX (__XSHM_A_MAX - 1)
-+
-+#endif /* XSHM_NL_H_ */
--- 
-1.7.0.4
+Given both come from Samsung, is this driver intended to replace
+that custom driver or is this another initiative altogether?
 
+Minkyu, Donggeun, can you help us finding out where
+these things belong? I guess you guys also have a strong interest
+in a standard solution derived from Android.
+
+Yours,
+Linus Walleij
