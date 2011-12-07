@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758271Ab1LGTQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 14:16:48 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:60388 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757656Ab1LGTQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 14:16:47 -0500
-Date: Wed, 7 Dec 2011 20:16:37 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Tom Gundersen <teg@jklm.no>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: mark some messages as INFO
-Message-ID: <20111207191637.GB12679@cmpxchg.org>
-References: <1323277360-3155-1-git-send-email-teg@jklm.no>
+	id S1758208Ab1LGTTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 14:19:22 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33426 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756616Ab1LGTTV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 14:19:21 -0500
+Date: Wed, 7 Dec 2011 23:19:16 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
+Message-ID: <20111207191916.GR21678@moon>
+References: <20111206181026.GO29781@moon>
+ <20111207185343.GA3209@redhat.com>
+ <20111207190340.GP21678@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323277360-3155-1-git-send-email-teg@jklm.no>
+In-Reply-To: <20111207190340.GP21678@moon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 06:02:40PM +0100, Tom Gundersen wrote:
-> @@ -4913,31 +4913,31 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
->  	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
->  
->  	/* Print out the zone ranges */
-> -	printk("Zone PFN ranges:\n");
-> +	printk(KERN_INFO "Zone PFN ranges:\n");
->  	for (i = 0; i < MAX_NR_ZONES; i++) {
->  		if (i == ZONE_MOVABLE)
->  			continue;
-> -		printk("  %-8s ", zone_names[i]);
-> +		printk(KERN_INFO "  %-8s ", zone_names[i]);
->  		if (arch_zone_lowest_possible_pfn[i] ==
->  				arch_zone_highest_possible_pfn[i])
-> -			printk("empty\n");
-> +			printk(KERN_INFO "empty\n");
->  		else
-> -			printk("%0#10lx -> %0#10lx\n",
-> +			printk(KERN_INFO "%0#10lx -> %0#10lx\n",
->  				arch_zone_lowest_possible_pfn[i],
->  				arch_zone_highest_possible_pfn[i]);
->  	}
+On Wed, Dec 07, 2011 at 11:03:40PM +0400, Cyrill Gorcunov wrote:
+> On Wed, Dec 07, 2011 at 07:53:43PM +0100, Oleg Nesterov wrote:
+> > Hi Cyrill,
+> > 
+> > Sorry, I didn't read this patch yet, but
+> > 
+> > On 12/06, Cyrill Gorcunov wrote:
+> > >
+> > > +static void *children_seq_start(struct seq_file *seq, loff_t *pos)
+> > > +{
+> > > +	struct task_struct *task;
+> > > +
+> > > +	rcu_read_lock();
+> > > +	task = seq->private;
+> > > +	if (task)
+> > > +		return seq_list_start(&task->children, *pos);
+> > 
+> > This looks "obviously wrong".
+> > 
+> > We can not trust ->children->next after rcu_read_unlock(). Another
+> > rcu_read_lock() can't help.
+> > 
+> > Once again, I can be easily wrong, need to read the patch first.
+> > 
+> 
+> Wait, Oleg, I might be wrong as well, but it's now as
+> 
+> children_seq_open
+>  get_proc_task (so ref to task increased)
+> 
+> the children_seq_start/children_seq_stop works
+> in iteration and every new iteration seq_list_next
+> walks over the whole children list from the list
+> head under rcu lock, so even if task is removed
+> or added the link should exsist until rcu is unlocked
+> and sync'ed no?
+> 
 
-Shouldn't continuation lines be KERN_CONT instead?
+On the other hands some if (task) tests are redundant
+and might be dropped since we have a reference to a
+task until seq-file is not released. I'll update it
+and shrink a patch some more.
+
+	Cyrill
