@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab1LGKQY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 05:16:24 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:51354 "EHLO zene.cmpxchg.org"
+	id S1754561Ab1LGKVM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:21:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42551 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab1LGKQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 05:16:23 -0500
-Date: Wed, 7 Dec 2011 11:16:10 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        rostedt@goodmis.org
-Subject: Re: [PATCH] jump_label: jump_label for boot options.
-Message-ID: <20111207101610.GD12673@cmpxchg.org>
-References: <20111201115353.563f79fc.kamezawa.hiroyu@jp.fujitsu.com>
- <1322751913.4699.19.camel@twins>
- <20111202092217.50d72f71.kamezawa.hiroyu@jp.fujitsu.com>
- <1322817850.4699.69.camel@twins>
- <20111202124558.GB1295@cmpxchg.org>
- <1322830407.2822.6.camel@laptop>
+	id S1752518Ab1LGKVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 05:21:08 -0500
+Date: Wed, 7 Dec 2011 11:20:58 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: linux-kernel@vger.kernel.org
+cc: linux-fsdevel@vger.kernel.org, linux-lvm@redhat.com,
+        linux-btrfs@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>
+Subject: System Storage Manager
+Message-ID: <alpine.LFD.2.00.1112071055270.4205@dhcp-27-109.brq.redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322830407.2822.6.camel@laptop>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 01:53:27PM +0100, Peter Zijlstra wrote:
-> On Fri, 2011-12-02 at 13:45 +0100, Johannes Weiner wrote:
-> > On Fri, Dec 02, 2011 at 10:24:10AM +0100, Peter Zijlstra wrote:
-> > > On Fri, 2011-12-02 at 09:22 +0900, KAMEZAWA Hiroyuki wrote:
-> > > > 
-> > > > Yes, that's an idea. But we also have another stupid shadow swap accounting
-> > > > table.  This can be disabled at boot, too. 
-> > > 
-> > > Bah I thought it was just the page frame thing, hnaz any plans to kill
-> > > this swap array as well?
-> > 
-> > I haven't looked at the swap accounting at all yet, sorry.  But where
-> > did this discussion go all of a sudden? :-)
-> > 
-> > That array is not allocated at all when the memory controller is
-> > disabled at boot-time.
-> > 
-> > Rather, we have those mem_cgroup_disabled() conditionals everytime we
-> > enter the memory controller from the VM and the idea is to patch them
-> > out during boot, since you can not re-enable the thing anyway.
-> 
-> Yeah, but without those arrays you could.. this boot time switch really
-> is a wart and if you don't have the shadow page frame and shadow swap
-> accounting muck stuff you could runtime flip all this..
+Hello everyone,
 
-Ah, got you.
+I would like to introduce to you a new tool called System Storage
+Manager (ssm). It is supposed to provide easy to use command line
+interface to manage your storage using various technologies like
+lvm, btrfs, encrypted volumes and possibly more.
 
-The shadow page frame is on its way out.  The extra
-swp_entry_t->cgroup_id array is allocated during swap-on in vmap
-space, so I don't think we have much of a runtime problem with that
-one, either.
+Background
+----------
 
-The biggest problem I see is that we modify per-page(_cgroup) state
-when charging/uncharging against the root_mem_cgroup.  But this sucks
-anyway (overhead for distro-kernel users that don't care about memcg),
-so we need to ditch that.  And once that is gone, we are much closer
-to runtime-toggling the controller.
+In more sophisticated enterprise storage environments, management with
+Device Mapper (dm), Logical Volume Manager (LVM), or Multiple Devices
+(md) is becoming increasingly more difficult. With file systems added
+to the mix, the number of tools needed to configure and manage storage
+has grown so large that it is simply not user friendly. With so many
+options for a system administrator to consider, the opportunity for
+errors and problems is large.
 
-> I've no objection to using jump_labels fwiw, we're looking to do the
-> same with the cpu controller for the nr_cgroups == 0 case. But boot time
-> stuff just doesn't make sense to me.
+The btrfs administration tools have shown us that storage management can
+be simplified, and we are working to bring that ease of use to Linux
+filesystems in general.
 
-Agreed.
+
+You can also find some more information in my presentation from LinuxCon
+Prague this year:
+
+http://people.redhat.com/lczerner/files/lczerner_fsm.pdf
+
+
+The code is still under development and no release has been made yet, but
+I would like to share with you what I have done so far, since the
+progress has been a bit slower than I have previously expected. The
+project lives on the sf.net :
+
+https://sourceforge.net/projects/storagemanager/
+
+and you can grab source files from git repository here:
+
+https://sourceforge.net/p/storagemanager/code/ci/a1a5fd616d06030f94b9d2e80ee6ebcad09ad35f/tree/
+
+More information can be found on the projects home page, or in the
+README file.
+
+https://sourceforge.net/p/storagemanager/home/Home/
+
+
+Notes
+-----
+
+- It is written in python
+- So far it supports commands : check, resize, create, list, add, remove
+- More commands to come : mirror, snapshot(!)
+- It does not support raid yet, except raid 0 from lvm (striped volume)
+- It has been tested with python 2.7, but would like to make it work on
+  python 2.6 as well.
+- It comes with some doctests, unittests and regression tests written in
+  bash (although it is for lvm only so far)
+- Its "modular" design should make it relatively simple to add support
+  for more back-ends other than lvm, or btrfs
+
+
+Things to be done before the actual release
+-------------------------------------------
+
+- Create btrfs bash tests
+- Create btrfs unittests
+- Extend python unittests to other backends
+- Use wipefs -a before using the device in add()
+- Consider using wipefs -a after removing the device
+- Remove the physical volume after it is removed from the group
+- Figure out how to create better pool names so it is unique in the system and
+  between the systems.
+- Add mirror support
+- Add snapshots support
+- Add raid support
+- use lsblk and blkid to get information
+- Better table alignment when the output spans multiple lines
+- Better error handling - not just plain Exception, but rather named exception
+  and handle it as main() in ssm module
+- Update readme
+- Add more documentation into the code
+
+
+Or course any comment or ideas would be highly appreciated. Please
+report bugs directly to me.
+
+Thanks!
+-Lukas
