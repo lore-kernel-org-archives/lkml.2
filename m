@@ -1,88 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab1LGHme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 02:42:34 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49286 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753219Ab1LGHmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 02:42:32 -0500
-Date: Wed, 7 Dec 2011 08:40:35 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+	id S1753576Ab1LGHno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 02:43:44 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:43742 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab1LGHnm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 02:43:42 -0500
+Date: Tue, 6 Dec 2011 23:42:57 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-Message-ID: <20111207074035.GC16942@elte.hu>
-References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
- <20111206084230.GC30062@elte.hu>
- <20111206085816.GA11116@elte.hu>
- <4EDDE5D0.7030906@linux.vnet.ibm.com>
- <20111206103500.GD15966@elte.hu>
- <4EDDF2DE.7020701@linux.vnet.ibm.com>
- <4EDDFB8E.10801@linux.vnet.ibm.com>
- <20111206130351.GC28735@gere.osrc.amd.com>
- <43F901BD926A4E43B106BF17856F075501A22B5A53@orsmsx508.amr.corp.intel.com>
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 03/22] ext4: Record the checksum algorithm in use in
+	the superblock
+Message-ID: <20111207074257.GJ7137@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111128232615.19194.80081.stgit@elm3c44.beaverton.ibm.com> <20111128232636.19194.92115.stgit@elm3c44.beaverton.ibm.com> <E0964BB6-793D-49AF-A2B0-20748C6DAE2B@dilger.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <43F901BD926A4E43B106BF17856F075501A22B5A53@orsmsx508.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <E0964BB6-793D-49AF-A2B0-20748C6DAE2B@dilger.ca>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11120707-7282-0000-0000-000004B92356
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Yu, Fenghua <fenghua.yu@intel.com> wrote:
-
-> > When you take it down for maintenance eventually, you don't 
-> > need to suspend but simply poweroff.
+On Tue, Dec 06, 2011 at 10:01:35PM -0700, Andreas Dilger wrote:
+> On 2011-11-28, at 4:26 PM, Darrick J. Wong wrote:
+> > Record the type of checksum algorithm we're using for metadata in the
+> > superblock, in case we ever want/need to change the algorithm.
+> > 
+> > @@ -982,6 +982,9 @@ extern void ext4_set_bits(void *bm, int cur, int len);
+> > +/* Metadata checksum algorithm codes */
+> > +#define EXT4_CRC32C_CHKSUM		1
 > 
-> Agree with you. To maintain a system with a bad CPU, either 
-> you hot plug or hot replace the CPU, or you power off then 
-> replace the CPU. Replacing the CPU between suspend and resume 
-> doesn't seem a normal RAS behavior.
+> It might make sense to add a constant for the existing CRC16 type:
+> 
+> #define EXT4_CRC16_CHKSUM    0
+> #define EXT4_CRC32C_CHKSUM   1
+> #define EXT4_CHKSUM_MAX      1
 
-More importantly, you generally *cannot* realistically continue 
-with a bad CPU anyway - the system will crash or will show signs 
-of corruptions and you *want* a full powerdown and a clean 
-reboot.
+I disagree -- this field is only defined if metadata_csum is set, and most of
+the checksumming code doesn't know what crc16 is.  If a user somehow set the
+checksum type to "crc16", the code would keep using crc32c.  
 
-The usecases for real CPU hotplug look pretty limited to me:
+If we ever extend ext4_chksum() to support other algorithms I suppose we could
+make it smart enough to switch algorithms based on the field setting, but I
+don't really want to do for crc16. :)
 
- - Special hardware environments that are deeply redundant and 
-   can warn about 'soft' failures well before hard failures
-   which gives a realistic window of time for a maintenance
-   hot-swap. [Such hardware actually exists, i even worked with
-   an x86 one eons ago.]
+> > +static int ext4_verify_csum_type(struct super_block *sb,
+> > +				 struct ext4_super_block *es)
+> > +{
+> > +	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
+> > +					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
+> > +		return 1;
+> > +
+> > +	return es->s_checksum_type == EXT4_CRC32C_CHKSUM;
+> > +}
+> 
+> Then this checks "return es->s_checksum_type <= EXT4_CHKSUM_MAX;".
 
- - Swapping slower CPUs for a faster CPUs, without any downtime.
-   Given that mixed steppings and mixed frequencies are
-   generally pretty unpredictable even with no hotswap in the
-   picture, i can see hw designers (and qa test matrix
-   engineers) cringe at the idea.
+Not really -- this would allow us to mount a file system with metadata_csum=1
+and csum_type=crc16, and crc16 is not supported by most of the checksumming
+code.  I'd rather have the code reject the mount and send fs in for fsck, since
+crc32c is the only one it knows about.
 
-Thanks,
+> > @@ -3182,6 +3192,14 @@ static int ext4_fill_super(struct super_block *sb, 
+> > +	/* Check for a known checksum algorithm */
+> > +	if (!ext4_verify_csum_type(sb, es)) {
+> > +		ext4_msg(sb, KERN_ERR, "VFS: Found ext4 filesystem with "
+> > +			 "unknown checksum algorithm.");
+> 
+> It would be useful if this error message printed the checksum type.
 
-	Ingo
+Agreed.
+
+--D
+> 
+> Cheers, Andreas
+> 
+> 
+> 
+> 
+> 
+
