@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758177Ab1LGSnh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 13:43:37 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54862 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756968Ab1LGSnf convert rfc822-to-8bit (ORCPT
+	id S1758074Ab1LGSx2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 13:53:28 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48009 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757680Ab1LGSx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 13:43:35 -0500
+	Wed, 7 Dec 2011 13:53:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111207130517.GA22946@xps8300>
-References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
-	<1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
-	<20111207130517.GA22946@xps8300>
-Date: Wed, 7 Dec 2011 20:43:35 +0200
-Message-ID: <CAMP44s2FV=Dtquq+HuhB7+0fTi9YwiY-4YcSf1XdB=OwDHYULA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Heikki Krogerus <krohei@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [109.186.57.177]
+In-Reply-To: <4EDE9289.8040903@codeaurora.org>
+References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
+ <4ECC67B9.4050306@codeaurora.org> <CAK=WgbYyrbZLmDOx8yKWwjhn2MYN8669FDRvsYZSyLj1equcTw@mail.gmail.com>
+ <20111123161012.GA31423@sirena.org.uk> <4ECD5767.90307@codeaurora.org>
+ <CAK=Wgba49eu_MGTWP_SND1=KDPp=MfuDyvxFGA_NND=ydqBmZA@mail.gmail.com> <4EDE9289.8040903@codeaurora.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 7 Dec 2011 20:53:05 +0200
+Message-ID: <CAK=Wgbb1WwvzR8KVZT7aQJA6WOMJwp9qdS5HCUd6tJxgJmwQUg@mail.gmail.com>
+Subject: Re: [PATCH 0/7] Introducing a generic AMP framework
+To: Saravana Kannan <skannan@codeaurora.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>, Brian Swetland <swetland@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>, akpm@linux-foundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 7, 2011 at 3:05 PM, Heikki Krogerus <krohei@gmail.com> wrote:
-> On Mon, Dec 05, 2011 at 07:23:40PM +0200, Felipe Contreras wrote:
->> From: Felipe Contreras <felipe.contreras@gmail.com>
->>
->> This reverts commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2.
->>
->> This seems to break USB networking stuff.
->>
->> Cc: Kalle Jokiniemi <kalle.jokiniemi@nokia.com>
->> Cc: Heikki Krogerus <heikki.krogerus@nokia.com>
->> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
->> Cc: Tony Lindgren <tony@atomide.com>
->> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
->> ---
->>  arch/arm/mach-omap2/board-rx51-peripherals.c |   27 +------------------------
->>  1 files changed, 2 insertions(+), 25 deletions(-)
->
-> <snip>
->
->> -static void __init rx51_charger_init(void)
->> -{
->> -     WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
->> -             GPIOF_OUT_INIT_LOW, "isp1704_reset"));
->
-> How about simply GPIOF_OUT_INIT_HIGH here. Is that not enough to fix
-> your problem? Revering the whole thing does not make any sense to me.
+On Wed, Dec 7, 2011 at 12:09 AM, Saravana Kannan <skannan@codeaurora.org> wrote:
+> Yes, I did realize it's not used in the code. I just wanted to prevent what
+> I considered a misuse of "AMP". Thanks for accommodating my request.
 
-Yes, that fixes it :)
+Sure thing, and thanks for the feedback.
 
--- 
-Felipe Contreras
+Dropping the 'amp' prefix also went well with my gut feeling that
+remoteproc and rpmsg should again be made as independent top-level
+subsystems, just like they were in the first patch set submission;
+they're not really coupled, and putting them together under the 'amp'
+folder just confused people and somewhat convoluted development.
+
+I suspect that once the basic functionality will be merged, the
+development of remoteproc and rpmsg will become completely orthogonal
+and it would then make sense to start queueing patches separately, so
+I've created two trees for them:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
+git://git.kernel.org/pub/scm/linux/kernel/git/ohad/rpmsg.git
+
+Though at this point splitting the patches into two separate trees
+will just make it harder for people to work with the code, so both
+trees currently have the entire patch-set (and some other wip stuff).
+
+I've also created a for-next branch which I'll send to Stephen, and
+then we could start doing linear development (there's a bunch of
+patches I'll post soon, including stuff that was reported-by Stephen
+earlier) - that will hopefully make it easier for people to use this
+code, but also to review patches.
+
+Thanks,
+Ohad.
