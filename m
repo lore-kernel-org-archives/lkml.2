@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757469Ab1LGQTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:19:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33401 "EHLO mx2.suse.de"
+	id S1757495Ab1LGQTa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:19:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33447 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757282Ab1LGQTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:19:13 -0500
+	id S1757282Ab1LGQTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:19:24 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:28 2011
-Message-Id: <20111207160828.239796453@clark.kroah.org>
+Message-Id: <20111207160828.485232078@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:29 -0800
+Date: Wed, 07 Dec 2011 08:07:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@lst.de>, Ben Myers <bpm@sgi.com>,
-        Dave Chinner <dchinner@redhat.com>
-Subject: [69/80] xfs: validate acl count
+        <alan@lxorguk.ukuu.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [72/80] trace_events_filter: Use rcu_assign_pointer() when setting ftrace_event_call->filter
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@infradead.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit fa8b18edd752a8b4e9d1ee2cd615b82c93cf8bba upstream.
+commit d3d9acf646679c1981032b0985b386d12fccc60c upstream.
 
-This prevents in-memory corruption and possible panics if the on-disk
-ACL is badly corrupted.
+ftrace_event_call->filter is sched RCU protected but didn't use
+rcu_assign_pointer().  Use it.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-Acked-by: Dave Chinner <dchinner@redhat.com>
+TODO: Add proper __rcu annotation to call->filter and all its users.
+
+-v2: Use RCU_INIT_POINTER() for %NULL clearing as suggested by Eric.
+
+Link: http://lkml.kernel.org/r/20111123164949.GA29639@google.com
+
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/xfs/linux-2.6/xfs_acl.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/trace/trace_events_filter.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/xfs/linux-2.6/xfs_acl.c
-+++ b/fs/xfs/linux-2.6/xfs_acl.c
-@@ -42,6 +42,8 @@ xfs_acl_from_disk(struct xfs_acl *aclp)
- 	int count, i;
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -1766,7 +1766,7 @@ static int replace_system_preds(struct e
+ 		 * replace the filter for the call.
+ 		 */
+ 		filter = call->filter;
+-		call->filter = filter_item->filter;
++		rcu_assign_pointer(call->filter, filter_item->filter);
+ 		filter_item->filter = filter;
  
- 	count = be32_to_cpu(aclp->acl_cnt);
-+	if (count > XFS_ACL_MAX_ENTRIES)
-+		return ERR_PTR(-EFSCORRUPTED);
- 
- 	acl = posix_acl_alloc(count, GFP_KERNEL);
- 	if (!acl)
+ 		fail = false;
+@@ -1821,7 +1821,7 @@ int apply_event_filter(struct ftrace_eve
+ 		filter = call->filter;
+ 		if (!filter)
+ 			goto out_unlock;
+-		call->filter = NULL;
++		RCU_INIT_POINTER(call->filter, NULL);
+ 		/* Make sure the filter is not being used */
+ 		synchronize_sched();
+ 		__free_filter(filter);
+@@ -1862,7 +1862,7 @@ out:
+ 	 * string
+ 	 */
+ 	tmp = call->filter;
+-	call->filter = filter;
++	rcu_assign_pointer(call->filter, filter);
+ 	if (tmp) {
+ 		/* Make sure the call is done with the filter */
+ 		synchronize_sched();
 
 
