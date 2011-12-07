@@ -1,44 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab1LGAMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:12:23 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54648 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab1LGAMW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:12:22 -0500
+	id S1754028Ab1LGAOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:14:51 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:43913 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751850Ab1LGAOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 19:14:49 -0500
+Message-ID: <4EDEAFDC.8000308@linux.vnet.ibm.com>
+Date: Tue, 06 Dec 2011 17:14:20 -0700
+From: Allison Henderson <achender@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20111206232741.GA5368@x1.osrc.amd.com>
-References: <20111206232741.GA5368@x1.osrc.amd.com>
-Date: Tue, 6 Dec 2011 19:12:21 -0500
-Message-ID: <CA+5PVA7bM8ZGaCiyZdHcMVccJYh2=bk-gsHLo9ZmBP_SYT208w@mail.gmail.com>
-Subject: Re: atl1c: WARNING: at net/sched/sch_generic.c:255 dev_watchdog
-From: Josh Boyer <jwboyer@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andy Whitcroft <apw@canonical.com>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] ext4: correct partial write discard size calculation
+References: <1323209988-14304-1-git-send-email-apw@canonical.com>
+In-Reply-To: <1323209988-14304-1-git-send-email-apw@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11120700-8974-0000-0000-000003FC4883
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 6:27 PM, Borislav Petkov <bp@alien8.de> wrote:
-> Hi,
+Hi Andy,
+
+We are currently doing some debugging in this region of the code, and 
+the code that you are modifying here may need to come back out, but I 
+will try your patch in my sand box too.  Thx!
+
+Allison Henderson
+
+On 12/06/2011 03:19 PM, Andy Whitcroft wrote:
+> When copying large numbers of files we are seeing occasional write failures
+> with errno EINVAL.  These are being returned from ext4_da_write_end()
+> when attempting to discard the end portion of a partial write.  The error
+> is detected and reported by the page index check below:
 >
-> this seems like a pretty old issue judging by a quick net search. It
-> still triggers on latest -rc4 here, below the whole trace. I'm willing
-> to test patches :).
+>      int ext4_discard_partial_page_buffers_no_lock(handle_t *handle,
+> 		    struct inode *inode, struct page *page, loff_t from,
+> 		    loff_t length, int flags)
+>      {
+>      [...]
+>          if (index != page->index)
+>                  return -EINVAL;
+>      [...]
 >
-> [14622.820555] atl1c 0000:02:00.0: atl1c: eth0 NIC Link is Up<100 Mbps Full Duplex>
-> [14632.816280] ------------[ cut here ]------------
-> [14632.816314] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0x237/0x240()
-> [14632.816323] Hardware name: 30515QG
-> [14632.816332] NETDEV WATCHDOG: eth0 (atl1c): transmit queue 0 timed out
+> This code was introduced by the commit below:
+>
+>    commit 02fac1297eb3f471a27368271aadd285548297b0
+>    Author: Allison Henderson<achender@linux.vnet.ibm.com>
+>    Date:   Tue Sep 6 21:53:01 2011 -0400
+>
+>      ext4: fix partial page writes
+>
+> This error is triggering when a write occurs at pos == 0 and results in
+> 0 bytes being written (copied == 0):
+>
+>      page_len = PAGE_CACHE_SIZE -
+>                      ((pos + copied - 1)&  (PAGE_CACHE_SIZE - 1));
+>      if (page_len>  0) {
+>              ret = ext4_discard_partial_page_buffers_no_lock(handle,
+>                      inode, page, pos + copied - 1, page_len,
+>      [...]
+>
+> In this case we will calculate that we need to clear out only one byte of
+> the page.  As we are aligned at the page boundary and wrote 0 bytes we
+> actually need to clear the entire page.  Also note that when we attempt
+> to apply the discard we will apply it at offset -1 (0 + 0 - 1), which is
+> the wrong place:
+>
+>      page_len = 4096 - ((0 + 0 - 1)&  4095)
+>      page_len = 1
+>
+> Firstly fix up the offset calculation.  Once this is done the erroring
+> case will correctly believe that the entire page needs to be discarded.
+> However in this case we did not actually write to the page so the page
+> is not instantiated and no discard is required.  So also only apply the
+> discard where we are not discarding the entire page.
+>
+> Signed-off-by: Andy Whitcroft<apw@canonical.com>
+> ---
+>   fs/ext4/inode.c |    6 +++---
+>   1 files changed, 3 insertions(+), 3 deletions(-)
+>
+> This issue is most easily reproducible within a VM on a fast, lightly
+> loaded host.  In that configuration I can trigger a failure with about
+> 1/2GB of medium sized files (.debs in this case).  Without the patch
+> the copy will fail 'EINVAL' 99% of the time, always failing within two
+> iterations.  With the patch I have run 100 iterations of the same copy
+> without failure.
+>
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 240f6e2..c137168 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -2533,11 +2533,11 @@ static int ext4_da_write_end(struct file *file,
+>   							page, fsdata);
+>
+>   	page_len = PAGE_CACHE_SIZE -
+> -			((pos + copied - 1)&  (PAGE_CACHE_SIZE - 1));
+> +			((pos + copied)&  (PAGE_CACHE_SIZE - 1));
+>
+> -	if (page_len>  0) {
+> +	if (page_len>  0&&  page_len<  PAGE_CACHE_SIZE) {
+>   		ret = ext4_discard_partial_page_buffers_no_lock(handle,
+> -			inode, page, pos + copied - 1, page_len,
+> +			inode, page, pos + copied, page_len,
+>   			EXT4_DISCARD_PARTIAL_PG_ZERO_UNMAPPED);
+>   	}
+>
 
-Matthew Garrett has a patch to the atl1c driver that changed it's ASPM
-behavior that seemed to help.  Dave Miller applied it, but I don't see
-it in linux-next for some reason.
-
-http://comments.gmane.org/gmane.linux.kernel/1214694
-
-
-josh
