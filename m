@@ -1,80 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab1LGPeX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 10:34:23 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38643 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755564Ab1LGPeW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 10:34:22 -0500
-Date: Wed, 7 Dec 2011 16:30:54 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
-        akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com
-Subject: Re: [PATCH UPDATED 03/10] threadgroup: extend threadgroup_lock() to
- cover exit and exec
-Message-ID: <20111207153046.GC13252@somewhere.redhat.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-4-git-send-email-tj@kernel.org>
- <20111124225054.GA14828@google.com>
- <20111125140136.GC23307@somewhere.redhat.com>
- <20111127193001.GC4266@google.com>
- <20111202162753.GA19752@somewhere.redhat.com>
- <20111205184315.GJ627@google.com>
+	id S1756633Ab1LGPhS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 10:37:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20873 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756478Ab1LGPhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 10:37:17 -0500
+Date: Wed, 7 Dec 2011 17:39:02 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] virtio_blk: fix config handler race
+Message-ID: <20111207153901.GA23820@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111205184315.GJ627@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 10:43:15AM -0800, Tejun Heo wrote:
-> Hello, Frederic.
-> 
-> On Fri, Dec 02, 2011 at 05:28:03PM +0100, Frederic Weisbecker wrote:
-> > But I don't think it's very useful to protect against irq_exit_thread(),
-> > what happens there is purely of internal irq interest.
-> > 
-> > Then right after, PF_EXITING is set before any interesting change.
-> > Isn't it possible to simply lock this flag setting? IIRC, as soon
-> > as the PF_EXITING flag is set, you ignore the task for attachment.
-> 
-> I think that's technically possible but it does introduce another
-> class of tasks - the dying ones.  e.g. If a task has PF_EXITING set
-> and the containing process is migrating, we'll have to migrate all
-> tasks but the dying one and cgroup ->exit callbacks can be called on
-> the lonely task after the migration is complete.  It's kinda messy and
-> if someone makes a wrong assumption there, the bug is gonna be even
-> more difficult to reproduce / track down than now.  Yes, smaller scope
-> locking is nicer but I would like to avoid api weirdities like that.
+Fix a theoretical race related to config work
+handler: a config interrupt might happen
+after we flush config work but before we
+reset the device. It will then cause the
+config work to run during or after reset.
 
-I don't understand what you mean. On your patches, you only process tasks
-that don't have PF_EXITING, ie: you don't include these in the flex array
-on cgroup_attach_proc(). So that still applies in my proposal.
+Two problems with this:
+- if this runs after device is gone we will get use after free
+- access of config while reset is in progress is racy
+(as layout is changing).
 
->From the exit path we would have:
+As a solution
+1. flush after reset when we know there will be no more interrupts
+2. add a flag to disable config access before reset
 
-	exit_signal() {
-		lock_threadgroup_change(task);
-		task->flags |= PF_EXITING;
-		lock_threadgroup(task);
-	}
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-	exit all the rest: mm, etc...
+RFC only as it's untested.
+Bugfix so 3.2 material? Comments?
 
-Then from cgroup_attach_proc():
+ drivers/block/virtio_blk.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
 
-	lock_threadgroup(task);
-	for_each_thread(task) {
-		if (!(task->flags & PF_EXITING))
-			include in flex array
-	}
-
-Am I forgetting something?
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 4d0b70a..34633f3 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -4,6 +4,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
+ #include <linux/module.h>
++#include <linux/mutex.h>
+ #include <linux/virtio.h>
+ #include <linux/virtio_blk.h>
+ #include <linux/scatterlist.h>
+@@ -36,6 +37,12 @@ struct virtio_blk
+ 	/* Process context for config space updates */
+ 	struct work_struct config_work;
+ 
++	/* Lock for config space updates */
++	struct mutex config_lock;
++
++	/* enable config space updates */
++	bool config_enable;
++
+ 	/* What host tells us, plus 2 for header & tailer. */
+ 	unsigned int sg_elems;
+ 
+@@ -318,6 +325,10 @@ static void virtblk_config_changed_work(struct work_struct *work)
+ 	char cap_str_2[10], cap_str_10[10];
+ 	u64 capacity, size;
+ 
++	mutex_lock(&vblk->config_lock);
++	if (!vblk->config_enable)
++		goto done;
++
+ 	/* Host must always specify the capacity. */
+ 	vdev->config->get(vdev, offsetof(struct virtio_blk_config, capacity),
+ 			  &capacity, sizeof(capacity));
+@@ -340,6 +351,8 @@ static void virtblk_config_changed_work(struct work_struct *work)
+ 		  cap_str_10, cap_str_2);
+ 
+ 	set_capacity(vblk->disk, capacity);
++done:
++	mutex_lock(&vblk->config_lock);
+ }
+ 
+ static void virtblk_config_changed(struct virtio_device *vdev)
+@@ -388,7 +401,9 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 	vblk->vdev = vdev;
+ 	vblk->sg_elems = sg_elems;
+ 	sg_init_table(vblk->sg, vblk->sg_elems);
++	mutex_init(&vblk->config_lock);
+ 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
++	vblk->config_enable = true;
+ 
+ 	/* We expect one virtqueue, for output. */
+ 	vblk->vq = virtio_find_single_vq(vdev, blk_done, "requests");
+@@ -542,7 +557,10 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+ 	struct virtio_blk *vblk = vdev->priv;
+ 	int index = vblk->index;
+ 
+-	flush_work(&vblk->config_work);
++	/* Prevent config work handler from accessing the device. */
++	mutex_lock(&vblk->config_lock);
++	vblk->config_enable = false;
++	mutex_unlock(&vblk->config_lock);
+ 
+ 	/* Nothing should be pending. */
+ 	BUG_ON(!list_empty(&vblk->reqs));
+@@ -550,6 +568,8 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
+ 
++	flush_work(&vblk->config_work);
++
+ 	del_gendisk(vblk->disk);
+ 	blk_cleanup_queue(vblk->disk->queue);
+ 	put_disk(vblk->disk);
+-- 
+1.7.5.53.gc233e
