@@ -1,104 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab1LGTLs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 14:11:48 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:27762
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757933Ab1LGTLr convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 14:11:47 -0500
-X-SpamScore: -15
-X-BigFish: VS-15(zzbb2dK9371Kc89bh1432N98dKzz1202hzz8275bhz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4EDFBA6D.9080500@freescale.com>
-Date: Wed, 7 Dec 2011 13:11:41 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1758252Ab1LGTNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 14:13:14 -0500
+Received: from ims-d14.mx.aol.com ([205.188.249.151]:56239 "EHLO
+	ims-d14.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757656Ab1LGTNM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 14:13:12 -0500
+Message-Id: <201112071841.pB7IefXq014656@ims-d14.mx.aol.com>
+Reply-To: <J.PETERSON2@blumail.org>
+From: "CITIBANK INTL PLC NEW YORK" <lmcnaughto@aol.com>
+Subject: MESSAGE FROM CITIBANK INTERNATIONAL NEW YORK HEADQUARTERS
+Date: Wed, 7 Dec 2011 10:41:59 -0800
 MIME-Version: 1.0
-To: LiuShuo <b35362@freescale.com>
-CC: <shuo.liu@freescale.com>, <dwmw2@infradead.org>,
-        <Artem.Bityutskiy@nokia.com>, <linux-mtd@lists.infradead.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com> <1322973098-2528-3-git-send-email-shuo.liu@freescale.com> <4EDEAEB9.6020703@freescale.com> <4EDEE3AC.7060000@freescale.com>
-In-Reply-To: <4EDEE3AC.7060000@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_002D_01C2A9A6.763B7FAC"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-AOL-VSS-INFO: 5400.1158/76717
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:5:51960544:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-VSS-INFO: 5400.1158/76717
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:108872384:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d33834edfb33f18d0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 09:55 PM, LiuShuo wrote:
-> 于 2011年12月07日 08:09, Scott Wood 写道:
->> On 12/03/2011 10:31 PM, shuo.liu@freescale.com wrote:
->>> From: Liu Shuo<shuo.liu@freescale.com>
->>>
->>> Freescale FCM controller has a 2K size limitation of buffer RAM. In
->>> order
->>> to support the Nand flash chip whose page size is larger than 2K bytes,
->>> we read/write 2k data repeatedly by issuing FIR_OP_RB/FIR_OP_WB and save
->>> them to a large buffer.
->>>
->>> Signed-off-by: Liu Shuo<shuo.liu@freescale.com>
->>> ---
->>> v3:
->>>      -remove page_size of struct fsl_elbc_mtd.
->>>      -do a oob write by NAND_CMD_RNDIN.
->>>
->>>   drivers/mtd/nand/fsl_elbc_nand.c |  243
->>> ++++++++++++++++++++++++++++++++++----
->>>   1 files changed, 218 insertions(+), 25 deletions(-)
->> What is the plan for bad block marker migration?
-> This patch has been ported to uboot now, I think we can make a special
-> uboot image for bad
-> block marker migration when first use the chip.
+This is a multi-part message in MIME format.
 
-It should not be a special image, and there should be some way to mark
-that the migration has happened.  Even if we do the migration in U-Boot,
-Linux could check for the marker and if absent, disallow access and tell
-the user to run the migration tool.
+------=_NextPart_000_002D_01C2A9A6.763B7FAC
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
->>> @@ -473,13 +568,72 @@ static void fsl_elbc_cmdfunc(struct mtd_info
->>> *mtd, unsigned int command,
->>>            * write so the HW generates the ECC.
->>>            */
->>>           if (elbc_fcm_ctrl->oob || elbc_fcm_ctrl->column != 0 ||
->>> -            elbc_fcm_ctrl->index != mtd->writesize + mtd->oobsize)
->>> -            out_be32(&lbc->fbcr,
->>> -                elbc_fcm_ctrl->index - elbc_fcm_ctrl->column);
->>> -        else
->>> +            elbc_fcm_ctrl->index != mtd->writesize + mtd->oobsize) {
->>> +            if (elbc_fcm_ctrl->oob&&  mtd->writesize>  2048) {
->>> +                out_be32(&lbc->fbcr, 64);
->>> +            } else {
->>> +                out_be32(&lbc->fbcr, elbc_fcm_ctrl->index
->>> +                        - elbc_fcm_ctrl->column);
->>> +            }
->> We need to limit ourselves to the regions that have actually been
->> written to in the buffer.  fbcr needs to be set separately for first and
->> last subpages, with intermediate subpages having 0, 64, or 2112 as
->> appropriate.  Subpages that are entirely before column or entirely after
->> column + index should be skipped.
-> 
-> I have considered this case, but I don't think it is useful.
->     1.There isn't a 'length' parameter in driver interface, although we
-> can get it from 'index - column'.
+THE ATTACHMENT IS VIRUS FREE!
 
-Right.  column is start, and index is end + 1.  We have the bounds of
-what has been written.
+YOUR URGENT ATTENTION IS HIGHLY NEEDED
 
->     2.To see nand_do_write_oob() in nand_base.c, it fill '0xff' to
-> entire oob area first and write the user data by nand_fill_oob(), then
-> call ecc.write_oob (default is nand_write_oob_std()).
+------=_NextPart_000_002D_01C2A9A6.763B7FAC
+Content-Type: application/octet-stream;
+	name="CITIBANK OF NEW YORK.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="CITIBANK OF NEW YORK.txt"
 
-Do we really want to assume that that's what it will always do?
+Q0lUSUJBTksgSU5URVJOQVRJT05BTCBQTEMgTkVXIFlPUksNCkRJUkVDVE9S
+LCBGT1JFSUdOIE9QRVJBVElPTlMgREVQQVJUTUVOVA0KQUREUkVTUzogSEVB
+RFFVQVJURVJTIDM5OSBQQVJLIEFWRS5ORVcgWU9SSywgTlkgMTAwNDMNCg0K
+T1VSIFJFRjogQ1VLL1NOVC9TVEINCg0KTXIuIEpFRkYuIEMgUEVURVJTT04N
+CkVNQUlMOiBKLlBFVEVSU09OMkBibHVtYWlsLm9yZw0KDQoNCkl0IGlzIG15
+IE1vZGVzdCBPYmxpZ2F0aW9uIHRvIHdyaXRlIHlvdSB0aGlzIE1lc3NhZ2Ug
+YXMgcmVnYXJkcyB0aGUgYXBwcm92YWwgb2YgeW91ciBPd2VkIHBheW1lbnQg
+dGhyb3VnaCBvdXIgbW9zdCByZXNwZWN0ZWQgTW9uZXRhcnkgT3JnYW5pemF0
+aW9uIChDaXRpYmFuayBQTEMpLiBJIGFtIE1yLiBKRUZGLiBDIFBFVEVSU09O
+LCB0aGUgQ2hpZWYgRmluYW5jaWFsIEZvcmVpZ24gT3BlcmF0aW9ucyBDaXRp
+YmFuayBvZiBOZXcgWW9yaywgVGhlIFVzIEdvdmVybm1lbnQgaW4gY29tYmlu
+YXRpb24gd2l0aCBVbml0ZWQgTmF0aW9ucyBPcmdhbml6YXRpb24gT24gZm9y
+ZWlnbiBwYXltZW50IG1hdHRlcnMgaGFzIGVtcG93ZXJlZCBteSBiYW5rIGFm
+dGVyIG11Y2ggZGlzY3Vzc2lvbiBhbmQga2luZG5lc3MgdG8gSGFuZGxlIGFs
+bCBvdmVyc2VhcyBwYXltZW50cyBhbmQgcmVsZWFzZSB0aGVtIHRvIHRoZWly
+IHJpZ2h0IEJlbmVmaWNpYXJpZXMgd2l0aCB0aGUgaGVscCBvZiBhIHJlcHJl
+c2VudGF0aXZlIGZyb20gRmVkZXJhbCBSZXNlcnZlIEJhbmsgb2YgTmV3IFlv
+cmsuDQoNCg0KQXMgdGhlIHJlY2VudGx5IEFwcG9pbnRlZC9BY2NyZWRpdGVk
+IEludGVybmF0aW9uYWwgUGF5aW5nIEJhbmssIHdlIGhhdmUgYmVlbiBpbnN0
+cnVjdGVkIGJ5IHRoZSBXb3JsZCBHb3Zlcm5pbmcgQm9keSB0b2dldGhlciB3
+aXRoIHRoZSBncm91cCBvbiBJbnRlcm5hdGlvbmFsIA0KRGVidCBSZWNvbmNp
+bGlhdGlvbiBEZXBhcnRtZW50IHRvIHJlbGVhc2UgeW91ciBvdmVyZHVlIGZ1
+bmRzIHdpdGggZGlyZWN0IGVmZmVjdC4gVGhpcyBhbW91bnQgaXMgdmFsdWVk
+IGF0IEZPVVJURUVOIE1JTExJT04gVEhSRUUgSFVORFJFRCBUSE9VU0FORCBV
+UyBEb2xsYXJzICgxNCwzMDAsMDAwLjAwIFVTIERvbGxhcnMpIG9ubHksIGFz
+IHBhcnQgcGF5bWVudCBzbyBhcyB0byBlbmFibGUgdXMgcGF5IG90aGVyIGVs
+aWdpYmxlIGJlbmVmaWNpYXJpZXMuDQoNCkJlIGluZm9ybWVkIHRoYXQgd2Ug
+aGF2ZSB2ZXJpZmllZCB5b3VyIHBheW1lbnQgZmlsZXMgYXMgZGlyZWN0ZWQg
+dG8gdXMgYW5kIHlvdXIgbmFtZSBpcyBuZXh0IG9uIHRoZSBsaXN0IG9mIG91
+ciBvdXRzdGFuZGluZyBCZW5lZmljaWFyaWVzIHRvIHJlY2VpdmUgdGhlaXIg
+cGF5bWVudCBiZWZvcmUgdGhlIGVuZCBvZiB0aGlzIHllYXIgMjAxMS4NCl9f
+X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
+X19fXw0KTk9XIFlPVZJSRSBORVcgUEFZTUVOVCBSRUZFUkVOQ0UgTk8gSVMu
+LTM1NDYwMDIxLCANCkFMTE9DQVRJT04gTk86IDY3NDYxMSBQQVNTV09SRCBO
+TzogMzM5MzMxIFBJTiAgDQpfX19fX19fX19fX19fX19fX19fX19fX19fX19f
+X19fX19fX19fX19fX19fX19fX19fX18NCg0KSGF2aW5nIHJlY2VpdmVkIHRo
+ZXNlIHZpdGFsIHBheW1lbnQgbnVtYmVycywgdGhlcmVmb3JlIHlvdSBhcmUg
+cXVhbGlmaWVkIG5vdyB0byByZWNlaXZlZCBhbmQgY29uZmlybSB5b3VyIHBh
+eW1lbnQgaW4gYSBtYXR0ZXIgb2YgNDgtNzIgSG91cnMsIFBsZWFzZSB2ZXJp
+ZnkgYW5kIGNvbnRhY3QgdXMgYXMgd2UgaGF2ZSBkb25lIGV2ZXJ5dGhpbmcg
+dG8gbWFrZSBzdXJlIHlvdXIgbW9uZXkgaXMgY3JlZGl0ZWQsIGRlc3BpdGUg
+dGhlIGdyaW0gY2lyY3Vtc3RhbmNlcyBkb3duIGhlcmUuLi4NCg0KDQpCZSBp
+bmZvcm1lZCB0aGF0IEkgTXIuIEpFRkYuIEMgUEVURVJTT04gIHdpbGwgIGRv
+IGFsbCB0aGF0IGlzIGh1bWFubHkgcG9zc2libGUgdG8gbWFrZSBzdXJlIHRo
+YXQgeW91IHJlY2VpdmVkIHRoaXMgZnVuZCwgIGFsbCBJICBuZWVkcyBpcyB5
+b3VyIGZ1bGwgY28tb3BlcmF0aW9uICB0byBlbmFibGUgdXMgIHNlcnZlIHlv
+dSB3ZWxsIGFuZCBnZXQgeW91ciBmdW5kIHRvIHlvdSBvbmNlIGFuZCBmb3Ig
+YWxsLCBhcyBJIHdlIGRyb3AgeW91ciBmaWxlcyBpbW1lZGlhdGVseSAgaWYg
+SSBub3RpY2UgYW55IHVuc2VyaW91cyBuZXNzIGZyb20geW91LiBGb2xsb3cg
+ZXZlcnkgaW5zdHJ1Y3Rpb24gSSBnaXZlcyB5b3Ugc2VyaW91c2x5IHRvIGVu
+c3VyZSB0aGF0IHRoaXMgcGF5bWVudCByZWFjaGVzIHlvdSBub3cgdGhhdCB3
+ZSBoYXZlIHRoZSBvcHBvcnR1bml0eSB0byBwYXkgeW91IGFzIHRoZXJlIHdp
+bGwgYmUgbm8gbW9yZSBwYXltZW50IGNvbWluZyB1bmRlciB5b3VyIG5hbWUu
+DQoNClRvIGhlbHAgd2l0aCB0aGUgcHJvY2VzcyBvZiB0aGlzIHRyYW5zYWN0
+aW9uLCBwbGVhc2UgZ2VudGx5IHJlLWNvbmZpcm0gdGhlIGZvbGxvd2luZyBp
+bmZvcm1hdGlvbpJzIGJlbG93Og0KDQoNCjEpIFlPVVIgRlVMTCBOQU1FOiAt
+LS0tLQ0KMikgWU9VUiBGVUxMIEFERFJFU1M6IC0tLS0tLQ0KMykgWU9VUiBD
+T05UQUNUIFRFTEVQSE9ORSBBTkQgRkFYIE5POiAtLS0tLQ0KMykgWU9VUiBQ
+Uk9GRVNTSU9OLCBBR0UgQU5EIE1BUklUQUwgU1RBVFVTOiAtLS0tLQ0KNCkg
+QU5ZIFZBTElEIEZPUk0gT0YgWU9VUiBJREVOVElGSUNBVElPTi9EUklWRU4g
+TElDRU5TRTogLS0tLS0NCjUpIEJBTksgTkFNRTogLS0tLS0tDQo2KSBCQU5L
+IEFERFJFU1M6IC0tLS0tLQ0KNykgQUNDT1VOVCBOQU1FOiAtLS0tLQ0KOCkg
+QUNDT1VOVCBOVU1CRVI6IC0tLS0tDQo5KSBTV0lGVCBDT0RFOiAtLS0tLS0N
+CjEwKSBST1VUSU5HIE5VTUJFUjogLS0tLS0NCg0KDQpTaG91bGQgeW91IGZp
+bmQgdGhpcyBtZXNzYWdlIGFuZCB3aWxsIGxpa2UgdG8gc2VjdXJlIHlvdXIg
+cGF5bWVudCB3aXRoIG91dCBmdXJ0aGVyIGhpbmRyYW5jZXMsIHRoZW4gaSBt
+YW5kYXRlIHlvdSB0byB1cmdlbnRseSBjb250YWN0IG1lIEluIHJlc3BvbnNl
+IHdpdGggdGhlIGluZm9ybWF0aW9uIGFzIGluZGljYXRlZCBhYm92ZS4NCg0K
+IEkgV0lMTCBBV0FJVCBZT1VSIFVSR0VOVCBSRVNQT05TRTsgUExFQVNFIERP
+IE5PVCBCT1JERVIgUkVQTFlJTkcgVEhJUyBFTUFJTCBJRiBZT1UgQ0FOIE5P
+VCBDT01QTFkgV0lUSCBUSEUgQUJPVkUgSU5TVFJVQ1RJT04nUy4NCg0KDQpS
+ZWdhcmQgU2VuYXRlDQpNci4gSkVGRi4gQyBQRVRFUlNPTg0KKERpcmVjdG9y
+LCBJbnRlcm5hdGlvbmFsIHRyYW5zZmVyIERlcHQuIENpdGliYW5rIE5ldyBZ
+b3JrKQ0KDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAoQ29weXJpZ2h0IKkgMjAxMSBDaXRpZ3JvdXAg
+SW5jLikNCg==
 
-And if we do want to make such assumptions, we could rip out all usage
-of index/column here, and just handle "oob" and "full page" cases.
-
--Scott
-
+------=_NextPart_000_002D_01C2A9A6.763B7FAC--
