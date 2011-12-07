@@ -1,36 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1LGH2O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 02:28:14 -0500
-Received: from ozlabs.org ([203.10.76.45]:38161 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976Ab1LGH2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 02:28:13 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Amit Shah <amit.shah@redhat.com>,
-        Virtualization List <virtualization@lists.linux-foundation.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
-        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>
-Subject: Re: [PATCH v4 00/12] virtio: s4 support
-In-Reply-To: <cover.1323199985.git.amit.shah@redhat.com>
-References: <cover.1323199985.git.amit.shah@redhat.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 07 Dec 2011 17:54:29 +1030
-Message-ID: <87wra8j13m.fsf@rustcorp.com.au>
+	id S1752981Ab1LGH2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 02:28:35 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51572 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab1LGH2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 02:28:34 -0500
+Date: Tue, 6 Dec 2011 23:28:27 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohua Li <shaohua.li@intel.com>
+cc: "Shi, Alex" <alex.shi@intel.com>, Christoph Lameter <cl@linux.com>,
+        "penberg@kernel.org" <penberg@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] slub: set a criteria for slub node partial adding
+In-Reply-To: <1323234673.22361.372.camel@sli10-conroe>
+Message-ID: <alpine.DEB.2.00.1112062319010.21785@chino.kir.corp.google.com>
+References: <1322814189-17318-1-git-send-email-alex.shi@intel.com> <alpine.DEB.2.00.1112020842280.10975@router.home> <1323076965.16790.670.camel@debian> <alpine.DEB.2.00.1112061259210.28251@chino.kir.corp.google.com>
+ <1323234673.22361.372.camel@sli10-conroe>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Dec 2011 01:18:38 +0530, Amit Shah <amit.shah@redhat.com> wrote:
-> Hi,
-> 
-> These patches add support for S4 to virtio (pci) and all drivers.
+On Wed, 7 Dec 2011, Shaohua Li wrote:
 
-Dumb meta-question: why do we want to hibernate virtual machines?
+> interesting. I did similar experiment before (try to sort the page
+> according to free number), but it appears quite hard. The free number of
+> a page is dynamic, eg more slabs can be freed when the page is in
+> partial list. And in netperf test, the partial list could be very very
+> long. Can you post your patch, I definitely what to look at it.
 
-I figure there's a reason, but it seems a bit weird :)
+It was over a couple of years ago and the slub code has changed 
+significantly since then, but you can see the general concept of the "slab 
+thrashing" problem with netperf and my solution back then:
 
-Thanks,
-Rusty.
+	http://marc.info/?l=linux-kernel&m=123839191416478
+	http://marc.info/?l=linux-kernel&m=123839203016592
+	http://marc.info/?l=linux-kernel&m=123839202916583
+
+I also had a separate patchset that, instead of this approach, would just 
+iterate through the partial list in get_partial_node() looking for 
+anything where the number of free objects met a certain threshold, which 
+still defaulted to 25% and instantly picked it.  The overhead was taking 
+slab_lock() for each page, but that was nullified by the performance 
+speedup of using the alloc fastpath a majority of the time for both 
+kmalloc-256 and kmalloc-2k when in the past it had only been able to serve 
+one or two allocs.  If no partial slab met the threshold, the slab_lock() 
+is held of the partial slab with the most free objects and returned 
+instead.
+
+> What I have about the partial list is it wastes a lot of memory.
+
+That's not going to be helped with the above approach since we typically 
+try to fill a partial slab with many free objects, but it also won't be 
+severely impacted because if the threshold is kept small enough, then we 
+simply return the first partial slab that meets the criteria.  That allows 
+the partial slabs at the end of the list to hopefully become mostly free.
+
+And, for completeness, there's also a possibility that you have some 
+completely free slabs on the partial list that coule be freed back to the 
+buddy allocator by decreasing min_partial by way of 
+/sys/kernel/slab/cache/min_partial at the risk of performance and then 
+invoke /sys/kernel/slab/cache/shrink to free the unused slabs.
