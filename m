@@ -1,98 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab1LGKtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 05:49:14 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:56352 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab1LGKtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 05:49:12 -0500
-Message-ID: <20191.17573.87285.411253@ipc1.ka-ro>
-Date: Wed, 7 Dec 2011 11:49:09 +0100
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: <netdev@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: preserve
- MII/RMII setting in fec_stop()
-In-Reply-To: <20111207105816.GH5550@S2100-06.ap.freescale.net>
-References: <cover.1323163127.git.LW@KARO-electronics.de>
-	<d6f4de9e4cfb393754b42815a2ef1a59c96eab83.1323163127.git.LW@KARO-electronics.de>
-	<20111207094146.GG5550@S2100-06.ap.freescale.net>
-	<20191.17172.493079.722098@ipc1.ka-ro>
-	<20111207105816.GH5550@S2100-06.ap.freescale.net>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	id S1755118Ab1LGKt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:49:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57810 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754561Ab1LGKt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 05:49:57 -0500
+Date: Wed, 7 Dec 2011 08:48:49 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Xen <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM
+ hypervisor to support pv-ticketlocks
+Message-ID: <20111207104849.GA24849@amt.cnet>
+References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com>
+ <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Shawn Guo writes:
-> On Wed, Dec 07, 2011 at 11:42:28AM +0100, Lothar Waßmann wrote:
-> > Hi,
-> > 
-> > Shawn Guo writes:
-> > > On Tue, Dec 06, 2011 at 11:27:14AM +0100, Lothar Waßmann wrote:
-> > > > Additionally to setting the ETHER_EN bit in FEC_ECNTRL the MII/RMII
-> > > > setting in FEC_R_CNTRL needs to be preserved to keep the MII interface
-> > > 
-> > > s/MII/RMII?  From what I see from imx28 and imx6q RM, the reset state
-> > > for this setting is MII mode.
-> > > 
-> > > > functional.
-> > > > 
-> > > > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> > > > ---
-> > > >  drivers/net/ethernet/freescale/fec.c |    5 ++++-
-> > > >  1 files changed, 4 insertions(+), 1 deletions(-)
-> > > 
-> > > I assume this is fixing a problem you are seeing on imx28 only.
-> > > Do you see the problem on imx53/51?
-> > > 
-> > No. i.MX53 uses the RMII gasket which is not affected by resetting the
-> > controller. And imMX51 does not support RMII at all.
-> > 
-> > > > 
-> > > > diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
-> > > > index 11534b9..ab0afb5 100644
-> > > > --- a/drivers/net/ethernet/freescale/fec.c
-> > > > +++ b/drivers/net/ethernet/freescale/fec.c
-> > > > @@ -515,6 +515,7 @@ fec_stop(struct net_device *ndev)
-> > > >  	struct fec_enet_private *fep = netdev_priv(ndev);
-> > > >  	const struct platform_device_id *id_entry =
-> > > >  				platform_get_device_id(fep->pdev);
-> > > > +	u32 rmii_mode = readl(fep->hwp + FEC_R_CNTRL) & (1 << 8);
-> > > 
-> > > This bit is only available on ENET (imx28 and imx6q).  Do we want to
-> > > do the same thing for FEC (imx25/27/35/51/53)?
-> > > 
-> > No. AFAICT that's not necessary there.
-> > 
-> So you need to check it's actually running on ENET before accessing
-> the bit.
+On Wed, Nov 30, 2011 at 02:29:59PM +0530, Raghavendra K T wrote:
+> Add a hypercall to KVM hypervisor to support pv-ticketlocks 
 > 
-That's done in the place where the register is being written:
-|	if (id_entry->driver_data & FEC_QUIRK_ENET_MAC) {
-|		writel(2, fep->hwp + FEC_ECNTRL);
-|		writel(rmii_mode, fep->hwp + FEC_R_CNTRL);
-|	}
+> KVM_HC_KICK_CPU allows the calling vcpu to kick another vcpu out of halt state.
+>     
+> The presence of these hypercalls is indicated to guest via
+> KVM_FEATURE_KICK_VCPU/KVM_CAP_KICK_VCPU.
+> 
+> Qemu needs a corresponding patch to pass up the presence of this feature to 
+> guest via cpuid. Patch to qemu will be sent separately.
+> 
+> There is no Xen/KVM hypercall interface to await kick from.
+>     
+> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+> Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> ---
+> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> index 734c376..8b1d65d 100644
+> --- a/arch/x86/include/asm/kvm_para.h
+> +++ b/arch/x86/include/asm/kvm_para.h
+> @@ -16,12 +16,14 @@
+>  #define KVM_FEATURE_CLOCKSOURCE		0
+>  #define KVM_FEATURE_NOP_IO_DELAY	1
+>  #define KVM_FEATURE_MMU_OP		2
+> +
+>  /* This indicates that the new set of kvmclock msrs
+>   * are available. The use of 0x11 and 0x12 is deprecated
+>   */
+>  #define KVM_FEATURE_CLOCKSOURCE2        3
+>  #define KVM_FEATURE_ASYNC_PF		4
+>  #define KVM_FEATURE_STEAL_TIME		5
+> +#define KVM_FEATURE_KICK_VCPU		6
+>  
+>  /* The last 8 bits are used to indicate how to interpret the flags field
+>   * in pvclock structure. If no bits are set, all flags are ignored.
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c38efd7..6e1c8b4 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2103,6 +2103,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+>  	case KVM_CAP_XSAVE:
+>  	case KVM_CAP_ASYNC_PF:
+>  	case KVM_CAP_GET_TSC_KHZ:
+> +	case KVM_CAP_KICK_VCPU:
+>  		r = 1;
+>  		break;
+>  	case KVM_CAP_COALESCED_MMIO:
+> @@ -2577,7 +2578,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>  			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
+>  			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
+>  			     (1 << KVM_FEATURE_ASYNC_PF) |
+> -			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
+> +			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
+> +			     (1 << KVM_FEATURE_KICK_VCPU);
+>  
+>  		if (sched_info_on())
+>  			entry->eax |= (1 << KVM_FEATURE_STEAL_TIME);
+> @@ -5305,6 +5307,26 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
+>  	return 1;
+>  }
+>  
+> +/*
+> + * kvm_pv_kick_cpu_op:  Kick a vcpu.
+> + *
+> + * @cpu - vcpu to be kicked.
+> + */
+> +static void kvm_pv_kick_cpu_op(struct kvm *kvm, int cpu)
+> +{
+> +	struct kvm_vcpu *vcpu = kvm_get_vcpu(kvm, cpu);
+> +	struct kvm_mp_state mp_state;
+> +
+> +	mp_state.mp_state = KVM_MP_STATE_RUNNABLE;
 
-We could save one register read by doing the check also for the read,
-but that would further complicate the code.
+Since vcpu->mp_state is not protected by a lock, this is potentially racy. For example:
 
+CPU0						CPU1
+kvm_pv_kick_cpu_op				running vcpuN
+vcpuN->mp_state = KVM_MP_STATE_RUNNABLE;
+						kvm_emulate_halt
+						vcpuN->mp_state = KVM_MP_STATE_HALTED
 
-Lothar Waßmann
--- 
-___________________________________________________________
+Is it harmless to lose a kick?
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
