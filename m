@@ -1,72 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab1LGQ4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:56:24 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:32925 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754291Ab1LGQ4W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:56:22 -0500
-X-Sasl-enc: vNWAx47sSbEy3k/pphoSSDRGqbjkMKsVutD+hYq7pFEr 1323276981
-Date: Wed, 7 Dec 2011 08:56:11 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [00/27] 2.6.32.50-longterm review
-Message-ID: <20111207165611.GA19872@kroah.com>
+	id S1755009Ab1LGQ4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:56:32 -0500
+Received: from ffm.saftware.de ([83.141.3.46]:42732 "EHLO ffm.saftware.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754291Ab1LGQ43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:56:29 -0500
+Message-ID: <4EDF9AB8.3050602@linuxtv.org>
+Date: Wed, 07 Dec 2011 17:56:24 +0100
+From: Andreas Oberritter <obi@linuxtv.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <4EDD2C82.7040804@linuxtv.org> <20111206112153.GC17194@sirena.org.uk> <4EDE0427.2050307@linuxtv.org> <20111206141929.GE17731@opensource.wolfsonmicro.com> <4EDE2B3B.2080905@linuxtv.org> <20111207134848.GB18837@opensource.wolfsonmicro.com> <4EDF71AE.5070509@linuxtv.org> <20111207161058.GC22355@opensource.wolfsonmicro.com>
+In-Reply-To: <20111207161058.GC22355@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.50 release.
-There are 27 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+On 07.12.2011 17:10, Mark Brown wrote:
+> a simple loopback in the style of FUSE which
+> bounces the kernel APIs up to userspace for virtual drivers would make
+> sense.
 
-Responses should be made by Friday, December 9, 2011, 17:00:00 UTC.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.19-rc1.gz
-and the diffstat can be found below.
-
-thanks,
-
-greg k-h
-
-
- Makefile                             |    2 +-
- arch/arm/Kconfig                     |   12 +++++
- arch/arm/kernel/process.c            |    3 +
- arch/x86/include/asm/timer.h         |   23 ++++++++++-
- arch/x86/kernel/mpparse.c            |    2 +-
- arch/x86/oprofile/init.c             |    7 ++-
- drivers/i2c/algos/i2c-algo-bit.c     |    4 +-
- drivers/net/wireless/p54/p54spi.c    |    5 +-
- drivers/pci/hotplug/shpchp_core.c    |    4 +-
- drivers/pci/hotplug/shpchp_hpc.c     |    4 +-
- drivers/scsi/scsi_lib.c              |   12 ++++--
- drivers/staging/comedi/comedi_fops.c |   75 +++++++++++++++++++++++++---------
- drivers/staging/usbip/vhci_rx.c      |   10 +++--
- drivers/usb/host/whci/qset.c         |    2 +-
- drivers/usb/serial/ftdi_sio.c        |    1 +
- drivers/usb/serial/ftdi_sio_ids.h    |    1 +
- drivers/usb/serial/option.c          |    1 +
- drivers/usb/storage/unusual_devs.h   |    7 +++
- fs/cifs/misc.c                       |    3 +
- fs/ecryptfs/crypto.c                 |    4 +-
- kernel/irq/manage.c                  |    5 ++-
- kernel/time/clockevents.c            |    1 +
- kernel/time/tick-broadcast.c         |    2 +-
- kernel/time/timekeeping.c            |    4 ++
- net/core/dev.c                       |    1 +
- net/sunrpc/xprtsock.c                |    3 +-
- net/wireless/nl80211.c               |    4 +-
- sound/pci/lx6464es/lx_core.c         |   16 +++++--
- 28 files changed, 164 insertions(+), 54 deletions(-)
+That's exactly what vtunerc is.
