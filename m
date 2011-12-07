@@ -1,134 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab1LGTNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 14:13:14 -0500
-Received: from ims-d14.mx.aol.com ([205.188.249.151]:56239 "EHLO
-	ims-d14.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757656Ab1LGTNM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 14:13:12 -0500
-Message-Id: <201112071841.pB7IefXq014656@ims-d14.mx.aol.com>
-Reply-To: <J.PETERSON2@blumail.org>
-From: "CITIBANK INTL PLC NEW YORK" <lmcnaughto@aol.com>
-Subject: MESSAGE FROM CITIBANK INTERNATIONAL NEW YORK HEADQUARTERS
-Date: Wed, 7 Dec 2011 10:41:59 -0800
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_002D_01C2A9A6.763B7FAC"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/76717
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:5:51960544:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: S
-X-SPAM-FLAG: YES
-X-AOL-VSS-INFO: 5400.1158/76717
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:108872384:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-X-AOL-REROUTE: YES 
-x-aol-sid: 3039ac1d33834edfb33f18d0
-To: unlisted-recipients:; (no To-header on input)
+	id S1758255Ab1LGTQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 14:16:28 -0500
+Received: from mga11.intel.com ([192.55.52.93]:16996 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757656Ab1LGTQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 14:16:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="93606277"
+Subject: Re: [patch v3 5/6] sched, ttwu_queue: queue remote wakeups only
+ when crossing cache domains
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
+        Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.jf.intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>
+Date: Wed, 07 Dec 2011 11:20:44 -0800
+In-Reply-To: <1323275027.32012.114.camel@twins>
+References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
+	 <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
+	 <1322796864.4755.5.camel@marge.simson.net>
+	 <1323275027.32012.114.camel@twins>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323285644.1984.55.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+On Wed, 2011-12-07 at 08:23 -0800, Peter Zijlstra wrote:
+> In fact, Ingo (rightfully) refused to take this due to the x86 specific
+> code in scheduler guts..
 
-------=_NextPart_000_002D_01C2A9A6.763B7FAC
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+I noticed this while reviewing/testing the patch and left it because on
+the microbenchmark, it had measurable impact of using the direct check
+as compared to going through the scheduler domains every time to figure
+out if we shared the LLC or not.
 
-THE ATTACHMENT IS VIRUS FREE!
+> Initially the idea was to provide a new arch interface and a fallback
+> and do the Kconfig thing etc. After a bit of thought I decided against
+> that for we already have that information in the sched_domain tree
+> anyway and it should be a simple matter of representing things
+> differently.
 
-YOUR URGENT ATTENTION IS HIGHLY NEEDED
+This def looks better.
 
-------=_NextPart_000_002D_01C2A9A6.763B7FAC
-Content-Type: application/octet-stream;
-	name="CITIBANK OF NEW YORK.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="CITIBANK OF NEW YORK.txt"
+> +DEFINE_PER_CPU(int, sd_top_spr_id);
 
-Q0lUSUJBTksgSU5URVJOQVRJT05BTCBQTEMgTkVXIFlPUksNCkRJUkVDVE9S
-LCBGT1JFSUdOIE9QRVJBVElPTlMgREVQQVJUTUVOVA0KQUREUkVTUzogSEVB
-RFFVQVJURVJTIDM5OSBQQVJLIEFWRS5ORVcgWU9SSywgTlkgMTAwNDMNCg0K
-T1VSIFJFRjogQ1VLL1NOVC9TVEINCg0KTXIuIEpFRkYuIEMgUEVURVJTT04N
-CkVNQUlMOiBKLlBFVEVSU09OMkBibHVtYWlsLm9yZw0KDQoNCkl0IGlzIG15
-IE1vZGVzdCBPYmxpZ2F0aW9uIHRvIHdyaXRlIHlvdSB0aGlzIE1lc3NhZ2Ug
-YXMgcmVnYXJkcyB0aGUgYXBwcm92YWwgb2YgeW91ciBPd2VkIHBheW1lbnQg
-dGhyb3VnaCBvdXIgbW9zdCByZXNwZWN0ZWQgTW9uZXRhcnkgT3JnYW5pemF0
-aW9uIChDaXRpYmFuayBQTEMpLiBJIGFtIE1yLiBKRUZGLiBDIFBFVEVSU09O
-LCB0aGUgQ2hpZWYgRmluYW5jaWFsIEZvcmVpZ24gT3BlcmF0aW9ucyBDaXRp
-YmFuayBvZiBOZXcgWW9yaywgVGhlIFVzIEdvdmVybm1lbnQgaW4gY29tYmlu
-YXRpb24gd2l0aCBVbml0ZWQgTmF0aW9ucyBPcmdhbml6YXRpb24gT24gZm9y
-ZWlnbiBwYXltZW50IG1hdHRlcnMgaGFzIGVtcG93ZXJlZCBteSBiYW5rIGFm
-dGVyIG11Y2ggZGlzY3Vzc2lvbiBhbmQga2luZG5lc3MgdG8gSGFuZGxlIGFs
-bCBvdmVyc2VhcyBwYXltZW50cyBhbmQgcmVsZWFzZSB0aGVtIHRvIHRoZWly
-IHJpZ2h0IEJlbmVmaWNpYXJpZXMgd2l0aCB0aGUgaGVscCBvZiBhIHJlcHJl
-c2VudGF0aXZlIGZyb20gRmVkZXJhbCBSZXNlcnZlIEJhbmsgb2YgTmV3IFlv
-cmsuDQoNCg0KQXMgdGhlIHJlY2VudGx5IEFwcG9pbnRlZC9BY2NyZWRpdGVk
-IEludGVybmF0aW9uYWwgUGF5aW5nIEJhbmssIHdlIGhhdmUgYmVlbiBpbnN0
-cnVjdGVkIGJ5IHRoZSBXb3JsZCBHb3Zlcm5pbmcgQm9keSB0b2dldGhlciB3
-aXRoIHRoZSBncm91cCBvbiBJbnRlcm5hdGlvbmFsIA0KRGVidCBSZWNvbmNp
-bGlhdGlvbiBEZXBhcnRtZW50IHRvIHJlbGVhc2UgeW91ciBvdmVyZHVlIGZ1
-bmRzIHdpdGggZGlyZWN0IGVmZmVjdC4gVGhpcyBhbW91bnQgaXMgdmFsdWVk
-IGF0IEZPVVJURUVOIE1JTExJT04gVEhSRUUgSFVORFJFRCBUSE9VU0FORCBV
-UyBEb2xsYXJzICgxNCwzMDAsMDAwLjAwIFVTIERvbGxhcnMpIG9ubHksIGFz
-IHBhcnQgcGF5bWVudCBzbyBhcyB0byBlbmFibGUgdXMgcGF5IG90aGVyIGVs
-aWdpYmxlIGJlbmVmaWNpYXJpZXMuDQoNCkJlIGluZm9ybWVkIHRoYXQgd2Ug
-aGF2ZSB2ZXJpZmllZCB5b3VyIHBheW1lbnQgZmlsZXMgYXMgZGlyZWN0ZWQg
-dG8gdXMgYW5kIHlvdXIgbmFtZSBpcyBuZXh0IG9uIHRoZSBsaXN0IG9mIG91
-ciBvdXRzdGFuZGluZyBCZW5lZmljaWFyaWVzIHRvIHJlY2VpdmUgdGhlaXIg
-cGF5bWVudCBiZWZvcmUgdGhlIGVuZCBvZiB0aGlzIHllYXIgMjAxMS4NCl9f
-X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
-X19fXw0KTk9XIFlPVZJSRSBORVcgUEFZTUVOVCBSRUZFUkVOQ0UgTk8gSVMu
-LTM1NDYwMDIxLCANCkFMTE9DQVRJT04gTk86IDY3NDYxMSBQQVNTV09SRCBO
-TzogMzM5MzMxIFBJTiAgDQpfX19fX19fX19fX19fX19fX19fX19fX19fX19f
-X19fX19fX19fX19fX19fX19fX19fX18NCg0KSGF2aW5nIHJlY2VpdmVkIHRo
-ZXNlIHZpdGFsIHBheW1lbnQgbnVtYmVycywgdGhlcmVmb3JlIHlvdSBhcmUg
-cXVhbGlmaWVkIG5vdyB0byByZWNlaXZlZCBhbmQgY29uZmlybSB5b3VyIHBh
-eW1lbnQgaW4gYSBtYXR0ZXIgb2YgNDgtNzIgSG91cnMsIFBsZWFzZSB2ZXJp
-ZnkgYW5kIGNvbnRhY3QgdXMgYXMgd2UgaGF2ZSBkb25lIGV2ZXJ5dGhpbmcg
-dG8gbWFrZSBzdXJlIHlvdXIgbW9uZXkgaXMgY3JlZGl0ZWQsIGRlc3BpdGUg
-dGhlIGdyaW0gY2lyY3Vtc3RhbmNlcyBkb3duIGhlcmUuLi4NCg0KDQpCZSBp
-bmZvcm1lZCB0aGF0IEkgTXIuIEpFRkYuIEMgUEVURVJTT04gIHdpbGwgIGRv
-IGFsbCB0aGF0IGlzIGh1bWFubHkgcG9zc2libGUgdG8gbWFrZSBzdXJlIHRo
-YXQgeW91IHJlY2VpdmVkIHRoaXMgZnVuZCwgIGFsbCBJICBuZWVkcyBpcyB5
-b3VyIGZ1bGwgY28tb3BlcmF0aW9uICB0byBlbmFibGUgdXMgIHNlcnZlIHlv
-dSB3ZWxsIGFuZCBnZXQgeW91ciBmdW5kIHRvIHlvdSBvbmNlIGFuZCBmb3Ig
-YWxsLCBhcyBJIHdlIGRyb3AgeW91ciBmaWxlcyBpbW1lZGlhdGVseSAgaWYg
-SSBub3RpY2UgYW55IHVuc2VyaW91cyBuZXNzIGZyb20geW91LiBGb2xsb3cg
-ZXZlcnkgaW5zdHJ1Y3Rpb24gSSBnaXZlcyB5b3Ugc2VyaW91c2x5IHRvIGVu
-c3VyZSB0aGF0IHRoaXMgcGF5bWVudCByZWFjaGVzIHlvdSBub3cgdGhhdCB3
-ZSBoYXZlIHRoZSBvcHBvcnR1bml0eSB0byBwYXkgeW91IGFzIHRoZXJlIHdp
-bGwgYmUgbm8gbW9yZSBwYXltZW50IGNvbWluZyB1bmRlciB5b3VyIG5hbWUu
-DQoNClRvIGhlbHAgd2l0aCB0aGUgcHJvY2VzcyBvZiB0aGlzIHRyYW5zYWN0
-aW9uLCBwbGVhc2UgZ2VudGx5IHJlLWNvbmZpcm0gdGhlIGZvbGxvd2luZyBp
-bmZvcm1hdGlvbpJzIGJlbG93Og0KDQoNCjEpIFlPVVIgRlVMTCBOQU1FOiAt
-LS0tLQ0KMikgWU9VUiBGVUxMIEFERFJFU1M6IC0tLS0tLQ0KMykgWU9VUiBD
-T05UQUNUIFRFTEVQSE9ORSBBTkQgRkFYIE5POiAtLS0tLQ0KMykgWU9VUiBQ
-Uk9GRVNTSU9OLCBBR0UgQU5EIE1BUklUQUwgU1RBVFVTOiAtLS0tLQ0KNCkg
-QU5ZIFZBTElEIEZPUk0gT0YgWU9VUiBJREVOVElGSUNBVElPTi9EUklWRU4g
-TElDRU5TRTogLS0tLS0NCjUpIEJBTksgTkFNRTogLS0tLS0tDQo2KSBCQU5L
-IEFERFJFU1M6IC0tLS0tLQ0KNykgQUNDT1VOVCBOQU1FOiAtLS0tLQ0KOCkg
-QUNDT1VOVCBOVU1CRVI6IC0tLS0tDQo5KSBTV0lGVCBDT0RFOiAtLS0tLS0N
-CjEwKSBST1VUSU5HIE5VTUJFUjogLS0tLS0NCg0KDQpTaG91bGQgeW91IGZp
-bmQgdGhpcyBtZXNzYWdlIGFuZCB3aWxsIGxpa2UgdG8gc2VjdXJlIHlvdXIg
-cGF5bWVudCB3aXRoIG91dCBmdXJ0aGVyIGhpbmRyYW5jZXMsIHRoZW4gaSBt
-YW5kYXRlIHlvdSB0byB1cmdlbnRseSBjb250YWN0IG1lIEluIHJlc3BvbnNl
-IHdpdGggdGhlIGluZm9ybWF0aW9uIGFzIGluZGljYXRlZCBhYm92ZS4NCg0K
-IEkgV0lMTCBBV0FJVCBZT1VSIFVSR0VOVCBSRVNQT05TRTsgUExFQVNFIERP
-IE5PVCBCT1JERVIgUkVQTFlJTkcgVEhJUyBFTUFJTCBJRiBZT1UgQ0FOIE5P
-VCBDT01QTFkgV0lUSCBUSEUgQUJPVkUgSU5TVFJVQ1RJT04nUy4NCg0KDQpS
-ZWdhcmQgU2VuYXRlDQpNci4gSkVGRi4gQyBQRVRFUlNPTg0KKERpcmVjdG9y
-LCBJbnRlcm5hdGlvbmFsIHRyYW5zZmVyIERlcHQuIENpdGliYW5rIE5ldyBZ
-b3JrKQ0KDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAoQ29weXJpZ2h0IKkgMjAxMSBDaXRpZ3JvdXAg
-SW5jLikNCg==
+pkg_srid (shared resource id)?
 
-------=_NextPart_000_002D_01C2A9A6.763B7FAC--
+> +
+> +static void update_top_cache_domain(int cpu)
+> +{
+> +	struct sched_domain *sd;
+> +	int id = -1;
+> +
+> +	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
+> +	if (sd)
+> +		id = cpumask_first(sched_domain_span(sd));
+
+if there is no sd with shared pkg resources, then id has to be set to
+'cpu'.
+
+> +	rcu_assign_pointer(per_cpu(sd_top_spr, cpu), sd);
+> +	per_cpu(sd_top_spr_id, cpu) = id;
+
+Otherwise it looks good.
+
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+
