@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab1LGNjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:39:37 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:64171 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755810Ab1LGNhX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:37:23 -0500
-From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Shawn Guo <shawn.guo@linaro.org>,
-        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH v2 1/8][NET] fec.c: misc cleanups
-Date: Wed,  7 Dec 2011 14:37:13 +0100
-Message-Id: <bd4415514fa0b40ece04d56b3ac4f549e79d87d7.1323256319.git.LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <cover.1323256319.git.LW@KARO-electronics.de>
-References: <cover.1323256319.git.LW@KARO-electronics.de>
-In-Reply-To: <cover.1323256319.git.LW@KARO-electronics.de>
-References: <cover.1323256319.git.LW@KARO-electronics.de>
+	id S1756187Ab1LGNjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:39:44 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:6776 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755810Ab1LGNjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 08:39:41 -0500
+Message-ID: <4EDF6C44.3050306@parallels.com>
+Date: Wed, 07 Dec 2011 17:38:12 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: "dave@gnu.org" <dave@gnu.org>
+CC: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] resource cgroups: remove bogus cast
+References: <1323119621.3244.1.camel@offbook>
+In-Reply-To: <1323119621.3244.1.camel@offbook>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - remove some bogus whitespace
- - remove line wraps from printk messages
+On 12/06/2011 01:13 AM, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> The memparse() function already accepts const char * as the parsing string.
+> 
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/net/ethernet/freescale/fec.c |   14 ++++++++------
- 1 files changed, 8 insertions(+), 6 deletions(-)
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
 
-diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
-index 1124ce0..f224e58 100644
---- a/drivers/net/ethernet/freescale/fec.c
-+++ b/drivers/net/ethernet/freescale/fec.c
-@@ -99,7 +99,7 @@ static struct platform_device_id fec_devtype[] = {
- MODULE_DEVICE_TABLE(platform, fec_devtype);
- 
- enum imx_fec_type {
--	IMX25_FEC = 1, 	/* runs on i.mx25/50/53 */
-+	IMX25_FEC = 1,	/* runs on i.mx25/50/53 */
- 	IMX27_FEC,	/* runs on i.mx27/35/51 */
- 	IMX28_FEC,
- 	IMX6Q_FEC,
-@@ -132,7 +132,7 @@ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
- #elif defined (CONFIG_M5272C3)
- #define	FEC_FLASHMAC	(0xffe04000 + 4)
- #elif defined(CONFIG_MOD5272)
--#define FEC_FLASHMAC 	0xffc0406b
-+#define FEC_FLASHMAC	0xffc0406b
- #else
- #define	FEC_FLASHMAC	0
- #endif
-@@ -972,8 +972,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
- 	}
- 
- 	if (phy_id >= PHY_MAX_ADDR) {
--		printk(KERN_INFO "%s: no PHY, assuming direct connection "
--			"to switch\n", ndev->name);
-+		printk(KERN_INFO
-+			"%s: no PHY, assuming direct connection to switch\n",
-+			ndev->name);
- 		strncpy(mdio_bus_id, "0", MII_BUS_ID_SIZE);
- 		phy_id = 0;
- 	}
-@@ -998,8 +999,9 @@ static int fec_enet_mii_probe(struct net_device *ndev)
- 	fep->link = 0;
- 	fep->full_duplex = 0;
- 
--	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
--		"(mii_bus:phy_addr=%s, irq=%d)\n", ndev->name,
-+	printk(KERN_INFO
-+		"%s: Freescale FEC PHY driver [%s] (mii_bus:phy_addr=%s, irq=%d)\n",
-+		ndev->name,
- 		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
- 		fep->phy_dev->irq);
- 
--- 
-1.5.6.5
+> ---
+>  kernel/res_counter.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+> index 34683ef..6d269cc 100644
+> --- a/kernel/res_counter.c
+> +++ b/kernel/res_counter.c
+> @@ -159,8 +159,7 @@ int res_counter_memparse_write_strategy(const char *buf,
+>  		return 0;
+>  	}
+>  
+> -	/* FIXME - make memparse() take const char* args */
+> -	*res = memparse((char *)buf, &end);
+> +	*res = memparse(buf, &end);
+>  	if (*end != '\0')
+>  		return -EINVAL;
+>  
 
