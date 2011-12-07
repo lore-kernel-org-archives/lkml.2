@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab1LGSnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 13:43:09 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49680 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756968Ab1LGSnH (ORCPT
+	id S1758177Ab1LGSnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 13:43:37 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54862 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756968Ab1LGSnf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 13:43:07 -0500
-Date: Wed, 7 Dec 2011 22:43:01 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
-Message-ID: <20111207184301.GO21678@moon>
-References: <20111206181026.GO29781@moon>
- <20111206143313.ac2e7287.akpm@linux-foundation.org>
- <20111206223558.GQ29781@moon>
- <20111207094144.GB21678@moon>
- <20111207182720.GB7610@google.com>
+	Wed, 7 Dec 2011 13:43:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111207182720.GB7610@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111207130517.GA22946@xps8300>
+References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
+	<1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
+	<20111207130517.GA22946@xps8300>
+Date: Wed, 7 Dec 2011 20:43:35 +0200
+Message-ID: <CAMP44s2FV=Dtquq+HuhB7+0fTi9YwiY-4YcSf1XdB=OwDHYULA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Heikki Krogerus <krohei@gmail.com>
+Cc: Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 10:27:26AM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Dec 07, 2011 at 01:41:44PM +0400, Cyrill Gorcunov wrote:
-> > +static void children_seq_stop(struct seq_file *seq, void *v)
-> > +{
-> > +	rcu_read_unlock();
-> > +	seq_printf(seq, "\n");
-> > +}
-> 
-> Wouldn't this add newline on page boundary?  Newline should be printed
-> at the end of the whole sequence but seq_stop() is called at buffer
-> boundaries.
-> 
+On Wed, Dec 7, 2011 at 3:05 PM, Heikki Krogerus <krohei@gmail.com> wrote:
+> On Mon, Dec 05, 2011 at 07:23:40PM +0200, Felipe Contreras wrote:
+>> From: Felipe Contreras <felipe.contreras@gmail.com>
+>>
+>> This reverts commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2.
+>>
+>> This seems to break USB networking stuff.
+>>
+>> Cc: Kalle Jokiniemi <kalle.jokiniemi@nokia.com>
+>> Cc: Heikki Krogerus <heikki.krogerus@nokia.com>
+>> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>> ---
+>>  arch/arm/mach-omap2/board-rx51-peripherals.c |   27 +------------------------
+>>  1 files changed, 2 insertions(+), 25 deletions(-)
+>
+> <snip>
+>
+>> -static void __init rx51_charger_init(void)
+>> -{
+>> -     WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
+>> -             GPIOF_OUT_INIT_LOW, "isp1704_reset"));
+>
+> How about simply GPIOF_OUT_INIT_HIGH here. Is that not enough to fix
+> your problem? Revering the whole thing does not make any sense to me.
 
-Yeah, good point. I'll update! Thanks Tejun (somehow missed this
-call in traverse()).
+Yes, that fixes it :)
 
-	Cyrill
+-- 
+Felipe Contreras
