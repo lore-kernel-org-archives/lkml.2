@@ -1,90 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab1LGRNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:13:32 -0500
-Received: from mail.klingt.org ([86.59.21.178]:42512 "EHLO klingt.org"
+	id S1756924Ab1LGROA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:14:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60902 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756714Ab1LGRN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:13:28 -0500
-From: Tim Blechmann <tim@klingt.org>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [05/27] ALSA: lx6464es - fix device communication via command bus
-Date: Wed, 07 Dec 2011 18:13:08 +0100
-Message-ID: <1561513.9b6lVaYVip@moka>
-User-Agent: KMail/4.7.3 (Linux/3.2.0-rc4+; KDE/4.7.3; x86_64; ; )
-In-Reply-To: <20111207165600.831023370@clark.kroah.org>
-References: <20111207165600.831023370@clark.kroah.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.9 (klingt.org [86.59.21.178]); Wed, 07 Dec 2011 18:13:10 +0100 (CET)
+	id S1756775Ab1LGQQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:16:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:23 2011
+Message-Id: <20111207160823.859637261@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:06:35 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Felipe Balbi <balbi@ti.com>, Eric Miao <eric.y.miao@gmail.com>
+Subject: [15/80] ARM: pxa: fix inconsistent CONFIG_USB_PXA27X
+In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it is not really necessary to apply this patch to 2.6.32, as the problem was 
-introduced by a change to the memcpy_*_io functions that was introduced in 
-2.6.34.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-otoh, it doesn't harm, either.
+------------------
 
-On Wednesday 07 December 2011 08:54:38 Greg KH wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let me
-> know.
-> 
-> ------------------
-> 
-> From: Tim Blechmann <tim@klingt.org>
-> 
-> commit a29878553a9a7b4c06f93c7e383527cf014d4ceb upstream.
-> 
-> commit 6175ddf06b6172046a329e3abfd9c901a43efd2e optimized the mem*io
-> functions that have been used to send commands to the device. these
-> optimizations somehow corrupted the communication with the lx6464es,
-> that resulted the device to be unusable with kernels after 2.6.33.
-> 
-> this patch emulates the memcpy_*_io functions via a loop to avoid these
-> problems.
-> 
-> Signed-off-by: Tim Blechmann <tim@klingt.org>
-> LKML-Reference: <4ECB5257.4040600@ladisch.de>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  sound/pci/lx6464es/lx_core.c |   16 ++++++++++++----
->  1 file changed, 12 insertions(+), 4 deletions(-)
-> 
-> --- a/sound/pci/lx6464es/lx_core.c
-> +++ b/sound/pci/lx6464es/lx_core.c
-> @@ -80,8 +80,12 @@ unsigned long lx_dsp_reg_read(struct lx6
-> 
->  void lx_dsp_reg_readbuf(struct lx6464es *chip, int port, u32 *data, u32
-> len) {
-> -	void __iomem *address = lx_dsp_register(chip, port);
-> -	memcpy_fromio(data, address, len*sizeof(u32));
-> +	u32 __iomem *address = lx_dsp_register(chip, port);
-> +	int i;
-> +
-> +	/* we cannot use memcpy_fromio */
-> +	for (i = 0; i != len; ++i)
-> +		data[i] = ioread32(address + i);
->  }
-> 
-> 
-> @@ -94,8 +98,12 @@ void lx_dsp_reg_write(struct lx6464es *c
->  void lx_dsp_reg_writebuf(struct lx6464es *chip, int port, const u32 *data,
->  			 u32 len)
->  {
-> -	void __iomem *address = lx_dsp_register(chip, port);
-> -	memcpy_toio(address, data, len*sizeof(u32));
-> +	u32 __iomem *address = lx_dsp_register(chip, port);
-> +	int i;
-> +
-> +	/* we cannot use memcpy_to */
-> +	for (i = 0; i != len; ++i)
-> +		iowrite32(data[i], address + i);
->  }
+From: Haojian Zhuang <haojian.zhuang@marvell.com>
+
+commit c0a39151a4055332897cba615623d3de2f3896df upstream.
+
+Since CONFIG_USB_GADGET_PXA27X and other macros are renamed to
+CONFIG_USB_PXA27X. Update them in arch/arm/mach-pxa and arch/arm/configs
+to keep consistent.
+
+Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/arm/configs/ezx_defconfig           |    2 +-
+ arch/arm/configs/imote2_defconfig        |    2 +-
+ arch/arm/configs/magician_defconfig      |    2 +-
+ arch/arm/configs/zeus_defconfig          |    2 +-
+ arch/arm/mach-pxa/balloon3.c             |    2 +-
+ arch/arm/mach-pxa/colibri-pxa320.c       |    2 +-
+ arch/arm/mach-pxa/gumstix.c              |    2 +-
+ arch/arm/mach-pxa/include/mach/palm27x.h |    4 ++--
+ arch/arm/mach-pxa/palm27x.c              |    4 ++--
+ arch/arm/mach-pxa/palmtc.c               |    2 +-
+ arch/arm/mach-pxa/vpac270.c              |    2 +-
+ 11 files changed, 13 insertions(+), 13 deletions(-)
+
+--- a/arch/arm/configs/ezx_defconfig
++++ b/arch/arm/configs/ezx_defconfig
+@@ -287,7 +287,7 @@ CONFIG_USB=y
+ # CONFIG_USB_DEVICE_CLASS is not set
+ CONFIG_USB_OHCI_HCD=y
+ CONFIG_USB_GADGET=y
+-CONFIG_USB_GADGET_PXA27X=y
++CONFIG_USB_PXA27X=y
+ CONFIG_USB_ETH=m
+ # CONFIG_USB_ETH_RNDIS is not set
+ CONFIG_MMC=y
+--- a/arch/arm/configs/imote2_defconfig
++++ b/arch/arm/configs/imote2_defconfig
+@@ -263,7 +263,7 @@ CONFIG_USB=y
+ # CONFIG_USB_DEVICE_CLASS is not set
+ CONFIG_USB_OHCI_HCD=y
+ CONFIG_USB_GADGET=y
+-CONFIG_USB_GADGET_PXA27X=y
++CONFIG_USB_PXA27X=y
+ CONFIG_USB_ETH=m
+ # CONFIG_USB_ETH_RNDIS is not set
+ CONFIG_MMC=y
+--- a/arch/arm/configs/magician_defconfig
++++ b/arch/arm/configs/magician_defconfig
+@@ -132,7 +132,7 @@ CONFIG_USB_MON=m
+ CONFIG_USB_OHCI_HCD=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_GADGET_VBUS_DRAW=500
+-CONFIG_USB_GADGET_PXA27X=y
++CONFIG_USB_PXA27X=y
+ CONFIG_USB_ETH=m
+ # CONFIG_USB_ETH_RNDIS is not set
+ CONFIG_USB_GADGETFS=m
+--- a/arch/arm/configs/zeus_defconfig
++++ b/arch/arm/configs/zeus_defconfig
+@@ -140,7 +140,7 @@ CONFIG_USB_SERIAL=m
+ CONFIG_USB_SERIAL_GENERIC=y
+ CONFIG_USB_SERIAL_MCT_U232=m
+ CONFIG_USB_GADGET=m
+-CONFIG_USB_GADGET_PXA27X=y
++CONFIG_USB_PXA27X=y
+ CONFIG_USB_ETH=m
+ CONFIG_USB_GADGETFS=m
+ CONFIG_USB_FILE_STORAGE=m
+--- a/arch/arm/mach-pxa/balloon3.c
++++ b/arch/arm/mach-pxa/balloon3.c
+@@ -307,7 +307,7 @@ static inline void balloon3_mmc_init(voi
+ /******************************************************************************
+  * USB Gadget
+  ******************************************************************************/
+-#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
+ static void balloon3_udc_command(int cmd)
+ {
+ 	if (cmd == PXA2XX_UDC_CMD_CONNECT)
+--- a/arch/arm/mach-pxa/colibri-pxa320.c
++++ b/arch/arm/mach-pxa/colibri-pxa320.c
+@@ -147,7 +147,7 @@ static void __init colibri_pxa320_init_e
+ static inline void __init colibri_pxa320_init_eth(void) {}
+ #endif /* CONFIG_AX88796 */
+ 
+-#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
+ static struct gpio_vbus_mach_info colibri_pxa320_gpio_vbus_info = {
+ 	.gpio_vbus		= mfp_to_gpio(MFP_PIN_GPIO96),
+ 	.gpio_pullup		= -1,
+--- a/arch/arm/mach-pxa/gumstix.c
++++ b/arch/arm/mach-pxa/gumstix.c
+@@ -106,7 +106,7 @@ static void __init gumstix_mmc_init(void
+ }
+ #endif
+ 
+-#ifdef CONFIG_USB_GADGET_PXA25X
++#ifdef CONFIG_USB_PXA25X
+ static struct gpio_vbus_mach_info gumstix_udc_info = {
+ 	.gpio_vbus		= GPIO_GUMSTIX_USB_GPIOn,
+ 	.gpio_pullup		= GPIO_GUMSTIX_USB_GPIOx,
+--- a/arch/arm/mach-pxa/include/mach/palm27x.h
++++ b/arch/arm/mach-pxa/include/mach/palm27x.h
+@@ -37,8 +37,8 @@ extern void __init palm27x_lcd_init(int
+ static inline void palm27x_lcd_init(int power, struct pxafb_mode_info *mode) {}
+ #endif
+ 
+-#if	defined(CONFIG_USB_GADGET_PXA27X) || \
+-	defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if	defined(CONFIG_USB_PXA27X) || \
++	defined(CONFIG_USB_PXA27X_MODULE)
+ extern void __init palm27x_udc_init(int vbus, int pullup,
+ 					int vbus_inverted);
+ #else
+--- a/arch/arm/mach-pxa/palm27x.c
++++ b/arch/arm/mach-pxa/palm27x.c
+@@ -164,8 +164,8 @@ void __init palm27x_lcd_init(int power,
+ /******************************************************************************
+  * USB Gadget
+  ******************************************************************************/
+-#if	defined(CONFIG_USB_GADGET_PXA27X) || \
+-	defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if	defined(CONFIG_USB_PXA27X) || \
++	defined(CONFIG_USB_PXA27X_MODULE)
+ static struct gpio_vbus_mach_info palm27x_udc_info = {
+ 	.gpio_vbus_inverted	= 1,
+ };
+--- a/arch/arm/mach-pxa/palmtc.c
++++ b/arch/arm/mach-pxa/palmtc.c
+@@ -339,7 +339,7 @@ static inline void palmtc_mkp_init(void)
+ /******************************************************************************
+  * UDC
+  ******************************************************************************/
+-#if defined(CONFIG_USB_GADGET_PXA25X)||defined(CONFIG_USB_GADGET_PXA25X_MODULE)
++#if defined(CONFIG_USB_PXA25X)||defined(CONFIG_USB_PXA25X_MODULE)
+ static struct gpio_vbus_mach_info palmtc_udc_info = {
+ 	.gpio_vbus		= GPIO_NR_PALMTC_USB_DETECT_N,
+ 	.gpio_vbus_inverted	= 1,
+--- a/arch/arm/mach-pxa/vpac270.c
++++ b/arch/arm/mach-pxa/vpac270.c
+@@ -343,7 +343,7 @@ static inline void vpac270_uhc_init(void
+ /******************************************************************************
+  * USB Gadget
+  ******************************************************************************/
+-#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
+ static struct gpio_vbus_mach_info vpac270_gpio_vbus_info = {
+ 	.gpio_vbus		= GPIO41_VPAC270_UDC_DETECT,
+ 	.gpio_pullup		= -1,
+
+
