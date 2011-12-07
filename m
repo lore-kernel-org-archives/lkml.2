@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab1LGGCY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 01:02:24 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:60650 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab1LGGCX (ORCPT
+	id S1751585Ab1LGGFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 01:05:45 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:54342 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab1LGGFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 01:02:23 -0500
-From: Josh Wu <josh.wu@atmel.com>
-To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org, linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nicolas.ferre@atmel.com, Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH v2 2/2] [media] V4L: atmel-isi: add clk_prepare()/clk_unprepare() functions
-Date: Wed,  7 Dec 2011 14:01:53 +0800
-Message-Id: <1323237713-25734-2-git-send-email-josh.wu@atmel.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1323237713-25734-1-git-send-email-josh.wu@atmel.com>
-References: <1323237713-25734-1-git-send-email-josh.wu@atmel.com>
-X-OriginalArrivalTime: 07 Dec 2011 06:01:56.0077 (UTC) FILETIME=[B97221D0:01CCB4A5]
+	Wed, 7 Dec 2011 01:05:44 -0500
+Date: Wed, 7 Dec 2011 17:05:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: linux-next: build failure after merge of the final tree (pci tree
+ related)
+Message-Id: <20111207170533.3dea865573c916e79d274eca@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__7_Dec_2011_17_05_33_+1100_EHATYxG8VV9PKEIs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Wed__7_Dec_2011_17_05_33_+1100_EHATYxG8VV9PKEIs
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
+Hi all,
+
+After merging the final tree, today's linux-next build (sparc64 defconfig)
+failed like this:
+
+arch/sparc/kernel/pci.c: In function 'pci_scan_one_pbm':
+arch/sparc/kernel/pci.c:697:7: error: incompatible type for argument 5 of '=
+pci_create_root_bus'
+include/linux/pci.h:665:17: note: expected 'struct list_head *' but argumen=
+t is of type 'struct list_head'
+
+Caused by commit fa3cec8aff53 ("sparc/PCI: convert to pci_create_root_bus
+()"). Same typo as for the powerpc tree. :-(  Please double check the
+rest of those changes, please.
+
+I applied the following patch for today.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 7 Dec 2011 17:02:12 +1100
+Subject: [PATCH] sparc/PCI: fix up typo from pci_create_root_bus conversion
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
-in v2 version, made the label name to be consistent
+ arch/sparc/kernel/pci.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
- drivers/media/video/atmel-isi.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index 0905dbd..bb8bc2e 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -694,7 +694,7 @@ struct pci_bus * __devinit pci_scan_one_pbm(struct pci_=
+pbm_info *pbm,
+ 	pci_add_resource(&resources, &pbm->io_space);
+ 	pci_add_resource(&resources, &pbm->mem_space);
+ 	bus =3D pci_create_root_bus(parent, pbm->pci_first_busno, pbm->pci_ops,
+-				  pbm, resources);
++				  pbm, &resources);
+ 	if (!bus) {
+ 		printk(KERN_ERR "Failed to create bus for %s\n",
+ 		       node->full_name);
+--=20
+1.7.7.3
 
-diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
-index ea4eef4..91ebcfb 100644
---- a/drivers/media/video/atmel-isi.c
-+++ b/drivers/media/video/atmel-isi.c
-@@ -922,7 +922,9 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
- 			isi->fb_descriptors_phys);
- 
- 	iounmap(isi->regs);
-+	clk_unprepare(isi->mck);
- 	clk_put(isi->mck);
-+	clk_unprepare(isi->pclk);
- 	clk_put(isi->pclk);
- 	kfree(isi);
- 
-@@ -955,6 +957,12 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 	if (IS_ERR(pclk))
- 		return PTR_ERR(pclk);
- 
-+	ret = clk_prepare(pclk);
-+	if (ret) {
-+		clk_put(pclk);
-+		return ret;
-+	}
-+
- 	isi = kzalloc(sizeof(struct atmel_isi), GFP_KERNEL);
- 	if (!isi) {
- 		ret = -ENOMEM;
-@@ -978,6 +986,10 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 		goto err_clk_get;
- 	}
- 
-+	ret = clk_prepare(isi->mck);
-+	if (ret)
-+		goto err_clk_prepare_mck;
-+
- 	/* Set ISI_MCK's frequency, it should be faster than pixel clock */
- 	ret = clk_set_rate(isi->mck, pdata->mck_hz);
- 	if (ret < 0)
-@@ -1059,10 +1071,13 @@ err_alloc_ctx:
- 			isi->fb_descriptors_phys);
- err_alloc_descriptors:
- err_set_mck_rate:
-+	clk_unprepare(isi->mck);
-+err_clk_prepare_mck:
- 	clk_put(isi->mck);
- err_clk_get:
- 	kfree(isi);
- err_alloc_isi:
-+	clk_unprepare(pclk);
- 	clk_put(pclk);
- 
- 	return ret;
--- 
-1.6.3.3
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Wed__7_Dec_2011_17_05_33_+1100_EHATYxG8VV9PKEIs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO3wItAAoJEECxmPOUX5FEBVkP/irjvBl21fENPbEP321JKaTg
+U03zwoXQIlQ8gnjMAx5ccWl6EmzvfnpR4ucSfeRC5Btra3hz7v9K5AOhc9ept1sF
+nQBxulFxSA58J9Pg8BANrfihGU+nJ7f/HPWNrdc9T/iUSQwYqOwOcFoneJ0ML1Uu
+nlI64h8P1KbQWKK1V3IozZmpaUFgOBQPHnA4QijhpRRhWPe1LhwS+ecK+6CjUZat
+wF/vQ7DxsCq6ZtColw+UP5K4J+FpoX8Az/++iUspUDMbzkil4uK6KC91xe65rVDm
+kAMaKUVw7xGb/6859dQLhaF3GK17rv0JHCCVEgXmJtAgYt/cLtDrBL+HLnDBGKjm
+GixgtBYrAikS97omBc6tmgMFlzHH0GIxaNoLBEGl1sOnEeZMAKlTlOMWUSQeUOyz
+FTfhxx8fEmssJvhDf2QGlYV0w9gaqUPZA5n9zrBooCjxzH2UZ2fXe5NKpeBrknzH
+l57wiHi79esg+W2HwcGt3CbZvZCB3oh4OPzkbFcfYZFBt63X6NXjaEN79M0Xcr0b
+HqDHECbB1vbm4j8NWWHjZxALBMHSPKNDQzJ1ylAYvHXQKYOWcnHi6HCmZe4PUki7
+HsYsANwfmzSg8NTOc2bhZu4rfvLasalhcXGSr2PmbpcUmYT8pUMYY7vg7nD8uGtv
+gHPcEezStKRxVGtkW3ds
+=K2L/
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__7_Dec_2011_17_05_33_+1100_EHATYxG8VV9PKEIs--
