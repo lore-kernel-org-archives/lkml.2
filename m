@@ -1,67 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab1LGQQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:16:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32772 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756762Ab1LGQQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:16:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:23 2011
-Message-Id: <20111207160822.968285506@clark.kroah.org>
-User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:24 -0800
-From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Phil Sutter <phil.sutter@viprinet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [04/80] crypto: mv_cesa - fix hashing of chunks > 1920 bytes
-In-Reply-To: <20111207161256.GA7736@kroah.com>
+	id S1756907Ab1LGRMr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:12:47 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46229 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab1LGRMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:12:44 -0500
+Message-ID: <4EDF9E8C.6010801@jp.fujitsu.com>
+Date: Wed, 07 Dec 2011 12:12:44 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: teg@jklm.no
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: mark some messages as INFO
+References: <1323277360-3155-1-git-send-email-teg@jklm.no>
+In-Reply-To: <1323277360-3155-1-git-send-email-teg@jklm.no>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 12/7/2011 12:02 PM, Tom Gundersen wrote:
+> This reduces the noise in
+> 
+> $ dmesg --kernel --level=err,warn
+> 
+> Signed-off-by: Tom Gundersen <teg@jklm.no>
 
-------------------
-
-From: Phil Sutter <phil.sutter@viprinet.com>
-
-commit 274252862f386b7868f35bf5ceaa5391a8ccfdf3 upstream.
-
-This was broken by commit 7759995c75ae0cbd4c861582908449f6b6208e7a (yes,
-myself). The basic problem here is since the digest state is only saved
-after the last chunk, the state array is only valid when handling the
-first chunk of the next buffer. Broken since linux-3.0.
-
-Signed-off-by: Phil Sutter <phil.sutter@viprinet.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/crypto/mv_cesa.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
-
---- a/drivers/crypto/mv_cesa.c
-+++ b/drivers/crypto/mv_cesa.c
-@@ -342,11 +342,13 @@ static void mv_process_hash_current(int
- 		else
- 			op.config |= CFG_MID_FRAG;
- 
--		writel(req_ctx->state[0], cpg->reg + DIGEST_INITIAL_VAL_A);
--		writel(req_ctx->state[1], cpg->reg + DIGEST_INITIAL_VAL_B);
--		writel(req_ctx->state[2], cpg->reg + DIGEST_INITIAL_VAL_C);
--		writel(req_ctx->state[3], cpg->reg + DIGEST_INITIAL_VAL_D);
--		writel(req_ctx->state[4], cpg->reg + DIGEST_INITIAL_VAL_E);
-+		if (first_block) {
-+			writel(req_ctx->state[0], cpg->reg + DIGEST_INITIAL_VAL_A);
-+			writel(req_ctx->state[1], cpg->reg + DIGEST_INITIAL_VAL_B);
-+			writel(req_ctx->state[2], cpg->reg + DIGEST_INITIAL_VAL_C);
-+			writel(req_ctx->state[3], cpg->reg + DIGEST_INITIAL_VAL_D);
-+			writel(req_ctx->state[4], cpg->reg + DIGEST_INITIAL_VAL_E);
-+		}
- 	}
- 
- 	memcpy(cpg->sram + SRAM_CONFIG, &op, sizeof(struct sec_accel_config));
-
-
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
