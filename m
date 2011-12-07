@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933619Ab1LGQWn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:22:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34033 "EHLO mx2.suse.de"
+	id S933581Ab1LGQWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:22:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33986 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933596Ab1LGQWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:22:38 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:17 2011
-Message-Id: <20111207161217.318885552@clark.kroah.org>
+	id S933306Ab1LGQW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:22:28 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:18 2011
+Message-Id: <20111207161218.637553648@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:33 -0800
+Date: Wed, 07 Dec 2011 08:11:49 -0800
 From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>, greg@kroah.com
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Larry Finger <Larry.Finger@lwfinger.net>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [031/104] rtlwifi: fix lps_lock deadlock
+        <alan@lxorguk.ukuu.org.uk>, xfs@oss.sgi.com, bpm@sgi.com,
+        Christoph Hellwig <hch@infradead.org>, Christoph Hellwig <hch@lst.de>,
+        Alex Elder <aelder@sgi.com>
+Subject: [047/104] xfs: avoid direct I/O write vs buffered I/O race
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,168 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit e55b32c110b025ce07b40227f620e99700bf8741 upstream.
+From: Christoph Hellwig <hch@infradead.org>
 
-rtl_lps_leave can be called from interrupt context, so we have to
-disable interrupts when taking lps_lock.
+commit c58cb165bd44de8aaee9755a144136ae743be116 upstream.
 
-Below is full lockdep info about deadlock:
+Currently a buffered reader or writer can add pages to the pagecache
+while we are waiting for the iolock in xfs_file_dio_aio_write.  Prevent
+this by re-checking mapping->nrpages after we got the iolock, and if
+nessecary upgrade the lock to exclusive mode.  To simplify this a bit
+only take the ilock inside of xfs_file_aio_write_checks.
 
-[   93.815269] =================================
-[   93.815390] [ INFO: inconsistent lock state ]
-[   93.815472] 2.6.41.1-3.offch.fc15.x86_64.debug #1
-[   93.815556] ---------------------------------
-[   93.815635] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-[   93.815743] swapper/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
-[   93.815832]  (&(&rtlpriv->locks.lps_lock)->rlock){+.?...}, at: [<ffffffffa025dad6>] rtl_lps_leave+0x26/0x103 [rtlwifi]
-[   93.815947] {SOFTIRQ-ON-W} state was registered at:
-[   93.815947]   [<ffffffff8108e10d>] __lock_acquire+0x369/0xd0c
-[   93.815947]   [<ffffffff8108efb3>] lock_acquire+0xf3/0x13e
-[   93.815947]   [<ffffffff814e981d>] _raw_spin_lock+0x45/0x79
-[   93.815947]   [<ffffffffa025de34>] rtl_swlps_rf_awake+0x5a/0x76 [rtlwifi]
-[   93.815947]   [<ffffffffa025aec0>] rtl_op_config+0x12a/0x32a [rtlwifi]
-[   93.815947]   [<ffffffffa01d614b>] ieee80211_hw_config+0x124/0x129 [mac80211]
-[   93.815947]   [<ffffffffa01e0af3>] ieee80211_dynamic_ps_disable_work+0x32/0x47 [mac80211]
-[   93.815947]   [<ffffffff81075aa5>] process_one_work+0x205/0x3e7
-[   93.815947]   [<ffffffff81076753>] worker_thread+0xda/0x15d
-[   93.815947]   [<ffffffff8107a119>] kthread+0xa8/0xb0
-[   93.815947]   [<ffffffff814f3184>] kernel_thread_helper+0x4/0x10
-[   93.815947] irq event stamp: 547822
-[   93.815947] hardirqs last  enabled at (547822): [<ffffffff814ea1a7>] _raw_spin_unlock_irqrestore+0x45/0x61
-[   93.815947] hardirqs last disabled at (547821): [<ffffffff814e9987>] _raw_spin_lock_irqsave+0x22/0x8e
-[   93.815947] softirqs last  enabled at (547790): [<ffffffff810623ed>] _local_bh_enable+0x13/0x15
-[   93.815947] softirqs last disabled at (547791): [<ffffffff814f327c>] call_softirq+0x1c/0x30
-[   93.815947]
-[   93.815947] other info that might help us debug this:
-[   93.815947]  Possible unsafe locking scenario:
-[   93.815947]
-[   93.815947]        CPU0
-[   93.815947]        ----
-[   93.815947]   lock(&(&rtlpriv->locks.lps_lock)->rlock);
-[   93.815947]   <Interrupt>
-[   93.815947]     lock(&(&rtlpriv->locks.lps_lock)->rlock);
-[   93.815947]
-[   93.815947]  *** DEADLOCK ***
-[   93.815947]
-[   93.815947] no locks held by swapper/0.
-[   93.815947]
-[   93.815947] stack backtrace:
-[   93.815947] Pid: 0, comm: swapper Not tainted 2.6.41.1-3.offch.fc15.x86_64.debug #1
-[   93.815947] Call Trace:
-[   93.815947]  <IRQ>  [<ffffffff814dfd00>] print_usage_bug+0x1e7/0x1f8
-[   93.815947]  [<ffffffff8101a849>] ? save_stack_trace+0x2c/0x49
-[   93.815947]  [<ffffffff8108d55c>] ? print_irq_inversion_bug.part.18+0x1a0/0x1a0
-[   93.815947]  [<ffffffff8108dc8a>] mark_lock+0x106/0x220
-[   93.815947]  [<ffffffff8108e099>] __lock_acquire+0x2f5/0xd0c
-[   93.815947]  [<ffffffff810152af>] ? native_sched_clock+0x34/0x36
-[   93.830125]  [<ffffffff810152ba>] ? sched_clock+0x9/0xd
-[   93.830125]  [<ffffffff81080181>] ? sched_clock_local+0x12/0x75
-[   93.830125]  [<ffffffffa025dad6>] ? rtl_lps_leave+0x26/0x103 [rtlwifi]
-[   93.830125]  [<ffffffff8108efb3>] lock_acquire+0xf3/0x13e
-[   93.830125]  [<ffffffffa025dad6>] ? rtl_lps_leave+0x26/0x103 [rtlwifi]
-[   93.830125]  [<ffffffff814e981d>] _raw_spin_lock+0x45/0x79
-[   93.830125]  [<ffffffffa025dad6>] ? rtl_lps_leave+0x26/0x103 [rtlwifi]
-[   93.830125]  [<ffffffff81422467>] ? skb_dequeue+0x62/0x6d
-[   93.830125]  [<ffffffffa025dad6>] rtl_lps_leave+0x26/0x103 [rtlwifi]
-[   93.830125]  [<ffffffffa025f677>] _rtl_pci_ips_leave_tasklet+0xe/0x10 [rtlwifi]
-[   93.830125]  [<ffffffff8106281f>] tasklet_action+0x8d/0xee
-[   93.830125]  [<ffffffff810629ce>] __do_softirq+0x112/0x25a
-[   93.830125]  [<ffffffff814f327c>] call_softirq+0x1c/0x30
-[   93.830125]  [<ffffffff81010bf6>] do_softirq+0x4b/0xa1
-[   93.830125]  [<ffffffff81062d7d>] irq_exit+0x5d/0xcf
-[   93.830125]  [<ffffffff814f3b7e>] do_IRQ+0x8e/0xa5
-[   93.830125]  [<ffffffff814ea533>] common_interrupt+0x73/0x73
-[   93.830125]  <EOI>  [<ffffffff8108b825>] ? trace_hardirqs_off+0xd/0xf
-[   93.830125]  [<ffffffff812bb6d5>] ? intel_idle+0xe5/0x10c
-[   93.830125]  [<ffffffff812bb6d1>] ? intel_idle+0xe1/0x10c
-[   93.830125]  [<ffffffff813f8d5e>] cpuidle_idle_call+0x11c/0x1fe
-[   93.830125]  [<ffffffff8100e2ef>] cpu_idle+0xab/0x101
-[   93.830125]  [<ffffffff814c6373>] rest_init+0xd7/0xde
-[   93.830125]  [<ffffffff814c629c>] ? csum_partial_copy_generic+0x16c/0x16c
-[   93.830125]  [<ffffffff81d4bbb0>] start_kernel+0x3dd/0x3ea
-[   93.830125]  [<ffffffff81d4b2c4>] x86_64_start_reservations+0xaf/0xb3
-[   93.830125]  [<ffffffff81d4b140>] ? early_idt_handlers+0x140/0x140
-[   93.830125]  [<ffffffff81d4b3ca>] x86_64_start_kernel+0x102/0x111
-
-Resolves:
-https://bugzilla.redhat.com/show_bug.cgi?id=755154
-
-Reported-by: vjain02@students.poly.edu
-Reported-and-tested-by: Oliver Paukstadt <pstadt@sourcentral.org>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Alex Elder <aelder@sgi.com>
+Cc: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/net/wireless/rtlwifi/ps.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ fs/xfs/xfs_file.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/rtlwifi/ps.c
-+++ b/drivers/net/wireless/rtlwifi/ps.c
-@@ -394,7 +394,7 @@ void rtl_lps_enter(struct ieee80211_hw *
- 	if (mac->link_state != MAC80211_LINKED)
- 		return;
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -677,6 +677,7 @@ xfs_file_aio_write_checks(
+ 	xfs_fsize_t		new_size;
+ 	int			error = 0;
  
--	spin_lock(&rtlpriv->locks.lps_lock);
-+	spin_lock_irq(&rtlpriv->locks.lps_lock);
++	xfs_rw_ilock(ip, XFS_ILOCK_EXCL);
+ 	error = generic_write_checks(file, pos, count, S_ISBLK(inode->i_mode));
+ 	if (error) {
+ 		xfs_rw_iunlock(ip, XFS_ILOCK_EXCL | *iolock);
+@@ -768,14 +769,24 @@ xfs_file_dio_aio_write(
+ 		*iolock = XFS_IOLOCK_EXCL;
+ 	else
+ 		*iolock = XFS_IOLOCK_SHARED;
+-	xfs_rw_ilock(ip, XFS_ILOCK_EXCL | *iolock);
++	xfs_rw_ilock(ip, *iolock);
  
- 	/* Idle for a while if we connect to AP a while ago. */
- 	if (mac->cnt_after_linked >= 2) {
-@@ -406,7 +406,7 @@ void rtl_lps_enter(struct ieee80211_hw *
- 		}
- 	}
+ 	ret = xfs_file_aio_write_checks(file, &pos, &count, iolock);
+ 	if (ret)
+ 		return ret;
  
--	spin_unlock(&rtlpriv->locks.lps_lock);
-+	spin_unlock_irq(&rtlpriv->locks.lps_lock);
- }
++	/*
++	 * Recheck if there are cached pages that need invalidate after we got
++	 * the iolock to protect against other threads adding new pages while
++	 * we were waiting for the iolock.
++	 */
++	if (mapping->nrpages && *iolock == XFS_IOLOCK_SHARED) {
++		xfs_rw_iunlock(ip, *iolock);
++		*iolock = XFS_IOLOCK_EXCL;
++		xfs_rw_ilock(ip, *iolock);
++	}
++
+ 	if (mapping->nrpages) {
+-		WARN_ON(*iolock != XFS_IOLOCK_EXCL);
+ 		ret = -xfs_flushinval_pages(ip, (pos & PAGE_CACHE_MASK), -1,
+ 							FI_REMAPF_LOCKED);
+ 		if (ret)
+@@ -820,7 +831,7 @@ xfs_file_buffered_aio_write(
+ 	size_t			count = ocount;
  
- /*Leave the leisure power save mode.*/
-@@ -415,8 +415,9 @@ void rtl_lps_leave(struct ieee80211_hw *
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	struct rtl_ps_ctl *ppsc = rtl_psc(rtl_priv(hw));
- 	struct rtl_hal *rtlhal = rtl_hal(rtl_priv(hw));
-+	unsigned long flags;
+ 	*iolock = XFS_IOLOCK_EXCL;
+-	xfs_rw_ilock(ip, XFS_ILOCK_EXCL | *iolock);
++	xfs_rw_ilock(ip, *iolock);
  
--	spin_lock(&rtlpriv->locks.lps_lock);
-+	spin_lock_irqsave(&rtlpriv->locks.lps_lock, flags);
- 
- 	if (ppsc->fwctrl_lps) {
- 		if (ppsc->dot11_psmode != EACTIVE) {
-@@ -437,7 +438,7 @@ void rtl_lps_leave(struct ieee80211_hw *
- 			rtl_lps_set_psmode(hw, EACTIVE);
- 		}
- 	}
--	spin_unlock(&rtlpriv->locks.lps_lock);
-+	spin_unlock_irqrestore(&rtlpriv->locks.lps_lock, flags);
- }
- 
- /* For sw LPS*/
-@@ -538,9 +539,9 @@ void rtl_swlps_rf_awake(struct ieee80211
- 		RT_CLEAR_PS_LEVEL(ppsc, RT_PS_LEVEL_ASPM);
- 	}
- 
--	spin_lock(&rtlpriv->locks.lps_lock);
-+	spin_lock_irq(&rtlpriv->locks.lps_lock);
- 	rtl_ps_set_rf_state(hw, ERFON, RF_CHANGE_BY_PS);
--	spin_unlock(&rtlpriv->locks.lps_lock);
-+	spin_unlock_irq(&rtlpriv->locks.lps_lock);
- }
- 
- void rtl_swlps_rfon_wq_callback(void *data)
-@@ -573,9 +574,9 @@ void rtl_swlps_rf_sleep(struct ieee80211
- 	if (rtlpriv->link_info.busytraffic)
- 		return;
- 
--	spin_lock(&rtlpriv->locks.lps_lock);
-+	spin_lock_irq(&rtlpriv->locks.lps_lock);
- 	rtl_ps_set_rf_state(hw, ERFSLEEP, RF_CHANGE_BY_PS);
--	spin_unlock(&rtlpriv->locks.lps_lock);
-+	spin_unlock_irq(&rtlpriv->locks.lps_lock);
- 
- 	if (ppsc->reg_rfps_level & RT_RF_OFF_LEVL_ASPM &&
- 		!RT_IN_PS_LEVEL(ppsc, RT_PS_LEVEL_ASPM)) {
+ 	ret = xfs_file_aio_write_checks(file, &pos, &count, iolock);
+ 	if (ret)
 
 
