@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab1LGLzq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 06:55:46 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:58501 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab1LGLzo (ORCPT
+	id S1755615Ab1LGL6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 06:58:09 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:60263 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755357Ab1LGL6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 06:55:44 -0500
-Message-ID: <4EDF5413.1030107@linux.vnet.ibm.com>
-Date: Wed, 07 Dec 2011 17:24:59 +0530
-From: Raghavendra K T <raghukt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Xen <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM hypervisor
- to support pv-ticketlocks
-References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com> <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com> <20111207104849.GA24849@amt.cnet>
-In-Reply-To: <20111207104849.GA24849@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11120701-1618-0000-0000-00000042FDDF
+	Wed, 7 Dec 2011 06:58:08 -0500
+Message-ID: <20191.21688.696997.76000@ipc1.ka-ro>
+Date: Wed, 7 Dec 2011 12:57:44 +0100
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: <linux-arm-kernel@lists.infradead.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [MXS MMC 2/5] Some cleanups for the MMC driver
+In-Reply-To: <20111207120120.GK5550@S2100-06.ap.freescale.net>
+References: <cover.1323177907.git.LW@KARO-electronics.de>
+	<d935557e044d2ebc56b4e70487b519fe722e9017.1323177907.git.LW@KARO-electronics.de>
+	<20111207120120.GK5550@S2100-06.ap.freescale.net>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2011 04:18 PM, Marcelo Tosatti wrote:
-> On Wed, Nov 30, 2011 at 02:29:59PM +0530, Raghavendra K T wrote:
->>
->> +/*
->> + * kvm_pv_kick_cpu_op:  Kick a vcpu.
->> + *
->> + * @cpu - vcpu to be kicked.
->> + */
->> +static void kvm_pv_kick_cpu_op(struct kvm *kvm, int cpu)
->> +{
->> +	struct kvm_vcpu *vcpu = kvm_get_vcpu(kvm, cpu);
->> +	struct kvm_mp_state mp_state;
->> +
->> +	mp_state.mp_state = KVM_MP_STATE_RUNNABLE;
->
-> Since vcpu->mp_state is not protected by a lock, this is potentially racy. For example:
->
-> CPU0						CPU1
-> kvm_pv_kick_cpu_op				running vcpuN
-> vcpuN->mp_state = KVM_MP_STATE_RUNNABLE;
-> 						kvm_emulate_halt
-> 						vcpuN->mp_state = KVM_MP_STATE_HALTED
->
-> Is it harmless to lose a kick?
->
+Hi,
 
-Yes you are right. It was potentially racy and it was harmful too!. I 
-had observed that it was stalling the CPU before I introduced kicked flag.
+Shawn Guo writes:
+> I'm fine with this cosmetic patch with the comments below addressed.
+> 
+> On Tue, Dec 06, 2011 at 02:41:27PM +0100, Lothar Waßmann wrote:
+> >  - Remove bogus parens around numerical arguments in #define's
+> >  - When defining bit masks, use the #def for the shift count
+> >    instead of repeating the numbers
+> 
+> This change brings a few 'line over 80 characters' checkpatch warnings.
+> 
+will fix.
 
-But now,
-
-vcpu->kicked = 1  ==> kvm_make_request(KVM_REQ_UNHALT, vcpu); ==>
-
-__vcpu_run() ==> kvm_check_request(KVM_REQ_UNHALT, vcpu) ==>
-
-vcpuN->mp_state = KVM_MP_STATE_RUNNABLE; so eventually we will end up
-in RUNNABLE.
-
-Also Avi pointed that, logically kvm_arch_vcpu_ioctl_set_mpstate should
-be called only in vcpu thread, so after further debugging, I noticed
-that,  setting vcpuN->mp_state = KVM_MP_STATE_RUNNABLE; is not
-necessary.
-I 'll remove that in the next patch. Thanks for pointing.
+> >  - Remove bogus whitespace in indentation
+> >  - Remove 'break' at end of switch statement
+> > 
+> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+> > ---
+> >  drivers/mmc/host/mxs-mmc.c |   57 +++++++++++++++++++++----------------------
+> >  1 files changed, 28 insertions(+), 29 deletions(-)
+> > 
+> > diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+> [...]
+> > @@ -277,7 +277,7 @@ static irqreturn_t mxs_mmc_irq_handler(int irq, void *dev_id)
+> >  
+> >  	stat = readl(host->base + HW_SSP_CTRL1);
+> >  	writel(stat & MXS_MMC_IRQ_BITS,
+> > -	       host->base + HW_SSP_CTRL1 + MXS_CLR_ADDR);
+> 
+> This is an intended indentation with 7 spaces.
+> 
+According to Documentation/CodingStyle spaces are never used for
+indentation (except in documentation, Kconfig and comments).
 
 
-			
+Lothar Waßmann
+-- 
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
