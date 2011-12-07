@@ -1,94 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab1LGJ3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:29:00 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38396 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753950Ab1LGJ2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:28:34 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>, Paul Bolle <pebolle@tiscali.nl>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCH 8/9] xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
-Date: Wed,  7 Dec 2011 10:28:07 +0100
-Message-Id: <1323250088-1729-9-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
+	id S1754646Ab1LGJ3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:29:16 -0500
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:30388
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752488Ab1LGJ3I convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 04:29:08 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzzz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 7 Dec 2011 17:41:48 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: <netdev@vger.kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: preserve
+ MII/RMII setting in fec_stop()
+Message-ID: <20111207094146.GG5550@S2100-06.ap.freescale.net>
+References: <cover.1323163127.git.LW@KARO-electronics.de>
+ <d6f4de9e4cfb393754b42815a2ef1a59c96eab83.1323163127.git.LW@KARO-electronics.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <d6f4de9e4cfb393754b42815a2ef1a59c96eab83.1323163127.git.LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sjur Br√¶ndeland <sjur.brandeland@stericsson.com>
----
- drivers/Kconfig       |    2 ++
- drivers/Makefile      |    1 +
- drivers/xshm/Kconfig  |   17 +++++++++++++++++
- drivers/xshm/Makefile |    3 +++
- 4 files changed, 23 insertions(+), 0 deletions(-)
- create mode 100644 drivers/xshm/Kconfig
- create mode 100644 drivers/xshm/Makefile
+On Tue, Dec 06, 2011 at 11:27:14AM +0100, Lothar Waﬂmann wrote:
+> Additionally to setting the ETHER_EN bit in FEC_ECNTRL the MII/RMII
+> setting in FEC_R_CNTRL needs to be preserved to keep the MII interface
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 041426c..742f028 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -138,4 +138,6 @@ source "drivers/virt/Kconfig"
- 
- source "drivers/devfreq/Kconfig"
- 
-+source "drivers/xshm/Kconfig"
-+
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 91077ac..30eae54 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -121,6 +121,7 @@ obj-$(CONFIG_VLYNQ)		+= vlynq/
- obj-$(CONFIG_STAGING)		+= staging/
- obj-y				+= platform/
- obj-y				+= ieee802154/
-+obj-$(CONFIG_XSHM)		+= xshm/
- #common clk code
- obj-y				+= clk/
- 
-diff --git a/drivers/xshm/Kconfig b/drivers/xshm/Kconfig
-new file mode 100644
-index 0000000..80daca4
---- /dev/null
-+++ b/drivers/xshm/Kconfig
-@@ -0,0 +1,17 @@
-+# XSHM gets selected by whoever wants it.
-+config XSHM
-+	depends on CONFIG_C2C
-+	tristate
-+
-+config XSHM_CHR
-+	tristate "Character device for External Shared Memory (XSHM)"
-+	select XSHM
-+	default n
-+	---help---
-+	Say "Y" to use a character device for the External Shared
-+	Memory (XSHM) IPC mechanism. XSHM is an IPC protocol used to
-+	talk to external device such as modem over a shared memory
-+	(e.g. Chip to Chip).
-+	Only say "M" here if you want to test XSHM and need to load
-+	and unload its module.
-+	If unsure say N.
-diff --git a/drivers/xshm/Makefile b/drivers/xshm/Makefile
-new file mode 100644
-index 0000000..954bd22
---- /dev/null
-+++ b/drivers/xshm/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_XSHM) += xshm.o
-+xshm-objs := xshm_boot.o xshm_dev.o
-+obj-$(CONFIG_XSHM_CHR) +=  xshm_chr.o
+s/MII/RMII?  From what I see from imx28 and imx6q RM, the reset state
+for this setting is MII mode.
+
+> functional.
+> 
+> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+> ---
+>  drivers/net/ethernet/freescale/fec.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+
+I assume this is fixing a problem you are seeing on imx28 only.
+Do you see the problem on imx53/51?
+
+> 
+> diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
+> index 11534b9..ab0afb5 100644
+> --- a/drivers/net/ethernet/freescale/fec.c
+> +++ b/drivers/net/ethernet/freescale/fec.c
+> @@ -515,6 +515,7 @@ fec_stop(struct net_device *ndev)
+>  	struct fec_enet_private *fep = netdev_priv(ndev);
+>  	const struct platform_device_id *id_entry =
+>  				platform_get_device_id(fep->pdev);
+> +	u32 rmii_mode = readl(fep->hwp + FEC_R_CNTRL) & (1 << 8);
+
+This bit is only available on ENET (imx28 and imx6q).  Do we want to
+do the same thing for FEC (imx25/27/35/51/53)?
+
+>  
+>  	/* We cannot expect a graceful transmit stop without link !!! */
+>  	if (fep->link) {
+> @@ -531,8 +532,10 @@ fec_stop(struct net_device *ndev)
+>  	writel(FEC_DEFAULT_IMASK, fep->hwp + FEC_IMASK);
+>  
+>  	/* We have to keep ENET enabled to have MII interrupt stay working */
+> -	if (id_entry->driver_data & FEC_QUIRK_ENET_MAC)
+> +	if (id_entry->driver_data & FEC_QUIRK_ENET_MAC) {
+>  		writel(2, fep->hwp + FEC_ECNTRL);
+> +		writel(rmii_mode, fep->hwp + FEC_R_CNTRL);
+> +	}
+>  }
+
+On imx6q, we have two bits, bit 6 and 8 of FEC_R_CNTRL, to select MII
+interface among MII, RMII and RGMII modes.  I'm not sure if we will
+run into the same problem for RGMII mode.  What's your test setup?
+I would try to reproduce it here.
+
 -- 
-1.7.0.4
+Regards,
+Shawn
 
