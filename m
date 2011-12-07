@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab1LGK0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 05:26:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60340 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab1LGK0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 05:26:40 -0500
-Date: Wed, 7 Dec 2011 12:28:24 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, levinsasha928@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 09/12] virtio: net: Add freeze, restore handlers to
- support S4
-Message-ID: <20111207102824.GC8326@redhat.com>
-References: <cover.1323199985.git.amit.shah@redhat.com>
- <712d8d78cf730161181562ed44d4fe08a370b85e.1323199985.git.amit.shah@redhat.com>
+	id S1754738Ab1LGK1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:27:55 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:61013 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754112Ab1LGK1x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 05:27:53 -0500
+Message-ID: <4EDF3F96.8030600@oracle.com>
+Date: Wed, 07 Dec 2011 18:27:34 +0800
+From: ANNIE LI <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <712d8d78cf730161181562ed44d4fe08a370b85e.1323199985.git.amit.shah@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>
+Subject: Re: [PATCH 1/2] xen/granttable: Support sub-page grants
+References: <4EDDF41E.8070200@oracle.com>	 <1323168999-4434-1-git-send-email-annie.li@oracle.com>	 <1323171726.23681.65.camel@zakaz.uk.xensource.com>	 <4EDEDF2E.3040204@oracle.com> <1323251784.23681.126.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1323251784.23681.126.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4EDF3FA4.0132,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 01:18:47AM +0530, Amit Shah wrote:
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 697a0fc..1378f3c 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1151,6 +1151,38 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
->  	free_netdev(vi->dev);
->  }
->  
-> +#ifdef CONFIG_PM
-> +static int virtnet_freeze(struct virtio_device *vdev)
-> +{
-> +	struct virtnet_info *vi = vdev->priv;
-> +
-> +	netif_device_detach(vi->dev);
-> +	if (netif_running(vi->dev))
-> +		napi_disable(&vi->napi);
-> +
 
-Could refill_work still be running at this point?
-If yes it can re-enable napi and cause other kind of trouble.
 
-> +	remove_vq_common(vi);
-> +
-> +	return 0;
-> +}
+On 2011-12-7 17:56, Ian Campbell wrote:
+> On Wed, 2011-12-07 at 03:36 +0000, ANNIE LI wrote:
+>> Thanks for your reviewing, Ian.
+>>>>    EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access);
+>>>>
+>>>> +int gnttab_grant_foreign_access_subpage_v2(domid_t domid, unsigned long frame,
+>>>> +					   int flags, unsigned page_off,
+>>>> +					   unsigned length)
+>>> Please drop the v2 suffixes on the public functions.
+>> OK, the initial interface is without v2 suffixes. It was added in order
+>> to reminder user the interfaces are only available for grant table v2.
+>> But I am fine to remove it, and following ops fn pointers are better.
+>>> Any reason not to route these via the ops table for consistency with all
+>>> the other ops? Then your availability check becomes a test for NULL fn
+>>> pointer rather than a specific version.
+>> Ok, it is good.
+>> How about following implements?
+> Looks to be along the right lines. Thanks.
+>
+>> gnttab_v1_ops = {
+>>    ...
+>> .access_subpage = NULL;
+>> .access_ref_subpage = NULL;
+>> .access_trans = NULL;
+>> .access_ref_trans = NULL;
+>> }
+> I think you can omit these since NULL is the default but perhaps
+> explicitly listing them is useful in a self documenting type way.
+>
+> [...]
+OK, I can delete those.
+>> Same operations for access_ref_subpage, access_trans and access_ref_trans.
+>>
+>> bool gnttab_subpage_available()
+>> {
+>>        return (gnttab_interface->access_subpage != NULL);
+>> }
+>>
+>> bool gnttab_subpage_available()
+> Typo:       ..trans..
+Thanks for pointing out this.
+
+Thanks
+Annie
+>> {
+>>        return (gnttab_interface->access_trans != NULL);
+>> }
+> Ian.
+>
+>> Thanks
+>> Annie
+>
