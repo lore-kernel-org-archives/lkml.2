@@ -1,142 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab1LGMyj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 07:54:39 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:49098 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab1LGMyi (ORCPT
+	id S1755708Ab1LGM5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 07:57:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52494 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab1LGM5S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 07:54:38 -0500
+	Wed, 7 Dec 2011 07:57:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <CANTF9xXtTTdJZywivEKr4jc+mozn9=nky3Qv-iccZ7Sebx7axA@mail.gmail.com>
-References: <CANTF9xXtTTdJZywivEKr4jc+mozn9=nky3Qv-iccZ7Sebx7axA@mail.gmail.com>
-Date: Wed, 7 Dec 2011 12:54:37 +0000
-Message-ID: <CANTF9xU=0fo+QO_ZE-5WifTjmjdMcU83G9OR_Xy5dkWROM7NfQ@mail.gmail.com>
-Subject: Re: ACPI/PM: My Sony Vaio does not resume (after suspension) if
- acpi_sleep=nonvs is not used
-From: Pedro Guerreiro <pmguerre@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: rjw@sisk.pl
-Content-Type: multipart/mixed; boundary=0016e642d4f0ece9a804b3800d1f
+In-Reply-To: <1323250088-1729-9-git-send-email-sjur.brandeland@stericsson.com>
+References: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
+	<1323250088-1729-9-git-send-email-sjur.brandeland@stericsson.com>
+Date: Wed, 7 Dec 2011 13:57:17 +0100
+Message-ID: <CACRpkda7Bm2QY2dFs-xctOgFdVeL0YH-rOepxYHnZhXE-xu0zQ@mail.gmail.com>
+Subject: Re: [PATCH 8/9] xshm: Makefile and Kconfig for M7400 Shared Memory Drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur.brandeland@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e642d4f0ece9a804b3800d1f
-Content-Type: text/plain; charset=ISO-8859-1
+2011/12/7 Sjur Brændeland <sjur.brandeland@stericsson.com>:
 
-Hi
+Some commit blurb here pls.
 
-My Sony Vaio VGN-FW41E needs acpi_sleep=nonvs to be able to suspend,
-otherwise it reboots instead of resuming.
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+> ---
+(...)
+> diff --git a/drivers/xshm/Kconfig b/drivers/xshm/Kconfig
+> new file mode 100644
+> index 0000000..80daca4
+> --- /dev/null
+> +++ b/drivers/xshm/Kconfig
+> @@ -0,0 +1,17 @@
+> +# XSHM gets selected by whoever wants it.
+> +config XSHM
+> +       depends on CONFIG_C2C
+> +       tristate
+> +
+> +config XSHM_CHR
+> +       tristate "Character device for External Shared Memory (XSHM)"
+> +       select XSHM
+> +       default n
+> +       ---help---
+> +       Say "Y" to use a character device for the External Shared
+> +       Memory (XSHM) IPC mechanism. XSHM is an IPC protocol used to
+> +       talk to external device such as modem over a shared memory
+> +       (e.g. Chip to Chip).
+> +       Only say "M" here if you want to test XSHM and need to load
+> +       and unload its module.
+> +       If unsure say N.
 
-Attached it the output of dmidecode, hope its all that is needed to
-fix/correct thsi issue.
+As mentioned this needs some Kconfig entry to enable the
+dummy driver.
 
-If anything else is needed, please just ask.
+This will appear right in the root menu of the driver config,
+and I think it is more apropriate to hide this from systems that
+do not have xshm, so check for how I did in drivers/pinctrl for
+example like this:
+
+config XSHM
+        bool
+        depends on EXPERIMENTAL
+
+if XSHM
+
+menu "XSHM drivers and interfaces"
+        depends on XSHM
+
+... your previous entries here ...
+
+endmenu
+
+endif
+
+This will hide everything until an arch issues
+select XSHM in it's say arch/arm/mach-foo/Kconfig.
+
+> diff --git a/drivers/xshm/Makefile b/drivers/xshm/Makefile
+> new file mode 100644
+> index 0000000..954bd22
+> --- /dev/null
+> +++ b/drivers/xshm/Makefile
+> @@ -0,0 +1,3 @@
+> +obj-$(CONFIG_XSHM) += xshm.o
+> +xshm-objs := xshm_boot.o xshm_dev.o
+> +obj-$(CONFIG_XSHM_CHR) +=  xshm_chr.o
+
+Also include a build rule for the dummy driver here.
 
 Thanks,
-Pedro Guerreiro
-
-PS - I've resend this email because the first one was in HTML and was
-rejected by vger.kernel.org
-
---0016e642d4f0ece9a804b3800d1f
-Content-Type: text/plain; charset=US-ASCII; name="dmidecode.txt"
-Content-Disposition: attachment; filename="dmidecode.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gvwc1pfj0
-
-IyBkbWlkZWNvZGUgMi45ClNNQklPUyAyLjQgcHJlc2VudC4KMTcgc3RydWN0dXJlcyBvY2N1cHlp
-bmcgNzA5IGJ5dGVzLgpUYWJsZSBhdCAweEJERjJFMDEwLgoKSGFuZGxlIDB4MDAwMCwgRE1JIHR5
-cGUgMCwgMjQgYnl0ZXMKQklPUyBJbmZvcm1hdGlvbgoJVmVuZG9yOiBBbWVyaWNhbiBNZWdhdHJl
-bmRzIEluYy4KCVZlcnNpb246IFIzMTEwWTAKCVJlbGVhc2UgRGF0ZTogMDgvMjcvMjAwOQoJQWRk
-cmVzczogMHhGMDAwMAoJUnVudGltZSBTaXplOiA2NCBrQgoJUk9NIFNpemU6IDIwNDgga0IKCUNo
-YXJhY3RlcmlzdGljczoKCQlQQ0kgaXMgc3VwcG9ydGVkCgkJUE5QIGlzIHN1cHBvcnRlZAoJCUJJ
-T1MgaXMgdXBncmFkZWFibGUKCQlCSU9TIHNoYWRvd2luZyBpcyBhbGxvd2VkCgkJRVNDRCBzdXBw
-b3J0IGlzIGF2YWlsYWJsZQoJCUJvb3QgZnJvbSBDRCBpcyBzdXBwb3J0ZWQKCQlTZWxlY3RhYmxl
-IGJvb3QgaXMgc3VwcG9ydGVkCgkJRUREIGlzIHN1cHBvcnRlZAoJCTgwNDIga2V5Ym9hcmQgc2Vy
-dmljZXMgYXJlIHN1cHBvcnRlZCAoaW50IDloKQoJCUNHQS9tb25vIHZpZGVvIHNlcnZpY2VzIGFy
-ZSBzdXBwb3J0ZWQgKGludCAxMGgpCgkJQUNQSSBpcyBzdXBwb3J0ZWQKCQlVU0IgbGVnYWN5IGlz
-IHN1cHBvcnRlZAoJCUFHUCBpcyBzdXBwb3J0ZWQKCQlTbWFydCBiYXR0ZXJ5IGlzIHN1cHBvcnRl
-ZAoJCUJJT1MgYm9vdCBzcGVjaWZpY2F0aW9uIGlzIHN1cHBvcnRlZAoJCUZ1bmN0aW9uIGtleS1p
-bml0aWF0ZWQgbmV0d29yayBib290IGlzIHN1cHBvcnRlZAoJCVRhcmdldGVkIGNvbnRlbnQgZGlz
-dHJpYnV0aW9uIGlzIHN1cHBvcnRlZAoJQklPUyBSZXZpc2lvbjogMzEuMTAKCUZpcm13YXJlIFJl
-dmlzaW9uOiAzMS4xMAoKSGFuZGxlIDB4MDAwMSwgRE1JIHR5cGUgMSwgMjcgYnl0ZXMKU3lzdGVt
-IEluZm9ybWF0aW9uCglNYW51ZmFjdHVyZXI6IFNvbnkgQ29ycG9yYXRpb24KCVByb2R1Y3QgTmFt
-ZTogVkdOLUZXNDFFX0gKCVZlcnNpb246IEM2MDFUVTNBCglTZXJpYWwgTnVtYmVyOiAyODIxNjc2
-NC01MDAwMzg1CglVVUlEOiA0OEQ1QjY2MC03MUJBLTExREUtODVFMC0wMDFEQkFGNkFEMzcKCVdh
-a2UtdXAgVHlwZTogUG93ZXIgU3dpdGNoCglTS1UgTnVtYmVyOiBOL0EKCUZhbWlseTogTi9BCgpI
-YW5kbGUgMHgwMDAyLCBETUkgdHlwZSAyLCAxMCBieXRlcwpCYXNlIEJvYXJkIEluZm9ybWF0aW9u
-CglNYW51ZmFjdHVyZXI6IFNvbnkgQ29ycG9yYXRpb24KCVByb2R1Y3QgTmFtZTogVkFJTwoJVmVy
-c2lvbjogTi9BCglTZXJpYWwgTnVtYmVyOiBOL0EKCkhhbmRsZSAweDAwMDMsIERNSSB0eXBlIDMs
-IDE3IGJ5dGVzCkNoYXNzaXMgSW5mb3JtYXRpb24KCU1hbnVmYWN0dXJlcjogU29ueSBDb3Jwb3Jh
-dGlvbgoJVHlwZTogTm90ZWJvb2sKCUxvY2s6IE5vdCBQcmVzZW50CglWZXJzaW9uOiBOL0EKCVNl
-cmlhbCBOdW1iZXI6IE4vQQoJQXNzZXQgVGFnOiBOL0EKCUJvb3QtdXAgU3RhdGU6IFNhZmUKCVBv
-d2VyIFN1cHBseSBTdGF0ZTogU2FmZQoJVGhlcm1hbCBTdGF0ZTogU2FmZQoJU2VjdXJpdHkgU3Rh
-dHVzOiBOb25lCglPRU0gSW5mb3JtYXRpb246IDB4MDAwMDAwMDAKCkhhbmRsZSAweDAwMDQsIERN
-SSB0eXBlIDQsIDM1IGJ5dGVzClByb2Nlc3NvciBJbmZvcm1hdGlvbgoJU29ja2V0IERlc2lnbmF0
-aW9uOiBOL0EKCVR5cGU6IENlbnRyYWwgUHJvY2Vzc29yCglGYW1pbHk6IDxPVVQgT0YgU1BFQz4K
-CU1hbnVmYWN0dXJlcjogR2VudWluZUludGVsCglJRDogN0EgMDYgMDEgMDAgRkYgRkIgRUIgQkYK
-CVZlcnNpb246IEludGVsKFIpIENvcmUoVE0pMiBEdW8gQ1BVICAgICBUNjQwMCAgQCAyLjAwR0h6
-CglWb2x0YWdlOiAxLjEgVgoJRXh0ZXJuYWwgQ2xvY2s6IDIwMCBNSHoKCU1heCBTcGVlZDogMjAw
-MCBNSHoKCUN1cnJlbnQgU3BlZWQ6IDIwMDAgTUh6CglTdGF0dXM6IFBvcHVsYXRlZCwgRW5hYmxl
-ZAoJVXBncmFkZTogTm9uZQoJTDEgQ2FjaGUgSGFuZGxlOiAweDAwMDUKCUwyIENhY2hlIEhhbmRs
-ZTogMHgwMDA2CglMMyBDYWNoZSBIYW5kbGU6IDB4MDAwNwoJU2VyaWFsIE51bWJlcjogTi9BIAoJ
-QXNzZXQgVGFnOiBOL0EKCVBhcnQgTnVtYmVyOiBOL0EKCkhhbmRsZSAweDAwMDUsIERNSSB0eXBl
-IDcsIDE5IGJ5dGVzCkNhY2hlIEluZm9ybWF0aW9uCglTb2NrZXQgRGVzaWduYXRpb246IEwxIENh
-Y2hlCglDb25maWd1cmF0aW9uOiBFbmFibGVkLCBTb2NrZXRlZCwgTGV2ZWwgMQoJT3BlcmF0aW9u
-YWwgTW9kZTogV3JpdGUgQmFjawoJTG9jYXRpb246IEludGVybmFsCglJbnN0YWxsZWQgU2l6ZTog
-MTI4IEtCCglNYXhpbXVtIFNpemU6IDEyOCBLQgoJU3VwcG9ydGVkIFNSQU0gVHlwZXM6CgkJT3Ro
-ZXIKCUluc3RhbGxlZCBTUkFNIFR5cGU6IE90aGVyCglTcGVlZDogVW5rbm93bgoJRXJyb3IgQ29y
-cmVjdGlvbiBUeXBlOiBTaW5nbGUtYml0IEVDQwoJU3lzdGVtIFR5cGU6IE90aGVyCglBc3NvY2lh
-dGl2aXR5OiA4LXdheSBTZXQtYXNzb2NpYXRpdmUKCkhhbmRsZSAweDAwMDYsIERNSSB0eXBlIDcs
-IDE5IGJ5dGVzCkNhY2hlIEluZm9ybWF0aW9uCglTb2NrZXQgRGVzaWduYXRpb246IEwyIENhY2hl
-CglDb25maWd1cmF0aW9uOiBFbmFibGVkLCBTb2NrZXRlZCwgTGV2ZWwgMgoJT3BlcmF0aW9uYWwg
-TW9kZTogV3JpdGUgQmFjawoJTG9jYXRpb246IEludGVybmFsCglJbnN0YWxsZWQgU2l6ZTogMjA0
-OCBLQgoJTWF4aW11bSBTaXplOiAyMDQ4IEtCCglTdXBwb3J0ZWQgU1JBTSBUeXBlczoKCQlPdGhl
-cgoJSW5zdGFsbGVkIFNSQU0gVHlwZTogT3RoZXIKCVNwZWVkOiBVbmtub3duCglFcnJvciBDb3Jy
-ZWN0aW9uIFR5cGU6IFNpbmdsZS1iaXQgRUNDCglTeXN0ZW0gVHlwZTogVW5pZmllZAoJQXNzb2Np
-YXRpdml0eTogOC13YXkgU2V0LWFzc29jaWF0aXZlCgpIYW5kbGUgMHgwMDA3LCBETUkgdHlwZSA3
-LCAxOSBieXRlcwpDYWNoZSBJbmZvcm1hdGlvbgoJU29ja2V0IERlc2lnbmF0aW9uOiBMMyBDYWNo
-ZQoJQ29uZmlndXJhdGlvbjogRGlzYWJsZWQsIE5vdCBTb2NrZXRlZCwgTGV2ZWwgMwoJT3BlcmF0
-aW9uYWwgTW9kZTogVW5rbm93bgoJTG9jYXRpb246IFVua25vd24KCUluc3RhbGxlZCBTaXplOiAw
-IEtCCglNYXhpbXVtIFNpemU6IDAgS0IKCVN1cHBvcnRlZCBTUkFNIFR5cGVzOgoJCVVua25vd24K
-CUluc3RhbGxlZCBTUkFNIFR5cGU6IFVua25vd24KCVNwZWVkOiBVbmtub3duCglFcnJvciBDb3Jy
-ZWN0aW9uIFR5cGU6IFVua25vd24KCVN5c3RlbSBUeXBlOiBVbmtub3duCglBc3NvY2lhdGl2aXR5
-OiBVbmtub3duCgpIYW5kbGUgMHgwMDA4LCBETUkgdHlwZSAxMSwgNSBieXRlcwpPRU0gU3RyaW5n
-cwoJU3RyaW5nIDE6IDAwMDAwNDE5NDYKCVN0cmluZyAyOiBGTkMtRVhUQgoJU3RyaW5nIDM6IDg0
-TloyNUI3NDYzNDEzMDczOTM1Qjc0NkZFREVECglTdHJpbmcgNDogUmVzZXJ2ZWQKCVN0cmluZyA1
-OiBSZXNlcnZlZAoKSGFuZGxlIDB4MDAwOSwgRE1JIHR5cGUgMTYsIDE1IGJ5dGVzClBoeXNpY2Fs
-IE1lbW9yeSBBcnJheQoJTG9jYXRpb246IFN5c3RlbSBCb2FyZCBPciBNb3RoZXJib2FyZAoJVXNl
-OiBTeXN0ZW0gTWVtb3J5CglFcnJvciBDb3JyZWN0aW9uIFR5cGU6IE5vbmUKCU1heGltdW0gQ2Fw
-YWNpdHk6IDIwNDggR0IKCUVycm9yIEluZm9ybWF0aW9uIEhhbmRsZTogTm90IFByb3ZpZGVkCglO
-dW1iZXIgT2YgRGV2aWNlczogMgoKSGFuZGxlIDB4MDAwQSwgRE1JIHR5cGUgMTksIDE1IGJ5dGVz
-Ck1lbW9yeSBBcnJheSBNYXBwZWQgQWRkcmVzcwoJU3RhcnRpbmcgQWRkcmVzczogMHgwMDAwMDAw
-MDAwMAoJRW5kaW5nIEFkZHJlc3M6IDB4MDAwRkZGRkZGRkYKCVJhbmdlIFNpemU6IDQgR0IKCVBo
-eXNpY2FsIEFycmF5IEhhbmRsZTogMHgwMDA5CglQYXJ0aXRpb24gV2lkdGg6IDAKCkhhbmRsZSAw
-eDAwMEIsIERNSSB0eXBlIDE3LCAyMSBieXRlcwpNZW1vcnkgRGV2aWNlCglBcnJheSBIYW5kbGU6
-IDB4MDAwOQoJRXJyb3IgSW5mb3JtYXRpb24gSGFuZGxlOiBOb3QgUHJvdmlkZWQKCVRvdGFsIFdp
-ZHRoOiA2NCBiaXRzCglEYXRhIFdpZHRoOiA2NCBiaXRzCglTaXplOiAyMDQ4IE1CCglGb3JtIEZh
-Y3RvcjogU09ESU1NCglTZXQ6IE5vbmUKCUxvY2F0b3I6IFNPRElNTTEKCUJhbmsgTG9jYXRvcjog
-QmFuayAwCglUeXBlOiBERFIyCglUeXBlIERldGFpbDogVW5rbm93bgoKSGFuZGxlIDB4MDAwQywg
-RE1JIHR5cGUgMjAsIDE5IGJ5dGVzCk1lbW9yeSBEZXZpY2UgTWFwcGVkIEFkZHJlc3MKCVN0YXJ0
-aW5nIEFkZHJlc3M6IDB4MDAwMDAwMDAwMDAKCUVuZGluZyBBZGRyZXNzOiAweDAwMDdGRkZGRkZG
-CglSYW5nZSBTaXplOiAyIEdCCglQaHlzaWNhbCBEZXZpY2UgSGFuZGxlOiAweDAwMEIKCU1lbW9y
-eSBBcnJheSBNYXBwZWQgQWRkcmVzcyBIYW5kbGU6IDB4MDAwQQoJUGFydGl0aW9uIFJvdyBQb3Np
-dGlvbjogVW5rbm93bgoJSW50ZXJsZWF2ZSBQb3NpdGlvbjogVW5rbm93bgoJSW50ZXJsZWF2ZWQg
-RGF0YSBEZXB0aDogVW5rbm93bgoKSGFuZGxlIDB4MDAwRCwgRE1JIHR5cGUgMTcsIDIxIGJ5dGVz
-Ck1lbW9yeSBEZXZpY2UKCUFycmF5IEhhbmRsZTogMHgwMDA5CglFcnJvciBJbmZvcm1hdGlvbiBI
-YW5kbGU6IE5vdCBQcm92aWRlZAoJVG90YWwgV2lkdGg6IDY0IGJpdHMKCURhdGEgV2lkdGg6IDY0
-IGJpdHMKCVNpemU6IDIwNDggTUIKCUZvcm0gRmFjdG9yOiBTT0RJTU0KCVNldDogTm9uZQoJTG9j
-YXRvcjogU09ESU1NMgoJQmFuayBMb2NhdG9yOiBCYW5rIDEKCVR5cGU6IEREUjIKCVR5cGUgRGV0
-YWlsOiBVbmtub3duCgpIYW5kbGUgMHgwMDBFLCBETUkgdHlwZSAyMCwgMTkgYnl0ZXMKTWVtb3J5
-IERldmljZSBNYXBwZWQgQWRkcmVzcwoJU3RhcnRpbmcgQWRkcmVzczogMHgwMDA4MDAwMDAwMAoJ
-RW5kaW5nIEFkZHJlc3M6IDB4MDAwRkZGRkZGRkYKCVJhbmdlIFNpemU6IDIgR0IKCVBoeXNpY2Fs
-IERldmljZSBIYW5kbGU6IDB4MDAwRAoJTWVtb3J5IEFycmF5IE1hcHBlZCBBZGRyZXNzIEhhbmRs
-ZTogMHgwMDBBCglQYXJ0aXRpb24gUm93IFBvc2l0aW9uOiBVbmtub3duCglJbnRlcmxlYXZlIFBv
-c2l0aW9uOiBVbmtub3duCglJbnRlcmxlYXZlZCBEYXRhIERlcHRoOiBVbmtub3duCgpIYW5kbGUg
-MHgwMDBGLCBETUkgdHlwZSAzMiwgMjAgYnl0ZXMKU3lzdGVtIEJvb3QgSW5mb3JtYXRpb24KCVN0
-YXR1czogTm8gZXJyb3JzIGRldGVjdGVkCgpIYW5kbGUgMHgwMDEwLCBETUkgdHlwZSAxMjcsIDQg
-Ynl0ZXMKRW5kIE9mIFRhYmxlCgo=
---0016e642d4f0ece9a804b3800d1f--
+Linus Walleij
