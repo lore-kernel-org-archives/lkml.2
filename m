@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab1LGRE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:04:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39562 "EHLO mx2.suse.de"
+	id S1757550Ab1LGREP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:04:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39479 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757002Ab1LGREY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:04:24 -0500
+	id S1757041Ab1LGREL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:04:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:02 2011
-Message-Id: <20111207165602.586998940@clark.kroah.org>
+Message-Id: <20111207165602.232166480@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:54:59 -0800
+Date: Wed, 07 Dec 2011 08:54:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [26/27] tick-broadcast: Stop active broadcast device when replacing it
+        <alan@lxorguk.ukuu.org.uk>, Salman Qazi <sqazi@google.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [22/27] sched, x86: Avoid unnecessary overflow in sched_clock
 In-Reply-To: <20111207165611.GA19872@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Salman Qazi <sqazi@google.com>
 
-commit c1be84309c58b1e7c6d626e28fba41a22b364c3d upstream.
+commit 4cecf6d401a01d054afc1e5f605bcbfe553cb9b9 upstream.
 
-When a better rated broadcast device is installed, then the current
-active device is not disabled, which results in two running broadcast
-devices.
+(Added the missing signed-off-by line)
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+In hundreds of days, the __cycles_2_ns calculation in sched_clock
+has an overflow.  cyc * per_cpu(cyc2ns, cpu) exceeds 64 bits, causing
+the final value to become zero.  We can solve this without losing
+any precision.
+
+We can decompose TSC into quotient and remainder of division by the
+scale factor, and then use this to convert TSC into nanoseconds.
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Acked-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/time/tick-broadcast.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/include/asm/timer.h |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -72,7 +72,7 @@ int tick_check_broadcast_device(struct c
- 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
- 		return 0;
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -38,6 +38,22 @@ extern int no_timer_check;
+  *  (mathieu.desnoyers@polymtl.ca)
+  *
+  *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
++ *
++ * In:
++ *
++ * ns = cycles * cyc2ns_scale / SC
++ *
++ * Although we may still have enough bits to store the value of ns,
++ * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
++ * leading to an incorrect result.
++ *
++ * To avoid this, we can decompose 'cycles' into quotient and remainder
++ * of division by SC.  Then,
++ *
++ * ns = (quot * SC + rem) * cyc2ns_scale / SC
++ *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
++ *
++ *			- sqazi@google.com
+  */
  
--	clockevents_exchange_device(NULL, dev);
-+	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
- 	tick_broadcast_device.evtdev = dev;
- 	if (!cpumask_empty(tick_get_broadcast_mask()))
- 		tick_broadcast_start_periodic(dev);
+ DECLARE_PER_CPU(unsigned long, cyc2ns);
+@@ -47,9 +63,14 @@ DECLARE_PER_CPU(unsigned long long, cyc2
+ 
+ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ {
++	unsigned long long quot;
++	unsigned long long rem;
+ 	int cpu = smp_processor_id();
+ 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+-	ns += cyc * per_cpu(cyc2ns, cpu) >> CYC2NS_SCALE_FACTOR;
++	quot = (cyc >> CYC2NS_SCALE_FACTOR);
++	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
++	ns += quot * per_cpu(cyc2ns, cpu) +
++		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
+ 	return ns;
+ }
+ 
 
 
