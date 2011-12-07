@@ -1,222 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab1LGN6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:58:33 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35329 "EHLO zene.cmpxchg.org"
+	id S1756392Ab1LGN6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:58:41 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:32569 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756144Ab1LGN6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:58:31 -0500
-Date: Wed, 7 Dec 2011 14:58:02 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/5] mm: exclude reserved pages from dirtyable memory
-Message-ID: <20111207135802.GF12673@cmpxchg.org>
-References: <1322055258-3254-1-git-send-email-hannes@cmpxchg.org>
- <1322055258-3254-2-git-send-email-hannes@cmpxchg.org>
- <20111129162014.aa290174.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111129162014.aa290174.akpm@linux-foundation.org>
+	id S1756298Ab1LGN6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 08:58:37 -0500
+From: Andrew Vagin <avagin@openvz.org>
+To: acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@elte.hu, asharma@fb.com, devel@openvz.org, dsahern@gmail.com,
+        linux-perf-users@vger.kernel.org
+Subject: [PATCH 2/6] perf: add ability to change event according to sample (v3)
+Date: Wed,  7 Dec 2011 16:55:57 +0300
+Message-Id: <1323266161-394927-3-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1323266161-394927-1-git-send-email-avagin@openvz.org>
+References: <1323266161-394927-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 29, 2011 at 04:20:14PM -0800, Andrew Morton wrote:
-> On Wed, 23 Nov 2011 14:34:14 +0100
-> Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > From: Johannes Weiner <jweiner@redhat.com>
-> > 
-> > The amount of dirtyable pages should not include the full number of
-> > free pages: there is a number of reserved pages that the page
-> > allocator and kswapd always try to keep free.
-> > 
-> > The closer (reclaimable pages - dirty pages) is to the number of
-> > reserved pages, the more likely it becomes for reclaim to run into
-> > dirty pages:
-> > 
-> >        +----------+ ---
-> >        |   anon   |  |
-> >        +----------+  |
-> >        |          |  |
-> >        |          |  -- dirty limit new    -- flusher new
-> >        |   file   |  |                     |
-> >        |          |  |                     |
-> >        |          |  -- dirty limit old    -- flusher old
-> >        |          |                        |
-> >        +----------+                       --- reclaim
-> >        | reserved |
-> >        +----------+
-> >        |  kernel  |
-> >        +----------+
-> > 
-> > This patch introduces a per-zone dirty reserve that takes both the
-> > lowmem reserve as well as the high watermark of the zone into account,
-> > and a global sum of those per-zone values that is subtracted from the
-> > global amount of dirtyable pages.  The lowmem reserve is unavailable
-> > to page cache allocations and kswapd tries to keep the high watermark
-> > free.  We don't want to end up in a situation where reclaim has to
-> > clean pages in order to balance zones.
-> > 
-> > Not treating reserved pages as dirtyable on a global level is only a
-> > conceptual fix.  In reality, dirty pages are not distributed equally
-> > across zones and reclaim runs into dirty pages on a regular basis.
-> > 
-> > But it is important to get this right before tackling the problem on a
-> > per-zone level, where the distance between reclaim and the dirty pages
-> > is mostly much smaller in absolute numbers.
-> > 
-> > ...
-> >
-> > --- a/mm/page-writeback.c
-> > +++ b/mm/page-writeback.c
-> > @@ -327,7 +327,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
-> >  			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
-> >  
-> >  		x += zone_page_state(z, NR_FREE_PAGES) +
-> > -		     zone_reclaimable_pages(z);
-> > +		     zone_reclaimable_pages(z) -
-> > +		     zone->dirty_balance_reserve;
-> 
-> Doesn't compile.  s/zone/z/.
-> 
-> Which makes me suspect it wasn't tested on a highmem box.  This is
-> rather worrisome, as highmem machines tend to have acute and unique
-> zone balancing issues.
+It's opposition of perf_session__parse_sample.
 
-You are right, so I ran fs_mark on an x86 machine with 8GB and a
-32-bit kernel.
+v2: fixed mistakes which David Arhen found
+v3: s/data/sample/
+    s/perf_event__change_sample/perf_event__synthesize_sample
 
-fs_mark  -S  0  -d  work-01  -d  work-02  -d  work-03  -d  work-04  -D  128  -N  128  -L  16  -n  512  -s  655360
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ tools/perf/util/event.h   |    2 +
+ tools/perf/util/evsel.c   |   74 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.h |    9 +++++
+ 3 files changed, 85 insertions(+), 0 deletions(-)
 
-This translates to 4 threads doing 16 iterations over a new set of 512
-files each time, where each file is 640k in size, which adds up to 20G
-of written data per run.  The results are gathered over 5 runs.  Data
-are written to an ext4 on a standard consumer rotational disk.
-
-The overall runtime for the loads were the same:
-
-		seconds
-		mean(stddev)
- vanilla:	242.061(0.953)
- patched:	242.726(1.714)
-
-Allocation counts confirm that allocation placement does not change:
-
-		pgalloc_dma		pgalloc_normal				pgalloc_high
-		min|median|max	
- vanilla:	0.000|0.000|0.000	3733291.000|3742709.000|4034662.000	5189412.000|5202220.000|5208743.000
- patched:	0.000|0.000|0.000	3716148.000|3733269.000|4032205.000	5212301.000|5216834.000|5227756.000
-
-Kswapd in both kernels did the same amount of work in each zone over
-the course of the workload; direct reclaim was never invoked:
-
-		pgscan_kswapd_dma	pgscan_kswapd_normal			pgscan_kswapd_high
-		min|median|max
- vanilla:	0.000|0.000|0.000	109919.000|115773.000|117952.000	3235879.000|3246707.000|3255205.000
- patched:	0.000|0.000|0.000	104169.000|114845.000|117657.000	3241327.000|3246835.000|3257843.000
-
-		pgsteal_dma		pgsteal_normal				pgsteal_high
-		min|median|max
- vanilla:	0.000|0.000|0.000	109912.000|115766.000|117945.000	3235318.000|3246632.000|3255098.000
- patched:	0.000|0.000|0.000	104163.000|114839.000|117651.000	3240765.000|3246760.000|3257768.000
-
-and the distribution of scans over time was equivalent, with no new
-hickups or scan spikes:
-
-		pgscan_kswapd_dma/s	pgscan_kswapd_normal/s			pgscan_kswapd_high/s
-		min|median|max
- vanilla:	0.000|0.000|0.000	0.000|144.000|2100.000			0.000|15582.500|44916.000
- patched:	0.000|0.000|0.000	0.000|152.000|2058.000			0.000|15361.000|44453.000
-
-		pgsteal_dma/s		pgsteal_normal/s			pgsteal_high/s
-		min|median|max
- vanilla:	0.000|0.000|0.000	0.000|144.000|2094.000			0.000|15582.500|44916.000
- patched:	0.000|0.000|0.000	0.000|152.000|2058.000			0.000|15361.000|44453.000
-
-
-				fs_mark 1G
-
-The same fs_mark load was run on the system limited to 1G memory
-(booted with mem=1G), to have a highmem zone that is much smaller
-compared to the rest of the system.
-
-		seconds
-		mean(stddev)
- vanilla:	238.428(3.810)	
- patched:	241.392(0.221)	
-
-In this case, allocation placement did shift slightly towards lower
-zones, to protect the tiny highmem zone from being unreclaimable due
-to dirty pages:
-
-		pgalloc_dma			pgalloc_normal				pgalloc_high
-		min|median|max
- vanilla:	20658.000|21863.000|23231.000	4017580.000|4023331.000|4038774.000	1057246.000|1076280.000|1083824.000
- patched:	25403.000|27679.000|28556.000	4163538.000|4172116.000|4179151.000	 917054.000| 922206.000| 933609.000
-
-However, while there were in total more allocations in the DMA and
-Normal zone, the utilization peaks of the zones individually were
-actually reduced due to smoother distribution:
-
-		DMA min nr_free_pages		Normal min nr_free_pages		HighMem min nr_free_pages
- vanilla:	1244.000			14819.000				432.000
- patched:	1337.000			14850.000				439.000
-
-Keep in mind that the lower zones are only used more often for
-allocation because they are providing dirtyable memory in this
-scenario, i.e. they have space to spare.
-
-With increasing lowmem usage for stuff that is truly lowmem, like
-dcache and page tables, the amount of memory we consider dirtyable
-(free pages + file pages) shrinks, so when highmem is not allowed to
-take anymore dirty pages, we will not thrash on the lower zones:
-either they have space left or the dirtiers are already being
-throttled in balance_dirty_pages().
-
-Reclaim numbers suggests that kswapd can easily keep up with the the
-allocation frequency increase in the Normal zone.  But for DMA, it
-looks like the unpatched kernel flooded the zone with dirty pages
-every once in a while, making it ineligible for allocations until
-those pages were cleaned.  Through better distribution, the patch
-improves reclaim efficiency (reclaimed/scanned) from 32% to 100% for
-DMA:
-
-		pgscan_kswapd_dma		pgscan_kswapd_normal			pgscan_kswapd_high
-		min|median|max
- vanilla:	39734.000|41248.000|41965.000	3692050.000|3696209.000|3716653.000	970411.000|987483.000|991469.000
- patched:	21204.000|23901.000|25141.000	3874782.000|3879125.000|3888302.000	793141.000|795631.000|803482.000
-
-		pgsteal_dma			pgsteal_normal				pgsteal_high
-		min|median|max
- vanilla:	12932.000|14044.000|16957.000	3692025.000|3696183.000|3716626.000	966050.000|987386.000|991405.000
- patched:	21204.000|23901.000|25141.000	3874771.000|3879095.000|3888284.000	792079.000|795572.000|803370.000
-
-And the increased reclaim efficiency in the DMA zone indeed correlates
-with the reduced likelyhood of reclaim running into dirty pages:
-
-	DMA						Normal				Highmem
-	nr_vmscan_write	nr_vmscan_immediate_reclaim
-
-vanilla:
-	26.0	19614.0					0.0	0.0			1174.0	0.0
-	0.0	21737.0					0.0	1.0			0.0	0.0
-	0.0	22101.0					0.0	0.0			0.0	0.0
-        0.0	21906.0					0.0	0.0			0.0	0.0
-	0.0	21880.0					0.0	0.0			0.0	0.0
-
-patched:
-	0.0	0.0					0.0	1.0			502.0	0.0
-	0.0	0.0					0.0	0.0			0.0	0.0
-	0.0	0.0					0.0	0.0			0.0	0.0
-	0.0	0.0					0.0	0.0			0.0	0.0
-	0.0	0.0					0.0	1.0			0.0	0.0
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 0d80201..cc3cc11 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -199,6 +199,8 @@ const char *perf_event__name(unsigned int id);
+ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 			     int sample_size, bool sample_id_all,
+ 			     struct perf_sample *sample, bool swapped);
++int perf_event__synthesize_sample(union perf_event *event, u64 type,
++			     const struct perf_sample *sample, bool swapped);
+ 
+ size_t perf_event__fprintf_comm(union perf_event *event, FILE *fp);
+ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp);
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index ee68d69..e2d1b22 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -574,3 +574,77 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 
+ 	return 0;
+ }
++
++int perf_event__synthesize_sample(union perf_event *event, u64 type,
++			     const struct perf_sample *sample, bool swapped)
++{
++	u64 *array;
++
++	/*
++	 * used for cross-endian analysis. See git commit 65014ab3
++	 * for why this goofiness is needed.
++	 */
++	union {
++		u64 val64;
++		u32 val32[2];
++	} u;
++
++	array = event->sample.array;
++
++	if (type & PERF_SAMPLE_IP) {
++		event->ip.ip = sample->ip;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_TID) {
++		u.val32[0] = sample->pid;
++		u.val32[1] = sample->tid;
++		if (swapped) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val32[1] = bswap_32(u.val32[1]);
++			u.val64 = bswap_64(u.val64);
++		}
++
++		*array = u.val64;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_TIME) {
++		*array = sample->time;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_ADDR) {
++		*array = sample->addr;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_ID) {
++		*array = sample->id;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_STREAM_ID) {
++		*array = sample->stream_id;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_CPU) {
++		u.val32[0] = sample->cpu;
++		if (swapped) {
++			/* undo swap of u64, then swap on individual u32s */
++			u.val32[0] = bswap_32(u.val32[0]);
++			u.val64 = bswap_64(u.val64);
++		}
++		*array = u.val64;
++		array++;
++	}
++
++	if (type & PERF_SAMPLE_PERIOD) {
++		*array = sample->period;
++		array++;
++	}
++
++	return 0;
++}
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 30e9c6b..4ed73d3 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -134,6 +134,15 @@ static inline int perf_session__parse_sample(struct perf_session *session,
+ 					session->header.needs_swap);
+ }
+ 
++static inline int perf_session__synthesize_sample(struct perf_session *session,
++					     union perf_event *event,
++					     const struct perf_sample *sample)
++{
++	return perf_event__synthesize_sample(event, session->sample_type,
++					sample,
++					session->header.needs_swap);
++}
++
+ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+ 					    unsigned int type);
+ 
+-- 
+1.7.1
 
