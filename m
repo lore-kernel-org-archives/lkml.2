@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab1LGJDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:03:15 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:27822
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754140Ab1LGJDK (ORCPT
+	id S1755789Ab1LGJDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:03:39 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:21708 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312Ab1LGJDO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:03:10 -0500
+	Wed, 7 Dec 2011 04:03:14 -0500
 X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzzz2dh668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LVTT50-01-ASJ-02
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LVTT55-02-6SA-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Arnaldo Carvalho de Melo <acme@redhat.com>
@@ -20,10 +20,12 @@ CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH v2 0/7] perf tools: cleanups, fixes, updates
-Date: Wed, 7 Dec 2011 10:02:50 +0100
-Message-ID: <1323248577-11268-1-git-send-email-robert.richter@amd.com>
+Subject: [PATCH v2 6/7] perf tools: Improve macros for struct feature_ops
+Date: Wed, 7 Dec 2011 10:02:56 +0100
+Message-ID: <1323248577-11268-7-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1323248577-11268-1-git-send-email-robert.richter@amd.com>
+References: <1323248577-11268-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: amd.com
@@ -31,61 +33,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch set contains some cleanups, fixes and updates I found worth
-to implement during code review. Some patches can be applied
-independently.
+Reducing duplication and line size by extending function names for
+print and write from a single name.
 
-v2:
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ tools/perf/util/header.c |   40 ++++++++++++++++++++++------------------
+ 1 files changed, 22 insertions(+), 18 deletions(-)
 
-* Rebased version to latest tip/perf/core.
-
-* Removed patches #1 and #2 as they are already applied.
-
-* Dropping patch "perf report: Setup browser if stdout is a pipe", the
-  patch did not properly handle ^C to terminate profiling.
-
-* perf record throws an error now if buildids may not be generated,
-  which can be disabled with the --no-buildid option.
-
-* Prevent potential null pointer access to input_name in
-  builtin-report.c. Needed due to removal of patch "perf report: Setup
-  browser if stdout is a pipe"
-
-Robert Richter (7):
-  perf tools: Continue processing header on unknown features
-  perf tools: Fix out-of-bound access to struct perf_session
-  perf tool: Moving code in some files
-  perf report: Accept fifos as input file
-  perf tool: Unify handling of features when writing feature section
-  perf tools: Improve macros for struct feature_ops
-  perf tools: Use for_each_set_bit() to iterate over feature flags
-
- tools/perf/Documentation/perf-annotate.txt     |    2 +-
- tools/perf/Documentation/perf-buildid-list.txt |    2 +-
- tools/perf/Documentation/perf-evlist.txt       |    2 +-
- tools/perf/Documentation/perf-kmem.txt         |    2 +-
- tools/perf/Documentation/perf-lock.txt         |    2 +-
- tools/perf/Documentation/perf-report.txt       |    2 +-
- tools/perf/Documentation/perf-sched.txt        |    2 +-
- tools/perf/Documentation/perf-script.txt       |    2 +-
- tools/perf/Documentation/perf-timechart.txt    |    2 +-
- tools/perf/builtin-annotate.c                  |    3 +-
- tools/perf/builtin-buildid-list.c              |   53 +-
- tools/perf/builtin-evlist.c                    |    2 +-
- tools/perf/builtin-kmem.c                      |    2 +-
- tools/perf/builtin-lock.c                      |    2 +-
- tools/perf/builtin-record.c                    |    7 +
- tools/perf/builtin-report.c                    |   13 +-
- tools/perf/builtin-sched.c                     |    2 +-
- tools/perf/builtin-script.c                    |    4 +-
- tools/perf/builtin-timechart.c                 |    4 +-
- tools/perf/util/header.c                       |  663 +++++++++++-------------
- tools/perf/util/header.h                       |    6 +-
- tools/perf/util/include/linux/bitops.h         |  118 +++++
- tools/perf/util/session.c                      |   15 +-
- tools/perf/util/session.h                      |    2 +-
- 24 files changed, 496 insertions(+), 418 deletions(-)
-
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 129c92d..f1d0a95 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1311,26 +1311,30 @@ struct feature_ops {
+ 	bool full_only;
+ };
+ 
+-#define FEAT_OPA(n, w, p) \
+-	[n] = { .name = #n, .write = w, .print = p }
+-#define FEAT_OPF(n, w, p) \
+-	[n] = { .name = #n, .write = w, .print = p, .full_only = true }
++#define FEAT_OPA(n, func) \
++	[n] = { .name = #n, .write = write_##func, .print = print_##func }
++#define FEAT_OPF(n, func) \
++	[n] = { .name = #n, .write = write_##func, .print = print_##func, .full_only = true }
++
++/* feature_ops not implemented: */
++#define print_trace_info		NULL
++#define print_build_id			NULL
+ 
+ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+-	FEAT_OPA(HEADER_TRACE_INFO, write_trace_info, NULL),
+-	FEAT_OPA(HEADER_BUILD_ID, write_build_id, NULL),
+-	FEAT_OPA(HEADER_HOSTNAME, write_hostname, print_hostname),
+-	FEAT_OPA(HEADER_OSRELEASE, write_osrelease, print_osrelease),
+-	FEAT_OPA(HEADER_VERSION, write_version, print_version),
+-	FEAT_OPA(HEADER_ARCH, write_arch, print_arch),
+-	FEAT_OPA(HEADER_NRCPUS, write_nrcpus, print_nrcpus),
+-	FEAT_OPA(HEADER_CPUDESC, write_cpudesc, print_cpudesc),
+-	FEAT_OPA(HEADER_CPUID, write_cpuid, print_cpuid),
+-	FEAT_OPA(HEADER_TOTAL_MEM, write_total_mem, print_total_mem),
+-	FEAT_OPA(HEADER_EVENT_DESC, write_event_desc, print_event_desc),
+-	FEAT_OPA(HEADER_CMDLINE, write_cmdline, print_cmdline),
+-	FEAT_OPF(HEADER_CPU_TOPOLOGY, write_cpu_topology, print_cpu_topology),
+-	FEAT_OPF(HEADER_NUMA_TOPOLOGY, write_numa_topology, print_numa_topology),
++	FEAT_OPA(HEADER_TRACE_INFO,	trace_info),
++	FEAT_OPA(HEADER_BUILD_ID,	build_id),
++	FEAT_OPA(HEADER_HOSTNAME,	hostname),
++	FEAT_OPA(HEADER_OSRELEASE,	osrelease),
++	FEAT_OPA(HEADER_VERSION,	version),
++	FEAT_OPA(HEADER_ARCH,		arch),
++	FEAT_OPA(HEADER_NRCPUS,		nrcpus),
++	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
++	FEAT_OPA(HEADER_CPUID,		cpuid),
++	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
++	FEAT_OPA(HEADER_EVENT_DESC,	event_desc),
++	FEAT_OPA(HEADER_CMDLINE,	cmdline),
++	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
++	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ };
+ 
+ struct header_print_data {
 -- 
 1.7.7
 
