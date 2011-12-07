@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755012Ab1LGDXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 22:23:34 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50485 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab1LGDXd (ORCPT
+	id S1755375Ab1LGD0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 22:26:36 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63567 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab1LGD0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 22:23:33 -0500
-Date: Wed, 7 Dec 2011 03:23:29 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
+	Tue, 6 Dec 2011 22:26:35 -0500
+X-Nat-Received: from [202.181.97.72]:55867 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1323228385.26889
+Message-Id: <201112070326.pB73QPZo042162@www262.sakura.ne.jp>
 Subject: Re: [git pull] apparmor fix for __d_path() misuse
-Message-ID: <20111207032329.GW2203@ZenIV.linux.org.uk>
-References: <4EDE94DC.8010106@canonical.com>
- <20111206224100.GM2203@ZenIV.linux.org.uk>
- <4EDEA152.90804@canonical.com>
- <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
- <20111207001643.GN2203@ZenIV.linux.org.uk>
- <20111207003922.GO2203@ZenIV.linux.org.uk>
- <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com>
- <20111207011047.GQ2203@ZenIV.linux.org.uk>
- <20111207013720.GS2203@ZenIV.linux.org.uk>
- <CA+55aFx7HZrZ=OxnRaCKnHJU0fYk5G7PY1o8eRBOaPZu7h-4kA@mail.gmail.com>
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: viro@ZenIV.linux.org.uk
+Cc: john.johansen@canonical.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, torvalds@linux-foundation.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx7HZrZ=OxnRaCKnHJU0fYk5G7PY1o8eRBOaPZu7h-4kA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Date: Wed, 07 Dec 2011 12:26:25 +0900
+References: <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com> <4EDE94DC.8010106@canonical.com> <20111206224100.GM2203@ZenIV.linux.org.uk> <4EDEA152.90804@canonical.com> <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com> <20111207001643.GN2203@ZenIV.linux.org.uk> <20111207003922.GO2203@ZenIV.linux.org.uk> <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com> <20111207011047.GQ2203@ZenIV.linux.org.uk> <20111207013720.GS2203@ZenIV.linux.org.uk>
+In-Reply-To: <20111207013720.GS2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 07122011 #5941518, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 06:21:55PM -0800, Linus Torvalds wrote:
+Al Viro wrote:
+> diff --git a/security/tomoyo/realpath.c b/security/tomoyo/realpath.c
+> index 738bbdf..36fa7c9 100644
+> --- a/security/tomoyo/realpath.c
+> +++ b/security/tomoyo/realpath.c
+> @@ -101,9 +101,8 @@ static char *tomoyo_get_absolute_path(struct path *path, char * const buffer,
+>  {
+>         char *pos = ERR_PTR(-ENOMEM);
+>         if (buflen >= 256) {
+> -               struct path ns_root = { };
+>                 /* go to whatever namespace root we are under */
+> -               pos = __d_path(path, &ns_root, buffer, buflen - 1);
+> +               pos = d_absolute_path(path, buffer, buflen - 1);
+>                 if (!IS_ERR(pos) && *pos == '/' && pos[1]) {
+>                         struct inode *inode = path->dentry->d_inode;
+>                         if (inode && S_ISDIR(inode->i_mode)) {
 
-> Afaik, you really are trying to make crazy code continue to work in
-> ways that I'm not convinced is really required. Now, maybe it's a good
-> idea for this stage in the -rc process, but my gut feel is that we
-> could simply have broken it too. JJ seems willing to fix things up for
-> AppArmor, and I don't know of any big distro that uses Tomoyo, so...
+Currently, TOMOYO assumes that -ENAMETOOLONG is the only error which __d_path()
+might return (and retries with larger buffer size unless kmalloc() fails).
+If d_absolute_path() starts returning -EINVAL, TOMOYO will deny requests even
+if "partial (I mean the result would have been different if reachable)"
+pathname is granted by the policy.
 
-*snort*
+How commonly can conditions that make d_absolute_path() return -EINVAL happen?
 
-As far as I'm concerned, adding
 
-# misnomer/marketing/lie - that's LSM, actually
-config SECURITY
-	depends on INSANITY || CRETINOUS_MANAGEMENT || SHITTY_GOV_REQS
 
-would be a good thing; git rm on the whole bunch would be even better
-(yes, both the pathname-based horrors and selinux).  Not feasible,
-unfortunately - Linux S&M is there to stay.  More's the pity...
-
-Anyway, we are at -rc4 and we have an oopsable race that needs to be fixed.
-So let's fix it and then let apparmor and tomoyo folks deal with their
-ugly stuff.  It's also 3.0.x / 3.1.x fodder; the same goes for 2.6.3[6-9].x
-but there tomoyo part will need backporting (they had changes circa 3.0-rc3
-in that area).
-
-I don't think that d_absolute_path() is a bad thing per se - it's *definitely*
-bad for making security decisions, but you've mentioned debugging yourself.
-Better that than kludges like struct path root = {} and passing &root around,
-especially if random debugging code starts using it...
-
-I'm waiting an ACK/NAK for apparmor bits from John; I think the summary I've
-put in the previous mail would do as commit message, so I'll put it into
-commit and push in #for-linus; if John ACKs that sucker, pull request time...
+Linus Torvalds wrote:
+> I don't know of any big distro that uses Tomoyo, so...
+Ubuntu, Debian, OpenSUSE, ArchLinux, Mandriva...
+Hope you know one of these distro. ;-)
