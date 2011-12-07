@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab1LGPse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 10:48:34 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57697 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756516Ab1LGPsd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 10:48:33 -0500
-Date: Wed, 7 Dec 2011 23:47:47 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Subject: Re: [PATCH] leds: driver for ab5500 high voltage leds
-Message-ID: <20111207154746.GA22355@opensource.wolfsonmicro.com>
-References: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com>
- <20111203214924.GA21511@sirena.org.uk>
- <CACRpkdZBX6ct7GNz_5AEfqgnhS75OW9n+CFTzOXMYF8hV1fwOw@mail.gmail.com>
+	id S1756639Ab1LGPww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 10:52:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28524 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756152Ab1LGPwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 10:52:51 -0500
+Date: Wed, 7 Dec 2011 17:54:35 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 04/12] virtio: console: Add freeze and restore
+ handlers to support S4
+Message-ID: <20111207155435.GB23845@redhat.com>
+References: <cover.1323199985.git.amit.shah@redhat.com>
+ <9f09629340556ddac37135bc3aab233f1154f86a.1323199985.git.amit.shah@redhat.com>
+ <20111207104323.GE8326@redhat.com>
+ <20111207105955.GJ4651@amit-x200.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZBX6ct7GNz_5AEfqgnhS75OW9n+CFTzOXMYF8hV1fwOw@mail.gmail.com>
-X-Cookie: You dialed 5483.
+In-Reply-To: <20111207105955.GJ4651@amit-x200.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 03:16:06PM +0100, Linus Walleij wrote:
+On Wed, Dec 07, 2011 at 04:29:55PM +0530, Amit Shah wrote:
+> On (Wed) 07 Dec 2011 [12:43:24], Michael S. Tsirkin wrote:
+> 
+> > > diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> > > index e14f5aa..fd2fd6f 100644
+> > > --- a/drivers/char/virtio_console.c
+> > > +++ b/drivers/char/virtio_console.c
+> > > @@ -1844,6 +1844,60 @@ static unsigned int features[] = {
+> > >  	VIRTIO_CONSOLE_F_MULTIPORT,
+> > >  };
+> > >  
+> > > +#ifdef CONFIG_PM
+> > > +static int virtcons_freeze(struct virtio_device *vdev)
+> > > +{
+> > > +	struct ports_device *portdev;
+> > > +	struct port *port;
+> > > +
+> > > +	portdev = vdev->priv;
+> > > +
+> > > +	vdev->config->reset(vdev);
+> > 
+> > 
+> > So here, cancel_work_sync might still be running.
+> > If it does run, might it try to access the device
+> > config?  Could not determine this quickly, if yes it's a problem.
+> 
+> Similar to the other comment: I don't see why just resetting device
+> can cause config queue access to go bad.
+> 
+> 		Amit
 
-> Then in the sysfs interface:
+Hmm, not sure anymore. Sorry.
 
-> +       if (led_curr > led->max_current)
-> +               led_curr = led->max_current;
-
-> You are only allowed to set a lower value than the max value.
-
-Oh, that's surprising - my expectation had been that the standard
-brightness setting would be managing the current limit and the user
-wouldn't need to control it separately.
