@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab1LGRC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:02:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:32968 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757031Ab1LGQRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:17:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
-Message-Id: <20111207160825.388383668@clark.kroah.org>
-User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:53 -0800
-From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        "Luis R. Rodriguez" <lrodriguez@qca.qualcomm.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [33/80] cfg80211: fix regulatory NULL dereference
-In-Reply-To: <20111207161256.GA7736@kroah.com>
+	id S1757266Ab1LGRCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:02:49 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61325 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757163Ab1LGRCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:02:47 -0500
+From: Tom Gundersen <teg@jklm.no>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>
+Subject: [PATCH] mm: mark some messages as INFO
+Date: Wed,  7 Dec 2011 18:02:40 +0100
+Message-Id: <1323277360-3155-1-git-send-email-teg@jklm.no>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This reduces the noise in
 
-------------------
+$ dmesg --kernel --level=err,warn
 
-From: Johannes Berg <johannes.berg@intel.com>
-
-commit de3584bd62d87b4c250129fbc46ca52c80330add upstream.
-
-By the time userspace returns with a response to
-the regulatory domain request, the wiphy causing
-the request might have gone away. If this is so,
-reject the update but mark the request as having
-been processed anyway.
-
-Cc: Luis R. Rodriguez <lrodriguez@qca.qualcomm.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Tom Gundersen <teg@jklm.no>
 ---
- net/wireless/reg.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ mm/page_alloc.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -2026,6 +2026,10 @@ static int __set_regdom(const struct iee
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 9dd443d..e427e99 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3270,14 +3270,14 @@ void __ref build_all_zonelists(void *data)
+ 	else
+ 		page_group_by_mobility_disabled = 0;
+ 
+-	printk("Built %i zonelists in %s order, mobility grouping %s.  "
++	printk(KERN_INFO "Built %i zonelists in %s order, mobility grouping %s.  "
+ 		"Total pages: %ld\n",
+ 			nr_online_nodes,
+ 			zonelist_order_name[current_zonelist_order],
+ 			page_group_by_mobility_disabled ? "off" : "on",
+ 			vm_total_pages);
+ #ifdef CONFIG_NUMA
+-	printk("Policy zone: %s\n", zone_names[policy_zone]);
++	printk(KERN_INFO "Policy zone: %s\n", zone_names[policy_zone]);
+ #endif
+ }
+ 
+@@ -4913,31 +4913,31 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+ 	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
+ 
+ 	/* Print out the zone ranges */
+-	printk("Zone PFN ranges:\n");
++	printk(KERN_INFO "Zone PFN ranges:\n");
+ 	for (i = 0; i < MAX_NR_ZONES; i++) {
+ 		if (i == ZONE_MOVABLE)
+ 			continue;
+-		printk("  %-8s ", zone_names[i]);
++		printk(KERN_INFO "  %-8s ", zone_names[i]);
+ 		if (arch_zone_lowest_possible_pfn[i] ==
+ 				arch_zone_highest_possible_pfn[i])
+-			printk("empty\n");
++			printk(KERN_INFO "empty\n");
+ 		else
+-			printk("%0#10lx -> %0#10lx\n",
++			printk(KERN_INFO "%0#10lx -> %0#10lx\n",
+ 				arch_zone_lowest_possible_pfn[i],
+ 				arch_zone_highest_possible_pfn[i]);
  	}
  
- 	request_wiphy = wiphy_idx_to_wiphy(last_request->wiphy_idx);
-+	if (!request_wiphy) {
-+		reg_set_request_processed();
-+		return -ENODEV;
-+	}
+ 	/* Print out the PFNs ZONE_MOVABLE begins at in each node */
+-	printk("Movable zone start PFN for each node\n");
++	printk(KERN_INFO "Movable zone start PFN for each node\n");
+ 	for (i = 0; i < MAX_NUMNODES; i++) {
+ 		if (zone_movable_pfn[i])
+-			printk("  Node %d: %lu\n", i, zone_movable_pfn[i]);
++			printk(KERN_INFO "  Node %d: %lu\n", i, zone_movable_pfn[i]);
+ 	}
  
- 	if (!last_request->intersect) {
- 		int r;
-
+ 	/* Print out the early_node_map[] */
+-	printk("early_node_map[%d] active PFN ranges\n", nr_nodemap_entries);
++	printk(KERN_INFO "early_node_map[%d] active PFN ranges\n", nr_nodemap_entries);
+ 	for (i = 0; i < nr_nodemap_entries; i++)
+-		printk("  %3d: %0#10lx -> %0#10lx\n", early_node_map[i].nid,
++		printk(KERN_INFO "  %3d: %0#10lx -> %0#10lx\n", early_node_map[i].nid,
+ 						early_node_map[i].start_pfn,
+ 						early_node_map[i].end_pfn);
+ 
+-- 
+1.7.8
 
