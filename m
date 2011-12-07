@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933909Ab1LGQYW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:24:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34426 "EHLO mx2.suse.de"
+	id S933974Ab1LGQYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:24:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34505 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933873Ab1LGQYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:24:16 -0500
+	id S933910Ab1LGQYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:24:36 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:21 2011
-Message-Id: <20111207161221.289171784@clark.kroah.org>
+Message-Id: <20111207161221.691461282@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:21 -0800
+Date: Wed, 07 Dec 2011 08:12:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Salman Qazi <sqazi@google.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [079/104] sched, x86: Avoid unnecessary overflow in sched_clock
+        <alan@lxorguk.ukuu.org.uk>, Robert Richter <robert.richter@amd.com>
+Subject: [084/104] oprofile, x86: Fix crash when unloading module (nmi timer mode)
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,72 +24,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Salman Qazi <sqazi@google.com>
+From: Robert Richter <robert.richter@amd.com>
 
-commit 4cecf6d401a01d054afc1e5f605bcbfe553cb9b9 upstream.
+commit 97f7f8189fe54e3cfe324ef9ad35064f3d2d3bff upstream.
 
-(Added the missing signed-off-by line)
+If oprofile uses the nmi timer interrupt there is a crash while
+unloading the module. The bug can be triggered with oprofile build as
+module and kernel parameter nolapic set. This patch fixes this.
 
-In hundreds of days, the __cycles_2_ns calculation in sched_clock
-has an overflow.  cyc * per_cpu(cyc2ns, cpu) exceeds 64 bits, causing
-the final value to become zero.  We can solve this without losing
-any precision.
+oprofile: using NMI timer interrupt.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+PGD 42dbca067 PUD 41da6a067 PMD 0
+Oops: 0002 [#1] PREEMPT SMP
+CPU 5
+Modules linked in: oprofile(-) [last unloaded: oprofile]
 
-We can decompose TSC into quotient and remainder of division by the
-scale factor, and then use this to convert TSC into nanoseconds.
+Pid: 2518, comm: modprobe Not tainted 3.1.0-rc7-00019-gb2fb49d #19 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+RSP: 0018:ffff88041ef71e98  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: ffffffffa0017100 RCX: dead000000200200
+RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
+RBP: ffff88041ef71ea8 R08: 0000000000000001 R09: 0000000000000082
+R10: 0000000000000000 R11: ffff88041ef71de8 R12: 0000000000000080
+R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
+FS:  00007fc902f20700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000008 CR3: 000000041cdb6000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process modprobe (pid: 2518, threadinfo ffff88041ef70000, task ffff88041d348040)
+Stack:
+ ffff88041ef71eb8 ffffffffa0017790 ffff88041ef71eb8 ffffffffa0013532
+ ffff88041ef71ec8 ffffffffa00132d6 ffff88041ef71ed8 ffffffffa00159b2
+ ffff88041ef71f78 ffffffff81073115 656c69666f72706f 0000000000610200
+Call Trace:
+ [<ffffffffa0013532>] op_nmi_exit+0x15/0x17 [oprofile]
+ [<ffffffffa00132d6>] oprofile_arch_exit+0xe/0x10 [oprofile]
+ [<ffffffffa00159b2>] oprofile_exit+0x1e/0x20 [oprofile]
+ [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
+ [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
+Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
+ 89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
+RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+ RSP <ffff88041ef71e98>
+CR2: 0000000000000008
+---[ end trace 43a541a52956b7b0 ]---
 
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Acked-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/timer.h |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ arch/x86/oprofile/init.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -32,6 +32,22 @@ extern int no_timer_check;
-  *  (mathieu.desnoyers@polymtl.ca)
-  *
-  *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
-+ *
-+ * In:
-+ *
-+ * ns = cycles * cyc2ns_scale / SC
-+ *
-+ * Although we may still have enough bits to store the value of ns,
-+ * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
-+ * leading to an incorrect result.
-+ *
-+ * To avoid this, we can decompose 'cycles' into quotient and remainder
-+ * of division by SC.  Then,
-+ *
-+ * ns = (quot * SC + rem) * cyc2ns_scale / SC
-+ *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
-+ *
-+ *			- sqazi@google.com
-  */
+--- a/arch/x86/oprofile/init.c
++++ b/arch/x86/oprofile/init.c
+@@ -21,6 +21,7 @@ extern int op_nmi_timer_init(struct opro
+ extern void op_nmi_exit(void);
+ extern void x86_backtrace(struct pt_regs * const regs, unsigned int depth);
  
- DECLARE_PER_CPU(unsigned long, cyc2ns);
-@@ -41,9 +57,14 @@ DECLARE_PER_CPU(unsigned long long, cyc2
++static int nmi_timer;
  
- static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ int __init oprofile_arch_init(struct oprofile_operations *ops)
  {
-+	unsigned long long quot;
-+	unsigned long long rem;
- 	int cpu = smp_processor_id();
- 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
--	ns += cyc * per_cpu(cyc2ns, cpu) >> CYC2NS_SCALE_FACTOR;
-+	quot = (cyc >> CYC2NS_SCALE_FACTOR);
-+	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
-+	ns += quot * per_cpu(cyc2ns, cpu) +
-+		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
- 	return ns;
+@@ -31,8 +32,9 @@ int __init oprofile_arch_init(struct opr
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	ret = op_nmi_init(ops);
+ #endif
++	nmi_timer = (ret != 0);
+ #ifdef CONFIG_X86_IO_APIC
+-	if (ret < 0)
++	if (nmi_timer)
+ 		ret = op_nmi_timer_init(ops);
+ #endif
+ 	ops->backtrace = x86_backtrace;
+@@ -44,6 +46,7 @@ int __init oprofile_arch_init(struct opr
+ void oprofile_arch_exit(void)
+ {
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	op_nmi_exit();
++	if (!nmi_timer)
++		op_nmi_exit();
+ #endif
  }
- 
 
 
