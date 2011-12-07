@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab1LGJSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:18:46 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:48598
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751589Ab1LGJSl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:18:41 -0500
-X-SpamScore: -17
-X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Guo Shawn-R65073 <r65073@freescale.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>
-Subject: RE: [RFC PATCH 3/3] pinctrl: imx: add pinmux-imx6q support
-Thread-Topic: [RFC PATCH 3/3] pinctrl: imx: add pinmux-imx6q support
-Thread-Index: AQHMsnlmt2gm/uAHMEandVQq7X9Y4JXOz4aA//+a+jCAAhUBAP//m+NA
-Date: Wed, 7 Dec 2011 09:18:36 +0000
-Message-ID: <65EE16ACC360FA4D99C96DC085B3F77234FC5B@039-SN1MPN1-002.039d.mgd.msft.net>
-References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
-	<1322999384-7886-3-git-send-email-b29396@freescale.com>
-	<20111206072326.GA3712@S2100-06.ap.freescale.net>
-	<65EE16ACC360FA4D99C96DC085B3F772345A0B@039-SN1MPN1-002.039d.mgd.msft.net>
- <CACRpkdbVXkpVHqhP2SHV2fud66NYFj0mcAPyaqJoyUS-20to5Q@mail.gmail.com>
-In-Reply-To: <CACRpkdbVXkpVHqhP2SHV2fud66NYFj0mcAPyaqJoyUS-20to5Q@mail.gmail.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.198]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752394Ab1LGJVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:21:18 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:45585 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751717Ab1LGJVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 04:21:16 -0500
+Date: Wed, 7 Dec 2011 10:21:07 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, Hugh Dickins <hughd@google.com>
+Subject: Re: [BUGFIX][PATCH] add mem_cgroup_replace_page_cache.
+Message-ID: <20111207092107.GB12673@cmpxchg.org>
+References: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Linus Walleij [mailto:linus.walleij@linaro.org]
-> Sent: Wednesday, December 07, 2011 5:10 PM
-> To: Dong Aisheng-B29396; Guo Shawn-R65073
-> Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> linus.walleij@stericsson.com; s.hauer@pengutronix.de;
-> kernel@pengutronix.de
-> Subject: Re: [RFC PATCH 3/3] pinctrl: imx: add pinmux-imx6q support
+On Tue, Dec 06, 2011 at 12:39:23PM +0900, KAMEZAWA Hiroyuki wrote:
 > 
-> On Tue, Dec 6, 2011 at 8:23 AM, Dong Aisheng-B29396 <B29396@freescale.com>
-> wrote:
-> >> From: Guo Shawn-R65073
-> >> As I do not see the device tree probing added in pinmux-imx-core.c, I
-> >> expect the patch has not got the chance to run on imx6, right?
-> >>
-> > Yes, I would add it if the pinctrl framework supports DT.
+> Hm, is this too naive ? better idea is welcome. 
+> ==
+> >From 33638351c5cd28af9f47f9ab1c44eeb1f63d9964 Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Tue, 6 Dec 2011 12:32:32 +0900
+> Subject: [PATCH] memcg: add mem_cgroup_replace_page_cache() for fixing LRU issue.
 > 
-> There are many levels of DT.
+> commit ef6a3c6311 adds a function replace_page_cache_page(). This
+> function replaces a page in radix-tree with a new page.
+> At doing this, memory cgroup need to fix up the accounting information.
+> memcg need to check PCG_USED bit etc.
 > 
-> You can of course add DT-support for anything driver-specific, such as
-> init data for some registers, or anything else you would normally pass in
-> through platform data. So please just do that if imx6 already has support
-> for such things.
+> In some(many?) case, 'newpage' is on LRU before calling replace_page_cache().
+> So, memcg's LRU accounting information should be fixed, too.
 > 
-> What we're discussing about right now on devicetree-discuss is where to
-> put the mapping tables etc that is currently registered by the board,
-> that has no obvious solution as there is some disagreement on how to do
-> that.
+> This patch adds mem_cgroup_replace_page_cache() and removing old hooks.
+> In that function, old pages will be unaccounted without touching res_counter
+> and new page will be accounted to the memcg (of old page). At overwriting
+> pc->mem_cgroup of newpage, take zone->lru_lock and avoid race with
+> LRU handling.
 > 
-Yes, thanks for your info.
-I'm new to device tree and may take some time to get more familiar with it.
+> Background:
+>   replace_page_cache_page() is called by FUSE code in its splice() handling.
+>   Here, 'newpage' is replacing oldpage but this newpage is not a newly allocated
+>   page and may be on LRU. LRU mis-accounting will be critical for memory cgroup
+>   because rmdir() checks the whole LRU is empty and there is no account leak.
+>   If a page is on the other LRU than it should be, rmdir() will fail.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I discussed with Shawn today and now we're going to move data to dt and run
-this driver on mx6q first.
+I think this is okay.  It's a tiny bit unfortunate that the migration
+code is more or less duplicated with some optimizations, but I fear
+the other solutions would be more complex and thus not adequate as a
+bug fix.
 
-Regards
-Dong Aisheng
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
