@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab1LGQP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:15:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60857 "EHLO mx2.suse.de"
+	id S1756808Ab1LGQQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:16:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60918 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756542Ab1LGQPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:15:53 -0500
+	id S1756792Ab1LGQQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:16:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:23 2011
-Message-Id: <20111207160823.707222262@clark.kroah.org>
+Message-Id: <20111207160823.932129071@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:33 -0800
+Date: Wed, 07 Dec 2011 08:06:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Alex Deucher <alexander.deucher@amd.com>,
-        Jean Delvare <khali@linux-fr.org>, Dave Airlie <airlied@redhat.com>
-Subject: [13/80] drm/radeon/kms: fix up gpio i2c mask bits for r4xx
+        <alan@lxorguk.ukuu.org.uk>, Wolfram Sang <w.sang@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [16/80] arm: mx28: fix bit operation in clock setting
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit 6c47e5c23aa2a7c54ad7ac13af4bd56cd9e703bf upstream.
+commit c2735391fbc68feae10d6d14e60956c8106e725f upstream.
 
-Fixes i2c test failures when i2c_algo_bit.bit_test=1.
+reg | (1 << clk->enable_shift) always evaluates to true. Switch it
+to & which makes much more sense. Same fix as 13be9f00 (ARM i.MX28: fix
+bit operation) at a different location.
 
-The hw doesn't actually require a mask, so just set it
-to the default mask bits for r1xx-r4xx radeon ddc.
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@freescale.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/mach-mxs/clock-mx28.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -85,6 +85,18 @@ static inline struct radeon_i2c_bus_rec
- 		for (i = 0; i < num_indices; i++) {
- 			gpio = &i2c_info->asGPIO_Info[i];
- 
-+			/* r4xx mask is technically not used by the hw, so patch in the legacy mask bits */
-+			if ((rdev->family == CHIP_R420) ||
-+			    (rdev->family == CHIP_R423) ||
-+			    (rdev->family == CHIP_RV410)) {
-+				if ((le16_to_cpu(gpio->usClkMaskRegisterIndex) == 0x0018) ||
-+				    (le16_to_cpu(gpio->usClkMaskRegisterIndex) == 0x0019) ||
-+				    (le16_to_cpu(gpio->usClkMaskRegisterIndex) == 0x001a)) {
-+					gpio->ucClkMaskShift = 0x19;
-+					gpio->ucDataMaskShift = 0x18;
-+				}
-+			}
-+
- 			/* some evergreen boards have bad data for this entry */
- 			if (ASIC_IS_DCE4(rdev)) {
- 				if ((i == 7) &&
+--- a/arch/arm/mach-mxs/clock-mx28.c
++++ b/arch/arm/mach-mxs/clock-mx28.c
+@@ -404,7 +404,7 @@ static int name##_set_rate(struct clk *c
+ 	reg = __raw_readl(CLKCTRL_BASE_ADDR + HW_CLKCTRL_##dr);		\
+ 	reg &= ~BM_CLKCTRL_##dr##_DIV;					\
+ 	reg |= div << BP_CLKCTRL_##dr##_DIV;				\
+-	if (reg | (1 << clk->enable_shift)) {				\
++	if (reg & (1 << clk->enable_shift)) {				\
+ 		pr_err("%s: clock is gated\n", __func__);		\
+ 		return -EINVAL;						\
+ 	}								\
 
 
