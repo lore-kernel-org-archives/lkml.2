@@ -1,136 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293Ab1LGLO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 06:14:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58184 "EHLO mx2.suse.de"
+	id S1755237Ab1LGLRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 06:17:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29794 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752420Ab1LGLO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 06:14:57 -0500
-Date: Wed, 7 Dec 2011 12:14:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [BUGFIX][PATCH] add mem_cgroup_replace_page_cache.
-Message-ID: <20111207111455.GA18249@tiehlicka.suse.cz>
-References: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1751973Ab1LGLRq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 06:17:46 -0500
+Date: Wed, 7 Dec 2011 12:17:34 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: =?ISO-8859-15?Q?P=E1draig_Brady?= <P@draigBrady.com>
+cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-lvm@redhat.com,
+        linux-btrfs@vger.kernel.org, Ric Wheeler <rwheeler@redhat.com>
+Subject: Re: System Storage Manager
+In-Reply-To: <4EDF4672.9080705@draigBrady.com>
+Message-ID: <alpine.LFD.2.00.1112071208190.15332@dhcp-27-109.brq.redhat.com>
+References: <alpine.LFD.2.00.1112071055270.4205@dhcp-27-109.brq.redhat.com> <4EDF4672.9080705@draigBrady.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-927029420-1323256658=:15332"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 06-12-11 12:39:23, KAMEZAWA Hiroyuki wrote:
-> 
-> Hm, is this too naive ? better idea is welcome. 
-> ==
-> From 33638351c5cd28af9f47f9ab1c44eeb1f63d9964 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Tue, 6 Dec 2011 12:32:32 +0900
-> Subject: [PATCH] memcg: add mem_cgroup_replace_page_cache() for fixing LRU issue.
-> 
-> commit ef6a3c6311 adds a function replace_page_cache_page(). This
-> function replaces a page in radix-tree with a new page.
-> At doing this, memory cgroup need to fix up the accounting information.
-> memcg need to check PCG_USED bit etc.
-> 
-> In some(many?) case, 'newpage' is on LRU before calling replace_page_cache().
-> So, memcg's LRU accounting information should be fixed, too.
-> 
-> This patch adds mem_cgroup_replace_page_cache() and removing old hooks.
-> In that function, old pages will be unaccounted without touching res_counter
-> and new page will be accounted to the memcg (of old page). At overwriting
-> pc->mem_cgroup of newpage, take zone->lru_lock and avoid race with
-> LRU handling.
-> 
-> Background:
->   replace_page_cache_page() is called by FUSE code in its splice() handling.
->   Here, 'newpage' is replacing oldpage but this newpage is not a newly allocated
->   page and may be on LRU. LRU mis-accounting will be critical for memory cgroup
->   because rmdir() checks the whole LRU is empty and there is no account leak.
->   If a page is on the other LRU than it should be, rmdir() will fail.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  include/linux/memcontrol.h |    6 ++++++
->  mm/filemap.c               |   18 ++----------------
->  mm/memcontrol.c            |   41 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 49 insertions(+), 16 deletions(-)
-> 
-[...]
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 8880a32..a9e92a6 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3306,6 +3306,47 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
->  	cgroup_release_and_wakeup_rmdir(&memcg->css);
->  }
->  
-> +/*
-> + * At replace page cache, newpage is not under any memcg but it's on
-> + * LRU. So, this function doesn't touch res_counter but handles LRU
-> + * in correct way.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Could you add?
-Both pages are locked so we cannot race with uncharge
+--8323328-927029420-1323256658=:15332
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> + */
-> +void mem_cgroup_replace_page_cache(struct page *oldpage,
-> +				  struct page *newpage)
-> +{
-> +	struct mem_cgroup *memcg;
-> +	struct page_cgroup *pc;
-> +	struct zone *zone;
-> +	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> +	unsigned long flags;
-> +
+On Wed, 7 Dec 2011, Pádraig Brady wrote:
 
-You are missing 
-	if (mem_cgroup_disabled())
-		return;
+> On 12/07/2011 10:20 AM, Lukas Czerner wrote:
+> > Hello everyone,
+> > 
+> > I would like to introduce to you a new tool called System Storage
+> > Manager (ssm). It is supposed to provide easy to use command line
+> > interface to manage your storage using various technologies like
+> > lvm, btrfs, encrypted volumes and possibly more.
+> > 
+> > Background
+> > ----------
+> > 
+> > In more sophisticated enterprise storage environments, management with
+> > Device Mapper (dm), Logical Volume Manager (LVM), or Multiple Devices
+> > (md) is becoming increasingly more difficult. With file systems added
+> > to the mix, the number of tools needed to configure and manage storage
+> > has grown so large that it is simply not user friendly. With so many
+> > options for a system administrator to consider, the opportunity for
+> > errors and problems is large.
+> 
+> This seems like a worthwhile project given the overlap
+> in functionality from the various commands.
+> It echoes some of the functionality provided by libguestfs
+> for VM images I think.
+> 
+> > The btrfs administration tools have shown us that storage management can
+> > be simplified, and we are working to bring that ease of use to Linux
+> > filesystems in general.
+> > 
+> > 
+> > You can also find some more information in my presentation from LinuxCon
+> > Prague this year:
+> > 
+> > http://people.redhat.com/lczerner/files/lczerner_fsm.pdf
+> 
+> This had the name 'fsm'.
 
-> +	pc = lookup_page_cgroup(oldpage);
-> +	/* fix accounting on old pages */
-> +	lock_page_cgroup(pc);
-> +	memcg = pc->mem_cgroup;
-> +	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), -1);
-> +	ClearPageCgroupUsed(pc);
-> +	unlock_page_cgroup(pc);
-> +
-> +	if (PageSwapBacked(oldpage))
-> +		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> +
-> +	zone = page_zone(newpage);
-> +	pc = lookup_page_cgroup(newpage);
-> +	/*
-> +	 * Even if newpage->mapping was NULL before starting replacement,
-> +	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
-> +	 * LRU while we overwrite pc->mem_cgroup.
-> +	 */
-> +	spin_lock_irqsave(&zone->lru_lock, flags);
-> +	if (PageLRU(newpage))
-> +		del_page_from_lru_list(zone, newpage, page_lru(newpage));
-> +	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type);
-> +	if (PageLRU(newpage))
-> +		add_page_to_lru_list(zone, newpage, page_lru(newpage));
-> +	spin_unlock_irqrestore(&zone->lru_lock, flags);
-> +}
-> +
+Yes I had to change it, since fsm implies file system, but it is not
+only about file systems.
 
-Other than that looks ok.
+> I do think 'ssm' is better, however I would drop the '.py' from
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Already done. But I can see that it is still present in the README file.
+Will fix it, tanks.
+
+> the command name. This is incidental and restrictive going forward.
+> Note I checked the debian and freebsd man pages and 'ssm' is available.
+
+I could not find it on http://manpages.debian.net/cgi-bin/man.cgi but I
+know there is a project called ssm:
+
+ssm.i686 : Macromolecular coordinate superposition library
+
+but my project is called System Storage Manager and ssm is just the
+executable. I could not find any binary with the same name (within
+Fedora), not sure if that will be a problem...
+
+> 
+> > The code is still under development and no release has been made yet, but
+> > I would like to share with you what I have done so far, since the
+> > progress has been a bit slower than I have previously expected. The
+> > project lives on the sf.net :
+> > 
+> > https://sourceforge.net/projects/storagemanager/
+> 
+> This is a much cleaner landing page:
+> http://sourceforge.net/p/storagemanager/home/Home/
+> 
+> cheers,
+> Pádraig.
+> 
+
+Thanks for comments!
+-Lukas
+--8323328-927029420-1323256658=:15332--
