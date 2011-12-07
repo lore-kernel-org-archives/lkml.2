@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab1LGKNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 05:13:22 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:62693 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab1LGKNU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 05:13:20 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1754588Ab1LGKNg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:13:36 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:46707 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754365Ab1LGKNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 05:13:35 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Amit Shah <amit.shah@redhat.com>
+Subject: Re: [PATCH v4 01/12] virtio: pci: switch to new PM API
+Date: Wed, 7 Dec 2011 11:16:32 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org
+References: <cover.1323199985.git.amit.shah@redhat.com> <201112071048.24566.rjw@sisk.pl> <20111207095229.GF4651@amit-x200.redhat.com>
+In-Reply-To: <20111207095229.GF4651@amit-x200.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 1/2] [media] V4L: atmel-isi: add code to enable/disableISI_MCK clock
-Date: Wed, 7 Dec 2011 18:12:52 +0800
-Message-ID: <4C79549CB6F772498162A641D92D5328039E9C15@penmb01.corp.atmel.com>
-In-Reply-To: <20111207084958.GA14542@n2100.arm.linux.org.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/2] [media] V4L: atmel-isi: add code to enable/disableISI_MCK clock
-Thread-Index: Acy0vXac6wVmRO8URuS9xPiuiUNkvQACm+0Q
-References: <1322647604-30662-1-git-send-email-josh.wu@atmel.com> <20111207084958.GA14542@n2100.arm.linux.org.uk>
-From: "Wu, Josh" <Josh.wu@atmel.com>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Cc: <g.liakhovetski@gmx.de>, <linux-media@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-X-OriginalArrivalTime: 07 Dec 2011 10:12:55.0382 (UTC) FILETIME=[C97DB760:01CCB4C8]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112071116.32862.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Russell King
+On Wednesday, December 07, 2011, Amit Shah wrote:
+> On (Wed) 07 Dec 2011 [10:48:24], Rafael J. Wysocki wrote:
+> > On Wednesday, December 07, 2011, Amit Shah wrote:
+> > > Hi Rafael,
+> > > 
+> > > On (Tue) 06 Dec 2011 [23:12:36], Rafael J. Wysocki wrote:
+> > > > Hi,
+> > > > 
+> > > > On Tuesday, December 06, 2011, Amit Shah wrote:
+> > > > > The older PM API doesn't have a way to get notifications on hibernate
+> > > > > events.  Switch to the newer one that gives us those notifications.
+> > > > > 
+> > > > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> > > > > ---
+> > > > >  drivers/virtio/virtio_pci.c |   16 ++++++++++++----
+> > > > >  1 files changed, 12 insertions(+), 4 deletions(-)
+> > > > > 
+> > > > > diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> > > > > index 03d1984..23e1532 100644
+> > > > > --- a/drivers/virtio/virtio_pci.c
+> > > > > +++ b/drivers/virtio/virtio_pci.c
+> > > > > @@ -708,19 +708,28 @@ static void __devexit virtio_pci_remove(struct pci_dev *pci_dev)
+> > > > >  }
+> > > > >  
+> > > > >  #ifdef CONFIG_PM
+> > > > > -static int virtio_pci_suspend(struct pci_dev *pci_dev, pm_message_t state)
+> > > > > +static int virtio_pci_suspend(struct device *dev)
+> > > > >  {
+> > > > > +	struct pci_dev *pci_dev = to_pci_dev(dev);
+> > > > > +
+> > > > >  	pci_save_state(pci_dev);
+> > > > >  	pci_set_power_state(pci_dev, PCI_D3hot);
+> > > > >  	return 0;
+> > > > >  }
+> > > > >  
+> > > > > -static int virtio_pci_resume(struct pci_dev *pci_dev)
+> > > > > +static int virtio_pci_resume(struct device *dev)
+> > > > >  {
+> > > > > +	struct pci_dev *pci_dev = to_pci_dev(dev);
+> > > > > +
+> > > > >  	pci_restore_state(pci_dev);
+> > > > >  	pci_set_power_state(pci_dev, PCI_D0);
+> > > > >  	return 0;
+> > > > >  }
+> > > > > +
+> > > > > +static const struct dev_pm_ops virtio_pci_pm_ops = {
+> > > > > +	.suspend = virtio_pci_suspend,
+> > > > > +	.resume  = virtio_pci_resume,
+> > > > > +};
+> > > > >  #endif
+> > > > 
+> > > > You seem to have forgotten about hibernation callbacks.
+> > > 
+> > > This patch just moves to the new API keeping everything else the same.
+> > > The hibernation callbacks come in patch 2.
+> > 
+> > OK, but then hibernation will be broken between the two patches, so perhaps
+> > it's better to merge them into one?
+> 
+> The hibernation support doesn't exist now.  It's added in the later
+> patches of the series (3 onwards).
 
-On Wed, Dec 07, 2011 at 4:50 PM, Russell King wrote:
+OK then, sorry for the noise.
 
-> On Wed, Nov 30, 2011 at 06:06:43PM +0800, Josh Wu wrote:
->> +	/* Get ISI_MCK, provided by programmable clock or external clock
-*/
->> +	isi->mck = clk_get(dev, "isi_mck");
->> +	if (IS_ERR_OR_NULL(isi->mck)) {
-
-> This should be IS_ERR()
-
-So it means the clk_get() will never return NULL even when clk structure
-is NULL in clk lookup entry. Right?
-
->> +		dev_err(dev, "Failed to get isi_mck\n");
->> +		ret = isi->mck ? PTR_ERR(isi->mck) : -EINVAL;
-
->		ret = PTR_ERR(isi->mck);
-
-Best Regards,
-Josh Wu
+Rafael
