@@ -1,92 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab1LGIXj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 03:23:39 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:48891 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752985Ab1LGIXi (ORCPT
+	id S1754299Ab1LGIYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 03:24:44 -0500
+Received: from imr-db02.mx.aol.com ([205.188.91.96]:53518 "EHLO
+	imr-db02.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009Ab1LGIYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 03:23:38 -0500
-X-AuditID: b753bd60-9fe84ba000000655-7a-4edf22885a45
-X-AuditID: b753bd60-9fe84ba000000655-7a-4edf22885a45
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Subject: [RFC PATCH tip ] x86: add stack top margin for stack overflow checking
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 07 Dec 2011 17:29:10 +0900
-Message-ID: <20111207082910.9847.3359.stgit@ltc219.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Wed, 7 Dec 2011 03:24:43 -0500
+Message-Id: <201112070823.pB78N5ii001019@imr-db02.mx.aol.com>
+Reply-To: <draminukano1@yahoo.es>
+From: "Aminu. K." <gjabaay771@aol.com>
+Subject: Dear Sole Beneficiary
+Date: Wed, 7 Dec 2011 00:21:36 -0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0049_01C2A9A6.2FF2AE52"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-AOL-VSS-INFO: 5400.1158/76706
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:226640656:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: G
+X-AOL-VSS-INFO: 5400.1158/76706
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:264179040:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-sid: 3039ac1d33834edf22680e79
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that a margin for stack overflow checking is added to
-top of a kernel stack but is not added to IRQ and exception stacks
-in stack_overflow_check(). Therefore, the overflows of IRQ and
-exception stacks are always detected only after they actually
-occurred and data corruption might occur due to them.
+This is a multi-part message in MIME format.
 
-This patch adds the margin to top of IRQ and exception stacks
-as well as a kernel stack to enhance reliability.
+------=_NextPart_000_0049_01C2A9A6.2FF2AE52
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
----
+I am writing on behalf of the committee regarding your payment... Please, sorry for the delay in getting you this information this late.
+Attached is the detailed information. Reply ASAP.
 
- arch/x86/kernel/irq_64.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+------=_NextPart_000_0049_01C2A9A6.2FF2AE52
+Content-Type: application/octet-stream;
+	name="from reconciliation.dept.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="from reconciliation.dept.rtf"
 
-diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
-index 54e2b2b..15e97c7 100644
---- a/arch/x86/kernel/irq_64.c
-+++ b/arch/x86/kernel/irq_64.c
-@@ -38,6 +38,7 @@ int sysctl_panic_on_stackoverflow;
- static inline void stack_overflow_check(struct pt_regs *regs)
- {
- #ifdef CONFIG_DEBUG_STACKOVERFLOW
-+#define STACK_TOP_MARGIN	128
- 	struct orig_ist *oist;
- 	u64 irq_stack_top, irq_stack_bottom;
- 	u64 estack_top, estack_bottom;
-@@ -47,17 +48,18 @@ static inline void stack_overflow_check(struct pt_regs *regs)
- 		return;
- 
- 	if (regs->sp >= curbase + sizeof(struct thread_info) +
--				  sizeof(struct pt_regs) + 128 &&
-+				  sizeof(struct pt_regs) + STACK_TOP_MARGIN &&
- 	    regs->sp <= curbase + THREAD_SIZE)
- 		return;
- 
--	irq_stack_top = (u64)__get_cpu_var(irq_stack_union.irq_stack);
-+	irq_stack_top = (u64)__get_cpu_var(irq_stack_union.irq_stack) +
-+			STACK_TOP_MARGIN;
- 	irq_stack_bottom = (u64)__get_cpu_var(irq_stack_ptr);
- 	if (regs->sp >= irq_stack_top && regs->sp <= irq_stack_bottom)
- 		return;
- 
- 	oist = &__get_cpu_var(orig_ist);
--	estack_top = (u64)oist->ist[0] - EXCEPTION_STKSZ;
-+	estack_top = (u64)oist->ist[0] - EXCEPTION_STKSZ + STACK_TOP_MARGIN;
- 	estack_bottom = (u64)oist->ist[N_EXCEPTION_STACKS - 1];
- 	if (regs->sp >= estack_top && regs->sp <= estack_bottom)
- 		return;
-@@ -69,6 +71,7 @@ static inline void stack_overflow_check(struct pt_regs *regs)
- 
- 	if (sysctl_panic_on_stackoverflow)
- 		panic("low stack detected by irq handler - check messages\n");
-+#undef STACK_TOP_MARGIN
- #endif
- }
- 
+VW5pdGVkIE5hdGlvbiBEZWJ0IFJlY29uY2lsaWF0aW9uIFVuaXQNCkluIEFm
+ZmlsaWF0aW9uIHdpdGggdGhlIFdvcmxkIEJhbmsgQW50aSBGcmF1ZCBPZmZp
+Y2UNClNlbmlvciBSZXNpZGVudCBSZXByZXNlbnRhdGl2ZSAoQWZyaWNhbiBS
+ZWdpb24pLg0KT2ZmaWNlOiArKDIzNCkgMSA2NjMgNjA0NA0KTW9iaWxlOiAr
+KDIzNCkgODEyIDMxMiA3MzIxDQogDQo3dGggRGVjZW1iZXIsMjAxMQ0KRGVh
+ciBTb2xlIEJlbmVmaWNpYXJ5LCAgICAgICAgICAgICAgICAgICAgICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgICAgICANCiANClRoaXMgaXMgdG8gYnJp
+bmcgdG8geW91ciBhdHRlbnRpb24gdGhhdCB0aGUgVW5pdGVkIE5hdGlvbiBE
+ZWJ0IFJlY29uY2lsaWF0aW9uIFVuaXQgaW4gYWZmaWxpYXRpb24gd2l0aCBX
+b3JsZCBCYW5rL0FudGktRnJhdWQgT2ZmaWNlIGlzIGF3YXJlIG9mIHRoZSBp
+bmNvbnZlbmllbmNlcyB5b3UgZXhwZXJpZW5jZWQgdGhyb3VnaCBzb21lIHVu
+YXV0aG9yaXplZCBvZmZpY2lhbHMgd2hvIGNsYWltIGl0cyB0aGVpciBvZmZp
+Y2lhbCAgIHJlc3BvbnNpYmlsaXR5IHRvIHByb2Nlc3MgeW91ciBkb2N1bWVu
+dHMgZm9yIHRoZSBjbGFpbSBvZiB5b3VyIGZ1bmRzIGZyb20gdGhlIGF1dGhv
+cml0aWVzIHdob20geW91ciBmdW5kcyBoYXZlIGJlZW4gaW4gdGhlaXIgY3Vz
+dG9keSBmb3Igc29tZSB0aW1lIG5vdy4gSSBhbSBwbGVhc2VkIHRvIGluZm9y
+bSB5b3UgdGhhdCBhIHJlc29sdXRpb24gd2FzIHJlYWNoZWQgZHVyaW5nIHRo
+ZSBHLTIwIFN1bW1pdCBpbiBDYW5uZXMtRnJhbmNlLCBhbmQgdGhlIHN1bSBv
+ZiAkODAwIE1pbGxpb24gRG9sbGFycyBoYXMgYmVlbiBhcHByb3ZlZCBmb3Ig
+cmVsZWFzZSB0byBiZW5lZmljaWFyaWVzIHdob3NlIGZ1bmRzIHdlcmUgZWl0
+aGVyIGRlbGF5ZWQsIFN0b3BwZWQgb3Igd2FzIG5ldmVyIHRyYW5zZmVycmVk
+IHRvIHRoZWlyIHJpZ2h0ZnVsIG93bmVycyBmb3Igc29tZSB1bnN1YnN0YW50
+aWF0ZWQgcmVhc29ucy4NCiANCkl0IG1heSBpbnRlcmVzdCB5b3UgdG8ga25v
+dyB0aGF0IHlvdXIgbmFtZSBpcyBhbW9uZyB0aGUgbGlzdCBvZiBiZW5lZmlj
+aWFyaWVzIGJyb3VnaHQgdG8gbXkgYXR0ZW50aW9uIHdoaWNoIGlzIG15IHJl
+YXNvbiBmb3IgY29udGFjdGluZyB5b3UuIFRoZSBFeGVjdXRpdmUgQ291bmNp
+bCBvZiB0aGUgRy0yMCBjb2xsZWN0aXZlbHkgYWdyZWVkIHRvIHJlbGVhc2Ug
+dGhlIHN1bSBvZiBVUyQ4LDUwMCwwMDAgTWlsbGlvbiBhcyBjb21wZW5zYXRp
+b24gdG8geW91IGZvciB3aGF0IHlvdSBoYXZlIGJlZW4gdGhyb3VnaCBpbiB0
+aGUgcGFzdCBpbiB5b3VyIGNvdXJzZSBvZiBjbGFpbWluZyB5b3VyIGZ1bmRz
+Lg0KIA0KSXQgaXMgb25lIG9mIG15IG9mZmljZZJzIG9mZmljaWFsIHJlc3Bv
+bnNpYmlsaXRpZXMgdG8gcmVsZWFzZSBiZW5lY2lhcmllcyBmdW5kcyB0byB0
+aGVpciByaWdodGZ1bCBvd25lcnMgaW4gc3RyaWN0IGFkaGVyZW5jZSB0byBw
+cm9mZXNzaW9uYWwgZXRoaWNzIG9mIGZpbmFuY2lhbCB0cmFuc2FjdGlvbiBp
+biBsaW5lIHdpdGggdGhlIGludGVybmF0aW9uYWwgZmlzY2FsIHBvbGljaWVz
+LiBUaGlzIGV4ZXJjaXNlIHdpbGwgYmUgY2FycmllZCBvdXQgdW5kZXIgc3Ry
+aWN0IHN1cGVydmlzaW9uIG9mIHRoZSBVbml0ZWQgTmF0aW9uIERydWcvVGVy
+cm9yaXN0IENsZWFyYW5jZSBVbml0IGZvciBtYXhpbXVtIHRyYW5zcGFyZW5j
+eSBhbmQgYWNjb3VudGFiaWxpdHkgYW5kIGluIHN0cmljdCBjb21wbGlhbmNl
+IHdpdGggdGhlIGludGVybmF0aW9uYWwgbGF3LiBPbiB0aGF0IG5vdGUsIHdl
+IHdvdWxkIGFwcHJlY2lhdGUgeW91ciBzaW5jZXJldHkgZm9yIHRoZSBwdXJw
+b3NlIHRoZXJlaW4uDQogDQpIb3dldmVyLCB0aGVyZSBpcyBldmVyeSB0ZW5k
+ZW5jeSB0aGF0IHNvbWUgdW5hdXRob3JpemVkIG9mZmljaWFscyBvciBpbXBl
+cnNvbmF0b3JzIHdobyBwZXJoYXBzIGhhdmUgYmVlbiBwcm9taXNpbmcgdG8g
+YXNzaXN0IHlvdSBpbiBjbGFpbWluZyB5b3VyIGZ1bmRzIGluIHRoZSByZWNl
+bnQgcGFzdCBtYXkgY29udGludWUgdG8gZGlzdHVyYiB5b3UuIEZvciB0aGlz
+IHJlYXNvbiwgeW91IG11c3Qgc3RvcCBmdXJ0aGVyIGNvbW11bmljYXRpb24s
+IGJlIGl0IG9yYWwsIHdyaXR0ZW4gb3Igb3RoZXIgd2lzZSB3aXRoIHRoZW0g
+dG8gYXZvaWQgdGhlbSBjbGFpbWluZyB5b3VyIGZ1bmRzLg0KIA0KT24geW91
+ciByZWNlaXB0IG9mIHRoaXMgY29uZmlkZW50aWFsIGluZm9ybWF0aW9uLCB5
+b3UgYXJlIHJlcXVpcmVkIHRvIGNhbGwgb3VyIG9mZmljZSB0byBjb25maXJt
+IHlvdSBhcmUgaHVtYW4gYmVpbmcsIGFuZCBhbHNvIHByb3ZpZGUgdXMgd2l0
+aCB5b3VyIGluZm9ybWF0aW9uIGFzIHN0YXRlZCBiZWxvdyBmb3IgdmV0dGlu
+ZyBhbmQgdXBkYXRpbmcgb2YgeW91ciBpbmZvcm1hdGlvbiBmb3IgdGhlIHB1
+cnBvc2Ugb2YgcHJvY2Vzc2luZyB5b3VyIGRvY3VtZW50cyBhbmQgcmVsZWFz
+ZSBvZiB5b3VyIGZ1bmRzIHRvIHlvdToNCiANCkZ1bGwgTmFtZToNCkFkZHJl
+c3MsIENpdHksIFN0YXRlIGFuZCBDb3VudHJ5Og0KUGhvbmUsIEZheCBhbmQg
+TW9iaWxlOg0KQ29tcGFueSBOYW1lIChJZiBBbnkpLCBQb3NpdGlvbiBhbmQg
+QWRkcmVzczoNClByb2Zlc3Npb24sIEFnZSBhbmQgTWFyaXRhbCBTdGF0dXM6
+DQpBIGNvcHkgb2YgeW91ciBJbnRlcm5hdGlvbmFsIFBhc3Nwb3J0IG9yIERy
+aXZlcnMgTGljZW5zZToNCiANCk5vdGU6IEZvciBjb25maWRlbnRpYWxpdHkg
+YW5kIHNlY3VyaXR5IHJlYXNvbnMsIHlvdSBhcmUgaGVyZWJ5IGdpdmVuIGEg
+Y29tbXVuaWNhdGlvbiBDb2RlOiBVTkRSLzExMjAxMSB0byBjaGVja21hdGUg
+dW5hdXRob3JpemVkIG9mZmljaWFscyBpbiB5b3VyIGZ1bmRzIHJlbGVhc2Ug
+YXJyYW5nZW1lbnRzLg0KIA0KWW91ciBwcm9tcHQgcmVzcG9uc2UgdG8gdGhp
+cyBlbWFpbCB3aWxsIGJlIGFwcHJlY2lhdGVkIGJ5IHVzIHRvIGVuYWJsZSB1
+cyByZWxlYXNlIHlvdXIgZnVuZHMgYmVmb3JlIHdlIGNvbW1lbmNlIGdlbmVy
+YWwgYWNjb3VudCBhdWRpdGluZyBmb3IgdGhlIEZpc2NhbCBZZWFyIDIwMTEu
+DQogDQpDYWxsIG1lIG9uIG15IERpcmVjdCBvZmZpY2UgTGluZTogKzIzNCkg
+ODEyIDMxMiA3MzIxDQogDQpZb3VycyBzaW5jZXJlbHkgaW4gc2VydmljZQ0K
+IA0KRHIuIEFtaW51IEthbm8NClNlbmlvciBSZXNpZGVudCBSZXByZXNlbnRh
+dGl2ZSAoQWZyaWNhbiBSZWdpb24p
 
+------=_NextPart_000_0049_01C2A9A6.2FF2AE52--
