@@ -1,50 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758145Ab1LGWqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 17:46:53 -0500
-Received: from smtpfb2-g21.free.fr ([212.27.42.10]:34211 "EHLO
-	smtpfb2-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab1LGWqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 17:46:52 -0500
-X-Greylist: delayed 516 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Dec 2011 17:46:50 EST
-Message-ID: <1323297487.4edfeacfc49ff@imp.free.fr>
-Date: Wed, 07 Dec 2011 23:38:07 +0100
-From: wallak@free.fr
-To: linux-kernel@vger.kernel.org
-Subject: ACPI "_PDC" - acpi_processor_set_pdc()- execution regression - Linux-3.x
+	id S1758557Ab1LGWrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 17:47:06 -0500
+Received: from fieldses.org ([174.143.236.118]:48096 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757829Ab1LGWrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 17:47:04 -0500
+Date: Wed, 7 Dec 2011 17:47:01 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: neilb@suse.de, linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] NFSd: use network-namespace-aware cache registering
+ routines
+Message-ID: <20111207224701.GA23621@fieldses.org>
+References: <20111207085741.7867.57700.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 3.2.8
-X-Originating-IP: 88.161.131.83
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111207085741.7867.57700.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have a regression on the ACPI stack of the last linux kernel line 3.x (3.1.4,
-3.2-rc4...). The ACPI "_PDC" chunk is not executed on some computers (e.g. Dell
-X300; the function acpi_processor_set_pdc() is not called). This issue yield to
-an uninitialized state of some ACPI variables.
+Thanks, applied.
 
-A patch is available below. This patch come back to the previous linux behavior,
-and works fine.
-
-Best Regards,
-Wallak.
-
---- linux-3.1.4-mdf/drivers/acpi/processor_core.c.orig  2011-12-07
-23:12:57.000000000 +0100
-+++ linux-3.1.4-mdf/drivers/acpi/processor_core.c       2011-12-07
-23:13:39.000000000 +0100
-@@ -223,8 +223,8 @@
-        type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
-        cpuid = acpi_get_cpuid(handle, type, acpi_id);
-
--       if (cpuid == -1)
--               return false;
-+       if ((cpuid == -1) && (num_possible_cpus() > 1))
-+               return false;
-
-        return true;
- }
+On Wed, Dec 07, 2011 at 12:57:56PM +0300, Stanislav Kinsbursky wrote:
+> v2: cache_register_net() and cache_unregister_net() GPL exports added
+> 
+> This is a cleanup patch. Hope, some day generic cache_register() and
+> cache_unregister() will be removed.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> ---
+>  fs/nfsd/export.c    |   10 +++++-----
+>  fs/nfsd/nfs4idmap.c |   11 ++++++-----
+>  net/sunrpc/cache.c  |    2 ++
+>  3 files changed, 13 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/nfsd/export.c b/fs/nfsd/export.c
+> index 62f3b90..d1feeef 100644
+> --- a/fs/nfsd/export.c
+> +++ b/fs/nfsd/export.c
+> @@ -1226,12 +1226,12 @@ nfsd_export_init(void)
+>  	int rv;
+>  	dprintk("nfsd: initializing export module.\n");
+>  
+> -	rv = cache_register(&svc_export_cache);
+> +	rv = cache_register_net(&svc_export_cache, &init_net);
+>  	if (rv)
+>  		return rv;
+> -	rv = cache_register(&svc_expkey_cache);
+> +	rv = cache_register_net(&svc_expkey_cache, &init_net);
+>  	if (rv)
+> -		cache_unregister(&svc_export_cache);
+> +		cache_unregister_net(&svc_export_cache, &init_net);
+>  	return rv;
+>  
+>  }
+> @@ -1255,8 +1255,8 @@ nfsd_export_shutdown(void)
+>  
+>  	dprintk("nfsd: shutting down export module.\n");
+>  
+> -	cache_unregister(&svc_expkey_cache);
+> -	cache_unregister(&svc_export_cache);
+> +	cache_unregister_net(&svc_expkey_cache, &init_net);
+> +	cache_unregister_net(&svc_export_cache, &init_net);
+>  	svcauth_unix_purge();
+>  
+>  	dprintk("nfsd: export shutdown complete.\n");
+> diff --git a/fs/nfsd/nfs4idmap.c b/fs/nfsd/nfs4idmap.c
+> index 55780a2..9409627 100644
+> --- a/fs/nfsd/nfs4idmap.c
+> +++ b/fs/nfsd/nfs4idmap.c
+> @@ -36,6 +36,7 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/sched.h>
+>  #include <linux/slab.h>
+> +#include <net/net_namespace.h>
+>  #include "idmap.h"
+>  #include "nfsd.h"
+>  
+> @@ -466,20 +467,20 @@ nfsd_idmap_init(void)
+>  {
+>  	int rv;
+>  
+> -	rv = cache_register(&idtoname_cache);
+> +	rv = cache_register_net(&idtoname_cache, &init_net);
+>  	if (rv)
+>  		return rv;
+> -	rv = cache_register(&nametoid_cache);
+> +	rv = cache_register_net(&nametoid_cache, &init_net);
+>  	if (rv)
+> -		cache_unregister(&idtoname_cache);
+> +		cache_unregister_net(&idtoname_cache, &init_net);
+>  	return rv;
+>  }
+>  
+>  void
+>  nfsd_idmap_shutdown(void)
+>  {
+> -	cache_unregister(&idtoname_cache);
+> -	cache_unregister(&nametoid_cache);
+> +	cache_unregister_net(&idtoname_cache, &init_net);
+> +	cache_unregister_net(&nametoid_cache, &init_net);
+>  }
+>  
+>  static int
+> diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+> index 72ad836..b8daa57 100644
+> --- a/net/sunrpc/cache.c
+> +++ b/net/sunrpc/cache.c
+> @@ -1641,6 +1641,7 @@ int cache_register_net(struct cache_detail *cd, struct net *net)
+>  		sunrpc_destroy_cache_detail(cd);
+>  	return ret;
+>  }
+> +EXPORT_SYMBOL_GPL(cache_register_net);
+>  
+>  int cache_register(struct cache_detail *cd)
+>  {
+> @@ -1653,6 +1654,7 @@ void cache_unregister_net(struct cache_detail *cd, struct net *net)
+>  	remove_cache_proc_entries(cd, net);
+>  	sunrpc_destroy_cache_detail(cd);
+>  }
+> +EXPORT_SYMBOL_GPL(cache_unregister_net);
+>  
+>  void cache_unregister(struct cache_detail *cd)
+>  {
+> 
