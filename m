@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab1LGDV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 22:21:28 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:37964 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459Ab1LGDV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 22:21:26 -0500
-Date: Tue, 6 Dec 2011 19:20:00 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Tang Yuantian-B29983 <B29983@freescale.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sun york-R58495 <R58495@freescale.com>,
-        Durai Kumar-R34055 <r34055@freescale.com>,
-        Huang Changming-R66093 <r66093@freescale.com>
-Subject: Re: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Message-ID: <20111207032000.GA17575@ericsson.com>
-References: <ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
- <1321464509.7847.41.camel@oslab-l1>
- <1321464968.2309.384.camel@groeck-laptop>
- <1321466135.7847.55.camel@oslab-l1>
- <20111116190954.67c846fc@endymion.delvare>
- <1321467638.7847.73.camel@oslab-l1>
- <20111116201048.4b7877dd@endymion.delvare>
- <1321470915.7847.122.camel@oslab-l1>
- <20111116201847.6b11dc7f@endymion.delvare>
- <3C06C26914DACA4BB3A368F78CA0B3A7134583@039-SN1MPN1-004.039d.mgd.msft.net>
+	id S1755012Ab1LGDXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 22:23:34 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50485 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459Ab1LGDXd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Dec 2011 22:23:33 -0500
+Date: Wed, 7 Dec 2011 03:23:29 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+Message-ID: <20111207032329.GW2203@ZenIV.linux.org.uk>
+References: <4EDE94DC.8010106@canonical.com>
+ <20111206224100.GM2203@ZenIV.linux.org.uk>
+ <4EDEA152.90804@canonical.com>
+ <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
+ <20111207001643.GN2203@ZenIV.linux.org.uk>
+ <20111207003922.GO2203@ZenIV.linux.org.uk>
+ <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com>
+ <20111207011047.GQ2203@ZenIV.linux.org.uk>
+ <20111207013720.GS2203@ZenIV.linux.org.uk>
+ <CA+55aFx7HZrZ=OxnRaCKnHJU0fYk5G7PY1o8eRBOaPZu7h-4kA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3C06C26914DACA4BB3A368F78CA0B3A7134583@039-SN1MPN1-004.039d.mgd.msft.net>
+In-Reply-To: <CA+55aFx7HZrZ=OxnRaCKnHJU0fYk5G7PY1o8eRBOaPZu7h-4kA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 09:52:36PM -0500, Tang Yuantian-B29983 wrote:
-> Hi Jean Delvare,
-> 
-> We agree to apply this patch. Do you have any concerns?
-> Although Guenter said that he give up, I don't think he really meant it.
+On Tue, Dec 06, 2011 at 06:21:55PM -0800, Linus Torvalds wrote:
 
-I did mean it, otherwise I would not have said it.
+> Afaik, you really are trying to make crazy code continue to work in
+> ways that I'm not convinced is really required. Now, maybe it's a good
+> idea for this stage in the -rc process, but my gut feel is that we
+> could simply have broken it too. JJ seems willing to fix things up for
+> AppArmor, and I don't know of any big distro that uses Tomoyo, so...
 
-Guenter
+*snort*
 
-> Also it is improper if I repost similar patch.
-> I tested this patch, it works.
-> 
-> Regards,
-> Yuantian
-> 
-> > -----Original Message-----
-> > From: Jean Delvare [mailto:khali@linux-fr.org]
-> > Sent: 2011年11月17日 3:19
-> > To: sun york-R58495
-> > Cc: guenter.roeck@ericsson.com; Tabi Timur-B04825; linux-
-> > i2c@vger.kernel.org; linux-kernel@vger.kernel.org; Tang Yuantian-B29983
-> > Subject: Re: [PATCH] i2c/busses: (mpc) Add support for
-> > SMBUS_READ_BLOCK_DATA
-> > Really, please. I understand you're only trying to help and understand
-> > the patch, but at some point, if you have zero knowledge about the topic,
-> > you're not the right person to review the patch, period. You are still
-> > welcome to test the patch if you can and want, that's a completely
-> > different task.
-> > 
-> > --
-> > Jean Delvare
-> 
-> 
+As far as I'm concerned, adding
+
+# misnomer/marketing/lie - that's LSM, actually
+config SECURITY
+	depends on INSANITY || CRETINOUS_MANAGEMENT || SHITTY_GOV_REQS
+
+would be a good thing; git rm on the whole bunch would be even better
+(yes, both the pathname-based horrors and selinux).  Not feasible,
+unfortunately - Linux S&M is there to stay.  More's the pity...
+
+Anyway, we are at -rc4 and we have an oopsable race that needs to be fixed.
+So let's fix it and then let apparmor and tomoyo folks deal with their
+ugly stuff.  It's also 3.0.x / 3.1.x fodder; the same goes for 2.6.3[6-9].x
+but there tomoyo part will need backporting (they had changes circa 3.0-rc3
+in that area).
+
+I don't think that d_absolute_path() is a bad thing per se - it's *definitely*
+bad for making security decisions, but you've mentioned debugging yourself.
+Better that than kludges like struct path root = {} and passing &root around,
+especially if random debugging code starts using it...
+
+I'm waiting an ACK/NAK for apparmor bits from John; I think the summary I've
+put in the previous mail would do as commit message, so I'll put it into
+commit and push in #for-linus; if John ACKs that sucker, pull request time...
