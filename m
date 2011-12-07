@@ -1,58 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab1LGAdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:33:00 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:45322 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753959Ab1LGAc7 (ORCPT
+	id S1755115Ab1LGAgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:36:54 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:46037 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281Ab1LGAgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:32:59 -0500
-Message-ID: <4EDEC21E.4050103@xenotime.net>
-Date: Tue, 06 Dec 2011 17:32:14 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 6 Dec 2011 19:36:52 -0500
+Date: Wed, 7 Dec 2011 09:36:48 +0900
+From: Simon Horman <horms@verge.net.au>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, len.brown@intel.com, linux-doc@vger.kernel.org,
+        linux-pm@vger.kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, oleg@redhat.com, rdunlap@xenotime.net,
+        ebiederm@xmission.com, pavel@ucw.cz, tj@kernel.org
+Subject: Re: [PATCH v2 2/3] PM / Sleep: Replace mutex_[un]lock(&pm_mutex)
+ with [un]lock_system_sleep()
+Message-ID: <20111207003648.GE13348@verge.net.au>
+References: <20111206192000.25854.53769.stgit@srivatsabhat.in.ibm.com>
+ <20111206192324.25854.88711.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: Mark Einon <mark.einon@gmail.com>
-CC: linux-kernel@vger.kernel.org, sfr@canb.auug.org.au,
-        Trivial patch monkey <trivial@kernel.org>
-Subject: Re: [PATCH] [TRIVIAL] linux-next: Fixed spelling typo in types.h
-References: <1323213494-21947-1-git-send-email-mark.einon@gmail.com>
-In-Reply-To: <1323213494-21947-1-git-send-email-mark.einon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111206192324.25854.88711.stgit@srivatsabhat.in.ibm.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 03:18 PM, Mark Einon wrote:
-> Spelling change, architetures -> architectures
+On Wed, Dec 07, 2011 at 12:54:02AM +0530, Srivatsa S. Bhat wrote:
+> Using [un]lock_system_sleep() is safer than directly using mutex_[un]lock()
+> on 'pm_mutex', since the latter could lead to freezing failures. Hence convert
+> all the present users of mutex_[un]lock(&pm_mutex) to use these safe APIs
+> instead.
 > 
-> Signed-off-by: Mark Einon <mark.einon@gmail.com>
+> Suggested-by: Tejun Heo <tj@kernel.org>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-You should Cc: trivial@kernel.org also.
-[done]
+I am happy with this from a kexec point of view.
+
+Reviewed-by: Simon Horman <horms@verge.net.au>
 
 > ---
->  include/linux/types.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/include/linux/types.h b/include/linux/types.h
-> index 57a9723..cbcef6e 100644
-> --- a/include/linux/types.h
-> +++ b/include/linux/types.h
-> @@ -188,7 +188,7 @@ typedef __u32 __bitwise __wsum;
->   * aligned_u64 should be used in defining kernel<->userspace ABIs to avoid
->   * common 32/64-bit compat problems.
->   * 64-bit values align to 4-byte boundaries on x86_32 (and possibly other
-> - * architectures) and to 8-byte boundaries on 64-bit architetures.  The new
-> + * architectures) and to 8-byte boundaries on 64-bit architectures.  The new
->   * aligned_64 type enforces 8-byte alignment so that structs containing
->   * aligned_64 values have the same alignment on 32-bit and 64-bit architectures.
->   * No conversions are necessary between 32-bit user-space and a 64-bit kernel.
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+>  kernel/kexec.c           |    4 ++--
+>  kernel/power/hibernate.c |   16 ++++++++--------
+>  kernel/power/main.c      |    4 ++--
+>  kernel/power/suspend.c   |    4 ++--
+>  kernel/power/user.c      |   16 ++++++++--------
+>  5 files changed, 22 insertions(+), 22 deletions(-)
+> 
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index dc7bc08..090ee10 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1523,7 +1523,7 @@ int kernel_kexec(void)
+>  
+>  #ifdef CONFIG_KEXEC_JUMP
+>  	if (kexec_image->preserve_context) {
+> -		mutex_lock(&pm_mutex);
+> +		lock_system_sleep();
+>  		pm_prepare_console();
+>  		error = freeze_processes();
+>  		if (error) {
+> @@ -1576,7 +1576,7 @@ int kernel_kexec(void)
+>  		thaw_processes();
+>   Restore_console:
+>  		pm_restore_console();
+> -		mutex_unlock(&pm_mutex);
+> +		unlock_system_sleep();
+>  	}
+>  #endif
+>  
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index 605149a..6d6d288 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -69,14 +69,14 @@ void hibernation_set_ops(const struct platform_hibernation_ops *ops)
+>  		WARN_ON(1);
+>  		return;
+>  	}
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  	hibernation_ops = ops;
+>  	if (ops)
+>  		hibernation_mode = HIBERNATION_PLATFORM;
+>  	else if (hibernation_mode == HIBERNATION_PLATFORM)
+>  		hibernation_mode = HIBERNATION_SHUTDOWN;
+>  
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  }
+>  
+>  static bool entering_platform_hibernation;
+> @@ -597,7 +597,7 @@ int hibernate(void)
+>  {
+>  	int error;
+>  
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  	/* The snapshot device should not be opened while we're running */
+>  	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+>  		error = -EBUSY;
+> @@ -665,7 +665,7 @@ int hibernate(void)
+>  	pm_restore_console();
+>  	atomic_inc(&snapshot_device_available);
+>   Unlock:
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  	return error;
+>  }
+>  
+> @@ -893,7 +893,7 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	p = memchr(buf, '\n', n);
+>  	len = p ? p - buf : n;
+>  
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  	for (i = HIBERNATION_FIRST; i <= HIBERNATION_MAX; i++) {
+>  		if (len == strlen(hibernation_modes[i])
+>  		    && !strncmp(buf, hibernation_modes[i], len)) {
+> @@ -919,7 +919,7 @@ static ssize_t disk_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	if (!error)
+>  		pr_debug("PM: Hibernation mode set to '%s'\n",
+>  			 hibernation_modes[mode]);
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  	return error ? error : n;
+>  }
+>  
+> @@ -946,9 +946,9 @@ static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	if (maj != MAJOR(res) || min != MINOR(res))
+>  		goto out;
+>  
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  	swsusp_resume_device = res;
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  	printk(KERN_INFO "PM: Starting manual resume from disk\n");
+>  	noresume = 0;
+>  	software_resume();
+> diff --git a/kernel/power/main.c b/kernel/power/main.c
+> index 7d36fb3..9824b41e 100644
+> --- a/kernel/power/main.c
+> +++ b/kernel/power/main.c
+> @@ -116,7 +116,7 @@ static ssize_t pm_test_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	p = memchr(buf, '\n', n);
+>  	len = p ? p - buf : n;
+>  
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  
+>  	level = TEST_FIRST;
+>  	for (s = &pm_tests[level]; level <= TEST_MAX; s++, level++)
+> @@ -126,7 +126,7 @@ static ssize_t pm_test_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  			break;
+>  		}
+>  
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  
+>  	return error ? error : n;
+>  }
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index d336b27..4fd51be 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -42,9 +42,9 @@ static const struct platform_suspend_ops *suspend_ops;
+>   */
+>  void suspend_set_ops(const struct platform_suspend_ops *ops)
+>  {
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  	suspend_ops = ops;
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  }
+>  EXPORT_SYMBOL_GPL(suspend_set_ops);
+>  
+> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> index 06ea33d..98ade21 100644
+> --- a/kernel/power/user.c
+> +++ b/kernel/power/user.c
+> @@ -71,7 +71,7 @@ static int snapshot_open(struct inode *inode, struct file *filp)
+>  	struct snapshot_data *data;
+>  	int error;
+>  
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  
+>  	if (!atomic_add_unless(&snapshot_device_available, -1, 0)) {
+>  		error = -EBUSY;
+> @@ -123,7 +123,7 @@ static int snapshot_open(struct inode *inode, struct file *filp)
+>  	data->platform_support = 0;
+>  
+>   Unlock:
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  
+>  	return error;
+>  }
+> @@ -132,7 +132,7 @@ static int snapshot_release(struct inode *inode, struct file *filp)
+>  {
+>  	struct snapshot_data *data;
+>  
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  
+>  	swsusp_free();
+>  	free_basic_memory_bitmaps();
+> @@ -146,7 +146,7 @@ static int snapshot_release(struct inode *inode, struct file *filp)
+>  			PM_POST_HIBERNATION : PM_POST_RESTORE);
+>  	atomic_inc(&snapshot_device_available);
+>  
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  
+>  	return 0;
+>  }
+> @@ -158,7 +158,7 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
+>  	ssize_t res;
+>  	loff_t pg_offp = *offp & ~PAGE_MASK;
+>  
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  
+>  	data = filp->private_data;
+>  	if (!data->ready) {
+> @@ -179,7 +179,7 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
+>  		*offp += res;
+>  
+>   Unlock:
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  
+>  	return res;
+>  }
+> @@ -191,7 +191,7 @@ static ssize_t snapshot_write(struct file *filp, const char __user *buf,
+>  	ssize_t res;
+>  	loff_t pg_offp = *offp & ~PAGE_MASK;
+>  
+> -	mutex_lock(&pm_mutex);
+> +	lock_system_sleep();
+>  
+>  	data = filp->private_data;
+>  
+> @@ -208,7 +208,7 @@ static ssize_t snapshot_write(struct file *filp, const char __user *buf,
+>  	if (res > 0)
+>  		*offp += res;
+>  unlock:
+> -	mutex_unlock(&pm_mutex);
+> +	unlock_system_sleep();
+>  
+>  	return res;
+>  }
+> 
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
+> 
