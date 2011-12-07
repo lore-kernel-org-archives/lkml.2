@@ -1,68 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933474Ab1LGQn7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:43:59 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:6075 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933473Ab1LGQWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:22:07 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqABAFOS304Y9geI/2dsb2JhbAAMN4UGoxmFKAQBAQEBAyMEUQEQCw4KAgIFFgsCAgkDAgECAUUGDQEHAQGFRII3pTmRVIE0iGqBFgSILp5+
-X-IronPort-AV: E=Sophos;i="4.71,314,1320642000"; 
-   d="scan'208";a="151278155"
-Message-ID: <4EDF9293.8070809@teksavvy.com>
-Date: Wed, 07 Dec 2011 11:21:39 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
-References: <4EA89972.5060101@teksavvy.com>  <20111026.194045.2019668159403582571.davem@davemloft.net>  <4EA8B283.3010105@teksavvy.com>  <20111026.221719.2216112919297458522.davem@davemloft.net>  <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>  <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>  <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>  <4EBAB643.8020603@teksavvy.com> <1320859911.2781.1.camel@bwh-desktop>  <4EBABAFD.6050604@teksavvy.com> <1320860895.2781.6.camel@bwh-desktop>  <4EDCD828.2090904@teksavvy.com> <1323098335.7454.214.camel@deadeye>  <4EDE0E29.9070809@teksavvy.com> <1323193537.2772.9.camel@bwh-desktop>
-In-Reply-To: <1323193537.2772.9.camel@bwh-desktop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933535Ab1LGQo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:44:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33929 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933449Ab1LGQWB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:22:01 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:14 2011
+Message-Id: <20111207161214.850306063@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:11:03 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Tyler Hicks <tyhicks@canonical.com>
+Subject: [001/104] eCryptfs: Prevent file create race condition
+In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-12-06 12:45 PM, Ben Hutchings wrote:
-> On Tue, 2011-12-06 at 07:44 -0500, Mark Lord wrote:
->> On 11-12-05 10:18 AM, Ben Hutchings wrote:
->>> On Mon, 2011-12-05 at 09:41 -0500, Mark Lord wrote:
-..
->>> If this hardware recognises specific protocols and works out the offsets
->>> itself, then you must claim NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM instead.
->>
->> Yeah, the hardware seems to understand quite a few protocol formats.
->> Okay, so I'll claim the protocol-specific flags in net->hw_features.
->>
->> But what do I use in net->features?
->> The exact same protocol flags,
->> or the generic NETIF_F_HW_CSUM | NETIF_F_RXCSUM ones?
-> 
-> You set the flags for features that are actually being implemented!
-> 
-> But do set NETIF_F_RXCSUM in both places.  The network stack doesn't
-> know or care exactly what protocols you can do RX checksum validation
-> for, so there is only one flag for this.  Only the TX checksum
-> generation features have to be distinguished.
-> 
->> The set_features() function also has to test for flags
->> to know what to do.  Should it test specific protocol flags,
->> or just the generic two ?
-> 
-> Think it through.
-..
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-Heh.. my thinking side says to use the exact same protocol-specific flags
-in both "hw_features" and "features", and therefore check for those flags
-inside the "set_features()" function.
+------------------
 
-But that's not what earlier versions of this driver did,
-and nor what the vendor's driver does.
-Those versions all mix the protocol-specific and generic flags.
+From: Tyler Hicks <tyhicks@canonical.com>
 
-thus my confusion.
+commit b59db43ad4434519feb338eacb01d77eb50825c5 upstream.
+
+The file creation path prematurely called d_instantiate() and
+unlock_new_inode() before the eCryptfs inode info was fully
+allocated and initialized and before the eCryptfs metadata was written
+to the lower file.
+
+This could result in race conditions in subsequent file and inode
+operations leading to unexpected error conditions or a null pointer
+dereference while attempting to use the unallocated memory.
+
+https://launchpad.net/bugs/813146
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/ecryptfs/crypto.c          |   22 +++++++++--------
+ fs/ecryptfs/ecryptfs_kernel.h |    5 ++--
+ fs/ecryptfs/inode.c           |   52 +++++++++++++++++++++++++-----------------
+ 3 files changed, 46 insertions(+), 33 deletions(-)
+
+--- a/fs/ecryptfs/crypto.c
++++ b/fs/ecryptfs/crypto.c
+@@ -967,7 +967,7 @@ static void ecryptfs_set_default_crypt_s
+ 
+ /**
+  * ecryptfs_new_file_context
+- * @ecryptfs_dentry: The eCryptfs dentry
++ * @ecryptfs_inode: The eCryptfs inode
+  *
+  * If the crypto context for the file has not yet been established,
+  * this is where we do that.  Establishing a new crypto context
+@@ -984,13 +984,13 @@ static void ecryptfs_set_default_crypt_s
+  *
+  * Returns zero on success; non-zero otherwise
+  */
+-int ecryptfs_new_file_context(struct dentry *ecryptfs_dentry)
++int ecryptfs_new_file_context(struct inode *ecryptfs_inode)
+ {
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+-	    &ecryptfs_inode_to_private(ecryptfs_dentry->d_inode)->crypt_stat;
++	    &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+ 	struct ecryptfs_mount_crypt_stat *mount_crypt_stat =
+ 	    &ecryptfs_superblock_to_private(
+-		    ecryptfs_dentry->d_sb)->mount_crypt_stat;
++		    ecryptfs_inode->i_sb)->mount_crypt_stat;
+ 	int cipher_name_len;
+ 	int rc = 0;
+ 
+@@ -1299,12 +1299,12 @@ static int ecryptfs_write_headers_virt(c
+ }
+ 
+ static int
+-ecryptfs_write_metadata_to_contents(struct dentry *ecryptfs_dentry,
++ecryptfs_write_metadata_to_contents(struct inode *ecryptfs_inode,
+ 				    char *virt, size_t virt_len)
+ {
+ 	int rc;
+ 
+-	rc = ecryptfs_write_lower(ecryptfs_dentry->d_inode, virt,
++	rc = ecryptfs_write_lower(ecryptfs_inode, virt,
+ 				  0, virt_len);
+ 	if (rc < 0)
+ 		printk(KERN_ERR "%s: Error attempting to write header "
+@@ -1338,7 +1338,8 @@ static unsigned long ecryptfs_get_zeroed
+ 
+ /**
+  * ecryptfs_write_metadata
+- * @ecryptfs_dentry: The eCryptfs dentry
++ * @ecryptfs_dentry: The eCryptfs dentry, which should be negative
++ * @ecryptfs_inode: The newly created eCryptfs inode
+  *
+  * Write the file headers out.  This will likely involve a userspace
+  * callout, in which the session key is encrypted with one or more
+@@ -1348,10 +1349,11 @@ static unsigned long ecryptfs_get_zeroed
+  *
+  * Returns zero on success; non-zero on error
+  */
+-int ecryptfs_write_metadata(struct dentry *ecryptfs_dentry)
++int ecryptfs_write_metadata(struct dentry *ecryptfs_dentry,
++			    struct inode *ecryptfs_inode)
+ {
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+-		&ecryptfs_inode_to_private(ecryptfs_dentry->d_inode)->crypt_stat;
++		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+ 	unsigned int order;
+ 	char *virt;
+ 	size_t virt_len;
+@@ -1391,7 +1393,7 @@ int ecryptfs_write_metadata(struct dentr
+ 		rc = ecryptfs_write_metadata_to_xattr(ecryptfs_dentry, virt,
+ 						      size);
+ 	else
+-		rc = ecryptfs_write_metadata_to_contents(ecryptfs_dentry, virt,
++		rc = ecryptfs_write_metadata_to_contents(ecryptfs_inode, virt,
+ 							 virt_len);
+ 	if (rc) {
+ 		printk(KERN_ERR "%s: Error writing metadata out to lower file; "
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -584,9 +584,10 @@ int ecryptfs_init_crypt_ctx(struct ecryp
+ int ecryptfs_write_inode_size_to_metadata(struct inode *ecryptfs_inode);
+ int ecryptfs_encrypt_page(struct page *page);
+ int ecryptfs_decrypt_page(struct page *page);
+-int ecryptfs_write_metadata(struct dentry *ecryptfs_dentry);
++int ecryptfs_write_metadata(struct dentry *ecryptfs_dentry,
++			    struct inode *ecryptfs_inode);
+ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry);
+-int ecryptfs_new_file_context(struct dentry *ecryptfs_dentry);
++int ecryptfs_new_file_context(struct inode *ecryptfs_inode);
+ void ecryptfs_write_crypt_stat_flags(char *page_virt,
+ 				     struct ecryptfs_crypt_stat *crypt_stat,
+ 				     size_t *written);
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -172,22 +172,23 @@ ecryptfs_create_underlying_file(struct i
+  * it. It will also update the eCryptfs directory inode to mimic the
+  * stat of the lower directory inode.
+  *
+- * Returns zero on success; non-zero on error condition
++ * Returns the new eCryptfs inode on success; an ERR_PTR on error condition
+  */
+-static int
++static struct inode *
+ ecryptfs_do_create(struct inode *directory_inode,
+ 		   struct dentry *ecryptfs_dentry, int mode)
+ {
+ 	int rc;
+ 	struct dentry *lower_dentry;
+ 	struct dentry *lower_dir_dentry;
++	struct inode *inode;
+ 
+ 	lower_dentry = ecryptfs_dentry_to_lower(ecryptfs_dentry);
+ 	lower_dir_dentry = lock_parent(lower_dentry);
+ 	if (IS_ERR(lower_dir_dentry)) {
+ 		ecryptfs_printk(KERN_ERR, "Error locking directory of "
+ 				"dentry\n");
+-		rc = PTR_ERR(lower_dir_dentry);
++		inode = ERR_CAST(lower_dir_dentry);
+ 		goto out;
+ 	}
+ 	rc = ecryptfs_create_underlying_file(lower_dir_dentry->d_inode,
+@@ -195,20 +196,19 @@ ecryptfs_do_create(struct inode *directo
+ 	if (rc) {
+ 		printk(KERN_ERR "%s: Failure to create dentry in lower fs; "
+ 		       "rc = [%d]\n", __func__, rc);
++		inode = ERR_PTR(rc);
+ 		goto out_lock;
+ 	}
+-	rc = ecryptfs_interpose(lower_dentry, ecryptfs_dentry,
+-				directory_inode->i_sb);
+-	if (rc) {
+-		ecryptfs_printk(KERN_ERR, "Failure in ecryptfs_interpose\n");
++	inode = __ecryptfs_get_inode(lower_dentry->d_inode,
++				     directory_inode->i_sb);
++	if (IS_ERR(inode))
+ 		goto out_lock;
+-	}
+ 	fsstack_copy_attr_times(directory_inode, lower_dir_dentry->d_inode);
+ 	fsstack_copy_inode_size(directory_inode, lower_dir_dentry->d_inode);
+ out_lock:
+ 	unlock_dir(lower_dir_dentry);
+ out:
+-	return rc;
++	return inode;
+ }
+ 
+ /**
+@@ -219,26 +219,26 @@ out:
+  *
+  * Returns zero on success
+  */
+-static int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry)
++static int ecryptfs_initialize_file(struct dentry *ecryptfs_dentry,
++				    struct inode *ecryptfs_inode)
+ {
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+-		&ecryptfs_inode_to_private(ecryptfs_dentry->d_inode)->crypt_stat;
++		&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+ 	int rc = 0;
+ 
+-	if (S_ISDIR(ecryptfs_dentry->d_inode->i_mode)) {
++	if (S_ISDIR(ecryptfs_inode->i_mode)) {
+ 		ecryptfs_printk(KERN_DEBUG, "This is a directory\n");
+ 		crypt_stat->flags &= ~(ECRYPTFS_ENCRYPTED);
+ 		goto out;
+ 	}
+ 	ecryptfs_printk(KERN_DEBUG, "Initializing crypto context\n");
+-	rc = ecryptfs_new_file_context(ecryptfs_dentry);
++	rc = ecryptfs_new_file_context(ecryptfs_inode);
+ 	if (rc) {
+ 		ecryptfs_printk(KERN_ERR, "Error creating new file "
+ 				"context; rc = [%d]\n", rc);
+ 		goto out;
+ 	}
+-	rc = ecryptfs_get_lower_file(ecryptfs_dentry,
+-				     ecryptfs_dentry->d_inode);
++	rc = ecryptfs_get_lower_file(ecryptfs_dentry, ecryptfs_inode);
+ 	if (rc) {
+ 		printk(KERN_ERR "%s: Error attempting to initialize "
+ 			"the lower file for the dentry with name "
+@@ -246,10 +246,10 @@ static int ecryptfs_initialize_file(stru
+ 			ecryptfs_dentry->d_name.name, rc);
+ 		goto out;
+ 	}
+-	rc = ecryptfs_write_metadata(ecryptfs_dentry);
++	rc = ecryptfs_write_metadata(ecryptfs_dentry, ecryptfs_inode);
+ 	if (rc)
+ 		printk(KERN_ERR "Error writing headers; rc = [%d]\n", rc);
+-	ecryptfs_put_lower_file(ecryptfs_dentry->d_inode);
++	ecryptfs_put_lower_file(ecryptfs_inode);
+ out:
+ 	return rc;
+ }
+@@ -269,18 +269,28 @@ static int
+ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
+ 		int mode, struct nameidata *nd)
+ {
++	struct inode *ecryptfs_inode;
+ 	int rc;
+ 
+-	/* ecryptfs_do_create() calls ecryptfs_interpose() */
+-	rc = ecryptfs_do_create(directory_inode, ecryptfs_dentry, mode);
+-	if (unlikely(rc)) {
++	ecryptfs_inode = ecryptfs_do_create(directory_inode, ecryptfs_dentry,
++					    mode);
++	if (unlikely(IS_ERR(ecryptfs_inode))) {
+ 		ecryptfs_printk(KERN_WARNING, "Failed to create file in"
+ 				"lower filesystem\n");
++		rc = PTR_ERR(ecryptfs_inode);
+ 		goto out;
+ 	}
+ 	/* At this point, a file exists on "disk"; we need to make sure
+ 	 * that this on disk file is prepared to be an ecryptfs file */
+-	rc = ecryptfs_initialize_file(ecryptfs_dentry);
++	rc = ecryptfs_initialize_file(ecryptfs_dentry, ecryptfs_inode);
++	if (rc) {
++		drop_nlink(ecryptfs_inode);
++		unlock_new_inode(ecryptfs_inode);
++		iput(ecryptfs_inode);
++		goto out;
++	}
++	d_instantiate(ecryptfs_dentry, ecryptfs_inode);
++	unlock_new_inode(ecryptfs_inode);
+ out:
+ 	return rc;
+ }
+
+
