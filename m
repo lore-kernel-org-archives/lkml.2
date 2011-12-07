@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934034Ab1LGQ0L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:26:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34785 "EHLO mx2.suse.de"
+	id S1757927Ab1LGQ0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:26:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34827 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757186Ab1LGQ0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:26:04 -0500
+	id S933792Ab1LGQ0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:26:17 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:22 2011
-Message-Id: <20111207161222.762773568@clark.kroah.org>
+Message-Id: <20111207161222.260209526@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:39 -0800
+Date: Wed, 07 Dec 2011 08:12:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [097/104] rtc: Fix some bugs that allowed accumulating time drift in suspend/resume
+        <alan@lxorguk.ukuu.org.uk>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [091/104] slab, lockdep: Fix silly bug
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +26,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-commit 6a8943d9ec2567572fca25cf69ad45844d0141a3 upstream.
+commit 52cef189165d74a5d6030184a8e05595194c69ca upstream.
 
-The current code checks if abs(delta_delta.tv_sec) is greater or
-equal to two before it discards the old delta value, but this can
-trigger at close to -1 seconds since -1.000000001 seconds is stored
-as tv_sec -2 and tv_nsec 999999999 in a normalized timespec.
+Commit 30765b92 ("slab, lockdep: Annotate the locks before using
+them") moves the init_lock_keys() call from after g_cpucache_up =
+FULL, to before it. And overlooks the fact that init_node_lock_keys()
+tests for it and ignores everything !FULL.
 
-rtc_resume had an early return check if the rtc value had not changed
-since rtc_suspend. This effectivly stops time for the duration of the
-short sleep. Check if sleep_time is positive after all the adjustments
-have been applied instead since this allows the old_system adjustment
-in rtc_suspend to have an effect even for short sleep cycles.
+Introduce a LATE stage and change the lockdep test to be <LATE.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Acked-by: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/class.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ mm/slab.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/rtc/class.c
-+++ b/drivers/rtc/class.c
-@@ -66,7 +66,7 @@ static int rtc_suspend(struct device *de
- 	 */
- 	delta = timespec_sub(old_system, old_rtc);
- 	delta_delta = timespec_sub(delta, old_delta);
--	if (abs(delta_delta.tv_sec)  >= 2) {
-+	if (delta_delta.tv_sec < -2 || delta_delta.tv_sec >= 2) {
- 		/*
- 		 * if delta_delta is too large, assume time correction
- 		 * has occured and set old_delta to the current delta.
-@@ -100,9 +100,8 @@ static int rtc_resume(struct device *dev
- 	rtc_tm_to_time(&tm, &new_rtc.tv_sec);
- 	new_rtc.tv_nsec = 0;
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -595,6 +595,7 @@ static enum {
+ 	PARTIAL_AC,
+ 	PARTIAL_L3,
+ 	EARLY,
++	LATE,
+ 	FULL
+ } g_cpucache_up;
  
--	if (new_rtc.tv_sec <= old_rtc.tv_sec) {
--		if (new_rtc.tv_sec < old_rtc.tv_sec)
--			pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
-+	if (new_rtc.tv_sec < old_rtc.tv_sec) {
-+		pr_debug("%s:  time travel!\n", dev_name(&rtc->dev));
- 		return 0;
- 	}
+@@ -671,7 +672,7 @@ static void init_node_lock_keys(int q)
+ {
+ 	struct cache_sizes *s = malloc_sizes;
  
-@@ -119,7 +118,8 @@ static int rtc_resume(struct device *dev
- 	sleep_time = timespec_sub(sleep_time,
- 			timespec_sub(new_system, old_system));
+-	if (g_cpucache_up != FULL)
++	if (g_cpucache_up < LATE)
+ 		return;
  
--	timekeeping_inject_sleeptime(&sleep_time);
-+	if (sleep_time.tv_sec >= 0)
-+		timekeeping_inject_sleeptime(&sleep_time);
- 	return 0;
- }
+ 	for (s = malloc_sizes; s->cs_size != ULONG_MAX; s++) {
+@@ -1666,6 +1667,8 @@ void __init kmem_cache_init_late(void)
+ {
+ 	struct kmem_cache *cachep;
+ 
++	g_cpucache_up = LATE;
++
+ 	/* Annotate slab for lockdep -- annotate the malloc caches */
+ 	init_lock_keys();
  
 
 
