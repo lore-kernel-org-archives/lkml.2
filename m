@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934056Ab1LGQ0t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:26:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34804 "EHLO mx2.suse.de"
+	id S933971Ab1LGQ0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:26:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34769 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934009Ab1LGQ0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:26:10 -0500
+	id S1757910Ab1LGQ0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:26:00 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:22 2011
-Message-Id: <20111207161222.920316881@clark.kroah.org>
+Message-Id: <20111207161222.676101253@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:41 -0800
+Date: Wed, 07 Dec 2011 08:12:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [099/104] tick-broadcast: Stop active broadcast device when replacing it
+        <alan@lxorguk.ukuu.org.uk>, John Stultz <john.stultz@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: [096/104] rtc: Disable the alarm in the hardware
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +25,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-commit c1be84309c58b1e7c6d626e28fba41a22b364c3d upstream.
+commit c0afabd3d553c521e003779c127143ffde55a16f upstream.
 
-When a better rated broadcast device is installed, then the current
-active device is not disabled, which results in two running broadcast
-devices.
+Currently, the RTC code does not disable the alarm in the hardware.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This means that after a sequence such as the one below (the files are in the
+RTC sysfs), the box will boot up after 2 minutes even though we've
+asked for the alarm to be turned off.
+
+	# echo $((`cat since_epoch`)+120) > wakealarm
+	# echo 0 > wakealarm
+	# poweroff
+
+Fix this by disabling the alarm when there are no timers to run.
+
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/time/tick-broadcast.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/rtc/interface.c |   44 ++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 34 insertions(+), 10 deletions(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -71,7 +71,7 @@ int tick_check_broadcast_device(struct c
- 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
- 		return 0;
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -318,6 +318,20 @@ int rtc_read_alarm(struct rtc_device *rt
+ }
+ EXPORT_SYMBOL_GPL(rtc_read_alarm);
  
--	clockevents_exchange_device(NULL, dev);
-+	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
- 	tick_broadcast_device.evtdev = dev;
- 	if (!cpumask_empty(tick_get_broadcast_mask()))
- 		tick_broadcast_start_periodic(dev);
++static int ___rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
++{
++	int err;
++
++	if (!rtc->ops)
++		err = -ENODEV;
++	else if (!rtc->ops->set_alarm)
++		err = -EINVAL;
++	else
++		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
++
++	return err;
++}
++
+ static int __rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ {
+ 	struct rtc_time tm;
+@@ -341,14 +355,7 @@ static int __rtc_set_alarm(struct rtc_de
+ 	 * over right here, before we set the alarm.
+ 	 */
+ 
+-	if (!rtc->ops)
+-		err = -ENODEV;
+-	else if (!rtc->ops->set_alarm)
+-		err = -EINVAL;
+-	else
+-		err = rtc->ops->set_alarm(rtc->dev.parent, alarm);
+-
+-	return err;
++	return ___rtc_set_alarm(rtc, alarm);
+ }
+ 
+ int rtc_set_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+@@ -762,6 +769,20 @@ static int rtc_timer_enqueue(struct rtc_
+ 	return 0;
+ }
+ 
++static void rtc_alarm_disable(struct rtc_device *rtc)
++{
++	struct rtc_wkalrm alarm;
++	struct rtc_time tm;
++
++	__rtc_read_time(rtc, &tm);
++
++	alarm.time = rtc_ktime_to_tm(ktime_add(rtc_tm_to_ktime(tm),
++				     ktime_set(300, 0)));
++	alarm.enabled = 0;
++
++	___rtc_set_alarm(rtc, &alarm);
++}
++
+ /**
+  * rtc_timer_remove - Removes a rtc_timer from the rtc_device timerqueue
+  * @rtc rtc device
+@@ -783,8 +804,10 @@ static void rtc_timer_remove(struct rtc_
+ 		struct rtc_wkalrm alarm;
+ 		int err;
+ 		next = timerqueue_getnext(&rtc->timerqueue);
+-		if (!next)
++		if (!next) {
++			rtc_alarm_disable(rtc);
+ 			return;
++		}
+ 		alarm.time = rtc_ktime_to_tm(next->expires);
+ 		alarm.enabled = 1;
+ 		err = __rtc_set_alarm(rtc, &alarm);
+@@ -846,7 +869,8 @@ again:
+ 		err = __rtc_set_alarm(rtc, &alarm);
+ 		if (err == -ETIME)
+ 			goto again;
+-	}
++	} else
++		rtc_alarm_disable(rtc);
+ 
+ 	mutex_unlock(&rtc->ops_lock);
+ }
 
 
