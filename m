@@ -1,253 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab1LGM1Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 07:27:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57618 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab1LGM1X (ORCPT
+	id S1755824Ab1LGMaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 07:30:16 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:52872 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755631Ab1LGMaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 07:27:23 -0500
-Date: Wed, 7 Dec 2011 16:27:18 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [rfc 3/3] prctl: Add PR_SET_MM codes to tune up mm_struct entires
-Message-ID: <20111207122718.GF21678@moon>
-References: <20111129191252.769160532@openvz.org>
- <20111129191638.912537377@openvz.org>
- <20111129201938.GP5169@outflux.net>
- <20111129202951.GG1775@moon>
- <20111129203714.GH1775@moon>
- <CAGXu5jKDLExXWi+_Hjc+8s7FeuDgQdZcPipMH80LQs+tRyJm2A@mail.gmail.com>
- <20111130173739.GI14515@moon>
- <CAGXu5jL=46_MyxrrB8G4FntnLJBtt+DbvVX0kEXh9n8Ss+Yfsw@mail.gmail.com>
- <20111130182310.GL14515@moon>
- <20111130210622.GM14515@moon>
+	Wed, 7 Dec 2011 07:30:14 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sjur =?utf-8?q?Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: Re: [PATCH 0/9] XSHM: Shared Memory Driver for ST-E Thor M7400 LTE modem
+Date: Wed, 7 Dec 2011 12:30:07 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Paul Bolle <pebolle@tiscali.nl>
+References: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
+In-Reply-To: <1323250088-1729-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111130210622.GM14515@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201112071230.08019.arnd@arndb.de>
+X-Provags-ID: V02:K0:hIwI+s8LMB83qrzV4LB8pSh/zue34/IsjnrsrqzAlEV
+ Zsl1V0pTcasb2wL7Da428QmNAG3SRKKkH3vHMKAaeXHonQcUlw
+ Y803fvqtU5t1dWoD+bBNfP3/cF+TMG0NOC9Hsu1gjp8Pm77/4x
+ bpDBqpbhHfoFHwC7q5JBx2dmbAQXfg3Edl92pX7oGZcffBHfCG
+ NS16nxK7jEulcqIvlMTknSYm9ZSUOrc33yJdIxpt6ULTNGCS0g
+ DWGjFQKkV/HuWbx8Fi7CwkbqUlkP6EaSgPr/wIvPxhjYVYGhsd
+ ImjfwrwN/yl3tJINfOcfiVt8zkG8kkaXvPZqHMtORhT4jKkdqA
+ UMunB50g1q+BsQxMVRbA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 01, 2011 at 01:06:22AM +0400, Cyrill Gorcunov wrote:
-...
+Hi Sjur,
+
+I've tried to do a review of your code, but I really need to understand
+more of the background first, to be able to tell if it's using the
+right high-level approach. There are a lot of details I could
+comment on, but let's first look at the overall design.
+
+On Wednesday 07 December 2011, Sjur Brændeland wrote:
+> Introduction:
+> ~~~~~~~~~~~~~
+> This patch-set introduces the Shared Memory Driver for ST-Ericsson's
+> Thor M7400 LTE modem.
+> The shared memory model is implemented for Chip-to-chip and
+> uses a reserved memory area and a number of bi-directional
+> channels. Each channel has it's own designated data area where payload
+> data is copied into.
+
+Can you explain what the scope of this framework is? What I don't
+understand from the code is whether this is meant to be very
+broadly applicable to a lot of devices and competing with e.g.
+rpmsg from Ohad Ben-Cohen, or whether this is really speciific
+to one hardware implementation for caif.
+
+Also, to what degree is the protocol design flexible? Is the modem
+side fixed, so you have to live with any shortcomings of the interface,
+or are you at this point able to improve both sides when something
+is found to be lacking?
+
+> Two different channel types are defined, one stream channel which is
+> implemented as a traditional ring-buffer, and a packet channel which
+> is a ring-buffer of fix sized buffers where each buffer contains
+> an array of CAIF frames.
 > 
-> You know Kees, I tried it, and finally I think it's overheaded, so I prefer
-> to stick with original version (no need to duplicate same data in two differen
-> memory places as it'll be in case of arrays, and since the VM_ flags are
-> constant the former code bloats kernel lesser. Thanks anyway!
+> The notification of read and write index updates are handled in a
+> separate driver called c2c_genio. This driver will be contributed separately,
+> but the API is included in this patch-set.
 > 
+> The channel configuration is stored in shared memory, each channel
+> has a designated area in shared memory for configuration data,
+> read and write indexes and a data area.
 
-Ping. Kees, Andrew, are there some other objections I'm not yet addressed?
-I've updated changelog a bit more. Please review.
+How many channels will there be on of each type in a typical system,
+and respectively in the maximum you can realistically expect over
+the next 10 years?
 
-(Kame CC'ed)
+> Stream data
+> ~~~~~~~~~~~
+> The driver for the stream channel is implemented as a character device
+> interface to user space. The character device implements non-blocking open
+> and non-blocking IO in general. The character device is implementing
+> a traditional circular buffer directly in the shared memory region for
+> the channel.
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH] prctl: Add PR_SET_MM codes to tune up mm_struct entires v2
+It seems unusual to have both a socket interface and a character device
+interface. What is the motivation behind this? Why can't you use the
+socket for non-blocking I/O?
 
-At process of task restoration we need a way to tune up
-a few members of mm_struct structure such as start_code,
-end_code, start_data, end_data, start_stack, start_brk, brk.
+> Driver model
+> ~~~~~~~~~~~~~~
+> Current implementation is using the platform bus for XSHM devices.
+> The packet channels are named "xshmp", and stream channel "xshms".
+>
+> /sys/devices:
+> |-- platform
+> |   |-- uevent
+> |   `-- xshm
+> |       |-- bootimg
+> |       |-- caif_ready
+> |       |-- ipc_ready
+> |       |-- subsystem -> ../../../bus/platform
+> |       |-- xshmp.1
+> |       |   |-- driver -> ../../../../bus/platform/drivers/xshmp
+> |       |   |-- subsystem -> ../../../../bus/platform
+> |       `-- xshms.0
+> |           |-- driver -> ../../../../bus/platform/drivers/xshms
+> |           |-- misc
+> |           |   `-- xshm0
+> |           |       |-- device -> ../../../xshms.0
+> |           |       |-- subsystem -> ../../../../../../class/misc
+> `-- virtual
+>     |-- net
+>     |   |-- cfshm0
 
-While most of them have a statistical nature (their values
-are involved into calculation of /proc/<pid>/statm output)
-the start_brk and brk values are used to compute an allowed
-size of program data segment expansion. Which means an arbitrary
-changes of this value might be a bit dangerous operation.
+Why are the channels /platform/ devices? With all the infrastructure
+you have in the xshm driver, I would think that you should be
+able to probe the available channels yourself instead of relying the
+board to define them. If you cannot, that is something that I think
+needs to be fixed in the interface to the modem. If you can, you
+probably should not be using the platform_bus but instead create
+your own bus_type.
 
-To restrict access to this facility the following requirements
-applied to prctl users:
-
- - The process has to have CAP_SYS_ADMIN capability granted.
- - For all opcodes except start_brk/brk members an appropriate
-   VMA area must be existing and should fit certain VMA flags,
-   such as:
-   - code segment must be executable but not writable;
-   - data segment must not be executable.
-
-start_brk/brk values must not intersect with data segment
-and must not exceed RLIMIT_DATA resource limit.
-
-Still the main guard is CAP_SYS_ADMIN capability check.
-
-v2:
- - Add a check for vma start address, testing for vma ending
-   address is not enough. From Kees Cook.
-
- - Add some sanity tests for assigned addresses.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Kees Cook <keescook@chromium.org>
----
- include/linux/prctl.h |   12 +++++
- kernel/sys.c          |  118 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 130 insertions(+)
-
-Index: linux-2.6.git/include/linux/prctl.h
-===================================================================
---- linux-2.6.git.orig/include/linux/prctl.h
-+++ linux-2.6.git/include/linux/prctl.h
-@@ -102,4 +102,16 @@
- 
- #define PR_MCE_KILL_GET 34
- 
-+/*
-+ * Tune up process memory map specifics.
-+ */
-+#define PR_SET_MM		35
-+# define PR_SET_MM_START_CODE		1
-+# define PR_SET_MM_END_CODE		2
-+# define PR_SET_MM_START_DATA		3
-+# define PR_SET_MM_END_DATA		4
-+# define PR_SET_MM_START_STACK		5
-+# define PR_SET_MM_START_BRK		6
-+# define PR_SET_MM_BRK			7
-+
- #endif /* _LINUX_PRCTL_H */
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1692,6 +1692,118 @@ SYSCALL_DEFINE1(umask, int, mask)
- 	return mask;
- }
- 
-+static int prctl_set_mm(int opt, unsigned long addr)
-+{
-+	unsigned long rlim = rlimit(RLIMIT_DATA);
-+	unsigned long vm_req_flags;
-+	unsigned long vm_bad_flags;
-+	struct vm_area_struct *vma;
-+	struct mm_struct *mm;
-+	int error = 0;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	if (addr >= TASK_SIZE)
-+		return -EINVAL;
-+
-+	mm = get_task_mm(current);
-+	if (!mm)
-+		return -ENOENT;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_vma(mm, addr);
-+
-+	if (opt != PR_SET_MM_START_BRK &&
-+	    opt != PR_SET_MM_BRK) {
-+		/* It must be existing VMA */
-+		if (!vma || vma->vm_start > addr)
-+			goto out;
-+	}
-+
-+	error = -EINVAL;
-+	switch (opt) {
-+	case PR_SET_MM_START_CODE:
-+	case PR_SET_MM_END_CODE:
-+
-+		vm_req_flags = VM_READ | VM_EXEC;
-+		vm_bad_flags = VM_WRITE | VM_MAYSHARE;
-+
-+		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
-+		    (vma->vm_flags & vm_bad_flags))
-+			goto out;
-+
-+		if (opt == PR_SET_MM_START_CODE)
-+			current->mm->start_code = addr;
-+		else
-+			current->mm->end_code = addr;
-+		break;
-+
-+	case PR_SET_MM_START_DATA:
-+	case PR_SET_MM_END_DATA:
-+
-+		vm_req_flags = VM_READ | VM_WRITE;
-+		vm_bad_flags = VM_EXEC | VM_MAYSHARE;
-+
-+		if ((vma->vm_flags & vm_req_flags) != vm_req_flags ||
-+		    (vma->vm_flags & vm_bad_flags))
-+			goto out;
-+
-+		if (opt == PR_SET_MM_START_DATA)
-+			current->mm->start_data = addr;
-+		else
-+			current->mm->end_data = addr;
-+		break;
-+
-+	case PR_SET_MM_START_STACK:
-+
-+#ifdef CONFIG_STACK_GROWSUP
-+		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSUP;
-+#else
-+		vm_req_flags = VM_READ | VM_WRITE | VM_GROWSDOWN;
-+#endif
-+		if ((vma->vm_flags & vm_req_flags) != vm_req_flags)
-+			goto out;
-+
-+		current->mm->start_stack = addr;
-+		break;
-+
-+	case PR_SET_MM_START_BRK:
-+		if (addr <= mm->end_data)
-+			goto out;
-+
-+		if (rlim < RLIM_INFINITY &&
-+		    (mm->brk - addr) + (mm->end_data - mm->start_data) > rlim)
-+			goto out;
-+
-+		current->mm->start_brk = addr;
-+		break;
-+
-+	case PR_SET_MM_BRK:
-+		if (addr <= mm->end_data)
-+			goto out;
-+
-+		if (rlim < RLIM_INFINITY &&
-+		    (addr - mm->start_brk) + (mm->end_data - mm->start_data) > rlim)
-+			goto out;
-+
-+		current->mm->brk = addr;
-+		break;
-+
-+	default:
-+		error = -EINVAL;
-+		goto out;
-+	}
-+
-+	error = 0;
-+
-+out:
-+	up_read(&mm->mmap_sem);
-+	mmput(mm);
-+
-+	return error;
-+}
-+
- SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 		unsigned long, arg4, unsigned long, arg5)
- {
-@@ -1841,6 +1953,12 @@ SYSCALL_DEFINE5(prctl, int, option, unsi
- 			else
- 				error = PR_MCE_KILL_DEFAULT;
- 			break;
-+		case PR_SET_MM: {
-+			if (arg4 | arg5)
-+				return -EINVAL;
-+			error = prctl_set_mm(arg2, arg3);
-+			break;
-+		}
- 		default:
- 			error = -EINVAL;
- 			break;
+	Arnd
