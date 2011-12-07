@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab1LGAFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 19:05:03 -0500
-Received: from mga14.intel.com ([143.182.124.37]:65131 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752836Ab1LGAFC convert rfc822-to-8bit (ORCPT
+	id S1754915Ab1LGAFa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 19:05:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43759 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab1LGAF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 19:05:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,309,1320652800"; 
-   d="scan'208";a="44566434"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Date: Tue, 6 Dec 2011 16:04:56 -0800
-Subject: RE: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-Thread-Topic: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-Thread-Index: Acy0HpwUzalDeSmQRsaez4gjH9nmhwAUv02w
-Message-ID: <43F901BD926A4E43B106BF17856F075501A22B5A21@orsmsx508.amr.corp.intel.com>
-References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
- <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu>
- <4EDDE5D0.7030906@linux.vnet.ibm.com> <20111206103500.GD15966@elte.hu>
- <4EDDF2DE.7020701@linux.vnet.ibm.com> <4EDDFB8E.10801@linux.vnet.ibm.com>
- <20111206130351.GC28735@gere.osrc.amd.com> <20111206135246.GC30018@elte.hu>
-In-Reply-To: <20111206135246.GC30018@elte.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 6 Dec 2011 19:05:28 -0500
+Date: Tue, 6 Dec 2011 16:05:27 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mike Galbraith <efault@gmx.de>, Paul Menage <paul@paulmenage.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [patch-final] Re: patch] cpusets, cgroups: disallow attaching
+ kthreadd
+Message-Id: <20111206160527.d8e3115a.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1112061547530.15884@chino.kir.corp.google.com>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	<4E7C2E7F.40307@cn.fujitsu.com>
+	<1316762345.8168.4.camel@marge.simson.net>
+	<alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	<1316770936.6641.11.camel@marge.simson.net>
+	<1316775204.7562.9.camel@marge.simson.net>
+	<alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	<1316788392.6544.33.camel@marge.simson.net>
+	<1318224892.6161.45.camel@marge.simson.net>
+	<1318233815.6527.5.camel@marge.simson.net>
+	<1318925436.9641.23.camel@marge.simson.net>
+	<CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com>
+	<1319001860.6222.34.camel@marge.simson.net>
+	<alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
+	<20111206144721.7b1d473d.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1112061547530.15884@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> The specific point i tried to make about s2ram is to make sure
-> it does not break during normal usage: for example someone
-> offlines the boot CPU, but the box then gets suspended - that
-> should not hang or crash.
-> 
-This has been considered in the patch #7/7. There shouldn't be a problem here (in theory).
+On Tue, 6 Dec 2011 15:53:47 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-Suspend/hibernate calls callback bsp_pm_callback() and must pass this check before it can continue.
+> Would 
+> you like the change separated into kernel/cpuset.c and kernel/sched.c 
+> portions each referring to each other?
 
-When CPU0 is offline, bsp_pm_callback() returns -ENODEV and suspend/hibernate fails. When CPU0 is online, bsp_pm_callback() returns 0 and suspend/hibernate can continue.
+Nope.
 
-So when CPU0 is offline, system cannot suspend/hibernate. Suspend/hibernate can succeed only when CPU0 is online.
+> Mike, would you mind resending the patch for the fourth or fifth time?  If 
+> not, I'll rebase it.
 
-Plus the patch #7/7 considers race condition by pm_notifier_call_chain()'s priority in pm call chain. So there should be race issue here.
-
-Thanks.
-
--Fenghua
+Oh goody.
