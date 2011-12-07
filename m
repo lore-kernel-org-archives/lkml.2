@@ -1,201 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab1LGGdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 01:33:33 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:59257 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751395Ab1LGGdb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 01:33:31 -0500
-X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Dec 2011 01:33:31 EST
-Date: Wed, 7 Dec 2011 07:25:37 +0100
-From: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH] kbuild: add Makefile snippet to list compiled files
-Message-ID: <20111207062524.GA6570@faui49.informatik.uni-erlangen.de>
+	id S1751853Ab1LGGff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 01:35:35 -0500
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:42681 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751307Ab1LGGfe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 01:35:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201112051718.48324.arnd@arndb.de>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+ <1322816252-19955-2-git-send-email-sumit.semwal@ti.com> <201112051718.48324.arnd@arndb.de>
+From: "Semwal, Sumit" <sumit.semwal@ti.com>
+Date: Wed, 7 Dec 2011 12:05:12 +0530
+Message-ID: <CAB2ybb8-0_HupO95UUvLN9ovVxnU+uvn4UXbwqZLSFuC9MZs0w@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        linux@arm.linux.org.uk, jesse.barker@linaro.org,
+        m.szyprowski@samsung.com, rob@ti.com, daniel@ffwll.ch,
+        t.stanislaws@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To list the compilation units compiled by the current configuration the
-scripts/Makefile.list can be executed. It supports:
+Hi Arnd,
 
-- printing of all compilation units
-- all directories considered for compilation units
-- test if a given file is compiled by the configuration
-- use a different auto.conf
+Thanks for your review!
+On Mon, Dec 5, 2011 at 10:48 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 02 December 2011, Sumit Semwal wrote:
+>> This is the first step in defining a dma buffer sharing mechanism.
+>
+> This looks very nice, but there are a few things I don't understand yet
+> and a bunch of trivial comments I have about things I spotted.
+>
+> Do you have prototype exporter and consumer drivers that you can post
+> for clarification?
+>
+> In the patch 2, you have a section about migration that mentions that
+> it is possible to export a buffer that can be migrated after it
+> is already mapped into one user driver. How does that work when
+> the physical addresses are mapped into a consumer device already?
+I guess I need to clear it up in the documentation - when I said "once
+all ongoing access is completed" - I meant to say "once all current
+users have finished accessing and have unmapped this buffer". So I
+agree with Rob - the migration would only be possible for "attached
+but unmapped" buffers. I will update the documentation.
+>
+>> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+>> index 21cf46f..07d8095 100644
+>> --- a/drivers/base/Kconfig
+>> +++ b/drivers/base/Kconfig
+>> @@ -174,4 +174,14 @@ config SYS_HYPERVISOR
+>>
+>>  source "drivers/base/regmap/Kconfig"
+>>
+>> +config DMA_SHARED_BUFFER
+>> +     bool "Buffer framework to be shared between drivers"
+>> +     default n
+>> +     depends on ANON_INODES
+>
+> I would make this 'select ANON_INODES', like the other users of this
+> feature.
+Sure.
 
-Signed-off-by: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
----
- Hi,
+>
+>> +     return dmabuf;
+>> +}
+>> +EXPORT_SYMBOL(dma_buf_export);
+>
+> I agree with Konrad, this should definitely be EXPORT_SYMBOL_GPL,
+> because it's really a low-level function that I would expect
+> to get used by in-kernel subsystems providing the feature to
+> users and having back-end drivers, but it's not the kind of thing
+> we want out-of-tree drivers to mess with.
+Agreed.
 
- the following patch is a result of our research work at VAMOS[1],
- where we try to examine the perconditions under which a file is
- compiled into the linux kernel.
+>
+>> +/**
+>> + * dma_buf_fd - returns a file descriptor for the given dma_buf
+>> + * @dmabuf:  [in]    pointer to dma_buf for which fd is required.
+>> + *
+>> + * On success, returns an associated 'fd'. Else, returns error.
+>> + */
+>> +int dma_buf_fd(struct dma_buf *dmabuf)
+>> +{
+>> +     int error, fd;
+>> +
+>> +     if (!dmabuf->file)
+>> +             return -EINVAL;
+>> +
+>> +     error = get_unused_fd_flags(0);
+>
+> Why not simply get_unused_fd()?
+:) oversight. Will correct.
 
- While working on this, we needed a way to get all compilation units,
- which are compiled with the current configuration. And since this
- might be useful for others, I think it would be great to have this
- possibility in the mainline kernel.
+>
+>> +/**
+>> + * dma_buf_attach - Add the device to dma_buf's attachments list; optionally,
+>> + * calls attach() of dma_buf_ops to allow device-specific attach functionality
+>> + * @dmabuf:  [in]    buffer to attach device to.
+>> + * @dev:     [in]    device to be attached.
+>> + *
+>> + * Returns struct dma_buf_attachment * for this attachment; may return NULL.
+>> + *
+>
+> Or may return a negative error code. It's better to be consistent here:
+> either always return NULL on error, or change the allocation error to
+> ERR_PTR(-ENOMEM).
+Ok, that makes sense.
 
- chris
+>
+>> + */
+>> +struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+>> +                                             struct device *dev)
+>> +{
+>> +     struct dma_buf_attachment *attach;
+>> +     int ret;
+>> +
+>> +     BUG_ON(!dmabuf || !dev);
+>> +
+>> +     attach = kzalloc(sizeof(struct dma_buf_attachment), GFP_KERNEL);
+>> +     if (attach == NULL)
+>> +             goto err_alloc;
+>> +
+>> +     mutex_lock(&dmabuf->lock);
+>> +
+>> +     attach->dev = dev;
+>> +     attach->dmabuf = dmabuf;
+>> +     if (dmabuf->ops->attach) {
+>> +             ret = dmabuf->ops->attach(dmabuf, dev, attach);
+>> +             if (!ret)
+>> +                     goto err_attach;
+>
+> You probably mean "if (ret)" here instead of "if (!ret)", right?
+yes - a stupid one! will correct.
 
- [1] http://vamos.informatik.uni-erlangen.de
+>
+>> +     /* allow allocator to take care of cache ops */
+>> +     void (*sync_sg_for_cpu) (struct dma_buf *, struct device *);
+>> +     void (*sync_sg_for_device)(struct dma_buf *, struct device *);
+>
+> I don't see how this works with multiple consumers: For the streaming
+> DMA mapping, there must be exactly one owner, either the device or
+> the CPU. Obviously, this rule needs to be extended when you get to
+> multiple devices and multiple device drivers, plus possibly user
+> mappings. Simply assigning the buffer to "the device" from one
+> driver does not block other drivers from touching the buffer, and
+> assigning it to "the cpu" does not stop other hardware that the
+> code calling sync_sg_for_cpu is not aware of.
+>
+> The only way to solve this that I can think of right now is to
+> mandate that the mappings are all coherent (i.e. noncachable
+> on noncoherent architectures like ARM). If you do that, you no
+> longer need the sync_sg_for_* calls.
+I will take yours and Daniel's suggestion, and remove these; if at all
+they're needed, we can add them back again later, with
+/s/device/attachment as suggested by Daniel.
+>
+>> +#ifdef CONFIG_DMA_SHARED_BUFFER
+>
+> Do you have a use case for making the interface compile-time disabled?
+> I had assumed that any code using it would make no sense if it's not
+> available so you don't actually need this.
+Ok. Though if we keep the interface compile-time disabled, the users
+can actually check and fail or fall-back gracefully when the API is
+not available; If I remove it, anyways the users would need to do the
+same compile time check whether API is available or not, right?
 
- scripts/Makefile.list           |   48 ++++++++++++++++++++++
- scripts/Makefile.list_recursion |   83 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 131 insertions(+), 0 deletions(-)
- create mode 100644 scripts/Makefile.list
- create mode 100644 scripts/Makefile.list_recursion
-
-diff --git a/scripts/Makefile.list b/scripts/Makefile.list
-new file mode 100644
-index 0000000..725500b
---- /dev/null
-+++ b/scripts/Makefile.list
-@@ -0,0 +1,48 @@
-+# -*- mode: makefile -*-#
-+#===============================================
-+# Listing files compiled by current configuration
-+#
-+# For retrieving a list of files compiled into the kernel with the current
-+# configuration use (in a kernel source tree)
-+# - make -f scripts/Makefile.list
-+#   options:
-+#     print_files - print all compiles files (default: "y")
-+#     print_dirs  - print all directories considered for compilation (default: "")
-+#
-+# If you want to check if a file is compiled by the current configuration
-+# - make -f scripts/Makefile.list compiled=kernel/sched.c
-+#
-+# You can also override, which auto.conf should be loaded, when the source
-+# tree is traversed
-+# - make -f scripts/Makefile.list auto_conf=another/path/to/auto.conf
-+
-+list:
-+
-+# We include the main Makefile to get a list of all considered
-+# directories.
-+include $(if $(KBUILD_SRC),$(srctree)/)Makefile
-+
-+list-dirs      := $(addprefix _list_, . $(vmlinux-alldirs))
-+
-+# Default value for print_files
-+print_files ?= y
-+
-+PHONY += $(list-dirs) list
-+$(list-dirs):
-+ifeq ($(compiled),)
-+	$(Q)$(MAKE) $(list) \
-+		auto_conf=$(auto_conf) \
-+		print_dirs=$(print_dirs) \
-+		print_files=$(print_files) \
-+		obj=$(patsubst _list_%,%,$@)
-+else
-+	$(Q)$(MAKE) $(list) \
-+		auto_conf=$(auto_conf) \
-+		compiled=$(patsubst %.c,%.o,$(compiled)) \
-+		obj=$(patsubst _list_%,%,$@)
-+endif
-+
-+list: $(list-dirs)
-+
-+list := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.list_recursion
-+
-diff --git a/scripts/Makefile.list_recursion b/scripts/Makefile.list_recursion
-new file mode 100644
-index 0000000..e448a06
---- /dev/null
-+++ b/scripts/Makefile.list_recursion
-@@ -0,0 +1,83 @@
-+# This is the recursive part of scripts/Makefile.list
-+# Have a look there if you are interested in modes of operation
-+#==============================================================
-+src := $(obj)
-+
-+PHONY := __list __find
-+
-+ifeq ($(compiled),)
-+__list:
-+else
-+__find:
-+endif
-+
-+# Read auto.conf if it exists, otherwise ignore
-+ifeq ($(auto_conf),)
-+-include include/config/auto.conf
-+else
-+include $(auto_conf)
-+endif
-+
-+# The filename Kbuild has precedence over Makefile
-+kbuild-dir := $(if $(filter /%,$(src)),$(src),$(srctree)/$(src))
-+include $(if $(wildcard $(kbuild-dir)/Kbuild), $(kbuild-dir)/Kbuild, $(kbuild-dir)/Makefile)
-+
-+# Figure out what we need to build from the various variables
-+# ==========================================================================
-+
-+__subdir-y	:= $(patsubst %/,%,$(filter %/, $(obj-y)))
-+subdir-y	+= $(__subdir-y)
-+__subdir-m	:= $(patsubst %/,%,$(filter %/, $(obj-m)))
-+subdir-m	+= $(__subdir-m)
-+__subdir-n	:= $(patsubst %/,%,$(filter %/, $(obj-n)))
-+subdir-n	+= $(__subdir-n)
-+__subdir-	:= $(patsubst %/,%,$(filter %/, $(obj-)))
-+subdir-		+= $(__subdir-)
-+
-+# Subdirectories we need to descend into
-+subdir-ym	:= $(sort $(subdir-y) $(subdir-m))
-+subdir-ymn      := $(sort $(subdir-ym) $(subdir-n) $(subdir-))
-+
-+include scripts/Makefile.lib
-+
-+__list: $(subdir-ym)
-+ifneq ($(print_dirs),)
-+	@echo $(obj)/
-+endif
-+ifneq ($(print_files),)
-+ifneq ($(strip $(real-objs-y)),)
-+	@for a in $(real-objs-y); do \
-+		echo $$a y; \
-+	done
-+endif
-+ifneq ($(strip $(real-objs-m)),)
-+	@for a in $(real-objs-m); do \
-+		echo $$a m; \
-+	done
-+endif
-+endif
-+	@:
-+
-+__find: $(foreach dir,$(subdir-ym),$(if $(filter $(dir)%,$(compiled)), $(dir)))
-+ifneq ($(filter $(compiled),$(real-objs-y)),)
-+	@echo $(compiled) y
-+endif
-+ifneq ($(filter $(compiled),$(real-objs-m)),)
-+	@echo $(compiled) m
-+endif
-+	@:
-+
-+
-+list := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.list_recursion
-+
-+PHONY += $(subdir-ym)
-+$(subdir-ym):
-+ifeq ($(compiled),)
-+	$(Q)$(MAKE) $(list) obj=$(patsubst _list_%,%,$@)
-+else
-+	$(Q)$(MAKE) $(list) compiled=$(compiled) obj=$(patsubst _list_%,%,$@)
-+endif
-+
-+# Declare the contents of the .PHONY variable as phony.  We keep that
-+# information in a variable se we can use it in if_changed and friends.
-+.PHONY: $(PHONY)
--- 
-1.7.1
+>
+>        Arnd
+Thanks, and best regards,
+~Sumit.
