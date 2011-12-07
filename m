@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758423Ab1LGVUA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 16:20:00 -0500
-Received: from wavehammer.waldi.eu.org ([82.139.201.20]:42482 "EHLO
+	id S1758412Ab1LGVT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 16:19:58 -0500
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:42480 "EHLO
 	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757798Ab1LGVTY (ORCPT
+	with ESMTP id S1756899Ab1LGVTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Dec 2011 16:19:24 -0500
 From: Bastian Blank <waldi@debian.org>
 To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
 Cc: konrad.wilk@oracle.com
-Subject: [PATCH 1/4] xen: Add privcmd device driver
-Date: Wed,  7 Dec 2011 22:13:13 +0100
-Message-Id: <1323292396-19523-2-git-send-email-waldi@debian.org>
+Subject: [PATCH 2/4] xen: Add xenbus device driver
+Date: Wed,  7 Dec 2011 22:13:14 +0100
+Message-Id: <1323292396-19523-3-git-send-email-waldi@debian.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323292396-19523-1-git-send-email-waldi@debian.org>
 References: <1323292396-19523-1-git-send-email-waldi@debian.org>
@@ -20,183 +20,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Access to arbitrary hypercalls is currently provided via xenfs. This
-adds a standard character device to handle this. The support in xenfs
-remains for backward compatibility and uses the device driver code.
+Access to xenbus is currently handled via xenfs. This adds a device
+driver for xenbus and makes xenfs use this code.
 
 Signed-off-by: Bastian Blank <waldi@debian.org>
 ---
- drivers/xen/Kconfig               |    7 ++++++
- drivers/xen/Makefile              |    2 +
- drivers/xen/{xenfs => }/privcmd.c |   39 ++++++++++++++++++++++++++++++++++++-
- drivers/xen/privcmd.h             |    3 ++
- drivers/xen/xenfs/Makefile        |    2 +-
- drivers/xen/xenfs/super.c         |    3 +-
- drivers/xen/xenfs/xenfs.h         |    1 -
- 7 files changed, 53 insertions(+), 4 deletions(-)
- rename drivers/xen/{xenfs => }/privcmd.c (92%)
- create mode 100644 drivers/xen/privcmd.h
+ drivers/xen/xenbus/Makefile                        |    1 +
+ drivers/xen/xenbus/xenbus_comms.h                  |    4 ++
+ .../xenbus.c => xenbus/xenbus_dev_frontend.c}      |   37 ++++++++++++++++++--
+ drivers/xen/xenfs/Makefile                         |    2 +-
+ drivers/xen/xenfs/super.c                          |    3 +-
+ drivers/xen/xenfs/xenfs.h                          |    1 -
+ 6 files changed, 42 insertions(+), 6 deletions(-)
+ rename drivers/xen/{xenfs/xenbus.c => xenbus/xenbus_dev_frontend.c} (95%)
 
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index 8795480..a1ced52 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -86,6 +86,7 @@ config XEN_BACKEND
+diff --git a/drivers/xen/xenbus/Makefile b/drivers/xen/xenbus/Makefile
+index 8dca685..a2ea363 100644
+--- a/drivers/xen/xenbus/Makefile
++++ b/drivers/xen/xenbus/Makefile
+@@ -1,4 +1,5 @@
+ obj-y	+= xenbus.o
++obj-y	+= xenbus_dev_frontend.o
  
- config XENFS
- 	tristate "Xen filesystem"
-+	select XEN_PRIVCMD
- 	default y
- 	help
- 	  The xen filesystem provides a way for domains to share
-@@ -171,4 +172,10 @@ config XEN_PCIDEV_BACKEND
- 	  xen-pciback.hide=(03:00.0)(04:00.0)
+ xenbus-objs =
+ xenbus-objs += xenbus_client.o
+diff --git a/drivers/xen/xenbus/xenbus_comms.h b/drivers/xen/xenbus/xenbus_comms.h
+index c21db75..6e42800 100644
+--- a/drivers/xen/xenbus/xenbus_comms.h
++++ b/drivers/xen/xenbus/xenbus_comms.h
+@@ -31,6 +31,8 @@
+ #ifndef _XENBUS_COMMS_H
+ #define _XENBUS_COMMS_H
  
- 	  If in doubt, say m.
++#include <linux/fs.h>
 +
-+config XEN_PRIVCMD
-+	tristate
-+	depends on XEN
-+	default m
+ int xs_init(void);
+ int xb_init_comms(void);
+ 
+@@ -43,4 +45,6 @@ int xs_input_avail(void);
+ extern struct xenstore_domain_interface *xen_store_interface;
+ extern int xen_store_evtchn;
+ 
++extern const struct file_operations xen_xenbus_fops;
 +
- endmenu
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index 974fffd..aa31337 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -19,7 +19,9 @@ obj-$(CONFIG_XEN_TMEM)			+= tmem.o
- obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
- obj-$(CONFIG_XEN_DOM0)			+= pci.o
- obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
-+obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
- 
- xen-evtchn-y				:= evtchn.o
- xen-gntdev-y				:= gntdev.o
- xen-gntalloc-y				:= gntalloc.o
-+xen-privcmd-y				:= privcmd.o
-diff --git a/drivers/xen/xenfs/privcmd.c b/drivers/xen/privcmd.c
-similarity index 92%
-rename from drivers/xen/xenfs/privcmd.c
-rename to drivers/xen/privcmd.c
-index dbd3b16..863fbd0 100644
---- a/drivers/xen/xenfs/privcmd.c
-+++ b/drivers/xen/privcmd.c
-@@ -7,6 +7,7 @@
-  */
- 
- #include <linux/kernel.h>
-+#include <linux/module.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
+ #endif /* _XENBUS_COMMS_H */
+diff --git a/drivers/xen/xenfs/xenbus.c b/drivers/xen/xenbus/xenbus_dev_frontend.c
+similarity index 95%
+rename from drivers/xen/xenfs/xenbus.c
+rename to drivers/xen/xenbus/xenbus_dev_frontend.c
+index bbd000f..fb30cff 100644
+--- a/drivers/xen/xenfs/xenbus.c
++++ b/drivers/xen/xenbus/xenbus_dev_frontend.c
+@@ -52,13 +52,16 @@
+ #include <linux/namei.h>
  #include <linux/string.h>
-@@ -18,6 +19,7 @@
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
- #include <linux/seq_file.h>
+ #include <linux/slab.h>
 +#include <linux/miscdevice.h>
++#include <linux/module.h>
  
- #include <asm/pgalloc.h>
- #include <asm/pgtable.h>
-@@ -32,6 +34,10 @@
- #include <xen/page.h>
- #include <xen/xen-ops.h>
+-#include "xenfs.h"
+-#include "../xenbus/xenbus_comms.h"
++#include "xenbus_comms.h"
  
-+#include "privcmd.h"
-+
+ #include <xen/xenbus.h>
+ #include <asm/xen/hypervisor.h>
+ 
 +MODULE_LICENSE("GPL");
 +
- #ifndef HAVE_ARCH_PRIVCMD_MMAP
- static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma);
- #endif
-@@ -394,7 +400,38 @@ static int privcmd_enforce_singleshot_mapping(struct vm_area_struct *vma)
+ /*
+  * An element of a list of outstanding transactions, for which we're
+  * still waiting a reply.
+@@ -583,7 +586,7 @@ static unsigned int xenbus_file_poll(struct file *file, poll_table *wait)
+ 	return 0;
  }
- #endif
  
--const struct file_operations privcmd_file_ops = {
-+const struct file_operations xen_privcmd_fops = {
-+	.owner = THIS_MODULE,
- 	.unlocked_ioctl = privcmd_ioctl,
- 	.mmap = privcmd_mmap,
+-const struct file_operations xenbus_file_ops = {
++const struct file_operations xen_xenbus_fops = {
+ 	.read = xenbus_file_read,
+ 	.write = xenbus_file_write,
+ 	.open = xenbus_file_open,
+@@ -591,3 +594,31 @@ const struct file_operations xenbus_file_ops = {
+ 	.poll = xenbus_file_poll,
+ 	.llseek = no_llseek,
  };
-+EXPORT_SYMBOL_GPL(xen_privcmd_fops);
++EXPORT_SYMBOL_GPL(xen_xenbus_fops);
 +
-+static struct miscdevice privcmd_dev = {
++static struct miscdevice xenbus_dev = {
 +	.minor = MISC_DYNAMIC_MINOR,
-+	.name = "xen/privcmd",
-+	.fops = &xen_privcmd_fops,
++	.name = "xen/xenbus",
++	.fops = &xen_xenbus_fops,
 +};
 +
-+static int __init privcmd_init(void)
++static int __init xenbus_init(void)
 +{
 +	int err;
 +
 +	if (!xen_domain())
 +		return -ENODEV;
 +
-+	err = misc_register(&privcmd_dev);
-+	if (err != 0) {
-+		printk(KERN_ERR "Could not register privcmd device\n");
-+		return err;
-+	}
-+	return 0;
++	err = misc_register(&xenbus_dev);
++	if (err)
++		printk(KERN_ERR "Could not register xenbus device\n");
++	return err;
 +}
 +
-+static void __exit privcmd_exit(void)
++static void __exit xenbus_exit(void)
 +{
-+	misc_deregister(&privcmd_dev);
++	misc_deregister(&xenbus_dev);
 +}
 +
-+module_init(privcmd_init);
-+module_exit(privcmd_exit);
-diff --git a/drivers/xen/privcmd.h b/drivers/xen/privcmd.h
-new file mode 100644
-index 0000000..14facae
---- /dev/null
-+++ b/drivers/xen/privcmd.h
-@@ -0,0 +1,3 @@
-+#include <linux/fs.h>
-+
-+extern const struct file_operations xen_privcmd_fops;
++module_init(xenbus_init);
++module_exit(xenbus_exit);
 diff --git a/drivers/xen/xenfs/Makefile b/drivers/xen/xenfs/Makefile
-index 4fde944..5d45ff1 100644
+index 5d45ff1..b019865 100644
 --- a/drivers/xen/xenfs/Makefile
 +++ b/drivers/xen/xenfs/Makefile
 @@ -1,4 +1,4 @@
  obj-$(CONFIG_XENFS) += xenfs.o
  
--xenfs-y			  = super.o xenbus.o privcmd.o
-+xenfs-y			  = super.o xenbus.o
+-xenfs-y			  = super.o xenbus.o
++xenfs-y			  = super.o
  xenfs-$(CONFIG_XEN_DOM0) += xenstored.o
 diff --git a/drivers/xen/xenfs/super.c b/drivers/xen/xenfs/super.c
-index 1aa3897..a55fbf9 100644
+index a55fbf9..a84b53c 100644
 --- a/drivers/xen/xenfs/super.c
 +++ b/drivers/xen/xenfs/super.c
-@@ -16,6 +16,7 @@
- #include <xen/xen.h>
+@@ -17,6 +17,7 @@
  
  #include "xenfs.h"
-+#include "../privcmd.h"
+ #include "../privcmd.h"
++#include "../xenbus/xenbus_comms.h"
  
  #include <asm/xen/hypervisor.h>
  
-@@ -84,7 +85,7 @@ static int xenfs_fill_super(struct super_block *sb, void *data, int silent)
+@@ -83,7 +84,7 @@ static int xenfs_fill_super(struct super_block *sb, void *data, int silent)
+ {
+ 	static struct tree_descr xenfs_files[] = {
  		[1] = {},
- 		{ "xenbus", &xenbus_file_ops, S_IRUSR|S_IWUSR },
+-		{ "xenbus", &xenbus_file_ops, S_IRUSR|S_IWUSR },
++		{ "xenbus", &xen_xenbus_fops, S_IRUSR|S_IWUSR },
  		{ "capabilities", &capabilities_file_ops, S_IRUGO },
--		{ "privcmd", &privcmd_file_ops, S_IRUSR|S_IWUSR },
-+		{ "privcmd", &xen_privcmd_fops, S_IRUSR|S_IWUSR },
+ 		{ "privcmd", &xen_privcmd_fops, S_IRUSR|S_IWUSR },
  		{""},
- 	};
- 	int rc;
 diff --git a/drivers/xen/xenfs/xenfs.h b/drivers/xen/xenfs/xenfs.h
-index b68aa62..5056306 100644
+index 5056306..6b80c77 100644
 --- a/drivers/xen/xenfs/xenfs.h
 +++ b/drivers/xen/xenfs/xenfs.h
-@@ -2,7 +2,6 @@
+@@ -1,7 +1,6 @@
+ #ifndef _XENFS_XENBUS_H
  #define _XENFS_XENBUS_H
  
- extern const struct file_operations xenbus_file_ops;
--extern const struct file_operations privcmd_file_ops;
+-extern const struct file_operations xenbus_file_ops;
  extern const struct file_operations xsd_kva_file_ops;
  extern const struct file_operations xsd_port_file_ops;
  
