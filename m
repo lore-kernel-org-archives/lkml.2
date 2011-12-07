@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab1LGRN1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:13:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60941 "EHLO mx2.suse.de"
+	id S1756922Ab1LGRNc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:13:32 -0500
+Received: from mail.klingt.org ([86.59.21.178]:42512 "EHLO klingt.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756714Ab1LGQQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:16:09 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:24 2011
-Message-Id: <20111207160824.007602831@clark.kroah.org>
-User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:37 -0800
-From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Felipe Balbi <balbi@ti.com>,
-        Kevin Hilman <khilman@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [17/80] ARM: OMAP: smartreflex: fix IRQ handling bug
-In-Reply-To: <20111207161256.GA7736@kroah.com>
+	id S1756714Ab1LGRN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:13:28 -0500
+From: Tim Blechmann <tim@klingt.org>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [05/27] ALSA: lx6464es - fix device communication via command bus
+Date: Wed, 07 Dec 2011 18:13:08 +0100
+Message-ID: <1561513.9b6lVaYVip@moka>
+User-Agent: KMail/4.7.3 (Linux/3.2.0-rc4+; KDE/4.7.3; x86_64; ; )
+In-Reply-To: <20111207165600.831023370@clark.kroah.org>
+References: <20111207165600.831023370@clark.kroah.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.9 (klingt.org [86.59.21.178]); Wed, 07 Dec 2011 18:13:10 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+it is not really necessary to apply this patch to 2.6.32, as the problem was 
+introduced by a change to the memcpy_*_io functions that was introduced in 
+2.6.34.
 
-------------------
+otoh, it doesn't harm, either.
 
-From: Felipe Balbi <balbi@ti.com>
-
-commit 5a4f1844c2ba21f804d7729306d9b16eaeb724a8 upstream.
-
-Fix a bug which has been on this driver since
-it was added by the original commit 984aa6db
-which would never clear IRQSTATUS bits.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Kevin Hilman <khilman@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/arm/mach-omap2/smartreflex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/arm/mach-omap2/smartreflex.c
-+++ b/arch/arm/mach-omap2/smartreflex.c
-@@ -137,7 +137,7 @@ static irqreturn_t sr_interrupt(int irq,
- 		sr_write_reg(sr_info, ERRCONFIG_V1, status);
- 	} else if (sr_info->ip_type == SR_TYPE_V2) {
- 		/* Read the status bits */
--		sr_read_reg(sr_info, IRQSTATUS);
-+		status = sr_read_reg(sr_info, IRQSTATUS);
- 
- 		/* Clear them by writing back */
- 		sr_write_reg(sr_info, IRQSTATUS, status);
-
-
+On Wednesday 07 December 2011 08:54:38 Greg KH wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let me
+> know.
+> 
+> ------------------
+> 
+> From: Tim Blechmann <tim@klingt.org>
+> 
+> commit a29878553a9a7b4c06f93c7e383527cf014d4ceb upstream.
+> 
+> commit 6175ddf06b6172046a329e3abfd9c901a43efd2e optimized the mem*io
+> functions that have been used to send commands to the device. these
+> optimizations somehow corrupted the communication with the lx6464es,
+> that resulted the device to be unusable with kernels after 2.6.33.
+> 
+> this patch emulates the memcpy_*_io functions via a loop to avoid these
+> problems.
+> 
+> Signed-off-by: Tim Blechmann <tim@klingt.org>
+> LKML-Reference: <4ECB5257.4040600@ladisch.de>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  sound/pci/lx6464es/lx_core.c |   16 ++++++++++++----
+>  1 file changed, 12 insertions(+), 4 deletions(-)
+> 
+> --- a/sound/pci/lx6464es/lx_core.c
+> +++ b/sound/pci/lx6464es/lx_core.c
+> @@ -80,8 +80,12 @@ unsigned long lx_dsp_reg_read(struct lx6
+> 
+>  void lx_dsp_reg_readbuf(struct lx6464es *chip, int port, u32 *data, u32
+> len) {
+> -	void __iomem *address = lx_dsp_register(chip, port);
+> -	memcpy_fromio(data, address, len*sizeof(u32));
+> +	u32 __iomem *address = lx_dsp_register(chip, port);
+> +	int i;
+> +
+> +	/* we cannot use memcpy_fromio */
+> +	for (i = 0; i != len; ++i)
+> +		data[i] = ioread32(address + i);
+>  }
+> 
+> 
+> @@ -94,8 +98,12 @@ void lx_dsp_reg_write(struct lx6464es *c
+>  void lx_dsp_reg_writebuf(struct lx6464es *chip, int port, const u32 *data,
+>  			 u32 len)
+>  {
+> -	void __iomem *address = lx_dsp_register(chip, port);
+> -	memcpy_toio(address, data, len*sizeof(u32));
+> +	u32 __iomem *address = lx_dsp_register(chip, port);
+> +	int i;
+> +
+> +	/* we cannot use memcpy_to */
+> +	for (i = 0; i != len; ++i)
+> +		iowrite32(data[i], address + i);
+>  }
