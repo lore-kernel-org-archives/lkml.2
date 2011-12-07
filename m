@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933444Ab1LGQVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:21:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33879 "EHLO mx2.suse.de"
+	id S933513Ab1LGQWJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:22:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33934 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933388Ab1LGQVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:21:41 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:15 2011
-Message-Id: <20111207161215.186906935@clark.kroah.org>
+	id S933498Ab1LGQWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:22:04 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:18 2011
+Message-Id: <20111207161218.068071699@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:07 -0800
+Date: Wed, 07 Dec 2011 08:11:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Phil Sutter <phil.sutter@viprinet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [005/104] crypto: mv_cesa - fix hashing of chunks > 1920 bytes
+        <alan@lxorguk.ukuu.org.uk>, Michael Buesch <m@bues.ch>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [040/104] p54spi: Fix workqueue deadlock
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Sutter <phil.sutter@viprinet.com>
+From: =?UTF-8?q?Michael=20B=C3=BCsch?= <m@bues.ch>
 
-commit 274252862f386b7868f35bf5ceaa5391a8ccfdf3 upstream.
+commit 2d1618170eb493d18f66f2ac03775409a6fb97c6 upstream.
 
-This was broken by commit 7759995c75ae0cbd4c861582908449f6b6208e7a (yes,
-myself). The basic problem here is since the digest state is only saved
-after the last chunk, the state array is only valid when handling the
-first chunk of the next buffer. Broken since linux-3.0.
+priv->work must not be synced while priv->mutex is locked, because
+the mutex is taken in the work handler.
+Move cancel_work_sync down to after the device shutdown code.
+This is safe, because the work handler checks fw_state and bails out
+early in case of a race.
 
-Signed-off-by: Phil Sutter <phil.sutter@viprinet.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Michael Buesch <m@bues.ch>
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/crypto/mv_cesa.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ drivers/net/wireless/p54/p54spi.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/crypto/mv_cesa.c
-+++ b/drivers/crypto/mv_cesa.c
-@@ -342,11 +342,13 @@ static void mv_process_hash_current(int
- 		else
- 			op.config |= CFG_MID_FRAG;
+--- a/drivers/net/wireless/p54/p54spi.c
++++ b/drivers/net/wireless/p54/p54spi.c
+@@ -589,8 +589,6 @@ static void p54spi_op_stop(struct ieee80
  
--		writel(req_ctx->state[0], cpg->reg + DIGEST_INITIAL_VAL_A);
--		writel(req_ctx->state[1], cpg->reg + DIGEST_INITIAL_VAL_B);
--		writel(req_ctx->state[2], cpg->reg + DIGEST_INITIAL_VAL_C);
--		writel(req_ctx->state[3], cpg->reg + DIGEST_INITIAL_VAL_D);
--		writel(req_ctx->state[4], cpg->reg + DIGEST_INITIAL_VAL_E);
-+		if (first_block) {
-+			writel(req_ctx->state[0], cpg->reg + DIGEST_INITIAL_VAL_A);
-+			writel(req_ctx->state[1], cpg->reg + DIGEST_INITIAL_VAL_B);
-+			writel(req_ctx->state[2], cpg->reg + DIGEST_INITIAL_VAL_C);
-+			writel(req_ctx->state[3], cpg->reg + DIGEST_INITIAL_VAL_D);
-+			writel(req_ctx->state[4], cpg->reg + DIGEST_INITIAL_VAL_E);
-+		}
- 	}
+ 	WARN_ON(priv->fw_state != FW_STATE_READY);
  
- 	memcpy(cpg->sram + SRAM_CONFIG, &op, sizeof(struct sec_accel_config));
+-	cancel_work_sync(&priv->work);
+-
+ 	p54spi_power_off(priv);
+ 	spin_lock_irqsave(&priv->tx_lock, flags);
+ 	INIT_LIST_HEAD(&priv->tx_pending);
+@@ -598,6 +596,8 @@ static void p54spi_op_stop(struct ieee80
+ 
+ 	priv->fw_state = FW_STATE_OFF;
+ 	mutex_unlock(&priv->mutex);
++
++	cancel_work_sync(&priv->work);
+ }
+ 
+ static int __devinit p54spi_probe(struct spi_device *spi)
 
 
