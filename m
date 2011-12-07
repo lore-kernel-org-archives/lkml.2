@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266Ab1LGRCt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:02:49 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61325 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757163Ab1LGRCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:02:47 -0500
-From: Tom Gundersen <teg@jklm.no>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>
-Subject: [PATCH] mm: mark some messages as INFO
-Date: Wed,  7 Dec 2011 18:02:40 +0100
-Message-Id: <1323277360-3155-1-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.7.8
+	id S1757287Ab1LGRDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:03:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39265 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755557Ab1LGRC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:02:58 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:01 2011
+Message-Id: <20111207165601.339899873@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:54:44 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        davem@davemloft.net
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, netdev@vger.kernel.org,
+        Jesse Gross <jesse@nicira.com>, Benjamin Poirier <bpoirier@suse.de>
+Subject: [11/27] gro: reset vlan_tci on reuse
+In-Reply-To: <20111207165611.GA19872@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reduces the noise in
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-$ dmesg --kernel --level=err,warn
+------------------
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
+This one liner is part of upstream
+commit 3701e51382a026cba10c60b03efabe534fba4ca4
+Author: Jesse Gross <jesse@nicira.com>
+
+    vlan: Centralize handling of hardware acceleration.
+
+The bulk of that commit is a rework of the hardware assisted vlan tagging
+driver interface, and as such doesn't classify for -stable inclusion. The fix
+that is needed is a part of that commit but can work independently of the
+rest.
+
+This patch can avoid panics on the 2.6.32.y -stable kernels and is in the same
+spirit as mainline commits
+66c46d7 gro: Reset dev pointer on reuse
+6d152e2 gro: reset skb_iif on reuse
+which are already in -stable.
+
+For drivers using the vlan_gro_frags() interface, a packet with an invalid tci
+leads to GRO_DROP and napi_reuse_skb(). The skb has to be sanitized before
+being reused or we may send an skb with an invalid vlan_tci field up the stack
+where it is not expected.
+
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+Cc: Jesse Gross <jesse@nicira.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+
 ---
- mm/page_alloc.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+ net/core/dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9dd443d..e427e99 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3270,14 +3270,14 @@ void __ref build_all_zonelists(void *data)
- 	else
- 		page_group_by_mobility_disabled = 0;
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2614,6 +2614,7 @@ void napi_reuse_skb(struct napi_struct *
+ {
+ 	__skb_pull(skb, skb_headlen(skb));
+ 	skb_reserve(skb, NET_IP_ALIGN - skb_headroom(skb));
++	skb->vlan_tci = 0;
+ 	skb->dev = napi->dev;
+ 	skb->iif = 0;
  
--	printk("Built %i zonelists in %s order, mobility grouping %s.  "
-+	printk(KERN_INFO "Built %i zonelists in %s order, mobility grouping %s.  "
- 		"Total pages: %ld\n",
- 			nr_online_nodes,
- 			zonelist_order_name[current_zonelist_order],
- 			page_group_by_mobility_disabled ? "off" : "on",
- 			vm_total_pages);
- #ifdef CONFIG_NUMA
--	printk("Policy zone: %s\n", zone_names[policy_zone]);
-+	printk(KERN_INFO "Policy zone: %s\n", zone_names[policy_zone]);
- #endif
- }
- 
-@@ -4913,31 +4913,31 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
- 	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
- 
- 	/* Print out the zone ranges */
--	printk("Zone PFN ranges:\n");
-+	printk(KERN_INFO "Zone PFN ranges:\n");
- 	for (i = 0; i < MAX_NR_ZONES; i++) {
- 		if (i == ZONE_MOVABLE)
- 			continue;
--		printk("  %-8s ", zone_names[i]);
-+		printk(KERN_INFO "  %-8s ", zone_names[i]);
- 		if (arch_zone_lowest_possible_pfn[i] ==
- 				arch_zone_highest_possible_pfn[i])
--			printk("empty\n");
-+			printk(KERN_INFO "empty\n");
- 		else
--			printk("%0#10lx -> %0#10lx\n",
-+			printk(KERN_INFO "%0#10lx -> %0#10lx\n",
- 				arch_zone_lowest_possible_pfn[i],
- 				arch_zone_highest_possible_pfn[i]);
- 	}
- 
- 	/* Print out the PFNs ZONE_MOVABLE begins at in each node */
--	printk("Movable zone start PFN for each node\n");
-+	printk(KERN_INFO "Movable zone start PFN for each node\n");
- 	for (i = 0; i < MAX_NUMNODES; i++) {
- 		if (zone_movable_pfn[i])
--			printk("  Node %d: %lu\n", i, zone_movable_pfn[i]);
-+			printk(KERN_INFO "  Node %d: %lu\n", i, zone_movable_pfn[i]);
- 	}
- 
- 	/* Print out the early_node_map[] */
--	printk("early_node_map[%d] active PFN ranges\n", nr_nodemap_entries);
-+	printk(KERN_INFO "early_node_map[%d] active PFN ranges\n", nr_nodemap_entries);
- 	for (i = 0; i < nr_nodemap_entries; i++)
--		printk("  %3d: %0#10lx -> %0#10lx\n", early_node_map[i].nid,
-+		printk(KERN_INFO "  %3d: %0#10lx -> %0#10lx\n", early_node_map[i].nid,
- 						early_node_map[i].start_pfn,
- 						early_node_map[i].end_pfn);
- 
--- 
-1.7.8
+
 
