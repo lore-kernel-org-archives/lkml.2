@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab1LGJS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:18:27 -0500
-Received: from mga03.intel.com ([143.182.124.21]:34226 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750927Ab1LGJSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:18:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,313,1320652800"; 
-   d="scan'208";a="83103839"
-Date: Wed, 7 Dec 2011 17:18:20 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 7/9] readahead: add vfs/readahead tracing event
-Message-ID: <20111207091820.GA7656@localhost>
-References: <20111129130900.628549879@intel.com>
- <20111129131456.797240894@intel.com>
- <20111206153025.GA18974@infradead.org>
+	id S1752329Ab1LGJSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:18:46 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:48598
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751589Ab1LGJSl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 04:18:41 -0500
+X-SpamScore: -17
+X-BigFish: VS-17(zz9371K542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+From: Dong Aisheng-B29396 <B29396@freescale.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Guo Shawn-R65073 <r65073@freescale.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>
+Subject: RE: [RFC PATCH 3/3] pinctrl: imx: add pinmux-imx6q support
+Thread-Topic: [RFC PATCH 3/3] pinctrl: imx: add pinmux-imx6q support
+Thread-Index: AQHMsnlmt2gm/uAHMEandVQq7X9Y4JXOz4aA//+a+jCAAhUBAP//m+NA
+Date: Wed, 7 Dec 2011 09:18:36 +0000
+Message-ID: <65EE16ACC360FA4D99C96DC085B3F77234FC5B@039-SN1MPN1-002.039d.mgd.msft.net>
+References: <1322999384-7886-1-git-send-email-b29396@freescale.com>
+	<1322999384-7886-3-git-send-email-b29396@freescale.com>
+	<20111206072326.GA3712@S2100-06.ap.freescale.net>
+	<65EE16ACC360FA4D99C96DC085B3F772345A0B@039-SN1MPN1-002.039d.mgd.msft.net>
+ <CACRpkdbVXkpVHqhP2SHV2fud66NYFj0mcAPyaqJoyUS-20to5Q@mail.gmail.com>
+In-Reply-To: <CACRpkdbVXkpVHqhP2SHV2fud66NYFj0mcAPyaqJoyUS-20to5Q@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.198]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111206153025.GA18974@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 06, 2011 at 11:30:25PM +0800, Christoph Hellwig wrote:
-> > +	TP_printk("readahead-%s(dev=%d:%d, ino=%lu, "
+> -----Original Message-----
+> From: Linus Walleij [mailto:linus.walleij@linaro.org]
+> Sent: Wednesday, December 07, 2011 5:10 PM
+> To: Dong Aisheng-B29396; Guo Shawn-R65073
+> Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> linus.walleij@stericsson.com; s.hauer@pengutronix.de;
+> kernel@pengutronix.de
+> Subject: Re: [RFC PATCH 3/3] pinctrl: imx: add pinmux-imx6q support
 > 
-> please don't duplicate the tracepoint name in the output string.
-> Also don't use braces, as it jsut complicates parsing.
-
-OK. Changed to this format:
-
-        TP_printk("pattern=%s bdi=%s ino=%lu "      
-                  "req=%lu+%lu ra=%lu+%d-%d async=%d actual=%d",
-
-
-> > +		  "req=%lu+%lu, ra=%lu+%d-%d, async=%d) = %d",
-> > +			ra_pattern_names[__entry->pattern],
+> On Tue, Dec 6, 2011 at 8:23 AM, Dong Aisheng-B29396 <B29396@freescale.com>
+> wrote:
+> >> From: Guo Shawn-R65073
+> >> As I do not see the device tree probing added in pinmux-imx-core.c, I
+> >> expect the patch has not got the chance to run on imx6, right?
+> >>
+> > Yes, I would add it if the pinctrl framework supports DT.
 > 
-> Instead of doing a manual array lookup please use __print_symbolic so
-> that users of the binary interface (like trace-cmd) also get the
-> right output.
-
-The patch actually started with 
-
-+#define show_pattern_name(val)                                            \
-+       __print_symbolic(val,                                              \
-+                       { RA_PATTERN_INITIAL,           "initial"       }, \
-+                       { RA_PATTERN_SUBSEQUENT,        "subsequent"    }, \
-+                       { RA_PATTERN_CONTEXT,           "context"       }, \
-+                       { RA_PATTERN_THRASH,            "thrash"        }, \
-+                       { RA_PATTERN_MMAP_AROUND,       "around"        }, \
-+                       { RA_PATTERN_FADVISE,           "fadvise"       }, \
-+                       { RA_PATTERN_RANDOM,            "random"        }, \
-+                       { RA_PATTERN_ALL,               "all"           })
-
-It's then converted to the current form so as to avoid duplicating the
-num<>string mapping in two places.
-
-The recently added writeback reason shares the same problem:
-
-        TP_printk("bdi %s: sb_dev %d:%d nr_pages=%ld sync_mode=%d "
-                  "kupdate=%d range_cyclic=%d background=%d reason=%s",
-...
-                  wb_reason_name[__entry->reason]
-        )
-
-Fortunately that's newly introduced in 3.2-rc1, so it's still the good
-time to fix the writeback traces.
-
-However the problem is, are we going to keep adding duplicate mappings
-like this in future?
-
-> > --- linux-next.orig/mm/readahead.c	2011-11-29 20:58:53.000000000 +0800
-> > +++ linux-next/mm/readahead.c	2011-11-29 20:59:20.000000000 +0800
-> > @@ -29,6 +29,9 @@ static const char * const ra_pattern_nam
-> >  	[RA_PATTERN_ALL]                = "all",
-> >  };
-> >  
-> > +#define CREATE_TRACE_POINTS
-> > +#include <trace/events/vfs.h>
+> There are many levels of DT.
 > 
-> Maybe we should create a new fs/trace.c just for this instead of stickin
-> it into the first file that created a tracepoint in the "vfs" namespace.
+> You can of course add DT-support for anything driver-specific, such as
+> init data for some registers, or anything else you would normally pass in
+> through platform data. So please just do that if imx6 already has support
+> for such things.
+> 
+> What we're discussing about right now on devicetree-discuss is where to
+> put the mapping tables etc that is currently registered by the board,
+> that has no obvious solution as there is some disagreement on how to do
+> that.
+> 
+Yes, thanks for your info.
+I'm new to device tree and may take some time to get more familiar with it.
 
-Yeah, it looks better to move it to a more general place.
+I discussed with Shawn today and now we're going to move data to dt and run
+this driver on mx6q first.
 
-Thanks,
-Fengguang
+Regards
+Dong Aisheng
+
