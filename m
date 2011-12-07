@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab1LGOWf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 09:22:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49385 "EHLO mx2.suse.de"
+	id S1756190Ab1LGOXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 09:23:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11499 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755798Ab1LGOWe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 09:22:34 -0500
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: Tony Luck <tony.luck@intel.com>
-Subject: Re: Overlapping reserved regions at boot
-Date: Wed, 7 Dec 2011 15:22:33 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.9-default; KDE/4.6.0; i686; ; )
-Cc: Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <201111291501.51657.ptesarik@suse.cz>
-In-Reply-To: <201111291501.51657.ptesarik@suse.cz>
+	id S1755798Ab1LGOXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 09:23:23 -0500
+Message-ID: <4EDF76D6.7020800@redhat.com>
+Date: Wed, 07 Dec 2011 16:23:18 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201112071522.34034.ptesarik@suse.cz>
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org
+Subject: Re: [PATCH 1/2] KVM: VMX: Notify if VMX is already in use
+References: <1322764218-4698-1-git-send-email-levinsasha928@gmail.com>  <4EDF7590.5060701@redhat.com> <1323267521.4009.11.camel@lappy>
+In-Reply-To: <1323267521.4009.11.camel@lappy>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne Út 29. listopadu 2011 15:01:51 Petr Tesarik napsal(a):
-> Hello,
-> 
-> while working on the upcoming SLES11 SP2, I ran into an issue with booting
-> the panic kernel on a kernel crash. In the first iteration I found out
-> that the initial register backing store gets overwritten with zeroes,
-> causing a kernel crash shortly afterwards.
-> 
-> Further investigation revealed that rsvd_region[] contains overlapping
-> entries: find_memmap_space() returns a pointer which lies between
-> KERNEL_START and _end. This is correct with the EFI memmap as patched by
-> the kexec purgatory code. That code removes vmlinux LOAD segments from the
-> usable map, but there is a pretty large hole between the gate section and
-> the per-cpu section.
-> 
-> With the following patch, the panic kernel can boot and save the crash
-> dump.
+On 12/07/2011 04:18 PM, Sasha Levin wrote:
+> On Wed, 2011-12-07 at 16:17 +0200, Avi Kivity wrote:
+> > On 12/01/2011 08:30 PM, Sasha Levin wrote:
+> > > Currently we silently fail if VMX is already in use by a different
+> > > virtualization technology.
+> > >
+> > > This is bad since it's non-obvious for the user, and its not too uncommon
+> > > for users to have several of these installed on same host.
+> > >
+> > > This patch adds a message to notify the user of the problem.
+> > >
+> > 
+> > Does this actually happen?  With which hypervisor?
+>
+> vbox
+>
+> It turns VMX/SVM on when it loads, regardless of whether it's running a
+> guest or not.
 
-OK guys, I take it that nobody is interested in ia64 any longer, but assuming 
-that there will probably be no other fix to the issue, can you at least 
-confirm that the fix is acceptable?
+That's odd.  IIRC when we discussed this with them, they were executing
+VMXON/VMXOFF dynamically.  Looks like they changed this.
 
-TIA,
-Petr Tesarik
+Anyway, please adjust according to Joerg's comment (and add the word
+"using"), and I'll apply.
 
-> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
-> 
-> --- a/arch/ia64/kernel/setup.c
-> +++ b/arch/ia64/kernel/setup.c
-> @@ -225,6 +225,23 @@
->  	}
->  }
-> 
-> +/* merge overlaps */
-> +static int __init
-> +merge_regions (struct rsvd_region *rsvd_region, int max)
-> +{
-> +	int i;
-> +	for (i = 1; i < max; ++i) {
-> +		if (rsvd_region[i].start >= rsvd_region[i-1].end)
-> +			continue;
-> +		if (rsvd_region[i].end > rsvd_region[i-1].end)
-> +			rsvd_region[i-1].end = rsvd_region[i].end;
-> +		--max;
-> +		memmove(&rsvd_region[i], &rsvd_region[i+1],
-> +			(max - i) * sizeof(struct rsvd_region));
-> +	}
-> +	return max;
-> +}
-> +
->  /*
->   * Request address space for all standard resources
->   */
-> @@ -275,6 +292,7 @@
->  	if (ret == 0 && size > 0) {
->  		if (!base) {
->  			sort_regions(rsvd_region, *n);
-> +			*n = merge_regions(rsvd_region, *n);
->  			base = kdump_find_rsvd_region(size,
->  					rsvd_region, *n);
->  		}
-> @@ -392,6 +410,7 @@
->  	BUG_ON(IA64_MAX_RSVD_REGIONS + 1 < n);
-> 
->  	sort_regions(rsvd_region, num_rsvd_regions);
-> +	num_rsvd_regions = merge_regions(rsvd_region, num_rsvd_regions);
->  }
+-- 
+error compiling committee.c: too many arguments to function
+
