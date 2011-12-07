@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab1LGBWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 20:22:17 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42101 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab1LGBWQ (ORCPT
+	id S1755365Ab1LGBXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 20:23:21 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36103 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab1LGBXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 20:22:16 -0500
-Date: Tue, 6 Dec 2011 17:22:12 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        dchinner@redhat.com
-Subject: Re: [PATCH] oom: add tracepoints for oom_score_adj
-In-Reply-To: <20111207095434.5f2fed4b.kamezawa.hiroyu@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1112061721230.25238@chino.kir.corp.google.com>
-References: <20111207095434.5f2fed4b.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 6 Dec 2011 20:23:20 -0500
+Date: Wed, 7 Dec 2011 01:23:18 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+Message-ID: <20111207012318.GR2203@ZenIV.linux.org.uk>
+References: <20111206205346.GK2203@ZenIV.linux.org.uk>
+ <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
+ <4EDE94DC.8010106@canonical.com>
+ <20111206224100.GM2203@ZenIV.linux.org.uk>
+ <4EDEA152.90804@canonical.com>
+ <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
+ <20111207001643.GN2203@ZenIV.linux.org.uk>
+ <CA+55aFzEE+qoRsiSQt7PecvS+hhnMRT9ytsRQKcBrjTQFg9kPg@mail.gmail.com>
+ <20111207005253.GP2203@ZenIV.linux.org.uk>
+ <CA+55aFxzZOL_TgQSvCUBNsm8OjR_UDHADL=bBeLe-xJ=3PsNhg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxzZOL_TgQSvCUBNsm8OjR_UDHADL=bBeLe-xJ=3PsNhg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Dec 2011, KAMEZAWA Hiroyuki wrote:
+On Tue, Dec 06, 2011 at 05:11:59PM -0800, Linus Torvalds wrote:
 
-> From 28189e4622fd97324893a0b234183f64472a54d6 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Wed, 7 Dec 2011 09:58:16 +0900
-> Subject: [PATCH] oom: trace point for oom_score_adj
-> 
-> oom_score_adj is set to prevent a task from being killed by OOM-Killer.
-> Some daemons sets this value and their children inerit it sometimes.
-> Because inheritance of oom_score_adj is done automatically, users
-> can be confused at seeing the value and finds it's hard to debug.
-> 
-> This patch adds trace point for oom_score_adj. This adds 3 trace
-> points. at
-> 	- update oom_score_adj
-> 	- fork()
-> 	- rename task->comm(typically, exec())
-> 
-> Outputs will be following.
->    bash-2404  [006]   199.620841: oom_score_adj_update: task 2404[bash] updates oom_score_ad  j=-1000
->    bash-2404  [006]   205.861287: oom_score_adj_inherited: new_task=2442 oom_score_adj=-1000
->    su-2442  [003]   205.861761: oom_score_task_rename: rename task 2442[bash] to [su] oom_  score_adj=-1000
->    su-2442  [003]   205.866737: oom_score_adj_inherited: new_task=2444 oom_score_adj=-1000
->    bash-2444  [007]   205.868136: oom_score_task_rename: rename task 2444[su] to [bash] oom_  score_adj=-1000
->    bash-2444  [007]   205.870407: oom_score_adj_inherited: new_task=2445 oom_score_adj=-1000
->    bash-2445  [001]   205.870975: oom_score_adj_inherited: new_task=2446 oom_score_adj=-1000
-> 
+> It's
+> *some* kind of root, but that's just about all the relevant
+> information you'd ever want to know.
 
-Little bit of whitespace damage there, but looks good in the code itself.
+Damnit, it may very well be NOT ANY KIND OF ROOT AT ALL.  Which is what
+I'd been trying to tell you all along.  You can race with umount -l.
+In that case that thing might have been *INSIDE* your chroot jail.
+Anywhere in it.
 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+We raced with umount -l /mnt.  And what would be /mnt/1/2/foo/bar/baz
+had shown up as /foo/bar/baz.  A few cycles earlier or later it could
+be /1/2/foo/bar/baz or /bar/baz.  And you are not in chroot jail at
+all.  _That_ is what I have trouble with.  Because that sysadmin will
+misinterpret it exactly the way you have...
 
-Just minor alterations to the format of the tracepoints from the first 
-version, so carry over my
+See what I'm talking about?  I'm fine with giving the pathname to global
+root.  It's doing that to *random* just-unmounted vfsmount that is not
+a good thing.
 
-Acked-by: David Rientjes <rientjes@google.com>
+And yes, we can avoid returning that struct vfsmount *.  Fortunately.
+See the posting in another branch of that thread for details.
