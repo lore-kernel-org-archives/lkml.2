@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab1LGQ4F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:56:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33289 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757253Ab1LGQSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:18:43 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:27 2011
-Message-Id: <20111207160827.608521295@clark.kroah.org>
-User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:21 -0800
+	id S1754726Ab1LGQ4Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:56:24 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:32925 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754291Ab1LGQ4W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:56:22 -0500
+X-Sasl-enc: vNWAx47sSbEy3k/pphoSSDRGqbjkMKsVutD+hYq7pFEr 1323276981
+Date: Wed, 7 Dec 2011 08:56:11 -0800
 From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [61/80] x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode
-In-Reply-To: <20111207161256.GA7736@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [00/27] 2.6.32.50-longterm review
+Message-ID: <20111207165611.GA19872@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the longterm review cycle for the 2.6.32.50 release.
+There are 27 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by Friday, December 9, 2011, 17:00:00 UTC.
+Anything received after that time might be too late.
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.19-rc1.gz
+and the diffstat can be found below.
 
-commit 2cd1c8d4dc7ecca9e9431e2dabe41ae9c7d89e51 upstream.
+thanks,
 
-Fix an outstanding issue that has been reported since 2.6.37.
-Under a heavy loaded machine processing "fork()" calls could
-crash with:
-
-BUG: unable to handle kernel paging request at f573fc8c
-IP: [<c01abc54>] swap_count_continued+0x104/0x180
-*pdpt = 000000002a3b9027 *pde = 0000000001bed067 *pte = 0000000000000000 Oops: 0000 [#1] SMP
-Modules linked in:
-Pid: 1638, comm: apache2 Not tainted 3.0.4-linode37 #1
-EIP: 0061:[<c01abc54>] EFLAGS: 00210246 CPU: 3
-EIP is at swap_count_continued+0x104/0x180
-.. snip..
-Call Trace:
- [<c01ac222>] ? __swap_duplicate+0xc2/0x160
- [<c01040f7>] ? pte_mfn_to_pfn+0x87/0xe0
- [<c01ac2e4>] ? swap_duplicate+0x14/0x40
- [<c01a0a6b>] ? copy_pte_range+0x45b/0x500
- [<c01a0ca5>] ? copy_page_range+0x195/0x200
- [<c01328c6>] ? dup_mmap+0x1c6/0x2c0
- [<c0132cf8>] ? dup_mm+0xa8/0x130
- [<c013376a>] ? copy_process+0x98a/0xb30
- [<c013395f>] ? do_fork+0x4f/0x280
- [<c01573b3>] ? getnstimeofday+0x43/0x100
- [<c010f770>] ? sys_clone+0x30/0x40
- [<c06c048d>] ? ptregs_clone+0x15/0x48
- [<c06bfb71>] ? syscall_call+0x7/0xb
-
-The problem is that in copy_page_range() we turn lazy mode on,
-and then in swap_entry_free() we call swap_count_continued()
-which ends up in:
-
-         map = kmap_atomic(page, KM_USER0) + offset;
-
-and then later we touch *map.
-
-Since we are running in batched mode (lazy) we don't actually
-set up the PTE mappings and the kmap_atomic is not done
-synchronously and ends up trying to dereference a page that has
-not been set.
-
-Looking at kmap_atomic_prot_pfn(), it uses
-'arch_flush_lazy_mmu_mode' and doing the same in
-kmap_atomic_prot() and __kunmap_atomic() makes the problem go
-away.
-
-Interestingly, commit b8bcfe997e4615 ("x86/paravirt: remove lazy
-mode in interrupts") removed part of this to fix an interrupt
-issue - but it went to far and did not consider this scenario.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/mm/highmem_32.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/arch/x86/mm/highmem_32.c
-+++ b/arch/x86/mm/highmem_32.c
-@@ -45,6 +45,7 @@ void *kmap_atomic_prot(struct page *page
- 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
- 	BUG_ON(!pte_none(*(kmap_pte-idx)));
- 	set_pte(kmap_pte-idx, mk_pte(page, prot));
-+	arch_flush_lazy_mmu_mode();
- 
- 	return (void *)vaddr;
- }
-@@ -88,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
- 		 */
- 		kpte_clear_flush(kmap_pte-idx, vaddr);
- 		kmap_atomic_idx_pop();
-+		arch_flush_lazy_mmu_mode();
- 	}
- #ifdef CONFIG_DEBUG_HIGHMEM
- 	else {
+greg k-h
 
 
+ Makefile                             |    2 +-
+ arch/arm/Kconfig                     |   12 +++++
+ arch/arm/kernel/process.c            |    3 +
+ arch/x86/include/asm/timer.h         |   23 ++++++++++-
+ arch/x86/kernel/mpparse.c            |    2 +-
+ arch/x86/oprofile/init.c             |    7 ++-
+ drivers/i2c/algos/i2c-algo-bit.c     |    4 +-
+ drivers/net/wireless/p54/p54spi.c    |    5 +-
+ drivers/pci/hotplug/shpchp_core.c    |    4 +-
+ drivers/pci/hotplug/shpchp_hpc.c     |    4 +-
+ drivers/scsi/scsi_lib.c              |   12 ++++--
+ drivers/staging/comedi/comedi_fops.c |   75 +++++++++++++++++++++++++---------
+ drivers/staging/usbip/vhci_rx.c      |   10 +++--
+ drivers/usb/host/whci/qset.c         |    2 +-
+ drivers/usb/serial/ftdi_sio.c        |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h    |    1 +
+ drivers/usb/serial/option.c          |    1 +
+ drivers/usb/storage/unusual_devs.h   |    7 +++
+ fs/cifs/misc.c                       |    3 +
+ fs/ecryptfs/crypto.c                 |    4 +-
+ kernel/irq/manage.c                  |    5 ++-
+ kernel/time/clockevents.c            |    1 +
+ kernel/time/tick-broadcast.c         |    2 +-
+ kernel/time/timekeeping.c            |    4 ++
+ net/core/dev.c                       |    1 +
+ net/sunrpc/xprtsock.c                |    3 +-
+ net/wireless/nl80211.c               |    4 +-
+ sound/pci/lx6464es/lx_core.c         |   16 +++++--
+ 28 files changed, 164 insertions(+), 54 deletions(-)
