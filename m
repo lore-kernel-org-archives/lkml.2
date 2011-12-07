@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab1LGQU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:20:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33707 "EHLO mx2.suse.de"
+	id S1757722Ab1LGQUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:20:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33684 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757739Ab1LGQUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:20:51 -0500
+	id S1757687Ab1LGQUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:20:40 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:16 2011
-Message-Id: <20111207161216.260252820@clark.kroah.org>
+Message-Id: <20111207161216.002300432@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:11:20 -0800
+Date: Wed, 07 Dec 2011 08:11:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
         <alan@lxorguk.ukuu.org.uk>,
-        Santosh Shilimkar <santosh.shilimar@ti.com>,
-        sricharan <r.sricharan@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>
-Subject: [018/104] ARM: OMAP: hwmod: Fix the addr space, irq, dma count APIs
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Felipe Balbi <balbi@ti.com>, Eric Miao <eric.y.miao@gmail.com>
+Subject: [015/104] ARM: pxa: fix inconsistent CONFIG_USB_PXA27X
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,71 +26,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: sricharan <r.sricharan@ti.com>
+From: Haojian Zhuang <haojian.zhuang@marvell.com>
 
-commit cc1b0765da6078b906772b79ff211b88cc0ae958 upstream.
+commit c0a39151a4055332897cba615623d3de2f3896df upstream.
 
-The address spaces, irqs and dma reqs count APIs return the
-number of corresponding entries in a hwmod including a additional
-null value or a -1 terminator in the structure introduced recently.
-More information here:
+Since CONFIG_USB_GADGET_PXA27X and other macros are renamed to
+CONFIG_USB_PXA27X. Update them in arch/arm/mach-pxa and arch/arm/configs
+to keep consistent.
 
-- 212738a4: omap_hwmod: use a terminator record with omap_hwmod_mpu_irqs
-  arrays
-
-- 78183f3f: omap_hwmod: use a null structure record to terminate
-  omap_hwmod_addr_space arrays
-
-- bc614958: omap_hwmod: use a terminator record with omap_hwmod_dma_info
-  arrays
-
-The issue with irqs and dma info was originally reported by Benoit Cousson.
-
-The devices which have multiple hwmods and use device_build_ss are
-broken with this, as their resources are populated with a extra null
-value, subsequently the probe fails. So fix the API not to include
-the array terminator in the count.
-
-Reported-by: Benoit Cousson <b-cousson@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimar@ti.com>
-Signed-off-by: sricharan <r.sricharan@ti.com>
-Signed-off-by: Benoit Cousson <b-cousson@ti.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-omap2/omap_hwmod.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/configs/ezx_defconfig           |    2 +-
+ arch/arm/configs/imote2_defconfig        |    2 +-
+ arch/arm/configs/magician_defconfig      |    2 +-
+ arch/arm/configs/zeus_defconfig          |    2 +-
+ arch/arm/mach-pxa/balloon3.c             |    2 +-
+ arch/arm/mach-pxa/colibri-pxa320.c       |    2 +-
+ arch/arm/mach-pxa/gumstix.c              |    2 +-
+ arch/arm/mach-pxa/include/mach/palm27x.h |    4 ++--
+ arch/arm/mach-pxa/palm27x.c              |    4 ++--
+ arch/arm/mach-pxa/palmtc.c               |    2 +-
+ arch/arm/mach-pxa/vpac270.c              |    2 +-
+ 11 files changed, 13 insertions(+), 13 deletions(-)
 
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -749,7 +749,7 @@ static int _count_mpu_irqs(struct omap_h
- 		ohii = &oh->mpu_irqs[i++];
- 	} while (ohii->irq != -1);
+--- a/arch/arm/configs/ezx_defconfig
++++ b/arch/arm/configs/ezx_defconfig
+@@ -287,7 +287,7 @@ CONFIG_USB=y
+ # CONFIG_USB_DEVICE_CLASS is not set
+ CONFIG_USB_OHCI_HCD=y
+ CONFIG_USB_GADGET=y
+-CONFIG_USB_GADGET_PXA27X=y
++CONFIG_USB_PXA27X=y
+ CONFIG_USB_ETH=m
+ # CONFIG_USB_ETH_RNDIS is not set
+ CONFIG_MMC=y
+--- a/arch/arm/configs/imote2_defconfig
++++ b/arch/arm/configs/imote2_defconfig
+@@ -263,7 +263,7 @@ CONFIG_USB=y
+ # CONFIG_USB_DEVICE_CLASS is not set
+ CONFIG_USB_OHCI_HCD=y
+ CONFIG_USB_GADGET=y
+-CONFIG_USB_GADGET_PXA27X=y
++CONFIG_USB_PXA27X=y
+ CONFIG_USB_ETH=m
+ # CONFIG_USB_ETH_RNDIS is not set
+ CONFIG_MMC=y
+--- a/arch/arm/configs/magician_defconfig
++++ b/arch/arm/configs/magician_defconfig
+@@ -132,7 +132,7 @@ CONFIG_USB_MON=m
+ CONFIG_USB_OHCI_HCD=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_GADGET_VBUS_DRAW=500
+-CONFIG_USB_GADGET_PXA27X=y
++CONFIG_USB_PXA27X=y
+ CONFIG_USB_ETH=m
+ # CONFIG_USB_ETH_RNDIS is not set
+ CONFIG_USB_GADGETFS=m
+--- a/arch/arm/configs/zeus_defconfig
++++ b/arch/arm/configs/zeus_defconfig
+@@ -140,7 +140,7 @@ CONFIG_USB_SERIAL=m
+ CONFIG_USB_SERIAL_GENERIC=y
+ CONFIG_USB_SERIAL_MCT_U232=m
+ CONFIG_USB_GADGET=m
+-CONFIG_USB_GADGET_PXA27X=y
++CONFIG_USB_PXA27X=y
+ CONFIG_USB_ETH=m
+ CONFIG_USB_GADGETFS=m
+ CONFIG_USB_FILE_STORAGE=m
+--- a/arch/arm/mach-pxa/balloon3.c
++++ b/arch/arm/mach-pxa/balloon3.c
+@@ -307,7 +307,7 @@ static inline void balloon3_mmc_init(voi
+ /******************************************************************************
+  * USB Gadget
+  ******************************************************************************/
+-#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
+ static void balloon3_udc_command(int cmd)
+ {
+ 	if (cmd == PXA2XX_UDC_CMD_CONNECT)
+--- a/arch/arm/mach-pxa/colibri-pxa320.c
++++ b/arch/arm/mach-pxa/colibri-pxa320.c
+@@ -146,7 +146,7 @@ static void __init colibri_pxa320_init_e
+ static inline void __init colibri_pxa320_init_eth(void) {}
+ #endif /* CONFIG_AX88796 */
  
--	return i;
-+	return i-1;
+-#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
+ static struct gpio_vbus_mach_info colibri_pxa320_gpio_vbus_info = {
+ 	.gpio_vbus		= mfp_to_gpio(MFP_PIN_GPIO96),
+ 	.gpio_pullup		= -1,
+--- a/arch/arm/mach-pxa/gumstix.c
++++ b/arch/arm/mach-pxa/gumstix.c
+@@ -106,7 +106,7 @@ static void __init gumstix_mmc_init(void
  }
+ #endif
  
- /**
-@@ -772,7 +772,7 @@ static int _count_sdma_reqs(struct omap_
- 		ohdi = &oh->sdma_reqs[i++];
- 	} while (ohdi->dma_req != -1);
+-#ifdef CONFIG_USB_GADGET_PXA25X
++#ifdef CONFIG_USB_PXA25X
+ static struct gpio_vbus_mach_info gumstix_udc_info = {
+ 	.gpio_vbus		= GPIO_GUMSTIX_USB_GPIOn,
+ 	.gpio_pullup		= GPIO_GUMSTIX_USB_GPIOx,
+--- a/arch/arm/mach-pxa/include/mach/palm27x.h
++++ b/arch/arm/mach-pxa/include/mach/palm27x.h
+@@ -37,8 +37,8 @@ extern void __init palm27x_lcd_init(int
+ static inline void palm27x_lcd_init(int power, struct pxafb_mode_info *mode) {}
+ #endif
  
--	return i;
-+	return i-1;
- }
- 
- /**
-@@ -795,7 +795,7 @@ static int _count_ocp_if_addr_spaces(str
- 		mem = &os->addr[i++];
- 	} while (mem->pa_start != mem->pa_end);
- 
--	return i;
-+	return i-1;
- }
- 
- /**
+-#if	defined(CONFIG_USB_GADGET_PXA27X) || \
+-	defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if	defined(CONFIG_USB_PXA27X) || \
++	defined(CONFIG_USB_PXA27X_MODULE)
+ extern void __init palm27x_udc_init(int vbus, int pullup,
+ 					int vbus_inverted);
+ #else
+--- a/arch/arm/mach-pxa/palm27x.c
++++ b/arch/arm/mach-pxa/palm27x.c
+@@ -164,8 +164,8 @@ void __init palm27x_lcd_init(int power,
+ /******************************************************************************
+  * USB Gadget
+  ******************************************************************************/
+-#if	defined(CONFIG_USB_GADGET_PXA27X) || \
+-	defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if	defined(CONFIG_USB_PXA27X) || \
++	defined(CONFIG_USB_PXA27X_MODULE)
+ static struct gpio_vbus_mach_info palm27x_udc_info = {
+ 	.gpio_vbus_inverted	= 1,
+ };
+--- a/arch/arm/mach-pxa/palmtc.c
++++ b/arch/arm/mach-pxa/palmtc.c
+@@ -338,7 +338,7 @@ static inline void palmtc_mkp_init(void)
+ /******************************************************************************
+  * UDC
+  ******************************************************************************/
+-#if defined(CONFIG_USB_GADGET_PXA25X)||defined(CONFIG_USB_GADGET_PXA25X_MODULE)
++#if defined(CONFIG_USB_PXA25X)||defined(CONFIG_USB_PXA25X_MODULE)
+ static struct gpio_vbus_mach_info palmtc_udc_info = {
+ 	.gpio_vbus		= GPIO_NR_PALMTC_USB_DETECT_N,
+ 	.gpio_vbus_inverted	= 1,
+--- a/arch/arm/mach-pxa/vpac270.c
++++ b/arch/arm/mach-pxa/vpac270.c
+@@ -343,7 +343,7 @@ static inline void vpac270_uhc_init(void
+ /******************************************************************************
+  * USB Gadget
+  ******************************************************************************/
+-#if defined(CONFIG_USB_GADGET_PXA27X)||defined(CONFIG_USB_GADGET_PXA27X_MODULE)
++#if defined(CONFIG_USB_PXA27X)||defined(CONFIG_USB_PXA27X_MODULE)
+ static struct gpio_vbus_mach_info vpac270_gpio_vbus_info = {
+ 	.gpio_vbus		= GPIO41_VPAC270_UDC_DETECT,
+ 	.gpio_pullup		= -1,
 
 
