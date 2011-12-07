@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab1LGQSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:18:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33185 "EHLO mx2.suse.de"
+	id S1757298Ab1LGQSR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:18:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33206 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757262Ab1LGQSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:18:02 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:26 2011
-Message-Id: <20111207160826.547279908@clark.kroah.org>
+	id S1756839Ab1LGQSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:12 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:24 2011
+Message-Id: <20111207160824.537050013@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:08 -0800
+Date: Wed, 07 Dec 2011 08:06:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Alessandro Rubini <rubini@gnudd.com>,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [48/80] Staging: comedi: fix signal handling in read and write
+        <alan@lxorguk.ukuu.org.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [23/80] ASoC: Ensure WM8731 register cache is synced when resuming from disabled
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Federico Vaga <federico.vaga@gmail.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 6a9ce6b654e491981f6ef7e214cbd4f63e033848 upstream.
+commit ed3e80c4c991a52f9fce3421536a78e331ae0949 upstream.
 
-After sleeping on a wait queue, signal_pending(current) should be
-checked (not before sleeping).
-
-Acked-by: Alessandro Rubini <rubini@gnudd.com>
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8731.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1673,11 +1673,11 @@ static ssize_t comedi_write(struct file
- 				retval = -EAGAIN;
- 				break;
- 			}
-+			schedule();
- 			if (signal_pending(current)) {
- 				retval = -ERESTARTSYS;
- 				break;
- 			}
--			schedule();
- 			if (!s->busy)
- 				break;
- 			if (s->busy != file) {
-@@ -1780,11 +1780,11 @@ static ssize_t comedi_read(struct file *
- 				retval = -EAGAIN;
- 				break;
- 			}
-+			schedule();
- 			if (signal_pending(current)) {
- 				retval = -ERESTARTSYS;
- 				break;
- 			}
--			schedule();
- 			if (!s->busy) {
- 				retval = 0;
- 				break;
+--- a/sound/soc/codecs/wm8731.c
++++ b/sound/soc/codecs/wm8731.c
+@@ -463,6 +463,7 @@ static int wm8731_set_bias_level(struct
+ 		snd_soc_write(codec, WM8731_PWR, 0xffff);
+ 		regulator_bulk_disable(ARRAY_SIZE(wm8731->supplies),
+ 				       wm8731->supplies);
++		codec->cache_sync = 1;
+ 		break;
+ 	}
+ 	codec->dapm.bias_level = level;
 
 
