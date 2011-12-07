@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933834Ab1LGQXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:23:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34317 "EHLO mx2.suse.de"
+	id S933909Ab1LGQYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:24:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34426 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933811Ab1LGQXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:23:49 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:20 2011
-Message-Id: <20111207161220.628631168@clark.kroah.org>
+	id S933873Ab1LGQYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:24:16 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:21 2011
+Message-Id: <20111207161221.289171784@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:12:13 -0800
+Date: Wed, 07 Dec 2011 08:12:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>,
-        =?UTF-8?q?Marcin=20Ko=C5=9Bcielnicki?= <koriakin@0x04.net>
-Subject: [071/104] usb: ftdi_sio: add PID for Propox ISPcable III
+        <alan@lxorguk.ukuu.org.uk>, Salman Qazi <sqazi@google.com>,
+        John Stultz <johnstul@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [079/104] sched, x86: Avoid unnecessary overflow in sched_clock
 In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Kościelnicki <koriakin@0x04.net>
+From: Salman Qazi <sqazi@google.com>
 
-commit 307369b0ca06b27b511b61714e335ddfccf19c4f upstream.
+commit 4cecf6d401a01d054afc1e5f605bcbfe553cb9b9 upstream.
 
-Signed-off-by: Marcin Kościelnicki <koriakin@0x04.net>
+(Added the missing signed-off-by line)
+
+In hundreds of days, the __cycles_2_ns calculation in sched_clock
+has an overflow.  cyc * per_cpu(cyc2ns, cpu) exceeds 64 bits, causing
+the final value to become zero.  We can solve this without losing
+any precision.
+
+We can decompose TSC into quotient and remainder of division by the
+scale factor, and then use this to convert TSC into nanoseconds.
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Acked-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+)
+ arch/x86/include/asm/timer.h |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -735,6 +735,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELSTER_UNICOM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_JTAGCABLEII_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_ISPCABLEIII_PID) },
- 	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_H_PID),
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -112,6 +112,7 @@
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -32,6 +32,22 @@ extern int no_timer_check;
+  *  (mathieu.desnoyers@polymtl.ca)
+  *
+  *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
++ *
++ * In:
++ *
++ * ns = cycles * cyc2ns_scale / SC
++ *
++ * Although we may still have enough bits to store the value of ns,
++ * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
++ * leading to an incorrect result.
++ *
++ * To avoid this, we can decompose 'cycles' into quotient and remainder
++ * of division by SC.  Then,
++ *
++ * ns = (quot * SC + rem) * cyc2ns_scale / SC
++ *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
++ *
++ *			- sqazi@google.com
+  */
  
- /* Propox devices */
- #define FTDI_PROPOX_JTAGCABLEII_PID	0xD738
-+#define FTDI_PROPOX_ISPCABLEIII_PID	0xD739
+ DECLARE_PER_CPU(unsigned long, cyc2ns);
+@@ -41,9 +57,14 @@ DECLARE_PER_CPU(unsigned long long, cyc2
  
- /* Lenz LI-USB Computer Interface. */
- #define FTDI_LENZ_LIUSB_PID	0xD780
+ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ {
++	unsigned long long quot;
++	unsigned long long rem;
+ 	int cpu = smp_processor_id();
+ 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+-	ns += cyc * per_cpu(cyc2ns, cpu) >> CYC2NS_SCALE_FACTOR;
++	quot = (cyc >> CYC2NS_SCALE_FACTOR);
++	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
++	ns += quot * per_cpu(cyc2ns, cpu) +
++		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
+ 	return ns;
+ }
+ 
 
 
