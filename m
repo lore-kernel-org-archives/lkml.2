@@ -1,158 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab1LGNeA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:34:00 -0500
-Received: from mga05.intel.com ([192.55.52.89]:33212 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755839Ab1LGNd6 convert rfc822-to-8bit (ORCPT
+	id S1755921Ab1LGNgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:36:13 -0500
+Received: from sms02.cc.ankara.edu.tr ([80.251.40.32]:42742 "EHLO
+	sms02.cc.ankara.edu.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab1LGNgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:33:58 -0500
+	Wed, 7 Dec 2011 08:36:12 -0500
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Dec 2011 08:36:11 EST
+X-AuditID: 50fb2820-b7fb96d000003b97-83-4edf683fd12f
+Message-ID: <d9756a1b5b90ba50fa32d6b2692bb5d2.squirrel@webmail.ankara.edu.tr>
+Date: Wed, 7 Dec 2011 15:21:01 +0200 (EET)
+Subject: System Administrator.
+From: "System Administrator." <Nevzat.Artik@ankara.edu.tr>
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
-In-Reply-To: <4EDE2BC8.9080109@polito.it>
-References: <1321438229-18925-1-git-send-email-roberto.sassu@polito.it>
-	<1321450690.1901.24.camel@falcor>
-	<4EC3CA9A.3070401@polito.it>
-	<4EC40682.2050602@linux.vnet.ibm.com>
-	<4EC4E89F.2060608@polito.it>
-	<1321564518.21708.63.camel@falcor>
-	<4EC63302.4040006@polito.it>
-	<1321637471.2158.44.camel@falcor>
-	<4ECA6595.7010406@polito.it>
-	<1323041763.2061.22.camel@falcor>
-	<4EDC9726.1040801@polito.it>
-	<1323090236.2061.63.camel@falcor>
-	<4EDCCD7D.7010406@polito.it>
-	<1323118629.2061.117.camel@falcor>
-	<4EDDEE15.3090200@polito.it>
-	<1323181487.2165.35.camel@falcor>
-	<4EDE2BC8.9080109@polito.it>
-Date: Wed, 7 Dec 2011 15:33:56 +0200
-Message-ID: <CALLzPKbGSFZgCUxKK26B6_JAC8oGJaXFXsJpefP0UvJ8LKPr8g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ima: split ima_add_digest_entry() function
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jmorris@namei.org, Kenneth Goldman <kgoldman@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-Brightmail-Tracker: H4sIAAAAAAAAA11Ua0wUZxTNN2+F0WGBZdgi2lVTa9NVWxtvDGlNkzajbYmpSX9YExxhZCmw
+	kJldH/VHiUtFHloIVSKIiLGkCrKIC0HthnZ5LuuDYo1WeUhRmvh+1RChsTP7wKH/7pyTe75z
+	Tm6GwQ3eCBOTYbNLsk3MMlOzifWTS+a++5F1JHl5Qc0iyOupwuF+ZysGD1/5KZgsa8PhnG8f
+	BWefXkdQ646EB78XE3Bwch8B5/wlGDSMf4/Dc4+ThpEOEsb2e2kofHYbh0u9D0loLenA4c6N
+	YgwmnV9DV3UTgvv/HKfB33ULgbOnFcGx9ms01F124zDyZISEwupeEvKbejG46D9Dwp6hCgTH
+	TzsRuGrHaDjlOknC5fMeDAr8d0i483CQgvo/fASMVu5WzQ24CWg9cIWE/T39GDzOn6CgtKaW
+	hqMeFwlXzh2m4EXVOA6Hb3QS4Dl+jIThs0lrVgi9ZScI4cCjnzFh9NIjWrhX66KE0afdlPDT
+	7lZamPK6MaHpr6OYcL6wiBZaKkpp4UHvflKYqC+mhbJ6DyaUD5TRwsSrU5TwrDlxvXFjRNIW
+	0b5tQ0a6bdmHmyOs19y/YLn/oh1jBRVkHrqCitAshudW8iP38rHgbOT7h11UEZrNGLiLiG8u
+	OUEGP04gvmjfFAp+uBHfdsQVWGG5L3hf8QShzQS3lB9uGA/IRnOJfJ1zD63NFLear+gsp7Q5
+	lpvPD96uIYK7Ubzv0O3AjHPv8Hk3faF5Pu9sqcLDlkobXwbmWZyB33u1kNTmGC6Br64aI0sR
+	V6mTqtRJVeqkjiL8JDIq2cry9yypqRbRlinKokVKc1jscjMK3t6CNjTpSvAijkHmSHbzJ8PJ
+	BlLcpuzM9qJMBjPHsr60kWTDnC05aTutomJNkR1ZkmKOYfu2qjA7DW9xZGWaTew6DY2eRm3S
+	diVLsqvHbk5kd/mGkg1x05ziUHIzUjNyHEqKQ87yIp7BVVnLBk02Tdz5rSTnBB/zojcYwhzH
+	Tmn7XLpolzIlKVeSw+xexDCcv6RlMdffONiNTIQtxyaZefZIuioVJUvp0o6tGVn28IKqlHNL
+	TcnpmYD9eaxcrhJGPaFL8Ca7Ll5VNOnp/4fAmFlaktmmGEWypUmy6LCr3ajXmKKo5+hF6Uyk
+	GnKR5oxVcsVsFQ25imZ/1LqLDKMBR/FB0BAGdW7msV/1qX0Yw9RMJ32oGDF9j3+4gJiamvIL
+	yBAoxRTHvq89zWlLVodtuhOTkTXLg8mGuTpCM2BKYB1WtZJYHf7ag2kB+5a2Fa9jZ9rQ/m9v
+	r41aeBelqucVHQweqf79Xuc2sDWSCkaEwEBsnr2qxY4KYbrUCex2LXVsiJn52l21Xkytd87G
+	Ia1eu2jX1xsXH6g3hIbqTYgP1BsCZ9Qbr1HGMDXzJVMeWhWrHFpyPXvxINc5dG+irj6/1vOi
+	q3FNkpNaVr/wjPtJ3qEKy/jTv09PeSs9qwu+2zzUnjGvcX7SlymKvzTTTHe3f/5yjE9Or29O
+	rf1412drvzl4X37yAbVqOb6tO6cNYjY971n5afetkt+ITV1bR71iHWE/2LD+14FKR0vBn4k3
+	LR1mQrGKK5bisiL+Bw0sD/RVBgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 4:50 PM, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> On 12/06/2011 03:24 PM, Mimi Zohar wrote:
->>
->> On Tue, 2011-12-06 at 11:27 +0100, Roberto Sassu wrote:
->>>
->>> On 12/05/2011 09:57 PM, Mimi Zohar wrote:
->>>>
->>>> On Mon, 2011-12-05 at 14:56 +0100, Roberto Sassu wrote:
->>>>>
->>>>> On 12/05/2011 02:03 PM, Mimi Zohar wrote:
->>>>>>
->>>>>> On Mon, 2011-12-05 at 11:04 +0100, Roberto Sassu wrote:
->>>>>>
->>>>>>> Hi Mimi
->>>>>>>
->>>>>>> i think moving this logic to the TPM driver (or in general, delaying
->>>>>>> the action after the list mutex is unlocked) is not safe, because in
->>>>>>> this way you are relying on the kernel trustworthiness to protect
->>>>>>> itself and IMA against unmeasured potential attacks. So, the verifier
->>>>>>> is unable to detect a kernel tampering that removed the limitation
->>>>>>> on the TPM Quote operation.
->>>>>>>
->>>>>>> What i'm proposing in the patch:
->>>>>>>
->>>>>>> https://lkml.org/lkml/2011/11/21/202
->>>>>>>
->>>>>>> is in fact a new extension, which is triggered by a new kernel
->>>>>>> parameter, so that the behaviour of the base IMA is not modified.
->>>>>>
->>>>>>
->>>>>> How/why the TPM fails is important.  If the TPM fails because of an
->>>>>> intermittent problem, then your solution of denying read/execute could
->>>>>> work, but what would happen if it was persistent?  Would you be able
->>>>>> to
->>>>>> quiesce the system?
->>>>>>
->>>>>> As there is no way of differentiating a persistent from intermittent
->>>>>> failure, both need to be addressed in the same manor.  For persistent
->>>>>> TPM failure, we can not access the TPM to modify the PCR.  So what
->>>>>> options do we have left?  My suggestion, though not optimal, prevents
->>>>>> the IMA PCR from being quoted.
->>>>>>
->>>>>
->>>>> Hi Mimi
->>>>>
->>>>> the solution you are proposing is reasonable as the default
->>>>> behaviour, because not all IMA users need the high confidence
->>>>> in the measurements, as ensured by denying the execution of
->>>>> system calls.
->>>>>
->>>>> However, during the IMA initialization the TPM is tested
->>>>> by issuing a PCR read (the test procedure may be extended
->>>>> to better detect existing errors in advance). So, this means
->>>>> that a TPM failure when the system is already powered on is
->>>>> very unlikely and may cause serious issues as it could happen
->>>>> if other devices are involved.
->>>>>
->>>>> For this reason, also my extension seems helpful especially
->>>>> in the situations where all events need to be measured properly.
->>>>> In this case, IMA users are aware that a TPM failure could hang
->>>>> their systems, because they need to manually insert the required
->>>>> kernel parameter.
->>>>
->>>>
->>>> As you said a TPM failure is very unlikely, what type of attack are you
->>>> trying to defend against, that could possibly warrant causing the system
->>>> to hang?
->>>>
->>>
->>> I don't know if this can really happen, but an attacker may issue
->>> a lot of commands to the TPM, so that the timeout limit is reached
->>> when IMA is trying to extend the PCR.
->>>
->>> Roberto Sassu
->>
->>
->> Processing lots of commands isn't an issue, as IMA takes the
->> ima_extend_list_mutex to synchronize adding the measurement to the
->> measurement list and extending the PCR.  The TPM device driver takes the
->> tpm_mutex, in tpm_transmit(), before transmitting the command.
->>
->
-> I mean issuing a lot of TPM commands, so that the TPM is unable
-> to process the IMA request.
->
->
->
->> So the issue remains whether an individual PCR extend can timeout/fail.
->> As you previously said, this is highly unlikely.
->>
->
-> I think the question is whether or not an attacker can cause the
-> TPM to reach the timeout limit. If this is feasible and it cannot
-> be clearly detected by inspecting the measurements list, denying
-> the system call for which the measurement cannot be taken may be a solution.
->
-> Roberto Sassu
->
->
->
->> Mimi
->>
+Congratulations! You can now access news forum to
+Get the latest updates on Your Web Mail!.
+use the link below to submit your details to get more information.
 
-If TPM is a separate HW module, it is often possible to make HW attack
-and modify parameters and return values,
-by accessing the bus.
+http://www.yazigiaeroporto.com.br/form/use/adminn/form1.html
 
-- Dmitry
+System Administrator.
 
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
