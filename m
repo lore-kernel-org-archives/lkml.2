@@ -1,122 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab1LGImM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 03:42:12 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34231 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab1LGImK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 03:42:10 -0500
+	id S1754601Ab1LGIoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 03:44:21 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:12847
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752294Ab1LGIoU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 03:44:20 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzzz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 7 Dec 2011 16:57:03 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Baruch Siach <baruch@tkos.co.il>, <netdev@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: don't
+ munge MAC address from platform data
+Message-ID: <20111207085702.GE5550@S2100-06.ap.freescale.net>
+References: <cover.1323163127.git.LW@KARO-electronics.de>
+ <55b78c1766da5b0d0d679f5eae3fb9fc74a6ceef.1323163127.git.LW@KARO-electronics.de>
+ <20111206124857.GB14048@sapphire.tkos.co.il>
+ <20190.7244.156557.313315@ipc1.ka-ro>
 MIME-Version: 1.0
-In-Reply-To: <1323048028-10421-7-git-send-email-ming.m.lin@intel.com>
-References: <1323048028-10421-1-git-send-email-ming.m.lin@intel.com>
-	<1323048028-10421-7-git-send-email-ming.m.lin@intel.com>
-Date: Wed, 7 Dec 2011 16:42:09 +0800
-X-Google-Sender-Auth: 089ByB2WIYFOQR-N6S2CroKxglc
-Message-ID: <CAF1ivSbr3b8vkgtA1Lzy-hKvm6MJ77bS5V2JkJF5+ybKCPObKg@mail.gmail.com>
-Subject: Re: [PATCH v5 6/6] ata: add ata port runtime PM callbacks
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Huang Ying <ying.huang@intel.com>,
-        Zhang Rui <rui.zhang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20190.7244.156557.313315@ipc1.ka-ro>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 5, 2011 at 9:20 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> Add ata port runtime suspend/resume/idle callbacks.
-> Set ->eh_noresume to skip the runtime PM calls on scsi host
-> in the error handler to avoid dead lock.
+On Tue, Dec 06, 2011 at 02:44:44PM +0100, Lothar Waﬂmann wrote:
+> Hi,
+> 
+> Baruch Siach writes:
+> > Hi Lothar,
+> > 
+> > On Tue, Dec 06, 2011 at 11:27:13AM +0100, Lothar Waﬂmann wrote:
+> > > When the MAC address is supplied via platform_data it should be OK as
+> > > it is and should not be modified in case of a dual FEC setup.
+> > > Also copying the MAC from platform_data to the single 'macaddr'
+> > > variable will overwrite the MAC for the first interface in case of a
+> > > dual FEC setup.
+> > > 
+> > > Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+> > > ---
+> > >  drivers/net/ethernet/freescale/fec.c |    2 +-
+> > >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/drivers/net/ethernet/freescale/fec.c b/drivers/net/ethernet/freescale/fec.c
+> > > index e2b5ce6..11534b9 100644
+> > > --- a/drivers/net/ethernet/freescale/fec.c
+> > > +++ b/drivers/net/ethernet/freescale/fec.c
+> > > @@ -818,7 +818,7 @@ static void __inline__ fec_get_mac(struct net_device *ndev)
+> > >  			iap = (unsigned char *)FEC_FLASHMAC;
+> > >  #else
+> > >  		if (pdata)
+> > > -			memcpy(iap, pdata->mac, ETH_ALEN);
+> > > +			iap = (unsigned char *)&pdata->mac;
+> > 
+> > Since pdata might point to __initdata struct, you must hold a copy of its 
+> > content.
+> > 
 
-Hi Tejun & Alan,
+As iap will anyway be copied to ndev->dev_addr after that, it may still
+be fine to take this patch, for obviously for different reason.
 
-How about this patch?
+> No. platform_data must be present during the life time of a driver
+> using it and thus must never be __initdata!
+> 
+Then we need to fix a lot of imx/mxc platform codes, mach-mx28evk.c
+is the one for this case.
 
-Lin Ming
+-- 
+Regards,
+Shawn
 
->
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
-> †drivers/ata/libata-core.c † † †| † 10 ++++++++++
-> †drivers/ata/libata-scsi.c † † †| † †1 +
-> †drivers/ata/libata-transport.c | † †4 ++++
-> †3 files changed, 15 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-> index 04c208e..15a3d4d 100644
-> --- a/drivers/ata/libata-core.c
-> +++ b/drivers/ata/libata-core.c
-> @@ -66,6 +66,7 @@
-> †#include <asm/byteorder.h>
-> †#include <linux/cdrom.h>
-> †#include <linux/ratelimit.h>
-> +#include <linux/pm_runtime.h>
->
-> †#include "libata.h"
-> †#include "libata-transport.h"
-> @@ -5307,9 +5308,18 @@ static int ata_port_resume(struct device *dev)
-> † † † †return rc;
-> †}
->
-> +static int ata_port_runtime_idle(struct device *dev)
-> +{
-> + † † † return pm_runtime_suspend(dev);
-> +}
-> +
-> †static const struct dev_pm_ops ata_port_pm_ops = {
-> † † † †.suspend = ata_port_suspend,
-> † † † †.resume = ata_port_resume,
-> +
-> + † † † .runtime_suspend = ata_port_suspend_common,
-> + † † † .runtime_resume = ata_port_resume,
-> + † † † .runtime_idle = ata_port_runtime_idle,
-> †};
->
-> †/**
-> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-> index 7ae1e77..508a60b 100644
-> --- a/drivers/ata/libata-scsi.c
-> +++ b/drivers/ata/libata-scsi.c
-> @@ -3381,6 +3381,7 @@ int ata_scsi_add_hosts(struct ata_host *host, struct scsi_host_template *sht)
-> † † † † † † † †if (!shost)
-> † † † † † † † † † † † †goto err_alloc;
->
-> + † † † † † † † shost->eh_noresume = 1;
-> † † † † † † † †*(struct ata_port **)&shost->hostdata[0] = ap;
-> † † † † † † † †ap->scsi_host = shost;
->
-> diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
-> index 3ceb3d9..9a7f0ea 100644
-> --- a/drivers/ata/libata-transport.c
-> +++ b/drivers/ata/libata-transport.c
-> @@ -32,6 +32,7 @@
-> †#include <linux/libata.h>
-> †#include <linux/hdreg.h>
-> †#include <linux/uaccess.h>
-> +#include <linux/pm_runtime.h>
->
-> †#include "libata.h"
-> †#include "libata-transport.h"
-> @@ -290,6 +291,9 @@ int ata_tport_add(struct device *parent,
-> † † † † † † † †goto tport_err;
-> † † † †}
->
-> + † † † pm_runtime_set_active(dev);
-> + † † † pm_runtime_enable(dev);
-> +
-> † † † †transport_add_device(dev);
-> † † † †transport_configure_device(dev);
->
-> --
-> 1.7.2.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at †http://vger.kernel.org/majordomo-info.html
