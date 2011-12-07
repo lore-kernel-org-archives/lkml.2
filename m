@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab1LGRIJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:08:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:8813 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757016Ab1LGRIE convert rfc822-to-8bit (ORCPT
+	id S1757577Ab1LGRIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:08:36 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5584 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757417Ab1LGRId convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:08:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,314,1320652800"; 
-   d="scan'208";a="99705121"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, "Yu, Fenghua" <fenghua.yu@intel.com>
-CC: Borislav Petkov <bp@amd64.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Date: Wed, 7 Dec 2011 09:08:00 -0800
-Subject: RE: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-Thread-Topic: [PATCH v4 0/7] x86: BSP or CPU0 online/offline
-Thread-Index: Acy0s8OVoATHaErkSeqxQxmVwdQRIgATV5hw
-Message-ID: <0207C53569FE594381A4F2EB66570B2A018EED1381@orsmsx508.amr.corp.intel.com>
-References: <1321075592-31600-1-git-send-email-fenghua.yu@intel.com>
- <20111206084230.GC30062@elte.hu> <20111206085816.GA11116@elte.hu>
- <4EDDE5D0.7030906@linux.vnet.ibm.com> <20111206103500.GD15966@elte.hu>
- <4EDDF2DE.7020701@linux.vnet.ibm.com> <4EDDFB8E.10801@linux.vnet.ibm.com>
- <20111206130351.GC28735@gere.osrc.amd.com>
- <43F901BD926A4E43B106BF17856F075501A22B5A53@orsmsx508.amr.corp.intel.com>
- <20111207074035.GC16942@elte.hu>
-In-Reply-To: <20111207074035.GC16942@elte.hu>
+	Wed, 7 Dec 2011 12:08:33 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 07 Dec 2011 09:08:27 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Andrew Chew <AChew@nvidia.com>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Dan Willemsen <dwillemsen@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        Venkat Moganty <vmoganty@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 7 Dec 2011 09:08:26 -0800
+Subject: RE: [PATCH 1/3 v4] usb: tegra20-ehci: Add devicetree support.
+Thread-Topic: [PATCH 1/3 v4] usb: tegra20-ehci: Add devicetree support.
+Thread-Index: Acy0ksKRlFZ1L/wmTAmiGfgitaRUbwAb+Fzw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1750B77736@HQMAIL01.nvidia.com>
+References: <1311283067-18952-1-git-send-email-achew@nvidia.com>
+ <20111207034200.GG32515@game.jcrosoft.org>
+In-Reply-To: <20111207034200.GG32515@game.jcrosoft.org>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -53,31 +42,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> More importantly, you generally *cannot* realistically continue 
-> with a bad CPU anyway - the system will crash or will show signs 
-> of corruptions and you *want* a full powerdown and a clean 
-> reboot.
+Jean-Christophe PLAGNIOL-VILLARD wrote at Tuesday, December 06, 2011 8:42 PM:
+> On 14:17 Thu 21 Jul     , achew@nvidia.com wrote:
+> > From: Andrew Chew <achew@nvidia.com>
+> >
+> > Add code to try to get platform data information (register base, irq,
+> > modes, various tuning parameters) from device tree, if not present in board
+> > files.
+...
+> > +static u64 tegra_ehci_dmamask = DMA_BIT_MASK(TEGRA_USB_DMA_ALIGN);
+> I really does not like this
+> as the dmamask is supposed to be device specific
+> 
+> before we put it in the soc codewhich alow to have it generic
+> 
+> this need to be manage a DT level
+> 	dmamask = <32>
+> 
+> or
+> 	dmamask = <0xffffffff>
 
-See the "Enhanced cache error reporting" section in the Intel
-Software Developers manual (section 15.4 in volume 3B of the
-latest edition).  Intel provides what is probably a very early
-notification in many cases that a processors cache is experiencing
-problems. At the time of the notification the system is still
-functioning correctly.  The SDM suggests that when the "yellow"
-status is signaled you should schedule service "within a few weeks".
+Jean-Christophe,
 
-24x7 systems with a lot of sockets & cores, and highly paranoid
-administrators, might want to take action to stop using the cores
-that share the cache with problems sooner than they can schedule
-downtime.
+The patch you're replying to is very old; Olof has posted (and applied)
+some basic USB bindings much more recently than the above.
 
->- Special hardware environments that are deeply redundant and 
->   can warn about 'soft' failures well before hard failures
->   which gives a realistic window of time for a maintenance
->   hot-swap. [Such hardware actually exists, i even worked with
->   an x86 one eons ago.]
+-- 
+nvpublic
 
-So not so special any more - every Xeon since Core Duo has the
-cache error reporting capability.
-
--Tony
