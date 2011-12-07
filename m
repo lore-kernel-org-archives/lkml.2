@@ -1,122 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425Ab1LGHHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 02:07:24 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48335 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752034Ab1LGHHX (ORCPT
+	id S1752683Ab1LGHO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 02:14:57 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:38227 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034Ab1LGHO4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 02:07:23 -0500
-Date: Wed, 7 Dec 2011 11:07:18 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Vagin <avagin@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fs, proc: Add start_data, end_data, start_brk members to
- /proc/$pid/stat v2
-Message-ID: <20111207070718.GA21678@moon>
-References: <20111205182010.GV14515@moon>
- <20111206140833.3b43fbeb.akpm@linux-foundation.org>
- <20111206221515.GP29781@moon>
- <20111206225315.GA20459@moon>
- <20111207090259.e2296dd3.kamezawa.hiroyu@jp.fujitsu.com>
- <20111207063308.GC20459@moon>
+	Wed, 7 Dec 2011 02:14:56 -0500
+From: <kalle.jokiniemi@nokia.com>
+To: <felipe.contreras@nokia.com>, <linux-kernel@vger.kernel.org>
+CC: <heikki.krogerus@nokia.com>, <cbouatmailru@gmail.com>, <tony@atomide.com>,
+        <felipe.contreras@gmail.com>
+Subject: RE: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
+Thread-Topic: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
+Thread-Index: AQHMs3K6p8szTVFcUk6vwcKmskkM7pXP94Fg
+Date: Wed, 7 Dec 2011 07:14:45 +0000
+Message-ID: <17A5987AD917BF4DB82CC60AED33D5E107096E44@008-AM1MPN1-021.mgdnok.nokia.com>
+References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
+ <1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
+In-Reply-To: <1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
+Accept-Language: fi-FI, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-headerinfofordlp: None
+x-titus-version: 3.3.8.1
+x-tituslabs-classifications-30: TLPropertyRoot=Nokia;Confidentiality=Company
+ Confidential;Project=None;
+x-tituslabs-classificationhash-30: VgNFIFU9Hx+/nZJb9Kg7IjpYutPtrUQ5frt4OB8CssV448XPEb9pGoTyOOuIrxISzWgR4/SsOA3qutDDp8OGYS6aU2ua/5APreC2U7sYcx5lhA6wJcm7pxdVvoi6Nf/B8ETPcIU06SyW29Is27Xv+gKvboRhyv6Bokel/ceunzLv1rR9MvC+tsuh/HenBDgzPjwCNDq+ey1hBq6atwwIf0i/5/Za/qyzYF/chEteKbrRO0aRM+PNtFv63clxdjM5OPsNKa418oZgr+PSAFU65Q==
+x-originating-ip: [172.22.212.16]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111207063308.GC20459@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 07 Dec 2011 07:14:47.0206 (UTC) FILETIME=[E6D77C60:01CCB4AF]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 10:33:08AM +0400, Cyrill Gorcunov wrote:
+Hi,
+
+> -----Original Message-----
+> From: Contreras Felipe (Nokia-SD/Helsinki)
+> Sent: 5. joulukuuta 2011 19:24
+> To: linux-main
+> Cc: Jokiniemi Kalle (Nokia-MP/Tampere); Heikki Krogerus; Anton Vorontsov;
+> Tony Lindgren; Felipe Contreras
+> Subject: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
 > 
-> No problem, I'll update (These segments are filled by binfmt handlers).
+> From: Felipe Contreras <felipe.contreras@gmail.com>
 > 
+> This reverts commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2.
+> 
+> This seems to break USB networking stuff.
 
-This one should fit.
+Reverting this patch will cause 14,7mA leak from the ISP1704 USB transceiver. I did test at the time that USB networking was ok on MeeGo 1.1 based (MeeGo community edition N900) release and this patch. Though can't help debugging this now, sorry. 
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH] fs, proc: Add start_data, end_data, start_brk members to /proc/$pid/stat v4
+If you guys are not concerned with use time, no problem with this patch.
 
-These members are involved into calculation of program
-data segment (which might be seen in /proc/<pid>/statm)
-and into brk() call, so in a sake of restore we need
-these entries to be set exactly to the same value the
-process had at dumpimg time.
+- Kalle
 
-While setting these entries back to a running task
-is supposed to be done via prctl interface (which is
-not addressed in this patch) the export of these values
-are done via /proc/$pid/stat, which already have start_code,
-end_code and start_stack entries.
+> 
+> Cc: Kalle Jokiniemi <kalle.jokiniemi@nokia.com>
+> Cc: Heikki Krogerus <heikki.krogerus@nokia.com>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> ---
+>  arch/arm/mach-omap2/board-rx51-peripherals.c |   27 +------------------------
+>  1 files changed, 2 insertions(+), 25 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-
+> omap2/board-rx51-peripherals.c
+> index ba1aa07..9f8e4d2 100644
+> --- a/arch/arm/mach-omap2/board-rx51-peripherals.c
+> +++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+> @@ -23,7 +23,6 @@
+>  #include <linux/gpio.h>
+>  #include <linux/gpio_keys.h>
+>  #include <linux/mmc/host.h>
+> -#include <linux/power/isp1704_charger.h>
+> 
+>  #include <plat/mcspi.h>
+>  #include <plat/board.h>
+> @@ -56,8 +55,6 @@
+>  #define RX51_FMTX_IRQ			53
+>  #define RX51_LP5523_CHIP_EN_GPIO	41
+> 
+> -#define RX51_USB_TRANSCEIVER_RST_GPIO	67
+> -
+>  /* list all spi devices here */
+>  enum {
+>  	RX51_SPI_WL1251,
+> @@ -174,30 +171,10 @@ static struct spi_board_info
+> rx51_peripherals_spi_board_info[] __initdata = {
+>  	},
+>  };
+> 
+> -static void rx51_charger_set_power(bool on)
+> -{
+> -	gpio_set_value(RX51_USB_TRANSCEIVER_RST_GPIO, on);
+> -}
+> -
+> -static struct isp1704_charger_data rx51_charger_data = {
+> -	.set_power	= rx51_charger_set_power,
+> -};
+> -
+>  static struct platform_device rx51_charger_device = {
+> -	.name	= "isp1704_charger",
+> -	.dev	= {
+> -		.platform_data = &rx51_charger_data,
+> -	},
+> +	.name = "isp1704_charger",
+>  };
+> 
+> -static void __init rx51_charger_init(void)
+> -{
+> -	WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
+> -		GPIOF_OUT_INIT_LOW, "isp1704_reset"));
+> -
+> -	platform_device_register(&rx51_charger_device);
+> -}
+> -
+>  #if defined(CONFIG_KEYBOARD_GPIO) ||
+> defined(CONFIG_KEYBOARD_GPIO_MODULE)
+> 
+>  #define RX51_GPIO_CAMERA_LENS_COVER	110
+> @@ -1102,6 +1079,6 @@ void __init rx51_peripherals_init(void)
+>  	if (partition)
+>  		omap2_hsmmc_init(mmc);
+> 
+> -	rx51_charger_init();
+> +	platform_device_register(&rx51_charger_device);
+>  }
+> 
+> --
+> 1.7.8.rc3.17.gf56ef1
 
-v2:
- - Kees and Alexey pointed out that "1" hack is unnecessary,
-   so make it to have plain (mm && permitted) ? mm->member : 0
-   form.
-
-v3:
- - Andrew pointed that documentation update is missed.
-   Chagelog is updated as well.
-
-v4:
- - Update proc.txt to address concerns from Kees and Kame.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Alexey Dobriyan <adobriyan@gmail.com>
----
- Documentation/filesystems/proc.txt |    3 +++
- fs/proc/array.c                    |    7 +++++--
- 2 files changed, 8 insertions(+), 2 deletions(-)
-
-Index: linux-2.6.git/Documentation/filesystems/proc.txt
-===================================================================
---- linux-2.6.git.orig/Documentation/filesystems/proc.txt
-+++ linux-2.6.git/Documentation/filesystems/proc.txt
-@@ -305,6 +305,9 @@ Table 1-4: Contents of the stat files (a
-   blkio_ticks   time spent waiting for block IO
-   gtime         guest time of the task in jiffies
-   cgtime        guest time of the task children in jiffies
-+  start_data    address above which program data+bss is placed
-+  end_data      address below which program data+bss is placed
-+  start_brk     address above which program heap can be expaned with brk() call
- ..............................................................................
- 
- The /proc/PID/maps file containing the currently mapped memory regions and
-Index: linux-2.6.git/fs/proc/array.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/array.c
-+++ linux-2.6.git/fs/proc/array.c
-@@ -464,7 +464,7 @@ static int do_task_stat(struct seq_file
- 
- 	seq_printf(m, "%d (%s) %c %d %d %d %d %d %u %lu \
- %lu %lu %lu %lu %lu %ld %ld %ld %ld %d 0 %llu %lu %ld %lu %lu %lu %lu %lu \
--%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld\n",
-+%lu %lu %lu %lu %lu %lu %lu %lu %d %d %u %u %llu %lu %ld %lu %lu %lu\n",
- 		pid_nr_ns(pid, ns),
- 		tcomm,
- 		state,
-@@ -511,7 +511,10 @@ static int do_task_stat(struct seq_file
- 		task->policy,
- 		(unsigned long long)delayacct_blkio_ticks(task),
- 		cputime_to_clock_t(gtime),
--		cputime_to_clock_t(cgtime));
-+		cputime_to_clock_t(cgtime),
-+		(mm && permitted) ? mm->start_data : 0,
-+		(mm && permitted) ? mm->end_data : 0,
-+		(mm && permitted) ? mm->start_brk : 0);
- 	if (mm)
- 		mmput(mm);
- 	return 0;
