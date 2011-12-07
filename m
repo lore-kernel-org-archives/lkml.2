@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab1LGQwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:52:46 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61544 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291Ab1LGQwo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:52:44 -0500
-From: Tom Gundersen <teg@jklm.no>
-To: linux-scsi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Tom Gundersen <teg@jklm.no>
-Subject: [PATCH] scsi: mark some messages as INFO/WARNING/ERROR
-Date: Wed,  7 Dec 2011 17:52:34 +0100
-Message-Id: <1323276754-1744-1-git-send-email-teg@jklm.no>
-X-Mailer: git-send-email 1.7.8
+	id S1755087Ab1LGQxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:53:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33517 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757523Ab1LGQTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:19:40 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:28 2011
+Message-Id: <20111207160828.906711000@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:07:37 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jason Baron <jbaron@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [77/80] jump_label: jump_label_inc may return before the code is patched
+In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reduces the noice in
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-$ dmesg --kernel --level=err,warn
+------------------
 
-Signed-off-by: Tom Gundersen <teg@jklm.no>
+From: Gleb Natapov <gleb@redhat.com>
+
+commit bbbf7af4bf8fc69bc751818cf30521080fa47dcb upstream.
+
+If cpu A calls jump_label_inc() just after atomic_add_return() is
+called by cpu B, atomic_inc_not_zero() will return value greater then
+zero and jump_label_inc() will return to a caller before jump_label_update()
+finishes its job on cpu B.
+
+Link: http://lkml.kernel.org/r/20111018175551.GH17571@redhat.com
+
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Jason Baron <jbaron@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/scsi/sr.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ kernel/jump_label.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
-index 5fc97d2..762039a 100644
---- a/drivers/scsi/sr.c
-+++ b/drivers/scsi/sr.c
-@@ -306,7 +306,7 @@ static int sr_done(struct scsi_cmnd *SCpnt)
- 	struct scsi_cd *cd = scsi_cd(SCpnt->request->rq_disk);
- 
- #ifdef DEBUG
--	printk("sr.c done: %x\n", result);
-+	printk(KERN_DEBUG "sr.c done: %x\n", result);
- #endif
- 
- 	/*
-@@ -416,7 +416,7 @@ static int sr_prep_fn(struct request_queue *q, struct request *rq)
- 		if (!in_interrupt())
- 			sr_set_blocklength(cd, 2048);
- 		else
--			printk("sr: can't switch blocksize: in interrupt\n");
-+			printk(KERN_WARNING "sr: can't switch blocksize: in interrupt\n");
- 	}
- 
- 	if (s_size != 512 && s_size != 1024 && s_size != 2048) {
-@@ -790,7 +790,7 @@ static void get_sectorsize(struct scsi_cd *cd)
- 		case 512:
- 			break;
- 		default:
--			printk("%s: unsupported sector size %d.\n",
-+			printk(KERN_ERR "%s: unsupported sector size %d.\n",
- 			       cd->cdi.name, sector_size);
- 			cd->capacity = 0;
- 		}
-@@ -852,7 +852,7 @@ static void get_capabilities(struct scsi_cd *cd)
- 				 CDC_SELECT_DISC | CDC_SELECT_SPEED |
- 				 CDC_MRW | CDC_MRW_W | CDC_RAM);
- 		kfree(buffer);
--		printk("%s: scsi-1 drive\n", cd->cdi.name);
-+		printk(KERN_INFO "%s: scsi-1 drive\n", cd->cdi.name);
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -66,8 +66,9 @@ void jump_label_inc(struct jump_label_ke
  		return;
- 	}
  
-@@ -861,7 +861,7 @@ static void get_capabilities(struct scsi_cd *cd)
- 	cd->readcd_known = 1;
- 	cd->readcd_cdda = buffer[n + 5] & 0x01;
- 	/* print some capability bits */
--	printk("%s: scsi3-mmc drive: %dx/%dx %s%s%s%s%s%s\n", cd->cdi.name,
-+	printk(KERN_INFO "%s: scsi3-mmc drive: %dx/%dx %s%s%s%s%s%s\n", cd->cdi.name,
- 	       ((buffer[n + 14] << 8) + buffer[n + 15]) / 176,
- 	       cd->cdi.speed,
- 	       buffer[n + 3] & 0x01 ? "writer " : "", /* CD Writer */
--- 
-1.7.8
+ 	jump_label_lock();
+-	if (atomic_add_return(1, &key->enabled) == 1)
++	if (atomic_read(&key->enabled) == 0)
+ 		jump_label_update(key, JUMP_LABEL_ENABLE);
++	atomic_inc(&key->enabled);
+ 	jump_label_unlock();
+ }
+ 
+
 
