@@ -1,90 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab1LGPRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 10:17:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19960 "EHLO mx1.redhat.com"
+	id S1756600Ab1LGPTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 10:19:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57976 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756064Ab1LGPRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 10:17:47 -0500
-Date: Wed, 7 Dec 2011 16:12:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>, serge.hallyn@canonical.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@redhat.com>
-Subject: Re: [PATCH 1/1][V3] Add reboot_pid_ns to handle the reboot syscall
-Message-ID: <20111207151235.GA21962@redhat.com>
-References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr> <1323030290-22216-2-git-send-email-daniel.lezcano@free.fr> <20111206171617.e31bc3a6.akpm@linux-foundation.org>
+	id S1756362Ab1LGPTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 10:19:38 -0500
+Date: Wed, 7 Dec 2011 17:21:22 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] virtio_net: fix refill related races
+Message-ID: <20111207152120.GA23417@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111206171617.e31bc3a6.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06, Andrew Morton wrote:
-> On Sun,  4 Dec 2011 21:24:50 +0100
-> Daniel Lezcano <daniel.lezcano@free.fr> wrote:
->
-> > This patch propose to store the reboot value in the 16 upper bits of the
-> > exit code from the processes belonging to a pid namespace which has
-> > rebooted. When the reboot syscall is called and we are not in the initial
-> > pid namespace, we kill the pid namespace.
-> >
-> > By this way the parent process of the child pid namespace to know if
-> > it rebooted or not and take the right decision.
->
-> hm, modifying the exit code in this manner is a strange interface.  I
-> didn't see that coming.  Perhaps some additional justification for this
-> idea should be added to the changelog, along with discussion of
-> alternative schemes.  I don't immediately see any problems with it,
-> but, odd...  I wonder what potential it has to upset existing
-> userspace.
+Fix theoretical races related to refill work:
+1. After napi is disabled by ndo_stop, refill work
+   can run and re-enable it.
+2. Refill can reschedule itself, if this happens
+   it can run after cancel_delayed_work_sync,
+   and will access device after it is destroyed.
 
-Alternatively, we could do something like
+As a solution, add flags to track napi state and
+to disable refill, and toggle them on start, stop
+and remove; check these flags on refill.
 
-	switch (reboot) {
-	case LINUX_REBOOT_CMD_RESTART:
-		exit_code = SIGHUP;
-		break;
-	case LINUX_REBOOT_CMD_HALT:
-		exit_code = SIGINT;
-		break;
-	...
-	}
+refill work structure and new fields aren't used
+on data path, so put them together near the end of
+struct virtnet_info.
 
-this way the parent can check WIFSIGNALED/WTERMSIG instead of upper bits.
-This was the initial suggestion, and personally I like this more.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+
+RFC only since it's untested at this point.
+A bugfix so 3.2 material?
+Comments?
 
 
-But I do not think this can upset existing userspace. __WEXITSTATUS()
-reports the lower bits only, it can't see the extra info we add.
+ drivers/net/virtio_net.c |   57 +++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 46 insertions(+), 11 deletions(-)
 
-> Also, this affects the data delivered by taskstats, I believe.  Please
-> check this, test it, document it in the changelog and update
-> getdelays.c appropriately.
-
-No, taskstats report ->exit_code. This doesn't look right btw. But
-in any case I do not think this can break something.
-
-> Also, glibc might be affected.  For symmetry we might want to add a
-> WIFREBOOT() or something.
-
-We already use these upper bits to report the ptrace events, in the
-same manner. I do not think this has something to do with libc.
-
-Although it could probably have another macro to read this info.
-
-> And we now expect waitid() to fill in extra
-> bits in siginfo_t.si_status, which assumes that glibc (and other
-> libc's!) aren't using a u8 in there somewhere.  etcetera.  This all
-> should be tested, and reviewed by Uli (please).
-
-Again, ptrace already puts the extra info this way when the tracee
-stops.
-
-Oleg.
-
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index f5b3f19..39eb24c 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -21,6 +21,7 @@
+ #include <linux/etherdevice.h>
+ #include <linux/ethtool.h>
+ #include <linux/module.h>
++#include <linux/mutex.h>
+ #include <linux/virtio.h>
+ #include <linux/virtio_net.h>
+ #include <linux/scatterlist.h>
+@@ -68,15 +69,24 @@ struct virtnet_info {
+ 	/* Active statistics */
+ 	struct virtnet_stats __percpu *stats;
+ 
+-	/* Work struct for refilling if we run low on memory. */
+-	struct delayed_work refill;
+-
+ 	/* Chain pages by the private ptr. */
+ 	struct page *pages;
+ 
+ 	/* fragments + linear part + virtio header */
+ 	struct scatterlist rx_sg[MAX_SKB_FRAGS + 2];
+ 	struct scatterlist tx_sg[MAX_SKB_FRAGS + 2];
++
++	/* Work struct for refilling if we run low on memory. */
++	struct delayed_work refill;
++
++	/* Set flag to allow delayed refill work, protected by a refill_lock. */
++	bool refill_enable;
++
++	/* Whether napi is enabled, protected by a refill_lock. */
++	bool napi_enable;
++
++	/* Lock to protect refill and napi enable/disable operations. */
++	struct mutex refill_lock;
+ };
+ 
+ struct skb_vnet_hdr {
+@@ -477,20 +487,35 @@ static void virtnet_napi_enable(struct virtnet_info *vi)
+ 	}
+ }
+ 
++static void virtnet_refill_enable(struct virtnet_info *vi, bool enable)
++{
++	mutex_lock(&vi->refill_lock);
++	vi->refill_enable = enable;
++	mutex_unlock(&vi->refill_lock);
++}
++
+ static void refill_work(struct work_struct *work)
+ {
+ 	struct virtnet_info *vi;
+ 	bool still_empty;
+ 
+ 	vi = container_of(work, struct virtnet_info, refill.work);
+-	napi_disable(&vi->napi);
+-	still_empty = !try_fill_recv(vi, GFP_KERNEL);
+-	virtnet_napi_enable(vi);
+ 
+-	/* In theory, this can happen: if we don't get any buffers in
+-	 * we will *never* try to fill again. */
+-	if (still_empty)
+-		schedule_delayed_work(&vi->refill, HZ/2);
++	mutex_lock(&vi->refill_lock);
++	if (vi->refill_enable) {
++		if (vi->napi_enable)
++			napi_disable(&vi->napi);
++		still_empty = !try_fill_recv(vi, GFP_KERNEL);
++		if (vi->napi_enable)
++			virtnet_napi_enable(vi);
++
++		/* In theory, this can happen: if we don't get any buffers in
++		 * we will *never* try to fill again. */
++		if (still_empty)
++			schedule_delayed_work(&vi->refill, HZ/2);
++
++	}
++	mutex_unlock(&vi->refill_lock);
+ }
+ 
+ static int virtnet_poll(struct napi_struct *napi, int budget)
+@@ -708,7 +733,10 @@ static int virtnet_open(struct net_device *dev)
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 
++	mutex_lock(&vi->refill_lock);
++	vi->napi_enable = true;
+ 	virtnet_napi_enable(vi);
++	mutex_unlock(&vi->refill_lock);
+ 	return 0;
+ }
+ 
+@@ -761,7 +789,10 @@ static int virtnet_close(struct net_device *dev)
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 
++	mutex_lock(&vi->refill_lock);
++	vi->napi_enable = false;
+ 	napi_disable(&vi->napi);
++	mutex_unlock(&vi->refill_lock);
+ 
+ 	return 0;
+ }
+@@ -1010,6 +1041,7 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	if (vi->stats == NULL)
+ 		goto free;
+ 
++	mutex_init(&vi->refill_lock);
+ 	INIT_DELAYED_WORK(&vi->refill, refill_work);
+ 	sg_init_table(vi->rx_sg, ARRAY_SIZE(vi->rx_sg));
+ 	sg_init_table(vi->tx_sg, ARRAY_SIZE(vi->tx_sg));
+@@ -1047,6 +1079,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		goto free_vqs;
+ 	}
+ 
++	virtnet_refill_enable(vi, true);
++
+ 	/* Last of all, set up some receive buffers. */
+ 	try_fill_recv(vi, GFP_KERNEL);
+ 
+@@ -1107,10 +1141,11 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
+ {
+ 	struct virtnet_info *vi = vdev->priv;
+ 
++	virtnet_refill_enable(vi, false);
++
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
+ 
+-
+ 	unregister_netdev(vi->dev);
+ 	cancel_delayed_work_sync(&vi->refill);
+ 
+-- 
+1.7.5.53.gc233e
