@@ -1,404 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1LGNxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:53:46 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44147 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755810Ab1LGNxo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:53:44 -0500
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Cc: patches@linaro.org, eric.miao@linaro.org,
-        broonie@opensource.wolfsonmicro.com,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Nancy Chen <Nancy.Chen@freescale.com>, Liam Girdwood <lrg@ti.com>
-Subject: [PATCH] Regulator: Add Anatop regulator driver
-Date: Wed,  7 Dec 2011 21:53:18 +0800
-Message-Id: <1323265998-29088-2-git-send-email-paul.liu@linaro.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323265998-29088-1-git-send-email-paul.liu@linaro.org>
-References: <1323265998-29088-1-git-send-email-paul.liu@linaro.org>
+	id S1756255Ab1LGN6d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:58:33 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35329 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756144Ab1LGN6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 08:58:31 -0500
+Date: Wed, 7 Dec 2011 14:58:02 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Shaohua Li <shaohua.li@intel.com>, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/5] mm: exclude reserved pages from dirtyable memory
+Message-ID: <20111207135802.GF12673@cmpxchg.org>
+References: <1322055258-3254-1-git-send-email-hannes@cmpxchg.org>
+ <1322055258-3254-2-git-send-email-hannes@cmpxchg.org>
+ <20111129162014.aa290174.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111129162014.aa290174.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+On Tue, Nov 29, 2011 at 04:20:14PM -0800, Andrew Morton wrote:
+> On Wed, 23 Nov 2011 14:34:14 +0100
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > From: Johannes Weiner <jweiner@redhat.com>
+> > 
+> > The amount of dirtyable pages should not include the full number of
+> > free pages: there is a number of reserved pages that the page
+> > allocator and kswapd always try to keep free.
+> > 
+> > The closer (reclaimable pages - dirty pages) is to the number of
+> > reserved pages, the more likely it becomes for reclaim to run into
+> > dirty pages:
+> > 
+> >        +----------+ ---
+> >        |   anon   |  |
+> >        +----------+  |
+> >        |          |  |
+> >        |          |  -- dirty limit new    -- flusher new
+> >        |   file   |  |                     |
+> >        |          |  |                     |
+> >        |          |  -- dirty limit old    -- flusher old
+> >        |          |                        |
+> >        +----------+                       --- reclaim
+> >        | reserved |
+> >        +----------+
+> >        |  kernel  |
+> >        +----------+
+> > 
+> > This patch introduces a per-zone dirty reserve that takes both the
+> > lowmem reserve as well as the high watermark of the zone into account,
+> > and a global sum of those per-zone values that is subtracted from the
+> > global amount of dirtyable pages.  The lowmem reserve is unavailable
+> > to page cache allocations and kswapd tries to keep the high watermark
+> > free.  We don't want to end up in a situation where reclaim has to
+> > clean pages in order to balance zones.
+> > 
+> > Not treating reserved pages as dirtyable on a global level is only a
+> > conceptual fix.  In reality, dirty pages are not distributed equally
+> > across zones and reclaim runs into dirty pages on a regular basis.
+> > 
+> > But it is important to get this right before tackling the problem on a
+> > per-zone level, where the distance between reclaim and the dirty pages
+> > is mostly much smaller in absolute numbers.
+> > 
+> > ...
+> >
+> > --- a/mm/page-writeback.c
+> > +++ b/mm/page-writeback.c
+> > @@ -327,7 +327,8 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
+> >  			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
+> >  
+> >  		x += zone_page_state(z, NR_FREE_PAGES) +
+> > -		     zone_reclaimable_pages(z);
+> > +		     zone_reclaimable_pages(z) -
+> > +		     zone->dirty_balance_reserve;
+> 
+> Doesn't compile.  s/zone/z/.
+> 
+> Which makes me suspect it wasn't tested on a highmem box.  This is
+> rather worrisome, as highmem machines tend to have acute and unique
+> zone balancing issues.
 
-Anatop regulator driver is used by i.MX6 SoC. This patch adds the
-Anatop regulator driver.
+You are right, so I ran fs_mark on an x86 machine with 8GB and a
+32-bit kernel.
 
-Signed-off-by: Nancy Chen <Nancy.Chen@freescale.com>
-Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>
----
- drivers/regulator/Kconfig                  |    7 +
- drivers/regulator/Makefile                 |    1 +
- drivers/regulator/anatop-regulator.c       |  236 ++++++++++++++++++++++++++++
- include/linux/regulator/anatop-regulator.h |   82 ++++++++++
- 4 files changed, 326 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/anatop-regulator.c
- create mode 100644 include/linux/regulator/anatop-regulator.h
+fs_mark  -S  0  -d  work-01  -d  work-02  -d  work-03  -d  work-04  -D  128  -N  128  -L  16  -n  512  -s  655360
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 9713b1b..790eca5 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -327,5 +327,12 @@ config REGULATOR_AAT2870
- 	  If you have a AnalogicTech AAT2870 say Y to enable the
- 	  regulator driver.
- 
-+config REGULATOR_ANATOP
-+	tristate "ANATOP LDO regulators"
-+	depends on ARCH_MX6
-+	default y if ARCH_MX6
-+	help
-+	  Say y here to support ANATOP LDOs regulators.
-+
- endif
- 
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 93a6318..990c332 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -46,5 +46,6 @@ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
- obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
- obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
- obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
-+obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
- 
- ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
-diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-new file mode 100644
-index 0000000..61ad1c2
---- /dev/null
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -0,0 +1,236 @@
-+/*
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/anatop-regulator.h>
-+
-+static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
-+				  int max_uV, unsigned *selector)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+
-+	if (anatop_reg->rdata->set_voltage)
-+		return anatop_reg->rdata->set_voltage(anatop_reg, max_uV);
-+	else
-+		return -ENOTSUPP;
-+}
-+
-+static int anatop_get_voltage(struct regulator_dev *reg)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+
-+	if (anatop_reg->rdata->get_voltage)
-+		return anatop_reg->rdata->get_voltage(anatop_reg);
-+	else
-+		return -ENOTSUPP;
-+}
-+
-+static int anatop_enable(struct regulator_dev *reg)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+
-+	return anatop_reg->rdata->enable(anatop_reg);
-+}
-+
-+static int anatop_disable(struct regulator_dev *reg)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+
-+	return anatop_reg->rdata->disable(anatop_reg);
-+}
-+
-+static int anatop_is_enabled(struct regulator_dev *reg)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+
-+	return anatop_reg->rdata->is_enabled(anatop_reg);
-+}
-+
-+static struct regulator_ops anatop_rops = {
-+	.set_voltage	= anatop_set_voltage,
-+	.get_voltage	= anatop_get_voltage,
-+	.enable		= anatop_enable,
-+	.disable	= anatop_disable,
-+	.is_enabled	= anatop_is_enabled,
-+};
-+
-+static struct regulator_desc anatop_reg_desc[] = {
-+	{
-+		.name = "vddpu",
-+		.id = ANATOP_VDDPU,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vddcore",
-+		.id = ANATOP_VDDCORE,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vddsoc",
-+		.id = ANATOP_VDDSOC,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd2p5",
-+		.id = ANATOP_VDD2P5,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd1p1",
-+		.id = ANATOP_VDD1P1,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd3p0",
-+		.id = ANATOP_VDD3P0,
-+		.ops = &anatop_rops,
-+		.irq = 0,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+};
-+
-+int anatop_regulator_probe(struct platform_device *pdev)
-+{
-+	struct regulator_desc *rdesc;
-+	struct regulator_dev *rdev;
-+	struct anatop_regulator *sreg;
-+	struct regulator_init_data *initdata;
-+
-+	sreg = platform_get_drvdata(pdev);
-+	initdata = pdev->dev.platform_data;
-+	sreg->cur_current = 0;
-+	sreg->next_current = 0;
-+	sreg->cur_voltage = 0;
-+
-+	init_waitqueue_head(&sreg->wait_q);
-+	spin_lock_init(&sreg->lock);
-+
-+	if (pdev->id > ANATOP_SUPPLY_NUM) {
-+		rdesc = kzalloc(sizeof(struct regulator_desc), GFP_KERNEL);
-+		memcpy(rdesc, &anatop_reg_desc[ANATOP_SUPPLY_NUM],
-+			sizeof(struct regulator_desc));
-+		rdesc->name = kstrdup(sreg->rdata->name, GFP_KERNEL);
-+	} else
-+		rdesc = &anatop_reg_desc[pdev->id];
-+
-+	pr_debug("probing regulator %s %s %d\n",
-+			sreg->rdata->name,
-+			rdesc->name,
-+			pdev->id);
-+
-+	/* register regulator */
-+	rdev = regulator_register(rdesc, &pdev->dev,
-+				  initdata, sreg);
-+
-+	if (IS_ERR(rdev)) {
-+		dev_err(&pdev->dev, "failed to register %s\n",
-+			rdesc->name);
-+		return PTR_ERR(rdev);
-+	}
-+
-+	return 0;
-+}
-+
-+
-+int anatop_regulator_remove(struct platform_device *pdev)
-+{
-+	struct regulator_dev *rdev = platform_get_drvdata(pdev);
-+
-+	regulator_unregister(rdev);
-+
-+	return 0;
-+
-+}
-+
-+int anatop_register_regulator(
-+		struct anatop_regulator *reg_data, int reg,
-+			      struct regulator_init_data *initdata)
-+{
-+	struct platform_device *pdev;
-+	int ret;
-+
-+	pdev = platform_device_alloc("anatop_reg", reg);
-+	if (!pdev)
-+		return -ENOMEM;
-+
-+	pdev->dev.platform_data = initdata;
-+
-+	platform_set_drvdata(pdev, reg_data);
-+	ret = platform_device_add(pdev);
-+
-+	if (ret != 0) {
-+		pr_debug("Failed to register regulator %d: %d\n",
-+			reg, ret);
-+		platform_device_del(pdev);
-+	}
-+	pr_debug("register regulator %s, %d: %d\n",
-+			reg_data->rdata->name, reg, ret);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(anatop_register_regulator);
-+
-+struct platform_driver anatop_reg = {
-+	.driver = {
-+		.name	= "anatop_reg",
-+	},
-+	.probe	= anatop_regulator_probe,
-+	.remove	= anatop_regulator_remove,
-+};
-+
-+int anatop_regulator_init(void)
-+{
-+	return platform_driver_register(&anatop_reg);
-+}
-+
-+void anatop_regulator_exit(void)
-+{
-+	platform_driver_unregister(&anatop_reg);
-+}
-+
-+postcore_initcall(anatop_regulator_init);
-+module_exit(anatop_regulator_exit);
-+
-+MODULE_AUTHOR("Freescale Semiconductor, Inc.");
-+MODULE_DESCRIPTION("ANATOP Regulator driver");
-+MODULE_LICENSE("GPL");
-+
-diff --git a/include/linux/regulator/anatop-regulator.h b/include/linux/regulator/anatop-regulator.h
-new file mode 100644
-index 0000000..a1d98ed
---- /dev/null
-+++ b/include/linux/regulator/anatop-regulator.h
-@@ -0,0 +1,82 @@
-+/*
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#ifndef __ANATOP_REGULATOR_H
-+#define __ANATOP_REGULATOR_H
-+#include <linux/regulator/driver.h>
-+
-+/* regulator supplies for Anatop */
-+enum anatop_regulator_supplies {
-+	ANATOP_VDDPU,
-+	ANATOP_VDDCORE,
-+	ANATOP_VDDSOC,
-+	ANATOP_VDD2P5,
-+	ANATOP_VDD1P1,
-+	ANATOP_VDD3P0,
-+	ANATOP_SUPPLY_NUM
-+};
-+
-+struct anatop_regulator {
-+	struct regulator_desc regulator;
-+	struct anatop_regulator *parent;
-+	struct anatop_regulator_data *rdata;
-+	struct completion done;
-+
-+	spinlock_t         lock;
-+	wait_queue_head_t  wait_q;
-+	struct notifier_block nb;
-+
-+	int mode;
-+	int cur_voltage;
-+	int cur_current;
-+	int next_current;
-+};
-+
-+
-+struct anatop_regulator_data {
-+	char name[80];
-+	char *parent_name;
-+	int (*reg_register)(struct anatop_regulator *sreg);
-+	int (*set_voltage)(struct anatop_regulator *sreg, int uv);
-+	int (*get_voltage)(struct anatop_regulator *sreg);
-+	int (*set_current)(struct anatop_regulator *sreg, int uA);
-+	int (*get_current)(struct anatop_regulator *sreg);
-+	int (*enable)(struct anatop_regulator *sreg);
-+	int (*disable)(struct anatop_regulator *sreg);
-+	int (*is_enabled)(struct anatop_regulator *sreg);
-+	int (*set_mode)(struct anatop_regulator *sreg, int mode);
-+	int (*get_mode)(struct anatop_regulator *sreg);
-+	int (*get_optimum_mode)(struct anatop_regulator *sreg,
-+			int input_uV, int output_uV, int load_uA);
-+	u32 control_reg;
-+	int vol_bit_shift;
-+	int vol_bit_mask;
-+	int min_bit_val;
-+	int min_voltage;
-+	int max_voltage;
-+	int max_current;
-+	struct regulation_constraints *cnstraints;
-+};
-+
-+int anatop_register_regulator(
-+		struct anatop_regulator *reg_data, int reg,
-+		      struct regulator_init_data *initdata);
-+
-+#endif /* __ANATOP_REGULATOR_H */
--- 
-1.7.7.3
+This translates to 4 threads doing 16 iterations over a new set of 512
+files each time, where each file is 640k in size, which adds up to 20G
+of written data per run.  The results are gathered over 5 runs.  Data
+are written to an ext4 on a standard consumer rotational disk.
+
+The overall runtime for the loads were the same:
+
+		seconds
+		mean(stddev)
+ vanilla:	242.061(0.953)
+ patched:	242.726(1.714)
+
+Allocation counts confirm that allocation placement does not change:
+
+		pgalloc_dma		pgalloc_normal				pgalloc_high
+		min|median|max	
+ vanilla:	0.000|0.000|0.000	3733291.000|3742709.000|4034662.000	5189412.000|5202220.000|5208743.000
+ patched:	0.000|0.000|0.000	3716148.000|3733269.000|4032205.000	5212301.000|5216834.000|5227756.000
+
+Kswapd in both kernels did the same amount of work in each zone over
+the course of the workload; direct reclaim was never invoked:
+
+		pgscan_kswapd_dma	pgscan_kswapd_normal			pgscan_kswapd_high
+		min|median|max
+ vanilla:	0.000|0.000|0.000	109919.000|115773.000|117952.000	3235879.000|3246707.000|3255205.000
+ patched:	0.000|0.000|0.000	104169.000|114845.000|117657.000	3241327.000|3246835.000|3257843.000
+
+		pgsteal_dma		pgsteal_normal				pgsteal_high
+		min|median|max
+ vanilla:	0.000|0.000|0.000	109912.000|115766.000|117945.000	3235318.000|3246632.000|3255098.000
+ patched:	0.000|0.000|0.000	104163.000|114839.000|117651.000	3240765.000|3246760.000|3257768.000
+
+and the distribution of scans over time was equivalent, with no new
+hickups or scan spikes:
+
+		pgscan_kswapd_dma/s	pgscan_kswapd_normal/s			pgscan_kswapd_high/s
+		min|median|max
+ vanilla:	0.000|0.000|0.000	0.000|144.000|2100.000			0.000|15582.500|44916.000
+ patched:	0.000|0.000|0.000	0.000|152.000|2058.000			0.000|15361.000|44453.000
+
+		pgsteal_dma/s		pgsteal_normal/s			pgsteal_high/s
+		min|median|max
+ vanilla:	0.000|0.000|0.000	0.000|144.000|2094.000			0.000|15582.500|44916.000
+ patched:	0.000|0.000|0.000	0.000|152.000|2058.000			0.000|15361.000|44453.000
+
+
+				fs_mark 1G
+
+The same fs_mark load was run on the system limited to 1G memory
+(booted with mem=1G), to have a highmem zone that is much smaller
+compared to the rest of the system.
+
+		seconds
+		mean(stddev)
+ vanilla:	238.428(3.810)	
+ patched:	241.392(0.221)	
+
+In this case, allocation placement did shift slightly towards lower
+zones, to protect the tiny highmem zone from being unreclaimable due
+to dirty pages:
+
+		pgalloc_dma			pgalloc_normal				pgalloc_high
+		min|median|max
+ vanilla:	20658.000|21863.000|23231.000	4017580.000|4023331.000|4038774.000	1057246.000|1076280.000|1083824.000
+ patched:	25403.000|27679.000|28556.000	4163538.000|4172116.000|4179151.000	 917054.000| 922206.000| 933609.000
+
+However, while there were in total more allocations in the DMA and
+Normal zone, the utilization peaks of the zones individually were
+actually reduced due to smoother distribution:
+
+		DMA min nr_free_pages		Normal min nr_free_pages		HighMem min nr_free_pages
+ vanilla:	1244.000			14819.000				432.000
+ patched:	1337.000			14850.000				439.000
+
+Keep in mind that the lower zones are only used more often for
+allocation because they are providing dirtyable memory in this
+scenario, i.e. they have space to spare.
+
+With increasing lowmem usage for stuff that is truly lowmem, like
+dcache and page tables, the amount of memory we consider dirtyable
+(free pages + file pages) shrinks, so when highmem is not allowed to
+take anymore dirty pages, we will not thrash on the lower zones:
+either they have space left or the dirtiers are already being
+throttled in balance_dirty_pages().
+
+Reclaim numbers suggests that kswapd can easily keep up with the the
+allocation frequency increase in the Normal zone.  But for DMA, it
+looks like the unpatched kernel flooded the zone with dirty pages
+every once in a while, making it ineligible for allocations until
+those pages were cleaned.  Through better distribution, the patch
+improves reclaim efficiency (reclaimed/scanned) from 32% to 100% for
+DMA:
+
+		pgscan_kswapd_dma		pgscan_kswapd_normal			pgscan_kswapd_high
+		min|median|max
+ vanilla:	39734.000|41248.000|41965.000	3692050.000|3696209.000|3716653.000	970411.000|987483.000|991469.000
+ patched:	21204.000|23901.000|25141.000	3874782.000|3879125.000|3888302.000	793141.000|795631.000|803482.000
+
+		pgsteal_dma			pgsteal_normal				pgsteal_high
+		min|median|max
+ vanilla:	12932.000|14044.000|16957.000	3692025.000|3696183.000|3716626.000	966050.000|987386.000|991405.000
+ patched:	21204.000|23901.000|25141.000	3874771.000|3879095.000|3888284.000	792079.000|795572.000|803370.000
+
+And the increased reclaim efficiency in the DMA zone indeed correlates
+with the reduced likelyhood of reclaim running into dirty pages:
+
+	DMA						Normal				Highmem
+	nr_vmscan_write	nr_vmscan_immediate_reclaim
+
+vanilla:
+	26.0	19614.0					0.0	0.0			1174.0	0.0
+	0.0	21737.0					0.0	1.0			0.0	0.0
+	0.0	22101.0					0.0	0.0			0.0	0.0
+        0.0	21906.0					0.0	0.0			0.0	0.0
+	0.0	21880.0					0.0	0.0			0.0	0.0
+
+patched:
+	0.0	0.0					0.0	1.0			502.0	0.0
+	0.0	0.0					0.0	0.0			0.0	0.0
+	0.0	0.0					0.0	0.0			0.0	0.0
+	0.0	0.0					0.0	0.0			0.0	0.0
+	0.0	0.0					0.0	1.0			0.0	0.0
 
