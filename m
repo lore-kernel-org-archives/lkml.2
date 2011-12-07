@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757188Ab1LGQRk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:17:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33113 "EHLO mx2.suse.de"
+	id S1757204Ab1LGQRp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:17:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33134 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757126Ab1LGQRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:17:38 -0500
+	id S1757126Ab1LGQRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:17:43 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:26 2011
-Message-Id: <20111207160826.010548909@clark.kroah.org>
+Message-Id: <20111207160826.085127186@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:01 -0800
+Date: Wed, 07 Dec 2011 08:07:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [41/80] drm/radeon/kms: add some loop timeouts in pageflip code
+        <alan@lxorguk.ukuu.org.uk>, Lars-Peter Clausen <lars@metafoo.de>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [42/80] firmware: Sigma: Prevent out of bounds memory access
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,119 +26,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit f64964796dedca340608fb1075ab6baad5625851 upstream.
+commit 4f718a29fe4908c2cea782f751e9805319684e2b upstream.
 
-Avoid infinite loops waiting for surface updates if a GPU
-reset happens while waiting for a page flip.
+The SigmaDSP firmware loader currently does not perform enough boundary size
+checks when processing the firmware. As a result it is possible that a
+malformed firmware can cause an out of bounds memory access.
 
-See:
-https://bugs.freedesktop.org/show_bug.cgi?id=43191
+This patch adds checks which ensure that both the action header and the payload
+are completely inside the firmware data boundaries before processing them.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
-Tested-by: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |    7 ++++++-
- drivers/gpu/drm/radeon/r100.c      |    7 ++++++-
- drivers/gpu/drm/radeon/rs600.c     |    7 ++++++-
- drivers/gpu/drm/radeon/rv770.c     |    7 ++++++-
- 4 files changed, 24 insertions(+), 4 deletions(-)
+ drivers/firmware/sigma.c |   76 ++++++++++++++++++++++++++++++++++-------------
+ include/linux/sigma.h    |    5 ---
+ 2 files changed, 55 insertions(+), 26 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -82,6 +82,7 @@ u32 evergreen_page_flip(struct radeon_de
- {
- 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
- 	u32 tmp = RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset);
-+	int i;
+--- a/drivers/firmware/sigma.c
++++ b/drivers/firmware/sigma.c
+@@ -14,13 +14,34 @@
+ #include <linux/module.h>
+ #include <linux/sigma.h>
  
- 	/* Lock the graphics update lock */
- 	tmp |= EVERGREEN_GRPH_UPDATE_LOCK;
-@@ -99,7 +100,11 @@ u32 evergreen_page_flip(struct radeon_de
- 	       (u32)crtc_base);
- 
- 	/* Wait for update_pending to go high. */
--	while (!(RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset) & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING));
-+	for (i = 0; i < rdev->usec_timeout; i++) {
-+		if (RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset) & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING)
-+			break;
-+		udelay(1);
+-/* Return: 0==OK, <0==error, =1 ==no more actions */
++static size_t sigma_action_size(struct sigma_action *sa)
++{
++	size_t payload = 0;
++
++	switch (sa->instr) {
++	case SIGMA_ACTION_WRITEXBYTES:
++	case SIGMA_ACTION_WRITESINGLE:
++	case SIGMA_ACTION_WRITESAFELOAD:
++		payload = sigma_action_len(sa);
++		break;
++	default:
++		break;
 +	}
- 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
- 
- 	/* Unlock the lock, so double-buffering can take place inside vblank */
---- a/drivers/gpu/drm/radeon/r100.c
-+++ b/drivers/gpu/drm/radeon/r100.c
-@@ -84,13 +84,18 @@ u32 r100_page_flip(struct radeon_device
++
++	payload = ALIGN(payload, 2);
++
++	return payload + sizeof(struct sigma_action);
++}
++
++/*
++ * Returns a negative error value in case of an error, 0 if processing of
++ * the firmware should be stopped after this action, 1 otherwise.
++ */
+ static int
+-process_sigma_action(struct i2c_client *client, struct sigma_firmware *ssfw)
++process_sigma_action(struct i2c_client *client, struct sigma_action *sa)
  {
- 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
- 	u32 tmp = ((u32)crtc_base) | RADEON_CRTC_OFFSET__OFFSET_LOCK;
-+	int i;
+-	struct sigma_action *sa = (void *)(ssfw->fw->data + ssfw->pos);
+ 	size_t len = sigma_action_len(sa);
+-	int ret = 0;
++	int ret;
  
- 	/* Lock the graphics update lock */
- 	/* update the scanout addresses */
- 	WREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset, tmp);
+ 	pr_debug("%s: instr:%i addr:%#x len:%zu\n", __func__,
+ 		sa->instr, sa->addr, len);
+@@ -29,44 +50,50 @@ process_sigma_action(struct i2c_client *
+ 	case SIGMA_ACTION_WRITEXBYTES:
+ 	case SIGMA_ACTION_WRITESINGLE:
+ 	case SIGMA_ACTION_WRITESAFELOAD:
+-		if (ssfw->fw->size < ssfw->pos + len)
+-			return -EINVAL;
+ 		ret = i2c_master_send(client, (void *)&sa->addr, len);
+ 		if (ret < 0)
+ 			return -EINVAL;
+ 		break;
+-
+ 	case SIGMA_ACTION_DELAY:
+-		ret = 0;
+ 		udelay(len);
+ 		len = 0;
+ 		break;
+-
+ 	case SIGMA_ACTION_END:
+-		return 1;
+-
++		return 0;
+ 	default:
+ 		return -EINVAL;
+ 	}
  
- 	/* Wait for update_pending to go high. */
--	while (!(RREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset) & RADEON_CRTC_OFFSET__GUI_TRIG_OFFSET));
-+	for (i = 0; i < rdev->usec_timeout; i++) {
-+		if (RREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset) & RADEON_CRTC_OFFSET__GUI_TRIG_OFFSET)
-+			break;
-+		udelay(1);
-+	}
- 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+-	/* when arrive here ret=0 or sent data */
+-	ssfw->pos += sigma_action_size(sa, len);
+-	return ssfw->pos == ssfw->fw->size;
++	return 1;
+ }
  
- 	/* Unlock the lock, so double-buffering can take place inside vblank */
---- a/drivers/gpu/drm/radeon/rs600.c
-+++ b/drivers/gpu/drm/radeon/rs600.c
-@@ -62,6 +62,7 @@ u32 rs600_page_flip(struct radeon_device
+ static int
+ process_sigma_actions(struct i2c_client *client, struct sigma_firmware *ssfw)
  {
- 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
- 	u32 tmp = RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset);
-+	int i;
- 
- 	/* Lock the graphics update lock */
- 	tmp |= AVIVO_D1GRPH_UPDATE_LOCK;
-@@ -74,7 +75,11 @@ u32 rs600_page_flip(struct radeon_device
- 	       (u32)crtc_base);
- 
- 	/* Wait for update_pending to go high. */
--	while (!(RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING));
-+	for (i = 0; i < rdev->usec_timeout; i++) {
-+		if (RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING)
+-	pr_debug("%s: processing %p\n", __func__, ssfw);
++	struct sigma_action *sa;
++	size_t size;
++	int ret;
++
++	while (ssfw->pos + sizeof(*sa) <= ssfw->fw->size) {
++		sa = (struct sigma_action *)(ssfw->fw->data + ssfw->pos);
++
++		size = sigma_action_size(sa);
++		ssfw->pos += size;
++		if (ssfw->pos > ssfw->fw->size || size == 0)
 +			break;
-+		udelay(1);
-+	}
- 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
++
++		ret = process_sigma_action(client, sa);
  
- 	/* Unlock the lock, so double-buffering can take place inside vblank */
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -47,6 +47,7 @@ u32 rv770_page_flip(struct radeon_device
- {
- 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
- 	u32 tmp = RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset);
-+	int i;
+-	while (1) {
+-		int ret = process_sigma_action(client, ssfw);
+ 		pr_debug("%s: action returned %i\n", __func__, ret);
+-		if (ret == 1)
+-			return 0;
+-		else if (ret)
++
++		if (ret <= 0)
+ 			return ret;
+ 	}
++
++	if (ssfw->pos != ssfw->fw->size)
++		return -EINVAL;
++
++	return 0;
+ }
  
- 	/* Lock the graphics update lock */
- 	tmp |= AVIVO_D1GRPH_UPDATE_LOCK;
-@@ -66,7 +67,11 @@ u32 rv770_page_flip(struct radeon_device
- 	       (u32)crtc_base);
+ int process_sigma_firmware(struct i2c_client *client, const char *name)
+@@ -89,7 +116,14 @@ int process_sigma_firmware(struct i2c_cl
  
- 	/* Wait for update_pending to go high. */
--	while (!(RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING));
-+	for (i = 0; i < rdev->usec_timeout; i++) {
-+		if (RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING)
-+			break;
-+		udelay(1);
-+	}
- 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 	/* then verify the header */
+ 	ret = -EINVAL;
+-	if (fw->size < sizeof(*ssfw_head))
++
++	/*
++	 * Reject too small or unreasonable large files. The upper limit has been
++	 * chosen a bit arbitrarily, but it should be enough for all practical
++	 * purposes and having the limit makes it easier to avoid integer
++	 * overflows later in the loading process.
++	 */
++	if (fw->size < sizeof(*ssfw_head) || fw->size >= 0x4000000)
+ 		goto done;
  
- 	/* Unlock the lock, so double-buffering can take place inside vblank */
+ 	ssfw_head = (void *)fw->data;
+--- a/include/linux/sigma.h
++++ b/include/linux/sigma.h
+@@ -50,11 +50,6 @@ static inline u32 sigma_action_len(struc
+ 	return (sa->len_hi << 16) | sa->len;
+ }
+ 
+-static inline size_t sigma_action_size(struct sigma_action *sa, u32 payload_len)
+-{
+-	return sizeof(*sa) + payload_len + (payload_len % 2);
+-}
+-
+ extern int process_sigma_firmware(struct i2c_client *client, const char *name);
+ 
+ #endif
 
 
