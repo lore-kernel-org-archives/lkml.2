@@ -1,39 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab1LGQ6y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:58:54 -0500
-Received: from ffm.saftware.de ([83.141.3.46]:50554 "EHLO ffm.saftware.de"
+	id S1757234Ab1LGQR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:17:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33152 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753679Ab1LGQ6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:58:52 -0500
-Message-ID: <4EDF9B48.1080808@linuxtv.org>
-Date: Wed, 07 Dec 2011 17:58:48 +0100
-From: Andreas Oberritter <obi@linuxtv.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
- of worrying about possible misusage?
-References: <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <4EDD2C82.7040804@linuxtv.org> <20111206112153.GC17194@sirena.org.uk> <4EDE0427.2050307@linuxtv.org> <20111206141929.GE17731@opensource.wolfsonmicro.com> <4EDE2B3B.2080905@linuxtv.org> <20111207134848.GB18837@opensource.wolfsonmicro.com> <4EDF71AE.5070509@linuxtv.org> <20111207161058.GC22355@opensource.wolfsonmicro.com>
-In-Reply-To: <20111207161058.GC22355@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757206Ab1LGQRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:17:52 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:26 2011
+Message-Id: <20111207160826.309569764@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:07:05 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Bart Westgeest <bart@elbrys.com>
+Subject: [45/80] staging: usbip: bugfix for deadlock
+In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.12.2011 17:10, Mark Brown wrote:
-> You're talking about a purely software defined thing that goes in the
-> kernel - it pretty much has to be able to scale to other applications
-> even if some of the implementation is left for later.  Once things like
-> this get included in the kernel they become part of the ABI and having
-> multiple specific things ends up being a recipie for confusion as users
-> have to work out which of the options is most appropriate for their
-> application.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-And to repeat myself once more: No networking is to be perfomed by the
-kernel in vtunerc.
+------------------
+
+From: Bart Westgeest <bart@elbrys.com>
+
+commit 438957f8d4a84daa7fa5be6978ad5897a2e9e5e5 upstream.
+
+Interrupts must be disabled prior to calling usb_hcd_unlink_urb_from_ep.
+If interrupts are not disabled, it can potentially lead to a deadlock.
+The deadlock is readily reproduceable on a slower (ARM based) device
+such as the TI Pandaboard.
+
+Signed-off-by: Bart Westgeest <bart@elbrys.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/staging/usbip/vhci_rx.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+--- a/drivers/staging/usbip/vhci_rx.c
++++ b/drivers/staging/usbip/vhci_rx.c
+@@ -68,6 +68,7 @@ static void vhci_recv_ret_submit(struct
+ {
+ 	struct usbip_device *ud = &vdev->ud;
+ 	struct urb *urb;
++	unsigned long flags;
+ 
+ 	spin_lock(&vdev->priv_lock);
+ 	urb = pickup_urb_and_free_priv(vdev, pdu->base.seqnum);
+@@ -101,9 +102,9 @@ static void vhci_recv_ret_submit(struct
+ 
+ 	usbip_dbg_vhci_rx("now giveback urb %p\n", urb);
+ 
+-	spin_lock(&the_controller->lock);
++	spin_lock_irqsave(&the_controller->lock, flags);
+ 	usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
+-	spin_unlock(&the_controller->lock);
++	spin_unlock_irqrestore(&the_controller->lock, flags);
+ 
+ 	usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb, urb->status);
+ 
+@@ -141,6 +142,7 @@ static void vhci_recv_ret_unlink(struct
+ {
+ 	struct vhci_unlink *unlink;
+ 	struct urb *urb;
++	unsigned long flags;
+ 
+ 	usbip_dump_header(pdu);
+ 
+@@ -170,9 +172,9 @@ static void vhci_recv_ret_unlink(struct
+ 		urb->status = pdu->u.ret_unlink.status;
+ 		pr_info("urb->status %d\n", urb->status);
+ 
+-		spin_lock(&the_controller->lock);
++		spin_lock_irqsave(&the_controller->lock, flags);
+ 		usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
+-		spin_unlock(&the_controller->lock);
++		spin_unlock_irqrestore(&the_controller->lock, flags);
+ 
+ 		usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb,
+ 				     urb->status);
+
+
