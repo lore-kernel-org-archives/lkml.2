@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab1LGSQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 13:16:26 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:32676
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756855Ab1LGSQZ (ORCPT
+	id S1757274Ab1LGSWZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 13:22:25 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61702 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756082Ab1LGSWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 13:16:25 -0500
-X-SpamScore: -19
-X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LVUIR6-02-EV4-02
-X-M-MSG: 
-Date: Wed, 7 Dec 2011 19:12:56 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: David Brown <davidb@codeaurora.org>
-CC: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arm-msm@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] iommu/msm: Fix compile error in mach-msm/devices-iommu.c
-Message-ID: <20111207181256.GA2181@amd.com>
-References: <20111206102527.GI25178@amd.com>
- <20111207170024.GA23621@huya.qualcomm.com>
+	Wed, 7 Dec 2011 13:22:24 -0500
+Date: Wed, 7 Dec 2011 10:22:14 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, matthltc@us.ibm.com,
+        akpm@linux-foundation.org, oleg@redhat.com,
+        kamezawa.hiroyu@Jp.fujitsu.com
+Subject: Re: [PATCH UPDATED 03/10] threadgroup: extend threadgroup_lock()
+ to cover exit and exec
+Message-ID: <20111207182214.GA7610@google.com>
+References: <1320191193-8110-1-git-send-email-tj@kernel.org>
+ <1320191193-8110-4-git-send-email-tj@kernel.org>
+ <20111124225054.GA14828@google.com>
+ <20111125140136.GC23307@somewhere.redhat.com>
+ <20111127193001.GC4266@google.com>
+ <20111202162753.GA19752@somewhere.redhat.com>
+ <20111205184315.GJ627@google.com>
+ <20111207153046.GC13252@somewhere.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111207170024.GA23621@huya.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20111207153046.GC13252@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 09:00:24AM -0800, David Brown wrote:
-> On Tue, Dec 06, 2011 at 11:25:27AM +0100, Joerg Roedel wrote:
-> 
-> > I just added a patch to my iommu/fixes branch to fix a compile error
-> > with IOMMU enabled. If there is another fix for this already somewhere
-> > please let me know the commit-id so that I can add it to my out-of-tree
-> > branch. If there is no other fix yet I will push this upstream soon with
-> > the next round of iommu-fixes.
-> 
-> You can go ahead and push this fix through your tree.  I'll enable the
-> iommu in my defconfigs so that I start catching things like this as
-> well.
+Hello, Frederic.
 
-Great, Thanks.
+On Wed, Dec 07, 2011 at 04:30:54PM +0100, Frederic Weisbecker wrote:
+> I don't understand what you mean. On your patches, you only process tasks
+> that don't have PF_EXITING, ie: you don't include these in the flex array
+> on cgroup_attach_proc(). So that still applies in my proposal.
+> 
+> From the exit path we would have:
+> 
+> 	exit_signal() {
+> 		lock_threadgroup_change(task);
+> 		task->flags |= PF_EXITING;
+> 		lock_threadgroup(task);
+> 	}
+> 
+> 	exit all the rest: mm, etc...
+> 
+> Then from cgroup_attach_proc():
+> 
+> 	lock_threadgroup(task);
+> 	for_each_thread(task) {
+> 		if (!(task->flags & PF_EXITING))
+> 			include in flex array
+> 	}
+> 
+> Am I forgetting something?
+
+The point I was trying to make was that doing the above would make
+->exit() called on dangling task of a threadgroup in rare cases.
+ie. With the proposed change, after a threadgroup migration, all tasks
+in the threadgroup is in the new cgroup.  No method will be called on
+the old cgroup for any of the member task.  With the above change,
+process migration would leave out dying tasks and ->exit() can be
+called with the old cgroup.
+
+Hmm... that said, it probably doesn't matter all that much either way.
+I'll update the patchset and repost.
+
+Thanks.
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+tejun
