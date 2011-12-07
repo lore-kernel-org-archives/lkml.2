@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1LGJwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:52:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59287 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751809Ab1LGJwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:52:41 -0500
-Date: Wed, 7 Dec 2011 15:22:29 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, levinsasha928@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 01/12] virtio: pci: switch to new PM API
-Message-ID: <20111207095229.GF4651@amit-x200.redhat.com>
-References: <cover.1323199985.git.amit.shah@redhat.com>
- <201112062312.36498.rjw@sisk.pl>
- <20111207035703.GA4651@amit-x200.redhat.com>
- <201112071048.24566.rjw@sisk.pl>
+	id S1753558Ab1LGJxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:53:30 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54736 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab1LGJx2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 04:53:28 -0500
+Date: Wed, 7 Dec 2011 10:52:54 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rob Herring <robherring2@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v3] of/irq: Get rid of NO_IRQ usage
+Message-ID: <20111207095254.GA6436@pengutronix.de>
+References: <20111110151852.GA7465@oksana.dev.rtsoft.ru>
+ <20111110152541.GA3207@oksana.dev.rtsoft.ru>
+ <4EDE877A.4080708@gmail.com>
+ <CA+55aFwGFogD4ROCH9m=c2jqB2axvrH-dnKPtA8kxXL9b3CVBw@mail.gmail.com>
+ <20111206231626.GA31683@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
 Content-Disposition: inline
-In-Reply-To: <201112071048.24566.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111206231626.GA31683@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 07 Dec 2011 [10:48:24], Rafael J. Wysocki wrote:
-> On Wednesday, December 07, 2011, Amit Shah wrote:
-> > Hi Rafael,
-> > 
-> > On (Tue) 06 Dec 2011 [23:12:36], Rafael J. Wysocki wrote:
-> > > Hi,
-> > > 
-> > > On Tuesday, December 06, 2011, Amit Shah wrote:
-> > > > The older PM API doesn't have a way to get notifications on hibernate
-> > > > events.  Switch to the newer one that gives us those notifications.
-> > > > 
-> > > > Signed-off-by: Amit Shah <amit.shah@redhat.com>
-> > > > ---
-> > > >  drivers/virtio/virtio_pci.c |   16 ++++++++++++----
-> > > >  1 files changed, 12 insertions(+), 4 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> > > > index 03d1984..23e1532 100644
-> > > > --- a/drivers/virtio/virtio_pci.c
-> > > > +++ b/drivers/virtio/virtio_pci.c
-> > > > @@ -708,19 +708,28 @@ static void __devexit virtio_pci_remove(struct pci_dev *pci_dev)
-> > > >  }
-> > > >  
-> > > >  #ifdef CONFIG_PM
-> > > > -static int virtio_pci_suspend(struct pci_dev *pci_dev, pm_message_t state)
-> > > > +static int virtio_pci_suspend(struct device *dev)
-> > > >  {
-> > > > +	struct pci_dev *pci_dev = to_pci_dev(dev);
-> > > > +
-> > > >  	pci_save_state(pci_dev);
-> > > >  	pci_set_power_state(pci_dev, PCI_D3hot);
-> > > >  	return 0;
-> > > >  }
-> > > >  
-> > > > -static int virtio_pci_resume(struct pci_dev *pci_dev)
-> > > > +static int virtio_pci_resume(struct device *dev)
-> > > >  {
-> > > > +	struct pci_dev *pci_dev = to_pci_dev(dev);
-> > > > +
-> > > >  	pci_restore_state(pci_dev);
-> > > >  	pci_set_power_state(pci_dev, PCI_D0);
-> > > >  	return 0;
-> > > >  }
-> > > > +
-> > > > +static const struct dev_pm_ops virtio_pci_pm_ops = {
-> > > > +	.suspend = virtio_pci_suspend,
-> > > > +	.resume  = virtio_pci_resume,
-> > > > +};
-> > > >  #endif
-> > > 
-> > > You seem to have forgotten about hibernation callbacks.
-> > 
-> > This patch just moves to the new API keeping everything else the same.
-> > The hibernation callbacks come in patch 2.
-> 
-> OK, but then hibernation will be broken between the two patches, so perhaps
-> it's better to merge them into one?
 
-The hibernation support doesn't exist now.  It's added in the later
-patches of the series (3 onwards).
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-		Amit
+On Wed, Dec 07, 2011 at 03:16:26AM +0400, Anton Vorontsov wrote:
+> PPC32/64 defines NO_IRQ to zero, so no problems expected.
+> ARM defines NO_IRQ to -1, but OF code relies on IRQ domains support,
+> which returns correct ('0') value in 'no irq' case. So everything
+> should be fine.
+>=20
+> Other arches might break if some of their OF drivers rely on NO_IRQ
+> being not 0. If so, the drivers must be fixed, finally.
+>=20
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+
+/me likes NO_IRQ removal very much
+
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk7fN3YACgkQD27XaX1/VRvt0ACfbx636k1V5VHHUwOKbikRv0zJ
+xx0AoKZLY57vMXqZK6xFgXEUyKOWrIjU
+=P6F1
+-----END PGP SIGNATURE-----
+
+--+QahgC5+KEYLbs62--
