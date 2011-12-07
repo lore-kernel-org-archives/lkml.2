@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab1LGRDF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:03:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39278 "EHLO mx2.suse.de"
+	id S1757194Ab1LGRDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:03:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39291 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557Ab1LGRDB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:03:01 -0500
+	id S1755557Ab1LGRDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:03:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:01 2011
-Message-Id: <20111207165601.430284072@clark.kroah.org>
+Message-Id: <20111207165601.588034224@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:54:45 -0800
+Date: Wed, 07 Dec 2011 08:54:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Bart Westgeest <bart@elbrys.com>
-Subject: [12/27] staging: usbip: bugfix for deadlock
+        <alan@lxorguk.ukuu.org.uk>, Alessandro Rubini <rubini@gnudd.com>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [14/27] Staging: comedi: fix signal handling in read and write
 In-Reply-To: <20111207165611.GA19872@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,63 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bart Westgeest <bart@elbrys.com>
+From: Federico Vaga <federico.vaga@gmail.com>
 
-commit 438957f8d4a84daa7fa5be6978ad5897a2e9e5e5 upstream.
+commit 6a9ce6b654e491981f6ef7e214cbd4f63e033848 upstream.
 
-Interrupts must be disabled prior to calling usb_hcd_unlink_urb_from_ep.
-If interrupts are not disabled, it can potentially lead to a deadlock.
-The deadlock is readily reproduceable on a slower (ARM based) device
-such as the TI Pandaboard.
+After sleeping on a wait queue, signal_pending(current) should be
+checked (not before sleeping).
 
-Signed-off-by: Bart Westgeest <bart@elbrys.com>
+Acked-by: Alessandro Rubini <rubini@gnudd.com>
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/vhci_rx.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/staging/comedi/comedi_fops.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/usbip/vhci_rx.c
-+++ b/drivers/staging/usbip/vhci_rx.c
-@@ -67,6 +67,7 @@ static void vhci_recv_ret_submit(struct
- {
- 	struct usbip_device *ud = &vdev->ud;
- 	struct urb *urb;
-+	unsigned long flags;
- 
- 	spin_lock(&vdev->priv_lock);
- 
-@@ -107,9 +108,9 @@ static void vhci_recv_ret_submit(struct
- 
- 	usbip_dbg_vhci_rx("now giveback urb %p\n", urb);
- 
--	spin_lock(&the_controller->lock);
-+	spin_lock_irqsave(&the_controller->lock, flags);
- 	usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
--	spin_unlock(&the_controller->lock);
-+	spin_unlock_irqrestore(&the_controller->lock, flags);
- 
- 	usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb, urb->status);
- 
-@@ -150,6 +151,7 @@ static void vhci_recv_ret_unlink(struct
- {
- 	struct vhci_unlink *unlink;
- 	struct urb *urb;
-+	unsigned long flags;
- 
- 	usbip_dump_header(pdu);
- 
-@@ -181,9 +183,9 @@ static void vhci_recv_ret_unlink(struct
- 		urb->status = pdu->u.ret_unlink.status;
- 		usbip_uinfo("%d\n", urb->status);
- 
--		spin_lock(&the_controller->lock);
-+		spin_lock_irqsave(&the_controller->lock, flags);
- 		usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
--		spin_unlock(&the_controller->lock);
-+		spin_unlock_irqrestore(&the_controller->lock, flags);
- 
- 		usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb,
- 								urb->status);
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -1599,11 +1599,11 @@ static ssize_t comedi_write(struct file
+ 				retval = -EAGAIN;
+ 				break;
+ 			}
++			schedule();
+ 			if (signal_pending(current)) {
+ 				retval = -ERESTARTSYS;
+ 				break;
+ 			}
+-			schedule();
+ 			if (!s->busy)
+ 				break;
+ 			if (s->busy != file) {
+@@ -1706,11 +1706,11 @@ static ssize_t comedi_read(struct file *
+ 				retval = -EAGAIN;
+ 				break;
+ 			}
++			schedule();
+ 			if (signal_pending(current)) {
+ 				retval = -ERESTARTSYS;
+ 				break;
+ 			}
+-			schedule();
+ 			if (!s->busy) {
+ 				retval = 0;
+ 				break;
 
 
