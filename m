@@ -1,126 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab1LGKt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 05:49:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57810 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754561Ab1LGKt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 05:49:57 -0500
-Date: Wed, 7 Dec 2011 08:48:49 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Xen <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM
- hypervisor to support pv-ticketlocks
-Message-ID: <20111207104849.GA24849@amt.cnet>
-References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com>
- <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com>
+	id S1754909Ab1LGKuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:50:51 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:43438 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181Ab1LGKuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 05:50:50 -0500
+Message-ID: <4EDF44F8.8060206@oracle.com>
+Date: Wed, 07 Dec 2011 18:50:32 +0800
+From: ANNIE LI <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Paul Durrant <Paul.Durrant@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
+Subject: Re: [PATCH 1/2] xen/granttable: Support sub-page grants
+References: <4EDDF41E.8070200@oracle.com>	 <1323168999-4434-1-git-send-email-annie.li@oracle.com>	 <1323171726.23681.65.camel@zakaz.uk.xensource.com>	 <4EDEDF2E.3040204@oracle.com>	 <291EDFCB1E9E224A99088639C4762022B5988E542E@LONPMAILBOX01.citrite.net>	 <1323251849.23681.128.camel@zakaz.uk.xensource.com>	 <4EDF3F9B.4030407@oracle.com> <1323254036.23681.142.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1323254036.23681.142.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090209.4EDF4505.00E6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2011 at 02:29:59PM +0530, Raghavendra K T wrote:
-> Add a hypercall to KVM hypervisor to support pv-ticketlocks 
-> 
-> KVM_HC_KICK_CPU allows the calling vcpu to kick another vcpu out of halt state.
->     
-> The presence of these hypercalls is indicated to guest via
-> KVM_FEATURE_KICK_VCPU/KVM_CAP_KICK_VCPU.
-> 
-> Qemu needs a corresponding patch to pass up the presence of this feature to 
-> guest via cpuid. Patch to qemu will be sent separately.
-> 
-> There is no Xen/KVM hypercall interface to await kick from.
->     
-> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-> Signed-off-by: Suzuki Poulose <suzuki@in.ibm.com>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
-> diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-> index 734c376..8b1d65d 100644
-> --- a/arch/x86/include/asm/kvm_para.h
-> +++ b/arch/x86/include/asm/kvm_para.h
-> @@ -16,12 +16,14 @@
->  #define KVM_FEATURE_CLOCKSOURCE		0
->  #define KVM_FEATURE_NOP_IO_DELAY	1
->  #define KVM_FEATURE_MMU_OP		2
-> +
->  /* This indicates that the new set of kvmclock msrs
->   * are available. The use of 0x11 and 0x12 is deprecated
->   */
->  #define KVM_FEATURE_CLOCKSOURCE2        3
->  #define KVM_FEATURE_ASYNC_PF		4
->  #define KVM_FEATURE_STEAL_TIME		5
-> +#define KVM_FEATURE_KICK_VCPU		6
->  
->  /* The last 8 bits are used to indicate how to interpret the flags field
->   * in pvclock structure. If no bits are set, all flags are ignored.
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index c38efd7..6e1c8b4 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2103,6 +2103,7 @@ int kvm_dev_ioctl_check_extension(long ext)
->  	case KVM_CAP_XSAVE:
->  	case KVM_CAP_ASYNC_PF:
->  	case KVM_CAP_GET_TSC_KHZ:
-> +	case KVM_CAP_KICK_VCPU:
->  		r = 1;
->  		break;
->  	case KVM_CAP_COALESCED_MMIO:
-> @@ -2577,7 +2578,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
->  			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
->  			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
->  			     (1 << KVM_FEATURE_ASYNC_PF) |
-> -			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
-> +			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
-> +			     (1 << KVM_FEATURE_KICK_VCPU);
->  
->  		if (sched_info_on())
->  			entry->eax |= (1 << KVM_FEATURE_STEAL_TIME);
-> @@ -5305,6 +5307,26 @@ int kvm_hv_hypercall(struct kvm_vcpu *vcpu)
->  	return 1;
->  }
->  
-> +/*
-> + * kvm_pv_kick_cpu_op:  Kick a vcpu.
-> + *
-> + * @cpu - vcpu to be kicked.
-> + */
-> +static void kvm_pv_kick_cpu_op(struct kvm *kvm, int cpu)
-> +{
-> +	struct kvm_vcpu *vcpu = kvm_get_vcpu(kvm, cpu);
-> +	struct kvm_mp_state mp_state;
-> +
-> +	mp_state.mp_state = KVM_MP_STATE_RUNNABLE;
 
-Since vcpu->mp_state is not protected by a lock, this is potentially racy. For example:
+> The existing convention seems to be for _ref to be a suffix, although
+> it's only actually used on the end_*_ref ones.
+> +       int (*end_foreign_access_ref)(grant_ref_t, int);
+> +       unsigned long (*end_foreign_transfer_ref)(grant_ref_t);
+>
+> Also it occurs to me that access_* sounds like something which uses a
+> ref rather than something which sets one up. The existing hook to setup
+> a normal grant is called "update_entry". Perhaps
+> update_{subpage,transitive}_entry?
+Yes, you are right.
+Just like the existing code:
+gnttab_grant_foreign_access   VS   gnttab_grant_foreign_access_subpage
+update_entry in gnttab_grant_foreign_access_ref  VS  
+update_{subpage,transitive}_entry in 
+gnttab_grant_foreign_access_{subpage,trans}_ref
 
-CPU0						CPU1
-kvm_pv_kick_cpu_op				running vcpuN
-vcpuN->mp_state = KVM_MP_STATE_RUNNABLE;
-						kvm_emulate_halt
-						vcpuN->mp_state = KVM_MP_STATE_HALTED
-
-Is it harmless to lose a kick?
-
+Thanks
+Annie
