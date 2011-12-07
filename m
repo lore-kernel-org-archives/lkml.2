@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab1LGOHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 09:07:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46821 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab1LGOHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 09:07:06 -0500
+	id S1756015Ab1LGOOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 09:14:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755773Ab1LGOOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 09:14:36 -0500
+Date: Wed, 7 Dec 2011 12:14:09 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/10] perf tool: Unify handling of features when
+	writing feature section
+Message-ID: <20111207141409.GA14415@infradead.org>
+References: <1323167560-2282-1-git-send-email-robert.richter@amd.com> <1323167560-2282-9-git-send-email-robert.richter@amd.com> <20111206133630.GI7059@infradead.org> <20111206163358.GL15738@erda.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <4EDAA785.40503@solonet.org.ua>
-References: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com>
-	<4EDAA785.40503@solonet.org.ua>
-Date: Wed, 7 Dec 2011 15:07:05 +0100
-Message-ID: <CACRpkdaos1pLNDsnWe3xqaWtcAFDFy2yw+xjRi0++A=41SZvmw@mail.gmail.com>
-Subject: Re: [PATCH] leds: driver for ab5500 high voltage leds
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Denis Kuzmenko <linux@solonet.org.ua>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111206163358.GL15738@erda.amd.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 3, 2011 at 11:49 PM, Denis Kuzmenko <linux@solonet.org.ua> wrote:
+Em Tue, Dec 06, 2011 at 05:33:58PM +0100, Robert Richter escreveu:
+> On 06.12.11 11:36:30, Arnaldo Carvalho de Melo wrote:
+> > If you fix that please add this warning as well when no build-ids are
+> > found, which hopefully is the odd case these days as all distros I'm
+> > aware of have build-ids in all DSOs.
+> 
+> What about the following change in addition? perf record then still
+> stops with an error, but --no-buildid could be used to proceed anyway:
+> 
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index 766fa0a..80e08ca 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -493,6 +493,13 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+>                         return err;
+>         }
+>  
+> +       if (!no_buildid
+> +           && !perf_header__has_feat(&session->header, HEADER_BUILD_ID)) {
+> +               pr_err("Couldn't collect buildids. "
+                         "Your report results may be misleading if profiled "
+                         "DSOs changed after the record session.\n"
+> +                      "Use --no-buildid option if you know that "
+                         "there where no changes in the profiled DSOs.\n");
+> +               return -1;
+> +       }
+> +
+>         rec->post_processing_offset = lseek(output, 0, SEEK_CUR);
 
-> (snip)
->> diff --git a/drivers/leds/leds-ab5500.c b/drivers/leds/leds-ab5500.c
-> (snip)
->> +/*
->> + * Driver for HVLED in ST-Ericsson AB5500 analog baseband controller
->> + *
->> + * This chip can drive upto 3 leds, of upto 40mA of led sink current.
->
-> Can't get these are High Voltage or High Current LEDs?
-> If Voltage why haven't you wrote about supplied voltage but wrote about
-> max. current?
+I can do these changes if you agree with this wording,
 
-The three channels are indeed high-voltage LEDs, they supply
-up to 20V from a supply voltage of some standard mobile handset
-battery at say 3.8 V or so. But there is no register to control the
-voltage or anything like that.
-
-My naive understanding is that you set the current limit and then
-the HV transformer (I guess this is a buck converter of some kind)
-will raise the voltage level until it either (A) cannot raise it any more
-at c:a 20V or (b) the current limit is reached.
-
-I suspect this is because for LEDs of this type you get a
-specified current but the voltage just has to be "high enough"
-to break through some diode barrier threshold or so. After
-that intensity is controlled by limiting the current.
-
-Does this suffice as explanation...?
-
-Yours,
-Linus Walleij
+- Arnaldo
