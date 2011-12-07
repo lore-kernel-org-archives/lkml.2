@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab1LGSLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 13:11:12 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:37959 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757152Ab1LGSLK (ORCPT
+	id S1757320Ab1LGSQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 13:16:26 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:32676
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756855Ab1LGSQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 13:11:10 -0500
-Message-ID: <4EDFBA25.1020102@xenotime.net>
-Date: Wed, 07 Dec 2011 11:10:29 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 7 Dec 2011 13:16:25 -0500
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LVUIR6-02-EV4-02
+X-M-MSG: 
+Date: Wed, 7 Dec 2011 19:12:56 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: David Brown <davidb@codeaurora.org>
+CC: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arm-msm@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] iommu/msm: Fix compile error in mach-msm/devices-iommu.c
+Message-ID: <20111207181256.GA2181@amd.com>
+References: <20111206102527.GI25178@amd.com>
+ <20111207170024.GA23621@huya.qualcomm.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Don Zickus <dzickus@redhat.com>
-Subject: Re: linux-next: Tree for Dec 7 (x86, not SMP)
-References: <20111207171218.e11db78531e7f20659e2ca65@canb.auug.org.au>
-In-Reply-To: <20111207171218.e11db78531e7f20659e2ca65@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111207170024.GA23621@huya.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2011 10:12 PM, Stephen Rothwell wrote:
-> Hi all,
+On Wed, Dec 07, 2011 at 09:00:24AM -0800, David Brown wrote:
+> On Tue, Dec 06, 2011 at 11:25:27AM +0100, Joerg Roedel wrote:
 > 
-> Changes since 20111206:
+> > I just added a patch to my iommu/fixes branch to fix a compile error
+> > with IOMMU enabled. If there is another fix for this already somewhere
+> > please let me know the commit-id so that I can add it to my out-of-tree
+> > branch. If there is no other fix yet I will push this upstream soon with
+> > the next round of iommu-fixes.
+> 
+> You can go ahead and push this fix through your tree.  I'll enable the
+> iommu in my defconfigs so that I start catching things like this as
+> well.
 
-
-When CONFIG_SMP is not enabled:
-(I think that's the cause, but it could be some other kconfig option.)
-
-
-arch/x86/built-in.o: In function `test_nmi_ipi':
-nmi_selftest.c:(.text+0xf7a0): undefined reference to `apic'
+Great, Thanks.
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
