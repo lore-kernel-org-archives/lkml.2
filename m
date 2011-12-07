@@ -1,74 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758057Ab1LGQj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:39:57 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45750 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756886Ab1LGQjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:39:53 -0500
-Message-ID: <4EDF96D2.9070808@gmail.com>
-Date: Wed, 07 Dec 2011 10:39:46 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Michal Simek <monstr@monstr.eu>, John Linn <John.Linn@xilinx.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Ingo Molnar <mingo@elte.hu>,
-        Jeff Garzik <jgarzik@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: Re: [RFC PATCH] microblaze/irq: Change NO_IRQ to 0
-References: <4EDEE2B2.7080606@gmail.com> <1323268911-6104-1-git-send-email-robherring2@gmail.com> <CA+55aFzz2SMvKJcRzOU0+Rd1MHMtygTmT9rDcyy7qGjuVFJKHg@mail.gmail.com>
-In-Reply-To: <CA+55aFzz2SMvKJcRzOU0+Rd1MHMtygTmT9rDcyy7qGjuVFJKHg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933699Ab1LGQXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:23:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34156 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933658Ab1LGQXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:23:05 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:19 2011
+Message-Id: <20111207161219.450451332@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:11:59 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [057/104] drm/radeon/kms: add some loop timeouts in pageflip code
+In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-On 12/07/2011 10:05 AM, Linus Torvalds wrote:
-> On Wed, Dec 7, 2011 at 6:41 AM, Rob Herring <robherring2@gmail.com> wrote:
->>
->> This patch changes the Microblaze NO_IRQ setting from -1 to 0 to bring
->> it in line with most of the rest of the kernel.  It also prepares for
->> Microblaze eventually supporting multiple interrupt controllers by
->> breaking the assumption that hwirq# == Linux IRQ#.  The Linux IRQ
->> number is just a cookie with no guarantee of a direct relationship
->> with the hardware irq arrangement.
-> 
-> This looks really nice and would probably be a great example for other
-> architectures with the same issue.
-> 
-> My only (small) nit is that just from a debuggability standpoint I'd
-> actually suggest keeping the "translated" and "hardware" interrupt
-> numbers totally disjoint, which would seem to be trivial - make the
-> offset be 32 instead of 1. Sure, some NR_IRQ arrays would end up being
-> a bit bigger that way, but it would allow for trivially seeing whether
-> anybody reports the raw or translated irq numbers by just looking at
-> the number. That could reduce lots of confusion if somebody ends up
-> having the old non-translated number hardcoded etc.
-> 
-> It would also potentially allow for actual debug checks - having code
-> like "WARN_ON_ONCE(irq < 32)" in some arch-specific irq controller
-> registration path etc, which is much harder to do with the overlapping
-> numbers.
+------------------
 
-Agreed. I debated making it 16 just to skip the legacy interrupts as
-we're doing on ARM. So there's 2 benefits to skipping to 32.
+From: Alex Deucher <alexander.deucher@amd.com>
 
-Anyway, I'll leave it to someone that can actually build and test this.
+commit f64964796dedca340608fb1075ab6baad5625851 upstream.
 
-> But it's nice to see how small the patch *can* be.
+Avoid infinite loops waiting for surface updates if a GPU
+reset happens while waiting for a page flip.
 
-If only ARM was this easy...
+See:
+https://bugs.freedesktop.org/show_bug.cgi?id=43191
 
-Rob
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
+Tested-by: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/gpu/drm/radeon/evergreen.c |    7 ++++++-
+ drivers/gpu/drm/radeon/r100.c      |    7 ++++++-
+ drivers/gpu/drm/radeon/rs600.c     |    7 ++++++-
+ drivers/gpu/drm/radeon/rv770.c     |    7 ++++++-
+ 4 files changed, 24 insertions(+), 4 deletions(-)
+
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -82,6 +82,7 @@ u32 evergreen_page_flip(struct radeon_de
+ {
+ 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+ 	u32 tmp = RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset);
++	int i;
+ 
+ 	/* Lock the graphics update lock */
+ 	tmp |= EVERGREEN_GRPH_UPDATE_LOCK;
+@@ -99,7 +100,11 @@ u32 evergreen_page_flip(struct radeon_de
+ 	       (u32)crtc_base);
+ 
+ 	/* Wait for update_pending to go high. */
+-	while (!(RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset) & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset) & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING)
++			break;
++		udelay(1);
++	}
+ 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 
+ 	/* Unlock the lock, so double-buffering can take place inside vblank */
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -84,13 +84,18 @@ u32 r100_page_flip(struct radeon_device
+ {
+ 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+ 	u32 tmp = ((u32)crtc_base) | RADEON_CRTC_OFFSET__OFFSET_LOCK;
++	int i;
+ 
+ 	/* Lock the graphics update lock */
+ 	/* update the scanout addresses */
+ 	WREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset, tmp);
+ 
+ 	/* Wait for update_pending to go high. */
+-	while (!(RREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset) & RADEON_CRTC_OFFSET__GUI_TRIG_OFFSET));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset) & RADEON_CRTC_OFFSET__GUI_TRIG_OFFSET)
++			break;
++		udelay(1);
++	}
+ 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 
+ 	/* Unlock the lock, so double-buffering can take place inside vblank */
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -62,6 +62,7 @@ u32 rs600_page_flip(struct radeon_device
+ {
+ 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+ 	u32 tmp = RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset);
++	int i;
+ 
+ 	/* Lock the graphics update lock */
+ 	tmp |= AVIVO_D1GRPH_UPDATE_LOCK;
+@@ -74,7 +75,11 @@ u32 rs600_page_flip(struct radeon_device
+ 	       (u32)crtc_base);
+ 
+ 	/* Wait for update_pending to go high. */
+-	while (!(RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING)
++			break;
++		udelay(1);
++	}
+ 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 
+ 	/* Unlock the lock, so double-buffering can take place inside vblank */
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -47,6 +47,7 @@ u32 rv770_page_flip(struct radeon_device
+ {
+ 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+ 	u32 tmp = RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset);
++	int i;
+ 
+ 	/* Lock the graphics update lock */
+ 	tmp |= AVIVO_D1GRPH_UPDATE_LOCK;
+@@ -66,7 +67,11 @@ u32 rv770_page_flip(struct radeon_device
+ 	       (u32)crtc_base);
+ 
+ 	/* Wait for update_pending to go high. */
+-	while (!(RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING)
++			break;
++		udelay(1);
++	}
+ 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 
+ 	/* Unlock the lock, so double-buffering can take place inside vblank */
+
+
