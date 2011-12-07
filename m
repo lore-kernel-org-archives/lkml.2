@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab1LGUee (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 15:34:34 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33519 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757775Ab1LGUec (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 15:34:32 -0500
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: linux-input@vger.kernel.org
-Cc: rdunlap@xenotime.net, linux-next@vger.kernel.org, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@googlemail.com>
-Subject: [PATCH] HID: wiimote: Select INPUT_FF_MEMLESS
-Date: Wed,  7 Dec 2011 21:33:59 +0100
-Message-Id: <1323290039-28073-1-git-send-email-dh.herrmann@googlemail.com>
-X-Mailer: git-send-email 1.7.8
-In-Reply-To: <4EDFD23D.4030703@xenotime.net>
-References: <4EDFD23D.4030703@xenotime.net>
+	id S1757958Ab1LGUeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 15:34:46 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:51416 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756597Ab1LGUep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 15:34:45 -0500
+Message-ID: <4EDFCDD4.2080603@zytor.com>
+Date: Wed, 07 Dec 2011 12:34:28 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Colin Walters <walters@verbum.org>
+CC: LKML <linux-kernel@vger.kernel.org>, morgan@kernel.org, serue@us.ibm.com,
+        dhowells@redhat.com, kzak@redhat.com
+Subject: Re: chroot(2) and bind mounts as non-root
+References: <1323280461.10724.13.camel@lenny>
+In-Reply-To: <1323280461.10724.13.camel@lenny>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We depend on memless force-feedback support, therefore correctly select the
-related config options.
+On 12/07/2011 09:54 AM, Colin Walters wrote:
+> 
+> The historical reason one can't call chroot(2) as non-root is because of
+> setuid binaries (hard link a setuid binary into chroot of your choice
+> with trojaned libc.so).
 
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
----
-Hi Randy
+No.  The historical reason is that it lets anyone escape a chroot jail:
 
-Thanks for reporting this. This patch should fix this. I don't know whether such
-fixes belong to stable tree, if they do, Jiri could you CC stable when applying
-it?
+	mkdir("jailbreak", 0666);
+	chroot("jailbreak");
 
-Cheers
-David
+	/* Now the cwd is outside the root, and therefore not bound by
+           it, walk the chain of .. directories until they don't change
+           anymore */
 
- drivers/hid/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+	chroot(".");	/* Change the root to the system root */
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index edf2b2b..dae04a0 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -591,6 +591,7 @@ config HID_WIIMOTE
- 	depends on BT_HIDP
- 	depends on LEDS_CLASS
- 	select POWER_SUPPLY
-+	select INPUT_FF_MEMLESS
- 	---help---
- 	Support for the Nintendo Wii Remote bluetooth device.
- 
--- 
-1.7.8
+Oops.
 
+	-hpa
+
+
+	
