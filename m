@@ -1,107 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236Ab1LGFZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 00:25:53 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:57931 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab1LGFZw (ORCPT
+	id S1751441Ab1LGFol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 00:44:41 -0500
+Received: from www262.sakura.ne.jp ([202.181.97.72]:58566 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab1LGFoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 00:25:52 -0500
-X-SpamScore: -14
-X-BigFish: VS-14(zzc89bh542M1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tang Yuantian-B29983 <B29983@freescale.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        sun york-R58495 <R58495@freescale.com>,
-        Durai Kumar-R34055 <r34055@freescale.com>,
-        Huang Changming-R66093 <r66093@freescale.com>
-Subject: RE: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Thread-Topic: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
-Thread-Index: AQHMpIUnsb9+I0lR9k+0uRq1j4EoUpWwJ/0AgAAFb4CAAAQAAIAAAwAAgAAOBACAAAE+gIAAAP2AgB+Fq4CAAG9pAP//s6FA
-Date: Wed, 7 Dec 2011 05:25:49 +0000
-Message-ID: <3C06C26914DACA4BB3A368F78CA0B3A71345F2@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
- <1321464509.7847.41.camel@oslab-l1>
- <1321464968.2309.384.camel@groeck-laptop>
- <1321466135.7847.55.camel@oslab-l1>
- <20111116190954.67c846fc@endymion.delvare>
- <1321467638.7847.73.camel@oslab-l1>
- <20111116201048.4b7877dd@endymion.delvare>
- <1321470915.7847.122.camel@oslab-l1>
- <20111116201847.6b11dc7f@endymion.delvare>
- <3C06C26914DACA4BB3A368F78CA0B3A7134583@039-SN1MPN1-004.039d.mgd.msft.net>
- <20111207032000.GA17575@ericsson.com>
-In-Reply-To: <20111207032000.GA17575@ericsson.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.75]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 7 Dec 2011 00:44:39 -0500
+X-Nat-Received: from [202.181.97.72]:54015 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1323236673.31383
+Message-Id: <201112070544.pB75iX12072157@www262.sakura.ne.jp>
+Subject: Re: [git pull] apparmor fix for __d_path() misuse
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: viro@ZenIV.linux.org.uk
+Cc: john.johansen@canonical.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, torvalds@linux-foundation.org
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 7bit
+Date: Wed, 07 Dec 2011 14:44:33 +0900
+References: <4EDEA152.90804@canonical.com> <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com> <20111207001643.GN2203@ZenIV.linux.org.uk> <20111207003922.GO2203@ZenIV.linux.org.uk> <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com> <20111207011047.GQ2203@ZenIV.linux.org.uk> <20111207013720.GS2203@ZenIV.linux.org.uk> <201112070326.pB73QPZo042162@www262.sakura.ne.jp> <20111207034238.GX2203@ZenIV.linux.org.uk> <201112070501.pB751LoP064331@www262.sakura.ne.jp> <20111207051908.GA2203@ZenIV.linux.org.uk>
+In-Reply-To: <20111207051908.GA2203@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 07122011 #5941518, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pB75Q4Mk019365
 
-Hi Guenter,
-
-I thought you were bore of discussion.
-Do you mind if I post similar patch?
-
-Regards,
-Yuantian
-
-> -----Original Message-----
-> From: Guenter Roeck [mailto:guenter.roeck@ericsson.com]
-> Sent: 2011å¹´12æœˆ7æ—¥ 11:20
-> To: Tang Yuantian-B29983
-> Cc: Jean Delvare; Tabi Timur-B04825; linux-i2c@vger.kernel.org; linux-
-> kernel@vger.kernel.org; sun york-R58495; Durai Kumar-R34055; Huang
-> Changming-R66093
-> Subject: Re: [PATCH] i2c/busses: (mpc) Add support for
-> SMBUS_READ_BLOCK_DATA
+Al Viro wrote:
+> > So, can we keep behavior of tomoyo_get_absolute_path() unchanged?
 > 
-> On Tue, Dec 06, 2011 at 09:52:36PM -0500, Tang Yuantian-B29983 wrote:
-> > Hi Jean Delvare,
-> >
-> > We agree to apply this patch. Do you have any concerns?
-> > Although Guenter said that he give up, I don't think he really meant it.
-> 
-> I did mean it, otherwise I would not have said it.
-> 
-> Guenter
-> 
-> > Also it is improper if I repost similar patch.
-> > I tested this patch, it works.
-> >
-> > Regards,
-> > Yuantian
-> >
-> > > -----Original Message-----
-> > > From: Jean Delvare [mailto:khali@linux-fr.org]
-> > > Sent: 2011å¹´11æœˆ17æ—¥ 3:19
-> > > To: sun york-R58495
-> > > Cc: guenter.roeck@ericsson.com; Tabi Timur-B04825; linux-
-> > > i2c@vger.kernel.org; linux-kernel@vger.kernel.org; Tang
-> > > Yuantian-B29983
-> > > Subject: Re: [PATCH] i2c/busses: (mpc) Add support for
-> > > SMBUS_READ_BLOCK_DATA Really, please. I understand you're only
-> > > trying to help and understand the patch, but at some point, if you
-> > > have zero knowledge about the topic, you're not the right person to
-> > > review the patch, period. You are still welcome to test the patch if
-> > > you can and want, that's a completely different task.
-> > >
-> > > --
-> > > Jean Delvare
-> >
-> >
+> Sure, you are always free to add
+> 	if (pos == ERR_PTR(-EINVAL)) {
+> 		pos = dentry_path(path->dentry, ...)
+> 		/* do whatever you want to buffer to indicate that
+> 		 * beginning had been lost
+> 		 */
+> 	}
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Maybe I can call tomoyo_get_local_path() if tomoyo_get_absolute_path() failed
+with -EINVAL.
+
+> Or you might want to do __d_path() from (path->mnt,path->mnt->mnt_root) to
+> path - that's the path from the last mountpoint to your object; i.e. it may
+> be shorter if that vfsmount had been a binding into the guts of filesystem,
+> but that is what __d_path() as you used it would stabilize to once the race
+> window is over.
+
+Excuse me, what "once the race window is over" means?
+Does
+
+  do {
+    pos = d_absolute_path(path, buffer, buflen - 1);
+  } while (pos == ERR_PTR(-EINVAL));
+
+work (i.e. racing with "umount -l" is a temporary failure)?
