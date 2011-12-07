@@ -1,127 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab1LGIYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 03:24:44 -0500
-Received: from imr-db02.mx.aol.com ([205.188.91.96]:53518 "EHLO
-	imr-db02.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab1LGIYn (ORCPT
+	id S1754632Ab1LGI26 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 03:28:58 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55693 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754410Ab1LGI24 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 03:24:43 -0500
-Message-Id: <201112070823.pB78N5ii001019@imr-db02.mx.aol.com>
-Reply-To: <draminukano1@yahoo.es>
-From: "Aminu. K." <gjabaay771@aol.com>
-Subject: Dear Sole Beneficiary
-Date: Wed, 7 Dec 2011 00:21:36 -0800
+	Wed, 7 Dec 2011 03:28:56 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0049_01C2A9A6.2FF2AE52"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/76706
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:226640656:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: G
-X-AOL-VSS-INFO: 5400.1158/76706
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:264179040:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-sid: 3039ac1d33834edf22680e79
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <4EDE85F4.4020503@linux.vnet.ibm.com>
+References: <CAO81RMa4uRsOsaK4G78EDvOenJpEdTp4y+rtkiDxaK9cASbMtA@mail.gmail.com>
+	<alpine.LSU.2.00.1111201121120.1264@sister.anvils>
+	<20111121165626.GD14568@thunk.org>
+	<alpine.LSU.2.00.1111211331120.1879@sister.anvils>
+	<alpine.LSU.2.00.1112051456580.3938@sister.anvils>
+	<4EDD729E.2060402@linux.vnet.ibm.com>
+	<alpine.LSU.2.00.1112060030220.1615@sister.anvils>
+	<4EDE85F4.4020503@linux.vnet.ibm.com>
+Date: Wed, 7 Dec 2011 16:28:56 +0800
+Message-ID: <CAGBYx2YmYRw_p5KHJCYaQNsCpe5OVV7X2TpaK=OE7znCiE7oZA@mail.gmail.com>
+Subject: Re: Bug with "fix partial page writes" [3.2-rc regression]
+From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+To: Allison Henderson <achender@linux.vnet.ibm.com>
+Cc: Hugh Dickins <hughd@google.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Curt Wohlgemuth <curtw@google.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Rafael Wysocki <rjw@sisk.pl>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi Allison and Hugh,
 
-------=_NextPart_000_0049_01C2A9A6.2FF2AE52
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+ I think I found the problem and it has nothing to do with punching
+hole.  The patch [ext4: let ext4_bio_write_page handle EOF correctly]
+would fix up the problem.
 
-I am writing on behalf of the committee regarding your payment... Please, sorry for the delay in getting you this information this late.
-Attached is the detailed information. Reply ASAP.
+I post the patch so that it can be tested as early as possible.  The
+problem has not appeared on my machine since the patch is applied.
 
-------=_NextPart_000_0049_01C2A9A6.2FF2AE52
-Content-Type: application/octet-stream;
-	name="from reconciliation.dept.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="from reconciliation.dept.rtf"
+Yongqiang.
+On Wed, Dec 7, 2011 at 5:15 AM, Allison Henderson
+<achender@linux.vnet.ibm.com> wrote:
+> On 12/06/2011 01:55 AM, Hugh Dickins wrote:
+>>
+>> On Mon, 5 Dec 2011, Allison Henderson wrote:
+>>>
+>>> On 12/05/2011 04:38 PM, Hugh Dickins wrote:
+>>>>
+>>>>
+>>>> This has been outstanding for a month now, and we've heard no progress:
+>>>> please revert commit 02fac1297eb3 "ext4: fix partial page writes" for
+>>>> rc5.
+>>>>
+>>>> The problems appear on a 1k-blocksize filesystem under memory pressure:
+>>>> the hunk in ext4_da_write_end() causes oops, because it's playing with
+>>>> a page after generic_write_end() dropped our last reference to it; and
+>>>> backing out the hunk in ext4_da_write_begin() is then found to stop
+>>>> rare data corruption seen when kbuilding.
+>>>>
+>>>> Although I earlier reported that backing out the patch caused an fsx
+>>>> test to fail earlier, I've since found great variation in how soon it
+>>>> fails, and seen it fail just as quickly with 02fac1297eb3 still in.
+>>>> I also reported that I had to go back to 2.6.38 for fsx not to fail
+>>>> under memory pressure: you won't be surprised that that turned out to
+>>>> be because 2.6.38 defaults nomblk_io_submit but 2.6.39 mblk_io_submit.
+>>>
+>>>
+>>> Have you tried Yongqiang's patch "[PATCH 1/2] ext4: let mpage_submit_io
+>>> works well when blocksize<  pagesize" ?  I have tried it and it does seem
+>>> to
+>>> help, but I am still running into some failures that I am trying to
+>>> debug,
+>>> but let please let us know if it helps the issues that you are seeing.
+>>>  Thx!
+>>
+>>
+>> That 1/2, or the 2/2 "ext4: let ext4_discard_partial_buffers handle
+>> pages without buffers correctly"?  The latter is mostly a reversion
+>> of your 02fac1297eb3, so that's the one I need to fix the oops and
+>> rare data corruption.  Perhaps you're suggesting 1/2 for fsx failures
+>> under memory pressure?
+>>
+>> I've now tried the fsx test on three machines, with both 1/2 and 2/2
+>> applied to 3.2-rc4.  On one machine, with ext2 on loop on tmpfs, the
+>> fsx test failed in a couple of minutes with those patches; on another
+>> machine, with ext2 on loop on tmpfs, it failed after about 40 minutes
+>> with  the patches; on this laptop, with ext2 on SSD, it's just now
+>> failed after 35 minutes with the patches.
+>>
+>> That's not to say that Yongqiang's patches aren't good; but I cannot
+>> detect whether they make any improvement or not, since lasting for 2 or
+>> 40 minutes is typical for fsx under memory pressure with recent kernels.
+>
+>
+>
+> Well, initially I meant to just try the whole set, but now that I try just
+> one of them, I find that I get further with only the first one.  I think
+> Yongqiang and I have a similar set up because I get the hang if I dont have
+> the first patch, and I get the fsx write failure (in about 20 or so minutes)
+> if I have the second one.  But I think Yongqiang's right, we need to figure
+> out why the page is uptodate when it shouldn't be.
+>
+>
+>>
+>> Hugh
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-VW5pdGVkIE5hdGlvbiBEZWJ0IFJlY29uY2lsaWF0aW9uIFVuaXQNCkluIEFm
-ZmlsaWF0aW9uIHdpdGggdGhlIFdvcmxkIEJhbmsgQW50aSBGcmF1ZCBPZmZp
-Y2UNClNlbmlvciBSZXNpZGVudCBSZXByZXNlbnRhdGl2ZSAoQWZyaWNhbiBS
-ZWdpb24pLg0KT2ZmaWNlOiArKDIzNCkgMSA2NjMgNjA0NA0KTW9iaWxlOiAr
-KDIzNCkgODEyIDMxMiA3MzIxDQogDQo3dGggRGVjZW1iZXIsMjAxMQ0KRGVh
-ciBTb2xlIEJlbmVmaWNpYXJ5LCAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICANCiANClRoaXMgaXMgdG8gYnJp
-bmcgdG8geW91ciBhdHRlbnRpb24gdGhhdCB0aGUgVW5pdGVkIE5hdGlvbiBE
-ZWJ0IFJlY29uY2lsaWF0aW9uIFVuaXQgaW4gYWZmaWxpYXRpb24gd2l0aCBX
-b3JsZCBCYW5rL0FudGktRnJhdWQgT2ZmaWNlIGlzIGF3YXJlIG9mIHRoZSBp
-bmNvbnZlbmllbmNlcyB5b3UgZXhwZXJpZW5jZWQgdGhyb3VnaCBzb21lIHVu
-YXV0aG9yaXplZCBvZmZpY2lhbHMgd2hvIGNsYWltIGl0cyB0aGVpciBvZmZp
-Y2lhbCAgIHJlc3BvbnNpYmlsaXR5IHRvIHByb2Nlc3MgeW91ciBkb2N1bWVu
-dHMgZm9yIHRoZSBjbGFpbSBvZiB5b3VyIGZ1bmRzIGZyb20gdGhlIGF1dGhv
-cml0aWVzIHdob20geW91ciBmdW5kcyBoYXZlIGJlZW4gaW4gdGhlaXIgY3Vz
-dG9keSBmb3Igc29tZSB0aW1lIG5vdy4gSSBhbSBwbGVhc2VkIHRvIGluZm9y
-bSB5b3UgdGhhdCBhIHJlc29sdXRpb24gd2FzIHJlYWNoZWQgZHVyaW5nIHRo
-ZSBHLTIwIFN1bW1pdCBpbiBDYW5uZXMtRnJhbmNlLCBhbmQgdGhlIHN1bSBv
-ZiAkODAwIE1pbGxpb24gRG9sbGFycyBoYXMgYmVlbiBhcHByb3ZlZCBmb3Ig
-cmVsZWFzZSB0byBiZW5lZmljaWFyaWVzIHdob3NlIGZ1bmRzIHdlcmUgZWl0
-aGVyIGRlbGF5ZWQsIFN0b3BwZWQgb3Igd2FzIG5ldmVyIHRyYW5zZmVycmVk
-IHRvIHRoZWlyIHJpZ2h0ZnVsIG93bmVycyBmb3Igc29tZSB1bnN1YnN0YW50
-aWF0ZWQgcmVhc29ucy4NCiANCkl0IG1heSBpbnRlcmVzdCB5b3UgdG8ga25v
-dyB0aGF0IHlvdXIgbmFtZSBpcyBhbW9uZyB0aGUgbGlzdCBvZiBiZW5lZmlj
-aWFyaWVzIGJyb3VnaHQgdG8gbXkgYXR0ZW50aW9uIHdoaWNoIGlzIG15IHJl
-YXNvbiBmb3IgY29udGFjdGluZyB5b3UuIFRoZSBFeGVjdXRpdmUgQ291bmNp
-bCBvZiB0aGUgRy0yMCBjb2xsZWN0aXZlbHkgYWdyZWVkIHRvIHJlbGVhc2Ug
-dGhlIHN1bSBvZiBVUyQ4LDUwMCwwMDAgTWlsbGlvbiBhcyBjb21wZW5zYXRp
-b24gdG8geW91IGZvciB3aGF0IHlvdSBoYXZlIGJlZW4gdGhyb3VnaCBpbiB0
-aGUgcGFzdCBpbiB5b3VyIGNvdXJzZSBvZiBjbGFpbWluZyB5b3VyIGZ1bmRz
-Lg0KIA0KSXQgaXMgb25lIG9mIG15IG9mZmljZZJzIG9mZmljaWFsIHJlc3Bv
-bnNpYmlsaXRpZXMgdG8gcmVsZWFzZSBiZW5lY2lhcmllcyBmdW5kcyB0byB0
-aGVpciByaWdodGZ1bCBvd25lcnMgaW4gc3RyaWN0IGFkaGVyZW5jZSB0byBw
-cm9mZXNzaW9uYWwgZXRoaWNzIG9mIGZpbmFuY2lhbCB0cmFuc2FjdGlvbiBp
-biBsaW5lIHdpdGggdGhlIGludGVybmF0aW9uYWwgZmlzY2FsIHBvbGljaWVz
-LiBUaGlzIGV4ZXJjaXNlIHdpbGwgYmUgY2FycmllZCBvdXQgdW5kZXIgc3Ry
-aWN0IHN1cGVydmlzaW9uIG9mIHRoZSBVbml0ZWQgTmF0aW9uIERydWcvVGVy
-cm9yaXN0IENsZWFyYW5jZSBVbml0IGZvciBtYXhpbXVtIHRyYW5zcGFyZW5j
-eSBhbmQgYWNjb3VudGFiaWxpdHkgYW5kIGluIHN0cmljdCBjb21wbGlhbmNl
-IHdpdGggdGhlIGludGVybmF0aW9uYWwgbGF3LiBPbiB0aGF0IG5vdGUsIHdl
-IHdvdWxkIGFwcHJlY2lhdGUgeW91ciBzaW5jZXJldHkgZm9yIHRoZSBwdXJw
-b3NlIHRoZXJlaW4uDQogDQpIb3dldmVyLCB0aGVyZSBpcyBldmVyeSB0ZW5k
-ZW5jeSB0aGF0IHNvbWUgdW5hdXRob3JpemVkIG9mZmljaWFscyBvciBpbXBl
-cnNvbmF0b3JzIHdobyBwZXJoYXBzIGhhdmUgYmVlbiBwcm9taXNpbmcgdG8g
-YXNzaXN0IHlvdSBpbiBjbGFpbWluZyB5b3VyIGZ1bmRzIGluIHRoZSByZWNl
-bnQgcGFzdCBtYXkgY29udGludWUgdG8gZGlzdHVyYiB5b3UuIEZvciB0aGlz
-IHJlYXNvbiwgeW91IG11c3Qgc3RvcCBmdXJ0aGVyIGNvbW11bmljYXRpb24s
-IGJlIGl0IG9yYWwsIHdyaXR0ZW4gb3Igb3RoZXIgd2lzZSB3aXRoIHRoZW0g
-dG8gYXZvaWQgdGhlbSBjbGFpbWluZyB5b3VyIGZ1bmRzLg0KIA0KT24geW91
-ciByZWNlaXB0IG9mIHRoaXMgY29uZmlkZW50aWFsIGluZm9ybWF0aW9uLCB5
-b3UgYXJlIHJlcXVpcmVkIHRvIGNhbGwgb3VyIG9mZmljZSB0byBjb25maXJt
-IHlvdSBhcmUgaHVtYW4gYmVpbmcsIGFuZCBhbHNvIHByb3ZpZGUgdXMgd2l0
-aCB5b3VyIGluZm9ybWF0aW9uIGFzIHN0YXRlZCBiZWxvdyBmb3IgdmV0dGlu
-ZyBhbmQgdXBkYXRpbmcgb2YgeW91ciBpbmZvcm1hdGlvbiBmb3IgdGhlIHB1
-cnBvc2Ugb2YgcHJvY2Vzc2luZyB5b3VyIGRvY3VtZW50cyBhbmQgcmVsZWFz
-ZSBvZiB5b3VyIGZ1bmRzIHRvIHlvdToNCiANCkZ1bGwgTmFtZToNCkFkZHJl
-c3MsIENpdHksIFN0YXRlIGFuZCBDb3VudHJ5Og0KUGhvbmUsIEZheCBhbmQg
-TW9iaWxlOg0KQ29tcGFueSBOYW1lIChJZiBBbnkpLCBQb3NpdGlvbiBhbmQg
-QWRkcmVzczoNClByb2Zlc3Npb24sIEFnZSBhbmQgTWFyaXRhbCBTdGF0dXM6
-DQpBIGNvcHkgb2YgeW91ciBJbnRlcm5hdGlvbmFsIFBhc3Nwb3J0IG9yIERy
-aXZlcnMgTGljZW5zZToNCiANCk5vdGU6IEZvciBjb25maWRlbnRpYWxpdHkg
-YW5kIHNlY3VyaXR5IHJlYXNvbnMsIHlvdSBhcmUgaGVyZWJ5IGdpdmVuIGEg
-Y29tbXVuaWNhdGlvbiBDb2RlOiBVTkRSLzExMjAxMSB0byBjaGVja21hdGUg
-dW5hdXRob3JpemVkIG9mZmljaWFscyBpbiB5b3VyIGZ1bmRzIHJlbGVhc2Ug
-YXJyYW5nZW1lbnRzLg0KIA0KWW91ciBwcm9tcHQgcmVzcG9uc2UgdG8gdGhp
-cyBlbWFpbCB3aWxsIGJlIGFwcHJlY2lhdGVkIGJ5IHVzIHRvIGVuYWJsZSB1
-cyByZWxlYXNlIHlvdXIgZnVuZHMgYmVmb3JlIHdlIGNvbW1lbmNlIGdlbmVy
-YWwgYWNjb3VudCBhdWRpdGluZyBmb3IgdGhlIEZpc2NhbCBZZWFyIDIwMTEu
-DQogDQpDYWxsIG1lIG9uIG15IERpcmVjdCBvZmZpY2UgTGluZTogKzIzNCkg
-ODEyIDMxMiA3MzIxDQogDQpZb3VycyBzaW5jZXJlbHkgaW4gc2VydmljZQ0K
-IA0KRHIuIEFtaW51IEthbm8NClNlbmlvciBSZXNpZGVudCBSZXByZXNlbnRh
-dGl2ZSAoQWZyaWNhbiBSZWdpb24p
 
-------=_NextPart_000_0049_01C2A9A6.2FF2AE52--
+
+-- 
+Best Wishes
+Yongqiang Yang
