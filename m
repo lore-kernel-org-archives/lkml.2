@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab1LGNkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 08:40:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20023 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755801Ab1LGNku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 08:40:50 -0500
-Date: Wed, 7 Dec 2011 11:39:47 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Raghavendra K T <raghukt@linux.vnet.ibm.com>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Xen <xen-devel@lists.xensource.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM
- hypervisor to support pv-ticketlocks
-Message-ID: <20111207133947.GA1708@amt.cnet>
-References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com>
- <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com>
- <20111207104849.GA24849@amt.cnet>
- <4EDF5413.1030107@linux.vnet.ibm.com>
- <20111207123330.GA32212@amt.cnet>
- <4EDF6049.2030204@redhat.com>
+	id S1756218Ab1LGNlA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 08:41:00 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:49502 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755801Ab1LGNk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 08:40:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Semwal, Sumit" <sumit.semwal@ti.com>
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+Date: Wed, 7 Dec 2011 13:40:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Rob Clark <rob@ti.com>, Daniel Vetter <daniel@ffwll.ch>,
+        t.stanislaws@samsung.com, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        m.szyprowski@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com> <CAF6AEGto-+oSqguuWyPunUbtE65GpNiXh21srQzrChiBQMb1Nw@mail.gmail.com> <CAB2ybb-0mTdNXN82O1TUGVjhMZUQtQb07A3EVmmdxg3ngEc3Dw@mail.gmail.com>
+In-Reply-To: <CAB2ybb-0mTdNXN82O1TUGVjhMZUQtQb07A3EVmmdxg3ngEc3Dw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EDF6049.2030204@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112071340.35267.arnd@arndb.de>
+X-Provags-ID: V02:K0:6pZHZbdtm+4566BdQ6ZTAM0HOnovHXkFrVQbpmtXFgC
+ a/TlOV3kYUeBN+ZuIVF4CdNxdsv5pBg96v95MC8ivtIehBSMVS
+ lAxcvSJ2BFAbY/P1SsCFWG4PIYF2gWOpnP18U4U+F+Wr+x2LIk
+ 6vp3mhNU4+viUOsyYOEHwfd13ZYyfa1GfJB6wMRtFxxz1TZiRt
+ 1b9V2kEjaAZCC7AtGhvSRCGoHrqqo+ZJGab8P6AR+Djqoya5e3
+ mXYOjDDljvWqUmzsBBHeay7LFdG/CIjMw63FfmuvFMIZlolwCS
+ y84phQSGB5ou1wf6QR62dFYhp8FnZ2aVnEDWmj1kuERxtZt328
+ ioUI6ZGEYRXEpvKFS++4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 02:47:05PM +0200, Avi Kivity wrote:
-> On 12/07/2011 02:33 PM, Marcelo Tosatti wrote:
-> > > 
-> > > Also Avi pointed that, logically kvm_arch_vcpu_ioctl_set_mpstate should
-> > > be called only in vcpu thread, so after further debugging, I noticed
-> > > that,  setting vcpuN->mp_state = KVM_MP_STATE_RUNNABLE; is not
-> > > necessary.
-> > > I 'll remove that in the next patch. Thanks for pointing.
-> >
-> > In fact you don't need kvm_arch_vcpu_ioctl_set_mpstate either, only the
-> > new "kicked" flag.
+On Wednesday 07 December 2011, Semwal, Sumit wrote:
+> Thanks for the excellent discussion - it indeed is very good learning
+> for the relatively-inexperienced me :)
 > 
-> If we have a kicked flag, it becomes necessary to live migrate it.
-> 
-> Maybe we can change KVM_GET_MP_STATE to fold the kicked flag into the mp
-> state (converting HALTED into RUNNABLE).
+> So, for the purpose of dma-buf framework, could I summarize the
+> following and rework accordingly?:
+> 1. remove mmap() dma_buf_op [and mmap fop], and introduce cpu_start(),
+> cpu_finish() ops to bracket cpu accesses to the buffer. Also add
+> DMABUF_CPU_START / DMABUF_CPU_FINI IOCTLs?
 
-Yep, that works.
+I think we'd be better off for now without the extra ioctls and
+just document that a shared buffer must not be exported to user
+space using mmap at all, to avoid those problems. Serialization
+between GPU and CPU is on a higher level than the dma_buf framework
+IMHO.
 
-> Also I think we can keep the kicked flag in vcpu->requests, no need for
-> new storage.
+> 2. remove sg_sync* ops for now (and we'll see if we need to add them
+> later if needed)
 
-Was going to suggest it but it violates the currently organized
-processing of entries at the beginning of vcpu_enter_guest.
+Just removing the sg_sync_* operations is not enough. We have to make
+the decision whether we want to allow
+a) only coherent mappings of the buffer into kernel memory (requiring
+an extension to the dma_map_ops on ARM to not flush caches at map/unmap
+time)
+b) not allowing any in-kernel mappings (same requirement on ARM, also
+limits the usefulness of the dma_buf if we cannot access it from the
+kernel or from user space)
+c) only allowing streaming mappings, even if those are non-coherent
+(requiring strict serialization between CPU (in-kernel) and dma users of
+the buffer)
 
-That is, this "kicked" flag is different enough from vcpu->requests
-processing that a separate variable seems worthwhile (even more
-different with convertion to MP_STATE at KVM_GET_MP_STATE).
+This issue has to be solved or we get random data corruption.
 
+	Arnd
