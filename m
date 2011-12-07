@@ -1,127 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756633Ab1LGPhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 10:37:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756478Ab1LGPhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 10:37:17 -0500
-Date: Wed, 7 Dec 2011 17:39:02 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] virtio_blk: fix config handler race
-Message-ID: <20111207153901.GA23820@redhat.com>
+	id S1756637Ab1LGPoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 10:44:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48655 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756176Ab1LGPo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 10:44:29 -0500
+Date: Wed, 7 Dec 2011 07:44:02 -0800
+From: tip-bot for Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Message-ID: <tip-d2db6610219cbcadceea6c43ee03d89068b7d759@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        torvalds@linux-foundation.org, mitsuo.hayasaka.hu@hitachi.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, mitsuo.hayasaka.hu@hitachi.com,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20111207082910.9847.3359.stgit@ltc219.sdl.hitachi.co.jp>
+References: <20111207082910.9847.3359.stgit@ltc219.sdl.hitachi.co.jp>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86: Add stack top margin for stack overflow checking
+Git-Commit-ID: d2db6610219cbcadceea6c43ee03d89068b7d759
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 07 Dec 2011 07:44:09 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a theoretical race related to config work
-handler: a config interrupt might happen
-after we flush config work but before we
-reset the device. It will then cause the
-config work to run during or after reset.
+Commit-ID:  d2db6610219cbcadceea6c43ee03d89068b7d759
+Gitweb:     http://git.kernel.org/tip/d2db6610219cbcadceea6c43ee03d89068b7d759
+Author:     Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+AuthorDate: Wed, 7 Dec 2011 17:29:10 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 7 Dec 2011 09:27:11 +0100
 
-Two problems with this:
-- if this runs after device is gone we will get use after free
-- access of config while reset is in progress is racy
-(as layout is changing).
+x86: Add stack top margin for stack overflow checking
 
-As a solution
-1. flush after reset when we know there will be no more interrupts
-2. add a flag to disable config access before reset
+It seems that a margin for stack overflow checking is added to
+top of a kernel stack but is not added to IRQ and exception
+stacks in stack_overflow_check(). Therefore, the overflows of
+IRQ and exception stacks are always detected only after they
+actually occurred and data corruption might occur due to them.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+This patch adds the margin to top of IRQ and exception stacks
+as well as a kernel stack to enhance reliability.
+
+Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: yrl.pp-manager.tt@hitachi.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20111207082910.9847.3359.stgit@ltc219.sdl.hitachi.co.jp
+[ removed the #undef - we typically don't do that for uncommon names ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
+ arch/x86/kernel/irq_64.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-RFC only as it's untested.
-Bugfix so 3.2 material? Comments?
-
- drivers/block/virtio_blk.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 4d0b70a..34633f3 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -4,6 +4,7 @@
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
- #include <linux/module.h>
-+#include <linux/mutex.h>
- #include <linux/virtio.h>
- #include <linux/virtio_blk.h>
- #include <linux/scatterlist.h>
-@@ -36,6 +37,12 @@ struct virtio_blk
- 	/* Process context for config space updates */
- 	struct work_struct config_work;
+diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
+index 54e2b2b..d04d3ec 100644
+--- a/arch/x86/kernel/irq_64.c
++++ b/arch/x86/kernel/irq_64.c
+@@ -38,6 +38,7 @@ int sysctl_panic_on_stackoverflow;
+ static inline void stack_overflow_check(struct pt_regs *regs)
+ {
+ #ifdef CONFIG_DEBUG_STACKOVERFLOW
++#define STACK_TOP_MARGIN	128
+ 	struct orig_ist *oist;
+ 	u64 irq_stack_top, irq_stack_bottom;
+ 	u64 estack_top, estack_bottom;
+@@ -47,17 +48,18 @@ static inline void stack_overflow_check(struct pt_regs *regs)
+ 		return;
  
-+	/* Lock for config space updates */
-+	struct mutex config_lock;
-+
-+	/* enable config space updates */
-+	bool config_enable;
-+
- 	/* What host tells us, plus 2 for header & tailer. */
- 	unsigned int sg_elems;
+ 	if (regs->sp >= curbase + sizeof(struct thread_info) +
+-				  sizeof(struct pt_regs) + 128 &&
++				  sizeof(struct pt_regs) + STACK_TOP_MARGIN &&
+ 	    regs->sp <= curbase + THREAD_SIZE)
+ 		return;
  
-@@ -318,6 +325,10 @@ static void virtblk_config_changed_work(struct work_struct *work)
- 	char cap_str_2[10], cap_str_10[10];
- 	u64 capacity, size;
+-	irq_stack_top = (u64)__get_cpu_var(irq_stack_union.irq_stack);
++	irq_stack_top = (u64)__get_cpu_var(irq_stack_union.irq_stack) +
++			STACK_TOP_MARGIN;
+ 	irq_stack_bottom = (u64)__get_cpu_var(irq_stack_ptr);
+ 	if (regs->sp >= irq_stack_top && regs->sp <= irq_stack_bottom)
+ 		return;
  
-+	mutex_lock(&vblk->config_lock);
-+	if (!vblk->config_enable)
-+		goto done;
-+
- 	/* Host must always specify the capacity. */
- 	vdev->config->get(vdev, offsetof(struct virtio_blk_config, capacity),
- 			  &capacity, sizeof(capacity));
-@@ -340,6 +351,8 @@ static void virtblk_config_changed_work(struct work_struct *work)
- 		  cap_str_10, cap_str_2);
- 
- 	set_capacity(vblk->disk, capacity);
-+done:
-+	mutex_lock(&vblk->config_lock);
- }
- 
- static void virtblk_config_changed(struct virtio_device *vdev)
-@@ -388,7 +401,9 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
- 	vblk->vdev = vdev;
- 	vblk->sg_elems = sg_elems;
- 	sg_init_table(vblk->sg, vblk->sg_elems);
-+	mutex_init(&vblk->config_lock);
- 	INIT_WORK(&vblk->config_work, virtblk_config_changed_work);
-+	vblk->config_enable = true;
- 
- 	/* We expect one virtqueue, for output. */
- 	vblk->vq = virtio_find_single_vq(vdev, blk_done, "requests");
-@@ -542,7 +557,10 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
- 	struct virtio_blk *vblk = vdev->priv;
- 	int index = vblk->index;
- 
--	flush_work(&vblk->config_work);
-+	/* Prevent config work handler from accessing the device. */
-+	mutex_lock(&vblk->config_lock);
-+	vblk->config_enable = false;
-+	mutex_unlock(&vblk->config_lock);
- 
- 	/* Nothing should be pending. */
- 	BUG_ON(!list_empty(&vblk->reqs));
-@@ -550,6 +568,8 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
- 	/* Stop all the virtqueues. */
- 	vdev->config->reset(vdev);
- 
-+	flush_work(&vblk->config_work);
-+
- 	del_gendisk(vblk->disk);
- 	blk_cleanup_queue(vblk->disk->queue);
- 	put_disk(vblk->disk);
--- 
-1.7.5.53.gc233e
+ 	oist = &__get_cpu_var(orig_ist);
+-	estack_top = (u64)oist->ist[0] - EXCEPTION_STKSZ;
++	estack_top = (u64)oist->ist[0] - EXCEPTION_STKSZ + STACK_TOP_MARGIN;
+ 	estack_bottom = (u64)oist->ist[N_EXCEPTION_STACKS - 1];
+ 	if (regs->sp >= estack_top && regs->sp <= estack_bottom)
+ 		return;
