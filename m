@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757398Ab1LGQSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:18:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33304 "EHLO mx2.suse.de"
+	id S1754462Ab1LGQ4F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:56:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33289 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757210Ab1LGQSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:18:46 -0500
+	id S1757253Ab1LGQSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:43 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:27 2011
-Message-Id: <20111207160827.697962982@clark.kroah.org>
+Message-Id: <20111207160827.608521295@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:22 -0800
+Date: Wed, 07 Dec 2011 08:07:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        <alan@lxorguk.ukuu.org.uk>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         Ingo Molnar <mingo@elte.hu>
-Subject: [62/80] perf/x86: Fix PEBS instruction unwind
+Subject: [61/80] x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +28,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 57d1c0c03c6b48b2b96870d831b9ce6b917f53ac upstream.
+commit 2cd1c8d4dc7ecca9e9431e2dabe41ae9c7d89e51 upstream.
 
-Masami spotted that we always try to decode the instruction stream as
-64bit instructions when running a 64bit kernel, this doesn't work for
-ia32-compat proglets.
+Fix an outstanding issue that has been reported since 2.6.37.
+Under a heavy loaded machine processing "fork()" calls could
+crash with:
 
-Use TIF_IA32 to detect if we need to use the 32bit instruction
-decoder.
+BUG: unable to handle kernel paging request at f573fc8c
+IP: [<c01abc54>] swap_count_continued+0x104/0x180
+*pdpt = 000000002a3b9027 *pde = 0000000001bed067 *pte = 0000000000000000 Oops: 0000 [#1] SMP
+Modules linked in:
+Pid: 1638, comm: apache2 Not tainted 3.0.4-linode37 #1
+EIP: 0061:[<c01abc54>] EFLAGS: 00210246 CPU: 3
+EIP is at swap_count_continued+0x104/0x180
+.. snip..
+Call Trace:
+ [<c01ac222>] ? __swap_duplicate+0xc2/0x160
+ [<c01040f7>] ? pte_mfn_to_pfn+0x87/0xe0
+ [<c01ac2e4>] ? swap_duplicate+0x14/0x40
+ [<c01a0a6b>] ? copy_pte_range+0x45b/0x500
+ [<c01a0ca5>] ? copy_page_range+0x195/0x200
+ [<c01328c6>] ? dup_mmap+0x1c6/0x2c0
+ [<c0132cf8>] ? dup_mm+0xa8/0x130
+ [<c013376a>] ? copy_process+0x98a/0xb30
+ [<c013395f>] ? do_fork+0x4f/0x280
+ [<c01573b3>] ? getnstimeofday+0x43/0x100
+ [<c010f770>] ? sys_clone+0x30/0x40
+ [<c06c048d>] ? ptregs_clone+0x15/0x48
+ [<c06bfb71>] ? syscall_call+0x7/0xb
 
-Reported-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+The problem is that in copy_page_range() we turn lazy mode on,
+and then in swap_entry_free() we call swap_count_continued()
+which ends up in:
+
+         map = kmap_atomic(page, KM_USER0) + offset;
+
+and then later we touch *map.
+
+Since we are running in batched mode (lazy) we don't actually
+set up the PTE mappings and the kmap_atomic is not done
+synchronously and ends up trying to dereference a page that has
+not been set.
+
+Looking at kmap_atomic_prot_pfn(), it uses
+'arch_flush_lazy_mmu_mode' and doing the same in
+kmap_atomic_prot() and __kunmap_atomic() makes the problem go
+away.
+
+Interestingly, commit b8bcfe997e4615 ("x86/paravirt: remove lazy
+mode in interrupts") removed part of this to fix an interrupt
+issue - but it went to far and did not consider this scenario.
+
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/mm/highmem_32.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -508,6 +508,7 @@ static int intel_pmu_pebs_fixup_ip(struc
- 	unsigned long from = cpuc->lbr_entries[0].from;
- 	unsigned long old_to, to = cpuc->lbr_entries[0].to;
- 	unsigned long ip = regs->ip;
-+	int is_64bit = 0;
+--- a/arch/x86/mm/highmem_32.c
++++ b/arch/x86/mm/highmem_32.c
+@@ -45,6 +45,7 @@ void *kmap_atomic_prot(struct page *page
+ 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+ 	BUG_ON(!pte_none(*(kmap_pte-idx)));
+ 	set_pte(kmap_pte-idx, mk_pte(page, prot));
++	arch_flush_lazy_mmu_mode();
  
- 	/*
- 	 * We don't need to fixup if the PEBS assist is fault like
-@@ -559,7 +560,10 @@ static int intel_pmu_pebs_fixup_ip(struc
- 		} else
- 			kaddr = (void *)to;
- 
--		kernel_insn_init(&insn, kaddr);
-+#ifdef CONFIG_X86_64
-+		is_64bit = kernel_ip(to) || !test_thread_flag(TIF_IA32);
-+#endif
-+		insn_init(&insn, kaddr, is_64bit);
- 		insn_get_length(&insn);
- 		to += insn.length;
- 	} while (to < ip);
+ 	return (void *)vaddr;
+ }
+@@ -88,6 +89,7 @@ void __kunmap_atomic(void *kvaddr)
+ 		 */
+ 		kpte_clear_flush(kmap_pte-idx, vaddr);
+ 		kmap_atomic_idx_pop();
++		arch_flush_lazy_mmu_mode();
+ 	}
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	else {
 
 
