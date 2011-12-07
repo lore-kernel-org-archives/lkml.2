@@ -1,55 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab1LGQid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:38:33 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39715 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933777Ab1LGQXe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:23:34 -0500
-Date: Thu, 8 Dec 2011 00:22:57 +0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 0/4] Random GPIO updates
-Message-ID: <20111207162256.GI22355@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933768Ab1LGQXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:23:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34209 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933742Ab1LGQXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:23:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:12:17 2011
+Message-Id: <20111207161217.649690605@clark.kroah.org>
+User-Agent: quilt/0.50-23.1
+Date: Wed, 07 Dec 2011 08:11:37 -0800
+From: Greg KH <gregkh@suse.de>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
+        <alan@lxorguk.ukuu.org.uk>, Michal Hocko <mhocko@suse.cz>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Tomasz Buchert <tomasz.buchert@inria.fr>,
+        Paul Menage <paul@paulmenage.org>, Tejun Heo <htejun@gmail.com>
+Subject: [035/104] cgroup_freezer: fix freezing groups with stopped tasks
+In-Reply-To: <20111207161246.GA10995@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a fairly random selection of updates I've been sitting on for
-the gpios, partly built up over your sabbatical but a couple predating
-that.  No real theme here except for time.
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-The following changes since commit 5611cc4572e889b62a7b4c72a413536bf6a9c416:
+------------------
 
-  Linux 3.2-rc4 (2011-12-01 14:56:01 -0800)
+From: Michal Hocko <mhocko@suse.cz>
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git gpio/misc
+commit 884a45d964dd395eda945842afff5e16bcaedf56 upstream.
 
-Mark Brown (4):
-      gpio: Explicitly index samsung_gpio_cfgs
-      gpio: Fix typo in comment in Samsung driver
-      gpio: Convert GPIO drivers to module_platform_driver
-      gpio: Add decode of WM8994 GPIO configuration
+2d3cbf8b (cgroup_freezer: update_freezer_state() does incorrect state
+transitions) removed is_task_frozen_enough and replaced it with a simple
+frozen call. This, however, breaks freezing for a group with stopped tasks
+because those cannot be frozen and so the group remains in CGROUP_FREEZING
+state (update_if_frozen doesn't count stopped tasks) and never reaches
+CGROUP_FROZEN.
 
- drivers/gpio/gpio-adp5520.c    |   12 +------
- drivers/gpio/gpio-cs5535.c     |   13 +------
- drivers/gpio/gpio-da9052.c     |   12 +------
- drivers/gpio/gpio-generic.c    |   12 +------
- drivers/gpio/gpio-janz-ttl.c   |   13 +------
- drivers/gpio/gpio-rdc321x.c    |   13 +------
- drivers/gpio/gpio-samsung.c    |   31 ++++++++++------
- drivers/gpio/gpio-sch.c        |   13 +------
- drivers/gpio/gpio-timberdale.c |   13 +------
- drivers/gpio/gpio-ucb1400.c    |   13 +------
- drivers/gpio/gpio-vr41xx.c     |   13 +------
- drivers/gpio/gpio-vx855.c      |   12 +------
- drivers/gpio/gpio-wm8994.c     |   79 +++++++++++++++++++++++++++++++++++++++-
- 13 files changed, 108 insertions(+), 141 deletions(-)
+Let's add is_task_frozen_enough back and use it at the original locations
+(update_if_frozen and try_to_freeze_cgroup). Semantically we consider
+stopped tasks as frozen enough so we should consider both cases when
+testing frozen tasks.
+
+Testcase:
+mkdir /dev/freezer
+mount -t cgroup -o freezer none /dev/freezer
+mkdir /dev/freezer/foo
+sleep 1h &
+pid=$!
+kill -STOP $pid
+echo $pid > /dev/freezer/foo/tasks
+echo FROZEN > /dev/freezer/foo/freezer.state
+while true
+do
+	cat /dev/freezer/foo/freezer.state
+	[ "`cat /dev/freezer/foo/freezer.state`" = "FROZEN" ] && break
+	sleep 1
+done
+echo OK
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
+Cc: Paul Menage <paul@paulmenage.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Tejun Heo <htejun@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/cgroup_freezer.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -153,6 +153,13 @@ static void freezer_destroy(struct cgrou
+ 	kfree(cgroup_freezer(cgroup));
+ }
+ 
++/* task is frozen or will freeze immediately when next it gets woken */
++static bool is_task_frozen_enough(struct task_struct *task)
++{
++	return frozen(task) ||
++		(task_is_stopped_or_traced(task) && freezing(task));
++}
++
+ /*
+  * The call to cgroup_lock() in the freezer.state write method prevents
+  * a write to that file racing against an attach, and hence the
+@@ -231,7 +238,7 @@ static void update_if_frozen(struct cgro
+ 	cgroup_iter_start(cgroup, &it);
+ 	while ((task = cgroup_iter_next(cgroup, &it))) {
+ 		ntotal++;
+-		if (frozen(task))
++		if (is_task_frozen_enough(task))
+ 			nfrozen++;
+ 	}
+ 
+@@ -284,7 +291,7 @@ static int try_to_freeze_cgroup(struct c
+ 	while ((task = cgroup_iter_next(cgroup, &it))) {
+ 		if (!freeze_task(task, true))
+ 			continue;
+-		if (frozen(task))
++		if (is_task_frozen_enough(task))
+ 			continue;
+ 		if (!freezing(task) && !freezer_should_skip(task))
+ 			num_cant_freeze_now++;
+
+
