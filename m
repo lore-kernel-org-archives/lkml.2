@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab1LGQ5x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:57:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33211 "EHLO mx2.suse.de"
+	id S1755698Ab1LGQ6V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:58:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33199 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757288Ab1LGQSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:18:16 -0500
+	id S1757185Ab1LGQSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:09 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:24 2011
-Message-Id: <20111207160824.628058729@clark.kroah.org>
+Message-Id: <20111207160824.447225658@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:44 -0800
+Date: Wed, 07 Dec 2011 08:06:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
         <alan@lxorguk.ukuu.org.uk>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [24/80] SUNRPC: Ensure we return EAGAIN in xs_nospace if congestion is cleared
+        Timo Juhani Lindfors <timo.lindfors@iki.fi>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [22/80] ASoC: wm8753: Skip noop reconfiguration of DAI mode
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Timo Juhani Lindfors <timo.lindfors@iki.fi>
 
-commit 24ca9a847791fd53d9b217330b15f3c285827a18 upstream.
+commit 2391a0e06789a3f1718dee30b282562f7ed28c87 upstream.
 
-By returning '0' instead of 'EAGAIN' when the tests in xs_nospace() fail
-to find evidence of socket congestion, we are making the RPC engine believe
-that the message was incorrectly sent and so it disconnects the socket
-instead of just retrying.
+This patch makes it possible to set DAI mode to its currently applied
+value even if codec is active. This is necessary to allow
 
-The bug appears to have been introduced by commit
-5e3771ce2d6a69e10fcc870cdf226d121d868491 (SUNRPC: Ensure that xs_nospace
-return values are propagated).
+aplay -t raw -r 44100 -f S16_LE -c 2 < /dev/urandom &
+alsactl store -f backup.state
+alsactl restore -f backup.state
 
-Reported-by: Andrew Cooper <andrew.cooper3@citrix.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Andrew Cooper <andrew.cooper3@citrix.com>
+to work without returning errors. This patch is based on a patch sent
+by Klaus Kurzmann <mok@fluxnetz.de>.
+
+Signed-off-by: Timo Juhani Lindfors <timo.lindfors@iki.fi>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/xprtsock.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ sound/soc/codecs/wm8753.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -485,7 +485,7 @@ static int xs_nospace(struct rpc_task *t
- 	struct rpc_rqst *req = task->tk_rqstp;
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
--	int ret = 0;
-+	int ret = -EAGAIN;
+--- a/sound/soc/codecs/wm8753.c
++++ b/sound/soc/codecs/wm8753.c
+@@ -189,6 +189,9 @@ static int wm8753_set_dai(struct snd_kco
+ 	struct wm8753_priv *wm8753 = snd_soc_codec_get_drvdata(codec);
+ 	u16 ioctl;
  
- 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
- 			task->tk_pid, req->rq_slen - req->rq_bytes_sent,
-@@ -497,7 +497,6 @@ static int xs_nospace(struct rpc_task *t
- 	/* Don't race with disconnect */
- 	if (xprt_connected(xprt)) {
- 		if (test_bit(SOCK_ASYNC_NOSPACE, &transport->sock->flags)) {
--			ret = -EAGAIN;
- 			/*
- 			 * Notify TCP that we're limited by the application
- 			 * window size
++	if (wm8753->dai_func == ucontrol->value.integer.value[0])
++		return 0;
++
+ 	if (codec->active)
+ 		return -EBUSY;
+ 
 
 
