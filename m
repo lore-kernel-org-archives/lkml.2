@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab1LGQQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:16:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60975 "EHLO mx2.suse.de"
+	id S1756914Ab1LGQQi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:16:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:32835 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756792Ab1LGQQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:16:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:22 2011
-Message-Id: <20111207160822.799771673@clark.kroah.org>
+	id S1756839Ab1LGQQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:16:36 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:23 2011
+Message-Id: <20111207160823.287047568@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:22 -0800
+Date: Wed, 07 Dec 2011 08:06:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, "Sheng-Hui J. Chu" <jeffchu@broadcom.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [02/80] i2c-algo-bit: Generate correct i2c address sequence for 10-bit target
+        <alan@lxorguk.ukuu.org.uk>, Eric Anholt <eric@anholt.net>,
+        Keith Packard <keithp@keithp.com>
+Subject: [08/80] drm/i915: Turn on a required 3D clock gating bit on Sandybridge.
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Jeffrey (Sheng-Hui) Chu" <jeffchu@broadcom.com>
+From: Eric Anholt <eric@anholt.net>
 
-commit cc6bcf7d2ec2234e7b41770185e4dc826390185e upstream.
+commit 406478dc911e16677fbd9c84d1d50cdffbc031ab upstream.
 
-The wrong bits were put on the wire, fix that.
+Fixes rendering failures in Unigine Tropics and Sanctuary and the mesa
+"fire" demo.
 
-This fixes kernel bug #42562.
-
-Signed-off-by: Sheng-Hui J. Chu <jeffchu@broadcom.com>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/i2c/algos/i2c-algo-bit.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    3 +++
+ drivers/gpu/drm/i915/intel_display.c |    9 +++++++++
+ 2 files changed, 12 insertions(+)
 
---- a/drivers/i2c/algos/i2c-algo-bit.c
-+++ b/drivers/i2c/algos/i2c-algo-bit.c
-@@ -486,7 +486,7 @@ static int bit_doAddress(struct i2c_adap
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3370,6 +3370,9 @@
  
- 	if (flags & I2C_M_TEN) {
- 		/* a ten bit address */
--		addr = 0xf0 | ((msg->addr >> 7) & 0x03);
-+		addr = 0xf0 | ((msg->addr >> 7) & 0x06);
- 		bit_dbg(2, &i2c_adap->dev, "addr0: %d\n", addr);
- 		/* try extended address code...*/
- 		ret = try_address(i2c_adap, addr, retries);
-@@ -496,7 +496,7 @@ static int bit_doAddress(struct i2c_adap
- 			return -EREMOTEIO;
- 		}
- 		/* the remaining 8 bit address */
--		ret = i2c_outb(i2c_adap, msg->addr & 0x7f);
-+		ret = i2c_outb(i2c_adap, msg->addr & 0xff);
- 		if ((ret != 1) && !nak_ok) {
- 			/* the chip did not ack / xmission error occurred */
- 			dev_err(&i2c_adap->dev, "died at 2nd address code\n");
+ #define  GT_FIFO_FREE_ENTRIES			0x120008
+ 
++#define GEN6_UCGCTL2				0x9404
++# define GEN6_RCPBUNIT_CLOCK_GATE_DISABLE		(1 << 12)
++
+ #define GEN6_RPNSWREQ				0xA008
+ #define   GEN6_TURBO_DISABLE			(1<<31)
+ #define   GEN6_FREQUENCY(x)			((x)<<25)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7405,6 +7405,15 @@ static void gen6_init_clock_gating(struc
+ 	I915_WRITE(WM2_LP_ILK, 0);
+ 	I915_WRITE(WM1_LP_ILK, 0);
+ 
++	/* According to the BSpec vol1g, bit 12 (RCPBUNIT) clock
++	 * gating disable must be set.  Failure to set it results in
++	 * flickering pixels due to Z write ordering failures after
++	 * some amount of runtime in the Mesa "fire" demo, and Unigine
++	 * Sanctuary and Tropics, and apparently anything else with
++	 * alpha test or pixel discard.
++	 */
++	I915_WRITE(GEN6_UCGCTL2, GEN6_RCPBUNIT_CLOCK_GATE_DISABLE);
++
+ 	/*
+ 	 * According to the spec the following bits should be
+ 	 * set in order to enable memory self-refresh and fbc:
 
 
