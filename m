@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab1LGRDj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:03:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39365 "EHLO mx2.suse.de"
+	id S1757020Ab1LGRDz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:03:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39422 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757372Ab1LGRDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:03:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:01 2011
-Message-Id: <20111207165601.008227165@clark.kroah.org>
+	id S1754671Ab1LGRDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:03:51 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:00 2011
+Message-Id: <20111207165600.523797414@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:54:40 -0800
+Date: Wed, 07 Dec 2011 08:54:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Hector Palacios <hector.palacios@digi.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [07/27] timekeeping: add arch_offset hook to ktime_get functions
+        <alan@lxorguk.ukuu.org.uk>, "Sheng-Hui J. Chu" <jeffchu@broadcom.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [01/27] i2c-algo-bit: Generate correct i2c address sequence for 10-bit target
 In-Reply-To: <20111207165611.GA19872@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hector Palacios <hector.palacios@digi.com>
+From: "Jeffrey (Sheng-Hui) Chu" <jeffchu@broadcom.com>
 
-commit d004e024058a0eaca097513ce62cbcf978913e0a upstream.
+commit cc6bcf7d2ec2234e7b41770185e4dc826390185e upstream.
 
-ktime_get and ktime_get_ts were calling timekeeping_get_ns()
-but later they were not calling arch_gettimeoffset() so architectures
-using this mechanism returned 0 ns when calling these functions.
+The wrong bits were put on the wire, fix that.
 
-This happened for example when running Busybox's ping which calls
-syscall(__NR_clock_gettime, CLOCK_MONOTONIC, ts) which eventually
-calls ktime_get. As a result the returned ping travel time was zero.
+This fixes kernel bug #42562.
 
-Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Sheng-Hui J. Chu <jeffchu@broadcom.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/time/timekeeping.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/i2c/algos/i2c-algo-bit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -264,6 +264,8 @@ ktime_t ktime_get(void)
- 		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
- 		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
- 		nsecs += timekeeping_get_ns();
-+		/* If arch requires, add in gettimeoffset() */
-+		nsecs += arch_gettimeoffset();
+--- a/drivers/i2c/algos/i2c-algo-bit.c
++++ b/drivers/i2c/algos/i2c-algo-bit.c
+@@ -471,7 +471,7 @@ static int bit_doAddress(struct i2c_adap
  
- 	} while (read_seqretry(&xtime_lock, seq));
- 	/*
-@@ -295,6 +297,8 @@ void ktime_get_ts(struct timespec *ts)
- 		*ts = xtime;
- 		tomono = wall_to_monotonic;
- 		nsecs = timekeeping_get_ns();
-+		/* If arch requires, add in gettimeoffset() */
-+		nsecs += arch_gettimeoffset();
- 
- 	} while (read_seqretry(&xtime_lock, seq));
- 
+ 	if (flags & I2C_M_TEN) {
+ 		/* a ten bit address */
+-		addr = 0xf0 | ((msg->addr >> 7) & 0x03);
++		addr = 0xf0 | ((msg->addr >> 7) & 0x06);
+ 		bit_dbg(2, &i2c_adap->dev, "addr0: %d\n", addr);
+ 		/* try extended address code...*/
+ 		ret = try_address(i2c_adap, addr, retries);
+@@ -481,7 +481,7 @@ static int bit_doAddress(struct i2c_adap
+ 			return -EREMOTEIO;
+ 		}
+ 		/* the remaining 8 bit address */
+-		ret = i2c_outb(i2c_adap, msg->addr & 0x7f);
++		ret = i2c_outb(i2c_adap, msg->addr & 0xff);
+ 		if ((ret != 1) && !nak_ok) {
+ 			/* the chip did not ack / xmission error occurred */
+ 			dev_err(&i2c_adap->dev, "died at 2nd address code\n");
 
 
