@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751148Ab1LGFTM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 00:19:12 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46033 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab1LGFTK (ORCPT
+	id S1751236Ab1LGFZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 00:25:53 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:57931 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab1LGFZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 00:19:10 -0500
-Date: Wed, 7 Dec 2011 05:19:08 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: john.johansen@canonical.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-Message-ID: <20111207051908.GA2203@ZenIV.linux.org.uk>
-References: <4EDEA152.90804@canonical.com>
- <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
- <20111207001643.GN2203@ZenIV.linux.org.uk>
- <20111207003922.GO2203@ZenIV.linux.org.uk>
- <CA+55aFyaz7K4V5xLmaQ9GK=5LA1mbRdVGCFspET=y6ode_i=jg@mail.gmail.com>
- <20111207011047.GQ2203@ZenIV.linux.org.uk>
- <20111207013720.GS2203@ZenIV.linux.org.uk>
- <201112070326.pB73QPZo042162@www262.sakura.ne.jp>
- <20111207034238.GX2203@ZenIV.linux.org.uk>
- <201112070501.pB751LoP064331@www262.sakura.ne.jp>
+	Wed, 7 Dec 2011 00:25:52 -0500
+X-SpamScore: -14
+X-BigFish: VS-14(zzc89bh542M1432N98dKzz1202hzzz2dh2a8h668h839h8e2h8e3h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tang Yuantian-B29983 <B29983@freescale.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Tabi Timur-B04825 <B04825@freescale.com>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        sun york-R58495 <R58495@freescale.com>,
+        Durai Kumar-R34055 <r34055@freescale.com>,
+        Huang Changming-R66093 <r66093@freescale.com>
+Subject: RE: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+Thread-Topic: [PATCH] i2c/busses: (mpc) Add support for SMBUS_READ_BLOCK_DATA
+Thread-Index: AQHMpIUnsb9+I0lR9k+0uRq1j4EoUpWwJ/0AgAAFb4CAAAQAAIAAAwAAgAAOBACAAAE+gIAAAP2AgB+Fq4CAAG9pAP//s6FA
+Date: Wed, 7 Dec 2011 05:25:49 +0000
+Message-ID: <3C06C26914DACA4BB3A368F78CA0B3A71345F2@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <ECEE0D23-8F53-402C-A97F-4DB0F0E9C79B@freescale.com>
+ <1321464509.7847.41.camel@oslab-l1>
+ <1321464968.2309.384.camel@groeck-laptop>
+ <1321466135.7847.55.camel@oslab-l1>
+ <20111116190954.67c846fc@endymion.delvare>
+ <1321467638.7847.73.camel@oslab-l1>
+ <20111116201048.4b7877dd@endymion.delvare>
+ <1321470915.7847.122.camel@oslab-l1>
+ <20111116201847.6b11dc7f@endymion.delvare>
+ <3C06C26914DACA4BB3A368F78CA0B3A7134583@039-SN1MPN1-004.039d.mgd.msft.net>
+ <20111207032000.GA17575@ericsson.com>
+In-Reply-To: <20111207032000.GA17575@ericsson.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.75]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112070501.pB751LoP064331@www262.sakura.ne.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pB75Q4Mk019365
 
-On Wed, Dec 07, 2011 at 02:01:21PM +0900, Tetsuo Handa wrote:
-> Al Viro wrote:
-> > > How commonly can conditions that make d_absolute_path() return -EINVAL happen?
-> > 
-> > Race with umount -l, basically.
-> 
-> d_absolute_path() will return -EINVAL if lazy unmount happens. I see.
-> 
-> Then, I prefer not denying the request with -EINVAL no matter how unreliable
-> the returned pathname is. I don't want to deny the request unless -ENOMEM
-> happens or rejected by the policy.
-> 
-> > In that case the pathname is completely
-> > unreliable - if I do umount -l /mnt, pathnames that would be under mnt
-> > may get truncated on *ANY* mountpoint.  Not "always cut on /mnt"; not "always
-> > cut on the last mountpoint"; it's "everything from root to arbitrary mountpoint
-> > on that path is not noticed".
-> 
-> Unfortunate specification for pathname based access control.
-> But since I assume that multiple LSM modules can run in parallel
-> ( http://sourceforge.jp/projects/tomoyo/docs/lca2009-kumaneko.pdf),
-> I leave more stricter decisions to inode based access control.
-> 
-> So, can we keep behavior of tomoyo_get_absolute_path() unchanged?
+Hi Guenter,
 
-Sure, you are always free to add
-	if (pos == ERR_PTR(-EINVAL)) {
-		pos = dentry_path(path->dentry, ...)
-		/* do whatever you want to buffer to indicate that
-		 * beginning had been lost
-		 */
-	}
-since that's the _only_ reliable part of pathname information there is in
-such situation.  What should be done to buffer contents is *really* up
-to you - what you have there is the path from the root of filesystem path
-points to and to path->dentry.  Beginning *is* lost; the thing had been
-unmounted and this is all you have.
+I thought you were bore of discussion.
+Do you mind if I post similar patch?
 
-Or you might want to do __d_path() from (path->mnt,path->mnt->mnt_root) to
-path - that's the path from the last mountpoint to your object; i.e. it may
-be shorter if that vfsmount had been a binding into the guts of filesystem,
-but that is what __d_path() as you used it would stabilize to once the race
-window is over.
+Regards,
+Yuantian
 
-Again, that's what happens if you are hit with umount and there is *no*
-absolute path anymore.  What should be done in such situation is really
-up to you - as far as I'm concerned, those races are among the reasons why
-pathname-based MAC is a fundamentally wrong idea.
+> -----Original Message-----
+> From: Guenter Roeck [mailto:guenter.roeck@ericsson.com]
+> Sent: 2011å¹´12æœˆ7æ—¥ 11:20
+> To: Tang Yuantian-B29983
+> Cc: Jean Delvare; Tabi Timur-B04825; linux-i2c@vger.kernel.org; linux-
+> kernel@vger.kernel.org; sun york-R58495; Durai Kumar-R34055; Huang
+> Changming-R66093
+> Subject: Re: [PATCH] i2c/busses: (mpc) Add support for
+> SMBUS_READ_BLOCK_DATA
+> 
+> On Tue, Dec 06, 2011 at 09:52:36PM -0500, Tang Yuantian-B29983 wrote:
+> > Hi Jean Delvare,
+> >
+> > We agree to apply this patch. Do you have any concerns?
+> > Although Guenter said that he give up, I don't think he really meant it.
+> 
+> I did mean it, otherwise I would not have said it.
+> 
+> Guenter
+> 
+> > Also it is improper if I repost similar patch.
+> > I tested this patch, it works.
+> >
+> > Regards,
+> > Yuantian
+> >
+> > > -----Original Message-----
+> > > From: Jean Delvare [mailto:khali@linux-fr.org]
+> > > Sent: 2011å¹´11æœˆ17æ—¥ 3:19
+> > > To: sun york-R58495
+> > > Cc: guenter.roeck@ericsson.com; Tabi Timur-B04825; linux-
+> > > i2c@vger.kernel.org; linux-kernel@vger.kernel.org; Tang
+> > > Yuantian-B29983
+> > > Subject: Re: [PATCH] i2c/busses: (mpc) Add support for
+> > > SMBUS_READ_BLOCK_DATA Really, please. I understand you're only
+> > > trying to help and understand the patch, but at some point, if you
+> > > have zero knowledge about the topic, you're not the right person to
+> > > review the patch, period. You are still welcome to test the patch if
+> > > you can and want, that's a completely different task.
+> > >
+> > > --
+> > > Jean Delvare
+> >
+> >
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
