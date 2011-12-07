@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757601Ab1LGRE7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 12:04:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39545 "EHLO mx2.suse.de"
+	id S1757575Ab1LGRE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 12:04:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39562 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757160Ab1LGREV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 12:04:21 -0500
+	id S1757002Ab1LGREY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 12:04:24 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:56:02 2011
-Message-Id: <20111207165602.489306609@clark.kroah.org>
+Message-Id: <20111207165602.586998940@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:54:58 -0800
+Date: Wed, 07 Dec 2011 08:54:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Ido Yariv <ido@wizery.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [25/27] genirq: Fix race condition when stopping the irq thread
+        <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [26/27] tick-broadcast: Stop active broadcast device when replacing it
 In-Reply-To: <20111207165611.GA19872@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,68 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ido Yariv <ido@wizery.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 550acb19269d65f32e9ac4ddb26c2b2070e37f1c upstream.
+commit c1be84309c58b1e7c6d626e28fba41a22b364c3d upstream.
 
-In irq_wait_for_interrupt(), the should_stop member is verified before
-setting the task's state to TASK_INTERRUPTIBLE and calling schedule().
-In case kthread_stop sets should_stop and wakes up the process after
-should_stop is checked by the irq thread but before the task's state
-is changed, the irq thread might never exit:
+When a better rated broadcast device is installed, then the current
+active device is not disabled, which results in two running broadcast
+devices.
 
-kthread_stop                    irq_wait_for_interrupt
-------------                    ----------------------
-
-                                 ...
-...                              while (!kthread_should_stop()) {
-kthread->should_stop = 1;
-wake_up_process(k);
-wait_for_completion(&kthread->exited);
-...
-                                     set_current_state(TASK_INTERRUPTIBLE);
-
-                                     ...
-
-                                     schedule();
-                                 }
-
-Fix this by checking if the thread should stop after modifying the
-task's state.
-
-[ tglx: Simplified it a bit ]
-
-Signed-off-by: Ido Yariv <ido@wizery.com>
-Link: http://lkml.kernel.org/r/1322740508-22640-1-git-send-email-ido@wizery.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/irq/manage.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ kernel/time/tick-broadcast.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -475,8 +475,9 @@ static irqreturn_t irq_nested_primary_ha
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -72,7 +72,7 @@ int tick_check_broadcast_device(struct c
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return 0;
  
- static int irq_wait_for_interrupt(struct irqaction *action)
- {
-+	set_current_state(TASK_INTERRUPTIBLE);
-+
- 	while (!kthread_should_stop()) {
--		set_current_state(TASK_INTERRUPTIBLE);
- 
- 		if (test_and_clear_bit(IRQTF_RUNTHREAD,
- 				       &action->thread_flags)) {
-@@ -484,7 +485,9 @@ static int irq_wait_for_interrupt(struct
- 			return 0;
- 		}
- 		schedule();
-+		set_current_state(TASK_INTERRUPTIBLE);
- 	}
-+	__set_current_state(TASK_RUNNING);
- 	return -1;
- }
- 
+-	clockevents_exchange_device(NULL, dev);
++	clockevents_exchange_device(tick_broadcast_device.evtdev, dev);
+ 	tick_broadcast_device.evtdev = dev;
+ 	if (!cpumask_empty(tick_get_broadcast_mask()))
+ 		tick_broadcast_start_periodic(dev);
 
 
