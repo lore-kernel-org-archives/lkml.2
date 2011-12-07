@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab1LGIMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 03:12:22 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41067 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab1LGIMJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 03:12:09 -0500
+	id S1754054Ab1LGINQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 03:13:16 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:39036
+	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751826Ab1LGINP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 03:13:15 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzz8275dhz2dh2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 7 Dec 2011 16:25:59 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH][NET] several cleanups and bugfixes for fec.c: misc
+ cleanups
+Message-ID: <20111207082557.GA5550@S2100-06.ap.freescale.net>
+References: <cover.1323163127.git.LW@KARO-electronics.de>
+ <bd4415514fa0b40ece04d56b3ac4f549e79d87d7.1323163127.git.LW@KARO-electronics.de>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFx+qUuPh7kRXVqMXeE-yZY+LddnqOFiVp3MkVuwvNnnKw@mail.gmail.com>
-References: <alpine.DEB.2.00.1112061619190.11925@skynet.skynet.ie>
-	<CA+55aFyFar45vTWb33FnJ1xv4zT+9XfnKBs=Xwx6-5O-RBHO4Q@mail.gmail.com>
-	<CAPM=9twbX+eDG=DE8FSU7HUoe1dQ=9bx1QQw5T6nKAjQdSgi4w@mail.gmail.com>
-	<CA+55aFx+qUuPh7kRXVqMXeE-yZY+LddnqOFiVp3MkVuwvNnnKw@mail.gmail.com>
-Date: Wed, 7 Dec 2011 08:12:08 +0000
-Message-ID: <CAPM=9tw0u=Wt=ZiaqWQ5ahPwjH3Dh-18s08SHUVN-eP3Uj5a+w@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <bd4415514fa0b40ece04d56b3ac4f549e79d87d7.1323163127.git.LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So having looked at the patch itself, I don't dislike the notion of
-> making sure certain fields are nicely initialized. So I don't hate the
-> patch itself, but quite frankly, to me it doesn't smell even
-> *remotely* like "regression fix". I don't think this is something that
-> has ever worked.
+On Tue, Dec 06, 2011 at 11:27:09AM +0100, Lothar Waﬂmann wrote:
+>  - remove some bogus whitespace
+>  - remove line wraps from printk messages
+> 
+> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
 
-Well just for completeness I tracked it down to
-724c80e1d630296d1324859e964d80d35007d83c
-which git describe shows as v2.6.36-rc5-456-g724c80e, so while it is a
-technical regression, it took a long time for anyone to notice.
+Other than subject,
 
-I think we probably need a more invasive patch in any case, as there
-is still a race between when the drm midlayer calls pci_set_master and
-the sanity enforcement, which we should close by moving pci_set_master
-into the drivers (midlayer design yet again for the win).
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-so I'll leave it for -next.
+-- 
+Regards,
+Shawn
 
-Dave.
