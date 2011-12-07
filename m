@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab1LGKiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 05:38:04 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:38217 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab1LGKiD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 05:38:03 -0500
-Date: Wed, 7 Dec 2011 21:37:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Cong Wang <amwang@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Please add my tree to linux-next
-Message-Id: <20111207213748.371309c1f000dd6365c9b3f4@canb.auug.org.au>
-In-Reply-To: <4EDF3347.3030601@redhat.com>
-References: <4ED8529E.5070608@redhat.com>
-	<20111205100930.1bedc458a5e78b85c563465d@canb.auug.org.au>
-	<4EDC594D.5040008@redhat.com>
-	<20111205171207.3b3bc1ad6d99ad7d7c9c0792@canb.auug.org.au>
-	<4EDC6A42.1090806@redhat.com>
-	<4EDF3347.3030601@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__7_Dec_2011_21_37_48_+1100_p005JImx1PbvVSne"
+	id S1754992Ab1LGKj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 05:39:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58957 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754625Ab1LGKj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 05:39:57 -0500
+Date: Wed, 7 Dec 2011 16:09:41 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, levinsasha928@gmail.com,
+        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+        linux-pm@vger.kernel.org
+Subject: Re: (resend) [PATCH v4 12/12] virtio: balloon: Add freeze, restore
+ handlers to support S4
+Message-ID: <20111207103941.GH4651@amit-x200.redhat.com>
+References: <5deccc36afa59032f0e3b10a653773bad511f303.1323199985.git.amit.shah@redhat.com>
+ <20111207103448.GA20882@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111207103448.GA20882@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__7_Dec_2011_21_37_48_+1100_p005JImx1PbvVSne
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On (Wed) 07 Dec 2011 [12:34:48], Michael S. Tsirkin wrote:
+> On Wed, Dec 07, 2011 at 01:18:50AM +0530, Amit Shah wrote:
+> > Now to not race with a host issuing ballooning requests while we are in
+> > the process of freezing, we just exit from the vballoon kthread when the
+> > processes are asked to freeze.  Upon thaw and restore, we re-start the
+> > thread.
+> 
+> ...
+> 
+> > ---
+> >  drivers/virtio/virtio_balloon.c |   79 ++++++++++++++++++++++++++++++++++++++-
+> >  1 files changed, 78 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> > index 8bf99be..10ec638 100644
+> > --- a/drivers/virtio/virtio_balloon.c
+> > +++ b/drivers/virtio/virtio_balloon.c
+> > @@ -258,7 +258,13 @@ static int balloon(void *_vballoon)
+> >  	while (!kthread_should_stop()) {
+> >  		s64 diff;
+> >  
+> > -		try_to_freeze();
+> > +		/*
+> > +		 * On suspend, we want to exit this thread.  We will
+> > +		 * start a new thread on resume.
+> > +		 */
+> > +		if (freezing(current))
+> > +			break;
+> > +
+> >  		wait_event_interruptible(vb->config_change,
+> >  					 (diff = towards_target(vb)) != 0
+> >  					 || vb->need_stats_update
+> 
+> ...
+> 
+> Note: this relies on kthreads being frozen before devices.
+> Looking at kernel/power/hibernate.c this is the case,
+> but I think we should add a comment to note this.
 
-Hi,
+Yes, it does.  And for that reason, I mentioned that stopping the
+thread doesn't buy us anything; I'll revert this change in the next
+submission.
 
-On Wed, 07 Dec 2011 17:35:03 +0800 Cong Wang <amwang@redhat.com> wrote:
->
-> I just re-commit those patches into my tree with ACK's I got,
-> and squash a patch which fixes ARM build, so it is rebased now.
-> Please re-add it to linux-next.
+> Also Cc linux-pm crowd in case I got it wrong.
 
-You don't need to ask me to re-add your tree.  As long as the URL and
-branch remain the same, I will attempt to fetch it each morning.
-
-So the new contents will appear in tomorrow's linux-next,
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__7_Dec_2011_21_37_48_+1100_p005JImx1PbvVSne
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO30H8AAoJEECxmPOUX5FEOYAP/0rfodgNJWtUcR4a8ww6SB0Q
-1lEBw2NIr9ERPtuJMB2eHk9i6nBjS1YiEUU9UrNtYFPgj1i9E9Puu5E29vXkBc15
-zZEl8eTLWcvdgMcBBgXNmSpW9xuTm4m3AfyeQpvf3niaS7iQglti7tPjk9txoNfN
-jC8/YvuF+D7q5B6HxGWh5L64Bc4sjVqruLORHkXYt78ohZTSlv8RkYzHo+Qo132D
-MDTQCQUC3dKw04cR7uk8sRASH5+kFM3WEqRegrO+l7SalQ6oiGKXPL1OPaEa6vEu
-HftOJb1OtJePAJrI95q5rC3O4YWOgNQ/lbrHr72mZlashHoudUXIk+XvnTdLy6OW
-VVfU2DAqBr+sGwSVJr1S7vDOyFPnQhE7uZy3yK0B4JVDMw5TGT/f78N+72TtvL2k
-iq+P/7darpYSlo1Nec+ey8Zv2D7vD4KTvoExo5PJ8zbQd/ZYPocKZ17qK0xNpLUd
-8PFSict3/ij1Ir3ITPU8tE/SqlU8rWhkjt8tOWL/+7wgkobOpk70g8IShd5iLJfk
-vm9fgrIs41jMkyhACcjBV7OYXu/38Frc6J+Ri3XPXutcM/8BxOWcDOq1p+6e9FRu
-imgbnF5QeXjcuTzBD+vn1qva0wIurZQ7CwcA8TujVLz+iVhhmYMySTGiHFntjk6S
-wcNTtBcmWmGrE7V8poNI
-=3ssD
------END PGP SIGNATURE-----
-
---Signature=_Wed__7_Dec_2011_21_37_48_+1100_p005JImx1PbvVSne--
+		Amit
