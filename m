@@ -1,87 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab1LGQSC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:18:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33179 "EHLO mx2.suse.de"
+	id S1755890Ab1LGQ6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:58:54 -0500
+Received: from ffm.saftware.de ([83.141.3.46]:50554 "EHLO ffm.saftware.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756855Ab1LGQR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:17:59 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:26 2011
-Message-Id: <20111207160826.477141898@clark.kroah.org>
-User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:07 -0800
-From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Alessandro Rubini <rubini@gnudd.com>,
-        Federico Vaga <federico.vaga@gmail.com>
-Subject: [47/80] Staging: comedi: fix mmap_count
-In-Reply-To: <20111207161256.GA7736@kroah.com>
+	id S1753679Ab1LGQ6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:58:52 -0500
+Message-ID: <4EDF9B48.1080808@linuxtv.org>
+Date: Wed, 07 Dec 2011 17:58:48 +0100
+From: Andreas Oberritter <obi@linuxtv.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>, HoP <jpetrous@gmail.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] vtunerc: virtual DVB device - is it ok to NACK driver because
+ of worrying about possible misusage?
+References: <4EDC9B17.2080701@gmail.com> <CAJbz7-2maWS6mx9WHUWLiW8gC-2PxLD3nc-3y7o9hMtYxN6ZwQ@mail.gmail.com> <4EDD01BA.40208@redhat.com> <4EDD2C82.7040804@linuxtv.org> <20111206112153.GC17194@sirena.org.uk> <4EDE0427.2050307@linuxtv.org> <20111206141929.GE17731@opensource.wolfsonmicro.com> <4EDE2B3B.2080905@linuxtv.org> <20111207134848.GB18837@opensource.wolfsonmicro.com> <4EDF71AE.5070509@linuxtv.org> <20111207161058.GC22355@opensource.wolfsonmicro.com>
+In-Reply-To: <20111207161058.GC22355@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 07.12.2011 17:10, Mark Brown wrote:
+> You're talking about a purely software defined thing that goes in the
+> kernel - it pretty much has to be able to scale to other applications
+> even if some of the implementation is left for later.  Once things like
+> this get included in the kernel they become part of the ABI and having
+> multiple specific things ends up being a recipie for confusion as users
+> have to work out which of the options is most appropriate for their
+> application.
 
-------------------
-
-From: Federico Vaga <federico.vaga@gmail.com>
-
-commit df30b21cb0eed5ba8a8e0cdfeebc66ba8cde821d upstream.
-
-In comedi_fops, mmap_count is decremented at comedi_vm_ops->close but
-it is not incremented at comedi_vm_ops->open. This may result in a negative
-counter.  The patch introduces the open method to keep the counter
-consistent.
-
-The bug was triggerd by this sample code:
-
-        mmap(0, ...., comedi_fd);
-        fork();
-        exit(0);
-
-Acked-by: Alessandro Rubini <rubini@gnudd.com>
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/staging/comedi/comedi_fops.c |   19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
-
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1432,7 +1432,21 @@ static int do_cancel(struct comedi_devic
- 	return ret;
- }
- 
--static void comedi_unmap(struct vm_area_struct *area)
-+
-+static void comedi_vm_open(struct vm_area_struct *area)
-+{
-+	struct comedi_async *async;
-+	struct comedi_device *dev;
-+
-+	async = area->vm_private_data;
-+	dev = async->subdevice->device;
-+
-+	mutex_lock(&dev->mutex);
-+	async->mmap_count++;
-+	mutex_unlock(&dev->mutex);
-+}
-+
-+static void comedi_vm_close(struct vm_area_struct *area)
- {
- 	struct comedi_async *async;
- 	struct comedi_device *dev;
-@@ -1446,7 +1460,8 @@ static void comedi_unmap(struct vm_area_
- }
- 
- static struct vm_operations_struct comedi_vm_ops = {
--	.close = comedi_unmap,
-+	.open = comedi_vm_open,
-+	.close = comedi_vm_close,
- };
- 
- static int comedi_mmap(struct file *file, struct vm_area_struct *vma)
-
-
+And to repeat myself once more: No networking is to be perfomed by the
+kernel in vtunerc.
