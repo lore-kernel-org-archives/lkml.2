@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab1LGQRY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:17:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33053 "EHLO mx2.suse.de"
+	id S1757188Ab1LGQRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:17:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33113 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756903Ab1LGQRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:17:19 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:25 2011
-Message-Id: <20111207160825.709564278@clark.kroah.org>
+	id S1757126Ab1LGQRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:17:38 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:26 2011
+Message-Id: <20111207160826.010548909@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:06:57 -0800
+Date: Wed, 07 Dec 2011 08:07:01 -0800
 From: Greg KH <gregkh@suse.de>
-To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        Greg KH <greg@kroah.com>
+To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Thomas Weber <weber@corscience.de>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>
-Subject: [37/80] revert "mfd: Fix twl4030 dependencies for audio codec"
+        <alan@lxorguk.ukuu.org.uk>, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [41/80] drm/radeon/kms: add some loop timeouts in pageflip code
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,31 +25,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This reverts commit 11b8fc6ae54bf18a48c94e181c37ca135b858b42, which was commit f09ee0451a44a4e913a7c3cec3805508f7de6c54 upstream.
+From: Alex Deucher <alexander.deucher@amd.com>
 
-Koen Kooi <koen@dominion.thruhere.net> reports that this shouldn't have been applied to the 3.0 kernel as it isn't relevant there, only 3.1.
+commit f64964796dedca340608fb1075ab6baad5625851 upstream.
 
-Reported-by: Koen Kooi <koen@dominion.thruhere.net>
-Cc: Thomas Weber <weber@corscience.de>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>
+Avoid infinite loops waiting for surface updates if a GPU
+reset happens while waiting for a page flip.
+
+See:
+https://bugs.freedesktop.org/show_bug.cgi?id=43191
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Mario Kleiner <mario.kleiner@tuebingen.mpg.de>
+Tested-by: Simon Farnsworth <simon.farnsworth@onelan.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mfd/twl-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen.c |    7 ++++++-
+ drivers/gpu/drm/radeon/r100.c      |    7 ++++++-
+ drivers/gpu/drm/radeon/rs600.c     |    7 ++++++-
+ drivers/gpu/drm/radeon/rv770.c     |    7 ++++++-
+ 4 files changed, 24 insertions(+), 4 deletions(-)
 
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -109,7 +109,7 @@
- #define twl_has_watchdog()        false
- #endif
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -82,6 +82,7 @@ u32 evergreen_page_flip(struct radeon_de
+ {
+ 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+ 	u32 tmp = RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset);
++	int i;
  
--#if defined(CONFIG_MFD_TWL4030_AUDIO) || defined(CONFIG_MFD_TWL4030_AUDIO_MODULE) ||\
-+#if defined(CONFIG_TWL4030_CODEC) || defined(CONFIG_TWL4030_CODEC_MODULE) ||\
- 	defined(CONFIG_SND_SOC_TWL6040) || defined(CONFIG_SND_SOC_TWL6040_MODULE)
- #define twl_has_codec()	true
- #else
+ 	/* Lock the graphics update lock */
+ 	tmp |= EVERGREEN_GRPH_UPDATE_LOCK;
+@@ -99,7 +100,11 @@ u32 evergreen_page_flip(struct radeon_de
+ 	       (u32)crtc_base);
+ 
+ 	/* Wait for update_pending to go high. */
+-	while (!(RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset) & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset) & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING)
++			break;
++		udelay(1);
++	}
+ 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 
+ 	/* Unlock the lock, so double-buffering can take place inside vblank */
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -84,13 +84,18 @@ u32 r100_page_flip(struct radeon_device
+ {
+ 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+ 	u32 tmp = ((u32)crtc_base) | RADEON_CRTC_OFFSET__OFFSET_LOCK;
++	int i;
+ 
+ 	/* Lock the graphics update lock */
+ 	/* update the scanout addresses */
+ 	WREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset, tmp);
+ 
+ 	/* Wait for update_pending to go high. */
+-	while (!(RREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset) & RADEON_CRTC_OFFSET__GUI_TRIG_OFFSET));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset) & RADEON_CRTC_OFFSET__GUI_TRIG_OFFSET)
++			break;
++		udelay(1);
++	}
+ 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 
+ 	/* Unlock the lock, so double-buffering can take place inside vblank */
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -62,6 +62,7 @@ u32 rs600_page_flip(struct radeon_device
+ {
+ 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+ 	u32 tmp = RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset);
++	int i;
+ 
+ 	/* Lock the graphics update lock */
+ 	tmp |= AVIVO_D1GRPH_UPDATE_LOCK;
+@@ -74,7 +75,11 @@ u32 rs600_page_flip(struct radeon_device
+ 	       (u32)crtc_base);
+ 
+ 	/* Wait for update_pending to go high. */
+-	while (!(RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING)
++			break;
++		udelay(1);
++	}
+ 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 
+ 	/* Unlock the lock, so double-buffering can take place inside vblank */
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -47,6 +47,7 @@ u32 rv770_page_flip(struct radeon_device
+ {
+ 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+ 	u32 tmp = RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset);
++	int i;
+ 
+ 	/* Lock the graphics update lock */
+ 	tmp |= AVIVO_D1GRPH_UPDATE_LOCK;
+@@ -66,7 +67,11 @@ u32 rv770_page_flip(struct radeon_device
+ 	       (u32)crtc_base);
+ 
+ 	/* Wait for update_pending to go high. */
+-	while (!(RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING));
++	for (i = 0; i < rdev->usec_timeout; i++) {
++		if (RREG32(AVIVO_D1GRPH_UPDATE + radeon_crtc->crtc_offset) & AVIVO_D1GRPH_SURFACE_UPDATE_PENDING)
++			break;
++		udelay(1);
++	}
+ 	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+ 
+ 	/* Unlock the lock, so double-buffering can take place inside vblank */
 
 
