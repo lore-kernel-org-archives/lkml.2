@@ -1,119 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab1LGH6v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 02:58:51 -0500
-Received: from imr-da03.mx.aol.com ([205.188.105.145]:36384 "EHLO
-	imr-da03.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab1LGH6u (ORCPT
+	id S1752234Ab1LGH7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 02:59:18 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46646 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab1LGH7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 02:58:50 -0500
-Message-Id: <201112070758.pB77w2Bp018538@imr-da03.mx.aol.com>
-Reply-To: <wanchaiwanchai1@w.cn>
-From: "May  Aphradee" <gjabaay771@aol.com>
-Subject: Highly Important Read and Reply.
-Date: Tue, 6 Dec 2011 23:56:39 -0800
+	Wed, 7 Dec 2011 02:59:16 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4EDF1CB4.5040305@jp.fujitsu.com>
+Date: Wed, 07 Dec 2011 16:58:44 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0004_01C2A9A6.520D0A74"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/76706
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:312219264:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: G
-X-AOL-VSS-INFO: 5400.1158/76706
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:237654864:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-sid: 3039ac1d33834edf1c8961d6
-To: unlisted-recipients:; (no To-header on input)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] PCI fixes
+References: <20111123144417.2da5958c@jbarnes-desktop> <CA+55aFyaiJBYmgVCLfPA7q3hqtPHYh9wwsmVTCewbBoxMsDE8A@mail.gmail.com> <20111205112256.68e59434@jbarnes-desktop> <4EDDCD6D.1010907@jp.fujitsu.com> <CA+55aFwuZxGZhXyhj+cb5WLnFPDh45Dy6BwgmvEQKAM5swaM6w@mail.gmail.com>
+In-Reply-To: <CA+55aFwuZxGZhXyhj+cb5WLnFPDh45Dy6BwgmvEQKAM5swaM6w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+(2011/12/07 1:14), Linus Torvalds wrote:
+> On Tue, Dec 6, 2011 at 12:08 AM, Kenji Kaneshige
+> <kaneshige.kenji@jp.fujitsu.com>  wrote:
+>>
+>> In the past, pciehp waits 100 ms instead of 1 sec after checking the link
+>> state. This 100 ms was based on PCIe spec.
+>
+> I would like to point out that these kinds of delays are *really*
+> annoying to users. And they add up.
+>
+> One second per se is not a huge problem, but imagine that you're
+> hotplugging some regular user device (think thunderbolt or something
+> that we'd expect normal users to see). First one second for the kernel
+> to even see it, then some random udev rules, then some disk spinup
+> times or whatever, and soon a few delays here and a few delays there,
+> and it takes say three seconds for the folder to show up on the
+> desktop (or whatever acknowledgement of "yes, I see your device now").
+>
+> That's a *long* time, and it's irritating to the user. It makes the
+> user think "the machine is slow".
+>
+> We used to have this exact problem with USB hotplugging with slow
+> devices, so I know. It's still not necessarily immediate, but it's
+> better than it has been.
+>
+> One second *total* is what people will consider pretty much immediate.
+> Any more than that is "thumb twiddling time".
+>
+> And quite frankly, an unconditional one-second delay here seems bad.
+> Two seconds was unacceptable, one second is just bad.
+>
+>>                                                               This is
+>> based on the PCIe description "software must allow 1 second after the Data
+>> Link Layer Link Active bit reads 1b before it is permitted to determine
+>> that a hot plugged device which fails to return a Successful Completion for
+>> a Valid Configuration Request is a broken device".
+>
+> Quite frankly, the way that reads to me says "you must wait at most 1s
+> before you consider a device broken".
+>
+> But a *successful* read of the LT bit should abort the wait early. So
+> that good devices that aren't broken can complete setup much faster.
+>
+> Please try to make something like that work. Instead of always waiting
+> for one second, wait for up to one second only for failure cases. Any
+> possibility of that?
+>
+> Clearly most devices are perfectly fine almost immediately. It's sad
+> to wait for good devices for no good reason.
+>
 
-------=_NextPart_000_0004_01C2A9A6.520D0A74
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+Thank you for comments. Yes, I think we can do more efforts on this.
 
-I hereby write you regarding some vital fund issue.   Read the attached message and reply ASAP. 
+To improve this, I think what we need is something to know if configuration
+request to the hot-added device starts working. One possible idea so far is
+to enable CRS Software Visibility and check vendor ID. The pci_scan_device()
+function already has vendor ID check, but the code to enable CRS was removed
+for some reason.
 
-------=_NextPart_000_0004_01C2A9A6.520D0A74
-Content-Type: application/octet-stream;
-	name="from may.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="from may.rtf"
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=ad7edfe0490877864dc0312e5f3315ea37fc4b3a
 
-RnJvbSB0aGUgZGVzayBvZiB0aGUgRGlyZWN0b3IgR2VuZXJhbCANCg0KQXNz
-b2NpYXRpb24gb2YgU291dGggRWFzdCBBc2lhbiBOYXRpb25zIChBU0VBTikg
-DQoNCkFudGkgRnJhdWQgJiBDcmltZXMgQ29tbWlzc2lvbi4gDQoNCiAgDQoN
-CkhlbGxvLA0KDQogIA0KDQpJbiB0aGUgZm91cnRlZW50aCBzdW1taXQgb2Yg
-dGhlIEFzc29jaWF0aW9uIG9mIFNvdXRoIEVhc3QgQXNpYW4gTmF0aW9uIHdo
-aWNoIHdhcyBoZWxkIGluIHRoZSByZXNvcnQgY2l0eSBvZiBQYXR0YXlhIFRo
-YWlsYW5kICwgb25lIG9mIHRoZSBpc3N1ZXMgcmFpc2VkIGluIHRoZSBzdW1t
-aXQgd2FzIHRoZSBlZmZlY3Qgb2YgZnJhdWQgYW5kIGNyaW1lcyBvbiB0aGUg
-Y2l0aXplbnJ5IG9mIHRoaXMgZ3JlYXQgYXNzb2NpYXRpb24gYW5kIHRoZSB3
-b3JsZCBpbiBnZW5lcmFsLiBUaGVyZSB3YXMgYW4gb3V0Y3J5IHdpdGggYSBs
-b3Qgb2YgcGVvcGxlIGhhdmluZyBiZWVuIHN3aW5kbGVkIG9mIHRoZWlyIGxp
-ZmUgZWFybmluZ3MgYW5kIGFyZSBsZWZ0IHRvIHdhbGxvcCBpbiBhYmplY3Qg
-cG92ZXJ0eSBhcyB0aGUgZWZmZWN0IG9mIGZyYXVkIGFuZCBjcmltZXMgcmFn
-ZXMgaW4gdGhlIHNvY2lldHkuIFRvIHRoaXMsIGVmZm9ydHMgaGFzIGJlZW4g
-bWFkZSB3aXRoIHRoZSBoZWxwIG9mIHRoZSByZWdpb25hbCBicmFuY2ggb2Yg
-dGhlIFVuaXRlZCBOYXRpb25zIChVTikgYW5kIFdvcmxkIEJhbmsgd2hpY2gg
-Ym90aCBhZ3JlZWQgdG8gY29tZSB0byB0aGUgYWlkIG9mIGFsbCB2aWN0aW1z
-LiBJdCB3YXMgYWdyZWVkIGJ5IGFsbCB0aGUgcGFydGllcyBhbmQgYSBzZXR0
-bGVtZW50IGNvbW1pdHRlZSB3YXMgc2V0IHVwIHdpdGggaXRzIHNlY3JldGFy
-aWF0IGluIHRoZSByZXNvcnQgY2l0eSBvZiBQYXR0YXlhIGFzIHdlbGwuIEEg
-aHVnZSBhbW91bnQgb2YgaGFsZiBhIGJpbGxpb24gZG9sbGFycyAoVVMkNTAw
-LDAwMCwwMDAuMDApIHdhcyBlYXJtYXJrZWQgZm9yIHRoaXMgcHJvamVjdCB3
-aGlsZSB0aGV5IHNldCBvdXQgZmlzaGluZyBvdXQgdmljdGltcyBvZiB0aGlz
-IGJhcmJhcmljIGFjdC4gU2luY2UgdGhlIGluYXVndXJhdGlvbiBvZiB0aGlz
-IGNvbW1pdHRlZSBmcmFudGljIGVmZm9ydHMgaGFzIGJlZW4gbWFkZSBpbiBj
-b250YWN0aW5nIHZpY3RpbXMgYnkgd2F5IG9mIGFubm91bmNlbWVudHMgYW5k
-IG90aGVyIG1hc3MgbWVkaWEgYW5kIHZpY3RpbXMgaGFzIGJlZW4gY29taW5n
-IGZvcndhcmQgZm9yIGNsYWltLCBhIGxhcmdlIHN1bSBoYXMgYmVlbiBwYWlk
-IG91dCBpcnJlc3BlY3RpdmUgb2YgdGhlaXIgY291bnRyaWVzIGFuZCBnZW8t
-cG9saXRpY2FsIHJlZ2lvbnMuIA0KDQogIA0KDQpSZWNlbnRseSB5b3VyIG5h
-bWUgaGFzIGNvbWUgdXAgYXMgYSB2aWN0aW0gYW5kIHdlIGFyZSBoYXBweSB0
-byBjb250YWN0IHlvdS4gRmlyc3QgeW91IGhhdmUgdG8gZGVzaXN0IGZyb20g
-Y29udGFjdGluZyBhbnlib2R5IGFuZCBmb2N1cyBvbiByZWdhaW5pbmcgYWxs
-IHlvdSBoYXZlIGxvc3QsIGFuZCBoZXJlIGlzIGEgY2hhbmNlIGZvciB0aGlz
-IGFzc29jaWF0aW9uIGhlbHBpbmcgeW91ICBpbiByZWNvdmVyaW5nIHBhcnQg
-b2Ygd2hhdCB5b3UgaGF2ZSBsb3N0LCB5b3VyIG5hbWVzIGFyZSBpbiB0aGUg
-cXVvdGEgZm9yIGZvdXJ0aCBxdWFydGVybHkgcGF5bWVudCBmb3IgdGhpcyB5
-ZWFyIHdoaWNoIHJlc3VtZXMgaW4gdGhlIG1vbnRoIG9mICBOb3ZlbWJlciAg
-YW5kIHdpbGwgbGFzdCB1bnRpbCB0aGUgZW5kIG9mIHRoZSB5ZWFyIDIwMTEg
-KHdlIHdpbGwgZS1tYWlsIHlvdSBuYW1lcyBvZiBwZXJzb25zIGFuZCB0aGVp
-ciBjb21wZW5zYXRpb24gYW1vdW50cyBhcyBhcHByb3ZlZCBieSB0aGUgYXNz
-b2NpYXRpb24gYW5kIHRoZSBwYXlpbmcgYmFuaykuIFlvdSBoYXZlIGJlZW4g
-YXBwcm92ZWQgZm9yIGEgY29tcGVuc2F0aW9uYWwgYW1vdW50IG9mIE9uZSBN
-aWxsaW9uIFR3byBIdW5kcmVkIEFuZCBGaWZ0eSB0aG91c2FuZCBkb2xsYXJz
-IChVUyQxLDI1MCwwMDAuMDApIGluIGNhc2ggb3IgQVRNIHRocm91Z2ggIG91
-ciBwYXlpbmcgYmFuay4gQWxsIHlvdSBoYXZlIHRvIGRvIHJpZ2h0IG5vdyBp
-cyB0byBjb250YWN0IHRoZSB1bmRlcnNpZ25lZCBwZXJzb24gYXQgdGhlIGUt
-bWFpbCBwcm92aWRlZCBiZWxvdy4NCg0KTXIuIFdhbmNoYWkgICBQcmFjaGEN
-CkVtYWlsLiAgIHdhbmNoYWlwcmFjaGFAZ21haWwuY29tICANCg0KYW5kIGZ1
-cm5pc2ggdGhpcyBvZmZpY2Ugd2l0aCB0aGUgZm9sbG93aW5nIGRhdGEgb2Yg
-eW91cnMgaW1tZWRpYXRlbHkgZm9yIGNyb3NzIGNoZWNraW5nIGFzIHdlIGlu
-dGVuZCBmaW5hbGl6aW5nIHRoaXMgcGF5bWVudCBpbiBhIGZldyBkYXlzLXRp
-bWUuDQogDQogMS4gWW91ciBGdWxsIE5hbWUuDQogMi5Zb3VyIEFkZHJlc3MN
-CiAzLllvdXIgZGlyZWN0IFRlbGVwaG9uZSBudW1iZXINCg0KDQoNCk5PVEU6
-IFlvdSBhcmUgYWR2aWNlIHRvIHN0b3AgZnVydGhlciBjb21tdW5pY2F0aW9u
-IHdpdGggYW55Ym9keSBpbiBvdGhlciBub3QgdG8gY29tcG91bmQgeW91ciBw
-cm9ibGVtcyBhcyB3ZSBhcmUgZ29pbmcgdG8gcHJvdGVjdCB5b3UgYW5kIGd1
-aWRlIHlvdSBvbiBob3cgeW91IGFyZSBnb2luZyB0byByZWNlaXZlIHlvdXIg
-Y29tcGVuc2F0aW9uYWwgZnVuZCB3aGlsZSBhdm9pZGluZyB5b3UgZ2V0dGlu
-ZyBpbnRvIHRoZSBoYW5kcyBvZiB0aGVzZSBmcmF1ZHN0ZXJzIHNvIHdlIHNo
-YWxsIGRpcmVjdCB5b3Ugb24gaG93IHRvIHJlY2VpdmUgeW91ciBjb21wZW5z
-YXRpb24gaW1tZWRpYXRlbHkuIA0KDQogIA0KDQpXZSBhc3N1cmUgeW91IG9m
-IG91ciB1bmFsbG95ZWQgYW5kIG1vc3Qgc2luY2VyZSBjb29wZXJhdGlvbi4g
-DQoNCiAgDQoNCllvdXJzIHRydWx5IA0KDQpNcy4gTWF5ICBBcGhyYWRlZQ0K
-DQpTZWNyZXRhcnkgQVNFQU4gVGhhaWxhbmQgDQo=
-
-------=_NextPart_000_0004_01C2A9A6.520D0A74--
+Regards,
+Kenji Kaneshige
