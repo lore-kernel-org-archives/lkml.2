@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab1LGJxa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 04:53:30 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54736 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab1LGJx2 (ORCPT
+	id S1754028Ab1LGJ40 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 04:56:26 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:37713 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329Ab1LGJ4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 04:53:28 -0500
-Date: Wed, 7 Dec 2011 10:52:54 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Rob Herring <robherring2@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jeff Garzik <jgarzik@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        devicetree-discuss@lists.ozlabs.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v3] of/irq: Get rid of NO_IRQ usage
-Message-ID: <20111207095254.GA6436@pengutronix.de>
-References: <20111110151852.GA7465@oksana.dev.rtsoft.ru>
- <20111110152541.GA3207@oksana.dev.rtsoft.ru>
- <4EDE877A.4080708@gmail.com>
- <CA+55aFwGFogD4ROCH9m=c2jqB2axvrH-dnKPtA8kxXL9b3CVBw@mail.gmail.com>
- <20111206231626.GA31683@oksana.dev.rtsoft.ru>
+	Wed, 7 Dec 2011 04:56:25 -0500
+X-IronPort-AV: E=Sophos;i="4.71,313,1320624000"; 
+   d="scan'208";a="9336749"
+Subject: Re: [PATCH 1/2] xen/granttable: Support sub-page grants
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: ANNIE LI <annie.li@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>
+Date: Wed, 7 Dec 2011 09:56:23 +0000
+In-Reply-To: <4EDEDF2E.3040204@oracle.com>
+References: <4EDDF41E.8070200@oracle.com>
+	 <1323168999-4434-1-git-send-email-annie.li@oracle.com>
+	 <1323171726.23681.65.camel@zakaz.uk.xensource.com>
+	 <4EDEDF2E.3040204@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1323251784.23681.126.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
-Content-Disposition: inline
-In-Reply-To: <20111206231626.GA31683@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-12-07 at 03:36 +0000, ANNIE LI wrote:
+> Thanks for your reviewing, Ian.
+> >>   EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access);
+> >>
+> >> +int gnttab_grant_foreign_access_subpage_v2(domid_t domid, unsigned long frame,
+> >> +					   int flags, unsigned page_off,
+> >> +					   unsigned length)
+> > Please drop the v2 suffixes on the public functions.
+> OK, the initial interface is without v2 suffixes. It was added in order 
+> to reminder user the interfaces are only available for grant table v2.
+> But I am fine to remove it, and following ops fn pointers are better.
+> > Any reason not to route these via the ops table for consistency with all
+> > the other ops? Then your availability check becomes a test for NULL fn
+> > pointer rather than a specific version.
+> Ok, it is good.
+> How about following implements?
 
---+QahgC5+KEYLbs62
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks to be along the right lines. Thanks.
 
-On Wed, Dec 07, 2011 at 03:16:26AM +0400, Anton Vorontsov wrote:
-> PPC32/64 defines NO_IRQ to zero, so no problems expected.
-> ARM defines NO_IRQ to -1, but OF code relies on IRQ domains support,
-> which returns correct ('0') value in 'no irq' case. So everything
-> should be fine.
->=20
-> Other arches might break if some of their OF drivers rely on NO_IRQ
-> being not 0. If so, the drivers must be fixed, finally.
->=20
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> ---
+> gnttab_v1_ops = {
+>   ...
+> .access_subpage = NULL;
+> .access_ref_subpage = NULL;
+> .access_trans = NULL;
+> .access_ref_trans = NULL;
+> }
 
-/me likes NO_IRQ removal very much
+I think you can omit these since NULL is the default but perhaps
+explicitly listing them is useful in a self documenting type way.
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+[...]
+> 
+> Same operations for access_ref_subpage, access_trans and access_ref_trans.
+> 
+> bool gnttab_subpage_available()
+> {
+>       return (gnttab_interface->access_subpage != NULL);
+> }
+> 
+> bool gnttab_subpage_available()
+Typo:       ..trans..
+> {
+>       return (gnttab_interface->access_trans != NULL);
+> }
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Ian.
 
---+QahgC5+KEYLbs62
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+> 
+> Thanks
+> Annie
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAk7fN3YACgkQD27XaX1/VRvt0ACfbx636k1V5VHHUwOKbikRv0zJ
-xx0AoKZLY57vMXqZK6xFgXEUyKOWrIjU
-=P6F1
------END PGP SIGNATURE-----
-
---+QahgC5+KEYLbs62--
