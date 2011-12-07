@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab1LGVIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 16:08:16 -0500
-Received: from re04.intra2net.com ([82.165.46.26]:59149 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639Ab1LGVIP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 16:08:15 -0500
-Message-ID: <4EDFD5BB.1050906@intra2net.com>
-Date: Wed, 07 Dec 2011 22:08:11 +0100
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1758328Ab1LGVNQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 16:13:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757860Ab1LGVNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 16:13:15 -0500
+Date: Wed, 7 Dec 2011 16:12:38 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        robert.richter@amd.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [patch] x86, NMI: add to_cpumask() to silence compile warning
+Message-ID: <20111207211238.GJ1669@redhat.com>
+References: <1318533267-18880-3-git-send-email-dzickus@redhat.com>
+ <tip-99e8b9ca90d688c3ac7d3a141b701c9694a93925@git.kernel.org>
+ <20111206090612.GA18662@elte.hu>
+ <20111206180859.GR1669@redhat.com>
+ <20111207110612.GA3437@mwanda>
 MIME-Version: 1.0
-To: linux-pci@vger.kernel.org
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        Charlie Suffin <charlie.suffin@stratus.com>, stable@kernel.org
-Subject: [PATCH] pci: Add quirk for still enabled interrupts on Intel Sandy
- Bridge GPUs
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111207110612.GA3437@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some BIOS implementations leave the Intel GPU interrupts enabled,
-even though no one is handling them (f.e. i915 driver is never loaded).
-Additionally the interrupt destination is not set up properly
-and the interrupt ends up -somewhere-.
+On Wed, Dec 07, 2011 at 02:06:12PM +0300, Dan Carpenter wrote:
+> Gcc complains if we don't cast this to a struct cpumask pointer.
+> arch/x86/kernel/nmi_selftest.c:93:2:
+> 	warning: passing argument 1 of ‘cpumask_empty’ from
+> 	incompatible pointer type [enabled by default]
+> 
 
-These spurious interrupts are "sticky" and the kernel disables
-the (shared) interrupt line after 100.000+ generated interrupts.
+Crap, another fallout found by Randy.
 
-Fix it by disabling the still enabled interrupts.
-This resolves crashes often seen on monitor unplug.
+Cheers,
+Don
 
-Tested on the following boards:
-- Intel DH61CR: Affected
-- Intel DH67BL: Affected
-- Intel S1200KP server board: Affected
-- Asus P8H61-M LE: Affected, but system does not crash.
-  Probably the IRQ ends up somewhere unnoticed.
+---8<---
+From: Don Zickus <dzickus@redhat.com>
+Date: Wed, 7 Dec 2011 16:03:40 -0500
+Subject: [PATCH] x86, NMI: NMI selftest depends on the local apic
 
-According to reports on the net, the Intel DH61WW board is also affected.
+The selftest doesn't work with out a local apic for now.
 
-Many thanks to Jesse Barnes from Intel for helping
-with the register configuration and to Intel in general
-for providing public hardware documentation.
-
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Tested-by: Charlie Suffin <charlie.suffin@stratus.com>
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
+ arch/x86/Kconfig.debug |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Please CC: comments.
-
- drivers/pci/quirks.c |   34 ++++++++++++++++++++++++++++++++++
- 1 files changed, 34 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 6476547..78fda9c 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2906,6 +2906,40 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65f8, quirk_intel_mc_errata);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65f9, quirk_intel_mc_errata);
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x65fa, quirk_intel_mc_errata);
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index 020a4f1..d6eea6d 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -286,7 +286,7 @@ config DEBUG_STRICT_USER_COPY_CHECKS
  
-+/*
-+ * Some BIOS implementations leave the Intel GPU interrupts enabled,
-+ * even though no one is handling them (f.e. i915 driver is never loaded).
-+ * Additionally the interrupt destination is not set up properly
-+ * and the interrupt ends up -somewhere-.
-+ *
-+ * These spurious interrupts are "sticky" and the kernel disables
-+ * the (shared) interrupt line after 100.000+ generated interrupts.
-+ *
-+ * Fix it by disabling the still enabled interrupts.
-+ * This resolves crashes often seen on monitor unplug.
-+ */
-+#define I915_DEIER_REG 0x4400c
-+static void __devinit disable_igfx_irq(struct pci_dev *dev)
-+{
-+	void __iomem *regs = pci_iomap(dev, 0, 0);
-+	if (regs == NULL) {
-+		dev_warn(&dev->dev, "igfx quirk: Can't iomap PCI device\n");
-+		return;
-+	}
-+
-+	/* Check if any interrupt line is still enabled */
-+	if (readl(regs + I915_DEIER_REG) != 0) {
-+		dev_warn(&dev->dev, "BIOS left Intel GPU interrupts enabled; "
-+			"disabling\n");
-+
-+		writel(0, regs + I915_DEIER_REG);
-+	}
-+
-+	pci_iounmap(dev, regs);
-+}
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
-+
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
- {
+ config DEBUG_NMI_SELFTEST
+ 	bool "NMI Selftest"
+-	depends on DEBUG_KERNEL
++	depends on DEBUG_KERNEL && X86_LOCAL_APIC
+ 	---help---
+ 	  Enabling this option turns on a quick NMI selftest to verify
+ 	  that the NMI behaves correctly.
 -- 
-1.7.4.4
+1.7.6.4
+
