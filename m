@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab1LGBMX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Dec 2011 20:12:23 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59028 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1LGBMV (ORCPT
+	id S1755293Ab1LGBQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Dec 2011 20:16:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44200 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab1LGBQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Dec 2011 20:12:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111207005253.GP2203@ZenIV.linux.org.uk>
-References: <20111206154854.GH2203@ZenIV.linux.org.uk> <CA+55aFybiSeYk57DdWXVWJvDk0VTU2hUtJWZUMaBdWOxYtdd_w@mail.gmail.com>
- <20111206205346.GK2203@ZenIV.linux.org.uk> <CA+55aFwbWUBs3Fy1hyP3CQ15rF2opvjxLR8gnSF5gERDGCGhOw@mail.gmail.com>
- <4EDE94DC.8010106@canonical.com> <20111206224100.GM2203@ZenIV.linux.org.uk>
- <4EDEA152.90804@canonical.com> <CA+55aFwn=n5H_PuaRhnVPpMtfeig8nSi+Wj4Yzv6VBdjkUBEjw@mail.gmail.com>
- <20111207001643.GN2203@ZenIV.linux.org.uk> <CA+55aFzEE+qoRsiSQt7PecvS+hhnMRT9ytsRQKcBrjTQFg9kPg@mail.gmail.com>
- <20111207005253.GP2203@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Dec 2011 17:11:59 -0800
-X-Google-Sender-Auth: I-j0o5cAD9cSGDRDcK7-A_yRcoY
-Message-ID: <CA+55aFxzZOL_TgQSvCUBNsm8OjR_UDHADL=bBeLe-xJ=3PsNhg@mail.gmail.com>
-Subject: Re: [git pull] apparmor fix for __d_path() misuse
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Dec 2011 20:16:19 -0500
+Date: Tue, 6 Dec 2011 17:16:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: serge.hallyn@canonical.com, oleg@redhat.com,
+        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@redhat.com>
+Subject: Re: [PATCH 1/1][V3] Add reboot_pid_ns to handle the reboot syscall
+Message-Id: <20111206171617.e31bc3a6.akpm@linux-foundation.org>
+In-Reply-To: <1323030290-22216-2-git-send-email-daniel.lezcano@free.fr>
+References: <1323030290-22216-1-git-send-email-daniel.lezcano@free.fr>
+	<1323030290-22216-2-git-send-email-daniel.lezcano@free.fr>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 4:52 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>
->> But why do you want that ancestor thing?
+On Sun,  4 Dec 2011 21:24:50 +0100
+Daniel Lezcano <daniel.lezcano@free.fr> wrote:
+
+> In the case of a child pid namespace, rebooting the system does not
+> really makes sense. When the pid namespace is used in conjunction
+> with the other namespaces in order to create a linux container, the
+> reboot syscall leads to some problems.
+> 
+> A container can reboot the host. That can be fixed by dropping
+> the sys_reboot capability but we are unable to correctly to poweroff/
+> halt/reboot a container and the container stays stuck at the shutdown
+> time with the container's init process waiting indefinitively.
+> 
+> After several attempts, no solution from userspace was found to reliabily
+> handle the shutdown from a container.
+> 
+> This patch propose to store the reboot value in the 16 upper bits of the
+> exit code from the processes belonging to a pid namespace which has
+> rebooted. When the reboot syscall is called and we are not in the initial
+> pid namespace, we kill the pid namespace.
+> 
+> By this way the parent process of the child pid namespace to know if
+> it rebooted or not and take the right decision.
+
+hm, modifying the exit code in this manner is a strange interface.  I
+didn't see that coming.  Perhaps some additional justification for this
+idea should be added to the changelog, along with discussion of
+alternative schemes.  I don't immediately see any problems with it,
+but, odd...  I wonder what potential it has to upset existing
+userspace.
+
+Also, do we need to reserve all upper 16 bits of the exit code?  It
+would be better to formally leave some free for future use.
+
+Also, this alters the interface of wait4() and friends, yes?  If so,
+that should be documented in the manpages.  Please Cc Michael on such
+changes.
+
+Also, this affects the data delivered by taskstats, I believe.  Please
+check this, test it, document it in the changelog and update
+getdelays.c appropriately.
+
+Also, glibc might be affected.  For symmetry we might want to add a
+WIFREBOOT() or something.  And we now expect waitid() to fill in extra
+bits in siginfo_t.si_status, which assumes that glibc (and other
+libc's!) aren't using a u8 in there somewhere.  etcetera.  This all
+should be tested, and reviewed by Uli (please).
+
 >
-> Because the path is useless without some idea where it starts?
+> ...
+>
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -444,6 +444,9 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  	                magic2 != LINUX_REBOOT_MAGIC2C))
+>  		return -EINVAL;
+>  
+> +	if (task_active_pid_ns(current) != &init_pid_ns)
+> +		return reboot_pid_ns(task_active_pid_ns(current), cmd);
 
-No.
+This adds a bunch of useless code if CONFIG_PID_NS=n.  It would be
+better to do
 
-You're thinking about this wrong, and you have gotten stuck thinking that way.
+#ifdef CONFIG_PID_NS
+extern void pidns_handle_reboot(int cmd);
+#else
+static inline void pidns_handle_reboot(int cmd)
+{
+}
+#endif
 
-The "where it starts" doesn't help you in any way. It has absolutely
-zero new information, apart from the "it's unreachable from your
-current root" part.
 
-> "It was /foo/bar/baz counting from some point; might have
-> been global root, might have been any random mountpoint if we'd
-> raced with umount and you've got no way to tell one from another"
-> is not particulary useful in logs.
-
-Umm. Think it through. NOBODY WILL EVER SEE ANYTHING ELSE *ANYWAY*.
-
-There is no valid information in that "where it starts". There's
-nothing more you can tell about it. So why return it?
-
-The "it was /foo/bar/baz" part is undeniabty useful. People do
-actually want that part, but they want it for printouts to the
-sysadmin or the user, who will then go "Ahh, I see what's up, they're
-in a chroot environment and they still have access to /foo/bar/baz
-from outside".
-
-But no possible user would ever actually care about that "ancestor"
-thing. There is absolutely nothing useful you can say about it. It's
-*some* kind of root, but that's just about all the relevant
-information you'd ever want to know.
-
-Equally importantly, no existing users actually use that information.
-Sure, AppArmor looked at it, but it looked at it *WRONG*. What
-AppArmor does doesn't actually make any sense to do.
-
-So why make excuses for it? It's useless and unused information that
-only complicates the interface. The only thing anybody *ever* actually
-wants to know is that one single bit of information: "was it reachable
-or not?"
-
-                           Linus
