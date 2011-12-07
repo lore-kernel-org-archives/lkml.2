@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab1LGQTB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 11:19:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33346 "EHLO mx2.suse.de"
+	id S1757426Ab1LGQSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 11:18:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33332 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757413Ab1LGQS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 11:18:57 -0500
+	id S1757413Ab1LGQSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 11:18:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Dec  7 08:08:27 2011
-Message-Id: <20111207160827.930370636@clark.kroah.org>
+Message-Id: <20111207160827.859717626@clark.kroah.org>
 User-Agent: quilt/0.50-23.1
-Date: Wed, 07 Dec 2011 08:07:25 -0800
+Date: Wed, 07 Dec 2011 08:07:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
 Cc: <torvalds@linux-foundation.org>, <akpm@linux-foundation.org>,
-        <alan@lxorguk.ukuu.org.uk>, Johannes Berg <johannes.berg@intel.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [65/80] cfg80211: fix race on init and driver registration
+        <alan@lxorguk.ukuu.org.uk>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [64/80] [S390] add missing .set function for NT_S390_LAST_BREAK regset
 In-Reply-To: <20111207161256.GA7736@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,160 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit a042994dd377d86bff9446ee76151ceb6267c9ba upstream.
+commit b934069c991355d27a053a932591c77960f4e414 upstream.
 
-There is a theoretical race that if hit will trigger
-a crash. The race is between when we issue the first
-regulatory hint, regulatory_hint_core(), gets processed
-by the workqueue and between when the first device
-gets registered to the wireless core. This is not easy
-to reproduce but it was easy to do so through the
-regulatory simulator I have been working on. This
-is a port of the fix I implemented there [1].
+The last breaking event address is a read-only value, the regset misses the
+.set function. If a PTRACE_SETREGSET is done for NT_S390_LAST_BREAK we
+get an oops due to a branch to zero:
 
-[1] https://github.com/mcgrof/regsim/commit/a246ccf81f059cb662eee288aa13100f631e4cc8
+Kernel BUG at 0000000000000002 verbose debug info unavailable
+illegal operation: 0001 #1 SMP
+...
+Call Trace:
+(<0000000000158294> ptrace_regset+0x184/0x188)
+ <00000000001595b6> ptrace_request+0x37a/0x4fc
+ <0000000000109a78> arch_ptrace+0x108/0x1fc
+ <00000000001590d6> SyS_ptrace+0xaa/0x12c
+ <00000000005c7a42> sysc_noemu+0x16/0x1c
+ <000003fffd5ec10c> 0x3fffd5ec10c
+Last Breaking-Event-Address:
+ <0000000000158242> ptrace_regset+0x132/0x188
 
-Cc: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Add a nop .set function to prevent the branch to zero.
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/reg.c |   43 +++++++++++++++++++++++++++----------------
- 1 file changed, 27 insertions(+), 16 deletions(-)
+ arch/s390/kernel/ptrace.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -57,8 +57,17 @@
- #define REG_DBG_PRINT(args...)
- #endif
- 
-+static struct regulatory_request core_request_world = {
-+	.initiator = NL80211_REGDOM_SET_BY_CORE,
-+	.alpha2[0] = '0',
-+	.alpha2[1] = '0',
-+	.intersect = false,
-+	.processed = true,
-+	.country_ie_env = ENVIRON_ANY,
-+};
-+
- /* Receipt of information from last regulatory request */
--static struct regulatory_request *last_request;
-+static struct regulatory_request *last_request = &core_request_world;
- 
- /* To trigger userspace events */
- static struct platform_device *reg_pdev;
-@@ -150,7 +159,7 @@ static char user_alpha2[2];
- module_param(ieee80211_regdom, charp, 0444);
- MODULE_PARM_DESC(ieee80211_regdom, "IEEE 802.11 regulatory domain code");
- 
--static void reset_regdomains(void)
-+static void reset_regdomains(bool full_reset)
- {
- 	/* avoid freeing static information or freeing something twice */
- 	if (cfg80211_regdomain == cfg80211_world_regdom)
-@@ -165,6 +174,13 @@ static void reset_regdomains(void)
- 
- 	cfg80211_world_regdom = &world_regdom;
- 	cfg80211_regdomain = NULL;
-+
-+	if (!full_reset)
-+		return;
-+
-+	if (last_request != &core_request_world)
-+		kfree(last_request);
-+	last_request = &core_request_world;
+--- a/arch/s390/kernel/ptrace.c
++++ b/arch/s390/kernel/ptrace.c
+@@ -897,6 +897,14 @@ static int s390_last_break_get(struct ta
+ 	return 0;
  }
  
- /*
-@@ -175,7 +191,7 @@ static void update_world_regdomain(const
- {
- 	BUG_ON(!last_request);
++static int s390_last_break_set(struct task_struct *target,
++			       const struct user_regset *regset,
++			       unsigned int pos, unsigned int count,
++			       const void *kbuf, const void __user *ubuf)
++{
++	return 0;
++}
++
+ #endif
  
--	reset_regdomains();
-+	reset_regdomains(false);
- 
- 	cfg80211_world_regdom = rd;
- 	cfg80211_regdomain = rd;
-@@ -1396,7 +1412,8 @@ static int __regulatory_hint(struct wiph
- 	}
- 
- new_request:
--	kfree(last_request);
-+	if (last_request != &core_request_world)
-+		kfree(last_request);
- 
- 	last_request = pending_request;
- 	last_request->intersect = intersect;
-@@ -1566,9 +1583,6 @@ static int regulatory_hint_core(const ch
- {
- 	struct regulatory_request *request;
- 
--	kfree(last_request);
--	last_request = NULL;
--
- 	request = kzalloc(sizeof(struct regulatory_request),
- 			  GFP_KERNEL);
- 	if (!request)
-@@ -1766,7 +1780,7 @@ static void restore_regulatory_settings(
- 	mutex_lock(&cfg80211_mutex);
- 	mutex_lock(&reg_mutex);
- 
--	reset_regdomains();
-+	reset_regdomains(true);
- 	restore_alpha2(alpha2, reset_user);
- 
- 	/*
-@@ -2035,7 +2049,7 @@ static int __set_regdom(const struct iee
- 		int r;
- 
- 		if (last_request->initiator != NL80211_REGDOM_SET_BY_DRIVER) {
--			reset_regdomains();
-+			reset_regdomains(false);
- 			cfg80211_regdomain = rd;
- 			return 0;
- 		}
-@@ -2056,7 +2070,7 @@ static int __set_regdom(const struct iee
- 		if (r)
- 			return r;
- 
--		reset_regdomains();
-+		reset_regdomains(false);
- 		cfg80211_regdomain = rd;
- 		return 0;
- 	}
-@@ -2081,7 +2095,7 @@ static int __set_regdom(const struct iee
- 
- 		rd = NULL;
- 
--		reset_regdomains();
-+		reset_regdomains(false);
- 		cfg80211_regdomain = intersected_rd;
- 
- 		return 0;
-@@ -2101,7 +2115,7 @@ static int __set_regdom(const struct iee
- 	kfree(rd);
- 	rd = NULL;
- 
--	reset_regdomains();
-+	reset_regdomains(false);
- 	cfg80211_regdomain = intersected_rd;
- 
+ static const struct user_regset s390_regsets[] = {
+@@ -923,6 +931,7 @@ static const struct user_regset s390_reg
+ 		.size = sizeof(long),
+ 		.align = sizeof(long),
+ 		.get = s390_last_break_get,
++		.set = s390_last_break_set,
+ 	},
+ #endif
+ };
+@@ -1080,6 +1089,14 @@ static int s390_compat_last_break_get(st
  	return 0;
-@@ -2254,11 +2268,8 @@ void /* __init_or_exit */ regulatory_exi
- 	mutex_lock(&cfg80211_mutex);
- 	mutex_lock(&reg_mutex);
+ }
  
--	reset_regdomains();
--
--	kfree(last_request);
-+	reset_regdomains(true);
- 
--	last_request = NULL;
- 	dev_set_uevent_suppress(&reg_pdev->dev, true);
- 
- 	platform_device_unregister(reg_pdev);
++static int s390_compat_last_break_set(struct task_struct *target,
++				      const struct user_regset *regset,
++				      unsigned int pos, unsigned int count,
++				      const void *kbuf, const void __user *ubuf)
++{
++	return 0;
++}
++
+ static const struct user_regset s390_compat_regsets[] = {
+ 	[REGSET_GENERAL] = {
+ 		.core_note_type = NT_PRSTATUS,
+@@ -1103,6 +1120,7 @@ static const struct user_regset s390_com
+ 		.size = sizeof(long),
+ 		.align = sizeof(long),
+ 		.get = s390_compat_last_break_get,
++		.set = s390_compat_last_break_set,
+ 	},
+ 	[REGSET_GENERAL_EXTENDED] = {
+ 		.core_note_type = NT_S390_HIGH_GPRS,
 
 
