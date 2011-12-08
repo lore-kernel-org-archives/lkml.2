@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab1LHHdQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 02:33:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40182 "EHLO mx1.redhat.com"
+	id S1751776Ab1LHHey (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:34:54 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19628 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751591Ab1LHHdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 02:33:14 -0500
-Date: Thu, 8 Dec 2011 08:33:17 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH v3 3/3] slub: min order when debug_guardpage_minorder > 0
-Message-ID: <20111208073316.GA2402@redhat.com>
-References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com>
- <1321633507-13614-3-git-send-email-sgruszka@redhat.com>
- <alpine.DEB.2.00.1112071407090.27360@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1112071407090.27360@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751613Ab1LHHev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 02:34:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99969247"
+Subject: Re: [PATCH] video IPUv1 fixes for different display connections
+From: Vinod Koul <vinod.koul@intel.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
+        Valentin Longchamp <valentin.longchamp@keymile.com>,
+        Daniel Mack <daniel@caiaq.de>, Eric Benard <eric@eukrea.com>
+In-Reply-To: <1322747932-24943-1-git-send-email-s.hauer@pengutronix.de>
+References: <1322747932-24943-1-git-send-email-s.hauer@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Dec 2011 13:03:26 +0530
+Message-ID: <1323329606.1641.25.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 02:07:55PM -0800, David Rientjes wrote:
-> On Fri, 18 Nov 2011, Stanislaw Gruszka wrote:
+On Thu, 2011-12-01 at 14:58 +0100, Sascha Hauer wrote:
+> Hi,
 > 
-> > diff --git a/mm/slub.c b/mm/slub.c
-> > index 7d2a996..a66be56 100644
-> > --- a/mm/slub.c
-> > +++ b/mm/slub.c
-> > @@ -3645,6 +3645,9 @@ void __init kmem_cache_init(void)
-> >  	struct kmem_cache *temp_kmem_cache_node;
-> >  	unsigned long kmalloc_size;
-> >  
-> > +	if (debug_guardpage_minorder())
-> > +		slub_max_order = 0;
-> > +
-> >  	kmem_size = offsetof(struct kmem_cache, node) +
-> >  				nr_node_ids * sizeof(struct kmem_cache_node *);
-> > 
+> The following series fixes the display connections to the IPU on
+> i.MX3 boards. The connection to the display is completely independend
+> of the internal pixel format in the framebuffer. The driver instead
+> changes the IPU <-> Display mapping dependent on the pixelformat
+> which is wrong.
+> The following patch makes 16bpp and 32bpp modes possible on both
+> RGB666 and RGB888 connected displays.
+> The burstsize setting for 32bpp was configured wrong, so 32bpp
+> modes have obviously never been tested.
 > 
-> I'd recommend at least printing a warning about why slub_max_order was 
-> reduced because users may be concerned why they can't now change any 
-> cache's order with /sys/kernel/slab/cache/order.
+> Not for stable since all in kernel boards seem to work.
+Applied thanks.
 
-It's only happen with debug_guardpage_minorder=N parameter, so
-perhaps I'll just document that in kernel-parameters.txt
+Couldn't help but notice that :
+@@ -312,7 +312,7 @@ static void ipu_ch_param_set_size(union
+chan_param_mem *params,
+        case IPU_PIX_FMT_RGB565:
+                params->ip.bpp  = 2;
+                params->ip.pfs  = 4;
 
-Thanks
-Stanislaw
+is not really good way. Someone else who is using this driver has no way
+of knowing what these magic numbers mean and how to use them
+Perhaps you can add meaning to these numbers and some note on why they
+should be set to these values.
+
+
+-- 
+~Vinod
+
