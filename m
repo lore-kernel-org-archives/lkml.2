@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab1LHNeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 08:34:11 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62395 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561Ab1LHNeF (ORCPT
+	id S1751679Ab1LHNra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 08:47:30 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:49589 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab1LHNr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 08:34:05 -0500
-Message-ID: <1323351217.3398.0.camel@phoenix>
-Subject: [PATCH] hwmon: jz4740: Staticise jz4740_hwmon_driver
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
-Date: Thu, 08 Dec 2011 21:33:37 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	Thu, 8 Dec 2011 08:47:29 -0500
+Message-ID: <4EE0BFCA.7010208@oracle.com>
+Date: Thu, 08 Dec 2011 21:46:50 +0800
+From: annie li <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Thunderbird 1.5.0.9 (Windows/20061207)
+MIME-Version: 1.0
+To: Paul Durrant <Paul.Durrant@citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
+Subject: Re: [PATCH V2 1/2] xen/granttable: Support sub-page grants
+References: <1323336940-5382-1-git-send-email-annie.li@oracle.com> <1323337048-5426-1-git-send-email-annie.li@oracle.com> <291EDFCB1E9E224A99088639C4762022B5988E5528@LONPMAILBOX01.citrite.net> <4EE08B0D.80504@oracle.com> <291EDFCB1E9E224A99088639C4762022B5988E552D@LONPMAILBOX01.citrite.net>
+In-Reply-To: <291EDFCB1E9E224A99088639C4762022B5988E552D@LONPMAILBOX01.citrite.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020202.4EE0BFED.00CF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is not used outside this driver so no need to make the symbol global.
+>
+>
+> I say let's be optimistic :-) Yes, there's more overhead in the failure case, but that's not what we should be optimising for.
+>   
+>From positive side, it is OK. I agree with you since the failure case does not occurs frequently, the other goodness is the code style can keep identical with gnttab_grant_foreign_access and gnttab_grant_foreign_access_ref. thanks.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/hwmon/jz4740-hwmon.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/hwmon/jz4740-hwmon.c b/drivers/hwmon/jz4740-hwmon.c
-index 3d7e590..5253d23 100644
---- a/drivers/hwmon/jz4740-hwmon.c
-+++ b/drivers/hwmon/jz4740-hwmon.c
-@@ -203,7 +203,7 @@ static int __devexit jz4740_hwmon_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--struct platform_driver jz4740_hwmon_driver = {
-+static struct platform_driver jz4740_hwmon_driver = {
- 	.probe	= jz4740_hwmon_probe,
- 	.remove = __devexit_p(jz4740_hwmon_remove),
- 	.driver = {
--- 
-1.7.5.4
-
-
+Thanks
+Annie
 
