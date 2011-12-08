@@ -1,191 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab1LHX0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 18:26:08 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35742 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab1LHX0G (ORCPT
+	id S1752530Ab1LHX2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 18:28:07 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52703 "EHLO
+	pyramind.ukuu.org.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750770Ab1LHX2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 18:26:06 -0500
-Message-ID: <4EE14787.8090509@gmail.com>
-Date: Fri, 09 Dec 2011 00:25:59 +0100
-From: Sylwester Nawrocki <snjw23@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>
-CC: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [RFC PATCH v1 6/7] media: video: introduce face detection driver
- module
-References: <1322838172-11149-1-git-send-email-ming.lei@canonical.com>	<1322838172-11149-7-git-send-email-ming.lei@canonical.com>	<4EDD3DEE.6060506@gmail.com>	<CACVXFVPrAro=3t-wpbR_cVahzcx7SCa2J=s2nyyKfQ6SG-i0VQ@mail.gmail.com>	<4EDE90A3.7050900@gmail.com> <CACVXFVN=-0OQ_Tz+HznDug4baLmLNjxVE21gv6CGFoU+hzCtPQ@mail.gmail.com>
-In-Reply-To: <CACVXFVN=-0OQ_Tz+HznDug4baLmLNjxVE21gv6CGFoU+hzCtPQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 8 Dec 2011 18:28:03 -0500
+Date: Thu, 8 Dec 2011 23:28:39 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Vinson Lee <vlee@vmware.com>
+Cc: rdunlap@xenotime.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] devices.txt: Fix typo of 'VMware'.
+Message-ID: <20111208232839.7f115e63@pyramind.ukuu.org.uk>
+In-Reply-To: <1323386282-3545-1-git-send-email-vlee@vmware.com>
+References: <1323386282-3545-1-git-send-email-vlee@vmware.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2011 02:40 PM, Ming Lei wrote:
->>> I understand the API you mentioned here should belong to kernel internal
->>> API, correct me if it is wrong.
->>
->> Yes, I meant the in kernel design, i.e. generic face detection kernel module
->> and an OMAP4 FDIF driver. It makes lots of sense to separate common code
->> in this way, maybe even when there would be only OMAP devices using it.
-> 
-> Yes, that is the motivation of the generic FD module. I think we can focus on
-> two use cases for the generic FD now:
-> 
-> - one is to detect faces from user space image data
-> 
-> - another one is to detect faces in image data generated from HW(SoC
-> internal bus, resize hardware)
-> 
-> For OMAP4 hardware, input data is always from physically continuous
-> memory directly, so it is very easy to support the two cases. For the
-> use case 2,
-> if buffer copy is to be avoided, we can use the coming shared dma-buf[1]
-> to pass the image buffer produced by other HW to FD hw directly.
+On Thu,  8 Dec 2011 15:18:02 -0800
+Vinson Lee <vlee@vmware.com> wrote:
 
-Some H/W uses direct data buses to exchange data between processing blocks,
-and there is no need for additional memory. We only need to manage the data
-links, for which MC has been designed.
+> Signed-off-by: Vinson Lee <vlee@vmware.com>
 
-> 
-> For other FD hardware, if it supports to detect faces in image data from
-> physically continuous memory, I think the patch is OK to support it.
-> 
-> If the FD hw doesn't support to detect faces from physically continuous
-> memory, I have some questions: how does user space app to parse the
-> FD result if application can't get the input image data? If user space can
-
-Do we need the map of detected objects on a input image in all cases ?
-If an application needs only coordinates of detected object on a video
-signal to for example, focus on it, trigger some action, or just count
-detected faces, etc. Perhaps there are more practical similar use cases.
-
-> get image data, how does it connect the image data with FD result? and
-
-If hardware provides frame sequence numbers the FD result can be associated
-with a frame, whether it's passing through H/W interconnect or is located
-in memory.
-
-> what standard v4l2 ways(v4l2_buffer?) can the app use to describe the
-> image data?
-
-We have USERPTR and MMAP memeory buffer for streaming IO, those use
-v4l2_buffer 1). read()/write() is also used 2), mostly for compressed formats.
-Except that there are works on shared buffers.
-
-> 
->> I'm sure now the Samsung devices won't fit in video output node based driver
->> design. They read image data in different ways and also the FD result format
->> is totally different.
-> 
-> I think user space will need the FD result, so it is very important to define
-> API to describe the FD result format to user space. And the input about your
-> FD HW result format is certainly helpful to define the API.
-
-I'll post exact attributes generated by our FD detection H/W soon.
-
-> 
->>>
->>>> AFAICS OMAP4 FDIF processes only data stored in memory, thus it seems
->>>> reasonable to use the videodev interface for passing data to the kernel
->>>> from user space.
->>>>
->>>> But there might be face detection devices that accept data from other
->>>> H/W modules, e.g. transferred through SoC internal data buses between
->>>> image processing pipeline blocks. Thus any new interfaces need to be
->>>> designed with such devices in mind.
->>>>
->>>> Also the face detection hardware block might now have an input DMA
->>>> engine in it, the data could be fed from memory through some other
->>>> subsystem (e.g. resize/colour converter). Then the driver for that
->>>> subsystem would implement a video node.
->>>
->>> I think the direct input image or frame data to FD should be from memory
->>> no matter the actual data is from external H/W modules or input DMA because
->>> FD will take lot of time to detect faces in one image or frame and FD can't
->>> have so much memory to cache several images or frames data.
->>
->> Sorry, I cannot provide much details at the moment, but there exists hardware
->> that reads data from internal SoC buses and even if it uses some sort of
->> cache memory it doesn't necessarily have to be available for the user.
-> 
-> Without some hardware background, it is not easy to give a generic FD module
-> design.
-
-Yes, please give me some time so I can prepare the list of requirements.
-
-> 
->> Still the FD result is associated with an image frame for such H/W, but not
->> necessarily with a memory buffer queued by a user application.
-> 
-> For user space application, it doesn't make sense to handle FD results
-> only without image data.  Even though there are other ways of input
-> image data to FD, user space still need to know the image data, so it makes
-> sense to associate FD result with a memory buffer.
-> 
->> How long it approximately takes to process single image for OMAP4 FDIF ?
-> 
-> See the link[2], and my test result is basically consistent with the data.
-
-Thanks. The processing time is rather low, looks like we could easily detect
-objects in each frame with 30..50 fps.
-
-> 
->>>
->>> If you have seen this kind of FD hardware design, please let me know.
->>>
->>>> I'm for leaving the buffer handling details for individual drivers
->>>> and focusing on a standard interface for applications, i.e. new
->>>
->>> I think leaving buffer handling details in generic FD driver or
->>> individual drivers
->>> doesn't matter now, since it don't have effect on interfaces between kernel
->>> and user space.
->>
->> I think you misunderstood me. I wasn't talking about core/driver module split,
->> I meant we should not be making the user interface video node centric.
->>
->> I think for Samsung devices I'll need a capture video node for passing
-> 
-> Why is it a capture video node instead of OUTPUT v4l2 device? I think the
-
-Let's forget about this capture device, I'm just in progress of learning
-our devices internals, that's quite huge IPs..
-
-> device name should be decided from the view of face detection function:
-> FD need input image data and produce detection result.
-
-No, we should be flexible about where the data comes from to a FD subsystem
-and how it is then processed - if it is passed to some other processing block
-or it is transferred to memory with DMA and returned to the user. And we
-should use Media Controller API to route the data according to application
-requirements.
-OMAP4 FDIF is pretty simple, we need to think more about integrating FD with
-existing data pipelines.
-
-> 
->> the result to the user. So instead of associating FD result with a buffer index
-> 
-> See the explanation above.
-
-No, I still insist on using frame sequence number rather than buffer index :-)
-
-> 
->> we could try to use the frame sequence number (struct v4l2_buffer.sequence,
->> http://linuxtv.org/downloads/v4l-dvb-apis/buffer.html#v4l2-buffer).
-> 
-> [1], http://marc.info/?t=132281644700005&r=1&w=2
-> [2], http://e2e.ti.com/support/embedded/linux/f/354/t/128938.aspx#462740
-
-1) http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-qbuf.html
-2) http://linuxtv.org/downloads/v4l-dvb-apis/func-write.html
-
-
---
-
-Thanks,
-Sylwester
+Acked-by: Alan Cox <alan@linux.intel.com>
