@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab1LHVJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 16:09:55 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34494 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab1LHVJv (ORCPT
+	id S1752146Ab1LHVMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 16:12:52 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53858 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592Ab1LHVMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 16:09:51 -0500
+	Thu, 8 Dec 2011 16:12:51 -0500
+Date: Thu, 8 Dec 2011 13:12:48 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andi Kleen <andi@firstfloor.org>
+cc: Petr Holasek <pholasek@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH v2] NUMA x86: add constraints check for nid parameters
+In-Reply-To: <m2mxb2nb58.fsf@firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1112081309290.8127@chino.kir.corp.google.com>
+References: <1322739907-4695-1-git-send-email-pholasek@redhat.com> <20111201133451.5fc1ee7b.akpm@linux-foundation.org> <20111201231441.GA3293@stainedmachine.redhat.com> <20111201152851.7e39f034.akpm@linux-foundation.org> <20111202105538.GB2188@dhcp-27-244.brq.redhat.com>
+ <alpine.DEB.2.00.1112061233330.28251@chino.kir.corp.google.com> <20111207194311.GB26060@dhcp-27-244.brq.redhat.com> <m2mxb2nb58.fsf@firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3@inbmail01.lsi.com>
-References: <7863850E8C98C748980632D9D3B7C19911968B8AE5@inbmail02.lsi.com>
-	<A6888A6805518E4EA4AF7072A28264A604726F2824@inbmail02.lsi.com>
-	<CAE9FiQWY-jhtbCmdfBY1zg_d0nreTHbkVe3CmaPQMgojDAtLaw@mail.gmail.com>
-	<CAE9FiQXbu-O2exdhjziWCdiWWGNb8q7_RoECeKC5K80DEOobbw@mail.gmail.com>
-	<B2FD678A64EAAD45B089B123FDFC3ED70D912FF83D@inbmail01.lsi.com>
-	<B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3@inbmail01.lsi.com>
-Date: Thu, 8 Dec 2011 13:09:50 -0800
-X-Google-Sender-Auth: Nis6_UULUl7s2bO9BmH8Wbpxv7U
-Message-ID: <CAE9FiQUBkjfOYrjxAVxG7F3GF11trkOnf0ZoKS4h5Db2gQJvbA@mail.gmail.com>
-Subject: Re: mpt2sas regression: can not add disk...
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
-Cc: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-scsi-owner@vger.kernel.org" <linux-scsi-owner@vger.kernel.org>,
-        James Bottomley <jejb@kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 8, 2011 at 5:30 AM, Desai, Kashyap <Kashyap.Desai@lsi.com> wrote:
-> Yinghai,
->
-> Please try attached patch. This must be on top of latest upstream code.
-> When we have introduced fast load, scan of devices are happening from thread context.
->
-> But currently we have not removed " _scsih_probe_devices(ioc);" call from actual probe and it is getting called from multiple places.
-> As a result, we end-up into this issue.
->
-> Please try the attached patch and provide your feedback. Based upon your result, we will post this patch to upstream.
+On Thu, 8 Dec 2011, Andi Kleen wrote:
 
-Yes.  The attaced patch fix the problem. the disk that is attached to
-the mpt2sas card is showing up in OS.
+> > This patch adds constraints checks for numa_set_distance()
+> > function. It emits warning when pxms are used uninitialized
+> > when parsing the SRAT.
+> 
+> Can you expand on the motivation for this please?
 
-Thanks
-
-Yinghai Lu
+It's adding a debugging check if something erroneously passes a negative 
+node id when setting a distance, perhaps because of buggy code that failed 
+to initialize the pxm-to-node mapping correctly which would result in 
+storing to a negative index of the numa_distance array as indicated in the 
+changelog.  It's for robustness and to warn explicitly rather than 
+silently rejecting it unless you're monitoring debug output.
