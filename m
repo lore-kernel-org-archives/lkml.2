@@ -1,115 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347Ab1LHQLH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 11:11:07 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:56815 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab1LHQLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 11:11:03 -0500
-Subject: Re: [PATCH 06/10] HWMON: Convert coretemp to x86 cpuid autoprobing
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jean Delvare <khali@linux-fr.org>
-CC: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, "trenn@suse.de" <trenn@suse.de>,
-        Andi Kleen <ak@linux.intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>
-In-Reply-To: <20111208082402.3591123f@endymion.delvare>
-References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
-	 <1323304882-27953-7-git-send-email-andi@firstfloor.org>
-	 <20111208024001.GA4912@ericsson.com>
-	 <20111208082402.3591123f@endymion.delvare>
+	id S1751438Ab1LHQLS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 11:11:18 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:35439 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751220Ab1LHQLQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 11:11:16 -0500
+X-Sasl-enc: jX3N4CUoSPGJqnE/5u0lozfdW8er+jsNovHnmIsuXiS0 1323360675
+Subject: Re: chroot(2) and bind mounts as non-root
+From: Colin Walters <walters@verbum.org>
+To: John Stoffel <john@stoffel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 08 Dec 2011 11:10:52 -0500
+In-Reply-To: <20191.49202.793643.397028@quad.stoffel.home>
+References: <1323280461.10724.13.camel@lenny>
+	 <20191.49202.793643.397028@quad.stoffel.home>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Thu, 8 Dec 2011 08:09:29 -0800
-Message-ID: <1323360569.2415.16.camel@groeck-laptop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1323360655.10724.35.camel@lenny>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-08 at 02:24 -0500, Jean Delvare wrote:
-> Hi Andi,
+On Wed, 2011-12-07 at 14:36 -0500, John Stoffel wrote:
+> >>>>> "Colin" == Colin Walters <walters@verbum.org> writes:
 > 
-> Thanks a lot for working on this. I wanted to give it a try long ago but
-> could never find the time.
+> Colin> I've recently been doing some work in software compilation, and it'd be
+> Colin> really handy if I could call chroot(2) as a non-root user.  The reason
+> Colin> to chroot is to help avoid "host contamination" - I can set up a build
+> Colin> root and then chroot in.  The reason to do it as non-root is, well,
+> Colin> requiring root to build software sucks for multiple obvious reasons.
 > 
-> On Wed, 7 Dec 2011 18:40:01 -0800, Guenter Roeck wrote:
-> > Andi,
-> > 
-> > On Wed, Dec 07, 2011 at 07:41:19PM -0500, Andi Kleen wrote:
-> > > From: Andi Kleen <ak@linux.intel.com>
-> > > 
-> > > Use the new x86 cpuid autoprobe interface for the Intel coretemp
-> > > driver.
-> > > 
-> > > Cc: fenghua.yu@intel.com
-> > > Cc: khali@linux-fr.org
-> > > Cc: guenter.roeck@ericsson.com
-> > > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> > > ---
-> > >  drivers/hwmon/coretemp.c |   17 ++++++++++++++---
-> > >  1 files changed, 14 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-> > > index 104b376..5de1579 100644
-> > > --- a/drivers/hwmon/coretemp.c
-> > > +++ b/drivers/hwmon/coretemp.c
-> > > @@ -39,6 +39,7 @@
-> > >  #include <linux/moduleparam.h>
-> > >  #include <asm/msr.h>
-> > >  #include <asm/processor.h>
-> > > +#include <asm/cpu_device_id.h>
-> > >  
-> > >  #define DRVNAME	"coretemp"
-> > >  
-> > > @@ -756,13 +757,23 @@ static struct notifier_block coretemp_cpu_notifier __refdata = {
-> > >  	.notifier_call = coretemp_cpu_callback,
-> > >  };
-> > >  
-> > > +static struct x86_cpu_id coretemp_ids[] = {
-> 
-> Can't this be made const?
-> 
-Unless I am missing something, the patchset would have to change to
-accept a const as parameter to x86_match_cpu().
+> What's wrong with using 'fakeroot' or tools like that instead? 
 
-> > > +	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTS },
-> > > +	{}
-> > > +};
-> > > +MODULE_DEVICE_TABLE(x86cpu, coretemp_ids);
-> > > +
-> > >  static int __init coretemp_init(void)
-> > >  {
-> > >  	int i, err = -ENODEV;
-> > >  
-> > > -	/* quick check if we run Intel */
-> > > -	if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
-> > > -		goto exit;
-> > > +	/*
-> > > +	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
-> > > +	 * sensors. We check this bit only, all the early CPUs
-> > > +	 * without thermal sensors will be filtered out.
-> > > +	 */
-> > > +	if (!x86_match_cpu(coretemp_ids))
-> > > +		return -ENODEV;
-> >
-> > X86_FEATURE_DTS is checked elsewhere in the driver, in function get_core_online().
-> > Can that check be removed ?
-> 
-> Is it not possible in theory to mix a CPU with DTS and one without DTS
-> on the same system? There may be a reason why the DTS flag was checked
-> in get_core_online() (i.e. on a per-core basis) rather than in
-> coretemp_init(). I seem to recall that someone explicitly asked for it.
-> 
-> To avoid any risk of regression, I wouldn't touch this part of the code.
-> 
-Ok, makes sense.
+I assume you mean
+"fakechroot" ( https://github.com/fakechroot/fakechroot/wiki )
 
-Thanks,
-Guenter
+The answer is twofold:
+
+1) It's a pile of gross hacks that can easily be buggy, and will be
+permanently trying to keep up with newer system calls.
+2) It's slower.  My edit-compile-debug cycle REALLY matters to me.  If
+you're a developer, it should matter to you - it directly impacts your
+productivity.
+
+How much slower?  Okay, well I tried "fakechroot" from Fedora 15.  It
+appears to break parallel make.  Which obviously already disqualifies it
+from being a core part of my edit-compile-debug cycle.
+
+But here's an example of a small autotools (~6000 significant lines of
+C) project, of which running configure is by far the slowest part.  Note
+'metabuild' is a trivial script which wraps the
+'autogen.sh;configure;make' dance:
+
+$ metabuild   # to prime the caches
+...
+$ git clean -dfx
+...
+$ time ostbuild-user-chroot --unshare-ipc --unshare-pid --unshare-net
+--mount-bind /src /src --mount-proc /proc
+--mount-bind /dev /dev / /bin/sh -c 'cd /src/test-project; metabuild'
+...
+real	0m17.627s
+user	0m9.397s
+sys	0m5.074s
+$ git clean -dfx
+...
+$ time fakeroot fakechroot chroot / /bin/sh -c 'cd /src/test-project;
+metabuild -j 1'
+real	0m35.327s
+user	0m13.118s
+sys	0m10.639s
+
+So it almost exactly doubles...Oh, crap, I just remembered I have
+ccache, so we're really only timing configure runs here.  Anyways, you
+get the point.  Doubling my compile time is bad.  And this is a
+relatively small project.
+
+One of the best parts of Linux is the filesystem and VFS - it's really
+amazingly fast compared to other OSes, especially if you know how to use
+it.  Adding in layers of emulation and crap in between the program and
+the filesystem takes that away.
 
 
