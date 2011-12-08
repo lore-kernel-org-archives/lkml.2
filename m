@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab1LHBsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 20:48:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64691 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757500Ab1LHBsa (ORCPT
+	id S1757575Ab1LHBsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 20:48:35 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:37404 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757520Ab1LHBsb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 20:48:30 -0500
-Date: Thu, 8 Dec 2011 09:47:39 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: trivial <trivial@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH][TRIVIAL] mainline: Fix typo: change aera to area in "*.[ch]"
-Message-ID: <20111208014739.GA6934@udknight.homenetwork>
-Mail-Followup-To: Wang YanQing <Udknight@gmail.com>,
-	trivial <trivial@kernel.org>, lkml <linux-kernel@vger.kernel.org>
+	Wed, 7 Dec 2011 20:48:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAN1soZyMxP4qKow+XKk09KAdzdctdzz=aiYbiTqek923xirK0A@mail.gmail.com>
+References: <1323083166.6763.3.camel@phoenix>
+	<CAN1soZyMxP4qKow+XKk09KAdzdctdzz=aiYbiTqek923xirK0A@mail.gmail.com>
+Date: Thu, 8 Dec 2011 09:48:31 +0800
+Message-ID: <CAN1soZxEdz5FSkC+xBfESAdWgiCnpWcykTa48Xy4RgM4ixCUQQ@mail.gmail.com>
+Subject: Re: [PATCH v2] pcmcia: pxa: replace IRQ_GPIO() with gpio_to_irq()
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Marek Vasut <marek.vasut@gmail.com>,
+        Ian Molton <spyro@f2s.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The shell command below make this patch:
-find . -name "*.[ch]" | xargs grep -l -w "aera" | xargs sed -i s/aera/area/g
+On Mon, Dec 5, 2011 at 7:29 PM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
+> On Mon, Dec 5, 2011 at 7:06 PM, Axel Lin <axel.lin@gmail.com> wrote:
+>> Since commit 6384fd "ARM: pxa: rename IRQ_GPIO to PXA_GPIO_TO_IRQ",
+>> I got buid errors due to implicit declaration of function 'IRQ_GPIO'.
+>>
+>> Use common gpio_to_irq() to replace machine dependant macro IRQ_GPIO().
+>>
+>> Cc: Marek Vasut <marek.vasut@gmail.com>
+>> Cc: Ian Molton <spyro@f2s.com>
+>> Cc: Jonathan Cameron <jic23@cam.ac.uk>
+>> Cc: Zhuang <haojian.zhuang@marvell.com>
+>> Cc: Eric Miao <eric.y.miao@gmail.com>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>> ---
+>> v2:
+>> I just found pxa2xx_trizeps4.c also needs to be converted to gpio_to_irq.
+>> Thus include the fix for pxa2xx_trizeps4.c in v2.
+>>
+>>  drivers/pcmcia/pxa2xx_e740.c      |   11 +++++++----
+>>  drivers/pcmcia/pxa2xx_palmld.c    |    2 +-
+>>  drivers/pcmcia/pxa2xx_palmtc.c    |    2 +-
+>>  drivers/pcmcia/pxa2xx_stargate2.c |    6 ++++--
+>>  drivers/pcmcia/pxa2xx_trizeps4.c  |    5 +++--
+>>  drivers/pcmcia/pxa2xx_vpac270.c   |    4 ++--
+>>  6 files changed, 18 insertions(+), 12 deletions(-)
+>>
+> Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- arch/x86/pci/pcbios.c            |    2 +-
- net/ipv4/netfilter/nf_nat_core.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
-index db0e9a5..da8fe05 100644
---- a/arch/x86/pci/pcbios.c
-+++ b/arch/x86/pci/pcbios.c
-@@ -44,7 +44,7 @@ static inline void set_bios_x(void)
- 	pcibios_enabled = 1;
- 	set_memory_x(PAGE_OFFSET + BIOS_BEGIN, (BIOS_END - BIOS_BEGIN) >> PAGE_SHIFT);
- 	if (__supported_pte_mask & _PAGE_NX)
--		printk(KERN_INFO "PCI : PCI BIOS aera is rw and x. Use pci=nobios if you want it NX.\n");
-+		printk(KERN_INFO "PCI : PCI BIOS area is rw and x. Use pci=nobios if you want it NX.\n");
- }
- 
- /*
-diff --git a/net/ipv4/netfilter/nf_nat_core.c b/net/ipv4/netfilter/nf_nat_core.c
-index 447bc5c..12a8b74 100644
---- a/net/ipv4/netfilter/nf_nat_core.c
-+++ b/net/ipv4/netfilter/nf_nat_core.c
-@@ -318,7 +318,7 @@ nf_nat_setup_info(struct nf_conn *ct,
- 		srchash = hash_by_src(net, nf_ct_zone(ct),
- 				      &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple);
- 		spin_lock_bh(&nf_nat_lock);
--		/* nf_conntrack_alter_reply might re-allocate exntension aera */
-+		/* nf_conntrack_alter_reply might re-allocate exntension area */
- 		nat = nfct_nat(ct);
- 		nat->ct = ct;
- 		hlist_add_head_rcu(&nat->bysource,
--- 
-1.7.3.4
+Applied
