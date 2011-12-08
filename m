@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab1LHKFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 05:05:49 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64886 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab1LHKFr (ORCPT
+	id S1753228Ab1LHKL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 05:11:26 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53139 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab1LHKLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 05:05:47 -0500
+	Thu, 8 Dec 2011 05:11:24 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111208100204.GA31434@oksana.dev.rtsoft.ru>
-References: <CACo8zOd45i3EnCVMyJoDPP4bx2AnD9mEjDiC=bJKvmX=TWfXGg@mail.gmail.com>
-	<4ED90E6D.8090402@goop.org>
-	<CACo8zOcvKwr0wDkytvJfqyx4kV0ceYyCt+qnDqiSgxNywpzeHg@mail.gmail.com>
-	<4ED9BDF8.3010600@goop.org>
-	<CAD2FfiE-rg-1bMmVpYzBhnQcBMKKKO4WPnu0bvx+pvdFnpARrQ@mail.gmail.com>
-	<4EDE4C7A.1010802@goop.org>
-	<CAD2FfiHWuEmVTa54YqfJDk5zHpSQuM_nwPT=mR6NoWpajpydpg@mail.gmail.com>
-	<4EDFA192.7000602@goop.org>
-	<CAD2FfiF+fVoLPWpPyGGKdnoGhx1f=Loh2Ju-vdU58Y=2kf6C3g@mail.gmail.com>
-	<4EE015D1.5070005@goop.org>
-	<20111208100204.GA31434@oksana.dev.rtsoft.ru>
-Date: Thu, 8 Dec 2011 10:05:46 +0000
-Message-ID: <CAD2FfiF5iPDhqQmvvS82xkuCh_HSeFJtPMBQdRuCCfz-9F6AFg@mail.gmail.com>
-Subject: Re: [GIT PULL] power_supply: add power supply scope
-From: Richard Hughes <hughsient@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, vojtech@ucw.cz,
-        Przemo Firszt <przemo@firszt.eu>, Richard Hughes <richard@hughsie.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20111206223109.GA1867@archminux>
+References: <20111204160728.GA27292@archminux>
+	<1323054041.6046.79.camel@linux-s257.site>
+	<20111206215137.GA20907@archminux>
+	<CAN+gG=EaG1h=seuKQa_SF2O033WWn52USh=tjO9F9O55DgH17Q@mail.gmail.com>
+	<20111206223109.GA1867@archminux>
+Date: Thu, 8 Dec 2011 11:11:22 +0100
+Message-ID: <CAN+gG=FoxDg3O5VSVkZEPGn4cVE=SJ4MUfvCgnYiB8vJGTLKmQ@mail.gmail.com>
+Subject: Re: [Dual-LVDS Acer Iconia laptop] i915/DRM issue: one screen stays
+ off [3.2-rc4+]
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>, joeyli <jlee@suse.com>,
+        Baptiste Jonglez <baptiste@jonglez.org>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+        intel-gfx@lists.freedesktop.org,
+        Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 December 2011 10:02, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> I see one problem with this approach. Userland will need patching
-> to distinguish system and device power supplies. So, even with
-> the patch applied, old userland will behave incorrectly.
+Hi,
 
-Userland will need patching anyway, as old versions of upower assumed
-anything showing up in /sys/class/power_supply was powering the
-system.
+On Tue, Dec 6, 2011 at 23:31, Baptiste Jonglez <baptiste@jonglez.org> wrote:
+> On Tue, Dec 06, 2011 at 11:12:26PM +0100, Benjamin Tissoires wrote:
+>> Hi Baptiste,
+>
+> Hi,
+>
+>> On Tue, Dec 6, 2011 at 22:51, Baptiste Jonglez <baptiste@jonglez.org> wrote:
+>> > The second screen works fine with the attached patch. It actually is
+>> > 6 months old but seems to have been lost in the wild...
+>>
+>> You don't have the problem of the second backlight still off?
+>> On our Iconia, we need to trigger a special DMI command to set it up
+>> (SDSS, IIRC).
+>
+> No, with the patch, it worked out-of-the-box.
 
-Richard.
+mmm, this is weird. We must not have the same bios or device version.
+We need to explicitly set the LCD2 up.
+
+>
+> I can even control the brightness in
+> `/sys/class/backlight/acpi_video0/brightness' (it affects both
+> displays at the same time though). But even at 0, it's still perfectly
+> readable.
+
+Yes, the acpi can control both brightness. But WMI can control each
+brightness. However, we are not sure this is what people want. So we
+do not plan to introduce a second brightness control.
+
+>
+> Maybe this a bug that got fixed recently? I've actually tried the 3.1
+> kernel (and then the 3.2-rc4) because I noticed a lot of commits and
+> improvements in the i915 driver recently.
+
+We doubled-checked on 3.2-rc4, and we still need our patch. This is
+definitively a bios/hardware configuration problem.
+
+Cheers,
+Benjamin
+
+>
+>> > Thanks Benjamin!
+>>
+>> All the credits are from Ajax and somebody else on IRC I don't recall,
+>> really sorry. Thanks to them.
+>>
+>> Cheers,
+>> Benjamin.
+>
+> Regards,
+> Baptiste
