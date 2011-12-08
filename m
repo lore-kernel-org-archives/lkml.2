@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab1LHScr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 13:32:47 -0500
-Received: from nine.vfemail.net ([108.76.175.9]:55347 "EHLO vfemail.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752625Ab1LHScp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 13:32:45 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Dec 2011 13:32:43 EST
-Date: Thu, 8 Dec 2011 19:25:36 +0100
-From: Matthias Matiak <netzpython@mail-on.us>
-To: linux-kernel@vger.kernel.org
-Subject: UDF: write hangs w/ certain applications (2.6.38...Git)
-Message-Id: <20111208192536.1ee205dc.netzpython@mail-on.us>
-Organization: NEXUS Research Corporation
-X-Mailer: Sylpheed 3.1.2 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753950Ab1LHSec (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 13:34:32 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:58047 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab1LHSe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 13:34:29 -0500
+X-SpamScore: -13
+X-BigFish: VS-13(zz1432N98dK4015Lzz1202hzzz2dh87h2a8h668h839h8e2h8e3h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:160.36.179.112;KIP:(null);UIP:(null);IPV:NLI;H:kedge2.utk.tennessee.edu;RD:kedge2.utk.tennessee.edu;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Thu, 8 Dec 2011 13:34:04 -0500
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: <eranian@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf_event self-monitoring overhead regression
+In-Reply-To: <CAMsRxfL3NVuz0dL-=iTJUsPMBt1frcfQ43fyc8pNoHEM9NXiOg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1112081324311.25737@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1111300011260.7107@cl320.eecs.utk.edu> <1322654092.2921.256.camel@twins> <CA+55aFwyYdN7HOkP0xanUOWd12zZhdqHCjnsWtdrs5LOxjg+Gg@mail.gmail.com> <alpine.DEB.2.00.1112010853430.31445@cl320.eecs.utk.edu>
+ <CAMsRxfJmXXxDrofY3PDOLWRC7E-o6mANiTSJwYbyMTgOT_J0UA@mail.gmail.com> <alpine.DEB.2.00.1112061604040.23414@cl320.eecs.utk.edu> <CAMsRxfL3NVuz0dL-=iTJUsPMBt1frcfQ43fyc8pNoHEM9NXiOg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear kernel hacker,
-there is a problem while trying to write to an UDF filesystem with 
-some userspace applications like "tar" or "dar" since linux 2.6.28 till currrent git
-at least on x86/x86_64. The process who wants to write hangs at D state forever,
-and no data were saved on the blockdev or image file actually. 
-There is no chance of killing that prozess, unmount that UDF filesystem or 
-reboot/shutdown the box in a clean fashion. 
-Other tools like "cp" or piping stuff via shell works perfectly however. 
+On Wed, 7 Dec 2011, stephane eranian wrote:
 
-This problem does not occur with linux <= 2.6.37
+> Are those the results for surrounding the ioctl() with rdtsc()?
+> 
+> What do the axis actually represent?
+> 
 
-No errors are shown by dmesg, except:
-"INFO: task dar:$PID blocked for more than 120 seconds."
-followed by a trace. Turning on udf debugging does not show any new infos
-after mounting the filesystem. 
+The code looks like this:
 
-Steps to reproduce:
-0) Fire up a virtual machine 
-1) boot a (x86) linux kernel 2.6.38 till current GIT
-2) create an image file or choose any block device, format it as UDF with mkudffs and mount somewhere.
-3) install "dar", a UNIX backup tool ( http://dar.linux.free.fr/ ).
-4) Try to create an archive. e.g.: 
-	dar --verbose --create /path/to/testarchive_on_UDF --fs-root /sbin 
-(replace /sbin with any path with some files within that you like)
-5) dar will hang now almost instantly.
+   start_before=rdtsc();
+   ret1=ioctl(fd[0], PERF_EVENT_IOC_ENABLE,0);
+   start_after=rdtsc();
 
-This behavior was reported by someone else already on debian bug tracking system
-some weeks ago, but with no responses so far.
-http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=647204
-You can find additional information there.
+Similar for stop and read.  The events are set up in advance.
 
-Would be great if someone could investigate this issue further. :)
+I've put up a page with some more graphs (though they're a bit rough yet)
+and more background on what the tests are doing here:
+   
+ http://web.eecs.utk.edu/~vweaver1/projects/perf-events/benchmarks/rdtsc_overhead/
 
+The overall overhead results I'm seeing with rdtsc() are the same I saw 
+using the clock_gettime() calls.
 
-Best regards
-Matthias
+The total overhead of start/stop/read seems to be getting worse with 
+each kernel release, but the individual start, stop and read calls don't
+follow an obvious pattern.
 
---
-Feel free to send me mail or patches directly!
+I'm rebuilding stock kernels with the same compiler/config and I'll re-run
+the tests but it might be a few days before I'll have those results.
 
+Thanks,
 
+Vince
+vweaver1@eecs.utk.edu
 
-
-
-
-
-
-
-
--------------------------------------------------
-This message sent via VFEmail.net
-http://www.vfemail.net
-$14.95 Lifetime accounts!  15GB disk!  
-Commercial Mail Options!   No bandwidth quotas!
- 
