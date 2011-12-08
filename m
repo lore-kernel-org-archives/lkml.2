@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab1LHVoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 16:44:12 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37923 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab1LHVoJ (ORCPT
+	id S1753136Ab1LHVvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 16:51:32 -0500
+Received: from [205.233.59.134] ([205.233.59.134]:46054 "EHLO
+	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752420Ab1LHVvb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 16:44:09 -0500
-MIME-Version: 1.0
-X-Originating-IP: [134.134.139.76]
-In-Reply-To: <201112071340.35267.arnd@arndb.de>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
-	<CAF6AEGto-+oSqguuWyPunUbtE65GpNiXh21srQzrChiBQMb1Nw@mail.gmail.com>
-	<CAB2ybb-0mTdNXN82O1TUGVjhMZUQtQb07A3EVmmdxg3ngEc3Dw@mail.gmail.com>
-	<201112071340.35267.arnd@arndb.de>
-Date: Thu, 8 Dec 2011 22:44:08 +0100
-X-Google-Sender-Auth: ae3eZYGPaar7kcgPB0lgkKuOwX4
-Message-ID: <CAKMK7uFQiiUbkU-7c3Os0d0FJNyLbqS2HLPRLy3LGnOoCXV5Pw@mail.gmail.com>
-Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
- sharing mechanism
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Semwal, Sumit" <sumit.semwal@ti.com>, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Dec 2011 16:51:31 -0500
+Message-ID: <1323381045.17673.22.camel@twins>
+Subject: Re: [patch v3 5/6] sched, ttwu_queue: queue remote wakeups only
+ when crossing cache domains
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
+        Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.jf.intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>
+Date: Thu, 08 Dec 2011 22:50:45 +0100
+In-Reply-To: <1323372858.1984.119.camel@sbsiddha-desk.sc.intel.com>
+References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
+	 <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
+	 <1322796864.4755.5.camel@marge.simson.net>
+	 <1323275027.32012.114.camel@twins>
+	 <1323285644.1984.55.camel@sbsiddha-desk.sc.intel.com>
+	 <1323336544.17673.3.camel@twins>
+	 <1323372858.1984.119.camel@sbsiddha-desk.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 7, 2011 at 14:40, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 07 December 2011, Semwal, Sumit wrote:
->> Thanks for the excellent discussion - it indeed is very good learning
->> for the relatively-inexperienced me :)
->>
->> So, for the purpose of dma-buf framework, could I summarize the
->> following and rework accordingly?:
->> 1. remove mmap() dma_buf_op [and mmap fop], and introduce cpu_start(),
->> cpu_finish() ops to bracket cpu accesses to the buffer. Also add
->> DMABUF_CPU_START / DMABUF_CPU_FINI IOCTLs?
->
-> I think we'd be better off for now without the extra ioctls and
-> just document that a shared buffer must not be exported to user
-> space using mmap at all, to avoid those problems. Serialization
-> between GPU and CPU is on a higher level than the dma_buf framework
-> IMHO.
-
-Agreed.
-
->> 2. remove sg_sync* ops for now (and we'll see if we need to add them
->> later if needed)
->
-> Just removing the sg_sync_* operations is not enough. We have to make
-> the decision whether we want to allow
-> a) only coherent mappings of the buffer into kernel memory (requiring
-> an extension to the dma_map_ops on ARM to not flush caches at map/unmap
-> time)
-> b) not allowing any in-kernel mappings (same requirement on ARM, also
-> limits the usefulness of the dma_buf if we cannot access it from the
-> kernel or from user space)
-> c) only allowing streaming mappings, even if those are non-coherent
-> (requiring strict serialization between CPU (in-kernel) and dma users of
-> the buffer)
-
-I think only allowing streaming access makes the most sense:
-- I don't see much (if any need) for the kernel to access a dma_buf -
-in all current usecases it just contains pixel data and no hw-specific
-things (like sg tables, command buffers, ..). At most I see the need
-for the kernel to access the buffer for dma bounce buffers, but that
-is internal to the dma subsystem (and hence does not need to be
-exposed).
-- Userspace can still access the contents through the exporting
-subsystem (e.g. use some gem mmap support). For efficiency reason gpu
-drivers are already messing around with cache coherency in a platform
-specific way (and hence violated the dma api a bit), so we could stuff
-the mmap coherency in there, too. When we later on extend dma_buf
-support so that other drivers than the gpu can export dma_bufs, we can
-then extend the official dma api with already a few drivers with
-use-patterns around.
-
-But I still think that the kernel must not be required to enforce
-correct access ordering for the reasons outlined in my other mail.
--Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 364 57 48 - http://blog.ffwll.ch
+On Thu, 2011-12-08 at 11:34 -0800, Suresh Siddha wrote:
+> On Thu, 2011-12-08 at 01:29 -0800, Peter Zijlstra wrote:
+> > On Wed, 2011-12-07 at 11:20 -0800, Suresh Siddha wrote:
+> > 
+> > > > +DEFINE_PER_CPU(int, sd_top_spr_id);
+> > > 
+> > > pkg_srid (shared resource id)?
+> > 
+> > How about sd_llc{,_id} ?
+> 
+> There is a reason why I didn't mention it ;)
+> 
+> It is not always LLC. In power-savings mode, we group the cores sharing
+> the power-domain (typically the whole package) irrespective of one more
+> multiple LLC's etc.
+> 
+> Anyways, it is just a 
