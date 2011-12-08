@@ -1,80 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab1LHHlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 02:41:13 -0500
-Received: from mga02.intel.com ([134.134.136.20]:47163 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab1LHHlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 02:41:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="84201406"
-Subject: Re: ACPI "_PDC" - acpi_processor_set_pdc()- execution regression -
- Linux-3.x
-From: Lin Ming <ming.m.lin@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "wallak@free.fr" <wallak@free.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-In-Reply-To: <CAErSpo7Dcxn7tsecDUXe6AQeRAchsU9tQjL7=-WPpPmDj2OUfw@mail.gmail.com>
-References: <1323297487.4edfeacfc49ff@imp.free.fr>
-	 <CAErSpo7Dcxn7tsecDUXe6AQeRAchsU9tQjL7=-WPpPmDj2OUfw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Dec 2011 15:40:57 +0800
-Message-ID: <1323330057.27764.14.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751849Ab1LHHnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:43:13 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:21662 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab1LHHnJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 02:43:09 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-7e-4ee06a8b85e0
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vinod Koul'" <vinod.koul@intel.com>,
+        "'Tushar Behera'" <tushar.behera@linaro.org>,
+        "'Boojin Kim'" <boojin.kim@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+References: <1323168355-2764-1-git-send-email-tushar.behera@linaro.org>
+ <1323168355-2764-2-git-send-email-tushar.behera@linaro.org>
+ <1323329702.1641.26.camel@vkoul-udesk3>
+In-reply-to: <1323329702.1641.26.camel@vkoul-udesk3>
+Subject: RE: [PATCH 1/2] DMA: PL330: Remove pm_runtime_xxx calls from pl330
+ probe/remove
+Date: Thu, 08 Dec 2011 16:43:01 +0900
+Message-id: <002201ccb57d$056d2440$10476cc0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Acy1fBpg4M4fwuJyTt+q5TlvD1xPqgAAEtHQ
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-08 at 13:01 +0800, Bjorn Helgaas wrote:
-> [+cc linux-acpi and Lin Ming]
+Vinod Koul wrote:
 > 
-> On Wed, Dec 7, 2011 at 3:38 PM,  <wallak@free.fr> wrote:
-> > We have a regression on the ACPI stack of the last linux kernel line 3.x (3.1.4,
-> > 3.2-rc4...). The ACPI "_PDC" chunk is not executed on some computers (e.g. Dell
-> > X300; the function acpi_processor_set_pdc() is not called). This issue yield to
-> > an uninitialized state of some ACPI variables.
+> On Tue, 2011-12-06 at 16:15 +0530, Tushar Behera wrote:
+> > amba_probe() now calls pm_runtime_get_noresume() and pm_runtime_enable()
+> > for the devices before the device probe is called. Hence we don't need
+> > to call pm_runtime_get_xxx and pm_runtime_enable() in device probe again.
+> > In the same way, since amba_remove() calls the respective pm_runtime
+> > functions, those functions need not be called from device remove.
 > >
-> > A patch is available below. This patch come back to the previous linux behavior,
-> > and works fine.
-
-Hi, Wallak
-
-Please attach the acpidump output and kernel .config file.
-And also the output of "cat /proc/cpuinfo"
-
-(You can send these files to me offline in case they are too big for
-mail list)
-
-Thanks,
-Lin Ming
-
+> > This patch fixes following run time error with pl330 driver.
 > >
-> > Best Regards,
-> > Wallak.
+> > dma-pl330 dma-pl330.0: Unbalanced pm_runtime_enable!
+> > dma-pl330 dma-pl330.0: failed to get runtime pm
 > >
-> > --- linux-3.1.4-mdf/drivers/acpi/processor_core.c.orig  2011-12-07
-> > 23:12:57.000000000 +0100
-> > +++ linux-3.1.4-mdf/drivers/acpi/processor_core.c       2011-12-07
-> > 23:13:39.000000000 +0100
-> > @@ -223,8 +223,8 @@
-> >        type = (acpi_type == ACPI_TYPE_DEVICE) ? 1 : 0;
-> >        cpuid = acpi_get_cpuid(handle, type, acpi_id);
-> >
-> > -       if (cpuid == -1)
-> > -               return false;
-> > +       if ((cpuid == -1) && (num_possible_cpus() > 1))
-> > +               return false;
-> >
-> >        return true;
-> >  }
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> > Signed-off-by: Giridhar Maruthy <giridhar.maruthy@linaro.org>
+> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> Looks fine to me. Do you want these to go thru slave-dma or samsung
+> tree.
 
+Hi Vinod,
+
+I think, this patch can be sent to upstream via slave-dma tree and second one via Samsung tree separately and you can add my and Boojin Kim's ack(actually, she replied) on this when you apply.
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+> For latter:
+> Acked-by: Vinod Koul <vinod.koul@linux.intel.com>
+> 
+> > ---
+> >  drivers/dma/pl330.c |   17 ++---------------
+> >  1 files changed, 2 insertions(+), 15 deletions(-)
+> >
+> > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> > index a626e15..cd07121 100644
+> > --- a/drivers/dma/pl330.c
+> > +++ b/drivers/dma/pl330.c
+> > @@ -834,17 +834,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+> >
+> >  	amba_set_drvdata(adev, pdmac);
+> >
+> > -#ifdef CONFIG_PM_RUNTIME
+> > -	/* to use the runtime PM helper functions */
+> > -	pm_runtime_enable(&adev->dev);
+> > -
+> > -	/* enable the power domain */
+> > -	if (pm_runtime_get_sync(&adev->dev)) {
+> > -		dev_err(&adev->dev, "failed to get runtime pm\n");
+> > -		ret = -ENODEV;
+> > -		goto probe_err1;
+> > -	}
+> > -#else
+> > +#ifndef CONFIG_PM_RUNTIME
+> >  	/* enable dma clk */
+> >  	clk_enable(pdmac->clk);
+> >  #endif
+> > @@ -977,10 +967,7 @@ static int __devexit pl330_remove(struct amba_device *adev)
+> >  	res = &adev->res;
+> >  	release_mem_region(res->start, resource_size(res));
+> >
+> > -#ifdef CONFIG_PM_RUNTIME
+> > -	pm_runtime_put(&adev->dev);
+> > -	pm_runtime_disable(&adev->dev);
+> > -#else
+> > +#ifndef CONFIG_PM_RUNTIME
+> >  	clk_disable(pdmac->clk);
+> >  #endif
+> >
+> 
+> 
+> --
+> ~Vinod
 
