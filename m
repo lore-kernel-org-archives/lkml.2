@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1LHSn5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 13:43:57 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:17557
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751345Ab1LHSn4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 13:43:56 -0500
-X-SpamScore: -5
-X-BigFish: VS-5(zzbb2dI9371Ic89bh98dKzz1202hzzz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4EE10568.9070002@freescale.com>
-Date: Thu, 8 Dec 2011 12:43:52 -0600
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1753869Ab1LHSuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 13:50:00 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44864 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab1LHSt4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 13:49:56 -0500
+Date: Thu, 8 Dec 2011 10:49:52 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the memblock tree
+Message-ID: <20111208184952.GA12108@google.com>
+References: <20111206143808.3fa5f3785538a37c9686734d@canb.auug.org.au>
+ <20111208075405.911cefd2ee3c2ed81cdc5f4b@canb.auug.org.au>
+ <CAOS58YOSp6VOJ6WCOyYf3KEJ=_p9ZG4LXmK8YiDgn4Y7DbVHKA@mail.gmail.com>
 MIME-Version: 1.0
-To: LiuShuo <b35362@freescale.com>
-CC: <shuo.liu@freescale.com>, <dwmw2@infradead.org>,
-        <Artem.Bityutskiy@nokia.com>, <linux-mtd@lists.infradead.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>
-Subject: Re: [PATCH 3/3] mtd/nand : workaround for Freescale FCM to support
- large-page Nand chip
-References: <1322973098-2528-1-git-send-email-shuo.liu@freescale.com> <1322973098-2528-3-git-send-email-shuo.liu@freescale.com> <4EDEAEB9.6020703@freescale.com> <4EDEE3AC.7060000@freescale.com> <4EDFBA6D.9080500@freescale.com> <4EE09526.5040705@freescale.com>
-In-Reply-To: <4EE09526.5040705@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOS58YOSp6VOJ6WCOyYf3KEJ=_p9ZG4LXmK8YiDgn4Y7DbVHKA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2011 04:44 AM, LiuShuo wrote:
-> 于 2011年12月08日 03:11, Scott Wood 写道:
->> And if we do want to make such assumptions, we could rip out all usage
->> of index/column here, and just handle "oob" and "full page" cases.
-> The function nand_do_write_ops() in nandbase.c is a Nand internal
-> interface.
-> It always is called when application write to nand flash. (e.g. dd)
-> In this function, partial page write is dealt with by filling '0xff' to
-> buffer before data copy.
-> (nand_do_write_oob() is similar)
-> So I don't think we need to do it in our controller driver again, it
-> should be a job of upper layer.
+Hello,
 
-If this is to be considered part of the interface contract, then perhaps
-do a WARN_ON() if we see an unexpected index/column?  And after that,
-only consider full-page or full-oob possibilities.
+On Wed, Dec 07, 2011 at 01:30:44PM -0800, Tejun Heo wrote:
+> Still trying to restore my cross build setup. I think I will be able
+> to send update series later today.
 
--Scott
+Made the following changes,
 
+* Fix the CONFIG_HAVE typo bug.
+
+* Remove 7 space -> tab conversion in arch/score/Kconfig to ease
+  conflict resolution.
+
+* Merge resolution in arch/arm/mm/init.c was incorrect.  Both sort()
+  and memblock_init() calls should be removed.  Fixed.
+
+memblock-kill-early_node_map is now 7bd0b0f0da.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock-kill-early_node_map
+
+Merge result can be verified against the following branch (d8b950f4c3)
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git memblock-kill-early_node_map-next
+
+Thanks.
+
+-- 
+tejun
