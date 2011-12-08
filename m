@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab1LMTOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Dec 2011 14:14:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:44935 "EHLO mga01.intel.com"
+	id S1755680Ab1LMTOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Dec 2011 14:14:35 -0500
+Received: from mga11.intel.com ([192.55.52.93]:15669 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755657Ab1LMTOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Dec 2011 14:14:31 -0500
+	id S1755647Ab1LMTOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Dec 2011 14:14:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="95755253"
-Message-Id: <bb20b30eaea7d0099fc2d5b0e0e5fb67b6268a8a.1323803130.git.tony.luck@intel.com>
+   d="scan'208";a="101791939"
+Message-Id: <9fc2d80b67a31c7b3c25bdabb20c361443113c04.1323803130.git.tony.luck@intel.com>
 In-Reply-To: <cover.1323803130.git.tony.luck@intel.com>
 References: <cover.1323803130.git.tony.luck@intel.com>
 From: Tony Luck <tony.luck@intel.com>
-Date: Tue, 13 Dec 2011 09:24:27 -0800
-Subject: [PATCH 1/6] HWPOISON: clean up memory_failure() vs. __memory_failure()
+Date: Thu, 8 Dec 2011 14:49:09 -0800
+Subject: [PATCH 6/6] x86, mce: Recognise machine check bank signature for data path error
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
         "Huang, Ying" <ying.huang@intel.com>,
@@ -23,186 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is only one caller of memory_failure(), all other users call
-__memory_failure() and pass in the flags argument explicitly. The
-lone user of memory_failure() will soon need to pass flags too.
+Action required data path signature is defined in table 15-19 of SDM:
 
-Add flags argument to the callsite in mce.c. Delete the old memory_failure()
-function, and then rename __memory_failure() without the leading "__".
++-----------------------------------------------------------------------------+
+| SRAR Error | Valid | OVER | UC | EN | MISCV | ADDRV | PCC | S | AR | MCACOD |
+| Data Load  |     1 |    0 |  1 |  1 |     1 |     1 |   0 | 1 |  1 |  0x134 |
++-----------------------------------------------------------------------------+
+
+Recognise this, and pass MCE_AR_SEVERITY code back to do_machine_check()
 
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |    9 +++++--
- drivers/base/memory.c            |    2 +-
- include/linux/mm.h               |    3 +-
- mm/hwpoison-inject.c             |    4 +-
- mm/madvise.c                     |    2 +-
- mm/memory-failure.c              |   46 +++++++++++++++++--------------------
- 6 files changed, 32 insertions(+), 34 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 2af127d..265139d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1046,11 +1046,14 @@ out:
- }
- EXPORT_SYMBOL_GPL(do_machine_check);
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index 7395d5f..c4d8b24 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -54,6 +54,7 @@ static struct severity {
+ #define  MASK(x, y)	.mask = x, .result = y
+ #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
+ #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
++#define	MCI_ADDR (MCI_STATUS_ADDRV|MCI_STATUS_MISCV)
+ #define MCACOD 0xffff
  
--/* dummy to break dependency. actual code is in mm/memory-failure.c */
--void __attribute__((weak)) memory_failure(unsigned long pfn, int vector)
-+#ifndef CONFIG_MEMORY_FAILURE
-+int memory_failure(unsigned long pfn, int vector, int flags)
- {
- 	printk(KERN_ERR "Action optional memory failure at %lx ignored\n", pfn);
+ 	MCESEV(
+@@ -102,11 +103,22 @@ static struct severity {
+ 		SER, BITCLR(MCI_STATUS_S)
+ 		),
+ 
+-	/* AR add known MCACODs here */
+ 	MCESEV(
+ 		PANIC, "Action required with lost events",
+ 		SER, BITSET(MCI_STATUS_OVER|MCI_UC_SAR)
+ 		),
 +
-+	return 0;
- }
-+#endif
- 
- /*
-  * Called after mce notification in process context. This code
-@@ -1068,7 +1071,7 @@ void mce_notify_process(void)
- 	unsigned long pfn;
- 	mce_notify_irq();
- 	while (mce_ring_get(&pfn))
--		memory_failure(pfn, MCE_VECTOR);
-+		memory_failure(pfn, MCE_VECTOR, 0);
- }
- 
- static void mce_process_work(struct work_struct *dummy)
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 8272d92..9a92444 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -474,7 +474,7 @@ store_hard_offline_page(struct class *class,
- 	if (strict_strtoull(buf, 0, &pfn) < 0)
- 		return -EINVAL;
- 	pfn >>= PAGE_SHIFT;
--	ret = __memory_failure(pfn, 0, 0);
-+	ret = memory_failure(pfn, 0, 0);
- 	return ret ? ret : count;
- }
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 4baadd1..bcc5234 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1607,8 +1607,7 @@ void vmemmap_populate_print_last(void);
- enum mf_flags {
- 	MF_COUNT_INCREASED = 1 << 0,
- };
--extern void memory_failure(unsigned long pfn, int trapno);
--extern int __memory_failure(unsigned long pfn, int trapno, int flags);
-+extern int memory_failure(unsigned long pfn, int trapno, int flags);
- extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
- extern int unpoison_memory(unsigned long pfn);
- extern int sysctl_memory_failure_early_kill;
-diff --git a/mm/hwpoison-inject.c b/mm/hwpoison-inject.c
-index c7fc7fd..cc448bb 100644
---- a/mm/hwpoison-inject.c
-+++ b/mm/hwpoison-inject.c
-@@ -45,7 +45,7 @@ static int hwpoison_inject(void *data, u64 val)
- 	 * do a racy check with elevated page count, to make sure PG_hwpoison
- 	 * will only be set for the targeted owner (or on a free page).
- 	 * We temporarily take page lock for try_get_mem_cgroup_from_page().
--	 * __memory_failure() will redo the check reliably inside page lock.
-+	 * memory_failure() will redo the check reliably inside page lock.
- 	 */
- 	lock_page(hpage);
- 	err = hwpoison_filter(hpage);
-@@ -55,7 +55,7 @@ static int hwpoison_inject(void *data, u64 val)
- 
- inject:
- 	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
--	return __memory_failure(pfn, 18, MF_COUNT_INCREASED);
-+	return memory_failure(pfn, 18, MF_COUNT_INCREASED);
- }
- 
- static int hwpoison_unpoison(void *data, u64 val)
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 74bf193..f5ab745 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -251,7 +251,7 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
- 		printk(KERN_INFO "Injecting memory failure for page %lx at %lx\n",
- 		       page_to_pfn(p), start);
- 		/* Ignore return value for now */
--		__memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
-+		memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
- 	}
- 	return ret;
- }
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 06d3479..ab259bb 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -984,7 +984,25 @@ static void clear_page_hwpoison_huge_page(struct page *hpage)
- 		ClearPageHWPoison(hpage + i);
- }
- 
--int __memory_failure(unsigned long pfn, int trapno, int flags)
-+/**
-+ * memory_failure - Handle memory failure of a page.
-+ * @pfn: Page Number of the corrupted page
-+ * @trapno: Trap number reported in the signal to user space.
-+ * @flags: fine tune action taken
-+ *
-+ * This function is called by the low level machine check code
-+ * of an architecture when it detects hardware memory corruption
-+ * of a page. It tries its best to recover, which includes
-+ * dropping pages, killing processes etc.
-+ *
-+ * The function is primarily of use for corruptions that
-+ * happen outside the current execution context (e.g. when
-+ * detected by a background scrubber)
-+ *
-+ * Must run in process context (e.g. a work queue) with interrupts
-+ * enabled and no spinlocks hold.
-+ */
-+int memory_failure(unsigned long pfn, int trapno, int flags)
- {
- 	struct page_state *ps;
- 	struct page *p;
-@@ -1156,29 +1174,7 @@ out:
- 	unlock_page(hpage);
- 	return res;
- }
--EXPORT_SYMBOL_GPL(__memory_failure);
--
--/**
-- * memory_failure - Handle memory failure of a page.
-- * @pfn: Page Number of the corrupted page
-- * @trapno: Trap number reported in the signal to user space.
-- *
-- * This function is called by the low level machine check code
-- * of an architecture when it detects hardware memory corruption
-- * of a page. It tries its best to recover, which includes
-- * dropping pages, killing processes etc.
-- *
-- * The function is primarily of use for corruptions that
-- * happen outside the current execution context (e.g. when
-- * detected by a background scrubber)
-- *
-- * Must run in process context (e.g. a work queue) with interrupts
-- * enabled and no spinlocks hold.
-- */
--void memory_failure(unsigned long pfn, int trapno)
--{
--	__memory_failure(pfn, trapno, 0);
--}
-+EXPORT_SYMBOL_GPL(memory_failure);
- 
- #define MEMORY_FAILURE_FIFO_ORDER	4
- #define MEMORY_FAILURE_FIFO_SIZE	(1 << MEMORY_FAILURE_FIFO_ORDER)
-@@ -1251,7 +1247,7 @@ static void memory_failure_work_func(struct work_struct *work)
- 		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
- 		if (!gotten)
- 			break;
--		__memory_failure(entry.pfn, entry.trapno, entry.flags);
-+		memory_failure(entry.pfn, entry.trapno, entry.flags);
- 	}
- }
- 
++	/* known AR MCACODs: */
++	MCESEV(
++		KEEP, "HT thread notices Action required: data load error",
++		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
++		MCGMASK(MCG_STATUS_EIPV, 0)
++		),
++	MCESEV(
++		AR, "Action required: data load error",
++		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
++		USER
++		),
+ 	MCESEV(
+ 		PANIC, "Action required: unknown MCACOD",
+ 		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_SAR)
 -- 
 1.7.3.1
 
