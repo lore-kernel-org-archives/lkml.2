@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab1LHHFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 02:05:38 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43282 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab1LHHFh convert rfc822-to-8bit (ORCPT
+	id S1751462Ab1LHHHT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:07:19 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:42988 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab1LHHHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 02:05:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20192.24749.652755.425707@ipc1.ka-ro>
-References: <cover.1323256319.git.LW@KARO-electronics.de>
-	<20111207.133800.1403774147364781100.davem@davemloft.net>
-	<20192.24749.652755.425707@ipc1.ka-ro>
-Date: Thu, 8 Dec 2011 15:05:36 +0800
-Message-ID: <CAAQ0ZWRXu+2h2Qu6pe12e=SsSrt-UxvdtfF7httbAdw8sOUY_A@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8][NET] fec.c: several cleanups and bugfixes
-From: Shawn Guo <shawn.guo@linaro.org>
-To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+	Thu, 8 Dec 2011 02:07:15 -0500
+Date: Wed, 7 Dec 2011 23:07:12 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Kautuk Consul <consul.kautuk@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        David Vrabel <david.vrabel@citrix.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 1/1] vmalloc: purge_fragmented_blocks: Acquire spinlock
+ before reading vmap_block
+In-Reply-To: <1323327732-30817-1-git-send-email-consul.kautuk@gmail.com>
+Message-ID: <alpine.DEB.2.00.1112072304010.28419@chino.kir.corp.google.com>
+References: <1323327732-30817-1-git-send-email-consul.kautuk@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 December 2011 15:01, Lothar Waﬂmann <LW@karo-electronics.de> wrote:
-> Hi,
->
-> David Miller writes:
->> From: Lothar Waﬂmann <LW@KARO-electronics.de>
->> Date: Wed, †7 Dec 2011 14:37:12 +0100
->>
->> > The following set of patches provides some cleanup and bugfixes for
->> > drivers/net/ethernet/freescale/fec.c and makes the driver buildable as
->> > a module.
->>
->> 1) I said to use a subject prefix of "fec: " not "fec.c: "
->>
-> OK.
+On Thu, 8 Dec 2011, Kautuk Consul wrote:
 
-To be consistent with existing commits, I would suggest use "net/fec:
-" as the subject prefix.
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 3231bf3..2228971 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -855,11 +855,14 @@ static void purge_fragmented_blocks(int cpu)
+>  
+>  	rcu_read_lock();
+>  	list_for_each_entry_rcu(vb, &vbq->free, free_list) {
+> +		spin_lock(&vb->lock);
+>  
+> -		if (!(vb->free + vb->dirty == VMAP_BBMAP_BITS && vb->dirty != VMAP_BBMAP_BITS))
+> +		if (!(vb->free + vb->dirty == VMAP_BBMAP_BITS &&
+> +			  vb->dirty != VMAP_BBMAP_BITS)) {
+> +			spin_unlock(&vb->lock);
+>  			continue;
+> +		}
+>  
+> -		spin_lock(&vb->lock);
+>  		if (vb->free + vb->dirty == VMAP_BBMAP_BITS && vb->dirty != VMAP_BBMAP_BITS) {
+>  			vb->free = 0; /* prevent further allocs after releasing lock */
+>  			vb->dirty = VMAP_BBMAP_BITS; /* prevent purging it again */
 
->
->> 2) You did not integrate Shawn's "Acked-by: " tags, I'm not going to
->> † †go sifting through the previous patch postings to collect them up,
->> † †that's your job.
->>
-> I still got no Ack from Shawn for patches 3 and 5 and only Tested-by
-> for patches 6 thru 8. Should I wait for Shawn's Ack for those patches
-> too, or should I resent now?
->
-For the whole series,
+Nack, this is wrong because the if-clause you're modifying isn't the 
+criteria that is used to determine whether the purge occurs or not.  It's 
+merely an optimization to prevent doing exactly what your patch is doing: 
+taking vb->lock unnecessarily.
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-
--- 
-Regards,
-Shawn
+In the original code, if the if-clause fails, the lock is only then taken 
+and the exact same test occurs again while protected.  If the test now 
+fails, the lock is immediately dropped.  A branch here is faster than a 
+contented spinlock.
