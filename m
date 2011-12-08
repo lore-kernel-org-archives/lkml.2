@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab1LHVvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 16:51:32 -0500
-Received: from [205.233.59.134] ([205.233.59.134]:46054 "EHLO
+	id S1753188Ab1LHVw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 16:52:26 -0500
+Received: from [205.233.59.134] ([205.233.59.134]:46214 "EHLO
 	merlin.infradead.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420Ab1LHVvb convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752991Ab1LHVwZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 16:51:31 -0500
-Message-ID: <1323381045.17673.22.camel@twins>
+	Thu, 8 Dec 2011 16:52:25 -0500
+Message-ID: <1323381103.17673.23.camel@twins>
 Subject: Re: [patch v3 5/6] sched, ttwu_queue: queue remote wakeups only
  when crossing cache domains
 From: Peter Zijlstra <peterz@infradead.org>
@@ -18,8 +18,8 @@ Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Tim Chen <tim.c.chen@linux.jf.intel.com>,
         "Shi, Alex" <alex.shi@intel.com>
-Date: Thu, 08 Dec 2011 22:50:45 +0100
-In-Reply-To: <1323372858.1984.119.camel@sbsiddha-desk.sc.intel.com>
+Date: Thu, 08 Dec 2011 22:51:43 +0100
+In-Reply-To: <1323381045.17673.22.camel@twins>
 References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
 	 <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
 	 <1322796864.4755.5.camel@marge.simson.net>
@@ -27,6 +27,7 @@ References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
 	 <1323285644.1984.55.camel@sbsiddha-desk.sc.intel.com>
 	 <1323336544.17673.3.camel@twins>
 	 <1323372858.1984.119.camel@sbsiddha-desk.sc.intel.com>
+	 <1323381045.17673.22.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Evolution 3.2.1- 
@@ -35,20 +36,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-08 at 11:34 -0800, Suresh Siddha wrote:
-> On Thu, 2011-12-08 at 01:29 -0800, Peter Zijlstra wrote:
-> > On Wed, 2011-12-07 at 11:20 -0800, Suresh Siddha wrote:
-> > 
-> > > > +DEFINE_PER_CPU(int, sd_top_spr_id);
+On Thu, 2011-12-08 at 22:50 +0100, Peter Zijlstra wrote:
+> On Thu, 2011-12-08 at 11:34 -0800, Suresh Siddha wrote:
+> > On Thu, 2011-12-08 at 01:29 -0800, Peter Zijlstra wrote:
+> > > On Wed, 2011-12-07 at 11:20 -0800, Suresh Siddha wrote:
 > > > 
-> > > pkg_srid (shared resource id)?
+> > > > > +DEFINE_PER_CPU(int, sd_top_spr_id);
+> > > > 
+> > > > pkg_srid (shared resource id)?
+> > > 
+> > > How about sd_llc{,_id} ?
 > > 
-> > How about sd_llc{,_id} ?
-> 
-> There is a reason why I didn't mention it ;)
-> 
-> It is not always LLC. In power-savings mode, we group the cores sharing
-> the power-domain (typically the whole package) irrespective of one more
-> multiple LLC's etc.
-> 
-> Anyways, it is just a 
+> > There is a reason why I didn't mention it ;)
+> > 
+> > It is not always LLC. In power-savings mode, we group the cores sharing
+> > the power-domain (typically the whole package) irrespective of one more
+> > multiple LLC's etc.
+> > 
+> > Anyways, it is just a 
+
+This sending of email stuff is hard..
+
+What I wanted to say is that I consider that an x86 arch bug that needs
+fixing.
+
