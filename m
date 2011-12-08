@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1LHVxj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 16:53:39 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60385 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036Ab1LHVxh (ORCPT
+	id S1753124Ab1LHVyd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 16:54:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46415 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab1LHVyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 16:53:37 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers_base: make argument to platform_device_register_full const
-Date: Thu,  8 Dec 2011 22:53:29 +0100
-Message-Id: <1323381209-20643-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.7.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 8 Dec 2011 16:54:32 -0500
+Date: Thu, 8 Dec 2011 13:54:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Pavel Emelyanov <xemul@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Vagin <avagin@openvz.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v2
+Message-Id: <20111208135430.00730308.akpm@linux-foundation.org>
+In-Reply-To: <20111208212853.GO21678@moon>
+References: <20111206181026.GO29781@moon>
+	<20111207185343.GA3209@redhat.com>
+	<20111207190340.GP21678@moon>
+	<20111208163535.GA25023@redhat.com>
+	<20111208212853.GO21678@moon>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-platform_device_register_full doesn't modify *pdevinfo so it can be
-marked as const without further adaptions.
+On Fri, 9 Dec 2011 01:28:53 +0400
+Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/base/platform.c         |    2 +-
- include/linux/platform_device.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> On Thu, Dec 08, 2011 at 05:35:35PM +0100, Oleg Nesterov wrote:
+> ...
+> > 
+> > However, ->children list is not rcu-safe, this means that even
+> > list_for_each() itself is not safe. Either you need tasklist or
+> > we can probably make it rcu-safe...
+> > 
+> 
+> Andrew, Oleg, does the below one look more less fine? Note the
+> tasklist_lock is back and it worries me a bit since I imagine
+> one could be endlessly reading some /proc/<pid>/children file
+> increasing contention over this lock on the whole system
+> (regardless the fact that it's take for read only).
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 7a24895..a7c0637 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -383,7 +383,7 @@ EXPORT_SYMBOL_GPL(platform_device_unregister);
-  * Returns &struct platform_device pointer on success, or ERR_PTR() on error.
-  */
- struct platform_device *platform_device_register_full(
--		struct platform_device_info *pdevinfo)
-+		const struct platform_device_info *pdevinfo)
- {
- 	int ret = -ENOMEM;
- 	struct platform_device *pdev;
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index 2a23f7d..8007e33 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -63,7 +63,7 @@ struct platform_device_info {
- 		u64 dma_mask;
- };
- extern struct platform_device *platform_device_register_full(
--		struct platform_device_info *pdevinfo);
-+		const struct platform_device_info *pdevinfo);
- 
- /**
-  * platform_device_register_resndata - add a platform-level device with
--- 
-1.7.7.3
+It is a potential problem, from the lock-hold point of view and
+also it can cause large scheduling latencies.  What's involved in
+making ->children an rcu-protected list?
+
+> ---
+> From: Cyrill Gorcunov <gorcunov@openvz.org>
+> Subject: [PATCH] fs, proc: Introduce the /proc/<pid>/children entry v4
+> 
+> There is no easy way to make a reverse parent->children chain
+> from arbitrary <pid> (while parent pid is provided in "PPid"
+> field of /proc/<pid>/status).
+> 
+> So instead of walking over all pids in the system to figure out which
+> children a task have -- we add explicit /proc/<pid>/children entry,
+> because kernel already has this kind of information but it is not
+> yet exported. This is a first level children, not the whole process
+> tree, neither the process threads are identified with this interface.
+
+The changelog doesn't explain why we want the patch, so there's no
+reason to merge it!  Something to do with c/r, yes?
+
+If so, I guess the feature could/should be configurable.  Probably with
+a CONFIG_PROC_CHILDREN which is selected by CONFIG_CHECKPOINT_RESTORE. 
+Which is all getting a bit over the top, but I suppose we must do it.
+
+Also, neither the changelog not the documentation mention the
+loss-of-data problem which might occur if/when the lock is dropped.
+
+The code now appears to be kinda-duplicating functionality which the
+seq_file library provides.  Shouldn't this have been
+changelogged/commented?  If it was, I wouldn't need to ask the next
+question.
+
+Why is it kinda-duplicating seq_file functionality?  Can we strengthen
+the seq_file code so this is unnecessary?
 
