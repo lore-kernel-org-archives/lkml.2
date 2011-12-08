@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab1LHTYZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 14:24:25 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:64199 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab1LHTYX (ORCPT
+	id S1753002Ab1LHTYu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 14:24:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52645 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab1LHTYp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 14:24:23 -0500
-Date: Thu, 8 Dec 2011 22:24:02 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Sjur =?utf-8?B?QnLvv71uZGVsYW5k?= 
-	<sjur.brandeland@stericsson.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch -next] xshm: calling unlock improperly in xshmchr_chrpoll()
-Message-ID: <20111208192402.GA8810@elgon.mountain>
+	Thu, 8 Dec 2011 14:24:45 -0500
+Date: Thu, 8 Dec 2011 23:21:43 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, "H. Peter Anvin" <hpa@zytor.com>,
+        Greg KH <greg@kroah.com>, Theodore Tso <tytso@mit.edu>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, James Morris <jmorris@namei.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [RFC v2 2/3] procfs: add hidepid= and gid= mount options
+Message-ID: <20111208192143.GB9794@albatros>
+References: <20111119110126.GA11468@albatros>
+ <20111119110212.GB11468@albatros>
+ <alpine.LSU.2.00.1112051451470.3938@sister.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4EE10EE3.013A,ss=1,re=0.000,fgs=0
+In-Reply-To: <alpine.LSU.2.00.1112051451470.3938@sister.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We got interrupted before we could take the lock here, and so we
-shouldn't call unlock.
+Hi Hugh,
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Mon, Dec 05, 2011 at 14:55 -0800, Hugh Dickins wrote:
+> On Sat, 19 Nov 2011, Vasiliy Kulikov wrote:
+> > This patch adds support of mount options to restrict access to
+> > /proc/PID/ directories.  The default backward-compatible "relaxed"
+> > behaviour is left untouched.
+> 
+> This patch, in 3.2.0-rc3-next-20111202, leaks tasks: watch
+> while :; do ps; grep KernelStack /proc/meminfo; sleep 1; done
 
-diff --git a/drivers/xshm/xshm_chr.c b/drivers/xshm/xshm_chr.c
-index 8593367..4df1287 100644
---- a/drivers/xshm/xshm_chr.c
-+++ b/drivers/xshm/xshm_chr.c
-@@ -620,7 +620,7 @@ static unsigned int xshmchr_chrpoll(struct file *filp, poll_table *waittab)
- 	if (mutex_lock_interruptible(&dev->mutex)) {
- 		xdev_dbg(dev, "mutex_lock_interruptible got signalled\n");
- 		mask |= POLLERR;
--		goto out;
-+		goto out_unlocked;
- 	}
- 	xshmchr_get(dev);
- 
-@@ -644,6 +644,7 @@ static unsigned int xshmchr_chrpoll(struct file *filp, poll_table *waittab)
- 
- out:
- 	mutex_unlock(&dev->mutex);
-+out_unlocked:
- 	xdev_devl(dev, "poll return mask=0x%04x\n", mask);
- 	xshmchr_put(dev);
- 	return mask;
+Thank you very much for the report!
+
+Unfortunately, I have no time to look at it now, will try to debug the
+issue these weekends.
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
