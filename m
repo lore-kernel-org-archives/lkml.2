@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab1LHMyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 07:54:33 -0500
+	id S1753651Ab1LHMyb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 07:54:31 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:36787 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753598Ab1LHMyW (ORCPT
+	with ESMTP id S1753618Ab1LHMy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 07:54:22 -0500
+	Thu, 8 Dec 2011 07:54:27 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 18/30] Staging: comedi: fix printk issue in jr3_pci.c
-Date: Thu,  8 Dec 2011 18:22:13 +0530
-Message-Id: <1323348745-31477-18-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 19/30] Staging: comedi: fix printk issue in jr3_pci.c
+Date: Thu,  8 Dec 2011 18:22:14 +0530
+Message-Id: <1323348745-31477-19-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -34,38 +34,33 @@ Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.
  1 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
-index 56f7e26..17370b9 100644
+index 17370b9..01b0e08 100644
 --- a/drivers/staging/comedi/drivers/jr3_pci.c
 +++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -372,14 +372,14 @@ static int jr3_pci_open(struct comedi_device *dev)
- 	int i;
- 	struct jr3_pci_dev_private *devpriv = dev->private;
+@@ -517,7 +517,7 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
+ 		int errors = get_u16(&channel->errors);
  
--	printk("jr3_pci_open\n");
-+	pr_debug("jr3_pci_open\n");
- 	for (i = 0; i < devpriv->n_channels; i++) {
- 		struct jr3_pci_subdev_private *p;
- 
- 		p = dev->subdevices[i].private;
- 		if (p) {
--			printk("serial: %p %d (%d)\n", p, p->serial_no,
--			       p->channel_no);
-+			pr_debug("serial: %p %d (%d)\n", p, p->serial_no,
-+				 p->channel_no);
+ 		if (errors != p->errors) {
+-			printk("Errors: %x -> %x\n", p->errors, errors);
++			pr_debug("Errors: %x -> %x\n", p->errors, errors);
+ 			p->errors = errors;
  		}
- 	}
- 	return 0;
-@@ -457,8 +457,8 @@ static int jr3_download_firmware(struct comedi_device *dev, const u8 * data,
- 					break;
- 				more = more
- 				    && read_idm_word(data, size, &pos, &addr);
--				printk("Loading#%d %4.4x bytes at %4.4x\n", i,
--				       count, addr);
-+				pr_debug("Loading#%d %4.4x bytes at %4.4x\n",
-+					 i, count, addr);
- 				while (more && count > 0) {
- 					if (addr & 0x4000) {
- 						/*  16 bit data, never seen in real life!! */
+ 		if (errors & (watch_dog | watch_dog2 | sensor_change)) {
+@@ -560,10 +560,10 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
+ 					printk
+ 					    ("Setting transform for channel %d\n",
+ 					     p->channel_no);
+-					printk("Sensor Model     = %i\n",
+-					       p->model_no);
+-					printk("Sensor Serial    = %i\n",
+-					       p->serial_no);
++					pr_debug("Sensor Model = %i\n",
++						 p->model_no);
++					pr_debug("Sensor Serial = %i\n",
++						 p->serial_no);
+ 
+ 					/*  Transformation all zeros */
+ 					for (i = 0; i < ARRAY_SIZE(transf.link); i++) {
 -- 
 1.7.0.4
 
