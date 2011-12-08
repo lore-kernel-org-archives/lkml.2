@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab1LHBTI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 20:19:08 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41661 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757149Ab1LHBTF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 20:19:05 -0500
-Date: Thu, 8 Dec 2011 01:19:04 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Denis Kuzmenko <linux@solonet.org.ua>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
-Subject: Re: [PATCH] leds: driver for ab5500 high voltage leds
-Message-ID: <20111208011904.GD5748@opensource.wolfsonmicro.com>
-References: <1322834182-26168-1-git-send-email-linus.walleij@stericsson.com> <4EDAA785.40503@solonet.org.ua> <CACRpkdaos1pLNDsnWe3xqaWtcAFDFy2yw+xjRi0++A=41SZvmw@mail.gmail.com> <4EDFAA0A.7040607@solonet.org.ua> <20111207160002.8b52df42.akpm@linux-foundation.org>
+	id S1757457Ab1LHBYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 20:24:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48937 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753166Ab1LHBYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 20:24:38 -0500
+Date: Wed, 7 Dec 2011 20:24:29 -0500
+From: Dave Jones <davej@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, trenn@suse.de,
+        Andi Kleen <ak@linux.intel.com>, hpa@zytor.com
+Subject: Re: [PATCH 07/10] cpufreq: Add support for x86 cpuinfo auto loading
+Message-ID: <20111208012429.GC27892@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+	kay.sievers@vrfy.org, trenn@suse.de,
+	Andi Kleen <ak@linux.intel.com>, hpa@zytor.com
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
+ <1323304882-27953-8-git-send-email-andi@firstfloor.org>
+ <20111208010730.GB27892@redhat.com>
+ <20111208011356.GA24062@one.firstfloor.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111207160002.8b52df42.akpm@linux-foundation.org>
-X-Cookie: Reply hazy, ask again later.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20111208011356.GA24062@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 04:00:02PM -0800, Andrew Morton wrote:
-> Denis Kuzmenko <linux@solonet.org.ua> wrote:
+On Thu, Dec 08, 2011 at 02:13:56AM +0100, Andi Kleen wrote:
 
-Hrm, for some reason lots of the mails here didn't reach my inbox...
-anyway.
+ > > This makes e_powersaver bind to every family 6 VIA cpu.
+ > > But the old logic only bound to certain models.
+ > > Won't this will clash with this other driver if both are built ?
+ > 
+ > The code does
+ > 
+ > static int __init eps_init(void)
+ > {
+ >         if (!x86_match_cpu(eps_cpu_id) || boot_cpu_data.x86_model < 10)
+ >                 return -ENODEV;
+ > 
+ > So modprobe will load it, but if the CPU is too old it will just error out
+ > again. I think that's reasonable.  There's no direct way current
+ > to express a >= in the matches because modprobe uses fnmatch()
+ > 
+ > Also most likely the old CPUs won't have the EST bit anyways, then
+ > it won't even be loaded.
 
-> > > My naive understanding is that you set the current limit and then
-> > > the HV transformer (I guess this is a buck converter of some kind)
+I don't have any VIA CPUs to check any more, and my memory is a little vague,
+but I think you're right on this assumption.
 
-Boost convertor.  A buck is always step down I beleive.
+ > > iirc, the intention here was longhaul on cpus that don't have EST,
+ > > and e_powersaver on those that do. Maybe an additional check for the
+ > > absense of EST in longhaul's init code would do the trick.
+ > > (sidenote: I don't recall why we even have e-powersaver, instead of them
+ > >  just using acpi-cpufreq).
+ > 
+ > It's not done today, but I could add it. 
+ > 
+ > But I tried to keep the existing behaviour. 
+ > This matches this. I have no way to test these CPUs so I would 
+ > prefer to be as compatible as possible.
 
-> > > will raise the voltage level until it either (A) cannot raise it any more
-> > > at c:a 20V or (b) the current limit is reached.
+That's fine. Don't sweat it for this, it's something that could be done later
+if someone cares enough. We might have a hard time finding someone even
+still using this driver.
 
-> > > I suspect this is because for LEDs of this type you get a
-> > > specified current but the voltage just has to be "high enough"
-> > > to break through some diode barrier threshold or so. After
-> > > that intensity is controlled by limiting the current.
+ > AFAIK distros just load them all right?
 
-> > > Does this suffice as explanation...?
+In Fedora, we used to. In F16, we changed things so instead of a monstrous
+init script with nested if's and a whole bunch of hairy logic, we changed
+all the modules to be built-in's, and relied on the link-order in the cpufreq Makefile
+to satisfy the 'first to bind wins'.
 
-OK, that's exactly the sort of hardware I thought you were driving.
-There's several drivers for this type of LED in the kernel already.
+Yes, ugly, but we didn't have this patchset ;-) 
 
-> I won't do anything with this patch yet - I'm waiting to see if Mark
-> stops being surprised ;)
+	Dave
 
-I'm still surprised I'm afraid.  The voltage is generally fixed by the
-platform (approximately anyway) to be whatever is needed to get the LEDs
-to start doing something and the current is varied to control the
-brightness with an upper limit configured based on what the LEDs can
-carry and what is sane for the physical design (blinding users tends not
-to be popular).  The funciton of the current regulator in the system is
-to constrain the brightness of the LED so that it doesn't just go to
-maximum brightness without burning power on a resistive load.
-
-This means that usually the current control does map fairly directly
-onto the LED API brightness, normally with a scaling as the eye
-percieves things on a log scale but we expect brightness to be linear.
-This scaling may be pre-done by the choice of current limits in the
-current regulator.
