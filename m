@@ -1,86 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303Ab1LHTyj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 14:54:39 -0500
-Received: from mga06.intel.com ([134.134.136.21]:65127 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750847Ab1LHTyi (ORCPT
+	id S1751141Ab1LHUCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 15:02:21 -0500
+Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:36992 "EHLO
+	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab1LHUCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 14:54:38 -0500
-Subject: Re: [PATCH] efifb: Update documentation to include generic EFI 1.1
- and UEFI 2.0 platforms
-From: Matt Fleming <matt.fleming@intel.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: "lkml," <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Edgar Hucek <gimli@dark-green.com>, Peter Jones <pjones@redhat.com>
-In-Reply-To: <4EE112A8.5030006@linux.intel.com>
-References: <4EE112A8.5030006@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Thu, 08 Dec 2011 19:54:21 +0000
-Message-ID: <1323374061.3894.81.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Dec 2011 15:02:19 -0500
+Message-ID: <4EE11801.6000709@calvaedi.com>
+Date: Thu, 08 Dec 2011 21:03:13 +0100
+From: John Hughes <john@calvaedi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+MIME-Version: 1.0
+To: platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+CC: Mattia Dongili <malattia@linux.it>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix scancodes emitted by sony-laptop driver (Version 3 with
+ spaces fixed)
+Content-Type: multipart/mixed;
+ boundary="------------090809050906050102060600"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Peter Jones, the efifb maintainer)
+This is a multi-part message in MIME format.
+--------------090809050906050102060600
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-On Thu, 2011-12-08 at 11:40 -0800, Darren Hart wrote:
-> According to the Kconfig help, efifb supports EFI 1.1 and UEFI 2.0 platforms
-> in addition to the Intel based Macs. I have Atom development platforms that
-> require CONFIG_FB_EFI for kernel output to the display console. I have left
-> the Mac kernel parameters alone as I do not have hardware to test it.
-> 
-> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-> CC: H. Peter Anvin <hpa@zytor.com>
-> CC: Matt Fleming <matt.fleming@linux.intel.com>
-> CC: Edgar Hucek <gimli@dark-green.com>
-> ---
->  Documentation/fb/efifb.txt |   12 ++++++++----
->  1 files changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/fb/efifb.txt b/Documentation/fb/efifb.txt
-> index a59916c..7cb9a62 100644
-> --- a/Documentation/fb/efifb.txt
-> +++ b/Documentation/fb/efifb.txt
-> @@ -2,12 +2,15 @@
->  What is efifb?
->  ===============
->  
-> -This is a generic EFI platform driver for Intel based Apple computers.
-> -efifb is only for EFI booted Intel Macs.
-> +This is a generic EFI platform driver for Intel based Apple computers and
-> +platforms with EFI 1.10 or UEFI 2.0 firmware. Select CONFIG_FB_EFI to add
-> +support for using the EFI framebuffer as your console.
->  
->  Supported Hardware
->  ==================
->  
-> +EFI 1.10 platforms
-> +UEFI 2.0 platforms
->  iMac 17"/20"
->  Macbook
->  Macbook Pro 15"/17"
-> @@ -16,8 +19,9 @@ MacMini
->  How to use it?
->  ==============
->  
-> -efifb does not have any kind of autodetection of your machine.
-> -You have to add the following kernel parameters in your elilo.conf:
-> +efifb will autodetect the framebuffer on some machines, for others
-> +you will have to add the appropriate kernel parameters to your boot
-> +loader configuration. For example:
->  	Macbook :
->  		video=efifb:macbook
->  	MacMini :
-> -- 
-> 1.7.6.4
+Drat.  Here we go again.  This time with whitespace as tabs.
 
-Looks good to me,
+Passes checkpatch.pl  Even took out assignment in condition to keep the 
+quiche eaters happy.  :-(
 
-Acked-by: Matt Fleming <matt.fleming@intel.com>
 
+--------------090809050906050102060600
+Content-Type: text/x-patch;
+ name="sony-scancode.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="sony-scancode.patch"
+
+The scancodes returned by the sony-laptop driver for function keys did not
+match the scancodes used to remap keys.  Also, since the scancode was sent
+to the input subsystem after the mapped keysym the /lib/udev/keymap
+utility was confused about which scancode to report for which keysym.
+
+This patch fixes the driver so the correct scancode is shown for each
+key.  It also adds to the documentation a description of where to find
+the scancodes.
+
+Signed-off-by: John Hughes <john@calva.com>
+
+diff --git a/Documentation/laptops/sony-laptop.txt b/Documentation/laptops/sony-laptop.txt
+index 2bd4e82..0d5ac7f 100644
+--- a/Documentation/laptops/sony-laptop.txt
++++ b/Documentation/laptops/sony-laptop.txt
+@@ -17,6 +17,11 @@ subsystem. See the logs of acpid or /proc/acpi/event and
+ devices are created by the driver. Additionally, loading the driver with the
+ debug option will report all events in the kernel log.
+ 
++The "scancodes" passed to the input system (that can be remapped with udev)
++are indexes to the table "sony_laptop_input_keycode_map" in the sony-laptop.c
++module.  For example the "FN/E" key combination (EJECTCD on some models)
++generates the scancode 20 (0x14).
++
+ Backlight control:
+ ------------------
+ If your laptop model supports it, you will find sysfs files in the
+diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
+index c006dee..35768cd 100644
+--- a/drivers/platform/x86/sony-laptop.c
++++ b/drivers/platform/x86/sony-laptop.c
+@@ -347,6 +347,7 @@ static void sony_laptop_report_input_event(u8 event)
+ 	struct input_dev *jog_dev = sony_laptop_input.jog_dev;
+ 	struct input_dev *key_dev = sony_laptop_input.key_dev;
+ 	struct sony_laptop_keypress kp = { NULL };
++	int scancode = -1;
+ 
+ 	if (event == SONYPI_EVENT_FNKEY_RELEASED ||
+ 			event == SONYPI_EVENT_ANYBUTTON_RELEASED) {
+@@ -380,8 +381,9 @@ static void sony_laptop_report_input_event(u8 event)
+ 			dprintk("sony_laptop_report_input_event, event not known: %d\n", event);
+ 			break;
+ 		}
+-		if (sony_laptop_input_index[event] != -1) {
+-			kp.key = sony_laptop_input_keycode_map[sony_laptop_input_index[event]];
++		scancode = sony_laptop_input_index[event];
++		if (scancode != -1) {
++			kp.key = sony_laptop_input_keycode_map[scancode];
+ 			if (kp.key != KEY_UNKNOWN)
+ 				kp.dev = key_dev;
+ 		}
+@@ -389,9 +391,11 @@ static void sony_laptop_report_input_event(u8 event)
+ 	}
+ 
+ 	if (kp.dev) {
++		/* if we have a scancode we emit it so we can always
++		   remap the key */
++		if (scancode != -1)
++			input_event(kp.dev, EV_MSC, MSC_SCAN, scancode);
+ 		input_report_key(kp.dev, kp.key, 1);
+-		/* we emit the scancode so we can always remap the key */
+-		input_event(kp.dev, EV_MSC, MSC_SCAN, event);
+ 		input_sync(kp.dev);
+ 
+ 		/* schedule key release */
+@@ -466,7 +470,7 @@ static int sony_laptop_setup_input(struct acpi_device *acpi_device)
+ 	jog_dev->name = "Sony Vaio Jogdial";
+ 	jog_dev->id.bustype = BUS_ISA;
+ 	jog_dev->id.vendor = PCI_VENDOR_ID_SONY;
+-	key_dev->dev.parent = &acpi_device->dev;
++	jog_dev->dev.parent = &acpi_device->dev;
+ 
+ 	input_set_capability(jog_dev, EV_KEY, BTN_MIDDLE);
+ 	input_set_capability(jog_dev, EV_REL, REL_WHEEL);
+
+
+--------------090809050906050102060600--
