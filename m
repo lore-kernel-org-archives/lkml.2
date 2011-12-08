@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860Ab1LHUnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 15:43:39 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:65342 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751770Ab1LHUng (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 15:43:36 -0500
-Date: Thu, 8 Dec 2011 15:47:39 -0500
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/22] Initial AMD IOMMUv2 support
-Message-ID: <20111208204739.GC3179@homer.localdomain>
-References: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
+	id S1751798Ab1LHUqx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 15:46:53 -0500
+Received: from fieldses.org ([174.143.236.118]:45129 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751615Ab1LHUqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 15:46:51 -0500
+Date: Thu, 8 Dec 2011 15:46:48 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, davem@davemloft.net, devel@openvz.org
+Subject: Re: [PATCH 0/4] SUNRPC: pass network namespace context to sockaddr
+ construction routines
+Message-ID: <20111208204648.GB32505@fieldses.org>
+References: <20111207111716.17273.63010.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111207111716.17273.63010.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 02:34:15PM +0100, Joerg Roedel wrote:
-> Hi,
-> 
-> here is a patch-set that adds initial support for the AMD IOMMU version
-> 2 to the Linux kernel. The main feature of the new IOMMU version is
-> support for DMA demand-paging and multiple DMA address spaces per
-> device.
-> The patch-set consists of 2 parts. Patches 1-16 implement the hardware
-> access functions to setup and manage the IOMMUv2 functionality of the
-> hardware. Patches 17-22 implement a seperate module which makes use
-> these functions to implement a page-fault handler for devices which can
-> be used by real device drivers.
-> 
-> Any feedback appreciated.
-> 
-> Thanks,
-> 
-> 	Joerg
-> 
+On Wed, Dec 07, 2011 at 03:20:07PM +0300, Stanislav Kinsbursky wrote:
+> This is another precursor patch set aimed to remove hard-coded "init_net"
+> reference from SUNRPC sockaddr convertion and construction routines.
 
-What hw/chipset/CPU support this functionality ?
+ACK--all look straightforward.  (Only complaint would be that this isn't
+terribly interesting till we see how these are used.)
 
-Cheers,
-Jerome
+--b.
+
+
+> 
+> The following series consists of:
+> 
+> ---
+> 
+> Stanislav Kinsbursky (4):
+>       SUNRPC: use passed network namespace context in rpc_parse_scope_id()
+>       SUNRPC: use passed network namespace context in rpc_pton6()
+>       SUNRPC: use passed network namespace context in rpc_pton()
+>       SUNRPC: use passed network namespace context in rpc_uaddr2sockaddr()
+> 
+> 
+>  fs/nfs/dns_resolve.c        |    4 ++--
+>  fs/nfs/nfs4filelayoutdev.c  |    2 +-
+>  fs/nfs/nfs4namespace.c      |    2 +-
+>  fs/nfs/super.c              |    4 ++--
+>  fs/nfsd/nfs4state.c         |    2 +-
+>  fs/nfsd/nfsctl.c            |    2 +-
+>  include/linux/sunrpc/clnt.h |    4 ++--
+>  net/sunrpc/addr.c           |   24 +++++++++++++-----------
+>  net/sunrpc/rpcb_clnt.c      |    2 +-
+>  net/sunrpc/svcauth_unix.c   |    2 +-
+>  10 files changed, 25 insertions(+), 23 deletions(-)
+> 
+> -- 
+> Signature
