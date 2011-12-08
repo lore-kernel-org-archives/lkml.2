@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab1LHDSo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 22:18:44 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:34954 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756911Ab1LHDSn convert rfc822-to-8bit (ORCPT
+	id S1757279Ab1LHDZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 22:25:05 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:32872 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756877Ab1LHDZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 22:18:43 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 7 Dec 2011 22:25:03 -0500
+Date: Wed, 7 Dec 2011 19:24:59 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+In-Reply-To: <1320512782-12209-1-git-send-email-aarcange@redhat.com>
+Message-ID: <alpine.DEB.2.00.1112071924400.636@chino.kir.corp.google.com>
+References: <alpine.LSU.2.00.1111041856530.22199@sister.anvils> <1320512782-12209-1-git-send-email-aarcange@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 1/2] [media] V4L: atmel-isi: add code toenable/disableISI_MCK clock
-Date: Thu, 8 Dec 2011 11:18:23 +0800
-Message-ID: <4C79549CB6F772498162A641D92D5328039E9F92@penmb01.corp.atmel.com>
-In-Reply-To: <20111207223952.GH14542@n2100.arm.linux.org.uk>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/2] [media] V4L: atmel-isi: add code toenable/disableISI_MCK clock
-Thread-Index: Acy1MSuxCHcxn45MSzCSfS1kYZVU6wAJizzA
-References: <1322647604-30662-1-git-send-email-josh.wu@atmel.com> <20111207084958.GA14542@n2100.arm.linux.org.uk> <4C79549CB6F772498162A641D92D5328039E9C15@penmb01.corp.atmel.com> <20111207223952.GH14542@n2100.arm.linux.org.uk>
-From: "Wu, Josh" <Josh.wu@atmel.com>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Cc: <g.liakhovetski@gmx.de>, <linux-media@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-X-OriginalArrivalTime: 08 Dec 2011 03:18:25.0951 (UTC) FILETIME=[0C9172F0:01CCB558]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 08, 2011 6:40AM, Russell King wrote:
+On Sat, 5 Nov 2011, Andrea Arcangeli wrote:
 
-> On Wed, Dec 07, 2011 at 06:12:52PM +0800, Wu, Josh wrote:
->> Hi, Russell King
->> 
->> On Wed, Dec 07, 2011 at 4:50 PM, Russell King wrote:
->> 
->> > On Wed, Nov 30, 2011 at 06:06:43PM +0800, Josh Wu wrote:
->> >> +	/* Get ISI_MCK, provided by programmable clock or external clock
->> */
->> >> +	isi->mck = clk_get(dev, "isi_mck");
->> >> +	if (IS_ERR_OR_NULL(isi->mck)) {
->> 
->> > This should be IS_ERR()
->> 
->> So it means the clk_get() will never return NULL even when clk
-structure
->> is NULL in clk lookup entry. Right?
+> migrate was doing a rmap_walk with speculative lock-less access on
+> pagetables. That could lead it to not serialize properly against
+> mremap PT locks. But a second problem remains in the order of vmas in
+> the same_anon_vma list used by the rmap_walk.
+> 
+> If vma_merge would succeed in copy_vma, the src vma could be placed
+> after the dst vma in the same_anon_vma list. That could still lead
+> migrate to miss some pte.
+> 
+> This patch adds a anon_vma_moveto_tail() function to force the dst vma
+> at the end of the list before mremap starts to solve the problem.
+> 
+> If the mremap is very large and there are a lots of parents or childs
+> sharing the anon_vma root lock, this should still scale better than
+> taking the anon_vma root lock around every pte copy practically for
+> the whole duration of mremap.
+> 
+> Update: Hugh noticed special care is needed in the error path where
+> move_page_tables goes in the reverse direction, a second
+> anon_vma_moveto_tail() call is needed in the error path.
+> 
 
-> It is not the drivers business to know whether NULL is valid or not.
-
-> clk_get() is defined to either return an error pointer, or a cookie
-> which the rest of the clk API must accept.
-
-> If an implementation decides that clk_get() can return NULL and deals
-> with that in the rest of the API (eg, to mean 'there is no clock but
-> don't fail for this') then drivers must not reject that.
-
-> If a driver rejects NULL then it is performing checks outside of the
-> definition of the clk API, and making assumptions about the nature of
-> valid cookies.
-
-Thanks for the feedback. I will send v3 patch which will not check the
-null return value.
-
-Best Regards,
-Josh Wu
+Is this still needed?  It's missing in linux-next.
