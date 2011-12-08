@@ -1,91 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab1LHKCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 05:02:12 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:61518 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab1LHKCG (ORCPT
+	id S1753192Ab1LHKCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 05:02:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38302 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751904Ab1LHKCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 05:02:06 -0500
-Message-ID: <4EE08B0D.80504@oracle.com>
-Date: Thu, 08 Dec 2011 18:01:49 +0800
-From: ANNIE LI <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
+	Thu, 8 Dec 2011 05:02:30 -0500
+Date: Thu, 8 Dec 2011 14:02:24 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Hughes <hughsient@gmail.com>,
+        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, vojtech@ucw.cz,
+        Przemo Firszt <przemo@firszt.eu>, Richard Hughes <richard@hughsie.com>
+Subject: Re: [GIT PULL] power_supply: add power supply scope
+Message-ID: <20111208100204.GA31434@oksana.dev.rtsoft.ru>
+References: <CACo8zOd45i3EnCVMyJoDPP4bx2AnD9mEjDiC=bJKvmX=TWfXGg@mail.gmail.com>
+ <4ED90E6D.8090402@goop.org>
+ <CACo8zOcvKwr0wDkytvJfqyx4kV0ceYyCt+qnDqiSgxNywpzeHg@mail.gmail.com>
+ <4ED9BDF8.3010600@goop.org>
+ <CAD2FfiE-rg-1bMmVpYzBhnQcBMKKKO4WPnu0bvx+pvdFnpARrQ@mail.gmail.com>
+ <4EDE4C7A.1010802@goop.org>
+ <CAD2FfiHWuEmVTa54YqfJDk5zHpSQuM_nwPT=mR6NoWpajpydpg@mail.gmail.com>
+ <4EDFA192.7000602@goop.org>
+ <CAD2FfiF+fVoLPWpPyGGKdnoGhx1f=Loh2Ju-vdU58Y=2kf6C3g@mail.gmail.com>
+ <4EE015D1.5070005@goop.org>
 MIME-Version: 1.0
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-Subject: Re: [PATCH V2 1/2] xen/granttable: Support sub-page grants
-References: <1323336940-5382-1-git-send-email-annie.li@oracle.com> <1323337048-5426-1-git-send-email-annie.li@oracle.com> <291EDFCB1E9E224A99088639C4762022B5988E5528@LONPMAILBOX01.citrite.net>
-In-Reply-To: <291EDFCB1E9E224A99088639C4762022B5988E5528@LONPMAILBOX01.citrite.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4EE08B1A.009E,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4EE015D1.5070005@goop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Jeremy,
 
->> +
->> +int gnttab_grant_foreign_access_subpage(domid_t domid, unsigned
->> long frame,
->> +					int flags, unsigned page_off,
->> +					unsigned length)
->> +{
->> +	int ref;
->> +
->> +	if (flags&  (GTF_accept_transfer | GTF_reading |
->> +		     GTF_writing | GTF_transitive))
->> +		return -EPERM;
->> +
->> +	if (gnttab_interface->update_subpage_entry == NULL)
->> +		return -ENOSYS;
->> +
->> +	ref = get_free_entries(1);
->> +	if (unlikely(ref<  0))
->> +		return -ENOSPC;
->> +
->> +	gnttab_interface->update_subpage_entry(ref, domid, frame,
->> flags,
->> +					       page_off, length);
->> +
->> +	return ref;
->> +}
->> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_subpage);
-> There's quite a lot of duplicated code here. What about something along the lines of:
->
-> #define get_free_entry()	get_free_entries(1)
->
-> int gnttab_grant_foreign_access_subpage(domid_t domid, unsigned long frame,
-> 					int flags, unsigned page_off,
-> 					unsigned length)
-> {
-> 	int ref;
->
-> 	ref = get_free_entry();
-> 	if (unlikely(ref<  0))
-> 		return -ENOSPC;
->
-> 	rc = gnttab_grant_foreign_access_subpage_ref(ref, domid, frame, flags, page_off, length);
-> 	if (rc<  0)
-> 		put_free_entry(ref);
->
-> 	return (rc<  0) rc : ref;
-> }
-> EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_subpage);
->
-> I think this is more akin to the format for existing non-ref variants.
->
-I hesitated between those two implement ways before sending them out. 
-Those two ways all have shortcoming, one has duplicated code, but is 
-simple when condition does not meet. The other way you pointed out added 
-more put_free_entry process when _ref function fails.
+On Wed, Dec 07, 2011 at 05:41:37PM -0800, Jeremy Fitzhardinge wrote:
+> This series adds a "scope" property to power supplies, so that a power
+> supply can indicate whether it powers the whole system, or just a
+> device.  This allows upowerd to distinguish between actual system power
+> supplies, and self-powered devices such as wireless mice.
 
-Thanks
-Annie
+I see one problem with this approach. Userland will need patching
+to distinguish system and device power supplies. So, even with
+the patch applied, old userland will behave incorrectly.
+
+So, instead of the new 'scope' property, how about adding another
+power supply type? I.e. DEVICE_BATTERY ? That type would be unknown
+to the current userland, and thus should be ignored.
+
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
