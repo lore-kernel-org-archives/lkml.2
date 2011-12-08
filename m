@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab1LHAFY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 19:05:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42567 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754280Ab1LHAFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 19:05:21 -0500
-Date: Thu, 8 Dec 2011 01:05:19 +0100
-From: Jan Kara <jack@suse.cz>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Randy Dunlap <rdunlap@xenotime.net>, Theodore Tso <tytso@mit.edu>,
-        linux-doc@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>, Miao Xie <miaox@cn.fujitsu.com>
-Subject: Re: [PATCH 3/5 resend] VFS: Fix s_umount thaw/write deadlock
-Message-ID: <20111208000519.GW4622@quack.suse.cz>
-References: <1323118489-16326-1-git-send-email-kamal@canonical.com>
- <1323118489-16326-4-git-send-email-kamal@canonical.com>
- <20111206113544.GA21589@infradead.org>
- <20111207231658.GQ4622@quack.suse.cz>
- <20111207234919.GW4387@parisc-linux.org>
+	id S1755009Ab1LHALs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 19:11:48 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48066 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab1LHALr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 19:11:47 -0500
+Date: Thu, 8 Dec 2011 01:11:41 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH 2/2] selftests: New x86 breakpoints selftest
+Message-ID: <20111208001138.GD13252@somewhere.redhat.com>
+References: <1322840475-19553-1-git-send-email-fweisbec@gmail.com>
+ <1322840475-19553-2-git-send-email-fweisbec@gmail.com>
+ <20111207153223.4885bab9.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111207234919.GW4387@parisc-linux.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111207153223.4885bab9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 07-12-11 16:49:20, Matthew Wilcox wrote:
-> On Thu, Dec 08, 2011 at 12:16:58AM +0100, Jan Kara wrote:
-> > On Tue 06-12-11 06:35:44, Christoph Hellwig wrote:
-> > > We make sure to not dirty any new inodes after the first phase of the
-> > > freeze, so this should be a BUG_ON/WARN_ON.
-> >   This is not really true in presence of mmaped writes. To block mmaped
-> > writes on a frozen filesystem, we need some synchronization between
-> > page_mkwrite() and freezing code. Currently, to avoid any additional
-> > locking overhead, we set page dirty and *then* check for filesystem being
-> > frozen. Only this order can make sure either the page is written (and
-> > write-protected) or the frozen check triggers and we wait... (see the
-> > comment in block_page_mkwrite()). The nasty sideeffect of this is that
-> > there can be dirty pages & inodes on a frozen filesystem. We are blocked in
-> > the page fault of these pages so user cannot write any data to these pages
-> > but still they are marked dirty.
+On Wed, Dec 07, 2011 at 03:32:23PM -0800, Andrew Morton wrote:
+> On Fri,  2 Dec 2011 16:41:15 +0100
+> Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> Can't we make the mmaps read-only during the freezing process?
-  But then application will get EFAULT instead of blocking? I don't think
-that is acceptable (we'd see lots of applications dying ;).
+> > Bring a first selftest in the relevant directory.
+> 
+> That all looks nice and simple, thanks.  Unless I get suitably shouted
+> at I think I'll send all this Linuswards.  Then I can hassle people to
+> add their little test snippets as they add userspace-visible features.
+> 
+> I don't think we'd ever want to turn this into some huge kernel
+> verification suite.  My thinking here is that I frequently see that
+> people have written little test cases for their new feature, but those
+> test cases just die after the feature is merged.  It would be better to
+> maintain and grow these tests as the relevant features are augmented or
+> bugfixed.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Exactly. And I also think this is no good place for background long running
+stress-tests but rather for correctness tests (Unless we find situations
+where short stress-tests are enough to trigger correctness problems).
+That's really targeted to spot ABI breakages or alike.
+
+My selftest for the cgroup task counter subsystem is also a good candidate for
+that (if that subsystem ever get merged but that's a separate debate ;)
+
+> 
+> All these features are Linux-specific.  Standard interface features (eg
+> POSIX) are and should be tested via other externally-maintained test
+> suites.
+> 
+> If the whole idea ends up not working out, we can just delete it all.
+
+Agreed, let the selftest subsystem selftest itself for a while and we'll figure
+out.
+
+Thanks.
