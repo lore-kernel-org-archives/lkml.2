@@ -1,100 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750972Ab1LHFm2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 00:42:28 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47782 "EHLO mx3.mail.elte.hu"
+	id S1751074Ab1LHFwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 00:52:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46993 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739Ab1LHFm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 00:42:27 -0500
-Date: Thu, 8 Dec 2011 06:40:36 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Greg KH <greg@kroah.com>, Peter Zijlstra <peterz@infradead.org>,
-        devel@driverdev.osuosl.org, lttng-dev@lists.lttng.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 09/11] sched: export task_prio to GPL modules
-Message-ID: <20111208054036.GA6636@elte.hu>
-References: <1322775683-8741-1-git-send-email-mathieu.desnoyers@efficios.com>
- <1322775683-8741-10-git-send-email-mathieu.desnoyers@efficios.com>
- <1322776568.4699.52.camel@twins>
- <20111201221404.GC3365@kroah.com>
- <1322780830.4699.62.camel@twins>
- <20111201231751.GA4961@kroah.com>
- <20111205141749.GC28866@elte.hu>
- <20111207225758.GA6541@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111207225758.GA6541@Krystal>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751014Ab1LHFwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 00:52:24 -0500
+Message-ID: <1323323519.24340.64.camel@bling.home>
+Subject: Re: RFC: Device isolation infrastructure
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Gibson <dwg@au1.ibm.com>, joerg.roedel@amd.com, dwmw2@infradead.org,
+        iommu@lists.linux-foundation.org, aik@au1.ibm.com,
+        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
+        scottwood@freescale.com, B08248@freescale.com
+Date: Wed, 07 Dec 2011 22:51:59 -0700
+In-Reply-To: <1323301293.12793.16.camel@pasglop>
+References: <20111207035816.GC7631@truffala.fritz.box>
+	 <1323240402.2182.241.camel@bling.home>
+	 <20111207142201.GA5696@truffala.fritz.box>
+	 <1323287120.15059.63.camel@bling.home> <1323301293.12793.16.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-
-> Hi Ingo,
+On Thu, 2011-12-08 at 10:41 +1100, Benjamin Herrenschmidt wrote:
+> On Wed, 2011-12-07 at 12:45 -0700, Alex Williamson wrote:
 > 
-> * Ingo Molnar (mingo@elte.hu) wrote:
-> [...]
-> > Mathieu, please work with the tracing folks who DO care about 
-> > this stuff. It's not like there's a lack of interest in this 
-> > area, nor is there a lack of willingness to take patches. What 
-> > there is a lack of is your willingness to actually work on 
-> > getting something unified, integrated to users...
+> > Ok, let's back up from the patch because I think its clouding the driver
+> > model with a detached device state that might be detracting from the
+> > useful bits.
 > > 
-> > LTTNG has been going on for how many years? I havent seen many 
-> > steps towards actually *merging* its functionality - you insist 
-> > on doing your own random thing, which is different in random 
-> > ways. Yes, some of those random ways may in fact be better than 
-> > what we have upstream - would you be interested in filtering 
-> > those out and pushing them upstream? I certainly would like to 
-> > see that happen.
-> >
-> > We want to pick the best features, and throw away current 
-> > upstream code in favor of superior out of tree code - this 
-> > concept of letting crap sit alongside each other when people do 
-> > care i cannot agree with.
+> > An isolation group is a generic association of devices into a set based
+> > on, well... isolation.  Presumably something like an iommu driver does a
+> > bus_register_notifier() and bus_for_each_dev() and when a new device is
+> > added we do isolation_group_new() and isolation_group_dev_add() as
+> > necessary.  When the iommu driver needs to do a dma_ops call for a
+> > device, it can traverse up to the isolation group and find something
+> > that points it to the shared iommu context for that group.  While
+> > dma_ops can share the iommu context among the drivers attached to the
+> > various devices, iommu_ops wants a single meta-driver for the group
+> > because it's predominantly designed for use when devices are exposed
+> > directly to the user.  We trust native kernel drivers to share context
+> > between each other, we do not trust user level drivers to share context
+> > with anyone but themselves.  Ok so far?
+> > 
+> > The first question we run into is what does the iommu driver do if it
+> > does not provide isolation?  If it's a translation-only iommu, maybe it
+> > has a single context and can manage to maintain it internally and should
+> > opt-out of isolation groups.  But we also have things like MSI isolation
+> > where we have multiple contexts and the isolation strength is sufficient
+> > for dma_ops, but not iommu_ops.  I don't know if we want to make that
+> > determination via a strength bitmask at the group level or simply a bool
+> > that the iommu driver sets when it registers a group.
 > 
-> LTTng 2.0, today, offers a unified interface for kernel and 
-> userspace tracing, in the form of libraries and git-alike 
-> command line user interface. [...]
+>  .../...
+> 
+> I think we are trying to solve too many problems at once.
+> 
+> I don't believe we should have the normal dma ops path in the kernel be
+> rewritten on top of some new iommu isolation layer or anything like that
+> at this stage.
 
-Note that Arnaldo is working on such a perf-alike tracing tool 
-workflow with the new 'trace' utility that we announced and 
-prototyped a couple of months ago.
+I headed down this path because David seems to be suggesting, well
+stating, that all this infrastructure is useful for providing simplicity
+and efficiency of groups to the core, and not just for this niche vfio
+usage.  "You don't get a choice about whether you use groups."  The only
+way I can rationalize that is to give it some purpose which is used by
+something other that just vfio.  If all of that is "some day", then why
+don't we start with the group management in vfio as I have it today and
+eventually push that down into the core?
 
-The perf.data data format is now extensible as well and 
-tightened for transportability. Tools such as PowerTop or 
-sysprof have standardized around the perf ABI.
+> Proceed step by step or we'll never be finished. What that means imho
+> is:
+> 
+>  - Existing dma/iommu arch layers mostly remain as-is. It has its own
+> internal representation of devices, domains and possibly grouping
+> information, and things like the buggy RICOH devices are handled there
+> (via a flag set in a generic header quirk)
 
-So there's a *lot* of overlap with existing upstream efforts and 
-the last thing we need is the parallel LTTNG ABI.
+But we're already being harassed to rework iommu_ops to operate based on
+groups and to take grouping into account for things like the ricoh
+device in dma_ops.  Mixed messages...
 
-Are you willing to merge LTTNG into our existing kernel and 
-userspace infrastructure and ABIs, with the possible end result 
-that LTTNG ceases to be a separately named entity?
+>  - Isolation groups are a new high-level thing that is not used by the
+> iommu/dma code for normal in-kernel operations at this stage. The
+> platform iommu/dma code creates the isolation group objects and
+> populates them, it doesn't initially -use- them.
 
-Mind hooking up with Arnaldo and with Steve regarding how we 
-could best split up the LTTNG bits and move them upstream?
+The iommu_device_group() interface is a tiny extension to the IOMMU API
+that basically lets vfio query the iommu driver for a group identifier
+for a device.  vfio then uses that information to create and manage
+groups itself.
 
-Frankly, i've seen a *lot* of talk from you but unfortunately 
-*very* little action on that front, so i think my healthy 
-scepticism is justified.
+This is simply reversing that, allowing the iommu driver to create
+groups and add devices, which are centrally managed.  That sounds like a
+good long term goal, especially when we start making use of the groups
+for dma/iommu ops, but it does require that we define an API both for
+group providers (iommu drivers) and the group users (vfio).  It's also
+much more intrusive to the iommu drivers (note the trivial patches to
+add iommu_device_group support to intel and amd iommu) and creates bloat
+for a niche user if we're not going to get around to making groups more
+pervasive anytime soon.
+
+>  - We can then use that for the needs of exposing the groups to user
+> space, perform driver level isolation, and provide the grouping
+> information to vfio.
+>
+>  - In the -long- run, individual iommu/dma layers might be modified to
+> instead use the isolation layer as their own building block if that
+> makes sense, this can be looked at on a case by case basis but is not a
+> pre-req.
+> 
+> That leaves us with what I think is the main disagreement between David
+> and Alex approaches which is whether devices in a group are "detached"
+> completely (in some kind of limbo) while they are used by vfio or
+> something else vs. assigned to a different driver (vfio).
+> 
+> After much thinking, I believe that the driver ownership model is the
+> right one. However, we could still use the work David did here. IE. I
+> _do_ think that exposing groups as the individual unit of ownership to
+> user space is the right thing to do.
+
+So far we're only exposing the group structure here (which vfio also
+does in sysfs), not providing a userspace or driver interface for taking
+ownership of the group.  I'm still not clear how this ends up satisfying
+David's complaints about the group ownership vs device access model in
+vfio.
+
+> That means that instead of that current detached flag alone, what we
+> could do instead is have an in-kernel mechanism to request isolation
+> which works by having the isolation group kernel code perform:
+> 
+>  - Rename the detached flag to "exclusive". This flag prevents automatic
+> & user driven attachment of a driver by the generic code. Set that flag
+> on all devices in the group (need a hook for hotplug).
+
+This is a sysfs attribute on the group?  So step #1:
+
+        $ echo 1 > /sys/isolation/$GROUP/exclusive
+
+>  - Detach existing drivers.
+
+step #2:
+
+        $ for i in $(ls /sys/isolation/$GROUP/devices/); do	\
+        	echo $(basename $i) > $i/driver/unbind; done
+>         
+>  - Once everything is detached, attach the requested client driver (vfio
+> being the one we initially provide, maybe uio could use that framework
+> as well). This can be done using an explicit in-kernel attach API that
+> can be used even when the exclusive flag is set.
+
+step #3: A miracle occurs ;)
+
+I'm not sure what this looks like.  Are we going to do a
+isolation_group_register_meta_driver() that vfio calls with some defined
+ops structure, so a user can:
+
+        $ echo "vfio" > /sys/isolation/$GROUP/driver
+
+That triggers some list walk of the group devices, asking vfio to find
+and force a driver attach to the bus driver for each device?  A model
+something like that is the only way I can see that removing groups from
+vfio doesn't also disassociate the group meta driver from the group
+device drivers.
+
+If instead, we make vfio be the group manager (since nobody else uses it
+anyway), all of the above becomes:
+
+        $ for i in $(ls /sys/devices/virtual/vfio/pci:257/devices); do	\
+        	echo $(basename $i) > $i/driver/unbind;			\
+        	echo $(basename $i) > /sys/bus/pci/drivers/vfio/bind;	\
+        	done
+        
+>  - Win
+
+I wish, we still have to make it through how vfio then exposes the group
+to userspace and how we don't end up with the same individual device
+manipulation vs group access model that seems to be getting under
+David's skin.  Effectively what we've done above is:
+
+      * provide a group model that we'll "some day" make more pervasive
+      * make the binding of devices to group device drivers implicit in
+        some kind of meta driver attachment
 
 Thanks,
 
-	Ingo
+Alex
+
+
