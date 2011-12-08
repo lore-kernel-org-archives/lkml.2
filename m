@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab1LHQxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 11:53:21 -0500
-Received: from claw.goop.org ([74.207.240.146]:60210 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138Ab1LHQxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 11:53:20 -0500
-Message-ID: <4EE0EB7B.6060807@goop.org>
-Date: Thu, 08 Dec 2011 08:53:15 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752375Ab1LHQyB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 11:54:01 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27183 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab1LHQx7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 11:53:59 -0500
+Message-ID: <4EE0EB51.5010900@oracle.com>
+Date: Thu, 08 Dec 2011 08:52:33 -0800
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Richard Hughes <hughsient@gmail.com>,
-        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, vojtech@ucw.cz,
-        Przemo Firszt <przemo@firszt.eu>, Richard Hughes <richard@hughsie.com>
-Subject: Re: [GIT PULL] power_supply: add power supply scope
-References: <CACo8zOd45i3EnCVMyJoDPP4bx2AnD9mEjDiC=bJKvmX=TWfXGg@mail.gmail.com> <4ED90E6D.8090402@goop.org> <CACo8zOcvKwr0wDkytvJfqyx4kV0ceYyCt+qnDqiSgxNywpzeHg@mail.gmail.com> <4ED9BDF8.3010600@goop.org> <CAD2FfiE-rg-1bMmVpYzBhnQcBMKKKO4WPnu0bvx+pvdFnpARrQ@mail.gmail.com> <4EDE4C7A.1010802@goop.org> <CAD2FfiHWuEmVTa54YqfJDk5zHpSQuM_nwPT=mR6NoWpajpydpg@mail.gmail.com> <4EDFA192.7000602@goop.org> <CAD2FfiF+fVoLPWpPyGGKdnoGhx1f=Loh2Ju-vdU58Y=2kf6C3g@mail.gmail.com> <4EE015D1.5070005@goop.org> <20111208104127.GA1753@oksana.dev.rtsoft.ru>
-In-Reply-To: <20111208104127.GA1753@oksana.dev.rtsoft.ru>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>, Peter Jones <pjones@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -v2] ibft: Fix finding IBFT ACPI table on UEFI
+References: <4EE073BB.6080403@oracle.com> <20111208142958.GA4096@andromeda.dapyr.net>
+In-Reply-To: <20111208142958.GA4096@andromeda.dapyr.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090201.4EE0EB71.0078,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2011 02:41 AM, Anton Vorontsov wrote:
-> On Wed, Dec 07, 2011 at 05:41:37PM -0800, Jeremy Fitzhardinge wrote:
-> [...]
->> diff --git a/drivers/acpi/ac.c b/drivers/acpi/ac.c
->> index 6512b20..ec36c82 100644
->> --- a/drivers/acpi/ac.c
->> +++ b/drivers/acpi/ac.c
->> @@ -142,6 +142,9 @@ static int get_ac_property(struct power_supply *psy,
->>  	case POWER_SUPPLY_PROP_ONLINE:
->>  		val->intval = ac->state;
->>  		break;
->> +	case POWER_SUPPLY_PROP_SCOPE:
->> +		val->intval = POWER_SUPPLY_SCOPE_SYSTEM;
->> +		break;
->>  	default:
->>  		return -EINVAL;
->>  	}
-> Mm... how about the rest of the drivers? I.e. drivers/power/*battery.c?
->
-> I think it's not a great idea to patch every driver, would be better to make
-> it similar to how we handle power_supply.type (w/ default value 'SYSTEM').
 
-Yes.  That patch was mostly so I could test the mechanism.  Certainly
-general rule is that if there's no scope attribute then assume System.
+Found one system with UEFI/iBFT, Kernel does not detect the iBFT during
+iscsi_ibft module loading.
 
-> But, thinking more about it... personally, from the ABI point of view, I'd
-> like to just see some kind of 'supplicants' directory in the power_supply
-> instances, with symlinks to an appropriate devices.
+the root cause: for x86, We have calling of find_ibft_region() much early.
+in setup_arch() before ACPI is enabled.
 
-Yes, that was my first proposal, and I have a patch to allow Device
-scope power supplies to indicate which "device" it is (which may be a
-root of a subtree of devices).  I'm not too sure about making it
-multiple devices; at that point I'd be tempted to introduce the notion
-of a "power bus" which points to multiple devices and make power
-supplies point to that.
+Try to call find_ibft_region() second time in ibft_init().
 
-> I.e.
-> /sys/class/power_supply/battery/supplicants/<device_name>
-> is a symlink to /sys/class/HID/.../device.
->
-> With a special meaning of an empty directory (or non-existent, or w/ a
-> symlink pointing to '/sys/devices/system') -- system power.
+At that time ACPI iBFT already get permanent mapped with ioremap.
+So isa_virt_to_bus will get wrong phys from right virt address.
+We could just skip that phys address printing.
 
-Yes.  That's awkward to implement because the kobj isn't exported from
-device/base.  But aside from that, its a somewhat awkward interface for
-usermode, because it has to end up following symlink and resolving their
-paths, and then having special hardcoded knowledge of what particular
-paths mean.  When all upower really wants to know is "do I need to
-suspend when this supply gets low?".
+For legacy one, print the found address early.
 
-> That way we may describe any possible power hierarchy.
->
-> From the implementation point of view, for now power_supply may just
-> conditionally (by introducing power_supply.not_system_power flag)
+-v2: update comments and description according to Konrad.
 
-How is that different from scope?
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-    J
+---
+ drivers/firmware/iscsi_ibft.c      |   14 ++++++++++++--
+ drivers/firmware/iscsi_ibft_find.c |    1 +
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/drivers/firmware/iscsi_ibft.c
+===================================================================
+--- linux-2.6.orig/drivers/firmware/iscsi_ibft.c
++++ linux-2.6/drivers/firmware/iscsi_ibft.c
+@@ -753,9 +753,19 @@ static int __init ibft_init(void)
+ {
+ 	int rc = 0;
+ 
++	/*
++	   Retry as on UEFI systems the setup_arch()/find_ibft_region()
++	   is called before ACPI tables are parsed so we never
++	   get the data.
++	*/
++	if (!ibft_addr) {
++		unsigned long size = 0;
++
++		find_ibft_region(&size);
++	}
++
+ 	if (ibft_addr) {
+-		printk(KERN_INFO "iBFT detected at 0x%llx.\n",
+-		       (u64)isa_virt_to_bus(ibft_addr));
++		pr_info("iBFT detected.\n");
+ 
+ 		rc = ibft_check_device();
+ 		if (rc)
+Index: linux-2.6/drivers/firmware/iscsi_ibft_find.c
+===================================================================
+--- linux-2.6.orig/drivers/firmware/iscsi_ibft_find.c
++++ linux-2.6/drivers/firmware/iscsi_ibft_find.c
+@@ -94,6 +94,7 @@ static int __init find_ibft_in_mem(void)
+ 				 * the table cannot be valid. */
+ 				if (pos + len <= (IBFT_END-1)) {
+ 					ibft_addr = (struct acpi_table_ibft *)virt;
++					pr_info("iBFT found at 0x%lx.\n", pos);
+ 					goto done;
+ 				}
+ 			}
