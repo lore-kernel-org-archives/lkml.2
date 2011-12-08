@@ -1,105 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab1LHD2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 22:28:36 -0500
-Received: from mga03.intel.com ([143.182.124.21]:14032 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757092Ab1LHDZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 22:25:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="45071341"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 01/11] ACPI, Add 64bit read/write support to atomicio on i386
-Date: Thu,  8 Dec 2011 11:25:40 +0800
-Message-Id: <1323314750-8185-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1323314750-8185-1-git-send-email-ying.huang@intel.com>
-References: <1323314750-8185-1-git-send-email-ying.huang@intel.com>
+	id S1757671Ab1LHDfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 22:35:18 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57901 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757092Ab1LHDfQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 22:35:16 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111206173220.GA28763@kroah.com>
+References: <CAM7b5hzt8D6hn3=XEcm9E3_BwJxj-YABpkufCpuhjiPLDxCsMQ@mail.gmail.com>
+	<20111206173220.GA28763@kroah.com>
+Date: Thu, 8 Dec 2011 11:35:15 +0800
+Message-ID: <CAM7b5hyXkRTUwnE-NwXEff-34WjRfMSBDf2itMVhdJGi4XoA=g@mail.gmail.com>
+Subject: Re: [PATCH] ipip, sit: copy parms.name after register_netdevice
+From: Ted Feng <artisdom@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Jiri Pirko <jpirko@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no 64bit read/write support in ACPI atomicio because
-readq/writeq is used to implement 64bit read/write, but readq/writeq
-is not available on i386.  This patch implement 64bit read/write
-support in atomicio via two readl/writel.
+From: Ted Feng <artisdom@gmail.com>
+Same fix as 731abb9cb2 for ipip and sit tunnel.
+Commit 1c5cae815d removed an explicit call to dev_alloc_name in
+ipip_tunnel_locate and ipip6_tunnel_locate, because register_netdevice
+will now create a valid name. However the tunnel keeps a copy of the
+name in the private parms structure.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
+This shows up if you do a simple tunnel add, followed by a tunnel show:
+
+$ sudo ip tunnel add mode ipip remote 10.2.20.211
+$ ip tunnel
+tunl0: ip/ip  remote any  local any  ttl inherit  nopmtudisc
+tunl%d: ip/ip  remote 10.2.20.211  local any  ttl inherit
+$ sudo ip tunnel add mode sit remote 10.2.20.212
+$ ip tunnel
+sit0: ipv6/ip  remote any  local any  ttl 64  nopmtudisc 6rd-prefix 2002::/16
+sit%d: ioctl 89f8 failed: No such device
+sit%d: ipv6/ip  remote 10.2.20.212  local any  ttl inherit
+
+Fix this by copying the name back after register_netdevice has
+successfully returned.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Ted Feng <artisdom@gmail.com>
 ---
- drivers/acpi/atomicio.c |   36 ++++++++++++++++++++++++++++++------
- 1 file changed, 30 insertions(+), 6 deletions(-)
+ net/ipv4/ipip.c |    7 ++++++-
+ net/ipv6/sit.c  |    7 ++++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/atomicio.c
-+++ b/drivers/acpi/atomicio.c
-@@ -260,6 +260,21 @@ int acpi_post_unmap_gar(struct acpi_gene
- }
- EXPORT_SYMBOL_GPL(acpi_post_unmap_gar);
- 
-+#ifdef readq
-+static inline u64 read64(const volatile void __iomem *addr)
-+{
-+	return readq(addr);
-+}
-+#else
-+static inline u64 read64(const volatile void __iomem *addr)
-+{
-+	u64 l, h;
-+	l = readl(addr);
-+	h = readl(addr+4);
-+	return l | (h << 32);
-+}
-+#endif
+diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
+index 065effd..0b2e732 100644
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -285,6 +285,8 @@ static struct ip_tunnel *
+ipip_tunnel_locate(struct net *net,
+ 	if (register_netdevice(dev) < 0)
+ 		goto failed_free;
+
++	strcpy(nt->parms.name, dev->name);
 +
- /*
-  * Can be used in atomic (including NMI) or process context. RCU read
-  * lock can only be released after the IO memory area accessing.
-@@ -280,11 +295,9 @@ static int acpi_atomic_read_mem(u64 padd
- 	case 32:
- 		*val = readl(addr);
- 		break;
--#ifdef readq
- 	case 64:
--		*val = readq(addr);
-+		*val = read64(addr);
- 		break;
--#endif
- 	default:
- 		return -EINVAL;
- 	}
-@@ -293,6 +306,19 @@ static int acpi_atomic_read_mem(u64 padd
- 	return 0;
- }
- 
-+#ifdef writeq
-+static inline void write64(u64 val, volatile void __iomem *addr)
-+{
-+	writeq(val, addr);
-+}
-+#else
-+static inline void write64(u64 val, volatile void __iomem *addr)
-+{
-+	writel(val, addr);
-+	writel(val>>32, addr+4);
-+}
-+#endif
-+
- static int acpi_atomic_write_mem(u64 paddr, u64 val, u32 width)
+ 	dev_hold(dev);
+ 	ipip_tunnel_link(ipn, nt);
+ 	return nt;
+@@ -759,7 +761,6 @@ static int ipip_tunnel_init(struct net_device *dev)
+ 	struct ip_tunnel *tunnel = netdev_priv(dev);
+
+ 	tunnel->dev = dev;
+-	strcpy(tunnel->parms.name, dev->name);
+
+ 	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
+ 	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
+@@ -825,6 +826,7 @@ static void ipip_destroy_tunnels(struct ipip_net
+*ipn, struct list_head *head)
+ static int __net_init ipip_init_net(struct net *net)
  {
- 	void __iomem *addr;
-@@ -309,11 +335,9 @@ static int acpi_atomic_write_mem(u64 pad
- 	case 32:
- 		writel(val, addr);
- 		break;
--#ifdef writeq
- 	case 64:
--		writeq(val, addr);
-+		write64(val, addr);
- 		break;
--#endif
- 	default:
- 		return -EINVAL;
- 	}
+ 	struct ipip_net *ipn = net_generic(net, ipip_net_id);
++	struct ip_tunnel *t;
+ 	int err;
+
+ 	ipn->tunnels[0] = ipn->tunnels_wc;
+@@ -848,6 +850,9 @@ static int __net_init ipip_init_net(struct net *net)
+ 	if ((err = register_netdev(ipn->fb_tunnel_dev)))
+ 		goto err_reg_dev;
+
++	t = netdev_priv(ipn->fb_tunnel_dev);
++
++	strcpy(t->parms.name, ipn->fb_tunnel_dev->name);
+ 	return 0;
+
+ err_reg_dev:
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index a7a1860..96f3623 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -263,6 +263,8 @@ static struct ip_tunnel
+*ipip6_tunnel_locate(struct net *net,
+ 	if (register_netdevice(dev) < 0)
+ 		goto failed_free;
+
++	strcpy(nt->parms.name, dev->name);
++
+ 	dev_hold(dev);
+
+ 	ipip6_tunnel_link(sitn, nt);
+@@ -1144,7 +1146,6 @@ static int ipip6_tunnel_init(struct net_device *dev)
+ 	struct ip_tunnel *tunnel = netdev_priv(dev);
+
+ 	tunnel->dev = dev;
+-	strcpy(tunnel->parms.name, dev->name);
+
+ 	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
+ 	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
+@@ -1207,6 +1208,7 @@ static void __net_exit
+sit_destroy_tunnels(struct sit_net *sitn, struct list_hea
+ static int __net_init sit_init_net(struct net *net)
+ {
+ 	struct sit_net *sitn = net_generic(net, sit_net_id);
++	struct ip_tunnel *t;
+ 	int err;
+
+ 	sitn->tunnels[0] = sitn->tunnels_wc;
+@@ -1231,6 +1233,9 @@ static int __net_init sit_init_net(struct net *net)
+ 	if ((err = register_netdev(sitn->fb_tunnel_dev)))
+ 		goto err_reg_dev;
+
++	t = netdev_priv(sitn->fb_tunnel_dev);
++
++	strcpy(t->parms.name, sitn->fb_tunnel_dev->name);
+ 	return 0;
+
+ err_reg_dev:
