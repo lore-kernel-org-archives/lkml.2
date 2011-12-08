@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab1LHIWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 03:22:32 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:30698
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750822Ab1LHIWb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 03:22:31 -0500
-X-SpamScore: -2
-X-BigFish: VS-2(zzc89bh1432Nzz1202h1082kzzz2dh2a8h668h839h93fhb79i)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Message-ID: <4EE073DC.7050803@freescale.com>
-Date: Thu, 8 Dec 2011 16:22:52 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1752377Ab1LHIXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 03:23:13 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:57687 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055Ab1LHIXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 03:23:12 -0500
+Message-ID: <4EE073BB.6080403@oracle.com>
+Date: Thu, 08 Dec 2011 00:22:19 -0800
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>
-CC: Vinod Koul <vinod.koul@intel.com>, Wolfram Sang <w.sang@pengutronix.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] dma: mxs-dma: make mxs_dma_prep_slave_sg() multi
- user safe
-References: <cover.1323176362.git.LW@KARO-electronics.de> <fd785eed4c58e0ee591084aa5334cafcc8cfe082.1323176362.git.LW@KARO-electronics.de>
-In-Reply-To: <fd785eed4c58e0ee591084aa5334cafcc8cfe082.1323176362.git.LW@KARO-electronics.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: Peter Jones <pjones@redhat.com>, Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] ibft: Fix finding ibft with ACPI tables
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4EE073E7.0038,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年12月08日 16:15, Lothar Waßmann 写道:
-> Using a static variable for counting the number of CCWs attached to
-> a DMA channel when appending a new descriptor is not multi user safe.
->
-> Signed-off-by: Lothar Waßmann<LW@KARO-electronics.de>
-> ---
->   drivers/dma/mxs-dma.c |    5 ++++-
->   1 files changed, 4 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-> index c7574e8..78336b0 100644
-> --- a/drivers/dma/mxs-dma.c
-> +++ b/drivers/dma/mxs-dma.c
-> @@ -111,6 +111,7 @@ struct mxs_dma_chan {
->   	int				chan_irq;
->   	struct mxs_dma_ccw		*ccw;
->   	dma_addr_t			ccw_phys;
-> +	int				desc_count;
->   	dma_cookie_t			last_completed;
->   	enum dma_status			status;
->   	unsigned int			flags;
-> @@ -386,7 +387,7 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
->   	struct scatterlist *sg;
->   	int i, j;
->   	u32 *pio;
-> -	static int idx;
-> +	int idx = append ? mxs_chan->desc_count : 0;
->
->   	if (mxs_chan->status == DMA_IN_PROGRESS&&  !append)
->   		return NULL;
-> @@ -462,6 +463,7 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_slave_sg(
->   			}
->   		}
->   	}
-> +	mxs_chan->desc_count = idx;
->
->   	return&mxs_chan->desc;
->
-> @@ -523,6 +525,7 @@ static struct dma_async_tx_descriptor *mxs_dma_prep_dma_cyclic(
->
->   		i++;
->   	}
-> +	mxs_chan->desc_count = i;
->
->   	return&mxs_chan->desc;
->
-I like this patch.
+Found one system with UEFI/iBFT is not detected.
 
+the root cause: for x86, We move calling of find_ibft_region() much earlier.
+in setup_arch() before ACPI is enabled.
+
+Try to all find_ibft_region() second times in ibft_init()
+
+at that time ACPI iBFT already get permanent mapped with ioremap.
+So isa_virt_to_bus will get wrong phys from right virt address.
+We could just skip that printing.
+For legacy one, print the found address early.
+
+Signed-off-by: Yinghai Lu <yinghai.lu@kernel.org>
+
+---
+ drivers/firmware/iscsi_ibft.c      |   18 +++++++++++++++---
+ drivers/firmware/iscsi_ibft_find.c |    1 +
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/drivers/firmware/iscsi_ibft.c
+===================================================================
+--- linux-2.6.orig/drivers/firmware/iscsi_ibft.c
++++ linux-2.6/drivers/firmware/iscsi_ibft.c
+@@ -753,9 +753,21 @@ static int __init ibft_init(void)
+ {
+ 	int rc = 0;
+ 
++	/* find that from acpi tables */
++	if (!ibft_addr) {
++		unsigned long size = 0;
++
++		find_ibft_region(&size);
++		barrier();
++	}
++
+ 	if (ibft_addr) {
+-		printk(KERN_INFO "iBFT detected at 0x%llx.\n",
+-		       (u64)isa_virt_to_bus(ibft_addr));
++		/*
++		 * Second try is from acpi permanent map with ioremap
++		 *  can not simply convert back to phys addr.
++		 *  and We don't need to print that table phys addr.
++		 */
++		pr_info("iBFT detected.\n");
+ 
+ 		rc = ibft_check_device();
+ 		if (rc)
+@@ -770,7 +782,7 @@ static int __init ibft_init(void)
+ 		if (rc)
+ 			goto out_free;
+ 	} else
+-		printk(KERN_INFO "No iBFT detected.\n");
++		pr_info("No iBFT detected.\n");
+ 
+ 	return 0;
+ 
+Index: linux-2.6/drivers/firmware/iscsi_ibft_find.c
+===================================================================
+--- linux-2.6.orig/drivers/firmware/iscsi_ibft_find.c
++++ linux-2.6/drivers/firmware/iscsi_ibft_find.c
+@@ -94,6 +94,7 @@ static int __init find_ibft_in_mem(void)
+ 				 * the table cannot be valid. */
+ 				if (pos + len <= (IBFT_END-1)) {
+ 					ibft_addr = (struct acpi_table_ibft *)virt;
++					pr_info("iBFT found at 0x%lx.\n", pos);
+ 					goto done;
+ 				}
+ 			}
