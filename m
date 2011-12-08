@@ -1,57 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab1LHKmn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 05:42:43 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62394 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab1LHKmj (ORCPT
+	id S1753395Ab1LHKqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 05:46:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60224 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab1LHKqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 05:42:39 -0500
-Date: Thu, 8 Dec 2011 14:42:35 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Richard Hughes <hughsient@gmail.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>, vojtech@ucw.cz,
-        Przemo Firszt <przemo@firszt.eu>, Richard Hughes <richard@hughsie.com>
-Subject: Re: [GIT PULL] power_supply: add power supply scope
-Message-ID: <20111208104235.GB1753@oksana.dev.rtsoft.ru>
-References: <CACo8zOcvKwr0wDkytvJfqyx4kV0ceYyCt+qnDqiSgxNywpzeHg@mail.gmail.com>
- <4ED9BDF8.3010600@goop.org>
- <CAD2FfiE-rg-1bMmVpYzBhnQcBMKKKO4WPnu0bvx+pvdFnpARrQ@mail.gmail.com>
- <4EDE4C7A.1010802@goop.org>
- <CAD2FfiHWuEmVTa54YqfJDk5zHpSQuM_nwPT=mR6NoWpajpydpg@mail.gmail.com>
- <4EDFA192.7000602@goop.org>
- <CAD2FfiF+fVoLPWpPyGGKdnoGhx1f=Loh2Ju-vdU58Y=2kf6C3g@mail.gmail.com>
- <4EE015D1.5070005@goop.org>
- <20111208100204.GA31434@oksana.dev.rtsoft.ru>
- <CAD2FfiF5iPDhqQmvvS82xkuCh_HSeFJtPMBQdRuCCfz-9F6AFg@mail.gmail.com>
+	Thu, 8 Dec 2011 05:46:31 -0500
+Date: Thu, 8 Dec 2011 18:46:21 +0800
+From: Ted Feng <artisdom@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: jpirko@redhat.com, jwboyer@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ipip, sit: copy parms.name after register_netdevice
+Message-ID: <20111208104619.GA20150@ted-OptiPlex-380>
+References: <CAM7b5hzt8D6hn3=XEcm9E3_BwJxj-YABpkufCpuhjiPLDxCsMQ@mail.gmail.com>
+ <20111206173220.GA28763@kroah.com>
+ <CAM7b5hyXkRTUwnE-NwXEff-34WjRfMSBDf2itMVhdJGi4XoA=g@mail.gmail.com>
+ <20111207.235602.1465915988125994516.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD2FfiF5iPDhqQmvvS82xkuCh_HSeFJtPMBQdRuCCfz-9F6AFg@mail.gmail.com>
+In-Reply-To: <20111207.235602.1465915988125994516.davem@davemloft.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 10:05:46AM +0000, Richard Hughes wrote:
-> On 8 December 2011 10:02, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> > I see one problem with this approach. Userland will need patching
-> > to distinguish system and device power supplies. So, even with
-> > the patch applied, old userland will behave incorrectly.
-> 
-> Userland will need patching anyway, as old versions of upower assumed
-> anything showing up in /sys/class/power_supply was powering the
-> system.
+From: Ted Feng <artisdom@gmail.com>
 
-Oh, makes sense then. But see my other email regarding a bit more
-universal scheme.
+Same fix as 731abb9cb2 for ipip and sit tunnel.
+Commit 1c5cae815d removed an explicit call to dev_alloc_name in
+ipip_tunnel_locate and ipip6_tunnel_locate, because register_netdevice
+will now create a valid name, however the tunnel keeps a copy of the
+name in the private parms structure. Fix this by copying the name back
+after register_netdevice has successfully returned.
 
-Thanks,
+This shows up if you do a simple tunnel add, followed by a tunnel show:
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+$ sudo ip tunnel add mode ipip remote 10.2.20.211
+$ ip tunnel
+tunl0: ip/ip  remote any  local any  ttl inherit  nopmtudisc
+tunl%d: ip/ip  remote 10.2.20.211  local any  ttl inherit
+$ sudo ip tunnel add mode sit remote 10.2.20.212
+$ ip tunnel
+sit0: ipv6/ip  remote any  local any  ttl 64  nopmtudisc 6rd-prefix 2002::/16
+sit%d: ioctl 89f8 failed: No such device
+sit%d: ipv6/ip  remote 10.2.20.212  local any  ttl inherit
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Ted Feng <artisdom@gmail.com>
+---
+ net/ipv4/ipip.c |    7 ++++++-
+ net/ipv6/sit.c  |    7 ++++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
+index 065effd..0b2e732 100644
+--- a/net/ipv4/ipip.c
++++ b/net/ipv4/ipip.c
+@@ -285,6 +285,8 @@ static struct ip_tunnel * ipip_tunnel_locate(struct net *net,
+ 	if (register_netdevice(dev) < 0)
+ 		goto failed_free;
+ 
++	strcpy(nt->parms.name, dev->name);
++
+ 	dev_hold(dev);
+ 	ipip_tunnel_link(ipn, nt);
+ 	return nt;
+@@ -759,7 +761,6 @@ static int ipip_tunnel_init(struct net_device *dev)
+ 	struct ip_tunnel *tunnel = netdev_priv(dev);
+ 
+ 	tunnel->dev = dev;
+-	strcpy(tunnel->parms.name, dev->name);
+ 
+ 	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
+ 	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
+@@ -825,6 +826,7 @@ static void ipip_destroy_tunnels(struct ipip_net *ipn, struct list_head *head)
+ static int __net_init ipip_init_net(struct net *net)
+ {
+ 	struct ipip_net *ipn = net_generic(net, ipip_net_id);
++	struct ip_tunnel *t;
+ 	int err;
+ 
+ 	ipn->tunnels[0] = ipn->tunnels_wc;
+@@ -848,6 +850,9 @@ static int __net_init ipip_init_net(struct net *net)
+ 	if ((err = register_netdev(ipn->fb_tunnel_dev)))
+ 		goto err_reg_dev;
+ 
++	t = netdev_priv(ipn->fb_tunnel_dev);
++
++	strcpy(t->parms.name, ipn->fb_tunnel_dev->name);
+ 	return 0;
+ 
+ err_reg_dev:
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index a7a1860..96f3623 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -263,6 +263,8 @@ static struct ip_tunnel *ipip6_tunnel_locate(struct net *net,
+ 	if (register_netdevice(dev) < 0)
+ 		goto failed_free;
+ 
++	strcpy(nt->parms.name, dev->name);
++
+ 	dev_hold(dev);
+ 
+ 	ipip6_tunnel_link(sitn, nt);
+@@ -1144,7 +1146,6 @@ static int ipip6_tunnel_init(struct net_device *dev)
+ 	struct ip_tunnel *tunnel = netdev_priv(dev);
+ 
+ 	tunnel->dev = dev;
+-	strcpy(tunnel->parms.name, dev->name);
+ 
+ 	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
+ 	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
+@@ -1207,6 +1208,7 @@ static void __net_exit sit_destroy_tunnels(struct sit_net *sitn, struct list_hea
+ static int __net_init sit_init_net(struct net *net)
+ {
+ 	struct sit_net *sitn = net_generic(net, sit_net_id);
++	struct ip_tunnel *t;
+ 	int err;
+ 
+ 	sitn->tunnels[0] = sitn->tunnels_wc;
+@@ -1231,6 +1233,9 @@ static int __net_init sit_init_net(struct net *net)
+ 	if ((err = register_netdev(sitn->fb_tunnel_dev)))
+ 		goto err_reg_dev;
+ 
++	t = netdev_priv(sitn->fb_tunnel_dev);
++
++	strcpy(t->parms.name, sitn->fb_tunnel_dev->name);
+ 	return 0;
+ 
+ err_reg_dev:
