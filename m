@@ -1,136 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab1LHDfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 22:35:18 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57901 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757092Ab1LHDfQ (ORCPT
+	id S1757638Ab1LHDmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 22:42:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:48129 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab1LHDmO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 22:35:16 -0500
+	Wed, 7 Dec 2011 22:42:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111206173220.GA28763@kroah.com>
-References: <CAM7b5hzt8D6hn3=XEcm9E3_BwJxj-YABpkufCpuhjiPLDxCsMQ@mail.gmail.com>
-	<20111206173220.GA28763@kroah.com>
-Date: Thu, 8 Dec 2011 11:35:15 +0800
-Message-ID: <CAM7b5hyXkRTUwnE-NwXEff-34WjRfMSBDf2itMVhdJGi4XoA=g@mail.gmail.com>
-Subject: Re: [PATCH] ipip, sit: copy parms.name after register_netdevice
-From: Ted Feng <artisdom@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Jiri Pirko <jpirko@redhat.com>, Josh Boyer <jwboyer@redhat.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4EDD428B.9010800@gmail.com>
+References: <1322838172-11149-1-git-send-email-ming.lei@canonical.com>
+	<1322838172-11149-6-git-send-email-ming.lei@canonical.com>
+	<4EDD428B.9010800@gmail.com>
+Date: Thu, 8 Dec 2011 11:42:10 +0800
+Message-ID: <CACVXFVMR_n946HW1eYWEfcig_D6wFx5e3vEKmVHtERcmtsXX6g@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 5/7] media: v4l2: introduce two IOCTLs for face detection
+From: Ming Lei <ming.lei@canonical.com>
+To: Sylwester Nawrocki <snjw23@gmail.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ted Feng <artisdom@gmail.com>
-Same fix as 731abb9cb2 for ipip and sit tunnel.
-Commit 1c5cae815d removed an explicit call to dev_alloc_name in
-ipip_tunnel_locate and ipip6_tunnel_locate, because register_netdevice
-will now create a valid name. However the tunnel keeps a copy of the
-name in the private parms structure.
+Hi,
 
-This shows up if you do a simple tunnel add, followed by a tunnel show:
+On Tue, Dec 6, 2011 at 6:15 AM, Sylwester Nawrocki <snjw23@gmail.com> wrote:
+> On 12/02/2011 04:02 PM, Ming Lei wrote:
+>> This patch introduces two new IOCTLs and related data
+>> structure defination which will be used by the coming
+>> face detection video device.
+>>
+>> The two IOCTLs and related data structure are used by
+>> user space application to retrieve the results of face
+>> detection. They can be called after one v4l2_buffer
+>> has been ioctl(VIDIOC_DQBUF) and before it will be
+>> ioctl(VIDIOC_QBUF).
+>>
+>> The utility fdif[1] is useing the two IOCTLs to find
+>> faces deteced in raw images or video streams.
+>>
+>> [1],http://kernel.ubuntu.com/git?p=ming/fdif.git;a=shortlog;h=refs/heads/v4l2-fdif
+>>
+>> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+>> ---
+>>  drivers/media/video/v4l2-ioctl.c |   38 ++++++++++++++++++++
+>>  include/linux/videodev2.h        |   70 ++++++++++++++++++++++++++++++++++++++
+>>  include/media/v4l2-ioctl.h       |    6 +++
+>>  3 files changed, 114 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
+>> index e1da8fc..fc6266f 100644
+>> --- a/drivers/media/video/v4l2-ioctl.c
+>> +++ b/drivers/media/video/v4l2-ioctl.c
+>> @@ -2140,6 +2140,30 @@ static long __video_do_ioctl(struct file *file,
+>>               dbgarg(cmd, "index=%d", b->index);
+>>               break;
+>>       }
+>> +     case VIDIOC_G_FD_RESULT:
+>> +     {
+>> +             struct v4l2_fd_result *fr = arg;
+>> +
+>> +             if (!ops->vidioc_g_fd_result)
+>> +                     break;
+>> +
+>> +             ret = ops->vidioc_g_fd_result(file, fh, fr);
+>> +
+>> +             dbgarg(cmd, "index=%d", fr->buf_index);
+>> +             break;
+>> +     }
+>> +     case VIDIOC_G_FD_COUNT:
+>> +     {
+>> +             struct v4l2_fd_count *fc = arg;
+>> +
+>> +             if (!ops->vidioc_g_fd_count)
+>> +                     break;
+>> +
+>> +             ret = ops->vidioc_g_fd_count(file, fh, fc);
+>> +
+>> +             dbgarg(cmd, "index=%d", fc->buf_index);
+>> +             break;
+>> +     }
+>>       default:
+>>               if (!ops->vidioc_default)
+>>                       break;
+>> @@ -2234,6 +2258,20 @@ static int check_array_args(unsigned int cmd, void *parg, size_t *array_size,
+>>               }
+>>               break;
+>>       }
+>> +
+>> +     case VIDIOC_G_FD_RESULT: {
+>> +             struct v4l2_fd_result *fr = parg;
+>> +
+>> +             if (fr->face_cnt != 0) {
+>> +                     *user_ptr = (void __user *)fr->fd;
+>> +                     *kernel_ptr = (void *)&fr->fd;
+>> +                     *array_size = sizeof(struct v4l2_fd_detection)
+>> +                                 * fr->face_cnt;
+>> +                     ret = 1;
+>> +             }
+>> +             break;
+>> +
+>> +     }
+>>       }
+>>
+>>       return ret;
+>> diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
+>> index 4b752d5..073eb4d 100644
+>> --- a/include/linux/videodev2.h
+>> +++ b/include/linux/videodev2.h
+>> @@ -2160,6 +2160,74 @@ struct v4l2_create_buffers {
+>>       __u32                   reserved[8];
+>>  };
+>>
+>> +/**
+>> + * struct v4l2_obj_detection
+>> + * @buf_index:       entry, index of v4l2_buffer for face detection
+>> + * @centerx: return, position in x direction of detected object
+>> + * @centery: return, position in y direction of detected object
+>> + * @angle:   return, angle of detected object
+>> + *           0 deg ~ 359 deg, vertical is 0 deg, clockwise
+>> + * @sizex:   return, size in x direction of detected object
+>> + * @sizey:   return, size in y direction of detected object
+>> + * @confidence:      return, confidence level of detection result
+>> + *           0: the heighest level, 9: the lowest level
+>
+> Hmm, not a good idea to align a public interface to the capabilities
+> of a single hardware implementation.
 
-$ sudo ip tunnel add mode ipip remote 10.2.20.211
-$ ip tunnel
-tunl0: ip/ip  remote any  local any  ttl inherit  nopmtudisc
-tunl%d: ip/ip  remote 10.2.20.211  local any  ttl inherit
-$ sudo ip tunnel add mode sit remote 10.2.20.212
-$ ip tunnel
-sit0: ipv6/ip  remote any  local any  ttl 64  nopmtudisc 6rd-prefix 2002::/16
-sit%d: ioctl 89f8 failed: No such device
-sit%d: ipv6/ip  remote 10.2.20.212  local any  ttl inherit
+I think that the current omap interface is general enough, so why can't
+we use it as public interface?
 
-Fix this by copying the name back after register_netdevice has
-successfully returned.
+> min/max confidence could be queried with
+> relevant controls and here we could remove the line implying range.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Ted Feng <artisdom@gmail.com>
----
- net/ipv4/ipip.c |    7 ++++++-
- net/ipv6/sit.c  |    7 ++++++-
- 2 files changed, 12 insertions(+), 2 deletions(-)
+No, the confidence is used to describe the probability about
+the correctness of the current detection result. Anyway, no FD can
+make sure that it is 100% correct.  Other HW can normalize its
+confidence level to 0~9 so that application can handle it easily, IMO.
 
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index 065effd..0b2e732 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -285,6 +285,8 @@ static struct ip_tunnel *
-ipip_tunnel_locate(struct net *net,
- 	if (register_netdevice(dev) < 0)
- 		goto failed_free;
+>> + * @reserved:        future extensions
+>> + */
+>> +struct v4l2_obj_detection {
+>> +     __u16           centerx;
+>> +     __u16           centery;
+>> +     __u16           angle;
+>> +     __u16           sizex;
+>> +     __u16           sizey;
+>
+> How about using struct v4l2_rect in place of centerx/centery, sizex/sizey ?
+> After all it describes a rectangle. We could also use struct v4l2_frmsize_discrete
+> for size but there seems to be missing en equivalent for position, e.g.
 
-+	strcpy(nt->parms.name, dev->name);
-+
- 	dev_hold(dev);
- 	ipip_tunnel_link(ipn, nt);
- 	return nt;
-@@ -759,7 +761,6 @@ static int ipip_tunnel_init(struct net_device *dev)
- 	struct ip_tunnel *tunnel = netdev_priv(dev);
+Maybe user space would like to plot a circle or ellipse over the detected
+objection, and I am sure that I have seen this kind of plot over detected
+face before.
 
- 	tunnel->dev = dev;
--	strcpy(tunnel->parms.name, dev->name);
+> struct v4l2_position {
+>        __s32 x;
+>        __s32 y;
+> };
+>
+>> +     __u16           confidence;
+>> +     __u32           reserved[4];
+>> +};
+>> +
+>> +#define V4L2_FD_HAS_LEFT_EYE 0x1
+>> +#define V4L2_FD_HAS_RIGHT_EYE        0x2
+>> +#define V4L2_FD_HAS_MOUTH    0x4
+>> +#define V4L2_FD_HAS_FACE     0x8
+>> +
+>> +/**
+>> + * struct v4l2_fd_detection - VIDIOC_G_FD_RESULT argument
+>> + * @flag:    return, describe which objects are detected
+>> + * @left_eye:        return, left_eye position if detected
+>> + * @right_eye:       return, right_eye position if detected
+>> + * @mouth_eye:       return, mouth_eye position if detected
+>
+> mouth_eye ? ;)
 
- 	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
- 	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
-@@ -825,6 +826,7 @@ static void ipip_destroy_tunnels(struct ipip_net
-*ipn, struct list_head *head)
- static int __net_init ipip_init_net(struct net *net)
- {
- 	struct ipip_net *ipn = net_generic(net, ipip_net_id);
-+	struct ip_tunnel *t;
- 	int err;
+Sorry, it should be mouth, :-)
 
- 	ipn->tunnels[0] = ipn->tunnels_wc;
-@@ -848,6 +850,9 @@ static int __net_init ipip_init_net(struct net *net)
- 	if ((err = register_netdev(ipn->fb_tunnel_dev)))
- 		goto err_reg_dev;
+>
+>> + * @face:    return, face position if detected
+>> + */
+>> +struct v4l2_fd_detection {
+>> +     __u32   flag;
+>> +     struct v4l2_obj_detection       left_eye;
+>> +     struct v4l2_obj_detection       right_eye;
+>> +     struct v4l2_obj_detection       mouth;
+>> +     struct v4l2_obj_detection       face;
+>
+> I would do this differently, i.e. put "flag" inside struct v4l2_obj_detection
+> and then struct v4l2_fd_detection would be simply an array of
+> struct v4l2_obj_detection, i.e.
+>
+> struct v4l2_fd_detection {
+>        unsigned int count;
+>        struct v4l2_obj_detection [V4L2_MAX_FD_OBJECT_NUM];
+> };
+>
+> This might be more flexible, e.g. if in the future some hardware supports
+> detecting wrinkles, we could easily add that by just defining a new flag:
+> V4L2_FD_HAS_WRINKLES, etc.
 
-+	t = netdev_priv(ipn->fb_tunnel_dev);
-+
-+	strcpy(t->parms.name, ipn->fb_tunnel_dev->name);
- 	return 0;
+This is a bit flexible, but not explicit enough for describing
+interface, how about
+reserving these as below for future usage?
 
- err_reg_dev:
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index a7a1860..96f3623 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -263,6 +263,8 @@ static struct ip_tunnel
-*ipip6_tunnel_locate(struct net *net,
- 	if (register_netdevice(dev) < 0)
- 		goto failed_free;
+	struct v4l2_fd_detection {
+		__u32   flag;
+		Struct v4l2_obj_detection       left_eye;
+		Struct v4l2_obj_detection       right_eye;
+		Struct v4l2_obj_detection       mouth;
+		Struct v4l2_obj_detection       face;
+		Struct v4l2_obj_detection       reserved[4];
+	};
 
-+	strcpy(nt->parms.name, dev->name);
-+
- 	dev_hold(dev);
 
- 	ipip6_tunnel_link(sitn, nt);
-@@ -1144,7 +1146,6 @@ static int ipip6_tunnel_init(struct net_device *dev)
- 	struct ip_tunnel *tunnel = netdev_priv(dev);
-
- 	tunnel->dev = dev;
--	strcpy(tunnel->parms.name, dev->name);
-
- 	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
- 	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
-@@ -1207,6 +1208,7 @@ static void __net_exit
-sit_destroy_tunnels(struct sit_net *sitn, struct list_hea
- static int __net_init sit_init_net(struct net *net)
- {
- 	struct sit_net *sitn = net_generic(net, sit_net_id);
-+	struct ip_tunnel *t;
- 	int err;
-
- 	sitn->tunnels[0] = sitn->tunnels_wc;
-@@ -1231,6 +1233,9 @@ static int __net_init sit_init_net(struct net *net)
- 	if ((err = register_netdev(sitn->fb_tunnel_dev)))
- 		goto err_reg_dev;
-
-+	t = netdev_priv(sitn->fb_tunnel_dev);
-+
-+	strcpy(t->parms.name, sitn->fb_tunnel_dev->name);
- 	return 0;
-
- err_reg_dev:
+thanks,
+--
+Ming Lei
