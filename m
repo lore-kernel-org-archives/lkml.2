@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab1LHD05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 22:26:57 -0500
+	id S1758571Ab1LHD1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 22:27:24 -0500
 Received: from mga03.intel.com ([143.182.124.21]:14032 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758057Ab1LHD0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 22:26:09 -0500
+	id S1756978Ab1LHD0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 22:26:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="45071405"
+   d="scan'208";a="45071372"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
         ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 10/11] ACPI, Record ACPI NVS regions
-Date: Thu,  8 Dec 2011 11:25:49 +0800
-Message-Id: <1323314750-8185-11-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 07/11] ACPI, Add RAM mapping support to ACPI atomic IO support
+Date: Thu,  8 Dec 2011 11:25:46 +0800
+Message-Id: <1323314750-8185-8-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323314750-8185-1-git-send-email-ying.huang@intel.com>
 References: <1323314750-8185-1-git-send-email-ying.huang@intel.com>
@@ -23,169 +23,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some firmware will access memory in ACPI NVS region via APEI.  That
-is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
-region.  The original resource conflict checking in APEI code will
-check memory/ioport accessed by APEI via general resource management
-mechanism.  But ACPI NVS region is marked as busy already, so that the
-false resource conflict will prevent APEI ERST/EINJ to work.
+On one of our testing machine, the following EINJ command lines:
 
-To fix this, this patch record ACPI NVS regions, so that we can avoid
-request resources for memory region inside it.
+  # echo 0x10000000 > param1
+  # echo 0xfffffffffffff000 > param2
+  # echo 0x8 > error_type
+  # echo 1 > error_inject
+
+Will get:
+
+  echo: write error: Input/output error
+
+The EIO comes from:
+
+    rc = apei_exec_pre_map_gars(&trigger_ctx);
+
+The root cause is as follow.  Normally, ACPI atomic IO support is used
+to access IO memory.  But in EINJ of that machine, it is used to
+access RAM to trigger the injected error.  And the ioremap() called by
+apei_exec_pre_map_gars() can not map the RAM.
+
+This patch add RAM mapping support to ACPI atomic IO support to
+satisfy EINJ requirement.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
+Tested-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/kernel/e820.c |    4 +--
- drivers/acpi/Makefile  |    3 +-
- drivers/acpi/nvs.c     |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/acpi.h   |   20 ++++++++++++------
- 4 files changed, 70 insertions(+), 10 deletions(-)
+ drivers/acpi/atomicio.c |   41 +++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 37 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -714,7 +714,7 @@ void __init e820_mark_nosave_regions(uns
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -32,6 +32,8 @@
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
++#include <linux/mm.h>
++#include <linux/highmem.h>
+ #include <acpi/atomicio.h>
+ 
+ #define ACPI_PFX "ACPI: "
+@@ -97,6 +99,37 @@ static void __iomem *__acpi_try_ioremap(
+ 		return NULL;
  }
- #endif
  
--#ifdef CONFIG_HIBERNATION
-+#ifdef CONFIG_ACPI
- /**
-  * Mark ACPI NVS memory region, so that we can save/restore it during
-  * hibernation and the subsequent resume.
-@@ -727,7 +727,7 @@ static int __init e820_mark_nvs_memory(v
- 		struct e820entry *ei = &e820.map[i];
- 
- 		if (ei->type == E820_NVS)
--			suspend_nvs_register(ei->addr, ei->size);
-+			acpi_nvs_register(ei->addr, ei->size);
- 	}
- 
- 	return 0;
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -20,11 +20,12 @@ obj-y				+= acpi.o \
- # All the builtin files are in the "acpi." module_param namespace.
- acpi-y				+= osl.o utils.o reboot.o
- acpi-y				+= atomicio.o
-+acpi-y				+= nvs.o
- 
- # sleep related files
- acpi-y				+= wakeup.o
- acpi-y				+= sleep.o
--acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o nvs.o
-+acpi-$(CONFIG_ACPI_SLEEP)	+= proc.o
- 
- 
- #
---- a/drivers/acpi/nvs.c
-+++ b/drivers/acpi/nvs.c
-@@ -15,6 +15,56 @@
- #include <linux/acpi_io.h>
- #include <acpi/acpiosxf.h>
- 
-+/* ACPI NVS regions, APEI may use it */
-+
-+struct nvs_region {
-+	__u64 phys_start;
-+	__u64 size;
-+	struct list_head node;
-+};
-+
-+static LIST_HEAD(nvs_region_list);
-+
-+#ifdef CONFIG_ACPI_SLEEP
-+static int suspend_nvs_register(unsigned long start, unsigned long size);
++#ifndef CONFIG_IA64
++#define should_use_kmap(pfn)	page_is_ram(pfn)
 +#else
-+static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-+{
-+	return 0;
-+}
++/* ioremap will take care of cache attributes */
++#define should_use_kmap(pfn)	0
 +#endif
 +
-+int acpi_nvs_register(__u64 start, __u64 size)
++static void __iomem *acpi_map(phys_addr_t pg_off, unsigned long pg_sz)
 +{
-+	struct nvs_region *region;
++	unsigned long pfn;
 +
-+	region = kmalloc(sizeof(*region), GFP_KERNEL);
-+	if (!region)
-+		return -ENOMEM;
-+	region->phys_start = start;
-+	region->size = size;
-+	list_add_tail(&region->node, &nvs_region_list);
-+
-+	return suspend_nvs_register(start, size);
++	pfn = pg_off >> PAGE_SHIFT;
++	if (should_use_kmap(pfn)) {
++		if (pg_sz > PAGE_SIZE)
++			return NULL;
++		return (void __iomem __force *)kmap(pfn_to_page(pfn));
++	} else
++		return ioremap(pg_off, pg_sz);
 +}
 +
-+int acpi_nvs_for_each_region(int (*func)(__u64 start, __u64 size, void *data),
-+			     void *data)
++static void acpi_unmap(phys_addr_t pg_off, void __iomem *vaddr)
 +{
-+	int rc;
-+	struct nvs_region *region;
++	unsigned long pfn;
 +
-+	list_for_each_entry(region, &nvs_region_list, node) {
-+		rc = func(region->phys_start, region->size, data);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	return 0;
++	pfn = pg_off >> PAGE_SHIFT;
++	if (page_is_ram(pfn))
++		kunmap(pfn_to_page(pfn));
++	else
++		iounmap(vaddr);
 +}
 +
-+
-+#ifdef CONFIG_ACPI_SLEEP
  /*
-  * Platforms, like ACPI, may want us to save some memory used by them during
-  * suspend and to restore the contents of this memory during the subsequent
-@@ -41,7 +91,7 @@ static LIST_HEAD(nvs_list);
-  *	things so that the data from page-aligned addresses in this region will
-  *	be copied into separate RAM pages.
-  */
--int suspend_nvs_register(unsigned long start, unsigned long size)
-+static int suspend_nvs_register(unsigned long start, unsigned long size)
- {
- 	struct nvs_page *entry, *next;
+  * Used to pre-map the specified IO memory area. First try to find
+  * whether the area is already pre-mapped, if it is, increase the
+@@ -119,7 +152,7 @@ static void __iomem *acpi_pre_map(phys_a
  
-@@ -159,3 +209,4 @@ void suspend_nvs_restore(void)
- 		if (entry->data)
- 			memcpy(entry->kaddr, entry->data, entry->size);
+ 	pg_off = paddr & PAGE_MASK;
+ 	pg_sz = ((paddr + size + PAGE_SIZE - 1) & PAGE_MASK) - pg_off;
+-	vaddr = ioremap(pg_off, pg_sz);
++	vaddr = acpi_map(pg_off, pg_sz);
+ 	if (!vaddr)
+ 		return NULL;
+ 	map = kmalloc(sizeof(*map), GFP_KERNEL);
+@@ -135,7 +168,7 @@ static void __iomem *acpi_pre_map(phys_a
+ 	vaddr = __acpi_try_ioremap(paddr, size);
+ 	if (vaddr) {
+ 		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+-		iounmap(map->vaddr);
++		acpi_unmap(pg_off, map->vaddr);
+ 		kfree(map);
+ 		return vaddr;
+ 	}
+@@ -144,7 +177,7 @@ static void __iomem *acpi_pre_map(phys_a
+ 
+ 	return map->vaddr + (paddr - map->paddr);
+ err_unmap:
+-	iounmap(vaddr);
++	acpi_unmap(pg_off, vaddr);
+ 	return NULL;
  }
-+#endif
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -306,6 +306,11 @@ extern acpi_status acpi_pci_osc_control_
- 					     u32 *mask, u32 req);
- extern void acpi_early_init(void);
  
-+extern int acpi_nvs_register(__u64 start, __u64 size);
-+
-+extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
-+				    void *data);
-+
- #else	/* !CONFIG_ACPI */
+@@ -177,7 +210,7 @@ static void acpi_post_unmap(phys_addr_t
+ 		return;
  
- #define acpi_disabled 1
-@@ -348,15 +353,18 @@ static inline int acpi_table_parse(char
- {
- 	return -1;
+ 	synchronize_rcu();
+-	iounmap(map->vaddr);
++	acpi_unmap(map->paddr, map->vaddr);
+ 	kfree(map);
  }
--#endif	/* !CONFIG_ACPI */
  
--#ifdef CONFIG_ACPI_SLEEP
--int suspend_nvs_register(unsigned long start, unsigned long size);
--#else
--static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-+static inline int acpi_nvs_register(__u64 start, __u64 size)
- {
- 	return 0;
- }
--#endif
-+
-+static inline int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
-+					   void *data)
-+{
-+	return 0;
-+}
-+
-+#endif	/* !CONFIG_ACPI */
- 
- #endif	/*_LINUX_ACPI_H*/
