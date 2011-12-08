@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab1LHWlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 17:41:37 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10856 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751938Ab1LHWlf (ORCPT
+	id S1753903Ab1LHWqo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 17:46:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60931 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab1LHWqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 17:41:35 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 08 Dec 2011 14:41:25 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: =?utf-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Date: Thu, 8 Dec 2011 14:41:24 -0800
-Subject: RE: [PATCH v2] Documentation/pinctrl: various minor fixes
-Thread-Topic: [PATCH v2] Documentation/pinctrl: various minor fixes
-Thread-Index: Acy1+cvxT7Ktmxk6Tni3+vVJW5N8AQAAKeIA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF1750B77BB0@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF1750B77B9F@HQMAIL01.nvidia.com>
- <1323383765-30742-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1323383765-30742-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 8 Dec 2011 17:46:40 -0500
+Date: Thu, 8 Dec 2011 14:46:37 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Anton Blanchard <anton@samba.org>,
+        Subrata Modak <subrata@linux.vnet.ibm.com>,
+        Manas k Nayak <maknayak@in.ibm.com>, Mark Wizner <markwiz@us.ibm.com>,
+        Pavaman <pavsubra@in.ibm.com>, Naveed <naveedaus@in.ibm.com>,
+        "divya.vikas" <divya.vikas@in.ibm.com>, Vishu <svishuku@in.ibm.com>
+Subject: [patch] powerpc, mm: fix section mismatch for read_n_cells
+In-Reply-To: <alpine.DEB.2.00.1112081428290.28693@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1112081443270.28693@chino.kir.corp.google.com>
+References: <1323371433.23534.8.camel@subratamodak.linux.ibm.com> <alpine.DEB.2.00.1112081428290.28693@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pB8Mfjd3032664
 
-Uwe Kleine-KÃ¶nig wrote at Thursday, December 08, 2011 3:36 PM:
-> - add some consts
-> - don't use the group index alone to determine the value to write to
->   foo's mux register. For spi and i2c the group index is always 0.
->   Additionally using the function index makes much more sense as it
->   generates a different value for each function/group pair.
-> - fix a few syntax errors
-> 
-> Signed-off-by: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
+read_n_cells() cannot be marked as .devinit.text since it is referenced 
+from two functions that are not in that section: of_get_lmb_size() and 
+hot_add_drconf_scn_to_nid().
 
-Acked-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ arch/powerpc/mm/numa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
--- 
-nvpublic
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -406,7 +406,7 @@ static void __init get_n_mem_cells(int *n_addr_cells, int *n_size_cells)
+ 	of_node_put(memory);
+ }
+ 
+-static unsigned long __devinit read_n_cells(int n, const unsigned int **buf)
++static unsigned long read_n_cells(int n, const unsigned int **buf)
+ {
+ 	unsigned long result = 0;
+ 
