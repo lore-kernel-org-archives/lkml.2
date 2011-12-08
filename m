@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755890Ab1LHARQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 19:17:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33396 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754455Ab1LHARP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 19:17:15 -0500
-Date: Wed, 7 Dec 2011 16:16:45 -0800
-From: Chris Wright <chrisw@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        David Gibson <dwg@au1.ibm.com>, joerg.roedel@amd.com,
-        dwmw2@infradead.org, iommu@lists.linux-foundation.org, aik@au1.ibm.com,
-        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
-        scottwood@freescale.com, B08248@freescale.com
-Subject: Re: RFC: Device isolation infrastructure
-Message-ID: <20111208001645.GJ2395@x200.localdomain>
-References: <20111207035816.GC7631@truffala.fritz.box>
- <1323240402.2182.241.camel@bling.home>
- <20111207142201.GA5696@truffala.fritz.box>
- <1323287120.15059.63.camel@bling.home>
- <1323301293.12793.16.camel@pasglop>
+	id S1756895Ab1LHASd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 19:18:33 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:34343 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753223Ab1LHASb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 19:18:31 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Cc: Anca Emanuel <anca.emanuel@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Octavian Purdila <tavi@cs.pub.ro>,
+        "David S . Miller" <davem@davemloft.net>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Damien Millescamps <damien.millescamps@6wind.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+References: <CAPLs8y9omncDbLE_KNoKOLLbfwHjWYUJX_i7cC4bLiJsyPbtZQ@mail.gmail.com>
+	<CAJL_dMtgP+BqFn3aGVBbGDJ+kMyGiEC_NmDURzh4mU=Jo=qZVA@mail.gmail.com>
+	<CAPLs8y8vhioqc3CPrD7ugmVkR2DjKWNm8+T5j9QQnrxi=BgvdA@mail.gmail.com>
+	<CAJL_dMtvgnZHH0uLE3j7Mg2Xqwt2rd90Uy0pUxm6muPmjFbkQg@mail.gmail.com>
+	<CAJL_dMvbL0LBrJ4irP3vd_PA458i0YefWpmvMgphuT+TnF2O5Q@mail.gmail.com>
+	<CAPLs8y-sc7CZw2Yb11A-jTEMmTYva==XHgCqK1UmWN6_HX0rfA@mail.gmail.com>
+Date: Wed, 07 Dec 2011 16:19:53 -0800
+In-Reply-To: <CAPLs8y-sc7CZw2Yb11A-jTEMmTYva==XHgCqK1UmWN6_HX0rfA@mail.gmail.com>
+	(Lucian Adrian Grijincu's message of "Wed, 7 Dec 2011 03:44:29 +0200")
+Message-ID: <m162hrgbiu.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323301293.12793.16.camel@pasglop>
-User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/KgUK6AYfC3tXHbiCJQ0p7V3gCTLiIqcw=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+X-Spam-Relay-Country: **
+Subject: Re: v6: faster tree-based sysctl implementation
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Benjamin Herrenschmidt (benh@kernel.crashing.org) wrote:
-> After much thinking, I believe that the driver ownership model is the
-> right one. However, we could still use the work David did here. IE. I
-> _do_ think that exposing groups as the individual unit of ownership to
-> user space is the right thing to do.
+Lucian Adrian Grijincu <lucian.grijincu@gmail.com> writes:
 
-OK, I think I agree at least w/ the ownership model...
+> On Wed, Dec 7, 2011 at 2:08 AM, Anca Emanuel <anca.emanuel@gmail.com> wrote:
+>> You can ask Stephen Rothwell to include your tree in next.
+>> git://github.com/luciang/linux-2.6-new-sysctl.git  v6-new-sysctl-alg
+>
+>
+> Thank you Anca, but I don't want to pollute Stephen's linux-next tree ATM.
+> I'd wait until a maintainer chimes in and agrees that this approach is
+> sound.
 
-> That means that instead of that current detached flag alone, what we
-> could do instead is have an in-kernel mechanism to request isolation
-> which works by having the isolation group kernel code perform:
-> 
->  - Rename the detached flag to "exclusive". This flag prevents automatic
-> & user driven attachment of a driver by the generic code. Set that flag
-> on all devices in the group (need a hook for hotplug).
-> 
->  - Detach existing drivers.
-> 
->  - Once everything is detached, attach the requested client driver (vfio
-> being the one we initially provide, maybe uio could use that framework
-> as well). This can be done using an explicit in-kernel attach API that
-> can be used even when the exclusive flag is set.
+Which is my cue to say that I am behind the power curve in reviewing
+this.  I will see if I can get to this before the end of the week.
 
-Since users will want to drive devices, not groups, how would you
-enumerate and expose devices here if the user visible construct exposed
-is groups?
+Doing this and getting it right is definitely something we need to do.
 
-thanks,
--chris
+We do need to be careful so that the code we wind up with is not just
+faster but more maintainable than what we have today.
+
+Thanks for still pushing this,
+
+Eric
+
