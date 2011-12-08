@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab1LHJAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 04:00:35 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45555 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab1LHJAd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 04:00:33 -0500
-Message-ID: <1323334812.3904.8.camel@lappy>
-Subject: Re: [PATCH -tip] kvm_tools: fix build fail
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 08 Dec 2011 11:00:12 +0200
-In-Reply-To: <4EE07AE6.10804@cn.fujitsu.com>
-References: <4EE07AE6.10804@cn.fujitsu.com>
-Content-Type: text/plain; charset="iso-8859-7"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1752628Ab1LHJEW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 04:04:22 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:8893
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750716Ab1LHJEQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 04:04:16 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzz8275dhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 8 Dec 2011 17:17:02 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
+        <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>
+Subject: Re: [MXS MMC v2 2/4] Some cleanups for the MMC driver
+Message-ID: <20111208091701.GC7913@S2100-06.ap.freescale.net>
+References: <cover.1323328267.git.LW@KARO-electronics.de>
+ <d935557e044d2ebc56b4e70487b519fe722e9017.1323328267.git.LW@KARO-electronics.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <d935557e044d2ebc56b4e70487b519fe722e9017.1323328267.git.LW@KARO-electronics.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lai,
-
-This was fixed in the KVM tools tree 2 days ago, but not pulled into
--tip yet.
-
-Thanks!
-
-On Thu, 2011-12-08 at 16:52 +0800, Lai Jiangshan wrote:
-> Commit e5fd47bfab2df0c2184cc0bf4245d8e1bb7724fb in -tip tree adds a
-> "bool set_pm_idle_to_default(void);" to system.h which causes kvm_tool build fail:
+On Thu, Dec 08, 2011 at 09:17:45AM +0100, Lothar Waﬂmann wrote:
+>  - Remove bogus parens around numerical arguments in #define's
+>  - When defining bit masks, use the #def for the shift count
+>    instead of repeating the numbers
+>  - Remove 'break' at end of switch statement
 > 
-> In file included from include/kvm/barrier.h:13:0,
->                  from virtio/core.c:5:
-> ../../arch/x86/include/asm/system.h:404:6: error: expected °=¢, °,¢, °;¢, °asm¢ or °__attribute__¢ before °set_pm_idle_to_default¢
+> Changes wrt v1:
+>  - break long lines
+>  - leave indentation as is
 > 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/tools/kvm/include/kvm/barrier.h b/tools/kvm/include/kvm/barrier.h
-> index c11a239..480276f 100644
-> --- a/tools/kvm/include/kvm/barrier.h
-> +++ b/tools/kvm/include/kvm/barrier.h
-> @@ -7,6 +7,7 @@
->   * Provide the dependencies here - we can drop these wrappers once
->   * the header is fixed upstream:
->   */
-> +#include <stdbool.h>
->  #include <linux/stringify.h>
->  #include <linux/bitops.h>
->  #include <asm/alternative.h>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+
+Not sure if Chris will ask you to add proper subject prefix though :)
 
 -- 
-
-Sasha.
+Regards,
+Shawn
 
