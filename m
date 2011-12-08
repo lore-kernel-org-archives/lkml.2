@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757585Ab1LHCER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 21:04:17 -0500
-Received: from nm23-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.224]:41399 "HELO
-	nm23-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757530Ab1LHCEP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 21:04:15 -0500
-X-Yahoo-Newman-Id: 66888.89191.bm@omp1002.mail.cnh.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com.cn;
-  h=DKIM-Signature:Message-ID:X-Yahoo-Newman-Property:X-YMail-OSG:X-Yahoo-SMTP:Received:Date:From:Reply-To:To:Subject:X-Mailer:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=WE1C5Jya8zIlxXk0uoI0KRxNugq8Ejsm6dT7gfzQdKtVzejEyA9qWWZhxYHsDOcqNWG7p+HEFli49rgy9bPPdUJhN5UcQ6Jgsj9zG5WkbXAu2THD1xNlzPp0fbC2gtKlkKSlUEajmhmmXZZdllJdI4/p7eVDwSPdN7EeXwPXx7E=  ;
-Message-ID: <308772.73644.qm@smtp105.mail.cnb.yahoo.com>
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 6H0OfUgVM1ktISFAUaT2pTTBA7qliODCJr_NT3oPsbEpXlG
- P50dA_JcH7ACDj2YAxOtmhjyr5kXmLznZFr8izWyDWqSu32_2FbGct_2LYPR
- 1LdK9253hieFdMr8uLj9cNCcP1cvmT0G7DiONAMQOOZ58lgL65jOT25w3pfG
- RJvic6ttrqQcrOharflXhnVKriNcqbJuAYAtMokd7SKz4fQwxnYlcE7rgtJf
- 1oeenxBcDhEiudEdx9OzudTLRCDmDjtPycxrfJVIMJp7cyAqXaTmlBi_NSQ8
- xJr0Z_7hk8hzIRFJbpW_gBgBV7NwAfy9CgpaL2KyQp7o26dbjxdocGuyybg2
- Rr80THSd7nt8hirnAwA--
-X-Yahoo-SMTP: N_dxUfuswBA9DvL2zaH9lXybXIoHKwTzSXE-
-Date: Thu, 8 Dec 2011 10:03:58 +0800
-From: "Linda Xu" <clnbuttoncell@yahoo.com.cn>
-Reply-To: linda@clnsz.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Battery Samples
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1756784Ab1LHCla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 21:41:30 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:55296 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753823Ab1LHCl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 21:41:29 -0500
+Date: Wed, 7 Dec 2011 18:40:01 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kay.sievers@vrfy.org" <kay.sievers@vrfy.org>,
+        "trenn@suse.de" <trenn@suse.de>, Andi Kleen <ak@linux.intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "khali@linux-fr.org" <khali@linux-fr.org>
+Subject: Re: [PATCH 06/10] HWMON: Convert coretemp to x86 cpuid autoprobing
+Message-ID: <20111208024001.GA4912@ericsson.com>
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
+ <1323304882-27953-7-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1323304882-27953-7-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pB824L4r025884
 
-Good days, Sir or Madam£¬
+Andi,
 
-We are special consumer blister card packaging battery factory. The main products are: CR Series, SR Series, LR Series and ect. 
+On Wed, Dec 07, 2011 at 07:41:19PM -0500, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Use the new x86 cpuid autoprobe interface for the Intel coretemp
+> driver.
+> 
+> Cc: fenghua.yu@intel.com
+> Cc: khali@linux-fr.org
+> Cc: guenter.roeck@ericsson.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  drivers/hwmon/coretemp.c |   17 ++++++++++++++---
+>  1 files changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> index 104b376..5de1579 100644
+> --- a/drivers/hwmon/coretemp.c
+> +++ b/drivers/hwmon/coretemp.c
+> @@ -39,6 +39,7 @@
+>  #include <linux/moduleparam.h>
+>  #include <asm/msr.h>
+>  #include <asm/processor.h>
+> +#include <asm/cpu_device_id.h>
+>  
+>  #define DRVNAME	"coretemp"
+>  
+> @@ -756,13 +757,23 @@ static struct notifier_block coretemp_cpu_notifier __refdata = {
+>  	.notifier_call = coretemp_cpu_callback,
+>  };
+>  
+> +static struct x86_cpu_id coretemp_ids[] = {
+> +	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTS },
+> +	{}
+> +};
+> +MODULE_DEVICE_TABLE(x86cpu, coretemp_ids);
+> +
+>  static int __init coretemp_init(void)
+>  {
+>  	int i, err = -ENODEV;
+>  
+> -	/* quick check if we run Intel */
+> -	if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
+> -		goto exit;
+> +	/*
+> +	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
+> +	 * sensors. We check this bit only, all the early CPUs
+> +	 * without thermal sensors will be filtered out.
+> +	 */
+> +	if (!x86_match_cpu(coretemp_ids))
+> +		return -ENODEV;
+>  
 
-After 20 years' effort, we have been one of the leading battery factory in China in the last few years and sincerely open a business with you.
+X86_FEATURE_DTS is checked elsewhere in the driver, in function get_core_online().
+Can that check be removed ?
 
-If any interest, please do not hesitate to contact us. We'll come back to you soon.
+Guenter
 
-Hope to hear from you£¨If this email disturb you, please tell us.£©
-With Best Regards.
-Sincerely
-
-Linda Xu
-Shenzhen CLN Electronics Co.,Ltd
-Mobile: 86-134 1899 9202
-Tel: 86-755-2995-5410
-Fax: 86-755-2995-5420ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>  	err = platform_driver_register(&coretemp_driver);
+>  	if (err)
+> -- 
+> 1.7.4.4
+> 
