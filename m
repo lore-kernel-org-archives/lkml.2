@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab1LHHpX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 02:45:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36621 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696Ab1LHHpW (ORCPT
+	id S1751886Ab1LHHud (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:50:33 -0500
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:35217 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751759Ab1LHHuc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 02:45:22 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1] vmalloc: Remove static declaration of va from __get_vm_area_node
-Date: Thu,  8 Dec 2011 13:20:21 +0530
-Message-Id: <1323330621-31254-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Thu, 8 Dec 2011 02:50:32 -0500
+Message-ID: <4EE06C3C.8080003@st.com>
+Date: Thu, 8 Dec 2011 13:20:20 +0530
+From: Viresh Kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Pratyush ANAND <pratyush.anand@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>, Amit VIRDI <Amit.VIRDI@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>
+Subject: Re: dmaengine/Query: What about scatter/gather for mem to mem transfers.
+References: <4EE038BD.7010705@st.com> <1323329870.1641.27.camel@vkoul-udesk3>
+In-Reply-To: <1323329870.1641.27.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Static storage is not required for the struct vmap_area in
-__get_vm_area_node.
+On 12/8/2011 1:07 PM, Vinod Koul wrote:
+> You mean something like:
+>        struct dma_async_tx_descriptor *(*device_prep_dma_sg)(
+>                 struct dma_chan *chan,
+>                 struct scatterlist *dst_sg, unsigned int dst_nents,
+>                 struct scatterlist *src_sg, unsigned int src_nents,
+>                 unsigned long flags);
+> 
+> Its already there, you need to implement in your driver :)
 
-Removing "static" to store this variable on the stack instead.
+Ok. I didn't knew it. :(
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- mm/vmalloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 3231bf3..173562c 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1290,7 +1290,7 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
- 		unsigned long align, unsigned long flags, unsigned long start,
- 		unsigned long end, int node, gfp_t gfp_mask, void *caller)
- {
--	static struct vmap_area *va;
-+	struct vmap_area *va;
- 	struct vm_struct *area;
- 
- 	BUG_ON(in_interrupt());
 -- 
-1.7.6
-
+viresh
