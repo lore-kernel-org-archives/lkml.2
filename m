@@ -1,58 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751553Ab1LHHTG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 02:19:06 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54643 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab1LHHTD (ORCPT
+	id S1751598Ab1LHHUB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:20:01 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58604 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab1LHHT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 02:19:03 -0500
-Date: Wed, 7 Dec 2011 23:18:59 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Kautuk Consul <consul.kautuk@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] vmalloc: purge_fragmented_blocks: Acquire spinlock
- before reading vmap_block
-In-Reply-To: <CAFPAmTSJDXD1KNVBUz75yN_CeCT9f_+W9CaRNN467LSyCD+WXg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1112072314140.28419@chino.kir.corp.google.com>
-References: <1323327732-30817-1-git-send-email-consul.kautuk@gmail.com> <alpine.DEB.2.00.1112072304010.28419@chino.kir.corp.google.com> <CAFPAmTSJDXD1KNVBUz75yN_CeCT9f_+W9CaRNN467LSyCD+WXg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-1066931067-1323328473=:28419"
-Content-ID: <alpine.DEB.2.00.1112072314460.28419@chino.kir.corp.google.com>
+	Thu, 8 Dec 2011 02:19:58 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 8 Dec 2011 16:18:29 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: [BUGFIX][PATCH v2] add mem_cgroup_replace_page_cache.
+Message-Id: <20111208161829.b6101de6.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111207111455.GA18249@tiehlicka.suse.cz>
+References: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111207111455.GA18249@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, 7 Dec 2011 12:14:55 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
---397155492-1066931067-1323328473=:28419
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.00.1112072314461.28419@chino.kir.corp.google.com>
-
-On Thu, 8 Dec 2011, Kautuk Consul wrote:
-
-> > In the original code, if the if-clause fails, the lock is only then taken
-> > and the exact same test occurs again while protected.  If the test now
-> > fails, the lock is immediately dropped.  A branch here is faster than a
-> > contented spinlock.
-> 
-> But, if there is some concurrent change happening to vb->free and
-> vb->dirty, dont you think
-> that it will continue and then go to the next vmap_block ?
-> 
-> If yes, then it will not be put into the purge list.
+> Other than that looks ok.
 > 
 
-That's intentional as an optimization, we don't care if 
-vb->free + vb->dirty == VMAP_BBMAP_BITS && vb->dirty != VMAP_BBMAP_BITS 
-would speculatively be true after we grab vb->lock, we'll have to purge it 
-next time instead.  We certainly don't want to grab vb->lock for blocks 
-that aren't candidates, so this optimization is a singificant speedup.
---397155492-1066931067-1323328473=:28419--
+Thank you for review. v2 here. This patch is for the latest linux-next.
+==
+>From 82067c96323cf464d9b18867025414526fc7ce84 Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Thu, 8 Dec 2011 16:31:15 +0900
+Subject: [PATCH] [BUGFIX][PATCH v2] memcg: add mem_cgroup_replace_page_cache() for fixing LRU issue.
+
+commit ef6a3c6311 adds a function replace_page_cache_page(). This
+function replaces a page in radix-tree with a new page.
+At doing this, memory cgroup need to fix up the accounting information.
+memcg need to check PCG_USED bit etc.
+
+In some(many?) case, 'newpage' is on LRU before calling replace_page_cache().
+So, memcg's LRU accounting information should be fixed, too.
+
+This patch adds mem_cgroup_replace_page_cache() and removing old hooks.
+In that function, old pages will be unaccounted without touching res_counter
+and new page will be accounted to the memcg (of old page). At overwriting
+pc->mem_cgroup of newpage, take zone->lru_lock and avoid race with
+LRU handling.
+
+Background:
+  replace_page_cache_page() is called by FUSE code in its splice() handling.
+  Here, 'newpage' is replacing oldpage but this newpage is not a newly allocated
+  page and may be on LRU. LRU mis-accounting will be critical for memory cgroup
+  because rmdir() checks the whole LRU is empty and there is no account leak.
+  If a page is on the other LRU than it should be, rmdir() will fail.
+
+Changelog: v1 -> v2
+  - fixed mem_cgroup_disabled() check missing.
+  - added comments.
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/memcontrol.h |    6 ++++++
+ mm/filemap.c               |   18 ++----------------
+ mm/memcontrol.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 52 insertions(+), 16 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 4b70e05..bd3b102 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -123,6 +123,8 @@ struct zone_reclaim_stat*
+ mem_cgroup_get_reclaim_stat_from_page(struct page *page);
+ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+ 					struct task_struct *p);
++extern void mem_cgroup_replace_page_cache(struct page *oldpage,
++					struct page *newpage);
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ extern int do_swap_account;
+@@ -382,6 +384,10 @@ static inline
+ void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
+ {
+ }
++static inline void mem_cgroup_replace_page_cache(struct page *oldpage,
++				struct page *newpage)
++{
++}
+ #endif /* CONFIG_CGROUP_MEM_CONT */
+ 
+ #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
+diff --git a/mm/filemap.c b/mm/filemap.c
+index a7b572b..4642211 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -393,24 +393,11 @@ EXPORT_SYMBOL(filemap_write_and_wait_range);
+ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+ {
+ 	int error;
+-	struct mem_cgroup *memcg = NULL;
+ 
+ 	VM_BUG_ON(!PageLocked(old));
+ 	VM_BUG_ON(!PageLocked(new));
+ 	VM_BUG_ON(new->mapping);
+ 
+-	/*
+-	 * This is not page migration, but prepare_migration and
+-	 * end_migration does enough work for charge replacement.
+-	 *
+-	 * In the longer term we probably want a specialized function
+-	 * for moving the charge from old to new in a more efficient
+-	 * manner.
+-	 */
+-	error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
+-	if (error)
+-		return error;
+-
+ 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
+ 	if (!error) {
+ 		struct address_space *mapping = old->mapping;
+@@ -432,13 +419,12 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
+ 		if (PageSwapBacked(new))
+ 			__inc_zone_page_state(new, NR_SHMEM);
+ 		spin_unlock_irq(&mapping->tree_lock);
++		/* mem_cgroup codes must not be called under tree_lock */
++		mem_cgroup_replace_page_cache(old, new);
+ 		radix_tree_preload_end();
+ 		if (freepage)
+ 			freepage(old);
+ 		page_cache_release(old);
+-		mem_cgroup_end_migration(memcg, old, new, true);
+-	} else {
+-		mem_cgroup_end_migration(memcg, old, new, false);
+ 	}
+ 
+ 	return error;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 8880a32..52edaef 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -3306,6 +3306,50 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+ 	cgroup_release_and_wakeup_rmdir(&memcg->css);
+ }
+ 
++/*
++ * At replace page cache, newpage is not under any memcg but it's on
++ * LRU. So, this function doesn't touch res_counter but handles LRU
++ * in correct way. Both pages are locked so we cannot race with uncharge.
++ */
++void mem_cgroup_replace_page_cache(struct page *oldpage,
++				  struct page *newpage)
++{
++	struct mem_cgroup *memcg;
++	struct page_cgroup *pc;
++	struct zone *zone;
++	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
++	unsigned long flags;
++
++	if (mem_cgroup_disabled())
++		return;
++
++	pc = lookup_page_cgroup(oldpage);
++	/* fix accounting on old pages */
++	lock_page_cgroup(pc);
++	memcg = pc->mem_cgroup;
++	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), -1);
++	ClearPageCgroupUsed(pc);
++	unlock_page_cgroup(pc);
++
++	if (PageSwapBacked(oldpage))
++		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
++
++	zone = page_zone(newpage);
++	pc = lookup_page_cgroup(newpage);
++	/*
++	 * Even if newpage->mapping was NULL before starting replacement,
++	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
++	 * LRU while we overwrite pc->mem_cgroup.
++	 */
++	spin_lock_irqsave(&zone->lru_lock, flags);
++	if (PageLRU(newpage))
++		del_page_from_lru_list(zone, newpage, page_lru(newpage));
++	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type);
++	if (PageLRU(newpage))
++		add_page_to_lru_list(zone, newpage, page_lru(newpage));
++	spin_unlock_irqrestore(&zone->lru_lock, flags);
++}
++
+ #ifdef CONFIG_DEBUG_VM
+ static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
+ {
+-- 
+1.7.4.1
+
+
