@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab1LHXHX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 18:07:23 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59688 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751984Ab1LHXHP (ORCPT
+	id S1752942Ab1LHXLj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 18:11:39 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33444 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab1LHXLg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 18:07:15 -0500
-X-Sasl-enc: VRJe/aiQsWgIKqTLM6A0EjTQo3vsJCeAjSyrjSvj651c 1323385634
-Date: Thu, 8 Dec 2011 14:55:55 -0800
-From: Greg KH <greg@kroah.com>
-To: Marcos Paulo de Souza <marcos.mage@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 1/3] staging: vtt6655: 80211hdr.h, 80211mgr.c: General
- cleanup
-Message-ID: <20111208225555.GA22949@kroah.com>
-References: <1322855714-6182-1-git-send-email-marcos.mage@gmail.com>
+	Thu, 8 Dec 2011 18:11:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1322855714-6182-1-git-send-email-marcos.mage@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111209085740.a23a0295a5ea15ab51169f3c@canb.auug.org.au>
+References: <CAB=NE6XDHL8mexe49TSoug3COh11RAvVY339Ntj0MJdw96wO1w@mail.gmail.com>
+ <20111209085740.a23a0295a5ea15ab51169f3c@canb.auug.org.au>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+Date: Thu, 8 Dec 2011 15:11:15 -0800
+X-Google-Sender-Auth: 3wF3BYD6ESuJ0Hcj-Zqg6UQ29-Q
+Message-ID: <CAB=NE6X4rgcHWUwn0fRkurf2Y5ci=eERQkNiN=UrPakECYKNdw@mail.gmail.com>
+Subject: Re: linux-next base Linus tag
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dani Keerikoolparn <danik@qca.qualcomm.com>,
+        "Hoefel, Guilherme" <hoefel@qualcomm.com>,
+        linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 02, 2011 at 07:55:14PM +0000, Marcos Paulo de Souza wrote:
-> This patch removes some useless comments, commented code and blank
-> lines. Also fix coding style of headers of functions.
-> 
-> Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: devel@driverdev.osuosl.org
-> ---
->  drivers/staging/vt6655/80211hdr.h |   14 --
->  drivers/staging/vt6655/80211mgr.c |  300 ++++++-------------------------------
+On Thu, Dec 8, 2011 at 1:57 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Luis,
+>
+> On Thu, 8 Dec 2011 13:39:16 -0800 "Luis R. Rodriguez" <mcgrof@frijolero.org> wrote:
+>>
+>> If I know a linux-next tag, say next-20110928, how can I extract the
+>> Linus tag you used to start that set of merges for linux-next for?
+>> That is, I am assuming you base your daily linux-next merges on that
+>> day's latest Linus's rc cycle (not just Linus's master tag of that
+>> day). Is that right? If so how can I get that tag?
+>
+> In each linux-next, there is a file called Next/SHA1s, and in there is a
+> SHA1 for "origin" - that is the point in Linus' tree that I started for
+> that day.  I just use the latest available version of Linus' tree each
+> day.
+>
+>> For example for next-20110928 I see in Next/quilt-import.log:
+>
+> For the quilt series, the owner of the series puts a BASE or NEXT_BASE
+> comment in the series to tell me what their series is based on.  I import
+> each quilt series staring from that base into a branch and then merge
+> that branch.
+>
+> For the git trees, I just fetch and merge them.
 
-Please split this up into one-patch-per-thing-you-do.
+Thanks for all the details!
 
-thanks,
+Last question, do you do merge conflicts manually? I was also trying
+to see if I can simulate a linux-next merge myself to see what you do
+but I didn't see the scripts you use, any pointers would be
+appreciated.
 
-greg k-h
+  Luis
