@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012Ab1LHQ2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 11:28:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab1LHQ2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 11:28:52 -0500
-Date: Thu, 8 Dec 2011 11:28:47 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Phillip Susi <psusi@cfl.rr.com>
-Cc: Karel Zak <kzak@redhat.com>, linux-kernel@vger.kernel.org,
+	id S1752157Ab1LHQeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 11:34:12 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:21822 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab1LHQeI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 11:34:08 -0500
+X-Authority-Analysis: v=2.0 cv=HK9B5/Rv c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=zQGhUK9Iw4MA:10 a=LNmbJxpDd3oA:10 a=8nJEP1OIZ-IA:10 a=D19gQVrFAAAA:8 a=jN9qw3U5iZ-elwqlHxwA:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.78.168.186
+Message-ID: <4EE0C814.2000807@cfl.rr.com>
+Date: Thu, 08 Dec 2011 09:22:12 -0500
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Karel Zak <kzak@redhat.com>
+CC: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
         Jens Axboe <jaxboe@fusionio.com>
 Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
-Message-ID: <20111208162847.GB9281@redhat.com>
-References: <cover.1322709471.git.psusi@cfl.rr.com>
- <4ED6F320.5060709@cfl.rr.com>
- <20111208123038.GA16493@nb.redhat.com>
- <4EE0C814.2000807@cfl.rr.com>
- <20111208151650.GB16934@nb.redhat.com>
- <4EE0D6E6.9000807@cfl.rr.com>
- <20111208155844.GA9281@redhat.com>
- <4EE0E085.8000907@cfl.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EE0E085.8000907@cfl.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <cover.1322709471.git.psusi@cfl.rr.com> <4ED6F320.5060709@cfl.rr.com> <20111208123038.GA16493@nb.redhat.com>
+In-Reply-To: <20111208123038.GA16493@nb.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 11:06:29AM -0500, Phillip Susi wrote:
-> On 12/8/2011 10:58 AM, Vivek Goyal wrote:
-> >So, if there is an IO in flight while partition shrinking is happening,
-> >then IO can end up happening outside the partition?
-> 
-> Yes.  Of course if there was an in flight IO at the time you
-> truncate the partition, then you did something wrong ( didn't shrink
-> the fs first ).
+On 12/8/2011 7:30 AM, Karel Zak wrote:
+>   It seems very close to Vivek's BLKPG_EXTEND_PARTITION idea, see:
+>
+>      https://lkml.org/lkml/2011/9/1/351
+>
+>   It's evident that we (userspace) need something better than
+>   BLKPG_{ADD,DEL}_* and BLKRRPART, but no response from kernel side :-(
 
-Ok, so one needs to shrink filesystem. So if partition is part of a
-volume group one is supposed to first reduce the size using pvresize
-and then shrink actual partition?
+Yes, this looks very similar to mine, except that I also wanted to allow 
+shrinking the partition, not just extending, since btrfs can handle this 
+( tested ).
 
-> 
-> >part->nr_sects can be 64 bits on 32bit machines and update will be
-> >non-atomic. I had used sequence counter to make sure read is able
-> >to get to intermediate value. May be it is a good idea to address
-> >this concenrn.
-> 
-> Isn't that what the mutex is for?
-
-I thought I have found couple of places where we don't take mutex. For
-example.
-
-drive_stat_acct()
- disk_map_sector_rcu()
-  sector_in_part()
-    --> read part->nr_sects without mutex.
-
-printk_all_partitions()
-   ---> read part->nr_sects without mutex.
-
-show_partition()
-   ---> read part->nr_sects without mutex.
-
-Thanks
-Vivek
