@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab1LHQXb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 11:23:31 -0500
-Received: from host171.canaca.com ([67.55.55.225]:47925 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab1LHQX3 (ORCPT
+	id S1751677Ab1LHQYa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 11:24:30 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:45229 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab1LHQY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 11:23:29 -0500
-Message-ID: <80063840e8a9778675e9a63db6f1d956.squirrel@host171.canaca.com>
-In-Reply-To: <CANq1E4T6uoezonoaBk6agD4-6A7QMSiP0ySDPg+5r50G8LYWTA@mail.gmail.com>
-References: <4EDFD23D.4030703@xenotime.net>
-    <1323290039-28073-1-git-send-email-dh.herrmann@googlemail.com>
-    <b92a2d1d30910b75f3354926d9fa26f6.squirrel@host171.canaca.com>
-    <CANq1E4T6uoezonoaBk6agD4-6A7QMSiP0ySDPg+5r50G8LYWTA@mail.gmail.com>
-Date: Thu, 8 Dec 2011 11:23:26 -0500
-Subject: Re: [PATCH] HID: wiimote: Select INPUT_FF_MEMLESS
-From: simon@mungewell.org
-To: "David Herrmann" <dh.herrmann@googlemail.com>
-Cc: simon@mungewell.org, linux-input@vger.kernel.org, rdunlap@xenotime.net,
-        linux-next@vger.kernel.org, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
+	Thu, 8 Dec 2011 11:24:29 -0500
+Message-ID: <4EE0E4B9.4050903@gmail.com>
+Date: Thu, 08 Dec 2011 11:24:25 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Michal Hocko <mhocko@suse.cz>
+CC: Wang Sheng-Hui <shhuiw@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Question about __zone_watermark_ok: why there is a "+ 1" in computing
+ free_pages?
+References: <CAKXJSOHu+sQ1NeMsRvFyp2GYoB6g+50boUu=-QvbxxjcqgOAVA@mail.gmail.com> <20111205161443.GA20663@tiehlicka.suse.cz>
+In-Reply-To: <20111205161443.GA20663@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->> I don't mean to be a complainer, but shouldn't the WiiMote module depend
->> on FF_MEMLESS rather than just forcing it on.
+(12/5/11 11:14 AM), Michal Hocko wrote:
+> On Fri 25-11-11 09:21:35, Wang Sheng-Hui wrote:
+>> In line 1459, we have "free_pages -= (1<<  order) + 1;".
+>> Suppose allocating one 0-order page, here we'll get
+>>      free_pages -= 1 + 1
+>> I wonder why there is a "+ 1"?
 >
-> I have considered that but "grep -r FF_MEMLESS" returned no other
-> driver using "depend" so I decided to use "select", too.
-
-If you look at 'Kconfig' every other driver is fragmented into a 'driver'
-and 'driver_ff', it is only the 'driver_ff' bit which does the
-force-feedback and all the 'drivers' would appear to work OK (as pure
-input devices) with FF disabled.
-
-Someone here will be able to comment whether that is policy, convention or
-just historic....
-
->> Some people might not want FF_MEMLESS enabled.
+> Good spot. Check the patch bellow.
+> ---
+>  From 38a1cf351b111e8791d2db538c8b0b912f5df8b8 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko<mhocko@suse.cz>
+> Date: Mon, 5 Dec 2011 17:04:23 +0100
+> Subject: [PATCH] mm: fix off-by-two in __zone_watermark_ok
 >
-> Why? It is a really small feature that depends only on CONFIG_INPUT.
-> Just 600 lines of code. I don't see why someone who wants to enable
-> the way bigger wiimote driver and HID core would bother about
-> FF_MEMLESS? Why should someone want to disable the rumble-feature of
-> the wiimote?
+> 88f5acf8 [mm: page allocator: adjust the per-cpu counter threshold when
+> memory is low] changed the form how free_pages is calculated but it
+> forgot that we used to do free_pages - ((1<<  order) - 1) so we ended up
+> with off-by-two when calculating free_pages.
+>
+> Spotted-by: Wang Sheng-Hui<shhuiw@gmail.com>
+> Signed-off-by: Michal Hocko<mhocko@suse.cz>
+> ---
+>   mm/page_alloc.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 9dd443d..8a2f1b6 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1457,7 +1457,7 @@ static bool __zone_watermark_ok(struct zone *z, int order, unsigned long mark,
+>   	long min = mark;
+>   	int o;
+>
+> -	free_pages -= (1<<  order) + 1;
+> +	free_pages -= (1<<  order) - 1;
+>   	if (alloc_flags&  ALLOC_HIGH)
+>   		min -= min / 2;
+>   	if (alloc_flags&  ALLOC_HARDER)
 
-600 lines where? What's the other costs to the system when enabling the FF
-code in the kernel.
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-> I cannot see any real use-case here. Maybe you can explain a bit more.
-
-Again I'm not here to kick up a fuss; it just looked different from the
-norm, so I was flagging it.
-
-Simon
 
