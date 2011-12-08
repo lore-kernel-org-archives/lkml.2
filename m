@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab1LHMyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 07:54:23 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64358 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab1LHMyQ (ORCPT
+	id S1753690Ab1LHMyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 07:54:37 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36787 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753559Ab1LHMyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 07:54:16 -0500
+	Thu, 8 Dec 2011 07:54:33 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 17/30] Staging: comedi: fix printk issue in dt3000.c
-Date: Thu,  8 Dec 2011 18:22:12 +0530
-Message-Id: <1323348745-31477-17-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 20/30] Staging: comedi: fix printk issue in jr3_pci.c
+Date: Thu,  8 Dec 2011 18:22:15 +0530
+Message-Id: <1323348745-31477-20-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,61 +23,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the dt3000.c file that fixes up a
+This is a patch to the jr3_pci.c file that fixes up a
 printk warning found by the checkpatch.pl tool.
 
 Converted printks to pr_<levels>.
-Removed if DEBUG.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/dt3000.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/jr3_pci.c |   46 ++++++++++++++---------------
+ 1 files changed, 22 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/dt3000.c b/drivers/staging/comedi/drivers/dt3000.c
-index 9926c77..0aa538d 100644
---- a/drivers/staging/comedi/drivers/dt3000.c
-+++ b/drivers/staging/comedi/drivers/dt3000.c
-@@ -845,7 +845,7 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	int bus, slot;
- 	int ret = 0;
+diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
+index 01b0e08..8273fb9 100644
+--- a/drivers/staging/comedi/drivers/jr3_pci.c
++++ b/drivers/staging/comedi/drivers/jr3_pci.c
+@@ -592,25 +592,23 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
  
--	printk("dt3000:");
-+	pr_debug("dt3000:\n");
- 	bus = it->options[0];
- 	slot = it->options[1];
+ 					min_full_scale =
+ 					    get_min_full_scales(channel);
+-					printk("Obtained Min. Full Scales:\n");
+-					printk("%i   ", (min_full_scale).fx);
+-					printk("%i   ", (min_full_scale).fy);
+-					printk("%i   ", (min_full_scale).fz);
+-					printk("%i   ", (min_full_scale).mx);
+-					printk("%i   ", (min_full_scale).my);
+-					printk("%i   ", (min_full_scale).mz);
+-					printk("\n");
++					pr_debug("Obtained Min. Full Scales:\n");
++					pr_debug("%i\n", (min_full_scale).fx);
++					pr_debug("%i\n", (min_full_scale).fy);
++					pr_debug("%i\n", (min_full_scale).fz);
++					pr_debug("%i\n", (min_full_scale).mx);
++					pr_debug("%i\n", (min_full_scale).my);
++					pr_debug("%i\n", (min_full_scale).mz);
  
-@@ -857,7 +857,7 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (ret < 0)
- 		return ret;
- 	if (ret == 0) {
--		printk(" no DT board found\n");
-+		pr_err("no DT board found\n");
- 		return -ENODEV;
- 	}
+ 					max_full_scale =
+ 					    get_max_full_scales(channel);
+-					printk("Obtained Max. Full Scales:\n");
+-					printk("%i   ", (max_full_scale).fx);
+-					printk("%i   ", (max_full_scale).fy);
+-					printk("%i   ", (max_full_scale).fz);
+-					printk("%i   ", (max_full_scale).mx);
+-					printk("%i   ", (max_full_scale).my);
+-					printk("%i   ", (max_full_scale).mz);
+-					printk("\n");
++					pr_debug("Obtained Max. Full Scales:\n");
++					pr_debug("%i\n", (max_full_scale).fx);
++					pr_debug("%i\n", (max_full_scale).fy);
++					pr_debug("%i\n", (max_full_scale).fz);
++					pr_debug("%i\n", (max_full_scale).mx);
++					pr_debug("%i\n", (max_full_scale).my);
++					pr_debug("%i\n", (max_full_scale).mz);
  
-@@ -865,7 +865,7 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 					set_full_scales(channel,
+ 							max_full_scale);
+@@ -666,14 +664,14 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
+ 					{
+ 						int i;
+ 						for (i = 0; i < 9; i++) {
+-							printk("%d %d - %d\n",
+-							       i,
+-							       p->
+-							       range[i].range.
+-							       min,
+-							       p->
+-							       range[i].range.
+-							       max);
++							pr_debug("%d %d - %d\n",
++								 i,
++								 p->
++								 range[i].range.
++								 min,
++								 p->
++								 range[i].range.
++								 max);
+ 						}
+ 					}
  
- 	if (request_irq(devpriv->pci_dev->irq, dt3k_interrupt, IRQF_SHARED,
- 			"dt3000", dev)) {
--		printk(" unable to allocate IRQ %u\n", devpriv->pci_dev->irq);
-+		pr_err("unable to allocate IRQ %u\n", devpriv->pci_dev->irq);
- 		return -EINVAL;
- 	}
- 	dev->irq = devpriv->pci_dev->irq;
-@@ -995,10 +995,8 @@ static int setup_pci(struct comedi_device *dev)
- 	devpriv->io_addr = ioremap(devpriv->phys_addr, DT3000_SIZE);
- 	if (!devpriv->io_addr)
- 		return -ENOMEM;
--#if DEBUG
--	printk("0x%08llx mapped to %p, ",
--	       (unsigned long long)devpriv->phys_addr, devpriv->io_addr);
--#endif
-+	pr_debug("0x%08llx mapped to %p\n",
-+		 (unsigned long long)devpriv->phys_addr, devpriv->io_addr);
- 
- 	return 0;
- }
 -- 
 1.7.0.4
 
