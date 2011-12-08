@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab1LHAlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 19:41:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:60089 "EHLO mga02.intel.com"
+	id S1757198Ab1LHAlv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 19:41:51 -0500
+Received: from mga01.intel.com ([192.55.52.88]:19156 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757020Ab1LHAlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 19:41:37 -0500
+	id S1757131Ab1LHAls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 19:41:48 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="84106920"
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99872096"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
-Cc: kay.sievers@vrfy.org, trenn@suse.de, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 09/10] x86: Add a test module for cpu loading
-Date: Wed,  7 Dec 2011 16:41:22 -0800
-Message-Id: <1323304882-27953-10-git-send-email-andi@firstfloor.org>
+Cc: kay.sievers@vrfy.org, trenn@suse.de, Andi Kleen <ak@linux.intel.com>,
+        davej@redhat.com, axboe@kernel.dk, hpa@zytor.com,
+        herbert@gondor.hengli.com.au, ying.huang@intel.com, lenb@kernel.org
+Subject: [PATCH 01/10] Add driver auto probing for x86 features
+Date: Wed,  7 Dec 2011 16:41:14 -0800
+Message-Id: <1323304882-27953-2-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
 References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
@@ -24,50 +26,327 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Not for merging, but useful for testing.
+Old patchkit, resurrect due to popular demand.
 
-Not-Signed-off: Andi Kleen <ak@linux.intel.com>
+There's a growing number of drivers that support a specific x86 feature
+or CPU.  Currently loading these drivers currently on a generic
+distribution requires various driver specific hacks and it often
+doesn't work.
+
+This patch adds auto probing for drivers based on the x86 cpuid
+information, in particular based on vendor/family/model number
+and also based on CPUID feature bits.
+
+For example a common issue is not loading the SSE 4.2 accelerated
+CRC module: this can significantly lower the performance of BTRFS
+which relies on fast CRC.
+
+Another issue is loading the right CPUFREQ driver for the current CPU.
+Currently distributions often try all all possible driver until
+one sticks, which is not really a good way to do this.
+
+It works with existing udev without any changes. The code
+exports the x86 information as a generic string in sysfs
+that can be matched by udev's pattern matching.
+
+This scheme does not support numeric ranges, so if you want to
+handle e.g. ranges of model numbers they have to be encoded
+in ASCII or simply all models or families listed. Fixing
+that would require changing udev.
+
+Another issue is that udev will happily load all drivers that match,
+there is currently no nice way to stop a specific driver from
+being loaded if it's not needed (e.g. if you don't need fast CRC)
+But there are not that many cpu specific drivers around and they're
+all not that bloated, so this isn't a particularly serious issue.
+
+Originally this patch added the modalias to the normal cpu
+sysdevs. However sysdevs don't have all the infrastructure
+needed for udev, so it couldn't really autoload drivers.
+This patch instead adds the CPU modaliases to the cpuid devices,
+which are real devices with full support for udev. This implies
+that the cpuid driver has to be loaded to use this.
+
+This patch just adds infrastructure, some driver conversions
+in followups.
+
+Thanks to Kay for helping with some sysfs magic.
+
+Cc: davej@redhat.com
+Cc: trenn@suse.de
+Cc: kay.sievers@vrfy.org
+Cc: axboe@kernel.dk
+Cc: hpa@zytor.com
+Cc: herbert@gondor.apana.org.au
+Cc: ying.huang@intel.com
+Cc: lenb@kernel.org
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- arch/x86/kernel/cpu/Makefile        |    2 ++
- arch/x86/kernel/cpu/test-cpu-load.c |   19 +++++++++++++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/test-cpu-load.c
+ arch/x86/include/asm/cpu_device_id.h |   13 +++++++
+ arch/x86/kernel/cpu/Makefile         |    1 +
+ arch/x86/kernel/cpu/match.c          |   48 ++++++++++++++++++++++++++++
+ arch/x86/kernel/cpuid.c              |   58 +++++++++++++++++++++++++++++++++-
+ include/linux/mod_devicetable.h      |   20 ++++++++++++
+ scripts/mod/file2alias.c             |   27 ++++++++++++++++
+ 6 files changed, 166 insertions(+), 1 deletions(-)
+ create mode 100755 arch/x86/include/asm/cpu_device_id.h
+ create mode 100644 arch/x86/kernel/cpu/match.c
 
+diff --git a/arch/x86/include/asm/cpu_device_id.h b/arch/x86/include/asm/cpu_device_id.h
+new file mode 100755
+index 0000000..2f7d127
+--- /dev/null
++++ b/arch/x86/include/asm/cpu_device_id.h
+@@ -0,0 +1,13 @@
++#ifndef _CPU_DEVICE_ID
++#define _CPU_DEVICE_ID 1
++
++/*
++ * Declare drivers belonging to specific x86 CPUs
++ * Similar in spirit to pci_device_id and related PCI functions
++ */
++
++#include <linux/mod_devicetable.h>
++
++extern struct x86_cpu_id *x86_match_cpu(struct x86_cpu_id *match);
++
++#endif
 diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 6ab6aa2..1af7e7b 100644
+index 25f24dc..6ab6aa2 100644
 --- a/arch/x86/kernel/cpu/Makefile
 +++ b/arch/x86/kernel/cpu/Makefile
-@@ -48,3 +48,5 @@ cpufeature = $(src)/../../include/asm/cpufeature.h
- targets += capflags.c
- $(obj)/capflags.c: $(cpufeature) $(src)/mkcapflags.pl FORCE
- 	$(call if_changed,mkcapflags)
-+
-+obj-m					+= test-cpu-load.o
-diff --git a/arch/x86/kernel/cpu/test-cpu-load.c b/arch/x86/kernel/cpu/test-cpu-load.c
+@@ -16,6 +16,7 @@ obj-y			:= intel_cacheinfo.o scattered.o topology.o
+ obj-y			+= proc.o capflags.o powerflags.o common.o
+ obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
+ obj-y			+= rdrand.o
++obj-y			+= match.o
+ 
+ obj-$(CONFIG_X86_32)	+= bugs.o
+ obj-$(CONFIG_X86_64)	+= bugs_64.o
+diff --git a/arch/x86/kernel/cpu/match.c b/arch/x86/kernel/cpu/match.c
 new file mode 100644
-index 0000000..497a764
+index 0000000..2c23457
 --- /dev/null
-+++ b/arch/x86/kernel/cpu/test-cpu-load.c
-@@ -0,0 +1,19 @@
-+#include <linux/module.h>
-+#include <linux/kernel.h>
++++ b/arch/x86/kernel/cpu/match.c
+@@ -0,0 +1,48 @@
 +#include <asm/cpu_device_id.h>
++#include <asm/processor.h>
++#include <linux/cpu.h>
++#include <linux/module.h>
 +
-+static struct x86_cpu_id microcode_id[] = {
-+        { X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(x86cpu, microcode_id);
-+
-+static int start(void)
++/**
++ * x86_match_cpu - match current CPU again an array of x86_cpu_ids
++ * @match: Pointer to array of x86_cpu_ids. Last entry terminated with
++ *         X86_MODEL_END.
++ *
++ * Return the entry if the current CPU matches the entries in the
++ * passed x86_cpu_id match table. Otherwise NULL.  The match table
++ * contains vendor (X86_VENDOR_*), family, model and feature bits or
++ * respective wildcard entries.
++ *
++ * A typical table entry would be to match a specific CPU
++ * { X86_VENDOR_INTEL, 6, 0x12 }
++ * or to match a specific CPU feature
++ * { X86_FEATURE_MATCH(X86_FEATURE_FOOBAR) }
++ *
++ * Felds can be wildcarded with %X86_VENDOR_ANY, %X86_FAMILY_ANY,
++ * %X86_MODEL_ANY, %X86_FEATURE_ANY.
++ *
++ * Arrays used to match for this should also be declared using 
++ * MODULE_DEVICE_TABLE(x86_cpu, ...)
++ *
++ * This always matches against the boot cpu, assuming models and features are 
++ * consistent over all CPUs.
++ */
++struct x86_cpu_id *x86_match_cpu(struct x86_cpu_id *match)
 +{
-+	printk("test-cpu-load loaded\n");
++	struct x86_cpu_id *m;
++	struct cpuinfo_x86 *c = &boot_cpu_data;
++
++	for (m = match; m->vendor | m->family | m->model | m->feature; m++) {
++		if (m->vendor != X86_VENDOR_ANY && c->x86_vendor != m->vendor)
++			continue;
++		if (m->family != X86_FAMILY_ANY && c->x86 != m->family)
++			continue;
++		if (m->model != X86_MODEL_ANY && c->x86_model != m->model)
++			continue;
++		if (m->feature != X86_FEATURE_ANY && !cpu_has(c, m->feature))
++			continue;
++		return m;
++	}
++	return NULL;
++}
++EXPORT_SYMBOL(x86_match_cpu);
+diff --git a/arch/x86/kernel/cpuid.c b/arch/x86/kernel/cpuid.c
+index 212a6a4..6bb24d3 100644
+--- a/arch/x86/kernel/cpuid.c
++++ b/arch/x86/kernel/cpuid.c
+@@ -40,6 +40,7 @@
+ #include <linux/notifier.h>
+ #include <linux/uaccess.h>
+ #include <linux/gfp.h>
++#include <linux/slab.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/msr.h>
+@@ -138,13 +139,56 @@ static const struct file_operations cpuid_fops = {
+ 	.open = cpuid_open,
+ };
+ 
++static ssize_t print_cpu_modalias(struct device *dev,
++				  struct device_attribute *attr,
++				  char *bufptr)
++{
++	int size = PAGE_SIZE;
++	int i, n;
++	char *buf = bufptr;
++
++	n = snprintf(buf, size, "x86cpu:vendor:%04x:family:%04x:model:%04x:feature:",
++		boot_cpu_data.x86_vendor,
++		boot_cpu_data.x86,
++		boot_cpu_data.x86_model);
++	size -= n;
++	buf += n;
++	size -= 2;
++	for (i = 0; i < NCAPINTS*32; i++) {
++		if (boot_cpu_has(i)) {
++			n = snprintf(buf, size, ",%04x", i);
++			if (n < 0) {
++				WARN(1, "x86 features overflow page\n");
++				break;
++			}
++			size -= n;
++			buf += n;
++		}
++	}
++	*buf++ = ',';
++	*buf++ = '\n';
++	return buf - bufptr;
++}
++
++static DEVICE_ATTR(modalias, 0444, print_cpu_modalias, NULL);
++
+ static __cpuinit int cpuid_device_create(int cpu)
+ {
+ 	struct device *dev;
++	int err;
+ 
+ 	dev = device_create(cpuid_class, NULL, MKDEV(CPUID_MAJOR, cpu), NULL,
+ 			    "cpu%d", cpu);
+-	return IS_ERR(dev) ? PTR_ERR(dev) : 0;
++	if (IS_ERR(dev))
++		return PTR_ERR(dev);
++
++	err = device_create_file(dev, &dev_attr_modalias);
++	if (err) {
++		/* keep device around on error. attribute is optional. */
++		return err;
++	}
++
++	return 0;
+ }
+ 
+ static void cpuid_device_destroy(int cpu)
+@@ -182,6 +226,17 @@ static char *cpuid_devnode(struct device *dev, mode_t *mode)
+ 	return kasprintf(GFP_KERNEL, "cpu/%u/cpuid", MINOR(dev->devt));
+ }
+ 
++static int cpuid_dev_uevent(struct device *dev, struct kobj_uevent_env *env)
++{
++	char *buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
++	if (buf) {
++		print_cpu_modalias(NULL, NULL, buf);
++		add_uevent_var(env, "MODALIAS=%s", buf);
++		kfree(buf);
++	}
 +	return 0;
 +}
 +
-+module_init(start);
+ static int __init cpuid_init(void)
+ {
+ 	int i, err = 0;
+@@ -200,6 +255,7 @@ static int __init cpuid_init(void)
+ 		goto out_chrdev;
+ 	}
+ 	cpuid_class->devnode = cpuid_devnode;
++	cpuid_class->dev_uevent = cpuid_dev_uevent;
+ 	for_each_online_cpu(i) {
+ 		err = cpuid_device_create(i);
+ 		if (err != 0)
+diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
+index 468819c..8971fec 100644
+--- a/include/linux/mod_devicetable.h
++++ b/include/linux/mod_devicetable.h
+@@ -542,4 +542,24 @@ struct isapnp_device_id {
+ 	kernel_ulong_t driver_data;	/* data private to the driver */
+ };
+ 
++/*
++ * Match x86 CPUs for CPU specific drivers.
++ * See documentation of "x86_match_cpu" for details.
++ */
 +
++struct x86_cpu_id {
++	__u16 vendor;
++	__u16 family;
++	__u16 model;
++ 	__u16 feature;	/* bit index */
++	kernel_ulong_t driver_data;
++};
 +
++#define X86_FEATURE_MATCH(x) { X86_VENDOR_ANY, X86_FAMILY_ANY, X86_MODEL_ANY, x }
++
++#define X86_VENDOR_ANY 0xffff
++#define X86_FAMILY_ANY 0
++#define X86_MODEL_ANY  0
++#define X86_FEATURE_ANY 0	/* Same as FPU, you can't test for that */
++
+ #endif /* LINUX_MOD_DEVICETABLE_H */
+diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
+index f936d1f..e5dd089 100644
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@ -880,6 +880,29 @@ static int do_isapnp_entry(const char *filename,
+ 	return 1;
+ }
+ 
++/* LOOKS like x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:*,FEAT,*
++ * All fields are numbers. It would be nicer to use strings for vendor
++ * and feature, but getting those out of the build system here is too
++ * complicated.
++ */
++
++static int do_x86cpu_entry(const char *filename, struct x86_cpu_id *id, 
++			   char *alias)
++{
++	id->feature = TO_NATIVE(id->feature);
++	id->family = TO_NATIVE(id->family);
++	id->model = TO_NATIVE(id->model);
++	id->vendor = TO_NATIVE(id->vendor);
++
++	strcpy(alias, "x86cpu:");
++	ADD(alias, "vendor:",  id->vendor != X86_VENDOR_ANY, id->vendor);
++	ADD(alias, ":family:", id->family != X86_FAMILY_ANY, id->family);
++	ADD(alias, ":model:",  id->model  != X86_MODEL_ANY,  id->model);
++	ADD(alias, ":feature:*,", id->feature != X86_FEATURE_ANY, id->feature);
++	strcat(alias, ",*");
++	return 1;
++}
++
+ /* Ignore any prefix, eg. some architectures prepend _ */
+ static inline int sym_is(const char *symbol, const char *name)
+ {
+@@ -1047,6 +1070,10 @@ void handle_moddevtable(struct module *mod, struct elf_info *info,
+ 		do_table(symval, sym->st_size,
+ 			sizeof(struct isapnp_device_id), "isa",
+ 			do_isapnp_entry, mod);
++	else if (sym_is(symname, "__mod_x86cpu_device_table"))
++		do_table(symval, sym->st_size,
++			 sizeof(struct x86_cpu_id), "x86cpu",
++			 do_x86cpu_entry, mod);
+ 	free(zeros);
+ }
+ 
 -- 
 1.7.4.4
 
