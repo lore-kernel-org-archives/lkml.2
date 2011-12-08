@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab1LHLIe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 06:08:34 -0500
-Received: from wavehammer.waldi.eu.org ([82.139.201.20]:44261 "EHLO
-	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab1LHLIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 06:08:31 -0500
-Date: Thu, 8 Dec 2011 12:08:27 +0100
-From: Bastian Blank <bastian@waldi.eu.org>
-To: Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH 3/4] xen: Add xenbusd device driver
-Message-ID: <20111208110827.GA32300@wavehammer.waldi.eu.org>
-Mail-Followup-To: Bastian Blank <bastian@waldi.eu.org>,
-	Ian Campbell <Ian.Campbell@citrix.com>,
-	"xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-References: <1323292396-19523-1-git-send-email-waldi@debian.org>
- <1323292396-19523-4-git-send-email-waldi@debian.org>
- <1323332686.2969.49.camel@zakaz.uk.xensource.com>
- <20111208092757.GA22678@wavehammer.waldi.eu.org>
+	id S1752759Ab1LHLJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 06:09:24 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:40165 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751922Ab1LHLJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 06:09:23 -0500
+X-IronPort-AV: E=Sophos;i="4.71,319,1320642000"; 
+   d="scan'208";a="19774090"
+Message-ID: <4EE09AE1.3080703@citrix.com>
+Date: Thu, 8 Dec 2011 11:09:21 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111208092757.GA22678@wavehammer.waldi.eu.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bastian Blank <waldi@debian.org>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        <konrad.wilk@oracle.com>
+Subject: Re: [Xen-devel] [PATCH 0/4] V2, Move stuff out of xenfs
+References: <1323292396-19523-1-git-send-email-waldi@debian.org>
+In-Reply-To: <1323292396-19523-1-git-send-email-waldi@debian.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 10:27:58AM +0100, Bastian Blank wrote:
-> I even think about registering this device from xenstored_local_init in
-> xenbus_probe.c. Then it will be available only if the kernel also owns
-> the communcation ring.
+On 07/12/2011 21:13, Bastian Blank wrote:
+> In<20100605162947.GA31336@wavehammer.waldi.eu.org>  I started the
+> discussion about xenfs and the usage of it. This is the second try to
+> move stuff over into normal device drivers.
 
-I'm not sure if I'm allowed to register character devices from a
-postcore_initcall. Isn't this function called a bit early anyway?
+You still don't say why this is needed in the commit messages.  I can't
+find the message you refer to in the previous thread (the mail archives
+don't let you search by message-id).
 
-Bastian
-
--- 
-Each kiss is as the first.
-		-- Miramanee, Kirk's wife, "The Paradise Syndrome",
-		   stardate 4842.6
+David
