@@ -1,195 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751074Ab1LHFwZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 00:52:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab1LHFwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 00:52:24 -0500
-Message-ID: <1323323519.24340.64.camel@bling.home>
-Subject: Re: RFC: Device isolation infrastructure
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Gibson <dwg@au1.ibm.com>, joerg.roedel@amd.com, dwmw2@infradead.org,
-        iommu@lists.linux-foundation.org, aik@au1.ibm.com,
-        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
-        scottwood@freescale.com, B08248@freescale.com
-Date: Wed, 07 Dec 2011 22:51:59 -0700
-In-Reply-To: <1323301293.12793.16.camel@pasglop>
-References: <20111207035816.GC7631@truffala.fritz.box>
-	 <1323240402.2182.241.camel@bling.home>
-	 <20111207142201.GA5696@truffala.fritz.box>
-	 <1323287120.15059.63.camel@bling.home> <1323301293.12793.16.camel@pasglop>
+	id S1751120Ab1LHGGh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 01:06:37 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:41410 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751036Ab1LHGGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 01:06:36 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+BthkBUVSBIpfVpUcoW1uA6ak0EeNLDy/b279tfe
+	kU9N2BSYCRX5Bo
+Subject: Re: [patch v3 5/6] sched, ttwu_queue: queue remote wakeups only
+ when crossing cache domains
+From: Mike Galbraith <efault@gmx.de>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Venki Pallipadi <venki@google.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tim Chen <tim.c.chen@linux.jf.intel.com>,
+        "Shi, Alex" <alex.shi@intel.com>
+In-Reply-To: <1323285644.1984.55.camel@sbsiddha-desk.sc.intel.com>
+References: <20111202010731.344451602@sbsiddha-desk.sc.intel.com>
+	 <20111202010832.714874234@sbsiddha-desk.sc.intel.com>
+	 <1322796864.4755.5.camel@marge.simson.net>
+	 <1323275027.32012.114.camel@twins>
+	 <1323285644.1984.55.camel@sbsiddha-desk.sc.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Date: Thu, 08 Dec 2011 07:06:28 +0100
+Message-ID: <1323324388.5118.16.camel@marge.simson.net>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-08 at 10:41 +1100, Benjamin Herrenschmidt wrote:
-> On Wed, 2011-12-07 at 12:45 -0700, Alex Williamson wrote:
+On Wed, 2011-12-07 at 11:20 -0800, Suresh Siddha wrote:
+> On Wed, 2011-12-07 at 08:23 -0800, Peter Zijlstra wrote:
+> > In fact, Ingo (rightfully) refused to take this due to the x86 specific
+> > code in scheduler guts..
 > 
-> > Ok, let's back up from the patch because I think its clouding the driver
-> > model with a detached device state that might be detracting from the
-> > useful bits.
-> > 
-> > An isolation group is a generic association of devices into a set based
-> > on, well... isolation.  Presumably something like an iommu driver does a
-> > bus_register_notifier() and bus_for_each_dev() and when a new device is
-> > added we do isolation_group_new() and isolation_group_dev_add() as
-> > necessary.  When the iommu driver needs to do a dma_ops call for a
-> > device, it can traverse up to the isolation group and find something
-> > that points it to the shared iommu context for that group.  While
-> > dma_ops can share the iommu context among the drivers attached to the
-> > various devices, iommu_ops wants a single meta-driver for the group
-> > because it's predominantly designed for use when devices are exposed
-> > directly to the user.  We trust native kernel drivers to share context
-> > between each other, we do not trust user level drivers to share context
-> > with anyone but themselves.  Ok so far?
-> > 
-> > The first question we run into is what does the iommu driver do if it
-> > does not provide isolation?  If it's a translation-only iommu, maybe it
-> > has a single context and can manage to maintain it internally and should
-> > opt-out of isolation groups.  But we also have things like MSI isolation
-> > where we have multiple contexts and the isolation strength is sufficient
-> > for dma_ops, but not iommu_ops.  I don't know if we want to make that
-> > determination via a strength bitmask at the group level or simply a bool
-> > that the iommu driver sets when it registers a group.
+> I noticed this while reviewing/testing the patch and left it because on
+> the microbenchmark, it had measurable impact of using the direct check
+> as compared to going through the scheduler domains every time to figure
+> out if we shared the LLC or not.
 > 
->  .../...
+> > Initially the idea was to provide a new arch interface and a fallback
+> > and do the Kconfig thing etc. After a bit of thought I decided against
+> > that for we already have that information in the sched_domain tree
+> > anyway and it should be a simple matter of representing things
+> > differently.
 > 
-> I think we are trying to solve too many problems at once.
+> This def looks better.
+
+Yup.
+
+> > +DEFINE_PER_CPU(int, sd_top_spr_id);
 > 
-> I don't believe we should have the normal dma ops path in the kernel be
-> rewritten on top of some new iommu isolation layer or anything like that
-> at this stage.
-
-I headed down this path because David seems to be suggesting, well
-stating, that all this infrastructure is useful for providing simplicity
-and efficiency of groups to the core, and not just for this niche vfio
-usage.  "You don't get a choice about whether you use groups."  The only
-way I can rationalize that is to give it some purpose which is used by
-something other that just vfio.  If all of that is "some day", then why
-don't we start with the group management in vfio as I have it today and
-eventually push that down into the core?
-
-> Proceed step by step or we'll never be finished. What that means imho
-> is:
+> pkg_srid (shared resource id)?
 > 
->  - Existing dma/iommu arch layers mostly remain as-is. It has its own
-> internal representation of devices, domains and possibly grouping
-> information, and things like the buggy RICOH devices are handled there
-> (via a flag set in a generic header quirk)
-
-But we're already being harassed to rework iommu_ops to operate based on
-groups and to take grouping into account for things like the ricoh
-device in dma_ops.  Mixed messages...
-
->  - Isolation groups are a new high-level thing that is not used by the
-> iommu/dma code for normal in-kernel operations at this stage. The
-> platform iommu/dma code creates the isolation group objects and
-> populates them, it doesn't initially -use- them.
-
-The iommu_device_group() interface is a tiny extension to the IOMMU API
-that basically lets vfio query the iommu driver for a group identifier
-for a device.  vfio then uses that information to create and manage
-groups itself.
-
-This is simply reversing that, allowing the iommu driver to create
-groups and add devices, which are centrally managed.  That sounds like a
-good long term goal, especially when we start making use of the groups
-for dma/iommu ops, but it does require that we define an API both for
-group providers (iommu drivers) and the group users (vfio).  It's also
-much more intrusive to the iommu drivers (note the trivial patches to
-add iommu_device_group support to intel and amd iommu) and creates bloat
-for a niche user if we're not going to get around to making groups more
-pervasive anytime soon.
-
->  - We can then use that for the needs of exposing the groups to user
-> space, perform driver level isolation, and provide the grouping
-> information to vfio.
->
->  - In the -long- run, individual iommu/dma layers might be modified to
-> instead use the isolation layer as their own building block if that
-> makes sense, this can be looked at on a case by case basis but is not a
-> pre-req.
+> > +
+> > +static void update_top_cache_domain(int cpu)
+> > +{
+> > +	struct sched_domain *sd;
+> > +	int id = -1;
+> > +
+> > +	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
+> > +	if (sd)
+> > +		id = cpumask_first(sched_domain_span(sd));
 > 
-> That leaves us with what I think is the main disagreement between David
-> and Alex approaches which is whether devices in a group are "detached"
-> completely (in some kind of limbo) while they are used by vfio or
-> something else vs. assigned to a different driver (vfio).
+> if there is no sd with shared pkg resources, then id has to be set to
+> 'cpu'.
 > 
-> After much thinking, I believe that the driver ownership model is the
-> right one. However, we could still use the work David did here. IE. I
-> _do_ think that exposing groups as the individual unit of ownership to
-> user space is the right thing to do.
-
-So far we're only exposing the group structure here (which vfio also
-does in sysfs), not providing a userspace or driver interface for taking
-ownership of the group.  I'm still not clear how this ends up satisfying
-David's complaints about the group ownership vs device access model in
-vfio.
-
-> That means that instead of that current detached flag alone, what we
-> could do instead is have an in-kernel mechanism to request isolation
-> which works by having the isolation group kernel code perform:
+> > +	rcu_assign_pointer(per_cpu(sd_top_spr, cpu), sd);
+> > +	per_cpu(sd_top_spr_id, cpu) = id;
 > 
->  - Rename the detached flag to "exclusive". This flag prevents automatic
-> & user driven attachment of a driver by the generic code. Set that flag
-> on all devices in the group (need a hook for hotplug).
+> Otherwise it looks good.
+> 
+> Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-This is a sysfs attribute on the group?  So step #1:
+Acked-by: Mike Galbraith <efault@gmx.de>
 
-        $ echo 1 > /sys/isolation/$GROUP/exclusive
+The stable regression fix should look about like so then, yes?
 
->  - Detach existing drivers.
+From: Peter Zijlstra <peterz@infradead.org>
 
-step #2:
+sched, ttwu_queue: queue remote wakeups only when crossing cache domains
 
-        $ for i in $(ls /sys/isolation/$GROUP/devices/); do	\
-        	echo $(basename $i) > $i/driver/unbind; done
->         
->  - Once everything is detached, attach the requested client driver (vfio
-> being the one we initially provide, maybe uio could use that framework
-> as well). This can be done using an explicit in-kernel attach API that
-> can be used even when the exclusive flag is set.
+<Insert Peter's final changelog>
 
-step #3: A miracle occurs ;)
+Acked-by: Mike Galbraith <efault@gmx.de>
+Cc: stable@kernel.org # v3.0+
 
-I'm not sure what this looks like.  Are we going to do a
-isolation_group_register_meta_driver() that vfio calls with some defined
-ops structure, so a user can:
+---
+ kernel/sched.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 50 insertions(+), 1 deletion(-)
+Index: linux-3.0/kernel/sched.c
+===================================================================
+--- linux-3.0.orig/kernel/sched.c
++++ linux-3.0/kernel/sched.c
+@@ -2636,6 +2636,19 @@ static int ttwu_activate_remote(struct t
+ 
+ }
+ #endif /* __ARCH_WANT_INTERRUPTS_ON_CTXSW */
++
++/*
++ * Keep a unique ID per domain (we use the first cpu number in
++ * the cpumask of the domain), this allows us to quickly tell if
++ * two cpus are in the same cache domain, see ttwu_share_cache().
++ */
++DEFINE_PER_CPU(int, sd_top_spr_id);
++
++static inline int ttwu_share_cache(int this_cpu, int that_cpu)
++{
++	return per_cpu(sd_top_spr_id, this_cpu) ==
++		per_cpu(sd_top_spr_id, that_cpu);
++}
+ #endif /* CONFIG_SMP */
+ 
+ static void ttwu_queue(struct task_struct *p, int cpu)
+@@ -2643,7 +2656,7 @@ static void ttwu_queue(struct task_struc
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+ #if defined(CONFIG_SMP)
+-	if (sched_feat(TTWU_QUEUE) && cpu != smp_processor_id()) {
++	if (sched_feat(TTWU_QUEUE) && !ttwu_share_cache(smp_processor_id(), cpu)) {
+ 		sched_clock_cpu(cpu); /* sync clocks x-cpu */
+ 		ttwu_queue_remote(p, cpu);
+ 		return;
+@@ -6858,6 +6871,40 @@ static void destroy_sched_domains(struct
+ 		destroy_sched_domain(sd, cpu);
+ }
+ 
++/**
++ * highest_flag_domain - Return highest sched_domain containing flag.
++ * @cpu:	The cpu whose highest level of sched domain is to
++ *		be returned.
++ * @flag:	The flag to check for the highest sched_domain
++ *		for the given cpu.
++ *
++ * Returns the highest sched_domain of a cpu which contains the given flag.
++ */
++static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
++{
++	struct sched_domain *sd, *hsd = NULL;
++
++	for_each_domain(cpu, sd) {
++		if (!(sd->flags & flag))
++			break;
++		hsd = sd;
++	}
++
++	return hsd;
++}
++
++static void update_top_cache_domain(int cpu)
++{
++	struct sched_domain *sd;
++	int id = cpu;
++
++	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
++	if (sd)
++		id = cpumask_first(sched_domain_span(sd));
++
++	per_cpu(sd_top_spr_id, cpu) = id;
++}
++
+ /*
+  * Attach the domain 'sd' to 'cpu' as its base domain. Callers must
+  * hold the hotplug lock.
+@@ -6897,6 +6944,8 @@ cpu_attach_domain(struct sched_domain *s
+ 	tmp = rq->sd;
+ 	rcu_assign_pointer(rq->sd, sd);
+ 	destroy_sched_domains(tmp, cpu);
++
++	update_top_cache_domain(cpu);
+ }
+ 
+ /* cpus with isolated domains */
 
-        $ echo "vfio" > /sys/isolation/$GROUP/driver
-
-That triggers some list walk of the group devices, asking vfio to find
-and force a driver attach to the bus driver for each device?  A model
-something like that is the only way I can see that removing groups from
-vfio doesn't also disassociate the group meta driver from the group
-device drivers.
-
-If instead, we make vfio be the group manager (since nobody else uses it
-anyway), all of the above becomes:
-
-        $ for i in $(ls /sys/devices/virtual/vfio/pci:257/devices); do	\
-        	echo $(basename $i) > $i/driver/unbind;			\
-        	echo $(basename $i) > /sys/bus/pci/drivers/vfio/bind;	\
-        	done
-        
->  - Win
-
-I wish, we still have to make it through how vfio then exposes the group
-to userspace and how we don't end up with the same individual device
-manipulation vs group access model that seems to be getting under
-David's skin.  Effectively what we've done above is:
-
-      * provide a group model that we'll "some day" make more pervasive
-      * make the binding of devices to group device drivers implicit in
-        some kind of meta driver attachment
-
-Thanks,
-
-Alex
 
 
