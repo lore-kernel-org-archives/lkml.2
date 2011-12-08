@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab1LHEKy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 23:10:54 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:34854 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756547Ab1LHEKx (ORCPT
+	id S1757456Ab1LHENg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 23:13:36 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:45157 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756741Ab1LHENe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 23:10:53 -0500
-Message-ID: <4EE038BD.7010705@st.com>
-Date: Thu, 8 Dec 2011 09:40:37 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: "Koul, Vinod" <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Shiraz HASHIM <shiraz.hashim@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        deepak sikri <deepak.sikri@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>, Amit VIRDI <amit.virdi@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>
-Subject: dmaengine/Query: What about scatter/gather for mem to mem transfers.
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Wed, 7 Dec 2011 23:13:34 -0500
+Date: Thu, 8 Dec 2011 15:13:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        =?UTF-8?B?IlNqdXIgQnLDpm5k?= =?UTF-8?B?ZWxhbmQi?= 
+	<sjur.brandeland@stericsson.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the xshm tree
+Message-Id: <20111208151322.146d37ed76b5a4fead2a6e03@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__8_Dec_2011_15_13_22_+1100_9LV5GW2k+1kYNG8S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan/Vinod
+--Signature=_Thu__8_Dec_2011_15_13_22_+1100_9LV5GW2k+1kYNG8S
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I am looking to implement scatter/gather interface for mem to mem transfers.
-But before that, i wanted to know your feedback about it.
+Hi all,
 
-In my case, i have memory scattered in pages and performance is not good, if
-i submit transfers page by page.
+After merging the xshm tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-If you are Okay with the idea, i can implement it and submit soon.
+warning: (XSHM_CHR) selects XSHM which has unmet direct dependencies (CONFI=
+G_C2C)
 
--- 
-viresh
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__8_Dec_2011_15_13_22_+1100_9LV5GW2k+1kYNG8S
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO4DliAAoJEECxmPOUX5FEOicP+wWb93rBBDIP2tRYu9HR15A0
+m7vXnOIbmvmY9ISGEOafhqQws0bqrDTM4tGticdhHUhuqh59l/UJFejIgM1Momyj
+s2QtHMu55AlJz9nPwSXh3XVwelcg5xmNfvcJkWySc+llJhDWfb4PmGl9NeGFp4qf
+2ixJun+1uwD4lIOdWOPaXiuoqx0ENDS5oQUnz50o09NtcHiVffBcpVceBLCrY7Od
+n8M/c3dyQiObRhHI5p3TlffuO49iINXnWB5qaSpVSStETScO6cqgokx1W472eiLd
+YKNA3aVTLsRAcFRS4k/fv7PsaWt2UEoWyPUJuIphPaEpQZI0lAmdb25xHZxB58cD
+bOG2FoiQcfTN0pXjOwdUlZpx/fiq9iwyGpBtZvnaf/Yrb5UERn9N+f2zSzRMhusw
+tZ1CT8dDVzJbX0LpLlWWD+2o8Jx9Fqm6s0fEBuXDLFLZSo0KhWlttSw3WN2+bMTH
+zV+/Zp4anSZ793d5q3kLdorMOALcw6LVEqyourdjdeWtrTWY1Z+kIU0frIGaJNRf
+MIv7ciAWryda5Zcb+OKSp3cDTXzxrv+lAmDRQYZFXU9OvbUIo/mnvFkvi0A0lypT
+as8Ud8idL5Gyt9R9oTJkfzbRwOqX7gK8nLWqCwgx4kOXr7rfprWJjSr31az7ykha
+yLVtEAuEvRU9kHs4ZAOC
+=XvfX
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Dec_2011_15_13_22_+1100_9LV5GW2k+1kYNG8S--
