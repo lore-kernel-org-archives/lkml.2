@@ -1,160 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab1LHRNQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 12:13:16 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:53737 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab1LHRNO (ORCPT
+	id S1752562Ab1LHRPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 12:15:39 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:50936 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751502Ab1LHRPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 12:13:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] arm-soc fixes for 3.2, part 3
-Date: Thu, 8 Dec 2011 17:13:02 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel" <linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 8 Dec 2011 12:15:38 -0500
+X-Sasl-enc: tSx+wd1sP6IglgnlEvclp6MwHqICW2AByPsUxOpQLnrn 1323364537
+Subject: Re: chroot(2) and bind mounts as non-root
+From: Colin Walters <walters@verbum.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: John Stoffel <john@stoffel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 08 Dec 2011 12:15:17 -0500
+In-Reply-To: <201112081704.22453.arnd@arndb.de>
+References: <1323280461.10724.13.camel@lenny>
+	 <20191.49202.793643.397028@quad.stoffel.home>
+	 <201112081704.22453.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112081713.02697.arnd@arndb.de>
-X-Provags-ID: V02:K0:HfF8i5jhLeh4Mmrmdkvkl5oHABrm/ZV8R7m6e1075LK
- tN1H4UV4GFhhuqsXjTahvosDeF03lqpoSGAgrS4+j0H7B/er3E
- SfUpx8nCegT6DglXIIobSkfTj9Djh1/pShEbi75HInSWQwHRvj
- NuOGwtn2QE5y8TmW9cFiItE4JNvwciHakvc0NCen/5DQX5f+Lo
- WoQwTnaXKVZjdUnQCYxF9vonVt1mjfJBFNCONI4ahkEQIKmgbW
- LS/2DMn9PVXW62t7mHxZd8cq8qAfO33kAEA+uXSH6g+cywECwO
- YH7BwNl0kQtkayEhFfRkN1eRh9tMY3TNjaFAmA3KuZxJCb1nnl
- Z7AKHCsj6nFJ3wOkkkjw=
+Message-ID: <1323364518.10724.65.camel@lenny>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2011-12-08 at 17:04 +0000, Arnd Bergmann wrote:
 
-Another week gone by, so here is the latest set of fixes for arm-soc.
-The rate of patches is going down slowly, but at least they are
-all trivial.
+> I think the better question to ask is what is missing from 'schroot', which
+> is commonly used for exactly this purpose. Is it just about avoing the
+> suid bit for /usr/bin/schroot or something else?
 
-	Arnd
+The trust model for schroot is that it only allows executing code
+downloaded from URLs in /etc/schroot/schroot.conf.  That means it
+requires root for the initial setup to edit that config file, which
+disqualifies it from my use case (no part of the compilation should
+require root).
 
-The following changes since commit 5611cc4572e889b62a7b4c72a413536bf6a9c416:
+In my approach, you can keep the OS tree (/usr/include, /usr/bin/gcc)
+owned by the user - there is absolutely no root-owned process running
+under any indirect control of the user (except the tiny bit for my new
+setuid binary).
 
-  Linux 3.2-rc4 (2011-12-01 14:56:01 -0800)
+Now ultimately to *run* your installed program locally (say you're
+hacking on a system daemon like gdm), then clearly you need root.  But
+nothing before that should.  And if you're not running it locally (e.g.
+you're cross compiling, running a build server which distributes
+binaries to other machines), then there is no root required.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
 
-Anders Darander (1):
-      ARM: at91: Fix USB AT91 gadget registration
-
-Arnd Bergmann (7):
-      Merge branch 'at91-fixes' of git://github.com/at91linux/linux-at91 into fixes
-      Merge branch 'imx/fix-irqdomain' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
-      Merge branch 'fixes' of git://gitorious.org/sirfprima2-kernel/sirfprima2-kernel into fixes
-      Merge branch 'mxs/fixes' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
-      Merge branch 'fixes' of git://gitorious.org/linux-davinci/linux-davinci into fixes
-      Merge branch 'samsung-fixes-2' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-      Merge branch 'fixes' of git://github.com/hzhuang1/linux into fixes
-
-Barry Song (2):
-      ARM: CSR: fix build error due to new mdesc->dma_zone_size
-      ARM: CSR: PM: fix build error due to undeclared 'THIS_MODULE'
-
-Christian Hitz (1):
-      ARM: at91: fix NAND bus width decoding from system_rev
-
-Dong Aisheng (1):
-      ARM: mxs/tx28: add __initconst for fec pdata
-
-Hans Verkuil (1):
-      ARM: davinci: dm646x evm: wrong register used in setup_vpif_input_channel_mode
-
-Heiko Stuebner (1):
-      MAINTAINERS: Consolidate Samsung MAINTAINERS
-
-Janusz Krzysztofik (3):
-      ARM: OMAP1: Remove unsafe clock values from omap1_defconfig
-      ARM: OMAP1: Fix ckctl value used for dpll1 defualt rate
-      ARM: OMAP1: recalculate loops per jiffy after dpll1 reprogram
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: fix clock conid for atmel_tcb.1 on 9260/9g20
-
-Jett.Zhou (1):
-      ARM: sa1100: fix build error
-
-Kukjin Kim (1):
-      Merge branch 'next/topic-update-maintainer' into samsung-fixes-2
-
-Lauri Hintsala (1):
-      ARM: mxs: fix machines' initializers order
-
-Manjunathappa, Prakash (1):
-      ARM: davinci: da850 evm: change audio edma event queue to EVENTQ_0
-
-Mark Brown (5):
-      MAINTAINERS: Add linux-samsung-soc mailing list for Samsung
-      MAINTAINERS: Extend Samsung patterns to cover SPI and ASoC drivers
-      ARM: S3C64XX: Remove extern from definition of framebuffer setup call
-      ARM: S3C64XX: Add linux/export.h to dev-spi.c
-      ARM: S3C64XX: Staticise s3c6400_sysclass
-
-Murali Karicheri (2):
-      ARM: davinci: psc: fix incorrect mask
-      ARM: davinci: psc: fix incorrect offsets
-
-Olof Johansson (1):
-      Merge branch 'fixes' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-
-Peter Rusko (1):
-      ARM: mx28: LRADC macro rename
-
-Sekhar Nori (1):
-      ARM: davinci: dm646x does not have a DSP domain
-
-Shankarmurthy,Akshay (1):
-      ARM: davinci: dm365 evm: align nand partition table to u-boot
-
-Shawn Guo (2):
-      arm/imx: fix return type of callback passed to of_irq_init()
-      arm/imx: fix irq_base for gpio
-
-Tony Lindgren (1):
-      ARM: OMAP1: Fix reprogramming of DPLL1 for systems that boot at rates below 60MHz
-
-Wolfram Sang (1):
-      arm: mx23: recognise stmp378x as mx23
-
- MAINTAINERS                                  |   27 ++++---------------------
- arch/arm/configs/omap1_defconfig             |    5 ----
- arch/arm/mach-at91/at91rm9200_devices.c      |    2 +-
- arch/arm/mach-at91/at91sam9260.c             |    6 ++--
- arch/arm/mach-at91/at91sam9260_devices.c     |    2 +-
- arch/arm/mach-at91/at91sam9261_devices.c     |    2 +-
- arch/arm/mach-at91/at91sam9263_devices.c     |    2 +-
- arch/arm/mach-at91/include/mach/system_rev.h |    2 +-
- arch/arm/mach-davinci/board-da850-evm.c      |    2 +-
- arch/arm/mach-davinci/board-dm365-evm.c      |    2 +-
- arch/arm/mach-davinci/board-dm646x-evm.c     |    6 ++--
- arch/arm/mach-davinci/dm646x.c               |    1 -
- arch/arm/mach-davinci/include/mach/psc.h     |    5 +++-
- arch/arm/mach-davinci/psc.c                  |   18 ++++++++--------
- arch/arm/mach-imx/mach-imx6q.c               |    9 ++++---
- arch/arm/mach-mx5/imx51-dt.c                 |   12 ++++++----
- arch/arm/mach-mx5/imx53-dt.c                 |   12 ++++++----
- arch/arm/mach-mxs/include/mach/mx28.h        |    4 +-
- arch/arm/mach-mxs/include/mach/mxs.h         |    1 +
- arch/arm/mach-mxs/mach-m28evk.c              |    2 +-
- arch/arm/mach-mxs/mach-stmp378x_devb.c       |    2 +-
- arch/arm/mach-mxs/module-tx28.c              |    4 +-
- arch/arm/mach-omap1/clock_data.c             |   12 +++++++++-
- arch/arm/mach-prima2/pm.c                    |    1 +
- arch/arm/mach-prima2/prima2.c                |    1 +
- arch/arm/mach-s3c64xx/dev-spi.c              |    1 +
- arch/arm/mach-s3c64xx/s3c6400.c              |    2 +-
- arch/arm/mach-s3c64xx/setup-fb-24bpp.c       |    2 +-
- arch/arm/mach-sa1100/Makefile.boot           |    4 +-
- 29 files changed, 74 insertions(+), 77 deletions(-)
