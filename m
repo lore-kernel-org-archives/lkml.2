@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab1LHAYf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 19:24:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33981 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122Ab1LHAYe (ORCPT
+	id S1756923Ab1LHA2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 19:28:06 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:34409 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756772Ab1LHA2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 19:24:34 -0500
-Date: Wed, 7 Dec 2011 16:24:20 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Pavel Emelyanov <xemul@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        John Johansen <john.johansen@canonical.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] sys_getppid: add missing rcu_dereference
-Message-ID: <20111208002420.GG13529@google.com>
-References: <1323225914-23985-1-git-send-email-msb@chromium.org>
- <CAGXu5j+Epkypk-AKi0QWrKewW9BX8k8xaW0bkPb82mHnYVECtw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGXu5j+Epkypk-AKi0QWrKewW9BX8k8xaW0bkPb82mHnYVECtw@mail.gmail.com>
-X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 7 Dec 2011 19:28:04 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-62-4ee00492f5c4
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org
+References: <20111207162256.GI22355@opensource.wolfsonmicro.com>
+ <1323275041-25493-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-reply-to: <1323275041-25493-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: RE: [PATCH 1/4] gpio: Explicitly index samsung_gpio_cfgs
+Date: Thu, 08 Dec 2011 09:27:59 +0900
+Message-id: <04c401ccb540$3d4813d0$b7d83b70$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Acy0/MldgwJU/7spTl6CMAlnkytZRwAQ19DQ
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook (keescook@chromium.org) wrote:
-> On Tue, Dec 6, 2011 at 6:45 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
-> > In order to safely dereference current->real_parent inside an
-> > rcu_read_lock, we need an rcu_dereference.
-> >
-> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Pavel Emelyanov <xemul@openvz.org>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Kees Cook <keescook@chromium.org>
-> > ---
-> >  kernel/timer.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/kernel/timer.c b/kernel/timer.c
-> > index dbaa624..9c3c62b 100644
-> > --- a/kernel/timer.c
-> > +++ b/kernel/timer.c
-> > @@ -1368,7 +1368,7 @@ SYSCALL_DEFINE0(getppid)
-> >        int pid;
-> >
-> >        rcu_read_lock();
-> > -       pid = task_tgid_vnr(current->real_parent);
-> > +       pid = task_tgid_vnr(rcu_dereference(current->real_parent));
-> >        rcu_read_unlock();
-> >
-> >        return pid;
+Mark Brown wrote:
 > 
-> Should parent and real_parent also be marked in sched.h with __rcu so
-> sparse can find other missing rcu_dereference()s? And if not, why?
-> (tasklist lock?)
+> Make it easier to follow the by number references into samsung_gpio_cfgs
+> by putting the indexes into the code initialising the array, improving
+> readability a bit. Ideally we wouldn't be using magic array indexes at all
+> but this is easier than coming up with a better way.
 > 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Good idea. I was thinking the same thing. There's gotta be some way of
-finding these bugs via lockdep or sparse.
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
 
-One idea I had was to create a ->real_parent accessor and insert an
-rcu_dereference_check there. That way lockdep could catch these bugs.
+Thanks.
 
-static inline struct task_struct *task_real_parent(struct task_struct *task)
-{
-        return rcu_dereference_check(task->real_parent,
-			             lockdep_is_held(&tasklist_lock));
-}
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-
-> I think I see at least are few other users (security/apparmor/audit.c,
-> security/tomoyo/common.h, kernel/sched.c) that need rcu_dereference()
-> when accessing real_parent, there are probably more.
+> ---
+>  drivers/gpio/gpio-samsung.c |   29 +++++++++++++++++++----------
+>  1 files changed, 19 insertions(+), 10 deletions(-)
 > 
-> -Kees
+> diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+> index 6b4d23f..f1c1ecd 100644
+> --- a/drivers/gpio/gpio-samsung.c
+> +++ b/drivers/gpio/gpio-samsung.c
+> @@ -470,33 +470,42 @@ static struct samsung_gpio_cfg s5p64x0_gpio_cfg_rbank = {
+>  #endif
 > 
-> -- 
-> Kees Cook
-> ChromeOS Security
+>  static struct samsung_gpio_cfg samsung_gpio_cfgs[] = {
+> -	{
+> +	[0] = {
+>  		.cfg_eint	= 0x0,
+> -	}, {
+> +	},
+> +	[1] = {
+>  		.cfg_eint	= 0x3,
+> -	}, {
+> +	},
+> +	[2] = {
+>  		.cfg_eint	= 0x7,
+> -	}, {
+> +	},
+> +	[3] = {
+>  		.cfg_eint	= 0xF,
+> -	}, {
+> +	},
+> +	[4] = {
+>  		.cfg_eint	= 0x0,
+>  		.set_config	= samsung_gpio_setcfg_2bit,
+>  		.get_config	= samsung_gpio_getcfg_2bit,
+> -	}, {
+> +	},
+> +	[5] = {
+>  		.cfg_eint	= 0x2,
+>  		.set_config	= samsung_gpio_setcfg_2bit,
+>  		.get_config	= samsung_gpio_getcfg_2bit,
+> -	}, {
+> +	},
+> +	[6] = {
+>  		.cfg_eint	= 0x3,
+>  		.set_config	= samsung_gpio_setcfg_2bit,
+>  		.get_config	= samsung_gpio_getcfg_2bit,
+> -	}, {
+> +	},
+> +	[7] = {
+>  		.set_config	= samsung_gpio_setcfg_2bit,
+>  		.get_config	= samsung_gpio_getcfg_2bit,
+> -	}, {
+> +	},
+> +	[8] = {
+>  		.set_pull	= exynos4_gpio_setpull,
+>  		.get_pull	= exynos4_gpio_getpull,
+> -	}, {
+> +	},
+> +	[9] = {
+>  		.cfg_eint	= 0x3,
+>  		.set_pull	= exynos4_gpio_setpull,
+>  		.get_pull	= exynos4_gpio_getpull,
+> --
+> 1.7.7.3
+
