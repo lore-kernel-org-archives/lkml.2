@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab1LHKTT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 05:19:19 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:2241 "EHLO sjogate2.atmel.com"
+	id S1753299Ab1LHKYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 05:24:23 -0500
+Received: from ozlabs.org ([203.10.76.45]:55822 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753234Ab1LHKTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 05:19:16 -0500
-From: Josh Wu <josh.wu@atmel.com>
-To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org, linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nicolas.ferre@atmel.com, Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH v3 2/2] [media] V4L: atmel-isi: add clk_prepare()/clk_unprepare() functions
-Date: Thu,  8 Dec 2011 18:18:50 +0800
-Message-Id: <1323339530-26117-2-git-send-email-josh.wu@atmel.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1323339530-26117-1-git-send-email-josh.wu@atmel.com>
-References: <1323339530-26117-1-git-send-email-josh.wu@atmel.com>
-X-OriginalArrivalTime: 08 Dec 2011 10:18:53.0492 (UTC) FILETIME=[C95AB740:01CCB592]
+	id S1753231Ab1LHKYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 05:24:21 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        markmc@redhat.com
+Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect descriptors
+In-Reply-To: <20111207154816.GA23845@redhat.com>
+References: <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy> <4EDB5EF0.2010909@redhat.com> <1323000831.4205.4.camel@lappy> <20111204162221.GB22501@redhat.com> <1323020088.3256.3.camel@lappy> <4EDBAFC5.2010405@redhat.com> <1323020374.3256.5.camel@lappy> <1323023039.3256.7.camel@lappy> <1323266565.4009.10.camel@lappy> <20111207154816.GA23845@redhat.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 08 Dec 2011 20:14:20 +1030
+Message-ID: <87r50fgzyj.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 7 Dec 2011 17:48:17 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Wed, Dec 07, 2011 at 04:02:45PM +0200, Sasha Levin wrote:
+> > On Sun, 2011-12-04 at 20:23 +0200, Sasha Levin wrote:
+> > 
+> > [snip]
+> > 
+> > Rusty, Michael, does the below looks a reasonable optimization for you?
+> 
+> OK overall but a bit hard to say for sure as it looks pretty incomplete ...
 
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
----
-in v2 version, made the label name to be consistent
+A static threshold is very hackish; we need to either initialize it to
+a proven-good value (since noone will ever change it) or be cleverer.
 
- drivers/media/video/atmel-isi.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
-index ea4eef4..91ebcfb 100644
---- a/drivers/media/video/atmel-isi.c
-+++ b/drivers/media/video/atmel-isi.c
-@@ -922,7 +922,9 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
- 			isi->fb_descriptors_phys);
- 
- 	iounmap(isi->regs);
-+	clk_unprepare(isi->mck);
- 	clk_put(isi->mck);
-+	clk_unprepare(isi->pclk);
- 	clk_put(isi->pclk);
- 	kfree(isi);
- 
-@@ -955,6 +957,12 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 	if (IS_ERR(pclk))
- 		return PTR_ERR(pclk);
- 
-+	ret = clk_prepare(pclk);
-+	if (ret) {
-+		clk_put(pclk);
-+		return ret;
-+	}
-+
- 	isi = kzalloc(sizeof(struct atmel_isi), GFP_KERNEL);
- 	if (!isi) {
- 		ret = -ENOMEM;
-@@ -978,6 +986,10 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
- 		goto err_clk_get;
- 	}
- 
-+	ret = clk_prepare(isi->mck);
-+	if (ret)
-+		goto err_clk_prepare_mck;
-+
- 	/* Set ISI_MCK's frequency, it should be faster than pixel clock */
- 	ret = clk_set_rate(isi->mck, pdata->mck_hz);
- 	if (ret < 0)
-@@ -1059,10 +1071,13 @@ err_alloc_ctx:
- 			isi->fb_descriptors_phys);
- err_alloc_descriptors:
- err_set_mck_rate:
-+	clk_unprepare(isi->mck);
-+err_clk_prepare_mck:
- 	clk_put(isi->mck);
- err_clk_get:
- 	kfree(isi);
- err_alloc_isi:
-+	clk_unprepare(pclk);
- 	clk_put(pclk);
- 
- 	return ret;
--- 
-1.6.3.3
-
+Thanks,
+Rusty.
