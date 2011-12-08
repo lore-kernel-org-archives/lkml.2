@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab1LHWGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 17:06:25 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58156 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab1LHWGX convert rfc822-to-8bit (ORCPT
+	id S1753351Ab1LHWGx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 17:06:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34932 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab1LHWGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 17:06:23 -0500
+	Thu, 8 Dec 2011 17:06:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <1323133549-13590-2-git-send-email-hpa@linux.intel.com>
-References: <1323133549-13590-1-git-send-email-hpa@linux.intel.com>
-	<1323133549-13590-2-git-send-email-hpa@linux.intel.com>
-Date: Thu, 8 Dec 2011 23:06:22 +0100
-Message-ID: <CAFLxGvxuP64FzhKcL5bL2vv=sfQ0ZB2U_xXd4MkAF006RJfZrA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] um: Run host archheaders, allow use of host generated headers
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1323368035.17673.20.camel@twins>
+References: <1318595833-29984-1-git-send-email-eranian@google.com>
+	<1318595833-29984-10-git-send-email-eranian@google.com>
+	<1323121074.32012.40.camel@twins>
+	<CABPqkBT=XrbyLLzxUf7KKwk4MGcSVq-b0DtDQL1cgg1z1b0UpQ@mail.gmail.com>
+	<1323341376.17673.10.camel@twins>
+	<CABPqkBTJ1M0Hpm-VHXGSSOtLHFQWuuo7AnaJzwEQ9a4WD8YFbw@mail.gmail.com>
+	<1323368035.17673.20.camel@twins>
+Date: Thu, 8 Dec 2011 14:06:48 -0800
+Message-ID: <CABPqkBTw2c=EXRzcnfmR9RjYXNcRVkOB1BzmsF==rd=mp-QXgA@mail.gmail.com>
+Subject: Re: [PATCH 09/12] perf_events: add hook to flush branch_stack on
+ context switch (v2)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
+        ravitillo@lbl.gov, will.deacon@arm.com, paulus@samba.org,
+        benh@kernel.crashing.org, rth@twiddle.net, ralf@linux-mips.org,
+        davem@davemloft.net, lethal@linux-sh.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 6, 2011 at 2:05 AM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> From: "H. Peter Anvin" <hpa@linux.intel.com>
+On Thu, Dec 8, 2011 at 10:13 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2011-12-08 at 10:04 -0800, Stephane Eranian wrote:
+>> The whole motivation behind the flush_branch_stack is explained in the
+>> Changelog of the patch. In summary, we need to flush the LBR (regardless
+>> of TOS) because in system-wide we need to be able to associate the content
+>> of the LBR with a specific task. Given that the HW does not capture the PID
+>> in the LBR buffer, the kernel has to intervene.
 >
-> Run the "archheaders" target for the host architecture, for
-> architectures (like x86, now) that want to generate some of the
-> necessary header files.
+> That's not regardless of the TOS. If the TOS was a full u64 you wouldn't
+> need the TID (which would be good, since the hardware has no such
+> concept).
 >
-> Add $(HOST_DIR)/include/generated to the include path so we then pick
-> them up.
->
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> ---
->  arch/um/Makefile |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/um/Makefile b/arch/um/Makefile
-> index 7730af6..00210e9 100644
-> --- a/arch/um/Makefile
-> +++ b/arch/um/Makefile
-> @@ -64,7 +64,8 @@ USER_CFLAGS = $(patsubst $(KERNEL_DEFINES),,$(patsubst -D__KERNEL__,,\
->  #This will adjust *FLAGS accordingly to the platform.
->  include $(srctree)/$(ARCH_DIR)/Makefile-os-$(OS)
->
-> -KBUILD_CPPFLAGS += -I$(srctree)/$(HOST_DIR)/include
-> +KBUILD_CPPFLAGS += -I$(srctree)/$(HOST_DIR)/include \
-> +                  -I$(HOST_DIR)/include/generated
->
->  # -Derrno=kernel_errno - This turns all kernel references to errno into
->  # kernel_errno to separate them from the libc errno.  This allows -fno-common
-> @@ -96,6 +97,10 @@ endef
->
->  KBUILD_KCONFIG := $(HOST_DIR)/um/Kconfig
->
-> +archheaders:
-> +       $(Q)$(MAKE) -C '$(KBUILD_SRC)' KBUILD_SRC= \
-> +               ARCH=$(SUBARCH) O='$(objtree)' archheaders
-> +
+Maybe I missed the trick but I don't quite see how a 64-bit TOS would
+solve the TID
+problem. It's not about the wraparound issue, i.e., not like the
+sampling buffer indexes.
+Could you describe the trick again?
 
-This does not work, KBUILD_SRC is empty.
-I'm not a kbuild expert, but I think the usage of KBUILD_SRC is in general
-not allowed.
-
--- 
-Thanks,
-//richard
+>> Why don't we have this already?
+>> Because we are capturing at all priv levels. But with this patchset, it becomes
+>> possible to filter taken branches based on priv levels. Thus, if you only sample
+>> at the user level and run in system-wide mode, it is more likely you could end
+>> up with branches belonging to two different tasks in the LBR buffer. But you'd
+>> have no way of determining this just by looking at the content of the buffer.
+>> So instead, we need to flush the LBR on context switch to associate a PID
+>> with them.
+>
+> Yeah, I get that.
+>
+>> Because this is an expensive operation, we want to do this only when we
+>> sample on LBR. That's what the ctx->nr_branch_stack is about. We could
+>> refine that some more by checking for system-wide events with only
+>> user priv level on the branch stack. But I did not do that yet.
+>>
+>> Does this make more sense now?
+>
+> It already did. The only thing I wanted to do was get rid of that method
+> check. Initially I overlooked the fact that its optional, even if you
+> support the branch stack. My reply from today argued for it, since
+> installing a dummy method would still have the needless ctx_lock &&
+> pmu_disable overhead.
+>
+>
