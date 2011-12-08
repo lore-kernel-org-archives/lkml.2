@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701Ab1LHUn2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 15:43:28 -0500
-Received: from www.linutronix.de ([62.245.132.108]:43274 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab1LHUn1 (ORCPT
+	id S1751860Ab1LHUnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 15:43:39 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:65342 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab1LHUng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 15:43:27 -0500
-Date: Thu, 8 Dec 2011 21:43:25 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] timer fixes for 3.2
-Message-ID: <alpine.LFD.2.02.1112082140520.3020@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 8 Dec 2011 15:43:36 -0500
+Date: Thu, 8 Dec 2011 15:47:39 -0500
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/22] Initial AMD IOMMUv2 support
+Message-ID: <20111208204739.GC3179@homer.localdomain>
+References: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323092077-25501-1-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, Dec 05, 2011 at 02:34:15PM +0100, Joerg Roedel wrote:
+> Hi,
+> 
+> here is a patch-set that adds initial support for the AMD IOMMU version
+> 2 to the Linux kernel. The main feature of the new IOMMU version is
+> support for DMA demand-paging and multiple DMA address spaces per
+> device.
+> The patch-set consists of 2 parts. Patches 1-16 implement the hardware
+> access functions to setup and manage the IOMMUv2 functionality of the
+> hardware. Patches 17-22 implement a seperate module which makes use
+> these functions to implement a page-fault handler for devices which can
+> be used by real device drivers.
+> 
+> Any feedback appreciated.
+> 
+> Thanks,
+> 
+> 	Joerg
+> 
 
-please pull the latest timers-urgent-for-linus git tree from:
+What hw/chipset/CPU support this functionality ?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
-
-Thanks,
-
-	tglx
-
------------------->
-Thomas Gleixner (2):
-      ptp: Fix clock_getres() implementation
-      alarmtimers: Fix time comparison
-
-
- drivers/ptp/ptp_clock.c  |    4 +++-
- kernel/time/alarmtimer.c |    2 +-
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/ptp/ptp_clock.c b/drivers/ptp/ptp_clock.c
-index cf3f999..10451a1 100644
---- a/drivers/ptp/ptp_clock.c
-+++ b/drivers/ptp/ptp_clock.c
-@@ -101,7 +101,9 @@ static s32 scaled_ppm_to_ppb(long ppm)
- 
- static int ptp_clock_getres(struct posix_clock *pc, struct timespec *tp)
- {
--	return 1; /* always round timer functions to one nanosecond */
-+	tp->tv_sec = 0;
-+	tp->tv_nsec = 1;
-+	return 0;
- }
- 
- static int ptp_clock_settime(struct posix_clock *pc, const struct timespec *tp)
-diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
-index c436e79..8a46f5d 100644
---- a/kernel/time/alarmtimer.c
-+++ b/kernel/time/alarmtimer.c
-@@ -195,7 +195,7 @@ static enum hrtimer_restart alarmtimer_fired(struct hrtimer *timer)
- 		struct alarm *alarm;
- 		ktime_t expired = next->expires;
- 
--		if (expired.tv64 >= now.tv64)
-+		if (expired.tv64 > now.tv64)
- 			break;
- 
- 		alarm = container_of(next, struct alarm, node);
+Cheers,
+Jerome
