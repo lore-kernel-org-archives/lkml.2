@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab1LHTdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 14:33:36 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:38161 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab1LHTde convert rfc822-to-8bit (ORCPT
+	id S1753308Ab1LHTg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 14:36:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40413 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab1LHTg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 14:33:34 -0500
-References: <1311207599-2553-1-git-send-email-tomoya-linux@dsn.okisemi.com> <1311207599-2553-6-git-send-email-tomoya-linux@dsn.okisemi.com>
-In-Reply-To: <1311207599-2553-6-git-send-email-tomoya-linux@dsn.okisemi.com>
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-Message-Id: <3D60A4A2-3538-4B24-B65B-219D6ED7B219@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        alexander.stein@systec-electronic.com, qi.wang@intel.com,
-        yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
-        toshiharu-linux@dsn.okisemi.com
-From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Subject: gpio-pch: does not honour IRQF_ONESHOT?
-Date: Thu, 8 Dec 2011 14:37:31 -0500
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-X-Mailer: Apple Mail (2.1084)
+	Thu, 8 Dec 2011 14:36:56 -0500
+X-Authority-Analysis: v=2.0 cv=Z6Nu7QtA c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gD6wIu1_qO8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=Z-H3xPG-LD8O-Opvu1kA:9 a=C7lhwuqMPV4X8PbBKucA:7 a=QEXdDO2ut3YA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Subject: Re: [RFC][PATCH 3/3] x86: Add workaround to NMI iret woes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Paul Turner <pjt@google.com>
+In-Reply-To: <20111208193136.366941904@goodmis.org>
+References: <20111208193003.112037550@goodmis.org>
+	 <20111208193136.366941904@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Dec 2011 14:36:52 -0500
+Message-ID: <1323373012.30977.123.camel@frodo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+On Thu, 2011-12-08 at 14:30 -0500, Steven Rostedt wrote:
 
-I am using the interrupt function of gpio-pch.c. I have an adp5588 who's interrupt line goes into one of the
-GPIO lines of a EG20T.
+> If the first NMI hits a breakpoint and loses NMI context, and then it
+> hits another breakpoint and while processing that breakpoint we get a
+> nested NMI. When processing a breakpoint, the stack changes to the
+> breakpoint stack. If another NMI comes in here we can't rely on the
+> interrupted stack to be the NMI stack. 
 
-I have a patch (not yet submitted to lkml) which lets the platform control the IRQ flags for the chip. I had to
-do this to allow the IRQ line to be shared. I used IRQF_SHARED | IRQF_ONESHOT | IRQF_TRIGGER_LOW.
+As I wrote this part of the change log, I thought of another nasty
+gotcha with breakpoints in NMIs.
 
-Unfortunately, since all of the handling of the adp5588 is done in a thread function, the interrupt stays low
-between the moment the hard handler is run and the 5588 function is run. Since pch_gpio_handler clears
-the interrupt status right away, I get an interrupt storm for the pch_gpio_handler function.
+If you have a breakpoint in both normal context and NMI context. When
+the breakpoint is being processed, if an NMI comes in and it too
+triggers a breakpoint, this processing of the breakpoint has the same
+problem as nested NMIs. The NMI breakpoint handler will corrupt the
+stack of the breakpoint that was being processed when the NMI triggered.
 
-the line that does "iowrite32(BIT(i), &chip->reg->iclr);" right before calling generic_handle_irq should be
-executed only after the corresponding nested ISR has run it's thread function.
+I'm not sure how to handle this case. We could do something similar in
+the break point code to handle the same thing. But this just seems
+really ugly.
 
-I am open to patching this and submitting, but I would like some pointers before I dive in.
+Anyone with any better ideas?
 
-Thanks for the help!
-(and thanks Tomoya for the interrupt support ;)
+-- Steve
 
-On Jul 20, 2011, at 20:19, Tomoya MORINAGA wrote:
 
-> 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-> ---
-> drivers/gpio/Kconfig    |    1 +
-> drivers/gpio/gpio-pch.c |  187 +++++++++++++++++++++++++++++++++++++++++++++++
-> 2 files changed, 188 insertions(+), 0 deletions(-)
-> ...
