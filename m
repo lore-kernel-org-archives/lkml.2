@@ -1,135 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab1LHKqe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 05:46:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60224 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab1LHKqb (ORCPT
+	id S1753413Ab1LHKut (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 05:50:49 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53124 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab1LHKus convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 05:46:31 -0500
-Date: Thu, 8 Dec 2011 18:46:21 +0800
-From: Ted Feng <artisdom@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: jpirko@redhat.com, jwboyer@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ipip, sit: copy parms.name after register_netdevice
-Message-ID: <20111208104619.GA20150@ted-OptiPlex-380>
-References: <CAM7b5hzt8D6hn3=XEcm9E3_BwJxj-YABpkufCpuhjiPLDxCsMQ@mail.gmail.com>
- <20111206173220.GA28763@kroah.com>
- <CAM7b5hyXkRTUwnE-NwXEff-34WjRfMSBDf2itMVhdJGi4XoA=g@mail.gmail.com>
- <20111207.235602.1465915988125994516.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111207.235602.1465915988125994516.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Dec 2011 05:50:48 -0500
+Message-ID: <1323341376.17673.10.camel@twins>
+Subject: Re: [PATCH 09/12] perf_events: add hook to flush branch_stack on
+ context switch (v2)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, acme@redhat.com,
+        ming.m.lin@intel.com, andi@firstfloor.org, robert.richter@amd.com,
+        ravitillo@lbl.gov, will.deacon@arm.com, paulus@samba.org,
+        benh@kernel.crashing.org, rth@twiddle.net, ralf@linux-mips.org,
+        davem@davemloft.net, lethal@linux-sh.org
+Date: Thu, 08 Dec 2011 11:49:36 +0100
+In-Reply-To: <CABPqkBT=XrbyLLzxUf7KKwk4MGcSVq-b0DtDQL1cgg1z1b0UpQ@mail.gmail.com>
+References: <1318595833-29984-1-git-send-email-eranian@google.com>
+	 <1318595833-29984-10-git-send-email-eranian@google.com>
+	 <1323121074.32012.40.camel@twins>
+	 <CABPqkBT=XrbyLLzxUf7KKwk4MGcSVq-b0DtDQL1cgg1z1b0UpQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ted Feng <artisdom@gmail.com>
+On Wed, 2011-12-07 at 10:25 -0800, Stephane Eranian wrote:
+> On Mon, Dec 5, 2011 at 1:37 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Fri, 2011-10-14 at 14:37 +0200, Stephane Eranian wrote:
+> >> +               /*
+> >> +                * check if the context has at least one
+> >> +                * event using PERF_SAMPLE_BRANCH_STACK
+> >> +                */
+> >> +               if (cpuctx->ctx.nr_branch_stack > 0
+> >> +                   && pmu->flush_branch_stack) {
+> >> +
+> >> +                       pmu = cpuctx->ctx.pmu;
+> >> +
+> >> +                       perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+> >> +
+> >> +                       perf_pmu_disable(pmu);
+> >> +
+> >> +                       pmu->flush_branch_stack();
+> >> +
+> >> +                       perf_pmu_enable(pmu);
+> >> +
+> >> +                       perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+> >> +               }
+> >> +       }
+> >
+> > (what whitespace looks funny)
+> >
+> > So all PMUs not supporting this branch stuff will fail to create a
+> > has_branch_stack() event, right? Thus all ctx with !0 nr_branch_stack
+> > support it. Doesn't this make the test for pmu->flush_branch_stack
+> > redundant?
+> >
+> >
+> No, nr_branch_stack counts the number of active events with
+> branch_stack. It's like the ctx->nr_cgroups. Processors which
+> do not support branch_stack will always have this field to 0.
+> It's not because a processor supports branch_stack that we
+> need to call flush_branch_stack(), i.e., we use a lazy approach.
 
-Same fix as 731abb9cb2 for ipip and sit tunnel.
-Commit 1c5cae815d removed an explicit call to dev_alloc_name in
-ipip_tunnel_locate and ipip6_tunnel_locate, because register_netdevice
-will now create a valid name, however the tunnel keeps a copy of the
-name in the private parms structure. Fix this by copying the name back
-after register_netdevice has successfully returned.
+What you're saying is we can support branch stack and not need
+flush_branch_stack()? Say in the case the x86 LBR TOS field would be a
+full u64 counter, since then we could sample the TOS on context switch
+and filter on that, obviating the hard reset we do now.
 
-This shows up if you do a simple tunnel add, followed by a tunnel show:
+And the advantage of testing for the operation as opposed to putting in
+a dummy function (like we do for most other optional methods) is
+avoiding all that ctx_lock and pmu_disable muck.
 
-$ sudo ip tunnel add mode ipip remote 10.2.20.211
-$ ip tunnel
-tunl0: ip/ip  remote any  local any  ttl inherit  nopmtudisc
-tunl%d: ip/ip  remote 10.2.20.211  local any  ttl inherit
-$ sudo ip tunnel add mode sit remote 10.2.20.212
-$ ip tunnel
-sit0: ipv6/ip  remote any  local any  ttl 64  nopmtudisc 6rd-prefix 2002::/16
-sit%d: ioctl 89f8 failed: No such device
-sit%d: ipv6/ip  remote 10.2.20.212  local any  ttl inherit
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Ted Feng <artisdom@gmail.com>
----
- net/ipv4/ipip.c |    7 ++++++-
- net/ipv6/sit.c  |    7 ++++++-
- 2 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv4/ipip.c b/net/ipv4/ipip.c
-index 065effd..0b2e732 100644
---- a/net/ipv4/ipip.c
-+++ b/net/ipv4/ipip.c
-@@ -285,6 +285,8 @@ static struct ip_tunnel * ipip_tunnel_locate(struct net *net,
- 	if (register_netdevice(dev) < 0)
- 		goto failed_free;
- 
-+	strcpy(nt->parms.name, dev->name);
-+
- 	dev_hold(dev);
- 	ipip_tunnel_link(ipn, nt);
- 	return nt;
-@@ -759,7 +761,6 @@ static int ipip_tunnel_init(struct net_device *dev)
- 	struct ip_tunnel *tunnel = netdev_priv(dev);
- 
- 	tunnel->dev = dev;
--	strcpy(tunnel->parms.name, dev->name);
- 
- 	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
- 	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
-@@ -825,6 +826,7 @@ static void ipip_destroy_tunnels(struct ipip_net *ipn, struct list_head *head)
- static int __net_init ipip_init_net(struct net *net)
- {
- 	struct ipip_net *ipn = net_generic(net, ipip_net_id);
-+	struct ip_tunnel *t;
- 	int err;
- 
- 	ipn->tunnels[0] = ipn->tunnels_wc;
-@@ -848,6 +850,9 @@ static int __net_init ipip_init_net(struct net *net)
- 	if ((err = register_netdev(ipn->fb_tunnel_dev)))
- 		goto err_reg_dev;
- 
-+	t = netdev_priv(ipn->fb_tunnel_dev);
-+
-+	strcpy(t->parms.name, ipn->fb_tunnel_dev->name);
- 	return 0;
- 
- err_reg_dev:
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index a7a1860..96f3623 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -263,6 +263,8 @@ static struct ip_tunnel *ipip6_tunnel_locate(struct net *net,
- 	if (register_netdevice(dev) < 0)
- 		goto failed_free;
- 
-+	strcpy(nt->parms.name, dev->name);
-+
- 	dev_hold(dev);
- 
- 	ipip6_tunnel_link(sitn, nt);
-@@ -1144,7 +1146,6 @@ static int ipip6_tunnel_init(struct net_device *dev)
- 	struct ip_tunnel *tunnel = netdev_priv(dev);
- 
- 	tunnel->dev = dev;
--	strcpy(tunnel->parms.name, dev->name);
- 
- 	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
- 	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
-@@ -1207,6 +1208,7 @@ static void __net_exit sit_destroy_tunnels(struct sit_net *sitn, struct list_hea
- static int __net_init sit_init_net(struct net *net)
- {
- 	struct sit_net *sitn = net_generic(net, sit_net_id);
-+	struct ip_tunnel *t;
- 	int err;
- 
- 	sitn->tunnels[0] = sitn->tunnels_wc;
-@@ -1231,6 +1233,9 @@ static int __net_init sit_init_net(struct net *net)
- 	if ((err = register_netdev(sitn->fb_tunnel_dev)))
- 		goto err_reg_dev;
- 
-+	t = netdev_priv(sitn->fb_tunnel_dev);
-+
-+	strcpy(t->parms.name, sitn->fb_tunnel_dev->name);
- 	return 0;
- 
- err_reg_dev:
+Fair enough.
