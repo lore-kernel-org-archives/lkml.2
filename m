@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab1LHWdd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 17:33:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36246 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab1LHWdc (ORCPT
+	id S1753737Ab1LHWfO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 17:35:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63626 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab1LHWfJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 17:33:32 -0500
-Date: Thu, 8 Dec 2011 14:33:29 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Subrata Modak <subrata@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>, Manas k Nayak <maknayak@in.ibm.com>,
-        Mark Wizner <markwiz@us.ibm.com>, Pavaman <pavsubra@in.ibm.com>,
-        Naveed <naveedaus@in.ibm.com>, "divya.vikas" <divya.vikas@in.ibm.com>,
-        Vishu <svishuku@in.ibm.com>
-Subject: [patch] powerpc, mm: fix section mismatch for
- mark_reserved_regions_for_nid
-In-Reply-To: <1323371433.23534.8.camel@subratamodak.linux.ibm.com>
-Message-ID: <alpine.DEB.2.00.1112081428290.28693@chino.kir.corp.google.com>
-References: <1323371433.23534.8.camel@subratamodak.linux.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 8 Dec 2011 17:35:09 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20111206055023.GB1580@elte.hu>
+References: <1323101246-2400-1-git-send-email-daniel@numascale-asia.com>
+	<tip-44b111b519160e33fdc41eadb39af86a24707edf@git.kernel.org>
+	<20111205203130.GA12364@elte.hu>
+	<4EDD5D77.3030101@numascale.com>
+	<20111206055023.GB1580@elte.hu>
+Date: Thu, 8 Dec 2011 18:35:06 -0400
+Message-ID: <CAELBVzBqNHsnRP=dt7nwFWoigfX4FF6nQio+P+Fz71xQY0qK4Q@mail.gmail.com>
+Subject: Re: [tip:x86/apic] x86: Add NumaChip support
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steffen Persvold <sp@numascale.com>, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+        tglx@linutronix.de, daniel@numascale-asia.com,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Dec 2011, Subrata Modak wrote:
+On 6 December 2011 01:50, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Steffen Persvold <sp@numascale.com> wrote:
+>
+>> On 12/5/2011 21:31, Ingo Molnar wrote:
+>> []
+>> > There's a new build failure caused by this commit:
+>>
+>> It's this commit actually :
+>>
+>> Commit-ID:  64be4c1c2428e148de6081af235e2418e6a66dda
+>> Gitweb:     http://git.kernel.org/tip/64be4c1c2428e148de6081af235e2418e6a66dda
+>> Author:     Daniel J Blueman <daniel@numascale-asia.com>
+>> AuthorDate: Mon, 5 Dec 2011 16:20:37 +0800
+>> Committer:  Ingo Molnar <mingo@elte.hu>
+>> CommitDate: Mon, 5 Dec 2011 17:17:21 +0100
+>>
+>> x86: Add x86_init platform override to fix up NUMA core numbering
+>>
+>> >
+>> >   arch/x86/kernel/cpu/common.c:1149:2: error: ‘struct cpuinfo_x86’ has no member named ‘phys_proc_id’
+>> >
+>> > Note that the config is a !SMP one - that's probably the key
+>> > detail.
+>>
+>> Yes, phys_proc_id in struct cpuinfo_x86 is covered within "ifdef CONFIG_SMP".
+>>
+>> >
+>> > Please send a delta fix that resolves this bug. You can find the
+>> > current lineup in:
+>> >
+>> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
+>> >
+>>
+>> Will do, should be fairly simple. Something in the lines of the attached should work (tested).
+>>
+>> Note: I used "ifdef CONFIG_NUMA" simply because it doesn't make sense in a non-numa configuration even with SMP enabled. Besides, the only place where it is called right now is in kernel/cpu/amd.c:srat_detect_node() within the "CONFIG_NUMA" protected part.
+>>
+>> Cheers,
+>> --
+>> Steffen Persvold, Chief Architect NumaChip
+>> Numascale AS - www.numascale.com
+>> Tel: +47 92 49 25 54 Skype: spersvold
+>
+>> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+>> index ad4da45..a70bd5b 100644
+>> --- a/arch/x86/kernel/cpu/common.c
+>> +++ b/arch/x86/kernel/cpu/common.c
+>> @@ -1146,7 +1146,9 @@ static void dbg_restore_debug_regs(void)
+>>   */
+>>  void __cpuinit x86_default_fixup_cpu_id(struct cpuinfo_x86 *c, int node)
+>>  {
+>> +#ifdef CONFIG_NUMA
+>>       pr_err("NUMA core number %d differs from configured core number %d\n", node, c->phys_proc_id);
+>> +#endif
+>>  }
+>
+> Yep, this should do the trick - i'll need a Signed-off-by line
+> to apply it.
+>
+> Ideally i think c->phys_proc_id should should be available
+> regardless of CONFIG_SMP or CONFIG_NUMA considerations - but
+> that would be a wider change. (feel free to have a shot at it
+> though, in addition to the fix above)
+>
 
-> WARNING: vmlinux.o(.text+0x4c760): Section mismatch in reference from
-> the function .mark_reserved_regions_for_nid() to the
-> function .meminit.text:.early_pfn_to_nid()
-> The function .mark_reserved_regions_for_nid() references
-> the function __meminit .early_pfn_to_nid().
-> This is often because .mark_reserved_regions_for_nid lacks a __meminit 
-> annotation or the annotation of .early_pfn_to_nid is wrong.
-> 
-> WARNING: vmlinux.o(.text+0x4c780): Section mismatch in reference from
-> the function .mark_reserved_regions_for_nid() to the
-> function .init.text:.work_with_active_regions()
-> The function .mark_reserved_regions_for_nid() references
-> the function __init .work_with_active_regions().
-> This is often because .mark_reserved_regions_for_nid lacks a __init 
-> annotation or the annotation of .work_with_active_regions is wrong.
-> 
-> WARNING: vmlinux.o(.text+0x4c7d4): Section mismatch in reference from
-> the function .mark_reserved_regions_for_nid() to the
-> function .meminit.text:.early_pfn_to_nid()
-> The function .mark_reserved_regions_for_nid() references
-> the function __meminit .early_pfn_to_nid().
-> This is often because .mark_reserved_regions_for_nid lacks a __meminit 
-> annotation or the annotation of .early_pfn_to_nid is wrong.
-> 
-> WARNING: vmlinux.o(.text+0x4c7f0): Section mismatch in reference from
-> the function .mark_reserved_regions_for_nid() to the
-> function .init.text:.work_with_active_regions()
-> The function .mark_reserved_regions_for_nid() references
-> the function __init .work_with_active_regions().
-> This is often because .mark_reserved_regions_for_nid lacks a __init 
-> annotation or the annotation of .work_with_active_regions is wrong.
-> 
-> WARNING: vmlinux.o(.text+0x4c828): Section mismatch in reference from
-> the function .mark_reserved_regions_for_nid() to the
-> function .init.text:.reserve_bootmem_node()
-> The function .mark_reserved_regions_for_nid() references
-> the function __init .reserve_bootmem_node().
-> This is often because .mark_reserved_regions_for_nid lacks a __init 
-> annotation or the annotation of .reserve_bootmem_node is wrong.
-> 
+If Steffen does not plan to do this additional cleanup, I would give
+it a try.  You would likely prefer the changes against -tip, correct?
 
-Wow, lots of ibm folks on the cc :)  I can only talk about the mm related 
-section mismatches, but these five can easily be solved with the 
-following.
-
-
-powerpc, mm: fix section mismatch for mark_reserved_regions_for_nid
-
-mark_reserved_regions_for_nid() is only called from do_init_bootmem(), 
-which is in .init.text, so it must be in the same section to avoid a 
-section mismatch warning.
-
-Reported-by: Subrata Modak <subrata@linux.vnet.ibm.com>
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/powerpc/mm/numa.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -969,7 +969,7 @@ static struct notifier_block __cpuinitdata ppc64_numa_nb = {
- 	.priority = 1 /* Must run before sched domains notifier. */
- };
- 
--static void mark_reserved_regions_for_nid(int nid)
-+static void __init mark_reserved_regions_for_nid(int nid)
- {
- 	struct pglist_data *node = NODE_DATA(nid);
- 	struct memblock_region *reg;
+-- 
+Kevin Winchester
