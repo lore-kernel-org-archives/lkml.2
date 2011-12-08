@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab1LHAm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 19:42:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:13722 "EHLO mga02.intel.com"
+	id S1757347Ab1LHAmY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 19:42:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60089 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756909Ab1LHAlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756949Ab1LHAlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 7 Dec 2011 19:41:36 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="84106917"
+   d="scan'208";a="84106918"
 From: Andi Kleen <andi@firstfloor.org>
 To: linux-kernel@vger.kernel.org
 Cc: kay.sievers@vrfy.org, trenn@suse.de, Andi Kleen <ak@linux.intel.com>,
-        fenghua.yu@intel.com, khali@linux-fr.org, guenter.roeck@ericsson.com
-Subject: [PATCH 06/10] HWMON: Convert coretemp to x86 cpuid autoprobing
-Date: Wed,  7 Dec 2011 16:41:19 -0800
-Message-Id: <1323304882-27953-7-git-send-email-andi@firstfloor.org>
+        davej@redhat.com, hpa@zytor.com
+Subject: [PATCH 07/10] cpufreq: Add support for x86 cpuinfo auto loading
+Date: Wed,  7 Dec 2011 16:41:20 -0800
+Message-Id: <1323304882-27953-8-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
 References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
@@ -25,56 +25,610 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-Use the new x86 cpuid autoprobe interface for the Intel coretemp
-driver.
+This marks all the x86 cpuinfo tables to the CPU specific device drivers,
+to allow auto loading by udev. This should simplify the distribution
+startup scripts for this greatly.
 
-Cc: fenghua.yu@intel.com
-Cc: khali@linux-fr.org
-Cc: guenter.roeck@ericsson.com
+I didn't add MODULE_DEVICE_IDs to the centrino and p4-clockmod drivers,
+because those probably shouldn't be auto loaded and the acpi driver
+be used instead (not fully sure on that, would appreciate feedback)
+
+The old nforce drivers autoload based on the PCI ID.
+
+ACPI cpufreq is autoloaded in another patch.
+
+Cc: davej@redhat.com
+Cc: trenn@suse.de
+Cc: kay.sievers@vrfy.org
+Cc: hpa@zytor.com
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/hwmon/coretemp.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+ drivers/cpufreq/cpufreq-nforce2.c    |    8 ++++++++
+ drivers/cpufreq/e_powersaver.c       |   20 +++++++++++---------
+ drivers/cpufreq/elanfreq.c           |   14 +++++++-------
+ drivers/cpufreq/gx-suspmod.c         |   15 ++++++++++-----
+ drivers/cpufreq/longhaul.c           |    8 +++++++-
+ drivers/cpufreq/longrun.c            |   13 ++++++++-----
+ drivers/cpufreq/p4-clockmod.c        |   17 +++++++++++------
+ drivers/cpufreq/powernow-k6.c        |   12 ++++++++----
+ drivers/cpufreq/powernow-k7.c        |   14 ++++++++------
+ drivers/cpufreq/powernow-k8.c        |   24 ++++++++++++++++++------
+ drivers/cpufreq/sc520_freq.c         |   14 ++++++++------
+ drivers/cpufreq/speedstep-centrino.c |   24 ++++++++++++++++++++----
+ drivers/cpufreq/speedstep-ich.c      |   15 +++++++++++++++
+ drivers/cpufreq/speedstep-lib.c      |    1 +
+ drivers/cpufreq/speedstep-smi.c      |   15 +++++++++++++++
+ 15 files changed, 155 insertions(+), 59 deletions(-)
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 104b376..5de1579 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -39,6 +39,7 @@
- #include <linux/moduleparam.h>
+diff --git a/drivers/cpufreq/cpufreq-nforce2.c b/drivers/cpufreq/cpufreq-nforce2.c
+index 7bac808..661251b 100644
+--- a/drivers/cpufreq/cpufreq-nforce2.c
++++ b/drivers/cpufreq/cpufreq-nforce2.c
+@@ -385,6 +385,14 @@ static struct cpufreq_driver nforce2_driver = {
+ 	.owner = THIS_MODULE,
+ };
+ 
++#ifdef MODULE
++static struct pci_device_id nforce2_ids[] = {
++	{ PCI_VENDOR_ID_NVIDIA, PCI_DEVICE_ID_NVIDIA_NFORCE2 },
++	{}
++};
++MODULE_DEVICE_TABLE(pci, nforce2_ids);
++#endif
++
+ /**
+  * nforce2_detect_chipset - detect the Southbridge which contains FSB PLL logic
+  *
+diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
+index 4bd6815..4604951 100644
+--- a/drivers/cpufreq/e_powersaver.c
++++ b/drivers/cpufreq/e_powersaver.c
+@@ -16,6 +16,7 @@
+ #include <linux/io.h>
+ #include <linux/delay.h>
+ 
++#include <asm/cpu_device_id.h>
+ #include <asm/msr.h>
+ #include <asm/tsc.h>
+ 
+@@ -437,18 +438,19 @@ static struct cpufreq_driver eps_driver = {
+ 	.attr		= eps_attr,
+ };
+ 
++
++/* This driver will work only on Centaur C7 processors with
++ * Enhanced SpeedStep/PowerSaver registers */
++static struct x86_cpu_id eps_cpu_id[] = {
++	{ X86_VENDOR_CENTAUR, 6, X86_MODEL_ANY, X86_FEATURE_EST },
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, eps_cpu_id);
++
+ static int __init eps_init(void)
+ {
+-	struct cpuinfo_x86 *c = &cpu_data(0);
+-
+-	/* This driver will work only on Centaur C7 processors with
+-	 * Enhanced SpeedStep/PowerSaver registers */
+-	if (c->x86_vendor != X86_VENDOR_CENTAUR
+-	    || c->x86 != 6 || c->x86_model < 10)
+-		return -ENODEV;
+-	if (!cpu_has(c, X86_FEATURE_EST))
++	if (!x86_match_cpu(eps_cpu_id) || boot_cpu_data.x86_model < 10)
+ 		return -ENODEV;
+-
+ 	if (cpufreq_register_driver(&eps_driver))
+ 		return -EINVAL;
+ 	return 0;
+diff --git a/drivers/cpufreq/elanfreq.c b/drivers/cpufreq/elanfreq.c
+index c587db4..7a124b1 100644
+--- a/drivers/cpufreq/elanfreq.c
++++ b/drivers/cpufreq/elanfreq.c
+@@ -23,6 +23,7 @@
+ #include <linux/delay.h>
+ #include <linux/cpufreq.h>
+ 
++#include <asm/cpu_device_id.h>
+ #include <asm/msr.h>
+ #include <linux/timex.h>
+ #include <linux/io.h>
+@@ -277,17 +278,16 @@ static struct cpufreq_driver elanfreq_driver = {
+ 	.attr		= elanfreq_attr,
+ };
+ 
++static struct x86_cpu_id elan_id[] = {
++	{ X86_VENDOR_AMD, 4, 10, },
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, elan_id);
+ 
+ static int __init elanfreq_init(void)
+ {
+-	struct cpuinfo_x86 *c = &cpu_data(0);
+-
+-	/* Test if we have the right hardware */
+-	if ((c->x86_vendor != X86_VENDOR_AMD) ||
+-		(c->x86 != 4) || (c->x86_model != 10)) {
+-		printk(KERN_INFO "elanfreq: error: no Elan processor found!\n");
++	if (!x86_match_cpu(elan_id))
+ 		return -ENODEV;
+-	}
+ 	return cpufreq_register_driver(&elanfreq_driver);
+ }
+ 
+diff --git a/drivers/cpufreq/gx-suspmod.c b/drivers/cpufreq/gx-suspmod.c
+index ffe1f2c..99ae003 100644
+--- a/drivers/cpufreq/gx-suspmod.c
++++ b/drivers/cpufreq/gx-suspmod.c
+@@ -82,6 +82,7 @@
+ #include <linux/errno.h>
+ #include <linux/slab.h>
+ 
++#include <asm/cpu_device_id.h>
+ #include <asm/processor-cyrix.h>
+ 
+ /* PCI config registers, all at F0 */
+@@ -171,12 +172,20 @@ static struct pci_device_id gx_chipset_tbl[] __initdata = {
+ 	{ PCI_VDEVICE(CYRIX, PCI_DEVICE_ID_CYRIX_5510), },
+ 	{ 0, },
+ };
++/* MODULE_DEVICE_TABLE here too? But the CPU should be enough. */
+ 
+ static void gx_write_byte(int reg, int value)
+ {
+ 	pci_write_config_byte(gx_params->cs55x0, reg, value);
+ }
+ 
++static struct x86_cpu_id gx_ids[] = {
++	{ X86_VENDOR_NSC, },
++	{ X86_VENDOR_CYRIX },
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, gx_ids);
++
+ /**
+  * gx_detect_chipset:
+  *
+@@ -185,12 +194,8 @@ static __init struct pci_dev *gx_detect_chipset(void)
+ {
+ 	struct pci_dev *gx_pci = NULL;
+ 
+-	/* check if CPU is a MediaGX or a Geode. */
+-	if ((boot_cpu_data.x86_vendor != X86_VENDOR_NSC) &&
+-	    (boot_cpu_data.x86_vendor != X86_VENDOR_CYRIX)) {
+-		pr_debug("error: no MediaGX/Geode processor found!\n");
++	if (!x86_match_cpu(gx_ids))
+ 		return NULL;
+-	}
+ 
+ 	/* detect which companion chip is used */
+ 	for_each_pci_dev(gx_pci) {
+diff --git a/drivers/cpufreq/longhaul.c b/drivers/cpufreq/longhaul.c
+index f47d26e..b4263ce 100644
+--- a/drivers/cpufreq/longhaul.c
++++ b/drivers/cpufreq/longhaul.c
+@@ -35,6 +35,7 @@
+ #include <linux/acpi.h>
+ 
+ #include <asm/msr.h>
++#include <asm/cpu_device_id.h>
+ #include <acpi/processor.h>
+ 
+ #include "longhaul.h"
+@@ -951,12 +952,17 @@ static struct cpufreq_driver longhaul_driver = {
+ 	.attr	= longhaul_attr,
+ };
+ 
++static struct x86_cpu_id longhaul_id[] = {
++	{ X86_VENDOR_CENTAUR, 6 },
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, longhaul_id);
+ 
+ static int __init longhaul_init(void)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+ 
+-	if (c->x86_vendor != X86_VENDOR_CENTAUR || c->x86 != 6)
++	if (!x86_match_cpu(longhaul_id))
+ 		return -ENODEV;
+ 
+ #ifdef CONFIG_SMP
+diff --git a/drivers/cpufreq/longrun.c b/drivers/cpufreq/longrun.c
+index 34ea359..a2579b6 100644
+--- a/drivers/cpufreq/longrun.c
++++ b/drivers/cpufreq/longrun.c
+@@ -14,6 +14,7 @@
+ 
  #include <asm/msr.h>
  #include <asm/processor.h>
 +#include <asm/cpu_device_id.h>
  
- #define DRVNAME	"coretemp"
+ static struct cpufreq_driver	longrun_driver;
  
-@@ -756,13 +757,23 @@ static struct notifier_block coretemp_cpu_notifier __refdata = {
- 	.notifier_call = coretemp_cpu_callback,
+@@ -288,6 +289,12 @@ static struct cpufreq_driver longrun_driver = {
+ 	.owner		= THIS_MODULE,
  };
  
-+static struct x86_cpu_id coretemp_ids[] = {
-+	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTS },
++static struct x86_cpu_id longrun_ids[] = {
++	{ X86_VENDOR_TRANSMETA, X86_FAMILY_ANY, X86_MODEL_ANY,
++	  X86_FEATURE_LONGRUN },
 +	{}
 +};
-+MODULE_DEVICE_TABLE(x86cpu, coretemp_ids);
-+
- static int __init coretemp_init(void)
++MODULE_DEVICE_TABLE(x86cpu, longrun_ids);
+ 
+ /**
+  * longrun_init - initializes the Transmeta Crusoe LongRun CPUFreq driver
+@@ -296,12 +303,8 @@ static struct cpufreq_driver longrun_driver = {
+  */
+ static int __init longrun_init(void)
  {
- 	int i, err = -ENODEV;
+-	struct cpuinfo_x86 *c = &cpu_data(0);
+-
+-	if (c->x86_vendor != X86_VENDOR_TRANSMETA ||
+-	    !cpu_has(c, X86_FEATURE_LONGRUN))
++	if (!x86_match_cpu(longrun_ids))
+ 		return -ENODEV;
+-
+ 	return cpufreq_register_driver(&longrun_driver);
+ }
  
--	/* quick check if we run Intel */
--	if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
--		goto exit;
-+	/*
-+	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
-+	 * sensors. We check this bit only, all the early CPUs
-+	 * without thermal sensors will be filtered out.
+diff --git a/drivers/cpufreq/p4-clockmod.c b/drivers/cpufreq/p4-clockmod.c
+index 6be3e07..f652f48 100644
+--- a/drivers/cpufreq/p4-clockmod.c
++++ b/drivers/cpufreq/p4-clockmod.c
+@@ -31,6 +31,7 @@
+ #include <asm/processor.h>
+ #include <asm/msr.h>
+ #include <asm/timer.h>
++#include <asm/cpu_device_id.h>
+ 
+ #include "speedstep-lib.h"
+ 
+@@ -289,21 +290,25 @@ static struct cpufreq_driver p4clockmod_driver = {
+ 	.attr		= p4clockmod_attr,
+ };
+ 
++static struct x86_cpu_id cpufreq_p4_id[] = {
++	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_ACC },
++	{}
++};
++
++/*
++ * Intentionally no MODULE_DEVICE_TABLE here: this driver should not
++ * be auto loaded.  Please don't add one.
++ */
+ 
+ static int __init cpufreq_p4_init(void)
+ {
+-	struct cpuinfo_x86 *c = &cpu_data(0);
+ 	int ret;
+ 
+ 	/*
+ 	 * THERM_CONTROL is architectural for IA32 now, so
+ 	 * we can rely on the capability checks
+ 	 */
+-	if (c->x86_vendor != X86_VENDOR_INTEL)
+-		return -ENODEV;
+-
+-	if (!test_cpu_cap(c, X86_FEATURE_ACPI) ||
+-				!test_cpu_cap(c, X86_FEATURE_ACC))
++	if (!x86_match_cpu(cpufreq_p4_id) || !boot_cpu_has(X86_FEATURE_ACPI))
+ 		return -ENODEV;
+ 
+ 	ret = cpufreq_register_driver(&p4clockmod_driver);
+diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
+index b3379d6..6293ad1 100644
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -16,6 +16,7 @@
+ #include <linux/timex.h>
+ #include <linux/io.h>
+ 
++#include <asm/cpu_device_id.h>
+ #include <asm/msr.h>
+ 
+ #define POWERNOW_IOPORT 0xfff0          /* it doesn't matter where, as long
+@@ -210,6 +211,12 @@ static struct cpufreq_driver powernow_k6_driver = {
+ 	.attr		= powernow_k6_attr,
+ };
+ 
++static struct x86_cpu_id powernow_k6_ids[] = {
++	{ X86_VENDOR_AMD, 5, 12 },
++	{ X86_VENDOR_AMD, 5, 13 },
++	{}
++};
++
+ 
+ /**
+  * powernow_k6_init - initializes the k6 PowerNow! CPUFreq driver
+@@ -220,10 +227,7 @@ static struct cpufreq_driver powernow_k6_driver = {
+  */
+ static int __init powernow_k6_init(void)
+ {
+-	struct cpuinfo_x86 *c = &cpu_data(0);
+-
+-	if ((c->x86_vendor != X86_VENDOR_AMD) || (c->x86 != 5) ||
+-		((c->x86_model != 12) && (c->x86_model != 13)))
++	if (!x86_match_cpu(powernow_k6_ids))
+ 		return -ENODEV;
+ 
+ 	if (!request_region(POWERNOW_IOPORT, 16, "PowerNow!")) {
+diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
+index d71d9f3..6bc5e6f 100644
+--- a/drivers/cpufreq/powernow-k7.c
++++ b/drivers/cpufreq/powernow-k7.c
+@@ -28,6 +28,7 @@
+ #include <asm/timer.h>		/* Needed for recalibrate_cpu_khz() */
+ #include <asm/msr.h>
+ #include <asm/system.h>
++#include <asm/cpu_device_id.h>
+ 
+ #ifdef CONFIG_X86_POWERNOW_K7_ACPI
+ #include <linux/acpi.h>
+@@ -110,18 +111,19 @@ static int check_fsb(unsigned int fsbspeed)
+ 	return delta < 5;
+ }
+ 
++static struct x86_cpu_id powernow_k7_cpuids[] = {
++	{ X86_VENDOR_AMD, 7, },
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, powernow_k7_cpuids);
++
+ static int check_powernow(void)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+ 	unsigned int maxei, eax, ebx, ecx, edx;
+ 
+-	if ((c->x86_vendor != X86_VENDOR_AMD) || (c->x86 != 6)) {
+-#ifdef MODULE
+-		printk(KERN_INFO PFX "This module only works with "
+-				"AMD K7 CPUs\n");
+-#endif
++	if (!x86_match_cpu(powernow_k7_cpuids))
+ 		return 0;
+-	}
+ 
+ 	/* Get maximum capabilities */
+ 	maxei = cpuid_eax(0x80000000);
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index bce576d..069fa86 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -37,6 +37,7 @@
+ #include <linux/delay.h>
+ 
+ #include <asm/msr.h>
++#include <asm/cpu_device_id.h>
+ 
+ #include <linux/acpi.h>
+ #include <linux/mutex.h>
+@@ -514,6 +515,20 @@ static int core_voltage_post_transition(struct powernow_k8_data *data,
+ 	return 0;
+ }
+ 
++static struct x86_cpu_id powernow_k8_ids[] = {
++	{ X86_VENDOR_AMD, 0xf, },
++	/* RED-PEN If HW PSTATE was a normal feature bit it could be matched here
++	 * instead of a (limited) model list.
 +	 */
-+	if (!x86_match_cpu(coretemp_ids))
-+		return -ENODEV;
++	{ X86_VENDOR_AMD, 0x10, },
++	{ X86_VENDOR_AMD, 0x11, },
++	{ X86_VENDOR_AMD, 0x12, },
++	{ X86_VENDOR_AMD, 0x13, },
++	{ X86_VENDOR_AMD, 0x14, },
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, powernow_k8_ids);
++
+ static void check_supported_cpu(void *_rc)
+ {
+ 	u32 eax, ebx, ecx, edx;
+@@ -521,13 +536,7 @@ static void check_supported_cpu(void *_rc)
  
- 	err = platform_driver_register(&coretemp_driver);
- 	if (err)
+ 	*rc = -ENODEV;
+ 
+-	if (__this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_AMD)
+-		return;
+-
+ 	eax = cpuid_eax(CPUID_PROCESSOR_SIGNATURE);
+-	if (((eax & CPUID_XFAM) != CPUID_XFAM_K8) &&
+-	    ((eax & CPUID_XFAM) < CPUID_XFAM_10H))
+-		return;
+ 
+ 	if ((eax & CPUID_XFAM) == CPUID_XFAM_K8) {
+ 		if (((eax & CPUID_USE_XFAM_XMOD) != CPUID_USE_XFAM_XMOD) ||
+@@ -1542,6 +1551,9 @@ static int __cpuinit powernowk8_init(void)
+ 	unsigned int i, supported_cpus = 0, cpu;
+ 	int rv;
+ 
++	if (!x86_match_cpu(powernow_k8_ids))
++		return -ENODEV;
++
+ 	for_each_online_cpu(i) {
+ 		int rc;
+ 		smp_call_function_single(i, check_supported_cpu, &rc, 1);
+diff --git a/drivers/cpufreq/sc520_freq.c b/drivers/cpufreq/sc520_freq.c
+index 1e205e6..3491578 100644
+--- a/drivers/cpufreq/sc520_freq.c
++++ b/drivers/cpufreq/sc520_freq.c
+@@ -22,6 +22,7 @@
+ #include <linux/timex.h>
+ #include <linux/io.h>
+ 
++#include <asm/cpu_device_id.h>
+ #include <asm/msr.h>
+ 
+ #define MMCR_BASE	0xfffef000	/* The default base address */
+@@ -150,18 +151,19 @@ static struct cpufreq_driver sc520_freq_driver = {
+ 	.attr	= sc520_freq_attr,
+ };
+ 
++static struct x86_cpu_id sc520_ids[] = {
++	{ X86_VENDOR_AMD, 4, 9 },
++	{}
++};
++MODULE_DEVICE_TABLE(x86cpu, sc520_ids);
+ 
+ static int __init sc520_freq_init(void)
+ {
+-	struct cpuinfo_x86 *c = &cpu_data(0);
+ 	int err;
+ 
+-	/* Test if we have the right hardware */
+-	if (c->x86_vendor != X86_VENDOR_AMD ||
+-	    c->x86 != 4 || c->x86_model != 9) {
+-		pr_debug("no Elan SC520 processor found!\n");
++	if (!x86_match_cpu(sc520_ids))
+ 		return -ENODEV;
+-	}
++
+ 	cpuctl = ioremap((unsigned long)(MMCR_BASE + OFFS_CPUCTL), 1);
+ 	if (!cpuctl) {
+ 		printk(KERN_ERR "sc520_freq: error: failed to remap memory\n");
+diff --git a/drivers/cpufreq/speedstep-centrino.c b/drivers/cpufreq/speedstep-centrino.c
+index 6ea3455..93213c0 100644
+--- a/drivers/cpufreq/speedstep-centrino.c
++++ b/drivers/cpufreq/speedstep-centrino.c
+@@ -25,6 +25,7 @@
+ #include <asm/msr.h>
+ #include <asm/processor.h>
+ #include <asm/cpufeature.h>
++#include <asm/cpu_device_id.h>
+ 
+ #define PFX		"speedstep-centrino: "
+ #define MAINTAINER	"cpufreq@vger.kernel.org"
+@@ -595,6 +596,24 @@ static struct cpufreq_driver centrino_driver = {
+ 	.owner		= THIS_MODULE,
+ };
+ 
++/*
++ * This doesn't replace the detailed checks above because
++ * the generic CPU IDs don't have a way to match for steppings
++ * or ASCII model IDs.
++ */
++static struct x86_cpu_id centrino_ids[] = {
++	{ X86_VENDOR_INTEL, 6, 9, X86_FEATURE_EST },
++	{ X86_VENDOR_INTEL, 6, 13, X86_FEATURE_EST },
++	{ X86_VENDOR_INTEL, 6, 13, X86_FEATURE_EST },
++	{ X86_VENDOR_INTEL, 6, 13, X86_FEATURE_EST },
++	{ X86_VENDOR_INTEL, 15, 3, X86_FEATURE_EST },
++	{ X86_VENDOR_INTEL, 15, 4, X86_FEATURE_EST },
++	{}
++};
++#if 0
++/* Autoload or not? Do not for now. */
++MODULE_DEVICE_TABLE(x86cpu, centrino_ids);
++#endif
+ 
+ /**
+  * centrino_init - initializes the Enhanced SpeedStep CPUFreq driver
+@@ -612,11 +631,8 @@ static struct cpufreq_driver centrino_driver = {
+  */
+ static int __init centrino_init(void)
+ {
+-	struct cpuinfo_x86 *cpu = &cpu_data(0);
+-
+-	if (!cpu_has(cpu, X86_FEATURE_EST))
++	if (!x86_match_cpu(centrino_ids))
+ 		return -ENODEV;
+-
+ 	return cpufreq_register_driver(&centrino_driver);
+ }
+ 
+diff --git a/drivers/cpufreq/speedstep-ich.c b/drivers/cpufreq/speedstep-ich.c
+index a748ce7..acd5578 100644
+--- a/drivers/cpufreq/speedstep-ich.c
++++ b/drivers/cpufreq/speedstep-ich.c
+@@ -25,6 +25,8 @@
+ #include <linux/pci.h>
+ #include <linux/sched.h>
+ 
++#include <asm/cpu_device_id.h>
++
+ #include "speedstep-lib.h"
+ 
+ 
+@@ -388,6 +390,16 @@ static struct cpufreq_driver speedstep_driver = {
+ 	.attr	= speedstep_attr,
+ };
+ 
++static struct x86_cpu_id ss_smi_ids[] = {
++	{ X86_VENDOR_INTEL, 6, 0xb, },
++	{ X86_VENDOR_INTEL, 6, 0x8, },
++	{ X86_VENDOR_INTEL, 15, 2 },
++	{}
++};
++#if 0
++/* Autoload or not? Do not for now. */
++MODULE_DEVICE_TABLE(x86cpu, ss_smi_ids);
++#endif
+ 
+ /**
+  * speedstep_init - initializes the SpeedStep CPUFreq driver
+@@ -398,6 +410,9 @@ static struct cpufreq_driver speedstep_driver = {
+  */
+ static int __init speedstep_init(void)
+ {
++	if (!x86_match_cpu(ss_smi_ids))
++		return -ENODEV;
++
+ 	/* detect processor */
+ 	speedstep_processor = speedstep_detect_processor();
+ 	if (!speedstep_processor) {
+diff --git a/drivers/cpufreq/speedstep-lib.c b/drivers/cpufreq/speedstep-lib.c
+index 8af2d2f..7047821 100644
+--- a/drivers/cpufreq/speedstep-lib.c
++++ b/drivers/cpufreq/speedstep-lib.c
+@@ -249,6 +249,7 @@ EXPORT_SYMBOL_GPL(speedstep_get_frequency);
+  *                 DETECT SPEEDSTEP-CAPABLE PROCESSOR                *
+  *********************************************************************/
+ 
++/* Keep in sync with the x86_cpu_id tables in the different modules */
+ unsigned int speedstep_detect_processor(void)
+ {
+ 	struct cpuinfo_x86 *c = &cpu_data(0);
+diff --git a/drivers/cpufreq/speedstep-smi.c b/drivers/cpufreq/speedstep-smi.c
+index c76ead3..8cb62df 100644
+--- a/drivers/cpufreq/speedstep-smi.c
++++ b/drivers/cpufreq/speedstep-smi.c
+@@ -20,6 +20,7 @@
+ #include <linux/delay.h>
+ #include <linux/io.h>
+ #include <asm/ist.h>
++#include <asm/cpu_device_id.h>
+ 
+ #include "speedstep-lib.h"
+ 
+@@ -379,6 +380,17 @@ static struct cpufreq_driver speedstep_driver = {
+ 	.attr		= speedstep_attr,
+ };
+ 
++static struct x86_cpu_id ss_smi_ids[] = {
++	{ X86_VENDOR_INTEL, 6, 0xb, },
++	{ X86_VENDOR_INTEL, 6, 0x8, },
++	{ X86_VENDOR_INTEL, 15, 2 },
++	{}
++};
++#if 0
++/* Not auto loaded currently */
++MODULE_DEVICE_TABLE(x86cpu, ss_smi_ids);
++#endif
++
+ /**
+  * speedstep_init - initializes the SpeedStep CPUFreq driver
+  *
+@@ -388,6 +400,9 @@ static struct cpufreq_driver speedstep_driver = {
+  */
+ static int __init speedstep_init(void)
+ {
++	if (!x86_match_cpu(ss_smi_ids))
++		return -ENODEV;
++
+ 	speedstep_processor = speedstep_detect_processor();
+ 
+ 	switch (speedstep_processor) {
 -- 
 1.7.4.4
 
