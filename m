@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab1LHNra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 08:47:30 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:49589 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091Ab1LHNr3 (ORCPT
+	id S1751959Ab1LHOIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 09:08:10 -0500
+Received: from smtp-out-079.synserver.de ([212.40.185.79]:1228 "EHLO
+	smtp-out-075.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751386Ab1LHOIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 08:47:29 -0500
-Message-ID: <4EE0BFCA.7010208@oracle.com>
-Date: Thu, 08 Dec 2011 21:46:50 +0800
-From: annie li <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Thunderbird 1.5.0.9 (Windows/20061207)
+	Thu, 8 Dec 2011 09:08:06 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 32723
+Message-ID: <4EE0C4D8.4050106@metafoo.de>
+Date: Thu, 08 Dec 2011 15:08:24 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-Subject: Re: [PATCH V2 1/2] xen/granttable: Support sub-page grants
-References: <1323336940-5382-1-git-send-email-annie.li@oracle.com> <1323337048-5426-1-git-send-email-annie.li@oracle.com> <291EDFCB1E9E224A99088639C4762022B5988E5528@LONPMAILBOX01.citrite.net> <4EE08B0D.80504@oracle.com> <291EDFCB1E9E224A99088639C4762022B5988E552D@LONPMAILBOX01.citrite.net>
-In-Reply-To: <291EDFCB1E9E224A99088639C4762022B5988E552D@LONPMAILBOX01.citrite.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org
+Subject: Re: [PATCH] hwmon: jz4740: Staticise jz4740_hwmon_driver
+References: <1323351217.3398.0.camel@phoenix>
+In-Reply-To: <1323351217.3398.0.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020202.4EE0BFED.00CF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
->
-> I say let's be optimistic :-) Yes, there's more overhead in the failure case, but that's not what we should be optimising for.
->   
->From positive side, it is OK. I agree with you since the failure case does not occurs frequently, the other goodness is the code style can keep identical with gnttab_grant_foreign_access and gnttab_grant_foreign_access_ref. thanks.
+On 12/08/2011 02:33 PM, Axel Lin wrote:
+> It is not used outside this driver so no need to make the symbol global.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Acked-by: Lars-Peter Clausen <lars@metafoo.de>
 
 Thanks
-Annie
+
+> ---
+>  drivers/hwmon/jz4740-hwmon.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hwmon/jz4740-hwmon.c b/drivers/hwmon/jz4740-hwmon.c
+> index 3d7e590..5253d23 100644
+> --- a/drivers/hwmon/jz4740-hwmon.c
+> +++ b/drivers/hwmon/jz4740-hwmon.c
+> @@ -203,7 +203,7 @@ static int __devexit jz4740_hwmon_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> -struct platform_driver jz4740_hwmon_driver = {
+> +static struct platform_driver jz4740_hwmon_driver = {
+>  	.probe	= jz4740_hwmon_probe,
+>  	.remove = __devexit_p(jz4740_hwmon_remove),
+>  	.driver = {
+
 
