@@ -1,88 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713Ab1LHDpD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 22:45:03 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53498 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757263Ab1LHDpC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 22:45:02 -0500
-Date: Wed, 7 Dec 2011 19:44:57 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Frantisek Hrbata <fhrbata@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kosaki.motohiro@jp.fujitsu.com, oleg@redhat.com, minchan.kim@gmail.com,
-        stable@kernel.org, eteo@redhat.com, pmatouse@redhat.com,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH v2 RESEND] oom: fix integer overflow of points in
- oom_badness
-In-Reply-To: <20111202174526.GA11483@dhcp-26-164.brq.redhat.com>
-Message-ID: <alpine.DEB.2.00.1112071944210.636@chino.kir.corp.google.com>
-References: <1320048865-13175-1-git-send-email-fhrbata@redhat.com> <20111202174526.GA11483@dhcp-26-164.brq.redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756850Ab1LHDxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 22:53:14 -0500
+Received: from void.printf.net ([89.145.121.20]:50156 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754842Ab1LHDxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 22:53:12 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: sdhci-pci: simplify error handling
+References: <1322897285.3884.1.camel@phoenix> <4EDCAAFB.4060209@intel.com>
+Date: Wed, 07 Dec 2011 22:53:24 -0500
+In-Reply-To: <4EDCAAFB.4060209@intel.com> (Adrian Hunter's message of "Mon, 05
+	Dec 2011 13:28:59 +0200")
+Message-ID: <87aa73u3bf.fsf@laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.91 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Dec 2011, Frantisek Hrbata wrote:
+Hi,
 
-> An integer overflow will happen on 64bit archs if task's sum of rss, swapents
-> and nr_ptes exceeds (2^31)/1000 value. This was introduced by commit
-> 
-> f755a04 oom: use pte pages in OOM score
-> 
-> where the oom score computation was divided into several steps and it's no
-> longer computed as one expression in unsigned long(rss, swapents, nr_pte are
-> unsigned long), where the result value assigned to points(int) is in
-> range(1..1000). So there could be an int overflow while computing
-> 
-> 176          points *= 1000;
-> 
-> and points may have negative value. Meaning the oom score for a mem hog task
-> will be one.
-> 
-> 196          if (points <= 0)
-> 197                  return 1;
-> 
-> For example:
-> [ 3366]     0  3366 35390480 24303939   5       0             0 oom01
-> Out of memory: Kill process 3366 (oom01) score 1 or sacrifice child
-> 
-> Here the oom1 process consumes more than 24303939(rss)*4096~=92GB physical
-> memory, but it's oom score is one.
-> 
-> In this situation the mem hog task is skipped and oom killer kills another and
-> most probably innocent task with oom score greater than one.
-> 
-> The points variable should be of type long instead of int to prevent the int
-> overflow.
-> 
-> Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
-> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Acked-by: Oleg Nesterov <oleg@redhat.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Cc: stable@kernel.org [2.6.36+]
+On Mon, Dec 05 2011, Adrian Hunter wrote:
+> On 03/12/11 09:28, Axel Lin wrote:
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>
+> Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+>
+>> ---
+>>  drivers/mmc/host/sdhci-pci.c |   38 ++++++++++++++++++--------------------
+>>  1 files changed, 18 insertions(+), 20 deletions(-)
+>> 
+>> diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+>> index 6878a94..d2e77fb 100644
+>> --- a/drivers/mmc/host/sdhci-pci.c
+>> +++ b/drivers/mmc/host/sdhci-pci.c
+>> @@ -1012,11 +1012,8 @@ static int sdhci_pci_suspend(struct device *dev)
+>>  
+>>  		ret = sdhci_suspend_host(slot->host);
+>>  
+>> -		if (ret) {
+>> -			for (i--; i >= 0; i--)
+>> -				sdhci_resume_host(chip->slots[i]->host);
+>> -			return ret;
+>> -		}
+>> +		if (ret)
+>> +			goto err_pci_suspend;
+>>  
+>>  		slot_pm_flags = slot->host->mmc->pm_flags;
+>>  		if (slot_pm_flags & MMC_PM_WAKE_SDIO_IRQ)
+>> @@ -1027,11 +1024,8 @@ static int sdhci_pci_suspend(struct device *dev)
+>>  
+>>  	if (chip->fixes && chip->fixes->suspend) {
+>>  		ret = chip->fixes->suspend(chip);
+>> -		if (ret) {
+>> -			for (i = chip->num_slots - 1; i >= 0; i--)
+>> -				sdhci_resume_host(chip->slots[i]->host);
+>> -			return ret;
+>> -		}
+>> +		if (ret)
+>> +			goto err_pci_suspend;
+>>  	}
+>>  
+>>  	pci_save_state(pdev);
+>> @@ -1048,6 +1042,11 @@ static int sdhci_pci_suspend(struct device *dev)
+>>  	}
+>>  
+>>  	return 0;
+>> +
+>> +err_pci_suspend:
+>> +	while (--i >= 0)
+>> +		sdhci_resume_host(chip->slots[i]->host);
+>> +	return ret;
+>>  }
+>>  
+>>  static int sdhci_pci_resume(struct device *dev)
+>> @@ -1113,23 +1112,22 @@ static int sdhci_pci_runtime_suspend(struct device *dev)
+>>  
+>>  		ret = sdhci_runtime_suspend_host(slot->host);
+>>  
+>> -		if (ret) {
+>> -			for (i--; i >= 0; i--)
+>> -				sdhci_runtime_resume_host(chip->slots[i]->host);
+>> -			return ret;
+>> -		}
+>> +		if (ret)
+>> +			goto err_pci_runtime_suspend;
+>>  	}
+>>  
+>>  	if (chip->fixes && chip->fixes->suspend) {
+>>  		ret = chip->fixes->suspend(chip);
+>> -		if (ret) {
+>> -			for (i = chip->num_slots - 1; i >= 0; i--)
+>> -				sdhci_runtime_resume_host(chip->slots[i]->host);
+>> -			return ret;
+>> -		}
+>> +		if (ret)
+>> +			goto err_pci_runtime_suspend;
+>>  	}
+>>  
+>>  	return 0;
+>> +
+>> +err_pci_runtime_suspend:
+>> +	while (--i >= 0)
+>> +		sdhci_runtime_resume_host(chip->slots[i]->host);
+>> +	return ret;
+>>  }
+>>  
+>>  static int sdhci_pci_runtime_resume(struct device *dev)
 
-Andrew, this looks like 3.2-rc5 material.
+Thanks, pushed to mmc-next for 3.3 with Adrian's ACK.
 
-> ---
->  mm/oom_kill.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 626303b..e9a1785 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -162,7 +162,7 @@ static bool oom_unkillable_task(struct task_struct *p,
->  unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
->  		      const nodemask_t *nodemask, unsigned long totalpages)
->  {
-> -	int points;
-> +	long points;
->  
->  	if (oom_unkillable_task(p, mem, nodemask))
->  		return 0;
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
