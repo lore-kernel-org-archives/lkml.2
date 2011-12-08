@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab1LHMyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 07:54:43 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64358 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666Ab1LHMyi (ORCPT
+	id S1753772Ab1LHMyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 07:54:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36787 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537Ab1LHMyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 07:54:38 -0500
+	Thu, 8 Dec 2011 07:54:49 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 21/30] Staging: comedi: fix printk issue in jr3_pci.c
-Date: Thu,  8 Dec 2011 18:22:16 +0530
-Message-Id: <1323348745-31477-21-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 23/30] Staging: comedi: fix brace coding style issue in ni_at_a2150.c
+Date: Thu,  8 Dec 2011 18:22:18 +0530
+Message-Id: <1323348745-31477-23-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,81 +23,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the jr3_pci.c file that fixes up a
-printk warning found by the checkpatch.pl tool.
+This is a patch to the ni_at_a2150.c file that fixes up a brace
+warning found by the checkpatch.pl tool.
 
-Added KERN_facility levels for printks.
+Converted printks to pr_<levels>.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/jr3_pci.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/ni_at_a2150.c |   27 +++++++++++++------------
+ 1 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/jr3_pci.c b/drivers/staging/comedi/drivers/jr3_pci.c
-index 8273fb9..b1af4fb 100644
---- a/drivers/staging/comedi/drivers/jr3_pci.c
-+++ b/drivers/staging/comedi/drivers/jr3_pci.c
-@@ -771,13 +771,13 @@ static int jr3_pci_attach(struct comedi_device *dev,
- 	int opt_bus, opt_slot, i;
- 	struct jr3_pci_dev_private *devpriv;
+diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging/comedi/drivers/ni_at_a2150.c
+index f5f21c6..90c8015 100644
+--- a/drivers/staging/comedi/drivers/ni_at_a2150.c
++++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
+@@ -347,30 +347,30 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	static const int timeout = 2000;
+ 	int i;
  
--	printk("comedi%d: jr3_pci\n", dev->minor);
-+	printk(KERN_INFO "comedi%d: jr3_pci: attached\n", dev->minor);
+-	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
+-	       iobase);
++	pr_debug("comedi%d: %s: io 0x%lx\n", dev->minor,
++		 driver_a2150.driver_name, iobase);
+ 	if (irq)
+-		printk(", irq %u", irq);
++		pr_debug("irq %u\n", irq);
+ 	else
+-		printk(", no irq");
++		pr_debug("no irq\n");
  
- 	opt_bus = it->options[0];
- 	opt_slot = it->options[1];
+ 	if (dma)
+-		printk(", dma %u", dma);
++		pr_debug("dma %u\n", dma);
+ 	else
+-		printk(", no dma");
++		pr_debug("no dma\n");
  
- 	if (sizeof(struct jr3_channel) != 0xc00) {
--		printk("sizeof(struct jr3_channel) = %x [expected %x]\n",
-+		printk(KERN_ERR "sizeof(struct jr3_channel) = %x [expected %x]\n",
- 		       (unsigned)sizeof(struct jr3_channel), 0xc00);
+ 	/* allocate and initialize dev->private */
+ 	if (alloc_private(dev, sizeof(struct a2150_private)) < 0)
+ 		return -ENOMEM;
+ 
+ 	if (iobase == 0) {
+-		printk(" io base address required\n");
++		pr_err("io base address required\n");
  		return -EINVAL;
  	}
-@@ -832,7 +832,7 @@ static int jr3_pci_attach(struct comedi_device *dev,
- 		}
- 	}
- 	if (!card) {
--		printk(" no jr3_pci found\n");
-+		printk(KERN_ERR "no jr3_pci found\n");
+ 
+ 	/* check if io addresses are available */
+ 	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name)) {
+-		printk(" I/O port conflict\n");
++		pr_err("I/O port conflict\n");
  		return -EIO;
- 	} else {
- 		devpriv->pci_dev = card;
-@@ -867,7 +867,7 @@ static int jr3_pci_attach(struct comedi_device *dev,
- 
- 			p = dev->subdevices[i].private;
- 			p->channel = &devpriv->iobase->channel[i].data;
--			printk("p->channel %p %p (%tx)\n",
-+			printk(KERN_DEBUG "p->channel %p %p (%tx)\n",
- 			       p->channel, devpriv->iobase,
- 			       ((char *)(p->channel) -
- 				(char *)(devpriv->iobase)));
-@@ -908,7 +908,7 @@ static int jr3_pci_attach(struct comedi_device *dev,
- 	devpriv->iobase->channel[0].reset = 0;
- 
- 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
--	printk("Firmare load %d\n", result);
-+	printk(KERN_DEBUG "Firmare load %d\n", result);
- 
- 	if (result < 0)
- 		goto out;
-@@ -926,7 +926,7 @@ static int jr3_pci_attach(struct comedi_device *dev,
-  */
- 	msleep_interruptible(25);
- 	for (i = 0; i < 0x18; i++) {
--		printk("%c",
-+		printk(KERN_DEBUG "%c",
- 		       get_u16(&devpriv->iobase->channel[0].
- 			       data.copyright[i]) >> 8);
  	}
-@@ -955,7 +955,7 @@ static int jr3_pci_detach(struct comedi_device *dev)
- 	int i;
- 	struct jr3_pci_dev_private *devpriv = dev->private;
+ 	dev->iobase = iobase;
+@@ -379,12 +379,12 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	if (irq) {
+ 		/*  check that irq is supported */
+ 		if (irq < 3 || irq == 8 || irq == 13 || irq > 15) {
+-			printk(" invalid irq line %u\n", irq);
++			pr_err("invalid irq line %u\n", irq);
+ 			return -EINVAL;
+ 		}
+ 		if (request_irq(irq, a2150_interrupt, 0,
+ 				driver_a2150.driver_name, dev)) {
+-			printk("unable to allocate irq %u\n", irq);
++			pr_err("unable to allocate irq %u\n", irq);
+ 			return -EINVAL;
+ 		}
+ 		devpriv->irq_dma_bits |= IRQ_LVL_BITS(irq);
+@@ -393,11 +393,11 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/*  initialize dma */
+ 	if (dma) {
+ 		if (dma == 4 || dma > 7) {
+-			printk(" invalid dma channel %u\n", dma);
++			pr_err("invalid dma channel %u\n", dma);
+ 			return -EINVAL;
+ 		}
+ 		if (request_dma(dma, driver_a2150.driver_name)) {
+-			printk(" failed to allocate dma channel %u\n", dma);
++			pr_err("failed to allocate dma channel %u\n", dma);
+ 			return -EINVAL;
+ 		}
+ 		devpriv->dma = dma;
+@@ -464,7 +464,8 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
--	printk("comedi%d: jr3_pci: remove\n", dev->minor);
-+	printk(KERN_INFO "comedi%d: jr3_pci: remove\n", dev->minor);
- 	if (devpriv) {
- 		del_timer_sync(&devpriv->timer);
+ static int a2150_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: %s: remove\n", dev->minor, driver_a2150.driver_name);
++	pr_debug("comedi%d: %s: remove\n", dev->minor,
++		 driver_a2150.driver_name);
  
+ 	/* only free stuff if it has been allocated by _attach */
+ 	if (dev->iobase) {
 -- 
 1.7.0.4
 
