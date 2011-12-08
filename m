@@ -1,218 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab1LHWxU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 17:53:20 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:49780 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133Ab1LHWxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 17:53:16 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH] PM / Hibernate: Remove deprecated hibernation snapshot ioctls
-Date: Thu, 8 Dec 2011 23:56:12 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: pavel@ucw.cz, len.brown@intel.com, rdunlap@xenotime.net,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-doc@vger.kernel.org, jirislaby@gmail.com, jslaby@suse.cz
-References: <20111208185318.19183.12112.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20111208185318.19183.12112.stgit@srivatsabhat.in.ibm.com>
+	id S1751579Ab1LHW4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 17:56:43 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:60130 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab1LHW4l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 17:56:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Uwe =?ISO-8859-1?Q?Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>, kernel@pengutronix.de,
+        Stephen Warren <swarren@nvidia.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] pinctrl: add a driver for Energy Micro's efm32 SoCs
+Date: Thu, 08 Dec 2011 23:55:53 +0100
+Message-ID: <4693507.K6tP4YDUh2@wuerfel>
+User-Agent: KMail/4.7.2 (Linux/3.1.0-rc8nosema+; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1323384057-31452-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112082356.12839.rjw@sisk.pl>
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:GbbeQ5xzwHH0CR+EK6xZPNkNJmPx8j4v4HdyGYy/9ZV
+ s2wecd+ofXyu8RrLMlEWwd25fVLFOq1LU77mSsJXjnoltaAucg
+ 0lxGk7CWuf/MUixzmIwOJ4zDY6uzTYBtwT+QlJkygQbPn89BfE
+ rUWou6fQ8koSOx/ltg4in0l9uS5ak3Mg0IEbXW2ZhlI8GZMUm8
+ n4bwPv0/8m3KEyCuqquyRKlI+gQ68qjdtTdMCrepcEywMvndSh
+ pD52OQ3RLD5kwXwxNB+h3BYhG8LEsS0OZpCuxP4yCEQoZIEl3K
+ evk6UcZVHurHt7DXKhBjz+t6CVuylDgnHO0gF8DeMMgtlnre0k
+ yA2md66TmbL24dIgVs8w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 08, 2011, Srivatsa S. Bhat wrote:
-> Several snapshot ioctls were marked for removal quite some time ago,
-> since they were deprecated. Remove them.
-> 
-> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-
-Applied to linux-pm/linux-next.
-
-Thanks,
-Rafael
-
-
+On Thursday 08 December 2011 23:40:57 Uwe Kleine-König wrote:
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 > ---
-> 
->  Documentation/feature-removal-schedule.txt |   11 ----
->  kernel/power/user.c                        |   87 ----------------------------
->  2 files changed, 0 insertions(+), 98 deletions(-)
-> 
-> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-> index 3d84912..9f51fc4 100644
-> --- a/Documentation/feature-removal-schedule.txt
-> +++ b/Documentation/feature-removal-schedule.txt
-> @@ -85,17 +85,6 @@ Who:	Robin Getz <rgetz@blackfin.uclinux.org> & Matt Mackall <mpm@selenic.com>
->  
->  ---------------------------
->  
-> -What:	Deprecated snapshot ioctls
-> -When:	2.6.36
-> -
-> -Why:	The ioctls in kernel/power/user.c were marked as deprecated long time
-> -	ago. Now they notify users about that so that they need to replace
-> -	their userspace. After some more time, remove them completely.
-> -
-> -Who:	Jiri Slaby <jirislaby@gmail.com>
-> -
-> ----------------------------
-> -
->  What:	The ieee80211_regdom module parameter
->  When:	March 2010 / desktop catchup
->  
-> diff --git a/kernel/power/user.c b/kernel/power/user.c
-> index 98ade21..78bdb44 100644
-> --- a/kernel/power/user.c
-> +++ b/kernel/power/user.c
-> @@ -30,28 +30,6 @@
->  
->  #include "power.h"
->  
-> -/*
-> - * NOTE: The SNAPSHOT_SET_SWAP_FILE and SNAPSHOT_PMOPS ioctls are obsolete and
-> - * will be removed in the future.  They are only preserved here for
-> - * compatibility with existing userland utilities.
-> - */
-> -#define SNAPSHOT_SET_SWAP_FILE	_IOW(SNAPSHOT_IOC_MAGIC, 10, unsigned int)
-> -#define SNAPSHOT_PMOPS		_IOW(SNAPSHOT_IOC_MAGIC, 12, unsigned int)
-> -
-> -#define PMOPS_PREPARE	1
-> -#define PMOPS_ENTER	2
-> -#define PMOPS_FINISH	3
-> -
-> -/*
-> - * NOTE: The following ioctl definitions are wrong and have been replaced with
-> - * correct ones.  They are only preserved here for compatibility with existing
-> - * userland utilities and will be removed in the future.
-> - */
-> -#define SNAPSHOT_ATOMIC_SNAPSHOT	_IOW(SNAPSHOT_IOC_MAGIC, 3, void *)
-> -#define SNAPSHOT_SET_IMAGE_SIZE		_IOW(SNAPSHOT_IOC_MAGIC, 6, unsigned long)
-> -#define SNAPSHOT_AVAIL_SWAP		_IOR(SNAPSHOT_IOC_MAGIC, 7, void *)
-> -#define SNAPSHOT_GET_SWAP_PAGE		_IOR(SNAPSHOT_IOC_MAGIC, 8, void *)
-> -
->  
->  #define SNAPSHOT_MINOR	231
->  
-> @@ -213,15 +191,6 @@ unlock:
->  	return res;
->  }
->  
-> -static void snapshot_deprecated_ioctl(unsigned int cmd)
-> -{
-> -	if (printk_ratelimit())
-> -		printk(KERN_NOTICE "%pf: ioctl '%.8x' is deprecated and will "
-> -				"be removed soon, update your suspend-to-disk "
-> -				"utilities\n",
-> -				__builtin_return_address(0), cmd);
-> -}
-> -
->  static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->  							unsigned long arg)
->  {
-> @@ -272,8 +241,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->  		data->frozen = 0;
->  		break;
->  
-> -	case SNAPSHOT_ATOMIC_SNAPSHOT:
-> -		snapshot_deprecated_ioctl(cmd);
->  	case SNAPSHOT_CREATE_IMAGE:
->  		if (data->mode != O_RDONLY || !data->frozen  || data->ready) {
->  			error = -EPERM;
-> @@ -308,8 +275,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->  		data->ready = 0;
->  		break;
->  
-> -	case SNAPSHOT_SET_IMAGE_SIZE:
-> -		snapshot_deprecated_ioctl(cmd);
->  	case SNAPSHOT_PREF_IMAGE_SIZE:
->  		image_size = arg;
->  		break;
-> @@ -324,16 +289,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->  		error = put_user(size, (loff_t __user *)arg);
->  		break;
->  
-> -	case SNAPSHOT_AVAIL_SWAP:
-> -		snapshot_deprecated_ioctl(cmd);
->  	case SNAPSHOT_AVAIL_SWAP_SIZE:
->  		size = count_swap_pages(data->swap, 1);
->  		size <<= PAGE_SHIFT;
->  		error = put_user(size, (loff_t __user *)arg);
->  		break;
->  
-> -	case SNAPSHOT_GET_SWAP_PAGE:
-> -		snapshot_deprecated_ioctl(cmd);
->  	case SNAPSHOT_ALLOC_SWAP_PAGE:
->  		if (data->swap < 0 || data->swap >= MAX_SWAPFILES) {
->  			error = -ENODEV;
-> @@ -356,27 +317,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->  		free_all_swap_pages(data->swap);
->  		break;
->  
-> -	case SNAPSHOT_SET_SWAP_FILE: /* This ioctl is deprecated */
-> -		snapshot_deprecated_ioctl(cmd);
-> -		if (!swsusp_swap_in_use()) {
-> -			/*
-> -			 * User space encodes device types as two-byte values,
-> -			 * so we need to recode them
-> -			 */
-> -			if (old_decode_dev(arg)) {
-> -				data->swap = swap_type_of(old_decode_dev(arg),
-> -							0, NULL);
-> -				if (data->swap < 0)
-> -					error = -ENODEV;
-> -			} else {
-> -				data->swap = -1;
-> -				error = -EINVAL;
-> -			}
-> -		} else {
-> -			error = -EPERM;
-> -		}
-> -		break;
-> -
->  	case SNAPSHOT_S2RAM:
->  		if (!data->frozen) {
->  			error = -EPERM;
-> @@ -399,33 +339,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
->  			error = hibernation_platform_enter();
->  		break;
->  
-> -	case SNAPSHOT_PMOPS: /* This ioctl is deprecated */
-> -		snapshot_deprecated_ioctl(cmd);
-> -		error = -EINVAL;
-> -
-> -		switch (arg) {
-> -
-> -		case PMOPS_PREPARE:
-> -			data->platform_support = 1;
-> -			error = 0;
-> -			break;
-> -
-> -		case PMOPS_ENTER:
-> -			if (data->platform_support)
-> -				error = hibernation_platform_enter();
-> -			break;
-> -
-> -		case PMOPS_FINISH:
-> -			if (data->platform_support)
-> -				error = 0;
-> -			break;
-> -
-> -		default:
-> -			printk(KERN_ERR "SNAPSHOT_PMOPS: invalid argument %ld\n", arg);
-> -
-> -		}
-> -		break;
-> -
->  	case SNAPSHOT_SET_SWAP_AREA:
->  		if (swsusp_swap_in_use()) {
->  			error = -EPERM;
-> 
-> 
-> 
+> Note that there is no support yet for efm32 in mainline, so ARCH_EFM32
+> isn't defined.
 
+Since the platform is not yet part of the architecture, it will have
+to use device tree based probing when it gets added. I would suggest
+only merging drivers for it that can deal with this and do not rely
+on platform_data.
+
+Other than that, the driver looks ok to me.
+
+	Arnd
