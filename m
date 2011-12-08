@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab1LHKYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 05:24:23 -0500
-Received: from ozlabs.org ([203.10.76.45]:55822 "EHLO ozlabs.org"
+	id S1753318Ab1LHK0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 05:26:12 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33300 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753231Ab1LHKYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 05:24:21 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        markmc@redhat.com
-Subject: Re: [PATCH] virtio-ring: Use threshold for switching to indirect descriptors
-In-Reply-To: <20111207154816.GA23845@redhat.com>
-References: <87zkfbre9x.fsf@rustcorp.com.au> <1322913028.3782.4.camel@lappy> <4EDB5EF0.2010909@redhat.com> <1323000831.4205.4.camel@lappy> <20111204162221.GB22501@redhat.com> <1323020088.3256.3.camel@lappy> <4EDBAFC5.2010405@redhat.com> <1323020374.3256.5.camel@lappy> <1323023039.3256.7.camel@lappy> <1323266565.4009.10.camel@lappy> <20111207154816.GA23845@redhat.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 08 Dec 2011 20:14:20 +1030
-Message-ID: <87r50fgzyj.fsf@rustcorp.com.au>
+	id S1753266Ab1LHK0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 05:26:11 -0500
+Date: Thu, 8 Dec 2011 11:24:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] kvm_tools: fix build fail
+Message-ID: <20111208102424.GA30865@elte.hu>
+References: <4EE07AE6.10804@cn.fujitsu.com>
+ <1323334812.3904.8.camel@lappy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323334812.3904.8.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Dec 2011 17:48:17 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Wed, Dec 07, 2011 at 04:02:45PM +0200, Sasha Levin wrote:
-> > On Sun, 2011-12-04 at 20:23 +0200, Sasha Levin wrote:
-> > 
-> > [snip]
-> > 
-> > Rusty, Michael, does the below looks a reasonable optimization for you?
-> 
-> OK overall but a bit hard to say for sure as it looks pretty incomplete ...
 
-A static threshold is very hackish; we need to either initialize it to
-a proven-good value (since noone will ever change it) or be cleverer.
+* Sasha Levin <levinsasha928@gmail.com> wrote:
+
+> Hi Lai,
+> 
+> This was fixed in the KVM tools tree 2 days ago, but not 
+> pulled into -tip yet.
+
+Hm, i do daily pulls, sometimes more often - and this fix i 
+pulled two days ago and pushed it out into -tip, because i was 
+hit by it too.
+
+Lai, are you using the right URI for -tip? The latest URI is:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git
 
 Thanks,
-Rusty.
+
+	Ingo
