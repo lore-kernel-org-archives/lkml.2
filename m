@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628Ab1LHJEW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 04:04:22 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:8893
-	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750716Ab1LHJEQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 04:04:16 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzz8275dhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 8 Dec 2011 17:17:02 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-CC: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
-        <linux-mmc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>
-Subject: Re: [MXS MMC v2 2/4] Some cleanups for the MMC driver
-Message-ID: <20111208091701.GC7913@S2100-06.ap.freescale.net>
-References: <cover.1323328267.git.LW@KARO-electronics.de>
- <d935557e044d2ebc56b4e70487b519fe722e9017.1323328267.git.LW@KARO-electronics.de>
+	id S1752500Ab1LHJML (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 04:12:11 -0500
+Received: from ozlabs.org ([203.10.76.45]:53294 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400Ab1LHJMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 04:12:08 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ben Hutchings <ben@decadent.org.uk>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>, Greg KH <greg@kroah.com>,
+        Dave Jones <davej@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>
+Subject: Re: [PATCH] lockdep, bug: Exclude TAINT_OOT_MODULE from disabling lock debugging
+In-Reply-To: <1323268258.18450.11.camel@deadeye>
+References: <1323268258.18450.11.camel@deadeye>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 08 Dec 2011 15:00:25 +1030
+Message-ID: <8762hrit26.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <d935557e044d2ebc56b4e70487b519fe722e9017.1323328267.git.LW@KARO-electronics.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 09:17:45AM +0100, Lothar Waﬂmann wrote:
->  - Remove bogus parens around numerical arguments in #define's
->  - When defining bit masks, use the #def for the shift count
->    instead of repeating the numbers
->  - Remove 'break' at end of switch statement
+On Wed, 07 Dec 2011 14:30:58 +0000, Ben Hutchings <ben@decadent.org.uk> wrote:
+> We do want to allow lock debugging for GPL-compatible modules that are
+> not (yet) built in-tree.  This was disabled as a side-effect of commit
+> 2449b8ba0745327c5fa49a8d9acffe03b2eded69 ('module,bug: Add
+> TAINT_OOT_MODULE flag for modules not built in-tree').  Lock debug
+> warnings now include taint flags, so kernel developers should still
+> be able to deflect warnings caused by out-of-tree modules.
 > 
-> Changes wrt v1:
->  - break long lines
->  - leave indentation as is
+> The TAINT_PROPRIETARY_MODULE flag for non-GPL-compatible modules will
+> still disable lock debugging.
 > 
-> Signed-off-by: Lothar Waﬂmann <LW@KARO-electronics.de>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Meh.  Disabling lock debugging was always a weird thing to do, IMHO.
+Taint flags should be used for warnings to developers, not these strange
+side-effects.
 
-Not sure if Chris will ask you to add proper subject prefix though :)
-
--- 
-Regards,
-Shawn
-
+Cheers,
+Rusty.
