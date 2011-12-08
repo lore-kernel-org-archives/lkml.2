@@ -1,222 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab1LHJvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 04:51:20 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:17805 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab1LHJvS convert rfc822-to-8bit (ORCPT
+	id S1753127Ab1LHJxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 04:53:15 -0500
+Received: from smtprelay01.ispgateway.de ([80.67.31.39]:53731 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab1LHJxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 04:51:18 -0500
-X-IronPort-AV: E=Sophos;i="4.71,319,1320624000"; 
-   d="scan'208";a="9357920"
-From: Paul Durrant <Paul.Durrant@citrix.com>
-To: "annie.li@oracle.com" <annie.li@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-CC: "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-Date: Thu, 8 Dec 2011 09:51:25 +0000
-Subject: RE: [PATCH V2 2/2] xen/granttable: Support transitive grants
-Thread-Topic: [PATCH V2 2/2] xen/granttable: Support transitive grants
-Thread-Index: Acy1jRQAKqiqmVv8RmuoLn/MJZ/b7wAAaspQ
-Message-ID: <291EDFCB1E9E224A99088639C4762022B5988E5529@LONPMAILBOX01.citrite.net>
-References: <1323336940-5382-1-git-send-email-annie.li@oracle.com>
- <1323337077-5457-1-git-send-email-annie.li@oracle.com>
-In-Reply-To: <1323337077-5457-1-git-send-email-annie.li@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 8 Dec 2011 04:53:12 -0500
+X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Dec 2011 04:53:11 EST
+Message-ID: <4EE08769.1070701@selhorst.net>
+Date: Thu, 08 Dec 2011 10:46:17 +0100
+From: Marcel Selhorst <tpmdd@selhorst.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111109 Thunderbird/7.0.1
 MIME-Version: 1.0
+To: TPM Device Driver List <tpmdd-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: tpm-new-email-address-for-tpm_infineon-driver.patch
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.6.128; VDF: 7.11.19.25; host: mail.selhorst.net); id=18516-6arZKi
+X-Df-Sender: MTc0NDk5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: annie.li@oracle.com [mailto:annie.li@oracle.com]
-> Sent: 08 December 2011 09:38
-> To: xen-devel@lists.xensource.com; linux-kernel@vger.kernel.org;
-> konrad.wilk@oracle.com; jeremy@goop.org; Paul Durrant; Ian Campbell
-> Cc: kurt.hackel@oracle.com; annie.li@oracle.com
-> Subject: [PATCH V2 2/2] xen/granttable: Support transitive grants
-> 
-> These allow a domain A which has been granted access on a page of
-> domain B's memory to issue domain C with a copy-grant on the same
-> page.  This is useful e.g. for forwarding packets between domains.
-> 
-> Signed-off-by: Annie Li <annie.li@oracle.com>
-> ---
->  drivers/xen/grant-table.c |   73
-> +++++++++++++++++++++++++++++++++++++++++++++
->  include/xen/grant_table.h |   12 +++++++
->  2 files changed, 85 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index 4a10e3f..db3e7c0 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -130,6 +130,18 @@ struct gnttab_ops {
->  	 */
->  	void (*update_subpage_entry)(grant_ref_t, domid_t, unsigned
-> long, int,
->  				     unsigned, unsigned);
-> +	/*
-> +	 * Redirect an available grant entry on domain A to another
-> grant
-> +	 * reference of domain B, then allow domain C to use grant
-> reference
-> +	 * of domain B transitively. First parameter is an available
-> grant entry
-> +	 * reference on domain A, second one is id of domain C which
-> accesses
-> +	 * grant entry transitively, third one is grant type and flag
-> +	 * information, forth one is id of domain B whose grant entry
-> is finally
-> +	 * accessed transitively, last one is grant entry transitive
-> reference
-> +	 * of domain B.
-> +	 */
-> +	void (*update_trans_entry)(grant_ref_t, domid_t, int,
-> domid_t,
-> +				   grant_ref_t);
->  };
-> 
->  static struct gnttab_ops *gnttab_interface; @@ -334,6 +346,66 @@
-> bool gnttab_subpage_grants_available(void)
->  }
->  EXPORT_SYMBOL_GPL(gnttab_subpage_grants_available);
-> 
-> +void gnttab_update_trans_entry_v2(grant_ref_t ref, domid_t domid,
-> +				  int flags, domid_t trans_domid,
-> +				  grant_ref_t trans_gref)
-> +{
-> +	gnttab_shared.v2[ref].transitive.trans_domid = trans_domid;
-> +	gnttab_shared.v2[ref].transitive.gref = trans_gref;
-> +	gnttab_shared.v2[ref].hdr.domid = domid;
-> +	wmb();
-> +	gnttab_shared.v2[ref].hdr.flags =
-> +				GTF_permit_access | GTF_transitive |
-> flags; }
-> +
-> +int gnttab_grant_foreign_access_trans_ref(grant_ref_t ref, domid_t
-> domid,
-> +					  int flags, domid_t trans_domid,
-> +					  grant_ref_t trans_gref)
-> +{
-> +	if (flags & (GTF_accept_transfer | GTF_reading |
-> +		     GTF_writing | GTF_sub_page))
-> +		return -EPERM;
-> +
-> +	if (gnttab_interface->update_trans_entry == NULL)
-> +		return -ENOSYS;
-> +
-> +	gnttab_interface->update_trans_entry(ref, domid, flags,
-> trans_domid,
-> +					     trans_gref);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_trans_ref);
-> +
-> +int gnttab_grant_foreign_access_trans(domid_t domid, int flags,
-> +				      domid_t trans_domid,
-> +				      grant_ref_t trans_gref)
-> +{
-> +	int ref;
-> +
-> +	if (flags & (GTF_accept_transfer | GTF_reading |
-> +		     GTF_writing | GTF_sub_page))
-> +		return -EPERM;
-> +
-> +	if (gnttab_interface->update_trans_entry == NULL)
-> +		return -ENOSYS;
-> +
-> +	ref = get_free_entries(1);
-> +	if (unlikely(ref < 0))
-> +		return -ENOSPC;
-> +
-> +	gnttab_interface->update_trans_entry(ref, domid, flags,
-> trans_domid,
-> +					     trans_gref);
-> +
-> +	return ref;
-> +}
-> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_trans);
-> +
+Dear all,
 
-I have the same opinion here as with the other patch. The non-ref variant should allocate and then call the ref variant.
+my contact details have changed, please find a patch below.
 
-> +bool gnttab_trans_grants_available(void)
-> +{
-> +	return gnttab_interface->update_trans_entry != NULL; }
-> +EXPORT_SYMBOL_GPL(gnttab_trans_grants_available);
-> +
->  static int gnttab_query_foreign_access_v1(grant_ref_t ref)  {
->  	return gnttab_shared.v1[ref].flags &
-> (GTF_reading|GTF_writing); @@ -887,6 +959,7 @@ static struct
-> gnttab_ops gnttab_v2_ops = {
->  	.end_foreign_transfer_ref	=
-> gnttab_end_foreign_transfer_ref_v2,
->  	.query_foreign_access		=
-> gnttab_query_foreign_access_v2,
->  	.update_subpage_entry		=
-> gnttab_update_subpage_entry_v2,
-> +	.update_trans_entry		= gnttab_update_trans_entry_v2,
->  };
-> 
->  static void gnttab_request_version(void) diff --git
-> a/include/xen/grant_table.h b/include/xen/grant_table.h index
-> 2b492b9..f1e17b7 100644
-> --- a/include/xen/grant_table.h
-> +++ b/include/xen/grant_table.h
-> @@ -65,6 +65,9 @@ int gnttab_grant_foreign_access(domid_t domid,
-> unsigned long frame,  int
-> gnttab_grant_foreign_access_subpage(domid_t domid, unsigned long
-> frame,
->  					int flags, unsigned page_off,
->  					unsigned length);
-> +int gnttab_grant_foreign_access_trans(domid_t domid, int flags,
-> +				      domid_t trans_domid,
-> +				      grant_ref_t trans_gref);
-> 
->  /*
->   * Are sub-page grants available on this version of Xen?  Returns
-> true if they @@ -73,6 +76,12 @@ int
-> gnttab_grant_foreign_access_subpage(domid_t domid, unsigned long
-> frame,  bool gnttab_subpage_grants_available(void);
-> 
->  /*
-> + * Are transitive grants available on this version of Xen?  Returns
-> +true if they
-> + * are, and false if they're not.
-> + */
-> +bool gnttab_trans_grants_available(void);
-> +
-> +/*
->   * End access through the given grant reference, iff the grant
-> entry is no
->   * longer in use.  Return 1 if the grant entry was freed, 0 if it
-> is still in
->   * use.
-> @@ -121,6 +130,9 @@ int
-> gnttab_grant_foreign_access_subpage_ref(grant_ref_t ref, domid_t
-> domid,
->  					    unsigned long frame, int
-> flags,
->  					    unsigned page_off,
->  					    unsigned length);
-> +int gnttab_grant_foreign_access_trans_ref(grant_ref_t ref, domid_t
-> domid,
-> +					  int flags, domid_t trans_domid,
-> +					  grant_ref_t trans_gref);
-> 
->  void gnttab_grant_foreign_transfer_ref(grant_ref_t, domid_t domid,
->  				       unsigned long pfn);
-> --
-> 1.7.6.4
+Signed-off-by: Marcel Selhorst <tpmdd@selhorst.net>
+---
+diff -pruN linux-3.1.4.old/MAINTAINERS linux-3.1.4.new/MAINTAINERS
+--- linux-3.1.4.old/MAINTAINERS	2011-11-28 23:48:14.000000000 +0100
++++ linux-3.1.4.new/MAINTAINERS	2011-12-08 10:15:19.752440618 +0100
+@@ -6491,7 +6491,8 @@ TPM DEVICE DRIVER
+ M:	Debora Velarde <debora@linux.vnet.ibm.com>
+ M:	Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+ W:	http://tpmdd.sourceforge.net
+-M:	Marcel Selhorst <m.selhorst@sirrix.com>
++M:	Marcel Selhorst <tpmdd@selhorst.net>
++M:	Sirrix AG <tpmdd@sirrix.com>
+ W:	http://www.sirrix.com
+ L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
+ S:	Maintained
+diff -pruN linux-3.1.4.old/drivers/char/tpm/tpm_infineon.c linux-3.1.4.new/drivers/char/tpm/tpm_infineon.c
+--- linux-3.1.4.old/drivers/char/tpm/tpm_infineon.c	2011-11-28 23:48:14.000000000 +0100
++++ linux-3.1.4.new/drivers/char/tpm/tpm_infineon.c	2011-12-08 10:37:10.876440286 +0100
+@@ -4,8 +4,8 @@
+  * SLD 9630 TT 1.1 and SLB 9635 TT 1.2 Trusted Platform Module
+  * Specifications at www.trustedcomputinggroup.org
+  *
+- * Copyright (C) 2005, Marcel Selhorst <m.selhorst@sirrix.com>
+- * Sirrix AG - security technologies, http://www.sirrix.com and
++ * Copyright (C) 2005, Marcel Selhorst <tpmdd@selhorst.net>
++ * Sirrix AG - security technologies <tpmdd@sirrix.com> and
+  * Applied Data Security Group, Ruhr-University Bochum, Germany
+  * Project-Homepage: http://www.trust.rub.de/projects/linux-device-driver-infineon-tpm/
+  *
+@@ -671,7 +671,7 @@ static void __exit cleanup_inf(void)
+ module_init(init_inf);
+ module_exit(cleanup_inf);
+
+-MODULE_AUTHOR("Marcel Selhorst <m.selhorst@sirrix.com>");
++MODULE_AUTHOR("Marcel Selhorst <tpmdd@selhorst.net>");
+ MODULE_DESCRIPTION("Driver for Infineon TPM SLD 9630 TT 1.1 / SLB 9635 TT 1.2");
+ MODULE_VERSION("1.9.2");
+ MODULE_LICENSE("GPL");
 
