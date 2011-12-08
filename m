@@ -1,85 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab1LHKL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 05:11:26 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53139 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab1LHKLY (ORCPT
+	id S1753253Ab1LHKTP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 05:19:15 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:24073 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab1LHKTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 05:11:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111206223109.GA1867@archminux>
-References: <20111204160728.GA27292@archminux>
-	<1323054041.6046.79.camel@linux-s257.site>
-	<20111206215137.GA20907@archminux>
-	<CAN+gG=EaG1h=seuKQa_SF2O033WWn52USh=tjO9F9O55DgH17Q@mail.gmail.com>
-	<20111206223109.GA1867@archminux>
-Date: Thu, 8 Dec 2011 11:11:22 +0100
-Message-ID: <CAN+gG=FoxDg3O5VSVkZEPGn4cVE=SJ4MUfvCgnYiB8vJGTLKmQ@mail.gmail.com>
-Subject: Re: [Dual-LVDS Acer Iconia laptop] i915/DRM issue: one screen stays
- off [3.2-rc4+]
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>, joeyli <jlee@suse.com>,
-        Baptiste Jonglez <baptiste@jonglez.org>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx@lists.freedesktop.org,
-        Mathieu Magnaudet <mathieu.magnaudet@enac.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Dec 2011 05:19:12 -0500
+From: Josh Wu <josh.wu@atmel.com>
+To: g.liakhovetski@gmx.de, linux-media@vger.kernel.org, linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nicolas.ferre@atmel.com, Josh Wu <josh.wu@atmel.com>
+Subject: [PATCH v3 1/2] [media] V4L: atmel-isi: add code to enable/disable ISI_MCK clock
+Date: Thu,  8 Dec 2011 18:18:49 +0800
+Message-Id: <1323339530-26117-1-git-send-email-josh.wu@atmel.com>
+X-Mailer: git-send-email 1.6.3.3
+X-OriginalArrivalTime: 08 Dec 2011 10:18:52.0430 (UTC) FILETIME=[C8B8AAE0:01CCB592]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch
+- add ISI_MCK clock enable/disable code.
+- change field name in isi_platform_data structure
 
-On Tue, Dec 6, 2011 at 23:31, Baptiste Jonglez <baptiste@jonglez.org> wrote:
-> On Tue, Dec 06, 2011 at 11:12:26PM +0100, Benjamin Tissoires wrote:
->> Hi Baptiste,
->
-> Hi,
->
->> On Tue, Dec 6, 2011 at 22:51, Baptiste Jonglez <baptiste@jonglez.org> wrote:
->> > The second screen works fine with the attached patch. It actually is
->> > 6 months old but seems to have been lost in the wild...
->>
->> You don't have the problem of the second backlight still off?
->> On our Iconia, we need to trigger a special DMI command to set it up
->> (SDSS, IIRC).
->
-> No, with the patch, it worked out-of-the-box.
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+[g.liakhovetski@gmx.de: fix label names]
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+v3: using IS_ERR() to check return value of clk_get() instead of using IS_ERR_OR_NULL()
 
-mmm, this is weird. We must not have the same bios or device version.
-We need to explicitly set the LCD2 up.
+ drivers/media/video/atmel-isi.c |   31 +++++++++++++++++++++++++++++--
+ include/media/atmel-isi.h       |    4 +++-
+ 2 files changed, 32 insertions(+), 3 deletions(-)
 
->
-> I can even control the brightness in
-> `/sys/class/backlight/acpi_video0/brightness' (it affects both
-> displays at the same time though). But even at 0, it's still perfectly
-> readable.
+diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
+index fbc904f..44789f0 100644
+--- a/drivers/media/video/atmel-isi.c
++++ b/drivers/media/video/atmel-isi.c
+@@ -90,7 +90,10 @@ struct atmel_isi {
+ 	struct isi_dma_desc		dma_desc[MAX_BUFFER_NUM];
+ 
+ 	struct completion		complete;
++	/* ISI peripherial clock */
+ 	struct clk			*pclk;
++	/* ISI_MCK, feed to camera sensor to generate pixel clock */
++	struct clk			*mck;
+ 	unsigned int			irq;
+ 
+ 	struct isi_platform_data	*pdata;
+@@ -766,6 +769,12 @@ static int isi_camera_add_device(struct soc_camera_device *icd)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = clk_enable(isi->mck);
++	if (ret) {
++		clk_disable(isi->pclk);
++		return ret;
++	}
++
+ 	isi->icd = icd;
+ 	dev_dbg(icd->parent, "Atmel ISI Camera driver attached to camera %d\n",
+ 		 icd->devnum);
+@@ -779,6 +788,7 @@ static void isi_camera_remove_device(struct soc_camera_device *icd)
+ 
+ 	BUG_ON(icd != isi->icd);
+ 
++	clk_disable(isi->mck);
+ 	clk_disable(isi->pclk);
+ 	isi->icd = NULL;
+ 
+@@ -874,7 +884,7 @@ static int isi_camera_set_bus_param(struct soc_camera_device *icd, u32 pixfmt)
+ 
+ 	if (isi->pdata->has_emb_sync)
+ 		cfg1 |= ISI_CFG1_EMB_SYNC;
+-	if (isi->pdata->isi_full_mode)
++	if (isi->pdata->full_mode)
+ 		cfg1 |= ISI_CFG1_FULL_MODE;
+ 
+ 	isi_writel(isi, ISI_CTRL, ISI_CTRL_DIS);
+@@ -912,6 +922,7 @@ static int __devexit atmel_isi_remove(struct platform_device *pdev)
+ 			isi->fb_descriptors_phys);
+ 
+ 	iounmap(isi->regs);
++	clk_put(isi->mck);
+ 	clk_put(isi->pclk);
+ 	kfree(isi);
+ 
+@@ -930,7 +941,7 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+ 	struct isi_platform_data *pdata;
+ 
+ 	pdata = dev->platform_data;
+-	if (!pdata || !pdata->data_width_flags) {
++	if (!pdata || !pdata->data_width_flags || !pdata->mck_hz) {
+ 		dev_err(&pdev->dev,
+ 			"No config available for Atmel ISI\n");
+ 		return -EINVAL;
+@@ -959,6 +970,19 @@ static int __devinit atmel_isi_probe(struct platform_device *pdev)
+ 	INIT_LIST_HEAD(&isi->video_buffer_list);
+ 	INIT_LIST_HEAD(&isi->dma_desc_head);
+ 
++	/* Get ISI_MCK, provided by programmable clock or external clock */
++	isi->mck = clk_get(dev, "isi_mck");
++	if (IS_ERR(isi->mck)) {
++		dev_err(dev, "Failed to get isi_mck\n");
++		ret = PTR_ERR(isi->mck);
++		goto err_clk_get;
++	}
++
++	/* Set ISI_MCK's frequency, it should be faster than pixel clock */
++	ret = clk_set_rate(isi->mck, pdata->mck_hz);
++	if (ret < 0)
++		goto err_set_mck_rate;
++
+ 	isi->p_fb_descriptors = dma_alloc_coherent(&pdev->dev,
+ 				sizeof(struct fbd) * MAX_BUFFER_NUM,
+ 				&isi->fb_descriptors_phys,
+@@ -1034,6 +1058,9 @@ err_alloc_ctx:
+ 			isi->p_fb_descriptors,
+ 			isi->fb_descriptors_phys);
+ err_alloc_descriptors:
++err_set_mck_rate:
++	clk_put(isi->mck);
++err_clk_get:
+ 	kfree(isi);
+ err_alloc_isi:
+ 	clk_put(pclk);
+diff --git a/include/media/atmel-isi.h b/include/media/atmel-isi.h
+index 26cece5..6568230 100644
+--- a/include/media/atmel-isi.h
++++ b/include/media/atmel-isi.h
+@@ -110,10 +110,12 @@ struct isi_platform_data {
+ 	u8 hsync_act_low;
+ 	u8 vsync_act_low;
+ 	u8 pclk_act_falling;
+-	u8 isi_full_mode;
++	u8 full_mode;
+ 	u32 data_width_flags;
+ 	/* Using for ISI_CFG1 */
+ 	u32 frate;
++	/* Using for ISI_MCK */
++	u32 mck_hz;
+ };
+ 
+ #endif /* __ATMEL_ISI_H__ */
+-- 
+1.6.3.3
 
-Yes, the acpi can control both brightness. But WMI can control each
-brightness. However, we are not sure this is what people want. So we
-do not plan to introduce a second brightness control.
-
->
-> Maybe this a bug that got fixed recently? I've actually tried the 3.1
-> kernel (and then the 3.2-rc4) because I noticed a lot of commits and
-> improvements in the i915 driver recently.
-
-We doubled-checked on 3.2-rc4, and we still need our patch. This is
-definitively a bios/hardware configuration problem.
-
-Cheers,
-Benjamin
-
->
->> > Thanks Benjamin!
->>
->> All the credits are from Ajax and somebody else on IRC I don't recall,
->> really sorry. Thanks to them.
->>
->> Cheers,
->> Benjamin.
->
-> Regards,
-> Baptiste
