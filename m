@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab1LHDZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 22:25:05 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:32872 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756877Ab1LHDZD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 22:25:03 -0500
-Date: Wed, 7 Dec 2011 19:24:59 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-In-Reply-To: <1320512782-12209-1-git-send-email-aarcange@redhat.com>
-Message-ID: <alpine.DEB.2.00.1112071924400.636@chino.kir.corp.google.com>
-References: <alpine.LSU.2.00.1111041856530.22199@sister.anvils> <1320512782-12209-1-git-send-email-aarcange@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757857Ab1LHD0B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 22:26:01 -0500
+Received: from mga03.intel.com ([143.182.124.21]:14032 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757650Ab1LHD0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 22:26:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="45071354"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org
+Subject: [PATCH 04/11] ACPI, APEI, Remove table not found message
+Date: Thu,  8 Dec 2011 11:25:43 +0800
+Message-Id: <1323314750-8185-5-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1323314750-8185-1-git-send-email-ying.huang@intel.com>
+References: <1323314750-8185-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Nov 2011, Andrea Arcangeli wrote:
+Because APEI tables are optional, these message may confuse users, for
+example,
 
-> migrate was doing a rmap_walk with speculative lock-less access on
-> pagetables. That could lead it to not serialize properly against
-> mremap PT locks. But a second problem remains in the order of vmas in
-> the same_anon_vma list used by the rmap_walk.
-> 
-> If vma_merge would succeed in copy_vma, the src vma could be placed
-> after the dst vma in the same_anon_vma list. That could still lead
-> migrate to miss some pte.
-> 
-> This patch adds a anon_vma_moveto_tail() function to force the dst vma
-> at the end of the list before mremap starts to solve the problem.
-> 
-> If the mremap is very large and there are a lots of parents or childs
-> sharing the anon_vma root lock, this should still scale better than
-> taking the anon_vma root lock around every pte copy practically for
-> the whole duration of mremap.
-> 
-> Update: Hugh noticed special care is needed in the error path where
-> move_page_tables goes in the reverse direction, a second
-> anon_vma_moveto_tail() call is needed in the error path.
-> 
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/599715
 
-Is this still needed?  It's missing in linux-next.
+Reported-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/apei/einj.c |    5 ++---
+ drivers/acpi/apei/erst.c |    5 ++---
+ drivers/acpi/apei/hest.c |    5 ++---
+ 3 files changed, 6 insertions(+), 9 deletions(-)
+
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -466,10 +466,9 @@ static int __init einj_init(void)
+ 
+ 	status = acpi_get_table(ACPI_SIG_EINJ, 0,
+ 				(struct acpi_table_header **)&einj_tab);
+-	if (status == AE_NOT_FOUND) {
+-		pr_info(EINJ_PFX "Table is not found!\n");
++	if (status == AE_NOT_FOUND)
+ 		return -ENODEV;
+-	} else if (ACPI_FAILURE(status)) {
++	else if (ACPI_FAILURE(status)) {
+ 		const char *msg = acpi_format_exception(status);
+ 		pr_err(EINJ_PFX "Failed to get table, %s\n", msg);
+ 		return -EINVAL;
+--- a/drivers/acpi/apei/erst.c
++++ b/drivers/acpi/apei/erst.c
+@@ -1125,10 +1125,9 @@ static int __init erst_init(void)
+ 
+ 	status = acpi_get_table(ACPI_SIG_ERST, 0,
+ 				(struct acpi_table_header **)&erst_tab);
+-	if (status == AE_NOT_FOUND) {
+-		pr_info(ERST_PFX "Table is not found!\n");
++	if (status == AE_NOT_FOUND)
+ 		goto err;
+-	} else if (ACPI_FAILURE(status)) {
++	else if (ACPI_FAILURE(status)) {
+ 		const char *msg = acpi_format_exception(status);
+ 		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
+ 		rc = -EINVAL;
+--- a/drivers/acpi/apei/hest.c
++++ b/drivers/acpi/apei/hest.c
+@@ -221,10 +221,9 @@ void __init acpi_hest_init(void)
+ 
+ 	status = acpi_get_table(ACPI_SIG_HEST, 0,
+ 				(struct acpi_table_header **)&hest_tab);
+-	if (status == AE_NOT_FOUND) {
+-		pr_info(HEST_PFX "Table not found.\n");
++	if (status == AE_NOT_FOUND)
+ 		goto err;
+-	} else if (ACPI_FAILURE(status)) {
++	else if (ACPI_FAILURE(status)) {
+ 		const char *msg = acpi_format_exception(status);
+ 		pr_err(HEST_PFX "Failed to get table, %s\n", msg);
+ 		rc = -EINVAL;
