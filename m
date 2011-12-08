@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab1LHMyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 07:54:00 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38835 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab1LHMx4 (ORCPT
+	id S1753571Ab1LHMyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 07:54:13 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64358 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1LHMyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 07:53:56 -0500
+	Thu, 8 Dec 2011 07:54:06 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 13/30] Staging: comedi: fix printk issue in contec_pci_dio.c
-Date: Thu,  8 Dec 2011 18:22:08 +0530
-Message-Id: <1323348745-31477-13-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 15/30] Staging: comedi: fix printk issue in dt3000.c
+Date: Thu,  8 Dec 2011 18:22:10 +0530
+Message-Id: <1323348745-31477-15-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,62 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the contec_pci_dio.c file that fixes up a
+This is a patch to the dt3000.c file that fixes up a
 printk warning found by the checkpatch.pl tool.
 
+Removed ifdef DEBUG.
 Converted printks to pr_<levels>.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/contec_pci_dio.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/dt3000.c |   11 ++++-------
+ 1 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/contec_pci_dio.c b/drivers/staging/comedi/drivers/contec_pci_dio.c
-index 64f5f49..2ca740a 100644
---- a/drivers/staging/comedi/drivers/contec_pci_dio.c
-+++ b/drivers/staging/comedi/drivers/contec_pci_dio.c
-@@ -179,7 +179,7 @@ static int contec_detach(struct comedi_device *dev)
- static int contec_cmdtest(struct comedi_device *dev, struct comedi_subdevice *s,
- 			  struct comedi_cmd *cmd)
- {
--	printk("contec_cmdtest called\n");
-+	pr_debug("contec_cmdtest called\n");
- 	return 0;
+diff --git a/drivers/staging/comedi/drivers/dt3000.c b/drivers/staging/comedi/drivers/dt3000.c
+index 069a691..c656fe4 100644
+--- a/drivers/staging/comedi/drivers/dt3000.c
++++ b/drivers/staging/comedi/drivers/dt3000.c
+@@ -352,7 +352,7 @@ static int dt3k_send_cmd(struct comedi_device *dev, unsigned int cmd)
+ 	if ((status & DT3000_COMPLETION_MASK) == DT3000_NOERROR)
+ 		return 0;
+ 
+-	printk("dt3k_send_cmd() timeout/error status=0x%04x\n", status);
++	pr_err("dt3k_send_cmd() timeout/error status=0x%04x\n", status);
+ 
+ 	return -ETIME;
+ }
+@@ -420,7 +420,6 @@ static irqreturn_t dt3k_interrupt(int irq, void *d)
+ 	return IRQ_HANDLED;
  }
  
-@@ -194,8 +194,8 @@ static int contec_do_insn_bits(struct comedi_device *dev,
- 			       struct comedi_insn *insn, unsigned int *data)
+-#ifdef DEBUG
+ static char *intr_flags[] = {
+ 	"AdFull", "AdSwError", "AdHwError", "DaEmpty",
+ 	"DaSwError", "DaHwError", "CtDone", "CmDone",
+@@ -429,14 +428,12 @@ static char *intr_flags[] = {
+ static void debug_intr_flags(unsigned int flags)
  {
- 
--	printk("contec_do_insn_bits called\n");
--	printk(" data: %d %d\n", data[0], data[1]);
-+	pr_debug("contec_do_insn_bits called\n");
-+	pr_debug("data: %d %d\n", data[0], data[1]);
- 
- 	if (insn->n != 2)
- 		return -EINVAL;
-@@ -203,8 +203,8 @@ static int contec_do_insn_bits(struct comedi_device *dev,
- 	if (data[0]) {
- 		s->state &= ~data[0];
- 		s->state |= data[0] & data[1];
--		printk("  out: %d on %lx\n", s->state,
--		       dev->iobase + thisboard->out_offs);
-+		pr_debug("out: %d on %lx\n", s->state,
-+			 dev->iobase + thisboard->out_offs);
- 		outw(s->state, dev->iobase + thisboard->out_offs);
+ 	int i;
+-	printk("dt3k: intr_flags:");
++	pr_debug("dt3k: intr_flags:\n");
+ 	for (i = 0; i < 8; i++) {
+ 		if (flags & (1 << i))
+-			printk(" %s", intr_flags[i]);
++			pr_debug("%s\n", intr_flags[i]);
  	}
- 	return 2;
-@@ -215,8 +215,8 @@ static int contec_di_insn_bits(struct comedi_device *dev,
- 			       struct comedi_insn *insn, unsigned int *data)
- {
+-	printk("\n");
+ }
+-#endif
  
--	printk("contec_di_insn_bits called\n");
--	printk(" data: %d %d\n", data[0], data[1]);
-+	pr_debug("contec_di_insn_bits called\n");
-+	pr_debug("data: %d %d\n", data[0], data[1]);
+ static void dt3k_ai_empty_fifo(struct comedi_device *dev,
+ 			       struct comedi_subdevice *s)
+@@ -452,7 +449,7 @@ static void dt3k_ai_empty_fifo(struct comedi_device *dev,
+ 	if (count < 0)
+ 		count += AI_FIFO_DEPTH;
  
- 	if (insn->n != 2)
- 		return -EINVAL;
+-	printk("reading %d samples\n", count);
++	pr_debug("reading %d samples\n", count);
+ 
+ 	rear = devpriv->ai_rear;
+ 
 -- 
 1.7.0.4
 
