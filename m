@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346Ab1LHRBZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 12:01:25 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:15658 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750763Ab1LHRBX (ORCPT
+	id S1752529Ab1LHRF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 12:05:28 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:60828 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab1LHRF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 12:01:23 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/b3fTWySA+nJyARISCEdL/
-Date: Thu, 8 Dec 2011 09:01:14 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Russell King <linux@arm.linux.org.uk>, Greg KH <greg@kroah.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH 4/7] amp/omap: add a remoteproc driver
-Message-ID: <20111208170114.GZ31337@atomide.com>
-References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
- <1319536106-25802-5-git-send-email-ohad@wizery.com>
- <CAK=WgbZvH3eiouryKDenC_x0LdDcHFuumhfoeY4ueiwT5r0cxA@mail.gmail.com>
+	Thu, 8 Dec 2011 12:05:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "John Stoffel" <john@stoffel.org>
+Subject: Re: chroot(2) and bind mounts as non-root
+Date: Thu, 8 Dec 2011 17:04:22 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc1+; KDE/4.3.2; x86_64; ; )
+Cc: Colin Walters <walters@verbum.org>, LKML <linux-kernel@vger.kernel.org>,
+        morgan@kernel.org, serue@us.ibm.com, dhowells@redhat.com,
+        kzak@redhat.com
+References: <1323280461.10724.13.camel@lenny> <20191.49202.793643.397028@quad.stoffel.home>
+In-Reply-To: <20191.49202.793643.397028@quad.stoffel.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAK=WgbZvH3eiouryKDenC_x0LdDcHFuumhfoeY4ueiwT5r0cxA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112081704.22453.arnd@arndb.de>
+X-Provags-ID: V02:K0:Pt+Xv8U9IdMLon5Ddv/xHQQHR5LPSctNhUNmnNfLCPC
+ t4OVH9sav953iP6BOyAEsCgJFp3c2VntrP5lpOIVBhrxiSfPt2
+ XP0LJlS6DxvHAOFyuFWWxyPvpxrKhOlw12BgVpKrO0e126enzo
+ UoSgMXGviC+NEF89WMWnyZTb/+6IntTN6O50zy543wgg20iwIV
+ RoAU+76qRZmTQTgZtzoFUw/nP1vOLMvWApSXV91hDfcmJ9Qs1i
+ fAsejtx5yzdfDhHa18+IF8MdaPDR3Jelpqt39Bns9yf9qzNBGO
+ gBsHOaeMCc5ddCDdBLgSk/xhPBAkA0SKsgiXNEbzpjkDM9dMFy
+ rskdMBV28av6zYDti0WA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ohad Ben-Cohen <ohad@wizery.com> [111207 23:26]:
-> Hi Tony,
+On Wednesday 07 December 2011, John Stoffel wrote:
+> >>>>> "Colin" == Colin Walters <walters@verbum.org> writes:
 > 
-> On Tue, Oct 25, 2011 at 11:48 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> > Add a remoteproc driver for OMAP4, so we can boot the dual-M3 "Ducati"
-> > and DSP subsystems.
-> >
-> > Use the omap_device_* API to control the hardware state, and utilize
-> > the OMAP mailbox to interrupt the remote processor when a new message
-> > is pending (the mailbox payload is used to tell it which virtqueue was
-> > the message placed in).
-> >
-> > Conversely, when an inbound mailbox message arrives, tell the remoteproc
-> > core which virtqueue is triggered.
-> >
-> > Later we will also use the mailbox payload to signal omap-specific
-> > events like remote crashes (which will be used to trigger remoteproc
-> > recovery) and power management transitions. At that point we will also
-> > extend the remoteproc core to support this.
-> >
-> > Based on (but now quite far from) work done by Fernando Guzman Lugo
-> > <fernando.lugo@ti.com> and Hari Kanigeri <h-kanigeri2@ti.com>.
-> >
-> > Designed with Brian Swetland <swetland@google.com>.
-> >
-> > Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-> > Cc: Brian Swetland <swetland@google.com>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Cc: Tony Lindgren <tony@atomide.com>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Greg KH <greg@kroah.com>
-> > Cc: Stephen Boyd <sboyd@codeaurora.org>
-> > ---
-> >  arch/arm/plat-omap/include/plat/remoteproc.h |   56 ++++++
-> >  drivers/amp/remoteproc/Kconfig               |   21 +++
-> >  drivers/amp/remoteproc/Makefile              |    4 +-
-> >  drivers/amp/remoteproc/omap_remoteproc.c     |  248 ++++++++++++++++++++++++++
-> >  drivers/amp/remoteproc/omap_remoteproc.h     |   69 +++++++
-> >  5 files changed, 397 insertions(+), 1 deletions(-)
-> >  create mode 100644 arch/arm/plat-omap/include/plat/remoteproc.h
-> >  create mode 100644 drivers/amp/remoteproc/omap_remoteproc.c
-> >  create mode 100644 drivers/amp/remoteproc/omap_remoteproc.h
+> Colin> I've recently been doing some work in software compilation, and it'd be
+> Colin> really handy if I could call chroot(2) as a non-root user.  The reason
+> Colin> to chroot is to help avoid "host contamination" - I can set up a build
+> Colin> root and then chroot in.  The reason to do it as non-root is, well,
+> Colin> requiring root to build software sucks for multiple obvious reasons.
 > 
-> I'm about to add this to linux-next (minus the 'amp' wording); can I
-> please have your Acked-by for this (at least for the plat-omap change) ?
+> What's wrong with using 'fakeroot' or tools like that instead?  Why
+> does the Kernel need to be involved like this?  I'm not against your
+> proposal so much, as trying to understand how compiling a bunch of
+> source requires this change.
 
-The platform init code looks OK to me. Please also start considering
-how to do the DT bindings for it. For patches 4 & 5:
+I think the better question to ask is what is missing from 'schroot', which
+is commonly used for exactly this purpose. Is it just about avoing the
+suid bit for /usr/bin/schroot or something else?
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+	Arnd
