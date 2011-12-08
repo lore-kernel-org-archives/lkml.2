@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab1LHJdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 04:33:18 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:51340 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab1LHJdP (ORCPT
+	id S1752781Ab1LHJf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 04:35:59 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:64379 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab1LHJfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 04:33:15 -0500
-X-IronPort-AV: E=Sophos;i="4.71,319,1320624000"; 
-   d="scan'208";a="9357371"
-Subject: Re: [Xen-devel] [PATCH 3/4] xen: Add xenbusd device driver
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Bastian Blank <waldi@debian.org>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Date: Thu, 8 Dec 2011 09:32:57 +0000
-In-Reply-To: <20111208092757.GA22678@wavehammer.waldi.eu.org>
-References: <1323292396-19523-1-git-send-email-waldi@debian.org>
-	 <1323292396-19523-4-git-send-email-waldi@debian.org>
-	 <1323332686.2969.49.camel@zakaz.uk.xensource.com>
-	 <20111208092757.GA22678@wavehammer.waldi.eu.org>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1323336777.2969.73.camel@zakaz.uk.xensource.com>
-MIME-Version: 1.0
+	Thu, 8 Dec 2011 04:35:53 -0500
+From: annie.li@oracle.com
+To: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, jeremy@goop.org, paul.durrant@citrix.com,
+        Ian.Campbell@citrix.com
+Cc: kurt.hackel@oracle.com, annie.li@oracle.com
+Subject: [PATCH V2 0/2] xen: patches for supporting sub-page and transitive grants
+Date: Thu,  8 Dec 2011 17:35:40 +0800
+Message-Id: <1323336940-5382-1-git-send-email-annie.li@oracle.com>
+X-Mailer: git-send-email 1.7.6.4
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A02020B.4EE084F4.00C4,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-08 at 09:27 +0000, Bastian Blank wrote:
-> On Thu, Dec 08, 2011 at 08:24:46AM +0000, Ian Campbell wrote:
-> > On Wed, 2011-12-07 at 21:13 +0000, Bastian Blank wrote:
-> > > +obj-$(CONFIG_XEN_BACKEND) += xenbus_dev_backend.o
-> > In principal this could be its own module which does not depend on any
-> > of the backend stuff but I think this is fine for now.
-> 
-> I even think about registering this device from xenstored_local_init in
-> xenbus_probe.c. Then it will be available only if the kernel also owns
-> the communcation ring.
+Hi
 
-That sounds like a good idea.
+Following two patches introduce and implement interfaces for sub-page and transitive grants, and they are based on linux-next branch of linux/kernel/git/konrad/xen.git(3.2.0-rc2+). Sub-page and transitive grants are new types of grant table V2.
 
-> > "Could not register xenbus backend device" to distinguish from the f.e.
-> > failure message, you could also add "frontend" there I suppose. Other
-> > than that:
-> 
-> Yep.
-> 
-> Will someone mind if I rename this device to xenbus_backend? It's more
-> clear.
+Descriptions for those patches:
 
-It's ok by me. You could even use "xenstored"?
+Through sub-page grant table interfaces, a domain can grant another domain access to a range of bytes within a page, and Xen will then prevent the grantee domain accessing outside that range.  For obvious reasons, it isn't possible to map these grant references, and domains are expected to use the grant copy hypercall instead.
 
-Ian.
+Through transitive grant interfaces,  a domain can create grant reference which redirects to another grant reference, so that any attempt to access the first grant reference will be redirected to the second one.  This is used to implement receiver-side copy on inter-domain traffic: rather than copying the packet in dom0, dom0 creates a transitive grant referencing the original transmit buffer, and passes that to the receiving domain.
+
+Annie Li (2):
+  xen/granttable: Support sub-page grants
+  xen/granttable: Support transitive grants
+
+ drivers/xen/grant-table.c |  147 +++++++++++++++++++++++++++++++++++++++++++++
+ include/xen/grant_table.h |   25 ++++++++
+ 2 files changed, 172 insertions(+), 0 deletions(-)
+
+Thanks
+Annie
+
+-- 
+1.7.6.4
 
