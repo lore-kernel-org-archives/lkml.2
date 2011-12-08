@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab1LHHUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 02:20:01 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58604 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab1LHHT6 (ORCPT
+	id S1751629Ab1LHHYh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:24:37 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:7258 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab1LHHYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 02:19:58 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 8 Dec 2011 16:18:29 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: [BUGFIX][PATCH v2] add mem_cgroup_replace_page_cache.
-Message-Id: <20111208161829.b6101de6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111207111455.GA18249@tiehlicka.suse.cz>
-References: <20111206123923.1432ab52.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111207111455.GA18249@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 8 Dec 2011 02:24:36 -0500
+Date: Thu, 8 Dec 2011 08:24:02 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, trenn@suse.de,
+        Andi Kleen <ak@linux.intel.com>, fenghua.yu@intel.com
+Subject: Re: [PATCH 06/10] HWMON: Convert coretemp to x86 cpuid autoprobing
+Message-ID: <20111208082402.3591123f@endymion.delvare>
+In-Reply-To: <20111208024001.GA4912@ericsson.com>
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
+	<1323304882-27953-7-git-send-email-andi@firstfloor.org>
+	<20111208024001.GA4912@ericsson.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -31,177 +27,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Dec 2011 12:14:55 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+Hi Andi,
 
-> Other than that looks ok.
+Thanks a lot for working on this. I wanted to give it a try long ago but
+could never find the time.
+
+On Wed, 7 Dec 2011 18:40:01 -0800, Guenter Roeck wrote:
+> Andi,
 > 
+> On Wed, Dec 07, 2011 at 07:41:19PM -0500, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > Use the new x86 cpuid autoprobe interface for the Intel coretemp
+> > driver.
+> > 
+> > Cc: fenghua.yu@intel.com
+> > Cc: khali@linux-fr.org
+> > Cc: guenter.roeck@ericsson.com
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  drivers/hwmon/coretemp.c |   17 ++++++++++++++---
+> >  1 files changed, 14 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+> > index 104b376..5de1579 100644
+> > --- a/drivers/hwmon/coretemp.c
+> > +++ b/drivers/hwmon/coretemp.c
+> > @@ -39,6 +39,7 @@
+> >  #include <linux/moduleparam.h>
+> >  #include <asm/msr.h>
+> >  #include <asm/processor.h>
+> > +#include <asm/cpu_device_id.h>
+> >  
+> >  #define DRVNAME	"coretemp"
+> >  
+> > @@ -756,13 +757,23 @@ static struct notifier_block coretemp_cpu_notifier __refdata = {
+> >  	.notifier_call = coretemp_cpu_callback,
+> >  };
+> >  
+> > +static struct x86_cpu_id coretemp_ids[] = {
 
-Thank you for review. v2 here. This patch is for the latest linux-next.
-==
->From 82067c96323cf464d9b18867025414526fc7ce84 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Thu, 8 Dec 2011 16:31:15 +0900
-Subject: [PATCH] [BUGFIX][PATCH v2] memcg: add mem_cgroup_replace_page_cache() for fixing LRU issue.
+Can't this be made const?
 
-commit ef6a3c6311 adds a function replace_page_cache_page(). This
-function replaces a page in radix-tree with a new page.
-At doing this, memory cgroup need to fix up the accounting information.
-memcg need to check PCG_USED bit etc.
+> > +	{ X86_VENDOR_INTEL, X86_FAMILY_ANY, X86_MODEL_ANY, X86_FEATURE_DTS },
+> > +	{}
+> > +};
+> > +MODULE_DEVICE_TABLE(x86cpu, coretemp_ids);
+> > +
+> >  static int __init coretemp_init(void)
+> >  {
+> >  	int i, err = -ENODEV;
+> >  
+> > -	/* quick check if we run Intel */
+> > -	if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
+> > -		goto exit;
+> > +	/*
+> > +	 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
+> > +	 * sensors. We check this bit only, all the early CPUs
+> > +	 * without thermal sensors will be filtered out.
+> > +	 */
+> > +	if (!x86_match_cpu(coretemp_ids))
+> > +		return -ENODEV;
+>
+> X86_FEATURE_DTS is checked elsewhere in the driver, in function get_core_online().
+> Can that check be removed ?
 
-In some(many?) case, 'newpage' is on LRU before calling replace_page_cache().
-So, memcg's LRU accounting information should be fixed, too.
+Is it not possible in theory to mix a CPU with DTS and one without DTS
+on the same system? There may be a reason why the DTS flag was checked
+in get_core_online() (i.e. on a per-core basis) rather than in
+coretemp_init(). I seem to recall that someone explicitly asked for it.
 
-This patch adds mem_cgroup_replace_page_cache() and removing old hooks.
-In that function, old pages will be unaccounted without touching res_counter
-and new page will be accounted to the memcg (of old page). At overwriting
-pc->mem_cgroup of newpage, take zone->lru_lock and avoid race with
-LRU handling.
+To avoid any risk of regression, I wouldn't touch this part of the code.
 
-Background:
-  replace_page_cache_page() is called by FUSE code in its splice() handling.
-  Here, 'newpage' is replacing oldpage but this newpage is not a newly allocated
-  page and may be on LRU. LRU mis-accounting will be critical for memory cgroup
-  because rmdir() checks the whole LRU is empty and there is no account leak.
-  If a page is on the other LRU than it should be, rmdir() will fail.
-
-Changelog: v1 -> v2
-  - fixed mem_cgroup_disabled() check missing.
-  - added comments.
-
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/memcontrol.h |    6 ++++++
- mm/filemap.c               |   18 ++----------------
- mm/memcontrol.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 52 insertions(+), 16 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 4b70e05..bd3b102 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -123,6 +123,8 @@ struct zone_reclaim_stat*
- mem_cgroup_get_reclaim_stat_from_page(struct page *page);
- extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
- 					struct task_struct *p);
-+extern void mem_cgroup_replace_page_cache(struct page *oldpage,
-+					struct page *newpage);
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
- extern int do_swap_account;
-@@ -382,6 +384,10 @@ static inline
- void mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx)
- {
- }
-+static inline void mem_cgroup_replace_page_cache(struct page *oldpage,
-+				struct page *newpage)
-+{
-+}
- #endif /* CONFIG_CGROUP_MEM_CONT */
- 
- #if !defined(CONFIG_CGROUP_MEM_RES_CTLR) || !defined(CONFIG_DEBUG_VM)
-diff --git a/mm/filemap.c b/mm/filemap.c
-index a7b572b..4642211 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -393,24 +393,11 @@ EXPORT_SYMBOL(filemap_write_and_wait_range);
- int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- {
- 	int error;
--	struct mem_cgroup *memcg = NULL;
- 
- 	VM_BUG_ON(!PageLocked(old));
- 	VM_BUG_ON(!PageLocked(new));
- 	VM_BUG_ON(new->mapping);
- 
--	/*
--	 * This is not page migration, but prepare_migration and
--	 * end_migration does enough work for charge replacement.
--	 *
--	 * In the longer term we probably want a specialized function
--	 * for moving the charge from old to new in a more efficient
--	 * manner.
--	 */
--	error = mem_cgroup_prepare_migration(old, new, &memcg, gfp_mask);
--	if (error)
--		return error;
--
- 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (!error) {
- 		struct address_space *mapping = old->mapping;
-@@ -432,13 +419,12 @@ int replace_page_cache_page(struct page *old, struct page *new, gfp_t gfp_mask)
- 		if (PageSwapBacked(new))
- 			__inc_zone_page_state(new, NR_SHMEM);
- 		spin_unlock_irq(&mapping->tree_lock);
-+		/* mem_cgroup codes must not be called under tree_lock */
-+		mem_cgroup_replace_page_cache(old, new);
- 		radix_tree_preload_end();
- 		if (freepage)
- 			freepage(old);
- 		page_cache_release(old);
--		mem_cgroup_end_migration(memcg, old, new, true);
--	} else {
--		mem_cgroup_end_migration(memcg, old, new, false);
- 	}
- 
- 	return error;
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 8880a32..52edaef 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3306,6 +3306,50 @@ void mem_cgroup_end_migration(struct mem_cgroup *memcg,
- 	cgroup_release_and_wakeup_rmdir(&memcg->css);
- }
- 
-+/*
-+ * At replace page cache, newpage is not under any memcg but it's on
-+ * LRU. So, this function doesn't touch res_counter but handles LRU
-+ * in correct way. Both pages are locked so we cannot race with uncharge.
-+ */
-+void mem_cgroup_replace_page_cache(struct page *oldpage,
-+				  struct page *newpage)
-+{
-+	struct mem_cgroup *memcg;
-+	struct page_cgroup *pc;
-+	struct zone *zone;
-+	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-+	unsigned long flags;
-+
-+	if (mem_cgroup_disabled())
-+		return;
-+
-+	pc = lookup_page_cgroup(oldpage);
-+	/* fix accounting on old pages */
-+	lock_page_cgroup(pc);
-+	memcg = pc->mem_cgroup;
-+	mem_cgroup_charge_statistics(memcg, PageCgroupCache(pc), -1);
-+	ClearPageCgroupUsed(pc);
-+	unlock_page_cgroup(pc);
-+
-+	if (PageSwapBacked(oldpage))
-+		type = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-+
-+	zone = page_zone(newpage);
-+	pc = lookup_page_cgroup(newpage);
-+	/*
-+	 * Even if newpage->mapping was NULL before starting replacement,
-+	 * the newpage may be on LRU(or pagevec for LRU) already. We lock
-+	 * LRU while we overwrite pc->mem_cgroup.
-+	 */
-+	spin_lock_irqsave(&zone->lru_lock, flags);
-+	if (PageLRU(newpage))
-+		del_page_from_lru_list(zone, newpage, page_lru(newpage));
-+	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, type);
-+	if (PageLRU(newpage))
-+		add_page_to_lru_list(zone, newpage, page_lru(newpage));
-+	spin_unlock_irqrestore(&zone->lru_lock, flags);
-+}
-+
- #ifdef CONFIG_DEBUG_VM
- static struct page_cgroup *lookup_page_cgroup_used(struct page *page)
- {
 -- 
-1.7.4.1
-
-
+Jean Delvare
