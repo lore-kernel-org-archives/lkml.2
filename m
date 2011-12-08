@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1LHMxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 07:53:36 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44906 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab1LHMxc (ORCPT
+	id S1753453Ab1LHM6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 07:58:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36787 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab1LHMxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 07:53:32 -0500
+	Thu, 8 Dec 2011 07:53:14 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 08/30] Staging: comedi: fix line over 80 character issue in cb_pcimdda.c
-Date: Thu,  8 Dec 2011 18:22:03 +0530
-Message-Id: <1323348745-31477-8-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 05/30] Staging: comedi: fix printk issue in daqboard2000.c
+Date: Thu,  8 Dec 2011 18:22:00 +0530
+Message-Id: <1323348745-31477-5-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,69 +23,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcimdda.c file that fixes up a
-line over 80 character warning found by the checkpatch.pl tool.
+This is a patch to the daqboard2000.c file that fixes up a
+printk warning found by the checkpatch.pl tool.
+
+Removed unnecessary printk statement.
+Included KERN_facility level.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcimdda.c |   24 +++++++++++++++++-------
- 1 files changed, 17 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/daqboard2000.c |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcimdda.c b/drivers/staging/comedi/drivers/cb_pcimdda.c
-index d2f3c3b..5d7a696 100644
---- a/drivers/staging/comedi/drivers/cb_pcimdda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcimdda.c
-@@ -105,7 +105,8 @@ struct board_struct {
- 	int ao_bits;
- 	int dio_chans;
- 	int dio_method;
--	int dio_offset;		/* how many bytes into the BADR are the DIO ports */
-+	/* how many bytes into the BADR are the DIO ports */
-+	int dio_offset;
- 	int regs_badrindex;	/* IO Region for the control, analog output,
- 				   and DIO registers */
- 	int reg_sz;		/* number of bytes of registers in io region */
-@@ -150,9 +151,12 @@ static DEFINE_PCI_DEVICE_TABLE(pci_table) = {
+diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
+index 7066d8f..fed8a3a 100644
+--- a/drivers/staging/comedi/drivers/daqboard2000.c
++++ b/drivers/staging/comedi/drivers/daqboard2000.c
+@@ -720,8 +720,6 @@ static int daqboard2000_attach(struct comedi_device *dev,
+ 	unsigned int aux_len;
+ 	int bus, slot;
  
- MODULE_DEVICE_TABLE(pci, pci_table);
+-	printk("comedi%d: daqboard2000:", dev->minor);
+-
+ 	bus = it->options[0];
+ 	slot = it->options[1];
  
--/* this structure is for data unique to this hardware driver.  If
--   several hardware drivers keep similar information in this structure,
--   feel free to suggest moving the variable to the struct comedi_device struct.  */
-+/*
-+ * this structure is for data unique to this hardware driver.  If
-+ * several hardware drivers keep similar information in this structure,
-+ * feel free to suggest moving the variable to the struct comedi_device
-+ * struct.
-+ */
- struct board_private_struct {
- 	unsigned long registers;	/* set by probe */
- 	unsigned long dio_registers;
-@@ -334,7 +338,10 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	if (thisboard->dio_chans) {
- 		switch (thisboard->dio_method) {
- 		case DIO_8255:
--			/* this is a straight 8255, so register us with the 8255 driver */
-+			/*
-+			 * this is a straight 8255, so register us with
-+			 * the 8255 driver
-+			 */
- 			subdev_8255_init(dev, s, NULL, devpriv->dio_registers);
- 			devpriv->attached_to_8255 = 1;
- 			break;
-@@ -433,8 +440,11 @@ static int ao_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
- 
- 	for (i = 0; i < insn->n; i++) {
- 		inw(devpriv->registers + chan * 2);
--		/* should I set data[i] to the result of the actual read on the register
--		   or the cached unsigned int in devpriv->ao_readback[]? */
-+		/*
-+		 * should I set data[i] to the result of the actual read
-+		 * on the register or the cached unsigned int in
-+		 * devpriv->ao_readback[]?
-+		 */
- 		data[i] = devpriv->ao_readback[chan];
+@@ -742,10 +740,10 @@ static int daqboard2000_attach(struct comedi_device *dev,
  	}
+ 	if (!card) {
+ 		if (bus || slot)
+-			printk(" no daqboard2000 found at bus/slot: %d/%d\n",
++			printk(KERN_ERR "no daqboard2000 found at bus/slot: %d/%d\n",
+ 			       bus, slot);
+ 		else
+-			printk(" no daqboard2000 found\n");
++			printk(KERN_ERR "no daqboard2000 found\n");
+ 		return -EIO;
+ 	} else {
+ 		u32 id;
+@@ -755,7 +753,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
+ 		      subsystem_device << 16) | card->subsystem_vendor;
+ 		for (i = 0; i < n_boardtypes; i++) {
+ 			if (boardtypes[i].id == id) {
+-				printk(" %s", boardtypes[i].name);
++				printk(KERN_DEBUG "%s", boardtypes[i].name);
+ 				dev->board_ptr = boardtypes + i;
+ 			}
+ 		}
+@@ -769,7 +767,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
+ 
+ 	result = comedi_pci_enable(card, "daqboard2000");
+ 	if (result < 0) {
+-		printk(" failed to enable PCI device and request regions\n");
++		printk(KERN_ERR "failed to enable PCI device and request regions\n");
+ 		return -EIO;
+ 	}
+ 	devpriv->got_regions = 1;
+@@ -799,7 +797,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
+ 	if (aux_data && aux_len) {
+ 		result = initialize_daqboard2000(dev, aux_data, aux_len);
+ 	} else {
+-		printk("no FPGA initialization code, aborting\n");
++		printk(KERN_DEBUG "no FPGA initialization code, aborting\n");
+ 		result = -EIO;
+ 	}
+ 	if (result < 0)
+@@ -839,15 +837,12 @@ static int daqboard2000_attach(struct comedi_device *dev,
+ 	result = subdev_8255_init(dev, s, daqboard2000_8255_cb,
+ 				  (unsigned long)(dev->iobase + 0x40));
+ 
+-	printk("\n");
+ out:
+ 	return result;
+ }
+ 
+ static int daqboard2000_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: daqboard2000: remove\n", dev->minor);
+-
+ 	if (dev->subdevices)
+ 		subdev_8255_cleanup(dev, dev->subdevices + 2);
  
 -- 
 1.7.0.4
