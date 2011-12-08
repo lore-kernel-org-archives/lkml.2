@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab1LHJiU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 04:38:20 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:10132 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab1LHJiE (ORCPT
+	id S1752837Ab1LHJjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 04:39:44 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47296 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab1LHJjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 04:38:04 -0500
-Message-ID: <4EE08569.3070009@atmel.com>
-Date: Thu, 08 Dec 2011 10:37:45 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Thu, 8 Dec 2011 04:39:40 -0500
+Date: Thu, 8 Dec 2011 10:39:27 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
+        Valentin Longchamp <valentin.longchamp@keymile.com>,
+        Daniel Mack <daniel@caiaq.de>, Eric Benard <eric@eukrea.com>
+Subject: Re: [PATCH] video IPUv1 fixes for different display connections
+Message-ID: <20111208093927.GU27267@pengutronix.de>
+References: <1322747932-24943-1-git-send-email-s.hauer@pengutronix.de>
+ <1323329606.1641.25.camel@vkoul-udesk3>
 MIME-Version: 1.0
-To: robherring2@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@secretlab.ca
-CC: Dave Martin <dave.martin@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] irqdomain: protect macro variable in domain iterators
-References: <1322833997-32083-1-git-send-email-nicolas.ferre@atmel.com> <1322832609-24956-1-git-send-email-nicolas.ferre@atmel.com> <20111202134458.GD2892@localhost.localdomain>
-In-Reply-To: <20111202134458.GD2892@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323329606.1641.25.camel@vkoul-udesk3>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:37:43 up 25 days, 17:24, 30 users,  load average: 0.03, 0.02,
+ 0.12
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/02/2011 02:44 PM, Dave Martin :
-> On Fri, Dec 02, 2011 at 02:30:09PM +0100, Nicolas Ferre wrote:
->> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
->
-> Looks OK to me:
->
-> Acked-by: Dave Martin<dave.martin@linaro.org>
+On Thu, Dec 08, 2011 at 01:03:26PM +0530, Vinod Koul wrote:
+> On Thu, 2011-12-01 at 14:58 +0100, Sascha Hauer wrote:
+> > Hi,
+> > 
+> > The following series fixes the display connections to the IPU on
+> > i.MX3 boards. The connection to the display is completely independend
+> > of the internal pixel format in the framebuffer. The driver instead
+> > changes the IPU <-> Display mapping dependent on the pixelformat
+> > which is wrong.
+> > The following patch makes 16bpp and 32bpp modes possible on both
+> > RGB666 and RGB888 connected displays.
+> > The burstsize setting for 32bpp was configured wrong, so 32bpp
+> > modes have obviously never been tested.
+> > 
+> > Not for stable since all in kernel boards seem to work.
+> Applied thanks.
+> 
+> Couldn't help but notice that :
+> @@ -312,7 +312,7 @@ static void ipu_ch_param_set_size(union
+> chan_param_mem *params,
+>         case IPU_PIX_FMT_RGB565:
+>                 params->ip.bpp  = 2;
+>                 params->ip.pfs  = 4;
+> 
+> is not really good way. Someone else who is using this driver has no way
+> of knowing what these magic numbers mean and how to use them
+> Perhaps you can add meaning to these numbers and some note on why they
+> should be set to these values.
 
-Rob,
+Yes, you are right. Adding defines for these really makes this better
+readable. BTW did you queue both patches or only the first one?
 
-Do you want a different implementation for this. I think it is the 
-simplest way to write this macro...
-
-If it is ok for you, it will be interesting to include this patch 
-quickly so that I will be able to queue my own patches on top of it.
-(Cc: stable can be a good idea also).
-
-Best regards,
-
->> ---
->> v2: add brackets to each macro variable.
->>
->>   include/linux/irqdomain.h |   10 ++++++----
->>   1 files changed, 6 insertions(+), 4 deletions(-)
->>
->> diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
->> index bd4272b..e535063 100644
->> --- a/include/linux/irqdomain.h
->> +++ b/include/linux/irqdomain.h
->> @@ -82,12 +82,14 @@ static inline unsigned int irq_domain_to_irq(struct irq_domain *d,
->>   }
->>
->>   #define irq_domain_for_each_hwirq(d, hw) \
->> -	for (hw = d->hwirq_base; hw<  d->hwirq_base + d->nr_irq; hw++)
->> +	for ((hw) = (d)->hwirq_base; \
->> +	     (hw)<  (d)->hwirq_base + (d)->nr_irq; \
->> +	     (hw)++)
->>
->>   #define irq_domain_for_each_irq(d, hw, irq) \
->> -	for (hw = d->hwirq_base, irq = irq_domain_to_irq(d, hw); \
->> -	     hw<  d->hwirq_base + d->nr_irq; \
->> -	     hw++, irq = irq_domain_to_irq(d, hw))
->> +	for ((hw) = (d)->hwirq_base, (irq) = irq_domain_to_irq((d), (hw)); \
->> +	     (hw)<  (d)->hwirq_base + (d)->nr_irq; \
->> +	     (hw)++, (irq) = irq_domain_to_irq((d), (hw)))
->>
->>   extern void irq_domain_add(struct irq_domain *domain);
->>   extern void irq_domain_del(struct irq_domain *domain);
->> --
->> 1.7.5.4
->>
->
+Sascha
 
 
 -- 
-Nicolas Ferre
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
