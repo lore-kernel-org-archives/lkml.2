@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751141Ab1LHUCV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 15:02:21 -0500
-Received: from oceanic.CalvaEDI.COM ([89.202.194.168]:36992 "EHLO
-	oceanic.CalvaEDI.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab1LHUCT (ORCPT
+	id S1751091Ab1LHUHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 15:07:18 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:47741 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750708Ab1LHUHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 15:02:19 -0500
-Message-ID: <4EE11801.6000709@calvaedi.com>
-Date: Thu, 08 Dec 2011 21:03:13 +0100
-From: John Hughes <john@calvaedi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Thu, 8 Dec 2011 15:07:14 -0500
+X-Sasl-enc: MbGJ8Q2d9kGbGADiDyR8QB0XCByYGTDp5UDnZgeByRuA 1323374833
+Date: Thu, 8 Dec 2011 11:25:33 -0800
+From: Greg KH <greg@kroah.com>
+To: Marcos Paulo de Souza <marcos.mage@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] staging: vt6655: card.c, srom.c, vntwifi.c: Code
+ cleanup
+Message-ID: <20111208192533.GA19310@kroah.com>
+References: <1322855892-6400-1-git-send-email-marcos.mage@gmail.com>
+ <20111203083215.GF3195@mwanda>
+ <alpine.LNX.2.00.1112042000070.5963@cactuar.localhost>
 MIME-Version: 1.0
-To: platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-CC: Mattia Dongili <malattia@linux.it>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix scancodes emitted by sony-laptop driver (Version 3 with
- spaces fixed)
-Content-Type: multipart/mixed;
- boundary="------------090809050906050102060600"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1112042000070.5963@cactuar.localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090809050906050102060600
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Sun, Dec 04, 2011 at 08:01:39PM -0200, Marcos Paulo de Souza wrote:
+> On Sat, 3 Dec 2011, Dan Carpenter wrote:
+> >On Fri, Dec 02, 2011 at 07:58:12PM +0000, Marcos Paulo de Souza wrote:
+> >>This patch removes commented code, useless comments, blank lines and fix
+> >>coding style of the headers of functions.
+> >>
+> >>Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
+> >>Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> >>Cc: devel@driverdev.osuosl.org
+> >>---
+> >> /*
+> >>- * Description: Test if bits off in eeprom
+> >>- *
+> >>- * Parameters:
+> >>- *  In:
+> >>- *      dwIoBase        - I/O base address
+> >>- *      byContntOffset  - address of EEPROM
+> >>- *      byTestBits      - bits to test
+> >>- *  Out:
+> >>- *      none
+> >>- *
+> >>- * Return Value: true if all test bits off; otherwise false
+> >>- *
+> >>+ * Test if bits off in eeprom
+> >>  */
+> >
+> >Some of these seems sort of useful.  It might be better to change
+> >them to doc-book format instead of deleting them:
+> >
+> >/**
+> >* SROMbIsRegBitsOff() - Test if bits off in eeprom
+> >* @dwIoBase:       I/O base address
+> >* @byContntOffset: Address of EEPROM
+> >* @byTestBits:     Bits to test
+> >*
+> >* Returns true if all test bits off; otherwise false.
+> >*/
+> >
+> >There is a howto in Documentation/kernel-doc-nano-HOWTO.txt.
+> 
+> Thanks for the suggestion Dan. I will do it for these 3 patches.
+> 
+> Greg, please delte this patches, I will sent them again.
 
-Drat.  Here we go again.  This time with whitespace as tabs.
+Ugh, "which" patches are you referring to?
 
-Passes checkpatch.pl  Even took out assignment in condition to keep the 
-quiche eaters happy.  :-(
+I see lots here from you, with different back-and-forth from Dan, and I
+don't really see an easy way to tell which thread from which, given that
+you didn't thread the patches using git-send-email.
 
+So, I've dropped all patches from you from my patch queue, can you
+please resend the ones that I am supposed to apply that have been
+reviewed by Dan as being acceptable?
 
---------------090809050906050102060600
-Content-Type: text/x-patch;
- name="sony-scancode.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="sony-scancode.patch"
+thanks,
 
-The scancodes returned by the sony-laptop driver for function keys did not
-match the scancodes used to remap keys.  Also, since the scancode was sent
-to the input subsystem after the mapped keysym the /lib/udev/keymap
-utility was confused about which scancode to report for which keysym.
-
-This patch fixes the driver so the correct scancode is shown for each
-key.  It also adds to the documentation a description of where to find
-the scancodes.
-
-Signed-off-by: John Hughes <john@calva.com>
-
-diff --git a/Documentation/laptops/sony-laptop.txt b/Documentation/laptops/sony-laptop.txt
-index 2bd4e82..0d5ac7f 100644
---- a/Documentation/laptops/sony-laptop.txt
-+++ b/Documentation/laptops/sony-laptop.txt
-@@ -17,6 +17,11 @@ subsystem. See the logs of acpid or /proc/acpi/event and
- devices are created by the driver. Additionally, loading the driver with the
- debug option will report all events in the kernel log.
- 
-+The "scancodes" passed to the input system (that can be remapped with udev)
-+are indexes to the table "sony_laptop_input_keycode_map" in the sony-laptop.c
-+module.  For example the "FN/E" key combination (EJECTCD on some models)
-+generates the scancode 20 (0x14).
-+
- Backlight control:
- ------------------
- If your laptop model supports it, you will find sysfs files in the
-diff --git a/drivers/platform/x86/sony-laptop.c b/drivers/platform/x86/sony-laptop.c
-index c006dee..35768cd 100644
---- a/drivers/platform/x86/sony-laptop.c
-+++ b/drivers/platform/x86/sony-laptop.c
-@@ -347,6 +347,7 @@ static void sony_laptop_report_input_event(u8 event)
- 	struct input_dev *jog_dev = sony_laptop_input.jog_dev;
- 	struct input_dev *key_dev = sony_laptop_input.key_dev;
- 	struct sony_laptop_keypress kp = { NULL };
-+	int scancode = -1;
- 
- 	if (event == SONYPI_EVENT_FNKEY_RELEASED ||
- 			event == SONYPI_EVENT_ANYBUTTON_RELEASED) {
-@@ -380,8 +381,9 @@ static void sony_laptop_report_input_event(u8 event)
- 			dprintk("sony_laptop_report_input_event, event not known: %d\n", event);
- 			break;
- 		}
--		if (sony_laptop_input_index[event] != -1) {
--			kp.key = sony_laptop_input_keycode_map[sony_laptop_input_index[event]];
-+		scancode = sony_laptop_input_index[event];
-+		if (scancode != -1) {
-+			kp.key = sony_laptop_input_keycode_map[scancode];
- 			if (kp.key != KEY_UNKNOWN)
- 				kp.dev = key_dev;
- 		}
-@@ -389,9 +391,11 @@ static void sony_laptop_report_input_event(u8 event)
- 	}
- 
- 	if (kp.dev) {
-+		/* if we have a scancode we emit it so we can always
-+		   remap the key */
-+		if (scancode != -1)
-+			input_event(kp.dev, EV_MSC, MSC_SCAN, scancode);
- 		input_report_key(kp.dev, kp.key, 1);
--		/* we emit the scancode so we can always remap the key */
--		input_event(kp.dev, EV_MSC, MSC_SCAN, event);
- 		input_sync(kp.dev);
- 
- 		/* schedule key release */
-@@ -466,7 +470,7 @@ static int sony_laptop_setup_input(struct acpi_device *acpi_device)
- 	jog_dev->name = "Sony Vaio Jogdial";
- 	jog_dev->id.bustype = BUS_ISA;
- 	jog_dev->id.vendor = PCI_VENDOR_ID_SONY;
--	key_dev->dev.parent = &acpi_device->dev;
-+	jog_dev->dev.parent = &acpi_device->dev;
- 
- 	input_set_capability(jog_dev, EV_KEY, BTN_MIDDLE);
- 	input_set_capability(jog_dev, EV_REL, REL_WHEEL);
-
-
---------------090809050906050102060600--
+greg k-h
