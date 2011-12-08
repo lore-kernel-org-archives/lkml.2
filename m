@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762Ab1LHMnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 07:43:37 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:43477 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751182Ab1LHMng (ORCPT
+	id S1751941Ab1LHMom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 07:44:42 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13640 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab1LHMok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 07:43:36 -0500
-X-Sasl-enc: N+Z6tj7zQshzbMjy17ivLFiGfDqTm9vpivn0vQvFjg74 1323348214
-Message-ID: <4EE0B156.4080708@ladisch.de>
-Date: Thu, 08 Dec 2011 13:45:10 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Thu, 8 Dec 2011 07:44:40 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 08 Dec 2011 04:44:15 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>, Gary King <gking@nvidia.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: [PATCH v6 00/10] Add support for tegra30 and cardhu
+Date: Thu, 8 Dec 2011 14:43:43 +0200
+Message-ID: <1323348254-29072-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>
-CC: "Huang, Shane" <Shane.Huang@amd.com>, Borislav Petkov <bp@amd64.org>,
-        "Nguyen, Dong" <Dong.Nguyen@amd.com>, linux-kernel@vger.kernel.org,
-        linux1394-devel@lists.sourceforge.net
-Subject: Re: Unhandled IRQs on AMD E-450
-References: <CAPRPZsCrGXKwYiOTzDde=5=8wMnMX0sxFvnustSSz4Z6BYJNzA@mail.gmail.com> <20111130154445.GA27198@gere.osrc.amd.com> <1E8B869C0C6913418421A406C094DF7C0205358F@sshaexmb1.amd.com> <CAPRPZsAL=xUCjTKaSgq117zppvZS0S7fHB0Ebk-JqXvV1vTPCQ@mail.gmail.com> <4EDB6C10.10102@ladisch.de> <CAPRPZsAc8wr_2KsRi3LnGi4ic-CzrFLbRvQfkrXckH--vaLkVQ@mail.gmail.com> <CAPRPZsBdnrProsTaSYnMKi6Q3dSsP9nYkw0CKnmb-BrmJxBivw@mail.gmail.com> <CAPRPZsBO_hvAv8o0vKh7XuE+RiEunETaxaPsmdm5yPe5YvOdPA@mail.gmail.com> <CAPRPZsDU2+ApCjQvEzRfOXfMLgfDS1j5zXF7hw4wy5yrzT-_7Q@mail.gmail.com> <4EDBA70E.3090905@ladisch.de> <CAPRPZsAqjWtbUH8FSh3O3C6iQ7+L11782fc1e=-UDSQkgm7FPg@mail.gmail.com> <CAPRPZsBzBNzrzbNDN2fBnWwQ-MYcRssfY5V+5mDXLbJ+-gd9SA@mail.gmail.com>
-In-Reply-To: <CAPRPZsBzBNzrzbNDN2fBnWwQ-MYcRssfY5V+5mDXLbJ+-gd9SA@mail.gmail.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeroen Van den Keybus wrote:
-> I have the impression that I see the same failure mechanism for both
-> IRQs. All goes well for a while, until an IRQ storm starts right
-> (e1000: 19 us, firewire-ohci: 39 us) after a valid IRQ.
->
-> Therefore there is a strong correlation between the arrival of the
-> spurious interrupt, alledgedly caused by a mystery device, and the
-> earlier arrival of a valid interrupt for a device. Combined with the
-> fact that it happens on 2 different IRQs pretty much rules out the
-> possibilty for me that there is either a mystery device at all, or
-> that the existing devices would both be defective, does it not ?
+This patchset adds support for the tegra30 SoC and the cardhu development
+board.
 
-There appears to be a problem with the interrupt handling.
+Patchset is on top of linux-next and
+http://www.spinics.net/lists/linux-tegra/msg03016.html.
 
-In PCI, interrupts are level-triggered, which means that the interrupt
-line (INTx) is active when it's at level 0 and inactive when it's at
-level 1.  When a device wants to trigger an interrupt, it outputs zero
-on its interrupt output.  The level doesn't get reset to 1 until the
-driver acknowledges the interrupt (in e1000, read of the ICR; in
-firewire-ohci, write of IntEventClear).  As long as the line stays at 0,
-all interrupt handlers will continue being called.  This mechanism
-allows multiple devices to share one interrupt line.
+Most important changes in v6:
 
-In PCI Express, there are only one-to-one connections, and there are no
-separate interrupt lines.  A device raises an interrupt by sending
-an interrupt message, which could be understood as a memory write to
-a special address at the interrupt controller.  Nothing needs to be done
-to deactive the interrupt; if the device has another reason for
-an interrupt, it just sends another interrupt message.
+* Align with latest version of the ARM restart implementation
+* Address comments on tegra_sdmmc_tap_delay()
+* Fix git bisection breakage for 'arm/tegra: implement support for tegra30'
 
-When a PCI device is connected to a PCI Express system, the old INTx
-interrupt line must be converted to PCI Express messages.  This is done
-with _two_ special messages, Assert_INTx and Deassert_INTx.  The first
-tells the interrupt controller that some INTx line went from 1 to 0, the
-second tells it that it went from 0 back to 1; this allows the interrupt
-controller to implement the level-triggered behaviour.
+Most important changes in v5:
 
-It appears that some Deassert_INTx messages get lost on your system.
-There are no indications of any other missing PCIe packets, so this
-looks like a problem with the interrupt handling in your PCI/PCIe
-bridge, the ASM1083 chip.
+* use devicetree binding for GIC
+* define a seperate machine for tegra30
+* add documentation for tegra devicetree compatible definitions
 
-> I also do not understand, if there would be a stuck IRQ line, why I
-> can unload and reload e1000 and firewire-ohci without immediately
-> getting the same IRQ storm.
+Most important changes in v4:
 
-Linux will reenable the interrupt line when a new driver attaches to it.
-At this point, it's still stuck, but the device initialization will
-trigger some actual interrupts, and after the first assert/deassert
-pair, the line will be unstuck.
+* cleanup clock code to work on multiple tegra variants
+* added dependencies to avoid building tegra20 only code for tegra30
 
+Most important changes in v3:
 
-Regards,
-Clemens
+* align with ARM restart rework. might need a bit of rework to merge with the
+  latest version of this.
+* minor cleanups and reformats
+
+Most important changes in v2:
+
+* account for arch_reset cleanup
+* seperate patch for renaming pinmux-t2.h and pinmux-t2-tables.c                                                                                               
+* fixed bug in common cache initialization
+* fixed compatibility with non DT boards (boottested on harmony)
+* improved commit messages
+
+Peter De Schrijver (10):
+  arm/tegra: initial device tree for tegra30
+  arm/tegra: cleanup tegra20 support
+  arm/tegra: prepare clock code for multiple tegra variants
+  arm/tegra: prepare early init for multiple tegra variants
+  arm/tegra: rename tegra20 pinmux files
+  arm/tegra: prepare pinmux code for multiple tegra variants
+  arm/tegra: add new fields to struct tegra_pingroup_desc
+  arm/tegra: pinmux tables and definitions for tegra30
+  arm/tegra: implement support for tegra30
+  arm/tegra: add support for tegra30 based board cardhu
+
+ Documentation/devicetree/bindings/arm/tegra.txt   |   14 +
+ arch/arm/boot/dts/tegra-cardhu.dts                |   36 ++
+ arch/arm/boot/dts/tegra30.dtsi                    |  127 +++++++
+ arch/arm/mach-tegra/Kconfig                       |   33 ++-
+ arch/arm/mach-tegra/Makefile                      |    6 +-
+ arch/arm/mach-tegra/Makefile.boot                 |    1 +
+ arch/arm/mach-tegra/board-dt.c                    |   28 ++-
+ arch/arm/mach-tegra/board-harmony-pcie.c          |    1 +
+ arch/arm/mach-tegra/board-harmony-pinmux.c        |    1 +
+ arch/arm/mach-tegra/board-harmony.c               |    2 +-
+ arch/arm/mach-tegra/board-paz00-pinmux.c          |    1 +
+ arch/arm/mach-tegra/board-paz00.c                 |    2 +-
+ arch/arm/mach-tegra/board-seaboard-pinmux.c       |    2 +-
+ arch/arm/mach-tegra/board-seaboard.c              |    6 +-
+ arch/arm/mach-tegra/board-trimslice-pinmux.c      |    1 +
+ arch/arm/mach-tegra/board-trimslice.c             |    2 +-
+ arch/arm/mach-tegra/board.h                       |    3 +-
+ arch/arm/mach-tegra/clock.c                       |   17 +-
+ arch/arm/mach-tegra/clock.h                       |    8 +-
+ arch/arm/mach-tegra/common.c                      |   40 ++-
+ arch/arm/mach-tegra/include/mach/irqs.h           |    2 -
+ arch/arm/mach-tegra/include/mach/pinmux-t2.h      |  184 ----------
+ arch/arm/mach-tegra/include/mach/pinmux-tegra20.h |  184 ++++++++++
+ arch/arm/mach-tegra/include/mach/pinmux-tegra30.h |  320 ++++++++++++++++++
+ arch/arm/mach-tegra/include/mach/pinmux.h         |   88 ++++-
+ arch/arm/mach-tegra/pinmux-t2-tables.c            |  228 -------------
+ arch/arm/mach-tegra/pinmux-tegra20-tables.c       |  244 +++++++++++++
+ arch/arm/mach-tegra/pinmux-tegra30-tables.c       |  376 +++++++++++++++++++++
+ arch/arm/mach-tegra/pinmux.c                      |  153 ++++++---
+ arch/arm/mach-tegra/tegra2_clocks.c               |   14 +-
+ arch/arm/mach-tegra/timer.c                       |   12 +-
+ 31 files changed, 1597 insertions(+), 539 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/tegra.txt
+ create mode 100644 arch/arm/boot/dts/tegra-cardhu.dts
+ create mode 100644 arch/arm/boot/dts/tegra30.dtsi
+ delete mode 100644 arch/arm/mach-tegra/include/mach/pinmux-t2.h
+ create mode 100644 arch/arm/mach-tegra/include/mach/pinmux-tegra20.h
+ create mode 100644 arch/arm/mach-tegra/include/mach/pinmux-tegra30.h
+ delete mode 100644 arch/arm/mach-tegra/pinmux-t2-tables.c
+ create mode 100644 arch/arm/mach-tegra/pinmux-tegra20-tables.c
+ create mode 100644 arch/arm/mach-tegra/pinmux-tegra30-tables.c
+
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
