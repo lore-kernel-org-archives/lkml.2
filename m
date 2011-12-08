@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394Ab1LHHBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 02:01:14 -0500
-Received: from mail.karo-electronics.de ([81.173.242.67]:62339 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab1LHHBK (ORCPT
+	id S1751405Ab1LHHCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:02:13 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57372 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab1LHHCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 02:01:10 -0500
-Message-ID: <20192.24749.652755.425707@ipc1.ka-ro>
-Date: Thu, 8 Dec 2011 08:01:01 +0100
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, shawn.guo@linaro.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v2 0/8][NET] fec.c: several cleanups and bugfixes
-In-Reply-To: <20111207.133800.1403774147364781100.davem@davemloft.net>
-References: <cover.1323256319.git.LW@KARO-electronics.de>
-	<20111207.133800.1403774147364781100.davem@davemloft.net>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	Thu, 8 Dec 2011 02:02:09 -0500
+Date: Thu, 8 Dec 2011 17:52:16 +1100
+From: David Gibson <dwg@au1.ibm.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: joerg.roedel@amd.com, dwmw2@infradead.org,
+        iommu@lists.linux-foundation.org, aik@au1.ibm.com,
+        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
+        scottwood@freescale.com, B08248@freescale.com,
+        benh@kernel.crashing.org
+Subject: Re: RFC: Device isolation infrastructure
+Message-ID: <20111208065216.GA9107@truffala.fritz.box>
+Mail-Followup-To: David Gibson <dwg@au1.ibm.com>,
+	Alex Williamson <alex.williamson@redhat.com>, joerg.roedel@amd.com,
+	dwmw2@infradead.org, iommu@lists.linux-foundation.org,
+	aik@au1.ibm.com, linux-kernel@vger.kernel.org, chrisw@redhat.com,
+	agraf@suse.de, scottwood@freescale.com, B08248@freescale.com,
+	benh@kernel.crashing.org
+References: <20111207035816.GC7631@truffala.fritz.box>
+ <1323240402.2182.241.camel@bling.home>
+ <20111207142201.GA5696@truffala.fritz.box>
+ <1323287120.15059.63.camel@bling.home>
+ <20111208024357.GB5344@truffala.fritz.box>
+ <1323325390.24340.81.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323325390.24340.81.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11120720-7014-0000-0000-0000003A9363
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-David Miller writes:
-> From: Lothar Waßmann <LW@KARO-electronics.de>
-> Date: Wed,  7 Dec 2011 14:37:12 +0100
+On Wed, Dec 07, 2011 at 11:23:10PM -0700, Alex Williamson wrote:
+> On Thu, 2011-12-08 at 13:43 +1100, David Gibson wrote:
+> > On Wed, Dec 07, 2011 at 12:45:20PM -0700, Alex Williamson wrote:
+> > > So the next problem is that while the group is the minimum granularity
+> > > for the iommu, it's not necessarily the desired granularity.  iommus
+> > > like VT-d have per PCI BDF context entries that can point to shared page
+> > > tables.  On such systems we also typically have singleton isolation
+> > > groups, so when multiple devices are used by a single user, we have a
+> > > lot of duplication in time and space.  VFIO handles this by allowing
+> > > groups to be "merged".  When this happens, the merged groups point to
+> > > the same iommu context.  I'm not sure what the plan is with isolation
+> > > groups, but we need some way to reduce that overhead.
+> > 
+> > Right.  So, again, I intend that mutiple groups can go into one
+> > domain.  Not entirely sure of the interface yet.  One I had in mind
+> > was to borrow the vfio1 interface, so you open a /dev/vfio (each open
+> > gives a new instance).  Then you do an "addgroup" ioctl which adds a
+> > group to the domain.  You can do that multiple times, then start using
+> > the domain.
 > 
-> > The following set of patches provides some cleanup and bugfixes for
-> > drivers/net/ethernet/freescale/fec.c and makes the driver buildable as
-> > a module.
-> 
-> 1) I said to use a subject prefix of "fec: " not "fec.c: "
-> 
-OK.
+> This also revisits one of the primary problems of vfio1, the dependency
+> on a privileged uiommu domain creation interface.  Assigning a user
+> ownership of a group should be a privileged operation.  If a privileged
+> user needs to open /dev/vfio, add groups, then drop privileges and hand
+> the open file descriptor to an unprivileged user, the interface becomes
+> much harder to use.  "Hot merging" becomes impossible.
 
-> 2) You did not integrate Shawn's "Acked-by: " tags, I'm not going to
->    go sifting through the previous patch postings to collect them up,
->    that's your job.
->
-I still got no Ack from Shawn for patches 3 and 5 and only Tested-by
-for patches 6 thru 8. Should I wait for Shawn's Ack for those patches
-too, or should I resent now?
+No, I was assuming that "permission to detach" could be handed out to
+a user before this step.  uid/gid/mode attributes in sysfs would
+suffice, though there might be better ways.
 
-
-Lothar Waßmann
 -- 
-___________________________________________________________
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
