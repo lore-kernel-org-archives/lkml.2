@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab1LHV5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 16:57:55 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:32820 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab1LHV5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 16:57:53 -0500
-Date: Fri, 9 Dec 2011 08:57:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Cc: Dani Keerikoolparn <danik@qca.qualcomm.com>,
-        "Hoefel, Guilherme" <hoefel@qualcomm.com>,
-        linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: linux-next base Linus tag
-Message-Id: <20111209085740.a23a0295a5ea15ab51169f3c@canb.auug.org.au>
-In-Reply-To: <CAB=NE6XDHL8mexe49TSoug3COh11RAvVY339Ntj0MJdw96wO1w@mail.gmail.com>
-References: <CAB=NE6XDHL8mexe49TSoug3COh11RAvVY339Ntj0MJdw96wO1w@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Dec_2011_08_57_40_+1100_eACj46DYQfRC5iDX"
+	id S1753169Ab1LHWAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 17:00:30 -0500
+Received: from ozlabs.org ([203.10.76.45]:44656 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075Ab1LHWA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 17:00:29 -0500
+Date: Fri, 9 Dec 2011 09:00:24 +1100
+From: Tony Breeds <tony@bakeyournoodle.com>
+To: Subrata Modak <subrata@linux.vnet.ibm.com>
+Cc: Linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Mark Wizner <markwiz@us.ibm.com>, Naveed <naveedaus@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Manas k Nayak <maknayak@in.ibm.com>, Pavaman <pavsubra@in.ibm.com>,
+        Vishu <svishuku@in.ibm.com>, "divya.vikas" <divya.vikas@in.ibm.com>
+Subject: Re: [linux-3.2-rc4 PPC64] Series of "Section Mismatch" warnings, are
+ they expected ?
+Message-ID: <20111208220023.GA20353@thor.bakeyournoodle.com>
+Mail-Followup-To: Subrata Modak <subrata@linux.vnet.ibm.com>,
+	Linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+	Mark Wizner <markwiz@us.ibm.com>, Naveed <naveedaus@in.ibm.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Manas k Nayak <maknayak@in.ibm.com>, Pavaman <pavsubra@in.ibm.com>,
+	Vishu <svishuku@in.ibm.com>, "divya.vikas" <divya.vikas@in.ibm.com>
+References: <1323371433.23534.8.camel@subratamodak.linux.ibm.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Disposition: inline
+In-Reply-To: <1323371433.23534.8.camel@subratamodak.linux.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Dec_2011_08_57_40_+1100_eACj46DYQfRC5iDX
-Content-Type: text/plain; charset=US-ASCII
+
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Luis,
+On Fri, Dec 09, 2011 at 12:40:32AM +0530, Subrata Modak wrote:
+> Hello,
+>=20
+> While compiling linux-3.2-rc4 on PPC64, i get the following set of
+> warning series. I wanted to know if they are expected, or, they need to
+> be fixed:
 
-On Thu, 8 Dec 2011 13:39:16 -0800 "Luis R. Rodriguez" <mcgrof@frijolero.org=
-> wrote:
->
-> If I know a linux-next tag, say next-20110928, how can I extract the
-> Linus tag you used to start that set of merges for linux-next for?
-> That is, I am assuming you base your daily linux-next merges on that
-> day's latest Linus's rc cycle (not just Linus's master tag of that
-> day). Is that right? If so how can I get that tag?
+If you have time they should be fixed.
 
-In each linux-next, there is a file called Next/SHA1s, and in there is a
-SHA1 for "origin" - that is the point in Linus' tree that I started for
-that day.  I just use the latest available version of Linus' tree each
-day.
+Yours Tony
 
-> For example for next-20110928 I see in Next/quilt-import.log:
-
-For the quilt series, the owner of the series puts a BASE or NEXT_BASE
-comment in the series to tell me what their series is based on.  I import
-each quilt series staring from that base into a branch and then merge
-that branch.
-
-For the git trees, I just fetch and merge them.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__9_Dec_2011_08_57_40_+1100_eACj46DYQfRC5iDX
+--IS0zKkzwUGydFO0o
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJO4TLUAAoJEECxmPOUX5FE7SkP/2Jw1AUIktFCBnO5HrCtbLAO
-cN9bBxGV9AoV+Jz2f/91SpFHM/VdmynK4kcRelMWBnELzsY5Fsphygu86lskfjci
-v7hqroncLhMgjxIqQNS+adt+dTN2Y/7DjYxBQHO533Hh4nY29cndoW4vMgZANyim
-lK1d86kI8VtHYiYrKqsr7DqUddjQx/inVnk+jUbTd6aAcbqs70Nq2THcjX0WSxKU
-ZKidiaHDwaU5Uk6KspPzl04pIPWXvJBQ0PogzHbKDFwduCVScaLqmv0vhGoZ9pzA
-PMO0dEuXWDd8YxEbNhQMuaNT2CpmG4+DP86nofYBbMlNlOYyM8uPtwPQhIeAgcQD
-fdjtrAnHEM+h9ZmcA47w5QrDSjcAtO4ujC6fJjzN9LC4vghEzbihPlbK+YLvck89
-eM1vdKMyJH8jMXZK/hqA4dtb5gB/49m+3RN0NBieTEkbQsHq1Snhd1AiDJJ91/nc
-NxoJ9anPUag60ywfP/ts3rlGa8LnEW6L2hKC9xSvkDAHe+zYIP70VQPw5RSacBJB
-uw3eCoro9Uxl+EMVNvkoeDQOVde9HmfTFR3DW7CNS2dvDQgNMPBC4wZe1cQ47mkI
-7jtWyaGmp37Q7b7vjlu7D1POXLcrhyZX+vRd0hnInojK3AVR3YSIGX2DgCABfQeE
-eLJ2FwZYYdouuKKmBwpC
-=5SR6
+iQIcBAEBCAAGBQJO4TN3AAoJEEsCiJRY75GKwsAQAL9paf+ksuBD0EZSDQ5hBSYE
+BGb6pPeMm+ayHXJuVuRIG8wA7FU350BNIq1AejCniIYtFDw1s60bFAYwYgG7xufb
+vBBpF/7uAUfEArRWdVSirA/9bYQ0GDnt5sdL+wcO9mZdOYC+OfHcmPas5wLkLRCs
+zUI7NF5fwc/bx9ua+VQ09nkGbbgCTs9TLcnw2+t9LRmLxj8k+aRjbYEd3+Ub+y0i
+Pka86Vunm3rPDwP2oA95HruxKBX96E55EnC7nWxqwdrraLnuw+YlZui//vcXygar
+y2H8/PvNCkbyzL7Aj4jLzsm25Lgg9NhyYr4r9qJb2qPk41RYukeoQWrMzwXv2tSg
+EB5gC9lEiaSxyZm8xHRhgqwU01o/yN/oCtxqHFsj3xgB4iMZNOI5WQmShcSkgN5Q
+P7DW4DA3AxWgQcCu+nY3fSvY9SMz/6v2xuQp5y+YtY7ZcADmCkTl7px33fJplMD9
+Xp+5dH/GOiwzzVWXEI7yq7NCTdmuAqJHnW4xG4hXb2qf1SJ4/3j51o8xLBWKMkAb
+bMAN/quGYT4QAKs+kcPGHewHM1iCNQT+BBSliyy1+6f/Py9NlEPgkzHty4t90fei
+O04a8nwzIm0g0gKeADJYwOAzalUvfcr2Y8K6J5Lv6JD+3kYmeEltolHnrEVrrGfB
+AaFmOGDnmtW5KFeF214W
+=E2cQ
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__9_Dec_2011_08_57_40_+1100_eACj46DYQfRC5iDX--
+--IS0zKkzwUGydFO0o--
