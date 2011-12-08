@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab1LHMxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 07:53:07 -0500
+	id S1752939Ab1LHMxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 07:53:16 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:36787 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab1LHMxE (ORCPT
+	with ESMTP id S1752867Ab1LHMxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 07:53:04 -0500
+	Thu, 8 Dec 2011 07:53:09 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 03/30] Staging: comedi: fix printk issue in daqboard2000.c
-Date: Thu,  8 Dec 2011 18:21:58 +0530
-Message-Id: <1323348745-31477-3-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 04/30] Staging: comedi: fix printk issue in daqboard2000.c
+Date: Thu,  8 Dec 2011 18:21:59 +0530
+Message-Id: <1323348745-31477-4-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -26,44 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This is a patch to the daqboard2000.c file that fixes up a
 printk warning found by the checkpatch.pl tool.
 
+Removed ifdef DEBUG_EEPROM.
 Converted printks to pr_<levels>.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/daqboard2000.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/comedi/drivers/daqboard2000.c |   17 ++++-------------
+ 1 files changed, 4 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/daqboard2000.c b/drivers/staging/comedi/drivers/daqboard2000.c
-index a16060e..265c650 100644
+index 265c650..7066d8f 100644
 --- a/drivers/staging/comedi/drivers/daqboard2000.c
 +++ b/drivers/staging/comedi/drivers/daqboard2000.c
-@@ -502,7 +502,7 @@ static int daqboard2000_ao_insn_write(struct comedi_device *dev,
+@@ -573,17 +573,12 @@ static int initialize_daqboard2000(struct comedi_device *dev,
+ 	/* Check to make sure the serial eeprom is present on the board */
+ 	secr = readl(devpriv->plx + 0x6c);
+ 	if (!(secr & DAQBOARD2000_EEPROM_PRESENT)) {
+-#ifdef DEBUG_EEPROM
+-		printk("no serial eeprom\n");
+-#endif
++		pr_debug("no serial eeprom\n");
+ 		return -EIO;
+ 	}
  
- static void daqboard2000_resetLocalBus(struct comedi_device *dev)
- {
--	printk("daqboard2000_resetLocalBus\n");
-+	pr_debug("daqboard2000_resetLocalBus\n");
- 	writel(DAQBOARD2000_SECRLocalBusHi, devpriv->plx + 0x6c);
- 	udelay(10000);
- 	writel(DAQBOARD2000_SECRLocalBusLo, devpriv->plx + 0x6c);
-@@ -511,7 +511,7 @@ static void daqboard2000_resetLocalBus(struct comedi_device *dev)
- 
- static void daqboard2000_reloadPLX(struct comedi_device *dev)
- {
--	printk("daqboard2000_reloadPLX\n");
-+	pr_debug("daqboard2000_reloadPLX\n");
- 	writel(DAQBOARD2000_SECRReloadLo, devpriv->plx + 0x6c);
- 	udelay(10000);
- 	writel(DAQBOARD2000_SECRReloadHi, devpriv->plx + 0x6c);
-@@ -522,7 +522,7 @@ static void daqboard2000_reloadPLX(struct comedi_device *dev)
- 
- static void daqboard2000_pulseProgPin(struct comedi_device *dev)
- {
--	printk("daqboard2000_pulseProgPin 1\n");
-+	pr_debug("daqboard2000_pulseProgPin 1\n");
- 	writel(DAQBOARD2000_SECRProgPinHi, devpriv->plx + 0x6c);
- 	udelay(10000);
- 	writel(DAQBOARD2000_SECRProgPinLo, devpriv->plx + 0x6c);
+ 	for (retry = 0; retry < 3; retry++) {
+-#ifdef DEBUG_EEPROM
+-		printk("Programming EEPROM try %x\n", retry);
+-#endif
+-
++		pr_debug("Programming EEPROM try %x\n", retry);
+ 		daqboard2000_resetLocalBus(dev);
+ 		daqboard2000_reloadPLX(dev);
+ 		daqboard2000_pulseProgPin(dev);
+@@ -591,9 +586,7 @@ static int initialize_daqboard2000(struct comedi_device *dev,
+ 			for (i = 0; i < len; i++) {
+ 				if (cpld_array[i] == 0xff
+ 				    && cpld_array[i + 1] == 0x20) {
+-#ifdef DEBUG_EEPROM
+-					printk("Preamble found at %d\n", i);
+-#endif
++					pr_debug("Preamble found at %d\n", i);
+ 					break;
+ 				}
+ 			}
+@@ -604,9 +597,7 @@ static int initialize_daqboard2000(struct comedi_device *dev,
+ 					break;
+ 			}
+ 			if (i >= len) {
+-#ifdef DEBUG_EEPROM
+-				printk("Programmed\n");
+-#endif
++				pr_debug("Programmed\n");
+ 				daqboard2000_resetLocalBus(dev);
+ 				daqboard2000_reloadPLX(dev);
+ 				result = 0;
 -- 
 1.7.0.4
 
