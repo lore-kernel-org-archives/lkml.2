@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab1LHIXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 03:23:13 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:57687 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055Ab1LHIXM (ORCPT
+	id S1752436Ab1LHIYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 03:24:53 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:27762 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab1LHIYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 03:23:12 -0500
-Message-ID: <4EE073BB.6080403@oracle.com>
-Date: Thu, 08 Dec 2011 00:22:19 -0800
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111101 SUSE/3.1.16 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Peter Jones <pjones@redhat.com>, Konrad Rzeszutek Wilk <konrad@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>,
+	Thu, 8 Dec 2011 03:24:51 -0500
+X-IronPort-AV: E=Sophos;i="4.71,319,1320624000"; 
+   d="scan'208";a="9355721"
+Subject: Re: [Xen-devel] [PATCH 3/4] xen: Add xenbusd device driver
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Bastian Blank <waldi@debian.org>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] ibft: Fix finding ibft with ACPI tables
-Content-Type: text/plain; charset=ISO-8859-1
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Date: Thu, 8 Dec 2011 08:24:46 +0000
+In-Reply-To: <1323292396-19523-4-git-send-email-waldi@debian.org>
+References: <1323292396-19523-1-git-send-email-waldi@debian.org>
+	 <1323292396-19523-4-git-send-email-waldi@debian.org>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090204.4EE073E7.0038,ss=1,re=0.000,fgs=0
+Message-ID: <1323332686.2969.49.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found one system with UEFI/iBFT is not detected.
+On Wed, 2011-12-07 at 21:13 +0000, Bastian Blank wrote:
+> Access for xenstored to the event channel and pre-allocated ring is
+> managed via xenfs.  This adds its own device driver featuring mmap for
+> the ring and an ioctl for the event channel.
+> 
+> Signed-off-by: Bastian Blank <waldi@debian.org>
+> ---
+>  drivers/xen/xenbus/Makefile             |    1 +
+>  drivers/xen/xenbus/xenbus_dev_backend.c |   79 +++++++++++++++++++++++++++++++
+>  include/xen/xenbus_dev.h                |   41 ++++++++++++++++
+>  3 files changed, 121 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/xen/xenbus/xenbus_dev_backend.c
+>  create mode 100644 include/xen/xenbus_dev.h
+> 
+> diff --git a/drivers/xen/xenbus/Makefile b/drivers/xen/xenbus/Makefile
+> index a2ea363..31e2e90 100644
+> --- a/drivers/xen/xenbus/Makefile
+> +++ b/drivers/xen/xenbus/Makefile
+> @@ -10,4 +10,5 @@ xenbus-objs += xenbus_probe.o
+>  xenbus-be-objs-$(CONFIG_XEN_BACKEND) += xenbus_probe_backend.o
+>  xenbus-objs += $(xenbus-be-objs-y)
+>  
+> +obj-$(CONFIG_XEN_BACKEND) += xenbus_dev_backend.o
 
-the root cause: for x86, We move calling of find_ibft_region() much earlier.
-in setup_arch() before ACPI is enabled.
+In principal this could be its own module which does not depend on any
+of the backend stuff but I think this is fine for now.
 
-Try to all find_ibft_region() second times in ibft_init()
+> [...]
 
-at that time ACPI iBFT already get permanent mapped with ioremap.
-So isa_virt_to_bus will get wrong phys from right virt address.
-We could just skip that printing.
-For legacy one, print the found address early.
+> +static int __init xenbusd_init(void)
+> +{
+> +	int err;
+> +
+> +	if (!xen_initial_domain())
+> +		return -ENODEV;
+> +
+> +	err = misc_register(&xenbusd_dev);
+> +	if (err)
+> +		printk(KERN_ERR "Could not register xenbus device\n");
 
-Signed-off-by: Yinghai Lu <yinghai.lu@kernel.org>
+"Could not register xenbus backend device" to distinguish from the f.e.
+failure message, you could also add "frontend" there I suppose. Other
+than that:
 
----
- drivers/firmware/iscsi_ibft.c      |   18 +++++++++++++++---
- drivers/firmware/iscsi_ibft_find.c |    1 +
- 2 files changed, 16 insertions(+), 3 deletions(-)
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 
-Index: linux-2.6/drivers/firmware/iscsi_ibft.c
-===================================================================
---- linux-2.6.orig/drivers/firmware/iscsi_ibft.c
-+++ linux-2.6/drivers/firmware/iscsi_ibft.c
-@@ -753,9 +753,21 @@ static int __init ibft_init(void)
- {
- 	int rc = 0;
- 
-+	/* find that from acpi tables */
-+	if (!ibft_addr) {
-+		unsigned long size = 0;
-+
-+		find_ibft_region(&size);
-+		barrier();
-+	}
-+
- 	if (ibft_addr) {
--		printk(KERN_INFO "iBFT detected at 0x%llx.\n",
--		       (u64)isa_virt_to_bus(ibft_addr));
-+		/*
-+		 * Second try is from acpi permanent map with ioremap
-+		 *  can not simply convert back to phys addr.
-+		 *  and We don't need to print that table phys addr.
-+		 */
-+		pr_info("iBFT detected.\n");
- 
- 		rc = ibft_check_device();
- 		if (rc)
-@@ -770,7 +782,7 @@ static int __init ibft_init(void)
- 		if (rc)
- 			goto out_free;
- 	} else
--		printk(KERN_INFO "No iBFT detected.\n");
-+		pr_info("No iBFT detected.\n");
- 
- 	return 0;
- 
-Index: linux-2.6/drivers/firmware/iscsi_ibft_find.c
-===================================================================
---- linux-2.6.orig/drivers/firmware/iscsi_ibft_find.c
-+++ linux-2.6/drivers/firmware/iscsi_ibft_find.c
-@@ -94,6 +94,7 @@ static int __init find_ibft_in_mem(void)
- 				 * the table cannot be valid. */
- 				if (pos + len <= (IBFT_END-1)) {
- 					ibft_addr = (struct acpi_table_ibft *)virt;
-+					pr_info("iBFT found at 0x%lx.\n", pos);
- 					goto done;
- 				}
- 			}
+
