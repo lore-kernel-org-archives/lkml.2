@@ -1,81 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab1LHWwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 17:52:40 -0500
-Received: from pip.mess.org ([212.110.186.137]:41951 "EHLO pip.mess.org"
+	id S1752066Ab1LHWxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 17:53:07 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49765 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab1LHWwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 17:52:37 -0500
-X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Dec 2011 17:52:37 EST
-Date: Thu, 8 Dec 2011 22:43:23 +0000
-From: Sean Young <sean@mess.org>
-To: simon@mungewell.org
-Cc: David Herrmann <dh.herrmann@googlemail.com>, linux-input@vger.kernel.org,
-        rdunlap@xenotime.net, linux-next@vger.kernel.org, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: wiimote: Select INPUT_FF_MEMLESS
-Message-ID: <20111208224323.GA29342@pip.mess.org>
-References: <4EDFD23D.4030703@xenotime.net>
- <1323290039-28073-1-git-send-email-dh.herrmann@googlemail.com>
- <b92a2d1d30910b75f3354926d9fa26f6.squirrel@host171.canaca.com>
- <CANq1E4T6uoezonoaBk6agD4-6A7QMSiP0ySDPg+5r50G8LYWTA@mail.gmail.com>
- <80063840e8a9778675e9a63db6f1d956.squirrel@host171.canaca.com>
+	id S1750715Ab1LHWxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 17:53:04 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] PM / Usermodehelper: Fix freezer failures due to racy usermodehelper_is_disabled()
+Date: Thu, 8 Dec 2011 23:56:00 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: gregkh@suse.de, dhowells@redhat.com, eparis@redhat.com,
+        kay.sievers@vrfy.org, jmorris@namei.org, tj@kernel.org, bp@amd64.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        namhyung@gmail.com
+References: <20111208173012.17763.39306.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20111208173012.17763.39306.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <80063840e8a9778675e9a63db6f1d956.squirrel@host171.canaca.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112082356.00747.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 11:23:26AM -0500, simon@mungewell.org wrote:
+On Thursday, December 08, 2011, Srivatsa S. Bhat wrote:
+> Commit a144c6a (PM: Print a warning if firmware is requested when tasks
+> are frozen) introduced usermodehelper_is_disabled() to warn and exit
+> immediately if firmware is requested when usermodehelpers are disabled.
 > 
-> >> I don't mean to be a complainer, but shouldn't the WiiMote module depend
-> >> on FF_MEMLESS rather than just forcing it on.
-> > > > I have considered that but "grep -r FF_MEMLESS" returned no other
-> > driver using "depend" so I decided to use "select", too.
+> However, it is racy. Consider the following scenario, currently used in
+> drivers/base/firmware_class.c:
 > 
-> If you look at 'Kconfig' every other driver is fragmented into a 'driver'
-> and 'driver_ff', it is only the 'driver_ff' bit which does the
-> force-feedback and all the 'drivers' would appear to work OK (as pure
-> input devices) with FF disabled.
-
-Which also requires these drivers to have #ifdef's in their code, they
-would be much cleaner without those.
-
-> Someone here will be able to comment whether that is policy, convention or
-> just historic....
+> ...
+> if (usermodehelper_is_disabled())
+>         goto out;
 > 
-> >> Some people might not want FF_MEMLESS enabled.
-> >
-> > Why? It is a really small feature that depends only on CONFIG_INPUT.
-> > Just 600 lines of code. I don't see why someone who wants to enable
-> > the way bigger wiimote driver and HID core would bother about
-> > FF_MEMLESS? Why should someone want to disable the rumble-feature of
-> > the wiimote?
+> /* Do actual work */
+> ...
 > 
-> 600 lines where? What's the other costs to the system when enabling the FF
-> code in the kernel.
-
-There is just ff-memless.c which will be compiled into a module (unless 
-not configured to so of of course), which is less than 600 lines including 
-comments. Nothing else changes.
-
-The fact that these drivers can be built without force feedback enabled 
-is an analomy. If every feature a piece of hardware provides were 
-configurable with #ifdef's, the code would not be very maintainable.
-
-> > I cannot see any real use-case here. Maybe you can explain a bit more.
+> out:
+>         return err;
 > 
-> Again I'm not here to kick up a fuss; it just looked different from the
-> norm, so I was flagging it.
+> Nothing prevents someone from disabling usermodehelpers just after the check
+> in the 'if' condition, which means that it is quite possible to try doing the
+> "actual work" with usermodehelpers disabled, leading to undesirable
+> consequences.
+> 
+> In particular, this race condition in _request_firmware() causes task freezing
+> failures whenever suspend/hibernation is in progress because, it wrongly waits
+> to get the firmware/microcode image from userspace when actually the
+> usermodehelpers are disabled or userspace has been frozen.
+> Some of the example scenarios that cause freezing failures due to this race
+> are those that depend on userspace via request_firmware(), such as x86
+> microcode module initialization and microcode image reload.
+> 
+> Previous discussions about this issue can be found at:
+> http://thread.gmane.org/gmane.linux.kernel/1198291/focus=1200591
+> 
+> This patch adds proper synchronization to fix this issue.
+> 
+> It is to be noted that this patchset fixes the freezing failures but doesn't
+> remove the warnings. IOW, it does not attempt to add explicit synchronization
+> to x86 microcode driver to avoid requesting microcode image at inopportune
+> moments. Because, the warnings were introduced to highlight such cases, in the
+> first place. And we need not silence the warnings, since we take care of the
+> *real* problem (freezing failure) and hence, after that, the warnings are
+> pretty harmless anyway.
+> 
+> v2: Used rwsemaphores to implement the synchronization, as Tejun suggested.
+> 
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-I guess once upon time people considered force feedback not useful enough
-to compile in.
+Applied to linux-pm/linux-next.
 
-I'm hoping that patches for removing the CONFIG_*_FF #ifdefs would be 
-accepted.
+Thanks,
+Rafael
 
 
-Sean
+> ---
+> 
+>  drivers/base/firmware_class.c |    4 ++++
+>  include/linux/kmod.h          |    2 ++
+>  kernel/kmod.c                 |   23 ++++++++++++++++++++++-
+>  3 files changed, 28 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index 06ed6b4..d5585da 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -534,6 +534,8 @@ static int _request_firmware(const struct firmware **firmware_p,
+>  		return 0;
+>  	}
+>  
+> +	read_lock_usermodehelper();
+> +
+>  	if (WARN_ON(usermodehelper_is_disabled())) {
+>  		dev_err(device, "firmware: %s will not be loaded\n", name);
+>  		retval = -EBUSY;
+> @@ -572,6 +574,8 @@ static int _request_firmware(const struct firmware **firmware_p,
+>  	fw_destroy_instance(fw_priv);
+>  
+>  out:
+> +	read_unlock_usermodehelper();
+> +
+>  	if (retval) {
+>  		release_firmware(firmware);
+>  		*firmware_p = NULL;
+> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
+> index b16f653..722f477 100644
+> --- a/include/linux/kmod.h
+> +++ b/include/linux/kmod.h
+> @@ -117,5 +117,7 @@ extern void usermodehelper_init(void);
+>  extern int usermodehelper_disable(void);
+>  extern void usermodehelper_enable(void);
+>  extern bool usermodehelper_is_disabled(void);
+> +extern void read_lock_usermodehelper(void);
+> +extern void read_unlock_usermodehelper(void);
+>  
+>  #endif /* __LINUX_KMOD_H__ */
+> diff --git a/kernel/kmod.c b/kernel/kmod.c
+> index 2142687..2b656fe 100644
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/resource.h>
+> +#include <linux/rwsem.h>
+>  #include <asm/uaccess.h>
+>  
+>  #include <trace/events/module.h>
+> @@ -48,6 +49,7 @@ static struct workqueue_struct *khelper_wq;
+>  static kernel_cap_t usermodehelper_bset = CAP_FULL_SET;
+>  static kernel_cap_t usermodehelper_inheritable = CAP_FULL_SET;
+>  static DEFINE_SPINLOCK(umh_sysctl_lock);
+> +static DECLARE_RWSEM(umhelper_sem);
+>  
+>  #ifdef CONFIG_MODULES
+>  
+> @@ -273,6 +275,7 @@ static void __call_usermodehelper(struct work_struct *work)
+>   * If set, call_usermodehelper_exec() will exit immediately returning -EBUSY
+>   * (used for preventing user land processes from being created after the user
+>   * land has been frozen during a system-wide hibernation or suspend operation).
+> + * Should always be manipulated under umhelper_sem acquired for write.
+>   */
+>  static int usermodehelper_disabled = 1;
+>  
+> @@ -291,6 +294,18 @@ static DECLARE_WAIT_QUEUE_HEAD(running_helpers_waitq);
+>   */
+>  #define RUNNING_HELPERS_TIMEOUT	(5 * HZ)
+>  
+> +void read_lock_usermodehelper(void)
+> +{
+> +	down_read(&umhelper_sem);
+> +}
+> +EXPORT_SYMBOL_GPL(read_lock_usermodehelper);
+> +
+> +void read_unlock_usermodehelper(void)
+> +{
+> +	up_read(&umhelper_sem);
+> +}
+> +EXPORT_SYMBOL_GPL(read_unlock_usermodehelper);
+> +
+>  /**
+>   * usermodehelper_disable - prevent new helpers from being started
+>   */
+> @@ -298,8 +313,10 @@ int usermodehelper_disable(void)
+>  {
+>  	long retval;
+>  
+> +	down_write(&umhelper_sem);
+>  	usermodehelper_disabled = 1;
+> -	smp_mb();
+> +	up_write(&umhelper_sem);
+> +
+>  	/*
+>  	 * From now on call_usermodehelper_exec() won't start any new
+>  	 * helpers, so it is sufficient if running_helpers turns out to
+> @@ -312,7 +329,9 @@ int usermodehelper_disable(void)
+>  	if (retval)
+>  		return 0;
+>  
+> +	down_write(&umhelper_sem);
+>  	usermodehelper_disabled = 0;
+> +	up_write(&umhelper_sem);
+>  	return -EAGAIN;
+>  }
+>  
+> @@ -321,7 +340,9 @@ int usermodehelper_disable(void)
+>   */
+>  void usermodehelper_enable(void)
+>  {
+> +	down_write(&umhelper_sem);
+>  	usermodehelper_disabled = 0;
+> +	up_write(&umhelper_sem);
+>  }
+>  
+>  /**
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+
