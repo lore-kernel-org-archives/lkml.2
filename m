@@ -1,115 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab1LHKEv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 05:04:51 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:48908 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab1LHKEt convert rfc822-to-8bit (ORCPT
+	id S1753205Ab1LHKFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 05:05:49 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64886 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab1LHKFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 05:04:49 -0500
-X-IronPort-AV: E=Sophos;i="4.71,319,1320624000"; 
-   d="scan'208";a="9358303"
-From: Paul Durrant <Paul.Durrant@citrix.com>
-To: ANNIE LI <annie.li@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-Date: Thu, 8 Dec 2011 10:04:57 +0000
-Subject: RE: [PATCH V2 1/2] xen/granttable: Support sub-page grants
-Thread-Topic: [PATCH V2 1/2] xen/granttable: Support sub-page grants
-Thread-Index: Acy1kHCd7Z+Z9eCOTU6spp2HTbgTwwAAD44Q
-Message-ID: <291EDFCB1E9E224A99088639C4762022B5988E552D@LONPMAILBOX01.citrite.net>
-References: <1323336940-5382-1-git-send-email-annie.li@oracle.com>
- <1323337048-5426-1-git-send-email-annie.li@oracle.com>
- <291EDFCB1E9E224A99088639C4762022B5988E5528@LONPMAILBOX01.citrite.net>
- <4EE08B0D.80504@oracle.com>
-In-Reply-To: <4EE08B0D.80504@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 8 Dec 2011 05:05:47 -0500
 MIME-Version: 1.0
+In-Reply-To: <20111208100204.GA31434@oksana.dev.rtsoft.ru>
+References: <CACo8zOd45i3EnCVMyJoDPP4bx2AnD9mEjDiC=bJKvmX=TWfXGg@mail.gmail.com>
+	<4ED90E6D.8090402@goop.org>
+	<CACo8zOcvKwr0wDkytvJfqyx4kV0ceYyCt+qnDqiSgxNywpzeHg@mail.gmail.com>
+	<4ED9BDF8.3010600@goop.org>
+	<CAD2FfiE-rg-1bMmVpYzBhnQcBMKKKO4WPnu0bvx+pvdFnpARrQ@mail.gmail.com>
+	<4EDE4C7A.1010802@goop.org>
+	<CAD2FfiHWuEmVTa54YqfJDk5zHpSQuM_nwPT=mR6NoWpajpydpg@mail.gmail.com>
+	<4EDFA192.7000602@goop.org>
+	<CAD2FfiF+fVoLPWpPyGGKdnoGhx1f=Loh2Ju-vdU58Y=2kf6C3g@mail.gmail.com>
+	<4EE015D1.5070005@goop.org>
+	<20111208100204.GA31434@oksana.dev.rtsoft.ru>
+Date: Thu, 8 Dec 2011 10:05:46 +0000
+Message-ID: <CAD2FfiF5iPDhqQmvvS82xkuCh_HSeFJtPMBQdRuCCfz-9F6AFg@mail.gmail.com>
+Subject: Re: [GIT PULL] power_supply: add power supply scope
+From: Richard Hughes <hughsient@gmail.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, vojtech@ucw.cz,
+        Przemo Firszt <przemo@firszt.eu>, Richard Hughes <richard@hughsie.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: ANNIE LI [mailto:annie.li@oracle.com]
-> Sent: 08 December 2011 10:02
-> To: Paul Durrant
-> Cc: xen-devel@lists.xensource.com; linux-kernel@vger.kernel.org;
-> konrad.wilk@oracle.com; jeremy@goop.org; Ian Campbell;
-> kurt.hackel@oracle.com
-> Subject: Re: [PATCH V2 1/2] xen/granttable: Support sub-page grants
-> 
-> 
-> >> +
-> >> +int gnttab_grant_foreign_access_subpage(domid_t domid, unsigned
-> >> long frame,
-> >> +					int flags, unsigned page_off,
-> >> +					unsigned length)
-> >> +{
-> >> +	int ref;
-> >> +
-> >> +	if (flags&  (GTF_accept_transfer | GTF_reading |
-> >> +		     GTF_writing | GTF_transitive))
-> >> +		return -EPERM;
-> >> +
-> >> +	if (gnttab_interface->update_subpage_entry == NULL)
-> >> +		return -ENOSYS;
-> >> +
-> >> +	ref = get_free_entries(1);
-> >> +	if (unlikely(ref<  0))
-> >> +		return -ENOSPC;
-> >> +
-> >> +	gnttab_interface->update_subpage_entry(ref, domid, frame,
-> >> flags,
-> >> +					       page_off, length);
-> >> +
-> >> +	return ref;
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_subpage);
-> > There's quite a lot of duplicated code here. What about something
-> along the lines of:
-> >
-> > #define get_free_entry()	get_free_entries(1)
-> >
-> > int gnttab_grant_foreign_access_subpage(domid_t domid, unsigned
-> long frame,
-> > 					int flags, unsigned page_off,
-> > 					unsigned length)
-> > {
-> > 	int ref;
-> >
-> > 	ref = get_free_entry();
-> > 	if (unlikely(ref<  0))
-> > 		return -ENOSPC;
-> >
-> > 	rc = gnttab_grant_foreign_access_subpage_ref(ref, domid,
-> frame, flags, page_off, length);
-> > 	if (rc<  0)
-> > 		put_free_entry(ref);
-> >
-> > 	return (rc<  0) rc : ref;
-> > }
-> > EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access_subpage);
-> >
-> > I think this is more akin to the format for existing non-ref
-> variants.
-> >
-> I hesitated between those two implement ways before sending them
-> out.
-> Those two ways all have shortcoming, one has duplicated code, but is
-> simple when condition does not meet. The other way you pointed out
-> added more put_free_entry process when _ref function fails.
-> 
+On 8 December 2011 10:02, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> I see one problem with this approach. Userland will need patching
+> to distinguish system and device power supplies. So, even with
+> the patch applied, old userland will behave incorrectly.
 
-I say let's be optimistic :-) Yes, there's more overhead in the failure case, but that's not what we should be optimising for.
+Userland will need patching anyway, as old versions of upower assumed
+anything showing up in /sys/class/power_supply was powering the
+system.
 
-  Paul
+Richard.
