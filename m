@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415Ab1LHOmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 09:42:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:10272 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804Ab1LHOmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 09:42:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="84314069"
-Date: Thu, 8 Dec 2011 16:42:21 +0200
-From: Heikki Krogerus <krohei@gmail.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: linux-kernel@vger.kernel.org, Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH 1/2] isp1704_charger: fix missing check
-Message-ID: <20111208144221.GB25415@xps8300>
-References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
- <1323105820-25946-2-git-send-email-felipe.contreras@nokia.com>
-MIME-Version: 1.0
+	id S1753696Ab1LHOpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 09:45:20 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:52749 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab1LHOpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 09:45:17 -0500
+Date: Thu, 8 Dec 2011 15:45:16 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        kay.sievers@vrfy.org, trenn@suse.de, Andi Kleen <ak@linux.intel.com>,
+        davej@redhat.com, axboe@kernel.dk, hpa@zytor.com,
+        herbert@gondor.hengli.com.au, ying.huang@intel.com, lenb@kernel.org
+Subject: Re: [PATCH 01/10] Add driver auto probing for x86 features
+Message-ID: <20111208144516.GE24062@one.firstfloor.org>
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org> <1323304882-27953-2-git-send-email-andi@firstfloor.org> <20111208103540.4778b896@endymion.delvare>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323105820-25946-2-git-send-email-felipe.contreras@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111208103540.4778b896@endymion.delvare>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 05, 2011 at 07:23:39PM +0200, Felipe Contreras wrote:
-> From: Felipe Contreras <felipe.contreras@gmail.com>
+On Thu, Dec 08, 2011 at 10:35:40AM +0100, Jean Delvare wrote:
+> > +/**
+> > + * x86_match_cpu - match current CPU again an array of x86_cpu_ids
 > 
-> A segfault happens if there's no board information.
+> The code is actually matching the boot cpu, which isn't necessarily the
+> current CPU. I think it would be better to let the caller pass a
+> specific cpu as a parameter. At least the hwmon drivers would benefit
+> from that. Then you can add an helper function x86_match_boot_cpu()
+> calling x86_match_cpu() on &boot_cpu_data if you want.
+
+I don't really see a point of this currently -- the udev/modprobe loading is 
+global anyways.  If we really want to support asymmetric configs a lot 
+more work all over the kernel is needed and this could be still
+changed.
 > 
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> > + * @match: Pointer to array of x86_cpu_ids. Last entry terminated with
+> > + *         X86_MODEL_END.
+> 
+> I see no such X86_MODEL_END, your loop below is instead treating entries
+> with all fields set to 0 as the terminating entry (which seems
+> reasonable.)
 
-Acked-by: Heikki Krogerus <krohei@gmail.com>
+Hmm yes I ended up with {}. I'll fix the comment.
 
+> > +#define X86_VENDOR_ANY 0xffff
+> > +#define X86_FAMILY_ANY 0
+> > +#define X86_MODEL_ANY  0
+> 
+> Are you sure family 0 or model 0 are never used, by any vendor? I
+
+They could be, but we never match for them.
+
+> wouldn't take the risk. What's wrong with 0xffff?
+
+That would not allow abbreviating the entries: the C compiler
+doesn't know how to fill in 0xffff automatically.
+
+> 
+> > +#define X86_FEATURE_ANY 0	/* Same as FPU, you can't test for that */
+> 
+> Might be better to set X86_FEATURE_ANY to either 10 (unused feature
+> bit) or 0xffff then.
+
+I don't think this is a problem in practice.
+
+Thanks for the review.
+
+-Andi
 -- 
-heikki
+ak@linux.intel.com -- Speaking for myself only.
