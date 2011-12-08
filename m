@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab1LHNaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 08:30:12 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:46405 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab1LHNaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 08:30:08 -0500
-Date: Thu, 8 Dec 2011 14:29:46 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/30] Staging: comedi: fix printk issue in pcmuio.c
-Message-ID: <20111208132946.GC6385@local>
-References: <1323348745-31477-1-git-send-email-ravishankar.km@greenturtles.in>
- <1323348745-31477-9-git-send-email-ravishankar.km@greenturtles.in>
+	id S1752961Ab1LHNaT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 08:30:19 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64246 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab1LHNaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 08:30:15 -0500
+Message-ID: <4EE0BBE3.60508@gmail.com>
+Date: Thu, 08 Dec 2011 07:30:11 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323348745-31477-9-git-send-email-ravishankar.km@greenturtles.in>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        Dave Martin <dave.martin@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2] irqdomain: protect macro variable in domain iterators
+References: <1322833997-32083-1-git-send-email-nicolas.ferre@atmel.com> <1322832609-24956-1-git-send-email-nicolas.ferre@atmel.com> <20111202134458.GD2892@localhost.localdomain> <4EE08569.3070009@atmel.com>
+In-Reply-To: <4EE08569.3070009@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 06:22:04PM +0530, Ravishankar karkala Mallikarjunayya wrote:
-> This is a patch to the pcmuio.c file that fixes up a
-> printk warning found by the checkpatch.pl tool.
+On 12/08/2011 03:37 AM, Nicolas Ferre wrote:
+> On 12/02/2011 02:44 PM, Dave Martin :
+>> On Fri, Dec 02, 2011 at 02:30:09PM +0100, Nicolas Ferre wrote:
+>>> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
+>>
+>> Looks OK to me:
+>>
+>> Acked-by: Dave Martin<dave.martin@linaro.org>
 > 
-> Added KERN_facility levels for printks.
-
-You shouldn't use printk, use the dev_* macros, e.g. dev_warn, dev_err...
-
-Thanks,
-Hans
-
+> Rob,
 > 
-> Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
-> ---
->  drivers/staging/comedi/drivers/pcmuio.c |   23 +++++++++++------------
->  1 files changed, 11 insertions(+), 12 deletions(-)
+> Do you want a different implementation for this. I think it is the
+> simplest way to write this macro...
+> 
+> If it is ok for you, it will be interesting to include this patch
+> quickly so that I will be able to queue my own patches on top of it.
+> (Cc: stable can be a good idea also).
+> 
+
+Yes, it's fine. The irqdomain patches need to be taken by tglx or acked
+by him. I don't think this is needed for stable. The existing users are
+fine and new ones aren't going to be added to stable kernels.
+
+Rob
+
