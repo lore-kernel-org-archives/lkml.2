@@ -1,53 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab1LHNaT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 08:30:19 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64246 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab1LHNaP (ORCPT
+	id S1753452Ab1LHNaY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 08:30:24 -0500
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:38212 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751769Ab1LHNaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 08:30:15 -0500
-Message-ID: <4EE0BBE3.60508@gmail.com>
-Date: Thu, 08 Dec 2011 07:30:11 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Thu, 8 Dec 2011 08:30:17 -0500
+From: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
+To: Yinghai Lu <yinghai@kernel.org>,
+        "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "linux-scsi-owner@vger.kernel.org" <linux-scsi-owner@vger.kernel.org>,
+        James Bottomley <jejb@kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 8 Dec 2011 19:00:11 +0530
+Subject: RE: mpt2sas regression: can not add disk...
+Thread-Topic: mpt2sas regression: can not add disk...
+Thread-Index: Acy0dVs+ZzbDMw4QTrmbrzdLiZvPfwAk79VgACj7T+A=
+Message-ID: <B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3@inbmail01.lsi.com>
+References: <7863850E8C98C748980632D9D3B7C19911968B8AE5@inbmail02.lsi.com>
+	<A6888A6805518E4EA4AF7072A28264A604726F2824@inbmail02.lsi.com>
+	<CAE9FiQWY-jhtbCmdfBY1zg_d0nreTHbkVe3CmaPQMgojDAtLaw@mail.gmail.com>
+ <CAE9FiQXbu-O2exdhjziWCdiWWGNb8q7_RoECeKC5K80DEOobbw@mail.gmail.com>
+ <B2FD678A64EAAD45B089B123FDFC3ED70D912FF83D@inbmail01.lsi.com>
+In-Reply-To: <B2FD678A64EAAD45B089B123FDFC3ED70D912FF83D@inbmail01.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3inbmail01lsic_"
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        Dave Martin <dave.martin@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2] irqdomain: protect macro variable in domain iterators
-References: <1322833997-32083-1-git-send-email-nicolas.ferre@atmel.com> <1322832609-24956-1-git-send-email-nicolas.ferre@atmel.com> <20111202134458.GD2892@localhost.localdomain> <4EE08569.3070009@atmel.com>
-In-Reply-To: <4EE08569.3070009@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2011 03:37 AM, Nicolas Ferre wrote:
-> On 12/02/2011 02:44 PM, Dave Martin :
->> On Fri, Dec 02, 2011 at 02:30:09PM +0100, Nicolas Ferre wrote:
->>> Signed-off-by: Nicolas Ferre<nicolas.ferre@atmel.com>
->>
->> Looks OK to me:
->>
->> Acked-by: Dave Martin<dave.martin@linaro.org>
-> 
-> Rob,
-> 
-> Do you want a different implementation for this. I think it is the
-> simplest way to write this macro...
-> 
-> If it is ok for you, it will be interesting to include this patch
-> quickly so that I will be able to queue my own patches on top of it.
-> (Cc: stable can be a good idea also).
-> 
+--_002_B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3inbmail01lsic_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Yes, it's fine. The irqdomain patches need to be taken by tglx or acked
-by him. I don't think this is needed for stable. The existing users are
-fine and new ones aren't going to be added to stable kernels.
+Yinghai,
 
-Rob
+Please try attached patch. This must be on top of latest upstream code.=20
+When we have introduced fast load, scan of devices are happening from threa=
+d context.
 
+But currently we have not removed " _scsih_probe_devices(ioc);" call from a=
+ctual probe and it is getting called from multiple places.
+As a result, we end-up into this issue.
+
+Please try the attached patch and provide your feedback. Based upon your re=
+sult, we will post this patch to upstream.
+
+Thanks, Kashyap
+
+> -----Original Message-----
+> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> owner@vger.kernel.org] On Behalf Of Desai, Kashyap
+> Sent: Wednesday, December 07, 2011 11:25 PM
+> To: Yinghai Lu; Nandigama, Nagalakshmi; James Bottomley; Rafael J.
+> Wysocki
+> Cc: linux-scsi-owner@vger.kernel.org; James Bottomley; linux-
+> scsi@vger.kernel.org; Linux Kernel Mailing List
+> Subject: RE: mpt2sas regression: can not add disk...
+>=20
+> Yinghai,
+>=20
+> I am trying to reproduce this issue locally and get back to you with my
+> findings.
+>=20
+>=20
+> Thanks, Kashyap
+>=20
+> > -----Original Message-----
+> > From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
+> > owner@vger.kernel.org] On Behalf Of Yinghai Lu
+> > Sent: Wednesday, December 07, 2011 5:45 AM
+> > To: Nandigama, Nagalakshmi; James Bottomley; Rafael J. Wysocki
+> > Cc: linux-scsi-owner@vger.kernel.org; James Bottomley; linux-
+> > scsi@vger.kernel.org; Linux Kernel Mailing List
+> > Subject: Re: mpt2sas regression: can not add disk...
+> >
+> > On Mon, Nov 28, 2011 at 12:00 PM, Yinghai Lu <yinghai@kernel.org>
+> wrote:
+> > > On Sun, Nov 27, 2011 at 10:09 PM, Nandigama, Nagalakshmi
+> > > <Nagalakshmi.Nandigama@lsi.com> wrote:
+> > >> Yinghai Lu,
+> > >>
+> > >> Please set the driver logging level to 0x421F8 (echo 0x421F8 >
+> > >> /sys/module/mpt2sas/parameters/logging_level) and the scsi logging
+> > >> level to 0x180000F1 (echo 0x180000F1 >
+> > >> /proc/sys/dev/scsi/logging_level) and recreate the issue and
+> provide
+> > >> the var/log/message
+> > >>
+> > >
+> > > please check two print out...
+> >
+> > James,
+> >
+> > one week passed, did not hear anything from the original author.
+> >
+> > Can you  revert offending commit ?
+> >
+> > it is 921cd8024b908f8f49f772c8d3a02381b4db2ed2
+> > and several related commits after that.
+> >
+> > please check attached reverting patch that i used locally.
+> >
+> > Thanks
+> >
+> > Yinghai
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--_002_B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3inbmail01lsic_
+Content-Type: application/octet-stream; name="fast_load_probe_devices.patch"
+Content-Description: fast_load_probe_devices.patch
+Content-Disposition: attachment; filename="fast_load_probe_devices.patch";
+	size=392; creation-date="Thu, 08 Dec 2011 18:56:58 GMT";
+	modification-date="Fri, 09 Dec 2011 03:01:12 GMT"
+Content-Transfer-Encoding: base64
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvc2NzaS9tcHQyc2FzL21wdDJzYXNfc2NzaWguYyBiL2RyaXZl
+cnMvc2NzaS9tcHQyc2FzL21wdDJzYXNfc2NzaWguYwppbmRleCA0ZTA0MWY2Li43NDM2NmNiIDEw
+MDY0NAotLS0gYS9kcml2ZXJzL3Njc2kvbXB0MnNhcy9tcHQyc2FzX3Njc2loLmMKKysrIGIvZHJp
+dmVycy9zY3NpL21wdDJzYXMvbXB0MnNhc19zY3NpaC5jCkBAIC04MDE1LDcgKzgwMTUsNiBAQCBf
+c2NzaWhfcHJvYmUoc3RydWN0IHBjaV9kZXYgKnBkZXYsIGNvbnN0IHN0cnVjdCBwY2lfZGV2aWNl
+X2lkICppZCkKIAl9IGVsc2UKIAkJaW9jLT5oaWRlX2RyaXZlcyA9IDA7CiAKLQlfc2NzaWhfcHJv
+YmVfZGV2aWNlcyhpb2MpOwogCXJldHVybiAwOwogCiAgb3V0X2F0dGFjaF9mYWlsOgo=
+
+--_002_B2FD678A64EAAD45B089B123FDFC3ED70D912FF8E3inbmail01lsic_--
