@@ -1,36 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1LHPCm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 10:02:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61482 "EHLO mx1.redhat.com"
+	id S1752534Ab1LHPKh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 10:10:37 -0500
+Received: from mga03.intel.com ([143.182.124.21]:46388 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab1LHPCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 10:02:39 -0500
-Message-ID: <4EE0D146.4050506@redhat.com>
-Date: Thu, 08 Dec 2011 10:01:26 -0500
-From: Peter Jones <pjones@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1751236Ab1LHPKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 10:10:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="83639388"
+Date: Thu, 8 Dec 2011 07:10:34 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org, trenn@suse.de,
+        davej@redhat.com
+Subject: Re: [PATCH-WIP] convert CPU sysdev class to a real subsytem
+ (needed for CPU modaliases)
+Message-ID: <20111208151034.GA28146@alboin.amr.corp.intel.com>
+References: <1323309517.979.8.camel@mop>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: Yinghai Lu <yinghai.lu@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ibft: Fix finding ibft with ACPI tables
-References: <4EE073BB.6080403@oracle.com> <20111208142958.GA4096@andromeda.dapyr.net>
-In-Reply-To: <20111208142958.GA4096@andromeda.dapyr.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323309517.979.8.camel@mop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2011 09:29 AM, Konrad Rzeszutek Wilk wrote:
+On Thu, Dec 08, 2011 at 02:58:37AM +0100, Kay Sievers wrote:
+> This patch is work-in-progress and just posted to coordinate with Andi
+> Kleen's current export of CPU modaliases. It boots my x86_64 workstation
+> fine, nothing else is tested.
 
-> Peter, do you know if Anaconda scans the dmesg for the 'iBFT'? I presume
-> not (since the SysFS exists).
+Once this is in I can move the cpu modaliases from cpuid into the normal cpu
+devices.  Right now either way works.
 
-It does not.
+Getting rid of sysdevs is definitely good.
 
--- 
-         Peter
+... Haven't read it all, but the parts I read look good.
+
+-Andi
