@@ -1,105 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab1LHB4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 20:56:06 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44773 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab1LHB4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 20:56:03 -0500
-Date: Thu, 8 Dec 2011 09:55:41 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [BUG -tip/sched] INFO: suspicious RCU usage
-Message-ID: <20111208015541.GA24481@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111207073942.GA12029@zhy>
- <1323264485.32012.106.camel@twins>
- <1323264728.32012.107.camel@twins>
+	id S1757409Ab1LHB6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 20:58:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54106 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754350Ab1LHB6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 20:58:09 -0500
+Message-ID: <4EE01991.4030208@zytor.com>
+Date: Wed, 07 Dec 2011 17:57:37 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1323264728.32012.107.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, trenn@suse.de,
+        Andi Kleen <ak@linux.intel.com>, davej@redhat.com, axboe@kernel.dk,
+        herbert@gondor.hengli.com.au, ying.huang@intel.com, lenb@kernel.org
+Subject: Re: [PATCH 01/10] Add driver auto probing for x86 features
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org> <1323304882-27953-2-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1323304882-27953-2-git-send-email-andi@firstfloor.org>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 02:32:08PM +0100, Peter Zijlstra wrote:
-> I made that
-> 
-> ---
-> Subject: sched, nohz: Fix missing RCU read lock
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Wed Dec 07 14:28:44 CET 2011
-> 
-> Yong Zhang reported:
-> 
-> > [ INFO: suspicious RCU usage. ]
-> > kernel/sched/fair.c:5091 suspicious rcu_dereference_check() usage!
-> 
-> This is due to the sched_domain stuff being RCU protected and commit
-> 0b005cf5 ("sched, nohz: Implement sched group, domain
-> aware nohz idle load balancing") overlooking this fact.
-> 
-> The sd variable only lives inside the for_each_domain() block, so we
-> only need to wrap that.
-> 
-
-Works for me.
-Tested-by: Yong Zhang <yong.zhang0@gmail.com>
-
-Thanks,
-Yong
-
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> Reported-by: Yong Zhang <yong.zhang0@gmail.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/n/tip-gt616u9aetdzgb1oc4m6uydr@git.kernel.org
-> ---
-> Index: linux-2.6/kernel/sched/fair.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/sched/fair.c
-> +++ linux-2.6/kernel/sched/fair.c
-> @@ -5088,23 +5088,28 @@ static inline int nohz_kick_needed(struc
->  	if (rq->nr_running >= 2)
->  		goto need_kick;
+On 12/07/2011 04:41 PM, Andi Kleen wrote:
 >  
-> +	rcu_read_lock();
->  	for_each_domain(cpu, sd) {
->  		struct sched_group *sg = sd->groups;
->  		struct sched_group_power *sgp = sg->sgp;
->  		int nr_busy = atomic_read(&sgp->nr_busy_cpus);
->  
->  		if (sd->flags & SD_SHARE_PKG_RESOURCES && nr_busy > 1)
-> -			goto need_kick;
-> +			goto need_kick_unlock;
->  
->  		if (sd->flags & SD_ASYM_PACKING && nr_busy != sg->group_weight
->  		    && (cpumask_first_and(nohz.idle_cpus_mask,
->  					  sched_domain_span(sd)) < cpu))
-> -			goto need_kick;
-> +			goto need_kick_unlock;
->  
->  		if (!(sd->flags & (SD_SHARE_PKG_RESOURCES | SD_ASYM_PACKING)))
->  			break;
->  	}
-> +	rcu_read_unlock();
->  	return 0;
-> +
-> +need_kick_unlock:
-> +	rcu_read_unlock();
->  need_kick:
->  	return 1;
->  }
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +/* LOOKS like x86cpu:vendor:VVVV:family:FFFF:model:MMMM:feature:*,FEAT,*
+> + * All fields are numbers. It would be nicer to use strings for vendor
+> + * and feature, but getting those out of the build system here is too
+> + * complicated.
+> + */
 
--- 
-Only stand for myself
+Hmm... how hard can that be, really?  Let me look at it a bit...
+
+	-hpa
+
