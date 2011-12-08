@@ -1,90 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1LHOJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 09:09:11 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:43614 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab1LHOJJ (ORCPT
+	id S1753514Ab1LHONg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 09:13:36 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41338 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab1LHONb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 09:09:09 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Tony Luck <tony.luck@intel.com>, X86-ML <x86@kernel.org>,
-        EDAC devel <linux-edac@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 2/2] x86, MCE: Drain mcelog buffer
-Date: Thu,  8 Dec 2011 15:08:52 +0100
-Message-Id: <1323353332-5671-3-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.8.rc0
-In-Reply-To: <1323353332-5671-1-git-send-email-bp@amd64.org>
-References: <1323353332-5671-1-git-send-email-bp@amd64.org>
+	Thu, 8 Dec 2011 09:13:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111207193141.GG31337@atomide.com>
+References: <1323105820-25946-1-git-send-email-felipe.contreras@nokia.com>
+	<1323105820-25946-3-git-send-email-felipe.contreras@nokia.com>
+	<20111207130517.GA22946@xps8300>
+	<CAMP44s2FV=Dtquq+HuhB7+0fTi9YwiY-4YcSf1XdB=OwDHYULA@mail.gmail.com>
+	<20111207193141.GG31337@atomide.com>
+Date: Thu, 8 Dec 2011 16:13:31 +0200
+Message-ID: <CAMP44s1B_4k3mYCLwLvDKOhKRjgpiQMk4S_TPZ9Cbx75CH+M9g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Revert "ARM: RX-51: Enable isp1704 power on/off"
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Heikki Krogerus <krohei@gmail.com>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Kalle Jokiniemi <kalle.jokiniemi@nokia.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On Wed, Dec 7, 2011 at 9:31 PM, Tony Lindgren <tony@atomide.com> wrote:
+> Got an updated patch for this one? Please also Cc linux-omap and
+> linux-arm-kernel lists for arch/arm/*omap*/ touching patches.
 
-Add a function which drains whatever MCEs were logged in already during
-boot and before the decoder chains were registered.
+You got the updated one... Right?
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |   39 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 39 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index c3c66ac..5be2464 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -189,9 +189,48 @@ void mce_log(struct mce *mce)
- 	set_bit(0, &mce_need_notify);
- }
- 
-+static void drain_mcelog_buffer(void)
-+{
-+	unsigned int next, i, prev = 0;
-+
-+	next = rcu_dereference_check_mce(mcelog.next);
-+
-+	do {
-+		struct mce *m;
-+
-+		/* drain what was logged during boot */
-+		for (i = prev; i < next; i++) {
-+			unsigned long start = jiffies;
-+			unsigned retries = 1;
-+
-+			m = &mcelog.entry[i];
-+
-+			while (!m->finished) {
-+				if (time_after_eq(jiffies, start + 2*retries))
-+					retries++;
-+
-+				cpu_relax();
-+
-+				if (!m->finished && retries >= 4) {
-+					pr_err("MCE: skipping error being logged currently!\n");
-+					break;
-+				}
-+			}
-+			smp_rmb();
-+			atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
-+		}
-+
-+		memset(mcelog.entry + prev, 0, (next - prev) * sizeof(*m));
-+		prev = next;
-+		next = cmpxchg(&mcelog.next, prev, 0);
-+	} while (next != prev);
-+}
-+
-+
- void mce_register_decode_chain(struct notifier_block *nb)
- {
- 	atomic_notifier_chain_register(&x86_mce_decoder_chain, nb);
-+	drain_mcelog_buffer();
- }
- EXPORT_SYMBOL_GPL(mce_register_decode_chain);
- 
 -- 
-1.7.8.rc0
-
+Felipe Contreras
