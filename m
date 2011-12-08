@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab1LHXe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 18:34:56 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:55557 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab1LHXex (ORCPT
+	id S1752074Ab1LHXgu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 18:36:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40050 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045Ab1LHXgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 18:34:53 -0500
-Date: Fri, 9 Dec 2011 10:34:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: error while fetching the hexagon quilt series
-Message-Id: <20111209103444.64a1e274b03ac7f7bb6c54fe@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Dec_2011_10_34_44_+1100_puWb.sQX7HfE8c6V"
+	Thu, 8 Dec 2011 18:36:48 -0500
+Date: Fri, 9 Dec 2011 03:36:43 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Hughes <hughsient@gmail.com>,
+        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, vojtech@ucw.cz,
+        Przemo Firszt <przemo@firszt.eu>, Richard Hughes <richard@hughsie.com>
+Subject: Re: [GIT PULL] power_supply: add power supply scope
+Message-ID: <20111208233643.GA19022@oksana.dev.rtsoft.ru>
+References: <CACo8zOcvKwr0wDkytvJfqyx4kV0ceYyCt+qnDqiSgxNywpzeHg@mail.gmail.com>
+ <4ED9BDF8.3010600@goop.org>
+ <CAD2FfiE-rg-1bMmVpYzBhnQcBMKKKO4WPnu0bvx+pvdFnpARrQ@mail.gmail.com>
+ <4EDE4C7A.1010802@goop.org>
+ <CAD2FfiHWuEmVTa54YqfJDk5zHpSQuM_nwPT=mR6NoWpajpydpg@mail.gmail.com>
+ <4EDFA192.7000602@goop.org>
+ <CAD2FfiF+fVoLPWpPyGGKdnoGhx1f=Loh2Ju-vdU58Y=2kf6C3g@mail.gmail.com>
+ <4EE015D1.5070005@goop.org>
+ <20111208104127.GA1753@oksana.dev.rtsoft.ru>
+ <4EE0EB7B.6060807@goop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4EE0EB7B.6060807@goop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Dec_2011_10_34_44_+1100_puWb.sQX7HfE8c6V
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 08, 2011 at 08:53:15AM -0800, Jeremy Fitzhardinge wrote:
+> Yes.  That patch was mostly so I could test the mechanism.  Certainly
+> general rule is that if there's no scope attribute then assume System.
 
-Hi Richard,
+Okay, great.
 
-Fetching the hexagon quilt series produces this warning:
+> > /sys/class/power_supply/battery/supplicants/<device_name>
+> > is a symlink to /sys/class/HID/.../device.
+> >
+> > With a special meaning of an empty directory (or non-existent, or w/ a
+> > symlink pointing to '/sys/devices/system') -- system power.
+> 
+> Yes.  That's awkward to implement because the kobj isn't exported from
+> device/base.  But aside from that, its a somewhat awkward interface for
+> usermode, because it has to end up following symlink and resolving their
+> paths, and then having special hardcoded knowledge of what particular
+> paths mean.  When all upower really wants to know is "do I need to
+> suspend when this supply gets low?".
 
-Read error (Success.) in headers.
+Mm... OK. I think you're right. The 'scope' thing is indeed useful by
+itself.
 
-And hangs for a long time ...
+> > That way we may describe any possible power hierarchy.
+> >
+> > From the implementation point of view, for now power_supply may just
+> > conditionally (by introducing power_supply.not_system_power flag)
+> 
+> How is that different from scope?
 
-I am fetching from https://www.codeaurora.org/patches/quic/hlk/linux-next/
+No different at all, I'm fine with either power_supply.scope or any
+other flag. :-)
 
-I will use what I have previously fetched.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Thanks!
 
---Signature=_Fri__9_Dec_2011_10_34_44_+1100_puWb.sQX7HfE8c6V
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO4UmUAAoJEECxmPOUX5FEbcsP/0Ya2Srdrm7aff5KJS90ykEh
-IAgpC9aEWLAkYFdXON8MTgcjghJwLAOs6d1z4I+KqCZJpc3fpGB21hu3IiHv2fOJ
-cr4ZU/l6IRsJMIsEd+HSOH26kfo6JCL8q96xiJa1VcgY4JkKVb8uyG16Pi1+vA+o
-sMt+Seuefjq2wX03Ep1OFXHt6x/JhSAq5CPQLHstgtsDFAtQT+6yK2dXdM+bigm+
-wsarM6bZEhDpUeOdqC9zSfzjan+sXTCD2EX+l12c5zxW5+ogkVsZTpTuTw1JwKLe
-3CoOVLVZSuLhQaf+TpUE6oky+wXVmEzSFDvzPap53NiJhfZGcu02bquMhAT53kz/
-skpT0n3OY7+OUXV0OQWJPqMagVqXpLGd5LJuhHt7+bKKgDn7zXoVwDdc45krGDmF
-d3QSA+qxZ4Ae/HAqHKIxUOAjhxAiJ41VBFP+Swf/ldPgCCYwd47jDoKo1wOgfEBp
-3+a8p4oi7Rj4QQs9LTmoB0oXnq6SgjvBHqndjrI9vHr0qxOPTEHDJwWBynxP1kW6
-PADyN1L63UUHtlQc8/nbPFwnkUvSXehcOF+fhAWjOpUK34JGg3bnkbg5GoB5leys
-XQuUo4hcvHvDPv2TR96foLGBBnOPCORI+vdhSNq4IU9o9scuhqJEAgzgvEj2SyhB
-vb91SYytB7qJZUtmQj3p
-=EuPS
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Dec_2011_10_34_44_+1100_puWb.sQX7HfE8c6V--
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
