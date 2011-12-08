@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab1LHBEX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 20:04:23 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51141 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757238Ab1LHBEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 20:04:21 -0500
+	id S1757362Ab1LHBHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 20:07:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5639 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757231Ab1LHBHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 20:07:46 -0500
+Date: Wed, 7 Dec 2011 20:07:31 -0500
+From: Dave Jones <davej@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, trenn@suse.de,
+        Andi Kleen <ak@linux.intel.com>, hpa@zytor.com
+Subject: Re: [PATCH 07/10] cpufreq: Add support for x86 cpuinfo auto loading
+Message-ID: <20111208010730.GB27892@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+	kay.sievers@vrfy.org, trenn@suse.de,
+	Andi Kleen <ak@linux.intel.com>, hpa@zytor.com
+References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
+ <1323304882-27953-8-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZC8LOOLkWbrPbXN_nKaw-WvueusYDyrX48Q1Pcdwv3Aw@mail.gmail.com>
-References: <1317189007-23033-1-git-send-email-alim.akhtar@samsung.com> <CACRpkdZC8LOOLkWbrPbXN_nKaw-WvueusYDyrX48Q1Pcdwv3Aw@mail.gmail.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Thu, 8 Dec 2011 10:03:38 +0900
-Message-ID: <CAGOxZ52w1nn8g4d_vuNAzjA9qYZ1=yEfihFvSOK+pBz=ZD=J7Q@mail.gmail.com>
-Subject: Re: [PATCH V2 0/1] dmaengine/amba-pl08x: Add support for s3c64xx DMAC
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alim Akhtar <alim.akhtar@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux@arm.linux.org.uk, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
-        dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323304882-27953-8-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
-sorry for the delay in submitting V3 of the pl080 patches for s3c64xx.
-I am very busy with my current assignment.
-I will come back to my patch series incorporating yours and Viresh
-suggestions in v3.
+On Wed, Dec 07, 2011 at 04:41:20PM -0800, Andi Kleen wrote:
+ 
+I think this bit isn't right..
 
-Thanks!!
+ > diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
+ > index 4bd6815..4604951 100644
+ > --- a/drivers/cpufreq/e_powersaver.c
+ > +++ b/drivers/cpufreq/e_powersaver.c
+ 
+ > +static struct x86_cpu_id eps_cpu_id[] = {
+ > +	{ X86_VENDOR_CENTAUR, 6, X86_MODEL_ANY, X86_FEATURE_EST },
+ > +	{}
+ > +};
+ ...
 
-Regards,
-Alim
+ > +MODULE_DEVICE_TABLE(x86cpu, eps_cpu_id);
+ > +
+ >  static int __init eps_init(void)
+ >  {
+ > -	struct cpuinfo_x86 *c = &cpu_data(0);
+ > -
+ > -	/* This driver will work only on Centaur C7 processors with
+ > -	 * Enhanced SpeedStep/PowerSaver registers */
+ > -	if (c->x86_vendor != X86_VENDOR_CENTAUR
+ > -	    || c->x86 != 6 || c->x86_model < 10)
+ > -		return -ENODEV;
 
-On Thu, Dec 8, 2011 at 8:43 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Sep 28, 2011 at 7:50 AM, Alim Akhtar <alim.akhtar@samsung.com> wrote:
->
->> This patch modifies the amba-pl08x driver for s3c64xx.
->> The DMA controller of S3C64XX is a variant of PrimeCell pl080 DMAC.
->> S3C64xx contents extra register to hold the TransferSize.
->
-> Alim what is happening with this patch series?
->
-> I was really happy with the rate of progress we had and Viresh & I
-> have given most feedback needed to complete this I think.
->
-> Yours,
-> Linus Walleij
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+This makes e_powersaver bind to every family 6 VIA cpu.
+But the old logic only bound to certain models.
+Won't this will clash with this other driver if both are built ?
 
+ > diff --git a/drivers/cpufreq/longhaul.c b/drivers/cpufreq/longhaul.c
+ > index f47d26e..b4263ce 100644
+ > --- a/drivers/cpufreq/longhaul.c
+ > +++ b/drivers/cpufreq/longhaul.c
+ > 
+ > +static struct x86_cpu_id longhaul_id[] = {
+ > +	{ X86_VENDOR_CENTAUR, 6 },
+ > +	{}
+ > +};
+ > +MODULE_DEVICE_TABLE(x86cpu, longhaul_id);
 
+iirc, the intention here was longhaul on cpus that don't have EST,
+and e_powersaver on those that do. Maybe an additional check for the
+absense of EST in longhaul's init code would do the trick.
+(sidenote: I don't recall why we even have e-powersaver, instead of them
+ just using acpi-cpufreq).
 
--- 
-aLim akHtaR
-mAin hUn nA :-)
+ > +static struct x86_cpu_id powernow_k8_ids[] = {
+ > +	{ X86_VENDOR_AMD, 0xf, },
+ > +	/* RED-PEN If HW PSTATE was a normal feature bit it could be matched here
+ > +	 * instead of a (limited) model list.
+ > +	 */
+
+You mean make fake one in the identify code ? Do-able I guess.
+Though that would just be moving this list from this driver to a different place,
+and as this is the only place that cares..
+
+Other stuff looks ok on a quick eyeball. I wouldn't be surprised though if
+this series throws some surprises, especially on some of the older hardware.
+
+Seems like a step in the right direction though.
+
+	Dave
+
