@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349Ab1LHG5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 01:57:22 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58009 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab1LHG5U (ORCPT
+	id S1751394Ab1LHHBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 02:01:14 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:62339 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab1LHHBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 01:57:20 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Joe Perches <joe@perches.com>,
-        David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        David Vrabel <david.vrabel@citrix.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1] vmalloc: purge_fragmented_blocks: Acquire spinlock before reading vmap_block
-Date: Thu,  8 Dec 2011 12:32:12 +0530
-Message-Id: <1323327732-30817-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Thu, 8 Dec 2011 02:01:10 -0500
+Message-ID: <20192.24749.652755.425707@ipc1.ka-ro>
+Date: Thu, 8 Dec 2011 08:01:01 +0100
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, shawn.guo@linaro.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2 0/8][NET] fec.c: several cleanups and bugfixes
+In-Reply-To: <20111207.133800.1403774147364781100.davem@davemloft.net>
+References: <cover.1323256319.git.LW@KARO-electronics.de>
+	<20111207.133800.1403774147364781100.davem@davemloft.net>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The purge_fragmented_blocks will loop over all vmap_blocks in the
-vmap_block_queue to create the purge list.
-Currently, the code in the loop does not acquire the &vb->lock before
-reading the vb->free and vb->dirty.
+Hi,
 
-Due to this, there might be a possibility of vb->free and vb->dirty being
-changed in parallel which could lead to the current vmap_block not being
-selected for purging.
+David Miller writes:
+> From: Lothar Waßmann <LW@KARO-electronics.de>
+> Date: Wed,  7 Dec 2011 14:37:12 +0100
+> 
+> > The following set of patches provides some cleanup and bugfixes for
+> > drivers/net/ethernet/freescale/fec.c and makes the driver buildable as
+> > a module.
+> 
+> 1) I said to use a subject prefix of "fec: " not "fec.c: "
+> 
+OK.
 
-Changing the code to acquire this spinlock before the check for vb->free
-and vb->dirty.
+> 2) You did not integrate Shawn's "Acked-by: " tags, I'm not going to
+>    go sifting through the previous patch postings to collect them up,
+>    that's your job.
+>
+I still got no Ack from Shawn for patches 3 and 5 and only Tested-by
+for patches 6 thru 8. Should I wait for Shawn's Ack for those patches
+too, or should I resent now?
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- mm/vmalloc.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 3231bf3..2228971 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -855,11 +855,14 @@ static void purge_fragmented_blocks(int cpu)
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(vb, &vbq->free, free_list) {
-+		spin_lock(&vb->lock);
- 
--		if (!(vb->free + vb->dirty == VMAP_BBMAP_BITS && vb->dirty != VMAP_BBMAP_BITS))
-+		if (!(vb->free + vb->dirty == VMAP_BBMAP_BITS &&
-+			  vb->dirty != VMAP_BBMAP_BITS)) {
-+			spin_unlock(&vb->lock);
- 			continue;
-+		}
- 
--		spin_lock(&vb->lock);
- 		if (vb->free + vb->dirty == VMAP_BBMAP_BITS && vb->dirty != VMAP_BBMAP_BITS) {
- 			vb->free = 0; /* prevent further allocs after releasing lock */
- 			vb->dirty = VMAP_BBMAP_BITS; /* prevent purging it again */
+Lothar Waßmann
 -- 
-1.7.6
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
