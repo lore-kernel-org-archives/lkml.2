@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757362Ab1LHBHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 20:07:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757231Ab1LHBHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 20:07:46 -0500
-Date: Wed, 7 Dec 2011 20:07:31 -0500
-From: Dave Jones <davej@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, trenn@suse.de,
-        Andi Kleen <ak@linux.intel.com>, hpa@zytor.com
-Subject: Re: [PATCH 07/10] cpufreq: Add support for x86 cpuinfo auto loading
-Message-ID: <20111208010730.GB27892@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-	kay.sievers@vrfy.org, trenn@suse.de,
-	Andi Kleen <ak@linux.intel.com>, hpa@zytor.com
-References: <1323304882-27953-1-git-send-email-andi@firstfloor.org>
- <1323304882-27953-8-git-send-email-andi@firstfloor.org>
+	id S1757397Ab1LHBMp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 20:12:45 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:52558 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498Ab1LHBMn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 20:12:43 -0500
+Date: Wed, 7 Dec 2011 17:12:39 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Dipankar Sarma <dipankar@in.ibm.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] docs: additional LWN links to RCU API
+Message-ID: <20111208011238.GG2367@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111207231123.GA13371@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1323304882-27953-8-git-send-email-andi@firstfloor.org>
+In-Reply-To: <20111207231123.GA13371@www.outflux.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11120801-2398-0000-0000-00000294358E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 04:41:20PM -0800, Andi Kleen wrote:
- 
-I think this bit isn't right..
+On Wed, Dec 07, 2011 at 03:11:23PM -0800, Kees Cook wrote:
+> Tyler Hicks pointed me at an additional article on RCU and I figured
+> it should probably be mentioned with the others.
 
- > diff --git a/drivers/cpufreq/e_powersaver.c b/drivers/cpufreq/e_powersaver.c
- > index 4bd6815..4604951 100644
- > --- a/drivers/cpufreq/e_powersaver.c
- > +++ b/drivers/cpufreq/e_powersaver.c
- 
- > +static struct x86_cpu_id eps_cpu_id[] = {
- > +	{ X86_VENDOR_CENTAUR, 6, X86_MODEL_ANY, X86_FEATURE_EST },
- > +	{}
- > +};
- ...
+Queued for 3.3, thank you!
 
- > +MODULE_DEVICE_TABLE(x86cpu, eps_cpu_id);
- > +
- >  static int __init eps_init(void)
- >  {
- > -	struct cpuinfo_x86 *c = &cpu_data(0);
- > -
- > -	/* This driver will work only on Centaur C7 processors with
- > -	 * Enhanced SpeedStep/PowerSaver registers */
- > -	if (c->x86_vendor != X86_VENDOR_CENTAUR
- > -	    || c->x86 != 6 || c->x86_model < 10)
- > -		return -ENODEV;
+							Thanx, Paul
 
-This makes e_powersaver bind to every family 6 VIA cpu.
-But the old logic only bound to certain models.
-Won't this will clash with this other driver if both are built ?
-
- > diff --git a/drivers/cpufreq/longhaul.c b/drivers/cpufreq/longhaul.c
- > index f47d26e..b4263ce 100644
- > --- a/drivers/cpufreq/longhaul.c
- > +++ b/drivers/cpufreq/longhaul.c
- > 
- > +static struct x86_cpu_id longhaul_id[] = {
- > +	{ X86_VENDOR_CENTAUR, 6 },
- > +	{}
- > +};
- > +MODULE_DEVICE_TABLE(x86cpu, longhaul_id);
-
-iirc, the intention here was longhaul on cpus that don't have EST,
-and e_powersaver on those that do. Maybe an additional check for the
-absense of EST in longhaul's init code would do the trick.
-(sidenote: I don't recall why we even have e-powersaver, instead of them
- just using acpi-cpufreq).
-
- > +static struct x86_cpu_id powernow_k8_ids[] = {
- > +	{ X86_VENDOR_AMD, 0xf, },
- > +	/* RED-PEN If HW PSTATE was a normal feature bit it could be matched here
- > +	 * instead of a (limited) model list.
- > +	 */
-
-You mean make fake one in the identify code ? Do-able I guess.
-Though that would just be moving this list from this driver to a different place,
-and as this is the only place that cares..
-
-Other stuff looks ok on a quick eyeball. I wouldn't be surprised though if
-this series throws some surprises, especially on some of the older hardware.
-
-Seems like a step in the right direction though.
-
-	Dave
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  Documentation/RCU/whatisRCU.txt |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/RCU/whatisRCU.txt b/Documentation/RCU/whatisRCU.txt
+> index 6ef6926..f0c5750 100644
+> --- a/Documentation/RCU/whatisRCU.txt
+> +++ b/Documentation/RCU/whatisRCU.txt
+> @@ -4,6 +4,7 @@ to start learning about RCU:
+>  1.	What is RCU, Fundamentally?  http://lwn.net/Articles/262464/
+>  2.	What is RCU? Part 2: Usage   http://lwn.net/Articles/263130/
+>  3.	RCU part 3: the RCU API      http://lwn.net/Articles/264090/
+> +4.	The RCU API, 2010 Edition    http://lwn.net/Articles/418853/
+> 
+> 
+>  What is RCU?
+> -- 
+> 1.7.0.4
+> 
 
