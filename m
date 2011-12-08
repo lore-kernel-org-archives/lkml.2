@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab1LHD0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Dec 2011 22:26:05 -0500
+	id S1758350Ab1LHD0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Dec 2011 22:26:13 -0500
 Received: from mga03.intel.com ([143.182.124.21]:14032 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757975Ab1LHD0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Dec 2011 22:26:02 -0500
+	id S1758051Ab1LHD0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Dec 2011 22:26:07 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="45071367"
+   d="scan'208";a="45071392"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 06/11] ACPI, APEI, Printk queued error record before panic
-Date: Thu,  8 Dec 2011 11:25:45 +0800
-Message-Id: <1323314750-8185-7-git-send-email-ying.huang@intel.com>
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        "Xiao, Hui" <hui.xiao@linux.intel.com>
+Subject: [PATCH 09/11] ACPI, APEI, EINJ, Refine the fix of resource conflict
+Date: Thu,  8 Dec 2011 11:25:48 +0800
+Message-Id: <1323314750-8185-10-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1323314750-8185-1-git-send-email-ying.huang@intel.com>
 References: <1323314750-8185-1-git-send-email-ying.huang@intel.com>
@@ -23,104 +24,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because printk is not safe inside NMI handler, the recoverable error
-records received in NMI handler will be queued to be printked in a
-delayed IRQ context via irq_work.  If a fatal error occurs after the
-recoverable error and before the irq_work processed, we lost a error
-report.
+From: "Xiao, Hui" <hui.xiao@linux.intel.com>
 
-To solve the issue, the queued error records are printked in NMI
-handler if system will go panic.
+Current fix for resource conflict is to remove the address region <param1 &
+param2, ~param2+1> from trigger resource, which is highly relies on valid user
+input. This patch is trying to avoid such potential issues by fetching the
+exact address region from trigger action table entry.
 
+Signed-off-by: Xiao, Hui <hui.xiao@linux.intel.com>
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- drivers/acpi/apei/ghes.c |   53 +++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 44 insertions(+), 9 deletions(-)
+ drivers/acpi/apei/einj.c |   38 ++++++++++++++++++++++++++++++++------
+ 1 file changed, 32 insertions(+), 6 deletions(-)
 
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -740,26 +740,34 @@ static int ghes_notify_sci(struct notifi
- 	return ret;
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -194,6 +194,26 @@ static int einj_check_trigger_header(str
+ 	return 0;
  }
  
-+static struct llist_node *llist_nodes_reverse(struct llist_node *llnode)
++static struct acpi_generic_address *einj_get_trigger_parameter_region(
++	struct acpi_einj_trigger *trigger_tab, u64 param1, u64 param2)
 +{
-+	struct llist_node *next, *tail = NULL;
++	int i;
++	struct acpi_whea_header *entry;
 +
-+	while (llnode) {
-+		next = llnode->next;
-+		llnode->next = tail;
-+		tail = llnode;
-+		llnode = next;
++	entry = (struct acpi_whea_header *)
++		((char *)trigger_tab + sizeof(struct acpi_einj_trigger));
++	for (i = 0; i < trigger_tab->entry_count; i++) {
++		if (entry->action == ACPI_EINJ_TRIGGER_ERROR &&
++		entry->instruction == ACPI_EINJ_WRITE_REGISTER_VALUE &&
++		entry->register_region.space_id ==
++			ACPI_ADR_SPACE_SYSTEM_MEMORY &&
++		(entry->register_region.address & param2) == (param1 & param2))
++			return &entry->register_region;
++		entry++;
 +	}
 +
-+	return tail;
++	return NULL;
 +}
-+
- static void ghes_proc_in_irq(struct irq_work *irq_work)
- {
--	struct llist_node *llnode, *next, *tail = NULL;
-+	struct llist_node *llnode, *next;
- 	struct ghes_estatus_node *estatus_node;
- 	struct acpi_hest_generic *generic;
- 	struct acpi_hest_generic_status *estatus;
- 	u32 len, node_len;
+ /* Execute instructions in trigger error action table */
+ static int __einj_error_trigger(u64 trigger_paddr, u32 type,
+ 				u64 param1, u64 param2)
+@@ -205,6 +225,7 @@ static int __einj_error_trigger(u64 trig
+ 	struct resource *r;
+ 	u32 table_size;
+ 	int rc = -EIO;
++	struct acpi_generic_address *trigger_param_region = NULL;
  
-+	llnode = llist_del_all(&ghes_estatus_llist);
- 	/*
- 	 * Because the time order of estatus in list is reversed,
- 	 * revert it back to proper order.
- 	 */
--	llnode = llist_del_all(&ghes_estatus_llist);
--	while (llnode) {
--		next = llnode->next;
--		llnode->next = tail;
--		tail = llnode;
--		llnode = next;
--	}
--	llnode = tail;
-+	llnode = llist_nodes_reverse(llnode);
- 	while (llnode) {
- 		next = llnode->next;
- 		estatus_node = llist_entry(llnode, struct ghes_estatus_node,
-@@ -779,6 +787,32 @@ static void ghes_proc_in_irq(struct irq_
- 	}
- }
- 
-+static void ghes_print_queued_estatus(void)
-+{
-+	struct llist_node *llnode;
-+	struct ghes_estatus_node *estatus_node;
-+	struct acpi_hest_generic *generic;
-+	struct acpi_hest_generic_status *estatus;
-+	u32 len, node_len;
-+
-+	llnode = llist_del_all(&ghes_estatus_llist);
-+	/*
-+	 * Because the time order of estatus in list is reversed,
-+	 * revert it back to proper order.
-+	 */
-+	llnode = llist_nodes_reverse(llnode);
-+	while (llnode) {
-+		estatus_node = llist_entry(llnode, struct ghes_estatus_node,
-+					   llnode);
-+		estatus = GHES_ESTATUS_FROM_NODE(estatus_node);
-+		len = apei_estatus_len(estatus);
-+		node_len = GHES_ESTATUS_NODE_LEN(len);
-+		generic = estatus_node->generic;
-+		ghes_print_estatus(NULL, generic, estatus);
-+		llnode = llnode->next;
-+	}
-+}
-+
- static int ghes_notify_nmi(unsigned int cmd, struct pt_regs *regs)
- {
- 	struct ghes *ghes, *ghes_global = NULL;
-@@ -804,6 +838,7 @@ static int ghes_notify_nmi(unsigned int
- 
- 	if (sev_global >= GHES_SEV_PANIC) {
- 		oops_begin();
-+		ghes_print_queued_estatus();
- 		__ghes_print_estatus(KERN_EMERG, ghes_global->generic,
- 				     ghes_global->estatus);
- 		/* reboot to log the error! */
+ 	r = request_mem_region(trigger_paddr, sizeof(*trigger_tab),
+ 			       "APEI EINJ Trigger Table");
+@@ -266,12 +287,17 @@ static int __einj_error_trigger(u64 trig
+ 	if (param_extension && (type & 0x0038) && param2) {
+ 		struct apei_resources addr_resources;
+ 		apei_resources_init(&addr_resources);
+-		rc = apei_resources_add(&addr_resources,
+-					param1 & param2,
+-					~param2 + 1, true);
+-		if (rc)
+-			goto out_fini;
+-		rc = apei_resources_sub(&trigger_resources, &addr_resources);
++		trigger_param_region = einj_get_trigger_parameter_region(
++			trigger_tab, param1, param2);
++		if (trigger_param_region) {
++			rc = apei_resources_add(&addr_resources,
++				trigger_param_region->address,
++				trigger_param_region->bit_width/8, true);
++			if (rc)
++				goto out_fini;
++			rc = apei_resources_sub(&trigger_resources,
++					&addr_resources);
++		}
+ 		apei_resources_fini(&addr_resources);
+ 		if (rc)
+ 			goto out_fini;
