@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab1LHJxP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 04:53:15 -0500
-Received: from smtprelay01.ispgateway.de ([80.67.31.39]:53731 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab1LHJxM (ORCPT
+	id S1753144Ab1LHJyG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 04:54:06 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:56843 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab1LHJyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 04:53:12 -0500
-X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Dec 2011 04:53:11 EST
-Message-ID: <4EE08769.1070701@selhorst.net>
-Date: Thu, 08 Dec 2011 10:46:17 +0100
-From: Marcel Selhorst <tpmdd@selhorst.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111109 Thunderbird/7.0.1
+	Thu, 8 Dec 2011 04:54:03 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: "Ohad Ben-Cohen" <ohad@wizery.com>
+Subject: Re: [PATCH] [media] omap3isp: fix compilation of ispvideo.c
+Date: Thu, 8 Dec 2011 10:53:59 +0100
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.3; x86_64; ; )
+Cc: Dmitry Artamonow <mad_soft@inbox.ru>, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org
+References: <1321808066-1791-1-git-send-email-mad_soft@inbox.ru> <201111230253.21007.laurent.pinchart@ideasonboard.com> <CADMYwHzPJeu6ixNJ=uRVEF-wz7Uz4oYdfHme8g1sRAK20Cro0w@mail.gmail.com>
+In-Reply-To: <CADMYwHzPJeu6ixNJ=uRVEF-wz7Uz4oYdfHme8g1sRAK20Cro0w@mail.gmail.com>
 MIME-Version: 1.0
-To: TPM Device Driver List <tpmdd-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: tpm-new-email-address-for-tpm_infineon-driver.patch
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.6.128; VDF: 7.11.19.25; host: mail.selhorst.net); id=18516-6arZKi
-X-Df-Sender: MTc0NDk5
+Message-Id: <201112081054.01240.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+Hi Ohad,
 
-my contact details have changed, please find a patch below.
+On Thursday 08 December 2011 07:31:29 Ohad Ben-Cohen wrote:
+> On Wed, Nov 23, 2011 at 3:53 AM, Laurent Pinchart wrote:
+> > On Sunday 20 November 2011 17:54:26 Dmitry Artamonow wrote:
+> >> Fix following build error by explicitely including <linux/module.h>
+> >> header file.
+> >> 
+> >>   CC      drivers/media/video/omap3isp/ispvideo.o
+> >> drivers/media/video/omap3isp/ispvideo.c:1267: error: 'THIS_MODULE'
+> >> undeclared here (not in a function) make[4]: ***
+> >> [drivers/media/video/omap3isp/ispvideo.o] Error 1
+> >> make[3]: *** [drivers/media/video/omap3isp] Error 2
+> >> make[2]: *** [drivers/media/video] Error 2
+> >> make[1]: *** [drivers/media] Error 2
+> >> make: *** [drivers] Error 2
+> >> 
+> >> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+> > 
+> > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > 
+> > Mauro, can you pick this for v3.2, or would you like me to send a pull
+> > request ?
+> 
+> Folks, was this one picked up by anyone ?
+> 
+> We seem to still have this issue in mainline (at least in rc4).
 
-Signed-off-by: Marcel Selhorst <tpmdd@selhorst.net>
----
-diff -pruN linux-3.1.4.old/MAINTAINERS linux-3.1.4.new/MAINTAINERS
---- linux-3.1.4.old/MAINTAINERS	2011-11-28 23:48:14.000000000 +0100
-+++ linux-3.1.4.new/MAINTAINERS	2011-12-08 10:15:19.752440618 +0100
-@@ -6491,7 +6491,8 @@ TPM DEVICE DRIVER
- M:	Debora Velarde <debora@linux.vnet.ibm.com>
- M:	Rajiv Andrade <srajiv@linux.vnet.ibm.com>
- W:	http://tpmdd.sourceforge.net
--M:	Marcel Selhorst <m.selhorst@sirrix.com>
-+M:	Marcel Selhorst <tpmdd@selhorst.net>
-+M:	Sirrix AG <tpmdd@sirrix.com>
- W:	http://www.sirrix.com
- L:	tpmdd-devel@lists.sourceforge.net (moderated for non-subscribers)
- S:	Maintained
-diff -pruN linux-3.1.4.old/drivers/char/tpm/tpm_infineon.c linux-3.1.4.new/drivers/char/tpm/tpm_infineon.c
---- linux-3.1.4.old/drivers/char/tpm/tpm_infineon.c	2011-11-28 23:48:14.000000000 +0100
-+++ linux-3.1.4.new/drivers/char/tpm/tpm_infineon.c	2011-12-08 10:37:10.876440286 +0100
-@@ -4,8 +4,8 @@
-  * SLD 9630 TT 1.1 and SLB 9635 TT 1.2 Trusted Platform Module
-  * Specifications at www.trustedcomputinggroup.org
-  *
-- * Copyright (C) 2005, Marcel Selhorst <m.selhorst@sirrix.com>
-- * Sirrix AG - security technologies, http://www.sirrix.com and
-+ * Copyright (C) 2005, Marcel Selhorst <tpmdd@selhorst.net>
-+ * Sirrix AG - security technologies <tpmdd@sirrix.com> and
-  * Applied Data Security Group, Ruhr-University Bochum, Germany
-  * Project-Homepage: http://www.trust.rub.de/projects/linux-device-driver-infineon-tpm/
-  *
-@@ -671,7 +671,7 @@ static void __exit cleanup_inf(void)
- module_init(init_inf);
- module_exit(cleanup_inf);
+According to http://patchwork.linuxtv.org/patch/8510/ the patch has been 
+accepted. Mauro, do you have any time estimate regarding when you will push 
+that to Linus ?
 
--MODULE_AUTHOR("Marcel Selhorst <m.selhorst@sirrix.com>");
-+MODULE_AUTHOR("Marcel Selhorst <tpmdd@selhorst.net>");
- MODULE_DESCRIPTION("Driver for Infineon TPM SLD 9630 TT 1.1 / SLB 9635 TT 1.2");
- MODULE_VERSION("1.9.2");
- MODULE_LICENSE("GPL");
+-- 
+Regards,
 
+Laurent Pinchart
