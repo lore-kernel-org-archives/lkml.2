@@ -1,77 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab1LHWxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 17:53:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:49765 "EHLO ogre.sisk.pl"
+	id S1751458Ab1LHWxU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 17:53:20 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:49780 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750715Ab1LHWxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 17:53:04 -0500
+	id S1752133Ab1LHWxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 17:53:16 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] PM / Usermodehelper: Fix freezer failures due to racy usermodehelper_is_disabled()
-Date: Thu, 8 Dec 2011 23:56:00 +0100
+Subject: Re: [PATCH] PM / Hibernate: Remove deprecated hibernation snapshot ioctls
+Date: Thu, 8 Dec 2011 23:56:12 +0100
 User-Agent: KMail/1.13.6 (Linux/3.2.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: gregkh@suse.de, dhowells@redhat.com, eparis@redhat.com,
-        kay.sievers@vrfy.org, jmorris@namei.org, tj@kernel.org, bp@amd64.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        namhyung@gmail.com
-References: <20111208173012.17763.39306.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20111208173012.17763.39306.stgit@srivatsabhat.in.ibm.com>
+Cc: pavel@ucw.cz, len.brown@intel.com, rdunlap@xenotime.net,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-doc@vger.kernel.org, jirislaby@gmail.com, jslaby@suse.cz
+References: <20111208185318.19183.12112.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20111208185318.19183.12112.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112082356.00747.rjw@sisk.pl>
+Message-Id: <201112082356.12839.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thursday, December 08, 2011, Srivatsa S. Bhat wrote:
-> Commit a144c6a (PM: Print a warning if firmware is requested when tasks
-> are frozen) introduced usermodehelper_is_disabled() to warn and exit
-> immediately if firmware is requested when usermodehelpers are disabled.
+> Several snapshot ioctls were marked for removal quite some time ago,
+> since they were deprecated. Remove them.
 > 
-> However, it is racy. Consider the following scenario, currently used in
-> drivers/base/firmware_class.c:
-> 
-> ...
-> if (usermodehelper_is_disabled())
->         goto out;
-> 
-> /* Do actual work */
-> ...
-> 
-> out:
->         return err;
-> 
-> Nothing prevents someone from disabling usermodehelpers just after the check
-> in the 'if' condition, which means that it is quite possible to try doing the
-> "actual work" with usermodehelpers disabled, leading to undesirable
-> consequences.
-> 
-> In particular, this race condition in _request_firmware() causes task freezing
-> failures whenever suspend/hibernation is in progress because, it wrongly waits
-> to get the firmware/microcode image from userspace when actually the
-> usermodehelpers are disabled or userspace has been frozen.
-> Some of the example scenarios that cause freezing failures due to this race
-> are those that depend on userspace via request_firmware(), such as x86
-> microcode module initialization and microcode image reload.
-> 
-> Previous discussions about this issue can be found at:
-> http://thread.gmane.org/gmane.linux.kernel/1198291/focus=1200591
-> 
-> This patch adds proper synchronization to fix this issue.
-> 
-> It is to be noted that this patchset fixes the freezing failures but doesn't
-> remove the warnings. IOW, it does not attempt to add explicit synchronization
-> to x86 microcode driver to avoid requesting microcode image at inopportune
-> moments. Because, the warnings were introduced to highlight such cases, in the
-> first place. And we need not silence the warnings, since we take care of the
-> *real* problem (freezing failure) and hence, after that, the warnings are
-> pretty harmless anyway.
-> 
-> v2: Used rwsemaphores to implement the synchronization, as Tejun suggested.
-> 
+> Suggested-by: Rafael J. Wysocki <rjw@sisk.pl>
 > Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
 Applied to linux-pm/linux-next.
@@ -82,129 +40,179 @@ Rafael
 
 > ---
 > 
->  drivers/base/firmware_class.c |    4 ++++
->  include/linux/kmod.h          |    2 ++
->  kernel/kmod.c                 |   23 ++++++++++++++++++++++-
->  3 files changed, 28 insertions(+), 1 deletions(-)
+>  Documentation/feature-removal-schedule.txt |   11 ----
+>  kernel/power/user.c                        |   87 ----------------------------
+>  2 files changed, 0 insertions(+), 98 deletions(-)
 > 
-> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-> index 06ed6b4..d5585da 100644
-> --- a/drivers/base/firmware_class.c
-> +++ b/drivers/base/firmware_class.c
-> @@ -534,6 +534,8 @@ static int _request_firmware(const struct firmware **firmware_p,
->  		return 0;
->  	}
+> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> index 3d84912..9f51fc4 100644
+> --- a/Documentation/feature-removal-schedule.txt
+> +++ b/Documentation/feature-removal-schedule.txt
+> @@ -85,17 +85,6 @@ Who:	Robin Getz <rgetz@blackfin.uclinux.org> & Matt Mackall <mpm@selenic.com>
 >  
-> +	read_lock_usermodehelper();
-> +
->  	if (WARN_ON(usermodehelper_is_disabled())) {
->  		dev_err(device, "firmware: %s will not be loaded\n", name);
->  		retval = -EBUSY;
-> @@ -572,6 +574,8 @@ static int _request_firmware(const struct firmware **firmware_p,
->  	fw_destroy_instance(fw_priv);
+>  ---------------------------
 >  
->  out:
-> +	read_unlock_usermodehelper();
-> +
->  	if (retval) {
->  		release_firmware(firmware);
->  		*firmware_p = NULL;
-> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-> index b16f653..722f477 100644
-> --- a/include/linux/kmod.h
-> +++ b/include/linux/kmod.h
-> @@ -117,5 +117,7 @@ extern void usermodehelper_init(void);
->  extern int usermodehelper_disable(void);
->  extern void usermodehelper_enable(void);
->  extern bool usermodehelper_is_disabled(void);
-> +extern void read_lock_usermodehelper(void);
-> +extern void read_unlock_usermodehelper(void);
+> -What:	Deprecated snapshot ioctls
+> -When:	2.6.36
+> -
+> -Why:	The ioctls in kernel/power/user.c were marked as deprecated long time
+> -	ago. Now they notify users about that so that they need to replace
+> -	their userspace. After some more time, remove them completely.
+> -
+> -Who:	Jiri Slaby <jirislaby@gmail.com>
+> -
+> ----------------------------
+> -
+>  What:	The ieee80211_regdom module parameter
+>  When:	March 2010 / desktop catchup
 >  
->  #endif /* __LINUX_KMOD_H__ */
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 2142687..2b656fe 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -34,6 +34,7 @@
->  #include <linux/kernel.h>
->  #include <linux/init.h>
->  #include <linux/resource.h>
-> +#include <linux/rwsem.h>
->  #include <asm/uaccess.h>
+> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> index 98ade21..78bdb44 100644
+> --- a/kernel/power/user.c
+> +++ b/kernel/power/user.c
+> @@ -30,28 +30,6 @@
 >  
->  #include <trace/events/module.h>
-> @@ -48,6 +49,7 @@ static struct workqueue_struct *khelper_wq;
->  static kernel_cap_t usermodehelper_bset = CAP_FULL_SET;
->  static kernel_cap_t usermodehelper_inheritable = CAP_FULL_SET;
->  static DEFINE_SPINLOCK(umh_sysctl_lock);
-> +static DECLARE_RWSEM(umhelper_sem);
+>  #include "power.h"
 >  
->  #ifdef CONFIG_MODULES
+> -/*
+> - * NOTE: The SNAPSHOT_SET_SWAP_FILE and SNAPSHOT_PMOPS ioctls are obsolete and
+> - * will be removed in the future.  They are only preserved here for
+> - * compatibility with existing userland utilities.
+> - */
+> -#define SNAPSHOT_SET_SWAP_FILE	_IOW(SNAPSHOT_IOC_MAGIC, 10, unsigned int)
+> -#define SNAPSHOT_PMOPS		_IOW(SNAPSHOT_IOC_MAGIC, 12, unsigned int)
+> -
+> -#define PMOPS_PREPARE	1
+> -#define PMOPS_ENTER	2
+> -#define PMOPS_FINISH	3
+> -
+> -/*
+> - * NOTE: The following ioctl definitions are wrong and have been replaced with
+> - * correct ones.  They are only preserved here for compatibility with existing
+> - * userland utilities and will be removed in the future.
+> - */
+> -#define SNAPSHOT_ATOMIC_SNAPSHOT	_IOW(SNAPSHOT_IOC_MAGIC, 3, void *)
+> -#define SNAPSHOT_SET_IMAGE_SIZE		_IOW(SNAPSHOT_IOC_MAGIC, 6, unsigned long)
+> -#define SNAPSHOT_AVAIL_SWAP		_IOR(SNAPSHOT_IOC_MAGIC, 7, void *)
+> -#define SNAPSHOT_GET_SWAP_PAGE		_IOR(SNAPSHOT_IOC_MAGIC, 8, void *)
+> -
 >  
-> @@ -273,6 +275,7 @@ static void __call_usermodehelper(struct work_struct *work)
->   * If set, call_usermodehelper_exec() will exit immediately returning -EBUSY
->   * (used for preventing user land processes from being created after the user
->   * land has been frozen during a system-wide hibernation or suspend operation).
-> + * Should always be manipulated under umhelper_sem acquired for write.
->   */
->  static int usermodehelper_disabled = 1;
+>  #define SNAPSHOT_MINOR	231
 >  
-> @@ -291,6 +294,18 @@ static DECLARE_WAIT_QUEUE_HEAD(running_helpers_waitq);
->   */
->  #define RUNNING_HELPERS_TIMEOUT	(5 * HZ)
->  
-> +void read_lock_usermodehelper(void)
-> +{
-> +	down_read(&umhelper_sem);
-> +}
-> +EXPORT_SYMBOL_GPL(read_lock_usermodehelper);
-> +
-> +void read_unlock_usermodehelper(void)
-> +{
-> +	up_read(&umhelper_sem);
-> +}
-> +EXPORT_SYMBOL_GPL(read_unlock_usermodehelper);
-> +
->  /**
->   * usermodehelper_disable - prevent new helpers from being started
->   */
-> @@ -298,8 +313,10 @@ int usermodehelper_disable(void)
->  {
->  	long retval;
->  
-> +	down_write(&umhelper_sem);
->  	usermodehelper_disabled = 1;
-> -	smp_mb();
-> +	up_write(&umhelper_sem);
-> +
->  	/*
->  	 * From now on call_usermodehelper_exec() won't start any new
->  	 * helpers, so it is sufficient if running_helpers turns out to
-> @@ -312,7 +329,9 @@ int usermodehelper_disable(void)
->  	if (retval)
->  		return 0;
->  
-> +	down_write(&umhelper_sem);
->  	usermodehelper_disabled = 0;
-> +	up_write(&umhelper_sem);
->  	return -EAGAIN;
+> @@ -213,15 +191,6 @@ unlock:
+>  	return res;
 >  }
 >  
-> @@ -321,7 +340,9 @@ int usermodehelper_disable(void)
->   */
->  void usermodehelper_enable(void)
+> -static void snapshot_deprecated_ioctl(unsigned int cmd)
+> -{
+> -	if (printk_ratelimit())
+> -		printk(KERN_NOTICE "%pf: ioctl '%.8x' is deprecated and will "
+> -				"be removed soon, update your suspend-to-disk "
+> -				"utilities\n",
+> -				__builtin_return_address(0), cmd);
+> -}
+> -
+>  static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+>  							unsigned long arg)
 >  {
-> +	down_write(&umhelper_sem);
->  	usermodehelper_disabled = 0;
-> +	up_write(&umhelper_sem);
->  }
+> @@ -272,8 +241,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+>  		data->frozen = 0;
+>  		break;
 >  
->  /**
+> -	case SNAPSHOT_ATOMIC_SNAPSHOT:
+> -		snapshot_deprecated_ioctl(cmd);
+>  	case SNAPSHOT_CREATE_IMAGE:
+>  		if (data->mode != O_RDONLY || !data->frozen  || data->ready) {
+>  			error = -EPERM;
+> @@ -308,8 +275,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+>  		data->ready = 0;
+>  		break;
+>  
+> -	case SNAPSHOT_SET_IMAGE_SIZE:
+> -		snapshot_deprecated_ioctl(cmd);
+>  	case SNAPSHOT_PREF_IMAGE_SIZE:
+>  		image_size = arg;
+>  		break;
+> @@ -324,16 +289,12 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+>  		error = put_user(size, (loff_t __user *)arg);
+>  		break;
+>  
+> -	case SNAPSHOT_AVAIL_SWAP:
+> -		snapshot_deprecated_ioctl(cmd);
+>  	case SNAPSHOT_AVAIL_SWAP_SIZE:
+>  		size = count_swap_pages(data->swap, 1);
+>  		size <<= PAGE_SHIFT;
+>  		error = put_user(size, (loff_t __user *)arg);
+>  		break;
+>  
+> -	case SNAPSHOT_GET_SWAP_PAGE:
+> -		snapshot_deprecated_ioctl(cmd);
+>  	case SNAPSHOT_ALLOC_SWAP_PAGE:
+>  		if (data->swap < 0 || data->swap >= MAX_SWAPFILES) {
+>  			error = -ENODEV;
+> @@ -356,27 +317,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+>  		free_all_swap_pages(data->swap);
+>  		break;
+>  
+> -	case SNAPSHOT_SET_SWAP_FILE: /* This ioctl is deprecated */
+> -		snapshot_deprecated_ioctl(cmd);
+> -		if (!swsusp_swap_in_use()) {
+> -			/*
+> -			 * User space encodes device types as two-byte values,
+> -			 * so we need to recode them
+> -			 */
+> -			if (old_decode_dev(arg)) {
+> -				data->swap = swap_type_of(old_decode_dev(arg),
+> -							0, NULL);
+> -				if (data->swap < 0)
+> -					error = -ENODEV;
+> -			} else {
+> -				data->swap = -1;
+> -				error = -EINVAL;
+> -			}
+> -		} else {
+> -			error = -EPERM;
+> -		}
+> -		break;
+> -
+>  	case SNAPSHOT_S2RAM:
+>  		if (!data->frozen) {
+>  			error = -EPERM;
+> @@ -399,33 +339,6 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+>  			error = hibernation_platform_enter();
+>  		break;
+>  
+> -	case SNAPSHOT_PMOPS: /* This ioctl is deprecated */
+> -		snapshot_deprecated_ioctl(cmd);
+> -		error = -EINVAL;
+> -
+> -		switch (arg) {
+> -
+> -		case PMOPS_PREPARE:
+> -			data->platform_support = 1;
+> -			error = 0;
+> -			break;
+> -
+> -		case PMOPS_ENTER:
+> -			if (data->platform_support)
+> -				error = hibernation_platform_enter();
+> -			break;
+> -
+> -		case PMOPS_FINISH:
+> -			if (data->platform_support)
+> -				error = 0;
+> -			break;
+> -
+> -		default:
+> -			printk(KERN_ERR "SNAPSHOT_PMOPS: invalid argument %ld\n", arg);
+> -
+> -		}
+> -		break;
+> -
+>  	case SNAPSHOT_SET_SWAP_AREA:
+>  		if (swsusp_swap_in_use()) {
+>  			error = -EPERM;
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 > 
 
