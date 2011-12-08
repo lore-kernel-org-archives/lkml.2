@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab1LHJjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Dec 2011 04:39:44 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47296 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab1LHJjk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Dec 2011 04:39:40 -0500
-Date: Thu, 8 Dec 2011 10:39:27 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-        Valentin Longchamp <valentin.longchamp@keymile.com>,
-        Daniel Mack <daniel@caiaq.de>, Eric Benard <eric@eukrea.com>
-Subject: Re: [PATCH] video IPUv1 fixes for different display connections
-Message-ID: <20111208093927.GU27267@pengutronix.de>
-References: <1322747932-24943-1-git-send-email-s.hauer@pengutronix.de>
- <1323329606.1641.25.camel@vkoul-udesk3>
+	id S1752859Ab1LHJlW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Dec 2011 04:41:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751713Ab1LHJlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Dec 2011 04:41:19 -0500
+Message-ID: <4EE08606.2060508@redhat.com>
+Date: Thu, 08 Dec 2011 11:40:22 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323329606.1641.25.camel@vkoul-udesk3>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:37:43 up 25 days, 17:24, 30 users,  load average: 0.03, 0.02,
- 0.12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Raghavendra K T <raghukt@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, KVM <kvm@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jiang <dave.jiang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Gleb Natapov <gleb@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Xen <xen-devel@lists.xensource.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Suzuki Poulose <suzuki@linux.vnet.ibm.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Subject: Re: [PATCH RFC V3 2/4] kvm hypervisor : Add a hypercall to KVM hypervisor
+ to support pv-ticketlocks
+References: <20111130085921.23386.89708.sendpatchset@oc5400248562.ibm.com> <20111130085959.23386.69166.sendpatchset@oc5400248562.ibm.com> <20111207104849.GA24849@amt.cnet> <4EDF5413.1030107@linux.vnet.ibm.com> <20111207123330.GA32212@amt.cnet> <4EDF6049.2030204@redhat.com> <20111207133947.GA1708@amt.cnet> <4EDF7DC5.5010504@redhat.com> <4EDF987B.8040900@linux.vnet.ibm.com>
+In-Reply-To: <4EDF987B.8040900@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 08, 2011 at 01:03:26PM +0530, Vinod Koul wrote:
-> On Thu, 2011-12-01 at 14:58 +0100, Sascha Hauer wrote:
-> > Hi,
-> > 
-> > The following series fixes the display connections to the IPU on
-> > i.MX3 boards. The connection to the display is completely independend
-> > of the internal pixel format in the framebuffer. The driver instead
-> > changes the IPU <-> Display mapping dependent on the pixelformat
-> > which is wrong.
-> > The following patch makes 16bpp and 32bpp modes possible on both
-> > RGB666 and RGB888 connected displays.
-> > The burstsize setting for 32bpp was configured wrong, so 32bpp
-> > modes have obviously never been tested.
-> > 
-> > Not for stable since all in kernel boards seem to work.
-> Applied thanks.
-> 
-> Couldn't help but notice that :
-> @@ -312,7 +312,7 @@ static void ipu_ch_param_set_size(union
-> chan_param_mem *params,
->         case IPU_PIX_FMT_RGB565:
->                 params->ip.bpp  = 2;
->                 params->ip.pfs  = 4;
-> 
-> is not really good way. Someone else who is using this driver has no way
-> of knowing what these magic numbers mean and how to use them
-> Perhaps you can add meaning to these numbers and some note on why they
-> should be set to these values.
+On 12/07/2011 06:46 PM, Raghavendra K T wrote:
+> On 12/07/2011 08:22 PM, Avi Kivity wrote:
+>> On 12/07/2011 03:39 PM, Marcelo Tosatti wrote:
+>>>> Also I think we can keep the kicked flag in vcpu->requests, no need
+>>>> for
+>>>> new storage.
+>>>
+>>> Was going to suggest it but it violates the currently organized
+>>> processing of entries at the beginning of vcpu_enter_guest.
+>>>
+>>> That is, this "kicked" flag is different enough from vcpu->requests
+>>> processing that a separate variable seems worthwhile (even more
+>>> different with convertion to MP_STATE at KVM_GET_MP_STATE).
+>>
+>> IMO, it's similar to KVM_REQ_EVENT (which can also cause mpstate to
+>> change due to apic re-evaluation).
+>>
+>
+> Ok, So what I understand is we have to either :
+> 1. retain current kick flag AS-IS but would have to make it migration
+> friendly. [I still have to get more familiar with migration side]
+> or
+> 2. introduce notion similar to KVM_REQ_PVLOCK_KICK(??) to be part of
+> vcpu->requests.
+>
+> So what would be better? Please let me know.
+>
 
-Yes, you are right. Adding defines for these really makes this better
-readable. BTW did you queue both patches or only the first one?
-
-Sascha
-
+IMO, KVM_REQ.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+error compiling committee.c: too many arguments to function
+
